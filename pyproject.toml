@@ -297,7 +297,6 @@ target-version = "py39"
 quote-style = "preserve"  # TODO: Convert to a specific quote style
 exclude = [
     "tests/*",
-    "tmt/cli/*",
     "tmt/steps/*",
     "tmt/utils/*",
     ]

@@ -71,45 +71,65 @@ environment_options = create_options_decorator(tmt.options.ENVIRONMENT_OPTIONS)
 @click.group(invoke_without_command=True, cls=CustomGroup)
 @pass_context
 @option(
-    '-r', '--root', metavar='PATH', show_default=True, default='.',
-    help="Path to the metadata tree root, '.' used by default.")
+    '-r',
+    '--root',
+    metavar='PATH',
+    show_default=True,
+    default='.',
+    help="Path to the metadata tree root, '.' used by default.",
+)
 @option(
-    '-c', '--context', metavar='DATA', multiple=True,
+    '-c',
+    '--context',
+    metavar='DATA',
+    multiple=True,
     help="""
          Set the fmf context. Use KEY=VAL or KEY=VAL1,VAL2... format to define individual
          dimensions or the @FILE notation to load data from provided yaml file. Can be specified
          multiple times.
-         """)
+         """,
+)
 @verbosity_options
 @feeling_safe_option
 @option(
     '--show-time',
     is_flag=True,
-    help='If set, logging messages on the terminal would contain timestamps.')
+    help='If set, logging messages on the terminal would contain timestamps.',
+)
 @option(
-    '--version', is_flag=True,
-    help='Show tmt version and commit hash.',)
+    '--version',
+    is_flag=True,
+    help='Show tmt version and commit hash.',
+)
 @option(
-    '--no-color', is_flag=True, default=False,
-    help='Forces tmt to not use any colors in the output or logging.'
-    )
+    '--no-color',
+    is_flag=True,
+    default=False,
+    help='Forces tmt to not use any colors in the output or logging.',
+)
 @option(
-    '--force-color', is_flag=True, default=False,
-    help='Forces tmt to use colors in the output and logging.'
-    )
+    '--force-color',
+    is_flag=True,
+    default=False,
+    help='Forces tmt to use colors in the output and logging.',
+)
 @option(
-    '--pre-check', is_flag=True, default=False, hidden=True,
-    help='Run pre-checks on the git root. (Used by pre-commit wrapper).'
-    )
+    '--pre-check',
+    is_flag=True,
+    default=False,
+    hidden=True,
+    help='Run pre-checks on the git root. (Used by pre-commit wrapper).',
+)
 def main(
-        click_contex: Context,
-        root: str,
-        context: list[str],
-        no_color: bool,
-        force_color: bool,
-        show_time: bool,
-        pre_check: bool,
-        **kwargs: Any) -> None:
+    click_contex: Context,
+    root: str,
+    context: list[str],
+    no_color: bool,
+    force_color: bool,
+    show_time: bool,
+    pre_check: bool,
+    **kwargs: Any,
+) -> None:
     """
     Test Management Tool
     """
@@ -127,7 +147,8 @@ def main(
     logger = tmt.log.Logger.create(
         apply_colors_output=apply_colors_output,
         apply_colors_logging=apply_colors_logging,
-        **kwargs)
+        **kwargs,
+    )
     logger.add_console_handler(show_timestamps=show_time)
 
     # Propagate color setting to Click as well.
@@ -154,7 +175,7 @@ def main(
         git_root = git_root.strip()
         git_command = tmt.utils.Command(
             'git', 'ls-files', '--error-unmatch', f"{git_root}/{root}/.fmf/version"
-            )
+        )
         git_command.run(cwd=None, logger=logger)
 
     # Initialize metadata tree (from given path or current directory)
@@ -167,8 +188,8 @@ def main(
         common=tmt.utils.Common(logger=logger),
         fmf_context=tmt.utils.FmfContext.from_spec('cli', context, logger),
         steps=set(),
-        tree=tree
-        )
+        tree=tree,
+    )
 
     # Show overview of available tests, plans and stories
     if click_contex.invoked_subcommand is None:
@@ -181,51 +202,94 @@ def main(
 #  Run
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
 @main.group(chain=True, invoke_without_command=True, cls=CustomGroup)
 @pass_context
 @option(
-    '-i', '--id', 'id_', help='Run id (name or directory path).', metavar="ID",)
+    '-i',
+    '--id',
+    'id_',
+    help='Run id (name or directory path).',
+    metavar="ID",
+)
 @option(
-    '-l', '--last', help='Execute the last run once again.', is_flag=True,)
+    '-l',
+    '--last',
+    help='Execute the last run once again.',
+    is_flag=True,
+)
 @option(
-    '-r', '--rm', '--remove', 'remove', is_flag=True,
-    help='Remove the workdir when test run is finished.')
+    '-r',
+    '--rm',
+    '--remove',
+    'remove',
+    is_flag=True,
+    help='Remove the workdir when test run is finished.',
+)
 @option(
-    '-k', '--keep', is_flag=True,
+    '-k',
+    '--keep',
+    is_flag=True,
     help="""
          Keep all files in the run workdir after testing is done (skip pruning during the finish
          step).
-         """)
+         """,
+)
 @option(
-    '--scratch', is_flag=True,
-    help='Remove the run workdir before executing to start from scratch.')
+    '--scratch',
+    is_flag=True,
+    help='Remove the run workdir before executing to start from scratch.',
+)
 @option(
-    '--follow', is_flag=True,
-    help='Output the logfile as it grows.',)
+    '--follow',
+    is_flag=True,
+    help='Output the logfile as it grows.',
+)
 @option(
-    '-a', '--all', help='Run all steps, customize some.', is_flag=True,)
+    '-a',
+    '--all',
+    help='Run all steps, customize some.',
+    is_flag=True,
+)
 @option(
-    '-u', '--until', choices=tmt.steps.STEPS,
-    help='Enable given step and all preceding steps.',)
+    '-u',
+    '--until',
+    choices=tmt.steps.STEPS,
+    help='Enable given step and all preceding steps.',
+)
 @option(
-    '-s', '--since', choices=tmt.steps.STEPS,
-    help='Enable given step and all following steps.',)
+    '-s',
+    '--since',
+    choices=tmt.steps.STEPS,
+    help='Enable given step and all following steps.',
+)
 @option(
-    '-A', '--after', choices=tmt.steps.STEPS,
-    help='Enable all steps after the given one.',)
+    '-A',
+    '--after',
+    choices=tmt.steps.STEPS,
+    help='Enable all steps after the given one.',
+)
 @option(
-    '-B', '--before', choices=tmt.steps.STEPS,
-    help='Enable all steps before the given one.',)
+    '-B',
+    '--before',
+    choices=tmt.steps.STEPS,
+    help='Enable all steps before the given one.',
+)
 @option(
-    '-S', '--skip', choices=tmt.steps.STEPS,
-    help='Skip given step(s) during test run execution.', multiple=True)
+    '-S',
+    '--skip',
+    choices=tmt.steps.STEPS,
+    help='Skip given step(s) during test run execution.',
+    multiple=True,
+)
 @option(
     '--on-plan-error',
     choices=['quit', 'continue'],
     default='quit',
     help="""
          What to do when plan fails to finish. Quit by default, or continue with the next plan.
-         """)
+         """,
+)
 @environment_options
 @workdir_root_options
 @verbosity_options
@@ -245,8 +309,8 @@ def run(context: Context, id_: Optional[str], workdir_root: Optional[Path], **kw
         tree=context.obj.tree,
         cli_invocation=CliInvocation.from_context(context),
         workdir_root=effective_workdir_root(workdir_root),
-        logger=logger
-        )
+        logger=logger,
+    )
     context.obj.run = run
 
 
@@ -264,20 +328,36 @@ run.add_command(tmt.steps.Reboot.command())
 @run.command(name='plans')
 @pass_context
 @option(
-    '-n', '--name', 'names', metavar='[REGEXP|.]', multiple=True,
-    help="Regular expression to match plan name or '.' for current directory.")
+    '-n',
+    '--name',
+    'names',
+    metavar='[REGEXP|.]',
+    multiple=True,
+    help="Regular expression to match plan name or '.' for current directory.",
+)
 @filter_option
 @option(
-    '-c', '--condition', 'conditions', metavar="EXPR", multiple=True,
-    help="Use arbitrary Python expression for filtering.")
+    '-c',
+    '--condition',
+    'conditions',
+    metavar="EXPR",
+    multiple=True,
+    help="Use arbitrary Python expression for filtering.",
+)
 @option(
-    '--link', 'links', metavar="RELATION:TARGET", multiple=True,
+    '--link',
+    'links',
+    metavar="RELATION:TARGET",
+    multiple=True,
     help="""
          Filter by linked objects (regular expressions are supported for both relation and target).
-         """)
+         """,
+)
 @option(
-    '--default', is_flag=True,
-    help="Use default plans even if others are available.",)
+    '--default',
+    is_flag=True,
+    help="Use default plans even if others are available.",
+)
 @verbosity_options
 def run_plans(context: Context, **kwargs: Any) -> None:
     """
@@ -293,23 +373,40 @@ def run_plans(context: Context, **kwargs: Any) -> None:
 @run.command(name='tests')
 @pass_context
 @option(
-    '-n', '--name', 'names', metavar='[REGEXP|.]', multiple=True,
-    help="Regular expression to match test name or '.' for current directory.")
+    '-n',
+    '--name',
+    'names',
+    metavar='[REGEXP|.]',
+    multiple=True,
+    help="Regular expression to match test name or '.' for current directory.",
+)
 @filter_option
 @option(
-    '-c', '--condition', 'conditions', metavar="EXPR", multiple=True,
-    help="Use arbitrary Python expression for filtering.")
+    '-c',
+    '--condition',
+    'conditions',
+    metavar="EXPR",
+    multiple=True,
+    help="Use arbitrary Python expression for filtering.",
+)
 @option(
-    '--link', 'links', metavar="RELATION:TARGET", multiple=True,
+    '--link',
+    'links',
+    metavar="RELATION:TARGET",
+    multiple=True,
     help="""
          Filter by linked objects (regular expressions are supported for both relation and target).
-         """)
+         """,
+)
 @option(
-    '--failed-only', is_flag=True, default=False,
+    '--failed-only',
+    is_flag=True,
+    default=False,
     help="""
          Select only failed tests from a previous run.
          Used when rerunning existing runs and requires either --id or --last option.
-         """)
+         """,
+)
 @verbosity_options
 def run_tests(context: Context, **kwargs: Any) -> None:
     """
@@ -328,10 +425,11 @@ def run_tests(context: Context, **kwargs: Any) -> None:
 @run.result_callback()  # type: ignore[arg-type]
 @pass_context
 def finito(
-        click_context: Context,
-        commands: Any,
-        *args: Any,
-        **kwargs: Any,) -> None:
+    click_context: Context,
+    commands: Any,
+    *args: Any,
+    **kwargs: Any,
+) -> None:
     """
     Run tests if run defined
     """
@@ -343,6 +441,7 @@ def finito(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Test
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
@@ -357,8 +456,7 @@ def tests(context: Context, **kwargs: Any) -> None:
     Convert old metadata into the new fmf format.
     """
 
-    context.obj.logger = context.obj.logger.clone() \
-        .apply_verbosity_options(**kwargs)
+    context.obj.logger = context.obj.logger.clone().apply_verbosity_options(**kwargs)
 
     # Show overview of available tests
     if context.invoked_subcommand is None:
@@ -400,43 +498,50 @@ def tests_show(context: Context, **kwargs: Any) -> None:
 
     tmt.Test.store_cli_invocation(context)
 
-    logger = context.obj.logger.clone() \
-        .apply_verbosity_options(**kwargs)
+    logger = context.obj.logger.clone().apply_verbosity_options(**kwargs)
 
     for test in context.obj.tree.tests(logger=logger):
         test.show()
         echo()
 
 
-_script_templates = fmf.utils.listed(
-    tmt.templates.MANAGER.templates['script'], join='or')
+_script_templates = fmf.utils.listed(tmt.templates.MANAGER.templates['script'], join='or')
 
-_metadata_templates = fmf.utils.listed(
-    tmt.templates.MANAGER.templates['test'], join='or')
+_metadata_templates = fmf.utils.listed(tmt.templates.MANAGER.templates['test'], join='or')
 
 
 @tests.command(name='create')
 @pass_context
 @click.argument('names', nargs=-1, metavar='[NAME]...')
 @option(
-    '-t', '--template', metavar='TEMPLATE',
+    '-t',
+    '--template',
+    metavar='TEMPLATE',
     help=f'Test metadata template ({_metadata_templates}).',
-    prompt=f'Test template ({_metadata_templates})')
+    prompt=f'Test template ({_metadata_templates})',
+)
 @option(
-    '-s', '--script', metavar='TEMPLATE',
-    help=f'Test script template ({_script_templates}).',)
+    '-s',
+    '--script',
+    metavar='TEMPLATE',
+    help=f'Test script template ({_script_templates}).',
+)
 @option(
-    '--link', metavar='[RELATION:]TARGET', multiple=True,
-    help='Link created test to the relevant issues.')
+    '--link',
+    metavar='[RELATION:]TARGET',
+    multiple=True,
+    help='Link created test to the relevant issues.',
+)
 @verbosity_options
 @force_dry_options
 def tests_create(
-        context: Context,
-        names: list[str],
-        template: str,
-        script: Optional[str],
-        force: bool,
-        **kwargs: Any) -> None:
+    context: Context,
+    names: list[str],
+    template: str,
+    script: Optional[str],
+    force: bool,
+    **kwargs: Any,
+) -> None:
     """
     Create a new test based on given template.
 
@@ -452,84 +557,135 @@ def tests_create(
         path=context.obj.tree.root,
         script=script,
         force=force,
-        logger=context.obj.logger)
+        logger=context.obj.logger,
+    )
 
 
 @tests.command(name='import')
 @pass_context
 @click.argument('paths', nargs=-1, metavar='[PATH]...')
 @option(
-    '--nitrate / --no-nitrate', default=True, show_default=True, is_flag=True,
-    help='Import test metadata from Nitrate.')
+    '--nitrate / --no-nitrate',
+    default=True,
+    show_default=True,
+    is_flag=True,
+    help='Import test metadata from Nitrate.',
+)
 @option(
-    '--polarion / --no-polarion', default=False, show_default=True, is_flag=True,
-    help='Import test metadata from Polarion.')
+    '--polarion / --no-polarion',
+    default=False,
+    show_default=True,
+    is_flag=True,
+    help='Import test metadata from Polarion.',
+)
 @option(
-    '--purpose / --no-purpose', default=True, show_default=True, is_flag=True,
-    help='Migrate description from PURPOSE file.')
+    '--purpose / --no-purpose',
+    default=True,
+    show_default=True,
+    is_flag=True,
+    help='Migrate description from PURPOSE file.',
+)
 @option(
-    '--makefile / --no-makefile', default=True, show_default=True, is_flag=True,
-    help='Convert Beaker Makefile metadata.')
+    '--makefile / --no-makefile',
+    default=True,
+    show_default=True,
+    is_flag=True,
+    help='Convert Beaker Makefile metadata.',
+)
 @option(
-    '--restraint / --no-restraint', default=False, show_default=True, is_flag=True,
-    help='Convert restraint metadata file.')
+    '--restraint / --no-restraint',
+    default=False,
+    show_default=True,
+    is_flag=True,
+    help='Convert restraint metadata file.',
+)
 @option(
-    '--general / --no-general', default=True, is_flag=True,
+    '--general / --no-general',
+    default=True,
+    is_flag=True,
     help="""
          Detect components from linked nitrate general plans (overrides Makefile/restraint
          component).
-         """)
+         """,
+)
 @option(
-    '--polarion-case-id', multiple=True,
+    '--polarion-case-id',
+    multiple=True,
     help="""
          Polarion Test case ID(s) to import data from. Can be provided multiple times. Can provide
          also test case name like: TEST-123:test_name
-         """)
+         """,
+)
 @option(
-    '--link-polarion / --no-link-polarion', default=False, show_default=True, is_flag=True,
-    help='Add Polarion link to fmf testcase metadata.')
+    '--link-polarion / --no-link-polarion',
+    default=False,
+    show_default=True,
+    is_flag=True,
+    help='Add Polarion link to fmf testcase metadata.',
+)
 @option(
-    '--type', 'types', metavar='TYPE', default=['multihost'], multiple=True,
+    '--type',
+    'types',
+    metavar='TYPE',
+    default=['multihost'],
+    multiple=True,
     show_default=True,
     help="""
          Convert selected types from Makefile into tags. Use 'all' to convert all detected types.
-         """)
+         """,
+)
 @option(
-    '--disabled', default=False, is_flag=True,
-    help='Import disabled test cases from Nitrate as well.')
+    '--disabled',
+    default=False,
+    is_flag=True,
+    help='Import disabled test cases from Nitrate as well.',
+)
 @option(
-    '--manual', default=False, is_flag=True,
-    help='Import manual test cases from Nitrate.',)
+    '--manual',
+    default=False,
+    is_flag=True,
+    help='Import manual test cases from Nitrate.',
+)
 @option(
-    '--plan', metavar='PLAN', type=int,
-    help='Identifier of test plan from which to import manual test cases.')
+    '--plan',
+    metavar='PLAN',
+    type=int,
+    help='Identifier of test plan from which to import manual test cases.',
+)
 @option(
-    '--case', metavar='CASE', type=int,
-    help='Identifier of manual test case to be imported.',)
+    '--case',
+    metavar='CASE',
+    type=int,
+    help='Identifier of manual test case to be imported.',
+)
 @option(
-    '--with-script', default=False, is_flag=True,
-    help='Import manual cases with non-empty script field in Nitrate.')
+    '--with-script',
+    default=False,
+    is_flag=True,
+    help='Import manual cases with non-empty script field in Nitrate.',
+)
 @verbosity_options
 @force_dry_options
 def tests_import(
-        context: Context,
-        paths: list[str],
-        makefile: bool,
-        restraint: bool,
-        general: bool,
-        types: list[str],
-        nitrate: bool,
-        polarion: bool,
-        polarion_case_id: list[str],
-        link_polarion: bool,
-        purpose: bool,
-        disabled: bool,
-        manual: bool,
-        plan: int,
-        case: int,
-        with_script: bool,
-        dry: bool,
-        **kwargs: Any) -> None:
+    context: Context,
+    paths: list[str],
+    makefile: bool,
+    restraint: bool,
+    general: bool,
+    types: list[str],
+    nitrate: bool,
+    polarion: bool,
+    polarion_case_id: list[str],
+    link_polarion: bool,
+    purpose: bool,
+    disabled: bool,
+    manual: bool,
+    plan: int,
+    case: int,
+    with_script: bool,
+    dry: bool,
+    **kwargs: Any,
+) -> None:
     """
     Import old test metadata into the new fmf format.
 
@@ -550,7 +706,8 @@ def tests_import(
     if manual:
         if not (case or plan):
             raise tmt.utils.GeneralError(
-                "Option --case or --plan is mandatory when using --manual.")
+                "Option --case or --plan is mandatory when using --manual."
+            )
         tmt.convert.read_manual(plan, case, disabled, with_script, context.obj.logger)
         return
 
@@ -561,12 +718,23 @@ def tests_import(
         # Make sure we've got a real directory
         path = path.resolve()
         if not path.is_dir():
-            raise tmt.utils.GeneralError(
-                f"Path '{path}' is not a directory.")
+            raise tmt.utils.GeneralError(f"Path '{path}' is not a directory.")
         # Gather old metadata and store them as fmf
         common, individual = tmt.convert.read(
-            path, makefile, restraint, nitrate, polarion, polarion_case_id, link_polarion,
-            purpose, disabled, types, general, dry, context.obj.logger)
+            path,
+            makefile,
+            restraint,
+            nitrate,
+            polarion,
+            polarion_case_id,
+            link_polarion,
+            purpose,
+            disabled,
+            types,
+            general,
+            dry,
+            context.obj.logger,
+        )
         # Add path to common metadata if there are virtual test cases
         if individual:
             # TODO: fmf is not annotated yet, fmf.Tree.root is seen by pyright as possibly
@@ -590,7 +758,8 @@ def tests_import(
                 file_name = testcase.get('filename')
                 if not file_name:
                     raise tmt.utils.ConvertError(
-                        'Filename was not found, please set one with --polarion-case-id.')
+                        'Filename was not found, please set one with --polarion-case-id.'
+                    )
                 testcase_path = path / file_name
             if not dry:
                 tmt.convert.write(testcase_path, testcase)
@@ -609,84 +778,127 @@ _test_export_default = 'yaml'
 @pass_context
 @filtering_options_long
 @option(
-    '-h', '--how', default=_test_export_default, show_default=True,
+    '-h',
+    '--how',
+    default=_test_export_default,
+    show_default=True,
     help='Output format.',
-    choices=_test_export_formats)
+    choices=_test_export_formats,
+)
 @option(
-    '--format', default=_test_export_default, show_default=True,
+    '--format',
+    default=_test_export_default,
+    show_default=True,
     help='Output format.',
     deprecated=Deprecated('1.21', hint='use --how instead'),
-    choices=_test_export_formats)
+    choices=_test_export_formats,
+)
 @option(
-    '--nitrate', is_flag=True,
+    '--nitrate',
+    is_flag=True,
     help="Export test metadata to Nitrate.",
-    deprecated=Deprecated('1.21', hint="use '--how nitrate' instead"))
+    deprecated=Deprecated('1.21', hint="use '--how nitrate' instead"),
+)
 @option(
-    '--project-id', help='Use specific Polarion project ID.',)
+    '--project-id',
+    help='Use specific Polarion project ID.',
+)
 @option(
-    '--link-polarion / --no-link-polarion', default=False, is_flag=True,
-    help='Add Polarion link to fmf testcase metadata')
+    '--link-polarion / --no-link-polarion',
+    default=False,
+    is_flag=True,
+    help='Add Polarion link to fmf testcase metadata',
+)
 @option(
-    '--bugzilla', is_flag=True,
+    '--bugzilla',
+    is_flag=True,
     help="""
          Link Nitrate case to Bugzilla specified in the 'link' attribute with the relation
          'verifies'.
-         """)
+         """,
+)
 @option(
-    '--ignore-git-validation', is_flag=True,
+    '--ignore-git-validation',
+    is_flag=True,
     help="""
          Ignore unpublished git changes and export to Nitrate. The case might not be able to be
          scheduled!
-         """)
+         """,
+)
 @option(
-    '--append-summary / --no-append-summary', default=False, is_flag=True,
+    '--append-summary / --no-append-summary',
+    default=False,
+    is_flag=True,
     help="""
          Include test summary in the Nitrate/Polarion test case summary as well. By default, only
          the repository name and test name are used.
-         """)
+         """,
+)
 @option(
-    '--create', is_flag=True,
-    help="Create test cases in nitrate if they don't exist.",)
+    '--create',
+    is_flag=True,
+    help="Create test cases in nitrate if they don't exist.",
+)
 @option(
-    '--general / --no-general', default=False, is_flag=True,
+    '--general / --no-general',
+    default=False,
+    is_flag=True,
     help="""
          Link Nitrate case to component's General plan. Disabled by default. Note that this will
          unlink any previously connected general plans.
-         """)
+         """,
+)
 @option(
-    '--link-runs / --no-link-runs', default=False, is_flag=True,
+    '--link-runs / --no-link-runs',
+    default=False,
+    is_flag=True,
     help="""
          Link Nitrate case to all open runs of descendant plans of General plan. Disabled by
          default. Implies --general option.
-         """)
+         """,
+)
 @option(
-    '--fmf-id', is_flag=True,
-    help='Show fmf identifiers instead of test metadata.',)
+    '--fmf-id',
+    is_flag=True,
+    help='Show fmf identifiers instead of test metadata.',
+)
 @option(
-    '--duplicate / --no-duplicate', default=False, show_default=True, is_flag=True,
+    '--duplicate / --no-duplicate',
+    default=False,
+    show_default=True,
+    is_flag=True,
     help="""
          Allow or prevent creating duplicates in Nitrate by searching for existing test cases with
          the same fmf identifier.
-         """)
+         """,
+)
 @option(
-    '-n', '--dry', is_flag=True,
-    help="Run in dry mode. No changes, please.",)
+    '-n',
+    '--dry',
+    is_flag=True,
+    help="Run in dry mode. No changes, please.",
+)
 @option(
-    '-d', '--debug', is_flag=True,
-    help='Provide as much debugging details as possible.',)
+    '-d',
+    '--debug',
+    is_flag=True,
+    help='Provide as much debugging details as possible.',
+)
 # TODO: move to `template` export plugin options
 @option(
-    '--template', metavar='PATH',
-    help="Path to a template to use for rendering the export. Used with '--how=template' only."
-    )
+    '--template',
+    metavar='PATH',
+    help="Path to a template to use for rendering the export. Used with '--how=template' only.",
+)
 def tests_export(
-        context: Context,
-        format: str,
-        how: str,
-        nitrate: bool,
-        bugzilla: bool,
-        template: Optional[str],
-        **kwargs: Any) -> None:
+    context: Context,
+    format: str,
+    how: str,
+    nitrate: bool,
+    bugzilla: bool,
+    template: Optional[str],
+    **kwargs: Any,
+) -> None:
     """
     Export test data into the desired format.
 
@@ -698,7 +910,8 @@ def tests_export(
 
     if nitrate:
         context.obj.common.warn(
-            "Option '--nitrate' is deprecated, please use '--how nitrate' instead.")
+            "Option '--nitrate' is deprecated, please use '--how nitrate' instead."
+        )
         how = 'nitrate'
 
     if format != _test_export_default:
@@ -709,22 +922,26 @@ def tests_export(
     # TODO: move this "requires bugzilla" flag to export plugin level.
     if bugzilla and how not in ('nitrate', 'polarion'):
         raise tmt.utils.GeneralError(
-            "The --bugzilla option is supported only with --nitrate "
-            "or --polarion for now.")
+            "The --bugzilla option is supported only with --nitrate or --polarion for now."
+        )
 
     if kwargs.get('fmf_id'):
-        echo(tmt.base.FmfId.export_collection(
-            collection=[test.fmf_id for test in context.obj.tree.tests()],
-            format=how,
-            template=Path(template) if template else None
-            ))
+        echo(
+            tmt.base.FmfId.export_collection(
+                collection=[test.fmf_id for test in context.obj.tree.tests()],
+                format=how,
+                template=Path(template) if template else None,
+            )
+        )
 
     else:
-        echo(tmt.Test.export_collection(
-            collection=context.obj.tree.tests(),
-            format=how,
-            template=Path(template) if template else None
-            ))
+        echo(
+            tmt.Test.export_collection(
+                collection=context.obj.tree.tests(),
+                format=how,
+                template=Path(template) if template else None,
+            )
+        )
 
 
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
@@ -752,6 +969,7 @@ def tests_id(context: Context, **kwargs: Any) -> None:
 #  Plan
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @main.group(invoke_without_command=True, cls=CustomGroup)  # type: ignore[arg-type]
@@ -767,8 +985,7 @@ def plans(context: Context, **kwargs: Any) -> None:
     Explore detailed test step configuration.
     """
 
-    context.obj.logger = context.obj.logger.clone() \
-        .apply_verbosity_options(**kwargs)
+    context.obj.logger = context.obj.logger.clone().apply_verbosity_options(**kwargs)
 
     # Show overview of available plans
     if context.invoked_subcommand is None:
@@ -813,8 +1030,7 @@ def plans_show(context: Context, **kwargs: Any) -> None:
 
     tmt.Plan.store_cli_invocation(context)
 
-    logger = context.obj.logger.clone() \
-        .apply_verbosity_options(**kwargs)
+    logger = context.obj.logger.clone().apply_verbosity_options(**kwargs)
 
     for plan in context.obj.tree.plans(logger=logger):
         plan.show()
@@ -828,38 +1044,63 @@ _plan_templates = fmf.utils.listed(tmt.templates.MANAGER.templates['plan'], join
 @pass_context
 @click.argument('names', nargs=-1, metavar='[NAME]...')
 @option(
-    '-t', '--template', metavar='TEMPLATE',
+    '-t',
+    '--template',
+    metavar='TEMPLATE',
     help=f'Plan template ({_plan_templates}).',
-    prompt=f'Template ({_plan_templates})',)
+    prompt=f'Template ({_plan_templates})',
+)
 @option(
-    '--discover', metavar='YAML', multiple=True,
-    help='Discover phase content in yaml format.',)
+    '--discover',
+    metavar='YAML',
+    multiple=True,
+    help='Discover phase content in yaml format.',
+)
 @option(
-    '--provision', metavar='YAML', multiple=True,
-    help='Provision phase content in yaml format.',)
+    '--provision',
+    metavar='YAML',
+    multiple=True,
+    help='Provision phase content in yaml format.',
+)
 @option(
-    '--prepare', metavar='YAML', multiple=True,
-    help='Prepare phase content in yaml format.',)
+    '--prepare',
+    metavar='YAML',
+    multiple=True,
+    help='Prepare phase content in yaml format.',
+)
 @option(
-    '--execute', metavar='YAML', multiple=True,
-    help='Execute phase content in yaml format.',)
+    '--execute',
+    metavar='YAML',
+    multiple=True,
+    help='Execute phase content in yaml format.',
+)
 @option(
-    '--report', metavar='YAML', multiple=True,
-    help='Report phase content in yaml format.',)
+    '--report',
+    metavar='YAML',
+    multiple=True,
+    help='Report phase content in yaml format.',
+)
 @option(
-    '--finish', metavar='YAML', multiple=True,
-    help='Finish phase content in yaml format.',)
+    '--finish',
+    metavar='YAML',
+    multiple=True,
+    help='Finish phase content in yaml format.',
+)
 @option(
-    '--link', metavar='[RELATION:]TARGET', multiple=True,
-    help='Link created plan to the relevant issues.',)
+    '--link',
+    metavar='[RELATION:]TARGET',
+    multiple=True,
+    help='Link created plan to the relevant issues.',
+)
 @verbosity_options
 @force_dry_options
 def plans_create(
-        context: Context,
-        names: list[str],
-        template: str,
-        force: bool,
-        **kwargs: Any,) -> None:
+    context: Context,
+    names: list[str],
+    template: str,
+    force: bool,
+    **kwargs: Any,
+) -> None:
     """
     Create a new plan based on given template.
     """
@@ -871,7 +1112,8 @@ def plans_create(
         template=template,
         path=context.obj.tree.root,
         force=force,
-        logger=context.obj.logger)
+        logger=context.obj.logger,
+    )
 
 
 _plan_export_formats = list(tmt.Plan.get_export_plugin_registry().iter_plugin_ids())
@@ -882,29 +1124,41 @@ _plan_export_default = 'yaml'
 @pass_context
 @filtering_options_long
 @option(
-    '-h', '--how', default=_plan_export_default, show_default=True,
+    '-h',
+    '--how',
+    default=_plan_export_default,
+    show_default=True,
     help='Output format.',
-    choices=_plan_export_formats)
+    choices=_plan_export_formats,
+)
 @option(
-    '--format', default=_plan_export_default, show_default=True,
+    '--format',
+    default=_plan_export_default,
+    show_default=True,
     help='Output format.',
     deprecated=Deprecated('1.21', hint='use --how instead'),
-    choices=_plan_export_formats)
+    choices=_plan_export_formats,
+)
 @option(
-    '-d', '--debug', is_flag=True,
-    help='Provide as much debugging details as possible.',)
+    '-d',
+    '--debug',
+    is_flag=True,
+    help='Provide as much debugging details as possible.',
+)
 # TODO: move to `template` export plugin options
 @option(
-    '--template', metavar='PATH',
-    help="Path to a template to use for rendering the export. Used with '--how=template' only."
-    )
+    '--template',
+    metavar='PATH',
+    help="Path to a template to use for rendering the export. Used with '--how=template' only.",
+)
 @environment_options
 def plans_export(
-        context: Context,
-        how: str,
-        format: str,
-        template: Optional[str],
-        **kwargs: Any,) -> None:
+    context: Context,
+    how: str,
+    format: str,
+    template: Optional[str],
+    **kwargs: Any,
+) -> None:
     """
     Export plans into desired format.
 
@@ -919,11 +1173,13 @@ def plans_export(
 
         how = format
 
-    echo(tmt.Plan.export_collection(
-        collection=context.obj.tree.plans(),
-        format=how,
-        template=Path(template) if template else None
-        ))
+    echo(
+        tmt.Plan.export_collection(
+            collection=context.obj.tree.plans(),
+            format=how,
+            template=Path(template) if template else None,
+        )
+    )
 
 
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
@@ -946,6 +1202,7 @@ def plans_id(context: Context, **kwargs: Any) -> None:
     for plan in context.obj.tree.plans():
         tmt.identifier.id_command(context, plan.node, "plan", dry=kwargs["dry"])
 
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Story
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -965,8 +1222,7 @@ def stories(context: Context, **kwargs: Any) -> None:
     Explore coverage (test, implementation, documentation).
     """
 
-    context.obj.logger = context.obj.logger.clone() \
-        .apply_verbosity_options(**kwargs)
+    context.obj.logger = context.obj.logger.clone().apply_verbosity_options(**kwargs)
 
     # Show overview of available stories
     if context.invoked_subcommand is None:
@@ -981,16 +1237,17 @@ def stories(context: Context, **kwargs: Any) -> None:
 @story_flags_filter_options
 @verbosity_options
 def stories_ls(
-        context: Context,
-        implemented: bool,
-        verified: bool,
-        documented: bool,
-        covered: bool,
-        unimplemented: bool,
-        unverified: bool,
-        undocumented: bool,
-        uncovered: bool,
-        **kwargs: Any) -> None:
+    context: Context,
+    implemented: bool,
+    verified: bool,
+    documented: bool,
+    covered: bool,
+    unimplemented: bool,
+    unverified: bool,
+    undocumented: bool,
+    uncovered: bool,
+    **kwargs: Any,
+) -> None:
     """
     List available stories.
 
@@ -1000,8 +1257,16 @@ def stories_ls(
 
     tmt.Story.store_cli_invocation(context)
     for story in context.obj.tree.stories():
-        if story._match(implemented, verified, documented, covered,
-                        unimplemented, unverified, undocumented, uncovered):
+        if story._match(
+            implemented,
+            verified,
+            documented,
+            covered,
+            unimplemented,
+            unverified,
+            undocumented,
+            uncovered,
+        ):
             story.ls()
 
 
@@ -1013,16 +1278,17 @@ def stories_ls(
 @story_flags_filter_options
 @verbosity_options
 def stories_show(
-        context: Context,
-        implemented: bool,
-        verified: bool,
-        documented: bool,
-        covered: bool,
-        unimplemented: bool,
-        unverified: bool,
-        undocumented: bool,
-        uncovered: bool,
-        **kwargs: Any) -> None:
+    context: Context,
+    implemented: bool,
+    verified: bool,
+    documented: bool,
+    covered: bool,
+    unimplemented: bool,
+    unverified: bool,
+    undocumented: bool,
+    uncovered: bool,
+    **kwargs: Any,
+) -> None:
     """
     Show story details.
 
@@ -1032,12 +1298,19 @@ def stories_show(
 
     tmt.Story.store_cli_invocation(context)
 
-    logger = context.obj.logger.clone() \
-        .apply_verbosity_options(**kwargs)
+    logger = context.obj.logger.clone().apply_verbosity_options(**kwargs)
 
     for story in context.obj.tree.stories(logger=logger):
-        if story._match(implemented, verified, documented, covered,
-                        unimplemented, unverified, undocumented, uncovered):
+        if story._match(
+            implemented,
+            verified,
+            documented,
+            covered,
+            unimplemented,
+            unverified,
+            undocumented,
+            uncovered,
+        ):
             story.show()
             echo()
 
@@ -1049,20 +1322,27 @@ _story_templates = fmf.utils.listed(tmt.templates.MANAGER.templates['story'], jo
 @pass_context
 @click.argument('names', nargs=-1, metavar='[NAME]...')
 @option(
-    '-t', '--template', metavar='TEMPLATE',
+    '-t',
+    '--template',
+    metavar='TEMPLATE',
     prompt=f'Template ({_story_templates})',
-    help=f'Story template ({_story_templates}).')
+    help=f'Story template ({_story_templates}).',
+)
 @option(
-    '--link', metavar='[RELATION:]TARGET', multiple=True,
-    help='Link created story to the relevant issues.')
+    '--link',
+    metavar='[RELATION:]TARGET',
+    multiple=True,
+    help='Link created story to the relevant issues.',
+)
 @verbosity_options
 @force_dry_options
 def stories_create(
-        context: Context,
-        names: list[str],
-        template: str,
-        force: bool,
-        **kwargs: Any,) -> None:
+    context: Context,
+    names: list[str],
+    template: str,
+    force: bool,
+    **kwargs: Any,
+) -> None:
     """
     Create a new story based on given template.
     """
@@ -1074,36 +1354,35 @@ def stories_create(
         template=template,
         path=context.obj.tree.root,
         force=force,
-        logger=context.obj.logger)
+        logger=context.obj.logger,
+    )
 
 
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
 # inference. See Context and ContextObjects above.
 @stories.command(name='coverage')  # type: ignore[arg-type]
-@option(
-    '--docs', is_flag=True, help='Show docs coverage.')
-@option(
-    '--test', is_flag=True, help='Show test coverage.')
-@option(
-    '--code', is_flag=True, help='Show code coverage.')
+@option('--docs', is_flag=True, help='Show docs coverage.')
+@option('--test', is_flag=True, help='Show test coverage.')
+@option('--code', is_flag=True, help='Show code coverage.')
 @pass_context
 @filtering_options_long
 @story_flags_filter_options
 @verbosity_options
 def stories_coverage(
-        context: Context,
-        code: bool,
-        test: bool,
-        docs: bool,
-        implemented: bool,
-        verified: bool,
-        documented: bool,
-        covered: bool,
-        unimplemented: bool,
-        unverified: bool,
-        undocumented: bool,
-        uncovered: bool,
-        **kwargs: Any) -> None:
+    context: Context,
+    code: bool,
+    test: bool,
+    docs: bool,
+    implemented: bool,
+    verified: bool,
+    documented: bool,
+    covered: bool,
+    unimplemented: bool,
+    unverified: bool,
+    undocumented: bool,
+    uncovered: bool,
+    **kwargs: Any,
+) -> None:
     """
     Show code, test and docs coverage for given stories.
 
@@ -1127,8 +1406,15 @@ def stories_coverage(
     for story in context.obj.tree.stories():
         # Check conditions
         if not story._match(
-                implemented, verified, documented, covered, unimplemented,
-                unverified, undocumented, uncovered):
+            implemented,
+            verified,
+            documented,
+            covered,
+            unimplemented,
+            unverified,
+            undocumented,
+            uncovered,
+        ):
             continue
         # Show header once
         if not header:
@@ -1169,36 +1455,51 @@ _story_export_default = 'yaml'
 @filtering_options_long
 @story_flags_filter_options
 @option(
-    '-h', '--how', default=_story_export_default, show_default=True,
+    '-h',
+    '--how',
+    default=_story_export_default,
+    show_default=True,
     help='Output format.',
-    choices=_story_export_formats)
+    choices=_story_export_formats,
+)
 @option(
-    '--format', default=_story_export_default, show_default=True,
+    '--format',
+    default=_story_export_default,
+    show_default=True,
     help='Output format.',
     deprecated=Deprecated('1.21', hint='use --how instead'),
-    choices=_story_export_formats)
+    choices=_story_export_formats,
+)
 @option(
-    '-d', '--debug', is_flag=True,
-    help='Provide as much debugging details as possible.',)
+    '-d',
+    '--debug',
+    is_flag=True,
+    help='Provide as much debugging details as possible.',
+)
 # TODO: move to `template` export plugin options
 @option(
-    '--template', metavar='PATH',
-    help="Path to a template to use for rendering the export. Used with '--how=rst|template' only."
-    )
+    '--template',
+    metavar='PATH',
+    help="""
+        Path to a template to use for rendering the export.
+        Used with '--how=rst|template' only.
+        """,
+)
 def stories_export(
-        context: Context,
-        how: str,
-        format: str,
-        implemented: bool,
-        verified: bool,
-        documented: bool,
-        covered: bool,
-        unimplemented: bool,
-        unverified: bool,
-        undocumented: bool,
-        uncovered: bool,
-        template: Optional[str],
-        **kwargs: Any) -> None:
+    context: Context,
+    how: str,
+    format: str,
+    implemented: bool,
+    verified: bool,
+    documented: bool,
+    covered: bool,
+    unimplemented: bool,
+    unverified: bool,
+    undocumented: bool,
+    uncovered: bool,
+    template: Optional[str],
+    **kwargs: Any,
+) -> None:
     """
     Export selected stories into desired format.
 
@@ -1214,15 +1515,25 @@ def stories_export(
         how = format
 
     stories = [
-        story for story in context.obj.tree.stories(whole=True)
-        if story._match(implemented, verified, documented, covered, unimplemented, unverified,
-                        undocumented, uncovered)
-        ]
+        story
+        for story in context.obj.tree.stories(whole=True)
+        if story._match(
+            implemented,
+            verified,
+            documented,
+            covered,
+            unimplemented,
+            unverified,
+            undocumented,
+            uncovered,
+        )
+    ]
 
-    echo(tmt.Story.export_collection(
-        collection=stories,
-        format=how,
-        template=Path(template) if template else None))
+    echo(
+        tmt.Story.export_collection(
+            collection=stories, format=how, template=Path(template) if template else None
+        )
+    )
 
 
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
@@ -1234,16 +1545,17 @@ def stories_export(
 @verbosity_options
 @force_dry_options
 def stories_id(
-        context: Context,
-        implemented: bool,
-        verified: bool,
-        documented: bool,
-        covered: bool,
-        unimplemented: bool,
-        unverified: bool,
-        undocumented: bool,
-        uncovered: bool,
-        **kwargs: Any) -> None:
+    context: Context,
+    implemented: bool,
+    verified: bool,
+    documented: bool,
+    covered: bool,
+    unimplemented: bool,
+    unverified: bool,
+    undocumented: bool,
+    uncovered: bool,
+    **kwargs: Any,
+) -> None:
     """
     Generate a unique id for each selected story.
 
@@ -1254,8 +1566,16 @@ def stories_id(
 
     tmt.Story.store_cli_invocation(context)
     for story in context.obj.tree.stories():
-        if story._match(implemented, verified, documented, covered,
-                        unimplemented, unverified, undocumented, uncovered):
+        if story._match(
+            implemented,
+            verified,
+            documented,
+            covered,
+            unimplemented,
+            unverified,
+            undocumented,
+            uncovered,
+        ):
             tmt.identifier.id_command(context, story.node, "story", dry=kwargs["dry"])
 
 
@@ -1270,27 +1590,45 @@ CLEAN_RESOURCES: list[str] = ["guests", "runs", "images"]
 @main.group(chain=True, invoke_without_command=True, cls=CustomGroup)
 @pass_context
 @option(
-    '-l', '--last', is_flag=True,
-    help='Clean resources related to the last run.',)
+    '-l',
+    '--last',
+    is_flag=True,
+    help='Clean resources related to the last run.',
+)
 @option(
-    '-i', '--id', 'id_', metavar="ID", multiple=True,
-    help='Identifier (name or directory path) of the run to be cleaned.')
+    '-i',
+    '--id',
+    'id_',
+    metavar="ID",
+    multiple=True,
+    help='Identifier (name or directory path) of the run to be cleaned.',
+)
 @option(
-    '-k', '--keep', type=int, default=None,
-    help='The number of latest workdirs to keep, clean the rest.')
+    '-k',
+    '--keep',
+    type=int,
+    default=None,
+    help='The number of latest workdirs to keep, clean the rest.',
+)
 @option(
-    '-s', '--skip', choices=CLEAN_RESOURCES,
-    help='The resources which should be kept on the disk.', multiple=True)
+    '-s',
+    '--skip',
+    choices=CLEAN_RESOURCES,
+    help='The resources which should be kept on the disk.',
+    multiple=True,
+)
 @workdir_root_options
 @verbosity_options
 @dry_options
-def clean(context: Context,
-          last: bool,
-          id_: tuple[str, ...],
-          keep: Optional[int],
-          skip: list[str],
-          workdir_root: Optional[Path],
-          **kwargs: Any) -> None:
+def clean(
+    context: Context,
+    last: bool,
+    id_: tuple[str, ...],
+    keep: Optional[int],
+    skip: list[str],
+    workdir_root: Optional[Path],
+    **kwargs: Any,
+) -> None:
     """
     Clean workdirs, guests or images.
 
@@ -1305,20 +1643,20 @@ def clean(context: Context,
     """
 
     if last and id_:
-        raise tmt.utils.GeneralError(
-            "Options --last and --id cannot be used together.")
+        raise tmt.utils.GeneralError("Options --last and --id cannot be used together.")
     if workdir_root and not workdir_root.exists():
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
-    context.obj.clean_logger = context.obj.logger \
-        .descend(logger_name='clean', extra_shift=0) \
-        .apply_verbosity_options(**kwargs)
+    context.obj.clean_logger = context.obj.logger.descend(
+        logger_name='clean', extra_shift=0
+    ).apply_verbosity_options(**kwargs)
 
     echo(style('clean', fg='red'))
     clean_obj = tmt.Clean(
         logger=context.obj.clean_logger,
         parent=context.obj.common,
-        cli_invocation=CliInvocation.from_context(context))
+        cli_invocation=CliInvocation.from_context(context),
+    )
     context.obj.clean = clean_obj
     exit_code = 0
     if context.invoked_subcommand is None:
@@ -1327,12 +1665,13 @@ def clean(context: Context,
         # Create another level to the hierarchy so that logging indent is
         # consistent between the command and subcommands
         clean_obj = tmt.Clean(
-            logger=context.obj.clean_logger
-            .descend(logger_name='clean', extra_shift=0)
-            .apply_verbosity_options(**kwargs),
+            logger=context.obj.clean_logger.descend(
+                logger_name='clean', extra_shift=0
+            ).apply_verbosity_options(**kwargs),
             parent=clean_obj,
             cli_invocation=CliInvocation.from_context(context),
-            workdir_root=workdir_root)
+            workdir_root=workdir_root,
+        )
         if workdir_root.exists():
             if 'guests' not in skip and not clean_obj.guests(id_, keep):
                 exit_code = 1
@@ -1340,8 +1679,8 @@ def clean(context: Context,
                 exit_code = 1
         else:
             clean_obj.warn(
-                f"Directory '{workdir_root}' does not exist, "
-                f"skipping guest and run cleanup.")
+                f"Directory '{workdir_root}' does not exist, skipping guest and run cleanup."
+            )
         if 'images' not in skip and not clean_obj.images():
             exit_code = 1
         raise SystemExit(exit_code)
@@ -1352,10 +1691,11 @@ def clean(context: Context,
 @clean.result_callback()  # type: ignore[arg-type]
 @pass_context
 def perform_clean(
-        click_context: Context,
-        commands: Any,
-        *args: Any,
-        **kwargs: Any,) -> None:
+    click_context: Context,
+    commands: Any,
+    *args: Any,
+    **kwargs: Any,
+) -> None:
     """
     Perform clean actions in the correct order.
 
@@ -1376,22 +1716,36 @@ def perform_clean(
 @pass_context
 @workdir_root_options
 @option(
-    '-l', '--last', is_flag=True, help='Clean the workdir of the last run.',)
+    '-l',
+    '--last',
+    is_flag=True,
+    help='Clean the workdir of the last run.',
+)
 @option(
-    '-i', '--id', 'id_', metavar="ID", multiple=True,
-    help='Run id(name or directory path) to clean workdir of. Can be specified multiple times.')
+    '-i',
+    '--id',
+    'id_',
+    metavar="ID",
+    multiple=True,
+    help='Run id(name or directory path) to clean workdir of. Can be specified multiple times.',
+)
 @option(
-    '-k', '--keep', type=int, default=None,
-    help='The number of latest workdirs to keep, clean the rest.')
+    '-k',
+    '--keep',
+    type=int,
+    default=None,
+    help='The number of latest workdirs to keep, clean the rest.',
+)
 @verbosity_options
 @dry_options
 def clean_runs(
-        context: Context,
-        workdir_root: Optional[Path],
-        last: bool,
-        id_: tuple[str, ...],
-        keep: Optional[int],
-        **kwargs: Any) -> None:
+    context: Context,
+    workdir_root: Optional[Path],
+    last: bool,
+    id_: tuple[str, ...],
+    keep: Optional[int],
+    **kwargs: Any,
+) -> None:
     """
     Clean workdirs of past runs.
 
@@ -1400,8 +1754,7 @@ def clean_runs(
 
     defined = [last is True, bool(id_), keep is not None]
     if defined.count(True) > 1:
-        raise tmt.utils.GeneralError(
-            "Options --last, --id and --keep cannot be used together.")
+        raise tmt.utils.GeneralError("Options --last, --id and --keep cannot be used together.")
     if keep is not None and keep < 0:
         raise tmt.utils.GeneralError("--keep must not be a negative number.")
     if workdir_root and not workdir_root.exists():
@@ -1410,41 +1763,61 @@ def clean_runs(
     assert context.obj.clean_logger is not None  # narrow type
 
     clean_obj = tmt.Clean(
-        logger=context.obj.clean_logger
-        .descend(logger_name='clean-runs', extra_shift=0)
-        .apply_verbosity_options(**kwargs),
+        logger=context.obj.clean_logger.descend(
+            logger_name='clean-runs', extra_shift=0
+        ).apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
         cli_invocation=CliInvocation.from_context(context),
-        workdir_root=effective_workdir_root(workdir_root))
+        workdir_root=effective_workdir_root(workdir_root),
+    )
     context.obj.clean_partials["runs"].append(
         lambda: clean_obj.runs(
             (context.parent and context.parent.params.get('id_', [])) or id_,
-            (context.parent and context.parent.params.get('keep', [])) or keep))
+            (context.parent and context.parent.params.get('keep', [])) or keep,
+        )
+    )
 
 
 @clean.command(name='guests')
 @pass_context
 @workdir_root_options
 @option(
-    '-l', '--last', is_flag=True, help='Stop the guest of the last run.',)
+    '-l',
+    '--last',
+    is_flag=True,
+    help='Stop the guest of the last run.',
+)
 @option(
-    '-i', '--id', 'id_', metavar="ID", multiple=True,
-    help='Run id(name or directory path) to stop the guest of. Can be specified multiple times.')
+    '-i',
+    '--id',
+    'id_',
+    metavar="ID",
+    multiple=True,
+    help='Run id(name or directory path) to stop the guest of. Can be specified multiple times.',
+)
 @option(
-    '-k', '--keep', type=int, default=None,
-    help='The number of latest guests to keep, clean the rest.')
+    '-k',
+    '--keep',
+    type=int,
+    default=None,
+    help='The number of latest guests to keep, clean the rest.',
+)
 @option(
-    '-h', '--how', metavar='METHOD',
-    help='Stop guests of the specified provision method.',)
+    '-h',
+    '--how',
+    metavar='METHOD',
+    help='Stop guests of the specified provision method.',
+)
 @verbosity_options
 @dry_options
 def clean_guests(
-        context: Context,
-        workdir_root: Optional[Path],
-        last: bool,
-        id_: tuple[str, ...],
-        keep: Optional[int],
-        **kwargs: Any) -> None:
+    context: Context,
+    workdir_root: Optional[Path],
+    last: bool,
+    id_: tuple[str, ...],
+    keep: Optional[int],
+    **kwargs: Any,
+) -> None:
     """
     Stop running guests of runs.
 
@@ -1452,23 +1825,25 @@ def clean_guests(
     """
 
     if last and bool(id_):
-        raise tmt.utils.GeneralError(
-            "Options --last and --id cannot be used together.")
+        raise tmt.utils.GeneralError("Options --last and --id cannot be used together.")
     if workdir_root and not workdir_root.exists():
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
     assert context.obj.clean_logger is not None  # narrow type
     clean_obj = tmt.Clean(
-        logger=context.obj.clean_logger
-        .descend(logger_name='clean-guests', extra_shift=0)
-        .apply_verbosity_options(**kwargs),
+        logger=context.obj.clean_logger.descend(
+            logger_name='clean-guests', extra_shift=0
+        ).apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
         cli_invocation=CliInvocation.from_context(context),
-        workdir_root=effective_workdir_root(workdir_root))
+        workdir_root=effective_workdir_root(workdir_root),
+    )
     context.obj.clean_partials["guests"].append(
         lambda: clean_obj.guests(
             (context.parent and context.parent.params.get('id_', [])) or id_,
-            (context.parent and context.parent.params.get('keep', [])) or keep))
+            (context.parent and context.parent.params.get('keep', [])) or keep,
+        )
+    )
 
 
 # ignore[arg-type]: click code expects click.Context, but we use our own type for better type
@@ -1491,12 +1866,14 @@ def clean_images(context: Context, **kwargs: Any) -> None:
     assert context.obj.clean_logger is not None  # narrow type
 
     clean_obj = tmt.Clean(
-        logger=context.obj.clean_logger
-        .descend(logger_name='clean-images', extra_shift=0)
-        .apply_verbosity_options(**kwargs),
+        logger=context.obj.clean_logger.descend(
+            logger_name='clean-images', extra_shift=0
+        ).apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
-        cli_invocation=CliInvocation.from_context(context))
+        cli_invocation=CliInvocation.from_context(context),
+    )
     context.obj.clean_partials["images"].append(clean_obj.images)
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Setup
@@ -1544,10 +1921,11 @@ def setup_completion(shell: str, install: bool, context: Context) -> None:
 
     logger = context.obj.logger
 
-    completions = Command('tmt').run(env=tmt.utils.Environment.from_dict(env_var),
-                                     cwd=None,
-                                     logger=context.obj.logger
-                                     ).stdout
+    completions = (
+        Command('tmt')
+        .run(env=tmt.utils.Environment.from_dict(env_var), cwd=None, logger=context.obj.logger)
+        .stdout
+    )
     if not completions:
         logger.warning("Unable to generate shell completion")
         return
@@ -1567,11 +1945,15 @@ def setup_completion(shell: str, install: bool, context: Context) -> None:
 @completion.command(name='bash')
 @pass_context
 @option(
-    '--install', '-i', 'install', is_flag=True,
+    '--install',
+    '-i',
+    'install',
+    is_flag=True,
     help="""
          Persistently store the script to tmt's configuration directory and set it up by modifying
          '~/.bashrc'.
-         """)
+         """,
+)
 def completion_bash(context: Context, install: bool, **kwargs: Any) -> None:
     """
     Setup shell completions for bash
@@ -1583,11 +1965,15 @@ def completion_bash(context: Context, install: bool, **kwargs: Any) -> None:
 @completion.command(name='zsh')
 @pass_context
 @option(
-    '--install', '-i', 'install', is_flag=True,
+    '--install',
+    '-i',
+    'install',
+    is_flag=True,
     help="""
          Persistently store the script to tmt's configuration directory and set it up by modifying
          '~/.zshrc'.
-         """)
+         """,
+)
 def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
     """
     Setup shell completions for zsh
@@ -1599,8 +1985,12 @@ def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
 @completion.command(name='fish')
 @pass_context
 @option(
-    '--install', '-i', 'install', is_flag=True,
-    help="Persistently store the script to '~/.config/fish/completions/tmt.fish'.")
+    '--install',
+    '-i',
+    'install',
+    is_flag=True,
+    help="Persistently store the script to '~/.config/fish/completions/tmt.fish'.",
+)
 def completion_fish(context: Context, install: bool, **kwargs: Any) -> None:
     """
     Setup shell completions for fish
@@ -1613,19 +2003,26 @@ def completion_fish(context: Context, install: bool, **kwargs: Any) -> None:
 @pass_context
 @click.argument('names', nargs=-1, metavar='[TEST|PLAN|STORY]...')
 @option(
-    '--link', 'links', metavar='[RELATION:]TARGET', multiple=True,
+    '--link',
+    'links',
+    metavar='[RELATION:]TARGET',
+    multiple=True,
     help="""
         Issue to which tests, plans or stories should be linked.
         Can be provided multiple times.
-        """)
+        """,
+)
 @option(
-    '--separate', is_flag=True,
-    help="Create linking separately for multiple passed objects.",)
-def link(context: Context,
-         names: list[str],
-         links: list[str],
-         separate: bool,
-         ) -> None:
+    '--separate',
+    is_flag=True,
+    help="Create linking separately for multiple passed objects.",
+)
+def link(
+    context: Context,
+    names: list[str],
+    links: list[str],
+    separate: bool,
+) -> None:
     """
     Create a link to tmt web service in an issue tracking software.
 
@@ -1635,9 +2032,10 @@ def link(context: Context,
     """
 
     tmt_objects = (
-        context.obj.tree.tests(names=list(names)) +
-        context.obj.tree.plans(names=list(names)) +
-        context.obj.tree.stories(names=list(names)))
+        context.obj.tree.tests(names=list(names))
+        + context.obj.tree.plans(names=list(names))
+        + context.obj.tree.stories(names=list(names))
+    )
 
     if not tmt_objects:
         raise tmt.utils.GeneralError("No test, plan or story found for linking.")
@@ -1650,4 +2048,5 @@ def link(context: Context,
             tmt_objects=tmt_objects,
             links=tmt.base.Links(data=link),
             separate=separate,
-            logger=context.obj.logger)
+            logger=context.obj.logger,
+        )
