@@ -531,8 +531,8 @@ class Try(tmt.utils.Common):
         data = prepare_data_class(
             name="tmt-try-epel",
             how='feature',
-            epel="enabled",
-        )  # type: ignore[reportCallIssue,call-arg,unused-ignore]
+            epel="enabled",  # type: ignore[reportCallIssue,call-arg,unused-ignore]
+        )
 
         phase: PreparePlugin[Any] = cast(
             PreparePlugin[Any],
