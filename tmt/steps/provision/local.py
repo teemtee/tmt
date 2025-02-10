@@ -33,13 +33,14 @@ class GuestLocal(tmt.Guest):
         return True
 
     def _run_ansible(
-            self,
-            playbook: tmt.steps.provision.AnsibleApplicable,
-            playbook_root: Optional[Path] = None,
-            extra_args: Optional[str] = None,
-            friendly_command: Optional[str] = None,
-            log: Optional[tmt.log.LoggingFunction] = None,
-            silent: bool = False) -> tmt.utils.CommandOutput:
+        self,
+        playbook: tmt.steps.provision.AnsibleApplicable,
+        playbook_root: Optional[Path] = None,
+        extra_args: Optional[str] = None,
+        friendly_command: Optional[str] = None,
+        log: Optional[tmt.log.LoggingFunction] = None,
+        silent: bool = False,
+    ) -> tmt.utils.CommandOutput:
         """
         Run an Ansible playbook on the guest.
 
@@ -84,18 +85,20 @@ class GuestLocal(tmt.Guest):
                 show_step_method_hints('plugin', 'ansible', self._logger)
             raise exc
 
-    def execute(self,
-                command: Union[Command, ShellScript],
-                cwd: Optional[Path] = None,
-                env: Optional[tmt.utils.Environment] = None,
-                friendly_command: Optional[str] = None,
-                test_session: bool = False,
-                tty: bool = False,
-                silent: bool = False,
-                log: Optional[tmt.log.LoggingFunction] = None,
-                interactive: bool = False,
-                on_process_start: Optional[OnProcessStartCallback] = None,
-                **kwargs: Any) -> tmt.utils.CommandOutput:
+    def execute(
+        self,
+        command: Union[Command, ShellScript],
+        cwd: Optional[Path] = None,
+        env: Optional[tmt.utils.Environment] = None,
+        friendly_command: Optional[str] = None,
+        test_session: bool = False,
+        tty: bool = False,
+        silent: bool = False,
+        log: Optional[tmt.log.LoggingFunction] = None,
+        interactive: bool = False,
+        on_process_start: Optional[OnProcessStartCallback] = None,
+        **kwargs: Any,
+    ) -> tmt.utils.CommandOutput:
         """
         Execute command on localhost
         """
@@ -121,7 +124,8 @@ class GuestLocal(tmt.Guest):
             cwd=cwd,
             interactive=interactive,
             on_process_start=on_process_start,
-            **kwargs)
+            **kwargs,
+        )
 
     def start(self) -> None:
         """
@@ -140,10 +144,12 @@ class GuestLocal(tmt.Guest):
 
         self.debug(f"Doing nothing to stop guest '{self.primary_address}'.")
 
-    def reboot(self,
-               hard: bool = False,
-               command: Optional[Union[Command, ShellScript]] = None,
-               timeout: Optional[int] = None) -> bool:
+    def reboot(
+        self,
+        hard: bool = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        timeout: Optional[int] = None,
+    ) -> bool:
         """
         Reboot the guest, return True if successful
         """
@@ -153,21 +159,23 @@ class GuestLocal(tmt.Guest):
         return False
 
     def push(
-            self,
-            source: Optional[Path] = None,
-            destination: Optional[Path] = None,
-            options: Optional[list[str]] = None,
-            superuser: bool = False) -> None:
+        self,
+        source: Optional[Path] = None,
+        destination: Optional[Path] = None,
+        options: Optional[list[str]] = None,
+        superuser: bool = False,
+    ) -> None:
         """
         Nothing to be done to push workdir
         """
 
     def pull(
-            self,
-            source: Optional[Path] = None,
-            destination: Optional[Path] = None,
-            options: Optional[list[str]] = None,
-            extend_options: Optional[list[str]] = None) -> None:
+        self,
+        source: Optional[Path] = None,
+        destination: Optional[Path] = None,
+        options: Optional[list[str]] = None,
+        extend_options: Optional[list[str]] = None,
+    ) -> None:
         """
         Nothing to be done to pull workdir
         """

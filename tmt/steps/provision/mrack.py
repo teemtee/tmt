@@ -26,7 +26,7 @@ from tmt.utils import (
     ProvisionError,
     ShellScript,
     UpdatableMessage,
-    )
+)
 
 MRACK_VERSION: Optional[str] = None
 
@@ -59,8 +59,7 @@ def mrack_constructs_ks_pre() -> bool:
 
     assert MRACK_VERSION is not None
 
-    return packaging.version.Version(MRACK_VERSION) \
-        >= packaging.version.Version('1.21.0')
+    return packaging.version.Version(MRACK_VERSION) >= packaging.version.Version('1.21.0')
 
 
 # Type annotation for "data" package describing a guest instance. Passed
@@ -81,7 +80,7 @@ OPERATOR_SIGN_TO_OPERATOR = {
     tmt.hardware.Operator.GTE: '>=',
     tmt.hardware.Operator.LT: '<',
     tmt.hardware.Operator.LTE: '<=',
-    }
+}
 
 
 def operator_to_beaker_op(operator: tmt.hardware.Operator, value: str) -> tuple[str, str, bool]:
@@ -151,9 +150,7 @@ class MrackHWElement(MrackBaseHWElement):
     attributes: dict[str, str] = simple_field(default_factory=dict)
 
     def to_mrack(self) -> dict[str, Any]:
-        return {
-            self.name: self.attributes
-            }
+        return {self.name: self.attributes}
 
 
 @container(init=False)
@@ -165,10 +162,7 @@ class MrackHWBinOp(MrackHWElement):
     def __init__(self, name: str, operator: str, value: str) -> None:
         super().__init__(name)
 
-        self.attributes = {
-            '_op': operator,
-            '_value': value
-            }
+        self.attributes = {'_op': operator, '_value': value}
 
 
 @container(init=False)
@@ -180,11 +174,7 @@ class MrackHWKeyValue(MrackHWElement):
     def __init__(self, name: str, operator: str, value: str) -> None:
         super().__init__('key_value')
 
-        self.attributes = {
-            '_key': name,
-            '_op': operator,
-            '_value': value
-            }
+        self.attributes = {'_key': name, '_op': operator, '_value': value}
 
 
 @container
@@ -201,13 +191,9 @@ class MrackHWGroup(MrackBaseHWElement):
         # Another unexpected behavior of mrack dictionary tree: if there is just
         # a single child, it is "packed" into its parent as a key/dict item.
         if len(self.children) == 1 and self.name not in ('and', 'or'):
-            return {
-                self.name: self.children[0].to_mrack()
-                }
+            return {self.name: self.children[0].to_mrack()}
 
-        return {
-            self.name: [child.to_mrack() for child in self.children]
-            }
+        return {self.name: [child.to_mrack() for child in self.children]}
 
 
 @container
@@ -238,8 +224,8 @@ class MrackHWNotGroup(MrackHWGroup):
 
 
 def _transform_unsupported(
-        constraint: tmt.hardware.Constraint[Any],
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.Constraint[Any], logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     # Unsupported constraint has been already logged via report_support(). Make
     # sure user is aware it would have no effect, and since we have to return
     # something, return an empty `or` group - no harm done, composable with other
@@ -250,348 +236,327 @@ def _transform_unsupported(
 
 
 def _transform_beaker_pool(
-        constraint: tmt.hardware.TextConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator,
-        constraint.value)
+        constraint.operator, constraint.value
+    )
 
-    return MrackHWBinOp(
-        'pool',
-        beaker_operator,
-        actual_value)
+    return MrackHWBinOp('pool', beaker_operator, actual_value)
 
 
 def _transform_cpu_family(
-        constraint: tmt.hardware.IntegerConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.IntegerConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
-        constraint.operator,
-        str(constraint.value))
+        constraint.operator, str(constraint.value)
+    )
 
-    return MrackHWGroup(
-        'cpu',
-        children=[MrackHWBinOp('family', beaker_operator, actual_value)])
+    return MrackHWGroup('cpu', children=[MrackHWBinOp('family', beaker_operator, actual_value)])
 
 
 def _transform_cpu_flag(
-        constraint: tmt.hardware.TextConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
-    beaker_operator = OPERATOR_SIGN_TO_OPERATOR[tmt.hardware.Operator.EQ] \
-        if constraint.operator is tmt.hardware.Operator.CONTAINS \
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
+    beaker_operator = (
+        OPERATOR_SIGN_TO_OPERATOR[tmt.hardware.Operator.EQ]
+        if constraint.operator is tmt.hardware.Operator.CONTAINS
         else OPERATOR_SIGN_TO_OPERATOR[tmt.hardware.Operator.NEQ]
+    )
     actual_value = str(constraint.value)
 
-    return MrackHWGroup(
-        'cpu',
-        children=[MrackHWBinOp('flag', beaker_operator, actual_value)]
-        )
+    return MrackHWGroup('cpu', children=[MrackHWBinOp('flag', beaker_operator, actual_value)])
 
 
 def _transform_cpu_model(
-        constraint: tmt.hardware.IntegerConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.IntegerConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
-        constraint.operator,
-        str(constraint.value))
+        constraint.operator, str(constraint.value)
+    )
 
-    return MrackHWGroup(
-        'cpu',
-        children=[MrackHWBinOp('model', beaker_operator, actual_value)])
+    return MrackHWGroup('cpu', children=[MrackHWBinOp('model', beaker_operator, actual_value)])
 
 
 def _transform_cpu_processors(
-        constraint: tmt.hardware.IntegerConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.IntegerConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
-        constraint.operator,
-        str(constraint.value))
+        constraint.operator, str(constraint.value)
+    )
 
     return MrackHWGroup(
-        'cpu',
-        children=[MrackHWBinOp('processors', beaker_operator, actual_value)])
+        'cpu', children=[MrackHWBinOp('processors', beaker_operator, actual_value)]
+    )
 
 
 def _transform_cpu_cores(
-        constraint: tmt.hardware.IntegerConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.IntegerConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
-        constraint.operator,
-        str(constraint.value))
+        constraint.operator, str(constraint.value)
+    )
 
-    return MrackHWGroup(
-        'cpu',
-        children=[MrackHWBinOp('cores', beaker_operator, actual_value)])
+    return MrackHWGroup('cpu', children=[MrackHWBinOp('cores', beaker_operator, actual_value)])
 
 
 def _transform_cpu_model_name(
-        constraint: tmt.hardware.TextConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator,
-        constraint.value)
+        constraint.operator, constraint.value
+    )
 
     if negate:
-        return MrackHWNotGroup(children=[
-            MrackHWGroup(
-                'cpu',
-                children=[MrackHWBinOp('model_name', beaker_operator, actual_value)])])
+        return MrackHWNotGroup(
+            children=[
+                MrackHWGroup(
+                    'cpu', children=[MrackHWBinOp('model_name', beaker_operator, actual_value)]
+                )
+            ]
+        )
 
     return MrackHWGroup(
-        'cpu',
-        children=[MrackHWBinOp('model_name', beaker_operator, actual_value)])
+        'cpu', children=[MrackHWBinOp('model_name', beaker_operator, actual_value)]
+    )
 
 
 def _transform_cpu_frequency(
-        constraint: tmt.hardware.NumberConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.NumberConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
-        constraint.operator,
-        str(float(constraint.value.to('MHz').magnitude)))
+        constraint.operator, str(float(constraint.value.to('MHz').magnitude))
+    )
 
-    return MrackHWGroup(
-        'cpu',
-        children=[MrackHWBinOp('speed', beaker_operator, actual_value)])
+    return MrackHWGroup('cpu', children=[MrackHWBinOp('speed', beaker_operator, actual_value)])
 
 
 def _transform_cpu_stepping(
-        constraint: tmt.hardware.IntegerConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.IntegerConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
-        constraint.operator,
-        str(constraint.value))
+        constraint.operator, str(constraint.value)
+    )
 
-    return MrackHWGroup(
-        'cpu',
-        children=[MrackHWBinOp('stepping', beaker_operator, actual_value)])
+    return MrackHWGroup('cpu', children=[MrackHWBinOp('stepping', beaker_operator, actual_value)])
 
 
 def _transform_cpu_vendor_name(
-        constraint: tmt.hardware.TextConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator,
-        str(constraint.value))
+        constraint.operator, str(constraint.value)
+    )
 
     if negate:
-        return MrackHWNotGroup(children=[
-            MrackHWGroup(
-                'cpu',
-                children=[MrackHWBinOp('vendor', beaker_operator, actual_value)])])
+        return MrackHWNotGroup(
+            children=[
+                MrackHWGroup(
+                    'cpu', children=[MrackHWBinOp('vendor', beaker_operator, actual_value)]
+                )
+            ]
+        )
 
-    return MrackHWGroup(
-        'cpu',
-        children=[MrackHWBinOp('vendor', beaker_operator, actual_value)])
+    return MrackHWGroup('cpu', children=[MrackHWBinOp('vendor', beaker_operator, actual_value)])
 
 
 def _transform_cpu_hyper_threading(
-        constraint: tmt.hardware.FlagConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.FlagConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
-        constraint.operator,
-        str(constraint.value))
+        constraint.operator, str(constraint.value)
+    )
 
-    return MrackHWGroup(
-        'cpu',
-        children=[MrackHWBinOp('hyper', beaker_operator, actual_value)])
+    return MrackHWGroup('cpu', children=[MrackHWBinOp('hyper', beaker_operator, actual_value)])
 
 
 def _transform_disk_driver(
-        constraint: tmt.hardware.TextConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator,
-        constraint.value)
+        constraint.operator, constraint.value
+    )
 
     if negate:
-        return MrackHWNotGroup(children=[
-            MrackHWKeyValue('BOOTDISK', beaker_operator, actual_value)
-            ])
+        return MrackHWNotGroup(
+            children=[MrackHWKeyValue('BOOTDISK', beaker_operator, actual_value)]
+        )
 
-    return MrackHWKeyValue(
-        'BOOTDISK',
-        beaker_operator,
-        actual_value)
+    return MrackHWKeyValue('BOOTDISK', beaker_operator, actual_value)
 
 
 def _transform_disk_size(
-        constraint: tmt.hardware.SizeConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.SizeConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
-        constraint.operator,
-        str(int(constraint.value.to('B').magnitude))
-        )
+        constraint.operator, str(int(constraint.value.to('B').magnitude))
+    )
 
-    return MrackHWGroup(
-        'disk',
-        children=[MrackHWBinOp('size', beaker_operator, actual_value)])
+    return MrackHWGroup('disk', children=[MrackHWBinOp('size', beaker_operator, actual_value)])
 
 
 def _transform_disk_model_name(
-        constraint: tmt.hardware.TextConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator,
-        constraint.value)
+        constraint.operator, constraint.value
+    )
 
     if negate:
-        return MrackHWNotGroup(children=[
-            MrackHWGroup(
-                'disk',
-                children=[MrackHWBinOp('model', beaker_operator, actual_value)])])
+        return MrackHWNotGroup(
+            children=[
+                MrackHWGroup(
+                    'disk', children=[MrackHWBinOp('model', beaker_operator, actual_value)]
+                )
+            ]
+        )
 
-    return MrackHWGroup(
-        'disk',
-        children=[MrackHWBinOp('model', beaker_operator, actual_value)])
+    return MrackHWGroup('disk', children=[MrackHWBinOp('model', beaker_operator, actual_value)])
 
 
 def _transform_disk_physical_sector_size(
-        constraint: tmt.hardware.SizeConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.SizeConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
-        constraint.operator,
-        str(constraint.value)
-        )
+        constraint.operator, str(constraint.value)
+    )
 
     return MrackHWGroup(
-        'disk',
-        children=[MrackHWBinOp('phys_sector_size', beaker_operator, actual_value)])
+        'disk', children=[MrackHWBinOp('phys_sector_size', beaker_operator, actual_value)]
+    )
 
 
 def _transform_disk_logical_sector_size(
-        constraint: tmt.hardware.SizeConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.SizeConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
-        constraint.operator,
-        str(constraint.value)
-        )
+        constraint.operator, str(constraint.value)
+    )
 
     return MrackHWGroup(
-        'disk',
-        children=[MrackHWBinOp('sector_size', beaker_operator, actual_value)])
+        'disk', children=[MrackHWBinOp('sector_size', beaker_operator, actual_value)]
+    )
 
 
 def _transform_hostname(
-        constraint: tmt.hardware.TextConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator,
-        constraint.value)
+        constraint.operator, constraint.value
+    )
 
     if negate:
-        return MrackHWNotGroup(children=[
-            MrackHWBinOp('hostname', beaker_operator, actual_value)
-            ])
+        return MrackHWNotGroup(children=[MrackHWBinOp('hostname', beaker_operator, actual_value)])
 
-    return MrackHWBinOp(
-        'hostname',
-        beaker_operator,
-        actual_value)
+    return MrackHWBinOp('hostname', beaker_operator, actual_value)
 
 
 def _transform_memory(
-        constraint: tmt.hardware.SizeConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
-
+    constraint: tmt.hardware.SizeConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
-        constraint.operator,
-        str(int(constraint.value.to('MiB').magnitude)))
+        constraint.operator, str(int(constraint.value.to('MiB').magnitude))
+    )
 
-    return MrackHWGroup(
-        'system',
-        children=[MrackHWBinOp('memory', beaker_operator, actual_value)])
+    return MrackHWGroup('system', children=[MrackHWBinOp('memory', beaker_operator, actual_value)])
 
 
 def _transform_tpm_version(
-        constraint: tmt.hardware.TextConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator,
-        constraint.value)
+        constraint.operator, constraint.value
+    )
 
     return MrackHWKeyValue('TPM', beaker_operator, actual_value)
 
 
 def _transform_virtualization_is_virtualized(
-        constraint: tmt.hardware.FlagConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.FlagConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
-        constraint.operator,
-        str(constraint.value))
+        constraint.operator, str(constraint.value)
+    )
 
     test = (constraint.operator, constraint.value)
 
     if test in [(tmt.hardware.Operator.EQ, True), (tmt.hardware.Operator.NEQ, False)]:
-        return MrackHWGroup(
-            'system',
-            children=[MrackHWBinOp('hypervisor', '!=', '')])
+        return MrackHWGroup('system', children=[MrackHWBinOp('hypervisor', '!=', '')])
 
     if test in [(tmt.hardware.Operator.EQ, False), (tmt.hardware.Operator.NEQ, True)]:
-        return MrackHWGroup(
-            'system',
-            children=[MrackHWBinOp('hypervisor', '==', '')])
+        return MrackHWGroup('system', children=[MrackHWBinOp('hypervisor', '==', '')])
 
     return _transform_unsupported(constraint, logger)
 
 
 def _transform_virtualization_hypervisor(
-        constraint: tmt.hardware.TextConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator,
-        str(constraint.value))
+        constraint.operator, str(constraint.value)
+    )
 
     if negate:
-        return MrackHWNotGroup(children=[
-            MrackHWGroup(
-                'system',
-                children=[MrackHWBinOp('hypervisor', beaker_operator, actual_value)])])
+        return MrackHWNotGroup(
+            children=[
+                MrackHWGroup(
+                    'system', children=[MrackHWBinOp('hypervisor', beaker_operator, actual_value)]
+                )
+            ]
+        )
 
     return MrackHWGroup(
-        'system',
-        children=[MrackHWBinOp('hypervisor', beaker_operator, actual_value)])
+        'system', children=[MrackHWBinOp('hypervisor', beaker_operator, actual_value)]
+    )
 
 
 def _transform_zcrypt_adapter(
-        constraint: tmt.hardware.TextConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator,
-        constraint.value)
+        constraint.operator, constraint.value
+    )
 
     if negate:
-        return MrackHWNotGroup(children=[
-            MrackHWGroup(
-                'system',
-                children=[MrackHWKeyValue('ZCRYPT_MODEL', beaker_operator, actual_value)])])
+        return MrackHWNotGroup(
+            children=[
+                MrackHWGroup(
+                    'system',
+                    children=[MrackHWKeyValue('ZCRYPT_MODEL', beaker_operator, actual_value)],
+                )
+            ]
+        )
 
     return MrackHWGroup(
-        'system',
-        children=[MrackHWKeyValue('ZCRYPT_MODEL', beaker_operator, actual_value)])
+        'system', children=[MrackHWKeyValue('ZCRYPT_MODEL', beaker_operator, actual_value)]
+    )
 
 
 def _transform_zcrypt_mode(
-        constraint: tmt.hardware.TextConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator,
-        constraint.value)
+        constraint.operator, constraint.value
+    )
 
     if negate:
-        return MrackHWNotGroup(children=[
-            MrackHWGroup(
-                'system',
-                children=[MrackHWKeyValue('ZCRYPT_MODE', beaker_operator, actual_value)])])
+        return MrackHWNotGroup(
+            children=[
+                MrackHWGroup(
+                    'system',
+                    children=[MrackHWKeyValue('ZCRYPT_MODE', beaker_operator, actual_value)],
+                )
+            ]
+        )
 
     return MrackHWGroup(
-        'system',
-        children=[MrackHWKeyValue('ZCRYPT_MODE', beaker_operator, actual_value)])
+        'system', children=[MrackHWKeyValue('ZCRYPT_MODE', beaker_operator, actual_value)]
+    )
 
 
 def _transform_iommu_is_supported(
-        constraint: tmt.hardware.FlagConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
-
+    constraint: tmt.hardware.FlagConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     test = (constraint.operator, constraint.value)
 
     if test in [(tmt.hardware.Operator.EQ, True), (tmt.hardware.Operator.NEQ, False)]:
@@ -604,74 +569,77 @@ def _transform_iommu_is_supported(
 
 
 def _transform_location_lab_controller(
-        constraint: tmt.hardware.TextConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     if constraint.operator not in [tmt.hardware.Operator.EQ, tmt.hardware.Operator.NEQ]:
         raise ProvisionError(
-            f"Cannot apply hardware requirement '{constraint}', operator not supported.")
+            f"Cannot apply hardware requirement '{constraint}', operator not supported."
+        )
     beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator,
-        constraint.value)
+        constraint.operator, constraint.value
+    )
 
     if negate:
-        return MrackHWNotGroup(children=[
-            MrackHWBinOp('labcontroller', beaker_operator, actual_value)
-            ])
+        return MrackHWNotGroup(
+            children=[MrackHWBinOp('labcontroller', beaker_operator, actual_value)]
+        )
 
-    return MrackHWBinOp(
-        'labcontroller',
-        beaker_operator,
-        actual_value)
+    return MrackHWBinOp('labcontroller', beaker_operator, actual_value)
 
 
 def _transform_system_numa_nodes(
-        constraint: tmt.hardware.IntegerConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.IntegerConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
-        constraint.operator,
-        str(constraint.value))
+        constraint.operator, str(constraint.value)
+    )
 
     return MrackHWGroup(
-        'system',
-        children=[MrackHWBinOp('numanodes', beaker_operator, actual_value)])
+        'system', children=[MrackHWBinOp('numanodes', beaker_operator, actual_value)]
+    )
 
 
 def _transform_system_model_name(
-        constraint: tmt.hardware.TextConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator,
-        str(constraint.value))
+        constraint.operator, str(constraint.value)
+    )
 
     if negate:
-        return MrackHWNotGroup(children=[
-            MrackHWGroup('system',
-                         children=[MrackHWBinOp('model', beaker_operator, actual_value)])
-            ])
+        return MrackHWNotGroup(
+            children=[
+                MrackHWGroup(
+                    'system', children=[MrackHWBinOp('model', beaker_operator, actual_value)]
+                )
+            ]
+        )
 
-    return MrackHWGroup('system',
-                        children=[MrackHWBinOp('model', beaker_operator, actual_value)])
+    return MrackHWGroup('system', children=[MrackHWBinOp('model', beaker_operator, actual_value)])
 
 
 def _transform_system_vendor_name(
-        constraint: tmt.hardware.TextConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator,
-        str(constraint.value))
+        constraint.operator, str(constraint.value)
+    )
 
     if negate:
-        return MrackHWNotGroup(children=[
-            MrackHWGroup('system',
-                         children=[MrackHWBinOp('vendor', beaker_operator, actual_value)])
-            ])
+        return MrackHWNotGroup(
+            children=[
+                MrackHWGroup(
+                    'system', children=[MrackHWBinOp('vendor', beaker_operator, actual_value)]
+                )
+            ]
+        )
 
-    return MrackHWGroup('system',
-                        children=[MrackHWBinOp('vendor', beaker_operator, actual_value)])
+    return MrackHWGroup('system', children=[MrackHWBinOp('vendor', beaker_operator, actual_value)])
 
 
-ConstraintTransformer = Callable[[
-    tmt.hardware.Constraint[Any], tmt.log.Logger], MrackBaseHWElement]
+ConstraintTransformer = Callable[
+    [tmt.hardware.Constraint[Any], tmt.log.Logger], MrackBaseHWElement
+]
 
 _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'beaker.pool': _transform_beaker_pool,  # type: ignore[dict-item]
@@ -694,22 +662,20 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'location.lab_controller': _transform_location_lab_controller,  # type: ignore[dict-item]
     'memory': _transform_memory,  # type: ignore[dict-item]
     'tpm.version': _transform_tpm_version,  # type: ignore[dict-item]
-    'virtualization.is_virtualized':
-        _transform_virtualization_is_virtualized,  # type: ignore[dict-item]
-    'virtualization.hypervisor':
-        _transform_virtualization_hypervisor,  # type: ignore[dict-item]
+    'virtualization.is_virtualized': _transform_virtualization_is_virtualized,  # type: ignore[dict-item]
+    'virtualization.hypervisor': _transform_virtualization_hypervisor,  # type: ignore[dict-item]
     'zcrypt.adapter': _transform_zcrypt_adapter,  # type: ignore[dict-item]
     'zcrypt.mode': _transform_zcrypt_mode,  # type: ignore[dict-item]
     'system.numa_nodes': _transform_system_numa_nodes,  # type: ignore[dict-item]
     'system.model_name': _transform_system_model_name,  # type: ignore[dict-item]
     'system.vendor_name': _transform_system_vendor_name,  # type: ignore[dict-item]
     'iommu.is_supported': _transform_iommu_is_supported,  # type: ignore[dict-item]
-    }
+}
 
 
 def constraint_to_beaker_filter(
-        constraint: tmt.hardware.BaseConstraint,
-        logger: tmt.log.Logger) -> MrackBaseHWElement:
+    constraint: tmt.hardware.BaseConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
     """
     Convert a hardware constraint into a Mrack-compatible filter
     """
@@ -719,16 +685,16 @@ def constraint_to_beaker_filter(
             children=[
                 constraint_to_beaker_filter(child_constraint, logger)
                 for child_constraint in constraint.constraints
-                ]
-            )
+            ]
+        )
 
     if isinstance(constraint, tmt.hardware.Or):
         return MrackHWOrGroup(
             children=[
                 constraint_to_beaker_filter(child_constraint, logger)
                 for child_constraint in constraint.constraints
-                ]
-            )
+            ]
+        )
 
     assert isinstance(constraint, tmt.hardware.Constraint)
 
@@ -788,8 +754,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
         providers.register(BEAKER, BeakerProvider)
 
     except ImportError:
-        raise ProvisionError(
-            "Install 'tmt+provision-beaker' to provision using this method.")
+        raise ProvisionError("Install 'tmt+provision-beaker' to provision using this method.")
 
     # ignore the misc because mrack sources are not typed and result into
     # error: Class cannot subclass "BeakerTransformer" (has type "Any")
@@ -816,9 +781,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
             # with `<and/>` group, even if it has just a single child,
             # it works around the problem.
             # See https://github.com/teemtee/tmt/issues/3442
-            return {
-                'hostRequires': MrackHWAndGroup(children=[transformed]).to_mrack()
-                }
+            return {'hostRequires': MrackHWAndGroup(children=[transformed]).to_mrack()}
 
         def create_host_requirement(self, host: CreateJobParameters) -> dict[str, Any]:
             """
@@ -881,30 +844,34 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         default=DEFAULT_USER,
         option=('-u', '--user'),
         metavar='USERNAME',
-        help='Username to use for all guest operations.')
+        help='Username to use for all guest operations.',
+    )
 
     # Guest request properties
     whiteboard: Optional[str] = field(
         default=None,
         option=('-w', '--whiteboard'),
         metavar='WHITEBOARD',
-        help='Text description of the beaker job which is displayed in the list of jobs.'
-        )
+        help='Text description of the beaker job which is displayed in the list of jobs.',
+    )
     arch: str = field(
         default=DEFAULT_ARCH,
         option='--arch',
         metavar='ARCH',
-        help='Architecture to provision.',)
+        help='Architecture to provision.',
+    )
     image: Optional[str] = field(
         default=DEFAULT_IMAGE,
         option=('-i', '--image'),
         metavar='COMPOSE',
-        help='Image (distro or "compose" in Beaker terminology) to provision.')
+        help='Image (distro or "compose" in Beaker terminology) to provision.',
+    )
 
     # Provided in Beaker job
     job_id: Optional[str] = field(
         default=None,
-        internal=True,)
+        internal=True,
+    )
 
     # Timeouts and deadlines
     provision_timeout: int = field(
@@ -915,7 +882,8 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              How long to wait for provisioning to complete,
              {DEFAULT_PROVISION_TIMEOUT} seconds by default.
              """,
-        normalize=tmt.utils.normalize_int)
+        normalize=tmt.utils.normalize_int,
+    )
     provision_tick: int = field(
         default=DEFAULT_PROVISION_TICK,
         option='--provision-tick',
@@ -924,7 +892,8 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              How often check Beaker for provisioning status,
              {DEFAULT_PROVISION_TICK} seconds by default.
              """,
-        normalize=tmt.utils.normalize_int)
+        normalize=tmt.utils.normalize_int,
+    )
     api_session_refresh_tick: int = field(
         default=DEFAULT_API_SESSION_REFRESH,
         option='--api-session-refresh-tick',
@@ -933,14 +902,16 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              How often should Beaker session be refreshed to pick up-to-date Kerberos ticket,
              {DEFAULT_API_SESSION_REFRESH} seconds by default.
              """,
-        normalize=tmt.utils.normalize_int)
+        normalize=tmt.utils.normalize_int,
+    )
     kickstart: dict[str, str] = field(
         default_factory=dict,
         option='--kickstart',
         metavar='KEY=VALUE',
         help='Optional Beaker kickstart to use when provisioning the guest.',
         multiple=True,
-        normalize=tmt.utils.normalize_string_dict)
+        normalize=tmt.utils.normalize_string_dict,
+    )
 
     beaker_job_owner: Optional[str] = field(
         default=None,
@@ -949,7 +920,8 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         help="""
              If set, Beaker jobs will be submitted on behalf of ``USERNAME``.
              Submitting user must be a submission delegate for the ``USERNAME``.
-             """)
+             """,
+    )
 
     public_key: list[str] = field(
         default_factory=list,
@@ -959,7 +931,8 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              Public keys to add among authorized SSH keys.
              """,
         multiple=True,
-        normalize=tmt.utils.normalize_string_list)
+        normalize=tmt.utils.normalize_string_list,
+    )
 
     beaker_job_group: Optional[str] = field(
         default=None,
@@ -967,7 +940,8 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         metavar='GROUPNAME',
         help="""
              If set, Beaker jobs will be submitted on behalf of ``GROUPNAME``.
-             """)
+             """,
+    )
 
 
 @container
@@ -989,7 +963,7 @@ GUEST_STATE_COLORS = {
     "Aborted": "yellow",
     "Reserved": "green",
     "Completed": "green",
-    }
+}
 
 
 @container
@@ -1053,8 +1027,8 @@ class BeakerAPI:
             Path(__file__).parent / "mrack/mrack.conf",
             Path("/etc/tmt/mrack.conf"),
             Path("~/.mrack/mrack.conf").expanduser(),
-            Path.cwd() / "mrack.conf"
-            ]
+            Path.cwd() / "mrack.conf",
+        ]
 
         mrack_config: Optional[Path] = None
 
@@ -1078,11 +1052,11 @@ class BeakerAPI:
         except AttributeError as hub_err:
             raise ProvisionError(
                 f"Can not use current kerberos ticket to authenticate: {hub_err}"
-                ) from hub_err
+            ) from hub_err
         except FileNotFoundError as missing_conf_err:
             raise ProvisionError(
                 f"Configuration file missing: {missing_conf_err.filename}"
-                ) from missing_conf_err
+            ) from missing_conf_err
 
         self._mrack_provider = self._mrack_transformer._provider
         self._mrack_provider.poll_sleep = DEFAULT_PROVISION_TICK
@@ -1091,9 +1065,7 @@ class BeakerAPI:
             self._bkr_job_id = guest.job_id
 
     @async_run
-    async def create(
-            self,
-            data: CreateJobParameters) -> Any:
+    async def create(self, data: CreateJobParameters) -> Any:
         """
         Create - or request creation of - a resource using mrack up.
 
@@ -1107,8 +1079,8 @@ class BeakerAPI:
 
     @async_run
     async def inspect(
-            self,
-            ) -> Any:
+        self,
+    ) -> Any:
         """
         Inspect a resource (kinda wait till provisioned)
         """
@@ -1118,8 +1090,8 @@ class BeakerAPI:
 
     @async_run
     async def delete(  # destroy
-            self,
-            ) -> Any:
+        self,
+    ) -> Any:
         """
         Delete - or request removal of - a resource
         """
@@ -1228,7 +1200,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             whiteboard=self.whiteboard or tmt_name,
             beaker_job_owner=self.beaker_job_owner,
             public_key=self.public_key,
-            group=self.beaker_job_group)
+            group=self.beaker_job_group,
+        )
 
         if self.is_dry_run:
             mrack_requirement = self.api._mrack_transformer.create_host_requirement(data)
@@ -1236,8 +1209,15 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
             # Mrack indents XML with tabs, tmt indents with spaces, let's make sure we
             # don't mix these two in tmt output & modify mrack's output to use spaces as well.
-            self.print(re.sub(r'^\t+', lambda match: '  ' * len(match.group()),
-                              job.toxml(prettyxml=True), flags=re.MULTILINE), shift=-2)
+            self.print(
+                re.sub(
+                    r'^\t+',
+                    lambda match: '  ' * len(match.group()),
+                    job.toxml(prettyxml=True),
+                    flags=re.MULTILINE,
+                ),
+                shift=-2,
+            )
             return
         try:
             response = self.api.create(data)
@@ -1251,22 +1231,26 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                 if 'is not a valid user name' in cause.faultString:
                     raise ProvisionError(
                         f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
-                        "was refused as unknown.") from exc
+                        "was refused as unknown."
+                    ) from exc
 
                 if 'is not a valid submission delegate' in cause.faultString:
                     raise ProvisionError(
                         f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
-                        "is not a valid submission delegate.") from exc
+                        "is not a valid submission delegate."
+                    ) from exc
 
                 if 'is not a valid group' in cause.faultString:
                     raise ProvisionError(
                         f"Failed to create Beaker job, job group '{self.beaker_job_group}' "
-                        "was refused as unknown.") from exc
+                        "was refused as unknown."
+                    ) from exc
 
                 if 'is not a member of group' in cause.faultString:
                     raise ProvisionError(
                         "Failed to create Beaker job, submitting user is not "
-                        "a member of group '{self.beaker_job_group}'") from exc
+                        "a member of group '{self.beaker_job_group}'"
+                    ) from exc
 
             raise ProvisionError('Failed to create Beaker job') from exc
 
@@ -1274,8 +1258,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             self.info('guest', 'has been requested', 'green')
 
         else:
-            raise ProvisionError(
-                f"Failed to create, response: '{response}'.")
+            raise ProvisionError(f"Failed to create, response: '{response}'.")
 
         self.job_id = f'J:{response["id"]}'
         self.info('job id', self.job_id, 'green')
@@ -1287,22 +1270,17 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
                 if response["status"] == "Aborted":
                     raise ProvisionError(
-                        f"Failed to create, "
-                        f"unhandled API response '{response['status']}'."
-                        )
+                        f"Failed to create, unhandled API response '{response['status']}'."
+                    )
 
                 current = cast(GuestInspectType, response)
                 state = current["status"]
-                state_color = GUEST_STATE_COLORS.get(
-                    state, GUEST_STATE_COLOR_DEFAULT
-                    )
+                state_color = GUEST_STATE_COLORS.get(state, GUEST_STATE_COLOR_DEFAULT)
 
                 progress_message.update(state, color=state_color)
 
                 if state in {"Error, Aborted", "Cancelled"}:
-                    raise ProvisionError(
-                        'Failed to create, provisioning failed.'
-                        )
+                    raise ProvisionError('Failed to create, provisioning failed.')
 
                 if state == 'Reserved':
                     return current
@@ -1311,17 +1289,18 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
             try:
                 guest_info = tmt.utils.wait(
-                    self, get_new_state, datetime.timedelta(
-                        seconds=self.provision_timeout),
-                    tick=self.provision_tick
-                    )
+                    self,
+                    get_new_state,
+                    datetime.timedelta(seconds=self.provision_timeout),
+                    tick=self.provision_tick,
+                )
 
             except tmt.utils.WaitingTimedOutError:
                 response = self.api.delete()
                 raise ProvisionError(
                     f'Failed to provision in the given amount '
                     f'of time (--provision-timeout={self.provision_timeout}).'
-                    )
+                )
 
         self.primary_address = self.topology_address = guest_info['system']
 
@@ -1359,12 +1338,13 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         self.api.delete()
 
     def reboot(
-            self,
-            hard: bool = False,
-            command: Optional[Union[Command, ShellScript]] = None,
-            timeout: Optional[int] = None,
-            tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-            tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
+        self,
+        hard: bool = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
 
@@ -1393,14 +1373,16 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                 timeout=timeout,
                 tick=tick,
                 tick_increase=tick_increase,
-                hard=True)
+                hard=True,
+            )
 
         return super().reboot(
             hard=hard,
             command=command,
             timeout=timeout,
             tick=tick,
-            tick_increase=tick_increase,)
+            tick_increase=tick_increase,
+        )
 
 
 @tmt.steps.provides_method('beaker')
@@ -1441,7 +1423,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
                 name=self.name,
                 parent=self.step,
                 logger=self._logger,
-                )
+            )
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
@@ -1456,15 +1438,15 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
 
         if data.hardware:
             data.hardware.report_support(
-                names=list(_CONSTRAINT_TRANSFORMERS.keys()),
-                logger=self._logger)
+                names=list(_CONSTRAINT_TRANSFORMERS.keys()), logger=self._logger
+            )
 
         self._guest = GuestBeaker(
             data=data,
             name=self.name,
             parent=self.step,
             logger=self._logger,
-            )
+        )
         self._guest.start()
         self._guest.setup()
 

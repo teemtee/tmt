@@ -18,7 +18,7 @@ from tmt.steps import (
     PluginTask,
     PullTask,
     sync_with_guests,
-    )
+)
 from tmt.steps.provision import Guest
 
 if TYPE_CHECKING:
@@ -47,9 +47,10 @@ class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, list[PhaseResult]]):
 
     @classmethod
     def base_command(
-            cls,
-            usage: str,
-            method_class: Optional[type[click.Command]] = None,) -> click.Command:
+        cls,
+        usage: str,
+        method_class: Optional[type[click.Command]] = None,
+    ) -> click.Command:
         """
         Create base click command (common for all finish plugins)
         """
@@ -61,9 +62,7 @@ class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, list[PhaseResult]]):
         # Create the command
         @click.command(cls=method_class, help=usage)
         @click.pass_context
-        @option(
-            '-h', '--how', metavar='METHOD',
-            help='Use specified method for finishing tasks.')
+        @option('-h', '--how', metavar='METHOD', help='Use specified method for finishing tasks.')
         @tmt.steps.PHASE_OPTIONS
         def finish(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             context.obj.steps.add('finish')
@@ -72,11 +71,12 @@ class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, list[PhaseResult]]):
         return finish
 
     def go(
-            self,
-            *,
-            guest: 'Guest',
-            environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> list[PhaseResult]:
+        self,
+        *,
+        guest: 'Guest',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[PhaseResult]:
         self.go_prolog(logger)
 
         return []
@@ -99,7 +99,8 @@ class Finish(tmt.steps.Step):
 
     _preserved_workdir_members = [
         *tmt.steps.Step._preserved_workdir_members,
-        'results.yaml',]
+        'results.yaml',
+    ]
 
     def wake(self) -> None:
         """
@@ -111,9 +112,7 @@ class Finish(tmt.steps.Step):
         # Choose the right plugin and wake it up
         for data in self.data:
             # FIXME: cast() - see https://github.com/teemtee/tmt/issues/1599
-            plugin = cast(
-                FinishPlugin[FinishStepData],
-                FinishPlugin.delegate(self, data=data))
+            plugin = cast(FinishPlugin[FinishStepData], FinishPlugin.delegate(self, data=data))
             plugin.wake()
             # Add plugin only if there are data
             if not plugin.data.is_bare:
@@ -121,8 +120,7 @@ class Finish(tmt.steps.Step):
 
         # Nothing more to do if already done and not asked to run again
         if self.status() == 'done' and not self.should_run_again:
-            self.debug(
-                'Finish wake up complete (already done before).', level=2)
+            self.debug('Finish wake up complete (already done before).', level=2)
         # Save status and step data (now we know what to do)
         else:
             self.status('todo')
@@ -164,14 +162,15 @@ class Finish(tmt.steps.Step):
             # finish step config rather than provision step config.
             guest_copy = copy.copy(guest)
             guest_copy.inject_logger(
-                guest._logger.clone().apply_verbosity_options(**self._cli_options))
+                guest._logger.clone().apply_verbosity_options(**self._cli_options)
+            )
             guest_copy.parent = self
 
             guest_copies.append(guest_copy)
 
         queue: PhaseQueue[FinishStepData, list[PhaseResult]] = PhaseQueue(
-            'finish',
-            self._logger.descend(logger_name=f'{self}.queue'))
+            'finish', self._logger.descend(logger_name=f'{self}.queue')
+        )
 
         for phase in self.phases(classes=(Action, FinishPlugin)):
             if isinstance(phase, Action):
@@ -180,8 +179,8 @@ class Finish(tmt.steps.Step):
             elif phase.enabled_by_when:
                 queue.enqueue_plugin(
                     phase=phase,  # type: ignore[arg-type]
-                    guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)]
-                    )
+                    guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)],
+                )
 
         failed_tasks: list[Union[ActionTask, PluginTask[FinishStepData, list[PhaseResult]]]] = []
         results: list[PhaseResult] = []
@@ -204,8 +203,8 @@ class Finish(tmt.steps.Step):
         if failed_tasks:
             raise tmt.utils.GeneralError(
                 'finish step failed',
-                causes=[outcome.exc for outcome in failed_tasks if outcome.exc is not None]
-                )
+                causes=[outcome.exc for outcome in failed_tasks if outcome.exc is not None],
+            )
 
         # To separate "finish" from "pull" queue visually
         self.info('')
@@ -217,11 +216,10 @@ class Finish(tmt.steps.Step):
                 self,
                 'pull',
                 PullTask(
-                    logger=self._logger,
-                    guests=guest_copies,
-                    source=self.plan.data_directory
-                    ),
-                self._logger)
+                    logger=self._logger, guests=guest_copies, source=self.plan.data_directory
+                ),
+                self._logger,
+            )
 
             # To separate "finish" from "pull" queue visually
             self.info('')

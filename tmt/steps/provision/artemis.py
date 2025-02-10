@@ -18,7 +18,7 @@ from tmt.utils import (
     dict_to_yaml,
     normalize_string_dict,
     retry_session,
-    )
+)
 
 # List of Artemis API versions supported and understood by this plugin.
 # Since API gains support for new features over time, it is important to
@@ -55,8 +55,8 @@ SUPPORTED_API_VERSIONS = (
     # NEW: boot.method HW constraint
     '0.0.32',
     # NEW: network HW constraint
-    '0.0.28'
-    )
+    '0.0.28',
+)
 
 
 # TODO: Artemis does not have any whoami endpoint which would report
@@ -65,8 +65,8 @@ SUPPORTED_LOG_TYPES = [
     'console:dump/blob',
     'console:dump/url',
     'console:interactive/url',
-    'sys.log:dump/url'
-    ]
+    'sys.log:dump/url',
+]
 
 
 # The default Artemis API version - the most recent supported versions
@@ -86,18 +86,14 @@ DEFAULT_API_RETRIES = 10
 DEFAULT_RETRY_BACKOFF_FACTOR = 1
 
 
-def _normalize_log_type(
-        key_address: str,
-        raw_value: Any,
-        logger: tmt.log.Logger) -> list[str]:
+def _normalize_log_type(key_address: str, raw_value: Any, logger: tmt.log.Logger) -> list[str]:
     if isinstance(raw_value, str):
         return [raw_value]
 
     if isinstance(raw_value, (list, tuple)):
         return [str(item) for item in raw_value]
 
-    raise tmt.utils.NormalizationError(
-        key_address, raw_value, 'a string or a list of strings')
+    raise tmt.utils.NormalizationError(key_address, raw_value, 'a string or a list of strings')
 
 
 @container
@@ -106,61 +102,71 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         default=DEFAULT_USER,
         option=('-u', '--user'),
         metavar='USERNAME',
-        help='Username to use for all guest operations.')
+        help='Username to use for all guest operations.',
+    )
 
     # API
     api_url: str = field(
         default=DEFAULT_API_URL,
         option='--api-url',
         metavar='URL',
-        help="Artemis API URL.",)
+        help="Artemis API URL.",
+    )
     api_version: str = field(
         default=DEFAULT_API_VERSION,
         option='--api-version',
         metavar='X.Y.Z',
         help="Artemis API version to use.",
-        choices=SUPPORTED_API_VERSIONS)
+        choices=SUPPORTED_API_VERSIONS,
+    )
 
     # Guest request properties
     arch: str = field(
         default=DEFAULT_ARCH,
         option='--arch',
         metavar='ARCH',
-        help='Architecture to provision.',)
+        help='Architecture to provision.',
+    )
     image: Optional[str] = field(
         default=None,
         option=('-i', '--image'),
         metavar='COMPOSE',
-        help='Image (or "compose" in Artemis terminology) to provision.')
+        help='Image (or "compose" in Artemis terminology) to provision.',
+    )
     pool: Optional[str] = field(
         default=None,
         option='--pool',
         metavar='NAME',
-        help='Pool to enforce.',)
+        help='Pool to enforce.',
+    )
     priority_group: str = field(
         default=DEFAULT_PRIORITY_GROUP,
         option='--priority-group',
         metavar='NAME',
-        help='Provisioning priority group.')
+        help='Provisioning priority group.',
+    )
     keyname: str = field(
         default=DEFAULT_KEYNAME,
         option='--keyname',
         metavar='NAME',
-        help='SSH key name.',)
+        help='SSH key name.',
+    )
     user_data: dict[str, str] = field(
         default_factory=dict,
         option='--user-data',
         metavar='KEY=VALUE',
         help='Optional data to attach to guest.',
         multiple=True,
-        normalize=normalize_string_dict)
+        normalize=normalize_string_dict,
+    )
     kickstart: dict[str, str] = field(
         default_factory=dict,
         option='--kickstart',
         metavar='KEY=VALUE',
         help='Optional Beaker kickstart to use when provisioning the guest.',
         multiple=True,
-        normalize=normalize_string_dict)
+        normalize=normalize_string_dict,
+    )
 
     log_type: list[str] = field(
         default_factory=list,
@@ -168,12 +174,14 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         choices=SUPPORTED_LOG_TYPES,
         help='Log types the guest must support.',
         multiple=True,
-        normalize=_normalize_log_type)
+        normalize=_normalize_log_type,
+    )
 
     # Provided by Artemis response
     guestname: Optional[str] = field(
         default=None,
-        internal=True,)
+        internal=True,
+    )
 
     # Timeouts and deadlines
     provision_timeout: int = field(
@@ -184,7 +192,8 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
              How long to wait for provisioning to complete,
              {DEFAULT_PROVISION_TIMEOUT} seconds by default.
              """,
-        normalize=tmt.utils.normalize_int)
+        normalize=tmt.utils.normalize_int,
+    )
     provision_tick: int = field(
         default=DEFAULT_PROVISION_TICK,
         option='--provision-tick',
@@ -193,7 +202,8 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
              How often check Artemis API for provisioning status,
              {DEFAULT_PROVISION_TICK} seconds by default.
              """,
-        normalize=tmt.utils.normalize_int)
+        normalize=tmt.utils.normalize_int,
+    )
     api_timeout: int = field(
         default=DEFAULT_API_TIMEOUT,
         option='--api-timeout',
@@ -202,7 +212,8 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
              How long to wait for API operations to complete,
              {DEFAULT_API_TIMEOUT} seconds by default.
              """,
-        normalize=tmt.utils.normalize_int)
+        normalize=tmt.utils.normalize_int,
+    )
     api_retries: int = field(
         default=DEFAULT_API_RETRIES,
         option='--api-retries',
@@ -211,7 +222,8 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
              How many attempts to use when talking to API,
              {DEFAULT_API_RETRIES} by default.
              """,
-        normalize=tmt.utils.normalize_int)
+        normalize=tmt.utils.normalize_int,
+    )
     api_retry_backoff_factor: int = field(
         default=DEFAULT_RETRY_BACKOFF_FACTOR,
         option='--api-retry-backoff-factor',
@@ -220,7 +232,8 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
              A factor for exponential API retry backoff,
             {DEFAULT_RETRY_BACKOFF_FACTOR} by default.
             """,
-        normalize=tmt.utils.normalize_int)
+        normalize=tmt.utils.normalize_int,
+    )
     # Artemis core already contains default values
     watchdog_dispatch_delay: Optional[int] = field(
         default=cast(Optional[int], None),
@@ -230,24 +243,27 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
              How long (seconds) before the guest "is-alive" watchdog is dispatched. The dispatch
              timer starts once the guest is successfully provisioned.
              """,
-        normalize=tmt.utils.normalize_optional_int)
+        normalize=tmt.utils.normalize_optional_int,
+    )
     watchdog_period_delay: Optional[int] = field(
         default=cast(Optional[int], None),
         option='--watchdog-period-delay',
         metavar='SECONDS',
         help='How often (seconds) check that the guest "is-alive".',
-        normalize=tmt.utils.normalize_optional_int)
+        normalize=tmt.utils.normalize_optional_int,
+    )
     skip_prepare_verify_ssh: bool = field(
         default=False,
         option='--skip-prepare-verify-ssh',
         is_flag=True,
-        help='If set, skip verifiction of SSH connection in prepare state.'
-        )
+        help='If set, skip verifiction of SSH connection in prepare state.',
+    )
     post_install_script: Optional[str] = field(
         default=None,
         option='--post-install-script',
         metavar='SCRIPT|URL',
-        help='If set, the script provided or fetched will be executed.')
+        help='If set, the script provided or fetched will be executed.',
+    )
 
 
 @container
@@ -263,12 +279,13 @@ class ArtemisProvisionError(ProvisionError):
     """
 
     def __init__(
-            self,
-            message: str,
-            response: Optional[requests.Response] = None,
-            request_data: Optional[dict[str, Any]] = None,
-            *args: Any,
-            **kwargs: Any) -> None:
+        self,
+        message: str,
+        response: Optional[requests.Response] = None,
+        request_data: Optional[dict[str, Any]] = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         if response is not None:
             message_components = [
                 message,
@@ -276,21 +293,18 @@ class ArtemisProvisionError(ProvisionError):
                 'Artemis API responded with unexpected code:',
                 '',
                 f'Request: {response.request.url}',
-                ]
+            ]
 
             if request_data is not None:
-                message_components += [
-                    '',
-                    dict_to_yaml(request_data)
-                    ]
+                message_components += ['', dict_to_yaml(request_data)]
 
             message_components += [
                 f'Response: {response.status_code} {response.reason}',
                 '',
                 dict_to_yaml(dict(response.headers)),
                 '',
-                dict_to_yaml(response.json())
-                ]
+                dict_to_yaml(response.json()),
+            ]
 
             message = '\n'.join(message_components)
 
@@ -305,8 +319,8 @@ GUEST_STATE_COLORS = {
     'promised': 'blue',
     'preparing': 'cyan',
     'cancelled': 'red',
-    'error': 'red'
-    }
+    'error': 'red',
+}
 
 
 # Type annotation for Artemis API `GET /guests/$guestname` response.
@@ -329,17 +343,17 @@ class ArtemisAPI:
                 500,  # Internal Server Error
                 502,  # Bad Gateway
                 503,  # Service Unavailable
-                504   # Gateway Timeout
-                ),
-            timeout=guest.api_timeout
-            )
+                504,  # Gateway Timeout
+            ),
+            timeout=guest.api_timeout,
+        )
 
     def query(
-            self,
-            path: str,
-            method: str = 'get',
-            request_kwargs: Optional[dict[str, Any]] = None,
-            ) -> requests.Response:
+        self,
+        path: str,
+        method: str = 'get',
+        request_kwargs: Optional[dict[str, Any]] = None,
+    ) -> requests.Response:
         """
         Base helper for Artemis API queries.
 
@@ -367,15 +381,14 @@ class ArtemisAPI:
         if method == 'put':
             return self.http_session.put(url, **request_kwargs)
 
-        raise tmt.utils.GeneralError(
-            f'Unsupported Artemis API method.\n{method}')
+        raise tmt.utils.GeneralError(f'Unsupported Artemis API method.\n{method}')
 
     def create(
-            self,
-            path: str,
-            data: dict[str, Any],
-            request_kwargs: Optional[dict[str, Any]] = None,
-            ) -> requests.Response:
+        self,
+        path: str,
+        data: dict[str, Any],
+        request_kwargs: Optional[dict[str, Any]] = None,
+    ) -> requests.Response:
         """
         Create - or request creation of - a resource.
 
@@ -391,11 +404,11 @@ class ArtemisAPI:
         return self.query(path, method='post', request_kwargs=request_kwargs)
 
     def inspect(
-            self,
-            path: str,
-            params: Optional[dict[str, Any]] = None,
-            request_kwargs: Optional[dict[str, Any]] = None,
-            ) -> requests.Response:
+        self,
+        path: str,
+        params: Optional[dict[str, Any]] = None,
+        request_kwargs: Optional[dict[str, Any]] = None,
+    ) -> requests.Response:
         """
         Inspect a resource.
 
@@ -413,10 +426,10 @@ class ArtemisAPI:
         return self.query(path, request_kwargs=request_kwargs)
 
     def delete(
-            self,
-            path: str,
-            request_kwargs: Optional[dict[str, Any]] = None,
-            ) -> requests.Response:
+        self,
+        path: str,
+        request_kwargs: Optional[dict[str, Any]] = None,
+    ) -> requests.Response:
         """
         Delete - or request removal of - a resource.
 
@@ -481,27 +494,24 @@ class GuestArtemis(tmt.GuestSsh):
 
     def _create(self) -> None:
         environment: dict[str, Any] = {
-            'hw': {
-                'arch': self.arch
-                },
-            'os': {
-                'compose': self.image
-                },
-            }
+            'hw': {'arch': self.arch},
+            'os': {'compose': self.image},
+        }
 
         if self.api_version >= "0.0.53":
             environment['kickstart'] = self.kickstart
 
         elif self.kickstart:
             raise ArtemisProvisionError(
-                f"API version '{self.api_version}' does not support kickstart.")
+                f"API version '{self.api_version}' does not support kickstart."
+            )
 
         data: dict[str, Any] = {
             'environment': environment,
             'keyname': self.keyname,
             'priority_group': self.priority_group,
-            'user_data': self.user_data
-            }
+            'user_data': self.user_data,
+        }
 
         if self.pool:
             environment['pool'] = self.pool
@@ -515,7 +525,8 @@ class GuestArtemis(tmt.GuestSsh):
 
         elif self.skip_prepare_verify_ssh:
             raise ArtemisProvisionError(
-                f"API version '{self.api_version}' does not support skip_prepare_verify_ssh.")
+                f"API version '{self.api_version}' does not support skip_prepare_verify_ssh."
+            )
 
         if self.api_version >= "0.0.56":
             if self.watchdog_dispatch_delay:
@@ -525,7 +536,8 @@ class GuestArtemis(tmt.GuestSsh):
 
         elif any([self.watchdog_dispatch_delay, self.watchdog_period_delay]):
             raise ArtemisProvisionError(
-                f"API version '{self.api_version}' does not support watchdog specification.")
+                f"API version '{self.api_version}' does not support watchdog specification."
+            )
 
         # TODO: snapshots
         # TODO: spot instance
@@ -537,12 +549,12 @@ class GuestArtemis(tmt.GuestSsh):
                         response = session.get(self.post_install_script)
 
                     if not response.ok:
-                        raise ArtemisProvisionError(
-                            "Failed to download the post-install script")
+                        raise ArtemisProvisionError("Failed to download the post-install script")
 
                 except requests.RequestException as exc:
                     raise ArtemisProvisionError(
-                        "Failed to download the post-install script") from exc
+                        "Failed to download the post-install script"
+                    ) from exc
 
                 post_install_script = response.text
             else:
@@ -576,8 +588,7 @@ class GuestArtemis(tmt.GuestSsh):
 
                 current = cast(GuestInspectType, response.json())
                 state = current['state']
-                state_color = GUEST_STATE_COLORS.get(
-                    state, GUEST_STATE_COLOR_DEFAULT)
+                state_color = GUEST_STATE_COLORS.get(state, GUEST_STATE_COLOR_DEFAULT)
 
                 progress_message.update(state, color=state_color)
 
@@ -591,8 +602,11 @@ class GuestArtemis(tmt.GuestSsh):
 
             try:
                 guest_info = tmt.utils.wait(
-                    self, get_new_state, datetime.timedelta(
-                        seconds=self.provision_timeout), tick=self.provision_tick)
+                    self,
+                    get_new_state,
+                    datetime.timedelta(seconds=self.provision_timeout),
+                    tick=self.provision_tick,
+                )
 
             except tmt.utils.WaitingTimedOutError:
                 # The provisioning chain has been already started, make sure we
@@ -601,7 +615,8 @@ class GuestArtemis(tmt.GuestSsh):
 
                 raise ArtemisProvisionError(
                     f'Failed to provision in the given amount '
-                    f'of time (--provision-timeout={self.provision_timeout}).')
+                    f'of time (--provision-timeout={self.provision_timeout}).'
+                )
 
         self.primary_address = self.topology_address = guest_info['address']
 
@@ -641,9 +656,8 @@ class GuestArtemis(tmt.GuestSsh):
 
         else:
             self.info(
-                'guest',
-                f"Failed to remove, "
-                f"unhandled API response '{response.status_code}'.")
+                'guest', f"Failed to remove, unhandled API response '{response.status_code}'."
+            )
 
 
 @tmt.steps.provides_method('artemis')
@@ -730,7 +744,8 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
             logger=self._logger,
             data=data,
             name=self.name,
-            parent=self.step,)
+            parent=self.step,
+        )
         self._guest.start()
         self._guest.setup()
 

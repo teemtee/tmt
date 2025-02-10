@@ -23,8 +23,7 @@ FeatureClass = type['Feature']
 _FEATURE_PLUGIN_REGISTRY: PluginRegistry[FeatureClass] = PluginRegistry()
 
 
-def provides_feature(
-        feature: str) -> Callable[[FeatureClass], FeatureClass]:
+def provides_feature(feature: str) -> Callable[[FeatureClass], FeatureClass]:
     """
     A decorator for registering feature plugins.
     Decorate a feature plugin class to register a feature.
@@ -34,7 +33,8 @@ def provides_feature(
         _FEATURE_PLUGIN_REGISTRY.register_plugin(
             plugin_id=feature,
             plugin=feature_cls,
-            logger=tmt.log.Logger.get_bootstrap_logger(),)
+            logger=tmt.log.Logger.get_bootstrap_logger(),
+        )
 
         return feature_cls
 
@@ -52,7 +52,8 @@ def find_plugin(name: str) -> 'FeatureClass':
 
     if plugin is None:
         raise tmt.utils.GeneralError(
-            f"Feature plugin '{name}' was not found in the feature registry.")
+            f"Feature plugin '{name}' was not found in the feature registry."
+        )
 
     return plugin
 
@@ -86,11 +87,12 @@ class Feature(tmt.utils.Common):
         return cls._data_class
 
     def __init__(
-            self,
-            *,
-            parent: 'PrepareFeature',
-            guest: Guest,
-            logger: tmt.log.Logger,) -> None:
+        self,
+        *,
+        parent: 'PrepareFeature',
+        guest: Guest,
+        logger: tmt.log.Logger,
+    ) -> None:
         """
         Initialize feature data
         """
@@ -122,15 +124,17 @@ class Feature(tmt.utils.Common):
 
     @classmethod
     def _run_playbook(
-            cls,
-            op: str,
-            playbook_filename: str,
-            guest: Guest,
-            logger: tmt.log.Logger,) -> None:
+        cls,
+        op: str,
+        playbook_filename: str,
+        guest: Guest,
+        logger: tmt.log.Logger,
+    ) -> None:
         playbook_path = cls._find_playbook(playbook_filename, logger)
         if not playbook_path:
             raise tmt.utils.GeneralError(
-                f"{op.capitalize()} {cls.NAME.upper()} is not supported on this guest.")
+                f"{op.capitalize()} {cls.NAME.upper()} is not supported on this guest."
+            )
 
         logger.info(f'{op.capitalize()} {cls.NAME.upper()}')
         guest.ansible(playbook_path)
@@ -206,25 +210,26 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
                 for plugin in _FEATURE_PLUGIN_REGISTRY.iter_plugins()
                 for field in tmt.container.container_fields(plugin.get_data_class())
                 if field.name not in baseclass_field_names
-                ]
+            ]
 
             cls._data_class = cast(
                 type[PrepareFeatureData],
                 dataclasses.make_dataclass(
                     'PrepareFeatureData',
-                    [
-                        (field.name, field.type, field)
-                        for field in component_fields],
-                    bases=(PrepareFeatureData,)))
+                    [(field.name, field.type, field) for field in component_fields],
+                    bases=(PrepareFeatureData,),
+                ),
+            )
 
         return cls._data_class
 
     def go(
-            self,
-            *,
-            guest: 'Guest',
-            environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> list[PhaseResult]:
+        self,
+        *,
+        guest: 'Guest',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[PhaseResult]:
         """
         Prepare the guests
         """

@@ -29,7 +29,8 @@ class ReportDisplayData(tmt.steps.report.ReportStepData):
         help="""
              When to display full guest name in report: when more than a single guest was involved
              (default), always, or never.
-             """)
+             """,
+    )
 
 
 @tmt.steps.provides_method('display')
@@ -65,10 +66,8 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
             assert self.step.plan.execute.workdir is not None
 
             self.verbose(
-                log.name,
-                self.step.plan.execute.workdir / log,
-                color='yellow',
-                shift=shift)
+                log.name, self.step.plan.execute.workdir / log, color='yellow', shift=shift
+            )
 
         def _display_log_content(log: Path, shift: int) -> None:
             """
@@ -82,7 +81,8 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
                 'content',
                 self.read(self.step.plan.execute.workdir / log),
                 color='yellow',
-                shift=shift)
+                shift=shift,
+            )
 
         def display_outcome(result: BaseResult) -> None:
             """
@@ -91,13 +91,11 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
 
             if isinstance(result, SubCheckResult):
                 self.verbose(
-                    f'{result.show()} ({result.event.value} check)',
-                    shift=SUBRESULT_CHECK_SHIFT)
+                    f'{result.show()} ({result.event.value} check)', shift=SUBRESULT_CHECK_SHIFT
+                )
 
             elif isinstance(result, CheckResult):
-                self.verbose(
-                    f'{result.show()} ({result.event.value} check)',
-                    shift=CHECK_SHIFT)
+                self.verbose(f'{result.show()} ({result.event.value} check)', shift=CHECK_SHIFT)
 
             elif isinstance(result, SubResult):
                 self.verbose(result.show(), shift=SUBRESULT_SHIFT)
@@ -183,10 +181,7 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
             display_guest = False
 
         else:
-            seen_guests = {
-                result.guest.name
-                for result in self.step.plan.execute.results()
-                }
+            seen_guests = {result.guest.name for result in self.step.plan.execute.results()}
 
             display_guest = len(seen_guests) > 1
 

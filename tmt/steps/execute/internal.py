@@ -27,7 +27,7 @@ from tmt.utils import (
     Stopwatch,
     format_duration,
     format_timestamp,
-    )
+)
 
 TEST_PIDFILE_FILENAME = 'tmt-test.pid'
 TEST_PIDFILE_LOCK_FILENAME = f'{TEST_PIDFILE_FILENAME}.lock'
@@ -58,8 +58,7 @@ def effective_pidfile_root() -> Path:
 #: even among all test wrappers. See https://github.com/teemtee/tmt/issues/2997
 #: for issue motivating the inclusion, it seems to be a good idea
 #: to prevent accidental reuse in general.
-TEST_WRAPPER_FILENAME_TEMPLATE = \
-    'tmt-test-wrapper.sh-{{ INVOCATION.test.pathless_safe_name }}-{{ INVOCATION.test.serial_number }}'  # noqa: E501
+TEST_WRAPPER_FILENAME_TEMPLATE = 'tmt-test-wrapper.sh-{{ INVOCATION.test.pathless_safe_name }}-{{ INVOCATION.test.serial_number }}'  # noqa: E501
 
 # tmt test wrapper is getting complex. Besides honoring the timeout
 # and interactivity request, it also must play nicely with reboots
@@ -109,7 +108,9 @@ TEST_WRAPPER_FILENAME_TEMPLATE = \
 # * In non-interactive mode with a tty, stdin is available to the tests
 #   and simulation of tty not available for output is not run.
 #
-TEST_WRAPPER_TEMPLATE = jinja2.Template(textwrap.dedent("""
+TEST_WRAPPER_TEMPLATE = jinja2.Template(
+    textwrap.dedent(
+        """
 if ! grep -q "{{ GUEST_SCRIPTS_PATH }}" <<< "${PATH}"; then
     export PATH={{ GUEST_SCRIPTS_PATH }}:${PATH}
 fi
@@ -148,7 +149,8 @@ mkdir -p "$(dirname $TMT_TEST_PIDFILE_LOCK)"
 {% endif %}
 exit $_exit_code;
 """  # noqa: E501
-))
+    )
+)
 
 
 class UpdatableMessage(tmt.utils.UpdatableMessage):
@@ -166,7 +168,8 @@ class UpdatableMessage(tmt.utils.UpdatableMessage):
             enabled=not plugin.verbosity_level and not plugin.data.no_progress_bar,
             indent_level=plugin._level(),
             key_color='cyan',
-            clear_on_exit=True)
+            clear_on_exit=True,
+        )
 
         self.plugin = plugin
         self.debug_level = plugin.debug_level
@@ -196,7 +199,8 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
         help='Shell script to be executed as a test.',
         normalize=tmt.utils.normalize_shell_script_list,
         serialize=lambda scripts: [str(script) for script in scripts],
-        unserialize=lambda serialized: [ShellScript(script) for script in serialized])
+        unserialize=lambda serialized: [ShellScript(script) for script in serialized],
+    )
     interactive: bool = field(
         default=False,
         option=('-i', '--interactive'),
@@ -206,12 +210,14 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
              shared with tmt itself. This allows input to be passed to tests
              via stdin, e.g. responding to password prompts. Test output in this
              mode is not captured, and ``duration`` has no effect.
-             """)
+             """,
+    )
     no_progress_bar: bool = field(
         default=False,
         option='--no-progress-bar',
         is_flag=True,
-        help='Disable interactive progress bar showing the current test.')
+        help='Disable interactive progress bar showing the current test.',
+    )
 
     # ignore[override] & cast: two base classes define to_spec(), with conflicting
     # formal types.
@@ -242,11 +248,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         self.scripts = SCRIPTS
 
     def _test_environment(
-            self,
-            *,
-            invocation: TestInvocation,
-            extra_environment: Optional[Environment] = None,
-            logger: tmt.log.Logger) -> Environment:
+        self,
+        *,
+        invocation: TestInvocation,
+        extra_environment: Optional[Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> Environment:
         """
         Return test environment
         """
@@ -260,18 +267,23 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         assert self.parent.plan.my_run is not None
 
         environment['TMT_TEST_PIDFILE'] = EnvVarValue(
-            effective_pidfile_root() / TEST_PIDFILE_FILENAME)
+            effective_pidfile_root() / TEST_PIDFILE_FILENAME
+        )
         environment['TMT_TEST_PIDFILE_LOCK'] = EnvVarValue(
-            effective_pidfile_root() / TEST_PIDFILE_LOCK_FILENAME)
+            effective_pidfile_root() / TEST_PIDFILE_LOCK_FILENAME
+        )
         environment["TMT_TEST_NAME"] = EnvVarValue(invocation.test.name)
         environment["TMT_TEST_DATA"] = EnvVarValue(invocation.test_data_path)
         environment['TMT_TEST_SERIAL_NUMBER'] = EnvVarValue(str(invocation.test.serial_number))
         environment['TMT_TEST_ITERATION_ID'] = EnvVarValue(
-            f"{self.parent.plan.my_run.unique_id}-{invocation.test.serial_number}")
+            f"{self.parent.plan.my_run.unique_id}-{invocation.test.serial_number}"
+        )
         environment["TMT_TEST_METADATA"] = EnvVarValue(
-            invocation.path / tmt.steps.execute.TEST_METADATA_FILENAME)
+            invocation.path / tmt.steps.execute.TEST_METADATA_FILENAME
+        )
         environment["TMT_REBOOT_REQUEST"] = EnvVarValue(
-            invocation.test_data_path / TMT_REBOOT_SCRIPT.created_file)
+            invocation.test_data_path / TMT_REBOOT_SCRIPT.created_file
+        )
         # Set all supported reboot variables
         for reboot_variable in TMT_REBOOT_SCRIPT.related_variables:
             environment[reboot_variable] = EnvVarValue(str(invocation._reboot_count))
@@ -279,19 +291,20 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Add variables the framework wants to expose
         environment.update(
-            invocation.test.test_framework.get_environment_variables(
-                invocation, logger))
+            invocation.test.test_framework.get_environment_variables(invocation, logger)
+        )
 
         return environment
 
     def _test_output_logger(
-            self,
-            key: str,
-            value: Optional[str] = None,
-            color: Optional[str] = None,
-            shift: int = 2,
-            level: int = 3,
-            topic: Optional[tmt.log.Topic] = None) -> None:
+        self,
+        key: str,
+        value: Optional[str] = None,
+        color: Optional[str] = None,
+        shift: int = 2,
+        level: int = 3,
+        topic: Optional[tmt.log.Topic] = None,
+    ) -> None:
         """
         Custom logger for test output with shift 2 and level 3 defaults
         """
@@ -299,11 +312,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         self.verbose(key=key, value=value, color=color, shift=shift, level=level)
 
     def execute(
-            self,
-            *,
-            invocation: TestInvocation,
-            extra_environment: Optional[Environment] = None,
-            logger: tmt.log.Logger) -> list[Result]:
+        self,
+        *,
+        invocation: TestInvocation,
+        extra_environment: Optional[Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[Result]:
         """
         Run test on the guest
         """
@@ -320,16 +334,16 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Create data directory, prepare test environment
         environment = self._test_environment(
-            invocation=invocation,
-            extra_environment=extra_environment,
-            logger=logger)
+            invocation=invocation, extra_environment=extra_environment, logger=logger
+        )
 
         # tmt wrapper filename *must* be "unique" - the plugin might be handling
         # the same `discover` phase for different guests at the same time, and
         # must keep them isolated. The wrapper script, while being prepared, is
         # a shared global state, and we must prevent race conditions.
         test_wrapper_filename = safe_filename(
-            TEST_WRAPPER_FILENAME_TEMPLATE, self, guest, INVOCATION=invocation)
+            TEST_WRAPPER_FILENAME_TEMPLATE, self, guest, INVOCATION=invocation
+        )
         test_wrapper_filepath = workdir / test_wrapper_filename
 
         logger.debug('test wrapper', test_wrapper_filepath)
@@ -344,16 +358,14 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         guest.push(
             source=test_wrapper_filepath,
             destination=test_wrapper_filepath,
-            options=["-s", "-p", "--chmod=755"])
+            options=["-s", "-p", "--chmod=755"],
+        )
 
         # Create topology files
         topology = tmt.steps.Topology(self.step.plan.provision.guests())
         topology.guest = tmt.steps.GuestTopology(guest)
 
-        environment.update(topology.push(
-            dirpath=invocation.path,
-            guest=guest,
-            logger=logger))
+        environment.update(topology.push(dirpath=invocation.path, guest=guest, logger=logger))
 
         command: str
         if guest.become and not guest.facts.is_superuser:
@@ -361,42 +373,38 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         else:
             command = f'./{test_wrapper_filename}'
         # Prepare the actual remote command
-        remote_command = ShellScript(TEST_WRAPPER_TEMPLATE.render(
-            INTERACTIVE=self.data.interactive,
-            TTY=test.tty,
-            REMOTE_COMMAND=ShellScript(command),
-            GUEST_SCRIPTS_PATH=guest.scripts_path
-            ).strip())
+        remote_command = ShellScript(
+            TEST_WRAPPER_TEMPLATE.render(
+                INTERACTIVE=self.data.interactive,
+                TTY=test.tty,
+                REMOTE_COMMAND=ShellScript(command),
+                GUEST_SCRIPTS_PATH=guest.scripts_path,
+            ).strip()
+        )
 
         def _test_output_logger(
-                key: str,
-                value: Optional[str] = None,
-                color: Optional[str] = None,
-                shift: int = 2,
-                level: int = 3,
-                topic: Optional[tmt.log.Topic] = None) -> None:
+            key: str,
+            value: Optional[str] = None,
+            color: Optional[str] = None,
+            shift: int = 2,
+            level: int = 3,
+            topic: Optional[tmt.log.Topic] = None,
+        ) -> None:
             logger.verbose(
-                key=key,
-                value=value,
-                color=color,
-                shift=shift,
-                level=level,
-                topic=topic)
+                key=key, value=value, color=color, shift=shift, level=level, topic=topic
+            )
 
         def _save_process(
-                command: Command,
-                process: subprocess.Popen[bytes],
-                logger: tmt.log.Logger) -> None:
+            command: Command, process: subprocess.Popen[bytes], logger: tmt.log.Logger
+        ) -> None:
             with invocation.process_lock:
                 invocation.process = process
 
         # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
         # to use some reusable decorator.
         invocation.check_results = self.run_checks_before_test(
-            invocation=invocation,
-            environment=environment,
-            logger=logger
-            )
+            invocation=invocation, environment=environment, logger=logger
+        )
 
         # Execute the test, save the output and return code
         with Stopwatch() as timer:
@@ -407,13 +415,15 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             if self.data.interactive:
                 if test.duration:
                     logger.warning(
-                        'Ignoring requested duration, not supported in interactive mode.')
+                        'Ignoring requested duration, not supported in interactive mode.'
+                    )
 
                 timeout = None
 
             else:
                 timeout = tmt.utils.duration_to_seconds(
-                    test.duration, tmt.base.DEFAULT_TEST_DURATION_L1)
+                    test.duration, tmt.base.DEFAULT_TEST_DURATION_L1
+                )
 
             try:
                 output = guest.execute(
@@ -427,7 +437,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     timeout=timeout,
                     on_process_start=_save_process,
                     test_session=True,
-                    friendly_command=str(test.test))
+                    friendly_command=str(test.test),
+                )
                 invocation.return_code = 0
                 stdout = output.stdout
             except tmt.utils.RunError as error:
@@ -448,9 +459,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Save the captured output. Do not let the follow-up pulls
         # overwrite it.
-        self.write(
-            invocation.path / TEST_OUTPUT_FILENAME,
-            stdout or '', mode='a', level=3)
+        self.write(invocation.path / TEST_OUTPUT_FILENAME, stdout or '', mode='a', level=3)
 
         # Fetch #1: we need logs and everything the test produced so we could
         # collect its results.
@@ -459,18 +468,18 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 source=invocation.path,
                 extend_options=[
                     *test.test_framework.get_pull_options(invocation, logger),
-                    '--exclude', str(invocation.path / TEST_OUTPUT_FILENAME)
-                    ])
+                    '--exclude',
+                    str(invocation.path / TEST_OUTPUT_FILENAME),
+                ],
+            )
             # Fetch plan data content as well in order to prevent
             # losing logs if the guest becomes later unresponsive.
             guest.pull(source=self.step.plan.data_directory)
 
         # Run after-test checks before extracting results
         invocation.check_results += self.run_checks_after_test(
-            invocation=invocation,
-            environment=environment,
-            logger=logger
-            )
+            invocation=invocation, environment=environment, logger=logger
+        )
 
         # Extract test results and store them in the invocation. Note
         # that these results will be overwritten with a fresh set of
@@ -484,8 +493,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 source=invocation.path,
                 extend_options=[
                     *test.test_framework.get_pull_options(invocation, logger),
-                    '--exclude', str(invocation.path / TEST_OUTPUT_FILENAME)
-                    ])
+                    '--exclude',
+                    str(invocation.path / TEST_OUTPUT_FILENAME),
+                ],
+            )
             # Fetch plan data content as well in order to prevent
             # losing logs if the guest becomes later unresponsive.
             guest.pull(source=self.step.plan.data_directory)
@@ -500,11 +511,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         return invocation.results
 
     def go(
-            self,
-            *,
-            guest: 'Guest',
-            environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> None:
+        self,
+        *,
+        guest: 'Guest',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> None:
         """
         Execute available tests
         """
@@ -519,11 +531,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         self._run_tests(guest=guest, extra_environment=environment, logger=logger)
 
     def _run_tests(
-            self,
-            *,
-            guest: Guest,
-            extra_environment: Optional[Environment] = None,
-            logger: tmt.log.Logger) -> None:
+        self,
+        *,
+        guest: Guest,
+        extra_environment: Optional[Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> None:
         """
         Execute tests on provided guest
         """
@@ -548,13 +561,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
                 progress = f"{index + 1}/{len(test_invocations)}"
                 progress_bar.update(progress, test.name)
-                logger.verbose(
-                    'test', test.summary or test.name, color='cyan', shift=1, level=2)
+                logger.verbose('test', test.summary or test.name, color='cyan', shift=1, level=2)
 
                 self.execute(
-                    invocation=invocation,
-                    extra_environment=extra_environment,
-                    logger=logger)
+                    invocation=invocation, extra_environment=extra_environment, logger=logger
+                )
 
                 assert invocation.real_duration is not None  # narrow type
                 duration = click.style(invocation.real_duration, fg='cyan')
@@ -579,13 +590,13 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                             result.result = ResultOutcome.ERROR
                             result.note.append(
                                 'crashed too many times, '
-                                'you may want to set restart-max-count larger')
+                                'you may want to set restart-max-count larger'
+                            )
 
                 # Handle reboot, abort, exit-first
                 if invocation.reboot_requested:
                     # Output before the reboot
-                    logger.verbose(
-                        f"{duration} {test.name} [{progress}]", shift=shift)
+                    logger.verbose(f"{duration} {test.name} [{progress}]", shift=shift)
                     try:
                         if invocation.handle_reboot():
                             continue
@@ -607,8 +618,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
                 for result in invocation.results:
                     logger.verbose(
-                        f"{_format_duration(result)} {result.show()} [{progress}]",
-                        shift=shift)
+                        f"{_format_duration(result)} {result.show()} [{progress}]", shift=shift
+                    )
 
                     for check_result in result.check:
                         # Indent the check one extra level, to make it clear it belongs to
@@ -618,18 +629,20 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                             f'{" " * tmt.utils.INDENT}'
                             f'{check_result.show()} '
                             f'({check_result.event.value} check)',
-                            shift=shift)
+                            shift=shift,
+                        )
 
                 if invocation.abort_requested or (
-                    self.data.exit_first and any(
-                        result.result not in (
-                            ResultOutcome.PASS,
-                            ResultOutcome.INFO) for result in invocation.results)):
+                    self.data.exit_first
+                    and any(
+                        result.result not in (ResultOutcome.PASS, ResultOutcome.INFO)
+                        for result in invocation.results
+                    )
+                ):
                     # Clear the progress bar before outputting
                     progress_bar.clear()
                     what_happened = "aborted" if invocation.abort_requested else "failed"
-                    self.warn(
-                        f'Test {test.name} {what_happened}, stopping execution.')
+                    self.warn(f'Test {test.name} {what_happened}, stopping execution.')
                     break
                 index += 1
 
@@ -648,8 +661,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                         env=self._test_environment(
                             invocation=invocation,
                             extra_environment=extra_environment,
-                            logger=logger),
-                        )
+                            logger=logger,
+                        ),
+                    )
 
         # Pull artifacts created in the plan data directory
         self.debug("Pull the plan data directory.", level=2)
@@ -672,6 +686,4 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         :returns: a list of requirements.
         """
 
-        return [
-            tmt.base.DependencySimple('/usr/bin/flock')
-            ]
+        return [tmt.base.DependencySimple('/usr/bin/flock')]
