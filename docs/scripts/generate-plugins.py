@@ -215,18 +215,21 @@ def main() -> None:
         raise tmt.utils.GeneralError(f"Unhandled step name '{step_name}'.")
 
     # ... and render the template.
-    output_filepath.write_text(render_template_file(
-        template_filepath,
-        LOGGER=logger,
-        STEP=step_name,
-        PLUGINS=plugin_generator,
-        REVIEWED_PLUGINS=REVIEWED_PLUGINS,
-        is_enum=is_enum,
-        container_fields=tmt.container.container_fields,
-        container_field=tmt.container.container_field,
-        container_ignored_fields=container_ignored_fields,
-        container_inherited_fields=container_inherited_fields,
-        container_intrinsic_fields=container_intrinsic_fields))
+    output_filepath.write_text(
+        render_template_file(
+            template_filepath,
+            LOGGER=logger,
+            STEP=step_name,
+            PLUGINS=plugin_generator,
+            REVIEWED_PLUGINS=REVIEWED_PLUGINS,
+            is_enum=is_enum,
+            container_fields=tmt.container.container_fields,
+            container_field=tmt.container.container_field,
+            container_ignored_fields=container_ignored_fields,
+            container_inherited_fields=container_inherited_fields,
+            container_intrinsic_fields=container_intrinsic_fields,
+        )
+    )
     output_filepath.write_text(
         render_template_file(
             template_filepath,

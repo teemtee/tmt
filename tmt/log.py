@@ -39,7 +39,7 @@ from typing import (
     TextIO,
     Union,
     cast,
-    )
+)
 
 import click
 
@@ -85,7 +85,8 @@ LoggableValue = Union[
     'tmt.utils.FmfContext',
     'tmt.utils.Path',
     'tmt.utils.Command',
-    'tmt.utils.ShellScript']
+    'tmt.utils.ShellScript',
+]
 
 
 # TODO: this is an ugly hack, removing colors after they have been added...
@@ -192,16 +193,17 @@ def render_labels(labels: list[str]) -> str:
         # add it at first place, and it should be configurable.
         click.style(LABEL_FORMAT.format(label=label), fg='cyan')
         for label in labels
-        )
+    )
 
 
 def indent(
-        key: str,
-        value: Optional[LoggableValue] = None,
-        color: Optional[str] = None,
-        level: int = 0,
-        labels: Optional[list[str]] = None,
-        labels_padding: int = 0) -> str:
+    key: str,
+    value: Optional[LoggableValue] = None,
+    color: Optional[str] = None,
+    level: int = 0,
+    labels: Optional[list[str]] = None,
+    labels_padding: int = 0,
+) -> str:
     """
     Indent a key/value message.
 
@@ -250,8 +252,9 @@ def indent(
     # extra bit of indentation ("deeper").
     deeper = ' ' * INDENT
 
-    return f'{prefix}{indent}{key}:\n' \
-        + '\n'.join(f'{prefix}{indent}{deeper}{line}' for line in lines)
+    return f'{prefix}{indent}{key}:\n' + '\n'.join(
+        f'{prefix}{indent}{deeper}{line}' for line in lines
+    )
 
 
 @container
@@ -353,7 +356,8 @@ class ConsoleFormatter(_Formatter):
     def __init__(self, apply_colors: bool = True, show_timestamps: bool = False) -> None:
         super().__init__(
             '%(asctime)s %(message)s' if show_timestamps else '%(message)s',
-            apply_colors=apply_colors)
+            apply_colors=apply_colors,
+        )
 
 
 class VerbosityLevelFilter(logging.Filter):
@@ -428,13 +432,14 @@ class TopicFilter(logging.Filter):
 
 class LoggingFunction(Protocol):
     def __call__(
-            self,
-            key: str,
-            value: Optional[str] = None,
-            color: Optional[str] = None,
-            shift: int = 0,
-            level: int = 1,
-            topic: Optional[Topic] = None) -> None:
+        self,
+        key: str,
+        value: Optional[str] = None,
+        color: Optional[str] = None,
+        shift: int = 0,
+        level: int = 1,
+        topic: Optional[Topic] = None,
+    ) -> None:
         pass
 
 
@@ -447,18 +452,18 @@ class Logger:
     """
 
     def __init__(
-            self,
-            actual_logger: logging.Logger,
-            base_shift: int = 0,
-            labels: Optional[list[str]] = None,
-            labels_padding: int = 0,
-            verbosity_level: int = DEFAULT_VERBOSITY_LEVEL,
-            debug_level: int = DEFAULT_DEBUG_LEVEL,
-            quiet: bool = False,
-            topics: Optional[set[Topic]] = None,
-            apply_colors_output: bool = True,
-            apply_colors_logging: bool = True
-            ) -> None:
+        self,
+        actual_logger: logging.Logger,
+        base_shift: int = 0,
+        labels: Optional[list[str]] = None,
+        labels_padding: int = 0,
+        verbosity_level: int = DEFAULT_VERBOSITY_LEVEL,
+        debug_level: int = DEFAULT_DEBUG_LEVEL,
+        quiet: bool = False,
+        topics: Optional[set[Topic]] = None,
+        apply_colors_output: bool = True,
+        apply_colors_logging: bool = True,
+    ) -> None:
         """
         Create a ``Logger`` instance with given verbosity levels.
 
@@ -496,15 +501,17 @@ class Logger:
         self._decolorize_output = create_decolorizer(apply_colors_output)
 
     def __repr__(self) -> str:
-        return (f'<Logger:'
-                f' name={self._logger.name}'
-                f' verbosity={self.verbosity_level}'
-                f' debug={self.debug_level}'
-                f' quiet={self.quiet}'
-                f' topics={self.topics}'
-                f' apply_colors_output={self.apply_colors_output}'
-                f' apply_colors_logging={self.apply_colors_logging}'
-                f'>')
+        return (
+            f'<Logger:'
+            f' name={self._logger.name}'
+            f' verbosity={self.verbosity_level}'
+            f' debug={self.debug_level}'
+            f' quiet={self.quiet}'
+            f' topics={self.topics}'
+            f' apply_colors_output={self.apply_colors_output}'
+            f' apply_colors_logging={self.apply_colors_logging}'
+            f'>'
+        )
 
     @property
     def apply_colors_output(self) -> bool:
@@ -555,14 +562,14 @@ class Logger:
             quiet=self.quiet,
             topics=self.topics,
             apply_colors_output=self.apply_colors_output,
-            apply_colors_logging=self.apply_colors_logging
-            )
+            apply_colors_logging=self.apply_colors_logging,
+        )
 
     def descend(
-            self,
-            logger_name: Optional[str] = None,
-            extra_shift: int = 1,
-            ) -> 'Logger':
+        self,
+        logger_name: Optional[str] = None,
+        extra_shift: int = 1,
+    ) -> 'Logger':
         """
         Create a copy of this logger instance, but with a new raw logger.
 
@@ -589,8 +596,8 @@ class Logger:
             quiet=self.quiet,
             topics=self.topics,
             apply_colors_output=self.apply_colors_output,
-            apply_colors_logging=self.apply_colors_logging
-            )
+            apply_colors_logging=self.apply_colors_logging,
+        )
 
     def add_logfile_handler(self, filepath: 'tmt.utils.Path') -> None:
         """
@@ -615,9 +622,11 @@ class Logger:
 
         handler = ConsoleHandler(stream=sys.stderr)
 
-        handler.setFormatter(ConsoleFormatter(
-            apply_colors=self.apply_colors_logging,
-            show_timestamps=show_timestamps))
+        handler.setFormatter(
+            ConsoleFormatter(
+                apply_colors=self.apply_colors_logging, show_timestamps=show_timestamps
+            )
+        )
 
         handler.addFilter(VerbosityLevelFilter())
         handler.addFilter(DebugLevelFilter())
@@ -627,9 +636,10 @@ class Logger:
         self._logger.addHandler(handler)
 
     def apply_verbosity_options(
-            self,
-            cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
-            **kwargs: Any,) -> 'Logger':
+        self,
+        cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
+        **kwargs: Any,
+    ) -> 'Logger':
         """
         Update logger's settings to match given CLI options.
 
@@ -681,17 +691,19 @@ class Logger:
 
                 raise tmt.utils.GeneralError(
                     f'Logging topic "{topic_spec}" is invalid.'
-                    f" Possible choices are {', '.join(topic.value for topic in Topic)}")
+                    f" Possible choices are {', '.join(topic.value for topic in Topic)}"
+                )
 
         return self
 
     @classmethod
     def create(
-            cls,
-            actual_logger: Optional[logging.Logger] = None,
-            apply_colors_output: bool = True,
-            apply_colors_logging: bool = True,
-            **verbosity_options: Any) -> 'Logger':
+        cls,
+        actual_logger: Optional[logging.Logger] = None,
+        apply_colors_output: bool = True,
+        apply_colors_logging: bool = True,
+        **verbosity_options: Any,
+    ) -> 'Logger':
         """
         Create a (root) tmt logger.
 
@@ -711,15 +723,15 @@ class Logger:
         return Logger(
             actual_logger,
             apply_colors_output=apply_colors_output,
-            apply_colors_logging=apply_colors_logging) \
-            .apply_verbosity_options(**verbosity_options)
+            apply_colors_logging=apply_colors_logging,
+        ).apply_verbosity_options(**verbosity_options)
 
     def _log(
-            self,
-            level: int,
-            details: LogRecordDetails,
-            message: str = '',
-            ) -> None:
+        self,
+        level: int,
+        details: LogRecordDetails,
+        message: str = '',
+    ) -> None:
         """
         Emit a log record describing the message and related properties.
 
@@ -746,16 +758,17 @@ class Logger:
                 color=details.color,
                 level=details.shift,
                 labels=self.labels,
-                labels_padding=self.labels_padding)
+                labels_padding=self.labels_padding,
+            )
 
         self._logger._log(level, message, (), extra={'details': details})
 
     def print_format(
-            self,
-            text: str,
-            color: Optional[str] = None,
-            shift: int = 0,
-            ) -> str:
+        self,
+        text: str,
+        color: Optional[str] = None,
+        shift: int = 0,
+    ) -> str:
         """
         Format the given text in a way suitable for :py:meth:`print`
         """
@@ -766,46 +779,40 @@ class Logger:
             color=color,
             level=shift + self._base_shift,
             labels=self.labels,
-            labels_padding=self.labels_padding)
+            labels_padding=self.labels_padding,
+        )
 
         return self._decolorize_output(text)
 
     def print(
-            self,
-            text: str,
-            color: Optional[str] = None,
-            shift: int = 0,
-            file: Optional[TextIO] = None,
-            ) -> None:
+        self,
+        text: str,
+        color: Optional[str] = None,
+        shift: int = 0,
+        file: Optional[TextIO] = None,
+    ) -> None:
         file = file or sys.stdout
 
         print(self.print_format(text, color=color, shift=shift), file=file)
 
     def info(
-            self,
-            key: str,
-            value: Optional[LoggableValue] = None,
-            color: Optional[str] = None,
-            shift: int = 0
-            ) -> None:
-        self._log(
-            logging.INFO,
-            LogRecordDetails(
-                key=key,
-                value=value,
-                color=color,
-                shift=shift)
-            )
+        self,
+        key: str,
+        value: Optional[LoggableValue] = None,
+        color: Optional[str] = None,
+        shift: int = 0,
+    ) -> None:
+        self._log(logging.INFO, LogRecordDetails(key=key, value=value, color=color, shift=shift))
 
     def verbose(
-            self,
-            key: str,
-            value: Optional[LoggableValue] = None,
-            color: Optional[str] = None,
-            shift: int = 0,
-            level: int = 1,
-            topic: Optional[Topic] = None
-            ) -> None:
+        self,
+        key: str,
+        value: Optional[LoggableValue] = None,
+        color: Optional[str] = None,
+        shift: int = 0,
+        level: int = 1,
+        topic: Optional[Topic] = None,
+    ) -> None:
         self._log(
             logging.INFO,
             LogRecordDetails(
@@ -814,18 +821,19 @@ class Logger:
                 color=color,
                 shift=shift,
                 message_verbosity_level=level,
-                message_topic=topic)
-            )
+                message_topic=topic,
+            ),
+        )
 
     def debug(
-            self,
-            key: str,
-            value: Optional[LoggableValue] = None,
-            color: Optional[str] = None,
-            shift: int = 0,
-            level: int = 1,
-            topic: Optional[Topic] = None
-            ) -> None:
+        self,
+        key: str,
+        value: Optional[LoggableValue] = None,
+        color: Optional[str] = None,
+        shift: int = 0,
+        level: int = 1,
+        topic: Optional[Topic] = None,
+    ) -> None:
         self._log(
             logging.DEBUG,
             LogRecordDetails(
@@ -834,44 +842,36 @@ class Logger:
                 color=color,
                 shift=shift,
                 message_debug_level=level,
-                message_topic=topic)
-            )
+                message_topic=topic,
+            ),
+        )
 
     def warning(
-            self,
-            message: str,
-            shift: int = 0,
-            ) -> None:
+        self,
+        message: str,
+        shift: int = 0,
+    ) -> None:
         self._log(
             logging.WARNING,
-            LogRecordDetails(
-                key='warn',
-                value=message,
-                color='yellow',
-                shift=shift)
-            )
+            LogRecordDetails(key='warn', value=message, color='yellow', shift=shift),
+        )
 
     @deprecated("Use Logger.warning instead")
     def warn(
-            self,
-            message: str,
-            shift: int,
-            ) -> None:
+        self,
+        message: str,
+        shift: int,
+    ) -> None:
         return self.warning(message, shift)
 
     def fail(
-            self,
-            message: str,
-            shift: int = 0,
-            ) -> None:
+        self,
+        message: str,
+        shift: int = 0,
+    ) -> None:
         self._log(
-            logging.ERROR,
-            LogRecordDetails(
-                key='fail',
-                value=message,
-                color='red',
-                shift=shift)
-            )
+            logging.ERROR, LogRecordDetails(key='fail', value=message, color='red', shift=shift)
+        )
 
     _bootstrap_logger: Optional['Logger'] = None
 

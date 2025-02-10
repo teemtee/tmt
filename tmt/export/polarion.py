@@ -35,8 +35,7 @@ def import_polarion() -> None:
         global PolarionException, PolarionTestCase, PolarionWorkItem
         from pylero.exceptions import PyleroLibException as PolarionException
     except ImportError:
-        raise ConvertError(
-            "Install 'tmt+export-polarion' to use Polarion API")
+        raise ConvertError("Install 'tmt+export-polarion' to use Polarion API")
 
     try:
         from pylero.work_item import TestCase as PolarionTestCase
@@ -47,8 +46,9 @@ def import_polarion() -> None:
 
 
 def get_polarion_ids(
-        query_result: list[Any],
-        preferred_project: Optional[str] = None,) -> tuple[str, Optional[str]]:
+    query_result: list[Any],
+    preferred_project: Optional[str] = None,
+) -> tuple[str, Optional[str]]:
     """
     Return case and project ids from query results
     """
@@ -61,8 +61,8 @@ def get_polarion_ids(
     if preferred_project:
         try:
             return next(
-                item.work_item_id for item in query_result
-                if item.project_id == preferred_project), preferred_project
+                item.work_item_id for item in query_result if item.project_id == preferred_project
+            ), preferred_project
         except StopIteration:
             pass
 
@@ -76,9 +76,10 @@ def get_polarion_ids(
 
 
 def find_polarion_case_ids(
-        data: dict[str, Optional[str]],
-        preferred_project: Optional[str] = None,
-        polarion_case_id: Optional[str] = None) -> tuple[str, Optional[str]]:
+    data: dict[str, Optional[str]],
+    preferred_project: Optional[str] = None,
+    polarion_case_id: Optional[str] = None,
+) -> tuple[str, Optional[str]]:
     """
     Find IDs for Polarion case from data dictionary
     """
@@ -91,13 +92,15 @@ def find_polarion_case_ids(
     # Search for Polarion case ID directly
     if polarion_case_id:
         query_result = PolarionWorkItem.query(
-            f'id:{polarion_case_id}', fields=['work_item_id', 'project_id'])
+            f'id:{polarion_case_id}', fields=['work_item_id', 'project_id']
+        )
         case_id, project_id = get_polarion_ids(query_result, preferred_project)
 
     # Search by UUID
     if not project_id and data.get(ID_KEY):
         query_result = PolarionWorkItem.query(
-            data.get(ID_KEY), fields=['work_item_id', 'project_id'])
+            data.get(ID_KEY), fields=['work_item_id', 'project_id']
+        )
         case_id, project_id = get_polarion_ids(query_result, preferred_project)
 
     # Search by TCMS Case ID
@@ -106,25 +109,29 @@ def find_polarion_case_ids(
         nitrate_case_id_search = re.search(r'\d+', extra_nitrate)
         if not nitrate_case_id_search:
             raise ConvertError(
-                "Could not find a valid nitrate testcase ID in 'extra-nitrate' attribute")
+                "Could not find a valid nitrate testcase ID in 'extra-nitrate' attribute"
+            )
         nitrate_case_id = str(int(nitrate_case_id_search.group()))
         query_result = PolarionWorkItem.query(
-            f"tcmscaseid:{nitrate_case_id}", fields=['work_item_id', 'project_id'])
+            f"tcmscaseid:{nitrate_case_id}", fields=['work_item_id', 'project_id']
+        )
         case_id, project_id = get_polarion_ids(query_result, preferred_project)
 
     # Search by extra task
     if not project_id and data.get('extra-task'):
         query_result = PolarionWorkItem.query(
-            data.get('extra-task'), fields=['work_item_id', 'project_id'])
+            data.get('extra-task'), fields=['work_item_id', 'project_id']
+        )
         case_id, project_id = get_polarion_ids(query_result, preferred_project)
 
     return case_id, project_id
 
 
 def get_polarion_case(
-        data: dict[str, Optional[str]],
-        preferred_project: Optional[str] = None,
-        polarion_case_id: Optional[str] = None) -> Optional[PolarionTestCase]:
+    data: dict[str, Optional[str]],
+    preferred_project: Optional[str] = None,
+    polarion_case_id: Optional[str] = None,
+) -> Optional[PolarionTestCase]:
     """
     Get Polarion case through couple different methods
     """
@@ -137,11 +144,8 @@ def get_polarion_case(
     case_id, project_id = find_polarion_case_ids(data, preferred_project, polarion_case_id)
 
     try:
-        polarion_case = PolarionTestCase(
-            project_id=project_id, work_item_id=case_id)
-        echo(style(
-            f"Test case '{polarion_case.work_item_id!s}' found.",
-            fg='blue'))
+        polarion_case = PolarionTestCase(project_id=project_id, work_item_id=case_id)
+        echo(style(f"Test case '{polarion_case.work_item_id!s}' found.", fg='blue'))
         return polarion_case
     except PolarionException:
         return None
@@ -183,6 +187,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     """
 
     import tmt.export.nitrate
+
     import_polarion()
 
     # Check command line options
@@ -206,18 +211,20 @@ def export_to_polarion(test: tmt.base.Test) -> None:
             if not project_id:
                 raise ConvertError(
                     "Please provide project_id so tmt knows which "
-                    "Polarion project to use for this test case.")
+                    "Polarion project to use for this test case."
+                )
             if not dry_mode:
                 polarion_case = create_polarion_case(
-                    summary, project_id=project_id, path=test_path)
+                    summary, project_id=project_id, path=test_path
+                )
             else:
-                echo(style(
-                    f"Test case '{summary}' created.", fg='blue'))
+                echo(style(f"Test case '{summary}' created.", fg='blue'))
             test._metadata['extra-summary'] = summary
         else:
             raise ConvertError(
                 f"Polarion test case id not found for '{test}'. "
-                f"(You can use --create option to enforce creating testcases.)")
+                f"(You can use --create option to enforce creating testcases.)"
+            )
 
     # Title
     if not dry_mode and test.summary is not None and polarion_case.title != test.summary:
@@ -238,10 +245,13 @@ def export_to_polarion(test: tmt.base.Test) -> None:
         polarion_case.tmtid = ''
         polarion_case.reload()
         if not polarion_case.tmtid:
-            echo(style(
-                f"Can't add ID because {polarion_case.project_id} project "
-                "doesn't have the 'tmtid' field defined.",
-                fg='yellow'))
+            echo(
+                style(
+                    f"Can't add ID because {polarion_case.project_id} project "
+                    "doesn't have the 'tmtid' field defined.",
+                    fg='yellow',
+                )
+            )
     if dry_mode or polarion_case.tmtid:
         echo(style(f"Append the ID {uuid}.", fg='green'))
 
@@ -312,7 +322,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     if test.contact:
         # Need to pick one value, so picking the first contact
         email_address = email.utils.parseaddr(test.contact[0])[1]
-        login_name = email_address[:email_address.find('@')]
+        login_name = email_address[: email_address.find('@')]
         try:
             if not dry_mode:
                 polarion_case.add_assignee(login_name)
@@ -336,7 +346,10 @@ def export_to_polarion(test: tmt.base.Test) -> None:
                 f'{server_url}{"" if server_url.endswith("/") else "/"}'
                 f'#/project/{polarion_case.project_id}/workitem?id='
                 f'{polarion_case.work_item_id!s}',
-                data, system=tmt.convert.SYSTEM_OTHER, type_='implements')
+                data,
+                system=tmt.convert.SYSTEM_OTHER,
+                type_='implements',
+            )
 
     # List of bugs test verifies
     bug_ids = []
@@ -379,24 +392,23 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     # Update Polarion test case
     if not dry_mode:
         polarion_case.update()
-    echo(style(
-        f"Test case '{summary}' successfully exported to Polarion.",
-        fg='magenta'))
+    echo(style(f"Test case '{summary}' successfully exported to Polarion.", fg='magenta'))
 
     # Optionally link Bugzilla to Polarion case
     if link_bugzilla and bug_ids and not dry_mode:
-        case_id = (f"{polarion_case.project_id}/workitem?id="
-                   f"{polarion_case.work_item_id!s}")
+        case_id = f"{polarion_case.project_id}/workitem?id={polarion_case.work_item_id!s}"
         tmt.export.bz_set_coverage(bug_ids, case_id, POLARION_TRACKER_ID)
 
 
 @tmt.base.Test.provides_export('polarion')
 class PolarionExporter(tmt.export.ExportPlugin):
     @classmethod
-    def export_test_collection(cls,
-                               tests: list[tmt.base.Test],
-                               keys: Optional[list[str]] = None,
-                               **kwargs: Any,) -> str:
+    def export_test_collection(
+        cls,
+        tests: list[tmt.base.Test],
+        keys: Optional[list[str]] = None,
+        **kwargs: Any,
+    ) -> str:
         for test in tests:
             export_to_polarion(test)
 

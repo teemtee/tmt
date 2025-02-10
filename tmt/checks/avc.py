@@ -14,7 +14,7 @@ from tmt.utils import (
     ShellScript,
     format_timestamp,
     render_command_report,
-    )
+)
 
 if TYPE_CHECKING:
     import tmt.base
@@ -29,17 +29,15 @@ AUSEARCH_TIMESTAMP_FILENAME = 'avc-timestamp.sh'
 
 #: Packages related to selinux and AVC reporting. Their versions would be made
 #: part of the report.
-INTERESTING_PACKAGES = [
-    'audit',
-    'selinux-policy'
-    ]
+INTERESTING_PACKAGES = ['audit', 'selinux-policy']
 
 
 def _save_report(
-        invocation: 'TestInvocation',
-        report: list[str],
-        timestamp: datetime.datetime,
-        append: bool = False) -> Path:
+    invocation: 'TestInvocation',
+    report: list[str],
+    timestamp: datetime.datetime,
+    append: bool = False,
+) -> Path:
     """
     Save the given report into check's report file.
 
@@ -59,7 +57,7 @@ def _save_report(
     report = [
         f'# Reported at {format_timestamp(timestamp)}',
         *report,
-        ]
+    ]
 
     invocation.phase.write(report_filepath, '\n'.join(report), mode='a' if append else 'w')
 
@@ -67,14 +65,12 @@ def _save_report(
 
 
 def _run_script(
-        *,
-        invocation: 'TestInvocation',
-        script: ShellScript,
-        needs_sudo: bool = False,
-        logger: tmt.log.Logger) -> Union[
-            tuple[CommandOutput, None],
-            tuple[None, tmt.utils.RunError]
-        ]:
+    *,
+    invocation: 'TestInvocation',
+    script: ShellScript,
+    needs_sudo: bool = False,
+    logger: tmt.log.Logger,
+) -> Union[tuple[CommandOutput, None], tuple[None, tmt.utils.RunError]]:
     """
     A helper to run a script on the guest.
 
@@ -91,19 +87,14 @@ def _run_script(
         script = ShellScript(f'sudo {script.to_shell_command()}')
 
     def _output_logger(
-            key: str,
-            value: Optional[str] = None,
-            color: Optional[str] = None,
-            shift: int = 2,
-            level: int = 3,
-            topic: Optional[tmt.log.Topic] = None) -> None:
-        logger.verbose(
-            key=key,
-            value=value,
-            color=color,
-            shift=shift,
-            level=level,
-            topic=topic)
+        key: str,
+        value: Optional[str] = None,
+        color: Optional[str] = None,
+        shift: int = 2,
+        level: int = 3,
+        topic: Optional[tmt.log.Topic] = None,
+    ) -> None:
+        logger.verbose(key=key, value=value, color=color, shift=shift, level=level, topic=topic)
 
     try:
         output = invocation.guest.execute(script, log=_output_logger, silent=True)
@@ -130,9 +121,7 @@ def _report_failure(label: str, exc: tmt.utils.RunError) -> list[str]:
     return list(render_command_report(label=label, exc=exc))
 
 
-def create_ausearch_timestamp(
-        invocation: 'TestInvocation',
-        logger: tmt.log.Logger) -> None:
+def create_ausearch_timestamp(invocation: 'TestInvocation', logger: tmt.log.Logger) -> None:
     """
     Save a timestamp for ``ausearch`` in a file on the guest
     """
@@ -154,10 +143,7 @@ echo "export AVC_SINCE=\\"$( date "+%m/%d/%Y %H:%M:%S")\\"" > {ausearch_timestam
 cat {ausearch_timestamp_filepath}
 """)
 
-    output, exc = _run_script(
-        invocation=invocation,
-        script=script,
-        logger=logger)
+    output, exc = _run_script(invocation=invocation, script=script, logger=logger)
 
     if exc is None:
         assert output is not None
@@ -171,15 +157,17 @@ cat {ausearch_timestamp_filepath}
 
 
 def create_final_report(
-        invocation: 'TestInvocation',
-        logger: tmt.log.Logger,) -> tuple[ResultOutcome, Path]:
+    invocation: 'TestInvocation',
+    logger: tmt.log.Logger,
+) -> tuple[ResultOutcome, Path]:
     """
     Collect the data, evaluate and create the final report
     """
 
     if invocation.start_time is None:
         raise tmt.utils.GeneralError(
-            "Test does not have start time recorded, cannot run AVC check.")
+            "Test does not have start time recorded, cannot run AVC check."
+        )
 
     ausearch_timestamp_filepath = invocation.check_files_path / AUSEARCH_TIMESTAMP_FILENAME
 
@@ -191,10 +179,7 @@ def create_final_report(
     got_sestatus, got_rpm, got_ausearch, got_denials = False, False, False, False
 
     # Get the `sestatus` output.
-    output, exc = _run_script(
-        invocation=invocation,
-        script=ShellScript('sestatus'),
-        logger=logger)
+    output, exc = _run_script(invocation=invocation, script=ShellScript('sestatus'), logger=logger)
 
     if exc is None:
         assert output is not None
@@ -209,9 +194,8 @@ def create_final_report(
     # Record NVRs of interesting packages.
     interesting_packages = ' '.join(INTERESTING_PACKAGES)
     output, exc = _run_script(
-        invocation=invocation,
-        script=ShellScript(f'rpm -q {interesting_packages}'),
-        logger=logger)
+        invocation=invocation, script=ShellScript(f'rpm -q {interesting_packages}'), logger=logger
+    )
 
     if exc is None:
         assert output is not None
@@ -229,11 +213,7 @@ set -x
 source {ausearch_timestamp_filepath}
 ausearch -i --input-logs -m AVC -m USER_AVC -m SELINUX_ERR -ts $AVC_SINCE
 """)
-    output, exc = _run_script(
-        invocation=invocation,
-        script=script,
-        needs_sudo=True,
-        logger=logger)
+    output, exc = _run_script(invocation=invocation, script=script, needs_sudo=True, logger=logger)
 
     # `ausearch` outcome evaluation is a bit more complicated than the one for a simple
     # `rpm -q`, because not all non-zero exit codes mean error.
@@ -299,10 +279,11 @@ class AvcDenials(CheckPlugin[Check]):
 
     @classmethod
     def essential_requires(
-            cls,
-            guest: 'Guest',
-            test: 'tmt.base.Test',
-            logger: tmt.log.Logger,) -> list['tmt.base.DependencySimple']:
+        cls,
+        guest: 'Guest',
+        test: 'tmt.base.Test',
+        logger: tmt.log.Logger,
+    ) -> list['tmt.base.DependencySimple']:
         if not guest.facts.has_selinux:
             return []
 
@@ -311,19 +292,17 @@ class AvcDenials(CheckPlugin[Check]):
 
         # Note: yes, this will most likely explode in any distro outside
         # of Fedora, CentOS and RHEL.
-        return [
-            tmt.base.DependencySimple('audit'),
-            tmt.base.DependencySimple('policycoreutils')
-            ]
+        return [tmt.base.DependencySimple('audit'), tmt.base.DependencySimple('policycoreutils')]
 
     @classmethod
     def before_test(
-            cls,
-            *,
-            check: 'Check',
-            invocation: 'TestInvocation',
-            environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> list[CheckResult]:
+        cls,
+        *,
+        check: 'Check',
+        invocation: 'TestInvocation',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[CheckResult]:
         if invocation.guest.facts.has_selinux:
             create_ausearch_timestamp(invocation, logger)
 
@@ -331,16 +310,15 @@ class AvcDenials(CheckPlugin[Check]):
 
     @classmethod
     def after_test(
-            cls,
-            *,
-            check: 'Check',
-            invocation: 'TestInvocation',
-            environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> list[CheckResult]:
+        cls,
+        *,
+        check: 'Check',
+        invocation: 'TestInvocation',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[CheckResult]:
         if not invocation.guest.facts.has_selinux:
-            return [CheckResult(
-                name='avc',
-                result=ResultOutcome.SKIP)]
+            return [CheckResult(name='avc', result=ResultOutcome.SKIP)]
 
         if not invocation.is_guest_healthy:
             return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
@@ -349,7 +327,8 @@ class AvcDenials(CheckPlugin[Check]):
 
         outcome, path = create_final_report(invocation, logger)
 
-        return [CheckResult(
-            name='avc',
-            result=outcome,
-            log=[path.relative_to(invocation.phase.step.workdir)])]
+        return [
+            CheckResult(
+                name='avc', result=outcome, log=[path.relative_to(invocation.phase.step.workdir)]
+            )
+        ]

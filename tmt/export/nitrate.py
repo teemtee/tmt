@@ -12,7 +12,7 @@ from typing import (
     Optional,
     Union,
     cast,
-    )
+)
 
 import fmf.context
 from click import echo, style
@@ -68,12 +68,12 @@ def import_nitrate() -> Nitrate:
         global nitrate, DEFAULT_PRODUCT, gssapi
         import gssapi
         import nitrate
+
         assert nitrate
         DEFAULT_PRODUCT = nitrate.Product(name='RHEL Tests')
         return nitrate
     except ImportError:
-        raise ConvertError(
-            "Install tmt+test-convert to export tests to nitrate.")
+        raise ConvertError("Install tmt+test-convert to export tests to nitrate.")
     # FIXME: ignore[union-attr]: https://github.com/teemtee/tmt/issues/1616
     except nitrate.NitrateError as error:  # type: ignore[union-attr]
         raise ConvertError(error)
@@ -87,6 +87,7 @@ def _nitrate_find_fmf_testcases(test: 'tmt.Test') -> Iterator[Any]:
     """
 
     import tmt.base
+
     assert nitrate
     for component in test.component:
         try:
@@ -94,11 +95,16 @@ def _nitrate_find_fmf_testcases(test: 'tmt.Test') -> Iterator[Any]:
                 struct_field = StructuredField(testcase.notes)
                 try:
                     fmf_id = tmt.base.FmfId.from_spec(
-                        cast(tmt.base._RawFmfId, tmt.utils.yaml_to_dict(struct_field.get('fmf'))))
+                        cast(tmt.base._RawFmfId, tmt.utils.yaml_to_dict(struct_field.get('fmf')))
+                    )
                     if fmf_id == test.fmf_id:
-                        echo(style(
-                            f"Existing test case '{testcase.identifier}' "
-                            f"found for given fmf id.", fg='magenta'))
+                        echo(
+                            style(
+                                f"Existing test case '{testcase.identifier}' "
+                                f"found for given fmf id.",
+                                fg='magenta',
+                            )
+                        )
                         yield testcase
                 except tmt.utils.StructuredFieldError:
                     pass
@@ -122,7 +128,7 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
         heading: []
         for heading_list in tmt.base.SECTIONS_HEADINGS.values()
         for heading in heading_list
-        }
+    }
 
     html = tmt.utils.markdown_to_html(test_md)
     html_splitlines = html.splitlines()
@@ -135,12 +141,11 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
                 if re.search("^" + key + "$", html_splitlines[i]):
                     html_content = ''
                     if key.startswith('<h1>Test'):
-                        html_content = html_splitlines[i].\
-                            replace('<h1>', '<b>').\
-                            replace('</h1>', '</b>')
+                        html_content = (
+                            html_splitlines[i].replace('<h1>', '<b>').replace('</h1>', '</b>')
+                        )
                     for j in range(i + 1, len(html_splitlines)):
-                        if re.search("^<h[1-4]>(.+?)</h[1-4]>$",
-                                     html_splitlines[j]):
+                        if re.search("^<h[1-4]>(.+?)</h[1-4]>$", html_splitlines[j]):
                             result.append([i, html_content])
                             i = j - 1
                             break
@@ -170,19 +175,22 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
 
         return content
 
-    sorted_test = sorted(concatenate_headings_content((
-        '<h1>Test</h1>',
-        '<h1>Test .*</h1>')))
+    sorted_test = sorted(concatenate_headings_content(('<h1>Test</h1>', '<h1>Test .*</h1>')))
 
-    sorted_step = sorted(enumerate_content(concatenate_headings_content((
-        '<h2>Step</h2>',
-        '<h2>Test Step</h2>'))) + sorted_test)
+    sorted_step = sorted(
+        enumerate_content(concatenate_headings_content(('<h2>Step</h2>', '<h2>Test Step</h2>')))
+        + sorted_test
+    )
     step = ''.join([f"{v[1]}" for v in sorted_step])
 
-    sorted_expect = sorted(enumerate_content(concatenate_headings_content((
-        '<h2>Expect</h2>',
-        '<h2>Result</h2>',
-        '<h2>Expected Result</h2>'))) + sorted_test)
+    sorted_expect = sorted(
+        enumerate_content(
+            concatenate_headings_content(
+                ('<h2>Expect</h2>', '<h2>Result</h2>', '<h2>Expected Result</h2>')
+            )
+        )
+        + sorted_test
+    )
     expect = ''.join([f"{v[1]}" for v in sorted_expect])
 
     def check_section_exists(text: str) -> str:
@@ -253,7 +261,8 @@ def enabled_for_environment(test: 'tmt.base.Test', tcms_notes: str) -> bool:
             try:
                 dimension, values = line.split('=', maxsplit=2)
                 context_dict[dimension.strip()] = [
-                    value.strip() for value in re.split(",|and", values)]
+                    value.strip() for value in re.split(",|and", values)
+                ]
             except ValueError:
                 pass
     except tmt.utils.StructuredFieldError:
@@ -280,17 +289,14 @@ def return_markdown_file() -> Optional[Path]:
     files = '\n'.join(os.listdir())
     reg_exp = r'.+\.md$'
     md_files = re.findall(reg_exp, files, re.MULTILINE)
-    fail_message = ("in the current working directory.\n"
-                    "Manual steps couldn't be exported")
+    fail_message = "in the current working directory.\nManual steps couldn't be exported"
     if len(md_files) == 1:
         return Path.cwd() / str(md_files[0])
     if not md_files:
-        echo(style(f'Markdown file doesn\'t exist {fail_message}',
-                   fg='yellow'))
+        echo(style(f'Markdown file doesn\'t exist {fail_message}', fg='yellow'))
         return None
 
-    echo(style(f'{len(md_files)} Markdown files found {fail_message}',
-               fg='yellow'))
+    echo(style(f'{len(md_files)} Markdown files found {fail_message}', fg='yellow'))
     return None
 
 
@@ -302,9 +308,8 @@ def get_category(path: Path) -> str:
     category = DEFAULT_NITRATE_CATEGORY
     try:
         category_search = re.search(
-            r'echo\s+"Type:\s*(.*)"',
-            (path / 'Makefile').read_text(encoding='utf-8'),
-            re.MULTILINE)
+            r'echo\s+"Type:\s*(.*)"', (path / 'Makefile').read_text(encoding='utf-8'), re.MULTILINE
+        )
         if category_search:
             category = category_search.group(1)
     # Default to 'Sanity' if Makefile or Type not found
@@ -327,10 +332,11 @@ def create_nitrate_case(summary: str, category: str) -> NitrateTestCase:
 
 
 def add_to_nitrate_runs(
-        nitrate_case: NitrateTestCase,
-        general_plan: NitrateTestPlan,
-        test: 'tmt.Test',
-        dry_mode: bool,) -> None:
+    nitrate_case: NitrateTestCase,
+    general_plan: NitrateTestPlan,
+    test: 'tmt.Test',
+    dry_mode: bool,
+) -> None:
     """
     Add nitrate test case to all active runs under given general plan
 
@@ -350,8 +356,7 @@ def add_to_nitrate_runs(
                 echo(style(f"Link to plan '{child_plan}'.", fg='magenta'))
                 if not dry_mode:
                     nitrate_case.testplans.add(child_plan)
-            if not nitrate_case or nitrate_case not in [
-                    caserun.testcase for caserun in testrun]:
+            if not nitrate_case or nitrate_case not in [caserun.testcase for caserun in testrun]:
                 echo(style(f"Link to run '{testrun}'.", fg='magenta'))
                 if not dry_mode:
                     nitrate.CaseRun(testcase=nitrate_case, testrun=testrun)
@@ -387,21 +392,21 @@ def find_general_plan(component: str) -> NitrateTestPlan:
     found: list[NitrateTestPlan] = nitrate.TestPlan.search(
         type__name="General",
         is_active=True,
-        component__name=f"{component}",)
+        component__name=f"{component}",
+    )
     # Attempt to find by name if no test plan found
     if not found:
         found = nitrate.TestPlan.search(
             type__name="General",
             is_active=True,
-            name=f"{component} / General",)
+            name=f"{component} / General",
+        )
     # No general -> raise error
     if not found:
-        raise nitrate.NitrateError(
-            f"No general test plan found for '{component}'.")
+        raise nitrate.NitrateError(f"No general test plan found for '{component}'.")
     # Multiple general plans are fishy -> raise error
     if len(found) != 1:
-        nitrate.NitrateError(
-            "Multiple general test plans found for '{component}' component.")
+        nitrate.NitrateError("Multiple general test plans found for '{component}' component.")
     # Finally return the one and only General plan
     return found[0]
 
@@ -412,6 +417,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
     """
 
     import tmt.base
+
     import_nitrate()
     assert nitrate
     assert gssapi
@@ -437,7 +443,8 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
         else:
             raise ConvertError(
                 f"Can't export due '{error_msg}'.\n"
-                "Use --ignore-git-validation on your own risk to export regardless.")
+                "Use --ignore-git-validation on your own risk to export regardless."
+            )
 
     # Check nitrate test case
     try:
@@ -462,8 +469,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
                 if not dry_mode:
                     nitrate_case = create_nitrate_case(extra_summary, category)
                 else:
-                    echo(style(
-                        f"Test case '{extra_summary}' created.", fg='blue'))
+                    echo(style(f"Test case '{extra_summary}' created.", fg='blue'))
                 test._metadata['extra-summary'] = extra_summary
             # Either newly created or duplicate with missing extra-nitrate
             if nitrate_case:
@@ -472,9 +478,11 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
                     with test.node as data:
                         data["extra-nitrate"] = nitrate_case.identifier
         else:
-            raise ConvertError(f"Nitrate test case id not found for {test}"
-                               " (You can use --create option to enforce"
-                               " creating testcases)")
+            raise ConvertError(
+                f"Nitrate test case id not found for {test}"
+                " (You can use --create option to enforce"
+                " creating testcases)"
+            )
     except (nitrate.NitrateError, gssapi.raw.misc.GSSError) as error:
         raise ConvertError(error)
 
@@ -483,9 +491,11 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
 
     # Summary
     try:
-        summary = (test._metadata.get('extra-summary')
-                   or test._metadata.get('extra-task')
-                   or prepare_extra_summary(test, append_summary))
+        summary = (
+            test._metadata.get('extra-summary')
+            or test._metadata.get('extra-task')
+            or prepare_extra_summary(test, append_summary)
+        )
     except ConvertError:
         summary = test.name
     if not dry_mode:
@@ -509,39 +519,30 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
         echo(style('components: ', fg='green') + ' '.join(test.component))
         for component in test.component:
             try:
-                nitrate_component = nitrate.Component(
-                    name=component, product=DEFAULT_PRODUCT.id)
+                nitrate_component = nitrate.Component(name=component, product=DEFAULT_PRODUCT.id)
                 if not dry_mode:
                     nitrate_case.components.add(nitrate_component)
             except nitrate.xmlrpc_driver.NitrateError as error:
                 log.debug(error)
-                echo(style(
-                    f"Failed to add component '{component}'.", fg='red'))
+                echo(style(f"Failed to add component '{component}'.", fg='red'))
             if general:
                 try:
                     general_plan = find_general_plan(component)
                     expected_general_plans.add(general_plan)
-                    echo(style(
-                        f"Linked to general plan '{general_plan}'.",
-                        fg='magenta'))
+                    echo(style(f"Linked to general plan '{general_plan}'.", fg='magenta'))
                     if not dry_mode:
                         nitrate_case.testplans.add(general_plan)
                     if link_runs:
-                        add_to_nitrate_runs(
-                            nitrate_case, general_plan, test, dry_mode)
+                        add_to_nitrate_runs(nitrate_case, general_plan, test, dry_mode)
                 except nitrate.NitrateError as error:
                     log.debug(error)
-                    echo(style(
-                        f"Failed to find general test plan for '{component}'.",
-                        fg='red'))
+                    echo(style(f"Failed to find general test plan for '{component}'.", fg='red'))
     # Remove unexpected general plans
     if general and nitrate_case:
         # Remove also all general plans linked to testcase
         for nitrate_plan in list(nitrate_case.testplans):
-            if (nitrate_plan.type.name == "General"
-                    and nitrate_plan not in expected_general_plans):
-                echo(style(
-                    f"Removed general plan '{nitrate_plan}'.", fg='red'))
+            if nitrate_plan.type.name == "General" and nitrate_plan not in expected_general_plans:
+                echo(style(f"Removed general plan '{nitrate_plan}'.", fg='red'))
                 if not dry_mode:
                     nitrate_case.testplans.remove(nitrate_plan)
 
@@ -610,8 +611,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
         echo(style('arguments: ', fg='green') + "' '")
 
     # Structured Field
-    struct_field = StructuredField(
-        nitrate_case.notes if nitrate_case else '')
+    struct_field = StructuredField(nitrate_case.notes if nitrate_case else '')
     echo(style('Structured Field: ', fg='green'))
 
     # Mapping of structured field sections to fmf case attributes
@@ -620,7 +620,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
         'purpose-file': test.description,
         'hardware': test.node.get('extra-hardware'),
         'pepa': test.node.get('extra-pepa'),
-        }
+    }
     for section, attribute in section_to_attr.items():
         if attribute is None:
             with suppress(tmt.utils.StructuredFieldError):
@@ -637,8 +637,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
     # Warning
     if WARNING not in struct_field.header():
         struct_field.header(WARNING + struct_field.header())
-        echo(style(
-            'Add migration warning to the test case notes.', fg='green'))
+        echo(style('Add migration warning to the test case notes.', fg='green'))
 
     # ID
     uuid = tmt.identifier.add_uuid_if_not_defined(test.node, dry_mode, test._logger)
@@ -657,7 +656,8 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
         step, expect, setup, cleanup = convert_manual_to_nitrate(md_path)
         if not dry_mode:
             nitrate.User()._server.TestCase.store_text(
-                nitrate_case.id, step, expect, setup, cleanup)
+                nitrate_case.id, step, expect, setup, cleanup
+            )
         echo(style("manual steps:", fg='green') + f" found in {md_path}")
 
     # List of bugs test verifies
@@ -680,8 +680,9 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
 
     # Add bugs to the Nitrate case
     if verifies_bug_ids:
-        echo(style('Verifies bugs: ', fg='green') +
-             ', '.join([f"BZ#{b}" for b in verifies_bug_ids]))
+        echo(
+            style('Verifies bugs: ', fg='green') + ', '.join([f"BZ#{b}" for b in verifies_bug_ids])
+        )
     for bug_id in verifies_bug_ids:
         if not dry_mode:
             nitrate_case.bugs.add(nitrate.Bug(bug=int(bug_id)))
@@ -689,8 +690,12 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
     # Update nitrate test case
     if not dry_mode:
         nitrate_case.update()
-        echo(style(f"Test case '{nitrate_case.identifier}' successfully exported to nitrate.",
-                   fg='magenta'))
+        echo(
+            style(
+                f"Test case '{nitrate_case.identifier}' successfully exported to nitrate.",
+                fg='magenta',
+            )
+        )
 
     # Optionally link Bugzilla to Nitrate case
     if link_bugzilla and verifies_bug_ids and not dry_mode:
@@ -700,10 +705,9 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
 @tmt.base.Test.provides_export('nitrate')
 class NitrateExporter(tmt.export.ExportPlugin):
     @classmethod
-    def export_test_collection(cls,
-                               tests: list[tmt.base.Test],
-                               keys: Optional[list[str]] = None,
-                               **kwargs: Any) -> str:
+    def export_test_collection(
+        cls, tests: list[tmt.base.Test], keys: Optional[list[str]] = None, **kwargs: Any
+    ) -> str:
         for test in tests:
             export_to_nitrate(test)
 

@@ -38,8 +38,7 @@ def get_id(node: fmf.Tree, leaf_only: bool = True) -> Optional[str]:
     if node.get(ID_KEY) is None:
         return None
     if leaf_only and not is_key_origin(node, ID_KEY):
-        raise IdLeafError(
-            f"Key '{ID_KEY}' not defined in leaf '{node.name}'.")
+        raise IdLeafError(f"Key '{ID_KEY}' not defined in leaf '{node.name}'.")
     # FIXME: cast() - typeless "dispatcher" method
     return cast(Optional[str], node.get(ID_KEY))
 
@@ -51,8 +50,7 @@ def add_uuid_if_not_defined(node: fmf.Tree, dry: bool, logger: Logger) -> Option
 
     # Already defined
     if is_key_origin(node, ID_KEY):
-        logger.debug(
-            f"Id '{node.data[ID_KEY]}' already defined for '{node.name}'.")
+        logger.debug(f"Id '{node.data[ID_KEY]}' already defined for '{node.name}'.")
         return None
 
     # Generate a new one
@@ -79,9 +77,6 @@ def id_command(context: 'tmt.cli.Context', node: fmf.Tree, node_type: str, dry: 
 
     generated = add_uuid_if_not_defined(node, dry, context.obj.logger)
     if generated:
-        print(
-            f"New id '{generated}' added to {node_type} '{node.name}'.")
+        print(f"New id '{generated}' added to {node_type} '{node.name}'.")
     else:
-        print(
-            f"Existing id '{node.get(ID_KEY)}' "
-            f"found in {node_type} '{node.name}'.")
+        print(f"Existing id '{node.get(ID_KEY)}' found in {node_type} '{node.name}'.")

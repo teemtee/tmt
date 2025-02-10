@@ -42,7 +42,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
-    )
+)
 
 import pint
 
@@ -99,7 +99,7 @@ INPUTABLE_OPERATORS = [
     operator
     for operator in Operator.__members__.values()
     if operator not in (Operator.CONTAINS, Operator.NOTCONTAINS)
-    ]
+]
 
 
 _OPERATOR_PATTERN = '|'.join(operator.value for operator in INPUTABLE_OPERATORS)
@@ -108,14 +108,17 @@ _OPERATOR_PATTERN = '|'.join(operator.value for operator in INPUTABLE_OPERATORS)
 #: The input consists of an (optional) operator, the actual value of the
 #: constraint, and (optional) units. As a result, pattern yields two groups,
 #: ``operator`` and ``value``, the latter containing both the value and units.
-CONSTRAINT_VALUE_PATTERN = re.compile(rf"""
+CONSTRAINT_VALUE_PATTERN = re.compile(
+    rf"""
     ^                                   # must match the whole string
     (?P<operator>{_OPERATOR_PATTERN})?  # optional operator
     \s*                                 # operator might be separated by white space
     (?P<value>.+?)                      # actual value of the constraint
     \s*                                 # there might be trailing white space
     $                                   # must match the whole string, I said :)
-    """, re.VERBOSE)
+    """,
+    re.VERBOSE,
+)
 
 #: Regular expression to match and split a HW constraint name into its
 #: components. The input consists of a constraint name, (optional) index
@@ -124,11 +127,14 @@ CONSTRAINT_VALUE_PATTERN = re.compile(rf"""
 #: * ``memory`` => ``memory``, ``None``, ``None``
 #: * ``cpu.processors`` => ``cpu``, ``None``, ``processors``
 #: * ``disk[1].size`` => ``disk``, ``1``, ``size``
-CONSTRAINT_NAME_PATTERN = re.compile(r"""
+CONSTRAINT_NAME_PATTERN = re.compile(
+    r"""
     (?P<name>[a-z_+]+)                   # constraint name is mandatory
     (?:\[(?P<peer_index>[+-]?\d+)\])?    # index is optional
     (?:\.(?P<child_name>[a-z_]+))?       # child constraint name is also optional'
-    """, re.VERBOSE)
+    """,
+    re.VERBOSE,
+)
 
 #: Regular expression to match and split a HW constraint into its components.
 #: The input consists of a constraint name, (optional) index of the constraint
@@ -138,7 +144,8 @@ CONSTRAINT_NAME_PATTERN = re.compile(r"""
 #: * ``memory 10 GiB`` => ``memory``, ``None``, ``None``, ``None``, ``10 GiB``
 #: * ``cpu.processors != 4`` => ``cpu``, ``None``, ``processors``, ``!=``, ``4``
 #: * ``disk[1].size <= 1 TiB`` => ``disk``, ``1``, ``size``, ``<=``, ``1 TiB``
-CONSTRAINT_COMPONENTS_PATTERN = re.compile(rf"""
+CONSTRAINT_COMPONENTS_PATTERN = re.compile(
+    rf"""
     ^                                   # must match the whole string
     (?P<name>[a-z_+]+)                  # constraint name is mandatory
     (?:\[(?P<peer_index>[+-]?\d+)\])?   # index is optional
@@ -149,21 +156,23 @@ CONSTRAINT_COMPONENTS_PATTERN = re.compile(rf"""
     (?P<value>.+?)                      # value is mandatory
     \s*                                 # trailing white space is allowed
     $                                   # must match the whole string
-    """, re.VERBOSE)
+    """,
+    re.VERBOSE,
+)
 
 
 #: A list of constraint names that operate over sequence of entities.
 INDEXABLE_CONSTRAINTS: tuple[str, ...] = (
     'disk',
     'network',
-    )
+)
 
 #: A list of constraint names that do not have child properties.
 CHILDLESS_CONSTRAINTS: tuple[str, ...] = (
     'arch',
     'memory',
     'hostname',
-    )
+)
 
 
 # Type of the operator callable. The operators accept two arguments, and return
@@ -232,8 +241,8 @@ class ConstraintComponents:
             peer_index=int(groups['peer_index']) if groups['peer_index'] is not None else None,
             child_name=groups['child_name'],
             operator=groups['operator'],
-            value=groups['value']
-            )
+            value=groups['value'],
+        )
 
 
 def match(text: str, pattern: str) -> bool:
@@ -289,8 +298,8 @@ OPERATOR_SIGN_TO_OPERATOR = {
     'contains': Operator.CONTAINS,
     'not contains': Operator.NOTCONTAINS,
     # Legacy operators
-    '=~': Operator.MATCH
-    }
+    '=~': Operator.MATCH,
+}
 
 
 OPERATOR_TO_HANDLER: dict[Operator, OperatorHandlerType] = {
@@ -303,8 +312,8 @@ OPERATOR_TO_HANDLER: dict[Operator, OperatorHandlerType] = {
     Operator.MATCH: match,
     Operator.NOTMATCH: not_match,
     Operator.CONTAINS: operator.contains,
-    Operator.NOTCONTAINS: not_contains
-    }
+    Operator.NOTCONTAINS: not_contains,
+}
 
 
 #: A callable reducing a sequence of booleans to a single one. Think
@@ -317,8 +326,9 @@ class ParseError(tmt.utils.MetadataError):
     Raised when HW requirement parsing fails
     """
 
-    def __init__(self, constraint_name: str, raw_value: str,
-                 message: Optional[str] = None) -> None:
+    def __init__(
+        self, constraint_name: str, raw_value: str, message: Optional[str] = None
+    ) -> None:
         """
         Raise when HW requirement parsing fails.
 
@@ -336,6 +346,7 @@ class ParseError(tmt.utils.MetadataError):
 #
 # Constraint classes
 #
+
 
 @container(repr=False)
 class BaseConstraint(SpecBasedContainer[Spec, Spec]):
@@ -366,9 +377,8 @@ class BaseConstraint(SpecBasedContainer[Spec, Spec]):
         raise NotImplementedError
 
     def variants(
-            self,
-            members: Optional[list['Constraint[Any]']] = None
-            ) -> Iterator[list['Constraint[Any]']]:
+        self, members: Optional[list['Constraint[Any]']] = None
+    ) -> Iterator[list['Constraint[Any]']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -409,10 +419,8 @@ class CompoundConstraint(BaseConstraint):
     """
 
     def __init__(
-            self,
-            reducer: ReducerType = any,
-            constraints: Optional[list[BaseConstraint]] = None
-            ) -> None:
+        self, reducer: ReducerType = any, constraints: Optional[list[BaseConstraint]] = None
+    ) -> None:
         """
         Construct a compound constraint, constraint imposed to more than one dimension.
 
@@ -432,8 +440,8 @@ class CompoundConstraint(BaseConstraint):
         return {
             self.__class__.__name__.lower(): [
                 constraint.to_spec() for constraint in self.constraints
-                ]
-            }
+            ]
+        }
 
     def uses_constraint(self, constraint_name: str, logger: tmt.log.Logger) -> bool:
         """
@@ -449,14 +457,12 @@ class CompoundConstraint(BaseConstraint):
         # But we want to answer the question "is *any* of child constraints using the given
         # constraint?", not "are all using it?".
         return any(
-            constraint.uses_constraint(constraint_name, logger)
-            for constraint in self.constraints
-            )
+            constraint.uses_constraint(constraint_name, logger) for constraint in self.constraints
+        )
 
     def variants(
-            self,
-            members: Optional[list['Constraint[Any]']] = None
-            ) -> Iterator[list['Constraint[Any]']]:
+        self, members: Optional[list['Constraint[Any]']] = None
+    ) -> Iterator[list['Constraint[Any]']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -508,15 +514,15 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
 
     @classmethod
     def _from_specification(
-            cls: type[T],
-            name: str,
-            raw_value: str,
-            as_quantity: bool = True,
-            as_cast: Optional[Callable[[str], ConstraintValueT]] = None,
-            original_constraint: Optional['Constraint[Any]'] = None,
-            allowed_operators: Optional[list[Operator]] = None,
-            default_unit: Optional[Any] = "bytes"
-            ) -> T:
+        cls: type[T],
+        name: str,
+        raw_value: str,
+        as_quantity: bool = True,
+        as_cast: Optional[Callable[[str], ConstraintValueT]] = None,
+        original_constraint: Optional['Constraint[Any]'] = None,
+        allowed_operators: Optional[list[Operator]] = None,
+        default_unit: Optional[Any] = "bytes",
+    ) -> T:
         """
         Parse raw constraint specification into our internal representation.
 
@@ -552,7 +558,8 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
             raise ParseError(
                 constraint_name=name,
                 raw_value=raw_value,
-                message=f"Operator '{operator} is not allowed.")
+                message=f"Operator '{operator} is not allowed.",
+            )
 
         raw_value = groups['value']
 
@@ -566,9 +573,7 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
             # reportUnnecessaryIsInstance: pyright cannot infere this
             # little trick Pint plays with us, and considers the `isinstance`
             # call to be pointless. But it's not. mypy does not care...
-            if not isinstance(
-                    value,
-                    pint.Quantity):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
+            if not isinstance(value, pint.Quantity):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
                 value = pint.Quantity(value, default_unit)
 
         elif as_cast is not None:
@@ -583,16 +588,14 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
             operator_handler=OPERATOR_TO_HANDLER[operator],
             value=value,
             raw_value=raw_value,
-            original_constraint=original_constraint
-            )
+            original_constraint=original_constraint,
+        )
 
     def __repr__(self) -> str:
         return f'{self.printable_name}: {self.operator.value} {self.value}'
 
     def to_spec(self) -> Spec:
-        return {
-            self.name.replace('_', '-'): f'{self.operator.value} {self.value}'
-            }
+        return {self.name.replace('_', '-'): f'{self.operator.value} {self.value}'}
 
     def expand_name(self) -> ConstraintNameComponents:
         """
@@ -612,8 +615,8 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
         return ConstraintNameComponents(
             name=groups['name'],
             peer_index=int(groups['peer_index']) if groups['peer_index'] is not None else None,
-            child_name=groups['child_name']
-            )
+            child_name=groups['child_name'],
+        )
 
     @property
     def printable_name(self) -> str:
@@ -654,9 +657,8 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
         return self.expand_name().name == constraint_name
 
     def variants(
-            self,
-            members: Optional[list['Constraint[ConstraintValueT]']] = None
-            ) -> Iterator[list['Constraint[ConstraintValueT]']]:
+        self, members: Optional[list['Constraint[ConstraintValueT]']] = None
+    ) -> Iterator[list['Constraint[ConstraintValueT]']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -679,21 +681,21 @@ class SizeConstraint(Constraint['Size']):
 
     @classmethod
     def from_specification(
-            cls: type[T],
-            name: str,
-            raw_value: str,
-            original_constraint: Optional['Constraint[Any]'] = None,
-            allowed_operators: Optional[list[Operator]] = None,
-            default_unit: Optional[Any] = 'bytes'
-            ) -> T:
+        cls: type[T],
+        name: str,
+        raw_value: str,
+        original_constraint: Optional['Constraint[Any]'] = None,
+        allowed_operators: Optional[list[Operator]] = None,
+        default_unit: Optional[Any] = 'bytes',
+    ) -> T:
         return cls._from_specification(
             name,
             raw_value,
             as_quantity=True,
             original_constraint=original_constraint,
             allowed_operators=allowed_operators,
-            default_unit=default_unit
-            )
+            default_unit=default_unit,
+        )
 
 
 class FlagConstraint(Constraint[bool]):
@@ -703,20 +705,20 @@ class FlagConstraint(Constraint[bool]):
 
     @classmethod
     def from_specification(
-            cls: type[T],
-            name: str,
-            raw_value: bool,
-            original_constraint: Optional['Constraint[Any]'] = None,
-            allowed_operators: Optional[list[Operator]] = None
-            ) -> T:
+        cls: type[T],
+        name: str,
+        raw_value: bool,
+        original_constraint: Optional['Constraint[Any]'] = None,
+        allowed_operators: Optional[list[Operator]] = None,
+    ) -> T:
         return cls._from_specification(
             name,
             str(raw_value),
             as_quantity=False,
             as_cast=lambda x: x.lower() == 'true',
             original_constraint=original_constraint,
-            allowed_operators=allowed_operators
-            )
+            allowed_operators=allowed_operators,
+        )
 
 
 class IntegerConstraint(Constraint[int]):
@@ -726,13 +728,12 @@ class IntegerConstraint(Constraint[int]):
 
     @classmethod
     def from_specification(
-            cls: type[T],
-            name: str,
-            raw_value: str,
-            original_constraint: Optional['Constraint[Any]'] = None,
-            allowed_operators: Optional[list[Operator]] = None
-            ) -> T:
-
+        cls: type[T],
+        name: str,
+        raw_value: str,
+        original_constraint: Optional['Constraint[Any]'] = None,
+        allowed_operators: Optional[list[Operator]] = None,
+    ) -> T:
         def _cast_int(raw_value: Any) -> int:
             if isinstance(raw_value, int):
                 return raw_value
@@ -753,8 +754,8 @@ class IntegerConstraint(Constraint[int]):
             as_quantity=False,
             as_cast=_cast_int,
             original_constraint=original_constraint,
-            allowed_operators=allowed_operators
-            )
+            allowed_operators=allowed_operators,
+        )
 
 
 class NumberConstraint(Constraint['Quantity']):
@@ -764,14 +765,13 @@ class NumberConstraint(Constraint['Quantity']):
 
     @classmethod
     def from_specification(
-            cls: type[T],
-            name: str,
-            raw_value: str,
-            original_constraint: Optional['Constraint[Any]'] = None,
-            allowed_operators: Optional[list[Operator]] = None,
-            default_unit: Optional[Any] = None
-            ) -> T:
-
+        cls: type[T],
+        name: str,
+        raw_value: str,
+        original_constraint: Optional['Constraint[Any]'] = None,
+        allowed_operators: Optional[list[Operator]] = None,
+        default_unit: Optional[Any] = None,
+    ) -> T:
         def _cast_number(raw_value: Any) -> float:
             if isinstance(raw_value, float):
                 return raw_value
@@ -789,8 +789,8 @@ class NumberConstraint(Constraint['Quantity']):
             as_cast=_cast_number,
             original_constraint=original_constraint,
             allowed_operators=allowed_operators,
-            default_unit=default_unit
-            )
+            default_unit=default_unit,
+        )
 
 
 class TextConstraint(Constraint[str]):
@@ -800,19 +800,19 @@ class TextConstraint(Constraint[str]):
 
     @classmethod
     def from_specification(
-            cls: type[T],
-            name: str,
-            raw_value: str,
-            original_constraint: Optional['Constraint[Any]'] = None,
-            allowed_operators: Optional[list[Operator]] = None
-            ) -> T:
+        cls: type[T],
+        name: str,
+        raw_value: str,
+        original_constraint: Optional['Constraint[Any]'] = None,
+        allowed_operators: Optional[list[Operator]] = None,
+    ) -> T:
         return cls._from_specification(
             name,
             raw_value,
             as_quantity=False,
             original_constraint=original_constraint,
-            allowed_operators=allowed_operators
-            )
+            allowed_operators=allowed_operators,
+        )
 
 
 @container(repr=False)
@@ -831,9 +831,8 @@ class And(CompoundConstraint):
         super().__init__(all, constraints=constraints)
 
     def variants(
-            self,
-            members: Optional[list[Constraint[Any]]] = None
-            ) -> Iterator[list[Constraint[Any]]]:
+        self, members: Optional[list[Constraint[Any]]] = None
+    ) -> Iterator[list[Constraint[Any]]]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -851,10 +850,8 @@ class And(CompoundConstraint):
 
         # List of non-compound constraints - we just slap these into every combination we generate
         simple_constraints: list[Constraint[Any]] = [
-            constraint
-            for constraint in self.constraints
-            if isinstance(constraint, Constraint)
-            ]
+            constraint for constraint in self.constraints if isinstance(constraint, Constraint)
+        ]
 
         # Compound constraints - these we will ask to generate their variants, and we produce
         # cartesian product from the output.
@@ -862,15 +859,14 @@ class And(CompoundConstraint):
             constraint
             for constraint in self.constraints
             if isinstance(constraint, CompoundConstraint)
-            ]
+        ]
 
-        for compounds in itertools.product(*[constraint.variants()
-                                           for constraint in compound_constraints]):
+        for compounds in itertools.product(
+            *[constraint.variants() for constraint in compound_constraints]
+        ):
             # Note that `product` returns an item for each iterable, and those items are lists,
             # because that's what `variants()` returns. Use `sum` to linearize the list of lists.
-            yield members \
-                + sum(compounds, cast(list[Constraint[Any]], [])) \
-                + simple_constraints
+            yield members + sum(compounds, cast(list[Constraint[Any]], [])) + simple_constraints
 
 
 @container(repr=False)
@@ -889,9 +885,8 @@ class Or(CompoundConstraint):
         super().__init__(any, constraints=constraints)
 
     def variants(
-            self,
-            members: Optional[list[Constraint[Any]]] = None
-            ) -> Iterator[list[Constraint[Any]]]:
+        self, members: Optional[list[Constraint[Any]]] = None
+    ) -> Iterator[list[Constraint[Any]]]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -915,6 +910,7 @@ class Or(CompoundConstraint):
 #
 # Constraint parsing
 #
+
 
 def ungroupify(fn: Callable[[Spec], BaseConstraint]) -> Callable[[Spec], BaseConstraint]:
     """
@@ -941,8 +937,8 @@ def ungroupify(fn: Callable[[Spec], BaseConstraint]) -> Callable[[Spec], BaseCon
 
 
 def ungroupify_indexed(
-        fn: Callable[[Spec, int], BaseConstraint]
-        ) -> Callable[[Spec, int], BaseConstraint]:
+    fn: Callable[[Spec, int], BaseConstraint],
+) -> Callable[[Spec, int], BaseConstraint]:
     """
     Swap returned single-child compound constraint and that child.
 
@@ -967,9 +963,10 @@ def ungroupify_indexed(
 
 
 def _parse_int_constraints(
-        spec: Spec,
-        prefix: str,
-        constraint_keys: tuple[str, ...],) -> list[BaseConstraint]:
+    spec: Spec,
+    prefix: str,
+    constraint_keys: tuple[str, ...],
+) -> list[BaseConstraint]:
     """
     Parse number-like constraints defined by a given set of keys, to int
     """
@@ -979,17 +976,25 @@ def _parse_int_constraints(
             f'{prefix}.{constraint_name.replace("-", "_")}',
             str(spec[constraint_name]),
             allowed_operators=[
-                Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
+                Operator.EQ,
+                Operator.NEQ,
+                Operator.LT,
+                Operator.LTE,
+                Operator.GT,
+                Operator.GTE,
+            ],
+        )
         for constraint_name in constraint_keys
         if constraint_name in spec
-        ]
+    ]
 
 
 def _parse_number_constraints(
-        spec: Spec,
-        prefix: str,
-        constraint_keys: tuple[str, ...],
-        default_unit: Optional[Any] = None,) -> list[BaseConstraint]:
+    spec: Spec,
+    prefix: str,
+    constraint_keys: tuple[str, ...],
+    default_unit: Optional[Any] = None,
+) -> list[BaseConstraint]:
     """
     Parse number-like constraints defined by a given set of keys, to float
     """
@@ -999,17 +1004,25 @@ def _parse_number_constraints(
             f'{prefix}.{constraint_name.replace("-", "_")}',
             str(spec[constraint_name]),
             allowed_operators=[
-                Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE],
-            default_unit=default_unit)
+                Operator.EQ,
+                Operator.NEQ,
+                Operator.LT,
+                Operator.LTE,
+                Operator.GT,
+                Operator.GTE,
+            ],
+            default_unit=default_unit,
+        )
         for constraint_name in constraint_keys
         if constraint_name in spec
-        ]
+    ]
 
 
 def _parse_size_constraints(
-        spec: Spec,
-        prefix: str,
-        constraint_keys: tuple[str, ...],) -> list[BaseConstraint]:
+    spec: Spec,
+    prefix: str,
+    constraint_keys: tuple[str, ...],
+) -> list[BaseConstraint]:
     """
     Parse size-like constraints defined by a given set of keys
     """
@@ -1019,38 +1032,52 @@ def _parse_size_constraints(
             f'{prefix}.{constraint_name.replace("-", "_")}',
             str(spec[constraint_name]),
             allowed_operators=[
-                Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
+                Operator.EQ,
+                Operator.NEQ,
+                Operator.LT,
+                Operator.LTE,
+                Operator.GT,
+                Operator.GTE,
+            ],
+        )
         for constraint_name in constraint_keys
         if constraint_name in spec
-        ]
+    ]
 
 
 def _parse_text_constraints(
-        spec: Spec,
-        prefix: str,
-        constraint_keys: tuple[str, ...],
-        allowed_operators: Optional[tuple[Operator, ...]] = None,) -> list[BaseConstraint]:
+    spec: Spec,
+    prefix: str,
+    constraint_keys: tuple[str, ...],
+    allowed_operators: Optional[tuple[Operator, ...]] = None,
+) -> list[BaseConstraint]:
     """
     Parse text-like constraints defined by a given set of keys
     """
 
     allowed_operators = allowed_operators or (
-        Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH)
+        Operator.EQ,
+        Operator.NEQ,
+        Operator.MATCH,
+        Operator.NOTMATCH,
+    )
 
     return [
         TextConstraint.from_specification(
             f'{prefix}.{constraint_name.replace("-", "_")}',
             str(spec[constraint_name]),
-            allowed_operators=list(allowed_operators))
+            allowed_operators=list(allowed_operators),
+        )
         for constraint_name in constraint_keys
         if constraint_name in spec
-        ]
+    ]
 
 
 def _parse_flag_constraints(
-        spec: Spec,
-        prefix: str,
-        constraint_keys: tuple[str, ...],) -> list[BaseConstraint]:
+    spec: Spec,
+    prefix: str,
+    constraint_keys: tuple[str, ...],
+) -> list[BaseConstraint]:
     """
     Parse flag-like constraints defined by a given set of keys
     """
@@ -1059,17 +1086,19 @@ def _parse_flag_constraints(
         FlagConstraint.from_specification(
             f'{prefix}.{constraint_name.replace("-", "_")}',
             spec[constraint_name],
-            allowed_operators=[Operator.EQ, Operator.NEQ])
+            allowed_operators=[Operator.EQ, Operator.NEQ],
+        )
         for constraint_name in constraint_keys
         if constraint_name in spec
-        ]
+    ]
 
 
 def _parse_device_core(
-        spec: Spec,
-        device_prefix: str = 'device',
-        include_driver: bool = True,
-        include_device: bool = True) -> And:
+    spec: Spec,
+    device_prefix: str = 'device',
+    include_driver: bool = True,
+    include_device: bool = True,
+) -> And:
     """
     Parse constraints shared across device classes.
 
@@ -1108,9 +1137,8 @@ def _parse_boot(spec: Spec) -> BaseConstraint:
 
     if 'method' in spec:
         constraint = TextConstraint.from_specification(
-            'boot.method',
-            spec["method"],
-            allowed_operators=[Operator.EQ, Operator.NEQ])
+            'boot.method', spec["method"], allowed_operators=[Operator.EQ, Operator.NEQ]
+        )
 
         if constraint.operator == Operator.EQ:
             constraint.change_operator(Operator.CONTAINS)
@@ -1134,10 +1162,9 @@ def _parse_virtualization(spec: Spec) -> BaseConstraint:
 
     group = And()
 
-    group.constraints += _parse_flag_constraints(spec,
-                                                 'virtualization',
-                                                 ('is-virtualized',
-                                                  'is-supported'))
+    group.constraints += _parse_flag_constraints(
+        spec, 'virtualization', ('is-virtualized', 'is-supported')
+    )
     group.constraints += _parse_text_constraints(spec, 'virtualization', ('hypervisor',))
 
     return group
@@ -1189,27 +1216,14 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
             'family',
             'vendor',
             'stepping',
-            )
-        )
+        ),
+    )
 
-    group.constraints += _parse_number_constraints(
-        spec,
-        'cpu',
-        (
-            'frequency',
-            ),
-        default_unit='MHz'
-        )
+    group.constraints += _parse_number_constraints(spec, 'cpu', ('frequency',), default_unit='MHz')
 
     group.constraints += _parse_text_constraints(
-        spec,
-        'cpu',
-        (
-            'family-name',
-            'model-name',
-            'vendor-name'
-            )
-        )
+        spec, 'cpu', ('family-name', 'model-name', 'vendor-name')
+    )
 
     if 'flag' in spec:
         flag_group = And()
@@ -1232,8 +1246,9 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
             FlagConstraint.from_specification(
                 'cpu.hyper_threading',
                 spec['hyper-threading'],
-                allowed_operators=[Operator.EQ, Operator.NEQ])
-            ]
+                allowed_operators=[Operator.EQ, Operator.NEQ],
+            )
+        ]
 
     return group
 
@@ -1262,13 +1277,12 @@ def _parse_disk(spec: Spec, disk_index: int) -> BaseConstraint:
 
     group = And()
 
-    group.constraints += _parse_size_constraints(spec,
-                                                 f'disk[{disk_index}]',
-                                                 ('size',
-                                                  'physical-sector-size',
-                                                  'logical-sector-size'))
-    group.constraints += _parse_text_constraints(spec,
-                                                 f'disk[{disk_index}]', ('model-name', 'driver'))
+    group.constraints += _parse_size_constraints(
+        spec, f'disk[{disk_index}]', ('size', 'physical-sector-size', 'logical-sector-size')
+    )
+    group.constraints += _parse_text_constraints(
+        spec, f'disk[{disk_index}]', ('model-name', 'driver')
+    )
 
     return group
 
@@ -1289,9 +1303,8 @@ def _parse_disks(spec: Spec) -> BaseConstraint:
     group = And()
 
     group.constraints += [
-        _parse_disk(disk_spec, disk_index)
-        for disk_index, disk_spec in enumerate(spec)
-        ]
+        _parse_disk(disk_spec, disk_index) for disk_index, disk_spec in enumerate(spec)
+    ]
 
     return group
 
@@ -1338,7 +1351,7 @@ def _parse_networks(spec: Spec) -> BaseConstraint:
     group.constraints += [
         _parse_network(network_spec, network_index)
         for network_index, network_spec in enumerate(spec)
-        ]
+    ]
 
     return group
 
@@ -1353,10 +1366,8 @@ def _parse_system(spec: Spec) -> BaseConstraint:
     """
 
     group = _parse_device_core(
-        spec,
-        device_prefix='system',
-        include_driver=False,
-        include_device=False)
+        spec, device_prefix='system', include_driver=False, include_device=False
+    )
 
     group.constraints += _parse_int_constraints(spec, 'system', ('model', 'numa-nodes'))
     group.constraints += _parse_text_constraints(spec, 'system', ('model-name',))
@@ -1365,7 +1376,13 @@ def _parse_system(spec: Spec) -> BaseConstraint:
 
 
 TPM_VERSION_ALLOWED_OPERATORS: tuple[Operator, ...] = (
-    Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE)
+    Operator.EQ,
+    Operator.NEQ,
+    Operator.LT,
+    Operator.LTE,
+    Operator.GT,
+    Operator.GTE,
+)
 
 
 @ungroupify
@@ -1379,11 +1396,9 @@ def _parse_tpm(spec: Spec) -> BaseConstraint:
 
     group = And()
 
-    group.constraints += _parse_text_constraints(spec,
-                                                 'tpm',
-                                                 ('version',
-                                                  ),
-                                                 allowed_operators=TPM_VERSION_ALLOWED_OPERATORS)
+    group.constraints += _parse_text_constraints(
+        spec, 'tpm', ('version',), allowed_operators=TPM_VERSION_ALLOWED_OPERATORS
+    )
 
     return group
 
@@ -1400,7 +1415,14 @@ def _parse_memory(spec: Spec) -> BaseConstraint:
         'memory',
         str(spec['memory']),
         allowed_operators=[
-            Operator.EQ, Operator.NEQ, Operator.LT, Operator.LTE, Operator.GT, Operator.GTE])
+            Operator.EQ,
+            Operator.NEQ,
+            Operator.LT,
+            Operator.LTE,
+            Operator.GT,
+            Operator.GTE,
+        ],
+    )
 
 
 def _parse_hostname(spec: Spec) -> BaseConstraint:
@@ -1414,7 +1436,8 @@ def _parse_hostname(spec: Spec) -> BaseConstraint:
     return TextConstraint.from_specification(
         'hostname',
         spec['hostname'],
-        allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH])
+        allowed_operators=[Operator.EQ, Operator.NEQ, Operator.MATCH, Operator.NOTMATCH],
+    )
 
 
 @ungroupify
@@ -1444,9 +1467,7 @@ def _parse_iommu(spec: Spec) -> BaseConstraint:
 
     group = And()
 
-    group.constraints += _parse_flag_constraints(spec,
-                                                 'iommu',
-                                                 ('is-supported',))
+    group.constraints += _parse_flag_constraints(spec, 'iommu', ('is-supported',))
     group.constraints += _parse_text_constraints(spec, 'iommu', ('model-name',))
 
     return group
@@ -1479,8 +1500,9 @@ def _parse_beaker(spec: Spec) -> BaseConstraint:
 
     group = And()
 
-    group.constraints += _parse_text_constraints(spec, 'beaker', ('pool',),
-                                                 allowed_operators=(Operator.EQ, Operator.NEQ))
+    group.constraints += _parse_text_constraints(
+        spec, 'beaker', ('pool',), allowed_operators=(Operator.EQ, Operator.NEQ)
+    )
 
     return group
 
@@ -1497,11 +1519,7 @@ def _parse_generic_spec(spec: Spec) -> BaseConstraint:
     group = And()
 
     if 'arch' in spec:
-        group.constraints += [
-            TextConstraint.from_specification(
-                'arch',
-                spec['arch'])
-            ]
+        group.constraints += [TextConstraint.from_specification('arch', spec['arch'])]
 
     if 'beaker' in spec:
         group.constraints += [_parse_beaker(spec['beaker'])]
@@ -1565,10 +1583,7 @@ def _parse_and(spec: Spec) -> BaseConstraint:
 
     group = And()
 
-    group.constraints += [
-        _parse_block(member)
-        for member in spec
-        ]
+    group.constraints += [_parse_block(member) for member in spec]
 
     return group
 
@@ -1584,10 +1599,7 @@ def _parse_or(spec: Spec) -> BaseConstraint:
 
     group = Or()
 
-    group.constraints += [
-        _parse_block(member)
-        for member in spec
-        ]
+    group.constraints += [_parse_block(member) for member in spec]
 
     return group
 
@@ -1633,10 +1645,7 @@ class Hardware(SpecBasedContainer[Spec, Spec]):
         if not spec:
             return Hardware(constraint=None, spec=spec)
 
-        return Hardware(
-            constraint=parse_hw_requirements(spec),
-            spec=spec
-            )
+        return Hardware(constraint=parse_hw_requirements(spec), spec=spec)
 
     def to_spec(self) -> Spec:
         return self.spec
@@ -1648,10 +1657,7 @@ class Hardware(SpecBasedContainer[Spec, Spec]):
         if self.constraint:
             group = And()
 
-            group.constraints = [
-                self.constraint,
-                constraint
-                ]
+            group.constraints = [self.constraint, constraint]
 
             self.constraint = group
 
@@ -1661,11 +1667,12 @@ class Hardware(SpecBasedContainer[Spec, Spec]):
         self.spec = self.constraint.to_spec()
 
     def report_support(
-            self,
-            *,
-            names: Optional[list[str]] = None,
-            check: Optional[Callable[[Constraint[Any]], bool]] = None,
-            logger: tmt.log.Logger) -> None:
+        self,
+        *,
+        names: Optional[list[str]] = None,
+        check: Optional[Callable[[Constraint[Any]], bool]] = None,
+        logger: tmt.log.Logger,
+    ) -> None:
         """
         Report all unsupported constraints.
 
@@ -1698,13 +1705,12 @@ class Hardware(SpecBasedContainer[Spec, Spec]):
             for constraint in variant:
                 name, _, child_name = constraint.expand_name()
 
-                if name in names \
-                        or f'{name}.{child_name}' in names \
-                        or check(constraint):
+                if name in names or f'{name}.{child_name}' in names or check(constraint):
                     continue
 
                 logger.warning(
-                    f"Hardware requirement '{constraint.printable_name}' is not supported.")
+                    f"Hardware requirement '{constraint.printable_name}' is not supported."
+                )
 
     def format_variants(self) -> Iterator[str]:
         """
