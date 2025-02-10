@@ -4386,8 +4386,9 @@ class Clean(tmt.utils.Common):
             # Pass the context containing --last to Run to choose
             # the correct one.
             return self._stop_running_guests(
-                Run(logger=self._logger, cli_invocation=self.cli_invocation)
-            )
+                Run(logger=self._logger,
+                    cli_invocation=self.cli_invocation,
+                    workdir_root=self.workdir_root))
         successful = True
         assert self._cli_context_object is not None  # narrow type
         all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, run_ids))
@@ -4403,7 +4404,7 @@ class Clean(tmt.utils.Common):
                 id_=abs_path,
                 tree=self._cli_context_object.tree,
                 cli_invocation=self.cli_invocation,
-            )
+                workdir_root=self.workdir_root)
             if not self._stop_running_guests(run):
                 successful = False
         return successful

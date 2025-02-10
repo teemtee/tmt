@@ -24,12 +24,12 @@ import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
 from tmt.utils import (
-    WORKDIR_ROOT,
     Command,
     Path,
     ProvisionError,
     ShellScript,
     configure_constant,
+    effective_workdir_root,
     retry_session,
     )
 
@@ -100,12 +100,6 @@ def import_testcloud() -> None:
     global TPM_CONFIG_ALLOWS_VERSIONS
     TPM_CONFIG_ALLOWS_VERSIONS = hasattr(TPMConfiguration(), 'version')
 
-
-# Testcloud cache to our tmt's workdir root
-TESTCLOUD_DATA = (
-    Path(os.environ['TMT_WORKDIR_ROOT']) if os.getenv('TMT_WORKDIR_ROOT') else WORKDIR_ROOT
-    ) / 'testcloud'
-TESTCLOUD_IMAGES = TESTCLOUD_DATA / 'images'
 
 TESTCLOUD_WORKAROUNDS: list[str] = []  # A list of commands to be executed during guest boot up
 
@@ -810,9 +804,18 @@ class GuestTestcloud(tmt.GuestSsh):
         self.config.DOWNLOAD_PROGRESS = self.debug_level > 2
         self.config.DOWNLOAD_PROGRESS_VERBOSE = False
 
+        data_dir = self.workdir_root / 'testcloud'
+        store_dir = data_dir / 'images'
+        # Make sure required directories exist
+        os.makedirs(data_dir, exist_ok=True)
+        os.makedirs(store_dir, exist_ok=True)
+
         # Configure to tmt's storage directories
-        self.config.DATA_DIR = TESTCLOUD_DATA
-        self.config.STORE_DIR = TESTCLOUD_IMAGES
+
+        self.config.DATA_DIR = effective_workdir_root(self.workdir_root) / 'testcloud'
+        self.config.STORE_DIR = self.config.DATA_DIR / 'images'
+        self.config.DATA_DIR = data_dir
+        self.config.STORE_DIR = store_dir
 
     def _combine_hw_memory(self) -> None:
         """
@@ -926,9 +929,6 @@ class GuestTestcloud(tmt.GuestSsh):
 
         if self.is_dry_run:
             return
-        # Make sure required directories exist
-        os.makedirs(TESTCLOUD_DATA, exist_ok=True)
-        os.makedirs(TESTCLOUD_IMAGES, exist_ok=True)
 
         # Prepare config
         self.prepare_config()
@@ -956,7 +956,7 @@ class GuestTestcloud(tmt.GuestSsh):
         except (testcloud.exceptions.TestcloudPermissionsError,
                 PermissionError) as error:
             raise ProvisionError(
-                f"Failed to prepare the image. Check the '{TESTCLOUD_IMAGES}' "
+                f"Failed to prepare the image. Check the '{self.config.STORE_DIR}' "
                 f"directory permissions.") from error
         except KeyError as error:
             raise ProvisionError(
@@ -1264,10 +1264,11 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
         Print images which are already cached
         """
 
+        store_dir = effective_workdir_root(self.workdir_root) / 'testcloud/images'
         self.info("Locally available images")
-        for filename in sorted(TESTCLOUD_IMAGES.glob('*.qcow2')):
+        for filename in sorted(store_dir.glob('*.qcow2')):
             self.info(filename.name, shift=1, color='yellow')
-            click.echo(f"{TESTCLOUD_IMAGES / filename}")
+            click.echo(f"{store_dir / filename}")
 
     @classmethod
     def clean_images(cls, clean: 'tmt.base.Clean', dry: bool, workdir_root: Path) -> bool:
