@@ -212,7 +212,7 @@ class CustomGroup(click.Group):
     def get_command(  # type: ignore[override]
             self,
             context: Context,
-            cmd_name: str
+            cmd_name: str,
             ) -> Optional[click.Command]:
         """
         Allow command shortening
@@ -245,7 +245,7 @@ class HelpFormatter(click.HelpFormatter):
             self,
             rows: Sequence[tuple[str, str]],
             col_max: int = 30,
-            col_spacing: int = 2) -> None:
+            col_spacing: int = 2,) -> None:
         rows = [
             (option, tmt.utils.rest.render_rst(help, _BOOTSTRAP_LOGGER))
             for option, help in rows

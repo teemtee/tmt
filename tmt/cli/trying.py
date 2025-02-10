@@ -35,13 +35,13 @@ from tmt.options import option
     help="Log into the guest only, do not run any tests.")
 @option(
     "--epel", is_flag=True, default=False,
-    help="Enable epel repository.")
+    help="Enable epel repository.",)
 @option(
     "--install", default=[], metavar="PACKAGE", multiple=True,
-    help="Install package on the guest.")
+    help="Install package on the guest.",)
 @option(
     "--arch", default=None, metavar="ARCH", multiple=False,
-    help="Specify guest CPU architecture.")
+    help="Specify guest CPU architecture.",)
 @option(
     "-a", "--ask", is_flag=True, default=False,
     help="Just provision the guest and ask what to do next.")

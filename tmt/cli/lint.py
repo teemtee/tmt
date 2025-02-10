@@ -79,7 +79,7 @@ def _lint_class(
 
     linters = klass.resolve_enabled_linters(
         enable_checks=enable_checks or None,
-        disable_checks=disable_checks or None)
+        disable_checks=disable_checks or None,)
 
     for lintable in klass.from_tree(context.obj.tree):
         valid, allowed_rulings = _apply_linters(
@@ -119,7 +119,7 @@ def _lint_collection(
 
     linters = tmt.base.LintableCollection.resolve_enabled_linters(
         enable_checks=enable_checks or None,
-        disable_checks=disable_checks or None)
+        disable_checks=disable_checks or None,)
 
     objs: list[tmt.base.Core] = [
         obj for cls in klasses

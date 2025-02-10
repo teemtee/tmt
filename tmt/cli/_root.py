@@ -88,7 +88,7 @@ environment_options = create_options_decorator(tmt.options.ENVIRONMENT_OPTIONS)
     help='If set, logging messages on the terminal would contain timestamps.')
 @option(
     '--version', is_flag=True,
-    help='Show tmt version and commit hash.')
+    help='Show tmt version and commit hash.',)
 @option(
     '--no-color', is_flag=True, default=False,
     help='Forces tmt to not use any colors in the output or logging.'
@@ -184,9 +184,9 @@ def main(
 @main.group(chain=True, invoke_without_command=True, cls=CustomGroup)
 @pass_context
 @option(
-    '-i', '--id', 'id_', help='Run id (name or directory path).', metavar="ID")
+    '-i', '--id', 'id_', help='Run id (name or directory path).', metavar="ID",)
 @option(
-    '-l', '--last', help='Execute the last run once again.', is_flag=True)
+    '-l', '--last', help='Execute the last run once again.', is_flag=True,)
 @option(
     '-r', '--rm', '--remove', 'remove', is_flag=True,
     help='Remove the workdir when test run is finished.')
@@ -201,21 +201,21 @@ def main(
     help='Remove the run workdir before executing to start from scratch.')
 @option(
     '--follow', is_flag=True,
-    help='Output the logfile as it grows.')
+    help='Output the logfile as it grows.',)
 @option(
-    '-a', '--all', help='Run all steps, customize some.', is_flag=True)
+    '-a', '--all', help='Run all steps, customize some.', is_flag=True,)
 @option(
     '-u', '--until', choices=tmt.steps.STEPS,
-    help='Enable given step and all preceding steps.')
+    help='Enable given step and all preceding steps.',)
 @option(
     '-s', '--since', choices=tmt.steps.STEPS,
-    help='Enable given step and all following steps.')
+    help='Enable given step and all following steps.',)
 @option(
     '-A', '--after', choices=tmt.steps.STEPS,
-    help='Enable all steps after the given one.')
+    help='Enable all steps after the given one.',)
 @option(
     '-B', '--before', choices=tmt.steps.STEPS,
-    help='Enable all steps before the given one.')
+    help='Enable all steps before the given one.',)
 @option(
     '-S', '--skip', choices=tmt.steps.STEPS,
     help='Skip given step(s) during test run execution.', multiple=True)
@@ -277,7 +277,7 @@ run.add_command(tmt.steps.Reboot.command())
          """)
 @option(
     '--default', is_flag=True,
-    help="Use default plans even if others are available.")
+    help="Use default plans even if others are available.",)
 @verbosity_options
 def run_plans(context: Context, **kwargs: Any) -> None:
     """
@@ -331,7 +331,7 @@ def finito(
         click_context: Context,
         commands: Any,
         *args: Any,
-        **kwargs: Any) -> None:
+        **kwargs: Any,) -> None:
     """
     Run tests if run defined
     """
@@ -424,7 +424,7 @@ _metadata_templates = fmf.utils.listed(
     prompt=f'Test template ({_metadata_templates})')
 @option(
     '-s', '--script', metavar='TEMPLATE',
-    help=f'Test script template ({_script_templates}).')
+    help=f'Test script template ({_script_templates}).',)
 @option(
     '--link', metavar='[RELATION:]TARGET', multiple=True,
     help='Link created test to the relevant issues.')
@@ -499,13 +499,13 @@ def tests_create(
     help='Import disabled test cases from Nitrate as well.')
 @option(
     '--manual', default=False, is_flag=True,
-    help='Import manual test cases from Nitrate.')
+    help='Import manual test cases from Nitrate.',)
 @option(
     '--plan', metavar='PLAN', type=int,
     help='Identifier of test plan from which to import manual test cases.')
 @option(
     '--case', metavar='CASE', type=int,
-    help='Identifier of manual test case to be imported.')
+    help='Identifier of manual test case to be imported.',)
 @option(
     '--with-script', default=False, is_flag=True,
     help='Import manual cases with non-empty script field in Nitrate.')
@@ -622,7 +622,7 @@ _test_export_default = 'yaml'
     help="Export test metadata to Nitrate.",
     deprecated=Deprecated('1.21', hint="use '--how nitrate' instead"))
 @option(
-    '--project-id', help='Use specific Polarion project ID.')
+    '--project-id', help='Use specific Polarion project ID.',)
 @option(
     '--link-polarion / --no-link-polarion', default=False, is_flag=True,
     help='Add Polarion link to fmf testcase metadata')
@@ -646,7 +646,7 @@ _test_export_default = 'yaml'
          """)
 @option(
     '--create', is_flag=True,
-    help="Create test cases in nitrate if they don't exist.")
+    help="Create test cases in nitrate if they don't exist.",)
 @option(
     '--general / --no-general', default=False, is_flag=True,
     help="""
@@ -661,7 +661,7 @@ _test_export_default = 'yaml'
          """)
 @option(
     '--fmf-id', is_flag=True,
-    help='Show fmf identifiers instead of test metadata.')
+    help='Show fmf identifiers instead of test metadata.',)
 @option(
     '--duplicate / --no-duplicate', default=False, show_default=True, is_flag=True,
     help="""
@@ -670,10 +670,10 @@ _test_export_default = 'yaml'
          """)
 @option(
     '-n', '--dry', is_flag=True,
-    help="Run in dry mode. No changes, please.")
+    help="Run in dry mode. No changes, please.",)
 @option(
     '-d', '--debug', is_flag=True,
-    help='Provide as much debugging details as possible.')
+    help='Provide as much debugging details as possible.',)
 # TODO: move to `template` export plugin options
 @option(
     '--template', metavar='PATH',
@@ -830,28 +830,28 @@ _plan_templates = fmf.utils.listed(tmt.templates.MANAGER.templates['plan'], join
 @option(
     '-t', '--template', metavar='TEMPLATE',
     help=f'Plan template ({_plan_templates}).',
-    prompt=f'Template ({_plan_templates})')
+    prompt=f'Template ({_plan_templates})',)
 @option(
     '--discover', metavar='YAML', multiple=True,
-    help='Discover phase content in yaml format.')
+    help='Discover phase content in yaml format.',)
 @option(
     '--provision', metavar='YAML', multiple=True,
-    help='Provision phase content in yaml format.')
+    help='Provision phase content in yaml format.',)
 @option(
     '--prepare', metavar='YAML', multiple=True,
-    help='Prepare phase content in yaml format.')
+    help='Prepare phase content in yaml format.',)
 @option(
     '--execute', metavar='YAML', multiple=True,
-    help='Execute phase content in yaml format.')
+    help='Execute phase content in yaml format.',)
 @option(
     '--report', metavar='YAML', multiple=True,
-    help='Report phase content in yaml format.')
+    help='Report phase content in yaml format.',)
 @option(
     '--finish', metavar='YAML', multiple=True,
-    help='Finish phase content in yaml format.')
+    help='Finish phase content in yaml format.',)
 @option(
     '--link', metavar='[RELATION:]TARGET', multiple=True,
-    help='Link created plan to the relevant issues.')
+    help='Link created plan to the relevant issues.',)
 @verbosity_options
 @force_dry_options
 def plans_create(
@@ -859,7 +859,7 @@ def plans_create(
         names: list[str],
         template: str,
         force: bool,
-        **kwargs: Any) -> None:
+        **kwargs: Any,) -> None:
     """
     Create a new plan based on given template.
     """
@@ -892,7 +892,7 @@ _plan_export_default = 'yaml'
     choices=_plan_export_formats)
 @option(
     '-d', '--debug', is_flag=True,
-    help='Provide as much debugging details as possible.')
+    help='Provide as much debugging details as possible.',)
 # TODO: move to `template` export plugin options
 @option(
     '--template', metavar='PATH',
@@ -904,7 +904,7 @@ def plans_export(
         how: str,
         format: str,
         template: Optional[str],
-        **kwargs: Any) -> None:
+        **kwargs: Any,) -> None:
     """
     Export plans into desired format.
 
@@ -1062,7 +1062,7 @@ def stories_create(
         names: list[str],
         template: str,
         force: bool,
-        **kwargs: Any) -> None:
+        **kwargs: Any,) -> None:
     """
     Create a new story based on given template.
     """
@@ -1179,7 +1179,7 @@ _story_export_default = 'yaml'
     choices=_story_export_formats)
 @option(
     '-d', '--debug', is_flag=True,
-    help='Provide as much debugging details as possible.')
+    help='Provide as much debugging details as possible.',)
 # TODO: move to `template` export plugin options
 @option(
     '--template', metavar='PATH',
@@ -1271,7 +1271,7 @@ CLEAN_RESOURCES: list[str] = ["guests", "runs", "images"]
 @pass_context
 @option(
     '-l', '--last', is_flag=True,
-    help='Clean resources related to the last run.')
+    help='Clean resources related to the last run.',)
 @option(
     '-i', '--id', 'id_', metavar="ID", multiple=True,
     help='Identifier (name or directory path) of the run to be cleaned.')
@@ -1355,7 +1355,7 @@ def perform_clean(
         click_context: Context,
         commands: Any,
         *args: Any,
-        **kwargs: Any) -> None:
+        **kwargs: Any,) -> None:
     """
     Perform clean actions in the correct order.
 
@@ -1376,7 +1376,7 @@ def perform_clean(
 @pass_context
 @workdir_root_options
 @option(
-    '-l', '--last', is_flag=True, help='Clean the workdir of the last run.')
+    '-l', '--last', is_flag=True, help='Clean the workdir of the last run.',)
 @option(
     '-i', '--id', 'id_', metavar="ID", multiple=True,
     help='Run id(name or directory path) to clean workdir of. Can be specified multiple times.')
@@ -1426,7 +1426,7 @@ def clean_runs(
 @pass_context
 @workdir_root_options
 @option(
-    '-l', '--last', is_flag=True, help='Stop the guest of the last run.')
+    '-l', '--last', is_flag=True, help='Stop the guest of the last run.',)
 @option(
     '-i', '--id', 'id_', metavar="ID", multiple=True,
     help='Run id(name or directory path) to stop the guest of. Can be specified multiple times.')
@@ -1435,7 +1435,7 @@ def clean_runs(
     help='The number of latest guests to keep, clean the rest.')
 @option(
     '-h', '--how', metavar='METHOD',
-    help='Stop guests of the specified provision method.')
+    help='Stop guests of the specified provision method.',)
 @verbosity_options
 @dry_options
 def clean_guests(
@@ -1620,7 +1620,7 @@ def completion_fish(context: Context, install: bool, **kwargs: Any) -> None:
         """)
 @option(
     '--separate', is_flag=True,
-    help="Create linking separately for multiple passed objects.")
+    help="Create linking separately for multiple passed objects.",)
 def link(context: Context,
          names: list[str],
          links: list[str],
