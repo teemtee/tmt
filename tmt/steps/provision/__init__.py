@@ -42,6 +42,7 @@ import tmt.queue
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.container import SerializableContainer, container, field, key_to_option
 from tmt.log import Logger
 from tmt.options import option, show_step_method_hints
 from tmt.package_managers import FileSystemPath, Package, PackageManagerClass
@@ -53,12 +54,9 @@ from tmt.utils import (
     OnProcessStartCallback,
     Path,
     ProvisionError,
-    SerializableContainer,
     ShellScript,
     configure_constant,
     effective_workdir_root,
-    field,
-    key_to_option,
     )
 
 if TYPE_CHECKING:
@@ -315,7 +313,7 @@ class GuestCapability(enum.Enum):
     SYSLOG_ACTION_READ_CLEAR = 'syslog-action-read-clear'
 
 
-@dataclasses.dataclass
+@container
 class GuestFacts(SerializableContainer):
     """
     Contains interesting facts about the guest.
@@ -809,7 +807,7 @@ def normalize_hardware(
 GuestDataT = TypeVar('GuestDataT', bound='GuestData')
 
 
-@dataclasses.dataclass
+@container
 class GuestData(SerializableContainer):
     """
     Keys necessary to describe, create, save and restore a guest.
@@ -944,7 +942,7 @@ class GuestData(SerializableContainer):
                 printable_value = str(value)
 
             logger.info(
-                tmt.utils.key_to_option(key).replace('-', ' '),
+                key_to_option(key).replace('-', ' '),
                 printable_value,
                 color='green')
 
@@ -1621,7 +1619,7 @@ class Guest(tmt.utils.Common):
         return []
 
 
-@dataclasses.dataclass
+@container
 class GuestSshData(GuestData):
     """
     Keys necessary to describe, create, save and restore a guest with SSH
@@ -2417,7 +2415,7 @@ class GuestSsh(Guest):
         self.debug(f"Doing nothing to remove guest '{self.primary_address}'.")
 
 
-@dataclasses.dataclass
+@container
 class ProvisionStepData(tmt.steps.StepData):
     # guest role in the multihost scenario
     role: Optional[str] = None
@@ -2584,7 +2582,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
                 echo(tmt.utils.format('hardware', tmt.utils.dict_to_yaml(hardware.to_spec())))
 
 
-@dataclasses.dataclass
+@container
 class ProvisionTask(tmt.queue.GuestlessTask[None]):
     """
     A task to run provisioning of multiple guests

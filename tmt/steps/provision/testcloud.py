@@ -1,6 +1,5 @@
 
 import collections
-import dataclasses
 import datetime
 import functools
 import itertools
@@ -23,6 +22,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.container import container, field
 from tmt.utils import (
     WORKDIR_ROOT,
     Command,
@@ -30,7 +30,6 @@ from tmt.utils import (
     ProvisionError,
     ShellScript,
     configure_constant,
-    field,
     retry_session,
     )
 
@@ -300,7 +299,7 @@ def _report_hw_requirement_support(constraint: tmt.hardware.Constraint[Any]) -> 
     return False
 
 
-@dataclasses.dataclass
+@container
 class TestcloudGuestData(tmt.steps.provision.GuestSshData):
     # Override parent class with our defaults
     user: str = field(
@@ -379,7 +378,7 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
         logger.info('disk', f'{(self.disk or DEFAULT_DISK).to("GB")}', 'green')
 
 
-@dataclasses.dataclass
+@container
 class ProvisionTestcloudData(TestcloudGuestData, tmt.steps.provision.ProvisionStepData):
     pass
 

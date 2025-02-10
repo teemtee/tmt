@@ -1,4 +1,3 @@
-import dataclasses
 import enum
 import re
 from typing import TYPE_CHECKING, Any, Callable, Optional, cast
@@ -7,11 +6,13 @@ import click
 import fmf
 import fmf.utils
 
+import tmt.container
 import tmt.identifier
 import tmt.log
 import tmt.utils
 from tmt.checks import CheckEvent, CheckResultInterpret
-from tmt.utils import GeneralError, Path, SerializableContainer, field
+from tmt.container import SerializableContainer, container, field
+from tmt.utils import GeneralError, Path
 
 if TYPE_CHECKING:
     import tmt.base
@@ -125,7 +126,7 @@ ResultIds = dict[str, Optional[str]]
 RawResult = Any
 
 
-@dataclasses.dataclass
+@container
 class ResultGuestData(SerializableContainer):
     """
     Describes what tmt knows about a guest the result was produced on
@@ -163,7 +164,7 @@ def _unserialize_fmf_id(serialized: 'tmt.base._RawFmfId') -> 'tmt.base.FmfId':
     return FmfId.from_spec(serialized)
 
 
-@dataclasses.dataclass
+@container
 class BaseResult(SerializableContainer):
     """
     Describes what tmt knows about a result
@@ -217,7 +218,7 @@ class BaseResult(SerializableContainer):
         return ', '.join(self.note)
 
 
-@dataclasses.dataclass
+@container
 class CheckResult(BaseResult):
     """
     Describes what tmt knows about a single test check result
@@ -236,7 +237,7 @@ class CheckResult(BaseResult):
         return SubCheckResult.from_serialized(self.to_serialized())
 
 
-@dataclasses.dataclass
+@container
 class SubCheckResult(CheckResult):
     """
     Describes what tmt knows about a single subtest check result.
@@ -247,7 +248,7 @@ class SubCheckResult(CheckResult):
     """
 
 
-@dataclasses.dataclass
+@container
 class SubResult(BaseResult):
     """
     Describes what tmt knows about a single test subresult
@@ -261,14 +262,14 @@ class SubResult(BaseResult):
         )
 
 
-@dataclasses.dataclass
+@container
 class PhaseResult(BaseResult):
     """
     Describes what tmt knows about result of individual phases, e.g. prepare ansible
     """
 
 
-@dataclasses.dataclass
+@container
 class Result(BaseResult):
     """
     Describes what tmt knows about a single test result
@@ -481,8 +482,8 @@ class Result(BaseResult):
         """
         Convert result to tmt subresult
         """
-
-        options = [tmt.utils.key_to_option(key) for key in tmt.utils.container_keys(SubResult)]
+        options = [
+            tmt.container.key_to_option(key) for key in tmt.container.container_keys(SubResult)]
 
         return SubResult.from_serialized(
             {option: value for option, value in self.to_serialized().items() if option in options})

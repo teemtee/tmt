@@ -1,4 +1,3 @@
-import dataclasses
 import datetime
 import os
 from typing import Optional
@@ -9,14 +8,15 @@ import tmt
 import tmt.steps
 import tmt.steps.report
 import tmt.utils
-from tmt.utils import Path, field
+from tmt.container import container, field
+from tmt.utils import Path
 
 from .junit import ResultsContext, make_junit_xml
 
 DEFAULT_NAME = 'xunit.xml'
 
 
-@dataclasses.dataclass
+@container
 class ReportPolarionData(tmt.steps.report.ReportStepData):
     file: Optional[Path] = field(
         default=None,

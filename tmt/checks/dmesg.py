@@ -1,4 +1,3 @@
-import dataclasses
 import datetime
 import re
 from re import Pattern
@@ -9,11 +8,11 @@ import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
 from tmt.checks import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
+from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome
 from tmt.steps.provision import GuestCapability
 from tmt.utils import (
     Path,
-    field,
     format_timestamp,
     render_command_report,
     )
@@ -34,7 +33,7 @@ DEFAULT_FAILURE_PATTERNS = [
     ]
 
 
-@dataclasses.dataclass
+@container
 class DmesgCheck(Check):
     failure_pattern: list[Pattern[str]] = field(
         default_factory=lambda: DEFAULT_FAILURE_PATTERNS[:],

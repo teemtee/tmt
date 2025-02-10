@@ -24,7 +24,6 @@ but all-capturing log files while keeping implementation simple - the other opti
 managing handlers themselves, which would be very messy given the propagation of messages.
 """
 
-import dataclasses
 import enum
 import itertools
 import logging
@@ -46,6 +45,7 @@ import click
 
 from tmt._compat.pathlib import Path
 from tmt._compat.warnings import deprecated
+from tmt.container import container, simple_field
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -254,7 +254,7 @@ def indent(
         + '\n'.join(f'{prefix}{indent}{deeper}{line}' for line in lines)
 
 
-@dataclasses.dataclass
+@container
 class LogRecordDetails:
     """
     tmt's log message components attached to log records
@@ -266,7 +266,7 @@ class LogRecordDetails:
     color: Optional[str] = None
     shift: int = 0
 
-    logger_labels: list[str] = dataclasses.field(default_factory=list)
+    logger_labels: list[str] = simple_field(default_factory=list)
     logger_labels_padding: int = 0
 
     logger_verbosity_level: int = 0
@@ -278,7 +278,7 @@ class LogRecordDetails:
     logger_quiet: bool = False
     ignore_quietness: bool = False
 
-    logger_topics: set[Topic] = dataclasses.field(default_factory=set)
+    logger_topics: set[Topic] = simple_field(default_factory=set)
     message_topic: Optional[Topic] = None
 
 

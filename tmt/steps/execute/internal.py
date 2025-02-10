@@ -1,4 +1,3 @@
-import dataclasses
 import os
 import subprocess
 import textwrap
@@ -14,6 +13,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.execute
 import tmt.utils
+from tmt.container import container, field
 from tmt.result import BaseResult, Result, ResultOutcome
 from tmt.steps import safe_filename
 from tmt.steps.execute import SCRIPTS, TEST_OUTPUT_FILENAME, TMT_REBOOT_SCRIPT, TestInvocation
@@ -25,7 +25,6 @@ from tmt.utils import (
     Path,
     ShellScript,
     Stopwatch,
-    field,
     format_duration,
     format_timestamp,
     )
@@ -187,7 +186,7 @@ class UpdatableMessage(tmt.utils.UpdatableMessage):
             self._update_message_area(message)
 
 
-@dataclasses.dataclass
+@container
 class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
     script: list[ShellScript] = field(
         default_factory=list,

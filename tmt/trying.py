@@ -15,6 +15,7 @@ import fmf.utils
 import tmt
 import tmt.base
 import tmt.config
+import tmt.container
 import tmt.log
 import tmt.steps
 import tmt.steps.execute
@@ -513,7 +514,7 @@ class Try(tmt.utils.Common):
             type[tmt.steps.prepare.feature.PrepareFeatureData],
             tmt.steps.prepare.feature.PrepareFeature.get_data_class())
 
-        if not tmt.utils.container_has_field(prepare_data_class, 'epel'):
+        if not tmt.container.container_has_field(prepare_data_class, 'epel'):
             raise GeneralError("Feature 'epel' is not available.")
 
         # ignore[reportCallIssue,call-arg,unused-ignore]: thanks to

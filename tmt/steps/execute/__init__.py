@@ -1,5 +1,4 @@
 import copy
-import dataclasses
 import functools
 import json
 import os
@@ -7,7 +6,6 @@ import signal as _signal
 import subprocess
 import threading
 from contextlib import suppress
-from dataclasses import dataclass
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union, cast
 
@@ -21,6 +19,7 @@ import tmt.log
 import tmt.steps
 import tmt.utils
 from tmt.checks import CheckEvent
+from tmt.container import container, field, simple_field
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.result import CheckResult, Result, ResultGuestData, ResultInterpret, ResultOutcome
@@ -32,7 +31,6 @@ from tmt.utils import (
     Path,
     ShellScript,
     Stopwatch,
-    field,
     format_duration,
     format_timestamp,
     )
@@ -71,7 +69,7 @@ DEFAULT_SCRIPTS_DEST_DIR_OSTREE = Path("/var/lib/tmt/scripts")
 SCRIPTS_DEST_DIR_VARIABLE = 'TMT_SCRIPTS_DIR'
 
 
-@dataclass
+@container
 class Script:
     """
     Represents a script provided by the internal executor.
@@ -109,7 +107,7 @@ class Script:
         pass
 
 
-@dataclass
+@container
 class ScriptCreatingFile(Script):
     """
     Represents a script which creates a file.
@@ -120,7 +118,7 @@ class ScriptCreatingFile(Script):
     created_file: str
 
 
-@dataclass
+@container
 class ScriptTemplate(Script):
     """
     Represents a Jinja2 templated script.
@@ -245,7 +243,7 @@ SCRIPTS = (
     )
 
 
-@dataclasses.dataclass
+@container
 class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
     duration: str = field(
         # TODO: ugly circular dependency (see tmt.base.DEFAULT_TEST_DURATION_L2)
@@ -263,7 +261,7 @@ class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
 ExecuteStepDataT = TypeVar('ExecuteStepDataT', bound=ExecuteStepData)
 
 
-@dataclasses.dataclass
+@container
 class TestInvocation:
     """
     A bundle describing one test invocation.
@@ -282,12 +280,12 @@ class TestInvocation:
     #: implementation and the test, it may be, for example, a shell process,
     #: SSH process, or a ``podman`` process.
     process: Optional[subprocess.Popen[bytes]] = None
-    process_lock: threading.Lock = field(default_factory=threading.Lock)
+    process_lock: threading.Lock = simple_field(default_factory=threading.Lock)
 
-    results: list[Result] = dataclasses.field(default_factory=list)
-    check_results: list[CheckResult] = dataclasses.field(default_factory=list)
+    results: list[Result] = simple_field(default_factory=list)
+    check_results: list[CheckResult] = simple_field(default_factory=list)
 
-    check_data: dict[str, Any] = field(default_factory=dict)
+    check_data: dict[str, Any] = simple_field(default_factory=dict)
 
     return_code: Optional[int] = None
     start_time: Optional[str] = None
@@ -595,7 +593,7 @@ class TestInvocation:
                 self.guest._cleanup_ssh_master_process(signal, logger)
 
 
-@dataclasses.dataclass
+@container
 class ResultCollection:
     """
     Collection of raw results loaded from a file
@@ -605,7 +603,7 @@ class ResultCollection:
 
     filepaths: list[Path]
     file_exists: bool = False
-    results: list['tmt.result.RawResult'] = dataclasses.field(default_factory=list)
+    results: list['tmt.result.RawResult'] = simple_field(default_factory=list)
 
     def validate(self) -> None:
         """
