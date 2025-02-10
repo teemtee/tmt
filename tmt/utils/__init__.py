@@ -443,7 +443,7 @@ class Environment(dict[str, EnvVarValue]):
     def from_yaml_file(
             cls,
             filepath: Path,
-            logger: tmt.log.Logger) -> 'Environment':
+            logger: tmt.log.Logger,) -> 'Environment':
         """
         Construct environment from a YAML file.
 
@@ -468,7 +468,7 @@ class Environment(dict[str, EnvVarValue]):
     def from_sequence(
             cls,
             variables: Union[str, list[str]],
-            logger: tmt.log.Logger) -> 'Environment':
+            logger: tmt.log.Logger,) -> 'Environment':
         """
         Construct environment from a sequence of variables.
 
@@ -531,7 +531,7 @@ class Environment(dict[str, EnvVarValue]):
             *,
             filename: str,
             root: Optional[Path] = None,
-            logger: tmt.log.Logger) -> 'Environment':
+            logger: tmt.log.Logger,) -> 'Environment':
         """
         Construct environment from a file.
 
@@ -614,7 +614,7 @@ class Environment(dict[str, EnvVarValue]):
             *,
             filenames: Iterable[str],
             root: Optional[Path] = None,
-            logger: tmt.log.Logger) -> 'Environment':
+            logger: tmt.log.Logger,) -> 'Environment':
         """
         Read environment variables from the given list of files.
 
@@ -701,7 +701,7 @@ class Environment(dict[str, EnvVarValue]):
             from_fmf_files = cls.from_files(
                 filenames=raw_fmf_environment_files,
                 root=file_root,
-                logger=logger)
+                logger=logger,)
         else:
             raise NormalizationError(
                 f'{key_address_prefix}environment-file',
@@ -722,7 +722,7 @@ class Environment(dict[str, EnvVarValue]):
             from_cli_files = Environment.from_files(
                 filenames=raw_cli_environment_files,
                 root=file_root,
-                logger=logger)
+                logger=logger,)
         else:
             raise NormalizationError(
                 'environment-file', raw_cli_environment_files, 'unset or a list of paths')
@@ -741,7 +741,7 @@ class Environment(dict[str, EnvVarValue]):
             **from_fmf_files,
             **from_fmf_dict,
             **from_cli_files,
-            **from_cli
+            **from_cli,
             })
 
     @classmethod
@@ -825,7 +825,7 @@ class Environment(dict[str, EnvVarValue]):
             cls,
             key_address: str,
             value: Any,
-            logger: tmt.log.Logger) -> 'Environment':
+            logger: tmt.log.Logger,) -> 'Environment':
         """
         Normalize value of ``environment`` key
         """
@@ -982,7 +982,7 @@ RawCommand = list[RawCommandElement]
 #: child process.
 OnProcessStartCallback = Callable[
     ['Command', subprocess.Popen[bytes], tmt.log.Logger],
-    None
+    None,
     ]
 
 
@@ -1569,7 +1569,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     def store_cli_invocation(
             cls,
             context: Optional['tmt.cli.Context'],
-            options: Optional[dict[str, Any]] = None) -> 'tmt.cli.CliInvocation':
+            options: Optional[dict[str, Any]] = None,) -> 'tmt.cli.CliInvocation':
         """
         Record a CLI invocation and options it carries for later use.
 
@@ -1867,7 +1867,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             key: str,
             value: Optional[str] = None,
             color: Optional[str] = None,
-            shift: int = 0) -> str:
+            shift: int = 0,) -> str:
         """
         Indent message according to the object hierarchy
         """
@@ -1882,7 +1882,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             self,
             text: str,
             color: Optional[str] = None,
-            shift: int = 0) -> None:
+            shift: int = 0,) -> None:
         """
         Print out an output.
 
@@ -2040,7 +2040,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             path: Path,
             data: str,
             mode: WriteMode = 'w',
-            level: int = 2) -> None:
+            level: int = 2,) -> None:
         """
         Write a file to the workdir
         """
@@ -2241,7 +2241,7 @@ class MultiInvokableCommon(Common, metaclass=_MultiInvokableCommonMeta):
     def store_cli_invocation(
             cls,
             context: Optional['tmt.cli.Context'],
-            options: Optional[dict[str, Any]] = None) -> 'tmt.cli.CliInvocation':
+            options: Optional[dict[str, Any]] = None,) -> 'tmt.cli.CliInvocation':
         """
         Save a CLI context and options it carries for later use.
 
@@ -2290,7 +2290,7 @@ class GeneralError(Exception):
             message: str,
             causes: Optional[list[Exception]] = None,
             *args: Any,
-            **kwargs: Any) -> None:
+            **kwargs: Any,) -> None:
         """
         General error.
 
@@ -2396,7 +2396,7 @@ class NormalizationError(SpecificationError):
             raw_value: Any,
             expected_type: str,
             *args: Any,
-            **kwargs: Any) -> None:
+            **kwargs: Any,) -> None:
         """
         Raised when a key normalization fails.
 
@@ -2450,7 +2450,7 @@ class WaitingTimedOutError(GeneralError):
             self,
             check: 'WaitCheckType[T]',
             timeout: datetime.timedelta,
-            check_success: bool = False) -> None:
+            check_success: bool = False,) -> None:
         if check_success:
             super().__init__(
                 f"Waiting for condition '{check.__name__}' succeeded but took too much time "
@@ -2561,7 +2561,7 @@ class TracebackVerbosity(enum.Enum):
 def render_run_exception_streams(
         output: CommandOutput,
         verbose: int = 0,
-        comment_sign: str = '#') -> Iterator[str]:
+        comment_sign: str = '#',) -> Iterator[str]:
     """
     Render run exception output streams for printing
     """
@@ -2679,7 +2679,7 @@ def render_run_exception(exception: RunError) -> Iterator[str]:
 
 def render_exception_stack(
         exception: BaseException,
-        traceback_verbosity: TracebackVerbosity = TracebackVerbosity.DEFAULT) -> Iterator[str]:
+        traceback_verbosity: TracebackVerbosity = TracebackVerbosity.DEFAULT,) -> Iterator[str]:
     """
     Render traceback of the given exception
     """
@@ -2688,7 +2688,7 @@ def render_exception_stack(
         type(exception),
         exception,
         exception.__traceback__,
-        capture_locals=True)
+        capture_locals=True,)
 
     # N806: allow upper-case names to make them look like formatting
     # tags in strings below.
@@ -2722,7 +2722,7 @@ def render_exception_stack(
 
 def render_exception(
         exception: BaseException,
-        traceback_verbosity: TracebackVerbosity = TracebackVerbosity.DEFAULT) -> Iterator[str]:
+        traceback_verbosity: TracebackVerbosity = TracebackVerbosity.DEFAULT,) -> Iterator[str]:
     """
     Render the exception and its causes for printing
     """
@@ -2775,7 +2775,7 @@ def render_exception(
 
 def show_exception(
         exception: BaseException,
-        include_logfiles: bool = True) -> None:
+        include_logfiles: bool = True,) -> None:
     """
     Display the exception and its causes.
 
@@ -3726,7 +3726,7 @@ def create_directory(
         name: str,
         dry: bool = False,
         quiet: bool = False,
-        logger: tmt.log.Logger) -> None:
+        logger: tmt.log.Logger,) -> None:
     """
     Create a new directory.
 
@@ -3860,7 +3860,7 @@ def fmf_id(
         *,
         name: str,
         fmf_root: Path,
-        logger: tmt.log.Logger) -> 'tmt.base.FmfId':
+        logger: tmt.log.Logger,) -> 'tmt.base.FmfId':
     """
     Return full fmf identifier of the node
     """
@@ -4714,7 +4714,7 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
         step_class = import_member(
             module=step_module_name,
             member=step_class_name,
-            logger=logger)[1]
+            logger=logger,)[1]
 
         if not issubclass(step_class, tmt.steps.Step):
             raise GeneralError(
@@ -4757,7 +4757,7 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
 
 def preformat_jsonschema_validation_errors(
         raw_errors: list[jsonschema.ValidationError],
-        prefix: Optional[str] = None) -> list[tuple[jsonschema.ValidationError, str]]:
+        prefix: Optional[str] = None,) -> list[tuple[jsonschema.ValidationError, str]]:
     """
     A helper to preformat JSON schema validation errors.
 
@@ -4789,7 +4789,7 @@ def preformat_jsonschema_validation_errors(
 def validate_fmf_node(
         node: fmf.Tree,
         schema_name: str,
-        logger: tmt.log.Logger) -> list[tuple[jsonschema.ValidationError, str]]:
+        logger: tmt.log.Logger,) -> list[tuple[jsonschema.ValidationError, str]]:
     """
     Validate a given fmf node
     """
@@ -4920,7 +4920,7 @@ class ValidateFmfMixin(_CommonBase):
             self,
             node: fmf.Tree,
             raise_on_validation_error: bool,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger,) -> None:
         """
         Validate a given fmf node
         """
@@ -4957,7 +4957,7 @@ def dataclass_normalize_field(
         key_address: str,
         keyname: str,
         raw_value: Any,
-        logger: tmt.log.Logger) -> Any:
+        logger: tmt.log.Logger,) -> Any:
     """
     Normalize and assign a value to container field.
 
@@ -5031,7 +5031,7 @@ def dataclass_normalize_field(
 def normalize_int(
         key_address: str,
         value: Any,
-        logger: tmt.log.Logger) -> int:
+        logger: tmt.log.Logger,) -> int:
     """
     Normalize an integer.
 
@@ -5052,7 +5052,7 @@ def normalize_int(
 def normalize_optional_int(
         key_address: str,
         value: Any,
-        logger: tmt.log.Logger) -> Optional[int]:
+        logger: tmt.log.Logger,) -> Optional[int]:
     """
     Normalize an integer that may be unset as well.
 
@@ -5076,7 +5076,7 @@ def normalize_optional_int(
 def normalize_storage_size(
         key_address: str,
         value: Any,
-        logger: tmt.log.Logger) -> int:
+        logger: tmt.log.Logger,) -> int:
     """
     Normalize a storage size.
 
@@ -5091,7 +5091,7 @@ def normalize_storage_size(
 def normalize_string_list(
         key_address: str,
         value: Any,
-        logger: tmt.log.Logger) -> list[str]:
+        logger: tmt.log.Logger,) -> list[str]:
     """
     Normalize a string-or-list-of-strings input value.
 
@@ -5136,7 +5136,7 @@ def normalize_string_list(
 def normalize_pattern_list(
         key_address: str,
         value: Any,
-        logger: tmt.log.Logger) -> list[Pattern[str]]:
+        logger: tmt.log.Logger,) -> list[Pattern[str]]:
     """
     Normalize a pattern-or-list-of-patterns input value.
 
@@ -5188,7 +5188,7 @@ def normalize_pattern_list(
 def normalize_integer_list(
         key_address: str,
         value: Any,
-        logger: tmt.log.Logger) -> list[int]:
+        logger: tmt.log.Logger,) -> list[int]:
     """
     Normalize an integer-or-list-of-integers input value.
 
@@ -5224,7 +5224,7 @@ def normalize_integer_list(
 def normalize_path(
         key_address: str,
         value: Any,
-        logger: tmt.log.Logger) -> Optional[Path]:
+        logger: tmt.log.Logger,) -> Optional[Path]:
     """
     Normalize content of the test `path` key
     """
@@ -5244,7 +5244,7 @@ def normalize_path(
 def normalize_path_list(
         key_address: str,
         value: Union[None, str, list[str]],
-        logger: tmt.log.Logger) -> list[Path]:
+        logger: tmt.log.Logger,) -> list[Path]:
     """
     Normalize a path-or-list-of-paths input value.
 
@@ -5280,7 +5280,7 @@ def normalize_path_list(
 def normalize_shell_script_list(
         key_address: str,
         value: Union[None, str, list[str]],
-        logger: tmt.log.Logger) -> list[ShellScript]:
+        logger: tmt.log.Logger,) -> list[ShellScript]:
     """
     Normalize a string-or-list-of-strings input value.
 
@@ -5316,7 +5316,7 @@ def normalize_shell_script_list(
 def normalize_shell_script(
         key_address: str,
         value: Union[None, str],
-        logger: tmt.log.Logger) -> Optional[ShellScript]:
+        logger: tmt.log.Logger,) -> Optional[ShellScript]:
     """
     Normalize a single shell script input that may be unset.
 
@@ -5347,7 +5347,7 @@ def normalize_adjust(
 def normalize_string_dict(
         key_address: str,
         raw_value: Any,
-        logger: tmt.log.Logger) -> dict[str, str]:
+        logger: tmt.log.Logger,) -> dict[str, str]:
     """
     Normalize a key/value dictionary.
 
@@ -5394,7 +5394,7 @@ def normalize_string_dict(
 def normalize_data_amount(
         key_address: str,
         raw_value: Any,
-        logger: tmt.log.Logger) -> 'Size':
+        logger: tmt.log.Logger,) -> 'Size':
 
     from pint import Quantity
 
@@ -5500,7 +5500,7 @@ class NormalizeKeysMixin(_CommonBase):
             self,
             key_source: dict[str, Any],
             key_source_name: str,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger,) -> None:
         """
         Extract values for class-level attributes, and verify they match declared types.
         """
@@ -5518,7 +5518,7 @@ class NormalizeKeysMixin(_CommonBase):
             logger.debug,
             shift=log_shift,
             level=log_level,
-            topic=tmt.log.Topic.KEY_NORMALIZATION)
+            topic=tmt.log.Topic.KEY_NORMALIZATION,)
 
         debug_intro('key source')
         for k, v in key_source.items():
@@ -5607,7 +5607,7 @@ class LoadFmfKeysMixin(NormalizeKeysMixin):
             *,
             node: fmf.Tree,
             logger: tmt.log.Logger,
-            **kwargs: Any) -> None:
+            **kwargs: Any,) -> None:
         self._load_keys(node.get(), node.name, logger)
 
         super().__init__(node=node, logger=logger, **kwargs)
@@ -5781,7 +5781,7 @@ ActionType = Literal['default', 'error', 'ignore', 'always', 'module', 'once']
 @contextlib.contextmanager
 def catch_warnings_safe(
         action: ActionType,
-        category: type[Warning] = Warning) -> Iterator[None]:
+        category: type[Warning] = Warning,) -> Iterator[None]:
     """
     Optionally catch the given warning category.
 

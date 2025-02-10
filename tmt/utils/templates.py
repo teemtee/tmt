@@ -287,7 +287,7 @@ def _template_filter_listed(  # type: ignore[reportUnusedFunction,unused-ignore]
 def _template_filter_web_git_url(  # type: ignore[reportUnusedFunction,unused-ignore]
         path_str: str,
         url: str,
-        ref: str) -> str:
+        ref: str,) -> str:
     """
     Sanitize git url using :py:meth:`tmt.utils.web_git_url`
 
@@ -402,7 +402,7 @@ def render_template(
 def render_template_file(
         template_filepath: Path,
         environment: Optional[jinja2.Environment] = None,
-        **variables: Any
+        **variables: Any,
         ) -> str:
     """
     Render a template from a file.

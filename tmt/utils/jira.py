@@ -21,7 +21,7 @@ TmtObject = Union['tmt.base.Test', 'tmt.base.Plan', 'tmt.base.Story']
 import_jira: ModuleImporter['jira'] = ModuleImporter(  # type: ignore[valid-type]
     'jira',
     tmt.utils.ReportError,
-    "Install 'tmt+link-jira' to use the Jira linking.")
+    "Install 'tmt+link-jira' to use the Jira linking.",)
 
 
 def prepare_url_params(tmt_object: 'tmt.base.Core') -> dict[str, str]:
@@ -75,7 +75,7 @@ class JiraInstance:
     def from_issue_url(
             cls,
             issue_url: str,
-            logger: tmt.log.Logger) -> Optional['JiraInstance']:
+            logger: tmt.log.Logger,) -> Optional['JiraInstance']:
         """
         Search configured issues trackers for matching Jira instance
         """
@@ -105,7 +105,7 @@ class JiraInstance:
     def add_link_to_issue(
             self,
             issue_url: str,
-            tmt_objects: Sequence[TmtObject]) -> None:
+            tmt_objects: Sequence[TmtObject],) -> None:
         """
         Link one or more tmt objects to the given Jira issue
         """
@@ -131,7 +131,7 @@ class JiraInstance:
 def save_link_to_metadata(
         tmt_object: TmtObject,
         link: 'tmt.base.Link',
-        logger: tmt.log.Logger) -> None:
+        logger: tmt.log.Logger,) -> None:
     """
     Store the link into the object metadata on disk
     """
