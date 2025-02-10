@@ -204,7 +204,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                         prefix='playbook-',
                         suffix='.yml',
                         dir=root_path,
-                        delete=False) as file:
+                        delete=False,) as file:
                     file.write(response.content)
                     file.flush()
 
@@ -236,7 +236,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             guest.ansible(
                 playbook,
                 playbook_root=self.step.plan.anchor_path,
-                extra_args=self.data.extra_args)
+                extra_args=self.data.extra_args,)
 
         return results
 

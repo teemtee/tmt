@@ -313,6 +313,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             self._logger.debug("Unable to remove existing podman machine (it might not exist).")
 
         self._logger.debug("Initialize podman machine.")
+        # fmt: off
         tmt.utils.Command(
             "podman", "machine", "init", "--rootful",
             "--disk-size", f"{DEFAULT_PODMAN_MACHINE_DISK_SIZE.magnitude}",
@@ -320,8 +321,9 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             "--cpus", f"{DEFAULT_PODMAN_MACHINE_CPU}",
             "-v", f"{DEFAULT_TMP_PATH}:{DEFAULT_TMP_PATH}",
             "-v", "$HOME:$HOME",
-            PODMAN_MACHINE_NAME
-            ).run(cwd=self.workdir, stream_output=True, logger=self._logger)
+            PODMAN_MACHINE_NAME,
+        ).run(cwd=self.workdir, stream_output=True, logger=self._logger)
+        # fmt: on
 
         self._logger.debug("Start podman machine.")
         tmt.utils.Command(

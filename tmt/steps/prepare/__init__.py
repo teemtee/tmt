@@ -61,7 +61,7 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, list[PhaseResult]]):
     def base_command(
             cls,
             usage: str,
-            method_class: Optional[type[click.Command]] = None) -> click.Command:
+            method_class: Optional[type[click.Command]] = None,) -> click.Command:
         """
         Create base click command (common for all prepare plugins)
         """
@@ -150,14 +150,14 @@ class Prepare(tmt.steps.Step):
 
     _preserved_workdir_members = [
         *tmt.steps.Step._preserved_workdir_members,
-        'results.yaml']
+        'results.yaml',]
 
     def __init__(
             self,
             *,
             plan: 'Plan',
             data: tmt.steps.RawStepDataArgument,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger,) -> None:
         """
         Initialize prepare step data
         """

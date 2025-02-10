@@ -208,7 +208,7 @@ TPM_VERSION_SUPPORTED_VERSIONS = {
 def normalize_memory_size(
         key_address: str,
         value: Any,
-        logger: tmt.log.Logger) -> Optional['Size']:
+        logger: tmt.log.Logger,) -> Optional['Size']:
     """
     Normalize memory size.
 
@@ -353,10 +353,10 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
 
     image_url: Optional[str] = field(
         default=None,
-        internal=True)
+        internal=True,)
     instance_name: Optional[str] = field(
         default=None,
-        internal=True)
+        internal=True,)
 
     # TODO: custom handling for two fields - when the formatting moves into
     # field(), this should not be necessary.
@@ -365,7 +365,7 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
             *,
             keys: Optional[list[str]] = None,
             verbose: int = 0,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger,) -> None:
 
         keys = keys or list(self.keys())
         super_keys = [key for key in keys if key not in ('memory', 'disk')]
@@ -1248,7 +1248,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
             logger=self._logger,
             data=data,
             name=self.name,
-            parent=self.step)
+            parent=self.step,)
         self._guest.start()
         self._guest.setup()
 

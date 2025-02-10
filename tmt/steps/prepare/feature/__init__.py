@@ -34,7 +34,7 @@ def provides_feature(
         _FEATURE_PLUGIN_REGISTRY.register_plugin(
             plugin_id=feature,
             plugin=feature_cls,
-            logger=tmt.log.Logger.get_bootstrap_logger())
+            logger=tmt.log.Logger.get_bootstrap_logger(),)
 
         return feature_cls
 
@@ -90,7 +90,7 @@ class Feature(tmt.utils.Common):
             *,
             parent: 'PrepareFeature',
             guest: Guest,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger,) -> None:
         """
         Initialize feature data
         """
@@ -126,7 +126,7 @@ class Feature(tmt.utils.Common):
             op: str,
             playbook_filename: str,
             guest: Guest,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger,) -> None:
         playbook_path = cls._find_playbook(playbook_filename, logger)
         if not playbook_path:
             raise tmt.utils.GeneralError(

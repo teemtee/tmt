@@ -48,7 +48,7 @@ DEFAULT_TEMPLATE_DIR = Path('steps/report/junit/templates/')
 import_lxml: ModuleImporter['lxml'] = ModuleImporter(  # type: ignore[valid-type]
     'lxml',
     tmt.utils.ReportError,
-    "Missing 'lxml', fixable by 'pip install tmt[report-junit]'.")
+    "Missing 'lxml', fixable by 'pip install tmt[report-junit]'.",)
 
 
 @overload

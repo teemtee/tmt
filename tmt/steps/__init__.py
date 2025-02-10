@@ -326,7 +326,7 @@ class StepData(
     how: str = field()
     order: int = field(
         default=PHASE_ORDER_DEFAULT,
-        help='Order in which the phase should be handled.')
+        help='Order in which the phase should be handled.',)
     when: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list,
@@ -365,7 +365,7 @@ class StepData(
     def from_spec(  # type: ignore[override]
             cls: type[StepDataT],
             raw_data: _RawStepData,
-            logger: tmt.log.Logger) -> StepDataT:
+            logger: tmt.log.Logger,) -> StepDataT:
         """
         Convert from a specification file or from a CLI option
         """
@@ -589,7 +589,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             self,
             *,
             keys: Optional[list[str]] = None,
-            include_internal: bool = False) -> tmt.export._RawExportedInstance:
+            include_internal: bool = False,) -> tmt.export._RawExportedInstance:
         # TODO: one day, this should recurse down into each materialized plugin,
         # to give them chance to affect the export of their data.
         def _export_datum(raw_datum: _RawStepData) -> _RawStepData:
@@ -779,7 +779,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
     def _load_results(
             self,
             result_class: type[ResultT],
-            allow_missing: bool = False) -> list[ResultT]:
+            allow_missing: bool = False,) -> list[ResultT]:
         """
         Load results of this step from the workdir
         """
@@ -1318,7 +1318,7 @@ class Method:
 def provides_method(
         name: str,
         doc: Optional[str] = None,
-        order: int = PHASE_ORDER_DEFAULT) -> Callable[[PluginClass], PluginClass]:
+        order: int = PHASE_ORDER_DEFAULT,) -> Callable[[PluginClass], PluginClass]:
     """
     A plugin class decorator to register plugin's method with tmt steps.
 
@@ -1441,7 +1441,7 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
     def base_command(
             cls,
             usage: str,
-            method_class: Optional[type[click.Command]] = None) -> click.Command:
+            method_class: Optional[type[click.Command]] = None,) -> click.Command:
         """
         Create base click command (common for all step plugins)
         """
@@ -1557,7 +1557,7 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
             cls,
             step: Step,
             data: Optional[StepDataT] = None,
-            raw_data: Optional[_RawStepData] = None
+            raw_data: Optional[_RawStepData] = None,
             ) -> 'BasePlugin[StepDataT, PluginReturnValueT]':
         """
         Return plugin instance implementing the data['how'] method
@@ -2006,7 +2006,7 @@ class Reboot(Action):
     def command(
             cls,
             method_class: Optional[Method] = None,
-            usage: Optional[str] = None) -> click.Command:
+            usage: Optional[str] = None,) -> click.Command:
         """
         Create the reboot command
         """
@@ -2077,7 +2077,7 @@ class Login(Action):
     def command(
             cls,
             method_class: Optional[Method] = None,
-            usage: Optional[str] = None) -> click.Command:
+            usage: Optional[str] = None,) -> click.Command:
         """
         Create the login command
         """
@@ -2177,7 +2177,7 @@ class Login(Action):
     def _login(
             self,
             cwd: Optional[Path] = None,
-            env: Optional[tmt.utils.Environment] = None) -> None:
+            env: Optional[tmt.utils.Environment] = None,) -> None:
         """
         Run the interactive command
         """
@@ -2388,7 +2388,7 @@ class Topology(SerializableContainer):
             self,
             *,
             dirpath: Path,
-            filename_base: Optional[Path] = None) -> list[Path]:
+            filename_base: Optional[Path] = None,) -> list[Path]:
         """
         Save the topology in files.
 
@@ -2427,7 +2427,7 @@ class Topology(SerializableContainer):
             guest.push(
                 source=filepath,
                 destination=filepath,
-                options=["-s", "-p", "--chmod=755"])
+                options=["-s", "-p", "--chmod=755"],)
 
             if filepath.suffix == '.sh':
                 environment['TMT_TOPOLOGY_BASH'] = EnvVarValue(filepath)
@@ -2469,7 +2469,7 @@ class ActionTask(tmt.queue.GuestlessTask[None]):
 
 @container
 class PluginTask(tmt.queue.MultiGuestTask[PluginReturnValueT],
-                 Generic[StepDataT, PluginReturnValueT]):
+                 Generic[StepDataT, PluginReturnValueT],):
     """
     A task to run a phase on a given set of guests
     """
@@ -2596,7 +2596,7 @@ def sync_with_guests(
         step: Step,
         action: str,
         task: GuestSyncTaskT,
-        logger: tmt.log.Logger) -> None:
+        logger: tmt.log.Logger,) -> None:
     """
     Push and pull stuff from guests in a parallel manner.
 

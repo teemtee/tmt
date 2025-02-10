@@ -74,7 +74,7 @@ class TestDescription(
     id: Optional[str] = None
     tag: list[str] = field(
         default_factory=list,
-        normalize=tmt.utils.normalize_string_list
+        normalize=tmt.utils.normalize_string_list,
         )
     tier: Optional[str] = field(
         default=None,
@@ -91,15 +91,15 @@ class TestDescription(
     # Basic test information
     author: list[str] = field(
         default_factory=list,
-        normalize=tmt.utils.normalize_string_list
+        normalize=tmt.utils.normalize_string_list,
         )
     contact: list[str] = field(
         default_factory=list,
-        normalize=tmt.utils.normalize_string_list
+        normalize=tmt.utils.normalize_string_list,
         )
     component: list[str] = field(
         default_factory=list,
-        normalize=tmt.utils.normalize_string_list
+        normalize=tmt.utils.normalize_string_list,
         )
 
     # Test execution data
@@ -468,7 +468,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             self,
             *,
             phase_name: Optional[str] = None,
-            enabled: Optional[bool] = None) -> list['tmt.Test']:
+            enabled: Optional[bool] = None,) -> list['tmt.Test']:
 
         if phase_name is not None and phase_name != self.name:
             return []

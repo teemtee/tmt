@@ -894,7 +894,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         default=DEFAULT_ARCH,
         option='--arch',
         metavar='ARCH',
-        help='Architecture to provision.')
+        help='Architecture to provision.',)
     image: Optional[str] = field(
         default=DEFAULT_IMAGE,
         option=('-i', '--image'),
@@ -904,7 +904,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
     # Provided in Beaker job
     job_id: Optional[str] = field(
         default=None,
-        internal=True)
+        internal=True,)
 
     # Timeouts and deadlines
     provision_timeout: int = field(
@@ -1400,7 +1400,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             command=command,
             timeout=timeout,
             tick=tick,
-            tick_increase=tick_increase)
+            tick_increase=tick_increase,)
 
 
 @tmt.steps.provides_method('beaker')

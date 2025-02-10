@@ -49,7 +49,7 @@ class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, list[PhaseResult]]):
     def base_command(
             cls,
             usage: str,
-            method_class: Optional[type[click.Command]] = None) -> click.Command:
+            method_class: Optional[type[click.Command]] = None,) -> click.Command:
         """
         Create base click command (common for all finish plugins)
         """
@@ -99,7 +99,7 @@ class Finish(tmt.steps.Step):
 
     _preserved_workdir_members = [
         *tmt.steps.Step._preserved_workdir_members,
-        'results.yaml']
+        'results.yaml',]
 
     def wake(self) -> None:
         """

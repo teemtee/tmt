@@ -91,7 +91,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
     def base_command(
             cls,
             usage: str,
-            method_class: Optional[type[click.Command]] = None) -> click.Command:
+            method_class: Optional[type[click.Command]] = None,) -> click.Command:
         """
         Create base click command (common for all discover plugins)
         """
@@ -124,7 +124,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             self,
             *,
             phase_name: Optional[str] = None,
-            enabled: Optional[bool] = None) -> list['tmt.Test']:
+            enabled: Optional[bool] = None,) -> list['tmt.Test']:
         """
         Return discovered tests
 
@@ -138,7 +138,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             self,
             distgit_dir: Path,
             target_dir: Path,
-            handler_name: Optional[str] = None) -> None:
+            handler_name: Optional[str] = None,) -> None:
         """
         Download sources to the target_dir
 
@@ -187,7 +187,7 @@ class Discover(tmt.steps.Step):
             *,
             plan: 'tmt.base.Plan',
             data: tmt.steps.RawStepDataArgument,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger,) -> None:
         """
         Store supported attributes, check for sanity
         """
@@ -459,7 +459,7 @@ class Discover(tmt.steps.Step):
             self,
             *,
             phase_name: Optional[str] = None,
-            enabled: Optional[bool] = None) -> list['tmt.Test']:
+            enabled: Optional[bool] = None,) -> list['tmt.Test']:
         def _iter_all_tests() -> Iterator['tmt.Test']:
             tests = self._failed_tests if self._failed_tests else self._tests
             for phase_tests in tests.values():

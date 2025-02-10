@@ -155,7 +155,7 @@ def _socket_path_trivial(
         socket_dir: Path,
         guest_id: str,
         limit_size: Literal[True] = True,
-        logger: tmt.log.Logger) -> Optional[Path]:
+        logger: tmt.log.Logger,) -> Optional[Path]:
     pass
 
 
@@ -165,7 +165,7 @@ def _socket_path_trivial(
         socket_dir: Path,
         guest_id: str,
         limit_size: Literal[False] = False,
-        logger: tmt.log.Logger) -> Path:
+        logger: tmt.log.Logger,) -> Path:
     pass
 
 
@@ -174,7 +174,7 @@ def _socket_path_trivial(
         socket_dir: Path,
         guest_id: str,
         limit_size: bool = True,
-        logger: tmt.log.Logger) -> Optional[Path]:
+        logger: tmt.log.Logger,) -> Optional[Path]:
     """
     Generate SSH socket path using guest IDs
     """
@@ -196,7 +196,7 @@ def _socket_path_hash(
         socket_dir: Path,
         guest_id: str,
         limit_size: bool = True,
-        logger: tmt.log.Logger) -> Optional[Path]:
+        logger: tmt.log.Logger,) -> Optional[Path]:
     """
     Generate SSH socket path using a hash of guest IDs.
 
@@ -882,7 +882,7 @@ class GuestData(SerializableContainer):
     @classmethod
     def from_plugin(
             cls: type[GuestDataT],
-            container: 'ProvisionPlugin[ProvisionStepDataT]') -> GuestDataT:
+            container: 'ProvisionPlugin[ProvisionStepDataT]',) -> GuestDataT:
         """
         Create guest data from plugin and its current configuration
         """
@@ -899,7 +899,7 @@ class GuestData(SerializableContainer):
             *,
             keys: Optional[list[str]] = None,
             verbose: int = 0,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger,) -> None:
         """
         Display guest data in a nice way.
 
@@ -2459,7 +2459,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
     def base_command(
             cls,
             usage: str,
-            method_class: Optional[type[click.Command]] = None) -> click.Command:
+            method_class: Optional[type[click.Command]] = None,) -> click.Command:
         """
         Create base click command (common for all provision plugins)
         """
@@ -2715,7 +2715,7 @@ class Provision(tmt.steps.Step):
             *,
             plan: 'tmt.Plan',
             data: tmt.steps.RawStepDataArgument,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger,) -> None:
         """
         Initialize provision step data
         """

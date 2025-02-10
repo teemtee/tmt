@@ -113,7 +113,7 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         default=DEFAULT_API_URL,
         option='--api-url',
         metavar='URL',
-        help="Artemis API URL.")
+        help="Artemis API URL.",)
     api_version: str = field(
         default=DEFAULT_API_VERSION,
         option='--api-version',
@@ -126,7 +126,7 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         default=DEFAULT_ARCH,
         option='--arch',
         metavar='ARCH',
-        help='Architecture to provision.')
+        help='Architecture to provision.',)
     image: Optional[str] = field(
         default=None,
         option=('-i', '--image'),
@@ -136,7 +136,7 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         default=None,
         option='--pool',
         metavar='NAME',
-        help='Pool to enforce.')
+        help='Pool to enforce.',)
     priority_group: str = field(
         default=DEFAULT_PRIORITY_GROUP,
         option='--priority-group',
@@ -146,7 +146,7 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
         default=DEFAULT_KEYNAME,
         option='--keyname',
         metavar='NAME',
-        help='SSH key name.')
+        help='SSH key name.',)
     user_data: dict[str, str] = field(
         default_factory=dict,
         option='--user-data',
@@ -173,7 +173,7 @@ class ArtemisGuestData(tmt.steps.provision.GuestSshData):
     # Provided by Artemis response
     guestname: Optional[str] = field(
         default=None,
-        internal=True)
+        internal=True,)
 
     # Timeouts and deadlines
     provision_timeout: int = field(
@@ -338,7 +338,7 @@ class ArtemisAPI:
             self,
             path: str,
             method: str = 'get',
-            request_kwargs: Optional[dict[str, Any]] = None
+            request_kwargs: Optional[dict[str, Any]] = None,
             ) -> requests.Response:
         """
         Base helper for Artemis API queries.
@@ -374,7 +374,7 @@ class ArtemisAPI:
             self,
             path: str,
             data: dict[str, Any],
-            request_kwargs: Optional[dict[str, Any]] = None
+            request_kwargs: Optional[dict[str, Any]] = None,
             ) -> requests.Response:
         """
         Create - or request creation of - a resource.
@@ -394,7 +394,7 @@ class ArtemisAPI:
             self,
             path: str,
             params: Optional[dict[str, Any]] = None,
-            request_kwargs: Optional[dict[str, Any]] = None
+            request_kwargs: Optional[dict[str, Any]] = None,
             ) -> requests.Response:
         """
         Inspect a resource.
@@ -415,7 +415,7 @@ class ArtemisAPI:
     def delete(
             self,
             path: str,
-            request_kwargs: Optional[dict[str, Any]] = None
+            request_kwargs: Optional[dict[str, Any]] = None,
             ) -> requests.Response:
         """
         Delete - or request removal of - a resource.
@@ -486,7 +486,7 @@ class GuestArtemis(tmt.GuestSsh):
                 },
             'os': {
                 'compose': self.image
-                }
+                },
             }
 
         if self.api_version >= "0.0.53":
@@ -730,7 +730,7 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
             logger=self._logger,
             data=data,
             name=self.name,
-            parent=self.step)
+            parent=self.step,)
         self._guest.start()
         self._guest.setup()
 

@@ -165,11 +165,11 @@ TMT_REBOOT_SCRIPT = ScriptCreatingFile(
     destination_path=None,
     aliases=[
         'rstrnt-reboot',
-        'rhts-reboot'],
+        'rhts-reboot',],
     related_variables=[
         "TMT_REBOOT_COUNT",
         "REBOOTCOUNT",
-        "RSTRNT_REBOOTCOUNT"],
+        "RSTRNT_REBOOTCOUNT",],
     created_file="reboot-request",
     enabled=lambda _: True
     )
@@ -188,7 +188,7 @@ TMT_REPORT_RESULT_SCRIPT = ScriptCreatingFile(
     destination_path=None,
     aliases=[
         'rstrnt-report-result',
-        'rhts-report-result'],
+        'rhts-report-result',],
     related_variables=[],
     created_file="tmt-report-results.yaml",
     enabled=lambda _: True
@@ -201,7 +201,7 @@ TMT_FILE_SUBMIT_SCRIPT = Script(
     aliases=[
         'rstrnt-report-log',
         'rhts-submit-log',
-        'rhts_submit_log'],
+        'rhts_submit_log',],
     related_variables=[],
     enabled=lambda _: True
     )
@@ -212,7 +212,7 @@ TMT_ABORT_SCRIPT = ScriptCreatingFile(
     destination_path=None,
     aliases=[
         'rstrnt-abort',
-        'rhts-abort'],
+        'rhts-abort',],
     related_variables=[],
     created_file="abort",
     enabled=lambda _: True
@@ -536,7 +536,7 @@ class TestInvocation:
             rebooted = self.guest.reboot(
                 hard=self.hard_reboot_requested,
                 command=reboot_command,
-                timeout=timeout)
+                timeout=timeout,)
 
         except tmt.utils.RunError:
             self.logger.fail(
@@ -560,7 +560,7 @@ class TestInvocation:
     def terminate_process(
             self,
             signal: _signal.Signals = _signal.SIGTERM,
-            logger: Optional[tmt.log.Logger] = None) -> None:
+            logger: Optional[tmt.log.Logger] = None,) -> None:
         """
         Terminate the invocation process.
 
@@ -665,7 +665,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
     def base_command(
             cls,
             usage: str,
-            method_class: Optional[type[click.Command]] = None) -> click.Command:
+            method_class: Optional[type[click.Command]] = None,) -> click.Command:
         """
         Create base click command (common for all execute plugins)
         """
@@ -728,7 +728,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             test_metadata["context"] = self.step.plan._fmf_context.to_spec()
             self.write(
                 invocation.path / TEST_METADATA_FILENAME,
-                tmt.utils.dict_to_yaml(test_metadata))
+                tmt.utils.dict_to_yaml(test_metadata),)
 
             # When running again then we only keep results for tests that won't be executed again
             if self.should_run_again:
@@ -1118,7 +1118,7 @@ class Execute(tmt.steps.Step):
             *,
             plan: "tmt.Plan",
             data: tmt.steps.RawStepDataArgument,
-            logger: tmt.log.Logger) -> None:
+            logger: tmt.log.Logger,) -> None:
         """
         Initialize execute step data
         """

@@ -80,7 +80,7 @@ class InstallBase(tmt.utils.Common):
     def prepare_installables(
             self,
             dependencies: list[tmt.base.DependencySimple],
-            directories: list[Path]) -> None:
+            directories: list[Path],) -> None:
         """
         Process package names and directories
         """
@@ -265,7 +265,7 @@ class Copr(tmt.utils.Common):
         # Download the repo file on guest
         try:
             self.guest.execute(Command('curl', '-LOf', url),
-                               cwd=Path('/etc/yum.repos.d'), silent=True)
+                               cwd=Path('/etc/yum.repos.d'), silent=True,)
         except tmt.utils.RunError as error:
             if error.stderr and 'not found' in error.stderr.lower():
                 raise tmt.utils.PrepareError(
@@ -324,7 +324,7 @@ class InstallDnf(InstallBase, Copr):
             options=Options(
                 excluded_packages=self.exclude,
                 skip_missing=self.skip_missing,
-                check_first=False
+                check_first=False,
                 )
             )
 
@@ -333,7 +333,7 @@ class InstallDnf(InstallBase, Copr):
             options=Options(
                 excluded_packages=self.exclude,
                 skip_missing=self.skip_missing,
-                check_first=False
+                check_first=False,
                 )
             )
 
@@ -349,7 +349,7 @@ class InstallDnf(InstallBase, Copr):
             *self.list_installables("remote package", *self.remote_packages),
             options=Options(
                 excluded_packages=self.exclude,
-                skip_missing=self.skip_missing
+                skip_missing=self.skip_missing,
                 )
             )
 
@@ -362,7 +362,7 @@ class InstallDnf(InstallBase, Copr):
             *self.list_installables("package", *self.packages),
             options=Options(
                 excluded_packages=self.exclude,
-                skip_missing=self.skip_missing
+                skip_missing=self.skip_missing,
                 )
             )
 
@@ -377,7 +377,7 @@ class InstallDnf(InstallBase, Copr):
             *packages,
             options=Options(
                 excluded_packages=self.exclude,
-                skip_missing=self.skip_missing
+                skip_missing=self.skip_missing,
                 )
             )
 
@@ -536,7 +536,7 @@ class InstallApt(InstallBase):
             *self.list_installables("remote package", *self.remote_packages),
             options=Options(
                 excluded_packages=self.exclude,
-                skip_missing=self.skip_missing
+                skip_missing=self.skip_missing,
                 )
             )
 
@@ -549,7 +549,7 @@ class InstallApt(InstallBase):
             *self.list_installables("package", *self.packages),
             options=Options(
                 excluded_packages=self.exclude,
-                skip_missing=self.skip_missing
+                skip_missing=self.skip_missing,
                 )
             )
 
@@ -564,7 +564,7 @@ class InstallApt(InstallBase):
             *packages,
             options=Options(
                 excluded_packages=self.exclude,
-                skip_missing=self.skip_missing
+                skip_missing=self.skip_missing,
                 )
             )
 
@@ -594,7 +594,7 @@ class InstallApk(InstallBase):
                 excluded_packages=self.exclude,
                 skip_missing=self.skip_missing,
                 allow_untrusted=True,
-                check_first=False
+                check_first=False,
                 )
             )
 
@@ -619,7 +619,7 @@ class InstallApk(InstallBase):
             *self.list_installables("package", *self.packages),
             options=Options(
                 excluded_packages=self.exclude,
-                skip_missing=self.skip_missing
+                skip_missing=self.skip_missing,
                 )
             )
 

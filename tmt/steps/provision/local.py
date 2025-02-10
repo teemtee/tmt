@@ -62,6 +62,7 @@ class GuestLocal(tmt.Guest):
         playbook = self._sanitize_ansible_playbook_path(playbook, playbook_root)
 
         try:
+            # fmt: off
             return self._run_guest_command(
                 Command(
                     'sudo', '-E',
@@ -70,11 +71,14 @@ class GuestLocal(tmt.Guest):
                     *self._ansible_extra_args(extra_args),
                     '-c', 'local',
                     '-i', 'localhost,',
-                    playbook),
+                    playbook,
+                ),
                 env=self._prepare_environment(),
                 friendly_command=friendly_command,
                 log=log,
-                silent=silent)
+                silent=silent,
+            )
+            # fmt: on
         except tmt.utils.RunError as exc:
             if exc.stderr and 'ansible-playbook: command not found' in exc.stderr:
                 show_step_method_hints('plugin', 'ansible', self._logger)

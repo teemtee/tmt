@@ -51,7 +51,7 @@ class PodmanGuestData(tmt.steps.provision.GuestData):
         help='Name or id of an existing container to be used.')
     network: Optional[str] = field(
         default=None,
-        internal=True)
+        internal=True,)
 
     pull_attempts: int = field(
         default=DEFAULT_PULL_ATTEMPTS,
@@ -139,7 +139,7 @@ class GuestContainer(tmt.Guest):
 
         self.podman(
             Command('pull', '-q', self.image),
-            message=f"Pull image '{self.image}'."
+            message=f"Pull image '{self.image}'.",
             )
 
     def _setup_network(self) -> list[str]:
@@ -156,7 +156,7 @@ class GuestContainer(tmt.Guest):
         try:
             self.podman(
                 Command('network', 'create', self.network),
-                message=f"Create network '{self.network}'."
+                message=f"Create network '{self.network}'.",
                 )
         except tmt.utils.RunError as err:
             if err.stderr and 'network already exists' in err.stderr:
@@ -194,7 +194,7 @@ class GuestContainer(tmt.Guest):
         try:
             self.podman(
                 Command('image', 'exists', self.image),
-                message=f"Check for container image '{self.image}'."
+                message=f"Check for container image '{self.image}'.",
                 )
             needs_pull = False
         except tmt.utils.RunError:
@@ -310,7 +310,7 @@ class GuestContainer(tmt.Guest):
             self,
             command: Command,
             silent: bool = True,
-            **kwargs: Any) -> tmt.utils.CommandOutput:
+            **kwargs: Any,) -> tmt.utils.CommandOutput:
         """
         Run given command via podman
         """
@@ -462,7 +462,7 @@ class GuestContainer(tmt.Guest):
             try:
                 self.podman(
                     Command('network', 'rm', self.network),
-                    message=f"Remove network '{self.network}'.")
+                    message=f"Remove network '{self.network}'.",)
                 self.info('container', 'network removed', 'green')
             except tmt.utils.RunError as err:
                 if err.stderr and 'network is being used' in err.stderr:
@@ -530,7 +530,7 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
             logger=self._logger,
             data=data,
             name=self.name,
-            parent=self.step)
+            parent=self.step,)
         self._guest.start()
         self._guest.setup()
 
