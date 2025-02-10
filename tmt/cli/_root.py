@@ -1853,7 +1853,7 @@ def clean_guests(
 @workdir_root_options
 @verbosity_options
 @dry_options
-def clean_images(context: Context, _workdir_root: Optional[str], **kwargs: Any) -> None:
+def clean_images(context: Context, workdir_root: Optional[Path], **kwargs: Any) -> None:
     """
     Remove images of supported provision methods.
 
@@ -1866,7 +1866,6 @@ def clean_images(context: Context, _workdir_root: Optional[str], **kwargs: Any) 
     #        cleaned, similarly to guests.
     assert context.obj.clean_logger is not None  # narrow type
 
-    workdir_root = Path(_workdir_root) if _workdir_root is not None else None
     if workdir_root and not workdir_root.exists():
         raise tmt.utils.GeneralError(f"Path '{workdir_root}' doesn't exist.")
 
