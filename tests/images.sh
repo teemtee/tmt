@@ -39,7 +39,6 @@ $TEST_IMAGE_PREFIX/debian/12.7/upstream:latest}"
 # TODO: enable centos-7 again with modified repo files
 TEST_VIRTUAL_IMAGES="${TEST_VIRTUAL_IMAGES:-centos-stream-9
 centos-stream-10
-fedora-39
 fedora-40
 fedora-41
 fedora-rawhide
@@ -63,13 +62,6 @@ function is_fedora_41 () {
 function is_fedora_40 () {
     [[ "$1" =~ ^.*fedora/40[:/].* ]] && return 0
     [[ "$1" = "fedora-40" ]] && return 0
-
-    return 1
-}
-
-function is_fedora_39 () {
-    [[ "$1" =~ ^.*fedora/39[:/].* ]] && return 0
-    [[ "$1" = "fedora-39" ]] && return 0
 
     return 1
 }

@@ -72,10 +72,6 @@ rlJournalStart
                 rlRun "distro=fedora-40"
                 rlRun "package_manager=dnf"
 
-            elif is_fedora_39 "$image"; then
-                rlRun "distro=fedora-39"
-                rlRun "package_manager=dnf"
-
             elif is_centos_stream_9 "$image"; then
                 rlRun "distro=centos-stream-9"
                 rlRun "package_manager=dnf"
