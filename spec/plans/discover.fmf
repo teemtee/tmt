@@ -57,20 +57,6 @@ description: |
         within the same discover config, use
         :ref:`multiple-configs` instead.
 
-        url
-            Git repository, used directly as a git clone argument.
-
-        ref
-            Branch, tag or commit specifying the desired git
-            revision. Defaults to the remote repository's default
-            branch.
-
-        keep-git-metadata
-            By default the ``.git`` directory is removed to save
-            disk space. Set to ``true`` to sync the git metadata
-            to guest as well. Implicit if ``dist-git-source`` is
-            used.
-
         Use the :ref:`/spec/plans/discover/dist-git-source`
         options to download rpm sources for dist-git repositories.
 
@@ -105,108 +91,9 @@ description: |
     summary: Discover available tests using the fmf format
     description: |
         Use the `Flexible Metadata Format`_ to explore all
-        available tests in given repository. The following
-        parameters are supported:
+        available tests in given repository.
 
-        url
-            Git repository containing the metadata tree.
-            Current git repository used by default.
-        ref
-            Branch, tag or commit specifying the desired git
-            revision. Defaults to the remote repository's default
-            branch if url given or to the current ``HEAD`` if url
-            not provided.
-
-            Additionally, one can set ``ref`` dynamically. This is
-            possible using a special file in tmt format stored in
-            the *default* branch of a tests repository. This special
-            file should contain rules assigning attribute ``ref``
-            in an `adjust` block, for example depending on a test
-            run context.
-
-            Dynamic ``ref`` assignment is enabled whenever a test
-            plan reference has the format ``ref: @FILEPATH``.
-        path
-            Path to the metadata tree root. Must be relative to
-            the git repository root if url provided, absolute
-            local filesystem path otherwise. By default ``.`` is
-            used.
-
-        See also the `fmf identifier`_ documentation for details.
-        Use the following keys to limit the test discovery by test
-        name, an advanced filter or link:
-
-        test
-            List of test names or regular expressions used to
-            select tests by name. Duplicate test names are allowed
-            to enable repetitive test execution, preserving the
-            listed test order.
-        link
-            Select tests using the :ref:`/spec/core/link` keys.
-            Values must be in the form of ``RELATION:TARGET``,
-            tests containing at least one of them are selected.
-            Regular expressions are supported for both relation
-            and target. Relation part can be omitted to match all
-            relations.
-        filter
-            Apply advanced filter based on test metadata
-            attributes. See ``pydoc fmf.filter`` for more info.
-        exclude
-            Exclude tests which match a regular expression.
-        prune
-            Copy only immediate directories of executed tests and
-            their required files.
-
-            .. versionadded:: 1.29
-
-        It is also possible to limit tests only to those that have
-        changed in git since a given revision. This can be
-        particularly useful when testing changes to tests
-        themselves (e.g. in a pull request CI). Related config
-        options (all optional) are:
-
-        modified-only
-            Set to ``true`` if you want to filter modified tests
-            only.  The test is modified if its name starts with
-            the name of any directory modified since modified-ref.
-        modified-url
-            An additional remote repository to be used as the
-            reference for comparison. Will be fetched as a
-            ``reference`` remote in the test dir.
-        modified-ref
-            The ref to compare against. Defaults to the local
-            repository's default branch. Note that you need to
-            specify ``reference/<branch>`` to compare to a branch
-            from the repository specified in ``modified-url``.
-
-        Use the :ref:`/spec/plans/discover/dist-git-source`
-        options to download rpm sources for dist-git repositories.
-        In addition to the common dist-git-source features, the
-        ``fmf`` plugin also supports the following options:
-
-        dist-git-init
-            Set to ``true`` to initialize fmf root inside
-            extracted sources at ``dist-git-extract`` location or
-            top directory. To be used when the sources contain fmf
-            files (for example tests) but do not have an
-            associated fmf root.
-
-        dist-git-remove-fmf-root
-            Set to ``true`` to remove any fmf root present in the
-            sources.  ``dist-git-init`` can be used to create it
-            later at desired location.
-
-        dist-git-merge
-            Set to ``true`` to combine fmf root from the sources
-            and fmf root from the plan.  It allows to have plans
-            and tests defined in the DistGit repo which use tests
-            and other resources from the downloaded sources. Any
-            plans in extracted sources will not be processed.
-
-        dist-git-extract
-            Path specifying what should be copied from the
-            sources.  Defaults to top fmf root or top directory
-            ``/``.
+        See  the `fmf identifier`_ documentation for details.
 
         .. _fmf identifier: https://fmf.readthedocs.io/en/latest/concept.html#identifiers
         .. _Flexible Metadata Format: https://fmf.readthedocs.io/
@@ -261,34 +148,6 @@ description: |
         runs in ``prepare`` step on the provisioned guest, with
         order ``60``. All created files and directories by this command
         are directly in ``TMT_SOURCE_DIR``.
-
-        .. versionadded:: 1.32
-
-        dist-git-source
-            Download and (optionally) extract the sources.
-
-        dist-git-type
-            Use the provided DistGit handler instead of the auto
-            detection. Useful when running from forked
-            repositories.
-
-        dist-git-download-only
-            When ``true`` sources are just downloaded.
-            No ``rpmbuild -bp``, nor installation of require
-            or buildddeps happens.
-
-        .. versionadded:: 1.29
-
-        dist-git-require
-            List of packages to install before ``rpmbuild -bp`` is attempted
-            on the sources. The rpm-build package itself is installed automatically.
-
-        .. versionadded:: 1.32
-
-        dist-git-install-builddeps
-            When set to ``true`` build requirements are installed.
-
-        .. versionadded:: 1.32
 
         The :ref:`/spec/plans/discover/fmf` plugin supports
         additional dist-git options, see its documentation for

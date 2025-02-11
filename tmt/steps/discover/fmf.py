@@ -166,7 +166,10 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         option='--dist-git-init',
         is_flag=True,
         help="""
-             Initialize fmf root inside extracted sources (at dist-git-extract or top directory).
+             Set to ``true`` to initialize fmf root inside extracted sources at
+             ``dist-git-extract`` location or top directory. To be used when the
+             sources contain fmf files (for example tests) but do not have an
+             associated fmf root.
              """,
     )
     dist_git_remove_fmf_root: bool = field(
@@ -182,7 +185,12 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         default=False,
         option='--dist-git-merge',
         is_flag=True,
-        help='Merge copied sources and plan fmf root.',
+        help="""
+            Set to ``true`` to combine fmf root from the sources and fmf root from the plan.
+            It allows to have plans and tests defined in the DistGit repo which use tests
+            and other resources from the downloaded sources. Any plans in extracted sources
+            will not be processed.
+            """,
     )
     dist_git_extract: Optional[str] = field(
         default=cast(Optional[str], None),
