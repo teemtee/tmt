@@ -22,7 +22,6 @@ TEST_CONTAINER_IMAGES="${TEST_CONTAINER_IMAGES:-$TEST_IMAGE_PREFIX/alpine:latest
 $TEST_IMAGE_PREFIX/centos/7/upstream:latest
 $TEST_IMAGE_PREFIX/centos/stream9/upstream:latest
 $TEST_IMAGE_PREFIX/centos/stream10/upstream:latest
-$TEST_IMAGE_PREFIX/fedora/39/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/40/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/41/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/rawhide/upstream:latest
