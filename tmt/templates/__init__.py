@@ -38,9 +38,10 @@ def _get_template_file_paths(path: Path) -> dict[str, Path]:
     """
 
     return {
-        file.name.removesuffix(TEMPLATE_FILE_SUFFIX): file for file in path.iterdir()
+        file.name.removesuffix(TEMPLATE_FILE_SUFFIX): file
+        for file in path.iterdir()
         if file.is_file() and file.suffix == TEMPLATE_FILE_SUFFIX
-        }
+    }
 
 
 def _get_templates(root_dir: Path) -> TemplatesType:
@@ -128,7 +129,8 @@ class TemplateManager:
 
         template = tmt.utils.get_url_content(url)
         template = tmt.utils.templates.render_template(
-            template, None, self._environment, **variables)
+            template, None, self._environment, **variables
+        )
         return _append_newline_if_missing(template)
 
     def render_file(self, path: Path, **variables: Any) -> str:
@@ -152,7 +154,8 @@ class TemplateManager:
                 path.mkdir(parents=True, exist_ok=True)
             except OSError as error:
                 raise tmt.utils.GeneralError(
-                    f"Failed to create template folder '{path}'.\n{error}") from error
+                    f"Failed to create template folder '{path}'.\n{error}"
+                ) from error
 
 
 # Global TemplateManager object

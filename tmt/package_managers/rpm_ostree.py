@@ -9,7 +9,7 @@ from tmt.package_managers import (
     Options,
     escape_installables,
     provides_package_manager,
-    )
+)
 from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScript
 
 
@@ -41,8 +41,7 @@ class RpmOstree(tmt.package_managers.PackageManager):
         if len(installables) == 1 and isinstance(installables[0], FileSystemPath):
             return ShellScript(f'rpm -qf {installables[0]}')
 
-        return ShellScript(
-            f'rpm -q --whatprovides {" ".join(escape_installables(*installables))}')
+        return ShellScript(f'rpm -q --whatprovides {" ".join(escape_installables(*installables))}')
 
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
         if len(installables) == 1 and isinstance(installables[0], FileSystemPath):
@@ -58,8 +57,11 @@ class RpmOstree(tmt.package_managers.PackageManager):
             return {installables[0]: True}
 
         try:
-            output = self.guest.execute(ShellScript(
-                f'rpm -q --whatprovides {" ".join(escape_installables(*installables))}'))
+            output = self.guest.execute(
+                ShellScript(
+                    f'rpm -q --whatprovides {" ".join(escape_installables(*installables))}'
+                )
+            )
             stdout = output.stdout
 
         except RunError as exc:
@@ -85,14 +87,14 @@ class RpmOstree(tmt.package_managers.PackageManager):
 
         return results
 
-    def _extra_options(
-            self,
-            options: Options) -> Command:
+    def _extra_options(self, options: Options) -> Command:
         extra_options = Command()
 
         for package in options.excluded_packages:
-            self.warn("There is no support for rpm-ostree exclude,"
-                      f" package '{package}' may still be installed.")
+            self.warn(
+                "There is no support for rpm-ostree exclude,"
+                f" package '{package}' may still be installed."
+            )
 
         if options.install_root is not None:
             extra_options += Command(f'--installroot={options.install_root}')
@@ -119,9 +121,10 @@ class RpmOstree(tmt.package_managers.PackageManager):
         # return self.guest.execute(script)
 
     def install(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
         options = options or Options()
 
         extra_options = self._extra_options(options)
@@ -129,7 +132,8 @@ class RpmOstree(tmt.package_managers.PackageManager):
         script = ShellScript(
             f'{self.command.to_script()} install '
             f'{self.options.to_script()} {extra_options} '
-            f'{" ".join(escape_installables(*installables))}')
+            f'{" ".join(escape_installables(*installables))}'
+        )
 
         if options.check_first:
             script = self._construct_presence_script(*installables) | script
@@ -140,13 +144,15 @@ class RpmOstree(tmt.package_managers.PackageManager):
         return self.guest.execute(script)
 
     def reinstall(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
         raise GeneralError("rpm-ostree does not support reinstall operation.")
 
     def install_debuginfo(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
         raise GeneralError("rpm-ostree does not support debuginfo packages.")

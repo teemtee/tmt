@@ -9,7 +9,7 @@ from tmt.package_managers import (
     Package,
     escape_installables,
     provides_package_manager,
-    )
+)
 from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScript
 
 
@@ -20,7 +20,8 @@ class Dnf(tmt.package_managers.PackageManager):
     probe_command = ShellScript(
         """
         type dnf && ((dnf --version | grep -E 'dnf5 version') && exit 1 || exit 0)
-        """).to_shell_command()
+        """
+    ).to_shell_command()
     # The priority of preference: `rpm-ostree` > `dnf5` > `dnf` > `yum`.
     # `rpm-ostree` has its own implementation and its own priority, and
     # the `dnf` family just stays below it.
@@ -68,17 +69,14 @@ class Dnf(tmt.package_managers.PackageManager):
         return extra_options
 
     def _construct_presence_script(
-            self,
-            *installables: Installable,
-            what_provides: bool = True) -> ShellScript:
+        self, *installables: Installable, what_provides: bool = True
+    ) -> ShellScript:
         if what_provides:
             return ShellScript(
                 f'rpm -q --whatprovides {" ".join(escape_installables(*installables))}'
-                )
-
-        return ShellScript(
-            f'rpm -q {" ".join(escape_installables(*installables))}'
             )
+
+        return ShellScript(f'rpm -q {" ".join(escape_installables(*installables))}')
 
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
         try:
@@ -109,9 +107,8 @@ class Dnf(tmt.package_managers.PackageManager):
         return results
 
     def _construct_install_script(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> ShellScript:
+        self, *installables: Installable, options: Optional[Options] = None
+    ) -> ShellScript:
         options = options or Options()
 
         extra_options = self._extra_dnf_options(options)
@@ -119,7 +116,8 @@ class Dnf(tmt.package_managers.PackageManager):
         script = ShellScript(
             f'{self.command.to_script()} install '
             f'{self.options.to_script()} {extra_options} '
-            f'{" ".join(escape_installables(*installables))}')
+            f'{" ".join(escape_installables(*installables))}'
+        )
 
         if options.check_first:
             script = self._construct_presence_script(*installables) | script
@@ -127,9 +125,8 @@ class Dnf(tmt.package_managers.PackageManager):
         return script
 
     def _construct_reinstall_script(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> ShellScript:
+        self, *installables: Installable, options: Optional[Options] = None
+    ) -> ShellScript:
         options = options or Options()
 
         extra_options = self._extra_dnf_options(options)
@@ -137,7 +134,8 @@ class Dnf(tmt.package_managers.PackageManager):
         script = ShellScript(
             f'{self.command.to_script()} reinstall '
             f'{self.options.to_script()} {extra_options} '
-            f'{" ".join(escape_installables(*installables))}')
+            f'{" ".join(escape_installables(*installables))}'
+        )
 
         if options.check_first:
             script = self._construct_presence_script(*installables) & script
@@ -145,9 +143,8 @@ class Dnf(tmt.package_managers.PackageManager):
         return script
 
     def _construct_install_debuginfo_script(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> ShellScript:
+        self, *installables: Installable, options: Optional[Options] = None
+    ) -> ShellScript:
         options = options or Options()
 
         extra_options = self._extra_dnf_options(options, command=self._base_debuginfo_command)
@@ -155,36 +152,35 @@ class Dnf(tmt.package_managers.PackageManager):
         return ShellScript(
             f'{self._base_debuginfo_command.to_script()} '
             f'{self.options.to_script()} {extra_options} '
-            f'{" ".join(escape_installables(*installables))}')
+            f'{" ".join(escape_installables(*installables))}'
+        )
 
     def refresh_metadata(self) -> CommandOutput:
         script = ShellScript(
-            f'{self.command.to_script()} makecache '
-            f'{self.options.to_script()} --refresh')
+            f'{self.command.to_script()} makecache {self.options.to_script()} --refresh'
+        )
 
         return self.guest.execute(script)
 
     def install(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
-        return self.guest.execute(self._construct_install_script(
-            *installables,
-            options=options))
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
+        return self.guest.execute(self._construct_install_script(*installables, options=options))
 
     def reinstall(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
-        return self.guest.execute(self._construct_reinstall_script(
-            *installables,
-            options=options
-            ))
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
+        return self.guest.execute(self._construct_reinstall_script(*installables, options=options))
 
     def install_debuginfo(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
         # Make sure debuginfo-install is present on the target system
         self.install(FileSystemPath('/usr/bin/debuginfo-install'))
 
@@ -193,9 +189,9 @@ class Dnf(tmt.package_managers.PackageManager):
         script = cast(  # type: ignore[redundant-cast]
             ShellScript,
             self._construct_install_debuginfo_script(  # type: ignore[reportGeneralIssues,unused-ignore]
-                *installables,
-                options=options
-                ))
+                *installables, options=options
+            ),
+        )
 
         # Extra ignore/check for yum to workaround BZ#1920176
         if not options.skip_missing:
@@ -203,7 +199,9 @@ class Dnf(tmt.package_managers.PackageManager):
                 ShellScript,
                 self._construct_presence_script(  # type: ignore[reportGeneralIssues,unused-ignore]
                     *tuple(Package(f'{installable}-debuginfo') for installable in installables),
-                    what_provides=False))
+                    what_provides=False,
+                ),
+            )
 
         return self.guest.execute(script)
 
@@ -226,7 +224,8 @@ class Yum(Dnf):
     probe_command = ShellScript(
         """
         type yum && ((yum --version | grep -E 'dnf5 version') && exit 1 || exit 0)
-        """).to_shell_command()
+        """
+    ).to_shell_command()
     probe_priority = 40
 
     _base_command = Command('yum')
@@ -236,18 +235,16 @@ class Yum(Dnf):
     # but mypy sees no issue, pytest sees no issue, everything works. Silencing
     # for now.
     def install(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
-
+        self, *installables: Installable, options: Optional[Options] = None
+    ) -> CommandOutput:
         options = options or Options()
 
         script = cast(  # type: ignore[redundant-cast]
             ShellScript,
             self._construct_install_script(  # type: ignore[reportGeneralIssues,unused-ignore]
-                *installables,
-                options=options
-                ))
+                *installables, options=options
+            ),
+        )
 
         # Extra ignore/check for yum to workaround BZ#1920176
         if options.skip_missing:
@@ -257,23 +254,23 @@ class Yum(Dnf):
             script &= cast(  # type: ignore[redundant-cast]
                 ShellScript,
                 self._construct_presence_script(  # type: ignore[reportGeneralIssues,unused-ignore]
-                    *installables))
+                    *installables
+                ),
+            )
 
         return self.guest.execute(script)
 
     def reinstall(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
-
+        self, *installables: Installable, options: Optional[Options] = None
+    ) -> CommandOutput:
         options = options or Options()
 
         script = cast(  # type: ignore[redundant-cast]
             ShellScript,
             self._construct_reinstall_script(  # type: ignore[reportGeneralIssues,unused-ignore]
-                *installables,
-                options=options
-                ))
+                *installables, options=options
+            ),
+        )
 
         # Extra ignore/check for yum to workaround BZ#1920176
         if options.skip_missing:
@@ -283,12 +280,13 @@ class Yum(Dnf):
             script &= cast(  # type: ignore[redundant-cast]
                 ShellScript,
                 self._construct_presence_script(  # type: ignore[reportGeneralIssues,unused-ignore]
-                    *installables))
+                    *installables
+                ),
+            )
 
         return self.guest.execute(script)
 
     def refresh_metadata(self) -> CommandOutput:
-        script = ShellScript(
-            f'{self.command.to_script()} makecache')
+        script = ShellScript(f'{self.command.to_script()} makecache')
 
         return self.guest.execute(script)

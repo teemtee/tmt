@@ -11,14 +11,14 @@ from tmt.package_managers import (
     PackagePath,
     escape_installables,
     provides_package_manager,
-    )
+)
 from tmt.utils import (
     Command,
     CommandOutput,
     GeneralError,
     RunError,
     ShellScript,
-    )
+)
 
 ReducedPackages = list[Union[Package, PackagePath]]
 
@@ -28,8 +28,8 @@ PACKAGE_PATH: dict[FileSystemPath, str] = {
     FileSystemPath('/usr/bin/python3'): 'python3',
     # Note: not used for anything serious, serves for unit tests as
     # an installable path.
-    FileSystemPath('/usr/bin/dos2unix'): 'dos2unix'
-    }
+    FileSystemPath('/usr/bin/dos2unix'): 'dos2unix',
+}
 
 
 @provides_package_manager('apk')
@@ -90,11 +90,13 @@ class Apk(tmt.package_managers.PackageManager):
         return packages
 
     def _construct_presence_script(
-            self, *installables: Installable) -> tuple[ReducedPackages, ShellScript]:
+        self, *installables: Installable
+    ) -> tuple[ReducedPackages, ShellScript]:
         reduced_packages = self._reduce_to_packages(*installables)
 
         shell_script = ShellScript(
-            f'apk info -e {" ".join(escape_installables(*reduced_packages))}')
+            f'apk info -e {" ".join(escape_installables(*reduced_packages))}'
+        )
 
         return reduced_packages, shell_script
 
@@ -125,15 +127,15 @@ class Apk(tmt.package_managers.PackageManager):
         return results
 
     def refresh_metadata(self) -> CommandOutput:
-        script = ShellScript(
-            f'{self.command.to_script()} update')
+        script = ShellScript(f'{self.command.to_script()} update')
 
         return self.guest.execute(script)
 
     def install(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
         options = options or Options()
 
         packages = self._reduce_to_packages(*installables)
@@ -141,7 +143,8 @@ class Apk(tmt.package_managers.PackageManager):
         script = ShellScript(
             f'{self.command.to_script()} {self.install_command.to_script()} '
             f'{"--allow-untrusted " if options.allow_untrusted else ""}'
-            f'{" ".join(escape_installables(*packages))}')
+            f'{" ".join(escape_installables(*packages))}'
+        )
 
         if options.check_first:
             script = self._construct_presence_script(*packages)[1] | script
@@ -152,16 +155,17 @@ class Apk(tmt.package_managers.PackageManager):
         return self.guest.execute(script)
 
     def reinstall(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
         options = options or Options()
 
         packages = self._reduce_to_packages(*installables)
 
         script = ShellScript(
-            f'{self.command.to_script()} fix '
-            f'{" ".join(escape_installables(*packages))}')
+            f'{self.command.to_script()} fix {" ".join(escape_installables(*packages))}'
+        )
 
         if options.check_first:
             script = self._construct_presence_script(*packages)[1] & script
@@ -172,7 +176,8 @@ class Apk(tmt.package_managers.PackageManager):
         return self.guest.execute(script)
 
     def install_debuginfo(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
         raise tmt.utils.GeneralError("There is no support for debuginfo packages in apk.")

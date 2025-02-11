@@ -184,8 +184,7 @@ class FieldMetadata(Generic[T]):
         Whether the field has a default value
         """
 
-        return self.default_factory is not None \
-            or self.default is not dataclasses.MISSING
+        return self.default_factory is not None or self.default is not dataclasses.MISSING
 
     @property
     def materialized_default(self) -> Optional[T]:
@@ -206,27 +205,27 @@ class FieldMetadata(Generic[T]):
         if self._option is None and self.cli_option:
             from tmt.options import option
 
-            self._option_args = (self.cli_option,) if isinstance(self.cli_option, str) \
-                else self.cli_option
+            self._option_args = (
+                (self.cli_option,) if isinstance(self.cli_option, str) else self.cli_option
+            )
 
-            self._option_kwargs.update({
-                'is_flag': self.is_flag,
-                'multiple': self.multiple,
-                'envvar': self.envvar,
-                'metavar': self.metavar,
-                'choices': self.choices,
-                'show_default': self.show_default,
-                'help': self.help,
-                'deprecated': self.deprecated
-                })
+            self._option_kwargs.update(
+                {
+                    'is_flag': self.is_flag,
+                    'multiple': self.multiple,
+                    'envvar': self.envvar,
+                    'metavar': self.metavar,
+                    'choices': self.choices,
+                    'show_default': self.show_default,
+                    'help': self.help,
+                    'deprecated': self.deprecated,
+                }
+            )
 
             if self.default is not dataclasses.MISSING and not self.is_flag:
                 self._option_kwargs['default'] = self.default
 
-            self._option = option(
-                *self._option_args,
-                **self._option_kwargs
-                )
+            self._option = option(*self._option_args, **self._option_kwargs)
 
         return self._option
 
@@ -267,8 +266,8 @@ def container_items(container: ContainerInstance) -> Iterator[tuple[str, Any]]:
 
 
 def container_field(
-        container: Container,
-        key: str) -> tuple[str, str, Any, dataclasses.Field[Any], 'FieldMetadata[Any]']:
+    container: Container, key: str
+) -> tuple[str, str, Any, dataclasses.Field[Any], 'FieldMetadata[Any]']:
     """
     Return a dataclass/data container field info by the field's name.
 
@@ -290,19 +289,22 @@ def container_field(
             FieldMetadata[Any],
             field.metadata.get(
                 'tmt',
-                cast(FieldMetadata[Any], FieldMetadata())  # type: ignore[redundant-cast]
-                ))
+                cast(FieldMetadata[Any], FieldMetadata()),  # type: ignore[redundant-cast]
+            ),
+        )
 
         return (
             field.name,
             key_to_option(field.name),
             container.__dict__[field.name] if not inspect.isclass(container) else None,
             field,
-            metadata)
+            metadata,
+        )
 
     if isinstance(container, DataContainer):
         raise tmt.utils.GeneralError(
-            f"Could not find field '{key}' in class '{container.__class__.__name__}'.")
+            f"Could not find field '{key}' in class '{container.__class__.__name__}'."
+        )
 
     raise tmt.utils.GeneralError(f"Could not find field '{key}' in class '{container}'.")
 
@@ -331,9 +333,7 @@ class DataContainer:
         for more details.
         """
 
-        return {
-            key: value for key, value in self.items() if value is not None
-            }
+        return {key: value for key, value in self.items() if value is not None}
 
     # This method should remain a class-method: 1. list of keys is known
     # already, therefore it's not necessary to create an instance, and
@@ -418,7 +418,8 @@ class DataContainer:
 SpecBasedContainerT = TypeVar(
     'SpecBasedContainerT',
     # ignore[type-arg]: generic bounds are not supported by mypy.
-    bound='SpecBasedContainer')  # type: ignore[type-arg]
+    bound='SpecBasedContainer',  # type: ignore[type-arg]
+)
 
 # It may look weird, having two different typevars for "spec", but it does make
 # sense: tmt is fairly open to what it accepts, e.g. "a string or a list of
@@ -477,8 +478,8 @@ class SpecBasedContainer(Generic[SpecInT, SpecOutT], DataContainer):
 
 
 SerializableContainerDerivedType = TypeVar(
-    'SerializableContainerDerivedType',
-    bound='SerializableContainer')
+    'SerializableContainerDerivedType', bound='SerializableContainer'
+)
 
 
 @container
@@ -504,8 +505,9 @@ class SerializableContainer(DataContainer):
             setattr(obj, name, value)
 
     @classmethod
-    def extract_from(cls: type[SerializableContainerDerivedType],
-                     obj: Any) -> SerializableContainerDerivedType:
+    def extract_from(
+        cls: type[SerializableContainerDerivedType], obj: Any
+    ) -> SerializableContainerDerivedType:
         """
         Extract keys from given object, and save them in a container
         """
@@ -550,15 +552,15 @@ class SerializableContainer(DataContainer):
         # Add a special field tracking what class we just shattered to pieces.
         serialized['__class__'] = {
             'module': self.__class__.__module__,
-            'name': self.__class__.__name__
-            }
+            'name': self.__class__.__name__,
+        }
 
         return serialized
 
     @classmethod
     def from_serialized(
-            cls: type[SerializableContainerDerivedType],
-            serialized: dict[str, Any]) -> SerializableContainerDerivedType:
+        cls: type[SerializableContainerDerivedType], serialized: dict[str, Any]
+    ) -> SerializableContainerDerivedType:
         """
         Convert from a serialized form loaded from a file.
 
@@ -600,9 +602,8 @@ class SerializableContainer(DataContainer):
     # silence mypy about the missing actual type.
     @staticmethod
     def unserialize(
-            serialized: dict[str, Any],
-            logger: 'tmt.log.Logger'
-            ) -> SerializableContainerDerivedType:  # type: ignore[misc,type-var]
+        serialized: dict[str, Any], logger: 'tmt.log.Logger'
+    ) -> SerializableContainerDerivedType:  # type: ignore[misc,type-var]
         """
         Convert from a serialized form loaded from a file.
 
@@ -630,13 +631,15 @@ class SerializableContainer(DataContainer):
         if "__class__" not in serialized:
             raise tmt.utils.GeneralError(
                 "Failed to load saved state, probably because of old data format.\n"
-                "Use 'tmt clean runs' to clean up old runs.")
+                "Use 'tmt clean runs' to clean up old runs."
+            )
 
         klass_info = serialized.pop('__class__')
         klass = import_member(
             module=klass_info['module'],
             member=klass_info['name'],
-            logger=logger)[1]
+            logger=logger,
+        )[1]
 
         # Stay away from classes that are not derived from this one, to
         # honor promise given by return value annotation.
@@ -648,131 +651,131 @@ class SerializableContainer(DataContainer):
 
 @overload
 def field(
-        *,
-        default: bool,
-        # Options
-        option: Optional[FieldCLIOption] = None,
-        is_flag: bool = True,
-        choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
-        multiple: bool = False,
-        metavar: Optional[str] = None,
-        envvar: Optional[str] = None,
-        deprecated: Optional['tmt.options.Deprecated'] = None,
-        help: Optional[str] = None,
-        show_default: bool = False,
-        internal: bool = False,
-        # Input data normalization - not needed, the field is a boolean
-        # flag.
-        # normalize: Optional[NormalizeCallback[T]] = None
-        # Custom serialization
-        # serialize: Optional[SerializeCallback[bool]] = None,
-        # unserialize: Optional[UnserializeCallback[bool]] = None
-        # Custom exporter
-        # exporter: Optional[FieldExporter[T]] = None
-        ) -> bool:
+    *,
+    default: bool,
+    # Options
+    option: Optional[FieldCLIOption] = None,
+    is_flag: bool = True,
+    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
+    multiple: bool = False,
+    metavar: Optional[str] = None,
+    envvar: Optional[str] = None,
+    deprecated: Optional['tmt.options.Deprecated'] = None,
+    help: Optional[str] = None,
+    show_default: bool = False,
+    internal: bool = False,
+    # Input data normalization - not needed, the field is a boolean
+    # flag.
+    # normalize: Optional[NormalizeCallback[T]] = None
+    # Custom serialization
+    # serialize: Optional[SerializeCallback[bool]] = None,
+    # unserialize: Optional[UnserializeCallback[bool]] = None
+    # Custom exporter
+    # exporter: Optional[FieldExporter[T]] = None
+) -> bool:
     pass
 
 
 @overload
 def field(
-        *,
-        default: T,
-        # Options
-        option: Optional[FieldCLIOption] = None,
-        is_flag: bool = False,
-        choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
-        multiple: bool = False,
-        metavar: Optional[str] = None,
-        envvar: Optional[str] = None,
-        deprecated: Optional['tmt.options.Deprecated'] = None,
-        help: Optional[str] = None,
-        show_default: bool = False,
-        internal: bool = False,
-        # Input data normalization
-        normalize: Optional[NormalizeCallback[T]] = None,
-        # Custom serialization
-        serialize: Optional[SerializeCallback[T]] = None,
-        unserialize: Optional[UnserializeCallback[T]] = None,
-        # Custom exporter
-        exporter: Optional[FieldExporter[T]] = None
-        ) -> T:
+    *,
+    default: T,
+    # Options
+    option: Optional[FieldCLIOption] = None,
+    is_flag: bool = False,
+    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
+    multiple: bool = False,
+    metavar: Optional[str] = None,
+    envvar: Optional[str] = None,
+    deprecated: Optional['tmt.options.Deprecated'] = None,
+    help: Optional[str] = None,
+    show_default: bool = False,
+    internal: bool = False,
+    # Input data normalization
+    normalize: Optional[NormalizeCallback[T]] = None,
+    # Custom serialization
+    serialize: Optional[SerializeCallback[T]] = None,
+    unserialize: Optional[UnserializeCallback[T]] = None,
+    # Custom exporter
+    exporter: Optional[FieldExporter[T]] = None,
+) -> T:
     pass
 
 
 @overload
 def field(
-        *,
-        default_factory: Callable[[], T],
-        # Options
-        option: Optional[FieldCLIOption] = None,
-        is_flag: bool = False,
-        choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
-        multiple: bool = False,
-        metavar: Optional[str] = None,
-        envvar: Optional[str] = None,
-        deprecated: Optional['tmt.options.Deprecated'] = None,
-        help: Optional[str] = None,
-        show_default: bool = False,
-        internal: bool = False,
-        # Input data normalization
-        normalize: Optional[NormalizeCallback[T]] = None,
-        # Custom serialization
-        serialize: Optional[SerializeCallback[T]] = None,
-        unserialize: Optional[UnserializeCallback[T]] = None,
-        # Custom exporter
-        exporter: Optional[FieldExporter[T]] = None
-        ) -> T:
+    *,
+    default_factory: Callable[[], T],
+    # Options
+    option: Optional[FieldCLIOption] = None,
+    is_flag: bool = False,
+    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
+    multiple: bool = False,
+    metavar: Optional[str] = None,
+    envvar: Optional[str] = None,
+    deprecated: Optional['tmt.options.Deprecated'] = None,
+    help: Optional[str] = None,
+    show_default: bool = False,
+    internal: bool = False,
+    # Input data normalization
+    normalize: Optional[NormalizeCallback[T]] = None,
+    # Custom serialization
+    serialize: Optional[SerializeCallback[T]] = None,
+    unserialize: Optional[UnserializeCallback[T]] = None,
+    # Custom exporter
+    exporter: Optional[FieldExporter[T]] = None,
+) -> T:
     pass
 
 
 @overload
 def field(
-        *,
-        # Options
-        option: Optional[FieldCLIOption] = None,
-        is_flag: bool = False,
-        choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
-        multiple: bool = False,
-        metavar: Optional[str] = None,
-        envvar: Optional[str] = None,
-        deprecated: Optional['tmt.options.Deprecated'] = None,
-        help: Optional[str] = None,
-        show_default: bool = False,
-        internal: bool = False,
-        # Input data normalization
-        normalize: Optional[NormalizeCallback[T]] = None,
-        # Custom serialization
-        serialize: Optional[SerializeCallback[T]] = None,
-        unserialize: Optional[UnserializeCallback[T]] = None,
-        # Custom exporter
-        exporter: Optional[FieldExporter[T]] = None
-        ) -> T:
+    *,
+    # Options
+    option: Optional[FieldCLIOption] = None,
+    is_flag: bool = False,
+    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
+    multiple: bool = False,
+    metavar: Optional[str] = None,
+    envvar: Optional[str] = None,
+    deprecated: Optional['tmt.options.Deprecated'] = None,
+    help: Optional[str] = None,
+    show_default: bool = False,
+    internal: bool = False,
+    # Input data normalization
+    normalize: Optional[NormalizeCallback[T]] = None,
+    # Custom serialization
+    serialize: Optional[SerializeCallback[T]] = None,
+    unserialize: Optional[UnserializeCallback[T]] = None,
+    # Custom exporter
+    exporter: Optional[FieldExporter[T]] = None,
+) -> T:
     pass
 
 
 def field(
-        *,
-        default: Any = dataclasses.MISSING,
-        default_factory: Any = None,
-        # Options
-        option: Optional[FieldCLIOption] = None,
-        is_flag: bool = False,
-        choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
-        multiple: bool = False,
-        metavar: Optional[str] = None,
-        envvar: Optional[str] = None,
-        deprecated: Optional['tmt.options.Deprecated'] = None,
-        help: Optional[str] = None,
-        show_default: bool = False,
-        internal: bool = False,
-        # Input data normalization
-        normalize: Optional[NormalizeCallback[T]] = None,
-        # Custom serialization
-        serialize: Optional[SerializeCallback[T]] = None,
-        unserialize: Optional[UnserializeCallback[T]] = None,
-        # Custom exporter
-        exporter: Optional[FieldExporter[T]] = None
-        ) -> Any:
+    *,
+    default: Any = dataclasses.MISSING,
+    default_factory: Any = None,
+    # Options
+    option: Optional[FieldCLIOption] = None,
+    is_flag: bool = False,
+    choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
+    multiple: bool = False,
+    metavar: Optional[str] = None,
+    envvar: Optional[str] = None,
+    deprecated: Optional['tmt.options.Deprecated'] = None,
+    help: Optional[str] = None,
+    show_default: bool = False,
+    internal: bool = False,
+    # Input data normalization
+    normalize: Optional[NormalizeCallback[T]] = None,
+    # Custom serialization
+    serialize: Optional[SerializeCallback[T]] = None,
+    unserialize: Optional[UnserializeCallback[T]] = None,
+    # Custom exporter
+    exporter: Optional[FieldExporter[T]] = None,
+) -> Any:
     """
     Define a :py:class:`DataContainer` field.
 
@@ -825,11 +828,13 @@ def field(
     if option:
         if is_flag is False and isinstance(default, bool):
             raise tmt.utils.GeneralError(
-                "Container field must be a flag to have boolean default value.")
+                "Container field must be a flag to have boolean default value."
+            )
 
         if is_flag is True and not isinstance(default, bool):
             raise tmt.utils.GeneralError(
-                "Container field must have a boolean default value when it is a flag.")
+                "Container field must have a boolean default value when it is a flag."
+            )
 
     # ignore[call-overload]: returning "wrong" type on purpose. field() must be annotated
     # as if returning the value of type matching the field declaration, and the original
@@ -858,6 +863,7 @@ def field(
                 normalize_callback=normalize,
                 serialize_callback=serialize,  # type: ignore[reportArgumentType,unused-ignore]
                 unserialize_callback=unserialize,
-                export_callback=exporter)  # type: ignore[reportArgumentType,unused-ignore]
-            }
-        )
+                export_callback=exporter,  # type: ignore[reportArgumentType,unused-ignore]
+            )
+        },
+    )

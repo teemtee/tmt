@@ -25,9 +25,7 @@ ImportedIdentifiersType = Optional[list[Dependency]]
 LibraryType = Union['BeakerLib', 'File']
 
 # A type for Beakerlib dependencies
-LibraryDependenciesType = tuple[
-    list[Dependency], list[Dependency], list['LibraryType']
-    ]
+LibraryDependenciesType = tuple[list[Dependency], list[Dependency], list['LibraryType']]
 
 
 class LibraryError(Exception):
@@ -44,10 +42,11 @@ class Library:
     """
 
     def __init__(
-            self,
-            *,
-            parent: Optional[tmt.utils.Common] = None,
-            logger: tmt.log.Logger) -> None:
+        self,
+        *,
+        parent: Optional[tmt.utils.Common] = None,
+        logger: tmt.log.Logger,
+    ) -> None:
         """
         Process the library identifier and fetch the library
         """
@@ -86,12 +85,13 @@ class Library:
 
 
 def library_factory(
-        *,
-        identifier: Dependency,
-        parent: Optional[tmt.utils.Common] = None,
-        logger: tmt.log.Logger,
-        source_location: Optional[Path] = None,
-        target_location: Optional[Path] = None) -> LibraryType:
+    *,
+    identifier: Dependency,
+    parent: Optional[tmt.utils.Common] = None,
+    logger: tmt.log.Logger,
+    source_location: Optional[Path] = None,
+    target_location: Optional[Path] = None,
+) -> LibraryType:
     """
     Factory function to get correct library instance
     """
@@ -110,14 +110,16 @@ def library_factory(
     # therefore an `else` with an exception.
     # ignore[unused-ignore]: silencing mypy's complaint about silencing
     # pyright's warning :)
-    elif isinstance(
-            identifier,
-            DependencyFile):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
+    elif isinstance(identifier, DependencyFile):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
         assert source_location is not None
         assert target_location is not None  # narrow type
         library = File(
-            identifier=identifier, parent=parent, logger=logger,
-            source_location=source_location, target_location=target_location)
+            identifier=identifier,
+            parent=parent,
+            logger=logger,
+            source_location=source_location,
+            target_location=target_location,
+        )
 
     # Something weird
     else:
@@ -129,21 +131,23 @@ def library_factory(
     except fmf.utils.RootError as exc:
         if isinstance(library, BeakerLib):
             raise tmt.utils.SpecificationError(
-                f"Repository '{library.url}' does not contain fmf metadata.") from exc
+                f"Repository '{library.url}' does not contain fmf metadata."
+            ) from exc
         raise exc
 
     return library
 
 
 def dependencies(
-        *,
-        original_require: list[Dependency],
-        original_recommend: Optional[list[Dependency]] = None,
-        parent: Optional[tmt.utils.Common] = None,
-        imported_lib_ids: ImportedIdentifiersType = None,
-        logger: tmt.log.Logger,
-        source_location: Optional[Path] = None,
-        target_location: Optional[Path] = None) -> LibraryDependenciesType:
+    *,
+    original_require: list[Dependency],
+    original_recommend: Optional[list[Dependency]] = None,
+    parent: Optional[tmt.utils.Common] = None,
+    imported_lib_ids: ImportedIdentifiersType = None,
+    logger: tmt.log.Logger,
+    source_location: Optional[Path] = None,
+    target_location: Optional[Path] = None,
+) -> LibraryDependenciesType:
     """
     Check dependencies for possible beakerlib libraries
 
@@ -176,12 +180,17 @@ def dependencies(
         # Library require/recommend
         try:
             library = library_factory(
-                logger=logger, identifier=dependency, parent=parent,
-                source_location=source_location, target_location=target_location)
+                logger=logger,
+                identifier=dependency,
+                parent=parent,
+                source_location=source_location,
+                target_location=target_location,
+            )
             gathered_libraries.append(library)
             imported_lib_ids.append(library.identifier)
 
             from .beakerlib import BeakerLib
+
             if isinstance(library, BeakerLib):
                 # Recursively check for possible dependent libraries
                 assert parent is not None  # narrow type
@@ -198,7 +207,8 @@ def dependencies(
                     imported_lib_ids=imported_lib_ids,
                     logger=logger,
                     source_location=library.source_directory,
-                    target_location=Path(library.tree.root))
+                    target_location=Path(library.tree.root),
+                )
                 processed_require.update(set(requires))
                 processed_recommend.update(set(recommends))
                 gathered_libraries.extend(libraries)

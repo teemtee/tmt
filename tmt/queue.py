@@ -253,9 +253,7 @@ class MultiGuestTask(Task[TaskResultT]):
 
                 # Submit each task/guest combination (save the guest & logger
                 # for later)...
-                futures[
-                    executor.submit(self.run_on_guest, guest, new_logger)
-                    ] = guest
+                futures[executor.submit(self.run_on_guest, guest, new_logger)] = guest
 
             # ... and then sit and wait as they get delivered to us as they
             # finish. Unpack the guest and logger, so we could preserve logging
@@ -314,7 +312,8 @@ class Queue(list[TaskT]):
         self._logger.info(
             f'queued {self.name} task #{len(self)}',
             task.name,
-            color='cyan')
+            color='cyan',
+        )
 
     def run(self) -> Iterator[TaskT]:
         """
@@ -330,7 +329,8 @@ class Queue(list[TaskT]):
             self._logger.info(
                 f'{self.name} task #{i + 1}',
                 task.name,
-                color='cyan')
+                color='cyan',
+            )
 
             failed_tasks: list[TaskT] = []
 

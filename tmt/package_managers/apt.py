@@ -11,7 +11,7 @@ from tmt.package_managers import (
     PackagePath,
     escape_installables,
     provides_package_manager,
-    )
+)
 from tmt.utils import (
     Command,
     CommandOutput,
@@ -20,7 +20,7 @@ from tmt.utils import (
     GeneralError,
     RunError,
     ShellScript,
-    )
+)
 
 ReducedPackages = list[Union[Package, PackagePath]]
 
@@ -96,11 +96,13 @@ class Apt(tmt.package_managers.PackageManager):
         return packages
 
     def _construct_presence_script(
-            self, *installables: Installable) -> tuple[ReducedPackages, ShellScript]:
+        self, *installables: Installable
+    ) -> tuple[ReducedPackages, ShellScript]:
         reduced_packages = self._reduce_to_packages(*installables)
 
         return reduced_packages, ShellScript(
-            f'dpkg-query --show {" ".join(escape_installables(*reduced_packages))}')
+            f'dpkg-query --show {" ".join(escape_installables(*reduced_packages))}'
+        )
 
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
         reduced_packages, presence_script = self._construct_presence_script(*installables)
@@ -119,7 +121,8 @@ class Apt(tmt.package_managers.PackageManager):
 
         for installable, package in zip(installables, reduced_packages):
             match = re.search(
-                rf'dpkg-query: no packages found matching {re.escape(str(package))}', stderr)
+                rf'dpkg-query: no packages found matching {re.escape(str(package))}', stderr
+            )
 
             if match is not None:
                 results[installable] = False
@@ -142,17 +145,17 @@ class Apt(tmt.package_managers.PackageManager):
         return extra_options
 
     def refresh_metadata(self) -> CommandOutput:
-        script = ShellScript(
-            f'{self.command.to_script()} update')
+        script = ShellScript(f'{self.command.to_script()} update')
 
-        return self.guest.execute(script, env=Environment({
-            'DEBIAN_FRONTEND': EnvVarValue('noninteractive')
-            }))
+        return self.guest.execute(
+            script, env=Environment({'DEBIAN_FRONTEND': EnvVarValue('noninteractive')})
+        )
 
     def install(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
         options = options or Options()
 
         extra_options = self._extra_options(options)
@@ -161,7 +164,8 @@ class Apt(tmt.package_managers.PackageManager):
         script = ShellScript(
             f'{self.command.to_script()} install '
             f'{self.options.to_script()} {extra_options} '
-            f'{" ".join(escape_installables(*packages))}')
+            f'{" ".join(escape_installables(*packages))}'
+        )
 
         if options.check_first:
             script = self._construct_presence_script(*packages)[1] | script
@@ -172,14 +176,15 @@ class Apt(tmt.package_managers.PackageManager):
         if options.skip_missing:
             script = script | ShellScript('/bin/true')
 
-        return self.guest.execute(script, env=Environment({
-            'DEBIAN_FRONTEND': EnvVarValue('noninteractive')
-            }))
+        return self.guest.execute(
+            script, env=Environment({'DEBIAN_FRONTEND': EnvVarValue('noninteractive')})
+        )
 
     def reinstall(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
         options = options or Options()
 
         extra_options = self._extra_options(options)
@@ -188,7 +193,8 @@ class Apt(tmt.package_managers.PackageManager):
         script = ShellScript(
             f'{self.command.to_script()} reinstall '
             f'{self.options.to_script()} {extra_options} '
-            f'{" ".join(escape_installables(*packages))}')
+            f'{" ".join(escape_installables(*packages))}'
+        )
 
         if options.check_first:
             script = self._construct_presence_script(*packages)[1] & script
@@ -196,12 +202,13 @@ class Apt(tmt.package_managers.PackageManager):
         if options.skip_missing:
             script = script | ShellScript('/bin/true')
 
-        return self.guest.execute(script, env=Environment({
-            'DEBIAN_FRONTEND': EnvVarValue('noninteractive')
-            }))
+        return self.guest.execute(
+            script, env=Environment({'DEBIAN_FRONTEND': EnvVarValue('noninteractive')})
+        )
 
     def install_debuginfo(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
         raise tmt.utils.GeneralError("There is no support for debuginfo packages in apt.")

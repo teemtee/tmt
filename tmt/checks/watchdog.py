@@ -24,7 +24,8 @@ if TYPE_CHECKING:
     from tmt.steps.execute import TestInvocation
 
 PING_OUTPUT_PATTERN = re.compile(
-    r'(?m)(?P<transmitted>\d+) packets transmitted, (?P<received>\d+) received')
+    r'(?m)(?P<transmitted>\d+) packets transmitted, (?P<received>\d+) received'
+)
 SSH_PING_OUTPUT_PATTERN = re.compile(r'Ncat: Connected')
 
 # TODO: do not use the list of classes, it's hard to maintain.
@@ -36,12 +37,12 @@ PINGABLE_GUEST_CLASSES: tuple[type[tmt.steps.provision.Guest], ...] = (
     # TODO: is there a way to ping the VM instead of localhost?
     # Tracked in https://github.com/teemtee/tmt/issues/2738
     # tmt.steps.provision.testcloud.GuestTestcloud
-    )
+)
 
 SSH_PINGABLE_GUEST_CLASSES: tuple[type[tmt.steps.provision.Guest], ...] = (
     tmt.steps.provision.GuestSsh,
-    tmt.steps.provision.local.GuestLocal
-    )
+    tmt.steps.provision.local.GuestLocal,
+)
 
 
 REPORT_FILENAME = 'tmt-watchdog.txt'
@@ -56,10 +57,11 @@ def render_report_path(invocation: 'TestInvocation') -> Path:
 
 
 def report_progress(
-        log: Path,
-        check_name: str,
-        report: Iterable[str],
-        command_output: Optional[str] = None) -> None:
+    log: Path,
+    check_name: str,
+    report: Iterable[str],
+    command_output: Optional[str] = None,
+) -> None:
     """
     Add new report into a report file.
 
@@ -109,31 +111,37 @@ class GuestContext:
 class WatchdogCheck(Check):
     interval: int = field(
         default=60,
-        help='How often should the watchdog run, in seconds.')
+        help='How often should the watchdog run, in seconds.',
+    )
 
     reboot: bool = field(
         default=False,
-        help='If enabled, watchdog would reboot the guest after enough failed probes.')
+        help='If enabled, watchdog would reboot the guest after enough failed probes.',
+    )
 
     ping: bool = field(
         default=False,
-        help="If enabled, watchdog would probe guest's responsiveness with ICMP packets.")
+        help="If enabled, watchdog would probe guest's responsiveness with ICMP packets.",
+    )
     ping_packets: int = field(
         default=1,
-        help='How many ICMP packates to send as one probe.')
+        help='How many ICMP packates to send as one probe.',
+    )
     ping_threshold: int = field(
-        default=10,
-        help='How many failed ping probes before taking any further action.')
+        default=10, help='How many failed ping probes before taking any further action.'
+    )
 
     ssh_ping: bool = field(
         default=False,
         help="""
              If enabled, watchdog would probe guest's responsiveness by connecting
              to its SSH port.
-             """)
+             """,
+    )
     ssh_ping_threshold: int = field(
         default=10,
-        help='How many failed SSH connections before taking any further action.')
+        help='How many failed SSH connections before taking any further action.',
+    )
 
     def notify(self, invocation: 'TestInvocation', logger: tmt.log.Logger) -> None:
         """
@@ -147,10 +155,11 @@ class WatchdogCheck(Check):
         invocation.terminate_process(logger=logger)
 
     def do_ping(
-            self,
-            invocation: 'TestInvocation',
-            guest_context: GuestContext,
-            logger: tmt.log.Logger) -> None:
+        self,
+        invocation: 'TestInvocation',
+        guest_context: GuestContext,
+        logger: tmt.log.Logger,
+    ) -> None:
         """
         Perform a ping check
         """
@@ -174,9 +183,9 @@ class WatchdogCheck(Check):
                 [
                     '# failed to parse ping output',
                     f'# failed {guest_context.ping_failures} of {self.ping_threshold} allowed',
-                    ],
-                command_output=ping_output
-                )
+                ],
+                command_output=ping_output,
+            )
 
         def _fail_lost_packets(ping_output: str, transmitted: int, received: int) -> None:
             """
@@ -193,9 +202,9 @@ class WatchdogCheck(Check):
                 [
                     '# not all packets returned',
                     f'# failed {guest_context.ping_failures} of {self.ping_threshold} allowed',
-                    ],
-                command_output=ping_output
-                )
+                ],
+                command_output=ping_output,
+            )
 
         def _success(ping_output: str) -> None:
             """
@@ -204,21 +213,14 @@ class WatchdogCheck(Check):
 
             logger.verbose('Received successful response to ping.', level=2)
 
-            report = [
-                '# successful response'
-                ]
+            report = ['# successful response']
 
             if guest_context.ping_failures != 0:
                 report.append(f'# replenished failure budget back to {self.ping_threshold}')
 
             guest_context.ping_failures = 0
 
-            report_progress(
-                log,
-                'ping',
-                report,
-                command_output=ping_output
-                )
+            report_progress(log, 'ping', report, command_output=ping_output)
 
         def _handle_output(ping_output: str) -> None:
             """
@@ -242,9 +244,7 @@ class WatchdogCheck(Check):
                 else:
                     _success(ping_output)
 
-            logger.debug(
-                f'failed {guest_context.ping_failures}'
-                f' of {self.ping_threshold} allowed')
+            logger.debug(f'failed {guest_context.ping_failures} of {self.ping_threshold} allowed')
 
             if guest_context.ping_failures >= self.ping_threshold:
                 logger.fail(f'exhausted {self.ping_threshold} ping attempts')
@@ -254,12 +254,9 @@ class WatchdogCheck(Check):
         try:
             assert invocation.guest.primary_address is not None  # narrow type
 
-            output = tmt.utils.Command('ping',
-                                       '-c',
-                                       str(self.ping_packets),
-                                       invocation.guest.primary_address) .run(cwd=Path.cwd(),
-                                                                              stream_output=False,
-                                                                              logger=logger)
+            output = tmt.utils.Command(
+                'ping', '-c', str(self.ping_packets), invocation.guest.primary_address
+            ).run(cwd=Path.cwd(), stream_output=False, logger=logger)
 
             _handle_output(output.stdout or '')
 
@@ -271,10 +268,11 @@ class WatchdogCheck(Check):
                 _handle_output('\n'.join(render_run_exception_streams(exc.output)))
 
     def do_ssh_ping(
-            self,
-            invocation: 'TestInvocation',
-            guest_context: GuestContext,
-            logger: tmt.log.Logger) -> None:
+        self,
+        invocation: 'TestInvocation',
+        guest_context: GuestContext,
+        logger: tmt.log.Logger,
+    ) -> None:
         """
         Perform a "SSH ping" check
         """
@@ -294,14 +292,16 @@ class WatchdogCheck(Check):
 
             guest_context.ssh_ping_failures += 1
 
-            report_progress(log,
-                            'ssh-ping',
-                            [
-                                '# unknown error',
-                                f'# failed {guest_context.ssh_ping_failures}'
-                                f' of {self.ssh_ping_threshold} allowed',
-                                ],
-                            command_output=ncat_output)
+            report_progress(
+                log,
+                'ssh-ping',
+                [
+                    '# unknown error',
+                    f'# failed {guest_context.ssh_ping_failures}'
+                    f' of {self.ssh_ping_threshold} allowed',
+                ],
+                command_output=ncat_output,
+            )
 
         def _fail_connection_refused(ncat_output: str) -> None:
             """
@@ -312,14 +312,16 @@ class WatchdogCheck(Check):
 
             guest_context.ssh_ping_failures += 1
 
-            report_progress(log,
-                            'ssh-ping',
-                            [
-                                '# connection refused',
-                                f'# failed {guest_context.ssh_ping_failures}'
-                                f' of {self.ssh_ping_threshold} allowed',
-                                ],
-                            command_output=ncat_output)
+            report_progress(
+                log,
+                'ssh-ping',
+                [
+                    '# connection refused',
+                    f'# failed {guest_context.ssh_ping_failures}'
+                    f' of {self.ssh_ping_threshold} allowed',
+                ],
+                command_output=ncat_output,
+            )
 
         def _success(ncat_output: str) -> None:
             """
@@ -328,31 +330,21 @@ class WatchdogCheck(Check):
 
             logger.verbose('Received successful response to SSH ping.', level=2)
 
-            report = [
-                '# successful response'
-                ]
+            report = ['# successful response']
 
             if guest_context.ssh_ping_failures != 0:
                 report.append(f'# replenished failure budget back to {self.ssh_ping_threshold}')
 
             guest_context.ssh_ping_failures = 0
 
-            report_progress(
-                log,
-                'ssh-ping',
-                report,
-                command_output=ncat_output
-                )
+            report_progress(log, 'ssh-ping', report, command_output=ncat_output)
 
         try:
             assert invocation.guest.primary_address is not None  # narrow type
 
-            output = tmt.utils.Command('nc',
-                                       '-zv',
-                                       invocation.guest.primary_address,
-                                       str(invocation.guest.port or 22)) .run(cwd=Path.cwd(),
-                                                                              stream_output=False,
-                                                                              logger=logger)
+            output = tmt.utils.Command(
+                'nc', '-zv', invocation.guest.primary_address, str(invocation.guest.port or 22)
+            ).run(cwd=Path.cwd(), stream_output=False, logger=logger)
 
             _success(output.stderr or '')
 
@@ -364,8 +356,8 @@ class WatchdogCheck(Check):
                 _fail_unknown('\n'.join(render_run_exception_streams(exc.output)))
 
         logger.debug(
-            f'failed {guest_context.ssh_ping_failures}'
-            f' of {self.ssh_ping_threshold} allowed')
+            f'failed {guest_context.ssh_ping_failures} of {self.ssh_ping_threshold} allowed'
+        )
 
         if guest_context.ssh_ping_failures >= self.ssh_ping_threshold:
             logger.fail(f'exhausted {self.ssh_ping_threshold} SSH ping attempts')
@@ -431,13 +423,13 @@ class Watchdog(CheckPlugin[WatchdogCheck]):
 
     @classmethod
     def before_test(
-            cls,
-            *,
-            check: WatchdogCheck,
-            invocation: 'TestInvocation',
-            environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> list[CheckResult]:
-
+        cls,
+        *,
+        check: WatchdogCheck,
+        invocation: 'TestInvocation',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[CheckResult]:
         # Setup a logger
         watchdog_logger = logger.clone()
         watchdog_logger.labels.append('watchdog')
@@ -481,7 +473,8 @@ class Watchdog(CheckPlugin[WatchdogCheck]):
             target=watchdog,
             args=(guest_context,),
             name=f'watchdog-{invocation.guest.name}',
-            daemon=True)
+            daemon=True,
+        )
 
         guest_context.thread.start()
 
@@ -489,13 +482,13 @@ class Watchdog(CheckPlugin[WatchdogCheck]):
 
     @classmethod
     def after_test(
-            cls,
-            *,
-            check: WatchdogCheck,
-            invocation: 'TestInvocation',
-            environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> list[CheckResult]:
-
+        cls,
+        *,
+        check: WatchdogCheck,
+        invocation: 'TestInvocation',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[CheckResult]:
         watchdog_logger = logger.clone()
         watchdog_logger.labels.append('watchdog')
 
@@ -515,4 +508,6 @@ class Watchdog(CheckPlugin[WatchdogCheck]):
             CheckResult(
                 name='watchdog',
                 result=ResultOutcome.PASS,
-                log=[render_report_path(invocation).relative_to(invocation.phase.step.workdir)])]
+                log=[render_report_path(invocation).relative_to(invocation.phase.step.workdir)],
+            )
+        ]

@@ -56,6 +56,7 @@ def discover(path: Path) -> Iterator[str]:
 #    - tmt.plugin
 #
 
+
 # A list of tmt (sub)packages that may contain plugins. For each package, we
 # track the package name and its path relative to tmt package sources.
 #
@@ -69,17 +70,14 @@ def discover(path: Path) -> Iterator[str]:
 def _discover_packages() -> list[tuple[str, Path]]:
     from tmt.steps import STEPS
 
-    return [
-        (f'tmt.steps.{step}', Path('steps') / step)
-        for step in STEPS
-        ] + [
+    return [(f'tmt.steps.{step}', Path('steps') / step) for step in STEPS] + [
         ('tmt.plugins', Path('plugins')),
         ('tmt.export', Path('export')),
         ('tmt.frameworks', Path('frameworks')),
         ('tmt.checks', Path('checks')),
         ('tmt.package_managers', Path('package_managers')),
         ('tmt.steps.prepare.feature', Path('steps/prepare/feature')),
-        ]
+    ]
 
 
 def _explore_package(package: str, path: Path, logger: Logger) -> None:
@@ -121,7 +119,8 @@ def _explore_custom_directories(logger: Logger) -> None:
 
     if not os.environ.get(ENVIRONMENT_NAME):
         logger.debug(
-            f"No custom directories found in the '{ENVIRONMENT_NAME}' environment variable.")
+            f"No custom directories found in the '{ENVIRONMENT_NAME}' environment variable."
+        )
         return
 
     for _path in os.environ[ENVIRONMENT_NAME].split(os.pathsep):
@@ -130,7 +129,8 @@ def _explore_custom_directories(logger: Logger) -> None:
         # to avoid str -> Path -> str -> Path conversion.
         _explore_directory(
             Path(os.path.expandvars(os.path.expanduser(_path))).resolve(),  # noqa: TID251
-            logger)
+            logger,
+        )
 
 
 def _explore_entry_point(entry_point: str, logger: Logger) -> None:
@@ -212,9 +212,10 @@ def explore(logger: Logger, again: bool = False) -> None:
 # return value would be assigned a name, with a narrower module type.
 # This type would be propagated into this type var.
 def _import(
-        *,
-        module: str,
-        logger: Logger) -> ModuleT:  # type: ignore[type-var,misc]
+    *,
+    module: str,
+    logger: Logger,
+) -> ModuleT:  # type: ignore[type-var,misc]
     """
     Import a module.
 
@@ -247,11 +248,12 @@ def _import(
 # return value would be assigned a name, with a narrower module type.
 # This type would be propagated into this type var.
 def _import_or_raise(
-        *,
-        module: str,
-        exc_class: type[BaseException],
-        exc_message: str,
-        logger: Logger) -> ModuleT:  # type: ignore[type-var,misc]
+    *,
+    module: str,
+    exc_class: type[BaseException],
+    exc_message: str,
+    logger: Logger,
+) -> ModuleT:  # type: ignore[type-var,misc]
     """
     Import a module, or raise an exception.
 
@@ -273,10 +275,11 @@ def _import_or_raise(
 # return value would be assigned a name, with a narrower module type.
 # This type would be propagated into this type var.
 def import_module(
-        *,
-        module: str,
-        path: Optional[Path] = None,
-        logger: Logger) -> ModuleT:  # type: ignore[type-var,misc]
+    *,
+    module: str,
+    path: Optional[Path] = None,
+    logger: Logger,
+) -> ModuleT:  # type: ignore[type-var,misc]
     """
     Import a module.
 
@@ -294,14 +297,16 @@ def import_module(
         module=module,
         exc_class=SystemExit,
         exc_message=f"Failed to import the '{module}' module from '{path}'.",
-        logger=logger)
+        logger=logger,
+    )
 
 
 def import_member(
-        *,
-        module: str,
-        member: str,
-        logger: Logger) -> tuple[ModuleT, Any]:
+    *,
+    module: str,
+    member: str,
+    logger: Logger,
+) -> tuple[ModuleT, Any]:
     """
     Import member from given module, handle errors nicely
     """
@@ -332,12 +337,13 @@ class PluginRegistry(Generic[RegisterableT]):
         self._plugins = {}
 
     def register_plugin(
-            self,
-            *,
-            plugin_id: str,
-            plugin: RegisterableT,
-            raise_on_conflict: bool = True,
-            logger: Logger) -> None:
+        self,
+        *,
+        plugin_id: str,
+        plugin: RegisterableT,
+        raise_on_conflict: bool = True,
+        logger: Logger,
+    ) -> None:
         """
         Register a plugin with this registry.
 
@@ -362,7 +368,8 @@ class PluginRegistry(Generic[RegisterableT]):
             logger.warning(
                 f"Registering plugin '{plugin}' collides"
                 f" with an already registered id '{plugin_id}'"
-                f" of plugin '{self._plugins[plugin_id]}'.")
+                f" of plugin '{self._plugins[plugin_id]}'."
+            )
 
             # raise tmt.utils.GeneralError(
             #     f"Registering plugin '{plugin.__module__}' collides"
@@ -403,10 +410,11 @@ class ModuleImporter(Generic[ModuleT]):
     """
 
     def __init__(
-            self,
-            module: str,
-            exc_class: type[Exception],
-            exc_message: str) -> None:
+        self,
+        module: str,
+        exc_class: type[Exception],
+        exc_message: str,
+    ) -> None:
         self._module_name = module
         self._exc_class = exc_class
         self._exc_message = exc_message
@@ -419,7 +427,8 @@ class ModuleImporter(Generic[ModuleT]):
                 module=self._module_name,
                 exc_class=self._exc_class,
                 exc_message=self._exc_message,
-                logger=logger)
+                logger=logger,
+            )
 
         assert self._module  # narrow type
         return self._module

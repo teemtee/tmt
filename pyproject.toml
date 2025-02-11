@@ -288,21 +288,22 @@ reportPrivateUsage = false
 reportUnknownMemberType = false
 reportUnnecessaryCast = false  # Unnecessary "cast" call; type is already...
 
-[tool.autopep8]
-max_line_length = 99
-in-place = true
-recursive = true
-hang-closing = true
-aggressive = 2
-
-[tool.pep8]
-max-line-length = "99"
-
 [tool.ruff]
 line-length = 99
 src = ["tmt", "tests"]
 target-version = "py39"
-lint.select = [
+
+[tool.ruff.format]
+quote-style = "preserve"  # TODO: Convert to a specific quote style
+exclude = [
+    "tests/*",
+    "tmt/cli/*",
+    "tmt/steps/*",
+    "tmt/utils/*",
+    ]
+
+[tool.ruff.lint]
+select = [
     "F",  # pyflakes
     "E",  # pycodestyle error
     "W",  # pycodestyle warning
@@ -343,7 +344,7 @@ lint.select = [
     "RUF",  # ruff
     "D",    # pydocstyle
     ]
-lint.ignore = [
+ignore = [
     "B904",  # Within an `except` clause, raise exceptions with `raise ... from err` or `raise ...
     "COM812",  # Trailing comma missing
     "G004",  # Logging statement uses f-string
@@ -379,16 +380,14 @@ lint.ignore = [
     "D107",  # Missing docstring in __init__
     "D202",  # No blank lines allowed after function docstring
     "D205",  # 1 blank line required between summary line and description
-    "D210",  # No whitespaces allowed surrounding docstring text
-    "D212",  # Multi-line docstring summary should start at the first line
     "D301",  # Use r""" if any backslashes in a docstring
     "D400",  # First line should end with a period
     "D401",  # First line of docstring should be in imperative mood
     "D415",  # First line should end with a period, question mark, or exclamation point
     ]
 
-lint.logger-objects = ["tmt.log.Logger"]
-lint.typing-modules = ["tmt._compat.typing"]
+logger-objects = ["tmt.log.Logger"]
+typing-modules = ["tmt._compat.typing"]
 
 [tool.ruff.lint.per-file-ignores]
 # Less strict security checks in tests

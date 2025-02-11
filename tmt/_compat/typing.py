@@ -17,4 +17,4 @@ __all__ = [
     "ParamSpec",
     "Self",
     "TypeAlias",
-    ]
+]

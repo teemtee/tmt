@@ -38,8 +38,8 @@ AREA_TITLES = {
     '/spec/stories': 'Stories',
     '/spec/context': 'Context',
     '/spec/hardware': 'Hardware',
-    '/spec/results': 'Results'
-    }
+    '/spec/results': 'Results',
+}
 
 
 def main() -> None:
@@ -75,7 +75,8 @@ def main() -> None:
                 rendered = story.export(
                     format='rst',
                     include_title=story.name != area,
-                    template=story_template_filepath)
+                    template=story_template_filepath,
+                )
 
                 doc.write(rendered)
                 doc.write('\n\n')

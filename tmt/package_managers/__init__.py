@@ -75,12 +75,14 @@ Installable = Union[Package, FileSystemPath, PackagePath, PackageUrl]
 PackageManagerClass = type['PackageManager']
 
 
-_PACKAGE_MANAGER_PLUGIN_REGISTRY: tmt.plugins.PluginRegistry[PackageManagerClass] = \
+_PACKAGE_MANAGER_PLUGIN_REGISTRY: tmt.plugins.PluginRegistry[PackageManagerClass] = (
     tmt.plugins.PluginRegistry()
+)
 
 
 def provides_package_manager(
-        package_manager: str) -> Callable[[PackageManagerClass], PackageManagerClass]:
+    package_manager: str,
+) -> Callable[[PackageManagerClass], PackageManagerClass]:
     """
     A decorator for registering package managers.
 
@@ -91,7 +93,8 @@ def provides_package_manager(
         _PACKAGE_MANAGER_PLUGIN_REGISTRY.register_plugin(
             plugin_id=package_manager,
             plugin=package_manager_cls,
-            logger=tmt.log.Logger.get_bootstrap_logger())
+            logger=tmt.log.Logger.get_bootstrap_logger(),
+        )
 
         return package_manager_cls
 
@@ -109,7 +112,8 @@ def find_package_manager(name: 'GuestPackageManager') -> 'PackageManagerClass':
 
     if plugin is None:
         raise tmt.utils.GeneralError(
-            f"Package manager '{name}' was not found in package manager registry.")
+            f"Package manager '{name}' was not found in package manager registry."
+        )
 
     return plugin
 
@@ -186,21 +190,24 @@ class PackageManager(tmt.utils.Common):
         raise NotImplementedError
 
     def install(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
         raise NotImplementedError
 
     def reinstall(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
         raise NotImplementedError
 
     def install_debuginfo(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
         raise NotImplementedError
 
     def refresh_metadata(self) -> CommandOutput:

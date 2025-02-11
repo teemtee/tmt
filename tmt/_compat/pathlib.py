@@ -48,11 +48,12 @@ class Path(pathlib.PosixPath):
         return self
 
     def append_text(
-            self,
-            data: str,
-            encoding: Optional[str] = None,
-            errors: Optional[str] = None,
-            newline: Optional[str] = None) -> int:
+        self,
+        data: str,
+        encoding: Optional[str] = None,
+        errors: Optional[str] = None,
+        newline: Optional[str] = None,
+    ) -> int:
         """
         Open the file pointed to in text mode, append data to it, and close the file
         """
@@ -61,14 +62,13 @@ class Path(pathlib.PosixPath):
             return f.write(data)
 
     def splitlines(
-            self,
-            encoding: Optional[str] = None,
-            errors: Optional[str] = None,
-            keepends: bool = False) -> Iterator[str]:
+        self,
+        encoding: Optional[str] = None,
+        errors: Optional[str] = None,
+        keepends: bool = False,
+    ) -> Iterator[str]:
         """
         Yield decoded lines of the pointed-to file as a sequence of strings
         """
 
-        yield from self \
-            .read_text(encoding=encoding, errors=errors) \
-            .splitlines(keepends=keepends)
+        yield from self.read_text(encoding=encoding, errors=errors).splitlines(keepends=keepends)

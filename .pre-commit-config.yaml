@@ -1,11 +1,6 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
-  - repo: https://github.com/hhatto/autopep8
-    rev: 'v2.3.2'
-    hooks:
-      - id: autopep8
-
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: "v5.0.0"
     hooks:
@@ -150,6 +145,7 @@ repos:
         args:
           - '--fix'
           - '--show-fixes'
+      - id: ruff-format
 
   - repo: https://github.com/teemtee/tmt.git
     rev: 1.42.1

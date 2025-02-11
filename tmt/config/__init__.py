@@ -45,8 +45,7 @@ class Config:
         try:
             self.path.mkdir(parents=True, exist_ok=True)
         except OSError as error:
-            raise tmt.utils.GeneralError(
-                f"Failed to create config '{self.path}'.") from error
+            raise tmt.utils.GeneralError(f"Failed to create config '{self.path}'.") from error
 
     @property
     def _last_run_symlink(self) -> Path:
@@ -75,10 +74,10 @@ class Config:
             # Race when tmt runs in parallel
             self.logger.warning(
                 f"Unable to mark '{workdir}' as the last run, "
-                "'tmt run --last' might not pick the right run directory.")
+                "'tmt run --last' might not pick the right run directory."
+            )
         except OSError as error:
-            raise tmt.utils.GeneralError(
-                f"Unable to save last run '{self.path}'.\n{error}")
+            raise tmt.utils.GeneralError(f"Unable to save last run '{self.path}'.\n{error}")
 
     @functools.cached_property
     def fmf_tree(self) -> fmf.Tree:
@@ -104,4 +103,5 @@ class Config:
             return LinkConfig.parse_obj(link_config.data)
         except ValidationError as error:
             raise tmt.utils.SpecificationError(
-                f"Invalid link configuration in '{link_config.name}'.") from error
+                f"Invalid link configuration in '{link_config.name}'."
+            ) from error

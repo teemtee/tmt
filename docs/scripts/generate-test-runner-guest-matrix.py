@@ -44,7 +44,7 @@ def main() -> None:
     try:
         unsupported_environments: list[Pattern[str]] = [
             re.compile(pattern) for pattern in definitions['unsupported']
-            ]
+        ]
 
     except re.error as exc:
         raise GeneralError(f"Invalid 'unsupported' pattern '{exc.pattern}'.") from exc
@@ -52,7 +52,7 @@ def main() -> None:
     try:
         unknown_environments: list[Pattern[str]] = [
             re.compile(pattern) for pattern in definitions['unknown']
-            ]
+        ]
 
     except re.error as exc:
         raise GeneralError(f"Invalid 'unknown' pattern '{exc.pattern}'.") from exc
@@ -60,7 +60,7 @@ def main() -> None:
     try:
         notes: dict[Pattern[str], Any] = {
             re.compile(note['pattern']): note for note in definitions['notes']
-            }
+        }
 
     except re.error as exc:
         raise GeneralError(f"Invalid 'notes' pattern '{exc.pattern}'.") from exc
@@ -91,11 +91,14 @@ def main() -> None:
                 else:
                     matrix[runner].append(('supported', None))
 
-    output_filepath.write_text(render_template_file(
-        template_filepath,
-        LOGGER=logger,
-        MATRIX=matrix,
-        NOTES=notes.values()))
+    output_filepath.write_text(
+        render_template_file(
+            template_filepath,
+            LOGGER=logger,
+            MATRIX=matrix,
+            NOTES=notes.values(),
+        ),
+    )
 
 
 if __name__ == '__main__':
