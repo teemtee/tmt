@@ -469,6 +469,7 @@ definitions:
   result_outcome:
     type: string
     enum:
+      - pending
       - pass
       - fail
       - info
