@@ -292,6 +292,8 @@ class Discover(tmt.steps.Step):
                 "Use either 'discover' or 'execute' step "
                 "to define tests, but not both.")
 
+        self._assert_default_phase()
+
         if not isinstance(self.data[0], DiscoverShellData):
             # TODO: or should we rather create a new `shell` discovery step data,
             # and fill it with our tests? Before step data patch, `tests` attribute

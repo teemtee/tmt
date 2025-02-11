@@ -179,9 +179,7 @@ class Prepare(tmt.steps.Step):
                 PreparePlugin[PrepareStepData],
                 PreparePlugin.delegate(self, data=data))
             plugin.wake()
-            # Add plugin only if there are data
-            if not plugin.data.is_bare:
-                self._phases.append(plugin)
+            self._phases.append(plugin)
 
         # Nothing more to do if already done and not asked to run again
         if self.status() == 'done' and not self.should_run_again:
