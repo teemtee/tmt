@@ -102,13 +102,25 @@ TEST_RESTART_MAX = 10
 FOLLOW_LINES = 10
 
 # Obsoleted test keys
-OBSOLETED_TEST_KEYS = "relevancy coverage".split()
+OBSOLETED_TEST_KEYS = [
+    "relevancy",
+    "coverage",
+]
 
 # Unofficial temporary test keys
-EXTRA_TEST_KEYS = "extra-nitrate extra-hardware extra-pepa extra-summary extra-task id".split()
+EXTRA_TEST_KEYS = [
+    "extra-nitrate",
+    "extra-hardware",
+    "extra-pepa",
+    "extra-summary",
+    "extra-task",
+    "id",
+]
 
 # Unofficial temporary story keys
-EXTRA_STORY_KEYS = "id".split()
+EXTRA_STORY_KEYS = [
+    "id",
+]
 
 SECTIONS_HEADINGS = {
     'Setup': ['<h1>Setup</h1>'],
@@ -336,7 +348,12 @@ _RawLinks = Union[_RawLink, list[_RawLink]]
 # like `environment` or `provision`, and focuses only on the keys defined for `adjust`
 # itself.
 _RawAdjustRule = TypedDict(
-    '_RawAdjustRule', {'when': Optional[str], 'continue': Optional[bool], 'because': Optional[str]}
+    '_RawAdjustRule',
+    {
+        'when': Optional[str],
+        'continue': Optional[bool],
+        'because': Optional[str],
+    },
 )
 
 

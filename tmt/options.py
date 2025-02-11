@@ -395,24 +395,63 @@ FILTERING_OPTIONS_LONG: list[ClickOptionDecoratorType] = [
 
 
 STORY_FLAGS_FILTER_OPTIONS: list[ClickOptionDecoratorType] = [
-    option('--implemented', is_flag=True, help='Implemented stories only.'),
-    option('--unimplemented', is_flag=True, help='Unimplemented stories only.'),
-    option('--verified', is_flag=True, help='Stories verified by tests.'),
-    option('--unverified', is_flag=True, help='Stories not verified by tests.'),
-    option('--documented', is_flag=True, help='Documented stories only.'),
-    option('--undocumented', is_flag=True, help='Undocumented stories only.'),
-    option('--covered', is_flag=True, help='Covered stories only.'),
-    option('--uncovered', is_flag=True, help='Uncovered stories only.'),
+    option(
+        '--implemented',
+        is_flag=True,
+        help='Implemented stories only.',
+    ),
+    option(
+        '--unimplemented',
+        is_flag=True,
+        help='Unimplemented stories only.',
+    ),
+    option(
+        '--verified',
+        is_flag=True,
+        help='Stories verified by tests.',
+    ),
+    option(
+        '--unverified',
+        is_flag=True,
+        help='Stories not verified by tests.',
+    ),
+    option(
+        '--documented',
+        is_flag=True,
+        help='Documented stories only.',
+    ),
+    option(
+        '--undocumented',
+        is_flag=True,
+        help='Undocumented stories only.',
+    ),
+    option(
+        '--covered',
+        is_flag=True,
+        help='Covered stories only.',
+    ),
+    option(
+        '--uncovered',
+        is_flag=True,
+        help='Uncovered stories only.',
+    ),
 ]
 
 FMF_SOURCE_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
-        '--source', is_flag=True, help="Select by fmf source file names instead of object names."
+        '--source',
+        is_flag=True,
+        help="Select by fmf source file names instead of object names.",
     )
 ]
 
 REMOTE_PLAN_OPTIONS: list[ClickOptionDecoratorType] = [
-    option('-s', '--shallow', is_flag=True, help='Do not clone remote plan.')
+    option(
+        '-s',
+        '--shallow',
+        is_flag=True,
+        help='Do not clone remote plan.',
+    )
 ]
 
 

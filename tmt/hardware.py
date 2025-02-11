@@ -1118,8 +1118,16 @@ def _parse_device_core(
     if include_driver:
         text_constraints = (*text_constraints, 'driver')
 
-    group.constraints += _parse_int_constraints(spec, device_prefix, number_constraints)
-    group.constraints += _parse_text_constraints(spec, device_prefix, text_constraints)
+    group.constraints += _parse_int_constraints(
+        spec,
+        device_prefix,
+        number_constraints,
+    )
+    group.constraints += _parse_text_constraints(
+        spec,
+        device_prefix,
+        text_constraints,
+    )
 
     return group
 
@@ -1163,9 +1171,15 @@ def _parse_virtualization(spec: Spec) -> BaseConstraint:
     group = And()
 
     group.constraints += _parse_flag_constraints(
-        spec, 'virtualization', ('is-virtualized', 'is-supported')
+        spec,
+        'virtualization',
+        ('is-virtualized', 'is-supported'),
     )
-    group.constraints += _parse_text_constraints(spec, 'virtualization', ('hypervisor',))
+    group.constraints += _parse_text_constraints(
+        spec,
+        'virtualization',
+        ('hypervisor',),
+    )
 
     return group
 
@@ -1219,10 +1233,21 @@ def _parse_cpu(spec: Spec) -> BaseConstraint:
         ),
     )
 
-    group.constraints += _parse_number_constraints(spec, 'cpu', ('frequency',), default_unit='MHz')
+    group.constraints += _parse_number_constraints(
+        spec,
+        'cpu',
+        ('frequency',),
+        default_unit='MHz',
+    )
 
     group.constraints += _parse_text_constraints(
-        spec, 'cpu', ('family-name', 'model-name', 'vendor-name')
+        spec,
+        'cpu',
+        (
+            'family-name',
+            'model-name',
+            'vendor-name',
+        ),
     )
 
     if 'flag' in spec:
@@ -1278,10 +1303,14 @@ def _parse_disk(spec: Spec, disk_index: int) -> BaseConstraint:
     group = And()
 
     group.constraints += _parse_size_constraints(
-        spec, f'disk[{disk_index}]', ('size', 'physical-sector-size', 'logical-sector-size')
+        spec,
+        f'disk[{disk_index}]',
+        ('size', 'physical-sector-size', 'logical-sector-size'),
     )
     group.constraints += _parse_text_constraints(
-        spec, f'disk[{disk_index}]', ('model-name', 'driver')
+        spec,
+        f'disk[{disk_index}]',
+        ('model-name', 'driver'),
     )
 
     return group
@@ -1332,7 +1361,11 @@ def _parse_network(spec: Spec, network_index: int) -> BaseConstraint:
     """
 
     group = _parse_device_core(spec, f'network[{network_index}]')
-    group.constraints += _parse_text_constraints(spec, f'network[{network_index}]', ('type',))
+    group.constraints += _parse_text_constraints(
+        spec,
+        f'network[{network_index}]',
+        ('type',),
+    )
 
     return group
 
@@ -1369,8 +1402,16 @@ def _parse_system(spec: Spec) -> BaseConstraint:
         spec, device_prefix='system', include_driver=False, include_device=False
     )
 
-    group.constraints += _parse_int_constraints(spec, 'system', ('model', 'numa-nodes'))
-    group.constraints += _parse_text_constraints(spec, 'system', ('model-name',))
+    group.constraints += _parse_int_constraints(
+        spec,
+        'system',
+        ('model', 'numa-nodes'),
+    )
+    group.constraints += _parse_text_constraints(
+        spec,
+        'system',
+        ('model-name',),
+    )
 
     return group
 
@@ -1397,7 +1438,10 @@ def _parse_tpm(spec: Spec) -> BaseConstraint:
     group = And()
 
     group.constraints += _parse_text_constraints(
-        spec, 'tpm', ('version',), allowed_operators=TPM_VERSION_ALLOWED_OPERATORS
+        spec,
+        'tpm',
+        ('version',),
+        allowed_operators=TPM_VERSION_ALLOWED_OPERATORS,
     )
 
     return group
@@ -1451,7 +1495,11 @@ def _parse_zcrypt(spec: Spec) -> BaseConstraint:
 
     group = And()
 
-    group.constraints += _parse_text_constraints(spec, 'zcrypt', ('adapter', 'mode'))
+    group.constraints += _parse_text_constraints(
+        spec,
+        'zcrypt',
+        ('adapter', 'mode'),
+    )
 
     return group
 
@@ -1467,8 +1515,16 @@ def _parse_iommu(spec: Spec) -> BaseConstraint:
 
     group = And()
 
-    group.constraints += _parse_flag_constraints(spec, 'iommu', ('is-supported',))
-    group.constraints += _parse_text_constraints(spec, 'iommu', ('model-name',))
+    group.constraints += _parse_flag_constraints(
+        spec,
+        'iommu',
+        ('is-supported',),
+    )
+    group.constraints += _parse_text_constraints(
+        spec,
+        'iommu',
+        ('model-name',),
+    )
 
     return group
 
@@ -1484,7 +1540,11 @@ def _parse_location(spec: Spec) -> BaseConstraint:
 
     group = And()
 
-    group.constraints += _parse_text_constraints(spec, 'location', ('lab-controller',))
+    group.constraints += _parse_text_constraints(
+        spec,
+        'location',
+        ('lab-controller',),
+    )
 
     return group
 
@@ -1501,7 +1561,10 @@ def _parse_beaker(spec: Spec) -> BaseConstraint:
     group = And()
 
     group.constraints += _parse_text_constraints(
-        spec, 'beaker', ('pool',), allowed_operators=(Operator.EQ, Operator.NEQ)
+        spec,
+        'beaker',
+        ('pool',),
+        allowed_operators=(Operator.EQ, Operator.NEQ),
     )
 
     return group
