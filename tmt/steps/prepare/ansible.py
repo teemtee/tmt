@@ -186,10 +186,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             lowercased_playbook = _playbook.lower()
 
             def normalize_remote_playbook(raw_playbook: str) -> Path:
-                assert self.step.plan.my_run is not None  # narrow type
-                assert self.step.plan.my_run.tree is not None  # narrow type
-                assert self.step.plan.my_run.tree.root is not None  # narrow type
-                root_path = self.step.plan.my_run.tree.root
+                root_path = self.step.plan.anchor_path
 
                 try:
                     with retry_session(
