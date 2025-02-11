@@ -29,7 +29,7 @@ from tmt.utils import GeneralError
 # monkeypatching it around our calls to parser does not work. To avoid
 # issues, ReST renderign is disabled when we know our code runs under
 # the control of Sphinx.
-REST_RENDERING_ALLOWED = ('sphinx-build' not in sys.argv[0])
+REST_RENDERING_ALLOWED = 'sphinx-build' not in sys.argv[0]
 
 
 #: Special string representing a new-line in the stack of rendered
@@ -55,9 +55,11 @@ class RestVisitor(docutils.nodes.NodeVisitor):
         self.logger = logger
         self.debug = functools.partial(logger.debug, level=4, topic=tmt.log.Topic.HELP_RENDERING)
         self.log_visit = functools.partial(
-            logger.debug, 'visit', level=4, topic=tmt.log.Topic.HELP_RENDERING)
+            logger.debug, 'visit', level=4, topic=tmt.log.Topic.HELP_RENDERING
+        )
         self.log_departure = functools.partial(
-            logger.debug, 'depart', level=4, topic=tmt.log.Topic.HELP_RENDERING)
+            logger.debug, 'depart', level=4, topic=tmt.log.Topic.HELP_RENDERING
+        )
 
         #: Collects all rendered paragraps - text, blocks, lists, etc.
         self._rendered_paragraphs: list[str] = []
@@ -212,9 +214,9 @@ class RestVisitor(docutils.nodes.NodeVisitor):
         elif 'shell' in node.attributes['classes']:
             fg = 'yellow'
 
-        self._emit_paragraphs([
-            f'    {click.style(line, fg=fg)}' for line in node.astext().splitlines()
-            ])
+        self._emit_paragraphs(
+            [f'    {click.style(line, fg=fg)}' for line in node.astext().splitlines()]
+        )
 
         self.in_literal_block = True
 
@@ -298,8 +300,8 @@ def role_ref(
     lineno: int,
     inliner: docutils.parsers.rst.states.Inliner,
     options: Optional[Mapping[str, Any]] = None,
-    content: Optional[Sequence[str]] = None) \
-        -> tuple[Sequence[docutils.nodes.reference], Sequence[docutils.nodes.reference]]:
+    content: Optional[Sequence[str]] = None,
+) -> tuple[Sequence[docutils.nodes.reference], Sequence[docutils.nodes.reference]]:
     """
     A handler for ``:ref:`` role.
 

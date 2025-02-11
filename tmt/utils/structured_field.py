@@ -166,11 +166,7 @@ class StructuredField:
     #  StructuredField Special
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    def __init__(
-            self,
-            text: Optional[str] = None,
-            version: int = 1,
-            multi: bool = False) -> None:
+    def __init__(self, text: Optional[str] = None, version: int = 1, multi: bool = False) -> None:
         """
         Initialize the structured field
         """
@@ -238,7 +234,8 @@ class StructuredField:
         format = re.compile(
             r"(.*)^\[structured-field-start\][ \t]*\n"
             r"(.*)\n\[structured-field-end\][ \t]*\n(.*)",
-            re.DOTALL + re.MULTILINE)
+            re.DOTALL + re.MULTILINE,
+        )
         # No match ---> plain text or broken structured field
         matched = format.search(text)
         if not matched:
@@ -261,11 +258,9 @@ class StructuredField:
         version_match = re.search(r"version (\d+)", parts[0])
         if not version_match:
             log.error(parts[0])
-            raise StructuredFieldError(
-                "Unable to detect StructuredField version")
+            raise StructuredFieldError("Unable to detect StructuredField version")
         self.version(int(version_match.groups()[0]))
-        log.debug(
-            f"Detected StructuredField version {self.version()}")
+        log.debug(f"Detected StructuredField version {self.version()}")
         # Convert to dictionary, remove escapes and save the order
         keys = parts[1::2]
         escape = re.compile(r"^\[structured-field-escape\]", re.MULTILINE)
@@ -306,10 +301,12 @@ class StructuredField:
             result.append(
                 "[structured-field-start]\n"
                 f"This is StructuredField version {self._version}. "
-                "Please, edit with care.\n")
+                "Please, edit with care.\n"
+            )
             for section, content in self.iterate():
-                result.append("[{}]\n{}".format(section, escape.sub(
-                    "[structured-field-escape]\\1", content)))
+                result.append(
+                    "[{}]\n{}".format(section, escape.sub("[structured-field-escape]\\1", content))
+                )
             result.append("[structured-field-end]\n")
         # Footer
         if self._footer:
@@ -330,8 +327,7 @@ class StructuredField:
             # Parse key and value
             matched = re.search("([^=]+)=(.*)", line)
             if not matched:
-                raise StructuredFieldError(
-                    f"Invalid key/value line: {line}")
+                raise StructuredFieldError(f"Invalid key/value line: {line}")
             key = matched.groups()[0].strip()
             value = matched.groups()[1].strip()
             # Handle multiple values if enabled
@@ -380,8 +376,7 @@ class StructuredField:
             if version in [0, 1]:
                 self._version = version
             else:
-                raise StructuredFieldError(
-                    f"Bad StructuredField version: {version}")
+                raise StructuredFieldError(f"Bad StructuredField version: {version}")
         return self._version
 
     def load(self, text: str, version: Optional[int] = None) -> None:
@@ -395,8 +390,7 @@ class StructuredField:
         if isinstance(text, bytes):
             text = text.decode("utf8")
         if not isinstance(text, str):
-            raise StructuredFieldError(
-                "Invalid StructuredField, expecting string")
+            raise StructuredFieldError("Invalid StructuredField, expecting string")
         # Remove possible carriage returns
         text = re.sub("\r\n", "\n", text)
         # Make sure the text has a new line at the end
@@ -443,10 +437,7 @@ class StructuredField:
 
         return self._order
 
-    def get(
-            self,
-            section: str,
-            item: Optional[str] = None) -> SFSectionValueType:
+    def get(self, section: str, item: Optional[str] = None) -> SFSectionValueType:
         """
         Return content of given section or section item
         """
@@ -454,8 +445,7 @@ class StructuredField:
         try:
             content = self._sections[section]
         except KeyError:
-            raise StructuredFieldError(
-                f"Section [{pure_ascii(section)!r}] not found")
+            raise StructuredFieldError(f"Section [{pure_ascii(section)!r}] not found")
         # Return the whole section content
         if item is None:
             return content
@@ -464,10 +454,10 @@ class StructuredField:
             return self._read_section(content)[item]
         except KeyError:
             raise StructuredFieldError(
-                f"Unable to read '{pure_ascii(item)!r}' from section '{pure_ascii(section)!r}'")
+                f"Unable to read '{pure_ascii(item)!r}' from section '{pure_ascii(section)!r}'"
+            )
 
-    def set(self, section: str, content: Any,
-            item: Optional[str] = None) -> None:
+    def set(self, section: str, content: Any, item: Optional[str] = None) -> None:
         """
         Update content of given section or section item
         """
@@ -509,16 +499,15 @@ class StructuredField:
                 del self._sections[section]
                 del self._order[self._order.index(section)]
             except KeyError:
-                raise StructuredFieldError(
-                    f"Section [{pure_ascii(section)!r}] not found")
+                raise StructuredFieldError(f"Section [{pure_ascii(section)!r}] not found")
         # Remove only selected item from the section
         else:
             try:
                 dictionary = self._read_section(self._sections[section])
-                del (dictionary[item])
+                del dictionary[item]
             except KeyError:
                 raise StructuredFieldError(
                     f"Unable to remove '{pure_ascii(item)!r}' "
                     f"from section '{pure_ascii(section)!r}'"
-                    )
+                )
             self._sections[section] = self._write_section(dictionary)

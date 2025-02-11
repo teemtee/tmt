@@ -298,7 +298,6 @@ quote-style = "preserve"  # TODO: Convert to a specific quote style
 exclude = [
     "tests/*",
     "tmt/steps/*",
-    "tmt/utils/*",
     ]
 
 [tool.ruff.lint]

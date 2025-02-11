@@ -13,7 +13,7 @@ from typing import (
     Callable,
     Optional,
     cast,
-    )
+)
 
 import fmf
 import fmf.utils
@@ -25,7 +25,8 @@ from tmt.utils.git import web_git_url
 
 
 def _template_filter_basename(  # type: ignore[reportUnusedFunction,unused-ignore]
-        pathlike: str) -> str:
+    pathlike: str,
+) -> str:
     """
     Return the last component of the given path.
 
@@ -42,7 +43,8 @@ def _template_filter_basename(  # type: ignore[reportUnusedFunction,unused-ignor
 
 
 def _template_filter_match(  # type: ignore[reportUnusedFunction,unused-ignore]
-        s: str, pattern: str) -> Optional[Match[str]]:
+    s: str, pattern: str
+) -> Optional[Match[str]]:
     """
     Return `re.Match`__ if the string matches a given pattern.
 
@@ -68,7 +70,8 @@ def _template_filter_match(  # type: ignore[reportUnusedFunction,unused-ignore]
 
 
 def _template_filter_search(  # type: ignore[reportUnusedFunction,unused-ignore]
-        s: str, pattern: str) -> Optional[Match[str]]:
+    s: str, pattern: str
+) -> Optional[Match[str]]:
     """
     Return `re.Match`__ if the string matches a given pattern.
 
@@ -94,7 +97,8 @@ def _template_filter_search(  # type: ignore[reportUnusedFunction,unused-ignore]
 
 
 def _template_filter_regex_findall(  # type: ignore[reportUnusedFunction,unused-ignore]
-        s: str, pattern: str) -> list[str]:
+    s: str, pattern: str
+) -> list[str]:
     """
     Return a list of all non-overlapping matches in the string.
 
@@ -114,7 +118,8 @@ def _template_filter_regex_findall(  # type: ignore[reportUnusedFunction,unused-
 
 
 def _template_filter_regex_match(  # type: ignore[reportUnusedFunction,unused-ignore]
-        s: str, pattern: str) -> str:
+    s: str, pattern: str
+) -> str:
     """
     Return string matching a given pattern.
 
@@ -151,7 +156,8 @@ def _template_filter_regex_match(  # type: ignore[reportUnusedFunction,unused-ig
 
 
 def _template_filter_regex_search(  # type: ignore[reportUnusedFunction,unused-ignore]
-        s: str, pattern: str) -> str:
+    s: str, pattern: str
+) -> str:
     """
     Return string matching a given pattern.
 
@@ -188,7 +194,8 @@ def _template_filter_regex_search(  # type: ignore[reportUnusedFunction,unused-i
 
 
 def _template_filter_regex_replace(  # type: ignore[reportUnusedFunction,unused-ignore]
-        s: str, pattern: str, repl: str) -> str:
+    s: str, pattern: str, repl: str
+) -> str:
     """
     Replace a substring defined by a regular expression with another string.
 
@@ -238,12 +245,13 @@ def _template_filter_dedent(s: str) -> str:  # type: ignore[reportUnusedFunction
 
 
 def _template_filter_listed(  # type: ignore[reportUnusedFunction,unused-ignore]
-        items: list[Any],
-        singular: Optional[str] = None,
-        plural: Optional[str] = None,
-        max: Optional[int] = None,
-        quote: str = "",
-        join: str = "and") -> str:
+    items: list[Any],
+    singular: Optional[str] = None,
+    plural: Optional[str] = None,
+    max: Optional[int] = None,
+    quote: str = "",
+    join: str = "and",
+) -> str:
     """
     Return a nice, human readable description of an iterable.
 
@@ -275,19 +283,17 @@ def _template_filter_listed(  # type: ignore[reportUnusedFunction,unused-ignore]
     """
 
     # cast: for some reason, mypy sees `listed` as `Any`
-    return cast(str, fmf.utils.listed(
-        items,
-        singular=singular,
-        plural=plural,
-        max=max,
-        quote=quote,
-        join=join))
+    return cast(
+        str,
+        fmf.utils.listed(items, singular=singular, plural=plural, max=max, quote=quote, join=join),
+    )
 
 
 def _template_filter_web_git_url(  # type: ignore[reportUnusedFunction,unused-ignore]
-        path_str: str,
-        url: str,
-        ref: str) -> str:
+    path_str: str,
+    url: str,
+    ref: str,
+) -> str:
     """
     Sanitize git url using :py:meth:`tmt.utils.web_git_url`
 
@@ -306,8 +312,9 @@ def _template_filter_web_git_url(  # type: ignore[reportUnusedFunction,unused-ig
 
 TEMPLATE_FILTERS: dict[str, Callable[..., Any]] = {
     _name.replace('_template_filter_', ''): _obj
-    for _name, _obj in locals().items() if callable(_obj) and _name.startswith('_template_filter_')
-    }
+    for _name, _obj in locals().items()
+    if callable(_obj) and _name.startswith('_template_filter_')
+}
 
 
 def _template_test_unit(value: Any) -> bool:  # type: ignore[reportUnusedFunction,unused-ignore]
@@ -328,8 +335,9 @@ def _template_test_unit(value: Any) -> bool:  # type: ignore[reportUnusedFunctio
 
 TEMPLATE_TESTS: dict[str, Callable[..., Any]] = {
     _name.replace('_template_test_', ''): _obj
-    for _name, _obj in locals().items() if callable(_obj) and _name.startswith('_template_test_')
-    }
+    for _name, _obj in locals().items()
+    if callable(_obj) and _name.startswith('_template_test_')
+}
 
 
 def default_template_environment() -> jinja2.Environment:
@@ -356,11 +364,11 @@ def default_template_environment() -> jinja2.Environment:
 
 
 def render_template(
-        template: str,
-        template_filepath: Optional[Path] = None,
-        environment: Optional[jinja2.Environment] = None,
-        **variables: Any
-        ) -> str:
+    template: str,
+    template_filepath: Optional[Path] = None,
+    environment: Optional[jinja2.Environment] = None,
+    **variables: Any,
+) -> str:
     """
     Render a template.
 
@@ -388,22 +396,21 @@ def render_template(
     except jinja2.exceptions.TemplateSyntaxError as exc:
         if template_filepath:
             raise GeneralError(
-                f"Could not parse template '{template_filepath}' at line {exc.lineno}.") from exc
-        raise GeneralError(
-            f"Could not parse template at line {exc.lineno}.") from exc
+                f"Could not parse template '{template_filepath}' at line {exc.lineno}."
+            ) from exc
+        raise GeneralError(f"Could not parse template at line {exc.lineno}.") from exc
 
     except jinja2.exceptions.TemplateError as exc:
         if template_filepath:
-            raise GeneralError(
-                f"Could not render template '{template_filepath}'.") from exc
+            raise GeneralError(f"Could not render template '{template_filepath}'.") from exc
         raise GeneralError("Could not render template.") from exc
 
 
 def render_template_file(
-        template_filepath: Path,
-        environment: Optional[jinja2.Environment] = None,
-        **variables: Any
-        ) -> str:
+    template_filepath: Path,
+    environment: Optional[jinja2.Environment] = None,
+    **variables: Any,
+) -> str:
     """
     Render a template from a file.
 
@@ -414,8 +421,8 @@ def render_template_file(
 
     try:
         return render_template(
-            template_filepath.read_text(), template_filepath, environment, **variables)
+            template_filepath.read_text(), template_filepath, environment, **variables
+        )
 
     except FileNotFoundError as exc:
-        raise GeneralError(
-            f"Could not open template '{template_filepath}'.") from exc
+        raise GeneralError(f"Could not open template '{template_filepath}'.") from exc
