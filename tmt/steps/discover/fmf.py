@@ -59,6 +59,15 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
             revision. Defaults to the remote repository's default
             branch if ``url`` was set or to the current ``HEAD``
             of the current repository.
+
+            Additionally, one can set ``ref`` dynamically.
+            This is possible using a special file in tmt format
+            stored in the *default* branch of a tests repository.
+            This special file should contain rules assigning attribute ``ref``
+            in an `adjust` block, for example depending on a test run context.
+
+            Dynamic ``ref`` assignment is enabled whenever a test plan
+            reference has the format ``ref: @FILEPATH``.
             """,
         normalize=normalize_ref,
     )
