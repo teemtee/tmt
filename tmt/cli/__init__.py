@@ -100,7 +100,8 @@ class ContextObject:
     clean: Optional[tmt.Clean] = None
     clean_logger: Optional[tmt.log.Logger] = None
     clean_partials: collections.defaultdict[str, list[tmt.base.CleanCallback]] = simple_field(
-        default_factory=lambda: collections.defaultdict(list))
+        default_factory=lambda: collections.defaultdict(list)
+    )
     run: Optional[tmt.Run] = None
 
 
@@ -176,9 +177,8 @@ class CliInvocation:
         # ignore[unused-ignore]: silencing mypy's complaint about silencing
         # pyright's warning :)
         invocation.option_sources = {  # type: ignore[reportGeneralTypeIssues,unused-ignore]
-            key: click.core.ParameterSource.COMMANDLINE
-            for key in options
-            }
+            key: click.core.ParameterSource.COMMANDLINE for key in options
+        }
         return invocation
 
     @functools.cached_property
@@ -192,6 +192,7 @@ class CliInvocation:
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Custom Group
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 class CustomGroup(click.Group):
     """
@@ -210,10 +211,10 @@ class CustomGroup(click.Group):
     # ignore[override]: expected, we want to use more specific `Context`
     # type than the one declared in superclass.
     def get_command(  # type: ignore[override]
-            self,
-            context: Context,
-            cmd_name: str
-            ) -> Optional[click.Command]:
+        self,
+        context: Context,
+        cmd_name: str,
+    ) -> Optional[click.Command]:
         """
         Allow command shortening
         """
@@ -225,8 +226,9 @@ class CustomGroup(click.Group):
         found = click.Group.get_command(self, context, cmd_name)
         if found is not None:
             return found
-        matches = [command for command in self.list_commands(context)
-                   if command.startswith(cmd_name)]
+        matches = [
+            command for command in self.list_commands(context) if command.startswith(cmd_name)
+        ]
         if not matches:
             return None
         if len(matches) == 1:
@@ -242,14 +244,14 @@ class HelpFormatter(click.HelpFormatter):
 
     # Override parent implementation
     def write_dl(
-            self,
-            rows: Sequence[tuple[str, str]],
-            col_max: int = 30,
-            col_spacing: int = 2) -> None:
+        self,
+        rows: Sequence[tuple[str, str]],
+        col_max: int = 30,
+        col_spacing: int = 2,
+    ) -> None:
         rows = [
-            (option, tmt.utils.rest.render_rst(help, _BOOTSTRAP_LOGGER))
-            for option, help in rows
-            ]
+            (option, tmt.utils.rest.render_rst(help, _BOOTSTRAP_LOGGER)) for option, help in rows
+        ]
 
         super().write_dl(rows, col_max=col_max, col_spacing=col_spacing)
 

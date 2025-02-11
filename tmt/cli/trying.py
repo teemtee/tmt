@@ -19,32 +19,61 @@ from tmt.options import option
 @pass_context
 @click.argument("image_and_how", nargs=-1, metavar="IMAGE[@HOW]")
 @option(
-    "-t", "--test", default=[], metavar="REGEXP", multiple=True,
+    "-t",
+    "--test",
+    default=[],
+    metavar="REGEXP",
+    multiple=True,
     help="""
         Run tests matching given regular expression.
         By default all tests under the current working directory are executed.
-        """)
+        """,
+)
 @option(
-    "-p", "--plan", default=[], metavar="REGEXP", multiple=True,
+    "-p",
+    "--plan",
+    default=[],
+    metavar="REGEXP",
+    multiple=True,
     help="""
         Use provided plan. By default user config is checked for plans
         named as '/user/plan*', default plan is used otherwise.
-        """)
+        """,
+)
 @option(
-    "-l", "--login", is_flag=True, default=False,
-    help="Log into the guest only, do not run any tests.")
+    "-l",
+    "--login",
+    is_flag=True,
+    default=False,
+    help="Log into the guest only, do not run any tests.",
+)
 @option(
-    "--epel", is_flag=True, default=False,
-    help="Enable epel repository.")
+    "--epel",
+    is_flag=True,
+    default=False,
+    help="Enable epel repository.",
+)
 @option(
-    "--install", default=[], metavar="PACKAGE", multiple=True,
-    help="Install package on the guest.")
+    "--install",
+    default=[],
+    metavar="PACKAGE",
+    multiple=True,
+    help="Install package on the guest.",
+)
 @option(
-    "--arch", default=None, metavar="ARCH", multiple=False,
-    help="Specify guest CPU architecture.")
+    "--arch",
+    default=None,
+    metavar="ARCH",
+    multiple=False,
+    help="Specify guest CPU architecture.",
+)
 @option(
-    "-a", "--ask", is_flag=True, default=False,
-    help="Just provision the guest and ask what to do next.")
+    "-a",
+    "--ask",
+    is_flag=True,
+    default=False,
+    help="Just provision the guest and ask what to do next.",
+)
 @verbosity_options
 @force_dry_options
 def try_command(context: Context, **kwargs: Any) -> None:
@@ -77,13 +106,10 @@ def try_command(context: Context, **kwargs: Any) -> None:
     # Inject custom image and provision method to the Provision options
     options = _construct_trying_provision_options(context.params)
     if options:
-        tmt.steps.provision.Provision.store_cli_invocation(
-            context=None, options=options)
+        tmt.steps.provision.Provision.store_cli_invocation(context=None, options=options)
 
     # Finally, let's start trying!
-    trying = tmt.trying.Try(
-        tree=context.obj.tree,
-        logger=context.obj.logger)
+    trying = tmt.trying.Try(tree=context.obj.tree, logger=context.obj.logger)
 
     trying.go()
 
