@@ -321,6 +321,7 @@ select = [
     "DTZ",  # flake8-datetimez
     "T10",  # flake8-debugger
     "EXE",  # flake8-executable
+    "ISC",  # flake8-implicit-str-concat
     "ICN",  # flake8-import-conventions
     "LOG",  # flake8-logging
     "G",  # flake8-logging-format
