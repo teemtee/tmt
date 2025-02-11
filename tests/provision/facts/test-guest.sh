@@ -40,11 +40,11 @@ rlJournalStart
             fi
 
         elif [ "$PROVISION_HOW" = "container" ]; then
-            provision_options="--image fedora:39"
+            provision_options="--image localhost/tmt/container/test/fedora/41/upstream:latest"
             bfu_provision_options="$provision_options --user=nobody"
 
             arch="$(arch)"
-            distro="Fedora Linux 39 (Container Image)"
+            distro="Fedora Linux 41 (Container Image)"
             kernel="$(uname -r)"
             package_manager="dnf"
 
