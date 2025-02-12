@@ -151,8 +151,9 @@ def _create_step_plugin_iterator(registry: tmt.plugins.PluginRegistry[tmt.steps.
 
 
 def _create_feature_plugin_iterator(
-        registry: tmt.plugins.PluginRegistry[tmt.steps.prepare.feature.FeatureClass]):
-    """ Create iterator over plugins of a feature plugin registry """
+    registry: tmt.plugins.PluginRegistry[tmt.steps.prepare.feature.FeatureClass],
+):
+    """Create iterator over plugins of a feature plugin registry"""
 
     def plugin_iterator():
         for plugin_id in registry.iter_plugin_ids():
@@ -226,7 +227,8 @@ def main() -> None:
 
     elif step_name == 'prepare-feature':
         plugin_generator = _create_feature_plugin_iterator(
-            tmt.steps.prepare.feature._FEATURE_PLUGIN_REGISTRY)
+            tmt.steps.prepare.feature._FEATURE_PLUGIN_REGISTRY
+        )
 
     elif step_name == 'test-checks':
         plugin_generator = _create_test_check_plugin_iterator(tmt.checks._CHECK_PLUGIN_REGISTRY)
