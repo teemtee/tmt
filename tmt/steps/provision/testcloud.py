@@ -53,6 +53,7 @@ UserNetworkConfiguration: Any
 QCow2StorageDevice: Any
 RawStorageDevice: Any
 TPMConfiguration: Any
+VIRTIOFSConfiguration: Any
 
 
 def import_testcloud() -> None:
@@ -73,6 +74,7 @@ def import_testcloud() -> None:
     global QCow2StorageDevice
     global RawStorageDevice
     global TPMConfiguration
+    global VIRTIOFSConfiguration
     try:
         import libvirt
         import testcloud.image
@@ -88,6 +90,7 @@ def import_testcloud() -> None:
             SystemNetworkConfiguration,
             TPMConfiguration,
             UserNetworkConfiguration,
+            VIRTIOFSConfiguration,
             X86_64ArchitectureConfiguration,
             )
         from testcloud.workarounds import Workarounds
@@ -344,6 +347,11 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
         option=('-a', '--arch'),
         choices=['x86_64', 'aarch64', 's390x', 'ppc64le'],
         help="What architecture to virtualize, host arch by default.")
+    virtiofs: str = field(
+        default="",
+        option=('-s', '--virtiofs'),
+        help="What directory to mount where, eg."
+             "'<host path>:<guest path>'")
 
     list_local_images: bool = field(
         default=False,
@@ -629,6 +637,7 @@ class GuestTestcloud(tmt.GuestSsh):
         memory ..... memory size for vm
         disk ....... disk size for vm
         connection . either session (default) or system, to be passed to qemu
+        virtiofs ... What directory to mount where, eg. <host path>:<guest path>
         arch ....... architecture for the VM, host arch is the default
     """
 
@@ -640,6 +649,7 @@ class GuestTestcloud(tmt.GuestSsh):
     memory: Optional['Size']
     disk: Optional['Size']
     connection: str
+    virtiofs: str
     arch: str
 
     # Not to be saved, recreated from image_url/instance_name/... every
@@ -944,6 +954,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Initialize and prepare testcloud image
         assert testcloud is not None
+        assert libvirt is not None
         self._image = testcloud.image.Image(self.image_url)
         self.verbose('qcow', self._image.name, 'green')
         if not Path(self._image.local_path).exists():
@@ -1006,6 +1017,22 @@ class GuestTestcloud(tmt.GuestSsh):
         self._domain.coreos = self.is_coreos
 
         self._apply_hw_arch(self._domain, self.is_kvm, self.is_legacy_os)
+
+        # Do we have virtiofs to handle?
+        if self.virtiofs:
+            if (f"qemu:///{self.connection}" == "qemu:///session" and
+                    libvirt.getVersion() < 10000000):
+                raise tmt.utils.ProvisionError("Only system connection is supported"
+                                               " for virtiofs on libvirt < 10.0.")
+
+            virtiofs_split = self.virtiofs.split(":")
+            if len(virtiofs_split) != 2:
+                raise tmt.utils.ProvisionError("virtiofs specified in a bad format, use "
+                                               "<host path>:<guest path>")
+
+            self._domain.virtiofs_configuration = [
+                VIRTIOFSConfiguration(
+                    virtiofs_split[0], virtiofs_split[1], 0)]
 
         mac_address = testcloud.util.generate_mac_address()
         if f"qemu:///{self.connection}" == "qemu:///system":
