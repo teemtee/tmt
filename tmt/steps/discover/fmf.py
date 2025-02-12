@@ -64,7 +64,7 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
             This is possible using a special file in tmt format
             stored in the *default* branch of a tests repository.
             This special file should contain rules assigning attribute ``ref``
-            in an `adjust` block, for example depending on a test run context.
+            in an *adjust* block, for example depending on a test run context.
 
             Dynamic ``ref`` assignment is enabled whenever a test plan
             reference has the format ``ref: @FILEPATH``.
