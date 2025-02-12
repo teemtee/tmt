@@ -573,7 +573,8 @@ class GuestArtemis(tmt.GuestSsh):
 
             if response.status_code != 201:
                 raise ArtemisProvisionError(
-                    'Failed to create', response=response, request_data=data)
+                    'Failed to create', response=response, request_data=data
+                )
 
             self.info('guest', 'has been requested', 'green')
             self.guestname = response.json()['guestname']

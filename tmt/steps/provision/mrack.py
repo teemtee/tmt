@@ -1234,22 +1234,26 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                     if 'is not a valid user name' in cause.faultString:
                         raise ProvisionError(
                             f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
-                            "was refused as unknown.") from exc
+                            "was refused as unknown."
+                        ) from exc
 
                     if 'is not a valid submission delegate' in cause.faultString:
                         raise ProvisionError(
                             f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
-                            "is not a valid submission delegate.") from exc
+                            "is not a valid submission delegate."
+                        ) from exc
 
                     if 'is not a valid group' in cause.faultString:
                         raise ProvisionError(
                             f"Failed to create Beaker job, job group '{self.beaker_job_group}' "
-                            "was refused as unknown.") from exc
+                            "was refused as unknown."
+                        ) from exc
 
                     if 'is not a member of group' in cause.faultString:
                         raise ProvisionError(
                             "Failed to create Beaker job, submitting user is not "
-                            "a member of group '{self.beaker_job_group}'") from exc
+                            "a member of group '{self.beaker_job_group}'"
+                        ) from exc
 
                 raise ProvisionError('Failed to create Beaker job') from exc
 
