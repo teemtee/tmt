@@ -2620,7 +2620,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
 
     @classmethod
     def clean_images(cls, clean: 'tmt.base.Clean', dry: bool, workdir_root: Path) -> bool:
-        """ Remove the images of one particular plugin """
+        """Remove the images of one particular plugin"""
         return True
 
     def show(self, keys: Optional[list[str]] = None) -> None:

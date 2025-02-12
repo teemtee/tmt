@@ -1294,7 +1294,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
 
     @classmethod
     def clean_images(cls, clean: 'tmt.base.Clean', dry: bool, workdir_root: Path) -> bool:
-        """ Remove the testcloud images """
+        """Remove the testcloud images"""
 
         testcloud_images = workdir_root / 'testcloud/images'
         clean.info('testcloud', shift=1, color='green')
