@@ -549,21 +549,18 @@ class TestInvocation:
             self.guest.push(self.test_data_path)
 
             try:
-                rebooted = self.guest.reboot(
-                    hard=False,
-                    command=reboot_command,
-                    timeout=timeout)
+                rebooted = self.guest.reboot(hard=False, command=reboot_command, timeout=timeout)
 
             except tmt.utils.RunError:
                 if reboot_command is not None:
                     self.logger.fail(
-                        f"Failed to reboot guest using the custom command '{reboot_command}'.")
+                        f"Failed to reboot guest using the custom command '{reboot_command}'."
+                    )
 
                 raise
 
             except tmt.steps.provision.RebootModeNotSupportedError:
-                self.logger.warning(
-                    "Guest does not support soft reboot, trying hard reboot.")
+                self.logger.warning("Guest does not support soft reboot, trying hard reboot.")
 
                 rebooted = self.guest.reboot(hard=True, timeout=timeout)
 
