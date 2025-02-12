@@ -122,8 +122,7 @@ def effective_pidfile_root() -> Path:
 #:    also test name and serial number to make it unique even among all
 #:    test wrappers. See #2997 for issue motivating the inclusion, it
 #:    seems to be a good idea to prevent accidental reuse in general.
-TEST_INNER_WRAPPER_FILENAME_TEMPLATE = \
-    'tmt-test-wrapper-inner.sh-{{ INVOCATION.test.pathless_safe_name }}-{{ INVOCATION.test.serial_number }}'  # noqa: E501
+TEST_INNER_WRAPPER_FILENAME_TEMPLATE = 'tmt-test-wrapper-inner.sh-{{ INVOCATION.test.pathless_safe_name }}-{{ INVOCATION.test.serial_number }}'  # noqa: E501
 
 #: A template for the outer test wrapper filename.
 #:
@@ -133,18 +132,20 @@ TEST_INNER_WRAPPER_FILENAME_TEMPLATE = \
 #:    also test name and serial number to make it unique even among all
 #:    test wrappers. See #2997 for issue motivating the inclusion, it
 #:    seems to be a good idea to prevent accidental reuse in general.
-TEST_OUTER_WRAPPER_FILENAME_TEMPLATE = \
-    'tmt-test-wrapper-outer.sh-{{ INVOCATION.test.pathless_safe_name }}-{{ INVOCATION.test.serial_number }}'  # noqa: E501
+TEST_OUTER_WRAPPER_FILENAME_TEMPLATE = 'tmt-test-wrapper-outer.sh-{{ INVOCATION.test.pathless_safe_name }}-{{ INVOCATION.test.serial_number }}'  # noqa: E501
 
 #: A template for the inner test wrapper which invokes the test script.
-TEST_INNER_WRAPPER_TEMPLATE = jinja2.Template(textwrap.dedent("""
+TEST_INNER_WRAPPER_TEMPLATE = jinja2.Template(
+    textwrap.dedent("""
 {{ INVOCATION.test.test_framework.get_test_command(INVOCATION, LOGGER) }}
-"""
-                                                              ))
+""")
+)
 
 #: A template for the outer test wrapper which handles most of the
 #: orchestration and invokes the inner wrapper.
-TEST_OUTER_WRAPPER_TEMPLATE = jinja2.Template(textwrap.dedent("""
+TEST_OUTER_WRAPPER_TEMPLATE = jinja2.Template(
+    textwrap.dedent(
+        """
 {% macro enter() %}
 # Updating the tmt test pid file
 mkdir -p "$(dirname $TMT_TEST_PIDFILE_LOCK)"
@@ -387,24 +388,22 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         )
 
         def _prepare_test_wrapper(
-                label: str,
-                filename_template: str,
-                template: jinja2.Template,
-                **variables: Any) -> Path:
+            label: str, filename_template: str, template: jinja2.Template, **variables: Any
+        ) -> Path:
             # tmt wrapper filenames *must* be "unique" - the plugin might be handling
             # the same `discover` phase for different guests at the same time, and
             # must keep them isolated. The wrapper scripts, while being prepared, are
             # a shared global state, and we must prevent race conditions.
             test_wrapper_filename = safe_filename(
-                filename_template, self, guest, INVOCATION=invocation)
+                filename_template, self, guest, INVOCATION=invocation
+            )
 
             test_wrapper_filepath = workdir / test_wrapper_filename
             logger.debug(f'test {label} wrapper', test_wrapper_filepath)
 
-            test_wrapper = ShellScript(template.render(
-                LOGGER=logger,
-                INVOCATION=invocation,
-                **variables).strip())
+            test_wrapper = ShellScript(
+                template.render(LOGGER=logger, INVOCATION=invocation, **variables).strip()
+            )
             self.debug(f'Test {label} wrapper', test_wrapper, level=3)
 
             self.write(test_wrapper_filepath, str(test_wrapper), 'w')
@@ -412,16 +411,15 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             guest.push(
                 source=test_wrapper_filepath,
                 destination=test_wrapper_filepath,
-                options=["-s", "-p", "--chmod=755"])
+                options=["-s", "-p", "--chmod=755"],
+            )
 
             return test_wrapper_filepath
 
         # The inner test wrapper envelops the test script...
         test_inner_wrapper_filepath = _prepare_test_wrapper(
-            'inner',
-            TEST_INNER_WRAPPER_FILENAME_TEMPLATE,
-            TEST_INNER_WRAPPER_TEMPLATE
-            )
+            'inner', TEST_INNER_WRAPPER_FILENAME_TEMPLATE, TEST_INNER_WRAPPER_TEMPLATE
+        )
 
         # ... and it's a command the outer plugin invoke execute.
         test_outer_wrapper_filepath = _prepare_test_wrapper(
@@ -429,7 +427,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             TEST_OUTER_WRAPPER_FILENAME_TEMPLATE,
             TEST_OUTER_WRAPPER_TEMPLATE,
             TEST_COMMAND=ShellScript(f'./{test_inner_wrapper_filepath.name}'),
-            )
+        )
 
         # Create topology files
         topology = tmt.steps.Topology(self.step.plan.provision.guests())
