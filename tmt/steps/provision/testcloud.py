@@ -1170,14 +1170,13 @@ class GuestTestcloud(tmt.GuestSsh):
                 timeout=timeout,
                 tick=tick,
                 tick_increase=tick_increase,
-                fetch_boot_time=False)
+                fetch_boot_time=False,
+            )
 
         if command:
             return super().reboot(
-                command=command,
-                timeout=timeout,
-                tick=tick,
-                tick_increase=tick_increase)
+                command=command, timeout=timeout, tick=tick, tick_increase=tick_increase
+            )
 
         if self._instance is None:
             raise tmt.utils.ProvisionError("No instance initialized.")
@@ -1188,7 +1187,8 @@ class GuestTestcloud(tmt.GuestSsh):
             lambda: self._instance.reboot(soft=True),  # type: ignore[union-attr]
             timeout=timeout,
             tick=tick,
-            tick_increase=tick_increase)
+            tick_increase=tick_increase,
+        )
 
 
 @tmt.steps.provides_method('virtual.testcloud')
