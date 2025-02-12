@@ -74,7 +74,7 @@ def _interrupt_handler(signum: int, frame: Optional[FrameType]) -> None:
 
 
 def install_handlers() -> None:
-    """ Install tmt's signal handlers """
+    """Install tmt's signal handlers"""
 
     signal.signal(signal.SIGINT, _interrupt_handler)
     signal.signal(signal.SIGTERM, _interrupt_handler)
