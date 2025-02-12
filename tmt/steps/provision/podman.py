@@ -216,9 +216,6 @@ class GuestContainer(tmt.Guest):
                 self._logger,
             )
 
-        # Mount the whole plan directory in the container
-        workdir = self.parent.plan.workdir
-
         self.verbose('name', self.container, 'green')
 
         additional_args = []
@@ -232,10 +229,12 @@ class GuestContainer(tmt.Guest):
             Command(
                 'run',
                 *additional_args,
+                '--userns',
+                'keep-id',
                 '--name',
                 self.container,
                 '-v',
-                f'{workdir}:{workdir}:z',
+                f'{self.workdir_root}:{self.workdir_root}:z',
                 '-itd',
                 '--user',
                 self.user,
