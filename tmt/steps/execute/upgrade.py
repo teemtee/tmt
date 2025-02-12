@@ -34,12 +34,14 @@ class ExecuteUpgradeData(ExecuteInternalData):
         default=cast(Optional[str], None),
         option=('-u', '--url'),
         metavar='REPOSITORY',
-        help='URL of the git repository with upgrade tasks.')
+        help='URL of the git repository with upgrade tasks.',
+    )
     upgrade_path: Optional[str] = field(
         default=cast(Optional[str], None),
         option=('-p', '--upgrade-path'),
         metavar='PLAN_NAME',
-        help='Upgrade path corresponding to a plan name in the repository with upgrade tasks.')
+        help='Upgrade path corresponding to a plan name in the repository with upgrade tasks.',
+    )
 
     # "Inherit" from tmt.steps.discover.fmf.DiscoverFmfStepData
     ref: Optional[str] = field(
@@ -47,28 +49,32 @@ class ExecuteUpgradeData(ExecuteInternalData):
         option=('-r', '--ref'),
         metavar='REVISION',
         help='Branch, tag or commit specifying the git revision.',
-        normalize=normalize_ref)
+        normalize=normalize_ref,
+    )
     test: list[str] = field(
         default_factory=list,
         option=('-t', '--test'),
         metavar='NAMES',
         multiple=True,
         help='Select tests by name.',
-        normalize=tmt.utils.normalize_string_list)
+        normalize=tmt.utils.normalize_string_list,
+    )
     filter: list[str] = field(
         default_factory=list,
         option=('-F', '--filter'),
         metavar='FILTERS',
         multiple=True,
         help='Include only tests matching the filter.',
-        normalize=tmt.utils.normalize_string_list)
+        normalize=tmt.utils.normalize_string_list,
+    )
     exclude: list[str] = field(
         default_factory=list,
         option=('-x', '--exclude'),
         metavar='REGEXP',
         multiple=True,
         help="Exclude a regular expression from search result.",
-        normalize=tmt.utils.normalize_string_list)
+        normalize=tmt.utils.normalize_string_list,
+    )
 
 
 @tmt.steps.provides_method('upgrade')
@@ -153,9 +159,7 @@ class ExecuteUpgrade(ExecuteInternal):
         self._discover_upgrade: Optional[DiscoverFmf] = None
 
     @property  # type:ignore[override]
-    def discover(self) -> Union[
-            Discover,
-            DiscoverFmf]:
+    def discover(self) -> Union[Discover, DiscoverFmf]:
         """
         Return discover plugin instance
         """
@@ -171,11 +175,12 @@ class ExecuteUpgrade(ExecuteInternal):
         self._discover = plugin
 
     def go(
-            self,
-            *,
-            guest: 'tmt.steps.provision.Guest',
-            environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> None:
+        self,
+        *,
+        guest: 'tmt.steps.provision.Guest',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> None:
         """
         Execute available tests
         """
@@ -198,14 +203,11 @@ class ExecuteUpgrade(ExecuteInternal):
             self._results = []
             return
 
-        self.verbose(
-            'upgrade', 'run tests on the old system', color='blue', shift=1)
+        self.verbose('upgrade', 'run tests on the old system', color='blue', shift=1)
         self._run_test_phase(guest, BEFORE_UPGRADE_PREFIX, logger)
-        self.verbose(
-            'upgrade', 'perform the system upgrade', color='blue', shift=1)
+        self.verbose('upgrade', 'perform the system upgrade', color='blue', shift=1)
         self._perform_upgrade(guest, logger)
-        self.verbose(
-            'upgrade', 'run tests on the new system', color='blue', shift=1)
+        self.verbose('upgrade', 'run tests on the new system', color='blue', shift=1)
         self._run_test_phase(guest, AFTER_UPGRADE_PREFIX, logger)
 
     def _get_plan(self, upgrades_repo: Path) -> tmt.base.Plan:
@@ -224,12 +226,13 @@ class ExecuteUpgrade(ExecuteInternal):
 
         if len(plans) == 0:
             raise tmt.utils.ExecuteError(
-                f"No matching upgrade path found for '{self.upgrade_path}'.")
+                f"No matching upgrade path found for '{self.upgrade_path}'."
+            )
         if len(plans) > 1:
             names = [plan.name for plan in plans]
             raise tmt.utils.ExecuteError(
-                f"Ambiguous upgrade path reference, found plans "
-                f"{fmf.utils.listed(names)}.")
+                f"Ambiguous upgrade path reference, found plans {fmf.utils.listed(names)}."
+            )
         return plans[0]
 
     def _fetch_upgrade_tasks(self) -> None:
@@ -241,10 +244,8 @@ class ExecuteUpgrade(ExecuteInternal):
             name='upgrade-discover',
             how='fmf',
             # url=self.data.url,
-            **{
-                key: getattr(self.data, key) for key in PROPAGATE_TO_DISCOVER_KEYS
-                }
-            )
+            **{key: getattr(self.data, key) for key in PROPAGATE_TO_DISCOVER_KEYS},
+        )
 
         self._discover_upgrade = DiscoverFmf(logger=self._logger, step=self.step, data=data)
         self._run_discover_upgrade()
@@ -276,10 +277,11 @@ class ExecuteUpgrade(ExecuteInternal):
                 cli_invocation.options['quiet'] = quiet
 
     def _install_dependencies(
-            self,
-            guest: tmt.steps.provision.Guest,
-            dependencies: list[tmt.base.DependencySimple],
-            recommends: bool = False) -> None:
+        self,
+        guest: tmt.steps.provision.Guest,
+        dependencies: list[tmt.base.DependencySimple],
+        recommends: bool = False,
+    ) -> None:
         """
         Install packages required/recommended for upgrade
         """
@@ -290,10 +292,12 @@ class ExecuteUpgrade(ExecuteInternal):
             name=f'{phase_name}-packages-upgrade',
             summary=f'Install packages {phase_name} by the upgrade',
             package=tmt.utils.uniq(dependencies),
-            missing='skip' if recommends else 'fail')
+            missing='skip' if recommends else 'fail',
+        )
 
         PreparePlugin.delegate(self.step, data=data).go(  # type:ignore[attr-defined]
-            guest=guest, logger=self._logger)
+            guest=guest, logger=self._logger
+        )
 
     def _prepare_remote_discover_data(self, plan: tmt.base.Plan) -> tmt.steps._RawStepData:
         """
@@ -301,21 +305,25 @@ class ExecuteUpgrade(ExecuteInternal):
         """
 
         if len(plan.discover.data) > 1:
-            raise tmt.utils.ExecuteError(
-                "Multiple discover configs are not supported.")
+            raise tmt.utils.ExecuteError("Multiple discover configs are not supported.")
 
         data = plan.discover.data[0]
 
         remote_raw_data: tmt.steps._RawStepData = {
             # Force name
             'name': 'upgrade-discover-remote',
-            'how': 'fmf'
-            }
-        remote_raw_data.update(cast(tmt.steps._RawStepData, {
-            key_to_option(key): value
-            for key, value in data.items()
-            if key in PROPAGATE_TO_DISCOVER_KEYS
-            }))
+            'how': 'fmf',
+        }
+        remote_raw_data.update(
+            cast(
+                tmt.steps._RawStepData,
+                {
+                    key_to_option(key): value
+                    for key, value in data.items()
+                    if key in PROPAGATE_TO_DISCOVER_KEYS
+                },
+            )
+        )
 
         # Local values have priority, override
         for key in self._keys:
@@ -325,10 +333,7 @@ class ExecuteUpgrade(ExecuteInternal):
 
         return remote_raw_data
 
-    def _perform_upgrade(
-            self,
-            guest: tmt.steps.provision.Guest,
-            logger: tmt.log.Logger) -> None:
+    def _perform_upgrade(self, guest: tmt.steps.provision.Guest, logger: tmt.log.Logger) -> None:
         """
         Perform a system upgrade
         """
@@ -347,11 +352,12 @@ class ExecuteUpgrade(ExecuteInternal):
                 # we want it to reuse existing, already cloned path.
                 # ignore[typeddict-unknown-key]: data is _RwStepData, we do not have more detailed
                 # type for raw step data of internal/upgrade plugins, it would be pretty verbose.
-                data['url'] = None   # type: ignore[typeddict-unknown-key]
+                data['url'] = None  # type: ignore[typeddict-unknown-key]
                 data['path'] = self._discover_upgrade.testdir  # type:ignore[typeddict-unknown-key]
                 # FIXME: cast() - https://github.com/teemtee/tmt/issues/1599
-                self._discover_upgrade = cast(DiscoverFmf, DiscoverPlugin.delegate(
-                    self.step, raw_data=data))
+                self._discover_upgrade = cast(
+                    DiscoverFmf, DiscoverPlugin.delegate(self.step, raw_data=data)
+                )
                 self._run_discover_upgrade()
                 # Pass in the path-specific env variables
                 extra_environment = plan.environment
@@ -362,29 +368,22 @@ class ExecuteUpgrade(ExecuteInternal):
                 test.name = f'/{DURING_UPGRADE_PREFIX}/{test.name.lstrip("/")}'
 
                 # Gathering dependencies for upgrade tasks
-                required_packages += (tmt.base.assert_simple_dependencies(
+                required_packages += tmt.base.assert_simple_dependencies(
                     test.require,
                     'After beakerlib processing, tests may have only simple requirements',
-                    self._logger)
-                    )
+                    self._logger,
+                )
 
-                recommended_packages += (tmt.base.assert_simple_dependencies(
+                recommended_packages += tmt.base.assert_simple_dependencies(
                     test.recommend,
                     'After beakerlib processing, tests may have only simple requirements',
-                    self._logger)
-                    )
+                    self._logger,
+                )
 
-                required_packages += (test.test_framework.get_requirements(
-                    test,
-                    self._logger)
-                    )
+                required_packages += test.test_framework.get_requirements(test, self._logger)
 
                 for check in test.check:
-                    required_packages += (check.plugin.essential_requires(
-                        guest,
-                        test,
-                        self._logger)
-                        )
+                    required_packages += check.plugin.essential_requires(guest, test, self._logger)
 
             self._install_dependencies(guest, required_packages)
             self._install_dependencies(guest, recommended_packages, recommends=True)
@@ -395,10 +394,8 @@ class ExecuteUpgrade(ExecuteInternal):
             self.discover_phase = original_discover_phase
 
     def _run_test_phase(
-            self,
-            guest: tmt.steps.provision.Guest,
-            prefix: str,
-            logger: tmt.log.Logger) -> None:
+        self, guest: tmt.steps.provision.Guest, prefix: str, logger: tmt.log.Logger
+    ) -> None:
         """
         Execute a single test phase on the guest
 
@@ -415,7 +412,8 @@ class ExecuteUpgrade(ExecuteInternal):
         self._run_tests(
             guest=guest,
             extra_environment=Environment({STATUS_VARIABLE: EnvVarValue(prefix)}),
-            logger=logger)
+            logger=logger,
+        )
 
         tests = self.discover.tests(enabled=True)
         for i, test in enumerate(tests):

@@ -18,7 +18,7 @@ from tmt.steps.provision import (
     AnsibleApplicable,
     AnsibleCollectionPlaybook,
     Guest,
-    )
+)
 from tmt.utils import (
     DEFAULT_RETRIABLE_HTTP_CODES,
     ENVFILE_RETRY_SESSION_RETRIES,
@@ -26,7 +26,7 @@ from tmt.utils import (
     PrepareError,
     normalize_string_list,
     retry_session,
-    )
+)
 
 
 class _RawAnsibleStepData(tmt.steps._RawStepData, total=False):
@@ -45,15 +45,15 @@ class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
              Path or URL of an ansible playbook to run.
              The playbook path must be relative to the metadata tree root.
              """,
-        normalize=tmt.utils.normalize_string_list
-        )
+        normalize=tmt.utils.normalize_string_list,
+    )
 
     extra_args: Optional[str] = field(
         default=None,
         option='--extra-args',
         metavar='ANSIBLE-PLAYBOOK-OPTIONS',
-        help='Additional CLI options for ``ansible-playbook``.'
-        )
+        help='Additional CLI options for ``ansible-playbook``.',
+    )
 
     # ignore[override]: method violates a liskov substitution principle,
     # but only apparently.  Thanks to how tmt initializes module, we can
@@ -61,9 +61,8 @@ class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
     # called with source data matching _RawAnsibleStepData.
     @classmethod
     def pre_normalization(  # type: ignore[override]
-            cls,
-            raw_data: _RawAnsibleStepData,
-            logger: tmt.log.Logger) -> None:
+        cls, raw_data: _RawAnsibleStepData, logger: tmt.log.Logger
+    ) -> None:
         super().pre_normalization(raw_data, logger)
 
         # Perform `playbook` normalization here, so we could merge `playbooks` to it.
@@ -162,11 +161,12 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
     _data_class = PrepareAnsibleData
 
     def go(
-            self,
-            *,
-            guest: 'Guest',
-            environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> list[PhaseResult]:
+        self,
+        *,
+        guest: 'Guest',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[PhaseResult]:
         """
         Prepare the guests
         """
@@ -187,24 +187,26 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
                 try:
                     with retry_session(
-                            retries=ENVFILE_RETRY_SESSION_RETRIES,
-                            status_forcelist=DEFAULT_RETRIABLE_HTTP_CODES) as session:
+                        retries=ENVFILE_RETRY_SESSION_RETRIES,
+                        status_forcelist=DEFAULT_RETRIABLE_HTTP_CODES,
+                    ) as session:
                         response = session.get(raw_playbook)
 
                     if not response.ok:
-                        raise PrepareError(
-                            f"Failed to fetch remote playbook '{raw_playbook}'.")
+                        raise PrepareError(f"Failed to fetch remote playbook '{raw_playbook}'.")
 
                 except requests.RequestException as exc:
                     raise PrepareError(
-                        f"Failed to fetch remote playbook '{raw_playbook}'.") from exc
+                        f"Failed to fetch remote playbook '{raw_playbook}'."
+                    ) from exc
 
                 with tempfile.NamedTemporaryFile(
-                        mode='w+b',
-                        prefix='playbook-',
-                        suffix='.yml',
-                        dir=root_path,
-                        delete=False) as file:
+                    mode='w+b',
+                    prefix='playbook-',
+                    suffix='.yml',
+                    dir=root_path,
+                    delete=False,
+                ) as file:
                     file.write(response.content)
                     file.flush()
 
@@ -236,7 +238,8 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             guest.ansible(
                 playbook,
                 playbook_root=self.step.plan.anchor_path,
-                extra_args=self.data.extra_args)
+                extra_args=self.data.extra_args,
+            )
 
         return results
 

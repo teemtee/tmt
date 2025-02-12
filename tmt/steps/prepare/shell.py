@@ -27,8 +27,8 @@ class PrepareShellData(tmt.steps.prepare.PrepareStepData):
         help='Shell script to be executed. Can be used multiple times.',
         normalize=tmt.utils.normalize_shell_script_list,
         serialize=lambda scripts: [str(script) for script in scripts],
-        unserialize=lambda serialized: [ShellScript(script) for script in serialized]
-        )
+        unserialize=lambda serialized: [ShellScript(script) for script in serialized],
+    )
 
     # ignore[override] & cast: two base classes define to_spec(), with conflicting
     # formal types.
@@ -59,11 +59,12 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
     _data_class = PrepareShellData
 
     def go(
-            self,
-            *,
-            guest: 'Guest',
-            environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> list[PhaseResult]:
+        self,
+        *,
+        guest: 'Guest',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[PhaseResult]:
         """
         Prepare the guests
         """
@@ -88,8 +89,11 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                     dirpath=workdir,
                     guest=guest,
                     logger=logger,
-                    filename_base=safe_filename(tmt.steps.TEST_TOPOLOGY_FILENAME_BASE, self, guest)
-                    ))
+                    filename_base=safe_filename(
+                        tmt.steps.TEST_TOPOLOGY_FILENAME_BASE, self, guest
+                    ),
+                )
+            )
 
         prepare_wrapper_filename = safe_filename(PREPARE_WRAPPER_FILENAME, self, guest)
         prepare_wrapper_path = workdir / prepare_wrapper_filename
@@ -106,15 +110,13 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             guest.push(
                 source=prepare_wrapper_path,
                 destination=prepare_wrapper_path,
-                options=["-s", "-p", "--chmod=755"])
+                options=["-s", "-p", "--chmod=755"],
+            )
             command: ShellScript
             if guest.become and not guest.facts.is_superuser:
                 command = tmt.utils.ShellScript(f'sudo -E {prepare_wrapper_path}')
             else:
                 command = tmt.utils.ShellScript(f'{prepare_wrapper_path}')
-            guest.execute(
-                command=command,
-                cwd=workdir,
-                env=environment)
+            guest.execute(command=command, cwd=workdir, env=environment)
 
         return results

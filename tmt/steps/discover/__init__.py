@@ -27,16 +27,16 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         default=False,
         option='--dist-git-source',
         is_flag=True,
-        help='Download DistGit sources and ``rpmbuild -bp`` them (can be skipped).'
-        )
+        help='Download DistGit sources and ``rpmbuild -bp`` them (can be skipped).',
+    )
 
     # TODO: use enum!
     dist_git_type: Optional[str] = field(
         default=None,
         option='--dist-git-type',
         choices=tmt.utils.get_distgit_handler_names,
-        help='Use the provided DistGit handler instead of the auto detection.'
-        )
+        help='Use the provided DistGit handler instead of the auto detection.',
+    )
 
     dist_git_download_only: bool = field(
         default=False,
@@ -44,14 +44,14 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         is_flag=True,
         help="Just download the sources. No ``rpmbuild -bp``, "
         "nor installation of require or buildddeps happens.",
-        )
+    )
 
     dist_git_install_builddeps: bool = field(
         default=False,
         option="--dist-git-install-builddeps",
         is_flag=True,
         help="Install package build dependencies according to the specfile.",
-        )
+    )
 
     dist_git_require: list['tmt.base.DependencySimple'] = field(
         default_factory=list,
@@ -63,13 +63,13 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         normalize=lambda key_address, value, logger: tmt.base.assert_simple_dependencies(
             tmt.base.normalize_require(key_address, value, logger),
             "'dist_git_require' can be simple packages only",
-            logger),
+            logger,
+        ),
         serialize=lambda packages: [package.to_spec() for package in packages],
         unserialize=lambda serialized: [
-            tmt.base.DependencySimple.from_spec(package)
-            for package in serialized
-            ]
-        )
+            tmt.base.DependencySimple.from_spec(package) for package in serialized
+        ],
+    )
 
 
 DiscoverStepDataT = TypeVar('DiscoverStepDataT', bound=DiscoverStepData)
@@ -89,9 +89,10 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
 
     @classmethod
     def base_command(
-            cls,
-            usage: str,
-            method_class: Optional[type[click.Command]] = None) -> click.Command:
+        cls,
+        usage: str,
+        method_class: Optional[type[click.Command]] = None,
+    ) -> click.Command:
         """
         Create base click command (common for all discover plugins)
         """
@@ -103,9 +104,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         # Create the command
         @click.command(cls=method_class, help=usage)
         @click.pass_context
-        @option(
-            '-h', '--how', metavar='METHOD',
-            help='Use specified method to discover tests.')
+        @option('-h', '--how', metavar='METHOD', help='Use specified method to discover tests.')
         @tmt.steps.PHASE_OPTIONS
         def discover(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             context.obj.steps.add('discover')
@@ -121,10 +120,11 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         self.go_prolog(logger or self._logger)
 
     def tests(
-            self,
-            *,
-            phase_name: Optional[str] = None,
-            enabled: Optional[bool] = None) -> list['tmt.Test']:
+        self,
+        *,
+        phase_name: Optional[str] = None,
+        enabled: Optional[bool] = None,
+    ) -> list['tmt.Test']:
         """
         Return discovered tests
 
@@ -135,10 +135,11 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         raise NotImplementedError
 
     def download_distgit_source(
-            self,
-            distgit_dir: Path,
-            target_dir: Path,
-            handler_name: Optional[str] = None) -> None:
+        self,
+        distgit_dir: Path,
+        target_dir: Path,
+        handler_name: Optional[str] = None,
+    ) -> None:
         """
         Download sources to the target_dir
 
@@ -150,8 +151,8 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             target_dir=target_dir,
             handler_name=handler_name,
             caller=self,
-            logger=self._logger
-            )
+            logger=self._logger,
+        )
 
     def log_import_plan_details(self) -> None:
         """
@@ -159,8 +160,11 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         """
 
         parent = cast(Optional[tmt.steps.discover.Discover], self.parent)
-        if parent and parent.plan._original_plan and \
-                parent.plan._original_plan._remote_plan_fmf_id:
+        if (
+            parent
+            and parent.plan._original_plan
+            and parent.plan._original_plan._remote_plan_fmf_id
+        ):
             remote_plan_id = parent.plan._original_plan._remote_plan_fmf_id
             # FIXME: cast() - https://github.com/python/mypy/issues/7981
             # Note the missing Optional for values - to_minimal_dict() would
@@ -183,11 +187,12 @@ class Discover(tmt.steps.Step):
     _preserved_workdir_members = ['step.yaml', 'tests.yaml']
 
     def __init__(
-            self,
-            *,
-            plan: 'tmt.base.Plan',
-            data: tmt.steps.RawStepDataArgument,
-            logger: tmt.log.Logger) -> None:
+        self,
+        *,
+        plan: 'tmt.base.Plan',
+        data: tmt.steps.RawStepDataArgument,
+        logger: tmt.log.Logger,
+    ) -> None:
         """
         Store supported attributes, check for sanity
         """
@@ -225,24 +230,28 @@ class Discover(tmt.steps.Step):
                 # what the phase could be.
                 if key_to_option('discover_phase') not in raw_test_datum:
                     # TODO: there should be a method for creating workdir-aware paths...
-                    path = self.workdir / Path('tests.yaml') if self.workdir \
-                        else Path('tests.yaml')
+                    path = (
+                        self.workdir / Path('tests.yaml') if self.workdir else Path('tests.yaml')
+                    )
 
                     raise tmt.utils.BackwardIncompatibleDataError(
                         f"Could not load '{path}' whose format is not compatible "
                         "with tmt 1.24 and newer."
-                        )
+                    )
 
                 phase_name = raw_test_datum.pop(key_to_option('discover_phase'))
 
                 if phase_name not in self._tests:
                     self._tests[phase_name] = []
 
-                self._tests[phase_name].append(tmt.Test.from_dict(
-                    logger=self._logger,
-                    mapping=raw_test_datum,
-                    name=raw_test_datum['name'],
-                    skip_validation=True))
+                self._tests[phase_name].append(
+                    tmt.Test.from_dict(
+                        logger=self._logger,
+                        mapping=raw_test_datum,
+                        name=raw_test_datum['name'],
+                        skip_validation=True,
+                    )
+                )
 
         except tmt.utils.FileError:
             self.debug('Discovered tests not found.', level=2)
@@ -289,8 +298,8 @@ class Discover(tmt.steps.Step):
         # Give a warning when discover step defined as well
         if self.data and not all(datum.is_bare for datum in self.data):
             raise tmt.utils.DiscoverError(
-                "Use either 'discover' or 'execute' step "
-                "to define tests, but not both.")
+                "Use either 'discover' or 'execute' step to define tests, but not both."
+            )
 
         if not isinstance(self.data[0], DiscoverShellData):
             # TODO: or should we rather create a new `shell` discovery step data,
@@ -300,25 +309,23 @@ class Discover(tmt.steps.Step):
             # Or should we find the first DiscoverShellData instance, use it, and
             # create a new one when no such entry exists yet?
             raise GeneralError(
-                f'Cannot append tests from execute to non-shell step "{self.data[0].how}"')
+                f'Cannot append tests from execute to non-shell step "{self.data[0].how}"'
+            )
 
         discover_step_data = self.data[0]
 
         # Check the execute step for possible custom duration limit
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1540
         duration = cast(
-            str,
-            getattr(
-                self.plan.execute.data[0],
-                'duration',
-                tmt.base.DEFAULT_TEST_DURATION_L2))
+            str, getattr(self.plan.execute.data[0], 'duration', tmt.base.DEFAULT_TEST_DURATION_L2)
+        )
 
         # Prepare the list of tests
         for index, script in enumerate(scripts):
             name = f'script-{str(index).zfill(2)}'
             discover_step_data.tests.append(
                 TestDescription(name=name, test=script, duration=duration)
-                )
+            )
 
     def wake(self) -> None:
         """
@@ -335,15 +342,14 @@ class Discover(tmt.steps.Step):
         for data in self.data:
             # FIXME: cast() - see https://github.com/teemtee/tmt/issues/1599
             plugin = cast(
-                DiscoverPlugin[DiscoverStepData],
-                DiscoverPlugin.delegate(self, data=data))
+                DiscoverPlugin[DiscoverStepData], DiscoverPlugin.delegate(self, data=data)
+            )
             self._phases.append(plugin)
             plugin.wake()
 
         # Nothing more to do if already done and not asked to run again
         if self.status() == 'done' and not self.should_run_again:
-            self.debug(
-                'Discover wake up complete (already done before).', level=2)
+            self.debug('Discover wake up complete (already done before).', level=2)
         # Save status and step data (now we know what to do)
         else:
             self.status('todo')
@@ -381,7 +387,6 @@ class Discover(tmt.steps.Step):
                 phase.go()
 
             elif isinstance(phase, DiscoverPlugin):
-
                 if not phase.enabled_by_when:
                     continue
 
@@ -436,8 +441,9 @@ class Discover(tmt.steps.Step):
             # Get failed results from previous run execute
             for result in self.parent.execute._results:
                 if (
-                        result.result is not tmt.result.ResultOutcome.PASS and
-                        result.result is not tmt.result.ResultOutcome.INFO):
+                    result.result is not tmt.result.ResultOutcome.PASS
+                    and result.result is not tmt.result.ResultOutcome.INFO
+                ):
                     failed_results.append(result)
 
             # Filter existing tests into another variable which is then used by tests() method
@@ -445,9 +451,7 @@ class Discover(tmt.steps.Step):
                 self._failed_tests[test_phase] = []
                 for test in self._tests[test_phase]:
                     for result in failed_results:
-                        if (
-                                test.name == result.name and
-                                test.serial_number == result.serial_number):
+                        if test.name == result.name and test.serial_number == result.serial_number:
                             self._failed_tests[test_phase].append(test)
 
         # Give a summary, update status and save
@@ -456,10 +460,11 @@ class Discover(tmt.steps.Step):
         self.save()
 
     def tests(
-            self,
-            *,
-            phase_name: Optional[str] = None,
-            enabled: Optional[bool] = None) -> list['tmt.Test']:
+        self,
+        *,
+        phase_name: Optional[str] = None,
+        enabled: Optional[bool] = None,
+    ) -> list['tmt.Test']:
         def _iter_all_tests() -> Iterator['tmt.Test']:
             tests = self._failed_tests if self._failed_tests else self._tests
             for phase_tests in tests.values():

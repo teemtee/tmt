@@ -22,15 +22,15 @@ class ReportHtmlData(tmt.steps.report.ReportStepData):
         default=False,
         option=('-o', '--open'),
         is_flag=True,
-        help='Open results in your preferred web browser.'
-        )
+        help='Open results in your preferred web browser.',
+    )
 
     absolute_paths: bool = field(
         default=False,
         option='--absolute-paths',
         is_flag=True,
-        help='Make paths absolute rather than relative to working directory.'
-        )
+        help='Make paths absolute rather than relative to working directory.',
+    )
 
     display_guest: str = field(
         default='auto',
@@ -40,7 +40,8 @@ class ReportHtmlData(tmt.steps.report.ReportStepData):
         help="""
              When to display full guest name in report: when more than a single guest was involved
              (default), always, or never.
-             """)
+             """,
+    )
 
 
 @tmt.steps.provides_method('html')
@@ -79,6 +80,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
         environment.autoescape = select_autoescape(enabled_extensions=('html.j2'))
 
         if self.data.absolute_paths:
+
             def _linkable_path(path: str) -> str:
                 return str(Path(path).absolute())
 
@@ -99,10 +101,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
             display_guest = False
 
         else:
-            seen_guests = {
-                result.guest.name
-                for result in self.step.plan.execute.results()
-                }
+            seen_guests = {result.guest.name for result in self.step.plan.execute.results()}
 
             display_guest = len(seen_guests) > 1
 
@@ -117,7 +116,9 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
                 results=self.step.plan.execute.results(),
                 base_dir=self.step.plan.execute.workdir,
                 plan=self.step.plan,
-                display_guest=display_guest))
+                display_guest=display_guest,
+            ),
+        )
 
         # Nothing more to do in dry mode
         if self.is_dry_run:
@@ -133,9 +134,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
         # Open target in webbrowser
         try:
             if webbrowser.open(f"file://{target}", new=0):
-                self.info(
-                    'open', 'Successfully opened in the web browser.',
-                    color='green')
+                self.info('open', 'Successfully opened in the web browser.', color='green')
                 return
             self.fail("Failed to open the web browser.")
         except Exception as error:
