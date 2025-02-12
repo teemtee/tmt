@@ -340,6 +340,8 @@ select = [
     "FURB",  # refurb
     "RUF",  # ruff
     "D",    # pydocstyle
+    # Override docstring convention
+    "D213", # multi-line-summary-second-line
     ]
 ignore = [
     "B904",  # Within an `except` clause, raise exceptions with `raise ... from err` or `raise ...
