@@ -1384,7 +1384,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                 timeout=timeout,
                 tick=tick,
                 tick_increase=tick_increase,
-                fetch_boot_time=False)
+                fetch_boot_time=False,
+            )
 
         return super().reboot(
             hard=False,

@@ -145,12 +145,13 @@ class GuestLocal(tmt.Guest):
         self.debug(f"Doing nothing to stop guest '{self.primary_address}'.")
 
     def reboot(
-            self,
-            hard: bool = False,
-            command: Optional[Union[Command, ShellScript]] = None,
-            timeout: Optional[int] = None,
-            tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-            tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
+        self,
+        hard: bool = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
         # No localhost reboot allowed!
         self.debug(f"Doing nothing to reboot guest '{self.primary_address}'.")
 

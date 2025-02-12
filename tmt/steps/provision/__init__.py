@@ -287,16 +287,16 @@ def format_guest_full_name(name: str, role: Optional[str]) -> str:
 
 
 class RebootModeNotSupportedError(ProvisionError):
-    """ A requested reboot mode is not supported by the guest """
+    """A requested reboot mode is not supported by the guest"""
 
     def __init__(
-            self,
-            message: Optional[str] = None,
-            guest: Optional['Guest'] = None,
-            hard: bool = False,
-            *args: Any,
-            **kwargs: Any) -> None:
-
+        self,
+        message: Optional[str] = None,
+        guest: Optional['Guest'] = None,
+        hard: bool = False,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         if message is not None:
             pass
 
@@ -1565,31 +1565,34 @@ class Guest(tmt.utils.Common):
 
     @overload
     def reboot(
-            self,
-            hard: Literal[True] = True,
-            command: None = None,
-            timeout: Optional[int] = None,
-            tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-            tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
+        self,
+        hard: Literal[True] = True,
+        command: None = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
         pass
 
     @overload
     def reboot(
-            self,
-            hard: Literal[False] = False,
-            command: Optional[Union[Command, ShellScript]] = None,
-            timeout: Optional[int] = None,
-            tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-            tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
+        self,
+        hard: Literal[False] = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
         pass
 
     def reboot(
-            self,
-            hard: bool = False,
-            command: Optional[Union[Command, ShellScript]] = None,
-            timeout: Optional[int] = None,
-            tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-            tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
+        self,
+        hard: bool = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
 
@@ -2394,12 +2397,14 @@ class GuestSsh(Guest):
         # Remove the ssh socket
         self._unlink_ssh_master_socket_path()
 
-    def perform_reboot(self,
-                       action: Callable[[], Any],
-                       timeout: Optional[int] = None,
-                       tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-                       tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
-                       fetch_boot_time: bool = True) -> bool:
+    def perform_reboot(
+        self,
+        action: Callable[[], Any],
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        fetch_boot_time: bool = True,
+    ) -> bool:
         """
         Perform the actual reboot and wait for the guest to recover.
 
@@ -2488,22 +2493,24 @@ class GuestSsh(Guest):
 
     @overload
     def reboot(
-            self,
-            hard: Literal[True] = True,
-            command: None = None,
-            timeout: Optional[int] = None,
-            tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-            tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
+        self,
+        hard: Literal[True] = True,
+        command: None = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
         pass
 
     @overload
     def reboot(
-            self,
-            hard: Literal[False] = False,
-            command: Optional[Union[Command, ShellScript]] = None,
-            timeout: Optional[int] = None,
-            tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-            tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
+        self,
+        hard: Literal[False] = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
         pass
 
     def reboot(
@@ -2550,7 +2557,8 @@ class GuestSsh(Guest):
             lambda: self.execute(actual_command),
             timeout=timeout,
             tick=tick,
-            tick_increase=tick_increase)
+            tick_increase=tick_increase,
+        )
 
     def remove(self) -> None:
         """
