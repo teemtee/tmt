@@ -60,7 +60,8 @@ class Path(click.ParamType):
         param: Optional[click.Parameter],
         ctx: Optional[click.Context],
     ) -> Optional[tmt.utils.Path]:
-        """Convert the value to the correct type. This is not called if
+        """
+        Convert the value to the correct type. This is not called if
         the value is ``None`` (the missing value).
 
         This must accept string values from the command line, as well as
