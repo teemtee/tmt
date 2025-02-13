@@ -9,6 +9,8 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
+from tmt.options import show_step_method_hints
+from tmt.package_managers import FileSystemPath
 from tmt.steps.provision import GuestCapability
 from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript, retry
 
@@ -215,6 +217,9 @@ class GuestContainer(tmt.Guest):
                 self._logger,
             )
 
+        # Mount the whole plan directory in the container
+        workdir = self.parent.plan.workdir
+
         self.verbose('name', self.container, 'green')
 
         additional_args = []
@@ -233,13 +238,25 @@ class GuestContainer(tmt.Guest):
                 '--name',
                 self.container,
                 '-v',
-                f'{self.workdir_root}:{self.workdir_root}:z',
+                f'{workdir}:{workdir}:z',
                 '-itd',
                 '--user',
                 self.user,
                 self.image,
             )
         )
+
+    def setup(self) -> None:
+        if not self.facts.is_superuser:
+            self.package_manager.install(FileSystemPath('/usr/bin/setfacl'))
+            self.execute(
+                ShellScript(
+                    f"""
+                    sudo chmod o+rwX {self.workdir_root};
+                    sudo setfacl -d -m o:rwX {self.workdir_root}
+                    """
+                )
+            )
 
     def reboot(
         self,
