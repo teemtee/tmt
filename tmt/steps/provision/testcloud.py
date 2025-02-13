@@ -1299,8 +1299,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
         testcloud_images = workdir_root / 'testcloud/images'
         clean.info('testcloud', shift=1, color='green')
         if not testcloud_images.exists():
-            clean.warn(
-                f"Directory '{testcloud_images}' does not exist.", shift=2)
+            clean.warn(f"Directory '{testcloud_images}' does not exist.", shift=2)
             return True
         successful = True
         for image in testcloud_images.iterdir():
