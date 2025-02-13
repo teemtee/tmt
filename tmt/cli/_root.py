@@ -1672,7 +1672,8 @@ def clean(
             ).apply_verbosity_options(**kwargs),
             parent=clean_obj,
             cli_invocation=CliInvocation.from_context(context),
-            workdir_root=workdir_root)
+            workdir_root=workdir_root,
+        )
         if 'guests' not in skip and not clean_obj.guests(id_, keep):
             exit_code = 1
         if 'runs' not in skip and not clean_obj.runs(id_, keep):
@@ -1871,7 +1872,8 @@ def clean_images(context: Context, workdir_root: Optional[Path], **kwargs: Any) 
         ).apply_verbosity_options(**kwargs),
         parent=context.obj.clean,
         cli_invocation=CliInvocation.from_context(context),
-        workdir_root=effective_workdir_root(workdir_root))
+        workdir_root=effective_workdir_root(workdir_root),
+    )
     context.obj.clean_partials["images"].append(clean_obj.images)
 
 

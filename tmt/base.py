@@ -4319,7 +4319,8 @@ class Clean(tmt.utils.Common):
         for method in tmt.steps.provision.ProvisionPlugin.methods():
             # FIXME: ignore[union-attr]: https://github.com/teemtee/tmt/issues/1599
             if not method.class_.clean_images(  # type: ignore[union-attr]
-                    self, self.is_dry_run, self.workdir_root):
+                self, self.is_dry_run, self.workdir_root
+            ):
                 successful = False
         return successful
 
@@ -4386,9 +4387,12 @@ class Clean(tmt.utils.Common):
             # Pass the context containing --last to Run to choose
             # the correct one.
             return self._stop_running_guests(
-                Run(logger=self._logger,
+                Run(
+                    logger=self._logger,
                     cli_invocation=self.cli_invocation,
-                    workdir_root=self.workdir_root))
+                    workdir_root=self.workdir_root,
+                )
+            )
         successful = True
         assert self._cli_context_object is not None  # narrow type
         all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, run_ids))
@@ -4404,7 +4408,8 @@ class Clean(tmt.utils.Common):
                 id_=abs_path,
                 tree=self._cli_context_object.tree,
                 cli_invocation=self.cli_invocation,
-                workdir_root=self.workdir_root)
+                workdir_root=self.workdir_root,
+            )
             if not self._stop_running_guests(run):
                 successful = False
         return successful
