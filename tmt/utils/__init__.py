@@ -2819,6 +2819,7 @@ def render_exception(
 
 def show_exception(
     exception: BaseException,
+    traceback_verbosity: Optional[TracebackVerbosity] = None,
     include_logfiles: bool = True,
 ) -> None:
     """
@@ -2831,7 +2832,7 @@ def show_exception(
 
     from tmt.cli import EXCEPTION_LOGGER
 
-    traceback_verbosity = TracebackVerbosity.from_env()
+    traceback_verbosity = traceback_verbosity or TracebackVerbosity.from_env()
 
     def _render_exception(traceback_verbosity: TracebackVerbosity) -> Iterator[str]:
         yield ''
