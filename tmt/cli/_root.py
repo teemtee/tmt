@@ -26,6 +26,7 @@ import tmt.identifier
 import tmt.log
 import tmt.options
 import tmt.plugins
+import tmt.plugins.plan_shapers
 import tmt.steps
 import tmt.templates
 import tmt.trying
@@ -312,6 +313,10 @@ def run(context: Context, id_: Optional[str], workdir_root: Optional[Path], **kw
         logger=logger,
     )
     context.obj.run = run
+
+
+for plugin_class in tmt.plugins.plan_shapers._PLAN_SHAPER_PLUGIN_REGISTRY.iter_plugins():
+    run = create_options_decorator(plugin_class.run_options())(run)
 
 
 # Steps options
