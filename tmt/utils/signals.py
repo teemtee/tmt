@@ -29,9 +29,10 @@ delivered and needs handling:
 
 import contextlib
 import signal
+import textwrap
 import threading
 from types import FrameType
-from typing import Optional
+from typing import NoReturn, Optional
 
 import tmt.log
 
@@ -48,6 +49,42 @@ _INTERRUPT_MASKED = threading.Event()
 _INTERRUPT_PENDING = threading.Event()
 
 
+def _quit_tmt(logger: tmt.log.Logger, repeated: bool = False) -> NoReturn:
+    """
+    Send tmt on the path of quitting by raising an exception.
+    """
+
+    if repeated:
+        logger.warning(
+            textwrap.dedent(
+                """
+              Repeated interruption requested.
+
+              tmt will now cancel its work in progress and quit as soon as
+              possible. Wait for it to finish, please.
+              """
+            ).strip()
+        )
+
+    else:
+        logger.warning(
+            textwrap.dedent(
+                """
+              Interrupting tmt operation as requested.
+
+              tmt will now cancel its work in progress and quit as soon as
+              possible. Wait for it to finish, please.
+
+              Interrupt tmt again for faster termination but be aware that
+              it may result in resource leaks as various cleanup tasks will
+              not finish.
+              """
+            ).strip()
+        )
+
+    raise KeyboardInterrupt
+
+
 def _interrupt_handler(signum: int, frame: Optional[FrameType]) -> None:
     """
     A signal handler for signals that interrupt tmt, ``SIGINT`` and ``SIGTERM`.
@@ -58,19 +95,19 @@ def _interrupt_handler(signum: int, frame: Optional[FrameType]) -> None:
 
     logger = tmt.log.Logger.get_bootstrap_logger()
 
-    logger.warning(f'Interrupt detected via {signal.Signals(signum).name} signal.')
+    logger.warning(f'Interrupt requested via {signal.Signals(signum).name} signal.')
 
     with _INTERRUPT_LOCK:
+        repeated = _INTERRUPT_PENDING.is_set()
+
+        _INTERRUPT_PENDING.set()
+
         if _INTERRUPT_MASKED.is_set():
             logger.warning('Interrupt is masked, postponing the reaction.')
 
-            _INTERRUPT_PENDING.set()
-
             return
 
-        logger.warning('Interrupting tmt operation as requested.')
-
-        raise KeyboardInterrupt
+        _quit_tmt(logger, repeated=repeated)
 
 
 def install_handlers() -> None:
@@ -109,8 +146,4 @@ class PreventSignals(contextlib.AbstractContextManager['PreventSignals']):
 
                 return
 
-            _INTERRUPT_PENDING.clear()
-
-            self.logger.warning('Interrupting tmt operation as requested')
-
-            raise KeyboardInterrupt
+            _quit_tmt(self.logger)
