@@ -81,7 +81,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         assert workdir is not None  # narrow type
 
         if not self.is_dry_run:
-            topology = tmt.steps.Topology(self.step.plan.provision.guests())
+            topology = tmt.steps.Topology(self.step.plan.provision.ready_guests)
             topology.guest = tmt.steps.GuestTopology(guest)
 
             environment.update(

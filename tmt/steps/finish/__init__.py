@@ -149,14 +149,14 @@ class Finish(tmt.steps.Step):
             return
 
         # Nothing to do if no guests were provisioned
-        if not self.plan.provision.guests():
+        if not self.plan.provision.ready_guests:
             self.warn("Nothing to finish, no guests provisioned.", shift=1)
             return
 
         # Prepare guests
         guest_copies: list[Guest] = []
 
-        for guest in self.plan.provision.guests():
+        for guest in self.plan.provision.ready_guests:
             # Create a guest copy and change its parent so that the
             # operations inside finish plugins on the guest use the
             # finish step config rather than provision step config.
@@ -224,8 +224,8 @@ class Finish(tmt.steps.Step):
             # To separate "finish" from "pull" queue visually
             self.info('')
 
-        # Stop and remove provisioned guests
-        for guest in self.plan.provision.guests():
+        # Stop and remove provisioned guests, even the partially provisioned ones.
+        for guest in self.plan.provision.guests:
             guest.stop()
             guest.remove()
 
