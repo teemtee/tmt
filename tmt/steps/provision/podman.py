@@ -252,6 +252,7 @@ class GuestContainer(tmt.Guest):
             self.execute(
                 ShellScript(
                     f"""
+                    sudo mkdir -p {self.workdir_root};
                     sudo chmod o+rwX {self.workdir_root};
                     sudo setfacl -d -m o:rwX {self.workdir_root}
                     """
