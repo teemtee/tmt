@@ -19,6 +19,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+import tmt.utils.signals
 from tmt.container import container, field, simple_field
 from tmt.utils import (
     Command,
@@ -1219,48 +1220,49 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                 shift=-2,
             )
             return
-        try:
-            response = self.api.create(data)
 
-        except ProvisioningError as exc:
-            import xmlrpc.client
+        with tmt.utils.signals.PreventSignals(self._logger):
+            try:
+                response = self.api.create(data)
 
-            cause = exc.__cause__
+            except ProvisioningError as exc:
+                import xmlrpc.client
 
-            if isinstance(cause, xmlrpc.client.Fault):
-                if 'is not a valid user name' in cause.faultString:
-                    raise ProvisionError(
-                        f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
-                        "was refused as unknown."
-                    ) from exc
+                cause = exc.__cause__
 
-                if 'is not a valid submission delegate' in cause.faultString:
-                    raise ProvisionError(
-                        f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
-                        "is not a valid submission delegate."
-                    ) from exc
+                if isinstance(cause, xmlrpc.client.Fault):
+                    if 'is not a valid user name' in cause.faultString:
+                        raise ProvisionError(
+                            f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
+                            "was refused as unknown."
+                        ) from exc
 
-                if 'is not a valid group' in cause.faultString:
-                    raise ProvisionError(
-                        f"Failed to create Beaker job, job group '{self.beaker_job_group}' "
-                        "was refused as unknown."
-                    ) from exc
+                    if 'is not a valid submission delegate' in cause.faultString:
+                        raise ProvisionError(
+                            f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
+                            "is not a valid submission delegate."
+                        ) from exc
 
-                if 'is not a member of group' in cause.faultString:
-                    raise ProvisionError(
-                        "Failed to create Beaker job, submitting user is not "
-                        "a member of group '{self.beaker_job_group}'"
-                    ) from exc
+                    if 'is not a valid group' in cause.faultString:
+                        raise ProvisionError(
+                            f"Failed to create Beaker job, job group '{self.beaker_job_group}' "
+                            "was refused as unknown."
+                        ) from exc
 
-            raise ProvisionError('Failed to create Beaker job') from exc
+                    if 'is not a member of group' in cause.faultString:
+                        raise ProvisionError(
+                            "Failed to create Beaker job, submitting user is not "
+                            "a member of group '{self.beaker_job_group}'"
+                        ) from exc
 
-        if response:
+                raise ProvisionError('Failed to create Beaker job') from exc
+
+            if not response:
+                raise ProvisionError(f"Failed to create, response: '{response}'.")
+
             self.info('guest', 'has been requested', 'green')
+            self.job_id = f'J:{response["id"]}'
 
-        else:
-            raise ProvisionError(f"Failed to create, response: '{response}'.")
-
-        self.job_id = f'J:{response["id"]}'
         self.info('job id', self.job_id, 'green')
 
         with UpdatableMessage("status", indent_level=self._level()) as progress_message:
