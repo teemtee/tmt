@@ -4,7 +4,7 @@ import tmt.log
 import tmt.steps.prepare
 import tmt.utils
 from tmt.container import container, field
-from tmt.steps.prepare.feature import Feature, PrepareFeatureData, provides_feature
+from tmt.steps.prepare.feature import PrepareFeatureData, ToggleableFeature, provides_feature
 from tmt.steps.provision import Guest
 
 
@@ -19,7 +19,7 @@ class EpelStepData(PrepareFeatureData):
 
 
 @provides_feature('epel')
-class Epel(Feature):
+class Epel(ToggleableFeature):
     NAME = "epel"
 
     _data_class = EpelStepData
