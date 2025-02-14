@@ -87,7 +87,7 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
 
     @property
     def lognames(self) -> list[str]:
-        """ Return name list of logs the guest could provide. """
+        """Return name list of logs the guest could provide."""
         return []
 
     def reboot(
