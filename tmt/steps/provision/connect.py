@@ -220,7 +220,7 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
         provision:
           how: connect
           hard-reboot: virsh reboot my-example-vm
-          soft-reboot: shutdown -r now
+          soft-reboot: ssh root@my-example-vm 'shutdown -r now'
 
     .. warning::
 
