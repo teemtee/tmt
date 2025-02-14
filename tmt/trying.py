@@ -348,7 +348,11 @@ class Try(tmt.utils.Common):
         try:
             plan.prepare.go()
         except GeneralError as error:
-            self.print(click.style(f"\n{error}.", fg="red"))
+            tmt.utils.show_exception(
+                error,
+                traceback_verbosity=tmt.utils.TracebackVerbosity.DEFAULT,
+                include_logfiles=True,
+            )
             return
         plan.execute.go()
 
@@ -363,7 +367,11 @@ class Try(tmt.utils.Common):
         try:
             plan.prepare.go()
         except GeneralError as error:
-            self.print(click.style(f"\n{error}.", fg="red"))
+            tmt.utils.show_exception(
+                error,
+                traceback_verbosity=tmt.utils.TracebackVerbosity.DEFAULT,
+                include_logfiles=True,
+            )
             return
         assert plan.login is not None  # Narrow type
         plan.login.go(force=True)
@@ -464,7 +472,11 @@ class Try(tmt.utils.Common):
         try:
             plan.prepare.go(force=True)
         except GeneralError as error:
-            self.print(click.style(f"\n{error}.", fg="red"))
+            tmt.utils.show_exception(
+                error,
+                traceback_verbosity=tmt.utils.TracebackVerbosity.DEFAULT,
+                include_logfiles=True,
+            )
 
     def action_execute(self, plan: Plan) -> None:
         """
