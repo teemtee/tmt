@@ -2786,7 +2786,7 @@ class Provision(tmt.steps.Step):
         Most of the time, after ``provision`` step finishes successfully,
         the list should be the same as :py:attr:`guests`, i.e. it should
         contain all known guests. There are situations when
-        ``ready_guests`` will be a subset of ``guests`, and their users
+        ``ready_guests`` will be a subset of ``guests``, and their users
         must decide which collection is the best for the desired goal:
 
         * when ``provision`` is still running. ``ready_guests`` will be
