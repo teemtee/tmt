@@ -96,14 +96,26 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
         """
         Reboot the guest, and wait for the guest to recover.
 
+        .. note::
+
+           Custom reboot command can be used only in combination with a
+           soft reboot. If both ``hard`` and ``command`` are set, a hard
+           reboot will be requested, and ``command`` will be ignored.
+
         :param hard: if set, force the reboot. This may result in a loss of
             data. The default of ``False`` will attempt a graceful reboot.
-        :param command: a command to run on the guest to trigger the reboot.
+
+            Plugin will use :py:attr:`ConnectGuestData.hard_reboot`,
+            set via ``hard-reboot`` key. Unlike ``command``, this command
+            would be executed on the runner, **not** on the guest.
+        :param command: a command to run on the guest to trigger the
+            reboot. If ``hard`` is also set, ``command`` is ignored.
+
             If not set, plugin would try to use
-            :py:attr:`ConnectGuestData.soft_reboot` or
-            :py:attr:`ConnectGuestData.hard_reboot` (``--soft-reboot`` and
-            ``--hard-reboot``, respectively), if specified. Unlike ``command``,
-            these would be executed on the runner, **not** on the guest.
+            :py:attr:`ConnectGuestData.soft_reboot`, set via
+            ``soft-reboot`` key. Unlike ``command``,
+            this command would be executed on the runner, **not** on the
+            guest.
         :param timeout: amount of time in which the guest must become available
             again.
         :param tick: how many seconds to wait between two consecutive attempts
@@ -113,35 +125,44 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
-        if not command:
-            if hard and self.hard_reboot is not None:
-                self.debug(f"Reboot using the hard reboot command '{self.hard_reboot}'.")
+        if hard:
+            if self.hard_reboot is None:
+                raise tmt.steps.provision.RebootModeNotSupportedError(guest=self, hard=True)
 
-                # ignore[union-attr]: mypy still considers `self.hard_reboot` as possibly
-                # being `None`, missing the explicit check above.
-                return self.perform_reboot(
-                    lambda: self._run_guest_command(self.hard_reboot.to_shell_command()),  # type: ignore[union-attr]
-                    timeout=timeout,
-                    tick=tick,
-                    tick_increase=tick_increase,
-                    hard=True,
-                )
+            self.debug(f"Hard reboot using the hard reboot command '{self.hard_reboot}'.")
 
-            if not hard and self.soft_reboot is not None:
-                self.debug(f"Reboot using the soft reboot command '{self.soft_reboot}'.")
+            # ignore[union-attr]: mypy still considers `self.hard_reboot` as possibly
+            # being `None`, missing the explicit check above.
+            return self.perform_reboot(
+                lambda: self._run_guest_command(self.hard_reboot.to_shell_command()),  # type: ignore[union-attr]
+                timeout=timeout,
+                tick=tick,
+                tick_increase=tick_increase,
+                fetch_boot_time=False,
+            )
 
-                # ignore[union-attr]: mypy still considers `self.soft_reboot` as possibly
-                # being `None`, missing the explicit check above.
-                return self.perform_reboot(
-                    lambda: self._run_guest_command(self.soft_reboot.to_shell_command()),  # type: ignore[union-attr]
-                    timeout=timeout,
-                    tick=tick,
-                    tick_increase=tick_increase,
-                )
+        if command is not None:
+            return super().reboot(
+                hard=False,
+                command=command,
+                timeout=timeout,
+                tick=tick,
+                tick_increase=tick_increase,
+            )
 
-        return super().reboot(
-            hard=hard, command=command, timeout=timeout, tick=tick, tick_increase=tick_increase
-        )
+        if self.soft_reboot is not None:
+            self.debug(f"Soft reboot using the soft reboot command '{self.soft_reboot}'.")
+
+            # ignore[union-attr]: mypy still considers `self.soft_reboot` as possibly
+            # being `None`, missing the explicit check above.
+            return self.perform_reboot(
+                lambda: self._run_guest_command(self.soft_reboot.to_shell_command()),  # type: ignore[union-attr]
+                timeout=timeout,
+                tick=tick,
+                tick_increase=tick_increase,
+            )
+
+        return super().reboot(hard=False, timeout=timeout, tick=tick, tick_increase=tick_increase)
 
     def start(self) -> None:
         """
@@ -187,6 +208,24 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
         provision:
             how: connect
             guest: host.example.org
+
+    To trigger a hard reboot of a guest, ``hard-reboot`` must be set to
+    an executable command or script. Without this key set, hard reboot
+    will remain unsupported and result in an error. In comparison,
+    ``soft-reboot`` is optional, it will be preferred over the default
+    soft reboot command, ``reboot``:
+
+    .. code-block:: yaml
+
+        provision:
+          how: connect
+          hard-reboot: virsh reboot my-example-vm
+          soft-reboot: ssh root@my-example-vm 'shutdown -r now'
+
+    .. warning::
+
+        Both ``hard-reboot`` and ``soft-reboot`` commands are executed
+        on the runner, not on the guest.
     """
 
     _data_class = ProvisionConnectData
