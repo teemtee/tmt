@@ -2785,11 +2785,23 @@ class Provision(tmt.steps.Step):
 
         Most of the time, after ``provision`` step finishes successfully,
         the list should be the same as :py:attr:`guests`, i.e. it should
-        contain all known guests. But, if tmt is terminated, or when
-        ``provision`` is still running, ``ready_guests`` will be a
-        subset of ``guests``, and caller must decide which set of guests
-        is the best fitting its purpose.
+        contain all known guests. There are situations when
+        ``ready_guests`` will be a subset of ``guests`, and their users
+        must decide which collection is the best for the desired goal:
+
+        * when ``provision`` is still running. ``ready_guests`` will be
+          slowly gaining new guests as they get up and running.
+        * in dry-run mode, no actual provisioning is expected to happen,
+          therefore there are no unsuccessfully provisioned guests. In
+          this mode, all known guests are considered as ready, and
+          ``ready_guests`` is the same as ``guests``.
+        * if tmt is interrupted by a signal or user. Not all guests will
+          finish their provisioning process, and ``ready_guests`` may
+          contain just the finished ones.
         """
+
+        if self.is_dry_run:
+            return self.guests
 
         return [guest for guest in self.guests if guest.is_ready]
 
