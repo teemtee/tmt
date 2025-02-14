@@ -2767,6 +2767,32 @@ class Provision(tmt.steps.Step):
 
     _preserved_workdir_members = ['step.yaml', 'guests.yaml']
 
+    #: All known guests.
+    #:
+    #: .. warning::
+    #:
+    #:    Guests may not necessarily be fully provisioned. They are
+    #:    from plugins as soon as possible, and guests may easily be
+    #:    still waiting for their infrastructure to finish the task.
+    #:    For the list of successfully provisioned guests, see
+    #:    :py:attr:`ready_guests`.
+    guests: list[Guest]
+
+    @property
+    def ready_guests(self) -> list[Guest]:
+        """
+        All successfully provisioned guests.
+
+        Most of the time, after ``provision`` step finishes successfully,
+        the list should be the same as :py:attr:`guests`, i.e. it should
+        contain all known guests. But, if tmt is terminated, or when
+        ``provision`` is still running, ``ready_guests`` will be a
+        subset of ``guests``, and caller must decide which set of guests
+        is the best fitting its purpose.
+        """
+
+        return [guest for guest in self.guests if guest.is_ready]
+
     def __init__(
         self,
         *,
@@ -2780,8 +2806,7 @@ class Provision(tmt.steps.Step):
 
         super().__init__(plan=plan, data=data, logger=logger)
 
-        # List of provisioned guests and loaded guest data
-        self._guests: list[Guest] = []
+        self.guests = []
         self._guest_data: dict[str, GuestData] = {}
 
     @property
@@ -2812,7 +2837,9 @@ class Provision(tmt.steps.Step):
 
         super().save()
         try:
-            raw_guest_data = {guest.name: guest.save().to_serialized() for guest in self.guests()}
+            raw_guest_data = {
+                guest.name: guest.save().to_serialized() for guest in self.ready_guests
+            }
 
             self.write(Path('guests.yaml'), tmt.utils.dict_to_yaml(raw_guest_data))
         except tmt.utils.FileError:
@@ -2836,7 +2863,7 @@ class Provision(tmt.steps.Step):
             plugin.wake(data=self._guest_data.get(plugin.name))
 
             if plugin.guest:
-                self._guests.append(plugin.guest)
+                self.guests.append(plugin.guest)
 
         # Nothing more to do if already done and not asked to run again
         if self.status() == 'done' and not self.should_run_again:
@@ -2852,10 +2879,10 @@ class Provision(tmt.steps.Step):
         """
 
         # Summary of provisioned guests
-        guests = fmf.utils.listed(self.guests(), 'guest')
+        guests = fmf.utils.listed(self.ready_guests, 'guest')
         self.info('summary', f'{guests} provisioned', 'green', shift=1)
         # Guest list in verbose mode
-        for guest in self.guests():
+        for guest in self.ready_guests:
             if not guest.name.startswith(tmt.utils.DEFAULT_NAME):
                 self.verbose(guest.name, color='red', shift=2)
 
@@ -2874,7 +2901,7 @@ class Provision(tmt.steps.Step):
             return
 
         # Provision guests
-        self._guests = []
+        self.guests = []
 
         def _run_provision_phases(
             phases: list[ProvisionPlugin[ProvisionStepData]],
@@ -2909,7 +2936,7 @@ class Provision(tmt.steps.Step):
                 if outcome.guest:
                     outcome.guest.show()
 
-                    self._guests.append(outcome.guest)
+                    self.guests.append(outcome.guest)
 
             return all_tasks, failed_tasks
 
@@ -3028,10 +3055,3 @@ class Provision(tmt.steps.Step):
         self.summary()
         self.status('done')
         self.save()
-
-    def guests(self) -> list[Guest]:
-        """
-        Return the list of all provisioned guests
-        """
-
-        return self._guests
