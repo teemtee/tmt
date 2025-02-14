@@ -1175,7 +1175,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         if command:
             return super().reboot(
-                command=command, timeout=timeout, tick=tick, tick_increase=tick_increase
+                hard=False, command=command, timeout=timeout, tick=tick, tick_increase=tick_increase
             )
 
         if self._instance is None:
