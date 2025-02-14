@@ -717,7 +717,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
     @property
     def lognames(self) -> list[str]:
-        """ Return name list of logs the guest could provide. """
+        """Return name list of logs the guest could provide."""
         return []
 
     def _get_url(self, url: str, message: str) -> requests.Response:

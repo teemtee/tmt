@@ -1115,7 +1115,7 @@ class Guest(tmt.utils.Common):
 
     @property
     def lognames(self) -> list[str]:
-        """ Return name list of logs the guest could provide. """
+        """Return name list of logs the guest could provide."""
 
         return []
 
@@ -1717,11 +1717,7 @@ class Guest(tmt.utils.Common):
         """
         raise NotImplementedError
 
-    def store_log(
-            self,
-            path: Path,
-            content: str,
-            logname: Optional[str] = None) -> None:
+    def store_log(self, path: Path, content: str, logname: Optional[str] = None) -> None:
         """
         Save log content to a file.
 
@@ -1738,12 +1734,11 @@ class Guest(tmt.utils.Common):
         elif logname:
             (path / logname).write_text(content)
         else:
-            raise tmt.utils.GeneralError(
-                'Log path is a directory but log name is not defined.')
+            raise tmt.utils.GeneralError('Log path is a directory but log name is not defined.')
 
-    def fetch_logs(self,
-                   dirpath: Optional[Path] = None,
-                   lognames: Optional[list[str]] = None) -> None:
+    def fetch_logs(
+        self, dirpath: Optional[Path] = None, lognames: Optional[list[str]] = None
+    ) -> None:
         """
         Get log content and save it to a directory.
 
