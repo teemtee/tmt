@@ -11,7 +11,8 @@ rlJournalStart
     rlPhaseStartTest "Interactive Investigation"
         rlRun -s "LANG=en_US ./investigate.exp" 0 "Try interactive investigation"
         rlAssertGrep "2 tests executed" $rlRun_LOG
-        rlAssertGrep "tmt-test-wrapper.sh" $rlRun_LOG
+        rlAssertGrep "tmt-test-wrapper-inner.sh" $rlRun_LOG
+        rlAssertGrep "tmt-test-wrapper-outer.sh" $rlRun_LOG
         rlAssertGrep "everything bad done" $rlRun_LOG
         rlAssertGrep "fail /tests/bad" $rlRun_LOG
         rlAssertGrep "everything good done" $rlRun_LOG
