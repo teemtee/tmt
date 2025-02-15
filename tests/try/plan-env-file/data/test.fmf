@@ -1,0 +1,5 @@
+summary: How it is
+framework: shell
+test: |
+    echo "My variable is $MY_VAR..."  # Check whether plan-file sourced after prepare
+    echo "YOUR_VAR=bad" >> $TMT_PLAN_ENVIRONMENT_FILE  # Variable to source after execute
