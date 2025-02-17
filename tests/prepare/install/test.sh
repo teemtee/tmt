@@ -154,7 +154,7 @@ rlJournalStart
             fi
         rlPhaseEnd
 
-        if rlIsFedora 41 && is_fedora_41 "$image"; then
+        if [ "$PROVISION_HOW" = "container" ] && rlIsFedora 41 && is_fedora_41 "$image"; then
             rlPhaseStartTest "$phase_prefix Install downloaded packages from current directory (plan)"
                 fetch_downloaded_packages "$image"
 
