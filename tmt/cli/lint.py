@@ -199,9 +199,7 @@ def do_lint(
     return max(res_single, res_collection)
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@tests.command(name='lint')  # type: ignore[arg-type]
+@tests.command(name='lint')
 @pass_context
 @filtering_options
 @fmf_source_options
@@ -210,6 +208,7 @@ def do_lint(
 @verbosity_options
 def tests_lint(
     context: Context,
+    /,
     list_checks: bool,
     failed_only: bool,
     enable_checks: list[str],
@@ -240,9 +239,7 @@ def tests_lint(
     raise SystemExit(exit_code)
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@plans.command(name='lint')  # type: ignore[arg-type]
+@plans.command(name='lint')
 @pass_context
 @filtering_options
 @fmf_source_options
@@ -251,6 +248,7 @@ def tests_lint(
 @verbosity_options
 def plans_lint(
     context: Context,
+    /,
     list_checks: bool,
     failed_only: bool,
     enable_checks: list[str],
@@ -281,9 +279,7 @@ def plans_lint(
     raise SystemExit(exit_code)
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@stories.command(name='lint')  # type: ignore[arg-type]
+@stories.command(name='lint')
 @pass_context
 @filtering_options
 @fmf_source_options
@@ -292,6 +288,7 @@ def plans_lint(
 @verbosity_options
 def stories_lint(
     context: Context,
+    /,
     list_checks: bool,
     failed_only: bool,
     enable_checks: list[str],
@@ -322,9 +319,7 @@ def stories_lint(
     raise SystemExit(exit_code)
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@main.command(name='lint')  # type: ignore[arg-type]
+@main.command(name='lint')
 @pass_context
 @filtering_options
 @fmf_source_options
@@ -333,6 +328,7 @@ def stories_lint(
 @verbosity_options
 def lint(
     context: Context,
+    /,
     list_checks: bool,
     enable_checks: list[str],
     disable_checks: list[str],

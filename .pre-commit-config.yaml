@@ -16,7 +16,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.14.1"
+    rev: "v1.15.0"
     hooks:
       - id: mypy
         language_version: "3.9"
@@ -64,7 +64,7 @@ repos:
         pass_filenames: false
 
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.393
+    rev: v1.1.394
     hooks:
       - id: pyright
         language_version: "3.9"
@@ -110,7 +110,7 @@ repos:
           - "types-lxml"
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.31.1"
+    rev: "0.31.2"
     hooks:
       - id: check-metaschema
         name: "Check JSON schemas validity"
@@ -123,7 +123,7 @@ repos:
         files: ^tmt/(?:schemas|steps/prepare/feature)/.*\.yaml
 
   - repo: https://github.com/ansible-community/ansible-lint.git
-    rev: v25.1.1
+    rev: v25.1.3
     hooks:
       - id: ansible-lint
         args:
@@ -139,7 +139,7 @@ repos:
           # in order to be parsed by ansible-lint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.9.4
+    rev: v0.9.7
     hooks:
       - id: ruff
         args:
@@ -148,7 +148,7 @@ repos:
       - id: ruff-format
 
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.42.1
+    rev: 1.42.0
     hooks:
     - id: tmt-lint
       additional_dependencies:
@@ -189,7 +189,7 @@ repos:
           - "--"
 
   - repo: https://github.com/hadolint/hadolint
-    rev: v2.12.0
+    rev: v2.13.1-beta
     hooks:
       # * hadolint-docker depends hard on Docker, ignores podman
       # * pre-commit check does not install hadolint binary,
