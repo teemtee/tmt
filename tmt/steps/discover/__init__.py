@@ -24,7 +24,7 @@ from tmt.utils import GeneralError, Path
 @container
 class TestOrigin:
     """
-    Describes the original of a test.
+    Describes the origin of a test.
     """
 
     #: Name of the ``discover`` phase that added the test.
