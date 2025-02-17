@@ -2847,6 +2847,19 @@ class Plan(
         return self._imported_plan
 
     def derive_plan(self, derived_id: int, tests: dict[str, list[Test]]) -> 'Plan':
+        """
+        Create a new plan derived from this one.
+
+        New plan will inherit its attributes from this plan, its name
+        would be combination of this plan's name and ``derived_id``.
+        New plan will have its own workdir, a copy of this plan's
+        workdir.
+
+        :param derived_id: arbitrary number marking the new plan as Nth
+            plan derived from this plan.
+        :param tests: lists of tests to limit the new plan to.
+        """
+
         derived_plan = Plan(
             node=self.node, run=self.my_run, logger=self._logger, name=f'{self.name}.{derived_id}'
         )
@@ -2887,6 +2900,19 @@ class Plan(
             step.prune(logger=step._logger)
 
     def reshape(self, tests: list['tmt.steps.discover.TestOrigin']) -> bool:
+        """
+        Change the content of this plan by application of plan shaping plugins.
+
+        :py:mod:`tmt.plugins.plan_shaper` plugins are invoked and may
+        mangle this plan and its content. This plan may be even removed
+        from the queue, and replaced with many new plans.
+
+        :param tests: tests that should be considered by shaping plugins
+            as part of this plan.
+        :returns: ``True`` if the plan has been modified, ``False``
+            otherwise.
+        """
+
         for shaper_id in tmt.plugins.plan_shapers._PLAN_SHAPER_PLUGIN_REGISTRY.iter_plugin_ids():
             shaper = tmt.plugins.plan_shapers._PLAN_SHAPER_PLUGIN_REGISTRY.get_plugin(shaper_id)
 

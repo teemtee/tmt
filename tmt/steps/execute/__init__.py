@@ -738,7 +738,9 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
         invocations: list[TestInvocation] = []
 
-        for _, test in self.discover.tests(phase_name=self.discover_phase, enabled=True):
+        for test_origin in self.discover.tests(phase_name=self.discover_phase, enabled=True):
+            test = test_origin.test
+
             invocation = TestInvocation(phase=self, test=test, guest=guest, logger=logger)
             invocations.append(invocation)
 
@@ -1353,14 +1355,14 @@ class Execute(tmt.steps.Step):
         """
 
         known_serial_numbers = {
-            test_address[1].serial_number: test_address for test_address in tests
+            test_origin.test.serial_number: test_origin for test_origin in tests
         }
         referenced_serial_numbers = {result.serial_number for result in self._results}
 
         return [
             (result, known_serial_numbers.get(result.serial_number)) for result in self._results
         ] + [
-            (None, test_address)
-            for test_address in tests
-            if test_address[1].serial_number not in referenced_serial_numbers
+            (None, test_origin)
+            for test_origin in tests
+            if test_origin.test.serial_number not in referenced_serial_numbers
         ]

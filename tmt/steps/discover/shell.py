@@ -468,11 +468,17 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
 
     def tests(
         self, *, phase_name: Optional[str] = None, enabled: Optional[bool] = None
-    ) -> list[tuple[str, 'tmt.Test']]:
+    ) -> list[tmt.steps.discover.TestOrigin]:
         if phase_name is not None and phase_name != self.name:
             return []
 
         if enabled is None:
-            return [(self.name, test) for test in self._tests]
+            return [
+                tmt.steps.discover.TestOrigin(test=test, phase=self.name) for test in self._tests
+            ]
 
-        return [(self.name, test) for test in self._tests if test.enabled is enabled]
+        return [
+            tmt.steps.discover.TestOrigin(test=test, phase=self.name)
+            for test in self._tests
+            if test.enabled is enabled
+        ]

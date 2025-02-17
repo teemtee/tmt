@@ -5,12 +5,17 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from tmt.base import Plan, Test
     from tmt.options import ClickOptionDecoratorType
+    from tmt.steps.discover import TestOrigin
 
 from tmt.plugins.plan_shapers import PlanShaper, provides_plan_shaper
 
 
 @provides_plan_shaper('max-tests')
 class MaxTestsPlanShaper(PlanShaper):
+    """
+    Reshape a plan by limiting the number of tests in a plan.
+    """
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
@@ -29,7 +34,7 @@ class MaxTestsPlanShaper(PlanShaper):
         ]
 
     @classmethod
-    def check(cls, plan: 'Plan', tests: list[tuple[str, 'Test']]) -> bool:
+    def check(cls, plan: 'Plan', tests: list['TestOrigin']) -> bool:
         if not plan.my_run:
             return False
 
@@ -44,7 +49,10 @@ class MaxTestsPlanShaper(PlanShaper):
         return True
 
     @classmethod
-    def apply(cls, plan: 'Plan', tests: list[tuple[str, 'Test']]) -> Iterator['Plan']:
+    def apply(cls, plan: 'Plan', tests: list['TestOrigin']) -> Iterator['Plan']:
+        # Prevent modification of caller's list.
+        tests = tests[:]
+
         assert plan.my_run is not None
 
         max_test_per_batch = plan.my_run.opt('max')
@@ -61,12 +69,12 @@ class MaxTestsPlanShaper(PlanShaper):
                 if not tests:
                     break
 
-                phase_name, test = tests.pop(0)
+                test_origin = tests.pop(0)
 
-                if phase_name not in batch:
-                    batch[phase_name] = [test]
+                if test_origin.phase not in batch:
+                    batch[test_origin.phase] = [test_origin.test]
 
                 else:
-                    batch[phase_name].append(test)
+                    batch[test_origin.phase].append(test_origin.test)
 
             yield plan.derive_plan(batch_id, batch)

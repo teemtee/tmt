@@ -11,9 +11,6 @@ if TYPE_CHECKING:
     import tmt.cli
     import tmt.options
     import tmt.steps
-    from tmt._compat.typing import TypeAlias
-
-    TestOrigin: TypeAlias = tuple[str, 'tmt.Test']
 
 import tmt.base
 import tmt.steps
@@ -22,6 +19,19 @@ from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
 from tmt.utils import GeneralError, Path
+
+
+@container
+class TestOrigin:
+    """
+    Describes the original of a test.
+    """
+
+    #: Name of the ``discover`` phase that added the test.
+    phase: str
+
+    #: The test in question.
+    test: 'tmt.Test'
 
 
 @container
@@ -382,8 +392,8 @@ class Discover(tmt.steps.Step):
         text = listed(len(self.tests(enabled=True)), 'test') + ' selected'
         self.info('summary', text, 'green', shift=1)
         # Test list in verbose mode
-        for _, test in self.tests(enabled=True):
-            self.verbose(test.name, color='red', shift=2)
+        for test_origin in self.tests(enabled=True):
+            self.verbose(test_origin.test.name, color='red', shift=2)
 
     def go(self, force: bool = False) -> None:
         """
@@ -416,7 +426,9 @@ class Discover(tmt.steps.Step):
                 # Prefix test name only if multiple plugins configured
                 prefix = f'/{phase.name}' if len(self.phases()) > 1 else ''
                 # Check discovered tests, modify test name/path
-                for _, test in phase.tests(enabled=True):
+                for test_origin in phase.tests(enabled=True):
+                    test = test_origin.test
+
                     test.name = f"{prefix}{test.name}"
                     test.path = Path(f"/{phase.safe_name}{test.path}")
                     # Update test environment with plan environment
@@ -426,8 +438,8 @@ class Discover(tmt.steps.Step):
             else:
                 raise GeneralError(f'Unexpected phase in discover step: {phase}')
 
-        for _, test in self.tests():
-            test.serial_number = self.plan.draw_test_serial_number(test)
+        for test_origin in self.tests():
+            test_origin.test.serial_number = self.plan.draw_test_serial_number(test_origin.test)
 
         # Show fmf identifiers for tests discovered in plan
         # TODO: This part should go into the 'fmf.py' module
@@ -435,13 +447,13 @@ class Discover(tmt.steps.Step):
             if self.tests(enabled=True):
                 export_fmf_ids: list[str] = []
 
-                for _, test in self.tests(enabled=True):
-                    fmf_id = test.fmf_id
+                for test_origin in self.tests(enabled=True):
+                    fmf_id = test_origin.test.fmf_id
 
                     if not fmf_id.url:
                         continue
 
-                    exported = test.fmf_id.to_minimal_spec()
+                    exported = test_origin.test.fmf_id.to_minimal_spec()
 
                     if fmf_id.default_branch and fmf_id.ref == fmf_id.default_branch:
                         exported.pop('ref')
@@ -492,6 +504,8 @@ class Discover(tmt.steps.Step):
         :returns: a list of phase name and test pairs.
         """
 
+        from tmt.steps.discover import TestOrigin
+
         suitable_tests = self._failed_tests if self._failed_tests else self._tests
         suitable_phases = [phase_name] if phase_name is not None else list(self._tests.keys())
 
@@ -503,11 +517,11 @@ class Discover(tmt.steps.Step):
                     continue
 
                 for test in phase_tests:
-                    yield phase_name, test
+                    yield TestOrigin(test=test, phase=phase_name)
 
         if enabled is None:
             return list(_iter_tests())
 
         return [
-            (phase_name, test) for phase_name, test in _iter_tests() if test.enabled is enabled
+            test_origin for test_origin in _iter_tests() if test_origin.test.enabled is enabled
         ]

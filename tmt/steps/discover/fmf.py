@@ -824,7 +824,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # Prefix test name only if multiple plugins configured
         prefix = f'/{self.name}' if len(self.step.phases()) > 1 else ''
         # Check discovered tests, modify test name/path
-        for _, test in self.tests(enabled=True):
+        for test_origin in self.tests(enabled=True):
+            test = test_origin.test
+
             test.name = f"{prefix}{test.name}"
             test.path = Path(f"/{self.safe_name}{test.path}")
             # Update test environment with plan environment
@@ -836,7 +838,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     def tests(
         self, *, phase_name: Optional[str] = None, enabled: Optional[bool] = None
-    ) -> list[tuple[str, 'tmt.Test']]:
+    ) -> list[tmt.steps.discover.TestOrigin]:
         """
         Return all discovered tests
         """
@@ -845,6 +847,12 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             return []
 
         if enabled is None:
-            return [(self.name, test) for test in self._tests]
+            return [
+                tmt.steps.discover.TestOrigin(test=test, phase=self.name) for test in self._tests
+            ]
 
-        return [(self.name, test) for test in self._tests if test.enabled is enabled]
+        return [
+            tmt.steps.discover.TestOrigin(test=test, phase=self.name)
+            for test in self._tests
+            if test.enabled is enabled
+        ]

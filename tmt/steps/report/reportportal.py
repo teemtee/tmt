@@ -630,10 +630,10 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             # The first test starts with the launch (at the worst case)
             test_time = launch_time
 
-            for result, test_address in self.step.plan.execute.results_for_tests(
+            for result, test_origin in self.step.plan.execute.results_for_tests(
                 self.step.plan.discover.tests()
             ):
-                test = test_address[1] if test_address else None
+                test = test_origin.test if test_origin else None
 
                 test_name = None
                 test_description = ''

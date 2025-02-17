@@ -315,7 +315,9 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
                 collected_requires: list[tmt.base.DependencySimple] = []
                 collected_recommends: list[tmt.base.DependencySimple] = []
 
-                for _, test in self.step.plan.discover.tests(enabled=True):
+                for test_origin in self.step.plan.discover.tests(enabled=True):
+                    test = test_origin.test
+
                     if not test.enabled_on_guest(g):
                         continue
 
