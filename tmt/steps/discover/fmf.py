@@ -104,8 +104,12 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         metavar="RELATION:TARGET",
         multiple=True,
         help="""
-             Filter by linked objects (regular expressions are supported for both relation and
-             target). Relation part can be omitted to match all relations.
+            Select tests using the :ref:`/spec/core/link` keys.
+            Values must be in the form of ``RELATION:TARGET``,
+            tests containing at least one of them are selected.
+            Regular expressions are supported for both relation
+            and target. Relation part can be omitted to match all
+            relations.
              """,
     )
 
@@ -114,7 +118,10 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         option=('-F', '--filter'),
         metavar='FILTERS',
         multiple=True,
-        help='Include only tests matching the filter.',
+        help="""
+            Apply advanced filter based on test metadata attributes.
+            See ``pydoc fmf.filter`` for more info.
+            """,
         normalize=tmt.utils.normalize_string_list,
     )
     exclude: list[str] = field(
@@ -132,7 +139,7 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         option=('-m', '--modified-only'),
         is_flag=True,
         help="""
-            Set to true if you want to filter modified tests
+            Set to ``true`` if you want to filter modified tests
             only. The test is modified if its name starts with
             the name of any directory modified since ``modified-ref``.
             """,
@@ -156,7 +163,7 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         help="""
             The branch, tag or commit specifying the reference git revision (if not provided, the
             default branch is used). Note that you need to specify ``reference/<branch>`` to
-            compare to a branch from the repository specified in modified-url.
+            compare to a branch from the repository specified in ``modified-url``.
             """,
     )
 
