@@ -863,8 +863,10 @@ class GuestTestcloud(tmt.GuestSsh):
         self.config.DOWNLOAD_PROGRESS = self.debug_level > 2
         self.config.DOWNLOAD_PROGRESS_VERBOSE = False
 
+        # We can't assign the path to STORE_DIR because it must exist first
         data_dir = self.workdir_root / 'testcloud'
         store_dir = data_dir / 'images'
+
         # Make sure required directories exist
         os.makedirs(data_dir, exist_ok=True)
         os.makedirs(store_dir, exist_ok=True)
