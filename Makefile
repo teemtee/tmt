@@ -147,7 +147,7 @@ images/test/bases:  ## Download base images for custom test images
 # Build a single container: <image name> <containerfile>
 define do-build-container-image =
 @ echo "$(ccgreen)Building$(ccend) $(ccred)${1}$(ccend) $(ccgreen)image...$(ccend)"
-podman build --squash -t ${1} -f ./containers/${2} .
+podman build ${3} -t ${1} -f ./containers/${2} .
 @ echo
 endef
 
@@ -163,12 +163,12 @@ endef
 
 # Build tmt image: <image name> <containerfile>
 define build-container-image =
-$(call do-build-container-image,$(call container-image-target-to-name,${1}),${2})
+$(call do-build-container-image,$(call container-image-target-to-name,${1}),${2},--squash)
 endef
 
 # Build tmt test image: <image name> <containerfile>
 define build-test-container-image =
-$(call do-build-container-image,$(call test-container-image-target-to-name,${1}),${2})
+$(call do-build-container-image,$(call test-container-image-target-to-name,${1}),${2},)
 endef
 
 $(TMT_DISTRO_IMAGE_TARGET_PREFIX)/$(TMT_DISTRO_CONTAINER_IMAGE_NAME_PREFIX)/tmt\:latest:
