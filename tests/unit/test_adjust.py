@@ -19,7 +19,8 @@ def full(root_logger):
     Full example
     """
 
-    return relevancy_to_adjust("""
+    return relevancy_to_adjust(
+        """
     # feature has been added in Fedora 33
     distro < fedora-33: False
 
@@ -30,7 +31,9 @@ def full(root_logger):
 
     # try special operators
     collection contains httpd24 && fips defined: False
-    """.replace('    ', ''), root_logger)
+    """.replace('    ', ''),
+        root_logger,
+    )
 
 
 def check(condition, expected, logger):
@@ -43,6 +46,7 @@ def check(condition, expected, logger):
 
 
 # Valid rules
+
 
 def test_empty(root_logger):
     """
@@ -183,13 +187,11 @@ def test_not_equal_comma_separated(root_logger):
     Special handling for comma-separated values with !=
     """
 
-    check(
-        'distro != centos-7, centos-8',
-        'distro != centos-7 and distro != centos-8',
-        root_logger)
+    check('distro != centos-7, centos-8', 'distro != centos-7 and distro != centos-8', root_logger)
 
 
 # Invalid rules
+
 
 def test_invalid_rule(root_logger):
     """

@@ -295,9 +295,6 @@ target-version = "py39"
 
 [tool.ruff.format]
 quote-style = "preserve"  # TODO: Convert to a specific quote style
-exclude = [
-    "tests/*",
-    ]
 
 [tool.ruff.lint]
 select = [

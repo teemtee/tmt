@@ -54,12 +54,12 @@ class SEARCH(PatternMatching):
 
 
 def _assert_log(
-        caplog: _pytest.logging.LogCaptureFixture,
-        evaluator: Callable[[Iterable[Any]], bool] = any,
-        remove_colors: bool = False,
-        not_present: bool = False,
-        **tests: Any
-        ) -> None:
+    caplog: _pytest.logging.LogCaptureFixture,
+    evaluator: Callable[[Iterable[Any]], bool] = any,
+    remove_colors: bool = False,
+    not_present: bool = False,
+    **tests: Any,
+) -> None:
     """
     Assert log contains a record - logged message - with given properties. Those are specified as
     keyword parameters: :py:class:`logging.LogRecords` properties are allowed names, parameter
@@ -88,28 +88,33 @@ def _assert_log(
 
     for field_name, expected_value in tests.items():
         if field_name == 'message' and remove_colors:
-            def field_getter(record, name): return remove_color(getattr(record, name))
+
+            def field_getter(record, name):
+                return remove_color(getattr(record, name))
 
         elif field_name.startswith('details_'):
             field_name = field_name.replace('details_', '')
-            def field_getter(record, name): return getattr(record.details, name, None)
+
+            def field_getter(record, name):
+                return getattr(record.details, name, None)
 
         elif field_name == 'message':
-            def field_getter(record, name): return remove_color(getattr(record, name))
+
+            def field_getter(record, name):
+                return remove_color(getattr(record, name))
 
         else:
-            def field_getter(record, name): return getattr(record, name)
+
+            def field_getter(record, name):
+                return getattr(record, name)
 
         # Special case: if the expected value is a pattern matching instance, it represents a
         # regular expression. We don't modify the field name and "expected" value, but the
         # function will be a custom lambda calling proper `re` method.
         if isinstance(expected_value, PatternMatching):
-            operators.append((
-                field_getter,
-                field_name,
-                lambda a, b: a.method(b) is not None,
-                expected_value
-                ))
+            operators.append(
+                (field_getter, field_name, lambda a, b: a.method(b) is not None, expected_value)
+            )
 
             continue
 
@@ -118,18 +123,15 @@ def _assert_log(
         # `lambda a, b: a == b`. We might use more than just `eq` in the future, so let's start
         # with `operator` right away.
 
-        operators.append((
-            field_getter,
-            field_name,
-            operator.eq,
-            expected_value
-            ))
+        operators.append((field_getter, field_name, operator.eq, expected_value))
 
     # Given a logging record, apply all field/operator/value triplets, and make sure all match the
     # actual record properties.
     def _cmp(record: logging.LogRecord) -> bool:
-        return all(op(expected_value, field_getter(record, field_name))
-                   for field_getter, field_name, op, expected_value in operators)
+        return all(
+            op(expected_value, field_getter(record, field_name))
+            for field_getter, field_name, op, expected_value in operators
+        )
 
     # Final step: apply our "make sure field/operator/value triplets match given record" to each
     # and every record, and reduce per-record results into a single answer. By default, `any` is
@@ -138,17 +140,16 @@ def _assert_log(
     outcome = evaluator([_cmp(record) for record in caplog.records])
 
     def _report(message: str) -> None:
-        formatted_fields = [
-            f'    {field} == {value}'
-            for field, value in tests.items()
-            ]
+        formatted_fields = [f'    {field} == {value}' for field, value in tests.items()]
 
         for record in caplog.records:
             for field_getter, field_name, op, expected_value in operators:
-                print(f'field={field_name}',
-                      f'current=>>>{field_getter(record, field_name)}<<<',
-                      f'expected=>>>{expected_value}<<<',
-                      f'comparison={op(expected_value, field_getter(record, field_name))}')
+                print(
+                    f'field={field_name}',
+                    f'current=>>>{field_getter(record, field_name)}<<<',
+                    f'expected=>>>{expected_value}<<<',
+                    f'comparison={op(expected_value, field_getter(record, field_name))}',
+                )
 
         pytest.fail(f"""
 {message}:
@@ -166,28 +167,22 @@ def _assert_log(
 
 
 def assert_log(
-        caplog: _pytest.logging.LogCaptureFixture,
-        evaluator: Callable[[Iterable[Any]], bool] = any,
-        remove_colors: bool = False,
-        **tests: Any
-        ) -> None:
+    caplog: _pytest.logging.LogCaptureFixture,
+    evaluator: Callable[[Iterable[Any]], bool] = any,
+    remove_colors: bool = False,
+    **tests: Any,
+) -> None:
     _assert_log(
-        caplog,
-        evaluator=evaluator,
-        remove_colors=remove_colors,
-        not_present=False,
-        **tests)
+        caplog, evaluator=evaluator, remove_colors=remove_colors, not_present=False, **tests
+    )
 
 
 def assert_not_log(
-        caplog: _pytest.logging.LogCaptureFixture,
-        evaluator: Callable[[Iterable[Any]], bool] = any,
-        remove_colors: bool = False,
-        **tests: Any
-        ) -> None:
+    caplog: _pytest.logging.LogCaptureFixture,
+    evaluator: Callable[[Iterable[Any]], bool] = any,
+    remove_colors: bool = False,
+    **tests: Any,
+) -> None:
     _assert_log(
-        caplog,
-        evaluator=evaluator,
-        remove_colors=remove_colors,
-        not_present=True,
-        **tests)
+        caplog, evaluator=evaluator, remove_colors=remove_colors, not_present=True, **tests
+    )

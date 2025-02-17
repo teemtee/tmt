@@ -16,22 +16,24 @@ from tmt.log import (
     VerbosityLevelFilter,
     indent,
     render_labels,
-    )
+)
 
 from . import assert_log, assert_not_log
 
 
 def _exercise_logger(
-        caplog: _pytest.logging.LogCaptureFixture,
-        capsys: _pytest.capture.CaptureFixture[str],
-        logger: Logger,
-        indent_by: str = '',
-        labels: Optional[list[str]] = None,
-        reset: bool = True) -> None:
+    caplog: _pytest.logging.LogCaptureFixture,
+    capsys: _pytest.capture.CaptureFixture[str],
+    logger: Logger,
+    indent_by: str = '',
+    labels: Optional[list[str]] = None,
+    reset: bool = True,
+) -> None:
     labels = labels or []
 
-    prefix = tmt.utils.remove_color(render_labels(labels)) + indent_by + ' ' \
-        if labels else indent_by
+    prefix = (
+        tmt.utils.remove_color(render_labels(labels)) + indent_by + ' ' if labels else indent_by
+    )
 
     if reset:
         caplog.clear()
@@ -50,46 +52,53 @@ def _exercise_logger(
         message=f'{prefix}this is printed',
         details_key='this is printed',
         details_logger_labels=labels,
-        levelno=logging.INFO)
+        levelno=logging.INFO,
+    )
     assert tmt.utils.remove_color(captured.out) == f'{prefix}this is printed\n'
     assert_log(
         caplog,
         message=f'{prefix}this is a debug message',
         details_key='this is a debug message',
         details_logger_labels=labels,
-        levelno=logging.DEBUG)
+        levelno=logging.DEBUG,
+    )
     assert_log(
         caplog,
         message=f'{prefix}this is a verbose message',
         details_key='this is a verbose message',
         details_logger_labels=labels,
-        levelno=logging.INFO)
+        levelno=logging.INFO,
+    )
     assert_log(
         caplog,
         message=f'{prefix}this is just an info',
         details_key='this is just an info',
         details_logger_labels=labels,
-        levelno=logging.INFO)
+        levelno=logging.INFO,
+    )
     assert_log(
         caplog,
         message=f'{prefix}warn: this is a warning',
         details_key='warn',
         details_value='this is a warning',
         details_logger_labels=labels,
-        levelno=logging.WARNING)
+        levelno=logging.WARNING,
+    )
     assert_log(
         caplog,
         message=f'{prefix}fail: this is a failure',
         details_key='fail',
         details_value='this is a failure',
         details_logger_labels=labels,
-        levelno=logging.ERROR)
+        levelno=logging.ERROR,
+    )
 
 
 def test_sanity(
-        caplog: _pytest.logging.LogCaptureFixture,
-        capsys: _pytest.capture.CaptureFixture[str],
-        root_logger: Logger) -> None:
+    caplog: _pytest.logging.LogCaptureFixture,
+    capsys: _pytest.capture.CaptureFixture[str],
+    root_logger: Logger,
+) -> None:
     _exercise_logger(caplog, capsys, root_logger)
 
 
@@ -103,9 +112,10 @@ def test_creation(caplog: _pytest.logging.LogCaptureFixture, root_logger: Logger
 
 
 def test_descend(
-        caplog: _pytest.logging.LogCaptureFixture,
-        capsys: _pytest.capture.CaptureFixture[str],
-        root_logger: Logger) -> None:
+    caplog: _pytest.logging.LogCaptureFixture,
+    capsys: _pytest.capture.CaptureFixture[str],
+    root_logger: Logger,
+) -> None:
     deeper_logger = root_logger.descend().descend().descend()
 
     _exercise_logger(caplog, capsys, deeper_logger, indent_by='            ')
@@ -138,23 +148,29 @@ def test_descend(
         (1, 4, 0),
         (2, 4, 0),
         (3, 4, 0),
-        (4, 4, 1)
-        ]
-    )
+        (4, 4, 1),
+    ],
+)
 def test_verbosity_filter(
-        logger_verbosity: int,
-        message_verbosity: int,
-        filter_outcome: int
-        ) -> None:
+    logger_verbosity: int, message_verbosity: int, filter_outcome: int
+) -> None:
     filter = VerbosityLevelFilter()
 
-    assert filter.filter(logging.makeLogRecord({
-        'levelno': logging.INFO,
-        'details': LogRecordDetails(
-            key='dummy key',
-            logger_verbosity_level=logger_verbosity,
-            message_verbosity_level=message_verbosity)
-        })) == filter_outcome
+    assert (
+        filter.filter(
+            logging.makeLogRecord(
+                {
+                    'levelno': logging.INFO,
+                    'details': LogRecordDetails(
+                        key='dummy key',
+                        logger_verbosity_level=logger_verbosity,
+                        message_verbosity_level=message_verbosity,
+                    ),
+                }
+            )
+        )
+        == filter_outcome
+    )
 
 
 @pytest.mark.parametrize(
@@ -184,23 +200,27 @@ def test_verbosity_filter(
         (1, 4, 0),
         (2, 4, 0),
         (3, 4, 0),
-        (4, 4, 1)
-        ]
-    )
-def test_debug_filter(
-        logger_debug: int,
-        message_debug: int,
-        filter_outcome: int
-        ) -> None:
+        (4, 4, 1),
+    ],
+)
+def test_debug_filter(logger_debug: int, message_debug: int, filter_outcome: int) -> None:
     filter = DebugLevelFilter()
 
-    assert filter.filter(logging.makeLogRecord({
-        'levelno': logging.DEBUG,
-        'details': LogRecordDetails(
-            key='dummy key',
-            logger_debug_level=logger_debug,
-            message_debug_level=message_debug)
-        })) == filter_outcome
+    assert (
+        filter.filter(
+            logging.makeLogRecord(
+                {
+                    'levelno': logging.DEBUG,
+                    'details': LogRecordDetails(
+                        key='dummy key',
+                        logger_debug_level=logger_debug,
+                        message_debug_level=message_debug,
+                    ),
+                }
+            )
+        )
+        == filter_outcome
+    )
 
 
 @pytest.mark.parametrize(
@@ -214,21 +234,20 @@ def test_debug_filter(
         (logging.INFO, 0),
         (logging.WARNING, 0),
         (logging.ERROR, 1),
-        (logging.CRITICAL, 1)
-        ]
-    )
+        (logging.CRITICAL, 1),
+    ],
+)
 def test_quietness_filter(levelno: int, filter_outcome: int) -> None:
     filter = QuietnessFilter()
 
-    assert filter.filter(logging.makeLogRecord({
-        'levelno': levelno
-        })) == filter_outcome
+    assert filter.filter(logging.makeLogRecord({'levelno': levelno})) == filter_outcome
 
 
 def test_labels(
-        caplog: _pytest.logging.LogCaptureFixture,
-        capsys: _pytest.capture.CaptureFixture[str],
-        root_logger: Logger) -> None:
+    caplog: _pytest.logging.LogCaptureFixture,
+    capsys: _pytest.capture.CaptureFixture[str],
+    root_logger: Logger,
+) -> None:
     _exercise_logger(caplog, capsys, root_logger, labels=[])
 
     root_logger.labels += ['foo']
@@ -241,8 +260,8 @@ def test_labels(
 
 
 def test_bootstrap_logger(
-        caplog: _pytest.logging.LogCaptureFixture,
-        capsys: _pytest.capture.CaptureFixture[str]) -> None:
+    caplog: _pytest.logging.LogCaptureFixture, capsys: _pytest.capture.CaptureFixture[str]
+) -> None:
     _exercise_logger(caplog, capsys, Logger.get_bootstrap_logger())
 
 
@@ -264,8 +283,8 @@ RLP = render_labels(["foo", "bar"]) + '   '
             0,
             None,
             0,
-            'dummy-key:\n    dummy\n    multiline\n    value'),
-
+            'dummy-key:\n    dummy\n    multiline\n    value',
+        ),
         ('dummy-key', None, None, 2, None, 0, '        dummy-key'),
         ('dummy-key', 'dummy-value', None, 2, None, 0, '        dummy-key: dummy-value'),
         (
@@ -275,10 +294,8 @@ RLP = render_labels(["foo", "bar"]) + '   '
             2,
             None,
             0,
-            '        dummy-key:\n'
-            '            dummy\n'
-            '            multiline\n'
-            '            value'),
+            '        dummy-key:\n            dummy\n            multiline\n            value',
+        ),
         (
             'dummy-key',
             'dummy\nmultiline\nvalue',
@@ -289,7 +306,8 @@ RLP = render_labels(["foo", "bar"]) + '   '
             f'{RL}         dummy-key:\n'
             f'{RL}             dummy\n'
             f'{RL}             multiline\n'
-            f'{RL}             value'),
+            f'{RL}             value',
+        ),
         (
             'dummy-key',
             'dummy\nmultiline\nvalue',
@@ -301,8 +319,10 @@ RLP = render_labels(["foo", "bar"]) + '   '
             f'{RLP}         dummy-key:\n'
             f'{RLP}             dummy\n'
             f'{RLP}             multiline\n'
-            f'{RLP}             value')
-        ], ids=[
+            f'{RLP}             value',
+        ),
+    ],
+    ids=[
         'key only',
         'key and value',
         'key and multiline value',
@@ -311,16 +331,20 @@ RLP = render_labels(["foo", "bar"]) + '   '
         'key and multiline value, indented',
         'key and multiline value, indented, with labels',
         'key and multiline value, indented, with labels, padded',
-        ]
-    )
+    ],
+)
 def test_indent(key, value, color, level, labels, labels_padding, expected):
-    assert indent(
-        key,
-        value=value,
-        color=color,
-        level=level,
-        labels=labels,
-        labels_padding=labels_padding) == expected
+    assert (
+        indent(
+            key,
+            value=value,
+            color=color,
+            level=level,
+            labels=labels,
+            labels_padding=labels_padding,
+        )
+        == expected
+    )
 
 
 @pytest.mark.parametrize(
@@ -331,46 +355,35 @@ def test_indent(key, value, color, level, labels, labels_padding, expected):
         #     message topic,
         #   expected outcome of `QietnessFilter.filter()`
         # )
-        (
-            set(),
-            None,
-            True
-            ),
-        (
-            set(),
-            Topic.KEY_NORMALIZATION,
-            False
-            ),
-        (
-            {Topic.KEY_NORMALIZATION},
-            Topic.KEY_NORMALIZATION,
-            True
-            ),
-        (
-            {Topic.KEY_NORMALIZATION},
-            None,
-            True
-            ),
-        ],
+        (set(), None, True),
+        (set(), Topic.KEY_NORMALIZATION, False),
+        ({Topic.KEY_NORMALIZATION}, Topic.KEY_NORMALIZATION, True),
+        ({Topic.KEY_NORMALIZATION}, None, True),
+    ],
     ids=(
         'no logger topics, no message topic',
         'no logger topics, message has topic',
         'message for enabled topic',
-        'logger topic, no message topic'
+        'logger topic, no message topic',
         # TODO: enable once we have more than one topic
         # 'message for disabled topic'
-        )
-    )
+    ),
+)
 def test_topic_filter(
-        logger_topics: set[Topic],
-        message_topic: Optional[Topic],
-        filter_outcome: bool) -> None:
+    logger_topics: set[Topic], message_topic: Optional[Topic], filter_outcome: bool
+) -> None:
     filter = TopicFilter()
 
-    assert filter.filter(logging.makeLogRecord({
-        'levelno': logging.INFO,
-        'details': LogRecordDetails(
-            key='dummy key',
-            logger_topics=logger_topics,
-            message_topic=message_topic)
-        })) == filter_outcome
+    assert (
+        filter.filter(
+            logging.makeLogRecord(
+                {
+                    'levelno': logging.INFO,
+                    'details': LogRecordDetails(
+                        key='dummy key', logger_topics=logger_topics, message_topic=message_topic
+                    ),
+                }
+            )
+        )
+        == filter_outcome
+    )

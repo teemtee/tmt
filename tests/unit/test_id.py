@@ -18,7 +18,6 @@ root_logger = tmt.log.Logger.create()
 
 
 class IdEmpty(TestCase):
-
     def setUp(self):
         self.path = Path(tempfile.mkdtemp()) / "empty"
         shutil.copytree(test_path / "empty", self.path)
@@ -38,6 +37,7 @@ class IdEmpty(TestCase):
     def test_manually_add_id(self):
         # TODO: it's really not possible to use fixtures with methods??
         from tmt.log import Logger
+
         root_logger = Logger.create(verbose=0, debug=0, quiet=False)
 
         node = self.base_tree.find("/some/structure")
@@ -53,7 +53,6 @@ class IdEmpty(TestCase):
 
 
 class TestGeneratorDefined(TestCase):
-
     def setUp(self):
         self.path = Path(tempfile.mkdtemp()) / "defined"
         shutil.copytree(test_path / "defined", self.path)
@@ -65,11 +64,9 @@ class TestGeneratorDefined(TestCase):
         shutil.rmtree(self.path)
 
     def test_test_dry(self):
-        result = runner.invoke(
-            tmt.cli._root.main, ["test", "id", "--dry", "^/no"])
+        result = runner.invoke(tmt.cli._root.main, ["test", "id", "--dry", "^/no"])
         assert "added to test '/no" in result.output
-        result = runner.invoke(
-            tmt.cli._root.main, ["test", "id", "--dry", "^/no"])
+        result = runner.invoke(tmt.cli._root.main, ["test", "id", "--dry", "^/no"])
         assert "added to test '/no" in result.output
 
     def test_test_real(self):
@@ -89,7 +86,6 @@ class TestGeneratorDefined(TestCase):
 
 
 class TestGeneratorEmpty(TestCase):
-
     def setUp(self):
         self.path = Path(tempfile.mkdtemp()) / "empty"
         shutil.copytree(test_path / "empty", self.path)
@@ -101,11 +97,9 @@ class TestGeneratorEmpty(TestCase):
         shutil.rmtree(self.path)
 
     def test_test_dry(self):
-        result = runner.invoke(
-            tmt.cli._root.main, ["test", "id", "--dry"])
+        result = runner.invoke(tmt.cli._root.main, ["test", "id", "--dry"])
         assert "added to test '/some/structure'" in result.output
-        result = runner.invoke(
-            tmt.cli._root.main, ["test", "id", "--dry"])
+        result = runner.invoke(tmt.cli._root.main, ["test", "id", "--dry"])
         assert "added to test '/some/structure'" in result.output
 
     def test_test_real(self):
