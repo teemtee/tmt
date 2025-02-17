@@ -6,6 +6,7 @@ import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
 from tmt.utils import Command, ShellScript
+from tmt.utils.wait import Waiting
 
 DEFAULT_USER = "root"
 
@@ -89,9 +90,7 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
         self,
         hard: bool = False,
         command: Optional[Union[Command, ShellScript]] = None,
-        timeout: Optional[int] = None,
-        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        waiting: Optional[Waiting] = None,
     ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
@@ -125,6 +124,8 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
+        waiting = waiting or tmt.steps.provision.default_reboot_waiting()
+
         if hard:
             if self.hard_reboot is None:
                 raise tmt.steps.provision.RebootModeNotSupportedError(guest=self, hard=True)
@@ -135,9 +136,7 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
             # being `None`, missing the explicit check above.
             return self.perform_reboot(
                 lambda: self._run_guest_command(self.hard_reboot.to_shell_command()),  # type: ignore[union-attr]
-                timeout=timeout,
-                tick=tick,
-                tick_increase=tick_increase,
+                waiting,
                 fetch_boot_time=False,
             )
 
@@ -145,9 +144,7 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
             return super().reboot(
                 hard=False,
                 command=command,
-                timeout=timeout,
-                tick=tick,
-                tick_increase=tick_increase,
+                waiting=waiting,
             )
 
         if self.soft_reboot is not None:
@@ -157,12 +154,10 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
             # being `None`, missing the explicit check above.
             return self.perform_reboot(
                 lambda: self._run_guest_command(self.soft_reboot.to_shell_command()),  # type: ignore[union-attr]
-                timeout=timeout,
-                tick=tick,
-                tick_increase=tick_increase,
+                waiting,
             )
 
-        return super().reboot(hard=False, timeout=timeout, tick=tick, tick_increase=tick_increase)
+        return super().reboot(hard=False, waiting=waiting)
 
     def start(self) -> None:
         """

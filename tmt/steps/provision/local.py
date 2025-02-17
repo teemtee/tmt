@@ -8,6 +8,7 @@ import tmt.steps.provision
 import tmt.utils
 from tmt.container import container
 from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript
+from tmt.utils.wait import Waiting
 
 
 @container
@@ -149,9 +150,7 @@ class GuestLocal(tmt.Guest):
         self,
         hard: bool = False,
         command: Optional[Union[Command, ShellScript]] = None,
-        timeout: Optional[int] = None,
-        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        waiting: Optional[Waiting] = None,
     ) -> bool:
         # No localhost reboot allowed!
         self.debug(f"Doing nothing to reboot guest '{self.primary_address}'.")
