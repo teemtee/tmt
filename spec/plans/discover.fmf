@@ -93,7 +93,7 @@ description: |
         Use the `Flexible Metadata Format`_ to explore all
         available tests in given repository.
 
-        See  the `fmf identifier`_ documentation for details.
+        See the `fmf identifier`_ documentation for details.
 
         .. _fmf identifier: https://fmf.readthedocs.io/en/latest/concept.html#identifiers
         .. _Flexible Metadata Format: https://fmf.readthedocs.io/
