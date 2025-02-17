@@ -12,6 +12,7 @@ from tmt.container import container, field
 from tmt.options import show_step_method_hints
 from tmt.steps.provision import GuestCapability
 from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript, retry
+from tmt.utils.wait import Deadline, Waiting
 
 # Timeout in seconds of waiting for a connection
 CONNECTION_TIMEOUT = 60
@@ -247,9 +248,7 @@ class GuestContainer(tmt.Guest):
         self,
         hard: bool = False,
         command: Optional[Union[Command, ShellScript]] = None,
-        timeout: Optional[int] = None,
-        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        waiting: Optional[Waiting] = None,
     ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
@@ -282,13 +281,15 @@ class GuestContainer(tmt.Guest):
             if self.container is None:
                 raise tmt.utils.ProvisionError("No container initialized.")
 
+            if waiting is None:
+                waiting = tmt.steps.provision.default_reconnect_waiting()
+                waiting.deadline = Deadline.from_seconds(CONNECTION_TIMEOUT)
+
             self.debug("Hard reboot using the reboot command 'container restart'.")
 
             self.podman(Command('container', 'restart', self.container))
 
-            return self.reconnect(
-                timeout=timeout or CONNECTION_TIMEOUT, tick=tick, tick_increase=tick_increase
-            )
+            return self.reconnect(waiting)
 
         if command:
             raise tmt.utils.ProvisionError(
