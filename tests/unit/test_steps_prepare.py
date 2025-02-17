@@ -22,18 +22,19 @@ def test_debuginfo(root_logger):
             # Debuginfo packages
             DependencySimple("grep-debuginfo"),
             DependencySimple("elfutils-debuginfod-debuginfo"),
-            ],
+        ],
         directories=[],
         exclude=[],
         logger=root_logger,
-        guest=guest)
+        guest=guest,
+    )
 
     assert install.packages == [
         "wget",
         "debuginfo-something",
         "elfutils-debuginfod",
-        ]
+    ]
     assert install.debuginfo_packages == [
         "grep",
         "elfutils-debuginfod",
-        ]
+    ]

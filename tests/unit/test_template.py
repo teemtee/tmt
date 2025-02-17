@@ -47,30 +47,36 @@ def test_get_custom_templates(tmppath: Path) -> None:
     template_manager = tmt.templates.TemplateManager(tmppath)
 
     create_template_file(
-        template_manager.custom_template_path / 'story' / 'tmp_story.j2',
-        'Story template content.'
-        )
+        template_manager.custom_template_path / 'story' / 'tmp_story.j2', 'Story template content.'
+    )
     create_template_file(
-        template_manager.custom_template_path / 'plan' / 'tmp_plan.j2',
-        'Plan template content.'
-        )
+        template_manager.custom_template_path / 'plan' / 'tmp_plan.j2', 'Plan template content.'
+    )
     create_template_file(
         template_manager.custom_template_path / 'test' / 'tmp_test_metadata.j2',
-        'Test metadata template content.'
-        )
+        'Test metadata template content.',
+    )
     create_template_file(
         template_manager.custom_template_path / 'script' / 'tmp_test_script.j2',
-        'Test script template content.'
-        )
+        'Test script template content.',
+    )
 
-    assert (template_manager.custom_templates['story']['tmp_story'].read_text()
-            == 'Story template content.')
-    assert (template_manager.custom_templates['plan']['tmp_plan'].read_text()
-            == 'Plan template content.')
-    assert (template_manager.custom_templates['test']['tmp_test_metadata'].read_text()
-            == 'Test metadata template content.')
-    assert (template_manager.custom_templates['script']['tmp_test_script'].read_text()
-            == 'Test script template content.')
+    assert (
+        template_manager.custom_templates['story']['tmp_story'].read_text()
+        == 'Story template content.'
+    )
+    assert (
+        template_manager.custom_templates['plan']['tmp_plan'].read_text()
+        == 'Plan template content.'
+    )
+    assert (
+        template_manager.custom_templates['test']['tmp_test_metadata'].read_text()
+        == 'Test metadata template content.'
+    )
+    assert (
+        template_manager.custom_templates['script']['tmp_test_script'].read_text()
+        == 'Test script template content.'
+    )
 
 
 def test_get_combined_templates(tmppath: Path) -> None:
@@ -81,22 +87,24 @@ def test_get_combined_templates(tmppath: Path) -> None:
 
     create_template_file(
         template_manager.custom_template_path / 'story' / 'full.j2',
-        'Overriden story template content.'
-        )
+        'Overriden story template content.',
+    )
     create_template_file(
-        template_manager.custom_template_path / 'plan' / 'custom_plan.j2',
-        'Plan template content.'
-        )
+        template_manager.custom_template_path / 'plan' / 'custom_plan.j2', 'Plan template content.'
+    )
 
     assert template_manager.templates['story']['base'] is not None
     assert template_manager.templates['story']['full'] is not None
-    assert (template_manager.templates['story']['full'].read_text()
-            == 'Overriden story template content.')
+    assert (
+        template_manager.templates['story']['full'].read_text()
+        == 'Overriden story template content.'
+    )
 
     assert template_manager.templates['plan']['base'] is not None
     assert template_manager.templates['plan']['custom_plan'] is not None
-    assert (template_manager.templates['plan']['custom_plan'].read_text()
-            == 'Plan template content.')
+    assert (
+        template_manager.templates['plan']['custom_plan'].read_text() == 'Plan template content.'
+    )
 
 
 def test_render_template_file(tmppath: Path) -> None:
@@ -108,9 +116,7 @@ def test_render_template_file(tmppath: Path) -> None:
     static_story_path.write_text('Story template content.')
     variable_story_path.write_text('Plan template content with variable: {{ variable }}.')
 
-    variables = {
-        'variable': 'value'
-        }
+    variables = {'variable': 'value'}
     static_content = template_manager.render_file(static_story_path)
     variable_content = template_manager.render_file(variable_story_path, **variables)
 
