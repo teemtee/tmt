@@ -425,12 +425,11 @@ def run_tests(context: Context, **kwargs: Any) -> None:
 
 
 # TODO: commands is unknown, needs revisit
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@run.result_callback()  # type: ignore[arg-type]
+@run.result_callback()
 @pass_context
 def finito(
     click_context: Context,
+    /,
     commands: Any,
     *args: Any,
     **kwargs: Any,
@@ -448,12 +447,10 @@ def finito(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@main.group(invoke_without_command=True, cls=CustomGroup)  # type: ignore[arg-type]
+@main.group(invoke_without_command=True, cls=CustomGroup)
 @pass_context
 @verbosity_options
-def tests(context: Context, **kwargs: Any) -> None:
+def tests(context: Context, /, **kwargs: Any) -> None:
     """
     Manage tests (L1 metadata).
 
@@ -468,13 +465,11 @@ def tests(context: Context, **kwargs: Any) -> None:
         tmt.Test.overview(context.obj.tree)
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@tests.command(name='ls')  # type: ignore[arg-type]
+@tests.command(name='ls')
 @pass_context
 @filtering_options
 @verbosity_options
-def tests_ls(context: Context, **kwargs: Any) -> None:
+def tests_ls(context: Context, /, **kwargs: Any) -> None:
     """
     List available tests.
 
@@ -487,13 +482,11 @@ def tests_ls(context: Context, **kwargs: Any) -> None:
         test.ls()
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@tests.command(name='show')  # type: ignore[arg-type]
+@tests.command(name='show')
 @pass_context
 @filtering_options
 @verbosity_options
-def tests_show(context: Context, **kwargs: Any) -> None:
+def tests_show(context: Context, /, **kwargs: Any) -> None:
     """
     Show test details.
 
@@ -949,14 +942,12 @@ def tests_export(
         )
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@tests.command(name="id")  # type: ignore[arg-type]
+@tests.command(name="id")
 @pass_context
 @filtering_options
 @verbosity_options
 @force_dry_options
-def tests_id(context: Context, **kwargs: Any) -> None:
+def tests_id(context: Context, /, **kwargs: Any) -> None:
     """
     Generate a unique id for each selected test.
 
@@ -975,13 +966,11 @@ def tests_id(context: Context, **kwargs: Any) -> None:
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@main.group(invoke_without_command=True, cls=CustomGroup)  # type: ignore[arg-type]
+@main.group(invoke_without_command=True, cls=CustomGroup)
 @pass_context
 @verbosity_options
 @remote_plan_options
-def plans(context: Context, **kwargs: Any) -> None:
+def plans(context: Context, /, **kwargs: Any) -> None:
     """
     Manage test plans (L2 metadata).
 
@@ -997,14 +986,12 @@ def plans(context: Context, **kwargs: Any) -> None:
         tmt.Plan.overview(context.obj.tree)
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@plans.command(name='ls')  # type: ignore[arg-type]
+@plans.command(name='ls')
 @pass_context
 @filtering_options
 @verbosity_options
 @remote_plan_options
-def plans_ls(context: Context, **kwargs: Any) -> None:
+def plans_ls(context: Context, /, **kwargs: Any) -> None:
     """
     List available plans.
 
@@ -1017,15 +1004,13 @@ def plans_ls(context: Context, **kwargs: Any) -> None:
         plan.ls()
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@plans.command(name='show')  # type: ignore[arg-type]
+@plans.command(name='show')
 @pass_context
 @filtering_options
 @environment_options
 @verbosity_options
 @remote_plan_options
-def plans_show(context: Context, **kwargs: Any) -> None:
+def plans_show(context: Context, /, **kwargs: Any) -> None:
     """
     Show plan details.
 
@@ -1187,14 +1172,12 @@ def plans_export(
     )
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@plans.command(name="id")  # type: ignore[arg-type]
+@plans.command(name="id")
 @pass_context
 @filtering_options
 @verbosity_options
 @force_dry_options
-def plans_id(context: Context, **kwargs: Any) -> None:
+def plans_id(context: Context, /, **kwargs: Any) -> None:
     """
     Generate a unique id for each selected plan.
 
@@ -1213,12 +1196,10 @@ def plans_id(context: Context, **kwargs: Any) -> None:
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@main.group(invoke_without_command=True, cls=CustomGroup)  # type: ignore[arg-type]
+@main.group(invoke_without_command=True, cls=CustomGroup)
 @pass_context
 @verbosity_options
-def stories(context: Context, **kwargs: Any) -> None:
+def stories(context: Context, /, **kwargs: Any) -> None:
     """
     Manage user stories.
 
@@ -1234,15 +1215,14 @@ def stories(context: Context, **kwargs: Any) -> None:
         tmt.Story.overview(context.obj.tree)
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@stories.command(name='ls')  # type: ignore[arg-type]
+@stories.command(name='ls')
 @pass_context
 @filtering_options_long
 @story_flags_filter_options
 @verbosity_options
 def stories_ls(
     context: Context,
+    /,
     implemented: bool,
     verified: bool,
     documented: bool,
@@ -1275,15 +1255,14 @@ def stories_ls(
             story.ls()
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@stories.command(name='show')  # type: ignore[arg-type]
+@stories.command(name='show')
 @pass_context
 @filtering_options_long
 @story_flags_filter_options
 @verbosity_options
 def stories_show(
     context: Context,
+    /,
     implemented: bool,
     verified: bool,
     documented: bool,
@@ -1363,9 +1342,7 @@ def stories_create(
     )
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@stories.command(name='coverage')  # type: ignore[arg-type]
+@stories.command(name='coverage')
 @option('--docs', is_flag=True, help='Show docs coverage.')
 @option('--test', is_flag=True, help='Show test coverage.')
 @option('--code', is_flag=True, help='Show code coverage.')
@@ -1375,6 +1352,7 @@ def stories_create(
 @verbosity_options
 def stories_coverage(
     context: Context,
+    /,
     code: bool,
     test: bool,
     docs: bool,
@@ -1541,9 +1519,7 @@ def stories_export(
     )
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@stories.command(name="id")  # type: ignore[arg-type]
+@stories.command(name="id")
 @pass_context
 @filtering_options_long
 @story_flags_filter_options
@@ -1551,6 +1527,7 @@ def stories_export(
 @force_dry_options
 def stories_id(
     context: Context,
+    /,
     implemented: bool,
     verified: bool,
     documented: bool,
@@ -1688,12 +1665,11 @@ def clean(
         raise SystemExit(exit_code)
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@clean.result_callback()  # type: ignore[arg-type]
+@clean.result_callback()
 @pass_context
 def perform_clean(
     click_context: Context,
+    /,
     commands: Any,
     *args: Any,
     **kwargs: Any,
@@ -1848,14 +1824,12 @@ def clean_guests(
     )
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@clean.command(name='images')  # type: ignore[arg-type]
+@clean.command(name='images')
 @pass_context
 @workdir_root_options
 @verbosity_options
 @dry_options
-def clean_images(context: Context, workdir_root: Optional[Path], **kwargs: Any) -> None:
+def clean_images(context: Context, /, workdir_root: Optional[Path], **kwargs: Any) -> None:
     """
     Remove images of supported provision methods.
 
