@@ -9,7 +9,14 @@ class FinishAnsible(
     tmt.steps.finish.FinishPlugin[tmt.steps.finish.FinishStepData], PrepareAnsible
 ):
     """
-    Perform finishing tasks using ansible
+    Perform finishing tasks using ansible.
+
+    One or more playbooks can be provided as a list under the ``playbook``
+    attribute.  Each of them will be applied using ``ansible-playbook`` in
+    the given order. The path must be relative to the metadata tree root.
+
+    Remote playbooks can be referenced as well as the local ones,
+    and both kinds can be used at the same time.
 
     .. warning::
 
@@ -44,8 +51,8 @@ class FinishAnsible(
               - playbook/three.yml
 
     The playbook path should be relative to the metadata tree root.
-    Use 'order' attribute to select in which order finishing tasks
-    should happen if there are multiple configs. Default order is '50'.
+    Use the :ref:`/spec/core/order` attribute to select in which order finishing
+    tasks should happen if there are multiple configs. Default order is ``50``.
     """
 
     # We are reusing "prepare" step for "finish",
