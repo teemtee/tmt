@@ -112,7 +112,8 @@ class ExecuteUpgrade(ExecuteInternal):
     remote repository whose discover step selects tests (upgrade tasks)
     performing the upgrade. Currently, selection of upgrade tasks in the remote
     repository can be done using both fmf and shell discover method.
-    The supported keys in discover are:
+    If the ``url`` is not provided, upgrade path and upgrade tasks are taken from
+    the current repository. The supported keys in discover are:
 
     * ``ref``
     * ``filter``
