@@ -1,3 +1,5 @@
 #!/bin/sh
 
-sudo dnf install -y make hatch python3-devel python3-hatch-vcs rpm-build
+# Minimal dependencies needed to run Makefile
+
+sudo dnf install -y make hatch

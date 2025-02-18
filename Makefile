@@ -17,6 +17,10 @@ ccend=$(shell tput sgr0)
 
 all: docs packages  ## Generate docs and packages
 
+_deps:  ## Minimal dependencies to run this Makefile
+	scripts/bootstrap
+
+
 # Temporary directory, include .fmf to prevent exploring tests there
 tmp:
 	mkdir -p $(TMP)/.fmf
@@ -52,8 +56,9 @@ man:  ## Build man page
 ##
 ## Packaging & Packit
 ##
-build: clean man
+build: _deps clean man
 	hatch build
+
 tarball: clean tmp build
 	mkdir -p $(TMP)/SOURCES
 	cp dist/tmt-*.tar.gz $(TMP)/SOURCES
@@ -66,7 +71,7 @@ srpm: tarball ver2spec  ## Build SRPM
 	rpmbuild --define '_topdir $(TMP)' -bs tmt.spec
 
 build-deps: tarball ver2spec  ## Install build dependencies
-	scripts/bootstrap
+	sudo dnf install -y rpm-build python3-devel python3-hatch-vcs
 	rpmbuild --define '_topdir $(TMP)' -br tmt.spec || sudo dnf builddep -y $(TMP)/SRPMS/tmt-*buildreqs.nosrc.rpm
 
 packages: rpm srpm  ## Build RPM and SRPM packages
