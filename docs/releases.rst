@@ -10,6 +10,8 @@ tmt-1.43
 Add the ``--workdir-root`` option for the ``tmt clean images``
 command so that users can specify the directory they want.
 
+Add the ``--command`` option for the ``tmt run reboot`` so that
+users specify the command to run on guest to trigger the reboot.
 
 tmt-1.42.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
