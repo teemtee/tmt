@@ -72,10 +72,6 @@ rlJournalStart
                 rlRun "distro=fedora-40"
                 rlRun "package_manager=dnf"
 
-            elif is_fedora_39 "$image"; then
-                rlRun "distro=fedora-39"
-                rlRun "package_manager=dnf"
-
             elif is_centos_stream_9 "$image"; then
                 rlRun "distro=centos-stream-9"
                 rlRun "package_manager=dnf"
@@ -158,7 +154,7 @@ rlJournalStart
             fi
         rlPhaseEnd
 
-        if rlIsFedora 39 && is_fedora_39 "$image"; then
+        if [ "$PROVISION_HOW" = "container" ] && rlIsFedora 41 && is_fedora_41 "$image"; then
             rlPhaseStartTest "$phase_prefix Install downloaded packages from current directory (plan)"
                 fetch_downloaded_packages "$image"
 
@@ -243,9 +239,6 @@ rlJournalStart
             elif is_fedora_40 "$image"; then
                 rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_fedora_39 "$image"; then
-                rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
-
             elif is_ubuntu "$image" || is_debian "$image"; then
                 rlAssertGrep "err: E: Unable to locate package tree-but-spelled-wrong" $rlRun_LOG
 
@@ -280,9 +273,6 @@ rlJournalStart
             elif is_fedora_40 "$image"; then
                 rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_fedora_39 "$image"; then
-                rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
-
             elif is_ubuntu "$image" || is_debian "$image"; then
                 rlAssertGrep "err: E: Unable to locate package tree-but-spelled-wrong" $rlRun_LOG
 
@@ -297,7 +287,7 @@ rlJournalStart
         # TODO: at least copr is RH-specific, but package name escaping and debuginfo should be
         # possible to extend to other distros.
         if (is_fedora "$image" && ! is_fedora_coreos "$image") || is_centos "$image" || is_ubi "$image"; then
-            if ! is_centos_7 "$image" && ! is_fedora_39 "$image" && ! is_ubi_8 "$image"; then
+            if ! is_centos_7 "$image" && ! is_ubi_8 "$image"; then
                 rlPhaseStartTest "$phase_prefix Just enable copr"
                     rlRun "$tmt execute plan --name copr"
                 rlPhaseEnd
