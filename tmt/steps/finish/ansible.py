@@ -51,8 +51,8 @@ class FinishAnsible(
               - playbook/three.yml
 
     The playbook path should be relative to the metadata tree root.
-    Use 'order' attribute to select in which order finishing tasks
-    should happen if there are multiple configs. Default order is '50'.
+    Use the :ref:`/spec/core/order` attribute to select in which order finishing
+    tasks should happen if there are multiple configs. Default order is ``50``.
     """
 
     # We are reusing "prepare" step for "finish",
