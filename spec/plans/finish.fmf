@@ -15,14 +15,7 @@ example: |
 
 /shell:
     summary:
-        Perform finishing tasks using shell (bash) scripts
-    description:
-        Execute arbitrary shell commands to finish the testing.
-
-        Default shell options are applied to the script, see the
-        :ref:`/spec/tests/test` key specification for more
-        details.
-
+        Perform finishing tasks using shell (bash) scripts.
     example: |
         finish:
             how: shell
@@ -35,15 +28,6 @@ example: |
 /ansible:
     summary:
         Perform finishing tasks using ansible
-    description: |
-        One or more playbooks can be provided as a list under the
-        ``playbook`` attribute.  Each of them will be applied
-        using ``ansible-playbook`` in the given order. The path
-        must be relative to the metadata tree root.
-
-        Remote playbooks can be referenced as well as the local ones,
-        and both kinds can be used at the same time.
-
     example: |
         finish:
             how: ansible
