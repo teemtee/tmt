@@ -4200,9 +4200,8 @@ def remove_color(text: str) -> str:
 
 
 def generate_runs(
-        path: Path,
-        id_: tuple[str, ...],
-        all_: Optional[bool] = False) -> Iterator[Path]:
+    path: Path, id_: tuple[str, ...], all_: Optional[bool] = False
+) -> Iterator[Path]:
     """
     Generate absolute paths to runs from path
     """
@@ -4231,6 +4230,10 @@ def generate_runs(
         # in abs_path to be generated.
         invalid_id = id_ and str(abs_child_path) not in id_
         invalid_run = not abs_child_path.joinpath('run.yaml').exists()
+        # We need _all here and being True to revert above invalid_run value to False,
+        # for commands who don't care there is run.yaml file in workdir or not, while
+        # not affect other commands. And, We only want to revert invalid_run
+        # for run paths, so we only check paths starting with 'run-'.
         if invalid_run and all_ and abs_child_path.name.startswith('run-'):
             invalid_run = False
         if not abs_child_path.is_dir() or invalid_id or invalid_run:
