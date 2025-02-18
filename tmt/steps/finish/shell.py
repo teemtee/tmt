@@ -41,7 +41,12 @@ class FinishShellData(tmt.steps.finish.FinishStepData):
 @tmt.steps.provides_method('shell')
 class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
     """
-    Perform finishing tasks using shell (bash) scripts
+    Perform finishing tasks using shell (bash) scripts.
+
+    Execute arbitrary shell commands to finish the testing.
+    Default shell options are applied to the script, see the
+    :ref:`/spec/tests/test` key specification for more
+    details.
 
     Example config:
 
