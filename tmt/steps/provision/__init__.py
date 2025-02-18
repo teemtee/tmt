@@ -2127,6 +2127,7 @@ class GuestSsh(Guest):
 
     def setup(self) -> None:
         from tmt.steps.execute.internal import effective_pidfile_root
+
         sudo = 'sudo' if not self.facts.is_superuser else ''
         if self.is_dry_run:
             return
@@ -2139,15 +2140,19 @@ class GuestSsh(Guest):
                     mkdir -p {workdir_root};
                     {sudo} chmod o+rwX {workdir_root};
                     {sudo} setfacl -d -m o:rwX {workdir_root}
-                    """))
+                    """
+                )
+            )
         pid_directory = effective_pidfile_root()
-        self.execute(ShellScript(
-            f"""
-            if [ ! -d {pid_directory} ]; then \
-                mkdir -p {pid_directory}
-            fi
-            """
-            ))
+        self.execute(
+            ShellScript(
+                f"""
+                if [ ! -d {pid_directory} ]; then \
+                    mkdir -p {pid_directory}
+                fi
+                """
+            )
+        )
 
     def execute(
         self,
