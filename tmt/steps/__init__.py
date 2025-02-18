@@ -2233,7 +2233,7 @@ class Login(Action):
                     # current working directory
                     worktree = self.parent.plan.worktree
                     tests = self.parent.plan.discover.tests()
-                    test_path = tests[-1].path if tests else None
+                    test_path = tests[-1].test.path if tests else None
                     if test_path is None or worktree is None:
                         cwd = worktree
                     else:

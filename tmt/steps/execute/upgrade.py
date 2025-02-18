@@ -364,7 +364,9 @@ class ExecuteUpgrade(ExecuteInternal):
 
             required_packages: list[tmt.base.DependencySimple] = []
             recommended_packages: list[tmt.base.DependencySimple] = []
-            for test in self._discover_upgrade.tests(enabled=True):
+            for test_origin in self._discover_upgrade.tests(enabled=True):
+                test = test_origin.test
+
                 test.name = f'/{DURING_UPGRADE_PREFIX}/{test.name.lstrip("/")}'
 
                 # Gathering dependencies for upgrade tasks
@@ -405,9 +407,9 @@ class ExecuteUpgrade(ExecuteInternal):
         """
 
         names_backup = []
-        for test in self.discover.tests(enabled=True):
-            names_backup.append(test.name)
-            test.name = f'/{prefix}/{test.name.lstrip("/")}'
+        for test_origin in self.discover.tests(enabled=True):
+            names_backup.append(test_origin.test.name)
+            test_origin.test.name = f'/{prefix}/{test_origin.test.name.lstrip("/")}'
 
         self._run_tests(
             guest=guest,
@@ -415,6 +417,5 @@ class ExecuteUpgrade(ExecuteInternal):
             logger=logger,
         )
 
-        tests = self.discover.tests(enabled=True)
-        for i, test in enumerate(tests):
-            test.name = names_backup[i]
+        for i, test_origin in enumerate(self.discover.tests(enabled=True)):
+            test_origin.test.name = names_backup[i]
