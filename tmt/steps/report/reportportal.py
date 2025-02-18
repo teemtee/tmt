@@ -87,6 +87,7 @@ _LOG_FILTERS = [
     _filter_invalid_chars,
 ]
 
+
 def _filter_log(log: str, settings: Optional[LogFilterSettings] = None) -> str:
     settings = settings or LogFilterSettings()
     for log_filter in _LOG_FILTERS:
@@ -511,7 +512,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     "itemUuid": item_uuid,
                     "launchUuid": launch_uuid,
                     "level": level,
-                    "time": timestamp
+                    "time": timestamp,
                 },
             )
 
