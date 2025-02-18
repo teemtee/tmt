@@ -2129,7 +2129,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             raise GeneralError(f"Invalid workdir '{id_}', expected a path or None.")
 
         def _check_or_create_workdir_root_with_perms() -> None:
-            """ If created workdir_root has to be 1777 for multi-user"""
+            """If created workdir_root has to be 1777 for multi-user"""
             try:
                 self.workdir_root.mkdir(exist_ok=True, parents=True)
                 self.workdir_root.chmod(0o1777)
