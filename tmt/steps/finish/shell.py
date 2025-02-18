@@ -58,8 +58,8 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
               - upload-logs.sh || true
               - rm -rf /tmp/temporary-files
 
-    Use the 'order' attribute to select in which order finishing tasks
-    should happen if there are multiple configs. Default order is '50'.
+    Use the :ref:`/spec/core/order` attribute to select in which order finishing
+    tasks should happen if there are multiple configs. Default order is ``50``.
     """
 
     _data_class = FinishShellData
