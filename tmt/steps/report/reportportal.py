@@ -264,7 +264,8 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         option=('--upload-subresults / --no-upload-subresults'),
         is_flag=True,
         show_default=True,
-        help="Enable/disable uploading of tmt subresults into the ReportPortal.")
+        help="Enable/disable uploading of tmt subresults into the ReportPortal.",
+    )
 
     launch_url: Optional[str] = None
     launch_uuid: Optional[str] = None
@@ -453,22 +454,17 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         return str(dt_locator)
 
     def rp_api_get(self, session: requests.Session, path: str) -> requests.Response:
-        response = session.get(url=f"{self.url}/{path}",
-                               headers=self.headers)
+        response = session.get(url=f"{self.url}/{path}", headers=self.headers)
         self.handle_response(response)
         return response
 
     def rp_api_post(self, session: requests.Session, path: str, json: JSON) -> requests.Response:
-        response = session.post(url=f"{self.url}/{path}",
-                                headers=self.headers,
-                                json=json)
+        response = session.post(url=f"{self.url}/{path}", headers=self.headers, json=json)
         self.handle_response(response)
         return response
 
     def rp_api_put(self, session: requests.Session, path: str, json: JSON) -> requests.Response:
-        response = session.put(url=f"{self.url}/{path}",
-                               headers=self.headers,
-                               json=json)
+        response = session.put(url=f"{self.url}/{path}", headers=self.headers, json=json)
         self.handle_response(response)
         return response
 
@@ -485,13 +481,14 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         return curr_description
 
     def upload_result_logs(
-            self,
-            result: tmt.result.BaseResult,
-            session: requests.Session,
-            item_uuid: str,
-            launch_uuid: str,
-            timestamp: str,
-            write_out_failures: bool = True) -> None:
+        self,
+        result: tmt.result.BaseResult,
+        session: requests.Session,
+        item_uuid: str,
+        launch_uuid: str,
+        timestamp: str,
+        write_out_failures: bool = True,
+    ) -> None:
         """
         Upload all result log files into the ReportPortal instance
         """
@@ -509,26 +506,36 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             self.rp_api_post(
                 session=session,
                 path="log/entry",
-                json={"message": message,
-                      "itemUuid": item_uuid,
-                      "launchUuid": launch_uuid,
-                      "level": level,
-                      "time": timestamp})
+                json={
+                    "message": message,
+                    "itemUuid": item_uuid,
+                    "launchUuid": launch_uuid,
+                    "level": level,
+                    "time": timestamp
+                },
+            )
 
             # Optionally write out failures only for results which implement the failures callable
             if hasattr(result, "failures") and index == 0 and write_out_failures:
-                message = _filter_log(result.failures(log), settings=LogFilterSettings(
-                    size=self.data.traceback_size_limit,
-                    is_traceback=True))
+                message = _filter_log(
+                    result.failures(log),
+                    settings=LogFilterSettings(
+                        size=self.data.traceback_size_limit,
+                        is_traceback=True,
+                    ),
+                )
 
                 self.rp_api_post(
                     session=session,
                     path="log/entry",
-                    json={"message": message,
-                          "itemUuid": item_uuid,
-                          "launchUuid": launch_uuid,
-                          "level": "ERROR",
-                          "time": timestamp})
+                    json={
+                        "message": message,
+                        "itemUuid": item_uuid,
+                        "launchUuid": launch_uuid,
+                        "level": "ERROR",
+                        "time": timestamp,
+                    },
+                )
 
     def execute_rp_import(self) -> None:
         """
@@ -547,7 +554,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             #
             # The datetime *strings* are in fact sorted here, but finding the minimum will work,
             # because the datetime in ISO format is designed to be lexicographically sortable.
-            launch_time = min(
+            launch_start_time = min(
                 [r.start_time or self.datetime for r in self.step.plan.execute.results()]
             )
 
@@ -811,7 +818,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                     "name": subresult.name,
                                     "launchUuid": launch_uuid,
                                     "type": "step",
-                                    "startTime": subresult_start_time})
+                                    "startTime": subresult_start_time,
+                                },
+                            )
 
                             child_item_uuid = yaml_to_dict(response.text).get("id")
                             assert child_item_uuid is not None
@@ -826,7 +835,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                 item_uuid=child_item_uuid,
                                 launch_uuid=launch_uuid,
                                 timestamp=subtest_end_time,
-                                write_out_failures=bool(child_item_status == "FAILED"))
+                                write_out_failures=bool(child_item_status == "FAILED"),
+                            )
 
                             # Finish the child item
                             response = self.rp_api_put(
@@ -835,7 +845,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                 json={
                                     "launchUuid": launch_uuid,
                                     "status": child_item_status,
-                                    "endTime": subtest_end_time})
+                                    "endTime": subtest_end_time,
+                                },
+                            )
 
                             self.verbose("uuid", child_item_uuid, "yellow", shift=2)
 
@@ -846,7 +858,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     json={
                         "launchUuid": launch_uuid,
                         "endTime": test_end_time,
-                        "status": status,
+                        "status": item_status,
                         "issue": {"issueType": self.get_defect_type_locator(session, defect_type)},
                     },
                 )
