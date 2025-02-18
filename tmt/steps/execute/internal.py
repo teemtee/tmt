@@ -247,11 +247,18 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
         metavar='SCRIPT',
         multiple=True,
         help="""
-             Shell script to be executed as a test. The exit code is used
-             as a test result and the default duration for tests defined
-             directly under the execute step is ``1h``. Use the ``duration``
-             attribute to modify the default limit.
-             """,
+            Execute arbitrary shell commands and check their exit
+            code which is used as a test result. The ``script`` field
+            is provided to cover simple test use cases only and must
+            not be combined with the :ref:`/spec/plans/discover` step
+            which is more suitable for more complex test scenarios.
+
+            Default shell options are applied to the script, see
+            :ref:`/spec/tests/test` for more details. The default
+            :ref:`/spec/tests/duration` for tests defined directly
+            under the execute step is ``1h``. Use the ``duration``
+            attribute to modify the default limit.
+            """,
         normalize=tmt.utils.normalize_shell_script_list,
         serialize=lambda scripts: [str(script) for script in scripts],
         unserialize=lambda serialized: [ShellScript(script) for script in serialized],

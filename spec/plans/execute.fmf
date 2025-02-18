@@ -160,60 +160,6 @@ description: |
 /tmt:
     summary: Internal test executor
     story: As a user I want to execute tests directly from tmt.
-    description: |
-        The internal ``tmt`` executor runs tests in the
-        provisioned environment one by one directly from the
-        tmt code which allows features such as showing live
-        :ref:`/stories/cli/steps/execute/progress` or the
-        :ref:`/stories/cli/steps/execute/interactive` session .
-        This is the default execute step implementation.
-
-        The executor provides following shell scripts which can
-        be used by the tests for certain operations.
-
-        ``tmt-file-submit``
-            Archive the given file in the tmt test data directory.
-            See the :ref:`/stories/features/report-log` section
-            for more details.
-
-        ``tmt-reboot``
-            Soft reboot the machine from inside the test. After reboot
-            the execution starts from the test which rebooted the machine.
-            An environment variable ``TMT_REBOOT_COUNT`` is provided which
-            the test can use to handle the reboot. The variable holds the
-            number of reboots performed by the test. For more information
-            see the :ref:`/stories/features/reboot` feature documentation.
-
-        ``tmt-report-result``
-            Generate a result report file from inside the test. Can be
-            called multiple times by the test. The generated report
-            file will be overwritten if a higher hierarchical result is
-            reported by the test. The hierarchy is as follows:
-            SKIP, PASS, WARN, FAIL.
-            For more information see the
-            :ref:`/stories/features/report-result` feature documentation.
-
-        ``tmt-abort``
-            Generate an abort file from inside the test. This will
-            set the current test result to failed and terminate
-            the execution of subsequent tests.
-            For more information see the
-            :ref:`/stories/features/abort` feature documentation.
-
-        The scripts are hosted by default in the ``/usr/local/bin``
-        directory, except for guests using ``rpm-ostree``, where
-        ``/var/lib/tmt/scripts`` is used. The directory can be forced
-        using the ``TMT_SCRIPTS_DIR`` environment variable.
-        Note that for guests using ``rpm-ostree``, the directory is added
-        to executable paths using the system-wide ``/etc/profile.d/tmt.sh``
-        profile script.
-
-        .. warning::
-
-            Please be aware that for guests using ``rpm-ostree``
-            the provided scripts will only be available in a shell that
-            loads the profile scripts. This is the default for
-            ``bash``-like shells, but might not work for others.
 
     example: |
         execute:
@@ -225,18 +171,6 @@ description: |
 /script:
     summary: Execute shell scripts
     story: As a user I want to easily run shell script as a test.
-    description: |
-        Execute arbitrary shell commands and check their exit
-        code which is used as a test result. The ``script`` field
-        is provided to cover simple test use cases only and must
-        not be combined with the :ref:`/spec/plans/discover` step
-        which is more suitable for more complex test scenarios.
-
-        Default shell options are applied to the script, see
-        :ref:`/spec/tests/test` for more details. The default
-        :ref:`/spec/tests/duration` for tests defined directly
-        under the execute step is ``1h``. Use the ``duration``
-        attribute to modify the default limit.
 
     example:
       - |
