@@ -180,7 +180,8 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             lowercased_playbook = _playbook.lower()
 
             def normalize_remote_playbook(raw_playbook: str) -> Path:
-                root_path = self.step.plan.anchor_path
+                assert self.step.workdir is not None  # narrow type
+                root_path = self.step.workdir
 
                 try:
                     with retry_session(
@@ -219,8 +220,11 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                 return AnsibleCollectionPlaybook(raw_playbook)
 
             playbook: AnsibleApplicable
+            playbook_root = self.step.plan.anchor_path
 
             if lowercased_playbook.startswith(('http://', 'https://')):
+                assert self.step.workdir is not None  # narrow type
+                playbook_root = self.step.workdir
                 playbook = normalize_remote_playbook(lowercased_playbook)
 
             elif lowercased_playbook.startswith('file://'):
@@ -234,7 +238,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
             guest.ansible(
                 playbook,
-                playbook_root=self.step.plan.anchor_path,
+                playbook_root=playbook_root,
                 extra_args=self.data.extra_args,
             )
 
