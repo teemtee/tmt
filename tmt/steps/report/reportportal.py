@@ -492,7 +492,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             launch_uuid: str,
             timestamp: str,
             write_out_failures: bool = True) -> None:
-        """ Upload all result log files into the ReportPortal instance """
+        """
+        Upload all result log files into the ReportPortal instance
+        """
 
         for index, log_path in enumerate(result.log):
             try:
