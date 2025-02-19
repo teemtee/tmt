@@ -3000,42 +3000,58 @@ class Provision(tmt.steps.Step):
         all_outcomes: list[Union[ActionTask, ProvisionTask]] = []
         failed_outcomes: list[Union[ActionTask, ProvisionTask]] = []
 
-        while all_phases:
-            # Start looking for sequences of phases of the same kind. Collect
-            # as many as possible, until hitting a different one
-            phase = all_phases.pop(0)
+        # Wrapping the code with try/except catching KeyboardInterrupt
+        # exceptions that signals tmt has been interrupted. We need to
+        # collect all known guests and populate `self.guests` so finish
+        # can release them if necessary.
+        try:
+            while all_phases:
+                # Start looking for sequences of phases of the same kind. Collect
+                # as many as possible, until hitting a different one
+                phase = all_phases.pop(0)
 
-            if isinstance(phase, Action):
-                action_phases: list[Action] = [phase]
+                if isinstance(phase, Action):
+                    action_phases: list[Action] = [phase]
 
-                while all_phases and isinstance(all_phases[0], Action):
-                    action_phases.append(cast(Action, all_phases.pop(0)))
+                    while all_phases and isinstance(all_phases[0], Action):
+                        action_phases.append(cast(Action, all_phases.pop(0)))
 
-                all_action_outcomes, failed_action_outcomes = _run_action_phases(action_phases)
+                    all_action_outcomes, failed_action_outcomes = _run_action_phases(action_phases)
 
-                all_outcomes += all_action_outcomes
-                failed_outcomes += failed_action_outcomes
+                    all_outcomes += all_action_outcomes
+                    failed_outcomes += failed_action_outcomes
 
-            else:
-                plugin_phases: list[ProvisionPlugin[ProvisionStepData]] = [phase]  # type: ignore[list-item]
+                else:
+                    plugin_phases: list[ProvisionPlugin[ProvisionStepData]] = [phase]  # type: ignore[list-item]
 
-                # ignore[attr-defined]: mypy does not recognize `phase` as `ProvisionPlugin`.
-                if phase._thread_safe:  # type: ignore[attr-defined]
-                    while all_phases:
-                        if not isinstance(all_phases[0], ProvisionPlugin):
-                            break
+                    # ignore[attr-defined]: mypy does not recognize `phase` as `ProvisionPlugin`.
+                    if phase._thread_safe:  # type: ignore[attr-defined]
+                        while all_phases:
+                            if not isinstance(all_phases[0], ProvisionPlugin):
+                                break
 
-                        if not all_phases[0]._thread_safe:
-                            break
+                            if not all_phases[0]._thread_safe:
+                                break
 
-                        plugin_phases.append(
-                            cast(ProvisionPlugin[ProvisionStepData], all_phases.pop(0))
-                        )
+                            plugin_phases.append(
+                                cast(ProvisionPlugin[ProvisionStepData], all_phases.pop(0))
+                            )
 
-                all_plugin_outcomes, failed_plugin_outcomes = _run_provision_phases(plugin_phases)
+                    all_plugin_outcomes, failed_plugin_outcomes = _run_provision_phases(
+                        plugin_phases
+                    )
 
-                all_outcomes += all_plugin_outcomes
-                failed_outcomes += failed_plugin_outcomes
+                    all_outcomes += all_plugin_outcomes
+                    failed_outcomes += failed_plugin_outcomes
+
+        except KeyboardInterrupt:
+            self.guests = [
+                phase.guest
+                for phase in self.phases(classes=ProvisionPlugin)
+                if phase.guest is not None
+            ]
+
+            raise
 
         # A plugin will only raise SystemExit if the exit is really desired
         # and no other actions should be done. An example of this is
