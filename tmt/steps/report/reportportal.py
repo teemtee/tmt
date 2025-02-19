@@ -260,6 +260,14 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         help="Enable/disable the SSL verification for communication with ReportPortal.",
     )
 
+    upload_subresults: bool = field(
+        default=False,
+        option=('--upload-subresults / --no-upload-subresults'),
+        is_flag=True,
+        show_default=True,
+        help="Enable/disable uploading of tmt subresults into the ReportPortal.",
+    )
+
     launch_url: Optional[str] = None
     launch_uuid: Optional[str] = None
     suite_uuid: Optional[str] = None
@@ -269,7 +277,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
 @tmt.steps.provides_method("reportportal")
 class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
     """
-    Report test results to a ReportPortal instance via API.
+    Report test results and their subresults to a ReportPortal instance via API.
 
     For communication with Report Portal API is necessary to provide
     following options:
@@ -473,16 +481,72 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 curr_description = self.data.launch_description
         return curr_description
 
+    def upload_result_logs(
+        self,
+        result: tmt.result.BaseResult,
+        session: requests.Session,
+        item_uuid: str,
+        launch_uuid: str,
+        timestamp: str,
+        write_out_failures: bool = True,
+    ) -> None:
+        """
+        Upload all result log files into the ReportPortal instance
+        """
+
+        for index, log_path in enumerate(result.log):
+            try:
+                log = self.step.plan.execute.read(log_path)
+            except tmt.utils.FileError:
+                continue
+
+            level = "INFO" if index == 0 else "TRACE"
+            message = _filter_log(log, settings=LogFilterSettings(size=self.data.log_size_limit))
+
+            # Upload log
+            self.rp_api_post(
+                session=session,
+                path="log/entry",
+                json={
+                    "message": message,
+                    "itemUuid": item_uuid,
+                    "launchUuid": launch_uuid,
+                    "level": level,
+                    "time": timestamp,
+                },
+            )
+
+            # Optionally write out failures only for results which implement the failures callable
+            if hasattr(result, "failures") and index == 0 and write_out_failures:
+                message = _filter_log(
+                    result.failures(log),
+                    settings=LogFilterSettings(
+                        size=self.data.traceback_size_limit,
+                        is_traceback=True,
+                    ),
+                )
+
+                self.rp_api_post(
+                    session=session,
+                    path="log/entry",
+                    json={
+                        "message": message,
+                        "itemUuid": item_uuid,
+                        "launchUuid": launch_uuid,
+                        "level": "ERROR",
+                        "time": timestamp,
+                    },
+                )
+
     def execute_rp_import(self) -> None:
         """
         Execute the import of test, results and subresults into ReportPortal
         """
 
         assert self.step.plan.my_run is not None
-
         # Use the current datetime as a default, but this is the worst case scenario
         # and we should use timestamps from results log as much as possible.
-        launch_time = self.datetime
+        launch_start_time = self.datetime
 
         # Support for idle tests
         executed = bool(self.step.plan.execute.results())
@@ -491,7 +555,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             #
             # The datetime *strings* are in fact sorted here, but finding the minimum will work,
             # because the datetime in ISO format is designed to be lexicographically sortable.
-            launch_time = min(
+            launch_start_time = min(
                 [r.start_time or self.datetime for r in self.step.plan.execute.results()]
             )
 
@@ -566,7 +630,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         "name": launch_name,
                         "description": launch_description,
                         "attributes": launch_attributes,
-                        "startTime": launch_time,
+                        "startTime": launch_start_time,
                         "rerun": launch_rerun,
                     },
                 )
@@ -611,7 +675,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         "name": suite_name,
                         "description": suite_description,
                         "attributes": attributes,
-                        "startTime": launch_time,
+                        "startTime": launch_start_time,
                         "launchUuid": launch_uuid,
                         "type": "suite",
                     },
@@ -628,7 +692,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 self.data.suite_uuid = suite_uuid
 
             # The first test starts with the launch (at the worst case)
-            test_time = launch_time
+            test_start_time = launch_start_time
 
             for result, test_origin in self.step.plan.execute.results_for_tests(
                 self.step.plan.discover.tests()
@@ -647,7 +711,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     test_name = result.name
 
                     # Use the actual timestamp or reuse the old one if missing
-                    test_time = result.start_time or test_time
+                    test_start_time = result.start_time or test_start_time
 
                     # for guests, save their primary address
                     if result.guest.primary_address:
@@ -679,6 +743,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         test_link = test.web_link()
                     if test.id:
                         test_id = test.id
+
                     env_vars = [
                         {'key': key, 'value': value}
                         for key, value in test.environment.items()
@@ -705,7 +770,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                             "launchUuid": launch_uuid,
                             "type": "step",
                             "testCaseId": test_id,
-                            "startTime": test_time,
+                            "startTime": test_start_time,
                         },
                     )
 
@@ -716,80 +781,98 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 else:
                     item_uuid = self.data.test_uuids[serial_number]
 
+                # If the result end-time is not defined, use the latest result start-time as
+                # default.
+                test_end_time = test_start_time
+
                 # Support for idle tests
-                status = "SKIPPED"
+                item_status = "SKIPPED"
                 if result:
-                    # Shift the timestamp to the end of a test
-                    test_time = result.end_time or test_time
+                    # Shift the timestamp to the end of a test.
+                    test_end_time = result.end_time or test_end_time
 
-                    # For each log
-                    for index, log_path in enumerate(result.log):
-                        try:
-                            log = self.step.plan.execute.read(log_path)
-                        except tmt.utils.FileError:
-                            continue
+                    item_status = self.TMT_TO_RP_RESULT_STATUS[result.result]
 
-                        level = "INFO" if log_path == result.log[0] else "TRACE"
-                        status = self.TMT_TO_RP_RESULT_STATUS[result.result]
+                    self.upload_result_logs(
+                        result=result,
+                        session=session,
+                        item_uuid=item_uuid,
+                        launch_uuid=launch_uuid,
+                        timestamp=test_end_time,
+                        write_out_failures=bool(item_status == "FAILED"),
+                    )
 
-                        # Upload log
+                    # If upload of subresults is required, create (and *finish*) the child test
+                    # item for every tmt subresult and map it under the parent test item.
+                    if self.data.upload_subresults:
+                        for subresult in result.subresult:
+                            # Create a child item
+                            self.info("sub-test", subresult.name, color="cyan", shift=1)
 
-                        message = _filter_log(
-                            log, settings=LogFilterSettings(size=self.data.log_size_limit)
-                        )
-                        response = self.rp_api_post(
-                            session=session,
-                            path="log/entry",
-                            json={
-                                "message": message,
-                                "itemUuid": item_uuid,
-                                "launchUuid": launch_uuid,
-                                "level": level,
-                                "time": test_time,
-                            },
-                        )
+                            # Use the parent test start-time as a default
+                            subresult_start_time = subresult.start_time or test_start_time
 
-                        # Write out failures
-                        if index == 0 and status == "FAILED":
-                            message = _filter_log(
-                                result.failures(log),
-                                settings=LogFilterSettings(
-                                    size=self.data.traceback_size_limit, is_traceback=True
-                                ),
-                            )
                             response = self.rp_api_post(
                                 session=session,
-                                path="log/entry",
+                                path=f"item/{item_uuid}",
                                 json={
-                                    "message": message,
-                                    "itemUuid": item_uuid,
+                                    "name": subresult.name,
                                     "launchUuid": launch_uuid,
-                                    "level": "ERROR",
-                                    "time": test_time,
+                                    "type": "step",
+                                    "startTime": subresult_start_time,
                                 },
                             )
 
-                # Finish the test item
+                            child_item_uuid = yaml_to_dict(response.text).get("id")
+                            assert child_item_uuid is not None
+
+                            child_item_status = self.TMT_TO_RP_RESULT_STATUS[subresult.result]
+                            subtest_end_time = subresult.end_time or test_end_time
+
+                            # Upload the subtest (child) logs
+                            self.upload_result_logs(
+                                result=subresult,
+                                session=session,
+                                item_uuid=child_item_uuid,
+                                launch_uuid=launch_uuid,
+                                timestamp=subtest_end_time,
+                                write_out_failures=bool(child_item_status == "FAILED"),
+                            )
+
+                            # Finish the child item
+                            response = self.rp_api_put(
+                                session=session,
+                                path=f"item/{child_item_uuid}",
+                                json={
+                                    "launchUuid": launch_uuid,
+                                    "status": child_item_status,
+                                    "endTime": subtest_end_time,
+                                },
+                            )
+
+                            self.verbose("uuid", child_item_uuid, "yellow", shift=2)
+
+                # Finish the parent test item
                 response = self.rp_api_put(
                     session=session,
                     path=f"item/{item_uuid}",
                     json={
                         "launchUuid": launch_uuid,
-                        "endTime": test_time,
-                        "status": status,
+                        "endTime": test_end_time,
+                        "status": item_status,
                         "issue": {"issueType": self.get_defect_type_locator(session, defect_type)},
                     },
                 )
 
                 # The launch ends with the last test
-                launch_time = test_time
+                launch_end_time = test_end_time
 
             if create_suite:
                 # Finish the test suite
                 response = self.rp_api_put(
                     session=session,
                     path=f"item{f'/{suite_uuid}' if suite_uuid else ''}",
-                    json={"launchUuid": launch_uuid, "endTime": launch_time},
+                    json={"launchUuid": launch_uuid, "endTime": launch_end_time},
                 )
 
             is_the_last_plan = self.step.plan == self.step.plan.my_run.plans[-1]
@@ -803,7 +886,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 response = self.rp_api_put(
                     session=session,
                     path=f"launch/{launch_uuid}/finish",
-                    json={"endTime": launch_time},
+                    json={"endTime": launch_end_time},
                 )
                 launch_url = str(yaml_to_dict(response.text).get("link"))
 

@@ -4,6 +4,13 @@
     Releases
 ======================
 
+
+A new ``upload-subresults`` key has been introduced for the
+:ref:`/plugins/report/reportportal` plugin, allowing the import of
+tmt subresults as child test items into ReportPortal. This
+behavior is optional and is disabled by default.
+
+
 tmt-1.43
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

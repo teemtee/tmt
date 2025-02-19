@@ -77,6 +77,9 @@ properties:
   ssl-verify:
     type: boolean
 
+  upload-subresults:
+    type: boolean
+
   when:
     $ref: "/schemas/common#/definitions/when"
 
