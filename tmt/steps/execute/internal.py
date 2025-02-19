@@ -246,7 +246,19 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
         option=('-s', '--script'),
         metavar='SCRIPT',
         multiple=True,
-        help='Shell script to be executed as a test.',
+        help="""
+            Execute arbitrary shell commands and check their exit
+            code which is used as a test result. The ``script`` field
+            is provided to cover simple test use cases only and must
+            not be combined with the :ref:`/spec/plans/discover` step
+            which is more suitable for more complex test scenarios.
+
+            Default shell options are applied to the script, see
+            :ref:`/spec/tests/test` for more details. The default
+            :ref:`/spec/tests/duration` for tests defined directly
+            under the execute step is ``1h``. Use the ``duration``
+            attribute to modify the default limit.
+            """,
         normalize=tmt.utils.normalize_shell_script_list,
         serialize=lambda scripts: [str(script) for script in scripts],
         unserialize=lambda serialized: [ShellScript(script) for script in serialized],
@@ -281,12 +293,51 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
 @tmt.steps.provides_method('tmt')
 class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
     """
-    Use the internal tmt executor to execute tests
+    Use the internal tmt executor to execute tests.
 
-    The internal tmt executor runs tests on the guest one by one, shows
-    testing progress and supports interactive debugging as well. Test
-    result is based on the script exit code (for shell tests) or the
-    results file (for beakerlib tests).
+    The internal tmt executor runs tests on the guest one by one directly
+    from the tmt code which shows testing :ref:`/stories/cli/steps/execute/progress`
+    and supports :ref:`/stories/cli/steps/execute/interactive` debugging as well.
+    This is the default execute step implementation. Test result is based on the
+    script exit code (for shell tests) or the results file (for beakerlib tests).
+
+    The executor provides the following shell scripts which can be used by the tests
+    for certain operations.
+
+    ``tmt-file-submit`` - archive the given file in the tmt test data directory.
+    See the :ref:`/stories/features/report-log` section for more details.
+
+    ``tmt-reboot`` - soft reboot the machine from inside the test. After reboot
+    the execution starts from the test which rebooted the machine.
+    An environment variable ``TMT_REBOOT_COUNT`` is provided which
+    the test can use to handle the reboot. The variable holds the
+    number of reboots performed by the test. For more information
+    see the :ref:`/stories/features/reboot` feature documentation.
+
+    ``tmt-report-result`` - generate a result report file from inside the test.
+    Can be called multiple times by the test. The generated report
+    file will be overwritten if a higher hierarchical result is
+    reported by the test. The hierarchy is as follows:
+    SKIP, PASS, WARN, FAIL. For more information see the
+    :ref:`/stories/features/report-result` feature documentation.
+
+    ``tmt-abort`` - generate an abort file from inside the test. This will
+    set the current test result to failed and terminate
+    the execution of subsequent tests. For more information see the
+    :ref:`/stories/features/abort` feature documentation.
+
+    The scripts are hosted by default in the ``/usr/local/bin`` directory, except
+    for guests using ``rpm-ostree``, where ``/var/lib/tmt/scripts`` is used.
+    The directory can be forced using the ``TMT_SCRIPTS_DIR`` environment variable.
+    Note that for guests using ``rpm-ostree``, the directory is added to
+    executable paths using the system-wide ``/etc/profile.d/tmt.sh`` profile script.
+
+    .. warning::
+
+        Please be aware that for guests using ``rpm-ostree``
+        the provided scripts will only be available in a shell that
+        loads the profile scripts. This is the default for
+        ``bash``-like shells, but might not work for others.
     """
 
     _data_class = ExecuteInternalData
