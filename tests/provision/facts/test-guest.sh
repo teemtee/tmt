@@ -3,6 +3,8 @@
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ../../images.sh || exit 1
 
+TEST_IMAGE_PREFIX="localhost/tmt/tests/container"
+
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-local}"
