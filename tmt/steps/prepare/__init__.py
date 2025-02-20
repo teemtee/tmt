@@ -235,7 +235,7 @@ class Prepare(tmt.steps.Step):
         ]
 
         # All provisioned guests.
-        guests = self.plan.provision.guests()
+        guests = self.plan.provision.ready_guests
 
         # 1. collect all requirements, per guest. For each phase, test,
         # check and so on, find out on which guest it needs to run, and
@@ -390,7 +390,7 @@ class Prepare(tmt.steps.Step):
         # Prepare guests (including workdir sync)
         guest_copies: list[Guest] = []
 
-        for guest in self.plan.provision.guests():
+        for guest in self.plan.provision.ready_guests:
             # Create a guest copy and change its parent so that the
             # operations inside prepare plugins on the guest use the
             # prepare step config rather than provision step config.

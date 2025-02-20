@@ -285,7 +285,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                 testsuites_properties[f"polarion-custom-{tr_field.replace('_', '')}"] = param
 
         if use_facts:
-            guests = self.step.plan.provision.guests()
+            guests = self.step.plan.provision.ready_guests
             try:
                 testsuites_properties['polarion-custom-hostname'] = guests[0].primary_address
                 testsuites_properties['polarion-custom-arch'] = guests[0].facts.arch

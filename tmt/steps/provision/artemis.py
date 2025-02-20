@@ -751,10 +751,3 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
         )
         self._guest.start()
         self._guest.setup()
-
-    def guest(self) -> Optional[GuestArtemis]:
-        """
-        Return the provisioned guest
-        """
-
-        return self._guest
