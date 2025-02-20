@@ -1853,6 +1853,8 @@ def test_render_command_report_output():
 
 # /bar/baz
 
+# exit code: finished successfully
+
 # stdout (1 lines)
 # {delimiter}
 This is some stdout
@@ -1881,6 +1883,8 @@ def test_render_command_report_exception():
         )) == f"""## foo
 
 # /bar/baz
+
+# exit code: 1
 
 # stdout (1 lines)
 # {delimiter}
