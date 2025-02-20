@@ -68,14 +68,14 @@ def register_hint(id_: str, hint: str) -> None:
     Register a hint for users.
 
     :param id_: step name for step-specific hints,
-        ``<step name>/< plugin name>`` for plugin-specific hints,
+        ``<step name>/<plugin name>`` for plugin-specific hints,
         or an arbitrary string.
     :param hint: a hint to register.
     """
 
     if id_ in HINTS:
         raise tmt.utils.GeneralError(
-            "Registering hint '{id_}' collides with an already registered hint."
+            f"Registering hint '{id_}' collides with an already registered hint."
         )
 
     HINTS[id_] = textwrap.dedent(hint).strip()
@@ -113,7 +113,7 @@ def render_hint(
     hint = HINTS.get(id_)
 
     if hint is None:
-        raise tmt.utils.GeneralError("Could not find hint '{id_}'.")
+        raise tmt.utils.GeneralError(f"Could not find hint '{id_}'.")
 
     return _render_single_hint(hint)
 
@@ -154,7 +154,7 @@ def render_hints(*ids: str, ignore_missing: bool = False, logger: tmt.log.Logger
             hint = HINTS.get(id_)
 
             if hint is None:
-                raise tmt.utils.GeneralError("Could not find hint '{id_}'.")
+                raise tmt.utils.GeneralError(f"Could not find hint '{id_}'.")
 
             yield _render_single_hint(hint)
 
