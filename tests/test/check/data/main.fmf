@@ -23,21 +23,41 @@
             result: respect
 
 /avc:
-  check:
-    - how: avc
+  /checkpoint:
+    check:
+      - how: avc
+        test-method: checkpoint
 
-  /harmless:
-    test: /bin/true
-    order: 100
+    /harmless:
+      test: /bin/true
+      order: 100
 
-  /nasty:
-    test: |
-      set -x
-      systemctl status auditd || /bin/true
-      systemctl start auditd
-      sudo bash -c "passwd --help &> /root/passwd.log; \
-                    ls -alZ /root/passwd.log; \
-                    rm -f /root/passwd.log" || /bin/true
+    /nasty:
+      test: |
+        set -x
+        systemctl status auditd || /bin/true
+        systemctl start auditd
+        sudo bash -c "passwd --help &> /root/passwd.log; \
+                      ls -alZ /root/passwd.log; \
+                      rm -f /root/passwd.log" || /bin/true
+
+  /timestamp:
+    check:
+      - how: avc
+        test-method: timestamp
+
+    /harmless:
+      test: /bin/true
+      order: 100
+
+    /nasty:
+      test: |
+        set -x
+        systemctl status auditd || /bin/true
+        systemctl start auditd
+        sudo bash -c "passwd --help &> /root/passwd.log; \
+                      ls -alZ /root/passwd.log; \
+                      rm -f /root/passwd.log" || /bin/true
 
 /watchdog/ping:
   require:
