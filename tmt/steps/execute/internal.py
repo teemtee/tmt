@@ -165,11 +165,11 @@ echo "{{ msg }}" > /dev/kmsg
 mkdir -p "$(dirname $TMT_TEST_PIDFILE_LOCK)"
 flock "$TMT_TEST_PIDFILE_LOCK" -c "echo '${test_pid} ${TMT_REBOOT_REQUEST}' > ${TMT_TEST_PIDFILE}" || exit 122
 
-{{ log_to_dmesg("Running test '%s' with reboot count %d and test restart count %d" | format(INVOCATION.test.name, INVOCATION._reboot_count, INVOCATION._restart_count)) }}
+{{ log_to_dmesg("Running test '%s' with reboot count %d and test restart count %d." | format(INVOCATION.test.name, INVOCATION._reboot_count, INVOCATION._restart_count)) }}
 {%- endmacro %}
 
 {% macro exit() %}
-{{ log_to_dmesg("Leaving test '%s'" | format(INVOCATION.test.name)) }}
+{{ log_to_dmesg("Leaving test '%s'." | format(INVOCATION.test.name)) }}
 
 # Updating the tmt test pid file
 mkdir -p "$(dirname $TMT_TEST_PIDFILE_LOCK)"
