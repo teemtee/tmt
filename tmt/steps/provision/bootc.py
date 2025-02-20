@@ -198,6 +198,10 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
     The bootc disk creation requires running podman as root. The plugin will
     automatically check if the current podman connection is rootless. If it is,
     a podman machine will be spun up and used to build the bootc disk.
+
+    To trigger hard reboot of a guest, plugin uses testcloud API. It is
+    also used to trigger soft reboot unless a custom reboot command was
+    specified via ``tmt-reboot -c ...``.
     """
 
     _data_class = BootcData
