@@ -58,11 +58,11 @@ def _quit_tmt(logger: tmt.log.Logger, repeated: bool = False) -> NoReturn:
         logger.warning(
             textwrap.dedent(
                 """
-              Repeated interruption requested.
+                Repeated interruption requested.
 
-              tmt will now cancel its work in progress and quit as soon as
-              possible. Wait for it to finish, please.
-              """
+                tmt will now cancel its work in progress and quit as soon as
+                possible. Wait for it to finish, please.
+                """
             ).strip()
         )
 
@@ -70,15 +70,15 @@ def _quit_tmt(logger: tmt.log.Logger, repeated: bool = False) -> NoReturn:
         logger.warning(
             textwrap.dedent(
                 """
-              Interrupting tmt operation as requested.
+                Interrupting tmt operation as requested.
 
-              tmt will now cancel its work in progress and quit as soon as
-              possible. Wait for it to finish, please.
+                tmt will now cancel its work in progress and quit as soon as
+                possible. Wait for it to finish, please.
 
-              Interrupt tmt again for faster termination but be aware that
-              it may result in resource leaks as various cleanup tasks will
-              not finish.
-              """
+                Interrupt tmt again for faster termination but be aware that
+                it may result in resource leaks as various cleanup tasks will
+                not finish.
+                """
             ).strip()
         )
 
@@ -142,7 +142,7 @@ class PreventSignals(contextlib.AbstractContextManager['PreventSignals']):
             _INTERRUPT_MASKED.clear()
 
             if not _INTERRUPT_PENDING.is_set():
-                self.logger.debug('Interrupt not detected, leaving safe block.')
+                self.logger.debug('Interrupt not detected, leaving safe block.', level=2)
 
                 return
 
