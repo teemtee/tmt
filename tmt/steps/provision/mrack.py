@@ -238,9 +238,7 @@ def _transform_unsupported(
 def _transform_beaker_pool(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
-    beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator, constraint.value
-    )
+    beaker_operator, actual_value, _ = operator_to_beaker_op(constraint.operator, constraint.value)
 
     return MrackHWBinOp('pool', beaker_operator, actual_value)
 
@@ -464,9 +462,7 @@ def _transform_memory(
 def _transform_tpm_version(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
-    beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator, constraint.value
-    )
+    beaker_operator, actual_value, _ = operator_to_beaker_op(constraint.operator, constraint.value)
 
     return MrackHWKeyValue('TPM', beaker_operator, actual_value)
 
@@ -474,10 +470,6 @@ def _transform_tpm_version(
 def _transform_virtualization_is_virtualized(
     constraint: tmt.hardware.FlagConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
-    beaker_operator, actual_value, _ = operator_to_beaker_op(
-        constraint.operator, str(constraint.value)
-    )
-
     test = (constraint.operator, constraint.value)
 
     if test in [(tmt.hardware.Operator.EQ, True), (tmt.hardware.Operator.NEQ, False)]:
