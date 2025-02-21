@@ -385,7 +385,7 @@ def make_junit_xml(
     xml_parser = etree.XMLParser(**xml_parser_kwargs)
     try:
         # S320: Parsing of untrusted data is known to be vulnerable to XML attacks.
-        tree_root: XMLElement = etree.fromstring(xml_data, xml_parser)  # noqa: S320
+        tree_root: XMLElement = etree.fromstring(xml_data, xml_parser)
 
     except etree.XMLSyntaxError as e:
         phase.warn(
@@ -405,7 +405,7 @@ def make_junit_xml(
         xml_parser = etree.XMLParser(**xml_parser_kwargs)
 
         try:
-            tree_root = etree.fromstring(xml_data, xml_parser)  # noqa: S320
+            tree_root = etree.fromstring(xml_data, xml_parser)
         except etree.XMLSyntaxError as error:
             phase.verbose('rendered XML', xml_data, 'red')
             raise tmt.utils.ReportError(

@@ -301,6 +301,11 @@ target-version = "py39"
 quote-style = "preserve"  # TODO: Convert to a specific quote style
 
 [tool.ruff.lint]
+# Enable preview rules...
+preview = true
+# ... but enable them manually for now.
+explicit-preview-rules = true
+
 select = [
     "F",  # pyflakes
     "E",  # pycodestyle error
