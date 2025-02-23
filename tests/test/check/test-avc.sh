@@ -18,12 +18,12 @@ rlJournalStart
     rlPhaseEnd
 
     for method in checkpoint timestamp; do
-        rlPhaseStartTest "Run /avc tests with $PROVISION_HOW"
+        rlPhaseStartTest "Run /avc tests with $PROVISION_HOW ($method method)"
             rlRun "tmt -c provision_method=$PROVISION_HOW run --id $run --scratch -a -vvv provision -h $PROVISION_HOW test -n /avc/$method" "1"
             rlRun "cat $results"
         rlPhaseEnd
 
-        rlPhaseStartTest "Test harmless AVC check with $PROVISION_HOW"
+        rlPhaseStartTest "Test harmless AVC check with $PROVISION_HOW ($method method)"
             rlRun "avc_log=$run/plan/execute/data/guest/default-0/avc/$method/harmless-2/checks/avc.txt"
             rlAssertExists "$avc_log"
             rlRun "cat $avc_log"
@@ -40,7 +40,7 @@ rlJournalStart
             fi
         rlPhaseEnd
 
-        rlPhaseStartTest "Test nasty AVC check with $PROVISION_HOW"
+        rlPhaseStartTest "Test nasty AVC check with $PROVISION_HOW ($method method)"
             rlRun "avc_log=$run/plan/execute/data/guest/default-0/avc/$method/nasty-1/checks/avc.txt"
             rlAssertExists "$avc_log"
             rlRun "cat $avc_log"
