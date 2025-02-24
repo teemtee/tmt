@@ -373,7 +373,7 @@ class AvcCheck(Check):
     )
 
     delay_before_report: int = field(
-        default=60,
+        default=5,
         metavar='SECONDS',
         help="""
              How many seconds to wait before running ``ausearch`` after
