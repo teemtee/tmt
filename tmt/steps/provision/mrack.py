@@ -1186,11 +1186,6 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         except mrack.errors.MrackError:
             return False
 
-    @property
-    def lognames(self) -> list[str]:
-        """Return name list of logs the guest could provide."""
-        return []
-
     def _create(self, tmt_name: str) -> None:
         """
         Create beaker job xml request and submit it to Beaker hub
@@ -1290,6 +1285,11 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                     raise ProvisionError('Failed to create, provisioning failed.')
 
                 if state == 'Reserved':
+                    for key in response["logs"]:
+                        self.guest_logs.append(
+                            GuestLogBeaker(self, key.replace('.log', ''), response["logs"][key])
+                        )
+                    self.guest_logs.append(GuestLogBeaker(self, 'dmesg'))
                     return current
 
                 raise tmt.utils.WaitingIncompleteError
@@ -1479,3 +1479,22 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
         """
 
         return self._guest
+
+
+@container
+class GuestLogBeaker(tmt.steps.provision.GuestLog):
+    def __init__(self, guest: GuestBeaker, name: str, url: Optional[str] = None) -> None:
+        self.name = name
+        self.url = url
+        self.guest = guest
+
+    def fetch(self) -> Optional[str]:
+        """
+        Fetch and return content of a log.
+
+        :returns: content of the log, or ``None`` if the log cannot be retrieved.
+        """
+
+        if self.name == 'dmesg':
+            return self.guest.execute(Command('dmesg')).stdout
+        return tmt.utils.get_url_content(self.url) if self.url else None

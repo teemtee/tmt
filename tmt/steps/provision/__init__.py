@@ -8,6 +8,7 @@ import os
 import re
 import secrets
 import shlex
+import shutil
 import signal as _signal
 import string
 import subprocess
@@ -56,6 +57,7 @@ from tmt.utils import (
     ProvisionError,
     ShellScript,
     configure_constant,
+    create_directory,
     effective_workdir_root,
 )
 
@@ -975,6 +977,19 @@ class GuestData(SerializableContainer):
             logger.info(key_to_option(key).replace('-', ' '), printable_value, color='green')
 
 
+@container
+class GuestLog:
+    name: str
+
+    def fetch(self) -> Optional[str]:
+        """
+        Fetch and return content of a log.
+
+        :returns: content of the log, or ``None`` if the log cannot be retrieved.
+        """
+        raise NotImplementedError
+
+
 class Guest(tmt.utils.Common):
     """
     Guest provisioned for test execution
@@ -1015,6 +1030,8 @@ class Guest(tmt.utils.Common):
 
     #: Guest topology hostname or IP address for guest/guest communication.
     topology_address: Optional[str] = None
+
+    guest_logs: list[GuestLog] = []
 
     become: bool
 
@@ -1112,12 +1129,6 @@ class Guest(tmt.utils.Common):
             if self.facts.is_ostree
             else tmt.steps.execute.DEFAULT_SCRIPTS_DEST_DIR
         )
-
-    @property
-    def lognames(self) -> list[str]:
-        """Return name list of logs the guest could provide."""
-
-        return []
 
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
@@ -1737,7 +1748,7 @@ class Guest(tmt.utils.Common):
             raise tmt.utils.GeneralError('Log path is a directory but log name is not defined.')
 
     def fetch_logs(
-        self, dirpath: Optional[Path] = None, lognames: Optional[list[str]] = None
+        self, dirpath: Optional[Path] = None, guest_logs: Optional[list[GuestLog]] = None
     ) -> None:
         """
         Get log content and save it to a directory.
@@ -1747,14 +1758,20 @@ class Guest(tmt.utils.Common):
         :param lognames: name list of logs need to be handled. If not set, all guest logs
             would be collected, as reported by :py:attr:`lognames`.
         """
-        lognames = lognames or self.lognames
-        dirpath = dirpath or self.workdir or Path.cwd()
-        for logname in lognames:
-            content = self.acquire_log(logname)
+
+        guest_logs = guest_logs or self.guest_logs or []
+
+        dirpath = dirpath or (self.workdir / 'logs' if self.workdir else None) or Path.cwd()
+        if self.workdir and dirpath == self.workdir / 'logs':
+            create_directory(
+                path=self.workdir / 'logs', name='logs workdir', quiet=True, logger=self._logger
+            )
+        for log in guest_logs:
+            content = log.fetch()
             if content:
-                self.store_log(dirpath, content, logname)
+                self.store_log(dirpath, content, log.name)
             else:
-                self.store_log(dirpath, '', logname)
+                self.store_log(dirpath, '', log.name)
 
 
 @container
@@ -2791,6 +2808,28 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
 
             if hardware:
                 echo(tmt.utils.format('hardware', tmt.utils.dict_to_yaml(hardware.to_spec())))
+
+    def prune(self, logger: tmt.log.Logger) -> None:
+        """Do not prune logs"""
+        if self.workdir is None:
+            return
+
+        logs_dir = self.workdir / 'logs'
+        if logs_dir.exists():
+            for member in self.workdir.iterdir():
+                if member.name == "logs":
+                    logger.debug(f"Preserve '{member.relative_to(self.workdir)}'.", level=3)
+                    continue
+                logger.debug(f"Remove '{member}'.", level=3)
+                try:
+                    if member.is_file() or member.is_symlink():
+                        member.unlink()
+                    else:
+                        shutil.rmtree(member)
+                except OSError as error:
+                    logger.warning(f"Unable to remove '{member}': {error}")
+        else:
+            super().prune(logger)
 
 
 @container
