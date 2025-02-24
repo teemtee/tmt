@@ -252,7 +252,8 @@ def _import_or_raise(
     *,
     module: str,
     exc_class: type[BaseException],
-    exc_message: str,
+    exc_message: Optional[str] = None,
+    hint_id: Optional[str] = None,
     logger: Logger,
 ) -> ModuleT:  # type: ignore[type-var,misc]
     """
@@ -269,7 +270,15 @@ def _import_or_raise(
         return _import(module=module, logger=logger)
 
     except tmt.utils.GeneralError as exc:
-        raise exc_class(exc_message) from exc
+        if hint_id is not None:
+            from tmt.utils.hints import print_hint
+
+            print_hint(id_=hint_id, logger=logger)
+
+        if exc_message is not None:
+            raise exc_class(exc_message) from exc
+
+        raise exc_class(f"Failed to import the '{module}' module.") from exc
 
 
 # ignore[type-var,misc]: the actual type is provided by caller - the
@@ -410,15 +419,10 @@ class ModuleImporter(Generic[ModuleT]):
     taken from :py:attr:`sys.modules`.
     """
 
-    def __init__(
-        self,
-        module: str,
-        exc_class: type[Exception],
-        exc_message: str,
-    ) -> None:
+    def __init__(self, module: str, exc_class: type[Exception], hint_id: str) -> None:
         self._module_name = module
         self._exc_class = exc_class
-        self._exc_message = exc_message
+        self._hint_id = hint_id
 
         self._module: Optional[ModuleT] = None
 
@@ -427,7 +431,7 @@ class ModuleImporter(Generic[ModuleT]):
             self._module = _import_or_raise(
                 module=self._module_name,
                 exc_class=self._exc_class,
-                exc_message=self._exc_message,
+                hint_id=self._hint_id,
                 logger=logger,
             )
 
