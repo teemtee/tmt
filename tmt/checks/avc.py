@@ -71,7 +71,7 @@ SETUP_SCRIPT = jinja2.Template(
 set -x
 export LC_ALL=C
 
-{% if CHECK.method == 'timestamp' %}
+{% if CHECK.method.value == 'timestamp' %}
 echo "export AVC_SINCE=\\"$( date "+%x %H:%M:%S")\\"" > {{ MARK_FILEPATH }}
 {% else %}
 ausearch --input-logs --checkpoint {{ MARK_FILEPATH }} -m AVC -m USER_AVC -m SELINUX_ERR
@@ -87,7 +87,7 @@ TEST_SCRIPT = jinja2.Template(
 set -x
 export LC_ALL=C
 
-{% if CHECK.method == 'timestamp' %}
+{% if CHECK.method.value == 'timestamp' %}
 source {{ MARK_FILEPATH }}
 ausearch -i --input-logs -m AVC -m USER_AVC -m SELINUX_ERR -ts $AVC_SINCE
 {% else %}
