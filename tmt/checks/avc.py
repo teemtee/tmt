@@ -114,6 +114,10 @@ cat /var/log/audit/audit.log
 cat {{ MARK_FILEPATH }}
 
 ausearch --input-logs --checkpoint {{ MARK_FILEPATH }} -m AVC -m USER_AVC -m SELINUX_ERR -i -ts checkpoint
+
+cat {{ MARK_FILEPATH }}
+
+cat /var/log/audit/audit.log
 """  # noqa: E501
     )
 )
@@ -369,7 +373,7 @@ class AvcCheck(Check):
     )
 
     delay_before_report: int = field(
-        default=10,
+        default=60,
         metavar='SECONDS',
         help="""
              How many seconds to wait before running ``ausearch`` after
