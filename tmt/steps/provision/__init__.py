@@ -1229,6 +1229,9 @@ class Guest(tmt.utils.Common):
         if self.is_dry_run:
             return
 
+        if not self.is_ready:
+            return
+
         for key, key_formatted, value_formatted in self.facts.format():
             if key in GUEST_FACTS_INFO_FIELDS:
                 self.info(key_formatted, value_formatted, color='green')
@@ -2678,15 +2681,14 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
             guest.wake()
             self._guest = guest
 
+    # TODO: getter. Like in Java. Do we need it?
+    @property
     def guest(self) -> Optional[Guest]:
         """
-        Return provisioned guest
-
-        Each ProvisionPlugin has to implement this method.
-        Should return a provisioned Guest() instance.
+        Return the provisioned guest.
         """
 
-        raise NotImplementedError
+        return self._guest
 
     def essential_requires(self) -> list['tmt.base.Dependency']:
         """
@@ -2798,7 +2800,7 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
                     yield ProvisionTask(
                         logger=new_logger,
                         result=None,
-                        guest=None,
+                        guest=phase.guest,
                         exc=None,
                         requested_exit=exc,
                         phases=[],
@@ -2808,7 +2810,7 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
                     yield ProvisionTask(
                         logger=new_logger,
                         result=None,
-                        guest=None,
+                        guest=phase.guest,
                         exc=exc,
                         requested_exit=None,
                         phases=[],
@@ -2818,7 +2820,7 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
                     yield ProvisionTask(
                         logger=new_logger,
                         result=None,
-                        guest=phase.guest(),
+                        guest=phase.guest,
                         exc=None,
                         requested_exit=None,
                         phases=[],
@@ -2859,6 +2861,44 @@ class Provision(tmt.steps.Step):
 
     _preserved_workdir_members = ['step.yaml', 'guests.yaml']
 
+    #: All known guests.
+    #:
+    #: .. warning::
+    #:
+    #:    Guests may not necessarily be fully provisioned. They are
+    #:    from plugins as soon as possible, and guests may easily be
+    #:    still waiting for their infrastructure to finish the task.
+    #:    For the list of successfully provisioned guests, see
+    #:    :py:attr:`ready_guests`.
+    guests: list[Guest]
+
+    @property
+    def ready_guests(self) -> list[Guest]:
+        """
+        All successfully provisioned guests.
+
+        Most of the time, after ``provision`` step finishes successfully,
+        the list should be the same as :py:attr:`guests`, i.e. it should
+        contain all known guests. There are situations when
+        ``ready_guests`` will be a subset of ``guests``, and their users
+        must decide which collection is the best for the desired goal:
+
+        * when ``provision`` is still running. ``ready_guests`` will be
+          slowly gaining new guests as they get up and running.
+        * in dry-run mode, no actual provisioning is expected to happen,
+          therefore there are no unsuccessfully provisioned guests. In
+          this mode, all known guests are considered as ready, and
+          ``ready_guests`` is the same as ``guests``.
+        * if tmt is interrupted by a signal or user. Not all guests will
+          finish their provisioning process, and ``ready_guests`` may
+          contain just the finished ones.
+        """
+
+        if self.is_dry_run:
+            return self.guests
+
+        return [guest for guest in self.guests if guest.is_ready]
+
     def __init__(
         self,
         *,
@@ -2872,8 +2912,7 @@ class Provision(tmt.steps.Step):
 
         super().__init__(plan=plan, data=data, logger=logger)
 
-        # List of provisioned guests and loaded guest data
-        self._guests: list[Guest] = []
+        self.guests = []
         self._guest_data: dict[str, GuestData] = {}
 
     @property
@@ -2904,7 +2943,9 @@ class Provision(tmt.steps.Step):
 
         super().save()
         try:
-            raw_guest_data = {guest.name: guest.save().to_serialized() for guest in self.guests()}
+            raw_guest_data = {
+                guest.name: guest.save().to_serialized() for guest in self.ready_guests
+            }
 
             self.write(Path('guests.yaml'), tmt.utils.dict_to_yaml(raw_guest_data))
         except tmt.utils.FileError:
@@ -2927,9 +2968,8 @@ class Provision(tmt.steps.Step):
             # If guest data loaded, perform a complete wake up
             plugin.wake(data=self._guest_data.get(plugin.name))
 
-            guest = plugin.guest()
-            if guest:
-                self._guests.append(guest)
+            if plugin.guest:
+                self.guests.append(plugin.guest)
 
         # Nothing more to do if already done and not asked to run again
         if self.status() == 'done' and not self.should_run_again:
@@ -2945,10 +2985,10 @@ class Provision(tmt.steps.Step):
         """
 
         # Summary of provisioned guests
-        guests = fmf.utils.listed(self.guests(), 'guest')
+        guests = fmf.utils.listed(self.ready_guests, 'guest')
         self.info('summary', f'{guests} provisioned', 'green', shift=1)
         # Guest list in verbose mode
-        for guest in self.guests():
+        for guest in self.ready_guests:
             if not guest.name.startswith(tmt.utils.DEFAULT_NAME):
                 self.verbose(guest.name, color='red', shift=2)
 
@@ -2967,7 +3007,7 @@ class Provision(tmt.steps.Step):
             return
 
         # Provision guests
-        self._guests = []
+        self.guests = []
 
         def _run_provision_phases(
             phases: list[ProvisionPlugin[ProvisionStepData]],
@@ -2999,15 +3039,10 @@ class Provision(tmt.steps.Step):
 
                     failed_tasks.append(outcome)
 
-                    continue
+                if outcome.guest:
+                    outcome.guest.show()
 
-                guest = outcome.guest
-
-                if guest:
-                    guest.show()
-
-                    if guest.is_ready or self.is_dry_run:
-                        self._guests.append(guest)
+                    self.guests.append(outcome.guest)
 
             return all_tasks, failed_tasks
 
@@ -3059,42 +3094,58 @@ class Provision(tmt.steps.Step):
         all_outcomes: list[Union[ActionTask, ProvisionTask]] = []
         failed_outcomes: list[Union[ActionTask, ProvisionTask]] = []
 
-        while all_phases:
-            # Start looking for sequences of phases of the same kind. Collect
-            # as many as possible, until hitting a different one
-            phase = all_phases.pop(0)
+        # Wrapping the code with try/except catching KeyboardInterrupt
+        # exceptions that signals tmt has been interrupted. We need to
+        # collect all known guests and populate `self.guests` so finish
+        # can release them if necessary.
+        try:
+            while all_phases:
+                # Start looking for sequences of phases of the same kind. Collect
+                # as many as possible, until hitting a different one
+                phase = all_phases.pop(0)
 
-            if isinstance(phase, Action):
-                action_phases: list[Action] = [phase]
+                if isinstance(phase, Action):
+                    action_phases: list[Action] = [phase]
 
-                while all_phases and isinstance(all_phases[0], Action):
-                    action_phases.append(cast(Action, all_phases.pop(0)))
+                    while all_phases and isinstance(all_phases[0], Action):
+                        action_phases.append(cast(Action, all_phases.pop(0)))
 
-                all_action_outcomes, failed_action_outcomes = _run_action_phases(action_phases)
+                    all_action_outcomes, failed_action_outcomes = _run_action_phases(action_phases)
 
-                all_outcomes += all_action_outcomes
-                failed_outcomes += failed_action_outcomes
+                    all_outcomes += all_action_outcomes
+                    failed_outcomes += failed_action_outcomes
 
-            else:
-                plugin_phases: list[ProvisionPlugin[ProvisionStepData]] = [phase]  # type: ignore[list-item]
+                else:
+                    plugin_phases: list[ProvisionPlugin[ProvisionStepData]] = [phase]  # type: ignore[list-item]
 
-                # ignore[attr-defined]: mypy does not recognize `phase` as `ProvisionPlugin`.
-                if phase._thread_safe:  # type: ignore[attr-defined]
-                    while all_phases:
-                        if not isinstance(all_phases[0], ProvisionPlugin):
-                            break
+                    # ignore[attr-defined]: mypy does not recognize `phase` as `ProvisionPlugin`.
+                    if phase._thread_safe:  # type: ignore[attr-defined]
+                        while all_phases:
+                            if not isinstance(all_phases[0], ProvisionPlugin):
+                                break
 
-                        if not all_phases[0]._thread_safe:
-                            break
+                            if not all_phases[0]._thread_safe:
+                                break
 
-                        plugin_phases.append(
-                            cast(ProvisionPlugin[ProvisionStepData], all_phases.pop(0))
-                        )
+                            plugin_phases.append(
+                                cast(ProvisionPlugin[ProvisionStepData], all_phases.pop(0))
+                            )
 
-                all_plugin_outcomes, failed_plugin_outcomes = _run_provision_phases(plugin_phases)
+                    all_plugin_outcomes, failed_plugin_outcomes = _run_provision_phases(
+                        plugin_phases
+                    )
 
-                all_outcomes += all_plugin_outcomes
-                failed_outcomes += failed_plugin_outcomes
+                    all_outcomes += all_plugin_outcomes
+                    failed_outcomes += failed_plugin_outcomes
+
+        except KeyboardInterrupt:
+            self.guests = [
+                phase.guest
+                for phase in self.phases(classes=ProvisionPlugin)
+                if phase.guest is not None
+            ]
+
+            raise
 
         # A plugin will only raise SystemExit if the exit is really desired
         # and no other actions should be done. An example of this is
@@ -3126,10 +3177,3 @@ class Provision(tmt.steps.Step):
         self.summary()
         self.status('done')
         self.save()
-
-    def guests(self) -> list[Guest]:
-        """
-        Return the list of all provisioned guests
-        """
-
-        return self._guests

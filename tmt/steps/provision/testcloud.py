@@ -1327,13 +1327,6 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
         self._guest.start()
         self._guest.setup()
 
-    def guest(self) -> Optional[tmt.Guest]:
-        """
-        Return the provisioned guest
-        """
-
-        return self._guest
-
     def _print_local_images(self) -> None:
         """
         Print images which are already cached

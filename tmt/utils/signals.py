@@ -32,9 +32,10 @@ import signal
 import textwrap
 import threading
 from types import FrameType
-from typing import NoReturn, Optional
+from typing import Any, NoReturn, Optional
 
 import tmt.log
+import tmt.utils
 
 #: All changes to :py:data:`_INTERRUPT_MASKED` and
 #: :py:data:`_INTERRUPT_PENDING` must be performed while holding this
@@ -46,7 +47,16 @@ _INTERRUPT_LOCK = threading.Lock()
 _INTERRUPT_MASKED = threading.Event()
 
 #: When set, interrupt was delivered to tmt, and tmt should react to it.
-_INTERRUPT_PENDING = threading.Event()
+INTERRUPT_PENDING = threading.Event()
+
+
+class Interrupted(tmt.utils.GeneralError):
+    """
+    Raised by code that interrupted its work because of tmt shutdown.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__('tmt was interrupted', *args, **kwargs)
 
 
 def _quit_tmt(logger: tmt.log.Logger, repeated: bool = False) -> NoReturn:
@@ -98,9 +108,9 @@ def _interrupt_handler(signum: int, frame: Optional[FrameType]) -> None:
     logger.warning(f'Interrupt requested via {signal.Signals(signum).name} signal.')
 
     with _INTERRUPT_LOCK:
-        repeated = _INTERRUPT_PENDING.is_set()
+        repeated = INTERRUPT_PENDING.is_set()
 
-        _INTERRUPT_PENDING.set()
+        INTERRUPT_PENDING.set()
 
         if _INTERRUPT_MASKED.is_set():
             logger.warning('Interrupt is masked, postponing the reaction.')
@@ -141,7 +151,7 @@ class PreventSignals(contextlib.AbstractContextManager['PreventSignals']):
         with _INTERRUPT_LOCK:
             _INTERRUPT_MASKED.clear()
 
-            if not _INTERRUPT_PENDING.is_set():
+            if not INTERRUPT_PENDING.is_set():
                 self.logger.debug('Interrupt not detected, leaving safe block.', level=2)
 
                 return

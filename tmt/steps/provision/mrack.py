@@ -1321,14 +1321,6 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         self.verbose('primary address', self.primary_address, 'green')
         self.verbose('topology address', self.topology_address, 'green')
 
-    def stop(self) -> None:
-        """
-        Stop the guest
-        """
-
-        # do nothing
-        return
-
     def remove(self) -> None:
         """
         Remove the guest
@@ -1467,10 +1459,3 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
         )
         self._guest.start()
         self._guest.setup()
-
-    def guest(self) -> Optional[GuestBeaker]:
-        """
-        Return the provisioned guest
-        """
-
-        return self._guest

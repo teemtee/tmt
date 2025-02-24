@@ -149,83 +149,88 @@ class Finish(tmt.steps.Step):
             return
 
         # Nothing to do if no guests were provisioned
-        if not self.plan.provision.guests():
+        if not self.plan.provision.guests:
             self.warn("Nothing to finish, no guests provisioned.", shift=1)
             return
 
-        # Prepare guests
-        guest_copies: list[Guest] = []
+        if self.plan.provision.ready_guests:
+            # Prepare guests
+            guest_copies: list[Guest] = []
 
-        for guest in self.plan.provision.guests():
-            # Create a guest copy and change its parent so that the
-            # operations inside finish plugins on the guest use the
-            # finish step config rather than provision step config.
-            guest_copy = copy.copy(guest)
-            guest_copy.inject_logger(
-                guest._logger.clone().apply_verbosity_options(**self._cli_options)
-            )
-            guest_copy.parent = self
-
-            guest_copies.append(guest_copy)
-
-        queue: PhaseQueue[FinishStepData, list[PhaseResult]] = PhaseQueue(
-            'finish', self._logger.descend(logger_name=f'{self}.queue')
-        )
-
-        for phase in self.phases(classes=(Action, FinishPlugin)):
-            if isinstance(phase, Action):
-                queue.enqueue_action(phase=phase)
-
-            elif phase.enabled_by_when:
-                queue.enqueue_plugin(
-                    phase=phase,  # type: ignore[arg-type]
-                    guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)],
+            for guest in self.plan.provision.ready_guests:
+                # Create a guest copy and change its parent so that the
+                # operations inside finish plugins on the guest use the
+                # finish step config rather than provision step config.
+                guest_copy = copy.copy(guest)
+                guest_copy.inject_logger(
+                    guest._logger.clone().apply_verbosity_options(**self._cli_options)
                 )
+                guest_copy.parent = self
 
-        failed_tasks: list[Union[ActionTask, PluginTask[FinishStepData, list[PhaseResult]]]] = []
-        results: list[PhaseResult] = []
+                guest_copies.append(guest_copy)
 
-        for outcome in queue.run():
-            if not isinstance(outcome.phase, FinishPlugin):
-                continue
-
-            if outcome.exc:
-                outcome.logger.fail(str(outcome.exc))
-
-                failed_tasks.append(outcome)
-                continue
-
-            if outcome.result:
-                results += outcome.result
-
-        self._save_results(results)
-
-        if failed_tasks:
-            raise tmt.utils.GeneralError(
-                'finish step failed',
-                causes=[outcome.exc for outcome in failed_tasks if outcome.exc is not None],
+            queue: PhaseQueue[FinishStepData, list[PhaseResult]] = PhaseQueue(
+                'finish', self._logger.descend(logger_name=f'{self}.queue')
             )
 
-        # To separate "finish" from "pull" queue visually
-        self.info('')
+            for phase in self.phases(classes=(Action, FinishPlugin)):
+                if isinstance(phase, Action):
+                    queue.enqueue_action(phase=phase)
 
-        # Pull artifacts created in the plan data directory
-        # if there was at least one plugin executed
-        if self.phases() and guest_copies:
-            sync_with_guests(
-                self,
-                'pull',
-                PullTask(
-                    logger=self._logger, guests=guest_copies, source=self.plan.data_directory
-                ),
-                self._logger,
-            )
+                elif phase.enabled_by_when:
+                    queue.enqueue_plugin(
+                        phase=phase,  # type: ignore[arg-type]
+                        guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)],
+                    )
+
+            failed_tasks: list[
+                Union[ActionTask, PluginTask[FinishStepData, list[PhaseResult]]]
+            ] = []
+            results: list[PhaseResult] = []
+
+            for outcome in queue.run():
+                if not isinstance(outcome.phase, FinishPlugin):
+                    continue
+
+                if outcome.exc:
+                    outcome.logger.fail(str(outcome.exc))
+
+                    failed_tasks.append(outcome)
+                    continue
+
+                if outcome.result:
+                    results += outcome.result
+
+            self._save_results(results)
+
+            if failed_tasks:
+                raise tmt.utils.GeneralError(
+                    'finish step failed',
+                    causes=[outcome.exc for outcome in failed_tasks if outcome.exc is not None],
+                )
 
             # To separate "finish" from "pull" queue visually
             self.info('')
 
-        # Stop and remove provisioned guests
-        for guest in self.plan.provision.guests():
+            # Pull artifacts created in the plan data directory
+            # if there was at least one plugin executed
+            if self.phases() and guest_copies:
+                sync_with_guests(
+                    self,
+                    'pull',
+                    PullTask(
+                        logger=self._logger, guests=guest_copies, source=self.plan.data_directory
+                    ),
+                    self._logger,
+                )
+
+                # To separate "finish" from "pull" queue visually
+                self.info('')
+
+            self.summary()
+
+        # Stop and remove provisioned guests, even the partially provisioned ones.
+        for guest in self.plan.provision.guests:
             guest.stop()
             guest.remove()
 
@@ -234,7 +239,6 @@ class Finish(tmt.steps.Step):
         if not (self.plan.my_run.opt('keep') or self.is_dry_run):
             self.plan.prune()
 
-        # Give a summary, update status and save
-        self.summary()
+        # Give update status and save
         self.status('done')
         self.save()
