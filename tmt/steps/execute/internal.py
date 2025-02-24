@@ -150,7 +150,7 @@ TEST_OUTER_WRAPPER_TEMPLATE = jinja2.Template(
     {%- if not INVOCATION.guest.facts.is_superuser %}
         {%- if INVOCATION.guest.become %}
 # Logging test into kernel log
-sudo bash -c "echo \"{{ msg }}\" > /dev/kmsg"
+sudo bash -c "echo \\\"{{ msg }}\\\" > /dev/kmsg"
         {%- else %}
 # Not logging into kernel log: not a superuser, 'become' not enabled
 # echo \"{{ msg }}\" > /dev/kmsg
