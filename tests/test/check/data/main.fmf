@@ -37,6 +37,7 @@
         set -x
         systemctl status auditd || /bin/true
         systemctl start auditd
+        sleep 10
         sudo bash -c "passwd --help &> /root/passwd.log; \
                       ls -alZ /root/passwd.log; \
                       rm -f /root/passwd.log" || /bin/true
@@ -55,6 +56,7 @@
         set -x
         systemctl status auditd || /bin/true
         systemctl start auditd
+        sleep 10
         sudo bash -c "passwd --help &> /root/passwd.log; \
                       ls -alZ /root/passwd.log; \
                       rm -f /root/passwd.log" || /bin/true
