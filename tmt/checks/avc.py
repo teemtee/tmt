@@ -66,58 +66,34 @@ AUSEARCH_MARK_FILENAME = 'avc-mark.txt'
 INTERESTING_PACKAGES = ['audit', 'selinux-policy']
 
 
-SETUP_SCRIPT_TIMESTAMP = jinja2.Template(
+SETUP_SCRIPT = jinja2.Template(
     textwrap.dedent("""
 set -x
 export LC_ALL=C
 
+{% if CHECK.method == 'timestamp' %}
 echo "export AVC_SINCE=\\"$( date "+%x %H:%M:%S")\\"" > {{ MARK_FILEPATH }}
+{% else %}
+ausearch --input-logs --checkpoint {{ MARK_FILEPATH }} -m AVC -m USER_AVC -m SELINUX_ERR
+{% endif %}
 
 cat {{ MARK_FILEPATH }}
 """)
 )
 
-SETUP_SCRIPT_CHECKPOINT = jinja2.Template(
+TEST_SCRIPT = jinja2.Template(
     textwrap.dedent(
         """
 set -x
 export LC_ALL=C
 
-ausearch --input-logs --checkpoint {{ MARK_FILEPATH }} -m AVC -m USER_AVC -m SELINUX_ERR
-
-cat {{ MARK_FILEPATH }}
-        """
-    )
-)
-
-TEST_SCRIPT_TIMESTAMP = jinja2.Template(
-    textwrap.dedent(
-        """
-set -x
-export LC_ALL=C
-
+{% if CHECK.method == 'timestamp' %}
 source {{ MARK_FILEPATH }}
-
 ausearch -i --input-logs -m AVC -m USER_AVC -m SELINUX_ERR -ts $AVC_SINCE
-"""
-    )
-)
-
-TEST_SCRIPT_CHECKPOINT = jinja2.Template(
-    textwrap.dedent(
-        """
-set -x
-export LC_ALL=C
-
-cat /var/log/audit/audit.log
-
+{% else %}
 cat {{ MARK_FILEPATH }}
-
 ausearch --input-logs --checkpoint {{ MARK_FILEPATH }} -m AVC -m USER_AVC -m SELINUX_ERR -i -ts checkpoint
-
-cat {{ MARK_FILEPATH }}
-
-cat /var/log/audit/audit.log
+{% endif %}
 """  # noqa: E501
     )
 )
@@ -231,15 +207,9 @@ def create_ausearch_mark(
     report_timestamp = datetime.datetime.now(datetime.timezone.utc)
     report: list[str] = []
 
-    if check.test_method == TestMethod.TIMESTAMP:
-        script = ShellScript(
-            SETUP_SCRIPT_TIMESTAMP.render(MARK_FILEPATH=ausearch_mark_filepath).strip()
-        )
-
-    else:
-        script = ShellScript(
-            SETUP_SCRIPT_CHECKPOINT.render(MARK_FILEPATH=ausearch_mark_filepath).strip()
-        )
+    script = ShellScript(
+        SETUP_SCRIPT.render(CHECK=check, MARK_FILEPATH=ausearch_mark_filepath).strip()
+    )
 
     output, exc = _run_script(invocation=invocation, script=script, logger=logger)
 
@@ -312,15 +282,9 @@ def create_final_report(
         report += _report_failure(f'rpm -q {interesting_packages}', exc)
 
     # Finally, run `ausearch`, to list AVC denials from the time the test started.
-    if check.test_method == TestMethod.TIMESTAMP:
-        script = ShellScript(
-            TEST_SCRIPT_TIMESTAMP.render(MARK_FILEPATH=ausearch_mark_filepath).strip()
-        )
-
-    else:
-        script = ShellScript(
-            TEST_SCRIPT_CHECKPOINT.render(MARK_FILEPATH=ausearch_mark_filepath).strip()
-        )
+    script = ShellScript(
+        TEST_SCRIPT.render(CHECK=check, MARK_FILEPATH=ausearch_mark_filepath).strip()
+    )
 
     output, exc = _run_script(invocation=invocation, script=script, needs_sudo=True, logger=logger)
 
@@ -357,7 +321,7 @@ def create_final_report(
 @container
 class AvcCheck(Check):
     test_method: TestMethod = field(
-        default=TestMethod.CHECKPOINT,
+        default=TestMethod.TIMESTAMP,
         choices=[method.value for method in TestMethod],
         help="""
              Which method to use when calling ``ausearch`` to report new
