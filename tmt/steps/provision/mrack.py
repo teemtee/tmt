@@ -1350,12 +1350,21 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         """
         Reboot the guest, and wait for the guest to recover.
 
-        :param hard: if set, force the reboot. This may result in a loss of
-            data. The default of ``False`` will attempt a graceful reboot.
-        :param command: a command to run on the guest to trigger the reboot.
-            If not set, plugin would try to use ``bkr system-power`` for hard
-            reboot. Unlike ``command``, this would be executed on the runner,
-            **not** on the guest.
+        .. note::
+
+           Custom reboot command can be used only in combination with a
+           soft reboot. If both ``hard`` and ``command`` are set, a hard
+           reboot will be requested, and ``command`` will be ignored.
+
+        :param hard: if set, force the reboot. This may result in a loss
+            of data. The default of ``False`` will attempt a graceful
+            reboot.
+
+            Plugin will use ``bkr system-power`` command to trigger the
+            hard reboot. Unlike ``command``, this command would be
+            executed on the runner, **not** on the guest.
+        :param command: a command to run on the guest to trigger the
+            reboot. If ``hard`` is also set, ``command`` is ignored.
         :param timeout: amount of time in which the guest must become available
             again.
         :param tick: how many seconds to wait between two consecutive attempts
@@ -1365,8 +1374,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
-        if not command and hard:
-            self.debug("Reboot using the reboot command 'bkr system-power --action reboot'.")
+        if hard:
+            self.debug("Hard reboot using the reboot command 'bkr system-power --action reboot'.")
 
             reboot_script = ShellScript(f'bkr system-power --action reboot {self.primary_address}')
 
@@ -1375,11 +1384,11 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                 timeout=timeout,
                 tick=tick,
                 tick_increase=tick_increase,
-                hard=True,
+                fetch_boot_time=False,
             )
 
         return super().reboot(
-            hard=hard,
+            hard=False,
             command=command,
             timeout=timeout,
             tick=tick,
@@ -1400,6 +1409,13 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
             how: beaker
             image: fedora
 
+    To trigger a hard reboot of a guest, ``bkr system-power --action reboot``
+    command is executed.
+
+    .. warning::
+
+        ``bkr system-power`` command is executed on the runner, not
+        on the guest.
     """
 
     _data_class = ProvisionBeakerData

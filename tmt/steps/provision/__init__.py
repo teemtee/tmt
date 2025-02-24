@@ -286,6 +286,29 @@ def format_guest_full_name(name: str, role: Optional[str]) -> str:
     return f'{name} ({role})'
 
 
+class RebootModeNotSupportedError(ProvisionError):
+    """A requested reboot mode is not supported by the guest"""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        guest: Optional['Guest'] = None,
+        hard: bool = False,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        if message is not None:
+            pass
+
+        elif guest is not None:
+            message = f"Guest '{guest.multihost_name}' does not support {'hard' if hard else 'soft'} reboot."  # noqa: E501
+
+        else:
+            message = f"Guest does not support {'hard' if hard else 'soft'} reboot."
+
+        super().__init__(message, *args, **kwargs)
+
+
 class CheckRsyncOutcome(enum.Enum):
     ALREADY_INSTALLED = 'already-installed'
     INSTALLED = 'installed'
@@ -1540,24 +1563,57 @@ class Guest(tmt.utils.Common):
 
         raise NotImplementedError
 
+    @overload
+    def reboot(
+        self,
+        hard: Literal[True] = True,
+        command: None = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
+        pass
+
+    @overload
+    def reboot(
+        self,
+        hard: Literal[False] = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
+        pass
+
     def reboot(
         self,
         hard: bool = False,
         command: Optional[Union[Command, ShellScript]] = None,
         timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
     ) -> bool:
         """
-        Reboot the guest, return True if successful
+        Reboot the guest, and wait for the guest to recover.
 
-        Parameter 'hard' set to True means that guest should be
-        rebooted by way which is not clean in sense that data can be
-        lost. When set to False reboot should be done gracefully.
+        .. note::
 
-        Use the 'command' parameter to specify a custom reboot command
-        instead of the default 'reboot'.
+           Custom reboot command can be used only in combination with a
+           soft reboot. If both ``hard`` and ``command`` are set, a hard
+           reboot will be requested, and ``command`` will be ignored.
 
-        Parameter 'timeout' can be used to specify time (in seconds) to
-        wait for the guest to come back up after rebooting.
+        :param hard: if set, force the reboot. This may result in a loss
+            of data. The default of ``False`` will attempt a graceful
+            reboot.
+        :param command: a command to run on the guest to trigger the
+            reboot. If ``hard`` is also set, ``command`` is ignored.
+        :param timeout: amount of time in which the guest must become available
+            again.
+        :param tick: how many seconds to wait between two consecutive attempts
+            of contacting the guest.
+        :param tick_increase: a multiplier applied to ``tick`` after every
+            attempt.
+        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
         raise NotImplementedError
@@ -2343,23 +2399,32 @@ class GuestSsh(Guest):
 
     def perform_reboot(
         self,
-        command: Callable[[], tmt.utils.CommandOutput],
+        action: Callable[[], Any],
         timeout: Optional[int] = None,
         tick: float = tmt.utils.DEFAULT_WAIT_TICK,
         tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
-        hard: bool = False,
+        fetch_boot_time: bool = True,
     ) -> bool:
         """
         Perform the actual reboot and wait for the guest to recover.
 
-        :param command: a callable running the actual command triggering
-            the reboot.
+        This is the core implementation of the common task of triggering
+        a reboot and waiting for the guest to recover. :py:meth:`reboot`
+        is the public API of guest classes, and feeds
+        :py:meth:`perform_reboot` with the right ``action`` callable.
+
+        :param action: a callable which will trigger the requested reboot.
         :param timeout: amount of time in which the guest must become available
             again.
         :param tick: how many seconds to wait between two consecutive attempts
             of contacting the guest.
         :param tick_increase: a multiplier applied to ``tick`` after every
             attempt.
+        :param fetch_boot_time: if set, the current boot time of the
+            guest would be read first, and used for testing whether the
+            reboot has been performed. This will require communication
+            with the guest, therefore it is recommended to use ``False``
+            with hard reboot of unhealthy guests.
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
@@ -2378,10 +2443,10 @@ class GuestSsh(Guest):
 
             return int(match.group(1))
 
-        current_boot_time = 0 if hard else get_boot_time()
+        current_boot_time = get_boot_time() if fetch_boot_time else 0
 
         try:
-            command()
+            action()
 
         except tmt.utils.RunError as error:
             # Connection can be closed by the remote host even before the
@@ -2426,6 +2491,28 @@ class GuestSsh(Guest):
         self.debug("Connection to guest succeeded after reboot.")
         return True
 
+    @overload
+    def reboot(
+        self,
+        hard: Literal[True] = True,
+        command: None = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
+        pass
+
+    @overload
+    def reboot(
+        self,
+        hard: Literal[False] = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
+        pass
+
     def reboot(
         self,
         hard: bool = False,
@@ -2437,9 +2524,17 @@ class GuestSsh(Guest):
         """
         Reboot the guest, and wait for the guest to recover.
 
-        :param hard: if set, force the reboot. This may result in a loss of
-            data. The default of ``False`` will attempt a graceful reboot.
-        :param command: a command to run on the guest to trigger the reboot.
+        .. note::
+
+           Custom reboot command can be used only in combination with a
+           soft reboot. If both ``hard`` and ``command`` are set, a hard
+           reboot will be requested, and ``command`` will be ignored.
+
+        :param hard: if set, force the reboot. This may result in a loss
+            of data. The default of ``False`` will attempt a graceful
+            reboot.
+        :param command: a command to run on the guest to trigger the
+            reboot. If ``hard`` is also set, ``command`` is ignored.
         :param timeout: amount of time in which the guest must become available
             again.
         :param tick: how many seconds to wait between two consecutive attempts
@@ -2456,14 +2551,13 @@ class GuestSsh(Guest):
 
         actual_command = command or DEFAULT_REBOOT_COMMAND
 
-        self.debug(f"Reboot using the command '{actual_command}'.")
+        self.debug(f"Soft reboot using command '{actual_command}'.")
 
         return self.perform_reboot(
             lambda: self.execute(actual_command),
             timeout=timeout,
             tick=tick,
             tick_increase=tick_increase,
-            hard=hard,
         )
 
     def remove(self) -> None:
