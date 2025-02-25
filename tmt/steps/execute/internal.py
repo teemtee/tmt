@@ -146,13 +146,42 @@ TEST_INNER_WRAPPER_TEMPLATE = jinja2.Template(
 TEST_OUTER_WRAPPER_TEMPLATE = jinja2.Template(
     textwrap.dedent(
         """
+{% macro log_to_dmesg(msg) %}
+    {%- if not INVOCATION.guest.facts.is_superuser %}
+        {%- if INVOCATION.guest.become %}
+# Logging test into kernel log
+sudo bash -c "echo \\\"{{ msg }}\\\" > /dev/kmsg"
+        {%- else %}
+# Not logging into kernel log: not a superuser, 'become' not enabled
+# echo \"{{ msg }}\" > /dev/kmsg
+        {%- endif %}
+    {%- else %}
+# Logging test into kernel log
+echo "{{ msg }}" > /dev/kmsg
+    {%- endif %}
+{% endmacro %}
+
 {% macro enter() %}
 # Updating the tmt test pid file
 mkdir -p "$(dirname $TMT_TEST_PIDFILE_LOCK)"
 flock "$TMT_TEST_PIDFILE_LOCK" -c "echo '${test_pid} ${TMT_REBOOT_REQUEST}' > ${TMT_TEST_PIDFILE}" || exit 122
+
+{{
+    log_to_dmesg(
+      "Running test '%s' (serial number %d) with reboot count %d and test restart count %d. (Be aware the test name is sanitized!)"
+      | format(INVOCATION.test.safe_name, INVOCATION.test.serial_number, INVOCATION._reboot_count, INVOCATION._restart_count)
+    )
+}}
 {%- endmacro %}
 
 {% macro exit() %}
+{{
+    log_to_dmesg(
+        "Leaving test '%s' (serial number %d). (Be aware the test name is sanitized!)"
+        | format(INVOCATION.test.safe_name, INVOCATION.test.serial_number)
+    )
+}}
+
 # Updating the tmt test pid file
 mkdir -p "$(dirname $TMT_TEST_PIDFILE_LOCK)"
 flock "$TMT_TEST_PIDFILE_LOCK" -c "rm -f ${TMT_TEST_PIDFILE}" || exit 123
