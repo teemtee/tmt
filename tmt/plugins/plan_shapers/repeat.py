@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from tmt.base import Plan, Test
     from tmt.options import ClickOptionDecoratorType
+    from tmt.steps.discover import TestOrigin
 
 from tmt.plugins.plan_shapers import PlanShaper, provides_plan_shaper
 
@@ -19,18 +20,13 @@ class RepeatPlanShaper(PlanShaper):
         from tmt.options import option
 
         return [
-            option(
-                '--repeat',
-                metavar='N',
-                help='Repeat a plan N times.',
-                type=int,
-                default=-1)
-            ]
+            option('--repeat', metavar='N', help='Repeat a plan N times.', type=int, default=-1)
+        ]
 
     _inspected_plan_names: list[str] = []
 
     @classmethod
-    def check(cls, plan: 'Plan', tests: list[tuple[str, 'Test']]) -> bool:
+    def check(cls, plan: 'Plan', tests: list['TestOrigin']) -> bool:
         if not plan.my_run:
             return False
 
@@ -45,10 +41,7 @@ class RepeatPlanShaper(PlanShaper):
         return True
 
     @classmethod
-    def apply(
-            cls,
-            plan: 'Plan',
-            tests: list[tuple[str, 'Test']]) -> Iterator['Plan']:
+    def apply(cls, plan: 'Plan', tests: list['TestOrigin']) -> Iterator['Plan']:
         assert plan.my_run is not None
 
         if plan.name in cls._inspected_plan_names:
@@ -60,8 +53,8 @@ class RepeatPlanShaper(PlanShaper):
 
         batch: dict[str, list[Test]] = collections.defaultdict(list)
 
-        for phase_name, test in tests:
-            batch[phase_name].append(test)
+        for test_origin in tests:
+            batch[test_origin.phase].append(test_origin.test)
 
         cls._inspected_plan_names.append(plan.name)
 
