@@ -239,6 +239,6 @@ class Finish(tmt.steps.Step):
         if not (self.plan.my_run.opt('keep') or self.is_dry_run):
             self.plan.prune()
 
-        # Give update status and save
+        # Update status and save
         self.status('done')
         self.save()
