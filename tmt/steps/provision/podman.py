@@ -614,10 +614,3 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
         self._guest.facts.capabilities[GuestCapability.SYSLOG_ACTION_READ_ALL] = False
         # ... while this seems to be forbidden completely.
         self._guest.facts.capabilities[GuestCapability.SYSLOG_ACTION_READ_CLEAR] = False
-
-    def guest(self) -> Optional[GuestContainer]:
-        """
-        Return the provisioned guest
-        """
-
-        return self._guest

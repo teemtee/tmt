@@ -510,7 +510,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         )
 
         # Create topology files
-        topology = tmt.steps.Topology(self.step.plan.provision.guests())
+        topology = tmt.steps.Topology(self.step.plan.provision.ready_guests)
         topology.guest = tmt.steps.GuestTopology(guest)
 
         environment.update(topology.push(dirpath=invocation.path, guest=guest, logger=logger))
