@@ -28,10 +28,10 @@ description: |
          path: /
 
        # String, the effective outcome of the test execution.
-       result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+       result: "pass"|"fail"|"info"|"warn"|"error"|"skip"|"pending"
 
        # String, the original outcome of the test execution.
-       original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+       original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"|"pending"
 
        # List of strings, optional comments to report with the result.
        note:
@@ -84,10 +84,10 @@ description: |
       # relate to each check alone.
       check:
           # String, the effective outcome of the check execution.
-        - result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+        - result: "pass"|"fail"|"info"|"warn"|"error"|"skip"|"pending"
 
           # String, the original outcome of the check execution.
-          original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+          original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"|"pending"
 
           # List of strings, optional comments to report with the result.
           note:
@@ -123,10 +123,10 @@ description: |
         - name: First test case
 
           # String, the effective outcome of the phase execution.
-          result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+          result: "pass"|"fail"|"info"|"warn"|"error"|"skip"|"pending"
 
           # String, the original outcome of the phase execution.
-          original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+          original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"|"pending"
 
           # List of strings, optional comments to report with the result.
           note:
@@ -186,6 +186,10 @@ description: |
         Test was discovered but not executed. Can be used when
         a single process produces multiple results but not all
         tests were run.
+
+    pending
+        Test was discovered and is waiting for execution.
+
 
     The ``name`` and ``result`` keys are required. Also, ``name``, ``result``,
     and ``event`` keys are required for entries under ``check`` key, and
