@@ -5,7 +5,7 @@
 ======================
 
 
-tmt-1.43
+tmt-1.43.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Add the ``--workdir-root`` option for the ``tmt clean images``
@@ -15,6 +15,12 @@ A new ``upload-subresults`` key has been introduced for the
 :ref:`/plugins/report/reportportal` plugin, allowing the import of
 tmt subresults as child test items into ReportPortal. This
 behavior is optional and is disabled by default.
+
+Option ``tmt run --max N`` can split plan to multiple plans to
+include N tests at max.
+
+Test name is logged in kernel buffer before and after the
+:ref:`/plugins/test-checks/dmesg` check is executed.
 
 
 tmt-1.42.1
