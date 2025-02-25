@@ -30,6 +30,7 @@ class ResultOutcome(enum.Enum):
     WARN = 'warn'
     ERROR = 'error'
     SKIP = 'skip'
+    PENDING = 'pending'
 
     @classmethod
     def from_spec(cls, spec: str) -> 'ResultOutcome':
@@ -55,6 +56,7 @@ class ResultOutcome(enum.Enum):
             ResultOutcome.PASS,
             ResultOutcome.INFO,
             ResultOutcome.SKIP,
+            ResultOutcome.PENDING,
         )
 
         for outcome in outcomes_by_severity:
@@ -74,6 +76,7 @@ class ResultInterpret(enum.Enum):
     WARN = 'warn'
     ERROR = 'error'
     SKIP = 'skip'
+    PENDING = 'pending'
 
     # Special interpret values
     RESPECT = 'respect'
@@ -118,6 +121,7 @@ RESULT_OUTCOME_COLORS: dict[ResultOutcome, str] = {
     ResultOutcome.ERROR: 'magenta',
     # TODO (happz) make sure the color is visible for all terminals
     ResultOutcome.SKIP: 'bright_black',
+    ResultOutcome.PENDING: 'bright_black',
 }
 
 
@@ -543,6 +547,9 @@ class Result(BaseResult):
         if stats.get(ResultOutcome.ERROR):
             count, comment = fmf.utils.listed(stats[ResultOutcome.ERROR], 'error').split()
             comments.append(count + ' ' + click.style(comment, fg='magenta'))
+        if stats.get(ResultOutcome.PENDING):
+            count, comment = fmf.utils.listed(stats[ResultOutcome.PENDING], 'pending').split()
+            comments.append(count + ' ' + click.style(comment, fg='bright_black'))
         # FIXME: cast() - https://github.com/teemtee/fmf/issues/185
         return cast(str, fmf.utils.listed(comments or ['no results found']))
 
