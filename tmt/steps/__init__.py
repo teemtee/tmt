@@ -1383,6 +1383,8 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
 
     _data_class: type[StepDataT]
 
+    preserved_members: list[str] = []
+
     @classmethod
     def get_data_class(cls) -> type[StepDataT]:
         """
@@ -1876,11 +1878,26 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
 
         if self.workdir is None:
             return
-        logger.debug(f"Remove '{self.name}' workdir '{self.workdir}'.", level=3)
-        try:
-            shutil.rmtree(self.workdir)
-        except OSError as error:
-            logger.warning(f"Unable to remove '{self.workdir}': {error}")
+        remove_workdir = True
+        for member in self.workdir.iterdir():
+            if member.name in self.preserved_members:
+                # We only want to remove the workdir, if there is no preserved members
+                remove_workdir = False
+            else:
+                logger.debug(f"Remove '{member}'.", level=3)
+                try:
+                    if member.is_file() or member.is_symlink():
+                        member.unlink()
+                    else:
+                        shutil.rmtree(member)
+                except OSError as error:
+                    logger.warning(f"Unable to remove '{member}': {error}")
+        if remove_workdir:
+            logger.debug(f"Remove '{self.name}' workdir '{self.workdir}'.", level=3)
+            try:
+                shutil.rmtree(self.workdir)
+            except OSError as error:
+                logger.warning(f"Unable to remove '{self.workdir}': {error}")
 
 
 class GuestlessPlugin(BasePlugin[StepDataT, PluginReturnValueT]):
