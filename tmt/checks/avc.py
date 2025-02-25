@@ -1,12 +1,18 @@
 import datetime
+import enum
+import textwrap
 import time
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
+
+import jinja2
 
 import tmt.log
 import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
-from tmt.checks import Check, CheckPlugin, provides_check
+import tmt.utils.templates
+from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
+from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome
 from tmt.utils import (
     CommandOutput,
@@ -21,15 +27,76 @@ if TYPE_CHECKING:
     from tmt.steps.execute import TestInvocation
     from tmt.steps.provision import Guest
 
+
+class TestMethod(enum.Enum):
+    TIMESTAMP = 'timestamp'
+    CHECKPOINT = 'checkpoint'
+
+    @classmethod
+    def from_spec(cls, spec: str) -> 'TestMethod':
+        try:
+            return TestMethod(spec)
+        except ValueError:
+            raise tmt.utils.SpecificationError(f"Invalid AVC check method '{spec}'.")
+
+    @classmethod
+    def normalize(
+        cls,
+        key_address: str,
+        value: Any,
+        logger: tmt.log.Logger,
+    ) -> 'TestMethod':
+        if isinstance(value, TestMethod):
+            return value
+
+        if isinstance(value, str):
+            return cls.from_spec(value)
+
+        raise tmt.utils.SpecificationError(f"Invalid AVC check method '{value}' at {key_address}.")
+
+
 #: The filename of the final check report file.
 TEST_POST_AVC_FILENAME = 'avc.txt'
 
-#: The filename of the file storing "since" timestamp for ``ausearch`` on the guest.
-AUSEARCH_TIMESTAMP_FILENAME = 'avc-timestamp.sh'
+#: The filename of the "mark" file ``ausearch`` on the guest.
+AUSEARCH_MARK_FILENAME = 'avc-mark.txt'
 
 #: Packages related to selinux and AVC reporting. Their versions would be made
 #: part of the report.
 INTERESTING_PACKAGES = ['audit', 'selinux-policy']
+
+
+SETUP_SCRIPT = jinja2.Template(
+    textwrap.dedent("""
+set -x
+export LC_ALL=C
+
+{% if CHECK.test_method.value == 'timestamp' %}
+echo "export AVC_SINCE=\\"$( date "+%x %H:%M:%S")\\"" > {{ MARK_FILEPATH }}
+{% else %}
+ausearch --input-logs --checkpoint {{ MARK_FILEPATH }} -m AVC -m USER_AVC -m SELINUX_ERR
+{% endif %}
+
+cat {{ MARK_FILEPATH }}
+""")
+)
+
+TEST_SCRIPT = jinja2.Template(
+    textwrap.dedent(
+        """
+set -x
+export LC_ALL=C
+
+{% if CHECK.test_method.value == 'timestamp' %}
+source {{ MARK_FILEPATH }}
+ausearch -i --input-logs -m AVC -m USER_AVC -m SELINUX_ERR -ts $AVC_SINCE
+{% else %}
+cat {{ MARK_FILEPATH }}
+ausearch --input-logs --checkpoint {{ MARK_FILEPATH }} -m AVC -m USER_AVC -m SELINUX_ERR -i -ts checkpoint
+{% endif %}
+"""  # noqa: E501
+    )
+)
 
 
 def _save_report(
@@ -54,12 +121,14 @@ def _save_report(
 
     report_filepath = invocation.check_files_path / TEST_POST_AVC_FILENAME
 
-    report = [
+    full_report = [''] if append else []
+
+    full_report += [
         f'# Reported at {format_timestamp(timestamp)}',
         *report,
     ]
 
-    invocation.phase.write(report_filepath, '\n'.join(report), mode='a' if append else 'w')
+    invocation.phase.write(report_filepath, '\n'.join(full_report), mode='a' if append else 'w')
 
     return report_filepath
 
@@ -121,43 +190,43 @@ def _report_failure(label: str, exc: tmt.utils.RunError) -> list[str]:
     return list(render_command_report(label=label, exc=exc))
 
 
-def create_ausearch_timestamp(invocation: 'TestInvocation', logger: tmt.log.Logger) -> None:
+def create_ausearch_mark(
+    invocation: 'TestInvocation', check: 'AvcCheck', logger: tmt.log.Logger
+) -> None:
     """
-    Save a timestamp for ``ausearch`` in a file on the guest
+    Save a mark for ``ausearch`` in a file on the guest
     """
 
-    ausearch_timestamp_filepath = invocation.check_files_path / AUSEARCH_TIMESTAMP_FILENAME
+    ausearch_mark_filepath = invocation.check_files_path / AUSEARCH_MARK_FILENAME
+
+    # Wait one second before storing the mark because ausearch
+    # could catch denials from the previous test if they are executed
+    # during the same second
+    time.sleep(check.delay_before_report)
 
     report_timestamp = datetime.datetime.now(datetime.timezone.utc)
     report: list[str] = []
 
-    # Wait one second before storing the timestamp because ausearch
-    # could catch denials from the previous test if they are executed
-    # during the same second
-    time.sleep(1)
-
-    script = ShellScript(f"""
-set -x
-export LC_ALL=en_US.UTF-8
-echo "export AVC_SINCE=\\"$( date "+%m/%d/%Y %H:%M:%S")\\"" > {ausearch_timestamp_filepath}
-cat {ausearch_timestamp_filepath}
-""")
+    script = ShellScript(
+        SETUP_SCRIPT.render(CHECK=check, MARK_FILEPATH=ausearch_mark_filepath).strip()
+    )
 
     output, exc = _run_script(invocation=invocation, script=script, logger=logger)
 
     if exc is None:
         assert output is not None
 
-        report += _report_success('timestamp', output)
+        report += _report_success('mark', output)
 
     else:
-        report += _report_failure('timestamp', exc)
+        report += _report_failure('mark', exc)
 
     _save_report(invocation, report, report_timestamp)
 
 
 def create_final_report(
     invocation: 'TestInvocation',
+    check: 'AvcCheck',
     logger: tmt.log.Logger,
 ) -> tuple[ResultOutcome, Path]:
     """
@@ -169,7 +238,12 @@ def create_final_report(
             "Test does not have start time recorded, cannot run AVC check."
         )
 
-    ausearch_timestamp_filepath = invocation.check_files_path / AUSEARCH_TIMESTAMP_FILENAME
+    ausearch_mark_filepath = invocation.check_files_path / AUSEARCH_MARK_FILENAME
+
+    # Wait one second before storing the mark because ausearch
+    # could catch denials from the previous test if they are executed
+    # during the same second
+    time.sleep(check.delay_before_report)
 
     # Collect all report components
     report_timestamp = datetime.datetime.now(datetime.timezone.utc)
@@ -208,11 +282,10 @@ def create_final_report(
         report += _report_failure(f'rpm -q {interesting_packages}', exc)
 
     # Finally, run `ausearch`, to list AVC denials from the time the test started.
-    script = ShellScript(f"""
-set -x
-source {ausearch_timestamp_filepath}
-ausearch -i --input-logs -m AVC -m USER_AVC -m SELINUX_ERR -ts $AVC_SINCE
-""")
+    script = ShellScript(
+        TEST_SCRIPT.render(CHECK=check, MARK_FILEPATH=ausearch_mark_filepath).strip()
+    )
+
     output, exc = _run_script(invocation=invocation, script=script, needs_sudo=True, logger=logger)
 
     # `ausearch` outcome evaluation is a bit more complicated than the one for a simple
@@ -245,8 +318,46 @@ ausearch -i --input-logs -m AVC -m USER_AVC -m SELINUX_ERR -ts $AVC_SINCE
     return outcome, report_filepath
 
 
+@container
+class AvcCheck(Check):
+    test_method: TestMethod = field(
+        default=TestMethod.TIMESTAMP,
+        choices=[method.value for method in TestMethod],
+        help="""
+             Which method to use when calling ``ausearch`` to report new
+             AVC denials. With ``checkpoint``, native ``--checkpoint``
+             option of ``ausearch`` is used, while ``timestamp`` will
+             depend on ``--ts`` option and a date/time recorded before
+             the test.
+             """,
+        normalize=TestMethod.normalize,
+        serialize=lambda method: method.value,
+        unserialize=lambda serialized: TestMethod.from_spec(serialized),
+        exporter=lambda method: method.value,
+    )
+
+    delay_before_report: int = field(
+        default=5,
+        metavar='SECONDS',
+        help="""
+             How many seconds to wait before running ``ausearch`` after
+             the test. Increasing it may help when events do reach logs
+             fast enough for ``ausearch`` report them.
+             """,
+        normalize=tmt.utils.normalize_int,
+    )
+
+    # TODO: fix `to_spec` of `Check` to support nested serializables
+    def to_spec(self) -> _RawCheck:
+        spec = super().to_spec()
+
+        spec['test-method'] = self.test_method.value  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
+
+        return spec
+
+
 @provides_check('avc')
-class AvcDenials(CheckPlugin[Check]):
+class AvcDenials(CheckPlugin[AvcCheck]):
     """
     Check for SELinux AVC denials raised during the test.
 
@@ -275,7 +386,7 @@ class AvcDenials(CheckPlugin[Check]):
     .. versionadded:: 1.28
     """
 
-    _check_class = Check
+    _check_class = AvcCheck
 
     @classmethod
     def essential_requires(
@@ -298,13 +409,13 @@ class AvcDenials(CheckPlugin[Check]):
     def before_test(
         cls,
         *,
-        check: 'Check',
+        check: 'AvcCheck',
         invocation: 'TestInvocation',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if invocation.guest.facts.has_selinux:
-            create_ausearch_timestamp(invocation, logger)
+            create_ausearch_mark(invocation, check, logger)
 
         return []
 
@@ -312,7 +423,7 @@ class AvcDenials(CheckPlugin[Check]):
     def after_test(
         cls,
         *,
-        check: 'Check',
+        check: 'AvcCheck',
         invocation: 'TestInvocation',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
@@ -325,7 +436,7 @@ class AvcDenials(CheckPlugin[Check]):
 
         assert invocation.phase.step.workdir is not None  # narrow type
 
-        outcome, path = create_final_report(invocation, logger)
+        outcome, path = create_final_report(invocation, check, logger)
 
         return [
             CheckResult(

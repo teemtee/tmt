@@ -2657,6 +2657,8 @@ def render_command_report(
 
         # ${command}
 
+        # exit code ${exit_code}
+
         # stdout (N lines)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ...
@@ -2686,9 +2688,13 @@ def render_command_report(
         yield ''
 
     if output is not None:
+        yield f'{comment_sign} exit code: finished successfully'
+        yield ''
         yield from render_run_exception_streams(output, verbose=1)
 
     elif exc is not None:
+        yield f'{comment_sign} exit code: {exc.returncode}'
+        yield ''
         yield from render_run_exception_streams(exc.output, verbose=1)
 
 
