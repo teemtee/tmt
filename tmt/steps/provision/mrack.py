@@ -1287,9 +1287,12 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                 if state == 'Reserved':
                     for key in response["logs"]:
                         self.guest_logs.append(
-                            GuestLogBeaker(self, key.replace('.log', ''), response["logs"][key])
+                            GuestLogBeaker(key.replace('.log', ''), self, response["logs"][key])
                         )
-                    self.guest_logs.append(GuestLogBeaker(self, 'dmesg'))
+                    # console.log contains dmesg, and accessible even when the system is dead.
+                    self.guest_logs.append(
+                        GuestLogBeaker('dmesg', self, response["logs"]["console.log"])
+                    )
                     return current
 
                 raise tmt.utils.WaitingIncompleteError
@@ -1483,18 +1486,14 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
 
 @container
 class GuestLogBeaker(tmt.steps.provision.GuestLog):
-    def __init__(self, guest: GuestBeaker, name: str, url: Optional[str] = None) -> None:
-        self.name = name
-        self.url = url
-        self.guest = guest
+    guest: GuestBeaker
+    url: str
 
-    def fetch(self) -> Optional[str]:
+    def fetch(self) -> str:
         """
         Fetch and return content of a log.
 
         :returns: content of the log, or ``None`` if the log cannot be retrieved.
         """
 
-        if self.name == 'dmesg':
-            return self.guest.execute(Command('dmesg')).stdout
-        return tmt.utils.get_url_content(self.url) if self.url else None
+        return tmt.utils.get_url_content(self.url) if self.url else ''
