@@ -2615,6 +2615,8 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
     # TODO: Generics would provide a better type, https://github.com/teemtee/tmt/issues/1437
     _guest: Optional[Guest] = None
 
+    preserved_members = ['logs']
+
     @classmethod
     def base_command(
         cls,
