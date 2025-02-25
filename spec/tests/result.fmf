@@ -16,7 +16,7 @@ description: |
         test result is respected (fails when test failed) - default value
     xfail
         expected fail (pass when test fails, fail when test passes)
-    pass, info, warn, error, fail, skip
+    pass, info, warn, error, fail, skip, pending
         ignore the actual test result and always report provided
         value instead
     custom
