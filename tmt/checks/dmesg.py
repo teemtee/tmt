@@ -124,6 +124,13 @@ class DmesgCheck(Check):
 
 @provides_check('dmesg')
 class Dmesg(CheckPlugin[DmesgCheck]):
+    #
+    # This plugin docstring has been reviewed and updated to follow
+    # our documentation best practices. When changing it, please make
+    # sure new changes are following them as well.
+    #
+    # https://tmt.readthedocs.io/en/stable/contribute.html#docs
+    #
     """
     Save the content of kernel ring buffer (aka "console") into a file.
 
