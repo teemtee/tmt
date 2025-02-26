@@ -111,28 +111,38 @@ class GuestContext:
 class WatchdogCheck(Check):
     interval: int = field(
         default=60,
-        help='How often should the watchdog run, in seconds.',
+        metavar='SECONDS',
+        help='How often should the watchdog run.',
+        normalize=tmt.utils.normalize_int,
     )
 
     reboot: bool = field(
         default=False,
+        is_flag=True,
         help='If enabled, watchdog would reboot the guest after enough failed probes.',
     )
 
     ping: bool = field(
         default=False,
+        is_flag=True,
         help="If enabled, watchdog would probe guest's responsiveness with ICMP packets.",
     )
     ping_packets: int = field(
         default=1,
+        metavar='N',
         help='How many ICMP packates to send as one probe.',
+        normalize=tmt.utils.normalize_int,
     )
     ping_threshold: int = field(
-        default=10, help='How many failed ping probes before taking any further action.'
+        default=10,
+        metavar='N',
+        help='How many failed ping probes before taking any further action.',
+        normalize=tmt.utils.normalize_int,
     )
 
     ssh_ping: bool = field(
         default=False,
+        is_flag=True,
         help="""
              If enabled, watchdog would probe guest's responsiveness by connecting
              to its SSH port.
@@ -140,7 +150,9 @@ class WatchdogCheck(Check):
     )
     ssh_ping_threshold: int = field(
         default=10,
+        metavar='N',
         help='How many failed SSH connections before taking any further action.',
+        normalize=tmt.utils.normalize_int,
     )
 
     def notify(self, invocation: 'TestInvocation', logger: tmt.log.Logger) -> None:
@@ -367,6 +379,13 @@ class WatchdogCheck(Check):
 
 @provides_check('watchdog')
 class Watchdog(CheckPlugin[WatchdogCheck]):
+    #
+    # This plugin docstring has been reviewed and updated to follow
+    # our documentation best practices. When changing it, please make
+    # sure new changes are following them as well.
+    #
+    # https://tmt.readthedocs.io/en/stable/contribute.html#docs
+    #
     """
     Take various actions when guest becomes unresponsive.
 
