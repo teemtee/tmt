@@ -746,7 +746,7 @@ Handle manually what did not went well:
 __ https://github.com/teemtee/tmt/releases/
 __ https://tmt.readthedocs.io/en/stable/releases.html
 __ https://src.fedoraproject.org/rpms/tmt/pull-requests
-__ https://copr.fedorainfracloud.org/coprs/g/teemtee/tmt/builds/
+__ https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/builds/
 __ https://quay.io/repository/teemtee/tmt
 __ https://pypi.org/project/tmt/
 
