@@ -30,3 +30,14 @@ execute:
 
         environment+:
             STATE: disabled
+
+/profile:
+    discover:
+      how: shell
+      tests:
+        - name: test
+          test: /bin/true
+
+    prepare:
+        how: feature
+        profile: testing_farm_profiles.testing_farm
