@@ -455,6 +455,7 @@ def iter_plugin_registries() -> Iterator[PluginRegistry[Any]]:
     from tmt.checks import _CHECK_PLUGIN_REGISTRY
     from tmt.frameworks import _FRAMEWORK_PLUGIN_REGISTRY
     from tmt.package_managers import _PACKAGE_MANAGER_PLUGIN_REGISTRY
+    from tmt.plugins.plan_shapers import _PLAN_SHAPER_PLUGIN_REGISTRY
     from tmt.steps.discover import DiscoverPlugin
     from tmt.steps.execute import ExecutePlugin
     from tmt.steps.finish import FinishPlugin
@@ -467,6 +468,7 @@ def iter_plugin_registries() -> Iterator[PluginRegistry[Any]]:
     yield Test._export_plugin_registry
     yield _CHECK_PLUGIN_REGISTRY
     yield _FRAMEWORK_PLUGIN_REGISTRY
+    yield _PLAN_SHAPER_PLUGIN_REGISTRY
     yield _PACKAGE_MANAGER_PLUGIN_REGISTRY
     yield DiscoverPlugin._supported_methods
     yield ProvisionPlugin._supported_methods
