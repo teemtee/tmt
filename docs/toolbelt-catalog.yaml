@@ -27,7 +27,7 @@ metadata:
       - title: pypi
         url: https://pypi.org/project/tmt
       - title: copr
-        url: https://copr.fedorainfracloud.org/coprs/g/teemtee/tmt/
+        url: https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/
       - title: "#tmt"
         url: https://app.slack.com/client/E030G10V24F/C04LRPNDZ4Y
         icon: chat

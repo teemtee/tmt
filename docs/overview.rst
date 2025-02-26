@@ -750,7 +750,7 @@ Releases:
 https://tmt.readthedocs.io/en/stable/releases.html
 
 Copr:
-https://copr.fedorainfracloud.org/coprs/g/teemtee/tmt/
+https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/
 
 PIP:
 https://pypi.org/project/tmt/
