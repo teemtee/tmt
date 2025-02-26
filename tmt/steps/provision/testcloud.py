@@ -54,7 +54,7 @@ RawStorageDevice: Any
 TPMConfiguration: Any
 
 
-def import_testcloud() -> None:
+def import_testcloud(logger: tmt.log.Logger) -> None:
     """
     Import testcloud module only when needed
     """
@@ -91,9 +91,11 @@ def import_testcloud() -> None:
         )
         from testcloud.workarounds import Workarounds
     except ImportError as error:
-        raise ProvisionError(
-            "Install 'tmt+provision-virtual' to provision using this method."
-        ) from error
+        from tmt.utils.hints import print_hint
+
+        print_hint(id_='provision/virtual.testcloud', logger=logger)
+
+        raise ProvisionError('Could not import testcloud package.') from error
 
     # Version-aware TPM configuration is added in
     # https://pagure.io/testcloud/c/89f1c024ca829543de7f74f89329158c6dee3d83
@@ -821,7 +823,7 @@ class GuestTestcloud(tmt.GuestSsh):
         Prepare common configuration
         """
 
-        import_testcloud()
+        import_testcloud(self._logger)
 
         # Get configuration
         assert testcloud is not None
@@ -1195,7 +1197,19 @@ class GuestTestcloud(tmt.GuestSsh):
         )
 
 
-@tmt.steps.provides_method('virtual.testcloud')
+@tmt.steps.provides_method(
+    'virtual.testcloud',
+    installation_hint="""
+        Make sure ``testcloud`` and ``libvirt`` packages are installed and configured, they are
+        required for VM-backed guests provided by ``provision/virtual.testcloud`` plugin.
+
+        * Users who installed tmt from system repositories should install ``tmt+provision-virtual``
+          package.
+        * Users who installed tmt from PyPI should also install ``tmt+provision-virtual`` package,
+          as it will install required system dependencies. After doing so, they should install
+          ``tmt[provision-virtual]`` extra.
+    """,
+)
 class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudData]):
     """
     Local virtual machine using ``testcloud`` library.
