@@ -775,7 +775,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 if invocation.abort_requested or (
                     self.data.exit_first
                     and any(
-                        result.result not in (ResultOutcome.PASS, ResultOutcome.INFO)
+                        result.result in (ResultOutcome.FAIL, ResultOutcome.ERROR)
                         for result in invocation.results
                     )
                 ):
