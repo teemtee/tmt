@@ -2691,6 +2691,8 @@ class Plan(
                     if self.my_run and self.reshape(tests):
                         return
 
+                    self.execute.save_temp_results()
+
                 # Source the plan environment file after prepare and execute step
                 if isinstance(step, (tmt.steps.prepare.Prepare, tmt.steps.execute.Execute)):
                     self._source_plan_environment_file()
@@ -2875,6 +2877,9 @@ class Plan(
         assert derived_plan.discover.workdir is not None
 
         shutil.copytree(self.discover.workdir, derived_plan.discover.workdir, dirs_exist_ok=True)
+
+        # Load new temporary results to execute step
+        derived_plan.execute.save_temp_results()
 
         for step_name in tmt.steps.STEPS:
             getattr(derived_plan, step_name).save()
