@@ -490,10 +490,6 @@ class Discover(tmt.steps.Step):
                         if test.name == result.name and test.serial_number == result.serial_number:
                             self._failed_tests[test_phase].append(test)
 
-        new_results = self.plan.execute.create_temp_results(self.tests(enabled=True))
-        self.plan.execute._results = new_results
-        self.plan.execute._save_results(new_results)
-
         # Give a summary, update status and save
         self.summary()
         self.status('done')

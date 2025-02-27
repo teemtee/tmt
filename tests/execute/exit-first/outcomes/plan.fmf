@@ -14,6 +14,7 @@ execute:
           - /test/warn
           - /test/skip
           - /test/pass
+          - /test/pending
           - /test/another-pass
 
 /fail:

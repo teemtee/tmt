@@ -18,10 +18,11 @@ rlJournalStart
         rlAssertGrep "warn /test/warn" $rlRun_LOG
         rlAssertGrep "skip /test/skip" $rlRun_LOG
         rlAssertGrep "pass /test/pass" $rlRun_LOG
+        rlAssertGrep "pending /test/pending" $rlRun_LOG
         rlAssertGrep "pass /test/another-pass" $rlRun_LOG
         rlAssertNotGrep "warn: Test .* stopping execution." $rlRun_LOG
         rlAssertGrep "summary: 4 tests executed, 1 test skipped" $rlRun_LOG
-        rlAssertGrep "total: 2 tests passed, 1 test skipped, 1 info and 1 warn" $rlRun_LOG
+        rlAssertGrep "total: 2 tests passed, 1 test skipped, 1 info, 1 warn and 1 pending" $rlRun_LOG
     rlPhaseEnd
 
     planName="/plan/fail"
@@ -32,7 +33,7 @@ rlJournalStart
         rlAssertNotGrep "pass /test/another-pass" $rlRun_LOG
         rlAssertGrep "warn: Test /test/fail failed, stopping execution." $rlRun_LOG
         rlAssertGrep "summary: 2 tests executed" $rlRun_LOG
-        rlAssertGrep "total: 1 test passed and 1 test failed" $rlRun_LOG
+        rlAssertGrep "total: 1 test passed, 1 test failed and 1 pending" $rlRun_LOG
     rlPhaseEnd
 
     planName="/plan/error"
@@ -43,7 +44,7 @@ rlJournalStart
         rlAssertNotGrep "pass /test/another-pass" $rlRun_LOG
         rlAssertGrep "warn: Test /test/error failed, stopping execution." $rlRun_LOG
         rlAssertGrep "summary: 2 tests executed" $rlRun_LOG
-        rlAssertGrep "total: 1 test passed and 1 error" $rlRun_LOG
+        rlAssertGrep "total: 1 test passed, 1 error and 1 pending" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
