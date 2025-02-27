@@ -75,8 +75,6 @@ class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
 @tmt.steps.provides_method('ansible')
 class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
     """
-    Prepare guest using Ansible.
-
     Run Ansible playbooks against the guest, by running
     ``ansible-playbook`` for all given playbooks.
 
