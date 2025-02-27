@@ -265,7 +265,7 @@ class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         default=False,
         option=('-x', '--exit-first'),
         is_flag=True,
-        help='Stop execution after the first test failure.',
+        help='Stop execution after the first test failure or error.',
     )
 
 

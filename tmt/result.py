@@ -73,6 +73,7 @@ class ResultInterpret(enum.Enum):
     INFO = 'info'
     WARN = 'warn'
     ERROR = 'error'
+    SKIP = 'skip'
 
     # Special interpret values
     RESPECT = 'respect'
