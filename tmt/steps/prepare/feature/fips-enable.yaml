@@ -1,0 +1,196 @@
+---
+- name: Enable FIPS mode on RHEL-7, RHEL-8, RHEL-9 and RHEL-10
+  hosts: all
+
+  tasks:
+    - name: Fail on distribution other than RHEL or CentOS
+      ansible.builtin.fail:
+        msg: "We support FIPS mode on RHEL or CentOS, only!"
+      when:
+        - ansible_facts['distribution'] != 'RedHat'
+        - ansible_facts['distribution'] != 'CentOS'
+
+    - name: Check if SUT is a container
+      ansible.builtin.command: cat /proc/1/environ
+      register: proc_1_environ
+      changed_when: false
+
+    - name: Register cpuinfo
+      ansible.builtin.command: cat /proc/cpuinfo
+      register: cpuinfo_contents
+      changed_when: false
+
+    - name: Enforce modulus bits for OpenSSL
+      ansible.builtin.shell: |
+        changed=0
+        if ! grep 'OPENSSL_ENFORCE_MODULUS_BITS' /etc/environment; then
+            echo 'OPENSSL_ENFORCE_MODULUS_BITS=true' >> /etc/environment
+            changed=1
+        fi
+        if [ -f /etc/profile.d/openssl.sh ] || \
+          ! grep 'export OPENSSL_ENFORCE_MODULUS_BITS=true' /etc/profile.d/openssl.sh; then
+          echo 'export OPENSSL_ENFORCE_MODULUS_BITS=true' > /etc/profile.d/openssl.sh
+          chmod +x /etc/profile.d/openssl.sh
+          changed=1
+        fi
+        if [ -f /etc/profile.d/openssl.csh ] || \
+          ! grep 'setenv OPENSSL_ENFORCE_MODULUS_BITS true' /etc/profile.d/openssl.csh; then
+          echo 'setenv OPENSSL_ENFORCE_MODULUS_BITS true' > /etc/profile.d/openssl.csh
+          chmod +x /etc/profile.d/openssl.csh
+          changed=1
+        fi
+        test "$changed" -eq 1
+      register: output
+      changed_when: output.rc == 0
+
+    - name: Disable prelink
+      ansible.builtin.shell: |
+        if rpm -q prelink; then
+          if pgrep prelink; then
+            killall prelink && echo "CHANGED"
+          fi
+          if ! grep "PRELINKING=no" /etc/sysconfig/prelink; then
+            sed -i 's/PRELINKING=.*/PRELINKING=no/g' /etc/sysconfig/prelink
+            prelink -u -a
+            killall prelink
+            echo "CHANGED"
+          fi
+        fi
+      register: output
+      changed_when: '"CHANGED" in output.stdout'
+      when: ansible_facts['distribution_major_version'] | int == 7
+
+    - name: Install crypto-policies-scripts and dracut-fips
+      ansible.builtin.dnf:
+        name:
+          - crypto-policies-scripts
+          - dracut-fips
+        state: present
+      when: ansible_facts['distribution_major_version'] | int > 7
+
+    # skip_ansible_lint is present int the following two tasks to prevent
+    # lint warning suggesting to use dnf module for yum commands, we cannot
+    # do that because yum backend in dnf module is only available until
+    # ansible-core 2.17
+    - name: Install dracut-fips
+      ansible.builtin.command: yum install -y dracut-fips
+      register: output
+      changed_when: output.rc == 0
+      when: ansible_facts['distribution_major_version'] | int == 7
+      tags: skip_ansible_lint
+
+    - name: Install grubby, dracut modules and modify bootloader (irrelevant for a container)
+      when: "'container' not in proc_1_environ.stdout"
+      block:
+
+        - name: Install grubby
+          ansible.builtin.dnf:
+            name: grubby
+            state: present
+          when: ansible_facts['distribution_major_version'] | int > 7
+
+        # skip_ansible_lint is present int the following two tasks to prevent
+        # lint warning suggesting to use dnf module for yum commands, we cannot
+        # do that because yum backend in dnf module is only available until
+        # ansible-core 2.17
+        - name: Install grubby
+          ansible.builtin.command: yum install -y grubby
+          register: output
+          changed_when: output.rc == 0
+          when: ansible_facts['distribution_major_version'] | int == 7
+          tags: skip_ansible_lint
+
+        - name: Install dracut-fips-aesni
+          ansible.builtin.command: yum install -y dracut-fips-aesni
+          register: output
+          changed_when: output.rc == 0
+          when: cpuinfo_contents.stdout.find('<aes>') == 1 and
+            cpuinfo_contenxt.stdout.find('<GenuineIntel>') and
+            ansible_facts['distribution_major_version'] | int == 7
+          tags: skip_ansible_lint
+
+        - name: Modify bootloader settings
+          ansible.builtin.shell: |
+            boot_device="$(stat -c %d:%m /boot)"
+            root_device="$(stat -c %d:%m /)"
+            boot_device_opt=""
+            if [ "$boot_device" != "$root_device" ]; then
+              # Trigger autofs if boot is mounted by automount.boot.
+              pushd /boot >/dev/null 2>&1 && popd
+              FINDMNT_UUID="findmnt --first-only -t noautofs --noheadings --output uuid"
+              boot_uuid=$(
+                $FINDMNT_UUID --mountpoint /boot --fstab ||
+                $FINDMNT_UUID /boot --fstab ||
+                $FINDMNT_UUID --mountpoint /boot ||
+                $FINDMNT_UUID /boot
+              )
+              boot_device_opt=" boot=UUID=$boot_uuid"
+            fi
+            grubby --update-kernel=ALL --args="fips=1 $boot_device_opt"
+          register: output
+          changed_when: output.rc == 0
+          when: ansible_facts['distribution_major_version'] not in "8 9"
+
+        - name: Regenerate initramfs
+          ansible.builtin.command: dracut -v -f --regenerate-all
+          register: output
+          changed_when: output.rc == 0
+          when: ansible_facts['distribution_major_version'] | int == 7
+
+        - name: Execute zipl
+          ansible.builtin.command: zipl
+          register: output
+          changed_when: output.rc == 0
+          when: ansible_facts['architecture'] == "s390x" and
+            ansible_facts['distribution_major_version'] not in ["8", "9"]
+
+    - name: Enable FIPS policy
+      ansible.builtin.command: update-crypto-policies --set FIPS
+      register: output
+      changed_when: output.rc == 0
+      when: ansible_facts['distribution_major_version'] | int >= 10
+
+    - name: Enable FIPS mode
+      ansible.builtin.command: fips-mode-setup --enable
+      environment:
+        FIPS_MODE_SETUP_SKIP_WARNING: "1"
+      register: output
+      changed_when: output.rc == 0
+      when:
+        - ansible_facts['distribution_major_version'] in ["8", "9"]
+        - "'container' not in proc_1_environ.stdout"
+
+    - name: Enable FIPS mode (container version)
+      ansible.builtin.command: fips-mode-setup --enable --no-bootcfg
+      environment:
+        FIPS_MODE_SETUP_SKIP_WARNING: "1"
+      register: output
+      changed_when: output.rc == 0
+      when:
+        - ansible_facts['distribution_major_version'] in ["8", "9"]
+        - "'container' in proc_1_environ.stdout"
+
+    - name: Reboot
+      ansible.builtin.reboot:
+      when: "'container' not in proc_1_environ.stdout"
+
+    - name: Kernel is running in FIPS mode
+      ansible.builtin.command: grep 1 /proc/sys/crypto/fips_enabled
+      changed_when: false
+
+    - name: Userspace is running in FIPS mode
+      ansible.builtin.command: test -e /etc/system-fips
+      changed_when: false
+      when: ansible_facts['distribution_major_version'] | int < 10
+
+    - name: Tool fips-mode-setup reports FIPS mode
+      ansible.builtin.command: fips-mode-setup --is-enabled
+      changed_when: false
+      when:
+        - ansible_facts['distribution_major_version'] in ["8", "9"]
+        - "'container' not in proc_1_environ.stdout"
+
+    - name: Check that FIPS policy is enabled
+      ansible.builtin.command: grep FIPS /etc/crypto-policies/state/current
+      changed_when: false
+      when: ansible_facts['distribution_major_version'] | int >= 8
