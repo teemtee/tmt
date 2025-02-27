@@ -1253,7 +1253,7 @@ class Execute(tmt.steps.Step):
         self._results = list(results_to_save.values())
         self._save_results(self._results)
 
-    def create_temp_results(self, tests: list['tmt.steps.discover.TestOrigin']) -> list['Result']:
+    def _create_temp_results(self, tests: list['tmt.steps.discover.TestOrigin']) -> list['Result']:
         """
         Get all available results from tests. For tests not yet executed, create a temporary
         result.
@@ -1276,6 +1276,15 @@ class Execute(tmt.steps.Step):
             )
         return new_results
 
+    def save_temp_results(self) -> None:
+        """
+        Create temporary results and save them to the workdir.
+        """
+
+        results = self._create_temp_results(self.plan.discover.tests(enabled=True))
+        self._results = results
+        self._save_results(results)
+
     def go(self, force: bool = False) -> None:
         """
         Execute tests
@@ -1285,8 +1294,7 @@ class Execute(tmt.steps.Step):
 
         # Clean up possible old results
         if force:
-            # TODO(fvagner): Verify
-            self._results = self.create_temp_results(self.plan.discover.tests(enabled=True))
+            self.save_temp_results()
 
         if self.should_run_again:
             self.status('todo')
