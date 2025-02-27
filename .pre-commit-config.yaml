@@ -139,7 +139,7 @@ repos:
           # in order to be parsed by ansible-lint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.9.7
+    rev: v0.9.8
     hooks:
       - id: ruff
         args:
