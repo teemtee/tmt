@@ -64,7 +64,7 @@ repos:
         pass_filenames: false
 
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.394
+    rev: v1.1.395
     hooks:
       - id: pyright
         language_version: "3.9"
@@ -148,7 +148,7 @@ repos:
       - id: ruff-format
 
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.42.0
+    rev: 1.43.0
     hooks:
     - id: tmt-lint
       additional_dependencies:
