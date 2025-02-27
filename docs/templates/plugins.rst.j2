@@ -159,7 +159,7 @@ The following keys are accepted by all plugins of the ``{{ STEP }}`` step.
 {% if plugin_full_id in HINTS %}
 .. note::
 
-{{ HINTS[plugin_full_id] | indent(3, first=true) }}
+{{ HINTS[plugin_full_id].text | indent(3, first=true) }}
 {% endif %}
 
 {% if STEP == 'prepare-feature' %}

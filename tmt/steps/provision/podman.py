@@ -360,9 +360,9 @@ class GuestContainer(tmt.Guest):
             )
         except tmt.utils.RunError as exc:
             if "File 'ansible-playbook' not found." in exc.message:
-                from tmt.utils.hints import print_hint
+                from tmt.utils.hints import print_hints
 
-                print_hint(id_='ansible-not-available', logger=self._logger)
+                print_hints('ansible-not-available', logger=self._logger)
             raise exc
 
     def podman(
