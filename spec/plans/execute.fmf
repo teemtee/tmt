@@ -70,14 +70,14 @@ description: |
             isolate: true
 
 /exit-first:
-    summary: Stop execution after a test fails
+    summary: Stop execution after the first test failure or error
     story:
         As a user I want to avoid waiting for all discovered
         tests to finish if one of them fails.
     description:
         Optional boolean attribute `exit-first` can be used to
         make the executor stop executing tests once a test
-        failure is encountered.
+        failure or error is encountered.
     example: |
         execute:
             how: tmt

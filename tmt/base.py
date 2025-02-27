@@ -2876,6 +2876,9 @@ class Plan(
 
         shutil.copytree(self.discover.workdir, derived_plan.discover.workdir, dirs_exist_ok=True)
 
+        # Load new temporary results to execute step
+        derived_plan.execute.save_temp_results()
+
         for step_name in tmt.steps.STEPS:
             getattr(derived_plan, step_name).save()
 
@@ -4021,6 +4024,8 @@ class Run(tmt.utils.Common):
 
         plans = cast(list[Plan], self.plans)
         plan_queue = cast(list[Plan], self.plan_queue)
+
+        plan.execute.clear_results()
 
         if plan in plan_queue:
             plan_queue.remove(plan)
