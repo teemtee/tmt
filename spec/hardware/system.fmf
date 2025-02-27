@@ -20,6 +20,9 @@ description: |
            # Integer or string, required number of NUMA nodes.
            numa-nodes: 2|">= 2"
 
+           # System management interface
+           management-interface: IPMI
+
     .. versionchanged:: 1.39
        ``beaker`` plugin supports ``vendor-name``
 
@@ -42,6 +45,11 @@ example:
     system:
         vendor-name: "~ HPE"
         numa-nodes: ">= 4"
+
+  - |
+    # Select any system with available Intelligent Platform Management Interface (IPMI).
+    system:
+        management-interface: IPMI
 
 link:
   - implemented-by: /tmt/steps/provision/mrack.py
