@@ -475,6 +475,7 @@ definitions:
       - warn
       - error
       - skip
+      - pending
 
   # https://tmt.readthedocs.io/en/stable/spec/tests.html#result
   result_interpret:

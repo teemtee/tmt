@@ -2921,6 +2921,18 @@ class Provision(tmt.steps.Step):
     def is_multihost(self) -> bool:
         return len(self.data) > 1
 
+    def get_guests_info(self) -> list[tuple[str, Optional[str]]]:
+        """
+        Get a list containing the names and roles of guests that should be enabled.
+        """
+
+        phases = [
+            cast(ProvisionPlugin[ProvisionStepData], phase)
+            for phase in self.phases(classes=ProvisionPlugin)
+            if phase.enabled_by_when
+        ]
+        return [(phase.data.name, phase.data.role) for phase in phases]
+
     def load(self) -> None:
         """
         Load guest data from the workdir

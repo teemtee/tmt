@@ -265,7 +265,7 @@ class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         default=False,
         option=('-x', '--exit-first'),
         is_flag=True,
-        help='Stop execution after the first test failure.',
+        help='Stop execution after the first test failure or error.',
     )
 
 
@@ -1210,15 +1210,93 @@ class Execute(tmt.steps.Step):
         Give a concise summary of the execution
         """
 
-        executed_tests = [r for r in self.results() if r.result != ResultOutcome.SKIP]
-        skipped_tests = [r for r in self.results() if r.result == ResultOutcome.SKIP]
+        executed_tests = []
+        skipped_tests = []
+        pending_tests = []
+
+        for r in self.results():
+            if r.result == ResultOutcome.SKIP:
+                skipped_tests.append(r)
+            elif r.result == ResultOutcome.PENDING:
+                pending_tests.append(r)
+            else:
+                executed_tests.append(r)
 
         message = [fmf.utils.listed(executed_tests, 'test') + ' executed']
 
         if skipped_tests:
             message.append(fmf.utils.listed(skipped_tests, 'test') + ' skipped')
 
+        if pending_tests:
+            message.append(fmf.utils.listed(pending_tests, 'test') + ' pending')
+
         self.info('summary', ', '.join(message), 'green', shift=1)
+
+    def update_results(self, results: list['Result']) -> None:
+        """
+        Update existing results with new results.
+        """
+
+        results_to_save: dict[tuple[int, str, str], Result] = {
+            (r.serial_number, r.name, r.guest.name): r for r in self._results
+        }
+        for result in results:
+            # Remove parent results with pending state for which we have a child result.
+            keys_to_remove = [
+                (p.serial_number, p.name, p.guest.name)
+                for p in results_to_save.values()
+                if (
+                    result.name != p.name
+                    and result.name.startswith(p.name)
+                    and result.guest.name == p.guest.name
+                    and p.serial_number == result.serial_number
+                    and p.result == ResultOutcome.PENDING
+                )
+            ]
+            for key in keys_to_remove:
+                results_to_save.pop(key, None)
+
+            # Replace existing pending result with the new one.
+            results_to_save[(result.serial_number, result.name, result.guest.name)] = result
+
+        self._results = list(results_to_save.values())
+
+    def create_results(self, tests: list['tmt.steps.discover.TestOrigin']) -> list['Result']:
+        """
+        Get all available results from tests. For tests not yet executed, create a pending
+        result.
+        """
+
+        guests = self.plan.provision.get_guests_info()
+
+        results = []
+        for result, test_origin in self.results_for_tests(tests):
+            if result:
+                results.append(result)
+                continue
+            if test_origin is None:
+                continue
+            test = test_origin.test
+            result_guests = []
+            for where in test.where:
+                result_guests += [guest for guest in guests if where in guest]
+
+            if not test.where:
+                result_guests = guests
+
+            for guest in result_guests:
+                results.append(
+                    Result(
+                        name=test.name,
+                        serial_number=test.serial_number,
+                        result=tmt.result.ResultOutcome.PENDING,
+                        guest=ResultGuestData(
+                            name=guest[0],
+                            role=guest[1],
+                        ),
+                    )
+                )
+        return results
 
     def go(self, force: bool = False) -> None:
         """
@@ -1230,6 +1308,8 @@ class Execute(tmt.steps.Step):
         # Clean up possible old results
         if force:
             self._results.clear()
+            self._results = self.create_results(self.plan.discover.tests(enabled=True))
+            self.save()
 
         if self.should_run_again:
             self.status('todo')
@@ -1292,18 +1372,6 @@ class Execute(tmt.steps.Step):
 
                 failed_tasks.append(outcome)
                 continue
-
-        # Execute plugins do not return results. Instead, plugin collects results
-        # in its internal `_results` list. To accommodate for different discover
-        # phases, we create a copy of the execute phase for each discover phase
-        # we have. All these copies share the `_results` list, and append to it.
-        #
-        # Therefore, avoid collecting results from phases when iterating the
-        # outcomes - such a process would encounter the list multiple times,
-        # which would make results appear several times. Instead, we can reach
-        # into the original plugin, and use it as a singleton "entry point" to
-        # access all collected `_results`.
-        self._results += execute_phases[0].results()
 
         # To separate "execute" from the follow-up logging visually
         self.info('')

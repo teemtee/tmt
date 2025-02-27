@@ -1,2 +1,2 @@
-summary: Check that exit after first fail works
+summary: Check functionality of exit-first
 test: ./test.sh

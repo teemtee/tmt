@@ -30,6 +30,7 @@ class ResultOutcome(enum.Enum):
     WARN = 'warn'
     ERROR = 'error'
     SKIP = 'skip'
+    PENDING = 'pending'
 
     @classmethod
     def from_spec(cls, spec: str) -> 'ResultOutcome':
@@ -55,6 +56,7 @@ class ResultOutcome(enum.Enum):
             ResultOutcome.PASS,
             ResultOutcome.INFO,
             ResultOutcome.SKIP,
+            ResultOutcome.PENDING,
         )
 
         for outcome in outcomes_by_severity:
@@ -117,6 +119,7 @@ RESULT_OUTCOME_COLORS: dict[ResultOutcome, str] = {
     ResultOutcome.ERROR: 'magenta',
     # TODO (happz) make sure the color is visible for all terminals
     ResultOutcome.SKIP: 'bright_black',
+    ResultOutcome.PENDING: 'cyan',
 }
 
 
@@ -542,6 +545,9 @@ class Result(BaseResult):
         if stats.get(ResultOutcome.ERROR):
             count, comment = fmf.utils.listed(stats[ResultOutcome.ERROR], 'error').split()
             comments.append(count + ' ' + click.style(comment, fg='magenta'))
+        if stats.get(ResultOutcome.PENDING):
+            count, comment = str(stats[ResultOutcome.PENDING]), 'pending'
+            comments.append(count + ' ' + click.style(comment, fg='cyan'))
         # FIXME: cast() - https://github.com/teemtee/fmf/issues/185
         return cast(str, fmf.utils.listed(comments or ['no results found']))
 
@@ -622,7 +628,7 @@ class Result(BaseResult):
         return filtered or log
 
 
-def results_to_exit_code(results: list[Result]) -> int:
+def results_to_exit_code(results: list[Result], execute_enabled: bool = True) -> int:
     """
     Map results to a tmt exit code
     """
@@ -649,10 +655,17 @@ def results_to_exit_code(results: list[Result]) -> int:
     if sum(stats.values()) == stats[ResultOutcome.SKIP]:
         return TmtExitCode.ALL_TESTS_SKIPPED
 
+    # "No errors or fails, but there are pending tests."
+    if execute_enabled and stats[ResultOutcome.PENDING]:
+        return TmtExitCode.ERROR
+
     # "At least one test passed, there was no fail, warn or error."
     if (
         sum(stats.values())
-        == stats[ResultOutcome.PASS] + stats[ResultOutcome.INFO] + stats[ResultOutcome.SKIP]
+        == stats[ResultOutcome.PASS]
+        + stats[ResultOutcome.INFO]
+        + stats[ResultOutcome.SKIP]
+        + stats[ResultOutcome.PENDING]
     ):
         return TmtExitCode.SUCCESS
 

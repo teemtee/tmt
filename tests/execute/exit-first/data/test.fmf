@@ -1,0 +1,20 @@
+framework: shell
+test: 'true'
+
+/pass:
+    result: pass
+
+/another-pass:
+    result: pass
+
+/fail:
+    result: fail
+
+/error:
+    result: error
+
+/info:
+    result: info
+
+/warn:
+    result: warn
