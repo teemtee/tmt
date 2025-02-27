@@ -21,3 +21,6 @@ test: 'true'
 
 /skip:
     result: skip
+
+/pending:
+    result: pending
