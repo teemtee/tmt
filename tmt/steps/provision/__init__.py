@@ -2800,6 +2800,7 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
 
                 except SystemExit as exc:
                     yield ProvisionTask(
+                        id=None,
                         logger=new_logger,
                         result=None,
                         guest=phase.guest,
@@ -2810,6 +2811,7 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
 
                 except Exception as exc:
                     yield ProvisionTask(
+                        id=None,
                         logger=new_logger,
                         result=None,
                         guest=phase.guest,
@@ -2820,6 +2822,7 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
 
                 else:
                     yield ProvisionTask(
+                        id=None,
                         logger=new_logger,
                         result=None,
                         guest=phase.guest,
@@ -2841,6 +2844,7 @@ class ProvisionQueue(tmt.queue.Queue[ProvisionTask]):
     def enqueue(self, *, phases: list[ProvisionPlugin[ProvisionStepData]], logger: Logger) -> None:
         self.enqueue_task(
             ProvisionTask(
+                id=None,
                 logger=logger,
                 result=None,
                 guest=None,
