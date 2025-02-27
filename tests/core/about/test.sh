@@ -99,7 +99,7 @@ rlJournalStart
         # test is a sanity one, making sure tmt discovers all it can,
         # updating $EXPECTED_PLUGIN_LIST should turn the tide of
         # misfortune.
-        rlAssertEquals "Compare the list of discovered output with the expected one" "$EXPECTED_PLUGIN_LIST" "$(yq -yS '.' $rlRun_LOG)"
+        rlAssertEquals "Compare the list of discovered output with the expected one" "$EXPECTED_PLUGIN_LIST" "$(yq -y --sort-keys '.' $rlRun_LOG)"
     rlPhaseEnd
 
     rlPhaseStartCleanup
