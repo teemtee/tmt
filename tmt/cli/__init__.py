@@ -6,7 +6,7 @@ import collections
 import enum
 import functools
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, cast
 
 import click
 import fmf
@@ -100,7 +100,10 @@ class ContextObject:
     clean: Optional[tmt.Clean] = None
     clean_logger: Optional[tmt.log.Logger] = None
     clean_partials: collections.defaultdict[str, list[tmt.base.CleanCallback]] = simple_field(
-        default_factory=lambda: collections.defaultdict(list)
+        default_factory=lambda: cast(
+            collections.defaultdict[str, list[tmt.base.CleanCallback]],
+            collections.defaultdict(list),
+        )
     )
     run: Optional[tmt.Run] = None
 
