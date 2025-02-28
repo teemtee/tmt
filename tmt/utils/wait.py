@@ -1,6 +1,5 @@
 import datetime
 import time
-from collections.abc import Iterator
 from typing import Callable, TypeVar
 
 import tmt.log
@@ -83,6 +82,9 @@ class Deadline:
         self._now = time.monotonic()
         self._deadline = self._now + timeout.total_seconds()
 
+    def __repr__(self) -> str:
+        return f'<Deadline: now={self._now} deadline={self._deadline}>'
+
     @classmethod
     def from_delta(cls, timeout: datetime.timedelta) -> 'Deadline':
         """
@@ -133,10 +135,8 @@ class Deadline:
 
         return datetime.timedelta(self._now - self._deadline)
 
-    def __enter__(self) -> Iterator[None]:
+    def __enter__(self) -> None:
         self._now = time.monotonic()
-
-        yield
 
     def __exit__(self, *args: object) -> None:
         pass
