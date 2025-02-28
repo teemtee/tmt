@@ -54,8 +54,7 @@ try:
     from _pytest.tmpdir import tmp_path_factory  # noqa: F401
 
     @pytest.fixture(scope='session')
-    def tmppath_factory(
-        tmp_path_factory: '_pytest.tmpdir.TempPathFactory') -> TempPathFactory:  # noqa: F811
+    def tmppath_factory(tmp_path_factory: '_pytest.tmpdir.TempPathFactory') -> TempPathFactory:  # noqa: F811
         return TempPathFactory(tmp_path_factory)
 
     @pytest.fixture
@@ -71,8 +70,8 @@ except ImportError:
     # pytest, therefore things are safe.
     @pytest.fixture(scope='session')
     def tmppath_factory(
-            tmpdir_factory: '_pytest.tmpdir.TempdirFactory'  # type: ignore[name-defined]
-            ) -> TempPathFactory:
+        tmpdir_factory: '_pytest.tmpdir.TempdirFactory',  # type: ignore[name-defined]
+    ) -> TempPathFactory:
         return TempPathFactory(tmpdir_factory)
 
     @pytest.fixture

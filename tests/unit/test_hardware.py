@@ -14,20 +14,25 @@ def parse_hw(text: str) -> Hardware:
     return Hardware.from_spec(tmt.utils.yaml_to_dict(textwrap.dedent(text)))
 
 
-_constraint_value_pattern_inputs = [
-    ('10', (None, '10')),
-    ('10 GiB', (None, '10 GiB')),
-    ('10GiB', (None, '10GiB')),
-    ] + [
-    (f'{operator.value} 10', (operator.value, '10'))
-    for operator in tmt.hardware.INPUTABLE_OPERATORS
-    ] + [
-    (f'{operator.value} 10 GiB', (operator.value, '10 GiB'))
-    for operator in tmt.hardware.INPUTABLE_OPERATORS
-    ] + [
-    (f'{operator.value}10GiB', (operator.value, '10GiB'))
-    for operator in tmt.hardware.INPUTABLE_OPERATORS
+_constraint_value_pattern_inputs = (
+    [
+        ('10', (None, '10')),
+        ('10 GiB', (None, '10 GiB')),
+        ('10GiB', (None, '10GiB')),
     ]
+    + [
+        (f'{operator.value} 10', (operator.value, '10'))
+        for operator in tmt.hardware.INPUTABLE_OPERATORS
+    ]
+    + [
+        (f'{operator.value} 10 GiB', (operator.value, '10 GiB'))
+        for operator in tmt.hardware.INPUTABLE_OPERATORS
+    ]
+    + [
+        (f'{operator.value}10GiB', (operator.value, '10GiB'))
+        for operator in tmt.hardware.INPUTABLE_OPERATORS
+    ]
+)
 
 
 @pytest.mark.parametrize(
@@ -36,8 +41,8 @@ _constraint_value_pattern_inputs = [
     ids=[
         f'{input} => ({expected[0]}, {expected[1]})'
         for input, expected in _constraint_value_pattern_inputs
-        ]
-    )
+    ],
+)
 def test_constraint_value_pattern(value: str, expected: tuple[Any, Any]) -> None:
     match = tmt.hardware.CONSTRAINT_VALUE_PATTERN.match(value)
 
@@ -48,8 +53,8 @@ def test_constraint_value_pattern(value: str, expected: tuple[Any, Any]) -> None
 _constraint_name_pattern_input = [
     ('memory', ('memory', None, None)),
     ('cpu.processors', ('cpu', None, 'processors')),
-    ('disk[1].size', ('disk', '1', 'size'))
-    ]
+    ('disk[1].size', ('disk', '1', 'size')),
+]
 
 
 @pytest.mark.parametrize(
@@ -58,8 +63,8 @@ _constraint_name_pattern_input = [
     ids=[
         f'{input} => ({expected[0]}, {expected[1]}, {expected[2]})'
         for input, expected in _constraint_name_pattern_input
-        ]
-    )
+    ],
+)
 def test_constraint_name_pattern(value: str, expected: tuple[Any, Any]) -> None:
     match = tmt.hardware.CONSTRAINT_NAME_PATTERN.match(value)
 
@@ -68,18 +73,22 @@ def test_constraint_name_pattern(value: str, expected: tuple[Any, Any]) -> None:
 
 
 _size_constraint_pattern_input = [
-    ({'name': 'num_with_default', 'raw_value': '10', 'default_unit': 'GiB'},
-     'num_with_default: == 10 gibibyte'),
+    (
+        {'name': 'num_with_default', 'raw_value': '10', 'default_unit': 'GiB'},
+        'num_with_default: == 10 gibibyte',
+    ),
     ({'name': 'num_without_default', 'raw_value': '1024'}, 'num_without_default: == 1024 byte'),
-    ({'name': 'num_with_unit', 'raw_value': '10 GiB', 'default_unit': 'MiB'},
-     'num_with_unit: == 10 GiB'),
-    ]
+    (
+        {'name': 'num_with_unit', 'raw_value': '10 GiB', 'default_unit': 'MiB'},
+        'num_with_unit: == 10 GiB',
+    ),
+]
 
 
 @pytest.mark.parametrize(
     ('value', 'expected'),
     _size_constraint_pattern_input,
-    )
+)
 def test_constraint_default_unit(value: dict, expected: tuple[Any, Any]) -> None:
     constraint_out = tmt.hardware.SizeConstraint.from_specification(**value)
 
@@ -90,8 +99,8 @@ def test_constraint_default_unit(value: dict, expected: tuple[Any, Any]) -> None
 _constraint_components_pattern_input = [
     ('memory 10 GiB', ('memory', None, None, None, '10 GiB')),
     ('cpu.processors != 4 ', ('cpu', None, 'processors', '!=', '4')),
-    ('disk[1].size <= 1 TiB', ('disk', '1', 'size', '<=', '1 TiB'))
-    ]
+    ('disk[1].size <= 1 TiB', ('disk', '1', 'size', '<=', '1 TiB')),
+]
 
 
 @pytest.mark.parametrize(
@@ -100,8 +109,8 @@ _constraint_components_pattern_input = [
     ids=[
         f'{input} => ({expected[0]}, {expected[1]}, {expected[2]}, {expected[3]}, {expected[4]})'
         for input, expected in _constraint_components_pattern_input
-        ]
-    )
+    ],
+)
 def test_constraint_components_pattern(value: str, expected: tuple[Any, Any]) -> None:
     match = tmt.hardware.CONSTRAINT_COMPONENTS_PATTERN.match(value)
 
@@ -117,8 +126,8 @@ def test_normalize_hardware(root_logger) -> None:
         # The same but with cpu.flags which have special handling
         'cpu.flag!=avc',
         # name[peer_index].child_name=value
-        'disk[1].size=1'
-        )
+        'disk[1].size=1',
+    )
 
     tmt.steps.provision.normalize_hardware('', spec, root_logger)
 
@@ -129,37 +138,34 @@ def test_normalize_hardware(root_logger) -> None:
         (
             ('disk[1].size=15GB', 'disk.size=20GB'),
             tmt.utils.SpecificationError,
-            r"^Hardware requirement 'disk\.size=20GB' lacks entry index \(disk\[N\]\)\.$"
-            ),
+            r"^Hardware requirement 'disk\.size=20GB' lacks entry index \(disk\[N\]\)\.$",
+        ),
         (
             ('network[1].type=eth', 'network.type=eth'),
             tmt.utils.SpecificationError,
-            r"^Hardware requirement 'network\.type=eth' lacks entry index \(network\[N\]\)\.$"
-            ),
+            r"^Hardware requirement 'network\.type=eth' lacks entry index \(network\[N\]\)\.$",
+        ),
         (
             ('disk=20GB',),
             tmt.utils.SpecificationError,
-            r"^Hardware requirement 'disk=20GB' lacks child property \(disk\[N\].M\)\.$"
-            ),
+            r"^Hardware requirement 'disk=20GB' lacks child property \(disk\[N\].M\)\.$",
+        ),
         (
             ('network=eth',),
             tmt.utils.SpecificationError,
-            r"^Hardware requirement 'network=eth' lacks child property \(network\[N\].M\)\.$"
-            ),
-        ],
+            r"^Hardware requirement 'network=eth' lacks child property \(network\[N\].M\)\.$",
+        ),
+    ],
     ids=[
         'disk.size lacks index',
         'network.size lacks index',
         'disk lacks child property',
         'network lacks child property',
-        ]
-    )
+    ],
+)
 def test_normalize_invalid_hardware(
-        spec: tmt.hardware.Spec,
-        expected_exc: type[Exception],
-        expected_message: str,
-        root_logger
-        ) -> None:
+    spec: tmt.hardware.Spec, expected_exc: type[Exception], expected_message: str, root_logger
+) -> None:
     with pytest.raises(expected_exc, match=expected_message):
         tmt.steps.provision.normalize_hardware('', spec, root_logger)
 
@@ -352,5 +358,4 @@ def test_parse_or_constraint() -> None:
     """
 
     hw = parse_hw(OR_HARDWARE_REQUIREMENTS)
-    assert tmt.utils.dict_to_yaml(
-        hw.constraint.to_spec()) == textwrap.dedent(hw_spec_out).lstrip()
+    assert tmt.utils.dict_to_yaml(hw.constraint.to_spec()) == textwrap.dedent(hw_spec_out).lstrip()
