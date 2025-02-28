@@ -1403,7 +1403,7 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
 
     _data_class: type[StepDataT]
 
-    _preserved_workdir_members: list[str] = []
+    _preserved_workdir_members: set[str] = set()
 
     @classmethod
     def get_data_class(cls) -> type[StepDataT]:
