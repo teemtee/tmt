@@ -836,16 +836,16 @@ def field(
                 "Container field must have a boolean default value when it is a flag."
             )
 
-    # ignore[call-overload]: returning "wrong" type on purpose. field() must be annotated
+    # ignore[arg-type]: returning "wrong" type on purpose. field() must be annotated
     # as if returning the value of type matching the field declaration, and the original
     # field() is called with wider argument types than expected, because we use our own
     # overloading to narrow types *our* custom field() accepts.
     # ignore[reportArgumentType]: not sure why these pop up, but `bool` keeps appearing
     # in the type of `default` value, and I was unable to sort things out in a way which
     # would make the `T` match.
-    return simple_field(  # type: ignore[call-overload]
+    return simple_field(
         default=default,
-        default_factory=default_factory or dataclasses.MISSING,
+        default_factory=default_factory or dataclasses.MISSING,  # type: ignore[arg-type]
         metadata={
             'tmt': FieldMetadata(
                 internal=internal,
