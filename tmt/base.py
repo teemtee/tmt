@@ -7,6 +7,7 @@ import copy
 import enum
 import functools
 import itertools
+import operator
 import os
 import re
 import shutil
@@ -1854,8 +1855,8 @@ class Plan(
     _original_plan: Optional['Plan'] = field(default=None, internal=True)
     _original_plan_fmf_id: Optional[FmfId] = field(default=None, internal=True)
 
-    _imported_plan_fmf_id: Optional[FmfId] = field(default=None, internal=True)
-    _imported_plan: Optional['Plan'] = field(default=None, internal=True)
+    _imported_plan_fmf_ids: list[FmfId] = field(default_factory=list, internal=True)
+    _imported_plans: list['Plan'] = field(default_factory=list, internal=True)
 
     _derived_plans: list['Plan'] = field(default_factory=list, internal=True)
     derived_id: Optional[int] = field(default=None, internal=True)
@@ -1903,12 +1904,14 @@ class Plan(
         # set, incorrect default value is generated, and the field ends up being
         # set to `None`. See https://github.com/teemtee/tmt/issues/2630.
         self._applied_cli_invocations = []
+        self._imported_plan_fmf_ids = []
+        self._imported_plans = []
         self._derived_plans = []
 
         # Check for possible remote plan reference first
         reference = self.node.get(['plan', 'import'])
         if reference is not None:
-            self._imported_plan_fmf_id = FmfId.from_spec(reference)
+            self._imported_plan_fmf_ids = [FmfId.from_spec(reference)]
 
         # Save the run, prepare worktree and plan data directory
         self.my_run = run
@@ -2347,19 +2350,23 @@ class Plan(
             self._show_additional_keys()
 
         # Show fmf id of the remote plan in verbose mode
-        if (self._original_plan or self._imported_plan_fmf_id) and self.verbosity_level:
+        if (self._original_plan or self._imported_plan_fmf_ids) and self.verbosity_level:
             # Pick fmf id from the original plan by default, use the
             # current plan in shallow mode when no plans are fetched.
 
-            if self._original_plan is not None:
-                fmf_id = self._original_plan._imported_plan_fmf_id
-            else:
-                fmf_id = self._imported_plan_fmf_id
+            def _show_imported(fmf_id: FmfId) -> None:
+                echo(tmt.utils.format('import', '', key_color='blue'))
 
-            echo(tmt.utils.format('import', '', key_color='blue'))
-            assert fmf_id is not None  # narrow type
-            for key, value in fmf_id.items():
-                echo(tmt.utils.format(key, value, key_color='green'))
+                for key, value in fmf_id.items():
+                    echo(tmt.utils.format(key, value, key_color='green'))
+
+            if self._original_plan is not None:
+                for fmf_id in self._original_plan._imported_plan_fmf_ids:
+                    _show_imported(fmf_id)
+
+            else:
+                for fmf_id in self._imported_plan_fmf_ids:
+                    _show_imported(fmf_id)
 
     # FIXME - Make additional attributes configurable
     def lint_unknown_keys(self) -> LinterReturn:
@@ -2737,20 +2744,16 @@ class Plan(
         """
         Check whether the plan is a remote plan reference
         """
-        return self._imported_plan_fmf_id is not None
+        return bool(self._imported_plan_fmf_ids)
 
-    def import_plan(self) -> Optional['Plan']:
+    def _resolve_import(self, plan_id: FmfId) -> Iterator['Plan']:
         """
-        Import plan from a remote repository, return a Plan instance
+        Discover and import plans matching a given fmf id.
+
+        :param plan_id: fmf id representing one or more plans to import.
+        :yields: new :py:class:`Plan` for each imported plan.
         """
-        if not self.is_remote_plan_reference:
-            return None
 
-        if self._imported_plan:
-            return self._imported_plan
-
-        assert self._imported_plan_fmf_id is not None  # narrow type
-        plan_id = self._imported_plan_fmf_id
         self.debug(f"Import remote plan '{plan_id.name}' from '{plan_id.url}'.", level=3)
 
         # Clone the whole git repository if executing tests (run is attached)
@@ -2844,15 +2847,32 @@ class Plan(
 
         # Override the plan name with the local one to ensure unique names
         node.name = self.name
-        # Create the plan object, save links between both plans
-        self._imported_plan = Plan(node=node, run=self.my_run, logger=self._logger)
-        self._imported_plan._original_plan = self
-        self._imported_plan._original_plan_fmf_id = self.fmf_id
 
         with self.environment.as_environ():
             expand_node_data(node.data, self._fmf_context)
 
-        return self._imported_plan
+        yield Plan(node=node, run=self.my_run, logger=self._logger)
+
+    def resolve_imports(self) -> list['Plan']:
+        """
+        Resolve possible references to remote plans.
+
+        :returns: one or more plans replacing the current one. The
+            current plan may also be one of the returned ones.
+        """
+
+        if not self.is_remote_plan_reference:
+            return [self]
+
+        if not self._imported_plans:
+            for plan_id in self._imported_plan_fmf_ids:
+                for imported_plan in self._resolve_import(plan_id):
+                    imported_plan._original_plan = self
+                    imported_plan._original_plan_fmf_id = self.fmf_id
+
+                    self._imported_plans.append(imported_plan)
+
+        return self._imported_plans
 
     def derive_plan(self, derived_id: int, tests: dict[str, list[Test]]) -> 'Plan':
         """
@@ -3593,7 +3613,7 @@ class Tree(tmt.utils.Common):
         ]
 
         if not Plan._opt('shallow'):
-            plans = [plan.import_plan() or plan for plan in plans]
+            plans = functools.reduce(operator.iadd, (plan.resolve_imports() for plan in plans), [])
 
         return self._filters_conditions(
             sorted(plans, key=lambda plan: plan.order), filters, conditions, links, excludes
