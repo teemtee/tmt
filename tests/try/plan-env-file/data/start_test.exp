@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+# Try the plan and quit
+
+spawn tmt try -p /plan
+
+expect "What do we do next?"
+send -- "q\r"
+expect eof
