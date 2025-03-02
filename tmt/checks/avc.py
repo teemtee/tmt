@@ -1,7 +1,6 @@
 import datetime
 import enum
 import textwrap
-import time
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import jinja2
@@ -66,36 +65,73 @@ AUSEARCH_MARK_FILENAME = 'avc-mark.txt'
 INTERESTING_PACKAGES = ['audit', 'selinux-policy']
 
 
-SETUP_SCRIPT = jinja2.Template(
-    textwrap.dedent("""
+# Common shell functions to be included in both templates
+SHELL_COMMON_FUNCTIONS = """
+# Basic shell setup
 set -x
 export LC_ALL=C
 
-{% if CHECK.test_method.value == 'timestamp' %}
-echo "export AVC_SINCE=\\"$( date "+%x %H:%M:%S")\\"" > {{ MARK_FILEPATH }}
-{% else %}
-ausearch --input-logs --checkpoint {{ MARK_FILEPATH }} -m AVC -m USER_AVC -m SELINUX_ERR
-{% endif %}
+# Function to check and wait for audit backlog to clear
+wait_for_backlog() {
+    max_wait=10
+    poll_interval=0.5
+    waited=0
 
-cat {{ MARK_FILEPATH }}
+    while [ $waited -lt $max_wait ]; do
+        backlog=$(auditctl -s 2>/dev/null | grep -E 'backlog *[0-9]+' | cut -d' ' -f2)
+
+        # Check if we got a valid number
+        if [[ "$backlog" =~ ^[0-9]+$ ]]; then
+            echo "Current audit backlog: $backlog events" >&2
+
+            if [ "$backlog" -eq 0 ]; then
+                echo "Audit backlog processed" >&2
+                return 0
+            fi
+        else
+            echo "Could not check audit backlog, falling back to 1s sleep" >&2
+            sleep 1
+            return 0
+        fi
+        sleep $poll_interval
+        waited=$(echo "$waited + $poll_interval" | bc)
+    done
+
+    echo "Timed out waiting for audit backlog to clear, falling back to 1s sleep" >&2
+    sleep 1
+    return 0
+}
+"""
+
+# Setup script with the common functions
+SETUP_SCRIPT = jinja2.Template(
+    textwrap.dedent(f"""
+{SHELL_COMMON_FUNCTIONS}
+
+# Wait for any pending events to be processed before setting mark
+wait_for_backlog
+{{% if CHECK.test_method.value == 'timestamp' %}}
+echo "export AVC_SINCE=\"$( date "+%x %H:%M:%S")\"" > {{{{ MARK_FILEPATH }}}}
+{{% else %}}
+ausearch --input-logs --checkpoint {{{{ MARK_FILEPATH }}}} > /dev/null
+{{% endif %}}
 """)
 )
 
+# Test script with the common functions
 TEST_SCRIPT = jinja2.Template(
-    textwrap.dedent(
-        """
-set -x
-export LC_ALL=C
+    textwrap.dedent(f"""
+{SHELL_COMMON_FUNCTIONS}
 
-{% if CHECK.test_method.value == 'timestamp' %}
-source {{ MARK_FILEPATH }}
-ausearch -i --input-logs -m AVC -m USER_AVC -m SELINUX_ERR -ts $AVC_SINCE
-{% else %}
-cat {{ MARK_FILEPATH }}
-ausearch --input-logs --checkpoint {{ MARK_FILEPATH }} -m AVC -m USER_AVC -m SELINUX_ERR -i -ts checkpoint
-{% endif %}
-"""  # noqa: E501
-    )
+# Wait for any pending events to be processed before checking for denials
+wait_for_backlog
+{{% if CHECK.test_method.value == 'timestamp' %}}
+source {{{{ MARK_FILEPATH }}}}
+ausearch --input-logs -m AVC -m USER_AVC -m SELINUX_ERR -i -ts $AVC_SINCE
+{{% else %}}
+ausearch --input-logs -m AVC -m USER_AVC -m SELINUX_ERR --checkpoint {{{{ MARK_FILEPATH }}}} -ts checkpoint
+{{% endif %}}
+""")  # noqa: E501
 )
 
 
@@ -199,11 +235,6 @@ def create_ausearch_mark(
 
     ausearch_mark_filepath = invocation.check_files_path / AUSEARCH_MARK_FILENAME
 
-    # Wait one second before storing the mark because ausearch
-    # could catch denials from the previous test if they are executed
-    # during the same second
-    time.sleep(check.delay_before_report)
-
     report_timestamp = datetime.datetime.now(datetime.timezone.utc)
     report: list[str] = []
 
@@ -239,11 +270,6 @@ def create_final_report(
         )
 
     ausearch_mark_filepath = invocation.check_files_path / AUSEARCH_MARK_FILENAME
-
-    # Wait one second before storing the mark because ausearch
-    # could catch denials from the previous test if they are executed
-    # during the same second
-    time.sleep(check.delay_before_report)
 
     # Collect all report components
     report_timestamp = datetime.datetime.now(datetime.timezone.utc)
@@ -321,7 +347,7 @@ def create_final_report(
 @container
 class AvcCheck(Check):
     test_method: TestMethod = field(
-        default=TestMethod.TIMESTAMP,
+        default=TestMethod.CHECKPOINT,
         choices=[method.value for method in TestMethod],
         help="""
              Which method to use when calling ``ausearch`` to report new
