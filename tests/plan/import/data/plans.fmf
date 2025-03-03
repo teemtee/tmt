@@ -33,7 +33,7 @@
     plan:
         import:
             url: https://github.com/teemtee/tmt
-            name: /plans/provision
+            name: /plans/provision/connect
 
 /dynamic-ref:
     summary: Git URL and dynamic ref
@@ -59,7 +59,7 @@
     plan:
         import:
             url: https://github.com/teemtee/tmt
-            name: /plans/provision
+            name: /plans/provision/connect
     enabled: true
 
 /disabled:
