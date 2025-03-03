@@ -11,6 +11,10 @@ ccred=$(shell tput setaf 1)
 ccgreen=$(shell tput setaf 2)
 ccend=$(shell tput sgr0)
 
+define timestamp =
+$(ccred)$(shell date '+%x %T')$(ccend)
+endef
+
 # Define special targets
 .DEFAULT_GOAL := help
 .PHONY: docs
@@ -146,9 +150,9 @@ images/test/bases:  ## Download base images for custom test images
 
 # Build a single container: <image name> <containerfile>
 define do-build-container-image =
-@ echo "$(ccgreen)Building$(ccend) $(ccred)${1}$(ccend) $(ccgreen)image...$(ccend)"
+@ echo "$(call timestamp) $(ccgreen)Building$(ccend) $(ccred)${1}$(ccend) $(ccgreen)image...$(ccend)"
 podman build ${3} -t ${1} -f ./containers/${2} .
-@ echo
+@ echo "$(call timestamp) $(ccgreen)Building$(ccend) $(ccred)${1}$(ccend) $(ccgreen)image done$(ccend)"
 endef
 
 # Return an image name from the given target: <image target>
