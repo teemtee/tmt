@@ -50,6 +50,7 @@ from tmt.container import (
 from tmt.options import option
 from tmt.utils import (
     DEFAULT_NAME,
+    Command,
     Environment,
     EnvVarValue,
     GeneralError,
@@ -2064,6 +2065,12 @@ class Reboot(Action):
         @option(
             '--hard', is_flag=True, help='Hard reboot of the machine. Unsaved data may be lost.'
         )
+        @option(
+            '--command',
+            type=str,
+            default='reboot',
+            help='A command to run on the guest to trigger the reboot.',
+        )
         def reboot(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             """
             Reboot the guest.
@@ -2097,7 +2104,7 @@ class Reboot(Action):
         assert hasattr(self.parent, 'plan')
         assert self.parent.plan is not None
         for guest in self.parent.plan.provision.ready_guests:
-            guest.reboot(hard=self.opt('hard'))
+            guest.reboot(hard=self.opt('hard'), command=Command(self.opt('command')))
         self.info('reboot', 'Reboot finished', color='yellow')
 
 
