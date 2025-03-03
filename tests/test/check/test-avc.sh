@@ -36,12 +36,7 @@ rlJournalStart
 
             rlAssertGrep "<no matches>" "$avc_log"
             rlAssertGrep "## mark" "$avc_log"
-
-            if [ "$method" = "checkpoint" ]; then
-                /bin/true
-            else
-                rlAssertGrep "export 'AVC_SINCE=[[:digit:]]{2}/[[:digit:]]{2}/[[:digit:]]{2} [[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2}'" "$avc_log" -E
-            fi
+            rlAssertGrep "## ausearch" "$avc_log"
         rlPhaseEnd
 
         rlPhaseStartTest "Test nasty AVC check with $PROVISION_HOW ($method method)"
@@ -54,12 +49,7 @@ rlJournalStart
             rlAssertGrep "avc:  denied" "$avc_log"
             rlAssertGrep "path=/root/passwd.log" "$avc_log"
             rlAssertGrep "## mark" "$avc_log"
-
-            if [ "$method" = "checkpoint" ]; then
-                /bin/true
-            else
-                rlAssertGrep "export 'AVC_SINCE=[[:digit:]]{2}/[[:digit:]]{2}/[[:digit:]]{2} [[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2}'" "$avc_log" -E
-            fi
+            rlAssertGrep "## ausearch" "$avc_log"
         rlPhaseEnd
     done
 
