@@ -8,6 +8,7 @@ import fmf.utils
 
 import tmt.utils
 from tmt._compat.pathlib import Path
+from tmt.config.models.hardware import HardwareConfig
 from tmt.config.models.link import LinkConfig
 
 # Config directory
@@ -100,3 +101,15 @@ class Config:
             return None
 
         return LinkConfig.from_fmf(link_config)
+
+    @property
+    def hardware(self) -> Optional[HardwareConfig]:
+        """
+        Return the hardware configuration, if present.
+        """
+
+        hardware_config = cast(Optional[fmf.Tree], self.fmf_tree.find('/hardware'))
+        if not hardware_config:
+            return None
+
+        return HardwareConfig.from_fmf(hardware_config)
