@@ -119,7 +119,43 @@ properties:
 
     properties:
       import:
-        $ref: "/schemas/common#/definitions/fmf_id"
+        allOf:
+          - $ref: "/schemas/common#/definitions/fmf_id_base"
+
+        additionalProperties: false
+
+        # NOTE: Because of old jsonschema package on RHEL-8, we cannot use
+        # `url: true` and inherit `url` attributes from parent schema. It
+        # seems like we have to repeat properties schemas here as well.
+        properties:
+          url:
+            # https://github.com/teemtee/tmt/issues/1258
+            type: string
+
+          ref:
+            type: string
+
+          path:
+            type: string
+
+          name:
+            type: string
+
+          replace:
+            type: string
+            enum:
+              - replace
+              - import-as-children
+
+          limit:
+            type: string
+            enum:
+              - single-plan-only
+              - all-plans
+
+        required:
+          - url
+          - name
 
 oneOf:
   - required:
