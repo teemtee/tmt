@@ -67,11 +67,8 @@ def test_test_invalid(root_logger):
     for key in ['component', 'require', 'tag']:
         with pytest.raises(SpecificationError) as exc_context:
             tmt.Test.from_dict(
-                logger=root_logger,
-                mapping={
-                    key: 1},
-                name='/smoke',
-                raise_on_validation_error=True)
+                logger=root_logger, mapping={key: 1}, name='/smoke', raise_on_validation_error=True
+            )
 
         exc = exc_context.value
 
@@ -81,21 +78,22 @@ def test_test_invalid(root_logger):
         validation_error, error_message = exc.validation_errors[0]
 
         assert isinstance(validation_error, jsonschema.ValidationError)
-        assert error_message \
-            == f'/smoke:{key} - 1 is not valid under any of the given schemas'
+        assert error_message == f'/smoke:{key} - 1 is not valid under any of the given schemas'
 
     with pytest.raises(SpecificationError):
-        tmt.Test.from_dict(logger=root_logger, mapping={'environment': 'string'},
-                           name='/smoke', raise_on_validation_error=True)
+        tmt.Test.from_dict(
+            logger=root_logger,
+            mapping={'environment': 'string'},
+            name='/smoke',
+            raise_on_validation_error=True,
+        )
     # Listify attributes
     assert tmt.Test.from_dict(
-        logger=root_logger,
-        mapping={
-            'test': 'test',
-            'tag': 'a'},
-        name='/smoke').tag == ['a']
-    assert tmt.Test.from_dict(logger=root_logger, mapping={'test': 'test', 'tag': [
-                              'a', 'b']}, name='/smoke').tag == ['a', 'b']
+        logger=root_logger, mapping={'test': 'test', 'tag': 'a'}, name='/smoke'
+    ).tag == ['a']
+    assert tmt.Test.from_dict(
+        logger=root_logger, mapping={'test': 'test', 'tag': ['a', 'b']}, name='/smoke'
+    ).tag == ['a', 'b']
 
 
 def test_link():
@@ -110,25 +108,32 @@ def test_link():
     assert Links(data='/fmf/id').get() == [Link(relation='relates', target='/fmf/id')]
     # Multiple strings (default relation)
     assert Links(data=['one', 'two']).get() == [
-        Link(relation='relates', target='one'), Link(relation='relates', target='two')]
+        Link(relation='relates', target='one'),
+        Link(relation='relates', target='two'),
+    ]
     # Multiple string mixed relation
     assert Links(data=['implicit', {'duplicates': 'explicit'}]).get() == [
         Link(relation='relates', target='implicit'),
-        Link(relation='duplicates', target='explicit')]
+        Link(relation='duplicates', target='explicit'),
+    ]
     # Multiple strings (explicit relation)
     assert Links(data=[{'parent': 'mom'}, {'child': 'son'}]).get() == [
-        Link(relation='parent', target='mom'), Link(relation='child', target='son')]
+        Link(relation='parent', target='mom'),
+        Link(relation='child', target='son'),
+    ]
 
     # Single dictionary (default relation)
     assert Links(data={'name': 'foo'}).get() == [
-        Link(relation='relates', target=FmfId(name='foo'))]
+        Link(relation='relates', target=FmfId(name='foo'))
+    ]
     # Single dictionary (explicit relation)
     assert Links(data={'verifies': 'foo'}).get() == [Link(relation='verifies', target='foo')]
     # Multiple dictionaries
     family = [{'parent': 'mom', 'note': 'foo'}, {'child': 'son'}]
     assert Links(data=family).get() == [
-        Link(relation='parent', target='mom', note='foo'), Link(relation='child', target='son')
-        ]
+        Link(relation='parent', target='mom', note='foo'),
+        Link(relation='child', target='son'),
+    ]
 
     # Selected relations
     assert Links(data=family).get('parent') == [Link(relation='parent', target='mom', note='foo')]
@@ -145,16 +150,17 @@ def test_link():
     assert link.get() == [
         Link(
             relation='blocked-by',
-            target=FmfId(
-                url=fmf_id['blocked-by']['url'],
-                name=fmf_id['blocked-by']['name']),
-            note=fmf_id['note'])]
+            target=FmfId(url=fmf_id['blocked-by']['url'], name=fmf_id['blocked-by']['name']),
+            note=fmf_id['note'],
+        )
+    ]
 
     # Invalid links and relations
     with pytest.raises(
-            SpecificationError,
-            match="Field 'link' must be a string, a fmf id or a list of their combinations,"
-                  " 'int' found."):
+        SpecificationError,
+        match="Field 'link' must be a string, a fmf id or a list of their combinations,"
+        " 'int' found.",
+    ):
         Links(data=123)
     with pytest.raises(SpecificationError, match='Multiple relations'):
         Links(data={'verifies': 'one', 'blocks': 'another'})
@@ -201,17 +207,14 @@ def test_expand_node_data(monkeypatch) -> None:
     # Then we will call `expand_node_data()` with custom fmf context and
     # environment providing inputs.
 
-    fmf_context = {
-        'WALDO': ['plugh'],
-        'XYZZY': ['thud']
-        }
+    fmf_context = {'WALDO': ['plugh'], 'XYZZY': ['thud']}
 
     environ = {
         'CORGE': 'quuz',
         # envvars starting with `@` resulted in `$@...` being the outcome,
         # as described in https://github.com/teemtee/tmt/issues/2654
-        'FRED': '@XYZZY'
-        }
+        'FRED': '@XYZZY',
+    }
 
     # All values should be propagated as they are, unless comment describes the expected
     # transformation.
@@ -219,32 +222,28 @@ def test_expand_node_data(monkeypatch) -> None:
         'foo',
         1,
         True,
-
         # `$CORGE` should be replaced with `quuz` from the environment
         '$CORGE',
         '  $CORGE  ',
         'something${CORGE}else',
-
         # `$FRED` should be replaced with `@XYZZY` from the environment
         # Similar to `$CORGE`, but testing whether leading `@` is handled
         # properly, see https://github.com/teemtee/tmt/issues/2654
         '$FRED',
         '  $FRED  ',
         'something${FRED}else',
-
         # `@WALDO` should be replaced by `plugh` from fmf context
         '$@WALDO',
         '  $@WALDO  ',
         'something$@{WALDO}else',
-
         # There is no source for these, therefore they remain untouched
         '$GRAPLY',
         '  $GRAPLY  ',
         'something${GRAPLY}else',
         '$@GRAPLY',
         '  $@GRAPLY  ',
-        'something$@{GRAPLY}else'
-        ]
+        'something$@{GRAPLY}else',
+    ]
 
     _expected = [
         'foo',
@@ -264,30 +263,12 @@ def test_expand_node_data(monkeypatch) -> None:
         'something${GRAPLY}else',
         '$@GRAPLY',
         '  $@GRAPLY  ',
-        'something$@{GRAPLY}else'
-        ]
+        'something$@{GRAPLY}else',
+    ]
 
-    data = [
-        *_data,
-        [
-            *_data
-            ],
-        {
-            f'key{i}': value
-            for i, value in enumerate(_data)
-            }
-        ]
+    data = [*_data, [*_data], {f'key{i}': value for i, value in enumerate(_data)}]
 
-    expected = [
-        *_expected,
-        [
-            *_expected
-            ],
-        {
-            f'key{i}': value
-            for i, value in enumerate(_expected)
-            }
-        ]
+    expected = [*_expected, [*_expected], {f'key{i}': value for i, value in enumerate(_expected)}]
 
     for envvar in os.environ:
         monkeypatch.delenv(envvar)

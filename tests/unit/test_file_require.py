@@ -17,7 +17,8 @@ def test_basic(root_logger, source_dir, target_dir):
         parent=parent,
         identifier=tmt.base.DependencyFile(type='file', pattern=['lib.*']),
         source_location=source_dir,
-        target_location=target_dir)
+        target_location=target_dir,
+    )
     assert target_dir.exists()
     assert target_dir.is_dir()
     target_content = list(target_dir.iterdir())
@@ -36,7 +37,8 @@ def test_full_copy(root_logger, source_dir, target_dir):
         parent=parent,
         identifier=tmt.base.DependencyFile(type='file', pattern=['/']),
         source_location=source_dir,
-        target_location=target_dir)
+        target_location=target_dir,
+    )
     assert (target_dir / 'tests/bz6/runtests.sh').exists()
 
 
@@ -52,4 +54,5 @@ def test_nothing_found(root_logger, source_dir, target_dir):
             parent=parent,
             identifier=tmt.base.DependencyFile(type='file', pattern=['/should/not/exist']),
             source_location=source_dir,
-            target_location=target_dir)
+            target_location=target_dir,
+        )

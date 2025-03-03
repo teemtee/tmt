@@ -170,13 +170,10 @@ def test_plans_schema(tree, plan):
                       is-supported: true
                   - virtualization:
                       is-supported: false
-            """
-        ],
-    ids=[
-        'all-requirements',
-        'conditions'
-        ]
-    )
+            """,
+    ],
+    ids=['all-requirements', 'conditions'],
+)
 def test_hw_schema_examples(hw: str, request) -> None:
     tree = tmt.Tree(logger=LOGGER)
 
@@ -187,17 +184,13 @@ def test_hw_schema_examples(hw: str, request) -> None:
     node = fmf.Tree(
         {
             'how': 'artemis',
-            'hardware': tmt.utils.yaml_to_dict(textwrap.dedent(hw), yaml_type='safe')
-            }
-        )
+            'hardware': tmt.utils.yaml_to_dict(textwrap.dedent(hw), yaml_type='safe'),
+        }
+    )
 
     validate_node(
-        tree,
-        node,
-        Path('provision') / 'artemis.yaml',
-        'HW requirements',
-        request.node.callspec.id
-        )
+        tree, node, Path('provision') / 'artemis.yaml', 'HW requirements', request.node.callspec.id
+    )
 
 
 #
@@ -227,11 +220,12 @@ def test_hw_schema_examples(hw: str, request) -> None:
                 "no-autopart harness=restraint"
             kernel-options: "ksdevice=eth1"
             kernel-options-post: "quiet"
-            """],
+            """
+    ],
     ids=[
         'all-properties',
-        ]
-    )
+    ],
+)
 def test_ks_schema_examples(ks: str, request) -> None:
     tree = tmt.Tree(logger=LOGGER)
 
@@ -242,17 +236,17 @@ def test_ks_schema_examples(ks: str, request) -> None:
     node = fmf.Tree(
         {
             'how': 'artemis',
-            'kickstart': tmt.utils.yaml_to_dict(textwrap.dedent(ks), yaml_type='safe')
-            }
-        )
+            'kickstart': tmt.utils.yaml_to_dict(textwrap.dedent(ks), yaml_type='safe'),
+        }
+    )
 
     validate_node(
         tree,
         node,
         Path('provision') / 'artemis.yaml',
         'Kickstart requirements',
-        request.node.callspec.id
-        )
+        request.node.callspec.id,
+    )
 
 
 def test_watchdog_specification() -> None:
@@ -267,13 +261,9 @@ def test_watchdog_specification() -> None:
             'how': 'artemis',
             'watchdog-period-delay': 10,
             'watchdog-dispatch-delay': 42,
-            }
-        )
+        }
+    )
 
     validate_node(
-        tree,
-        node,
-        Path('provision') / 'artemis.yaml',
-        'Watchdog specification',
-        'both-wd-options'
-        )
+        tree, node, Path('provision') / 'artemis.yaml', 'Watchdog specification', 'both-wd-options'
+    )
