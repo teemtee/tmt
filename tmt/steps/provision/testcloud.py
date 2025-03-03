@@ -865,7 +865,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # We can't assign the path to STORE_DIR because it must exist first
         data_dir = self.workdir_root / 'testcloud'
-        store_dir = data_dir / 'images'
+        store_dir = self.workdir_root / 'testcloud/images'
 
         # Make sure required directories exist
         os.makedirs(data_dir, exist_ok=True)
