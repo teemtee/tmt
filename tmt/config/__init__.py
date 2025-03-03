@@ -9,6 +9,7 @@ import fmf.utils
 import tmt.utils
 from tmt._compat.pathlib import Path
 from tmt._compat.pydantic import ValidationError
+from tmt.config.models.hardware import HardwareConfig
 from tmt.config.models.link import LinkConfig
 from tmt.config.models.themes import Theme, ThemeConfig
 from tmt.container import MetadataContainer
@@ -133,3 +134,11 @@ class Config:
             return ThemeConfig.get_default_theme()
 
         return theme_config.get_active_theme()
+
+    @property
+    def hardware(self) -> Optional[HardwareConfig]:
+        """
+        Return the hardware configuration, if present.
+        """
+
+        return self._parse_config_subtree('/hardware', HardwareConfig)
