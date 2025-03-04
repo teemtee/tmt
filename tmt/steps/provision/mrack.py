@@ -27,6 +27,7 @@ from tmt.utils import (
     ProvisionError,
     ShellScript,
     UpdatableMessage,
+    yaml_to_dict,
 )
 
 MRACK_VERSION: Optional[str] = None
@@ -52,6 +53,10 @@ DEFAULT_PROVISION_TICK = 60  # poll job each minute
 #: Kerberos ticket.
 DEFAULT_API_SESSION_REFRESH = 3600
 
+TMT_MRACK_HW_FILTERS_FILE = Path(
+    os.environ.get('TMT_MRACK_HW_FILTERS_FILE', 'mrack-hw-filters.yaml')
+)
+
 
 def mrack_constructs_ks_pre() -> bool:
     """
@@ -61,6 +66,23 @@ def mrack_constructs_ks_pre() -> bool:
     assert MRACK_VERSION is not None
 
     return packaging.version.Version(MRACK_VERSION) >= packaging.version.Version('1.21.0')
+
+
+def _get_custom_config() -> dict[str, Any]:
+    """
+    Read yaml config file and translate its content to a dict.
+    example:
+        cpu:
+          processor: '{"cpu": {"processors": {"_op": "%s", "_value": "%s"}}}'
+        boot:
+          method: '{"key_value": {"_key": "NETBOOT_METHOD", "_value": "%s"}}'
+
+    """
+    if TMT_MRACK_HW_FILTERS_FILE.is_absolute():
+        config_content = TMT_MRACK_HW_FILTERS_FILE.read_text()
+    else:
+        config_content = (tmt.config.Config().path / TMT_MRACK_HW_FILTERS_FILE).read_text()
+    return tmt.utils.yaml_to_dict(config_content)
 
 
 # Type annotation for "data" package describing a guest instance. Passed
@@ -186,15 +208,26 @@ class MrackHWGroup(MrackBaseHWElement):
     This type of element is not allowed to have any attributes.
     """
 
-    children: list[MrackBaseHWElement] = simple_field(default_factory=list)
+    children: list[Union[MrackBaseHWElement, dict[str, Any]]] = simple_field(default_factory=list)
 
     def to_mrack(self) -> dict[str, Any]:
         # Another unexpected behavior of mrack dictionary tree: if there is just
         # a single child, it is "packed" into its parent as a key/dict item.
-        if len(self.children) == 1 and self.name not in ('and', 'or'):
+        if (
+            len(self.children) == 1
+            and self.name not in ('and', 'or')
+            and not isinstance(self.children[0], dict)
+        ):
             return {self.name: self.children[0].to_mrack()}
 
-        return {self.name: [child.to_mrack() for child in self.children]}
+        child_list = []
+        for child in self.children:
+            # There is no need to call to_mrack if child is already a dict
+            if isinstance(child, dict):
+                child_list.append(child)
+            else:
+                child_list.append(child.to_mrack())
+        return {self.name: child_list}
 
 
 @container
@@ -222,6 +255,16 @@ class MrackHWNotGroup(MrackHWGroup):
     """
 
     name: str = 'not'
+
+
+def _translate_constraint_by_config(
+    constraint: tmt.hardware.Constraint[Any], config: str
+) -> dict[str, Any]:
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator, constraint.value
+    )
+
+    return yaml_to_dict(config % (beaker_operator, actual_value))
 
 
 def _transform_unsupported(
@@ -638,9 +681,38 @@ def _transform_system_vendor_name(
     return MrackHWGroup('system', children=[MrackHWBinOp('vendor', beaker_operator, actual_value)])
 
 
+def _transform_boot_method(
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> Union[MrackBaseHWElement, dict[str, Any]]:
+    # custom config example:
+    # boot:
+    # method: '{"or": [{"key_value": {"_key": "NETBOOT_METHOD", "_value": "%s"},},
+    # {"key_value": {"_key": "NETBOOT_METHOD", "_value": "%s"},}]}'
+
+    config = _get_custom_config().get('boot', {}).get('method')
+    if not config:
+        return _transform_unsupported(constraint, logger)
+    beaker_operator = (
+        OPERATOR_SIGN_TO_OPERATOR[tmt.hardware.Operator.EQ]
+        if constraint.operator is tmt.hardware.Operator.CONTAINS
+        else OPERATOR_SIGN_TO_OPERATOR[tmt.hardware.Operator.NEQ]
+    )
+    actual_value = str(constraint.value)
+    test = (beaker_operator, actual_value)
+
+    if test in [('==', 'bios'), ('!=', 'uefi')]:
+        # For easy format. We use or in config, so it won't hurt
+        return yaml_to_dict(config % ('pxe', 'pxe'))
+    if test in [('==', 'uefi'), ('!=', 'bios')]:
+        return yaml_to_dict(config % ('grub2', 'efigrub'))
+    # We only support uefi/bios bootloaders, for now.
+    return _transform_unsupported(constraint, logger)
+
+
 ConstraintTransformer = Callable[
     [tmt.hardware.Constraint[Any], tmt.log.Logger], MrackBaseHWElement
 ]
+
 
 _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'beaker.pool': _transform_beaker_pool,  # type: ignore[dict-item]
@@ -671,12 +743,13 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'system.model_name': _transform_system_model_name,  # type: ignore[dict-item]
     'system.vendor_name': _transform_system_vendor_name,  # type: ignore[dict-item]
     'iommu.is_supported': _transform_iommu_is_supported,  # type: ignore[dict-item]
+    'boot.method': _transform_boot_method,  # type: ignore[dict-item]
 }
 
 
 def constraint_to_beaker_filter(
     constraint: tmt.hardware.BaseConstraint, logger: tmt.log.Logger
-) -> MrackBaseHWElement:
+) -> Union[MrackBaseHWElement, dict[str, Any]]:
     """
     Convert a hardware constraint into a Mrack-compatible filter
     """
@@ -709,6 +782,14 @@ def constraint_to_beaker_filter(
 
     if transformer:
         return transformer(constraint, logger)
+    config = (
+        _get_custom_config().get(name, {}).get(child_name)
+        if child_name
+        else _get_custom_config().get(name)
+    )
+    if not config:
+        return _transform_unsupported(constraint, logger)
+    return _translate_constraint_by_config(constraint, config)
 
     return _transform_unsupported(constraint, logger)
 
@@ -772,8 +853,10 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
             # groups. And our `constraint_to_beaker_filter()` does that,
             # even for groups nested deeper in the tree.
             transformed = constraint_to_beaker_filter(hw.constraint, logger)
+            if isinstance(transformed, MrackBaseHWElement):
+                transformed = transformed.to_mrack()
 
-            logger.debug('Transformed hardware', tmt.utils.dict_to_yaml(transformed.to_mrack()))
+            logger.debug('Transformed hardware', tmt.utils.dict_to_yaml(transformed))
 
             # Mrack does not handle well situation when the filter
             # consists of just a single filtering element, e.g. just
