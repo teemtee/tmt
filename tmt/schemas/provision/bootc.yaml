@@ -74,5 +74,8 @@ properties:
       - xfs
       - btrfs
 
+  build-disk-image-only:
+    type: boolean
+
 required:
   - how
