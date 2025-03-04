@@ -120,6 +120,24 @@ def configure_constant(default: int, envvar: str) -> int:
         ) from exc
 
 
+def configure_bool_constant(default: bool, envvar: str) -> bool:
+    """
+    Deduce the bool value of global constant.
+
+    Value '1' means True, all other values mean False.
+
+    :param default: the default value of the constant.
+    :param envvar: name of the optional environment variable which would
+        override the default value.
+    :returns: value extracted from the environment variable, or the
+        given default value if the variable did not exist.
+    """
+    value = os.environ.get(envvar)
+    if value is None:
+        return default
+    return value == "1"
+
+
 log = fmf.utils.Logging('tmt').logger
 
 
