@@ -2691,7 +2691,10 @@ class Plan(
                     if self.my_run and self.reshape(tests):
                         return
 
-                    self.execute.save_temp_results()
+                    self.execute._results = self.execute.create_results(
+                        self.discover.tests(enabled=True)
+                    )
+                    self.execute.save()
 
                 # Source the plan environment file after prepare and execute step
                 if isinstance(step, (tmt.steps.prepare.Prepare, tmt.steps.execute.Execute)):
@@ -2878,8 +2881,11 @@ class Plan(
 
         shutil.copytree(self.discover.workdir, derived_plan.discover.workdir, dirs_exist_ok=True)
 
-        # Load new temporary results to execute step
-        derived_plan.execute.save_temp_results()
+        # Load results from discovered tests and save them to the execute step.
+        derived_plan.execute._results = derived_plan.execute.create_results(
+            derived_plan.discover.tests(enabled=True)
+        )
+        derived_plan.execute.save()
 
         for step_name in tmt.steps.STEPS:
             getattr(derived_plan, step_name).save()

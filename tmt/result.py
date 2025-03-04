@@ -75,8 +75,6 @@ class ResultInterpret(enum.Enum):
     INFO = 'info'
     WARN = 'warn'
     ERROR = 'error'
-    SKIP = 'skip'
-    PENDING = 'pending'
 
     # Special interpret values
     RESPECT = 'respect'
@@ -646,7 +644,7 @@ def results_to_exit_code(results: list[Result]) -> int:
         return TmtExitCode.NO_RESULTS_FOUND
 
     # "Errors occurred during test execution."
-    if stats[ResultOutcome.ERROR]:
+    if stats[ResultOutcome.ERROR] + stats[ResultOutcome.PENDING]:
         return TmtExitCode.ERROR
 
     # "There was a fail or warn identified, but no error."
@@ -656,10 +654,6 @@ def results_to_exit_code(results: list[Result]) -> int:
     # "Tests were executed, and all reported the ``skip`` result."
     if sum(stats.values()) == stats[ResultOutcome.SKIP]:
         return TmtExitCode.ALL_TESTS_SKIPPED
-
-    # "Some tests were not executed."
-    if stats[ResultOutcome.PENDING]:
-        return TmtExitCode.TESTS_PENDING
 
     # "At least one test passed, there was no fail, warn or error."
     if (

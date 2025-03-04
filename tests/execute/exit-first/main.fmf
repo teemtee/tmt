@@ -3,5 +3,5 @@
     test: ./basic.sh
 
 /correct-outcomes:
-    summary: Check that exit-first works for correct result outcomes
+    summary: Verify exit-first produces correct result outcomes
     test: ./outcomes.sh

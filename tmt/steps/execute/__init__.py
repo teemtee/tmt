@@ -1230,12 +1230,12 @@ class Execute(tmt.steps.Step):
 
     def update_results(self, results: list['Result']) -> None:
         """
-        Update existing results with new results and save them.
+        Update existing results with new results.
         """
 
         results_to_save = {(r.serial_number, r.name): r for r in self._results}
         for result in results:
-            # Remove all temporary results that are not needed anymore.
+            # Remove parent results with pending state for which we have a child result.
             parent_results = [
                 p
                 for p in results_to_save.values()
@@ -1248,25 +1248,25 @@ class Execute(tmt.steps.Step):
                 ):
                     results_to_save.pop((parent.serial_number, parent.name), None)
 
+            # Replace existing pending result with the new one.
             results_to_save[(result.serial_number, result.name)] = result
 
         self._results = list(results_to_save.values())
-        self._save_results(self._results)
 
-    def _create_temp_results(self, tests: list['tmt.steps.discover.TestOrigin']) -> list['Result']:
+    def create_results(self, tests: list['tmt.steps.discover.TestOrigin']) -> list['Result']:
         """
-        Get all available results from tests. For tests not yet executed, create a temporary
+        Get all available results from tests. For tests not yet executed, create a pending
         result.
         """
 
-        new_results = []
+        results = []
         for result, test_origin in self.results_for_tests(tests):
             if result:
-                new_results.append(result)
+                results.append(result)
                 continue
             if test_origin is None:
                 continue
-            new_results.append(
+            results.append(
                 Result(
                     name=test_origin.test.name,
                     serial_number=test_origin.test.serial_number,
@@ -1274,16 +1274,7 @@ class Execute(tmt.steps.Step):
                     result=tmt.result.ResultOutcome.PENDING,
                 )
             )
-        return new_results
-
-    def save_temp_results(self) -> None:
-        """
-        Create temporary results and save them to the workdir.
-        """
-
-        results = self._create_temp_results(self.plan.discover.tests(enabled=True))
-        self._results = results
-        self._save_results(results)
+        return results
 
     def go(self, force: bool = False) -> None:
         """
@@ -1294,7 +1285,8 @@ class Execute(tmt.steps.Step):
 
         # Clean up possible old results
         if force:
-            self.save_temp_results()
+            self._results = self.create_results(self.plan.discover.tests(enabled=True))
+            self.save()
 
         if self.should_run_again:
             self.status('todo')

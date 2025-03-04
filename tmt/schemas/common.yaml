@@ -489,8 +489,6 @@ definitions:
       - warn
       - error
       - fail
-      - skip
-      - pending
       - custom
       - restraint
 
