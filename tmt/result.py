@@ -657,6 +657,10 @@ def results_to_exit_code(results: list[Result]) -> int:
     if sum(stats.values()) == stats[ResultOutcome.SKIP]:
         return TmtExitCode.ALL_TESTS_SKIPPED
 
+    # "Some tests were not executed."
+    if stats[ResultOutcome.PENDING]:
+        return TmtExitCode.TESTS_PENDING
+
     # "At least one test passed, there was no fail, warn or error."
     if (
         sum(stats.values())
