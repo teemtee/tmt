@@ -345,8 +345,6 @@ and only check for the exit code.
     No test results found.
 4
     Tests were executed, and all reported the ``skip`` result.
-5
-    Some tests were not executed.
 
 
 Variables

@@ -72,9 +72,6 @@ class TmtExitCode(enum.IntEnum):
     #: Tests were executed, and all reported the ``skip`` result.
     ALL_TESTS_SKIPPED = 4
 
-    #: Some tests were not executed.
-    TESTS_PENDING = 5
-
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #  Click Context Object Container
