@@ -25,6 +25,7 @@ from tmt.utils import (
     Path,
     ShellScript,
     Stopwatch,
+    configure_bool_constant,
     format_duration,
     format_timestamp,
 )
@@ -303,6 +304,17 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
              mode is not captured, and ``duration`` has no effect.
              """,
     )
+    ignore_duration: bool = field(
+        default=configure_bool_constant(False, 'TMT_PLUGIN_EXECUTE_TMT_IGNORE_DURATION'),
+        option=('--ignore-duration'),
+        is_flag=True,
+        help="""
+             Ignore test duration value and allow test to run forever.
+             Can be set by ``TMT_PLUGIN_EXECUTE_TMT_IGNORE_DURATION=1`` even
+             when step is not specified on the commandline. This environment variable
+             will be replaced by plan.fmf or CLI arguments.
+             """,
+    )
     no_progress_bar: bool = field(
         default=False,
         option='--no-progress-bar',
@@ -558,6 +570,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                         'Ignoring requested duration, not supported in interactive mode.'
                     )
 
+                timeout = None
+
+            elif self.data.ignore_duration:
+                logger.debug("Test duration is not effective due ignore-duration option.")
                 timeout = None
 
             else:

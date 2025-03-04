@@ -5,6 +5,15 @@
 ======================
 
 
+tmt-1.44.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Execute tmt option ``--ignore-duration`` makes tmt to execute
+the test as long as it needs. This can be enabled via environment
+``TMT_PLUGIN_EXECUTE_TMT_IGNORE_DURATION=1`` even when the execute
+step is not stated on the commandline.
+
+
 tmt-1.43.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

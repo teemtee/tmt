@@ -261,6 +261,12 @@ class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         option='--duration',
         help='The maximal time allowed for the test to run.',
     )
+    ignore_duration: bool = field(
+        default=False,
+        option=('--ignore-duration'),
+        is_flag=True,
+        help='Ignore test duration values and allow tests run forever.',
+    )
     exit_first: bool = field(
         default=False,
         option=('-x', '--exit-first'),
@@ -709,6 +715,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         logger: tmt.log.Logger,
     ) -> None:
         self.go_prolog(logger)
+        logger.verbose('ignore-duration', self.data.exit_first, 'green', level=2)
         logger.verbose('exit-first', self.data.exit_first, 'green', level=2)
 
     @property
