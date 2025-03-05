@@ -1233,23 +1233,22 @@ class Execute(tmt.steps.Step):
         Update existing results with new results.
         """
 
-        results_to_save = {(r.serial_number, r.name): r for r in self._results}
+        results_to_save = {(r.serial_number, r.name, r.guest.name): r for r in self._results}
         for result in results:
             # Remove parent results with pending state for which we have a child result.
             parent_results = [
                 p
                 for p in results_to_save.values()
-                if result.name != p.name and result.name.startswith(p.name)
+                if result.name != p.name
+                and result.name.startswith(p.name)
+                and result.guest.name == p.guest.name
             ]
-            for parent in parent_results:
-                if (
-                    parent.serial_number == result.serial_number
-                    and parent.result == ResultOutcome.PENDING
-                ):
-                    results_to_save.pop((parent.serial_number, parent.name), None)
+            for p in parent_results:
+                if p.serial_number == result.serial_number and p.result == ResultOutcome.PENDING:
+                    results_to_save.pop((p.serial_number, p.name, p.guest.name), None)
 
             # Replace existing pending result with the new one.
-            results_to_save[(result.serial_number, result.name)] = result
+            results_to_save[(result.serial_number, result.name, result.guest.name)] = result
 
         self._results = list(results_to_save.values())
 
@@ -1259,6 +1258,8 @@ class Execute(tmt.steps.Step):
         result.
         """
 
+        guests = self.plan.provision.get_guests_info()
+
         results = []
         for result, test_origin in self.results_for_tests(tests):
             if result:
@@ -1266,14 +1267,29 @@ class Execute(tmt.steps.Step):
                 continue
             if test_origin is None:
                 continue
-            results.append(
-                Result(
-                    name=test_origin.test.name,
-                    serial_number=test_origin.test.serial_number,
-                    fmf_id=test_origin.test.fmf_id,
-                    result=tmt.result.ResultOutcome.PENDING,
+            test = test_origin.test
+            result_guests = []
+            for where in test.where:
+                for guest in guests:
+                    if where in guest:
+                        result_guests.append(guest)
+
+            if not test.where:
+                result_guests = guests
+
+            for guest in result_guests:
+                results.append(
+                    Result(
+                        name=test.name,
+                        serial_number=test.serial_number,
+                        fmf_id=test.fmf_id,
+                        result=tmt.result.ResultOutcome.PENDING,
+                        guest=ResultGuestData(
+                            name=guest[0],
+                            role=guest[1],
+                        ),
+                    )
                 )
-            )
         return results
 
     def go(self, force: bool = False) -> None:
@@ -1285,6 +1301,7 @@ class Execute(tmt.steps.Step):
 
         # Clean up possible old results
         if force:
+            self._results.clear()
             self._results = self.create_results(self.plan.discover.tests(enabled=True))
             self.save()
 
