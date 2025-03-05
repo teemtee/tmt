@@ -1,5 +1,4 @@
 import re
-import shutil
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Optional, Union, cast
 
@@ -9,6 +8,7 @@ import tmt
 import tmt.base
 import tmt.log
 import tmt.utils
+import tmt.utils.filesystem
 import tmt.utils.git
 from tmt.base import DependencyFmfId, DependencySimple, FmfId
 from tmt.convert import write
@@ -351,7 +351,7 @@ class BeakerLib(Library):
                         self.parent.debug(f"Failed to find library {self} at {self.url}")
                         raise LibraryError
                     self.parent.debug(f"Library {self} is copied into {directory}")
-                    shutil.copytree(library_path, local_library_path, dirs_exist_ok=True)
+                    tmt.utils.filesystem.copy_tree(library_path, local_library_path, self._logger)
 
                     fake_library_id = (
                         self.identifier
@@ -388,12 +388,14 @@ class BeakerLib(Library):
                         ) from error
 
                     # Copy fmf metadata
-                    shutil.copytree(clone_dir / '.fmf', directory / '.fmf', dirs_exist_ok=True)
+                    tmt.utils.filesystem.copy_tree(
+                        clone_dir / '.fmf', directory / '.fmf', self._logger
+                    )
                     if self.path:
-                        shutil.copytree(
+                        tmt.utils.filesystem.copy_tree(
                             clone_dir / self.path.unrooted() / '.fmf',
                             directory / self.path.unrooted() / '.fmf',
-                            dirs_exist_ok=True,
+                            self._logger,
                         )
                 else:
                     # Either url or path must be defined
@@ -408,13 +410,13 @@ class BeakerLib(Library):
                         f"Copy local library '{self.fmf_node_path}' to '{directory}'.", level=3
                     )
                     # Copy only the required library
-                    shutil.copytree(
-                        library_path, local_library_path, symlinks=True, dirs_exist_ok=True
-                    )
+                    tmt.utils.filesystem.copy_tree(library_path, local_library_path, self._logger)
                     # Remove metadata file(s) and create one with full data
                     self._merge_metadata(library_path, local_library_path)
                     # Copy fmf metadata
-                    shutil.copytree(self.path / '.fmf', directory / '.fmf', dirs_exist_ok=True)
+                    tmt.utils.filesystem.copy_tree(
+                        self.path / '.fmf', directory / '.fmf', self._logger
+                    )
             except (tmt.utils.RunError, tmt.utils.RetryError, tmt.utils.GitUrlError) as error:
                 assert self.url is not None
                 # Fallback to install during the prepare step if in rpm format
