@@ -30,7 +30,7 @@ copy_outputfile_to_data_dir () {
     # Construct the final outputfile.
     finalOutputFile="${TMT_TEST_DATA}/${fileprefix}/${filename}"
     # make sure the directory exists.
-    mkdir -p "$(dirname $finalOutputFile)"
+    mkdir -p "$(dirname "$finalOutputFile")"
     # Copy outputfile to data dir.
     cp -f "$outputFile" "$finalOutputFile"
     # Make sure that the log file is readable for guest.pull()
