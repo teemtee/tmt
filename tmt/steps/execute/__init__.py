@@ -1270,9 +1270,7 @@ class Execute(tmt.steps.Step):
             test = test_origin.test
             result_guests = []
             for where in test.where:
-                for guest in guests:
-                    if where in guest:
-                        result_guests.append(guest)
+                result_guests += [guest for guest in guests if where in guest]
 
             if not test.where:
                 result_guests = guests
