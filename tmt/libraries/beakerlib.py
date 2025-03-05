@@ -352,7 +352,7 @@ class BeakerLib(Library):
                         raise LibraryError
                     self.parent.debug(f"Library {self} is copied into {directory}")
                     tmt.utils.filesystem.copy_tree(
-                        library_path, local_library_path, symlinks=True, logger=self._logger
+                        library_path, local_library_path, logger=self._logger
                     )
 
                     fake_library_id = (
@@ -391,13 +391,12 @@ class BeakerLib(Library):
 
                     # Copy fmf metadata
                     tmt.utils.filesystem.copy_tree(
-                        clone_dir / '.fmf', directory / '.fmf', symlinks=True, logger=self._logger
+                        clone_dir / '.fmf', directory / '.fmf', logger=self._logger
                     )
                     if self.path:
                         tmt.utils.filesystem.copy_tree(
                             clone_dir / self.path.unrooted() / '.fmf',
                             directory / self.path.unrooted() / '.fmf',
-                            symlinks=True,
                             logger=self._logger,
                         )
                 else:
@@ -414,13 +413,13 @@ class BeakerLib(Library):
                     )
                     # Copy only the required library
                     tmt.utils.filesystem.copy_tree(
-                        library_path, local_library_path, symlinks=True, logger=self._logger
+                        library_path, local_library_path, logger=self._logger
                     )
                     # Remove metadata file(s) and create one with full data
                     self._merge_metadata(library_path, local_library_path)
                     # Copy fmf metadata
                     tmt.utils.filesystem.copy_tree(
-                        self.path / '.fmf', directory / '.fmf', symlinks=True, logger=self._logger
+                        self.path / '.fmf', directory / '.fmf', logger=self._logger
                     )
             except (tmt.utils.RunError, tmt.utils.RetryError, tmt.utils.GitUrlError) as error:
                 assert self.url is not None

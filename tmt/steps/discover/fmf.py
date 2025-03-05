@@ -487,9 +487,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             if not dist_git_source or dist_git_merge:
                 self.debug(f"Copy '{directory}' to '{self.testdir}'.")
                 if not self.is_dry_run:
-                    tmt.utils.filesystem.copy_tree(
-                        directory, self.testdir, symlinks=True, logger=self._logger
-                    )
+                    tmt.utils.filesystem.copy_tree(directory, self.testdir, logger=self._logger)
 
         # Prepare path of the dynamic reference
         try:
@@ -531,7 +529,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 tmt.utils.filesystem.copy_tree(
                     self.testdir if ref else git_root,
                     sourcedir,
-                    symlinks=True,
                     logger=self._logger,
                 )
                 # patch & rediscover will happen later in the prepare step
@@ -672,7 +669,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 tmt.utils.filesystem.copy_tree(
                     path,
                     clonedir / path.relative_to(tree_path),
-                    symlinks=True,
                     logger=self._logger,
                 )
 
@@ -696,7 +692,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 tmt.utils.filesystem.copy_tree(
                     tree_path / relative_test_path,
                     clonedir / relative_test_path,
-                    symlinks=True,
                     logger=self._logger,
                 )
 
@@ -728,9 +723,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             # Clean self.testdir and copy back only required tests and files from clonedir
             # This is to have correct paths in tests
             shutil.rmtree(self.testdir, ignore_errors=True)
-            tmt.utils.filesystem.copy_tree(
-                clonedir, self.testdir, symlinks=True, logger=self._logger
-            )
+            tmt.utils.filesystem.copy_tree(clonedir, self.testdir, logger=self._logger)
 
         # Cleanup clone directories
         if self.clone_dirpath.exists():
@@ -813,7 +806,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     tmt.utils.filesystem.copy_tree(
                         sourcedir / to_copy,
                         self.testdir if flatten else self.testdir / to_copy,
-                        symlinks=True,
                         logger=self._logger,
                     )
                 else:
