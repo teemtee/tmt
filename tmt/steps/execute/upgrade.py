@@ -478,7 +478,8 @@ class ExecuteUpgrade(ExecuteInternal):
             for result in results
             if result.name.startswith(f'/{prefix}/')
         ]
-        results_to_save = [result for result in results if result.name not in old_result_names]
 
-        self.step.plan.execute._results = results_to_save
-        self.step.plan.execute._save_results(results_to_save)
+        self.step.plan.execute._results = [
+            result for result in results if result.name not in old_result_names
+        ]
+        self.step.plan.execute.save()
