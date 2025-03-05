@@ -18,3 +18,25 @@ Following plugins fully implement hard reboot:
 * :ref:`virtual</plugins/provision/virtual.testcloud>`
 
 .. include:: hardware-matrix.rst
+
+
+SSH options
+-----------
+
+When communicating with guests over SSH, tmt adds several SSH options by
+default to relevant commands:
+
+.. code-block::
+
+    # Try establishing connection multiple times before giving up.
+    ConnectionAttempts=5
+    ConnectTimeout=60
+
+    # Prevent SSH from disconnecting if no data has been
+    # received from the server for a long time.
+    ServerAliveInterval=5
+    ServerAliveCountMax=60
+
+Additional SSH options can be specified either via ``ssh-option`` key
+of respective plugins, or by setting ``TMT_SSH_*`` environment
+variables; see :ref:`command-variables` for details.
