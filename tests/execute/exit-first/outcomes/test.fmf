@@ -18,9 +18,3 @@ test: 'true'
 
 /warn:
     result: warn
-
-/skip:
-    result: skip
-
-/pending:
-    result: pending

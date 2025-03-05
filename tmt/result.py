@@ -644,7 +644,7 @@ def results_to_exit_code(results: list[Result]) -> int:
         return TmtExitCode.NO_RESULTS_FOUND
 
     # "Errors occurred during test execution."
-    if stats[ResultOutcome.ERROR] + stats[ResultOutcome.PENDING]:
+    if stats[ResultOutcome.ERROR]:
         return TmtExitCode.ERROR
 
     # "There was a fail or warn identified, but no error."
@@ -654,6 +654,10 @@ def results_to_exit_code(results: list[Result]) -> int:
     # "Tests were executed, and all reported the ``skip`` result."
     if sum(stats.values()) == stats[ResultOutcome.SKIP]:
         return TmtExitCode.ALL_TESTS_SKIPPED
+
+    # "No errors or fails, but there are pending tests."
+    if stats[ResultOutcome.PENDING]:
+        return TmtExitCode.ERROR
 
     # "At least one test passed, there was no fail, warn or error."
     if (
