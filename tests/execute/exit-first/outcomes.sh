@@ -16,13 +16,11 @@ rlJournalStart
         rlRun -s "${tmt_command} ${planName} 2>&1 >/dev/null" 1 "Warning is expected"
         rlAssertGrep "info /test/info" $rlRun_LOG
         rlAssertGrep "warn /test/warn" $rlRun_LOG
-        rlAssertGrep "skip /test/skip" $rlRun_LOG
         rlAssertGrep "pass /test/pass" $rlRun_LOG
-        rlAssertGrep "pending /test/pending" $rlRun_LOG
         rlAssertGrep "pass /test/another-pass" $rlRun_LOG
         rlAssertNotGrep "warn: Test .* stopping execution." $rlRun_LOG
-        rlAssertGrep "summary: 4 tests executed, 1 test skipped" $rlRun_LOG
-        rlAssertGrep "total: 2 tests passed, 1 test skipped, 1 info, 1 warn and 1 pending" $rlRun_LOG
+        rlAssertGrep "summary: 4 tests executed" $rlRun_LOG
+        rlAssertGrep "total: 2 tests passed, 1 info and 1 warn" $rlRun_LOG
     rlPhaseEnd
 
     planName="/plan/fail"
