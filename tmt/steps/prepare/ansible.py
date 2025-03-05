@@ -53,6 +53,7 @@ class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
         option='--extra-args',
         metavar='ANSIBLE-PLAYBOOK-OPTIONS',
         help='Additional CLI options for ``ansible-playbook``.',
+        help_example_values=['-vvv'],
     )
 
     # ignore[override]: method violates a liskov substitution principle,
