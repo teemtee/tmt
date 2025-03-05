@@ -16,6 +16,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.discover
 import tmt.utils
+import tmt.utils.filesystem
 import tmt.utils.git
 from tmt.base import _RawAdjustRule
 from tmt.container import container, field
@@ -486,7 +487,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             if not dist_git_source or dist_git_merge:
                 self.debug(f"Copy '{directory}' to '{self.testdir}'.")
                 if not self.is_dry_run:
-                    shutil.copytree(directory, self.testdir, symlinks=True)
+                    tmt.utils.filesystem.copy_tree(
+                        directory, self.testdir, symlinks=True, logger=self._logger
+                    )
 
         # Prepare path of the dynamic reference
         try:
@@ -525,11 +528,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 )
                 # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
                 # FIXME 'worktree' could be used as sourcedir when 'url' is not set
-                shutil.copytree(
+                tmt.utils.filesystem.copy_tree(
                     self.testdir if ref else git_root,
                     sourcedir,
                     symlinks=True,
-                    dirs_exist_ok=True,
+                    logger=self._logger,
                 )
                 # patch & rediscover will happen later in the prepare step
                 if not self.get('dist-git-download-only'):
@@ -666,10 +669,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             # Save fmf metadata
             clonedir = self.clone_dirpath / 'tests'
             for path in tmt.utils.filter_paths(tree_path, [r'\.fmf']):
-                shutil.copytree(
+                tmt.utils.filesystem.copy_tree(
                     path,
                     clonedir / path.relative_to(tree_path),
-                    dirs_exist_ok=True,
+                    symlinks=True,
+                    logger=self._logger,
                 )
 
             # Save upgrade plan
@@ -689,10 +693,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 # Save only current test data
                 assert test.path is not None  # narrow type
                 relative_test_path = test.path.unrooted()
-                shutil.copytree(
+                tmt.utils.filesystem.copy_tree(
                     tree_path / relative_test_path,
                     clonedir / relative_test_path,
-                    dirs_exist_ok=True,
+                    symlinks=True,
+                    logger=self._logger,
                 )
 
                 # Copy all parent main.fmf files
@@ -723,7 +728,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             # Clean self.testdir and copy back only required tests and files from clonedir
             # This is to have correct paths in tests
             shutil.rmtree(self.testdir, ignore_errors=True)
-            shutil.copytree(clonedir, self.testdir)
+            tmt.utils.filesystem.copy_tree(
+                clonedir, self.testdir, symlinks=True, logger=self._logger
+            )
 
         # Cleanup clone directories
         if self.clone_dirpath.exists():
@@ -803,11 +810,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             for to_copy in copy_these:
                 src = sourcedir / to_copy
                 if src.is_dir():
-                    shutil.copytree(
+                    tmt.utils.filesystem.copy_tree(
                         sourcedir / to_copy,
                         self.testdir if flatten else self.testdir / to_copy,
                         symlinks=True,
-                        dirs_exist_ok=True,
+                        logger=self._logger,
                     )
                 else:
                     shutil.copyfile(src, self.testdir / to_copy)
