@@ -4359,16 +4359,16 @@ class CentOSDistGit(DistGitHandler):
     remote_substring = re.compile(r'redhat/centos')
 
 
-class RedHatGitlab(DistGitHandler):
+class RedHatDistGit(DistGitHandler):
     """
-    Red Hat on Gitlab
+    Red Hat Handler
     """
 
-    usage_name = "redhatgitlab"
+    usage_name = "redhat"
     re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
     # Location already public (standard-test-roles)
     lookaside_server = "http://pkgs.devel.redhat.com/repo"
-    remote_substring = re.compile(r'redhat/rhel/')
+    remote_substring = re.compile(r'redhat/rhel/|pkgs\.devel\.redhat\.com')
 
 
 def get_distgit_handler(

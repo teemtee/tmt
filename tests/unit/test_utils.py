@@ -808,12 +808,18 @@ def test_get_distgit_handler():
             "remote.origin.url https://<redacted_credentials>@gitlab.com/redhat/rhel/rpms/osbuild.git",
         ]
     )
-    assert isinstance(returned_object, tmt.utils.RedHatGitlab)
+    assert isinstance(returned_object, tmt.utils.RedHatDistGit)
+    returned_object = tmt.utils.get_distgit_handler(
+        [
+            "remote.origin.url ssh://<redacted_credentials>@pkgs.devel.redhat.com/rpms/ruby",
+        ]
+    )
+    assert isinstance(returned_object, tmt.utils.RedHatDistGit)
 
 
 def test_get_distgit_handler_explicit():
-    instance = tmt.utils.get_distgit_handler(usage_name='redhatgitlab')
-    assert instance.__class__.__name__ == 'RedHatGitlab'
+    instance = tmt.utils.get_distgit_handler(usage_name='redhat')
+    assert instance.__class__.__name__ == 'RedHatDistGit'
 
 
 def test_fedora_dist_git(tmppath):
