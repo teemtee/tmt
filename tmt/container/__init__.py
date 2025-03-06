@@ -9,6 +9,10 @@ import textwrap
 from collections.abc import Iterator, Sequence
 from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, Union, cast, overload
 
+import fmf
+
+from tmt._compat.pydantic import BaseModel, Extra, ValidationError
+
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
 
@@ -867,3 +871,46 @@ def field(
             )
         },
     )
+
+
+#
+# A base class for containers holding tmt metadata, content of fmf trees
+# of various kinds.
+#
+# Note: this is a work in progress! We would like to reduce the amount
+# of custom code implementing validation, normalization and srialization,
+# and use existing and well-equipped libraries like attrs and Pydantic.
+# Not all containers are converted, not all features are ready, do not
+# be surprised if there are containers still using `DataContainer`
+# family of classes.
+#
+
+#: A typevar bound to spec-based container base class. A stand-in for all classes
+#: derived from :py:class:`SpecBasedContainer`.
+MetadataContainerT = TypeVar(
+    'MetadataContainerT',
+    bound='MetadataContainer',
+)
+
+
+class MetadataContainer(BaseModel):
+    """
+    A base class of containers backed by fmf nodes.
+    """
+
+    class Config:
+        # Accept only keys with dashes instead of underscores
+        alias_generator = key_to_option
+        extra = Extra.forbid
+        validate_all = True
+        validate_assignment = True
+
+    @classmethod
+    def from_fmf(cls: type[MetadataContainerT], tree: fmf.Tree) -> MetadataContainerT:
+        try:
+            return cls.parse_obj(tree.data)
+
+        except ValidationError as error:
+            import tmt.utils
+
+            raise tmt.utils.SpecificationError(f"Invalid metadata in '{tree.name}'.") from error

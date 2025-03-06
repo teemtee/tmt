@@ -8,7 +8,6 @@ import fmf.utils
 
 import tmt.utils
 from tmt._compat.pathlib import Path
-from tmt._compat.pydantic import ValidationError
 from tmt.config.models.link import LinkConfig
 
 # Config directory
@@ -99,9 +98,5 @@ class Config:
         link_config = cast(Optional[fmf.Tree], self.fmf_tree.find('/link'))
         if not link_config:
             return None
-        try:
-            return LinkConfig.parse_obj(link_config.data)
-        except ValidationError as error:
-            raise tmt.utils.SpecificationError(
-                f"Invalid link configuration in '{link_config.name}'."
-            ) from error
+
+        return LinkConfig.from_fmf(link_config)
