@@ -16,8 +16,16 @@ from tmt.utils import Path
 @pytest.mark.parametrize(
     ('socket_dir', 'limit_size', 'expected'),
     [
-        (Path('/tmp'), True, Path('/tmp/dummy-id.socket')),
-        (Path('/very/log/socket/dir/which/is/almost/over/the/limit/but/just/and/soo'), True, None),
+        (
+            Path('/tmp'),
+            True,
+            Path('/tmp/dummy-id.socket'),
+        ),
+        (
+            Path('/very/log/socket/dir/which/is/almost/over/the/limit/but/just/and/soo'),
+            True,
+            None,
+        ),
         (
             Path('/very/log/socket/dir/which/is/over/the/limit/by/itself/and/does/not/need'),
             True,
