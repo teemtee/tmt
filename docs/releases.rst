@@ -6,6 +6,7 @@
 
 tmt-1.44.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 When running ``tmt try`` failure in ``prepare`` phase drops the user
 to the menu to be able to login to the machine and possibly try it again.
 
