@@ -466,6 +466,9 @@ definitions:
             - "$ref": "#/definitions/block"
             - "$ref": "#/definitions/and"
             - "$ref": "#/definitions/or"
+        minItems: 1
+
+    additionalProperties: false
 
     required:
       - "and"
@@ -480,6 +483,9 @@ definitions:
             - "$ref": "#/definitions/block"
             - "$ref": "#/definitions/and"
             - "$ref": "#/definitions/or"
+        minItems: 1
+
+    additionalProperties: false
 
     required:
       - "or"
