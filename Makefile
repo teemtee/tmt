@@ -146,9 +146,9 @@ images/test/bases:  ## Download base images for custom test images
 
 # Build a single container: <image name> <containerfile>
 define do-build-container-image =
-@ echo "$(ccred)$$(date '+%x %T')$(ccend) $(ccgreen)Building$(ccend) $(ccred)${1}$(ccend) $(ccgreen)image...$(ccend)"
+@ echo "$(ccred)$$(date '+%Y-%m-%d %H:%M:%S')$(ccend) $(ccgreen)Building$(ccend) $(ccred)${1}$(ccend) $(ccgreen)image...$(ccend)"
 podman build ${3} -t ${1} -f ./containers/${2} .
-@ echo "$(ccred)$$(date '+%x %T')$(ccend) $(ccgreen)Building$(ccend) $(ccred)${1}$(ccend) $(ccgreen)image done$(ccend)"
+@ echo "$(ccred)$$(date '+%Y-%m-%d %H:%M:%S')$(ccend) $(ccgreen)Building$(ccend) $(ccred)${1}$(ccend) $(ccgreen)image done$(ccend)"
 endef
 
 # Return an image name from the given target: <image target>
