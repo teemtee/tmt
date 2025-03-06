@@ -2691,10 +2691,11 @@ class Plan(
                     if self.my_run and self.reshape(tests):
                         return
 
-                    self.execute._results = self.execute.create_results(
-                        self.discover.tests(enabled=True)
-                    )
-                    self.execute.save()
+                    if not self.is_dry_run:
+                        self.execute._results = self.execute.create_results(
+                            self.discover.tests(enabled=True)
+                        )
+                        self.execute.save()
 
                 # Source the plan environment file after prepare and execute step
                 if isinstance(step, (tmt.steps.prepare.Prepare, tmt.steps.execute.Execute)):
