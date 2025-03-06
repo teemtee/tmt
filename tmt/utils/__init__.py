@@ -245,10 +245,6 @@ DEFAULT_RETRIABLE_HTTP_CODES: Optional[tuple[int, ...]] = (
     504,  # Gateway Timeout
 )
 
-# Default for wait()-related options
-DEFAULT_WAIT_TICK: float = 30.0
-DEFAULT_WAIT_TICK_INCREASE: float = 1.0
-
 # Defaults for GIT attempts and interval
 DEFAULT_GIT_CLONE_TIMEOUT: Optional[int] = None
 GIT_CLONE_TIMEOUT: Optional[int] = configure_optional_constant(

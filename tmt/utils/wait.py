@@ -153,10 +153,10 @@ class Waiting:
 
     #: How many seconds to wait between two consecutive checks whether
     #: the condition is satisfied.
-    tick: float = tmt.utils.DEFAULT_WAIT_TICK
+    tick: float = DEFAULT_WAIT_TICK
 
     #: A multiplier applied to :py:attr:`tick` after every attempt.
-    tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE
+    tick_increase: float = DEFAULT_WAIT_TICK_INCREASE
 
     def wait(self, check: WaitCheckType[T], logger: tmt.log.Logger) -> T:
         """
