@@ -31,6 +31,7 @@ from tmt.utils import (
     Path,
     ShellScript,
     Stopwatch,
+    configure_bool_constant,
     format_duration,
     format_timestamp,
 )
@@ -262,10 +263,16 @@ class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         help='The maximal time allowed for the test to run.',
     )
     ignore_duration: bool = field(
-        default=False,
-        option=('--ignore-duration'),
+        default=configure_bool_constant(False, 'TMT_PLUGIN_EXECUTE_TMT_IGNORE_DURATION'),
+        option='--ignore-duration',
         is_flag=True,
-        help='Ignore test duration values and allow tests run forever.',
+        envvar="TMT_PLUGIN_EXECUTE_TMT_IGNORE_DURATION",
+        help="""
+             Ignore test duration value and allow test to run forever.
+             Can be set by envvar even when step is not specified on the
+             commandline. This environment variable
+             will be replaced by plan.fmf or CLI arguments.
+             """,
     )
     exit_first: bool = field(
         default=False,
@@ -715,7 +722,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         logger: tmt.log.Logger,
     ) -> None:
         self.go_prolog(logger)
-        logger.verbose('ignore-duration', self.data.exit_first, 'green', level=2)
+        logger.verbose('ignore-duration', self.data.ignore_duration, 'green', level=2)
         logger.verbose('exit-first', self.data.exit_first, 'green', level=2)
 
     @property

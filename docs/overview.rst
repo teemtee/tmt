@@ -629,6 +629,8 @@ TMT_TEST_PIDFILE_ROOT
     of temporary directory permissions, e.g. ``chmod 1777``, to
     allow access to users with all privilege levels.
 
+.. _plugin-variables:
+
 Plugin Variables
 ----------------
 
@@ -685,6 +687,9 @@ example, an interactive mode would be enabled in this run::
       # Here the environment variable will take effect:
       $ TMT_PLUGIN_DISCOVER_FMF_VERBOSE=2 tmt run -a discover -h fmf ...
 
+   Few plugins (:ref:`/plugins/report/reportportal`, :ref:`/plugins/report/polarion`,
+   :ref:`/plugins/execute/tmt`) allow selected variables to be processed,
+   even when plugin is not specified on the command line.
 
 .. _regular-expressions:
 
