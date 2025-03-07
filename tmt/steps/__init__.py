@@ -50,7 +50,6 @@ from tmt.container import (
 from tmt.options import option
 from tmt.utils import (
     DEFAULT_NAME,
-    Command,
     Environment,
     EnvVarValue,
     GeneralError,
@@ -101,6 +100,9 @@ PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS = 75
 STEPS: list[str] = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish']
 ACTIONS: list[str] = ['login', 'reboot']
 DEFAULT_LOGIN_COMMAND = 'bash'
+
+#: A default command to trigger a guest reboot when executed remotely.
+DEFAULT_REBOOT_COMMAND = tmt.utils.ShellScript('reboot')
 
 # Step phase order
 PHASE_START = 10
@@ -2068,7 +2070,7 @@ class Reboot(Action):
         @option(
             '--command',
             type=str,
-            default='reboot',
+            default=str(DEFAULT_REBOOT_COMMAND),
             help='A command to run on the guest to trigger the reboot.',
         )
         def reboot(context: 'tmt.cli.Context', **kwargs: Any) -> None:
@@ -2104,7 +2106,7 @@ class Reboot(Action):
         assert hasattr(self.parent, 'plan')
         assert self.parent.plan is not None
         for guest in self.parent.plan.provision.ready_guests:
-            guest.reboot(hard=self.opt('hard'), command=Command(self.opt('command')))
+            guest.reboot(hard=self.opt('hard'), command=tmt.utils.ShellScript(self.opt('command')))
         self.info('reboot', 'Reboot finished', color='yellow')
 
 
