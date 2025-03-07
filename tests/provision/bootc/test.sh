@@ -17,7 +17,8 @@ rlJournalStart
 
     rlPhaseStartTest "Image that needs dependencies"
         rlRun "podman build . -f needs-deps.containerfile -t $IMAGE_NEEDS_DEPS"
-        rlRun "tmt -vvv run --scratch -i $run plan --name /plans/image/needs-deps"
+        rlRun -s "tmt -vvv run --scratch -i $run plan --name /plans/image/needs-deps"
+        rlAssertGrep "building container image with dependencies" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Image that already includes dependencies"
