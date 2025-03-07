@@ -5,6 +5,15 @@
 ======================
 
 
+tmt-1.44.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Execute tmt option ``--ignore-duration`` makes tmt to execute
+the test as long as it needs. Execute plugin doesn't need to be
+specified on the commandline for :ref:`plugin-variables` to work
+for this option.
+
+
 tmt-1.43.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
