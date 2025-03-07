@@ -687,8 +687,8 @@ example, an interactive mode would be enabled in this run::
       # Here the environment variable will take effect:
       $ TMT_PLUGIN_DISCOVER_FMF_VERBOSE=2 tmt run -a discover -h fmf ...
 
-   Few plugins (:ref:`/plugins/report/reportportal`, :ref:`/plugins/report/polarion`,
-   :ref:`/plugins/execute/tmt`) allow selected variables to be processed,
+   Several plugins (``report -h reportportal``, ``report -h polarion``,
+   ``execute -h tmt``) allow selected variables to be processed,
    even when plugin is not specified on the command line.
 
 .. _regular-expressions:
