@@ -1,5 +1,7 @@
 import re
 import shutil
+import json
+import uuid
 from collections.abc import Iterator
 from typing import Any, Literal, Optional, TypeVar, Union, cast
 
@@ -579,6 +581,181 @@ class InstallApt(InstallBase):
                 *[Package(f'{package}-debuginfo') for package in self.debuginfo_packages]
             )
 
+class InstallBootc(InstallBase):
+    """ Install packages using bootc container image mode """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """ Initialize bootc installation for package management """
+        super().__init__(*args, **kwargs)
+
+        # Create package directory
+        assert self.parent is not None
+        workdir = cast(PrepareInstall, self.parent).step.workdir
+        if not workdir:
+            raise tmt.utils.GeneralError('workdir should not be empty')
+
+        self.package_directory = workdir / 'packages'
+        self.package_directory.mkdir(parents=True, exist_ok=True)
+
+        # Determine the current running image to use as base
+        self.base_image = self._get_current_bootc_image()
+
+        # Initialize containerfile content with sections for different package types
+        self.containerfile_content = f"FROM {self.base_image}\n\n"
+        self.has_packages = False
+
+    def _get_current_bootc_image(self) -> str:
+        """ Get the current bootc image running on the system """
+        output = self.guest.execute(Command('bootc', 'status', '--json'), silent=True)
+        try:
+            image_status = json.loads(output.stdout)
+            base_image = image_status.get('booted', {}).get('image', '')
+
+            if not base_image:
+                raise tmt.utils.PrepareError("Failed to detect current bootc image.")
+            return base_image
+        except json.JSONDecodeError as error:
+            raise tmt.utils.PrepareError(f"Failed to parse bootc status: {error}")
+
+    def install_local(self) -> None:
+        """ Add local packages to the container image """
+        if not self.local_packages:
+            return
+
+        self.debug("Adding local packages to Containerfile.")
+
+        # Create packages directory inside the container and copy packages
+        local_pkg_section = "# Install local packages\n"
+        local_pkg_section += "RUN mkdir -p /tmp/packages\n"
+
+        # Add COPY commands for each local package
+        for package in self.local_packages:
+            package_name = package.name
+            local_pkg_section += f"COPY packages/{package_name} /tmp/packages/{package_name}\n"
+
+        # Create install command for all local packages
+        install_cmd = "RUN dnf -y install"
+
+        if self.exclude:
+            for pkg in self.exclude:
+                install_cmd += f" --exclude={pkg}"
+
+        for package in self.local_packages:
+            install_cmd += f" /tmp/packages/{package.name}"
+
+        local_pkg_section += f"{install_cmd}\n\n"
+        self.containerfile_content += local_pkg_section
+        self.has_packages = True
+
+        # Copy all local packages to the package directory for COPY command
+        for package in self.local_packages:
+            shutil.copy(package, self.package_directory)
+
+    def install_from_url(self) -> None:
+        """ Add remote URL packages to the container image """
+        if not self.remote_packages:
+            return
+
+        self.debug("Adding remote URL packages to Containerfile.")
+
+        url_pkg_section = "# Install packages from URLs\n"
+        install_cmd = "RUN dnf -y install"
+
+        if self.exclude:
+            for pkg in self.exclude:
+                install_cmd += f" --exclude={pkg}"
+
+        if self.skip_missing:
+            install_cmd += " --skip-broken"
+
+        for package_url in self.remote_packages:
+            install_cmd += f" {package_url}"
+
+        url_pkg_section += f"{install_cmd}\n\n"
+        self.containerfile_content += url_pkg_section
+        self.has_packages = True
+
+    def install_from_repository(self) -> None:
+        """ Add repository packages to the container image """
+        if not self.packages:
+            return
+
+        self.debug("Adding repository packages to Containerfile.")
+
+        repo_pkg_section = "# Install packages from repositories\n"
+        install_cmd = "RUN dnf -y install"
+
+        if self.exclude:
+            for pkg in self.exclude:
+                install_cmd += f" --exclude={pkg}"
+
+        if self.skip_missing:
+            install_cmd += " --skip-broken"
+
+        for package in self.packages:
+            install_cmd += f" {package}"
+
+        repo_pkg_section += f"{install_cmd}\n\n"
+        self.containerfile_content += repo_pkg_section
+        self.has_packages = True
+
+    def install_debuginfo(self) -> None:
+        """ Add debuginfo packages to the container image """
+        if not self.debuginfo_packages:
+            return
+
+        self.debug("Adding debuginfo packages to Containerfile.")
+
+        debug_pkg_section = "# Install debuginfo packages\n"
+        install_cmd = "RUN dnf -y debuginfo-install"
+
+        if self.exclude:
+            for pkg in self.exclude:
+                install_cmd += f" --exclude={pkg}"
+
+        if self.skip_missing:
+            install_cmd += " --skip-broken"
+
+        for package in self.debuginfo_packages:
+            install_cmd += f" {package}"
+
+        debug_pkg_section += f"{install_cmd}\n\n"
+        self.containerfile_content += debug_pkg_section
+        self.has_packages = True
+
+    def _install(self) -> None:
+        """ Coordinate installation process through containerfile building and switching """
+        # Call base install methods to collect all package types
+        super()._install()
+
+        # If no packages were added, nothing to do
+        if not self.has_packages:
+            self.debug("No packages to install.")
+            return
+
+        image_tag = f"localhost/tmt-deps-{uuid.uuid4()}"
+
+        # Write the final Containerfile
+        containerfile_path = self.package_directory / 'Containerfile'
+        containerfile_path.write_text(self.containerfile_content)
+
+        # Build the container image
+        self.info("building", "container image with dependencies", "green")
+        self.guest.execute(
+            Command('podman', 'build', '-t', image_tag, '-f', str(containerfile_path), '.'),
+            cwd=self.package_directory)
+
+        # Switch to the new image for next boot
+        self.info("switching", f"to new image {image_tag}", "green")
+        self.guest.execute(Command(
+            'bootc', 'switch', '--transport', 'containers-storage', image_tag))
+
+        # Reboot into the new image
+        self.info("rebooting", "to apply new image", "green")
+        self.guest.execute(ShellScript("bash -lc tmt-reboot"))
+
+        # Let tmt handle the reboot and reconnection
+
 
 class InstallApk(InstallBase):
     """
@@ -774,6 +951,15 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         # shipped as plugins, but we still need a matching *installation* class.
         # But do we really need a class per package manager family? Maybe the
         # code could be integrated into package manager plugins directly.
+        if guest.facts.package_manager == 'bootc':
+            installer: InstallBase = InstallBootc(
+                logger=logger,
+                parent=self,
+                dependencies=self.data.package,
+                directories=self.data.directory,
+                exclude=self.data.exclude,
+                guest=guest)
+
         if guest.facts.package_manager == 'rpm-ostree':
             installer: InstallBase = InstallRpmOstree(
                 logger=logger,
