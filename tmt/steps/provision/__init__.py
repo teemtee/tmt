@@ -257,9 +257,6 @@ DEFAULT_RSYNC_OPTIONS = ["-s", "-R", "-r", "-z", "--links", "--safe-links", "--d
 DEFAULT_RSYNC_PUSH_OPTIONS = ["-s", "-R", "-r", "-z", "--links", "--safe-links", "--delete"]
 DEFAULT_RSYNC_PULL_OPTIONS = ["-s", "-R", "-r", "-z", "--links", "--safe-links", "--protect-args"]
 
-#: A default command to trigger a guest reboot when executed remotely.
-DEFAULT_REBOOT_COMMAND = Command('reboot')
-
 #: A pattern to extract ``btime`` from ``/proc/stat`` file.
 STAT_BTIME_PATTERN = re.compile(r'btime\s+(\d+)')
 
@@ -2554,7 +2551,7 @@ class GuestSsh(Guest):
                 f"Guest '{self.multihost_name}' does not support hard reboot."
             )
 
-        actual_command = command or DEFAULT_REBOOT_COMMAND
+        actual_command = command or tmt.steps.DEFAULT_REBOOT_COMMAND
 
         self.debug(f"Soft reboot using command '{actual_command}'.")
 
