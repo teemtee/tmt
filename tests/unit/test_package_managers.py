@@ -13,6 +13,7 @@ import tmt.package_managers.apk
 import tmt.package_managers.apt
 import tmt.package_managers.dnf
 import tmt.package_managers.rpm_ostree
+import tmt.package_managers.bootc
 import tmt.plugins
 import tmt.steps.provision.podman
 import tmt.utils
@@ -84,6 +85,7 @@ PACKAGE_MANAGER_RPMOSTREE = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTR
     'rpm-ostree'
 )
 PACKAGE_MANAGER_APK = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('apk')
+PACKAGE_MANAGER_BOOTC = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('bootc')
 
 
 def has_legacy_dnf(container: ContainerData) -> bool:
@@ -165,6 +167,8 @@ CONTAINER_BASE_MATRIX = [
     # Fedora CoreOS
     (CONTAINER_FEDORA_COREOS, PACKAGE_MANAGER_DNF5),
     (CONTAINER_FEDORA_COREOS_OSTREE, PACKAGE_MANAGER_RPMOSTREE),
+    (CONTAINER_FEDORA_COREOS_OSTREE, PACKAGE_MANAGER_BOOTC),
+
     # Alpine
     (CONTAINER_ALPINE, PACKAGE_MANAGER_APK),
 ]
@@ -393,6 +397,13 @@ def _parametrize_test_install() -> Iterator[
                 'Installing: tree',
             )
 
+        elif package_manager_class is tmt.package_managers.bootc.Bootc:
+            yield container, \
+                package_manager_class, \
+                Package('tree'), \
+                r"rpm -q --whatprovides tree \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree", \
+                'Installing: tree'  # noqa: E501
+
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield (
                 container,
@@ -484,6 +495,15 @@ def _parametrize_test_refresh_metadata() -> Iterator[
                     reason="refresh-md does not work with how tmt runs ostree container"
                 ),
             )
+
+        elif package_manager_class is tmt.package_managers.bootc.Bootc:
+            yield pytest.param(
+                container,
+                package_manager_class,
+                r"rpm-ostree refresh-md --force",
+                'Available',
+                marks=pytest.mark.skip(reason="refresh-md does not work with how tmt runs ostree container")  # noqa: E501
+                )
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield container, package_manager_class, r"apk update", 'OK:'
@@ -601,6 +621,12 @@ def _parametrize_test_install_nonexistent() -> Iterator[
                 'no package provides tree-but-spelled-wrong',
             )
 
+        elif package_manager_class is tmt.package_managers.bootc.Bootc:
+            yield container, \
+                package_manager_class, \
+                r"rpm -q --whatprovides tree-but-spelled-wrong \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree-but-spelled-wrong", \
+                'no package provides tree-but-spelled-wrong'  # noqa: E501
+
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield (
                 container,
@@ -716,6 +742,12 @@ def _parametrize_test_install_nonexistent_skip() -> Iterator[
                 'no package provides tree-but-spelled-wrong',
             )
 
+        elif package_manager_class is tmt.package_managers.bootc.Bootc:
+            yield container, \
+                package_manager_class, \
+                r"rpm -q --whatprovides tree-but-spelled-wrong \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree-but-spelled-wrong \|\| /bin/true", \
+                'no package provides tree-but-spelled-wrong'  # noqa: E501
+
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield (
                 container,
@@ -819,6 +851,13 @@ def _parametrize_test_install_dont_check_first() -> Iterator[
                 r"rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree",
                 'Installing: tree',
             )
+
+        elif package_manager_class is tmt.package_managers.bootc.Bootc:
+            yield container, \
+                package_manager_class, \
+                Package('tree'), \
+                r"rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree", \
+                'Installing: tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield (
@@ -927,6 +966,14 @@ def _parametrize_test_reinstall() -> Iterator[
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, package_manager_class, Package('tar'), False, None, None
+
+        elif package_manager_class is tmt.package_managers.bootc.Bootc:
+            yield container, \
+                package_manager_class, \
+                Package('tar'), \
+                False, \
+                None, \
+                None
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield (
@@ -1052,6 +1099,13 @@ def _generate_test_reinstall_nonexistent_matrix() -> Iterator[
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, package_manager_class, False, None, None
+
+        elif package_manager_class is tmt.package_managers.bootc.Bootc:
+            yield container, \
+                package_manager_class, \
+                False, \
+                None, \
+                None
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield (
@@ -1367,6 +1421,28 @@ def _generate_test_check_presence() -> Iterator[
                 r'\s+out:\s+util-linux-core',
             )
 
+        elif package_manager_class is tmt.package_managers.bootc.Bootc:
+            yield container, \
+                package_manager_class, \
+                Package('util-linux'), \
+                True, \
+                r"rpm -q --whatprovides util-linux", \
+                r'\s+out:\s+util-linux'
+
+            yield container, \
+                package_manager_class, \
+                Package('tree-but-spelled-wrong'), \
+                False, \
+                r"rpm -q --whatprovides tree-but-spelled-wrong", \
+                r'\s+out:\s+no package provides tree-but-spelled-wrong'
+
+            yield container, \
+                package_manager_class, \
+                FileSystemPath('/usr/bin/flock'), \
+                True, \
+                r"rpm -qf /usr/bin/flock", \
+                r'\s+out:\s+util-linux-core'
+
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield (
                 container,
@@ -1509,6 +1585,13 @@ def _parametrize_test_install_filesystempath() -> Iterator[
                 "Installing 1 packages:\n  dos2unix-",
             )
 
+        elif package_manager_class is tmt.package_managers.bootc.Bootc:
+            yield container, \
+                package_manager_class, \
+                FileSystemPath('/usr/bin/dos2unix'), \
+                r"rpm -qf /usr/bin/dos2unix \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  /usr/bin/dos2unix", \
+                "Installing 1 packages:\n  dos2unix-"  # noqa: E501
+
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield (
                 container,
@@ -1645,6 +1728,13 @@ def _parametrize_test_install_multiple() -> Iterator[
                 r"rpm -q --whatprovides tree nano \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree nano",  # noqa: E501
                 'Installing: tree',
             )
+
+        elif package_manager_class is tmt.package_managers.bootc.Bootc:
+            yield container, \
+                package_manager_class, \
+                (Package('tree'), Package('nano')), \
+                r"rpm -q --whatprovides tree nano \|\| rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  tree nano", \
+                'Installing: tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apk.Apk:
             yield (
@@ -1799,6 +1889,14 @@ def _parametrize_test_install_downloaded() -> Iterator[
                 r"rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  /tmp/tree.rpm /tmp/cowsay.rpm",  # noqa: E501
                 'Installing: tree',
             )
+
+        elif package_manager_class is tmt.package_managers.bootc.Bootc:
+            yield container, \
+                package_manager_class, \
+                (Package('tree'), Package('cowsay')), \
+                ('tree*.x86_64.rpm', 'cowsay*.noarch.rpm'), \
+                r"rpm-ostree install --apply-live --idempotent --allow-inactive --assumeyes  /tmp/tree.rpm /tmp/cowsay.rpm", \
+                'Installing: tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
             yield pytest.param(
