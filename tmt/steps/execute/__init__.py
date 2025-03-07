@@ -1210,13 +1210,17 @@ class Execute(tmt.steps.Step):
         Give a concise summary of the execution
         """
 
-        executed_tests = [
-            r
-            for r in self.results()
-            if r.result not in (ResultOutcome.PENDING, ResultOutcome.SKIP)
-        ]
-        skipped_tests = [r for r in self.results() if r.result == ResultOutcome.SKIP]
-        pending_tests = [r for r in self.results() if r.result == ResultOutcome.PENDING]
+        executed_tests = []
+        skipped_tests = []
+        pending_tests = []
+
+        for r in self.results():
+            if r.result == ResultOutcome.SKIP:
+                skipped_tests.append(r)
+            elif r.result == ResultOutcome.PENDING:
+                pending_tests.append(r)
+            else:
+                executed_tests.append(r)
 
         message = [fmf.utils.listed(executed_tests, 'test') + ' executed']
 
@@ -1233,19 +1237,24 @@ class Execute(tmt.steps.Step):
         Update existing results with new results.
         """
 
-        results_to_save = {(r.serial_number, r.name, r.guest.name): r for r in self._results}
+        results_to_save: dict[tuple[int, str, str], Result] = {
+            (r.serial_number, r.name, r.guest.name): r for r in self._results
+        }
         for result in results:
             # Remove parent results with pending state for which we have a child result.
-            parent_results = [
-                p
+            keys_to_remove = [
+                (p.serial_number, p.name, p.guest.name)
                 for p in results_to_save.values()
-                if result.name != p.name
-                and result.name.startswith(p.name)
-                and result.guest.name == p.guest.name
+                if (
+                    result.name != p.name
+                    and result.name.startswith(p.name)
+                    and result.guest.name == p.guest.name
+                    and p.serial_number == result.serial_number
+                    and p.result == ResultOutcome.PENDING
+                )
             ]
-            for p in parent_results:
-                if p.serial_number == result.serial_number and p.result == ResultOutcome.PENDING:
-                    results_to_save.pop((p.serial_number, p.name, p.guest.name), None)
+            for key in keys_to_remove:
+                results_to_save.pop(key, None)
 
             # Replace existing pending result with the new one.
             results_to_save[(result.serial_number, result.name, result.guest.name)] = result
