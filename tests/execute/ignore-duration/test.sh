@@ -2,10 +2,6 @@
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
 
-tmt(){
-    tmt_DUR $@
-}
-
 rlJournalStart
     rlPhaseStartSetup
         rlRun "tmp=\$(mktemp -d)" 0 "Creating tmp directory"
