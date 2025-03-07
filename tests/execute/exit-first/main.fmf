@@ -1,2 +1,7 @@
-summary: Check that exit after first fail works
-test: ./test.sh
+/basic:
+    summary: Check basic functionality of exit-first
+    test: ./basic.sh
+
+/correct-outcomes:
+    summary: Verify exit-first produces correct result outcomes
+    test: ./outcomes.sh

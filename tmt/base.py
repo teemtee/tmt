@@ -2691,6 +2691,12 @@ class Plan(
                     if self.my_run and self.reshape(tests):
                         return
 
+                    if not self.is_dry_run:
+                        self.execute._results = self.execute.create_results(
+                            self.discover.tests(enabled=True)
+                        )
+                        self.execute.save()
+
                 # Source the plan environment file after prepare and execute step
                 if isinstance(step, (tmt.steps.prepare.Prepare, tmt.steps.execute.Execute)):
                     self._source_plan_environment_file()
@@ -2875,6 +2881,12 @@ class Plan(
         assert derived_plan.discover.workdir is not None
 
         shutil.copytree(self.discover.workdir, derived_plan.discover.workdir, dirs_exist_ok=True)
+
+        # Load results from discovered tests and save them to the execute step.
+        derived_plan.execute._results = derived_plan.execute.create_results(
+            derived_plan.discover.tests(enabled=True)
+        )
+        derived_plan.execute.save()
 
         for step_name in tmt.steps.STEPS:
             getattr(derived_plan, step_name).save()

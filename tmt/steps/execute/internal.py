@@ -751,6 +751,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                         result.note.append('aborted')
 
                 self._results.extend(invocation.results)
+                self.step.plan.execute.update_results(self.results())
+                self.step.plan.execute.save()
 
                 # If test duration information is missing, print 8 spaces to keep indentation
                 def _format_duration(result: BaseResult) -> str:
@@ -775,7 +777,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 if invocation.abort_requested or (
                     self.data.exit_first
                     and any(
-                        result.result not in (ResultOutcome.PASS, ResultOutcome.INFO)
+                        result.result in (ResultOutcome.FAIL, ResultOutcome.ERROR)
                         for result in invocation.results
                     )
                 ):
