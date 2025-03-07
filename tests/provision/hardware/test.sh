@@ -28,6 +28,9 @@ rlJournalStart
 
         rlRun -s "tmt plan lint --enable-check C000 --enforce-check C000 '^/plan/and-does-not-combine'" 1
         rlAssertGrep "warn -> fail C000 fmf node failed schema validation" $rlRun_LOG
+
+        rlRun -s "tmt plan lint --enable-check C000 --enforce-check C000 '^/plan/and-or-safe'" 0
+        rlAssertNotGrep "warn -> fail C000 fmf node failed schema validation" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
