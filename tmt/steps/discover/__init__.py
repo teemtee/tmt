@@ -47,7 +47,7 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
     dist_git_type: Optional[str] = field(
         default=None,
         option='--dist-git-type',
-        choices=tmt.utils.get_distgit_handler_names,
+        choices=tmt.utils.git.get_distgit_handler_names,
         help="""
             Use the provided DistGit handler instead of the auto detection.
             Useful when running from forked repositories.
@@ -180,7 +180,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         distgit_dir is path to the DistGit repository
         """
 
-        tmt.utils.distgit_download(
+        tmt.utils.git.distgit_download(
             distgit_dir=distgit_dir,
             target_dir=target_dir,
             handler_name=handler_name,

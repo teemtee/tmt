@@ -693,9 +693,9 @@ def distgit_download(
         if output.stdout is None:
             raise tmt.utils.GeneralError("Missing remote origin url.")
         remotes = output.stdout.split('\n')
-        handler = tmt.utils.get_distgit_handler(remotes=remotes)
+        handler = get_distgit_handler(remotes=remotes)
     else:
-        handler = tmt.utils.get_distgit_handler(usage_name=handler_name)
+        handler = get_distgit_handler(usage_name=handler_name)
 
     for url, source_name in handler.url_and_name(distgit_dir):
         logger.debug(f"Download sources from '{url}'.")
