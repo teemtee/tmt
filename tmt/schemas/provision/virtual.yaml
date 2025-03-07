@@ -25,6 +25,9 @@ properties:
   image:
     type: string
 
+  hardware:
+    $ref: "/schemas/provision/hardware#/definitions/hardware"
+
   user:
     type: string
 
