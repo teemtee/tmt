@@ -17,20 +17,45 @@ rlJournalStart
 
     rlPhaseStartTest "Image that needs dependencies"
         rlRun "podman build . -f needs-deps.containerfile -t $IMAGE_NEEDS_DEPS"
-        rlRun "tmt -vvv run --scratch -i $run plan --name /plans/image/needs-deps"
+        rlRun -s "tmt -vvv run --scratch -i $run plan --name /plans/image/needs-deps"
+        # Testing the output of the bootc package manager
+        rlAssertGrep "building container image with dependencies" $rlRun_LOG
+        rlAssertGrep "STEP 1/2: FROM containers-storage:localhost/tmt/bootc" $rlRun_LOG
+        rlAssertGrep "Successfully tagged localhost/tmt/bootc/" $rlRun_LOG
+        rlAssertGrep "switching to new image localhost/tmt/bootc/" $rlRun_LOG
+        rlAssertGrep "rebooting to apply new image" $rlRun_LOG
+
     rlPhaseEnd
 
     rlPhaseStartTest "Image that already includes dependencies"
         rlRun "podman build . -f includes-deps.containerfile -t $IMAGE_INCLUDES_DEPS"
-        rlRun "tmt -vvv run --scratch -i $run plan --name /plans/image/includes-deps"
+        rlRun -s "tmt -vvv run --scratch -i $run plan --name /plans/image/includes-deps"
+        # Testing the output of the bootc package manager
+        rlAssertGrep "building container image with dependencies" $rlRun_LOG
+        rlAssertGrep "STEP 1/2: FROM containers-storage:localhost/tmt-bootc-includes-deps" $rlRun_LOG
+        rlAssertGrep "Successfully tagged localhost/tmt/bootc/" $rlRun_LOG
+        rlAssertGrep "switching to new image localhost/tmt/bootc/" $rlRun_LOG
+        rlAssertGrep "rebooting to apply new image" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Containerfile that needs dependencies"
-        rlRun "tmt -vvv run --scratch -i $run plan --name /plans/containerfile/needs-deps"
+        rlRun -s "tmt -vvv run --scratch -i $run plan --name /plans/containerfile/needs-deps"
+        # Testing the output of the bootc package manager
+        rlAssertGrep "building container image with dependencies" $rlRun_LOG
+        rlAssertGrep "STEP 1/2: FROM containers-storage:localhost/tmtmodified" $rlRun_LOG
+        rlAssertGrep "Successfully tagged localhost/tmt/bootc/" $rlRun_LOG
+        rlAssertGrep "switching to new image localhost/tmt/bootc/" $rlRun_LOG
+        rlAssertGrep "rebooting to apply new image" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Containerfile that already includes dependencies"
-        rlRun "tmt -vvv run --scratch -i $run plan --name /plans/containerfile/includes-deps"
+        rlRun -s "tmt -vvv run --scratch -i $run plan --name /plans/containerfile/includes-deps"
+        # Testing the output of the bootc package manager
+        rlAssertGrep "building container image with dependencies" $rlRun_LOG
+        rlAssertGrep "STEP 1/2: FROM containers-storage:localhost/tmtbase-" $rlRun_LOG
+        rlAssertGrep "Successfully tagged localhost/tmt/bootc/" $rlRun_LOG
+        rlAssertGrep "switching to new image localhost/tmt/bootc/" $rlRun_LOG
+        rlAssertGrep "rebooting to apply new image" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

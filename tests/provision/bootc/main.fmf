@@ -4,7 +4,7 @@ tag+:
   - provision-bootc
 require:
   - tmt+provision-virtual
-duration: 40m
+duration: 60m
 
 # As for now there is an expected AVC failure:
 # https://github.com/osbuild/bootc-image-builder/issues/645

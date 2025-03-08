@@ -5,6 +5,8 @@ provision:
     disk: 20
 execute:
     how: tmt
+environment:
+    PATTERN: localhost/tmt/bootc/
 
 
 /image:
@@ -14,16 +16,12 @@ execute:
         provision+:
             add-tmt-dependencies: true
             container-image: localhost/tmt-bootc-needs-deps
-        environment:
-            PATTERN: localhost/tmtmodified
 
     /includes-deps:
         summary: "Image that already includes dependencies"
         provision+:
             add-tmt-dependencies: false
             container-image: localhost/tmt-bootc-includes-deps
-        environment:
-            PATTERN: localhost/tmt-bootc-includes-deps
 
 /containerfile:
 
@@ -32,8 +30,6 @@ execute:
         provision+:
             add-tmt-dependencies: true
             container-file: needs-deps.containerfile
-        environment:
-            PATTERN: localhost/tmtmodified
 
     /includes-deps:
         summary: "Containerfile that already includes dependencies"
@@ -41,5 +37,3 @@ execute:
             how: bootc
             add-tmt-dependencies: false
             container-file: includes-deps.containerfile
-        environment:
-            PATTERN: localhost/tmtbase
