@@ -148,6 +148,12 @@ class AptEngine(PackageManagerEngine):
             )
         )
 
+<<<<<<< HEAD
+=======
+    def check_presence(self, *installables: Installable) -> ShellScript:
+        return self._construct_presence_script(*installables)[1]
+
+>>>>>>> cffb9215 (Split package manager code into scripts and execution)
     def _extra_options(self, options: Options) -> Command:
         extra_options = Command()
 
