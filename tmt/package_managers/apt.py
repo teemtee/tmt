@@ -1,13 +1,14 @@
 import re
 from typing import Optional, Union
 
-import tmt.package_managers
 import tmt.utils
 from tmt.package_managers import (
     FileSystemPath,
     Installable,
     Options,
     Package,
+    PackageManager,
+    PackageManagerEngine,
     PackagePath,
     escape_installables,
     provides_package_manager,
@@ -15,8 +16,6 @@ from tmt.package_managers import (
 from tmt.utils import (
     Command,
     CommandOutput,
-    Environment,
-    EnvVarValue,
     GeneralError,
     RunError,
     ShellScript,
@@ -25,12 +24,7 @@ from tmt.utils import (
 ReducedPackages = list[Union[Package, PackagePath]]
 
 
-@provides_package_manager('apt')
-class Apt(tmt.package_managers.PackageManager):
-    NAME = 'apt'
-
-    probe_command = Command('apt', '--version')
-
+class AptEngine(PackageManagerEngine):
     install_command = Command('install')
 
     _sudo_prefix: Command
@@ -104,8 +98,91 @@ class Apt(tmt.package_managers.PackageManager):
             f'dpkg-query --show {" ".join(escape_installables(*reduced_packages))}'
         )
 
+    def check_presence(self, *installables: Installable) -> ShellScript:
+        return self._construct_presence_script(*installables)[1]
+
+    def _extra_options(self, options: Options) -> Command:
+        extra_options = Command()
+
+        if options.skip_missing:
+            extra_options += Command('--ignore-missing')
+
+        return extra_options
+
+    def refresh_metadata(self) -> ShellScript:
+        return ShellScript(
+            f'export DEBIAN_FRONTEND=noninteractive; {self.command.to_script()} update'
+        )
+
+    def install(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> ShellScript:
+        options = options or Options()
+
+        extra_options = self._extra_options(options)
+        packages = self._reduce_to_packages(*installables)
+
+        script = ShellScript(
+            f'{self.command.to_script()} install '
+            f'{self.options.to_script()} {extra_options} '
+            f'{" ".join(escape_installables(*packages))}'
+        )
+
+        if options.check_first:
+            script = self._construct_presence_script(*packages)[1] | script
+
+        # TODO: find a better way to handle `skip_missing`, this may hide other
+        # kinds of errors. But `--ignore-missing` does not turn exit code into
+        # zero :/
+        if options.skip_missing:
+            script = script | ShellScript('/bin/true')
+
+        return ShellScript(f'export DEBIAN_FRONTEND=noninteractive; {script}')
+
+    def reinstall(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> ShellScript:
+        options = options or Options()
+
+        extra_options = self._extra_options(options)
+        packages = self._reduce_to_packages(*installables)
+
+        script = ShellScript(
+            f'{self.command.to_script()} reinstall '
+            f'{self.options.to_script()} {extra_options} '
+            f'{" ".join(escape_installables(*packages))}'
+        )
+
+        if options.check_first:
+            script = self._construct_presence_script(*packages)[1] & script
+
+        if options.skip_missing:
+            script = script | ShellScript('/bin/true')
+
+        return ShellScript(f'export DEBIAN_FRONTEND=noninteractive; {script}')
+
+    def install_debuginfo(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> ShellScript:
+        raise tmt.utils.GeneralError("There is no support for debuginfo packages in apt.")
+
+
+@provides_package_manager('apt')
+class Apt(PackageManager[AptEngine]):
+    NAME = 'apt'
+
+    _engine_class = AptEngine
+
+    probe_command = Command('apt', '--version')
+
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
-        reduced_packages, presence_script = self._construct_presence_script(*installables)
+        reduced_packages, presence_script = self.engine._construct_presence_script(*installables)
 
         try:
             output = self.guest.execute(presence_script)
@@ -135,76 +212,6 @@ class Apt(tmt.package_managers.PackageManager):
                 continue
 
         return results
-
-    def _extra_options(self, options: Options) -> Command:
-        extra_options = Command()
-
-        if options.skip_missing:
-            extra_options += Command('--ignore-missing')
-
-        return extra_options
-
-    def refresh_metadata(self) -> CommandOutput:
-        script = ShellScript(f'{self.command.to_script()} update')
-
-        return self.guest.execute(
-            script, env=Environment({'DEBIAN_FRONTEND': EnvVarValue('noninteractive')})
-        )
-
-    def install(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-        options = options or Options()
-
-        extra_options = self._extra_options(options)
-        packages = self._reduce_to_packages(*installables)
-
-        script = ShellScript(
-            f'{self.command.to_script()} install '
-            f'{self.options.to_script()} {extra_options} '
-            f'{" ".join(escape_installables(*packages))}'
-        )
-
-        if options.check_first:
-            script = self._construct_presence_script(*packages)[1] | script
-
-        # TODO: find a better way to handle `skip_missing`, this may hide other
-        # kinds of errors. But `--ignore-missing` does not turn exit code into
-        # zero :/
-        if options.skip_missing:
-            script = script | ShellScript('/bin/true')
-
-        return self.guest.execute(
-            script, env=Environment({'DEBIAN_FRONTEND': EnvVarValue('noninteractive')})
-        )
-
-    def reinstall(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-        options = options or Options()
-
-        extra_options = self._extra_options(options)
-        packages = self._reduce_to_packages(*installables)
-
-        script = ShellScript(
-            f'{self.command.to_script()} reinstall '
-            f'{self.options.to_script()} {extra_options} '
-            f'{" ".join(escape_installables(*packages))}'
-        )
-
-        if options.check_first:
-            script = self._construct_presence_script(*packages)[1] & script
-
-        if options.skip_missing:
-            script = script | ShellScript('/bin/true')
-
-        return self.guest.execute(
-            script, env=Environment({'DEBIAN_FRONTEND': EnvVarValue('noninteractive')})
-        )
 
     def install_debuginfo(
         self,

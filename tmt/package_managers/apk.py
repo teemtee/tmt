@@ -1,13 +1,14 @@
 import re
 from typing import Optional, Union
 
-import tmt.package_managers
 import tmt.utils
 from tmt.package_managers import (
     FileSystemPath,
     Installable,
     Options,
     Package,
+    PackageManager,
+    PackageManagerEngine,
     PackagePath,
     escape_installables,
     provides_package_manager,
@@ -32,12 +33,7 @@ PACKAGE_PATH: dict[FileSystemPath, str] = {
 }
 
 
-@provides_package_manager('apk')
-class Apk(tmt.package_managers.PackageManager):
-    NAME = 'apk'
-
-    probe_command = Command('apk', '--version')
-
+class ApkEngine(PackageManagerEngine):
     install_command = Command('add')
 
     _sudo_prefix: Command
@@ -100,8 +96,74 @@ class Apk(tmt.package_managers.PackageManager):
 
         return reduced_packages, shell_script
 
+    def check_presence(self, *installables: Installable) -> ShellScript:
+        return self._construct_presence_script(*installables)[1]
+
+    def refresh_metadata(self) -> ShellScript:
+        return ShellScript(f'{self.command.to_script()} update')
+
+    def install(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> ShellScript:
+        options = options or Options()
+
+        packages = self._reduce_to_packages(*installables)
+
+        script = ShellScript(
+            f'{self.command.to_script()} {self.install_command.to_script()} '
+            f'{"--allow-untrusted " if options.allow_untrusted else ""}'
+            f'{" ".join(escape_installables(*packages))}'
+        )
+
+        if options.check_first:
+            script = self._construct_presence_script(*packages)[1] | script
+
+        if options.skip_missing:
+            script = script | ShellScript('/bin/true')
+
+        return script
+
+    def reinstall(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> ShellScript:
+        options = options or Options()
+
+        packages = self._reduce_to_packages(*installables)
+
+        script = ShellScript(
+            f'{self.command.to_script()} fix {" ".join(escape_installables(*packages))}'
+        )
+
+        if options.check_first:
+            script = self._construct_presence_script(*packages)[1] & script
+
+        if options.skip_missing:
+            script = script | ShellScript('/bin/true')
+
+        return script
+
+    def install_debuginfo(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> ShellScript:
+        raise tmt.utils.GeneralError("There is no support for debuginfo packages in apk.")
+
+
+@provides_package_manager('apk')
+class Apk(PackageManager[ApkEngine]):
+    NAME = 'apk'
+
+    _engine_class = ApkEngine
+
+    probe_command = Command('apk', '--version')
+
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
-        reduced_packages, presence_script = self._construct_presence_script(*installables)
+        reduced_packages, presence_script = self.engine._construct_presence_script(*installables)
 
         try:
             output = self.guest.execute(presence_script)
@@ -125,55 +187,6 @@ class Apk(tmt.package_managers.PackageManager):
             results[installable] = False
 
         return results
-
-    def refresh_metadata(self) -> CommandOutput:
-        script = ShellScript(f'{self.command.to_script()} update')
-
-        return self.guest.execute(script)
-
-    def install(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-        options = options or Options()
-
-        packages = self._reduce_to_packages(*installables)
-
-        script = ShellScript(
-            f'{self.command.to_script()} {self.install_command.to_script()} '
-            f'{"--allow-untrusted " if options.allow_untrusted else ""}'
-            f'{" ".join(escape_installables(*packages))}'
-        )
-
-        if options.check_first:
-            script = self._construct_presence_script(*packages)[1] | script
-
-        if options.skip_missing:
-            script = script | ShellScript('/bin/true')
-
-        return self.guest.execute(script)
-
-    def reinstall(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-        options = options or Options()
-
-        packages = self._reduce_to_packages(*installables)
-
-        script = ShellScript(
-            f'{self.command.to_script()} fix {" ".join(escape_installables(*packages))}'
-        )
-
-        if options.check_first:
-            script = self._construct_presence_script(*packages)[1] & script
-
-        if options.skip_missing:
-            script = script | ShellScript('/bin/true')
-
-        return self.guest.execute(script)
 
     def install_debuginfo(
         self,
