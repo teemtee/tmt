@@ -5,7 +5,7 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
-        rlRun "pushd outcomes"
+        rlRun "pushd data"
         rlRun "set -o pipefail"
     rlPhaseEnd
 
