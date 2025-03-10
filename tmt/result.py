@@ -628,7 +628,7 @@ class Result(BaseResult):
         return filtered or log
 
 
-def results_to_exit_code(results: list[Result]) -> int:
+def results_to_exit_code(results: list[Result], execute_enabled: bool = True) -> int:
     """
     Map results to a tmt exit code
     """
@@ -656,13 +656,16 @@ def results_to_exit_code(results: list[Result]) -> int:
         return TmtExitCode.ALL_TESTS_SKIPPED
 
     # "No errors or fails, but there are pending tests."
-    if stats[ResultOutcome.PENDING]:
+    if execute_enabled and stats[ResultOutcome.PENDING]:
         return TmtExitCode.ERROR
 
     # "At least one test passed, there was no fail, warn or error."
     if (
         sum(stats.values())
-        == stats[ResultOutcome.PASS] + stats[ResultOutcome.INFO] + stats[ResultOutcome.SKIP]
+        == stats[ResultOutcome.PASS]
+        + stats[ResultOutcome.INFO]
+        + stats[ResultOutcome.SKIP]
+        + stats[ResultOutcome.PENDING]
     ):
         return TmtExitCode.SUCCESS
 
