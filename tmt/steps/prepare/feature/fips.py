@@ -1,25 +1,26 @@
-import dataclasses
+import re
 from typing import Any, Optional
 
 import tmt.log
 import tmt.steps.prepare
 import tmt.utils
-from tmt.steps.prepare.feature import Feature, PrepareFeatureData, provides_feature
+from tmt.container import container, field
+from tmt.steps.prepare.feature import PrepareFeatureData, ToggleableFeature, provides_feature
 from tmt.steps.provision import Guest
-from tmt.utils import field
 
 
-@dataclasses.dataclass
+@container
 class FipsStepData(PrepareFeatureData):
     fips: Optional[str] = field(
-        default='enabled',
+        default=None,
         option='--fips',
         metavar='enabled',
-        help='Whether FIPS mode should be enabled')
+        help='Whether FIPS mode should be enabled',
+    )
 
 
 @provides_feature('fips')
-class Fips(Feature):
+class Epel(ToggleableFeature):
     NAME = "fips"
 
     _data_class = FipsStepData
@@ -28,5 +29,24 @@ class Fips(Feature):
         super().__init__(*args, **kwargs)
 
     @classmethod
+    def disable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
+        raise tmt.utils.GeneralError('FIPS prepare feature does not support \'disabled\'.')
+
+    @classmethod
     def enable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
-        cls._run_playbook('enable', "fips-enable.yaml", guest, logger)
+        if guest.facts.is_ostree:
+            raise tmt.utils.GeneralError(
+                'FIPS prepare feature is not supported on ostree systems.'
+            )
+        if guest.facts.container:
+            raise tmt.utils.GeneralError(
+                'FIPS prepare feature is not supported on container systems.'
+            )
+        if not guest.facts.distro or (
+            not re.compile('Red Hat Enterprise Linux (8|9|10)\\.').match(guest.facts.distro)
+            and not re.compile('Centos Stream (8|9|10)').match(guest.facts.distro)
+        ):
+            raise tmt.utils.GeneralError(
+                'FIPS prepare feature is supported on systems with RHEL/Centos-Stream 8, 9 or 10.'
+            )
+        cls._run_playbook('enable', 'fips-enable.yaml', guest, logger)
