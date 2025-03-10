@@ -157,6 +157,14 @@ function build_container_image () {
     # https://github.com/teemtee/tmt/issues/2063
     build="make -C $_MAKEFILE_DIR images/test/tmt/container/test/$1"
     rlWaitForCmd "$build" -m 5 -d 5 -t 3600 || rlDie "Unable to prepare the image"
+
+    # TODO: temporarily silencing AVC checks during image builds. The call
+    # to tmt-check-avc-mark should do the trick, but it's not available
+    # in TF yet.
+    #
+    # tmt-check-avc-mark
+    sleep 1
+    LC_ALL=C bash -c 'echo "export AVC_SINCE=\"$(date "+%x %H:%M:%S")\""' > "$(dirname $TMT_TEST_DATA)/checks/avc-mark.txt"
 }
 
 
@@ -170,4 +178,12 @@ function build_container_images () {
     # https://github.com/teemtee/tmt/issues/2063
     build="make -C $_MAKEFILE_DIR images/test"
     rlWaitForCmd "$build" -m 5 -d 5 -t 3600 || rlDie "Unable to prepare the images"
+
+    # TODO: temporarily silencing AVC checks during image builds. The call
+    # to tmt-check-avc-mark should do the trick, but it's not available
+    # in TF yet.
+    #
+    # tmt-check-avc-mark
+    sleep 1
+    LC_ALL=C bash -c 'echo "export AVC_SINCE=\"$(date "+%x %H:%M:%S")\""' > "$(dirname $TMT_TEST_DATA)/checks/avc-mark.txt"
 }

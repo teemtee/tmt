@@ -7,9 +7,9 @@
 # Prepare variables
 TMP = $(CURDIR)/tmp
 
-ccred=$(shell tput setaf 1)
-ccgreen=$(shell tput setaf 2)
-ccend=$(shell tput sgr0)
+ccred=$(shell env TERM="$${TERM:-linux}" tput setaf 1)
+ccgreen=$(shell env TERM="$${TERM:-linux}" tput setaf 2)
+ccend=$(shell env TERM="$${TERM:-linux}" tput sgr0)
 
 # Define special targets
 .DEFAULT_GOAL := help
@@ -146,9 +146,9 @@ images/test/bases:  ## Download base images for custom test images
 
 # Build a single container: <image name> <containerfile>
 define do-build-container-image =
-@ echo "$(ccgreen)Building$(ccend) $(ccred)${1}$(ccend) $(ccgreen)image...$(ccend)"
-podman build --squash -t ${1} -f ./containers/${2} .
-@ echo
+@ echo "$(ccred)$$(date '+%Y-%m-%d %H:%M:%S')$(ccend) $(ccgreen)Building$(ccend) $(ccred)${1}$(ccend) $(ccgreen)image...$(ccend)"
+podman build ${3} -t ${1} -f ./containers/${2} .
+@ echo "$(ccred)$$(date '+%Y-%m-%d %H:%M:%S')$(ccend) $(ccgreen)Building$(ccend) $(ccred)${1}$(ccend) $(ccgreen)image done$(ccend)"
 endef
 
 # Return an image name from the given target: <image target>
@@ -163,12 +163,12 @@ endef
 
 # Build tmt image: <image name> <containerfile>
 define build-container-image =
-$(call do-build-container-image,$(call container-image-target-to-name,${1}),${2})
+$(call do-build-container-image,$(call container-image-target-to-name,${1}),${2},--squash)
 endef
 
 # Build tmt test image: <image name> <containerfile>
 define build-test-container-image =
-$(call do-build-container-image,$(call test-container-image-target-to-name,${1}),${2})
+$(call do-build-container-image,$(call test-container-image-target-to-name,${1}),${2},)
 endef
 
 $(TMT_DISTRO_IMAGE_TARGET_PREFIX)/$(TMT_DISTRO_CONTAINER_IMAGE_NAME_PREFIX)/tmt\:latest:

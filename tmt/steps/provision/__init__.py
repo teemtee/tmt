@@ -44,7 +44,7 @@ import tmt.steps.provision
 import tmt.utils
 from tmt.container import SerializableContainer, container, field, key_to_option
 from tmt.log import Logger
-from tmt.options import option, show_step_method_hints
+from tmt.options import option
 from tmt.package_managers import FileSystemPath, Package, PackageManagerClass
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue
@@ -284,6 +284,29 @@ def format_guest_full_name(name: str, role: Optional[str]) -> str:
         return name
 
     return f'{name} ({role})'
+
+
+class RebootModeNotSupportedError(ProvisionError):
+    """A requested reboot mode is not supported by the guest"""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        guest: Optional['Guest'] = None,
+        hard: bool = False,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        if message is not None:
+            pass
+
+        elif guest is not None:
+            message = f"Guest '{guest.multihost_name}' does not support {'hard' if hard else 'soft'} reboot."  # noqa: E501
+
+        else:
+            message = f"Guest does not support {'hard' if hard else 'soft'} reboot."
+
+        super().__init__(message, *args, **kwargs)
 
 
 class CheckRsyncOutcome(enum.Enum):
@@ -1206,6 +1229,9 @@ class Guest(tmt.utils.Common):
         if self.is_dry_run:
             return
 
+        if not self.is_ready:
+            return
+
         for key, key_formatted, value_formatted in self.facts.format():
             if key in GUEST_FACTS_INFO_FIELDS:
                 self.info(key_formatted, value_formatted, color='green')
@@ -1540,24 +1566,57 @@ class Guest(tmt.utils.Common):
 
         raise NotImplementedError
 
+    @overload
+    def reboot(
+        self,
+        hard: Literal[True] = True,
+        command: None = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
+        pass
+
+    @overload
+    def reboot(
+        self,
+        hard: Literal[False] = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
+        pass
+
     def reboot(
         self,
         hard: bool = False,
         command: Optional[Union[Command, ShellScript]] = None,
         timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
     ) -> bool:
         """
-        Reboot the guest, return True if successful
+        Reboot the guest, and wait for the guest to recover.
 
-        Parameter 'hard' set to True means that guest should be
-        rebooted by way which is not clean in sense that data can be
-        lost. When set to False reboot should be done gracefully.
+        .. note::
 
-        Use the 'command' parameter to specify a custom reboot command
-        instead of the default 'reboot'.
+           Custom reboot command can be used only in combination with a
+           soft reboot. If both ``hard`` and ``command`` are set, a hard
+           reboot will be requested, and ``command`` will be ignored.
 
-        Parameter 'timeout' can be used to specify time (in seconds) to
-        wait for the guest to come back up after rebooting.
+        :param hard: if set, force the reboot. This may result in a loss
+            of data. The default of ``False`` will attempt a graceful
+            reboot.
+        :param command: a command to run on the guest to trigger the
+            reboot. If ``hard`` is also set, ``command`` is ignored.
+        :param timeout: amount of time in which the guest must become available
+            again.
+        :param tick: how many seconds to wait between two consecutive attempts
+            of contacting the guest.
+        :param tick_increase: a multiplier applied to ``tick`` after every
+            attempt.
+        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
         raise NotImplementedError
@@ -2052,7 +2111,9 @@ class GuestSsh(Guest):
             )
         except tmt.utils.RunError as exc:
             if "File 'ansible-playbook' not found." in exc.message:
-                show_step_method_hints('plugin', 'ansible', self._logger)
+                from tmt.utils.hints import print_hint
+
+                print_hint(id_='ansible-not-available', logger=self._logger)
             raise exc
 
     @property
@@ -2343,23 +2404,32 @@ class GuestSsh(Guest):
 
     def perform_reboot(
         self,
-        command: Callable[[], tmt.utils.CommandOutput],
+        action: Callable[[], Any],
         timeout: Optional[int] = None,
         tick: float = tmt.utils.DEFAULT_WAIT_TICK,
         tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
-        hard: bool = False,
+        fetch_boot_time: bool = True,
     ) -> bool:
         """
         Perform the actual reboot and wait for the guest to recover.
 
-        :param command: a callable running the actual command triggering
-            the reboot.
+        This is the core implementation of the common task of triggering
+        a reboot and waiting for the guest to recover. :py:meth:`reboot`
+        is the public API of guest classes, and feeds
+        :py:meth:`perform_reboot` with the right ``action`` callable.
+
+        :param action: a callable which will trigger the requested reboot.
         :param timeout: amount of time in which the guest must become available
             again.
         :param tick: how many seconds to wait between two consecutive attempts
             of contacting the guest.
         :param tick_increase: a multiplier applied to ``tick`` after every
             attempt.
+        :param fetch_boot_time: if set, the current boot time of the
+            guest would be read first, and used for testing whether the
+            reboot has been performed. This will require communication
+            with the guest, therefore it is recommended to use ``False``
+            with hard reboot of unhealthy guests.
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
@@ -2378,10 +2448,10 @@ class GuestSsh(Guest):
 
             return int(match.group(1))
 
-        current_boot_time = 0 if hard else get_boot_time()
+        current_boot_time = get_boot_time() if fetch_boot_time else 0
 
         try:
-            command()
+            action()
 
         except tmt.utils.RunError as error:
             # Connection can be closed by the remote host even before the
@@ -2426,6 +2496,28 @@ class GuestSsh(Guest):
         self.debug("Connection to guest succeeded after reboot.")
         return True
 
+    @overload
+    def reboot(
+        self,
+        hard: Literal[True] = True,
+        command: None = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
+        pass
+
+    @overload
+    def reboot(
+        self,
+        hard: Literal[False] = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
+        pass
+
     def reboot(
         self,
         hard: bool = False,
@@ -2437,9 +2529,17 @@ class GuestSsh(Guest):
         """
         Reboot the guest, and wait for the guest to recover.
 
-        :param hard: if set, force the reboot. This may result in a loss of
-            data. The default of ``False`` will attempt a graceful reboot.
-        :param command: a command to run on the guest to trigger the reboot.
+        .. note::
+
+           Custom reboot command can be used only in combination with a
+           soft reboot. If both ``hard`` and ``command`` are set, a hard
+           reboot will be requested, and ``command`` will be ignored.
+
+        :param hard: if set, force the reboot. This may result in a loss
+            of data. The default of ``False`` will attempt a graceful
+            reboot.
+        :param command: a command to run on the guest to trigger the
+            reboot. If ``hard`` is also set, ``command`` is ignored.
         :param timeout: amount of time in which the guest must become available
             again.
         :param tick: how many seconds to wait between two consecutive attempts
@@ -2456,14 +2556,13 @@ class GuestSsh(Guest):
 
         actual_command = command or DEFAULT_REBOOT_COMMAND
 
-        self.debug(f"Reboot using the command '{actual_command}'.")
+        self.debug(f"Soft reboot using command '{actual_command}'.")
 
         return self.perform_reboot(
             lambda: self.execute(actual_command),
             timeout=timeout,
             tick=tick,
             tick_increase=tick_increase,
-            hard=hard,
         )
 
     def remove(self) -> None:
@@ -2584,15 +2683,14 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
             guest.wake()
             self._guest = guest
 
+    # TODO: getter. Like in Java. Do we need it?
+    @property
     def guest(self) -> Optional[Guest]:
         """
-        Return provisioned guest
-
-        Each ProvisionPlugin has to implement this method.
-        Should return a provisioned Guest() instance.
+        Return the provisioned guest.
         """
 
-        raise NotImplementedError
+        return self._guest
 
     def essential_requires(self) -> list['tmt.base.Dependency']:
         """
@@ -2704,7 +2802,7 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
                     yield ProvisionTask(
                         logger=new_logger,
                         result=None,
-                        guest=None,
+                        guest=phase.guest,
                         exc=None,
                         requested_exit=exc,
                         phases=[],
@@ -2714,7 +2812,7 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
                     yield ProvisionTask(
                         logger=new_logger,
                         result=None,
-                        guest=None,
+                        guest=phase.guest,
                         exc=exc,
                         requested_exit=None,
                         phases=[],
@@ -2724,7 +2822,7 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
                     yield ProvisionTask(
                         logger=new_logger,
                         result=None,
-                        guest=phase.guest(),
+                        guest=phase.guest,
                         exc=None,
                         requested_exit=None,
                         phases=[],
@@ -2765,6 +2863,44 @@ class Provision(tmt.steps.Step):
 
     _preserved_workdir_members = ['step.yaml', 'guests.yaml']
 
+    #: All known guests.
+    #:
+    #: .. warning::
+    #:
+    #:    Guests may not necessarily be fully provisioned. They are
+    #:    from plugins as soon as possible, and guests may easily be
+    #:    still waiting for their infrastructure to finish the task.
+    #:    For the list of successfully provisioned guests, see
+    #:    :py:attr:`ready_guests`.
+    guests: list[Guest]
+
+    @property
+    def ready_guests(self) -> list[Guest]:
+        """
+        All successfully provisioned guests.
+
+        Most of the time, after ``provision`` step finishes successfully,
+        the list should be the same as :py:attr:`guests`, i.e. it should
+        contain all known guests. There are situations when
+        ``ready_guests`` will be a subset of ``guests``, and their users
+        must decide which collection is the best for the desired goal:
+
+        * when ``provision`` is still running. ``ready_guests`` will be
+          slowly gaining new guests as they get up and running.
+        * in dry-run mode, no actual provisioning is expected to happen,
+          therefore there are no unsuccessfully provisioned guests. In
+          this mode, all known guests are considered as ready, and
+          ``ready_guests`` is the same as ``guests``.
+        * if tmt is interrupted by a signal or user. Not all guests will
+          finish their provisioning process, and ``ready_guests`` may
+          contain just the finished ones.
+        """
+
+        if self.is_dry_run:
+            return self.guests
+
+        return [guest for guest in self.guests if guest.is_ready]
+
     def __init__(
         self,
         *,
@@ -2778,8 +2914,7 @@ class Provision(tmt.steps.Step):
 
         super().__init__(plan=plan, data=data, logger=logger)
 
-        # List of provisioned guests and loaded guest data
-        self._guests: list[Guest] = []
+        self.guests = []
         self._guest_data: dict[str, GuestData] = {}
 
     @property
@@ -2810,7 +2945,9 @@ class Provision(tmt.steps.Step):
 
         super().save()
         try:
-            raw_guest_data = {guest.name: guest.save().to_serialized() for guest in self.guests()}
+            raw_guest_data = {
+                guest.name: guest.save().to_serialized() for guest in self.ready_guests
+            }
 
             self.write(Path('guests.yaml'), tmt.utils.dict_to_yaml(raw_guest_data))
         except tmt.utils.FileError:
@@ -2833,9 +2970,8 @@ class Provision(tmt.steps.Step):
             # If guest data loaded, perform a complete wake up
             plugin.wake(data=self._guest_data.get(plugin.name))
 
-            guest = plugin.guest()
-            if guest:
-                self._guests.append(guest)
+            if plugin.guest:
+                self.guests.append(plugin.guest)
 
         # Nothing more to do if already done and not asked to run again
         if self.status() == 'done' and not self.should_run_again:
@@ -2851,10 +2987,10 @@ class Provision(tmt.steps.Step):
         """
 
         # Summary of provisioned guests
-        guests = fmf.utils.listed(self.guests(), 'guest')
+        guests = fmf.utils.listed(self.ready_guests, 'guest')
         self.info('summary', f'{guests} provisioned', 'green', shift=1)
         # Guest list in verbose mode
-        for guest in self.guests():
+        for guest in self.ready_guests:
             if not guest.name.startswith(tmt.utils.DEFAULT_NAME):
                 self.verbose(guest.name, color='red', shift=2)
 
@@ -2873,7 +3009,7 @@ class Provision(tmt.steps.Step):
             return
 
         # Provision guests
-        self._guests = []
+        self.guests = []
 
         def _run_provision_phases(
             phases: list[ProvisionPlugin[ProvisionStepData]],
@@ -2905,15 +3041,10 @@ class Provision(tmt.steps.Step):
 
                     failed_tasks.append(outcome)
 
-                    continue
+                if outcome.guest:
+                    outcome.guest.show()
 
-                guest = outcome.guest
-
-                if guest:
-                    guest.show()
-
-                    if guest.is_ready or self.is_dry_run:
-                        self._guests.append(guest)
+                    self.guests.append(outcome.guest)
 
             return all_tasks, failed_tasks
 
@@ -2965,42 +3096,58 @@ class Provision(tmt.steps.Step):
         all_outcomes: list[Union[ActionTask, ProvisionTask]] = []
         failed_outcomes: list[Union[ActionTask, ProvisionTask]] = []
 
-        while all_phases:
-            # Start looking for sequences of phases of the same kind. Collect
-            # as many as possible, until hitting a different one
-            phase = all_phases.pop(0)
+        # Wrapping the code with try/except catching KeyboardInterrupt
+        # exceptions that signals tmt has been interrupted. We need to
+        # collect all known guests and populate `self.guests` so finish
+        # can release them if necessary.
+        try:
+            while all_phases:
+                # Start looking for sequences of phases of the same kind. Collect
+                # as many as possible, until hitting a different one
+                phase = all_phases.pop(0)
 
-            if isinstance(phase, Action):
-                action_phases: list[Action] = [phase]
+                if isinstance(phase, Action):
+                    action_phases: list[Action] = [phase]
 
-                while all_phases and isinstance(all_phases[0], Action):
-                    action_phases.append(cast(Action, all_phases.pop(0)))
+                    while all_phases and isinstance(all_phases[0], Action):
+                        action_phases.append(cast(Action, all_phases.pop(0)))
 
-                all_action_outcomes, failed_action_outcomes = _run_action_phases(action_phases)
+                    all_action_outcomes, failed_action_outcomes = _run_action_phases(action_phases)
 
-                all_outcomes += all_action_outcomes
-                failed_outcomes += failed_action_outcomes
+                    all_outcomes += all_action_outcomes
+                    failed_outcomes += failed_action_outcomes
 
-            else:
-                plugin_phases: list[ProvisionPlugin[ProvisionStepData]] = [phase]  # type: ignore[list-item]
+                else:
+                    plugin_phases: list[ProvisionPlugin[ProvisionStepData]] = [phase]  # type: ignore[list-item]
 
-                # ignore[attr-defined]: mypy does not recognize `phase` as `ProvisionPlugin`.
-                if phase._thread_safe:  # type: ignore[attr-defined]
-                    while all_phases:
-                        if not isinstance(all_phases[0], ProvisionPlugin):
-                            break
+                    # ignore[attr-defined]: mypy does not recognize `phase` as `ProvisionPlugin`.
+                    if phase._thread_safe:  # type: ignore[attr-defined]
+                        while all_phases:
+                            if not isinstance(all_phases[0], ProvisionPlugin):
+                                break
 
-                        if not all_phases[0]._thread_safe:
-                            break
+                            if not all_phases[0]._thread_safe:
+                                break
 
-                        plugin_phases.append(
-                            cast(ProvisionPlugin[ProvisionStepData], all_phases.pop(0))
-                        )
+                            plugin_phases.append(
+                                cast(ProvisionPlugin[ProvisionStepData], all_phases.pop(0))
+                            )
 
-                all_plugin_outcomes, failed_plugin_outcomes = _run_provision_phases(plugin_phases)
+                    all_plugin_outcomes, failed_plugin_outcomes = _run_provision_phases(
+                        plugin_phases
+                    )
 
-                all_outcomes += all_plugin_outcomes
-                failed_outcomes += failed_plugin_outcomes
+                    all_outcomes += all_plugin_outcomes
+                    failed_outcomes += failed_plugin_outcomes
+
+        except KeyboardInterrupt:
+            self.guests = [
+                phase.guest
+                for phase in self.phases(classes=ProvisionPlugin)
+                if phase.guest is not None
+            ]
+
+            raise
 
         # A plugin will only raise SystemExit if the exit is really desired
         # and no other actions should be done. An example of this is
@@ -3032,10 +3179,3 @@ class Provision(tmt.steps.Step):
         self.summary()
         self.status('done')
         self.save()
-
-    def guests(self) -> list[Guest]:
-        """
-        Return the list of all provisioned guests
-        """
-
-        return self._guests

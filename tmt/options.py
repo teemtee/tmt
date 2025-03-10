@@ -535,75 +535,6 @@ def create_options_decorator(options: list[ClickOptionDecoratorType]) -> Callabl
     return common_decorator
 
 
-def show_step_method_hints(
-    step_name: str,
-    how: str,
-    logger: tmt.log.Logger,
-) -> None:
-    """
-    Show hints about available step methods' installation
-
-    The logger will be used to output the hints to the terminal, hence
-    it must be an instance of a subclass of tmt.utils.Common (info method
-    must be available).
-    """
-
-    if how == 'ansible':
-        logger.info(
-            'hint',
-            "Install 'ansible-core' to prepare guests using ansible playbooks.",
-            color='blue',
-        )
-    elif step_name == 'provision':
-        if how == 'virtual':
-            logger.info(
-                'hint',
-                "Install 'tmt+provision-virtual' to run tests in a virtual machine.",
-                color='blue',
-            )
-        if how == 'container':
-            logger.info(
-                'hint',
-                "Install 'tmt+provision-container' to run tests in a container.",
-                color='blue',
-            )
-        if how == 'minute':
-            logger.info(
-                'hint',
-                "Install 'tmt-redhat-provision-minute' "
-                "to run tests in 1minutetip OpenStack backend. "
-                "(Available only from the internal COPR repository.)",
-                color='blue',
-            )
-        logger.info(
-            'hint',
-            "Use the 'local' method to execute tests directly on your localhost.",
-            color='blue',
-        )
-        logger.info(
-            'hint',
-            "See 'tmt run provision --help' for all available provision options.",
-            color='blue',
-        )
-    elif step_name == 'report':
-        if how == 'junit':
-            logger.info(
-                'hint',
-                "Install 'tmt+report-junit' to write results in JUnit format.",
-                color='blue',
-            )
-        logger.info(
-            'hint',
-            "Use the 'display' method to show test results on the terminal.",
-            color='blue',
-        )
-        logger.info(
-            'hint',
-            "See 'tmt run report --help' for all available report options.",
-            color='blue',
-        )
-
-
 def create_method_class(methods: MethodDictType) -> type[click.Command]:
     """
     Create special class to handle different options for each method
@@ -732,10 +663,17 @@ def create_method_class(methods: MethodDictType) -> type[click.Command]:
                         break
 
             if how and self._method is None:
+                from tmt.utils.hints import print_hint
+
                 # Use run for logging, steps may not be initialized yet
                 assert context.obj.run is not None  # narrow type
                 assert self.name is not None  # narrow type
-                show_step_method_hints(self.name, how, context.obj.run._logger)
+
+                print_hint(
+                    id_=f'{self.name}/{how}', ignore_missing=True, logger=context.obj.run._logger
+                )
+                print_hint(id_=self.name, ignore_missing=True, logger=context.obj.run._logger)
+
                 raise tmt.utils.SpecificationError(f"Unsupported {self.name} method '{how}'.")
 
         def parse_args(  # type: ignore[override]

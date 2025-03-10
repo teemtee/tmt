@@ -27,47 +27,6 @@ description: |
     story:
         As a tester I want to verify that a configured application
         or service still correctly works after the system upgrade.
-    description: |
-        In order to enable developing tests for upgrade testing, we
-        need to provide a way how to execute these tests easily.
-        This does not cover unit tests for individual actors but
-        rather system tests which verify the whole upgrade story.
-
-        The ``upgrade`` executor runs the discovered tests (using
-        the internal executor, hence the same config options can
-        be used), then performs a set of upgrade tasks from
-        a remote repository, and finally, re-runs the tests on
-        the upgraded system.
-
-        The ``IN_PLACE_UPGRADE`` environment variable is set during
-        the test execution to differentiate between the stages of
-        the test. It is set to ``old`` during the first execution
-        and ``new`` during the second execution. Test names are
-        prefixed with this value to make the names unique.
-        Based on this variable, the test can perform appropriate
-        actions.
-
-        old
-            setup, test
-        new
-            test, cleanup
-        without
-            setup, test, cleanup
-
-        The upgrade tasks performing the actual system upgrade are
-        taken from a remote repository (specified by the ``url`` key)
-        based on an upgrade path (specified by the ``upgrade-path`` key)
-        or other filters (e.g. specified by the ``filter`` key).
-        If both ``upgrade-path`` and extra filters are specified,
-        the discover keys in the remote upgrade path plan are overridden
-        by the filters specified in the local plan.
-
-        The upgrade path must correspond to a plan name in the remote
-        repository whose discover selects tests (upgrade tasks).
-        The environment variables defined in the upgrade path are passed
-        to the upgrade tasks. If the ``url`` is not provided,
-        upgrade path and upgrade tasks are taken from the current
-        repository.
     example:
       - |
         # Main testing plan
@@ -95,36 +54,6 @@ description: |
             how: upgrade
             url: https://github.com/teemtee/upgrade
             filter: "tag:fedora"
-
-      - |
-        # A simple beakerlib test using the $IN_PLACE_UPGRADE variable
-        . /usr/share/beakerlib/beakerlib.sh || exit 1
-
-        VENV_PATH=/var/tmp/venv_test
-
-        rlJournalStart
-            # Perform the setup only for the old distro
-            if [[ "$IN_PLACE_UPGRADE" !=  "new" ]]; then
-                rlPhaseStartSetup
-                    rlRun "python3.9 -m venv $VENV_PATH"
-                    rlRun "$VENV_PATH/bin/pip install pyjokes"
-                rlPhaseEnd
-            fi
-
-            # Execute the test for both old & new distro
-            rlPhaseStartTest
-                rlAsssertExists "$VENV_PATH/bin/pyjoke"
-                rlRun "$VENV_PATH/bin/pyjoke"
-            rlPhaseEnd
-
-            # Skip the cleanup phase when on the old distro
-            if [[ "$IN_PLACE_UPGRADE" !=  "old" ]]; then
-                rlPhaseStartCleanup
-                    rlRun "rm -rf $VENV_PATH"
-                rlPhaseEnd
-            fi
-        rlJournalEnd
-
     link:
       - implemented-by: /tmt/steps/execute/upgrade.py
       - verified-by: /tests/execute/upgrade
@@ -160,60 +89,6 @@ description: |
 /tmt:
     summary: Internal test executor
     story: As a user I want to execute tests directly from tmt.
-    description: |
-        The internal ``tmt`` executor runs tests in the
-        provisioned environment one by one directly from the
-        tmt code which allows features such as showing live
-        :ref:`/stories/cli/steps/execute/progress` or the
-        :ref:`/stories/cli/steps/execute/interactive` session .
-        This is the default execute step implementation.
-
-        The executor provides following shell scripts which can
-        be used by the tests for certain operations.
-
-        ``tmt-file-submit``
-            Archive the given file in the tmt test data directory.
-            See the :ref:`/stories/features/report-log` section
-            for more details.
-
-        ``tmt-reboot``
-            Soft reboot the machine from inside the test. After reboot
-            the execution starts from the test which rebooted the machine.
-            An environment variable ``TMT_REBOOT_COUNT`` is provided which
-            the test can use to handle the reboot. The variable holds the
-            number of reboots performed by the test. For more information
-            see the :ref:`/stories/features/reboot` feature documentation.
-
-        ``tmt-report-result``
-            Generate a result report file from inside the test. Can be
-            called multiple times by the test. The generated report
-            file will be overwritten if a higher hierarchical result is
-            reported by the test. The hierarchy is as follows:
-            SKIP, PASS, WARN, FAIL.
-            For more information see the
-            :ref:`/stories/features/report-result` feature documentation.
-
-        ``tmt-abort``
-            Generate an abort file from inside the test. This will
-            set the current test result to failed and terminate
-            the execution of subsequent tests.
-            For more information see the
-            :ref:`/stories/features/abort` feature documentation.
-
-        The scripts are hosted by default in the ``/usr/local/bin``
-        directory, except for guests using ``rpm-ostree``, where
-        ``/var/lib/tmt/scripts`` is used. The directory can be forced
-        using the ``TMT_SCRIPTS_DIR`` environment variable.
-        Note that for guests using ``rpm-ostree``, the directory is added
-        to executable paths using the system-wide ``/etc/profile.d/tmt.sh``
-        profile script.
-
-        .. warning::
-
-            Please be aware that for guests using ``rpm-ostree``
-            the provided scripts will only be available in a shell that
-            loads the profile scripts. This is the default for
-            ``bash``-like shells, but might not work for others.
 
     example: |
         execute:
@@ -225,18 +100,6 @@ description: |
 /script:
     summary: Execute shell scripts
     story: As a user I want to easily run shell script as a test.
-    description: |
-        Execute arbitrary shell commands and check their exit
-        code which is used as a test result. The ``script`` field
-        is provided to cover simple test use cases only and must
-        not be combined with the :ref:`/spec/plans/discover` step
-        which is more suitable for more complex test scenarios.
-
-        Default shell options are applied to the script, see
-        :ref:`/spec/tests/test` for more details. The default
-        :ref:`/spec/tests/duration` for tests defined directly
-        under the execute step is ``1h``. Use the ``duration``
-        attribute to modify the default limit.
 
     example:
       - |

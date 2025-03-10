@@ -2657,6 +2657,8 @@ def render_command_report(
 
         # ${command}
 
+        # exit code ${exit_code}
+
         # stdout (N lines)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ...
@@ -2686,9 +2688,13 @@ def render_command_report(
         yield ''
 
     if output is not None:
+        yield f'{comment_sign} exit code: finished successfully'
+        yield ''
         yield from render_run_exception_streams(output, verbose=1)
 
     elif exc is not None:
+        yield f'{comment_sign} exit code: {exc.returncode}'
+        yield ''
         yield from render_run_exception_streams(exc.output, verbose=1)
 
 
@@ -4867,6 +4873,8 @@ def wait(
       shall then raise :py:class:`WaitingIncomplete` exception, and ``wait()``
       will try again later.
 
+    ``wait()`` will also stop and quit if tmt has been interrupted.
+
     :param parent: "owner" of the wait process. Used for its logging capability.
     :param check: a callable responsible for testing the condition. Accepts no
         arguments. To indicate more time and attempts are needed, the callable
@@ -4882,10 +4890,13 @@ def wait(
     :returns: value returned by ``check`` reporting success.
     :raises GeneralError: when ``tick`` is not a positive integer.
     :raises WaitingTimedOutError: when time quota has been consumed.
+    :raises Interrupted: when tmt has been interrupted.
     """
 
     if tick <= 0:
         raise GeneralError('Tick must be a positive integer')
+
+    from tmt.utils.signals import INTERRUPT_PENDING, Interrupted
 
     monotomic_clock = time.monotonic
 
@@ -4899,6 +4910,11 @@ def wait(
     )
 
     while True:
+        if INTERRUPT_PENDING.is_set():
+            parent.debug('wait', f"'{check.__name__}' interrupted")
+
+            raise Interrupted
+
         now = monotomic_clock()
 
         if now > deadline:

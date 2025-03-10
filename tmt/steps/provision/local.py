@@ -7,7 +7,6 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container
-from tmt.options import show_step_method_hints
 from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript
 
 
@@ -82,7 +81,9 @@ class GuestLocal(tmt.Guest):
             # fmt: on
         except tmt.utils.RunError as exc:
             if exc.stderr and 'ansible-playbook: command not found' in exc.stderr:
-                show_step_method_hints('plugin', 'ansible', self._logger)
+                from tmt.utils.hints import print_hint
+
+                print_hint(id_='ansible-not-available', logger=self._logger)
             raise exc
 
     def execute(
@@ -149,11 +150,10 @@ class GuestLocal(tmt.Guest):
         hard: bool = False,
         command: Optional[Union[Command, ShellScript]] = None,
         timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
     ) -> bool:
-        """
-        Reboot the guest, return True if successful
-        """
-
+        # No localhost reboot allowed!
         self.debug(f"Doing nothing to reboot guest '{self.primary_address}'.")
 
         return False
@@ -206,6 +206,10 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
     Note that ``tmt run`` is expected to be executed under a regular user.
     If there are admin rights required (for example in the prepare step)
     you might be asked for a ``sudo`` password.
+
+    .. note::
+
+        Neither hard nor soft reboot is supported.
     """
 
     _data_class = ProvisionLocalData
@@ -236,10 +240,3 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
 
         self._guest = GuestLocal(logger=self._logger, data=data, name=self.name, parent=self.step)
         self._guest.setup()
-
-    def guest(self) -> Optional[GuestLocal]:
-        """
-        Return the provisioned guest
-        """
-
-        return self._guest

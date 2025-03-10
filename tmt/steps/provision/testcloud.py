@@ -54,7 +54,7 @@ RawStorageDevice: Any
 TPMConfiguration: Any
 
 
-def import_testcloud() -> None:
+def import_testcloud(logger: tmt.log.Logger) -> None:
     """
     Import testcloud module only when needed
     """
@@ -91,9 +91,11 @@ def import_testcloud() -> None:
         )
         from testcloud.workarounds import Workarounds
     except ImportError as error:
-        raise ProvisionError(
-            "Install 'tmt+provision-virtual' to provision using this method."
-        ) from error
+        from tmt.utils.hints import print_hint
+
+        print_hint(id_='provision/virtual.testcloud', logger=logger)
+
+        raise ProvisionError('Could not import testcloud package.') from error
 
     # Version-aware TPM configuration is added in
     # https://pagure.io/testcloud/c/89f1c024ca829543de7f74f89329158c6dee3d83
@@ -821,7 +823,7 @@ class GuestTestcloud(tmt.GuestSsh):
         Prepare common configuration
         """
 
-        import_testcloud()
+        import_testcloud(self._logger)
 
         # Get configuration
         assert testcloud is not None
@@ -1135,19 +1137,79 @@ class GuestTestcloud(tmt.GuestSsh):
         tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
     ) -> bool:
         """
-        Reboot the guest, return True if successful
+        Reboot the guest, and wait for the guest to recover.
+
+        .. note::
+
+           Custom reboot command can be used only in combination with a
+           soft reboot. If both ``hard`` and ``command`` are set, a hard
+           reboot will be requested, and ``command`` will be ignored.
+
+        :param hard: if set, force the reboot. This may result in a loss
+            of data. The default of ``False`` will attempt a graceful
+            reboot.
+        :param command: a command to run on the guest to trigger the
+            reboot. If ``hard`` is also set, ``command`` is ignored.
+        :param timeout: amount of time in which the guest must become available
+            again.
+        :param tick: how many seconds to wait between two consecutive attempts
+            of contacting the guest.
+        :param tick_increase: a multiplier applied to ``tick`` after every
+            attempt.
+        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
-        # Use custom reboot command if provided
+        if hard:
+            if self._instance is None:
+                raise tmt.utils.ProvisionError("No instance initialized.")
+
+            self.debug("Hard reboot using the testcloud API.")
+
+            # ignore[union-attr]: mypy still considers `self._instance` as possibly
+            # being `None`, missing the explicit check above.
+            return self.perform_reboot(
+                lambda: self._instance.reboot(soft=False),  # type: ignore[union-attr]
+                timeout=timeout,
+                tick=tick,
+                tick_increase=tick_increase,
+                fetch_boot_time=False,
+            )
+
         if command:
-            return super().reboot(hard=hard, command=command, timeout=timeout)
-        if not self._instance:
+            return super().reboot(
+                hard=False,
+                command=command,
+                timeout=timeout,
+                tick=tick,
+                tick_increase=tick_increase,
+            )
+
+        if self._instance is None:
             raise tmt.utils.ProvisionError("No instance initialized.")
-        self._instance.reboot(soft=not hard)
-        return self.reconnect(timeout=timeout)
+
+        # ignore[union-attr]: mypy still considers `self._instance` as possibly
+        # being `None`, missing the explicit check above.
+        return self.perform_reboot(
+            lambda: self._instance.reboot(soft=True),  # type: ignore[union-attr]
+            timeout=timeout,
+            tick=tick,
+            tick_increase=tick_increase,
+        )
 
 
-@tmt.steps.provides_method('virtual.testcloud')
+@tmt.steps.provides_method(
+    'virtual.testcloud',
+    installation_hint="""
+        Make sure ``testcloud`` and ``libvirt`` packages are installed and configured, they are
+        required for VM-backed guests provided by ``provision/virtual.testcloud`` plugin.
+
+        * Users who installed tmt from system repositories should install ``tmt+provision-virtual``
+          package.
+        * Users who installed tmt from PyPI should also install ``tmt+provision-virtual`` package,
+          as it will install required system dependencies. After doing so, they should install
+          ``tmt[provision-virtual]`` extra.
+    """,
+)
 class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudData]):
     """
     Local virtual machine using ``testcloud`` library.
@@ -1200,6 +1262,10 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
 
     In addition to the qcow2 format, Vagrant boxes can be used as well,
     testcloud will take care of unpacking the image for you.
+
+    To trigger hard reboot of a guest, plugin uses testcloud API. It is
+    also used to trigger soft reboot unless a custom reboot command was
+    specified via ``tmt-reboot -c ...``.
     """
 
     _data_class = ProvisionTestcloudData
@@ -1274,13 +1340,6 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
         )
         self._guest.start()
         self._guest.setup()
-
-    def guest(self) -> Optional[tmt.Guest]:
-        """
-        Return the provisioned guest
-        """
-
-        return self._guest
 
     def _print_local_images(self) -> None:
         """

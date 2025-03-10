@@ -82,6 +82,11 @@ class ExecuteUpgrade(ExecuteInternal):
     """
     Perform system upgrade during testing.
 
+    In order to enable developing tests for upgrade testing, we need to provide
+    a way how to execute these tests easily. This does not cover unit tests for
+    individual actors but rather system tests which verify
+    the whole upgrade story.
+
     The upgrade executor runs the discovered tests (using the internal
     executor), then performs a set of upgrade tasks from a remote
     repository, and finally, re-runs the tests on the upgraded guest.
@@ -90,15 +95,25 @@ class ExecuteUpgrade(ExecuteInternal):
     execution to differentiate between the stages of the test. It is set
     to ``old`` during the first execution and ``new`` during the second
     execution. Test names are prefixed with this value to make the names
-    unique.
+    unique. Based on this variable, the test can perform appropriate actions.
+
+    * ``old``: setup, test
+    * ``new``: test, cleanup
+    * ``without``: setup, test, cleanup
 
     The upgrade tasks performing the actual system upgrade are taken
-    from a remote repository either based on an upgrade path
-    (e.g. ``fedora35to36``) or filters. The upgrade path must correspond to
-    a plan name in the remote repository whose discover step selects
-    tests (upgrade tasks) performing the upgrade. Currently, selection
-    of upgrade tasks in the remote repository can be done using both fmf
-    and shell discover method. The supported keys in discover are:
+    from a remote repository (specified by the ``url`` key) based on an upgrade
+    path (e.g. ``fedora35to36``) or other filters (e.g. specified by the
+    ``filter`` key). If both ``upgrade-path`` and extra filters are specified,
+    the discover keys in the remote upgrade path plan are overridden by the
+    filters specified in the local plan.
+
+    The upgrade path must correspond to a plan name in the
+    remote repository whose discover step selects tests (upgrade tasks)
+    performing the upgrade. Currently, selection of upgrade tasks in the remote
+    repository can be done using both fmf and shell discover method.
+    If the ``url`` is not provided, upgrade path and upgrade tasks are taken from
+    the current repository. The supported keys in discover are:
 
     * ``ref``
     * ``filter``
@@ -149,6 +164,36 @@ class ExecuteUpgrade(ExecuteInternal):
             how: upgrade
             url: https://github.com/teemtee/upgrade
             filter: "tag:fedora"
+
+    .. code-block:: yaml
+
+        # A simple beakerlib test using the $IN_PLACE_UPGRADE variable
+        . /usr/share/beakerlib/beakerlib.sh || exit 1
+
+        VENV_PATH=/var/tmp/venv_test
+
+        rlJournalStart
+            # Perform the setup only for the old distro
+            if [[ "$IN_PLACE_UPGRADE" !=  "new" ]]; then
+                rlPhaseStartSetup
+                    rlRun "python3.9 -m venv $VENV_PATH"
+                    rlRun "$VENV_PATH/bin/pip install pyjokes"
+                rlPhaseEnd
+            fi
+
+            # Execute the test for both old & new distro
+            rlPhaseStartTest
+                rlAsssertExists "$VENV_PATH/bin/pyjoke"
+                rlRun "$VENV_PATH/bin/pyjoke"
+            rlPhaseEnd
+
+            # Skip the cleanup phase when on the old distro
+            if [[ "$IN_PLACE_UPGRADE" !=  "old" ]]; then
+                rlPhaseStartCleanup
+                    rlRun "rm -rf $VENV_PATH"
+                rlPhaseEnd
+            fi
+        rlJournalEnd
     """
 
     _data_class = ExecuteUpgradeData

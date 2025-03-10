@@ -11,9 +11,3 @@ tag+:
   - provision-local
   - provision-virtual
 duration: 30m
-adjust+:
-  - check:
-      - how: avc
-        result: xfail
-    when: provision_how == container
-    because: https://bugzilla.redhat.com/show_bug.cgi?id=2342247

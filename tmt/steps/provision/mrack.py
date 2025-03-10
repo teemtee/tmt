@@ -19,6 +19,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+import tmt.utils.signals
 from tmt.container import container, field, simple_field
 from tmt.utils import (
     Command,
@@ -1219,48 +1220,49 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                 shift=-2,
             )
             return
-        try:
-            response = self.api.create(data)
 
-        except ProvisioningError as exc:
-            import xmlrpc.client
+        with tmt.utils.signals.PreventSignals(self._logger):
+            try:
+                response = self.api.create(data)
 
-            cause = exc.__cause__
+            except ProvisioningError as exc:
+                import xmlrpc.client
 
-            if isinstance(cause, xmlrpc.client.Fault):
-                if 'is not a valid user name' in cause.faultString:
-                    raise ProvisionError(
-                        f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
-                        "was refused as unknown."
-                    ) from exc
+                cause = exc.__cause__
 
-                if 'is not a valid submission delegate' in cause.faultString:
-                    raise ProvisionError(
-                        f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
-                        "is not a valid submission delegate."
-                    ) from exc
+                if isinstance(cause, xmlrpc.client.Fault):
+                    if 'is not a valid user name' in cause.faultString:
+                        raise ProvisionError(
+                            f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
+                            "was refused as unknown."
+                        ) from exc
 
-                if 'is not a valid group' in cause.faultString:
-                    raise ProvisionError(
-                        f"Failed to create Beaker job, job group '{self.beaker_job_group}' "
-                        "was refused as unknown."
-                    ) from exc
+                    if 'is not a valid submission delegate' in cause.faultString:
+                        raise ProvisionError(
+                            f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
+                            "is not a valid submission delegate."
+                        ) from exc
 
-                if 'is not a member of group' in cause.faultString:
-                    raise ProvisionError(
-                        "Failed to create Beaker job, submitting user is not "
-                        "a member of group '{self.beaker_job_group}'"
-                    ) from exc
+                    if 'is not a valid group' in cause.faultString:
+                        raise ProvisionError(
+                            f"Failed to create Beaker job, job group '{self.beaker_job_group}' "
+                            "was refused as unknown."
+                        ) from exc
 
-            raise ProvisionError('Failed to create Beaker job') from exc
+                    if 'is not a member of group' in cause.faultString:
+                        raise ProvisionError(
+                            "Failed to create Beaker job, submitting user is not "
+                            "a member of group '{self.beaker_job_group}'"
+                        ) from exc
 
-        if response:
+                raise ProvisionError('Failed to create Beaker job') from exc
+
+            if not response:
+                raise ProvisionError(f"Failed to create, response: '{response}'.")
+
             self.info('guest', 'has been requested', 'green')
+            self.job_id = f'J:{response["id"]}'
 
-        else:
-            raise ProvisionError(f"Failed to create, response: '{response}'.")
-
-        self.job_id = f'J:{response["id"]}'
         self.info('job id', self.job_id, 'green')
 
         with UpdatableMessage("status", indent_level=self._level()) as progress_message:
@@ -1319,14 +1321,6 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         self.verbose('primary address', self.primary_address, 'green')
         self.verbose('topology address', self.topology_address, 'green')
 
-    def stop(self) -> None:
-        """
-        Stop the guest
-        """
-
-        # do nothing
-        return
-
     def remove(self) -> None:
         """
         Remove the guest
@@ -1348,12 +1342,21 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         """
         Reboot the guest, and wait for the guest to recover.
 
-        :param hard: if set, force the reboot. This may result in a loss of
-            data. The default of ``False`` will attempt a graceful reboot.
-        :param command: a command to run on the guest to trigger the reboot.
-            If not set, plugin would try to use ``bkr system-power`` for hard
-            reboot. Unlike ``command``, this would be executed on the runner,
-            **not** on the guest.
+        .. note::
+
+           Custom reboot command can be used only in combination with a
+           soft reboot. If both ``hard`` and ``command`` are set, a hard
+           reboot will be requested, and ``command`` will be ignored.
+
+        :param hard: if set, force the reboot. This may result in a loss
+            of data. The default of ``False`` will attempt a graceful
+            reboot.
+
+            Plugin will use ``bkr system-power`` command to trigger the
+            hard reboot. Unlike ``command``, this command would be
+            executed on the runner, **not** on the guest.
+        :param command: a command to run on the guest to trigger the
+            reboot. If ``hard`` is also set, ``command`` is ignored.
         :param timeout: amount of time in which the guest must become available
             again.
         :param tick: how many seconds to wait between two consecutive attempts
@@ -1363,8 +1366,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
-        if not command and hard:
-            self.debug("Reboot using the reboot command 'bkr system-power --action reboot'.")
+        if hard:
+            self.debug("Hard reboot using the reboot command 'bkr system-power --action reboot'.")
 
             reboot_script = ShellScript(f'bkr system-power --action reboot {self.primary_address}')
 
@@ -1373,11 +1376,11 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                 timeout=timeout,
                 tick=tick,
                 tick_increase=tick_increase,
-                hard=True,
+                fetch_boot_time=False,
             )
 
         return super().reboot(
-            hard=hard,
+            hard=False,
             command=command,
             timeout=timeout,
             tick=tick,
@@ -1398,6 +1401,13 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
             how: beaker
             image: fedora
 
+    To trigger a hard reboot of a guest, ``bkr system-power --action reboot``
+    command is executed.
+
+    .. warning::
+
+        ``bkr system-power`` command is executed on the runner, not
+        on the guest.
     """
 
     _data_class = ProvisionBeakerData
@@ -1449,10 +1459,3 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
         )
         self._guest.start()
         self._guest.setup()
-
-    def guest(self) -> Optional[GuestBeaker]:
-        """
-        Return the provisioned guest
-        """
-
-        return self._guest

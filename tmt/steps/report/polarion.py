@@ -285,7 +285,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                 testsuites_properties[f"polarion-custom-{tr_field.replace('_', '')}"] = param
 
         if use_facts:
-            guests = self.step.plan.provision.guests()
+            guests = self.step.plan.provision.ready_guests
             try:
                 testsuites_properties['polarion-custom-hostname'] = guests[0].primary_address
                 testsuites_properties['polarion-custom-arch'] = guests[0].facts.arch
@@ -344,6 +344,11 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                 'polarion-project-span-ids': ','.join([project_id, *project_span_ids]),
             }
         )
+
+        # Add deployment mode if provided as a context variable
+        deployment_mode = self.step.plan._fmf_context.get('deployment-mode', [])
+        if deployment_mode:
+            testsuites_properties.update({'polarion-custom-deploymentMode': deployment_mode[0]})
 
         # ignore[assignment]: mypy does not support different types for property getter
         # and setter. The assignment is correct, but mypy cannot tell.

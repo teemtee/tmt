@@ -15,14 +15,11 @@ import tmt.steps
 import tmt.steps.report
 import tmt.utils
 from tmt.container import container, field
-from tmt.plugins import ModuleImporter
 from tmt.result import ResultOutcome
 from tmt.utils import Path
 from tmt.utils.templates import default_template_environment, render_template_file
 
 if TYPE_CHECKING:
-    import lxml
-
     from tmt._compat.typing import TypeAlias
 
     XMLElement: TypeAlias = Any
@@ -34,22 +31,6 @@ CUSTOM_FLAVOR_NAME = 'custom'
 
 # Relative path to tmt junit template directory.
 DEFAULT_TEMPLATE_DIR = Path('steps/report/junit/templates/')
-
-# ignore[unused-ignore]: Pyright would report that "module cannot be
-# used as a type", and it would be correct. On the other hand, it works,
-# and both mypy and pyright are able to propagate the essence of a given
-# module through `ModuleImporter` that, eventually, the module object
-# returned by the importer does have all expected members.
-#
-# The error message does not have its own code, but simple `type: ignore`
-# is enough to suppress it. And then mypy complains about an unused
-# ignore, hence `unused-ignore` code, leading to apparently confusing
-# directive.
-import_lxml: ModuleImporter['lxml'] = ModuleImporter(  # type: ignore[valid-type]
-    'lxml',
-    tmt.utils.ReportError,
-    "Missing 'lxml', fixable by 'pip install tmt[report-junit]'.",
-)
 
 
 @overload
@@ -353,11 +334,12 @@ def make_junit_xml(
     # output.
     try:
         from lxml import etree
+
     except ImportError:
-        phase.warn(
-            "Install 'tmt[report-junit]' to support neater JUnit XML output and the XML schema "
-            "validation against the XSD."
-        )
+        from tmt.utils.hints import print_hint
+
+        print_hint(id_='report/junit', logger=phase._logger)
+
         return xml_data
 
     xml_parser_kwargs: dict[str, Any] = {
@@ -479,7 +461,19 @@ class ReportJUnitData(tmt.steps.report.ReportStepData):
     )
 
 
-@tmt.steps.provides_method('junit')
+@tmt.steps.provides_method(
+    'junit',
+    installation_hint="""
+        For neater JUnit XML and XML validation against the XSD, ``lxml`` package is required
+        by the ``report/junit`` plugin.
+
+        To quickly test ``lxml`` presence, you can try running ``python -c 'import lxml'``.
+
+        * Users who installed tmt from system repositories should install ``tmt+report-junit``
+          package.
+        * Users who installed tmt from PyPI should install ``tmt[report-junit]`` extra.
+    """,
+)
 class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
     """
     Save test results in chosen JUnit flavor format.
