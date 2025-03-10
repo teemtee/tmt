@@ -1289,7 +1289,6 @@ class Execute(tmt.steps.Step):
                     Result(
                         name=test.name,
                         serial_number=test.serial_number,
-                        fmf_id=test.fmf_id,
                         result=tmt.result.ResultOutcome.PENDING,
                         guest=ResultGuestData(
                             name=guest[0],
