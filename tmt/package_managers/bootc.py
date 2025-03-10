@@ -1,0 +1,213 @@
+import re
+import json
+import uuid
+import tempfile
+from typing import Optional, Any
+
+import tmt.utils
+from tmt.package_managers import (
+    FileSystemPath,
+    Installable,
+    Options,
+    PackageManager,
+    PackageManagerEngine,
+    provides_package_manager,
+    dnf
+)
+from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScript
+
+
+class BootcEngine(PackageManagerEngine):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """ Initialize bootc engine for package management """
+        super().__init__(*args, **kwargs)
+
+        self.aux_engine = dnf.DnfEngine()
+
+        self.containerfile_directives = self._get_base_containerfile_directives()
+
+        self.image_package_directory = "/tmp/packages/"
+
+    def _get_current_bootc_image(self) -> str:
+        """ Get the current bootc image running on the system """
+        output = self.guest.execute(Command('bootc', 'status', '--json'), silent=True)
+        try:
+            image_status = json.loads(output.stdout)
+            base_image = image_status.get('booted', {}).get('image', '')
+
+            if not base_image:
+                raise tmt.utils.PrepareError("Failed to detect current bootc image.")
+            return base_image
+        except json.JSONDecodeError as error:
+            raise tmt.utils.PrepareError(f"Failed to parse bootc status: {error}")
+
+    def _get_base_containerfile_directives(self) -> None:
+        base_image = self._get_current_bootc_image()
+        return [f'FROM {base_image}']
+
+    def check_presence(self, *installables) -> ShellScript:
+        script = self.aux_engine.check_presence(*installables)
+        return script
+
+    def install(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> ShellScript:
+
+        script = self.aux_engine.install(
+            *installables,
+            options=options
+        )
+
+        return script
+
+    def reinstall(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> ShellScript:
+
+        script = self.aux_engine.reinstall(
+            *installables,
+            options=options
+        )
+
+        return script
+
+    def install_debuginfo(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> ShellScript:
+
+        script = self.aux_engine.install_debuginfo(
+            *installables,
+            options=options
+        )
+
+        return script
+
+
+@provides_package_manager('bootc')
+class Bootc(PackageManager[BootcEngine]):
+    NAME = 'bootc'
+
+    _engine_class = BootcEngine
+
+    probe_command = Command('stat', '/run/ostree-booted')
+    # Needs to be bigger than priorities of `yum`, `dnf` and `dnf5`.
+    probe_priority = 90
+
+    def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
+        script = self.engine.check_presence(*installables)
+
+        if len(installables) == 1 and isinstance(installables[0], FileSystemPath):
+            try:
+                self.guest.execute(script)
+
+            except RunError as exc:
+                if exc.returncode == 1:
+                    return {installables[0]: False}
+
+                raise exc
+
+            return {installables[0]: True}
+
+        try:
+            output = self.guest.execute(script)
+            stdout = output.stdout
+
+        except RunError as exc:
+            stdout = exc.stdout
+
+        if stdout is None:
+            raise GeneralError("rpm presence check provided no output")
+
+        results: dict[Installable, bool] = {}
+
+        for line, installable in zip(stdout.strip().splitlines(), installables):
+            match = re.match(rf'package {re.escape(str(installable))} is not installed', line)
+            if match is not None:
+                results[installable] = False
+                continue
+
+            match = re.match(rf'no package provides {re.escape(str(installable))}', line)
+            if match is not None:
+                results[installable] = False
+                continue
+
+            results[installable] = True
+
+        return results
+
+    def build_container(self) -> None:
+
+        image_tag = f"localhost/tmt-deps-{uuid.uuid4()}"
+
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            # Write the final Containerfile
+            containerfile_path = tmpdirname / 'Containerfile'
+
+            containerfile = '\n'.join(self.engine.containerfile_directives)
+
+            containerfile_path.write_text(containerfile)
+
+            self.info("containerfile content: {containerfile}")
+            # Build the container image
+            self.info("building", "container image with dependencies", "green")
+            self.guest.execute(
+                Command('podman', 'build', '-t', image_tag, '-f', str(containerfile_path), '.'),
+                cwd=self.package_directory)
+
+        # Switch to the new image for next boot
+        self.info("switching", f"to new image {image_tag}", "green")
+        self.guest.execute(Command(
+            'bootc', 'switch', '--transport', 'containers-storage', image_tag))
+
+        # Reboot into the new image
+        self.info("rebooting", "to apply new image", "green")
+        self.guest.reboot()
+
+    def refresh_metadata(self) -> CommandOutput:
+        self.guest.warn("Metadata refresh is not supported with rpm-ostree.")
+
+        return CommandOutput(stdout=None, stderr=None)
+
+        # The following should work, but it hits some ostree issue:
+        #
+        #   System has not been booted with systemd as init system (PID 1). Can't operate.
+        #   Failed to connect to bus: Host is down
+        #   System has not been booted with systemd as init system (PID 1). Can't operate.
+        #   Failed to connect to bus: Host is down
+        #   error: Loading sysroot: exit status: 1
+        #
+        # script = ShellScript(f'{self.command.to_script()} refresh-md --force')
+        # return self.guest.execute(script)
+
+    def install(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
+        self.engine.install(*installables, options=options)
+
+        self.build_container()
+
+    def reinstall(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
+        self.engine.reinstall(*installables, options=options)
+
+        self.build_container()
+
+    def install_debuginfo(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
+        self.engine.install_debuginfo(*installables, options=options)
+
+        self.build_container()

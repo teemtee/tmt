@@ -582,6 +582,91 @@ class InstallApt(InstallBase):
             )
 
 
+class InstallBootc(InstallBase):
+    """ Install packages using bootc container image mode """
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """ Initialize bootc installation for package management """
+        super().__init__(*args, **kwargs)
+
+        self.engine = self.guest.package_manager.engine
+
+    def install_from_repository(self) -> None:
+        self.guest.package_manager.engine.install(
+            *self.list_installables("package", *self.packages),
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing,
+            ),
+        )
+
+    def install_from_url(self):
+        script = self.engine.install(
+            *self.list_installables("remote package", *self.remote_packages),
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing,
+            ),
+        )
+
+    def install_local(self):
+        # Filelist for packages on the guest
+        filelist = [
+            PackagePath(self.package_directory / filename.name) for filename in self.local_packages
+        ]
+
+        self.engine.containerfile_directives.append(f'RUN mkdir -p {self.package_directory}')
+        self.engine.containerfile_directives.append(f'COPY {" ".join(filelist)} {self.package_directory}')
+
+        script = self.engine.install(
+            *filelist,
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing,
+                check_first=False,
+            ),
+        )
+
+        script = self.engine.reinstall(
+            *filelist,
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing,
+                check_first=False,
+            ),
+        )
+
+    def install_debuginfo(self):
+
+        packages = self.list_installables("debuginfo", *self.debuginfo_packages)
+
+        script = self.engine.install_debuginfo(
+            *packages,
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing,
+            ),
+        )
+
+        # Check the packages are installed on the guest because 'debuginfo-install'
+        # returns 0 even though it didn't manage to install the required packages
+        if not self.skip_missing:
+            script = self.engine.check_presence(
+                *[Package(f'{package}-debuginfo') for package in self.debuginfo_packages]
+            )
+
+    def _install(self) -> None:
+        """ Coordinate installation process through containerfile building and switching """
+        # Call base install methods to collect all package types
+        super()._install()
+
+        # If no packages were added, nothing to do
+        if not self.has_packages:
+            self.debug("No packages to install.")
+            return
+
+        self.guest.package_manager.build_container()
+
+
 class InstallApk(InstallBase):
     """
     Install packages using apk
@@ -776,6 +861,15 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         # shipped as plugins, but we still need a matching *installation* class.
         # But do we really need a class per package manager family? Maybe the
         # code could be integrated into package manager plugins directly.
+        if guest.facts.package_manager == 'bootc':
+            installer: InstallBase = InstallBootc(
+                logger=logger,
+                parent=self,
+                dependencies=self.data.package,
+                directories=self.data.directory,
+                exclude=self.data.exclude,
+                guest=guest)
+
         if guest.facts.package_manager == 'rpm-ostree':
             installer: InstallBase = InstallRpmOstree(
                 logger=logger,
