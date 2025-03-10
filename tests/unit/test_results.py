@@ -30,7 +30,8 @@ from tmt.result import (
                 ResultOutcome.INFO,
                 ResultOutcome.SKIP,
                 ResultOutcome.WARN,
-                ResultOutcome.ERROR
+                ResultOutcome.ERROR,
+                ResultOutcome.PENDING,
                 ],
             TmtExitCode.ERROR
             ),
@@ -42,6 +43,7 @@ from tmt.result import (
                 ResultOutcome.INFO,
                 ResultOutcome.SKIP,
                 ResultOutcome.WARN,
+                ResultOutcome.PENDING,
                 ],
             TmtExitCode.FAIL
             ),
@@ -69,6 +71,14 @@ from tmt.result import (
                 ResultOutcome.SKIP,
                 ],
             TmtExitCode.SUCCESS
+            ),
+        # A pending without any fail or error is treated as an error.
+        (
+            [
+                ResultOutcome.PASS,
+                ResultOutcome.PENDING,
+                ],
+            TmtExitCode.ERROR
             )
         ],
     # IDs copied from the specification:
@@ -78,7 +88,8 @@ from tmt.result import (
         "There was a fail or warn identified, but no error",
         "Tests were executed, and all reported the ``skip`` result",
         "At least one test passed, there was no fail, warn or error",
-        "An info is treated as a pass"
+        "An info is treated as a pass",
+        "A pending without any fail or error is treated as an error"
         )
     )
 def test_result_to_exit_code(outcomes: list[ResultOutcome], expected_exit_code: int) -> None:

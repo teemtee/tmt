@@ -462,5 +462,24 @@ class ExecuteUpgrade(ExecuteInternal):
             logger=logger,
         )
 
+        self._remove_old_results(prefix)
+
         for i, test_origin in enumerate(self.discover.tests(enabled=True)):
             test_origin.test.name = names_backup[i]
+
+    def _remove_old_results(self, prefix: str) -> None:
+        """
+        Remove old results that were replaced by prefixed ones
+        """
+
+        results = self.step.plan.execute.results()
+        old_result_names = [
+            result.name.removeprefix(f'/{prefix}')
+            for result in results
+            if result.name.startswith(f'/{prefix}/')
+        ]
+
+        self.step.plan.execute._results = [
+            result for result in results if result.name not in old_result_names
+        ]
+        self.step.plan.execute.save()
