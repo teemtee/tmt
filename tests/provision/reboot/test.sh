@@ -50,6 +50,14 @@ rlJournalStart
             rlAssertGrep "Reboot finished" $rlRun_LOG
             rlRun "rm $rlRun_LOG"
 
+            rlRun -s "tmt run -l reboot --command 'reboot'"
+            rlAssertGrep "Reboot finished" $rlRun_LOG
+            rlRun "rm $rlRun_LOG"
+
+            rlRun -s "tmt run -l reboot --command 'dummy'" 2
+            rlAssertGrep "command not found" $rlRun_LOG
+            rlRun "rm $rlRun_LOG"
+
             rlRun -s "tmt run -l reboot --hard"
             rlAssertGrep "Reboot finished" $rlRun_LOG
             rlRun "rm $rlRun_LOG"

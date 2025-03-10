@@ -5,6 +5,13 @@
 ======================
 
 
+tmt-1.44.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add the ``--command`` option for the ``tmt run reboot`` so that
+users specify the command to run on guest to trigger the reboot.
+
+
 tmt-1.43.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

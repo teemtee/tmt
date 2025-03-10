@@ -101,6 +101,9 @@ STEPS: list[str] = ['discover', 'provision', 'prepare', 'execute', 'report', 'fi
 ACTIONS: list[str] = ['login', 'reboot']
 DEFAULT_LOGIN_COMMAND = 'bash'
 
+#: A default command to trigger a guest reboot when executed remotely.
+DEFAULT_REBOOT_COMMAND = tmt.utils.ShellScript('reboot')
+
 # Step phase order
 PHASE_START = 10
 PHASE_BASE = 50
@@ -2064,6 +2067,12 @@ class Reboot(Action):
         @option(
             '--hard', is_flag=True, help='Hard reboot of the machine. Unsaved data may be lost.'
         )
+        @option(
+            '--command',
+            type=str,
+            default=str(DEFAULT_REBOOT_COMMAND),
+            help='A command to run on the guest to trigger the reboot.',
+        )
         def reboot(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             """
             Reboot the guest.
@@ -2097,7 +2106,7 @@ class Reboot(Action):
         assert hasattr(self.parent, 'plan')
         assert self.parent.plan is not None
         for guest in self.parent.plan.provision.ready_guests:
-            guest.reboot(hard=self.opt('hard'))
+            guest.reboot(hard=self.opt('hard'), command=tmt.utils.ShellScript(self.opt('command')))
         self.info('reboot', 'Reboot finished', color='yellow')
 
 
