@@ -631,16 +631,16 @@ class CentOSDistGit(DistGitHandler):
     remote_substring = re.compile(r'redhat/centos')
 
 
-class RedHatGitlab(DistGitHandler):
+class RedHatDistGit(DistGitHandler):
     """
-    Red Hat on Gitlab
+    Red Hat Handler
     """
 
-    usage_name = "redhatgitlab"
+    usage_name = "redhat"
     re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
     # Location already public (standard-test-roles)
     lookaside_server = "http://pkgs.devel.redhat.com/repo"
-    remote_substring = re.compile(r'redhat/rhel/')
+    remote_substring = re.compile(r'redhat/rhel/|pkgs\.devel\.redhat\.com')
 
 
 def get_distgit_handler(
@@ -693,9 +693,9 @@ def distgit_download(
         if output.stdout is None:
             raise tmt.utils.GeneralError("Missing remote origin url.")
         remotes = output.stdout.split('\n')
-        handler = tmt.utils.get_distgit_handler(remotes=remotes)
+        handler = get_distgit_handler(remotes=remotes)
     else:
-        handler = tmt.utils.get_distgit_handler(usage_name=handler_name)
+        handler = get_distgit_handler(usage_name=handler_name)
 
     for url, source_name in handler.url_and_name(distgit_dir):
         logger.debug(f"Download sources from '{url}'.")
