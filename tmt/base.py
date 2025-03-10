@@ -4069,7 +4069,7 @@ class Run(tmt.utils.Common):
         if tmt.steps.execute.Execute._opt("dry"):
             raise SystemExit(0)
         # Return appropriate exit code based on the total stats
-        raise SystemExit(tmt.result.results_to_exit_code(results))
+        raise SystemExit(tmt.result.results_to_exit_code(results, bool(execute.enabled)))
 
     def follow(self) -> None:
         """
