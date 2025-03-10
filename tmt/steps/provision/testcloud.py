@@ -1379,7 +1379,9 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
         return successful
 
     def prune(self, logger: tmt.log.Logger) -> None:
-        """ Do not prune console logs """
+        """
+        Do not prune console logs.
+        """
         _console_log = self.workdir / 'console.log'
         if _console_log.exists():
             for member in self.workdir.iterdir():
