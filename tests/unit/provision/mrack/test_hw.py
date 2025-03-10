@@ -61,6 +61,25 @@ def test_maximal_constraint(root_logger: Logger) -> None:
              },
             {'or': []},
             {
+                'or': [
+                    {
+                        'key_value': {
+                            '_key': 'NETBOOT_METHOD',
+                            '_op': '==',
+                            '_value': 'pxe',
+                            },
+                        },
+                    {
+                        'key_value': {
+                            '_key': 'NETBOOT_METHOD',
+                            '_op': '==',
+                            '_value': 'pxe',
+                            },
+                        },
+                    ]
+                },
+
+            {
                 'and': [
                     {'or': []},
                     {'or': []}
