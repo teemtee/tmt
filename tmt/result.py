@@ -546,7 +546,7 @@ class Result(BaseResult):
             count, comment = fmf.utils.listed(stats[ResultOutcome.ERROR], 'error').split()
             comments.append(count + ' ' + click.style(comment, fg='magenta'))
         if stats.get(ResultOutcome.PENDING):
-            count, comment = fmf.utils.listed(stats[ResultOutcome.PENDING], 'pending').split()
+            count, comment = str(stats[ResultOutcome.PENDING]), 'pending'
             comments.append(count + ' ' + click.style(comment, fg='cyan'))
         # FIXME: cast() - https://github.com/teemtee/fmf/issues/185
         return cast(str, fmf.utils.listed(comments or ['no results found']))

@@ -2927,9 +2927,9 @@ class Provision(tmt.steps.Step):
         """
 
         phases = [
-            cast(ProvisionPlugin[ProvisionStepData], p)
-            for p in self.phases(classes=ProvisionPlugin)
-            if p.enabled_by_when
+            cast(ProvisionPlugin[ProvisionStepData], phase)
+            for phase in self.phases(classes=ProvisionPlugin)
+            if phase.enabled_by_when
         ]
         return [(phase.data.name, phase.data.role) for phase in phases]
 

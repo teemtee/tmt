@@ -18,7 +18,7 @@ rlJournalStart
         rlAssertGrep "^\s*report\s*$" $rlRun_LOG
         rlAssertGrep "how: html" $rlRun_LOG
         rlAssertGrep "output: /.*/plan/report/default-0/index.html" $rlRun_LOG
-        rlAssertGrep "summary: 1 test passed, 1 test failed and 2 pendings" $rlRun_LOG
+        rlAssertGrep "summary: 1 test passed, 1 test failed and 2 pending" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

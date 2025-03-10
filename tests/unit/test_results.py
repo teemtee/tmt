@@ -89,7 +89,7 @@ from tmt.result import (
         "Tests were executed, and all reported the ``skip`` result",
         "At least one test passed, there was no fail, warn or error",
         "An info is treated as a pass",
-        "A pending without any fail or error is treated as an error"
+        "A pending without any fail or error is treated as an error",
         )
     )
 def test_result_to_exit_code(outcomes: list[ResultOutcome], expected_exit_code: int) -> None:
