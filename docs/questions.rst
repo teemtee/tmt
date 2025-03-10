@@ -179,6 +179,44 @@ restraint server, are ignored.
 __ https://restraint.readthedocs.io/
 
 
+.. _mulithost-compatibility:
+
+Multihost Compatibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Some older tests might be using the ``CLIENTS`` and ``SERVERS``
+environment variables to get the information about the guests
+involved in the multihost testing. In order to provide these
+variables to all tests in a tmt plan it is possible to use the
+``TMT_PLAN_ENVIRONMENT_FILE`` variable and set them based on the
+:ref:`/spec/plans/guest-topology`. The example below demonstrates
+the usage on a simple tmt plan:
+
+.. code-block:: yaml
+
+    provision:
+      - name: server
+        how: virtual
+        connection: system
+      - name: client
+        how: virtual
+        connection: system
+
+    prepare:
+      - summary: Export client and server hostname for all tests
+        how: shell
+        script: |
+            source "$TMT_TOPOLOGY_BASH"
+            echo "CLIENTS=${TMT_GUESTS[client.hostname]}" >> "$TMT_PLAN_ENVIRONMENT_FILE"
+            echo "SERVERS=${TMT_GUESTS[server.hostname]}" >> "$TMT_PLAN_ENVIRONMENT_FILE"
+
+    execute:
+        how: tmt
+        script: |
+            echo "clients: $CLIENTS"
+            echo "servers: $SERVERS"
+
+
 Why is the 'id' key added to my test during export?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
