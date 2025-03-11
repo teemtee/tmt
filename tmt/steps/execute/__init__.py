@@ -269,9 +269,9 @@ class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         envvar="TMT_PLUGIN_EXECUTE_TMT_IGNORE_DURATION",
         help="""
              Ignore test duration value and allow test to run forever.
-             Can be set by envvar even when step is not specified on the
-             commandline. This environment variable
-             will be replaced by plan.fmf or CLI arguments.
+             Can be set by environment variable even when step is not
+             specified on the commandline. This environment variable
+             will be replaced by fmf config file or CLI arguments.
              """,
     )
     exit_first: bool = field(
