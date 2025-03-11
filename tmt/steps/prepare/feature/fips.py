@@ -8,6 +8,11 @@ from tmt.container import container, field
 from tmt.steps.prepare.feature import PrepareFeatureData, ToggleableFeature, provides_feature
 from tmt.steps.provision import Guest
 
+SUPPORTED_DISTRO_PATTERNS = (
+    re.compile(pattern)
+    for pattern in (r'Red Hat Enterprise Linux (8|9|10)', r'CentOS Stream (8|9|10)')
+)
+
 
 @container
 class FipsStepData(PrepareFeatureData):
@@ -34,19 +39,15 @@ class Epel(ToggleableFeature):
 
     @classmethod
     def enable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
-        if guest.facts.is_ostree:
+        if guest.facts.is_ostree or guest.facts.is_container:
             raise tmt.utils.GeneralError(
-                'FIPS prepare feature is not supported on ostree systems.'
+                'FIPS prepare feature is not supported on ostree or container systems.'
             )
-        if guest.facts.container:
-            raise tmt.utils.GeneralError(
-                'FIPS prepare feature is not supported on container systems.'
-            )
-        if not guest.facts.distro or (
-            not re.compile('Red Hat Enterprise Linux (8|9|10)\\.').match(guest.facts.distro)
-            and not re.compile('Centos Stream (8|9|10)').match(guest.facts.distro)
+        if not (
+            guest.facts.distro
+            and any(pattern.match(guest.facts.distro) for pattern in SUPPORTED_DISTRO_PATTERNS)
         ):
             raise tmt.utils.GeneralError(
-                'FIPS prepare feature is supported on systems with RHEL/Centos-Stream 8, 9 or 10.'
+                'FIPS prepare feature is supported on RHEL/CentOS-Stream 8, 9 or 10.'
             )
         cls._run_playbook('enable', 'fips-enable.yaml', guest, logger)
