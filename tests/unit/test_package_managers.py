@@ -380,9 +380,9 @@ def _parametrize_test_install() -> Iterator[
                 container,
                 package_manager_class,
                 Package('tree'),
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree \|\| apt install -y  tree",  # noqa: E501
-                'Setting up tree',
-            )
+                r".*?dpkg-query --show \$installable_packages \\\n^\|\| apt install -y  \$installable_packages.*",  # noqa: E501
+                'Setting up tree'
+              )
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield (
@@ -436,7 +436,8 @@ def test_install(
     output = package_manager.install(package)
 
     assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
+        caplog,
+        message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'")
     )
 
     assert_output(expected_output, output.stdout, output.stderr)
@@ -588,8 +589,8 @@ def _parametrize_test_install_nonexistent() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree-but-spelled-wrong \|\| apt install -y  tree-but-spelled-wrong",  # noqa: E501
-                'E: Unable to locate package tree-but-spelled-wrong',
+                r".*?dpkg-query --show \$installable_packages \\\n^\|\| apt install -y  \$installable_packages.*",  # noqa: E501
+                'E: Unable to locate package tree-but-spelled-wrong'
             )
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
@@ -633,9 +634,8 @@ def test_install_nonexistent(
     with pytest.raises(tmt.utils.RunError) as excinfo:
         package_manager.install(Package('tree-but-spelled-wrong'))
 
-    assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
-    )
+    assert_log(caplog, message=MATCH(
+        rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
     assert excinfo.type is tmt.utils.RunError
     assert excinfo.value.returncode != 0
@@ -699,12 +699,10 @@ def _parametrize_test_install_nonexistent_skip() -> Iterator[
                 )
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
-            yield (
-                container,
-                package_manager_class,
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree-but-spelled-wrong \|\| apt install -y --ignore-missing tree-but-spelled-wrong \|\| /bin/true",  # noqa: E501
-                'E: Unable to locate package tree-but-spelled-wrong',
-            )
+            yield container, \
+                package_manager_class, \
+                r".*?dpkg-query --show \$installable_packages \\\n^\|\| apt install -y --ignore-missing \$installable_packages.*", \
+                'E: Unable to locate package tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield (
@@ -748,9 +746,8 @@ def test_install_nonexistent_skip(
         Package('tree-but-spelled-wrong'), options=Options(skip_missing=True)
     )
 
-    assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
-    )
+    assert_log(caplog, message=MATCH(
+        rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
     assert_output(expected_output, output.stdout, output.stderr)
 
@@ -800,13 +797,11 @@ def _parametrize_test_install_dont_check_first() -> Iterator[
                 )
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
-            yield (
-                container,
-                package_manager_class,
-                Package('tree'),
-                r"export DEBIAN_FRONTEND=noninteractive; apt install -y  tree",
-                'Setting up tree',
-            )
+            yield container, \
+                package_manager_class, \
+                Package('tree'), \
+                r".*?/bin/false \\\n^\|\| apt install -y  \$installable_packages.*", \
+                'Setting up tree'
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield (
@@ -859,9 +854,8 @@ def test_install_dont_check_first(
 
     output = package_manager.install(package, options=Options(check_first=False))
 
-    assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
-    )
+    assert_log(caplog, message=MATCH(
+        rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
     assert_output(expected_output, output.stdout, output.stderr)
 
@@ -912,14 +906,12 @@ def _parametrize_test_reinstall() -> Iterator[
             )
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
-            yield (
-                container,
-                package_manager_class,
-                Package('tar'),
-                True,
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tar && apt reinstall -y  tar",  # noqa: E501
-                'Setting up tar',
-            )
+            yield container, \
+                package_manager_class, \
+                Package('tar'), \
+                True, \
+                r".*?dpkg-query --show \$installable_packages \\\n^&& apt reinstall -y  \$installable_packages.*", \
+                'Setting up tar'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, package_manager_class, Package('tar'), False, None, None
@@ -972,10 +964,8 @@ def test_reinstall(
 
         output = package_manager.reinstall(package)
 
-        assert_log(
-            caplog,
-            message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
-        )
+        assert_log(caplog, message=MATCH(
+            rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
     else:
         with pytest.raises(tmt.utils.GeneralError) as excinfo:
@@ -1038,13 +1028,11 @@ def _generate_test_reinstall_nonexistent_matrix() -> Iterator[
                 )
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
-            yield (
-                container,
-                package_manager_class,
-                True,
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree-but-spelled-wrong && apt reinstall -y  tree-but-spelled-wrong",  # noqa: E501
-                'dpkg-query: no packages found matching tree-but-spelled-wrong',
-            )
+            yield container, \
+                package_manager_class, \
+                True, \
+                r".*?dpkg-query --show \$installable_packages \\\n^&& apt reinstall -y  \$installable_packages.*", \
+                'dpkg-query: no packages found matching tree-but-spelled-wrong'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield container, package_manager_class, False, None, None
@@ -1087,10 +1075,8 @@ def test_reinstall_nonexistent(
         with pytest.raises(tmt.utils.RunError) as excinfo:
             package_manager.reinstall(Package('tree-but-spelled-wrong'))
 
-        assert_log(
-            caplog,
-            message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
-        )
+        assert_log(caplog, message=MATCH(
+            rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
         assert excinfo.type is tmt.utils.RunError
         assert excinfo.value.returncode != 0
@@ -1308,32 +1294,26 @@ def _generate_test_check_presence() -> Iterator[
                 )
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
-            yield (
-                container,
-                package_manager_class,
-                Package('util-linux'),
-                True,
-                r"dpkg-query --show util-linux",
-                r'\s+out:\s+util-linux',
-            )
+            yield container, \
+                package_manager_class, \
+                Package('util-linux'), \
+                True, \
+                r".*?echo \"PRESENCE-TEST:util-linux:util-linux:\$\(dpkg-query --show util-linux\).*?", \
+                r'\s+out:\s+PRESENCE-TEST:util-linux:util-linux:util-linux'  # noqa: E501
 
-            yield (
-                container,
-                package_manager_class,
-                Package('tree-but-spelled-wrong'),
-                False,
-                r"dpkg-query --show tree-but-spelled-wrong",
-                r'\s+err:\s+dpkg-query: no packages found matching tree-but-spelled-wrong',
-            )
+            yield container, \
+                package_manager_class, \
+                Package('tree-but-spelled-wrong'), \
+                False, \
+                r".*?echo \"PRESENCE-TEST:tree-but-spelled-wrong:tree-but-spelled-wrong:\$\(dpkg-query --show tree-but-spelled-wrong\).*?", \
+                r'\s+err:\s+dpkg-query: no packages found matching tree-but-spelled-wrong'  # noqa: E501
 
-            yield (
-                container,
-                package_manager_class,
-                FileSystemPath('/usr/bin/flock'),
-                True,
-                r"dpkg-query --show util-linux",
-                r'\s+out:\s+util-linux',
-            )
+            yield container, \
+                package_manager_class, \
+                FileSystemPath('/usr/bin/flock'), \
+                True, \
+                r".*?echo \"PRESENCE-TEST:/usr/bin/flock:\$\{fs_path_package\}:\$\(dpkg-query --show \$fs_path_package\)\".*?", \
+                r'\s+out:\s+PRESENCE-TEST:/usr/bin/flock:util-linux:util-linux'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield (
@@ -1437,9 +1417,8 @@ def test_check_presence(
 
     assert package_manager.check_presence(installable) == {installable: expected_result}
 
-    assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
-    )
+    assert_log(caplog, message=MATCH(
+        rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
     if expected_output:
         assert_log(caplog, remove_colors=True, message=MATCH(expected_output))
@@ -1487,13 +1466,11 @@ def _parametrize_test_install_filesystempath() -> Iterator[
                 )
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
-            yield (
-                container,
-                package_manager_class,
-                FileSystemPath('/usr/bin/dos2unix'),
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show dos2unix \|\| apt install -y  dos2unix",  # noqa: E501
-                "Setting up dos2unix",
-            )
+            yield container, \
+                package_manager_class, \
+                FileSystemPath('/usr/bin/dos2unix'), \
+                r".*?dpkg-query --show \$installable_packages \\\n^\|\| apt install -y  \$installable_packages.*", \
+                "Setting up dos2unix"  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield (
@@ -1546,9 +1523,8 @@ def test_install_filesystempath(
 
     output = package_manager.install(installable)
 
-    assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
-    )
+    assert_log(caplog, message=MATCH(
+        rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
     assert_output(expected_output, output.stdout, output.stderr)
 
@@ -1623,13 +1599,11 @@ def _parametrize_test_install_multiple() -> Iterator[
             )
 
         elif package_manager_class is tmt.package_managers.apt.Apt:
-            yield (
-                container,
-                package_manager_class,
-                (Package('tree'), Package('nano')),
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree nano \|\| apt install -y  tree nano",  # noqa: E501
-                'Setting up tree',
-            )
+            yield container, \
+                package_manager_class, \
+                (Package('tree'), Package('nano')), \
+                r".*?dpkg-query --show \$installable_packages \\\n^\|\| apt install -y  \$installable_packages.*", \
+                'Setting up tree'  # noqa: E501
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
             yield (
@@ -1682,9 +1656,8 @@ def test_install_multiple(
 
     output = package_manager.install(*packages)
 
-    assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
-    )
+    assert_log(caplog, message=MATCH(
+        rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
     assert_output(expected_output, output.stdout, output.stderr)
 
@@ -1799,7 +1772,7 @@ def _parametrize_test_install_downloaded() -> Iterator[
                 package_manager_class,
                 (Package('tree'), Package('nano')),
                 ('tree*.x86_64.rpm', 'nano*.x86_64.rpm'),
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree nano \|\| apt install -y  tree nano",  # noqa: E501
+                r".*?dpkg-query --show \$installable_packages \\\n^\|\| apt install -y  \$installable_packages.*",  # noqa: E501
                 'Setting up tree',
                 marks=pytest.mark.skip(reason="not supported yet"),
             )
@@ -1875,9 +1848,8 @@ def test_install_downloaded(
     else:
         output = package_manager.install(*installables, options=Options(check_first=False))
 
-    assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
-    )
+    assert_log(caplog, message=MATCH(
+        rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"))
 
     assert_output(expected_output, output.stdout, output.stderr)
 
