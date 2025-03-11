@@ -113,14 +113,6 @@ example: |
 /feature:
     summary:
         Easily enable and disable common features
-    description: |
-        The ``feature`` plugin provides a comfortable way to
-        enable and disable some commonly used functionality. As
-        for now enabling and disabling the ``epel`` repository is
-        supported, ``crb`` and ``fips`` are coming in the near
-        future.
-
-        .. versionadded:: 1.31
     example: |
         prepare:
             how: feature
