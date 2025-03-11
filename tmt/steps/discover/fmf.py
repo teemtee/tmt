@@ -321,6 +321,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     in git since a given revision. This can be particularly useful when
     testing changes to tests themselves (e.g. in a pull request CI).
 
+    Related keys: ``modified-only``, ``modified-url``, ``modified-ref``
+
     Example to compare local repo against upstream ``main`` branch:
 
     .. code-block:: yaml
