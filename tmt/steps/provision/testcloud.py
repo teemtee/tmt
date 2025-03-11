@@ -30,7 +30,6 @@ from tmt.utils import (
     ProvisionError,
     ShellScript,
     configure_constant,
-    effective_workdir_root,
     retry_session,
 )
 from tmt.utils.wait import Deadline, Waiting
@@ -865,7 +864,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # We can't assign the path to STORE_DIR because it must exist first
         data_dir = self.workdir_root / 'testcloud'
-        store_dir = self.workdir_root / 'testcloud/images'
+        store_dir = data_dir / 'images'
 
         # Make sure required directories exist
         os.makedirs(data_dir, exist_ok=True)
@@ -1416,7 +1415,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
         Print images which are already cached
         """
 
-        store_dir = effective_workdir_root(self.workdir_root) / 'testcloud/images'
+        store_dir = self.workdir_root / 'testcloud/images'
         self.info("Locally available images")
         for filename in sorted(store_dir.glob('*.qcow2')):
             self.info(filename.name, shift=1, color='yellow')
