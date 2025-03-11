@@ -292,15 +292,15 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     The following keys are used to limit the test discovery:
 
-    ``test`` - list of test names or regular expressions used to select tests.
+    ``test`` - list of test names or regular expressions used to select tests
 
-    ``link`` - select tests using the link keys.
+    ``link`` - select tests using the link keys
 
-    ``filter`` - Apply advanced filter based on test metadata attributes
+    ``filter`` - apply advanced filter based on test metadata attributes
 
-    ``exclude`` - Exclude tests which match a regular expression.
+    ``exclude`` - exclude tests which match a regular expression
 
-    ``prune`` - Copy only immediate directories of executed tests and their required files.
+    ``prune`` - copy only immediate directories of executed tests and their required files
 
 
     For DistGit repo one can download sources and use code from them in
