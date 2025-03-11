@@ -74,6 +74,13 @@ class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
 
 @tmt.steps.provides_method('ansible')
 class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
+    #
+    # This plugin docstring has been reviewed and updated to follow
+    # our documentation best practices. When changing it, please make
+    # sure new changes are following them as well.
+    #
+    # https://tmt.readthedocs.io/en/stable/contribute.html#docs
+    #
     """
     Prepare guest using Ansible.
 

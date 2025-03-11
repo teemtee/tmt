@@ -358,6 +358,13 @@ class AvcCheck(Check):
 
 @provides_check('avc')
 class AvcDenials(CheckPlugin[AvcCheck]):
+    #
+    # This plugin docstring has been reviewed and updated to follow
+    # our documentation best practices. When changing it, please make
+    # sure new changes are following them as well.
+    #
+    # https://tmt.readthedocs.io/en/stable/contribute.html#docs
+    #
     """
     Check for SELinux AVC denials raised during the test.
 
