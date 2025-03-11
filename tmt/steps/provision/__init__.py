@@ -1,4 +1,5 @@
 import ast
+import contextlib
 import dataclasses
 import datetime
 import enum
@@ -1795,6 +1796,84 @@ class Guest(tmt.utils.Common):
         dirpath.mkdir(parents=True, exist_ok=True)
         for log in guest_logs:
             log.store(logger, dirpath, log.name)
+
+    def _construct_mkdtemp_command(
+        self,
+        prefix: Optional[str] = None,
+        template: Optional[str] = None,
+        parent: Optional[Path] = None,
+    ) -> Command:
+        template = template or 'tmp.XXXXXXXXXX'
+
+        if prefix is not None:
+            template = f'{prefix}{template}'
+
+        options: list[str] = ['--directory']
+
+        if parent is not None:
+            options += ['-p', str(parent)]
+
+        return Command(*('mktemp', *options, template))
+
+    @contextlib.contextmanager
+    def mkdtemp(
+        self,
+        # Suffix is not supported everywhere, namely Alpine does not
+        # recognize it, and even requires template to end with `XXXXXX`.
+        # Therefore not supporting this option - in the future, someone
+        # may need it, fix it for all distros, and uncomment the
+        # parameter.
+        # suffix: Optional[str] = None,
+        prefix: Optional[str] = None,
+        template: Optional[str] = None,
+        parent: Optional[Path] = None,
+    ) -> Iterator[Path]:
+        """
+        Create a temporary directory.
+
+        Modeled after :py:func:`tempfile.mkdtemp`, but creates the
+        temporary directory on the guest, by invoking ``mktemp -d``. The
+        implementation may slightly differ, but the temporary directory
+        should be created safely, without conflicts, and it should be
+        accessible only to user who created it.
+
+        Since the caller is responsible for removing the directory, it
+        is recommended to use it as a context manager, just as one would
+        use :py:func:`tempfile.mkdtemp`; leaving the context will remove
+        the directory:
+
+        .. code-block:: python
+
+            with guest.mkdtemp() as path:
+                ...
+
+        :param prefix: if set, the directory name will begin with this
+            string.
+        :param template: if set, the directory name will follow the
+            given naming scheme: the template must end with 6
+            consecutive ``X``s, i.e. ``XXXXXX``. All ``X`` letters will
+            be replaced with random characters.
+        :param parent: if set, new directory will be created under this
+            path. Otherwise, the default directory is used.
+        """
+
+        output = self.execute(
+            self._construct_mkdtemp_command(prefix=prefix, template=template, parent=parent)
+        )
+
+        if not output.stdout:
+            raise GeneralError(f"Failed to create temporary directory on guest: {output.stderr}")
+
+        path = Path(output.stdout.strip())
+
+        try:
+            yield path
+
+        except Exception as exc:
+            raise exc
+
+        else:
+            self.execute(Command('rm', '-rf', path))
 
 
 @container
