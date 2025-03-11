@@ -6,8 +6,10 @@ import _pytest.tmpdir
 import fmf
 import py.path
 import pytest
+from pytest_container.container import ContainerData
 
 from tmt.log import Logger
+from tmt.steps.provision.podman import GuestContainer, PodmanGuestData
 from tmt.utils import Path
 
 
@@ -115,3 +117,29 @@ def fixture_id_tree_defined() -> fmf.Tree:
 @pytest.fixture(name='id_tree_empty')
 def fixture_id_tree_empty() -> fmf.Tree:
     return fmf.Tree(Path(__file__).parent / 'id' / 'empty')
+
+
+@pytest.fixture(name='guest')
+def fixture_guest(container: ContainerData, root_logger: Logger) -> GuestContainer:
+    guest_data = PodmanGuestData(image=container.image_url_or_id, container=container.container_id)
+
+    guest = GuestContainer(logger=root_logger, data=guest_data, name='dummy-container')
+
+    guest.start()
+
+    return guest
+
+
+@pytest.fixture(name='guest_per_test')
+def fixture_guest_per_test(
+    container_per_test: ContainerData, root_logger: Logger
+) -> GuestContainer:
+    guest_data = PodmanGuestData(
+        image=container_per_test.image_url_or_id, container=container_per_test.container_id
+    )
+
+    guest = GuestContainer(logger=root_logger, data=guest_data, name='dummy-container')
+
+    guest.start()
+
+    return guest
