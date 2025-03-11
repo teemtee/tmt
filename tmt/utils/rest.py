@@ -201,6 +201,13 @@ class RestVisitor(docutils.nodes.NodeVisitor):
 
     depart_literal = _noop_departure
 
+    def visit_emphasis(self, node: docutils.nodes.literal) -> None:
+        self.log_visit(str(node))
+
+        self._emit(click.style(node.astext(), fg='yellow'))
+
+    depart_emphasis = _noop_departure
+
     def visit_literal_block(self, node: docutils.nodes.literal_block) -> None:
         self.log_visit(str(node))
 

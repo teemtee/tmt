@@ -48,7 +48,10 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         default=None,
         option='--dist-git-type',
         choices=tmt.utils.get_distgit_handler_names,
-        help='Use the provided DistGit handler instead of the auto detection.',
+        help="""
+            Use the provided DistGit handler instead of the auto detection.
+            Useful when running from forked repositories.
+            """,
     )
 
     dist_git_download_only: bool = field(
@@ -71,7 +74,10 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         option="--dist-git-require",
         metavar='PACKAGE',
         multiple=True,
-        help='Additional required package to be present before sources are prepared.',
+        help="""
+            Additional required package to be present before sources are prepared.
+            The ``rpm-build`` package itself is installed automatically.
+            """,
         # *simple* requirements only
         normalize=lambda key_address, value, logger: tmt.base.assert_simple_dependencies(
             tmt.base.normalize_require(key_address, value, logger),

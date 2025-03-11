@@ -44,20 +44,43 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         default=cast(Optional[str], None),
         option=('-u', '--url'),
         metavar='REPOSITORY',
-        help='URL of the git repository with fmf metadata.',
+        help="""
+            Git repository containing the metadata tree.
+            Current git repository used by default.
+            """,
     )
+
     ref: Optional[str] = field(
         default=cast(Optional[str], None),
         option=('-r', '--ref'),
         metavar='REVISION',
-        help='Branch, tag or commit specifying the git revision.',
+        help="""
+            Branch, tag or commit specifying the desired git
+            revision. Defaults to the remote repository's default
+            branch if ``url`` was set or to the current ``HEAD``
+            of the current repository.
+
+            Additionally, one can set ``ref`` dynamically.
+            This is possible using a special file in tmt format
+            stored in the *default* branch of a tests repository.
+            This special file should contain rules assigning attribute ``ref``
+            in an *adjust* block, for example depending on a test run context.
+
+            Dynamic ``ref`` assignment is enabled whenever a test plan
+            reference has the format ``ref: @FILEPATH``.
+            """,
         normalize=normalize_ref,
     )
+
     path: Optional[str] = field(
         default=cast(Optional[str], None),
         option=('-p', '--path'),
         metavar='ROOT',
-        help='Path to the metadata tree root.',
+        help="""
+            Path to the metadata tree root. Must be relative to
+            the git repository root if ``url`` was provided, absolute
+            local filesystem path otherwise. By default ``.`` is used.
+            """,
     )
 
     # Selecting tests
@@ -66,25 +89,39 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         option=('-t', '--test'),
         metavar='NAMES',
         multiple=True,
-        help='Select tests by name.',
+        help="""
+            List of test names or regular expressions used to
+            select tests by name. Duplicate test names are allowed
+            to enable repetitive test execution, preserving the
+            listed test order.
+            """,
         normalize=tmt.utils.normalize_string_list,
     )
+
     link: list[str] = field(
         default_factory=list,
         option='--link',
         metavar="RELATION:TARGET",
         multiple=True,
         help="""
-             Filter by linked objects (regular expressions are supported for both relation and
-             target).
+            Select tests using the :ref:`/spec/core/link` keys.
+            Values must be in the form of ``RELATION:TARGET``,
+            tests containing at least one of them are selected.
+            Regular expressions are supported for both relation
+            and target. Relation part can be omitted to match all
+            relations.
              """,
     )
+
     filter: list[str] = field(
         default_factory=list,
         option=('-F', '--filter'),
         metavar='FILTERS',
         multiple=True,
-        help='Include only tests matching the filter.',
+        help="""
+            Apply advanced filter based on test metadata attributes.
+            See ``pydoc fmf.filter`` for more info.
+            """,
         normalize=tmt.utils.normalize_string_list,
     )
     exclude: list[str] = field(
@@ -101,21 +138,32 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         default=False,
         option=('-m', '--modified-only'),
         is_flag=True,
-        help='If set, select only tests modified since reference revision.',
+        help="""
+            Set to ``true`` if you want to filter modified tests
+            only. The test is modified if its name starts with
+            the name of any directory modified since ``modified-ref``.
+            """,
     )
+
     modified_url: Optional[str] = field(
         default=cast(Optional[str], None),
         option='--modified-url',
         metavar='REPOSITORY',
-        help='URL of the reference git repository with fmf metadata.',
+        help="""
+            An additional remote repository to be used as the
+            reference for comparison. Will be fetched as a
+            reference remote in the test dir.
+            """,
     )
+
     modified_ref: Optional[str] = field(
         default=cast(Optional[str], None),
         option='--modified-ref',
         metavar='REVISION',
         help="""
-            Branch, tag or commit specifying the reference git revision (if not provided, the
-            default branch is used).
+            The branch, tag or commit specifying the reference git revision (if not provided, the
+            default branch is used). Note that you need to specify ``reference/<branch>`` to
+            compare to a branch from the repository specified in ``modified-url``.
             """,
     )
 
@@ -125,7 +173,10 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         option='--dist-git-init',
         is_flag=True,
         help="""
-             Initialize fmf root inside extracted sources (at dist-git-extract or top directory).
+             Set to ``true`` to initialize fmf root inside extracted sources at
+             ``dist-git-extract`` location or top directory. To be used when the
+             sources contain fmf files (for example tests) but do not have an
+             associated fmf root.
              """,
     )
     dist_git_remove_fmf_root: bool = field(
@@ -141,7 +192,12 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         default=False,
         option='--dist-git-merge',
         is_flag=True,
-        help='Merge copied sources and plan fmf root.',
+        help="""
+            Set to ``true`` to combine fmf root from the sources and fmf root from the plan.
+            It allows to have plans and tests defined in the DistGit repo which use tests
+            and other resources from the downloaded sources. Any plans in extracted sources
+            will not be processed.
+            """,
     )
     dist_git_extract: Optional[str] = field(
         default=cast(Optional[str], None),
@@ -234,6 +290,19 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     If no ``ref`` is provided, the default branch from the origin is used.
 
+    The following keys are used to limit the test discovery:
+
+    ``test`` - list of test names or regular expressions used to select tests
+
+    ``link`` - select tests using the link keys
+
+    ``filter`` - apply advanced filter based on test metadata attributes
+
+    ``exclude`` - exclude tests which match a regular expression
+
+    ``prune`` - copy only immediate directories of executed tests and their required files
+
+
     For DistGit repo one can download sources and use code from them in
     the tests. Sources are extracted into ``$TMT_SOURCE_DIR`` path,
     patches are applied by default. See options to install build
@@ -250,17 +319,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             how: fmf
             dist-git-source: true
 
-    Related config options (all optional):
-
-    * ``dist-git-merge`` - set to ``true`` if you want to copy in extracted
-      sources to the local repo
-    * ``dist-git-init`` - set to ``true`` and ``fmf init`` will be called inside
-      extracted sources (at ``dist-git-extract`` or top directory)
-    * ``dist-git-extract`` - directory (glob supported) to copy from
-      extracted sources (defaults to inner fmf root)
-    * ``dist-git-remove-fmf-root`` - set to ``true`` to remove fmf root from
-      extracted sources
-
     Selecting tests containing specified link is possible using ``link``
     key accepting ``RELATION:TARGET`` format of values. Regular
     expressions are supported for both relation and target part of the
@@ -276,11 +334,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     in git since a given revision. This can be particularly useful when
     testing changes to tests themselves (e.g. in a pull request CI).
 
-    Related config options (all optional):
-
-    * ``modified-only`` - set to ``true`` if you want to filter modified tests
-    * ``modified-url`` - fetched as "reference" remote in the test dir
-    * ``modified-ref`` - the ref to compare against
+    Related keys: ``modified-only``, ``modified-url``, ``modified-ref``
 
     Example to compare local repo against upstream ``main`` branch:
 
