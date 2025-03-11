@@ -76,7 +76,7 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         multiple=True,
         help="""
             Additional required package to be present before sources are prepared.
-            The rpm-build package itself is installed automatically.
+            The ``rpm-build`` package itself is installed automatically.
             """,
         # *simple* requirements only
         normalize=lambda key_address, value, logger: tmt.base.assert_simple_dependencies(

@@ -290,6 +290,19 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     If no ``ref`` is provided, the default branch from the origin is used.
 
+    The following keys are used to limit the test discovery:
+
+    ``test`` - list of test names or regular expressions used to select tests.
+
+    ``link`` - select tests using the link keys.
+
+    ``filter`` - Apply advanced filter based on test metadata attributes
+
+    ``exclude`` - Exclude tests which match a regular expression.
+
+    ``prune`` - Copy only immediate directories of executed tests and their required files.
+
+
     For DistGit repo one can download sources and use code from them in
     the tests. Sources are extracted into ``$TMT_SOURCE_DIR`` path,
     patches are applied by default. See options to install build
