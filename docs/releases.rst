@@ -8,7 +8,6 @@
 tmt-1.44.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
 The ``results.yaml`` file is now populated with test results
 right after the ``discover`` step is finished and the file is
 continuously updated during test execution to provide the latest
@@ -20,6 +19,9 @@ Execute tmt option ``--ignore-duration`` makes tmt to execute
 the test as long as it needs. Execute plugin doesn't need to be
 specified on the commandline for :ref:`plugin-variables` to work
 for this option.
+
+Add the ``--command`` option for the ``tmt run reboot`` so that
+users specify the command to run on guest to trigger the reboot.
 
 
 tmt-1.43.0
