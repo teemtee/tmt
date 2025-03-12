@@ -368,11 +368,11 @@ def _template_filter_guest_full_name(  # type: ignore[reportUnusedFunction,unuse
 
     .. code-block:: jinja
 
-        # {"name": "foo", "role": None, ...} -> 'foo'
-        {{ {"name": "foo", "role": None, ...} | guest_full_name }}
+        # {"name": "foo", "role": None} -> 'foo'
+        {{ {"name": "foo", "role": None} | guest_full_name }}
 
-        # {"name": "foo", "role": "bar", ...} -> 'foo (bar)'
-        {{ {"name": "foo", "role": "bar", ...} | guest_full_name }}
+        # {"name": "foo", "role": "bar"} -> 'foo (bar)'
+        {{ {"name": "foo", "role": "bar"} | guest_full_name }}
     """
 
     from tmt.steps.provision import format_guest_full_name
@@ -388,12 +388,11 @@ def _template_filter_format_duration(  # type: ignore[reportUnusedFunction,unuse
 
     .. code-block:: jinja
 
-        # {"duration": None, ...} -> '    '
-        {{ {"duration": None, ...} | format_duration }}
+        # {"duration": None} -> '    '
+        {{ {"duration": None} | format_duration }}
 
-        # {"duration": "12:34:56", ...} -> '12:34:56'
-        {{ {"duration": "12:34:56", ...} | format_duration }}
-
+        # {"duration": "12:34:56"} -> '12:34:56'
+        {{ {"duration": "12:34:56"} | format_duration }}
     """
 
     # If test duration information is missing, print 8 spaces to keep indentation
