@@ -30,7 +30,7 @@ from tmt.result import (
                 ResultOutcome.ERROR,
                 ResultOutcome.PENDING,
             ],
-            TmtExitCode.ERROR
+            TmtExitCode.ERROR,
         ),
         # There was a fail or warn identified, but no error.
         (
@@ -42,7 +42,7 @@ from tmt.result import (
                 ResultOutcome.WARN,
                 ResultOutcome.PENDING,
             ],
-        TmtExitCode.FAIL
+            TmtExitCode.FAIL,
         ),
         # Tests were executed, and all reported the ``skip`` result.
         (
@@ -67,7 +67,7 @@ from tmt.result import (
                 ResultOutcome.INFO,
                 ResultOutcome.SKIP,
             ],
-            TmtExitCode.SUCCESS
+            TmtExitCode.SUCCESS,
         ),
         # A pending without any fail or error is treated as an error.
         (
@@ -75,8 +75,8 @@ from tmt.result import (
                 ResultOutcome.PASS,
                 ResultOutcome.PENDING,
             ],
-            TmtExitCode.ERROR
-        )
+            TmtExitCode.ERROR,
+        ),
     ],
     # IDs copied from the specification:
     ids=(
