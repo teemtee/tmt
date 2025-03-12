@@ -10,12 +10,14 @@ import shlex
 import textwrap
 from re import Match
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Optional,
     cast,
 )
 
+import click
 import fmf
 import fmf.utils
 import jinja2
@@ -23,6 +25,10 @@ import jinja2.exceptions
 
 from tmt.utils import GeneralError, Path
 from tmt.utils.git import web_git_url
+
+if TYPE_CHECKING:
+    from tmt.result import BaseResult
+    from tmt.steps.provision import Guest
 
 
 def _template_filter_basename(  # type: ignore[reportUnusedFunction,unused-ignore]
@@ -324,6 +330,75 @@ def _template_filter_shell_quote(  # type: ignore[reportUnusedFunction,unused-ig
     """
 
     return shlex.quote(s)
+
+
+def _template_filter_style(  # type: ignore[reportUnusedFunction,unused-ignore]
+    s: str,
+    fg: Optional[str] = None,
+    bg: Optional[str] = None,
+    bold: Optional[bool] = None,
+    dim: Optional[bool] = None,
+    underline: Optional[bool] = None,
+    overline: Optional[bool] = None,
+    italic: Optional[bool] = None,
+    blink: Optional[bool] = None,
+    reverse: Optional[bool] = None,
+    strikethrough: Optional[bool] = None,
+    reset: bool = True,
+) -> str:
+    """
+    Evaluate terminal-style colorization tags supported by Click.
+
+    Implemented by passing all arguments to :py:func:`click.style`.
+    """
+
+    kwargs = locals().copy()
+    kwargs.pop('s')
+
+    return click.style(s, **kwargs)
+
+
+def _template_filter_guest_full_name(  # type: ignore[reportUnusedFunction,unused-ignore]
+    guest: 'Guest',
+) -> str:
+    """
+    Render guest's "full name".
+
+    Implemented by calling :py:func:`format_guest_full_name`.
+
+    .. code-block:: jinja
+
+        # {"name": "foo", "role": None, ...} -> 'foo'
+        {{ {"name": "foo", "role": None, ...} | guest_full_name }}
+
+        # {"name": "foo", "role": "bar", ...} -> 'foo (bar)'
+        {{ {"name": "foo", "role": "bar", ...} | guest_full_name }}
+    """
+
+    from tmt.steps.provision import format_guest_full_name
+
+    return format_guest_full_name(guest.name, guest.role)
+
+
+def _template_filter_format_duration(  # type: ignore[reportUnusedFunction,unused-ignore]
+    result: 'BaseResult',
+) -> str:
+    """
+    Render result duration in the ``hh:mm:ss`` format.
+
+    .. code-block:: jinja
+
+        # {"duration": None, ...} -> '    '
+        {{ {"duration": None, ...} | format_duration }}
+
+        # {"duration": "12:34:56", ...} -> '12:34:56'
+        {{ {"duration": "12:34:56", ...} | format_duration }}
+
+    """
+
+    # If test duration information is missing, print 8 spaces to keep indentation
+
+    return result.duration if result.duration else 6 * ' '
 
 
 TEMPLATE_FILTERS: dict[str, Callable[..., Any]] = {
