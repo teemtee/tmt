@@ -37,14 +37,14 @@ from tmt.utils import (
     duration_to_seconds,
     filter_paths,
     wait,
-    )
+)
 from tmt.utils.git import (
     clonable_git_url,
     git_add,
     inject_auth_git_url,
     public_git_url,
     validate_git_status,
-    )
+)
 from tmt.utils.structured_field import StructuredField
 
 from . import MATCH, assert_log, assert_not_log
@@ -58,23 +58,15 @@ def local_git_repo(tmppath: Path) -> Path:
     origin.mkdir()
 
     run(Command('git', 'init', '-b', 'main'), cwd=origin)
-    run(
-        Command('git', 'config', '--local', 'user.email', 'lzachar@redhat.com'),
-        cwd=origin)
-    run(
-        Command('git', 'config', '--local', 'user.name', 'LZachar'),
-        cwd=origin)
+    run(Command('git', 'config', '--local', 'user.email', 'lzachar@redhat.com'), cwd=origin)
+    run(Command('git', 'config', '--local', 'user.name', 'LZachar'), cwd=origin)
     # We need to be able to push, --bare repo is another option here however
     # that would require to add separate fixture for bare repo (unusable for
     # local changes)
-    run(
-        Command('git', 'config', '--local', 'receive.denyCurrentBranch', 'ignore'),
-        cwd=origin)
+    run(Command('git', 'config', '--local', 'receive.denyCurrentBranch', 'ignore'), cwd=origin)
     origin.joinpath('README').write_text('something to have in the repo')
     run(Command('git', 'add', '-A'), cwd=origin)
-    run(
-        Command('git', 'commit', '-m', 'initial_commit'),
-        cwd=origin)
+    run(Command('git', 'commit', '-m', 'initial_commit'), cwd=origin)
     return origin
 
 
@@ -82,12 +74,12 @@ def local_git_repo(tmppath: Path) -> Path:
 def origin_and_local_git_repo(local_git_repo: Path) -> tuple[Path, Path]:
     top_dir = local_git_repo.parent
     fork_dir = top_dir / 'fork'
-    run(ShellScript(f'git clone {local_git_repo} {fork_dir}').to_shell_command(),
-        cwd=top_dir)
-    run(ShellScript('git config --local user.email lzachar@redhat.com').to_shell_command(),
-        cwd=fork_dir)
-    run(ShellScript('git config --local user.name LZachar').to_shell_command(),
-        cwd=fork_dir)
+    run(ShellScript(f'git clone {local_git_repo} {fork_dir}').to_shell_command(), cwd=top_dir)
+    run(
+        ShellScript('git config --local user.email lzachar@redhat.com').to_shell_command(),
+        cwd=fork_dir,
+    )
+    run(ShellScript('git config --local user.name LZachar').to_shell_command(), cwd=fork_dir)
     return local_git_repo, fork_dir
 
 
@@ -103,55 +95,51 @@ def nested_file(tmppath: Path) -> tuple[Path, Path, Path]:
 
 
 _test_public_git_url_input = [
-    (
-        'git@github.com:teemtee/tmt.git',
-        'https://github.com/teemtee/tmt.git'
-        ),
+    ('git@github.com:teemtee/tmt.git', 'https://github.com/teemtee/tmt.git'),
     (
         'ssh://psplicha@pkgs.devel.redhat.com/tests/bash',
         'https://pkgs.devel.redhat.com/git/tests/bash',
-        ),
+    ),
     (
         'git+ssh://psplicha@pkgs.devel.redhat.com/tests/bash',
         'https://pkgs.devel.redhat.com/git/tests/bash',
-        ),
+    ),
     (
         'ssh://pkgs.devel.redhat.com/tests/bash',
         'https://pkgs.devel.redhat.com/git/tests/bash',
-        ),
+    ),
     (
         'git+ssh://psss@pkgs.fedoraproject.org/tests/shell',
         'https://pkgs.fedoraproject.org/tests/shell',
-        ),
+    ),
     (
         'ssh://psss@pkgs.fedoraproject.org/tests/shell',
         'https://pkgs.fedoraproject.org/tests/shell',
-        ),
+    ),
     (
         'ssh://git@pagure.io/fedora-ci/metadata.git',
         'https://pagure.io/fedora-ci/metadata.git',
-        ),
+    ),
     (
         'git@gitlab.com:redhat/rhel/NAMESPACE/COMPONENT.git',
         'https://pkgs.devel.redhat.com/git/NAMESPACE/COMPONENT.git',
-        ),
+    ),
     (
         'https://gitlab.com/redhat/rhel/NAMESPACE/COMPONENT',
         'https://pkgs.devel.redhat.com/git/NAMESPACE/COMPONENT',
-        ),
+    ),
     (
         'https://gitlab.com/redhat/centos-stream/NAMESPACE/COMPONENT.git',
         'https://gitlab.com/redhat/centos-stream/NAMESPACE/COMPONENT.git',
-        )
-    ]
+    ),
+]
 
 
 @pytest.mark.parametrize(
     ('original', 'expected'),
     _test_public_git_url_input,
-    ids=[
-        f'{original} => {expected}' for original, expected in _test_public_git_url_input
-        ])
+    ids=[f'{original} => {expected}' for original, expected in _test_public_git_url_input],
+)
 def test_public_git_url(original: str, expected: str) -> None:
     """
     Verify url conversion
@@ -161,12 +149,15 @@ def test_public_git_url(original: str, expected: str) -> None:
 
 
 def test_clonable_git_url():
-    assert clonable_git_url('git://pkgs.devel.redhat.com/tests/bash') \
+    assert (
+        clonable_git_url('git://pkgs.devel.redhat.com/tests/bash')
         == 'https://pkgs.devel.redhat.com/git/tests/bash'
-    assert clonable_git_url('git+ssh://pkgs.devel.redhat.com/tests/bash') \
+    )
+    assert (
+        clonable_git_url('git+ssh://pkgs.devel.redhat.com/tests/bash')
         == 'git+ssh://pkgs.devel.redhat.com/tests/bash'
-    assert clonable_git_url('git://example.com') \
-        == 'git://example.com'
+    )
+    assert clonable_git_url('git://example.com') == 'git://example.com'
 
 
 def test_inject_auth_git_url(monkeypatch) -> None:
@@ -181,29 +172,41 @@ def test_inject_auth_git_url(monkeypatch) -> None:
     suffix = '_glab'
     # https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#clone-repository-using-personal-access-token
     # username can be anything but cannot be an empty string
-    monkeypatch.setattr('os.environ', {
-        f'{tmt.utils.git.INJECT_CREDENTIALS_URL_PREFIX}{suffix}': 'https://gitlab.com/namespace/project',
-        f'{tmt.utils.git.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}': 'foo:abcdefgh',
-        f'{tmt.utils.git.INJECT_CREDENTIALS_VALUE_PREFIX}___': 'FAKE',
-        })
-    assert inject_auth_git_url('https://gitlab.com/namespace/project') \
+    monkeypatch.setattr(
+        'os.environ',
+        {
+            f'{tmt.utils.git.INJECT_CREDENTIALS_URL_PREFIX}{suffix}': 'https://gitlab.com/namespace/project',
+            f'{tmt.utils.git.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}': 'foo:abcdefgh',
+            f'{tmt.utils.git.INJECT_CREDENTIALS_VALUE_PREFIX}___': 'FAKE',
+        },
+    )
+    assert (
+        inject_auth_git_url('https://gitlab.com/namespace/project')
         == 'https://foo:abcdefgh@gitlab.com/namespace/project'
+    )
 
     suffix = '_ghub'
     # https://github.blog/2012-09-21-easier-builds-and-deployments-using-git-over-https-and-oauth/
     # just token or username is used (value before @)
-    monkeypatch.setattr('os.environ', {
-        f'{tmt.utils.git.INJECT_CREDENTIALS_URL_PREFIX}{suffix}': 'https://github.com/namespace/project',
-        f'{tmt.utils.git.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}': 'abcdefgh',
-        f'{tmt.utils.git.INJECT_CREDENTIALS_VALUE_PREFIX}___': 'FAKE',
-        f'{tmt.utils.git.INJECT_CREDENTIALS_URL_PREFIX}{suffix}_2': 'https://github.com/other_namespace',
-        f'{tmt.utils.git.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}_2': 'xyzabcde',
-        f'{tmt.utils.git.INJECT_CREDENTIALS_URL_PREFIX}{suffix}_3': 'https://example.com/broken',
-        })
-    assert inject_auth_git_url('https://github.com/namespace/project') \
+    monkeypatch.setattr(
+        'os.environ',
+        {
+            f'{tmt.utils.git.INJECT_CREDENTIALS_URL_PREFIX}{suffix}': 'https://github.com/namespace/project',
+            f'{tmt.utils.git.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}': 'abcdefgh',
+            f'{tmt.utils.git.INJECT_CREDENTIALS_VALUE_PREFIX}___': 'FAKE',
+            f'{tmt.utils.git.INJECT_CREDENTIALS_URL_PREFIX}{suffix}_2': 'https://github.com/other_namespace',
+            f'{tmt.utils.git.INJECT_CREDENTIALS_VALUE_PREFIX}{suffix}_2': 'xyzabcde',
+            f'{tmt.utils.git.INJECT_CREDENTIALS_URL_PREFIX}{suffix}_3': 'https://example.com/broken',
+        },
+    )
+    assert (
+        inject_auth_git_url('https://github.com/namespace/project')
         == 'https://abcdefgh@github.com/namespace/project'
-    assert inject_auth_git_url('https://github.com/other_namespace/project') \
+    )
+    assert (
+        inject_auth_git_url('https://github.com/other_namespace/project')
         == 'https://xyzabcde@github.com/other_namespace/project'
+    )
 
     with pytest.raises(tmt.utils.GitUrlError):
         inject_auth_git_url('https://example.com/broken/something')
@@ -315,16 +318,19 @@ def test_duration_to_seconds():
     assert duration_to_seconds('*2', injected_default="1m") == 120
 
 
-@pytest.mark.parametrize("duration", [
-    '*10m',
-    '**10',
-    '10w',
-    '1sm',
-    '*10m 3',
-    '3 *10m',
-    '1 1ss 5',
-    'bad',
-    ])
+@pytest.mark.parametrize(
+    "duration",
+    [
+        '*10m',
+        '**10',
+        '10w',
+        '1sm',
+        '*10m 3',
+        '3 *10m',
+        '1 1ss 5',
+        'bad',
+    ],
+)
 def test_duration_to_seconds_invalid(duration):
     """
     Catch invalid input duration string
@@ -345,7 +351,8 @@ class TestStructuredField(unittest.TestCase):
         self.start = (
             "[structured-field-start]\n"
             "This is StructuredField version 1. "
-            "Please, edit with care.\n")
+            "Please, edit with care.\n"
+        )
         self.end = "[structured-field-end]\n"
         self.zeroend = "[end]\n"
         self.one = "[one]\n1\n"
@@ -359,20 +366,14 @@ class TestStructuredField(unittest.TestCase):
         """
 
         # Version 0
-        text0 = "\n".join([
-                self.header,
-                self.sections, self.zeroend,
-                self.footer])
+        text0 = "\n".join([self.header, self.sections, self.zeroend, self.footer])
         inited0 = StructuredField(text0, version=0)
         loaded0 = StructuredField()
         loaded0.load(text0, version=0)
         assert inited0.save() == text0
         assert loaded0.save() == text0
         # Version 1
-        text1 = "\n".join([
-                self.header,
-                self.start, self.sections, self.end,
-                self.footer])
+        text1 = "\n".join([self.header, self.start, self.sections, self.end, self.footer])
         inited1 = StructuredField(text1)
         loaded1 = StructuredField()
         loaded1.load(text1)
@@ -397,8 +398,7 @@ class TestStructuredField(unittest.TestCase):
         field0 = StructuredField(text0, version=0)
         assert field0.save() == text0
         # Version 1
-        text1 = "\n".join(
-                [self.start, self.sections, self.end, self.footer])
+        text1 = "\n".join([self.start, self.sections, self.end, self.footer])
         field1 = StructuredField(text1)
         assert field1.save() == text1
         # Common checks
@@ -419,8 +419,7 @@ class TestStructuredField(unittest.TestCase):
         field0 = StructuredField(text0, version=0)
         assert field0.save() == text0
         # Version 1
-        text1 = "\n".join(
-                [self.header, self.start, self.sections, self.end])
+        text1 = "\n".join([self.header, self.start, self.sections, self.end])
         field1 = StructuredField(text1)
         assert field1.save() == text1
         # Common checks
@@ -505,10 +504,8 @@ class TestStructuredField(unittest.TestCase):
         Remove section
         """
 
-        field0 = StructuredField(
-            "\n".join([self.sections, self.zeroend]), version=0)
-        field1 = StructuredField(
-            "\n".join([self.start, self.sections, self.end]))
+        field0 = StructuredField("\n".join([self.sections, self.zeroend]), version=0)
+        field1 = StructuredField("\n".join([self.start, self.sections, self.end]))
         for field in [field0, field1]:
             field.remove("one")
             field.remove("two")
@@ -554,8 +551,7 @@ class TestStructuredField(unittest.TestCase):
         Section tags in header
         """
 
-        field = StructuredField("\n".join(
-            ["[something]", self.start, self.one, self.end]))
+        field = StructuredField("\n".join(["[something]", self.start, self.one, self.end]))
         assert 'something' not in field
         assert 'one' in field
         assert field.get('one') == '1\n'
@@ -594,8 +590,7 @@ class TestStructuredField(unittest.TestCase):
         Remove section item
         """
 
-        text = "\n".join(
-            [self.start, "[section]\nx = 3\ny = 7\n", self.end])
+        text = "\n".join([self.start, "[section]\nx = 3\ny = 7\n", self.end])
         field = StructuredField(text)
         field.remove("section", "x")
         assert field.save() == '\n'.join([self.start, '[section]\ny = 7\n', self.end])
@@ -686,63 +681,59 @@ class TestStructuredField(unittest.TestCase):
         # Remove multiple values
         field.remove("section", "key")
         assert 'key = 1\nkey = 2\nkey = 3' not in field.save()
-        pytest.raises(
-            StructuredFieldError, field.get, "section", "key")
+        pytest.raises(StructuredFieldError, field.get, "section", "key")
 
 
 def test_run_interactive_not_joined(tmppath, root_logger):
-    output = ShellScript("echo abc; echo def >2").to_shell_command().run(
-        shell=True,
-        interactive=True,
-        cwd=tmppath,
-        env={},
-        log=None,
-        logger=root_logger)
+    output = (
+        ShellScript("echo abc; echo def >2")
+        .to_shell_command()
+        .run(shell=True, interactive=True, cwd=tmppath, env={}, log=None, logger=root_logger)
+    )
     assert output.stdout is None
     assert output.stderr is None
 
 
 def test_run_interactive_joined(tmppath, root_logger):
-    output = ShellScript("echo abc; echo def >2").to_shell_command().run(
-        shell=True,
-        interactive=True,
-        cwd=tmppath,
-        env={},
-        join=True,
-        log=None,
-        logger=root_logger)
+    output = (
+        ShellScript("echo abc; echo def >2")
+        .to_shell_command()
+        .run(
+            shell=True,
+            interactive=True,
+            cwd=tmppath,
+            env={},
+            join=True,
+            log=None,
+            logger=root_logger,
+        )
+    )
     assert output.stdout is None
     assert output.stderr is None
 
 
 def test_run_not_joined_stdout(root_logger):
     output = Command("ls", "/").run(
-        shell=False,
-        cwd=Path.cwd(),
-        env={},
-        log=None,
-        logger=root_logger)
+        shell=False, cwd=Path.cwd(), env={}, log=None, logger=root_logger
+    )
     assert "sbin" in output.stdout
 
 
 def test_run_not_joined_stderr(root_logger):
-    output = ShellScript("ls non_existing || true").to_shell_command().run(
-        shell=False,
-        cwd=Path.cwd(),
-        env={},
-        log=None,
-        logger=root_logger)
+    output = (
+        ShellScript("ls non_existing || true")
+        .to_shell_command()
+        .run(shell=False, cwd=Path.cwd(), env={}, log=None, logger=root_logger)
+    )
     assert "ls: cannot access" in output.stderr
 
 
 def test_run_joined(root_logger):
-    output = ShellScript("ls non_existing / || true").to_shell_command().run(
-        shell=False,
-        cwd=Path.cwd(),
-        env={},
-        log=None,
-        join=True,
-        logger=root_logger)
+    output = (
+        ShellScript("ls non_existing / || true")
+        .to_shell_command()
+        .run(shell=False, cwd=Path.cwd(), env={}, log=None, join=True, logger=root_logger)
+    )
     assert "ls: cannot access" in output.stdout
     assert "sbin" in output.stdout
 
@@ -757,31 +748,27 @@ def test_run_big(root_logger):
         done
         """
 
-    output = ShellScript(textwrap.dedent(script)).to_shell_command().run(
-        shell=False,
-        cwd=Path.cwd(),
-        env={},
-        log=None,
-        join=True,
-        logger=root_logger)
+    output = (
+        ShellScript(textwrap.dedent(script))
+        .to_shell_command()
+        .run(shell=False, cwd=Path.cwd(), env={}, log=None, join=True, logger=root_logger)
+    )
     assert "n n" in output.stdout
     assert len(output.stdout) == 200000
 
 
 def test_command_run_without_streaming(root_logger: Logger, caplog) -> None:
     ShellScript('ls -al /').to_shell_command().run(
-        cwd=Path.cwd(),
-        stream_output=True,
-        logger=root_logger)
+        cwd=Path.cwd(), stream_output=True, logger=root_logger
+    )
 
     assert_log(caplog, message=MATCH('out: drwx.+? mnt'))
 
     caplog.clear()
 
     ShellScript('ls -al /').to_shell_command().run(
-        cwd=Path.cwd(),
-        stream_output=False,
-        logger=root_logger)
+        cwd=Path.cwd(), stream_output=False, logger=root_logger
+    )
 
     assert_not_log(caplog, message=MATCH('out: drwx.+? mnt'))
 
@@ -789,9 +776,8 @@ def test_command_run_without_streaming(root_logger: Logger, caplog) -> None:
 
     with pytest.raises(tmt.utils.RunError):
         ShellScript('ls -al / /does/not/exist').to_shell_command().run(
-            cwd=Path.cwd(),
-            stream_output=False,
-            logger=root_logger)
+            cwd=Path.cwd(), stream_output=False, logger=root_logger
+        )
 
     assert_log(caplog, message=MATCH('out: drwx.+? mnt'))
     assert_log(caplog, message=MATCH("err: ls: cannot access '/does/not/exist'"))
@@ -802,20 +788,26 @@ def test_get_distgit_handler():
         with pytest.raises(tmt.utils.GeneralError):
             tmt.utils.get_distgit_handler([])
     # Fedora detection
-    returned_object = tmt.utils.get_distgit_handler("""
+    returned_object = tmt.utils.get_distgit_handler(
+        """
         remote.origin.url ssh://lzachar@pkgs.fedoraproject.org/rpms/tmt
         remote.lzachar.url ssh://lzachar@pkgs.fedoraproject.org/forks/lzachar/rpms/tmt.git
-        """.split('\n'))
+        """.split('\n')
+    )
     assert isinstance(returned_object, tmt.utils.FedoraDistGit)
     # CentOS detection
-    returned_object = tmt.utils.get_distgit_handler("""
+    returned_object = tmt.utils.get_distgit_handler(
+        """
         remote.origin.url git+ssh://git@gitlab.com/redhat/centos-stream/rpms/ruby.git
-        """.split('\n'))
+        """.split('\n')
+    )
     assert isinstance(returned_object, tmt.utils.CentOSDistGit)
     # RH Gitlab detection
-    returned_object = tmt.utils.get_distgit_handler([
-        "remote.origin.url https://<redacted_credentials>@gitlab.com/redhat/rhel/rpms/osbuild.git",
-        ])
+    returned_object = tmt.utils.get_distgit_handler(
+        [
+            "remote.origin.url https://<redacted_credentials>@gitlab.com/redhat/rhel/rpms/osbuild.git",
+        ]
+    )
     assert isinstance(returned_object, tmt.utils.RedHatGitlab)
 
 
@@ -829,20 +821,20 @@ def test_fedora_dist_git(tmppath):
     (tmppath / 'sources').write_text('SHA512 (fn-1.tar.gz) = 09af\n')
     (tmppath / 'tmt.spec').write_text('')
     fedora_sources_obj = tmt.utils.FedoraDistGit()
-    assert fedora_sources_obj.url_and_name(cwd=tmppath) == [(
-        "https://src.fedoraproject.org/repo/pkgs/rpms/tmt/fn-1.tar.gz/sha512/09af/fn-1.tar.gz",
-        "fn-1.tar.gz")]
+    assert fedora_sources_obj.url_and_name(cwd=tmppath) == [
+        (
+            "https://src.fedoraproject.org/repo/pkgs/rpms/tmt/fn-1.tar.gz/sha512/09af/fn-1.tar.gz",
+            "fn-1.tar.gz",
+        )
+    ]
 
 
 class TestValidateGitStatus:
     @classmethod
-    @pytest.mark.parametrize("use_path",
-                             [False, True], ids=["without path", "with path"])
+    @pytest.mark.parametrize("use_path", [False, True], ids=["without path", "with path"])
     def test_all_good(
-            cls,
-            origin_and_local_git_repo: tuple[Path, Path],
-            use_path: bool,
-            root_logger):
+        cls, origin_and_local_git_repo: tuple[Path, Path], use_path: bool, root_logger
+    ):
         # No need to modify origin, ignoring it
         mine = origin_and_local_git_repo[1]
 
@@ -851,12 +843,11 @@ class TestValidateGitStatus:
         fmf_root = mine / 'fmf_root' if use_path else mine
         tmt.Tree.init(logger=root_logger, path=fmf_root, template=None, force=None)
         fmf_root.joinpath('main.fmf').write_text('test: echo')
-        run(ShellScript(f'git add {fmf_root} {fmf_root / "main.fmf"}').to_shell_command(),
-            cwd=mine)
-        run(ShellScript('git commit -m add_test').to_shell_command(),
-            cwd=mine)
-        run(ShellScript('git push').to_shell_command(),
-            cwd=mine)
+        run(
+            ShellScript(f'git add {fmf_root} {fmf_root / "main.fmf"}').to_shell_command(), cwd=mine
+        )
+        run(ShellScript('git commit -m add_test').to_shell_command(), cwd=mine)
+        run(ShellScript('git push').to_shell_command(), cwd=mine)
         test = tmt.Tree(logger=root_logger, path=fmf_root).tests()[0]
         validation = validate_git_status(test)
         assert validation == (True, '')
@@ -866,10 +857,8 @@ class TestValidateGitStatus:
         tmt.Tree.init(logger=root_logger, path=local_git_repo, template=None, force=None)
         with open(local_git_repo / 'main.fmf', 'w') as f:
             f.write('test: echo')
-        run(ShellScript('git add main.fmf .fmf/version').to_shell_command(),
-            cwd=local_git_repo)
-        run(ShellScript('git commit -m initial_commit').to_shell_command(),
-            cwd=local_git_repo)
+        run(ShellScript('git add main.fmf .fmf/version').to_shell_command(), cwd=local_git_repo)
+        run(ShellScript('git commit -m initial_commit').to_shell_command(), cwd=local_git_repo)
 
         test = tmt.Tree(logger=root_logger, path=local_git_repo).tests()[0]
         val, msg = validate_git_status(test)
@@ -881,16 +870,10 @@ class TestValidateGitStatus:
         # local repo is enough since this can't get passed 'is pushed' check
         tmt.Tree.init(logger=root_logger, path=local_git_repo, template=None, force=None)
         # Make sure fmf root is not tracked
-        run(
-            ShellScript('git rm --cached .fmf/version').to_shell_command(),
-            cwd=local_git_repo)
+        run(ShellScript('git rm --cached .fmf/version').to_shell_command(), cwd=local_git_repo)
         local_git_repo.joinpath('main.fmf').write_text('test: echo')
-        run(
-            ShellScript('git add main.fmf').to_shell_command(),
-            cwd=local_git_repo)
-        run(
-            ShellScript('git commit -m missing_fmf_root').to_shell_command(),
-            cwd=local_git_repo)
+        run(ShellScript('git add main.fmf').to_shell_command(), cwd=local_git_repo)
+        run(ShellScript('git commit -m missing_fmf_root').to_shell_command(), cwd=local_git_repo)
 
         test = tmt.Tree(logger=root_logger, path=local_git_repo).tests()[0]
         validate = validate_git_status(test)
@@ -901,36 +884,28 @@ class TestValidateGitStatus:
         tmt.Tree.init(logger=root_logger, path=local_git_repo, template=None, force=None)
         local_git_repo.joinpath('main.fmf').write_text('test: echo')
         local_git_repo.joinpath('test.fmf').write_text('tag: []')
-        run(ShellScript('git add .fmf/version test.fmf').to_shell_command(),
-            cwd=local_git_repo)
-        run(
-            ShellScript('git commit -m main.fmf').to_shell_command(),
-            cwd=local_git_repo)
+        run(ShellScript('git add .fmf/version test.fmf').to_shell_command(), cwd=local_git_repo)
+        run(ShellScript('git commit -m main.fmf').to_shell_command(), cwd=local_git_repo)
 
         test = tmt.Tree(logger=root_logger, path=local_git_repo).tests()[0]
         validate = validate_git_status(test)
         assert validate == (False, 'Uncommitted changes in main.fmf')
 
     @classmethod
-    @pytest.mark.parametrize("use_path",
-                             [False, True], ids=["without path", "with path"])
+    @pytest.mark.parametrize("use_path", [False, True], ids=["without path", "with path"])
     def test_local_changes(
-            cls,
-            origin_and_local_git_repo: tuple[Path, Path],
-            use_path,
-            root_logger):
+        cls, origin_and_local_git_repo: tuple[Path, Path], use_path, root_logger
+    ):
         origin, mine = origin_and_local_git_repo
 
         fmf_root = origin / 'fmf_root' if use_path else origin
         tmt.Tree.init(logger=root_logger, path=fmf_root, template=None, force=None)
         fmf_root.joinpath('main.fmf').write_text('test: echo')
         run(ShellScript('git add -A').to_shell_command(), cwd=origin)
-        run(ShellScript('git commit -m added_test').to_shell_command(),
-            cwd=origin)
+        run(ShellScript('git commit -m added_test').to_shell_command(), cwd=origin)
 
         # Pull changes from previous line
-        run(ShellScript('git pull').to_shell_command(),
-            cwd=mine)
+        run(ShellScript('git pull').to_shell_command(), cwd=mine)
 
         mine_fmf_root = mine
         if use_path:
@@ -944,7 +919,9 @@ class TestValidateGitStatus:
         validation_result = validate_git_status(test)
 
         assert validation_result == (
-            False, "Uncommitted changes in " + ('fmf_root/' if use_path else '') + "main.fmf")
+            False,
+            "Uncommitted changes in " + ('fmf_root/' if use_path else '') + "main.fmf",
+        )
 
     @classmethod
     def test_not_pushed(cls, origin_and_local_git_repo: tuple[Path, Path], root_logger):
@@ -956,20 +933,16 @@ class TestValidateGitStatus:
         tmt.Tree.init(logger=root_logger, path=fmf_root, template=None, force=None)
 
         fmf_root.joinpath('main.fmf').write_text('test: echo')
-        run(ShellScript('git add main.fmf .fmf/version').to_shell_command(),
-            cwd=fmf_root)
-        run(ShellScript('git commit -m changes').to_shell_command(),
-            cwd=mine)
+        run(ShellScript('git add main.fmf .fmf/version').to_shell_command(), cwd=fmf_root)
+        run(ShellScript('git commit -m changes').to_shell_command(), cwd=mine)
 
         test = tmt.Tree(logger=root_logger, path=fmf_root).tests()[0]
         validation_result = validate_git_status(test)
 
-        assert validation_result == (
-            False, 'Not pushed changes in .fmf/version main.fmf')
+        assert validation_result == (False, 'Not pushed changes in .fmf/version main.fmf')
 
 
-@pytest.mark.parametrize("git_ref",
-                         ["tag", "branch", "merge", "commit"])
+@pytest.mark.parametrize("git_ref", ["tag", "branch", "merge", "commit"])
 def test_fmf_id(local_git_repo, root_logger, git_ref):
     run(Command('git', 'checkout', '-b', 'other_branch'), cwd=local_git_repo)
     # Initialize tmt tree with a test
@@ -985,14 +958,15 @@ def test_fmf_id(local_git_repo, root_logger, git_ref):
         run(Command('git', 'checkout', 'some_tag'), cwd=local_git_repo)
     if git_ref == "commit":
         # Create an empty commit and checkout the previous commit
-        run(Command('git', 'commit', '--allow-empty', '-m',
-            'Random other commit'), cwd=local_git_repo)
+        run(
+            Command('git', 'commit', '--allow-empty', '-m', 'Random other commit'),
+            cwd=local_git_repo,
+        )
         run(Command('git', 'checkout', 'HEAD^'), cwd=local_git_repo)
     if git_ref == "merge":
         run(Command('git', 'checkout', '--detach', 'main'), cwd=local_git_repo)
         run(Command('git', 'merge', 'other_branch'), cwd=local_git_repo)
-        commit_hash = run(Command('git', 'rev-parse', 'HEAD'),
-                          cwd=local_git_repo).stdout.strip()
+        commit_hash = run(Command('git', 'rev-parse', 'HEAD'), cwd=local_git_repo).stdout.strip()
 
     fmf_id = tmt.utils.fmf_id(name="/test", fmf_root=local_git_repo, logger=root_logger)
     assert fmf_id.git_root == local_git_repo
@@ -1009,20 +983,14 @@ def test_fmf_id(local_git_repo, root_logger, git_ref):
 
 class TestGitAdd:
     @classmethod
-    def test_not_in_repository(
-            cls,
-            nested_file: tuple[Path, Path, Path],
-            root_logger):
+    def test_not_in_repository(cls, nested_file: tuple[Path, Path, Path], root_logger):
         top_dir, sub_dir, file = nested_file
 
         with pytest.raises(GeneralError, match=r"Failed to add path .* to git index."):
             git_add(path=sub_dir, logger=root_logger)
 
     @classmethod
-    def test_in_repository(
-            cls,
-            nested_file: tuple[Path, Path, Path],
-            root_logger):
+    def test_in_repository(cls, nested_file: tuple[Path, Path, Path], root_logger):
         top_dir, sub_dir, file = nested_file
         run(ShellScript('git init').to_shell_command(), cwd=top_dir)
 
@@ -1056,9 +1024,8 @@ def test_wait_deadline_already_passed(root_logger):
 
     with pytest.raises(WaitingTimedOutError):
         wait(
-            Common(logger=root_logger),
-            lambda: ticks.append(1),
-            datetime.timedelta(seconds=-86400))
+            Common(logger=root_logger), lambda: ticks.append(1), datetime.timedelta(seconds=-86400)
+        )
 
     # our callback should not have been called at all
     assert not ticks
@@ -1098,9 +1065,7 @@ def test_wait_timeout(root_logger):
     out of time.
     """
 
-    check = unittest.mock.MagicMock(
-        __name__='mock_check',
-        side_effect=WaitingIncompleteError)
+    check = unittest.mock.MagicMock(__name__='mock_check', side_effect=WaitingIncompleteError)
 
     # We want to reach end of time budget before reaching end of the list.
     with pytest.raises(WaitingTimedOutError):
@@ -1130,7 +1095,8 @@ def test_wait_success_but_too_late(root_logger):
 
 def test_import_member(root_logger):
     klass = tmt.plugins.import_member(
-        module='tmt.steps.discover', member='Discover', logger=root_logger)[1]
+        module='tmt.steps.discover', member='Discover', logger=root_logger
+    )[1]
 
     assert klass is tmt.steps.discover.Discover
 
@@ -1139,21 +1105,21 @@ def test_import_member_no_such_module(root_logger):
     with pytest.raises(
         SystemExit,
         match=rf"Failed to import the 'tmt\.steps\.nope_does_not_exist'"
-            rf" module from '{Path.cwd()}'."):
+        rf" module from '{Path.cwd()}'.",
+    ):
         tmt.plugins.import_member(
-            module='tmt.steps.nope_does_not_exist',
-            member='Discover',
-            logger=root_logger)
+            module='tmt.steps.nope_does_not_exist', member='Discover', logger=root_logger
+        )
 
 
 def test_import_member_no_such_class(root_logger):
     with pytest.raises(
-            tmt.utils.GeneralError,
-            match=r"No such member 'NopeDoesNotExist' in module 'tmt\.steps\.discover'."):
+        tmt.utils.GeneralError,
+        match=r"No such member 'NopeDoesNotExist' in module 'tmt\.steps\.discover'.",
+    ):
         tmt.plugins.import_member(
-            module='tmt.steps.discover',
-            member='NopeDoesNotExist',
-            logger=root_logger)
+            module='tmt.steps.discover', member='NopeDoesNotExist', logger=root_logger
+        )
 
 
 def test_common_base_inheritance(root_logger):
@@ -1183,21 +1149,9 @@ def test_common_base_inheritance(root_logger):
 
     # Make sure both "branches" of inheritance tree are listed,
     # in the correct order.
-    assert ClassA.__mro__ == (
-        ClassA,
-        Common,
-        Mixin,
-        _CommonBase,
-        object
-        )
+    assert ClassA.__mro__ == (ClassA, Common, Mixin, _CommonBase, object)
 
-    assert ClassB.__mro__ == (
-        ClassB,
-        Mixin,
-        Common,
-        _CommonBase,
-        object
-        )
+    assert ClassB.__mro__ == (ClassB, Mixin, Common, _CommonBase, object)
 
     # And that both classes can be instantiated.
     ClassA(logger=root_logger, foo='bar')
@@ -1206,34 +1160,18 @@ def test_common_base_inheritance(root_logger):
 
 @pytest.mark.parametrize(
     ('values', 'expected'),
-    [
-        ([], []),
-        ([1, 2, 3, 4, 5], [1, 2, 3, 4, 5]),
-        ([1, 2, 1, 2, 3], [1, 2, 3])
-        ],
-    ids=(
-        'empty-list',
-        'no-duplicates',
-        'duplicates'
-        )
-    )
+    [([], []), ([1, 2, 3, 4, 5], [1, 2, 3, 4, 5]), ([1, 2, 1, 2, 3], [1, 2, 3])],
+    ids=('empty-list', 'no-duplicates', 'duplicates'),
+)
 def test_uniq(values: list[Any], expected: list[Any]) -> None:
     assert tmt.utils.uniq(values) == expected
 
 
 @pytest.mark.parametrize(
     ('values', 'expected'),
-    [
-        ([], []),
-        ([1, 2, 3, 4, 5], []),
-        ([1, 2, 1, 2, 3, 4, 4], [1, 2, 4])
-        ],
-    ids=(
-        'empty-list',
-        'no-duplicates',
-        'duplicates'
-        )
-    )
+    [([], []), ([1, 2, 3, 4, 5], []), ([1, 2, 1, 2, 3, 4, 4], [1, 2, 4])],
+    ids=('empty-list', 'no-duplicates', 'duplicates'),
+)
 def test_duplicates(values: list[Any], expected: list[Any]) -> None:
     assert list(tmt.utils.duplicates(values)) == expected
 
@@ -1244,15 +1182,10 @@ def test_duplicates(values: list[Any], expected: list[Any]) -> None:
         ([], False, []),
         ([[], [], []], False, []),
         ([[], [1, 2, 3], [1, 2, 3], [4, 5], [3, 2, 1]], False, [1, 2, 3, 1, 2, 3, 4, 5, 3, 2, 1]),
-        ([[], [1, 2, 3], [1, 2, 3], [4, 5], [3, 2, 1]], True, [1, 2, 3, 4, 5])
-        ],
-    ids=(
-        'empty-input',
-        'empty-lists',
-        'keep-duplicates',
-        'unique-enabled'
-        )
-    )
+        ([[], [1, 2, 3], [1, 2, 3], [4, 5], [3, 2, 1]], True, [1, 2, 3, 4, 5]),
+    ],
+    ids=('empty-input', 'empty-lists', 'keep-duplicates', 'unique-enabled'),
+)
 def test_flatten(lists: list[list[Any]], unique: bool, expected: list[Any]) -> None:
     assert tmt.utils.flatten(lists, unique=unique) == expected
 
@@ -1264,8 +1197,8 @@ def test_flatten(lists: list[list[Any]], unique: bool, expected: list[Any]) -> N
         (timedelta(minutes=6, seconds=8), '00:06:08'),
         (timedelta(hours=4, minutes=6, seconds=8), '04:06:08'),
         (timedelta(days=15, hours=4, minutes=6, seconds=8), '364:06:08'),
-        ]
-    )
+    ],
+)
 def test_format_duration(duration, expected):
     from tmt.utils import format_duration
 
@@ -1290,11 +1223,8 @@ def test_filter_paths(source_dir):
 
 @pytest.mark.parametrize(
     ('name', 'allow_slash', 'sanitized'),
-    [
-        ('foo bar/baz', True, 'foo-bar/baz'),
-        ('foo bar/baz', False, 'foo-bar-baz')
-        ]
-    )
+    [('foo bar/baz', True, 'foo-bar/baz'), ('foo bar/baz', False, 'foo-bar-baz')],
+)
 def test_sanitize_name(name: str, allow_slash: bool, sanitized: str) -> None:
     assert tmt.utils.sanitize_name(name, allow_slash=allow_slash) == sanitized
 
@@ -1306,8 +1236,8 @@ def test_locate_key_origin(id_tree_defined: fmf.Tree) -> None:
 
 
 def test_locate_key_origin_defined_partially(
-        root_logger: tmt.log.Logger,
-        id_tree_defined: fmf.Tree) -> None:
+    root_logger: tmt.log.Logger, id_tree_defined: fmf.Tree
+) -> None:
     node = id_tree_defined.find('/partial')
     test = tmt.Test(logger=root_logger, node=node)
 
@@ -1346,28 +1276,18 @@ def test_locate_key_origin_empty_defined(id_tree_empty: fmf.Tree) -> None:
 
 
 _test_format_value_complex_structure = {
-    'foo': [
-        'bar',
-        'baz',
-        {
-            'qux': 'fred',
-            'xyyzy': [1, False, 17.19]
-            },
-        'corge'
-        ],
+    'foo': ['bar', 'baz', {'qux': 'fred', 'xyyzy': [1, False, 17.19]}, 'corge'],
     'nested1': {
-        'n2': {
-            'nest3': True
-            },
+        'n2': {'nest3': True},
         'n4': True,
         'n5': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',  # noqa: E501
-        },
+    },
     'some boolean': True,
     'empty list': [],
     'nested empty list': [1, False, [], 17.19],
     'single item list': [False],
     'another single item list': ['foo\nbar'],
-    }
+}
 
 _test_format_value_big_list = list(range(1, 20))
 
@@ -1378,7 +1298,6 @@ _test_format_value_big_list = list(range(1, 20))
         # NOTE: each test case is prefixed with a comment matching its id
         # in the `ids` list given to `parametrize` below. Keep it that way
         # for easier search.
-
         # true
         (True, None, 'true'),
         # false
@@ -1392,14 +1311,10 @@ _test_format_value_big_list = list(range(1, 20))
             2.34
             foo
             false
-            """
-            ),
+            """,
+        ),
         # list within huge window
-        (
-            [1, 2.34, 'foo', False],
-            120,
-            "'1', '2.34', 'foo' and 'false'"
-            ),
+        ([1, 2.34, 'foo', False], 120, "'1', '2.34', 'foo' and 'false'"),
         # list within small window
         (
             [1, 2.34, 'foo', False],
@@ -1409,8 +1324,8 @@ _test_format_value_big_list = list(range(1, 20))
             2.34
             foo
             false
-            """
-            ),
+            """,
+        ),
         # dict
         (
             {'foo': 1, 'bar': 2.34, 'baz': 'qux', 'corge': False},
@@ -1420,14 +1335,10 @@ _test_format_value_big_list = list(range(1, 20))
             bar: 2.34
             baz: qux
             corge: false
-            """
-            ),
+            """,
+        ),
         # string
-        (
-            'foo',
-            None,
-            'foo'
-            ),
+        ('foo', None, 'foo'),
         # multiline string
         (
             'foo\nbar\nbaz\n',
@@ -1436,8 +1347,8 @@ _test_format_value_big_list = list(range(1, 20))
             foo
             bar
             baz
-            """
-            ),
+            """,
+        ),
         # long string
         (
             'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.',  # noqa: E501
@@ -1454,7 +1365,7 @@ _test_format_value_big_list = list(range(1, 20))
             veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
             commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
             velit esse cillum dolore eu fugiat nulla pariatur.
-            """
+            """,
         ),
         # complex structure
         (
@@ -1486,8 +1397,8 @@ _test_format_value_big_list = list(range(1, 20))
             another single item list:
               - foo
                 bar
-            """  # noqa: E501
-            ),
+            """,  # noqa: E501
+        ),
         # complex structure within small window
         (
             _test_format_value_complex_structure,
@@ -1527,8 +1438,8 @@ _test_format_value_big_list = list(range(1, 20))
             another single item list:
               - foo
                 bar
-            """
-            ),
+            """,
+        ),
         # complex structure within huge window
         (
             _test_format_value_complex_structure,
@@ -1554,8 +1465,8 @@ _test_format_value_big_list = list(range(1, 20))
             another single item list:
               - foo
                 bar
-            """  # noqa: E501
-            ),
+            """,  # noqa: E501
+        ),
         # long list
         (
             _test_format_value_big_list,
@@ -1580,8 +1491,8 @@ _test_format_value_big_list = list(range(1, 20))
             17
             18
             19
-            """
-            ),
+            """,
+        ),
         # long list within small window
         (
             _test_format_value_big_list,
@@ -1606,21 +1517,18 @@ _test_format_value_big_list = list(range(1, 20))
             17
             18
             19
-            """
-            ),
+            """,
+        ),
         # long list within huge window
         (
             _test_format_value_big_list,
             120,
             """
             '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18' and '19'
-            """  # noqa: E501
-            ),
+            """,  # noqa: E501
+        ),
         # environment
-        (
-            tmt.utils.Environment.from_dict({'FOO': 'BAR'}),
-            None,
-            'FOO: BAR'),
+        (tmt.utils.Environment.from_dict({'FOO': 'BAR'}), None, 'FOO: BAR'),
         # fmf context
         (
             tmt.utils.FmfContext({'foo': ['bar', 'baz']}),
@@ -1629,8 +1537,9 @@ _test_format_value_big_list = list(range(1, 20))
             foo:
               - bar
               - baz
-            """)
-        ],
+            """,
+        ),
+    ],
     ids=(
         'true',
         'false',
@@ -1649,9 +1558,9 @@ _test_format_value_big_list = list(range(1, 20))
         'long list within small window',
         'long list within huge window',
         'environment',
-        'fmf context'
-        )
-    )
+        'fmf context',
+    ),
+)
 def test_format_value(value: Any, window_size: Optional[int], expected: str) -> None:
     expected = textwrap.dedent(expected).strip('\n')
     actual = tmt.utils.format_value(value, window_size=window_size)
@@ -1683,7 +1592,7 @@ def test_format_value(value: Any, window_size: Optional[int], expected: str) -> 
         ('example', False),
         ('example.com', False),
         ('example.com/foo', False),
-        ],
+    ],
     ids=(
         'domain-basic',
         'domain-with-slash',
@@ -1698,8 +1607,8 @@ def test_format_value(value: Any, window_size: Optional[int], expected: str) -> 
         'string',
         'no-protocol',
         'no-protocol-with-path',
-        )
-    )
+    ),
+)
 def test_is_url(url: str, expected: bool) -> None:
     assert tmt.utils.is_url(url) == expected
 
@@ -1714,8 +1623,8 @@ def test_invocation_terminate_process(root_logger: tmt.log.Logger, caplog) -> No
         phase=MagicMock(name='phase'),
         test=MagicMock(name='test'),
         guest=MagicMock(name='guest'),
-        process=MagicMock(name='process')
-        )
+        process=MagicMock(name='process'),
+    )
 
     invocation.process.pid = pid
 
@@ -1726,11 +1635,13 @@ def test_invocation_terminate_process(root_logger: tmt.log.Logger, caplog) -> No
     assert_log(
         caplog,
         message=MATCH(rf'Terminating process {pid} with {signal.SIGFPE.name}.'),
-        levelno=logging.DEBUG)
+        levelno=logging.DEBUG,
+    )
 
 
 def test_invocation_terminate_process_not_running_anymore(
-        root_logger: tmt.log.Logger, caplog) -> None:
+    root_logger: tmt.log.Logger, caplog
+) -> None:
     from tmt.steps.execute import TestInvocation
 
     invocation = TestInvocation(
@@ -1738,15 +1649,16 @@ def test_invocation_terminate_process_not_running_anymore(
         phase=MagicMock(name='phase'),
         test=MagicMock(name='test'),
         guest=MagicMock(name='guest'),
-        process=None
-        )
+        process=None,
+    )
 
     invocation.terminate_process(signal=signal.SIGFPE, logger=root_logger)
 
     assert_log(
         caplog,
         message=MATCH(r'Test invocation process cannot be terminated because it is unset.'),
-        levelno=logging.DEBUG)
+        levelno=logging.DEBUG,
+    )
 
 
 class TestJiraLink(unittest.TestCase):
@@ -1765,20 +1677,14 @@ class TestJiraLink(unittest.TestCase):
             """.strip()
         self.config_tree = fmf.Tree(data=tmt.utils.yaml_to_dict(config_yaml))
         tmt.base.Test.create(
-            names=['tmp/test'],
-            template='shell',
-            path=self.tmp,
-            logger=self.logger)
+            names=['tmp/test'], template='shell', path=self.tmp, logger=self.logger
+        )
         tmt.base.Plan.create(
-            names=['tmp/plan'],
-            template='mini',
-            path=self.tmp,
-            logger=self.logger)
+            names=['tmp/plan'], template='mini', path=self.tmp, logger=self.logger
+        )
         tmt.base.Story.create(
-            names=['tmp/story'],
-            template='mini',
-            path=self.tmp,
-            logger=self.logger)
+            names=['tmp/story'], template='mini', path=self.tmp, logger=self.logger
+        )
 
     def tearDown(self):
         # Cleanup the created files of tmt objects
@@ -1792,7 +1698,8 @@ class TestJiraLink(unittest.TestCase):
         tmt.utils.jira.link(
             tmt_objects=[test],
             links=tmt.base.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
-            logger=self.logger)
+            logger=self.logger,
+        )
         result = mock_add_simple_link.call_args.args[1]
         assert 'https://tmt.testing-farm.io/?' in result['url']
         assert 'test-url=https%3A%2F%2Fgithub.com%2F' in result['url']
@@ -1809,7 +1716,8 @@ class TestJiraLink(unittest.TestCase):
         tmt.utils.jira.link(
             tmt_objects=[test, plan, story],
             links=tmt.base.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
-            logger=self.logger)
+            logger=self.logger,
+        )
         result = mock_add_simple_link.call_args.args[1]
         assert 'https://tmt.testing-farm.io/?' in result['url']
 
@@ -1833,7 +1741,8 @@ class TestJiraLink(unittest.TestCase):
         tmt.utils.jira.link(
             tmt_objects=[test],
             links=tmt.base.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
-            logger=self.logger)
+            logger=self.logger,
+        )
         # Load the test object again with the link present
         test = tmt.Tree(logger=self.logger, path=self.tmp).tests(names=['tmp/test'])[0]
         assert test.link.get('verifies')[0].target == 'https://issues.redhat.com/browse/TT-262'
@@ -1842,14 +1751,17 @@ class TestJiraLink(unittest.TestCase):
 def test_render_command_report_output():
     delimiter = (tmt.utils.OUTPUT_WIDTH - 2) * '~'
 
-    assert '\n'.join(tmt.utils.render_command_report(
-        label='foo',
-        command=ShellScript('/bar/baz'),
-        output=tmt.utils.CommandOutput(
-            stdout='This is some stdout',
-            stderr='This is some stderr'
+    assert (
+        '\n'.join(
+            tmt.utils.render_command_report(
+                label='foo',
+                command=ShellScript('/bar/baz'),
+                output=tmt.utils.CommandOutput(
+                    stdout='This is some stdout', stderr='This is some stderr'
+                ),
             )
-        )) == f"""## foo
+        )
+        == f"""## foo
 
 # /bar/baz
 
@@ -1865,22 +1777,27 @@ This is some stdout
 This is some stderr
 # {delimiter}
 """
+    )
 
 
 def test_render_command_report_exception():
     delimiter = (tmt.utils.OUTPUT_WIDTH - 2) * '~'
 
-    assert '\n'.join(tmt.utils.render_command_report(
-        label='foo',
-        command=ShellScript('/bar/baz'),
-        exc=tmt.utils.RunError(
-            'foo failed',
-            ShellScript('/bar/baz').to_shell_command(),
-            1,
-            stdout='This is some stdout',
-            stderr='This is some stderr'
+    assert (
+        '\n'.join(
+            tmt.utils.render_command_report(
+                label='foo',
+                command=ShellScript('/bar/baz'),
+                exc=tmt.utils.RunError(
+                    'foo failed',
+                    ShellScript('/bar/baz').to_shell_command(),
+                    1,
+                    stdout='This is some stdout',
+                    stderr='This is some stderr',
+                ),
             )
-        )) == f"""## foo
+        )
+        == f"""## foo
 
 # /bar/baz
 
@@ -1896,13 +1813,13 @@ This is some stdout
 This is some stderr
 # {delimiter}
 """
+    )
 
 
 def test_render_command_report_minimal():
-    print(list(tmt.utils.render_command_report(
-        label='foo'
-        )))
-    assert '\n'.join(tmt.utils.render_command_report(
-        label='foo'
-        )) == """## foo
+    print(list(tmt.utils.render_command_report(label='foo')))
+    assert (
+        '\n'.join(tmt.utils.render_command_report(label='foo'))
+        == """## foo
 """
+    )

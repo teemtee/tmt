@@ -22,26 +22,25 @@ def reset_common() -> None:
     from tmt.base import Core, Plan, Run, Story, Test, Tree
     from tmt.utils import Common, MultiInvokableCommon
 
-    for klass in (
-            Core, Run, Tree, Test, Plan, Story,
-            Common, MultiInvokableCommon):
-
+    for klass in (Core, Run, Tree, Test, Plan, Story, Common, MultiInvokableCommon):
         klass.cli_invocation = None
 
 
 class CliRunner(click.testing.CliRunner):
     def invoke(
-            self,
-            cli: click.core.BaseCommand,
-            args: Optional[Union[str, Sequence[str]]] = None,
-            input: Optional[Union[str, bytes, IO]] = None,
-            env: Optional[Mapping[str, Optional[str]]] = None,
-            catch_exceptions: bool = True,
-            color: bool = False,
-            **extra: Any) -> click.testing.Result:
+        self,
+        cli: click.core.BaseCommand,
+        args: Optional[Union[str, Sequence[str]]] = None,
+        input: Optional[Union[str, bytes, IO]] = None,
+        env: Optional[Mapping[str, Optional[str]]] = None,
+        catch_exceptions: bool = True,
+        color: bool = False,
+        **extra: Any,
+    ) -> click.testing.Result:
         reset_common()
 
         from tmt.__main__ import import_cli_commands
+
         import_cli_commands()
 
         return super().invoke(
@@ -51,4 +50,5 @@ class CliRunner(click.testing.CliRunner):
             env=env,
             catch_exceptions=catch_exceptions,
             color=color,
-            **extra)
+            **extra,
+        )

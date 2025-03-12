@@ -20,9 +20,10 @@ class PolarionExport(Base):
 
         os.chdir(self.tmpdir / "new_testcase")
         runner = CliRunner()
-        self.runner_output = runner.invoke(tmt.cli._root.main, [
-            "test", "export", "--how", "polarion", "--project-id",
-            "RHIVOS", "--create", "."])
+        self.runner_output = runner.invoke(
+            tmt.cli._root.main,
+            ["test", "export", "--how", "polarion", "--project-id", "RHIVOS", "--create", "."],
+        )
         # Reload the node data to see if it appears there
         fmf_node = Tree(self.tmpdir).find("/new_testcase")
         assert ID_KEY in fmf_node.data
@@ -36,7 +37,8 @@ class PolarionExport(Base):
         self.runner_output = runner.invoke(
             tmt.cli._root.main,
             ["test", "export", "--how", "polarion", "--create", "--dry", "."],
-            catch_exceptions=False)
+            catch_exceptions=False,
+        )
         fmf_node = Tree(self.tmpdir).find("/new_testcase")
         assert ID_KEY not in fmf_node.data
         assert fmf_node_before.data == fmf_node.data
@@ -48,9 +50,10 @@ class PolarionExport(Base):
 
         os.chdir(self.tmpdir / "existing_testcase")
         runner = CliRunner()
-        self.runner_output = runner.invoke(tmt.cli._root.main, [
-            "test", "export", "--how", "polarion", "--project-id",
-            "RHIVOS", "--create", "."])
+        self.runner_output = runner.invoke(
+            tmt.cli._root.main,
+            ["test", "export", "--how", "polarion", "--project-id", "RHIVOS", "--create", "."],
+        )
 
         fmf_node = Tree(self.tmpdir).find("/existing_testcase")
         assert fmf_node.data["extra-nitrate"] == "TC#0609686"
@@ -63,9 +66,9 @@ class PolarionExport(Base):
         runner = CliRunner()
         self.runner_output = runner.invoke(
             tmt.cli._root.main,
-            ["test", "export", "--how", "polarion", "--debug", "--dry",
-             "--bugzilla", "."],
-            catch_exceptions=False)
+            ["test", "export", "--how", "polarion", "--debug", "--dry", "--bugzilla", "."],
+            catch_exceptions=False,
+        )
         assert "title: tmt /existing_dryrun_testcase - ABCDEF" in self.runner_output.output
 
     def test_coverage_bugzilla(self):
@@ -74,7 +77,8 @@ class PolarionExport(Base):
 
         os.chdir(self.tmpdir / "existing_testcase")
         runner = CliRunner()
-        self.runner_output = runner.invoke(tmt.cli._root.main, [
-            "test", "export", "--how", "polarion", "--project-id",
-            "RHIVOS", "--bugzilla", "."])
+        self.runner_output = runner.invoke(
+            tmt.cli._root.main,
+            ["test", "export", "--how", "polarion", "--project-id", "RHIVOS", "--bugzilla", "."],
+        )
         assert self.runner_output.exit_code == 0

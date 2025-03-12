@@ -20,42 +20,47 @@ def test_basic(root_logger):
     library_with_parent = tmt.libraries.library_factory(
         logger=root_logger,
         identifier=tmt.base.DependencySimple('library(openssl/certgen)'),
-        parent=parent)
+        parent=parent,
+    )
     library_without_parent = tmt.libraries.library_factory(
-        logger=root_logger,
-        identifier=tmt.base.DependencySimple('library(openssl/certgen)'))
+        logger=root_logger, identifier=tmt.base.DependencySimple('library(openssl/certgen)')
+    )
 
     for library in [library_with_parent, library_without_parent]:
         assert library.format == 'rpm'
         assert library.repo == Path('openssl')
         assert library.url == 'https://github.com/beakerlib/openssl'
         assert library.ref == 'master'  # The default branch is master
-        assert library.dest.resolve() \
+        assert (
+            library.dest.resolve()
             == Path.cwd().joinpath(tmt.libraries.beakerlib.DEFAULT_DESTINATION).resolve()
+        )
         shutil.rmtree(library.parent.workdir)
 
 
 @pytest.mark.web
 @pytest.mark.parametrize(
-    ('url', 'name', 'default_branch'), [
+    ('url', 'name', 'default_branch'),
+    [
         ('https://github.com/beakerlib/httpd', '/http', 'master'),
-        ('https://github.com/beakerlib/example', '/file', 'main')
-        ])
+        ('https://github.com/beakerlib/example', '/file', 'main'),
+    ],
+)
 def test_require_from_fmf(url, name, default_branch, root_logger):
     """
     Fetch beakerlib library referenced by fmf identifier
     """
 
     library = tmt.libraries.library_factory(
-        logger=root_logger,
-        identifier=tmt.base.DependencyFmfId(
-            url=url,
-            name=name))
+        logger=root_logger, identifier=tmt.base.DependencyFmfId(url=url, name=name)
+    )
     assert library.format == 'fmf'
     assert library.ref == default_branch
     assert library.url == url
-    assert library.dest.resolve() \
+    assert (
+        library.dest.resolve()
         == Path.cwd().joinpath(tmt.libraries.beakerlib.DEFAULT_DESTINATION).resolve()
+    )
     assert library.repo == Path(url.split('/')[-1])
     assert library.name == name
     shutil.rmtree(library.parent.workdir)
@@ -74,14 +79,17 @@ def test_invalid_url_conflict(root_logger):
         identifier=tmt.base.DependencyFmfId(
             url='https://github.com/teemtee/tmt',
             name='/',
-            path=Path('/tests/libraries/local/data')),
-        parent=parent)
+            path=Path('/tests/libraries/local/data'),
+        ),
+        parent=parent,
+    )
     # Library 'tmt' repo is already fetched from different git,
     # however upstream (gh.com/beakerlib/tmt) repo does not exist,
     # so there can't be "already fetched" error
     with pytest.raises(tmt.libraries.LibraryError):
         tmt.libraries.library_factory(
-            logger=root_logger, identifier='library(tmt/foo)', parent=parent)
+            logger=root_logger, identifier='library(tmt/foo)', parent=parent
+        )
     shutil.rmtree(parent.workdir)
 
 
@@ -94,10 +102,13 @@ def test_dependencies(root_logger):
     parent = tmt.utils.Common(logger=root_logger, workdir=True)
     requires, recommends, libraries = tmt.libraries.dependencies(
         original_require=[
-            tmt.base.DependencySimple('library(httpd/http)'), tmt.base.DependencySimple('wget')],
+            tmt.base.DependencySimple('library(httpd/http)'),
+            tmt.base.DependencySimple('wget'),
+        ],
         original_recommend=[tmt.base.DependencySimple('forest')],
         parent=parent,
-        logger=root_logger)
+        logger=root_logger,
+    )
     # Check for correct requires and recommends
     for require in ['httpd', 'lsof', 'mod_ssl']:
         assert require in requires
@@ -113,8 +124,10 @@ def test_dependencies(root_logger):
     assert libraries[0].name == '/http'
     assert libraries[0].url == 'https://github.com/beakerlib/httpd'
     assert libraries[0].ref == 'master'  # The default branch is master
-    assert libraries[0].dest.resolve() == Path.cwd().joinpath(
-        tmt.libraries.beakerlib.DEFAULT_DESTINATION).resolve()
+    assert (
+        libraries[0].dest.resolve()
+        == Path.cwd().joinpath(tmt.libraries.beakerlib.DEFAULT_DESTINATION).resolve()
+    )
     assert libraries[1].repo == Path('openssl')
     assert libraries[1].name == '/certgen'
     shutil.rmtree(parent.workdir)
@@ -130,18 +143,17 @@ def test_mark_nonexistent_url(root_logger, monkeypatch):
     identifier = tmt.base.DependencyFmfId(
         url='https://github.com/beakerlib/THISDOESNTEXIST',
         name='/',
-        )
+    )
     with pytest.raises(tmt.utils.GeneralError):
         tmt.libraries.beakerlib.BeakerLib(
-            logger=root_logger,
-            identifier=identifier,
-            parent=parent).fetch()
+            logger=root_logger, identifier=identifier, parent=parent
+        ).fetch()
     # Second time there shouldn't be an attempt to clone...
-    monkeypatch.setattr("tmt.utils.git.git_clone", MagicMock(
-        side_effect=RuntimeError('Should not be called')))
+    monkeypatch.setattr(
+        "tmt.utils.git.git_clone", MagicMock(side_effect=RuntimeError('Should not be called'))
+    )
     with pytest.raises(tmt.utils.GeneralError):
         tmt.libraries.beakerlib.BeakerLib(
-            logger=root_logger,
-            identifier=identifier,
-            parent=parent).fetch()
+            logger=root_logger, identifier=identifier, parent=parent
+        ).fetch()
     shutil.rmtree(parent.workdir)

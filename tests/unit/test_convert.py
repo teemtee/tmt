@@ -28,25 +28,35 @@ def test_extract_relevancy_field_has_priority():
 @pytest.mark.parametrize(
     ('expected', 'individual'),
     [
-        ({'common': {1: 1, 2: 2}, 'individual': [{}, {}]},
-         [{1: 1, 2: 2}, {1: 1, 2: 2}]),
-        ({'common': {1: 1}, 'individual': [{2: 2}, {3: 3}]},
-         [{1: 1, 2: 2}, {1: 1, 3: 3}]),
-        ({'common': {1: 1}, 'individual': [{2: 2}, {3: 3}, {}]},
-         [{1: 1, 2: 2}, {1: 1, 3: 3}, {1: 1}]),
-        ({'common': {}, 'individual': [{1: 1, 2: 2}, {3: 3}]},
-         [{1: 1, 2: 2}, {3: 3}]),
-        ({'common': {}, 'individual': [{1: 1, 2: 2}, {3: 3}, {3: 3, 4: 4}]},
-         [{1: 1, 2: 2}, {3: 3}, {3: 3, 4: 4}]),
-        ],
+        (
+            {'common': {1: 1, 2: 2}, 'individual': [{}, {}]},
+            [{1: 1, 2: 2}, {1: 1, 2: 2}],
+        ),
+        (
+            {'common': {1: 1}, 'individual': [{2: 2}, {3: 3}]},
+            [{1: 1, 2: 2}, {1: 1, 3: 3}],
+        ),
+        (
+            {'common': {1: 1}, 'individual': [{2: 2}, {3: 3}, {}]},
+            [{1: 1, 2: 2}, {1: 1, 3: 3}, {1: 1}],
+        ),
+        (
+            {'common': {}, 'individual': [{1: 1, 2: 2}, {3: 3}]},
+            [{1: 1, 2: 2}, {3: 3}],
+        ),
+        (
+            {'common': {}, 'individual': [{1: 1, 2: 2}, {3: 3}, {3: 3, 4: 4}]},
+            [{1: 1, 2: 2}, {3: 3}, {3: 3, 4: 4}],
+        ),
+    ],
     ids=(
         'everything-common',
         'some-matches',
         'three-way-some-matches',
         'no-matches',
         'three-way-no-matches',
-        )
-    )
+    ),
+)
 def test_filter_common_data(expected, individual):
     common = {}
     filter_common_data(common, individual)
