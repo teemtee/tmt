@@ -247,6 +247,7 @@ class GuestContainer(tmt.Guest):
         )
 
     def setup(self) -> None:
+        super().setup()
         if not self.facts.is_superuser:
             self.package_manager.install(FileSystemPath('/usr/bin/setfacl'))
             self.execute(
