@@ -23,6 +23,12 @@ for this option.
 Add the ``--command`` option for the ``tmt run reboot`` so that
 users specify the command to run on guest to trigger the reboot.
 
+A new plan shaping plugin has been implemented to repeat a plan N times,
+demonstrating how one plan can be turned into many plans.
+
+The ``deployment-mode`` context dimension is now included in test run
+exports to Polarion.
+
 
 tmt-1.43.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
