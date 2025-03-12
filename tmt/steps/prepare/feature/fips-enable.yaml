@@ -1,17 +1,20 @@
 # On RHEL/CentosStream 8 and 9 FIPS is enabled as follows:
 #
-#  1. Install crypto-policies-scripts, dracut-fips and grubby
-#  2. Execute fips-mode-setup --enable
-#  3. Reboot
+# 1. Install crypto-policies-scripts, dracut-fips and grubby
+# 2. Execute fips-mode-setup --enable
+# 3. Reboot
+#
+# https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/security_hardening/switching-rhel-to-fips-mode_security-hardening
 #
 # On RHEL/CentosStream 10 FIPS is enabled as follows:
 #
-#  1. Install grubby
-#  2. Add fips=1 and boot= (if needed) to bootloader kernel arguments [*]
-#  3. Reboot
+# 1. Install grubby
+# 2. Add fips=1 and boot= (if needed) to bootloader kernel arguments [*]
+# 3. Reboot
 #
-#  [*] fips-mode-setup is not longer available on RHEL/CentosStream 10
-
+# [*] fips-mode-setup is not longer available on RHEL/CentosStream 10
+#
+# https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10-beta/html/security_hardening/switching-rhel-to-fips-mode
 ---
 - name: Enable FIPS mode on RHEL/CentosStream 8, 9 or 10
   hosts: all
