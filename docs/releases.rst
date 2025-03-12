@@ -8,12 +8,18 @@
 tmt-1.44.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
 The ``results.yaml`` file is now populated with test results
 right after the ``discover`` step is finished and the file is
 continuously updated during test execution to provide the latest
 results. This change also adds a new ``pending`` result outcome
 to the :ref:`/spec/results` specification for tests that were
 discovered but not yet executed.
+
+Execute tmt option ``--ignore-duration`` makes tmt to execute
+the test as long as it needs. Execute plugin doesn't need to be
+specified on the commandline for :ref:`plugin-variables` to work
+for this option.
 
 
 tmt-1.43.0
