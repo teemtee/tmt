@@ -1,8 +1,11 @@
 /dmesg:
-    test: /bin/true
+    test: echo "some text"
     check: dmesg
 
     /harmless:
+        test: bash -c 'sleep 5'
+
+    /harmless2:
 
     /segfault:
         test: echo Some segfault happened > /dev/kmsg

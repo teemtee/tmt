@@ -14,7 +14,7 @@ import tmt.steps.execute
 import tmt.utils
 import tmt.utils.themes
 from tmt.container import container, field
-from tmt.result import BaseResult, Result, ResultOutcome
+from tmt.result import Result, ResultOutcome
 from tmt.steps import safe_filename
 from tmt.steps.execute import (
     SCRIPTS,
@@ -24,6 +24,7 @@ from tmt.steps.execute import (
     TestInvocation,
 )
 from tmt.steps.provision import Guest
+from tmt.steps.report.display import ResultRenderer
 from tmt.utils import (
     Command,
     Environment,
@@ -712,6 +713,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         Execute tests on provided guest
         """
 
+        assert self.workdir is not None  # narrow type
+
         # Prepare tests and helper scripts, check options
         test_invocations = self.prepare_tests(guest, logger)
 
@@ -791,25 +794,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 self.step.plan.execute.update_results(self.results())
                 self.step.plan.execute.save()
 
-                # If test duration information is missing, print 8 spaces to keep indentation
-                def _format_duration(result: BaseResult) -> str:
-                    return style(result.duration, fg='cyan') if result.duration else 8 * ' '
-
-                for result in invocation.results:
-                    logger.verbose(
-                        f"{_format_duration(result)} {result.show()} [{progress}]", shift=shift
-                    )
-
-                    for check_result in result.check:
-                        # Indent the check one extra level, to make it clear it belongs to
-                        # a parent test.
-                        logger.verbose(
-                            f'{_format_duration(check_result)} '
-                            f'{" " * tmt.utils.INDENT}'
-                            f'{check_result.show()} '
-                            f'({check_result.event.value} check)',
-                            shift=shift,
-                        )
+                ResultRenderer(
+                    basepath=self.workdir,
+                    logger=self._logger,
+                    shift=shift,
+                    variables={'PROGRESS': f'[{progress}]'},
+                ).print_results(invocation.results)
 
                 abort_execute = invocation.abort_requested or (
                     self.data.exit_first
