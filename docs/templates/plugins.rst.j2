@@ -1,7 +1,39 @@
+{% if STEP != 'prepare-feature' %}
 :tocdepth: 0
-{% if STEP == 'prepare-feature' %}
-:orphan:
 {% endif %}
+
+{% if STEP == 'prepare-feature' %}
+    {% set page_header_char = '-' %}
+    {% set plugin_header_char = '^' %}
+    {% set plugin_configuration_header_char = '#' %}
+
+    {% macro render_page_header() %}{% endmacro %}
+
+{% else %}
+    {% set page_header_char = '~' %}
+    {% set plugin_header_char = '-' %}
+    {% set plugin_configuration_header_char = '^' %}
+
+    {% macro render_page_header() %}
+.. _/plugins/{{ STEP }}:
+
+{{ render_header((STEP | replace('-', ' ') | capitalize) + ' Plugins', page_header_char) }}
+    {% endmacro %}
+
+{% endif %}
+
+{% macro render_header(name, char) %}
+{{ name }}
+{{ char * (name | length) }}
+{% endmacro %}
+
+{% macro render_plugin_header(name) %}
+{{ render_header(name, plugin_header_char) }}
+{% endmacro %}
+
+{% macro render_plugin_configuration_header(name) %}
+{{ render_header(name, plugin_configuration_header_char) }}
+{% endmacro %}
 
 {% macro render_field(plugin_id, plugin_data_class, field_name) %}
     {% set _, option, _, _, metadata = container_field(plugin_data_class, field_name) %}
@@ -46,10 +78,7 @@
     {% endif %}
 {% endmacro %}
 
-.. _/plugins/{{ STEP }}:
-
-{% if STEP == 'prepare-feature' %}prepare/feature{% else %}{{ STEP | replace('-', ' ') | capitalize }}{% endif %} Plugins
-{{ '~' * (8 + (STEP | length)) }}
+{{ render_page_header() }}
 
 .. include:: {{ STEP }}-header.inc.rst
 
@@ -57,8 +86,7 @@
     {% if loop.first and STEP != 'prepare-feature' %}
 .. _/plugins/{{ STEP }}/common-keys:
 
-Common Keys
------------
+{{ render_plugin_header('Common Keys') }}
 
 The following keys are accepted by all plugins of the ``{{ STEP }}`` step.
 
@@ -67,10 +95,11 @@ The following keys are accepted by all plugins of the ``{{ STEP }}`` step.
         {% endfor %}
     {% endif %}
 
+{% if STEP != 'prepare-feature' %}
 .. _/plugins/{{ STEP }}/{{ PLUGIN_ID | trim }}:
+{% endif %}
 
-{{ PLUGIN_ID }}
-{{ '-' * (PLUGIN_ID | length) }}
+{{ render_plugin_header(PLUGIN_ID) }}
 
 {# Emit the warning only for plugins that have not been reviewed yet. #}
 {% set plugin_full_id = STEP + "/" + PLUGIN_ID %}
@@ -93,22 +122,57 @@ The following keys are accepted by all plugins of the ``{{ STEP }}`` step.
 {{ HINTS[plugin_full_id] | indent(3, first=true) }}
 {% endif %}
 
-{% set intrinsic_fields = container_intrinsic_fields(PLUGIN_DATA_CLASS) | sort %}
+{% if STEP == 'prepare-feature' %}
+    {#
+      When rendering prepare/feature plugins, emit only a reduced version of
+      plugin configuration: no shared keys, just the intrinsic ones.
+    #}
 
-{% if intrinsic_fields %}
-Configuration
-^^^^^^^^^^^^^
+    {% set intrinsic_fields = container_intrinsic_fields(PLUGIN_DATA_CLASS) | sort %}
 
-{% if STEP != 'prepare-feature' %}
-See also :ref:`Common Keys{# djlint:off H025 #}</plugins/{{ STEP }}/common-keys>{# djlint:on H025 #}` accepted by the plugin.
-{% endif %}
-
-{% for field_name in intrinsic_fields %}
+    {% if intrinsic_fields %}
+        {% for field_name in intrinsic_fields %}
 {{ render_field(PLUGIN_ID, PLUGIN_DATA_CLASS, field_name) }}
-{% endfor %}
+        {% endfor %}
 
-{% if not loop.last %}
+        {% if not loop.last %}
 ----
+        {% endif %}
+
+    {% endif %}
+
+{% elif STEP == 'prepare' and PLUGIN_ID == 'feature' %}
+    {#
+      Since prepare/feature does not have intrinsic keys of its own,
+      and all its keys are keys of its plugins, include the generated
+      document describing the plugins instead of rendering any keys.
+    #}
+
+See also :ref:`Common Keys{# djlint:off H025 #}</plugins/prepare/common-keys>{# djlint:on H025 #}` accepted by the plugin.
+
+.. include:: prepare-feature.rst
+
+{% else %}
+    {#
+      And for all other plugins, render their intrinsic keys, and don't
+      forget to point to the shared ones.
+    #}
+
+    {% set intrinsic_fields = container_intrinsic_fields(PLUGIN_DATA_CLASS) | sort %}
+
+    {% if intrinsic_fields %}
+{{ render_plugin_configuration_header('Configuration') }}
+
+See also :ref:`Common Keys{# djlint:off H025 #}</plugins/{{ STEP }}/common-keys>{# djlint:on H025 #}` accepted by the plugin.
+
+        {% for field_name in intrinsic_fields %}
+{{ render_field(PLUGIN_ID, PLUGIN_DATA_CLASS, field_name) }}
+        {% endfor %}
+
+        {% if not loop.last %}
+----
+        {% endif %}
+    {% endif %}
 {% endif %}
-{% endif %}
+
 {% endfor %}
