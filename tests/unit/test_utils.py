@@ -1017,10 +1017,7 @@ def test_wait_deadline_already_passed(root_logger):
     ticks = []
 
     with pytest.raises(WaitingTimedOutError):
-        Waiting(Deadline.from_seconds(-86400)).wait(
-            lambda: ticks.append(1),
-            root_logger
-        )
+        Waiting(Deadline.from_seconds(-86400)).wait(lambda: ticks.append(1), root_logger)
 
     # our callback should not have been called at all
     assert not ticks
