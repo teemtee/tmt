@@ -48,11 +48,9 @@ rlJournalStart
             rlAssertGrep "disk\\[0\\].size: set to '11 GB' because of 'disk\\[0\\].size: == 11 GB'" "$run/log.txt"
             rlAssertGrep "final domain memory: 2049000" "$run/log.txt"
             rlAssertGrep "final domain root disk size: 11" "$run/log.txt"
-            rpmdev-vercmp "$(rpm -q --qf '%{V}' testcloud)" 0.11.4 > /dev/null; testcloud_cmp_code=$?
-            VERSION_NEWER_CODE=11
-            if [[ $testcloud_cmp_code == "$VERSION_NEWER_CODE" ]]; then
-                rlAssertGrep "\\[    0.000000\\] Linux version" "$run/default/plan/provision/default-0/console.log"
-            fi
+            # TODO Enable once the testcloud change is merged and released
+            # https://github.com/teemtee/testcloud/pull/7
+            # rlAssertGrep "\\[    0.000000\\] Linux version" "$run/default/plan/provision/default-0/console.log"
         fi
     rlPhaseEnd
 
