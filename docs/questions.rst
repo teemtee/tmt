@@ -30,14 +30,14 @@ __ https://tmt.readthedocs.io/en/latest/
 .. _libvirt:
 
 
-Inspiration Projects
+Who is using tmt?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Are there any example projects which are using ``tmt`` which I
 could use as an inspiration for my initial configuration setup?
 
 * The `HealthTrio Success Story`__ with CentOS Stream and tmt
-* The `AlmaLinux`__ community is using tmt for it compose testing
+* The `AlmaLinux`__ community is using tmt for its compose testing
 
 __ https://blog.centos.org/2024/01/managing-internal-ci-tests-with-tmt-for-centos-stream-updates/
 __ https://github.com/AlmaLinux/compose-tests
