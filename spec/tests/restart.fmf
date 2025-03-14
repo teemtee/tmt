@@ -20,7 +20,10 @@ description: |
 
     restart-on-exit-code: ``EXIT-CODES``
         When set, it lists test exit codes that should trigger the test
-        restart.
+        restart. Environment variable ``TMT_TEST_RESTART_COUNT`` is incremented
+        with every restart, which allows the test to skip parts of its code
+        before/after restarts.
+
 
         Default: *not set*
 
@@ -46,14 +49,22 @@ description: |
 
 example:
   - |
-    # Enable test restart on very rare exit code
-    restart-on-exit-code: 79
+    # Enable test restart on specific exit code
+    restart-on-exit-code: 255
+
+    test: |
+          echo 2 > /proc/sys/kernel/panic
+          sync
+          if [ "$TMT_TEST_RESTART_COUNT" == 0 ]; then
+             echo c > /proc/sysrq-trigger
+          fi
+          echo "Test passed"
 
   - |
     # Enable test restart on exit code the test reports when detecting
     # kernel panic. Do not reboot the guest, the test needs to re-enter
     # the environment as it is.
-    restart-on-exit-code: 79
+    restart-on-exit-code: 255
     restart-with-reboot: true
 
 link:
