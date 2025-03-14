@@ -137,6 +137,8 @@ repos:
           - --exclude=examples/redis/ansible/tasks/redis.yml
           # redis.yml example requires posix module to be installed
           # in order to be parsed by ansible-lint
+        additional_dependencies:
+          - "ansible"
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: v0.9.8
