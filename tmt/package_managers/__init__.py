@@ -76,7 +76,7 @@ PackageManagerClass = type['PackageManager']
 
 
 _PACKAGE_MANAGER_PLUGIN_REGISTRY: tmt.plugins.PluginRegistry[PackageManagerClass] = (
-    tmt.plugins.PluginRegistry()
+    tmt.plugins.PluginRegistry('package_managers')
 )
 
 

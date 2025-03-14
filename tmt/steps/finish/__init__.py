@@ -43,7 +43,7 @@ class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, list[PhaseResult]]):
     _data_class = FinishStepData  # type: ignore[assignment]
 
     # Methods ("how: ..." implementations) registered for the same step.
-    _supported_methods: PluginRegistry[Method] = PluginRegistry()
+    _supported_methods: PluginRegistry[Method] = PluginRegistry('step.finish')
 
     @classmethod
     def base_command(
