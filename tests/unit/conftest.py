@@ -121,15 +121,9 @@ def fixture_id_tree_empty() -> fmf.Tree:
 
 @pytest.fixture(name='guest')
 def fixture_guest(container: ContainerData, root_logger: Logger) -> GuestContainer:
-    guest_data = PodmanGuestData(
-        image=container.image_url_or_id,
-        container=container.container_id
-        )
+    guest_data = PodmanGuestData(image=container.image_url_or_id, container=container.container_id)
 
-    guest = GuestContainer(
-        logger=root_logger,
-        data=guest_data,
-        name='dummy-container')
+    guest = GuestContainer(logger=root_logger, data=guest_data, name='dummy-container')
 
     guest.start()
 
@@ -138,17 +132,13 @@ def fixture_guest(container: ContainerData, root_logger: Logger) -> GuestContain
 
 @pytest.fixture(name='guest_per_test')
 def fixture_guest_per_test(
-        container_per_test: ContainerData,
-        root_logger: Logger) -> GuestContainer:
+    container_per_test: ContainerData, root_logger: Logger
+) -> GuestContainer:
     guest_data = PodmanGuestData(
-        image=container_per_test.image_url_or_id,
-        container=container_per_test.container_id
-        )
+        image=container_per_test.image_url_or_id, container=container_per_test.container_id
+    )
 
-    guest = GuestContainer(
-        logger=root_logger,
-        data=guest_data,
-        name='dummy-container')
+    guest = GuestContainer(logger=root_logger, data=guest_data, name='dummy-container')
 
     guest.start()
 

@@ -88,20 +88,15 @@ def test_execute_no_connection_closed(
 @pytest.mark.containers
 @pytest.mark.parametrize(
     'container',
-    (
-        (TEST_CONTAINERS[container_name],)
-        for container_name in sorted(TEST_CONTAINERS.keys())
-    ),
+    ((TEST_CONTAINERS[container_name],) for container_name in sorted(TEST_CONTAINERS.keys())),
     indirect=["container"],
-    ids=[
-        TEST_CONTAINERS[container_name].url for container_name in sorted(TEST_CONTAINERS.keys())
-    ]
+    ids=[TEST_CONTAINERS[container_name].url for container_name in sorted(TEST_CONTAINERS.keys())],
 )
 def test_mkdtemp(
     container: ContainerData,
     guest: GuestContainer,
     root_logger: Logger,
-    caplog: _pytest.logging.LogCaptureFixture
+    caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
     guest.execute(ShellScript('mkdir -p /tmp/qux'))
 
@@ -115,7 +110,4 @@ def test_mkdtemp(
     with pytest.raises(RunError) as exc_context:
         guest.execute(ShellScript(f'ls -al {path}'))
 
-    assert re.match(
-        r'(?i).*?No such file or directory.*',
-        exc_context.value.stderr or ''
-    )
+    assert re.match(r'(?i).*?No such file or directory.*', exc_context.value.stderr or '')
