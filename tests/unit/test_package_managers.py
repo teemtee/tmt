@@ -25,7 +25,7 @@ from tmt.package_managers import (
     PackageManagerClass,
     PackagePath,
 )
-from tmt.steps.provision.podman import GuestContainer, PodmanGuestData
+from tmt.steps.provision.podman import GuestContainer
 from tmt.utils import ShellScript
 
 from . import MATCH, assert_log
