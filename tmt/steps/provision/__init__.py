@@ -412,6 +412,18 @@ class GuestFacts(SerializableContainer):
     os_release_content: dict[str, str] = field(default_factory=dict)
     lsb_release_content: dict[str, str] = field(default_factory=dict)
 
+    def has_capability(self, capability: GuestCapability) -> bool:
+        """
+        Check if the guest has a specific capability.
+
+        :param capability: The capability to check for.
+        :returns: True if the guest has the specified capability, False otherwise.
+        """
+        if not self.capabilities:
+            return False
+
+        return capability in self.capabilities
+
     def has_capabilities(self, *caps: GuestCapability) -> bool:
         """
         Check if the guest has all specified capabilities.

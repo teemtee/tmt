@@ -10,7 +10,7 @@ import tmt.utils
 from tmt.checks import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome
-from tmt.utils import Command, ShellScript
+from tmt.utils import Command, Path, ShellScript
 
 if TYPE_CHECKING:
     import tmt.base
@@ -26,9 +26,6 @@ COREDUMP_CONFIG = """[Coredump]
 Storage=external
 Compress=yes
 """
-
-# Can be set in /proc/sys/kernel/core_pattern
-# CORE_PATTERN = '|/usr/lib/systemd/systemd-coredump %P %u %g %s %t %c %h'
 
 
 @container
@@ -88,7 +85,12 @@ class CoredumpCheck(Check):
 
     def _check_coredump_available(self, guest: "Guest", logger: tmt.log.Logger) -> bool:
         """
-        Check if coredump functionality is available.
+        Check if coredump functionality is available and usable.
+
+        Checks for:
+        1. coredumpctl command exists
+        2. systemd-coredump.socket is active
+        3. Has sufficient permissions to access coredump data
 
         :returns: True if coredump is available and we have necessary permissions,
                  False otherwise.
@@ -102,15 +104,23 @@ class CoredumpCheck(Check):
 
         # Check if systemd-coredump.socket is active
         try:
-            guest.execute(
-                ShellScript("systemctl is-active systemd-coredump.socket")
-                or ShellScript("systemctl is-active systemd-coredump.socket")
+            # Try activating the socket if it's not already active
+            result = guest.execute(
+                ShellScript("systemctl is-active systemd-coredump.socket"), silent=True
             )
+            if result.stdout and "inactive" in result.stdout:
+                guest.execute(ShellScript("systemctl start systemd-coredump.socket"), silent=True)
         except tmt.utils.RunError:
-            logger.debug("Unable to start systemd-coredump.socket")
+            logger.debug("Unable to access or start systemd-coredump.socket")
             return False
 
-        return True
+        # Check if we can access coredump files
+        try:
+            guest.execute(ShellScript("coredumpctl list --no-pager"), silent=True)
+            return True
+        except tmt.utils.RunError:
+            logger.debug("Cannot access coredump data - permission issues")
+            return False
 
     def _check_for_crashes(
         self, guest: "Guest", logger: tmt.log.Logger, check_files_path: str, start_time: str
@@ -148,17 +158,11 @@ class CoredumpCheck(Check):
                     continue
 
                 # Skip if this crash matches any ignore pattern
-                if self.ignore_patterns:
-                    ignored = False
-                    for pattern in self.ignore_patterns:
-                        if pattern.search(crash_info):
-                            logger.debug(
-                                f"Ignoring crash due to pattern '{pattern.pattern}': {crash_info}"
-                            )
-                            ignored = True
-                            break
-                    if ignored:
-                        continue
+                if self.ignore_patterns and any(
+                    pattern.search(crash_info) for pattern in self.ignore_patterns
+                ):
+                    logger.debug(f"Ignoring crash due to pattern match in: {crash_info}")
+                    continue
 
                 # Save the crash info
                 info_file = f"{check_files_path}/dump.{exe}_{sig}_{pid}.txt"
@@ -191,24 +195,48 @@ class CoredumpCheck(Check):
 
     def _check_coredump(
         self, invocation: "TestInvocation", event: CheckEvent, logger: tmt.log.Logger
-    ) -> ResultOutcome:
-        """Check coredump status and return appropriate result."""
+    ) -> tuple[ResultOutcome, list[Path]]:
+        """
+        Check coredump status and return appropriate result.
+
+        :returns: A tuple of (outcome, log_files) where log_files is a list of
+                 paths to files with coredump information.
+        """
+        log_files: list[Path] = []
 
         # Check for crash reports in after_test
         output = invocation.guest.execute(Command("cat", self.coredump_timestamp_filepath)).stdout
 
         if not output:
             logger.debug("Failed to read timestamp file")
-            return ResultOutcome.ERROR
+            return ResultOutcome.ERROR, log_files
 
         start_time = output.strip()
 
-        if self._check_for_crashes(
+        # Check for crashes
+        has_crashes = self._check_for_crashes(
             invocation.guest, logger, str(invocation.check_files_path), start_time
-        ):
-            return ResultOutcome.FAIL
+        )
 
-        return ResultOutcome.PASS
+        # Get list of generated files
+        try:
+            files_output = invocation.guest.execute(
+                Command("find", str(invocation.check_files_path), "-type", "f")
+            ).stdout
+
+            if files_output:
+                for file_path in files_output.splitlines():
+                    path = Path(file_path)
+                    if path.exists() and invocation.phase.step.workdir:
+                        rel_path = path.relative_to(invocation.phase.step.workdir)
+                        log_files.append(rel_path)
+        except tmt.utils.RunError:
+            logger.debug("Failed to list coredump files")
+
+        if has_crashes:
+            return ResultOutcome.FAIL, log_files
+
+        return ResultOutcome.PASS, log_files
 
     def _create_coredump_timestamp(self, invocation: "TestInvocation") -> bool:
         self.coredump_timestamp_filepath = (
@@ -223,6 +251,21 @@ class CoredumpCheck(Check):
         return True
 
 
+# TODO: Enable hints when PR #3498 is merged
+# @provides_check(
+#     "coredump",
+#     hints={  # type: ignore[call-arg]
+#         "not-available": """
+#             Coredump detection was skipped because coredumpctl is not available or has
+#             insufficient privileges.
+
+
+#             The coredump check requires systemd-coredump to be installed and the
+#             systemd-coredump.socket to be active. Additionally, the user must have
+#             sufficient permissions to access coredump data.
+#             """
+#     },
+# )
 @provides_check("coredump")
 class Coredump(CheckPlugin[CoredumpCheck]):
     """
@@ -262,19 +305,32 @@ class Coredump(CheckPlugin[CoredumpCheck]):
     ) -> list[CheckResult]:
         """Check for crashes before the test starts."""
 
+        # TODO: Uncomment when PR #3498 is merged
+        # from tmt.utils.hints import get_hints
+
         if not invocation.guest.facts.has_systemd or not check._check_coredump_available(
             invocation.guest, logger
         ):
             logger.debug("coredump not available, skipping..")
             check.is_available = False
+            # TODO: Add note when PR #3498 is merged
+            # return [CheckResult(
+            #     name="coredump",
+            #     result=ResultOutcome.SKIP,
+            #     note=[hint.summary_ref
+            #            for hint in get_hints('test-checks/coredump/not-available')]
+            # )]
             return [CheckResult(name="coredump", result=ResultOutcome.SKIP)]
 
-        if not check._create_coredump_timestamp(invocation):
-            outcome = ResultOutcome.ERROR
+        # Initialize outcome to ERROR in case timestamp creation fails
+        outcome = ResultOutcome.ERROR
+        log_files: list[Path] = []
 
-        check._configure_coredump(invocation.guest, logger)
-        outcome = check._check_coredump(invocation, CheckEvent.BEFORE_TEST, logger)
-        return [CheckResult(name="coredump", result=outcome)]
+        if check._create_coredump_timestamp(invocation):
+            check._configure_coredump(invocation.guest, logger)
+            outcome, log_files = check._check_coredump(invocation, CheckEvent.BEFORE_TEST, logger)
+
+        return [CheckResult(name="coredump", result=outcome, log=log_files)]
 
     @classmethod
     def after_test(
@@ -286,10 +342,29 @@ class Coredump(CheckPlugin[CoredumpCheck]):
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         """Check for crashes after the test finishes."""
+        # TODO: Uncomment when PR #3498 is merged
+        # from tmt.utils.hints import get_hints
+
         # Skip if coredumpctl is not available, as detected in before-test
         sleep(1)
         if not check.is_available:
+            # TODO: Add note when PR #3498 is merged
+            # return [CheckResult(
+            #     name="coredump",
+            #     result=ResultOutcome.SKIP,
+            #     note=[hint.summary_ref for hint in get_hints(
+            # 'test-checks/coredump/not-available')]
+            # )]
             return [CheckResult(name="coredump", result=ResultOutcome.SKIP)]
 
-        outcome = check._check_coredump(invocation, CheckEvent.AFTER_TEST, logger)
-        return [CheckResult(name="coredump", result=outcome)]
+        if not invocation.is_guest_healthy:
+            # TODO: Add note when PR #3498 is merged
+            # return [CheckResult(
+            #     name="coredump",
+            #     result=ResultOutcome.SKIP,
+            #     note=[hint.summary_ref for hint in get_hints('guest-not-healthy')]
+            # )]
+            return [CheckResult(name="coredump", result=ResultOutcome.SKIP)]
+
+        outcome, log_files = check._check_coredump(invocation, CheckEvent.AFTER_TEST, logger)
+        return [CheckResult(name="coredump", result=outcome, log=log_files)]

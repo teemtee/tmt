@@ -54,6 +54,32 @@ rlJournalStart
         fi
     rlPhaseEnd
 
+    rlPhaseStartTest "Test ignore pattern with $PROVISION_HOW"
+        # This test uses the same segfault code but with a pattern to ignore it
+        if [ "$PROVISION_HOW" = "container" ]; then
+            # Container won't have required capabilities, expect success
+            rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /coredump/ignore-pattern"
+        else
+            # Since crash is ignored via pattern, should pass even with crash
+            rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /coredump/ignore-pattern"
+        fi
+        rlRun "cat $results"
+
+        if [ "$PROVISION_HOW" = "container" ]; then
+            # Container won't have required capabilities
+            assert_check_result "coredump as a before-test should skip with containers" "skip" "before-test" "/coredump/ignore-pattern"
+            assert_check_result "coredump as an after-test should skip with containers" "skip" "after-test" "/coredump/ignore-pattern"
+        else
+            # Even though there's a crash, it should pass because of the ignore pattern
+            assert_check_result "coredump as a before-test should pass" "pass" "before-test" "/coredump/ignore-pattern"
+            assert_check_result "coredump as an after-test should pass" "pass" "after-test" "/coredump/ignore-pattern"
+
+            # Verify the crash was still logged even though it was ignored
+            rlRun "ls -l $run/plan/execute/data/guest/default-0/coredump/ignore-pattern-1/checks/"
+            rlLogInfo "$(ls -l $run/plan/execute/data/guest/default-0/coredump/ignore-pattern-1/checks/)"
+        fi
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $run" 0 "Remove run directory"
