@@ -1,0 +1,22 @@
+/fips:
+  execute:
+    how: tmt
+
+  discover:
+    how: shell
+    tests:
+      - name: check kernel fips mode
+        test: grep 1 /proc/sys/crypto/fips_enabled
+      - name: check FIPS crypto-policy
+        test: update-crypto-policies --show | grep FIPS
+
+  prepare:
+    how: feature
+
+  /enabled:
+    prepare+:
+      fips: enabled
+
+  /disabled:
+    prepare+:
+      fips: disabled
