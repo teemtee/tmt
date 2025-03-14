@@ -345,8 +345,8 @@ class Try(tmt.utils.Common):
 
         plan.discover.go()
         plan.provision.go()
-        plan.prepare.go()
-        plan.execute.go()
+        self.action_prepare(plan)
+        self.action_execute(plan)
 
     def action_start_login(self, plan: Plan) -> None:
         """
@@ -356,7 +356,7 @@ class Try(tmt.utils.Common):
         self.action_start(plan)
 
         plan.provision.go()
-        plan.prepare.go()
+        self.action_prepare(plan)
         assert plan.login is not None  # Narrow type
         plan.login.go(force=True)
 
@@ -375,7 +375,7 @@ class Try(tmt.utils.Common):
         """
 
         plan.discover.go(force=True)
-        plan.execute.go(force=True)
+        self.action_execute(plan)
 
     def action_login(self, plan: Plan) -> None:
         """
@@ -454,6 +454,7 @@ class Try(tmt.utils.Common):
         """
 
         plan.prepare.go(force=True)
+        plan._source_plan_environment_file()
 
     def action_execute(self, plan: Plan) -> None:
         """
@@ -461,6 +462,7 @@ class Try(tmt.utils.Common):
         """
 
         plan.execute.go(force=True)
+        plan._source_plan_environment_file()
 
     def action_report(self, plan: Plan) -> None:
         """

@@ -1,0 +1,13 @@
+summary: Telling how it is
+discover:
+    how: fmf
+provision:
+    how: local
+prepare:
+    how: shell
+    script: echo "MY_VAR=good" >> $TMT_PLAN_ENVIRONMENT_FILE
+execute:
+    how: tmt
+finish:
+    how: shell
+    script: echo "and yours is $YOUR_VAR..."  # Check if env-file sourced after execute
