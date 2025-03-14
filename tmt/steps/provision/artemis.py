@@ -1,4 +1,3 @@
-import datetime
 import functools
 from typing import Any, Optional, TypedDict, cast
 
@@ -12,6 +11,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 import tmt.utils.signals
+import tmt.utils.wait
 from tmt.container import container, field
 from tmt.utils import (
     ProvisionError,
@@ -20,6 +20,7 @@ from tmt.utils import (
     normalize_string_dict,
     retry_session,
 )
+from tmt.utils.wait import Deadline, Waiting
 
 # List of Artemis API versions supported and understood by this plugin.
 # Since API gains support for new features over time, it is important to
@@ -601,17 +602,14 @@ class GuestArtemis(tmt.GuestSsh):
                 if state == 'ready':
                     return current
 
-                raise tmt.utils.WaitingIncompleteError
+                raise tmt.utils.wait.WaitingIncompleteError
 
             try:
-                guest_info = tmt.utils.wait(
-                    self,
-                    get_new_state,
-                    datetime.timedelta(seconds=self.provision_timeout),
-                    tick=self.provision_tick,
-                )
+                guest_info = Waiting(
+                    Deadline.from_seconds(self.provision_timeout), tick=self.provision_tick
+                ).wait(get_new_state, self._logger)
 
-            except tmt.utils.WaitingTimedOutError:
+            except tmt.utils.wait.WaitingTimedOutError:
                 # The provisioning chain has been already started, make sure we
                 # remove the guest.
                 self.remove()
