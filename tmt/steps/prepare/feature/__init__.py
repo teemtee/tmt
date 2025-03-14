@@ -171,21 +171,26 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
          before using ``feature`` plugin from an alternative repository
          or local build.
 
-    Example config:
-
-    .. code-block:: yaml
-
-        prepare:
-            how: feature
-            epel: enabled
-
-    Or
+    Control enablement of various features on the guest:
 
     .. code-block:: yaml
 
         prepare:
             how: feature
             epel: disabled
+            crb: enabled
+            fips: enabled
+            ...
+
+    .. code-block:: shell
+
+        prepare --how feature --epel disabled --crb enabled --fips enabled ...
+
+    .. note::
+
+       Features available via this plugin are implemented and shipped as
+       plugins too. The list of available features and configuration keys
+       will depend on which plugins you have installed.
     """
 
     _data_class = PrepareFeatureData

@@ -20,6 +20,28 @@ class EpelStepData(PrepareFeatureData):
 
 @provides_feature('epel')
 class Epel(ToggleableFeature):
+    """
+    Control Extra Packages for Enterprise Linux (EPEL) repository.
+
+    `EPEL`__ is an initiative within the Fedora Project to provide high
+    quality additional packages for CentOS Stream and Red Hat Enterprise
+    Linux (RHEL).
+
+    Enable or disable EPEL repository on the guest:
+
+    .. code-block:: yaml
+
+        prepare:
+            how: feature
+            epel: enabled
+
+    .. code-block:: shell
+
+        prepare --how feature --epel enabled
+
+    __ https://docs.fedoraproject.org/en-US/epel/
+    """
+
     NAME = "epel"
 
     _data_class = EpelStepData
