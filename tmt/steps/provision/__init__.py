@@ -314,16 +314,61 @@ class CheckRsyncOutcome(enum.Enum):
 T = TypeVar('T')
 
 
-class GuestCapability(enum.Enum):
+class GuestCapability(enum.IntEnum):
     """
-    Various Linux capabilities
+    Linux capabilities as defined in capabilities.h.
+
+    Each enum member represents a Linux capability that can be granted to processes.
+    The integer value of each member corresponds to its bit position in the kernel's
+    capability bitmask, as defined in the Linux kernel's capabilities.h.
+
+    These values are stable across kernel versions as they are part of the kernel's
+    ABI guarantee. New capabilities can only be added with new numbers at the end.
+
+    See: https://github.com/torvalds/linux/blob/master/include/uapi/linux/capability.h
     """
 
-    # See man 2 syslog:
-    #: Read all messages remaining in the ring buffer.
-    SYSLOG_ACTION_READ_ALL = 'syslog-action-read-all'
-    #: Read and clear all messages remaining in the ring buffer.
-    SYSLOG_ACTION_READ_CLEAR = 'syslog-action-read-clear'
+    CAP_CHOWN = 0
+    CAP_DAC_OVERRIDE = 1
+    CAP_DAC_READ_SEARCH = 2
+    CAP_FOWNER = 3
+    CAP_FSETID = 4
+    CAP_KILL = 5
+    CAP_SETGID = 6
+    CAP_SETUID = 7
+    CAP_SETPCAP = 8
+    CAP_LINUX_IMMUTABLE = 9
+    CAP_NET_BIND_SERVICE = 10
+    CAP_NET_BROADCAST = 11
+    CAP_NET_ADMIN = 12
+    CAP_NET_RAW = 13
+    CAP_IPC_LOCK = 14
+    CAP_IPC_OWNER = 15
+    CAP_SYS_MODULE = 16
+    CAP_SYS_RAWIO = 17
+    CAP_SYS_CHROOT = 18
+    CAP_SYS_PTRACE = 19
+    CAP_SYS_PACCT = 20
+    CAP_SYS_ADMIN = 21
+    CAP_SYS_BOOT = 22
+    CAP_SYS_NICE = 23
+    CAP_SYS_RESOURCE = 24
+    CAP_SYS_TIME = 25
+    CAP_SYS_TTY_CONFIG = 26
+    CAP_MKNOD = 27
+    CAP_LEASE = 28
+    CAP_AUDIT_WRITE = 29
+    CAP_AUDIT_CONTROL = 30
+    CAP_SETFCAP = 31
+    CAP_MAC_OVERRIDE = 32
+    CAP_MAC_ADMIN = 33
+    CAP_SYSLOG = 34
+    CAP_WAKE_ALARM = 35
+    CAP_BLOCK_SUSPEND = 36
+    CAP_AUDIT_READ = 37
+    CAP_PERFMON = 38
+    CAP_BPF = 39
+    CAP_CHECKPOINT_RESTORE = 40
 
 
 @container
@@ -349,34 +394,35 @@ class GuestFacts(SerializableContainer):
     )
 
     has_selinux: Optional[bool] = None
+    has_systemd: Optional[bool] = None
     is_superuser: Optional[bool] = None
     is_ostree: Optional[bool] = None
     is_toolbox: Optional[bool] = None
     toolbox_container_name: Optional[str] = None
 
-    #: Various Linux capabilities and whether they are permitted to
-    #: commands executed on this guest.
-    capabilities: dict[GuestCapability, bool] = field(
-        default_factory=cast(Callable[[], dict[GuestCapability, bool]], dict),
-        serialize=lambda capabilities: {
-            capability.value: enabled for capability, enabled in capabilities.items()
-        }
-        if capabilities
-        else {},
-        unserialize=lambda raw_value: {
-            GuestCapability(raw_capability): enabled
-            for raw_capability, enabled in raw_value.items()
-        },
+    #: Permitted Linux capabilities on this guest.
+    capabilities: Optional[list[GuestCapability]] = field(
+        default=None,
+        serialize=lambda caps: [cap.name for cap in caps] if caps else None,
+        unserialize=lambda serialized: [GuestCapability[value] for value in serialized]
+        if serialized
+        else None,
     )
 
     os_release_content: dict[str, str] = field(default_factory=dict)
     lsb_release_content: dict[str, str] = field(default_factory=dict)
 
-    def has_capability(self, cap: GuestCapability) -> bool:
+    def has_capabilities(self, *caps: GuestCapability) -> bool:
+        """
+        Check if the guest has all specified capabilities.
+
+        :param caps: one or more capabilities to check for.
+        :returns: True if the guest has all specified capabilities, False otherwise.
+        """
         if not self.capabilities:
             return False
 
-        return self.capabilities.get(cap, False)
+        return all(cap in self.capabilities for cap in caps)
 
     # TODO nothing but a fancy helper, to check for some special errors that
     # may appear this soon in provisioning. But, would it make sense to put
@@ -583,6 +629,18 @@ class GuestFacts(SerializableContainer):
 
         return 'selinux' in output.stdout
 
+    def _query_has_systemd(self, guest: "Guest") -> Optional[bool]:
+        """
+        Detect whether guest uses systemd.
+
+        For detection we check if systemctl exists and is executable.
+        """
+        try:
+            guest.execute(Command('systemctl', '--version'), silent=True)
+            return True
+        except tmt.utils.RunError:
+            return False
+
     def _query_is_superuser(self, guest: 'Guest') -> Optional[bool]:
         output = self._execute(guest, Command('whoami'))
 
@@ -650,13 +708,33 @@ class GuestFacts(SerializableContainer):
 
         return None
 
-    def _query_capabilities(self, guest: 'Guest') -> dict[GuestCapability, bool]:
-        # TODO: there must be a canonical way of getting permitted capabilities.
-        # For now, we're interested in whether we can access kernel message buffer.
-        return {
-            GuestCapability.SYSLOG_ACTION_READ_ALL: True,
-            GuestCapability.SYSLOG_ACTION_READ_CLEAR: True,
-        }
+    def _query_capabilities(self, guest: 'Guest') -> Optional[list[GuestCapability]]:
+        """
+        Read /proc/self/status to determine the permitted capabilities.
+
+        The CapPrm line in /proc/self/status contains a hex number representing
+        a bitmask of permitted capabilities. Each bit position corresponds to
+        a capability's index as defined in the kernel's capabilities.h.
+
+        :returns: A list of GuestCapability enum members representing the currently
+                 permitted capabilities, or an empty list if capabilities cannot be determined.
+        """
+        try:
+            output = self._execute(guest, Command('grep', 'CapPrm', '/proc/self/status'))
+        except tmt.utils.RunError:
+            return []
+
+        if not output or not output.stdout:
+            return []
+
+        # Extract the permitted bitmask from the CapPrm line
+        bitmask_hex = output.stdout.split()[1]
+        # TODO If hex = 0000000000000000, we could try again to read /proc/self/status with
+        # sudo to get capabilities available for superuser
+        bitmask = int(bitmask_hex, 16)
+
+        # Convert the bitmask to a list of permitted capabilities
+        return [cap for cap in GuestCapability if bitmask & (1 << cap.value)]
 
     def sync(self, guest: 'Guest') -> None:
         """
@@ -671,6 +749,7 @@ class GuestFacts(SerializableContainer):
         self.kernel_release = self._query_kernel_release(guest)
         self.package_manager = self._query_package_manager(guest)
         self.has_selinux = self._query_has_selinux(guest)
+        self.has_systemd = self._query_has_systemd(guest)
         self.is_superuser = self._query_is_superuser(guest)
         self.is_ostree = self._query_is_ostree(guest)
         self.is_toolbox = self._query_is_toolbox(guest)
@@ -696,6 +775,7 @@ class GuestFacts(SerializableContainer):
             self.package_manager if self.package_manager else 'unknown',
         )
         yield 'has_selinux', 'selinux', 'yes' if self.has_selinux else 'no'
+        yield 'has_systemd', 'systemd', 'yes' if self.has_systemd else 'no'
         yield 'is_superuser', 'is superuser', 'yes' if self.is_superuser else 'no'
 
 
