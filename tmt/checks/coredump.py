@@ -88,13 +88,19 @@ class CoredumpCheck(Check):
         Check if coredump functionality is available and usable.
 
         Checks for:
-        1. coredumpctl command exists
-        2. systemd-coredump.socket is active
-        3. Has sufficient permissions to access coredump data
+        1. systemd availability through guest facts
+        2. coredumpctl command exists
+        3. systemd-coredump.socket is active or can be activated
+        4. Has sufficient permissions to access coredump data
 
         :returns: True if coredump is available and we have necessary permissions,
                  False otherwise.
         """
+        # We need systemd for coredump functionality
+        if not guest.facts.has_systemd:
+            logger.debug("systemd not available, skipping coredump check")
+            return False
+
         # Check if coredumpctl is present
         try:
             guest.execute(ShellScript("coredumpctl --version"), silent=True)
@@ -105,11 +111,13 @@ class CoredumpCheck(Check):
         # Check if systemd-coredump.socket is active
         try:
             # Try activating the socket if it's not already active
-            result = guest.execute(
-                ShellScript("systemctl is-active systemd-coredump.socket"), silent=True
+            guest.execute(
+                ShellScript(
+                    "systemctl is-active systemd-coredump.socket || "
+                    "systemctl start systemd-coredump.socket"
+                ),
+                silent=True,
             )
-            if result.stdout and "inactive" in result.stdout:
-                guest.execute(ShellScript("systemctl start systemd-coredump.socket"), silent=True)
         except tmt.utils.RunError:
             logger.debug("Unable to access or start systemd-coredump.socket")
             return False
@@ -308,9 +316,7 @@ class Coredump(CheckPlugin[CoredumpCheck]):
         # TODO: Uncomment when PR #3498 is merged
         # from tmt.utils.hints import get_hints
 
-        if not invocation.guest.facts.has_systemd or not check._check_coredump_available(
-            invocation.guest, logger
-        ):
+        if not check._check_coredump_available(invocation.guest, logger):
             logger.debug("coredump not available, skipping..")
             check.is_available = False
             # TODO: Add note when PR #3498 is merged

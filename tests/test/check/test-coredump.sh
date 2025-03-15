@@ -18,10 +18,16 @@ rlJournalStart
         rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /coredump/harmless"
         rlRun "cat $results"
 
-        if [ "$PROVISION_HOW" = "container" ]; then
-            # Container won't have required capabilities
-            assert_check_result "coredump as a before-test should skip with containers" "skip" "before-test" "/coredump/harmless"
-            assert_check_result "coredump as an after-test should skip with containers" "skip" "after-test" "/coredump/harmless"
+        # Check if systemd is available in the provisioner
+        has_systemd=true
+        if [ "$PROVISION_HOW" = "container" ] || { [ "$PROVISION_HOW" = "local" ] && ! systemctl --version &>/dev/null; }; then
+            has_systemd=false
+        fi
+
+        if [ "$has_systemd" = "false" ]; then
+            # Container or local without systemd won't have required capabilities
+            assert_check_result "coredump as a before-test should skip without systemd" "skip" "before-test" "/coredump/harmless"
+            assert_check_result "coredump as an after-test should skip without systemd" "skip" "after-test" "/coredump/harmless"
         else
             # Other provisioners should pass with no crashes
             assert_check_result "coredump as a before-test should pass" "pass" "before-test" "/coredump/harmless"
@@ -30,8 +36,14 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test segfault with $PROVISION_HOW"
-        if [ "$PROVISION_HOW" = "container" ]; then
-            # Container won't have required capabilities, expect success
+        # Check if systemd is available in the provisioner
+        has_systemd=true
+        if [ "$PROVISION_HOW" = "container" ] || { [ "$PROVISION_HOW" = "local" ] && ! systemctl --version &>/dev/null; }; then
+            has_systemd=false
+        fi
+
+        if [ "$has_systemd" = "false" ]; then
+            # No systemd means no coredump capabilities, expect success
             rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /coredump/segfault"
         else
             # Other provisioners should detect the crash, expect failure
@@ -39,10 +51,10 @@ rlJournalStart
         fi
         rlRun "cat $results"
 
-        if [ "$PROVISION_HOW" = "container" ]; then
-            # Container won't have required capabilities
-            assert_check_result "coredump as a before-test should skip with containers" "skip" "before-test" "/coredump/segfault"
-            assert_check_result "coredump as an after-test should skip with containers" "skip" "after-test" "/coredump/segfault"
+        if [ "$has_systemd" = "false" ]; then
+            # No systemd means no coredump capabilities
+            assert_check_result "coredump as a before-test should skip without systemd" "skip" "before-test" "/coredump/segfault"
+            assert_check_result "coredump as an after-test should skip without systemd" "skip" "after-test" "/coredump/segfault"
         else
             # Other provisioners should detect the crash
             assert_check_result "coredump as a before-test should pass" "pass" "before-test" "/coredump/segfault"
@@ -56,19 +68,20 @@ rlJournalStart
 
     rlPhaseStartTest "Test ignore pattern with $PROVISION_HOW"
         # This test uses the same segfault code but with a pattern to ignore it
-        if [ "$PROVISION_HOW" = "container" ]; then
-            # Container won't have required capabilities, expect success
-            rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /coredump/ignore-pattern"
-        else
-            # Since crash is ignored via pattern, should pass even with crash
-            rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /coredump/ignore-pattern"
+        # Check if systemd is available in the provisioner
+        has_systemd=true
+        if [ "$PROVISION_HOW" = "container" ] || { [ "$PROVISION_HOW" = "local" ] && ! systemctl --version &>/dev/null; }; then
+            has_systemd=false
         fi
+
+        # This test should pass regardless of systemd availability
+        rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /coredump/ignore-pattern"
         rlRun "cat $results"
 
-        if [ "$PROVISION_HOW" = "container" ]; then
-            # Container won't have required capabilities
-            assert_check_result "coredump as a before-test should skip with containers" "skip" "before-test" "/coredump/ignore-pattern"
-            assert_check_result "coredump as an after-test should skip with containers" "skip" "after-test" "/coredump/ignore-pattern"
+        if [ "$has_systemd" = "false" ]; then
+            # No systemd means no coredump capabilities
+            assert_check_result "coredump as a before-test should skip without systemd" "skip" "before-test" "/coredump/ignore-pattern"
+            assert_check_result "coredump as an after-test should skip without systemd" "skip" "after-test" "/coredump/ignore-pattern"
         else
             # Even though there's a crash, it should pass because of the ignore pattern
             assert_check_result "coredump as a before-test should pass" "pass" "before-test" "/coredump/ignore-pattern"

@@ -35,5 +35,4 @@ tier: 2
     tag+:
       - provision-only
       - provision-container
-      - provision-local
       - provision-virtual

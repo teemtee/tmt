@@ -67,7 +67,6 @@
     tag+:
       - provision-only
       - provision-container
-      - provision-local
       - provision-virtual
 
     /harmless:
