@@ -201,3 +201,15 @@ repos:
       # action (.github/workflows/pre-commit.yml).
       - id: hadolint
         files: ^containers/.*
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        # Local shellcheck for developers - keep exclusions in sync with .github/workflows/shellcheck.yml
+        exclude: |
+          (?x)^(
+            tests/.*|
+            examples/.*|
+            tmt/steps/execute/scripts/.*\.sh\.j2|
+            tmt/templates/.*
+          )$
