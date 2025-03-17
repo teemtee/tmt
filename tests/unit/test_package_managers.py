@@ -1910,14 +1910,11 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                 container,
                 package_manager_class,
                 (Package('dos2unix'), Package('tree')),
-                r"debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",
+                r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| dnf5 install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",  # noqa: E501
                 None,
             )
 
-        elif (
-            package_manager_class is tmt.package_managers.dnf.Dnf
-            or package_manager_class is tmt.package_managers.dnf.Yum
-        ):
+        elif package_manager_class is tmt.package_managers.dnf.Dnf:
             if 'centos' in container.url:
                 yield pytest.param(
                     container,
@@ -1935,7 +1932,7 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('dconf'), Package('libpng')),
-                    r"debuginfo-install -y  dconf libpng && rpm -q dconf-debuginfo libpng-debuginfo",  # noqa: E501
+                    r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| dnf install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dconf libpng && rpm -q dconf-debuginfo libpng-debuginfo",  # noqa: E501
                     None,
                 )
 
@@ -1944,7 +1941,38 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('dos2unix'), Package('tree')),
+                    r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| dnf install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",  # noqa: E501
+                    None,
+                )
+
+        elif package_manager_class is tmt.package_managers.dnf.Yum:
+            if 'centos' in container.url:
+                yield pytest.param(
+                    container,
+                    package_manager_class,
+                    (Package('dos2unix'), Package('tree')),
                     r"debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",  # noqa: E501
+                    None,
+                    marks=pytest.mark.skip(
+                        reason='centos comes without debuginfo repos, we do not enable them yet'
+                    ),
+                )
+
+            elif 'ubi/8' in container.url:
+                yield (
+                    container,
+                    package_manager_class,
+                    (Package('dconf'), Package('libpng')),
+                    r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| yum install -y  /usr/bin/debuginfo-install && rpm -q --whatprovides /usr/bin/debuginfo-install && debuginfo-install -y  dconf libpng && rpm -q dconf-debuginfo libpng-debuginfo",  # noqa: E501
+                    None,
+                )
+
+            else:
+                yield (
+                    container,
+                    package_manager_class,
+                    (Package('dos2unix'), Package('tree')),
+                    r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| yum install -y  /usr/bin/debuginfo-install && rpm -q --whatprovides /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",  # noqa: E501
                     None,
                 )
 
@@ -2006,16 +2034,30 @@ def _parametrize_test_install_debuginfo_nonexistent() -> Iterator[
     tuple[Container, PackageManagerClass, tuple[Package, Package], str, Optional[str]]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
-        if (
-            package_manager_class is tmt.package_managers.dnf.Dnf5
-            or package_manager_class is tmt.package_managers.dnf.Dnf
-            or package_manager_class is tmt.package_managers.dnf.Yum
-        ):
+        if package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield (
                 container,
                 package_manager_class,
                 (Package('dos2unix'), Package('tree-but-spelled-wrong')),
-                r"debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
+                r"rpm -q --whatprovides /usr/bin/debuginfo-install || dnf5 install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
+                None,
+            )
+
+        elif package_manager_class is tmt.package_managers.dnf.Dnf:
+            yield (
+                container,
+                package_manager_class,
+                (Package('dos2unix'), Package('tree-but-spelled-wrong')),
+                r"rpm -q --whatprovides /usr/bin/debuginfo-install || dnf install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
+                None,
+            )
+
+        elif package_manager_class is tmt.package_managers.dnf.Yum:
+            yield (
+                container,
+                package_manager_class,
+                (Package('dos2unix'), Package('tree-but-spelled-wrong')),
+                r"rpm -q --whatprovides /usr/bin/debuginfo-install || yum install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
                 None,
             )
 
@@ -2097,14 +2139,11 @@ def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
                 container,
                 package_manager_class,
                 (Package('dos2unix'), Package('tree-but-spelled-wrong')),
-                r"debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong",
+                r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| dnf5 install -y  /usr/bin/debuginfo-install && debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong",  # noqa: E501
                 None,
             )
 
-        elif (
-            package_manager_class is tmt.package_managers.dnf.Dnf
-            or package_manager_class is tmt.package_managers.dnf.Yum
-        ):
+        elif package_manager_class is tmt.package_managers.dnf.Dnf:
             if 'centos' in container.url:
                 yield pytest.param(
                     container,
@@ -2122,7 +2161,29 @@ def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('dos2unix'), Package('tree-but-spelled-wrong')),
+                    r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| dnf install -y  /usr/bin/debuginfo-install && debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong",  # noqa: E501
+                    None,
+                )
+
+        elif package_manager_class is tmt.package_managers.dnf.Yum:
+            if 'centos' in container.url:
+                yield pytest.param(
+                    container,
+                    package_manager_class,
+                    (Package('dos2unix'), Package('tree-but-spelled-wrong')),
                     r"debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong",
+                    None,
+                    marks=pytest.mark.skip(
+                        reason='centos comes without debuginfo repos, we do not enable them yet'
+                    ),
+                )
+
+            else:
+                yield (
+                    container,
+                    package_manager_class,
+                    (Package('dos2unix'), Package('tree-but-spelled-wrong')),
+                    r"rpm -q --whatprovides /usr/bin/debuginfo-install || yum install -y  /usr/bin/debuginfo-install && rpm -q --whatprovides /usr/bin/debuginfo-install && debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong",  # noqa: E501
                     None,
                 )
 
