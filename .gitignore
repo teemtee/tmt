@@ -9,6 +9,7 @@ docs/plugins/finish.rst
 docs/plugins/prepare.rst
 docs/plugins/provision.rst
 docs/plugins/report.rst
+docs/plugins/prepare-feature.rst
 docs/plugins/test-checks.rst
 docs/plugins/hardware-matrix.rst
 docs/guide/test-runner-guest-compatibility-matrix.inc.rst

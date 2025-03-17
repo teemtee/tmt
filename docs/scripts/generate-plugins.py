@@ -15,6 +15,7 @@ import tmt.steps.discover
 import tmt.steps.execute
 import tmt.steps.finish
 import tmt.steps.prepare
+import tmt.steps.prepare.feature
 import tmt.steps.provision
 import tmt.steps.report
 import tmt.utils
@@ -149,6 +150,20 @@ def _create_step_plugin_iterator(registry: tmt.plugins.PluginRegistry[tmt.steps.
     return plugin_iterator
 
 
+def _create_feature_plugin_iterator(
+    registry: tmt.plugins.PluginRegistry[tmt.steps.prepare.feature.FeatureClass],
+):
+    """Create iterator over plugins of a feature plugin registry"""
+
+    def plugin_iterator():
+        for plugin_id in registry.iter_plugin_ids():
+            plugin = registry.get_plugin(plugin_id)
+
+            yield plugin_id, plugin, plugin._data_class
+
+    return plugin_iterator
+
+
 def _create_test_check_plugin_iterator(registry: tmt.plugins.PluginRegistry[tmt.steps.Method]):
     """
     Create iterator over plugins of a test check registry
@@ -208,6 +223,11 @@ def main() -> None:
     elif step_name == 'report':
         plugin_generator = _create_step_plugin_iterator(
             tmt.steps.report.ReportPlugin._supported_methods
+        )
+
+    elif step_name == 'prepare-feature':
+        plugin_generator = _create_feature_plugin_iterator(
+            tmt.steps.prepare.feature._FEATURE_PLUGIN_REGISTRY
         )
 
     elif step_name == 'test-checks':
