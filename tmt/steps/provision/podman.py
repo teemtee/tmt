@@ -9,7 +9,6 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
-from tmt.options import show_step_method_hints
 from tmt.package_managers import FileSystemPath
 from tmt.steps.provision import GuestCapability
 from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript, retry
