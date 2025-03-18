@@ -287,7 +287,7 @@ ExecuteStepDataT = TypeVar('ExecuteStepDataT', bound=ExecuteStepData)
 
 class AbortExecute(tmt.utils.GeneralError):
     """
-    Raised by ``execute`` phases to when the whole step should abort.
+    Raised by ``execute`` phases when the entire step should abort.
     """
 
     pass
