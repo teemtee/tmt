@@ -16,7 +16,13 @@ import tmt.utils
 from tmt.container import container, field
 from tmt.result import BaseResult, Result, ResultOutcome
 from tmt.steps import safe_filename
-from tmt.steps.execute import SCRIPTS, TEST_OUTPUT_FILENAME, TMT_REBOOT_SCRIPT, TestInvocation
+from tmt.steps.execute import (
+    SCRIPTS,
+    TEST_OUTPUT_FILENAME,
+    TMT_REBOOT_SCRIPT,
+    AbortExecute,
+    TestInvocation,
+)
 from tmt.steps.provision import Guest
 from tmt.utils import (
     Command,
@@ -697,6 +703,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # We cannot use enumerate here due to continue in the code
         index = 0
 
+        # TODO: plugin does not return any value. Results are exchanged
+        # via `self.results`, to signal abort we need a bigger gun. Once
+        # we get back to refactoring the plugin, this would turn into a
+        # better way of transporting "plugin outcome" back to the step.
+        abort_execute_exception: Optional[AbortExecute] = None
+
         with UpdatableMessage(self) as progress_bar:
             while index < len(test_invocations):
                 invocation = test_invocations[index]
@@ -737,7 +749,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                                 'you may want to set restart-max-count larger'
                             )
 
-                # Handle reboot, abort, exit-first
+                # Handle reboot
                 if invocation.reboot_requested:
                     # Output before the reboot
                     logger.verbose(f"{duration} {test.name} [{progress}]", shift=shift)
@@ -778,18 +790,27 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                             shift=shift,
                         )
 
-                if invocation.abort_requested or (
+                abort_execute = invocation.abort_requested or (
                     self.data.exit_first
                     and any(
                         result.result in (ResultOutcome.FAIL, ResultOutcome.ERROR)
                         for result in invocation.results
                     )
-                ):
-                    # Clear the progress bar before outputting
+                )
+
+                if abort_execute:
+                    if invocation.abort_requested:
+                        abort_message = f'Test {test.name} aborted, stopping execution.'
+
+                    else:
+                        abort_message = f'Test {test.name} failed, stopping execution.'
+
+                    abort_execute_exception = AbortExecute(abort_message)
+
                     progress_bar.clear()
-                    what_happened = "aborted" if invocation.abort_requested else "failed"
-                    self.warn(f'Test {test.name} {what_happened}, stopping execution.')
+
                     break
+
                 index += 1
 
                 # Log into the guest after each executed test if "login
@@ -814,6 +835,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # Pull artifacts created in the plan data directory
         self.debug("Pull the plan data directory.", level=2)
         guest.pull(source=self.step.plan.data_directory)
+
+        if abort_execute_exception:
+            raise abort_execute_exception
 
     def results(self) -> list[Result]:
         """
