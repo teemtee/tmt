@@ -26,7 +26,7 @@ from tmt.utils import (
 # know when particular feature became available, and avoid using it with
 # older APIs.
 SUPPORTED_API_VERSIONS = (
-    # # NEW: guest reboot
+    # NEW: guest reboot
     '0.0.74',
     # NEW: allow passing security group rules for guest creation
     '0.0.72',
