@@ -285,6 +285,14 @@ class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
 ExecuteStepDataT = TypeVar('ExecuteStepDataT', bound=ExecuteStepData)
 
 
+class AbortExecute(tmt.utils.GeneralError):
+    """
+    Raised by ``execute`` phases to when the whole step should abort.
+    """
+
+    pass
+
+
 @container
 class TestInvocation:
     """
@@ -1059,15 +1067,6 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         # (e.g. saves them as a tmt subresults).
         return invocation.test.test_framework.extract_results(invocation, results, logger)
 
-    def check_abort_file(self, invocation: TestInvocation) -> bool:
-        """
-        Check for an abort file created by tmt-abort
-
-        Returns whether an abort file is present (i.e. abort occurred).
-        """
-
-        return (invocation.test_data_path / TMT_ABORT_SCRIPT.created_file).exists()
-
     def timeout_hint(self, invocation: TestInvocation) -> None:
         """
         Append a duration increase hint to the test output
@@ -1384,6 +1383,12 @@ class Execute(tmt.steps.Step):
         for outcome in queue.run():
             if outcome.exc:
                 outcome.logger.fail(str(outcome.exc))
+
+                # Special exception serving as a signal to not run any more phases.
+                # Not necessarily a failed task calling for the final exception
+                # to be raised, crashing the whole run.
+                if isinstance(outcome.exc, AbortExecute):
+                    break
 
                 failed_tasks.append(outcome)
                 continue
