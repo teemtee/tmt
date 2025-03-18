@@ -44,7 +44,7 @@ rlJournalStart
             build_container_image "fedora/41/upstream\:latest"
 
             provision_options="--image localhost/tmt/container/test/fedora/41/upstream:latest"
-            bfu_provision_options="$provision_options --user=nobody"
+            bfu_provision_options="--image localhost/tmt/container/test/fedora/41/unprivileged:latest --user=fedora"
 
             arch="$(arch)"
             distro="Fedora Linux 41 (Container Image)"
