@@ -18,7 +18,7 @@ rlJournalStart
         rlAssertGrep "warn /test/warn" $rlRun_LOG
         rlAssertGrep "pass /test/pass" $rlRun_LOG
         rlAssertGrep "pass /test/another-pass" $rlRun_LOG
-        rlAssertNotGrep "warn: Test .* stopping execution." $rlRun_LOG
+        rlAssertNotGrep "fail: Test .* stopping execution." $rlRun_LOG
         rlAssertGrep "summary: 4 tests executed" $rlRun_LOG
         rlAssertGrep "total: 2 tests passed, 1 info and 1 warn" $rlRun_LOG
     rlPhaseEnd
@@ -29,7 +29,7 @@ rlJournalStart
         rlAssertGrep "pass /test/pass" $rlRun_LOG
         rlAssertGrep "fail /test/fail" $rlRun_LOG
         rlAssertNotGrep "pass /test/another-pass" $rlRun_LOG
-        rlAssertGrep "warn: Test /test/fail failed, stopping execution." $rlRun_LOG
+        rlAssertGrep "fail: Test /test/fail failed, stopping execution." $rlRun_LOG
         rlAssertGrep "summary: 2 tests executed" $rlRun_LOG
         rlAssertGrep "total: 1 test passed, 1 test failed and 1 pending" $rlRun_LOG
     rlPhaseEnd
@@ -40,7 +40,7 @@ rlJournalStart
         rlAssertGrep "pass /test/pass" $rlRun_LOG
         rlAssertGrep "errr /test/error" $rlRun_LOG
         rlAssertNotGrep "pass /test/another-pass" $rlRun_LOG
-        rlAssertGrep "warn: Test /test/error failed, stopping execution." $rlRun_LOG
+        rlAssertGrep "fail: Test /test/error failed, stopping execution." $rlRun_LOG
         rlAssertGrep "summary: 2 tests executed" $rlRun_LOG
         rlAssertGrep "total: 1 test passed, 1 error and 1 pending" $rlRun_LOG
     rlPhaseEnd
