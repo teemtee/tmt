@@ -5,6 +5,15 @@
 ======================
 
 
+tmt-1.45.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When pruning a repository with a specified ``path``, the ``discover``
+step now saves the data to the correct temporary directory and
+respects the structure of the original repository. This ensures
+that the test attributes have correct paths.
+
+
 tmt-1.44.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
