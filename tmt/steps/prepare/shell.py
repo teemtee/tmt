@@ -44,7 +44,9 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
     """
     Prepare guest using shell (Bash) scripts.
 
-    Run various commands and scripts on the guest:
+    Default shell options are applied to the script, see the
+    :ref:`/spec/tests/test` key specification for more
+    details.
 
     .. code-block:: yaml
 
