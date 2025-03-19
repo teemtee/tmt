@@ -16,6 +16,11 @@ that the test attributes have correct paths.
 When running ``tmt try`` failure in ``prepare`` phase drops the user
 to the menu to be able to login to the machine and possibly try it again.
 
+When working with an existing run which involved executing only a
+subset of plans, commands such as ``tmt run --last report`` will
+load the respective plans only instead of all available plans to
+save disk space and speed up the execution.
+
 
 tmt-1.44.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
