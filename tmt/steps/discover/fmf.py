@@ -618,11 +618,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         else:
             self.info('path', path, 'green')
 
-        # Prepare the whole tree path and test path prefix
+        # Prepare the whole tree path
         tree_path = self.testdir / path.unrooted()
         if not tree_path.is_dir() and not self.is_dry_run:
             raise tmt.utils.DiscoverError(f"Metadata tree path '{path}' not found.")
-        prefix_path = Path('/tests') / path.unrooted()
 
         # Show filters and test names if provided
         # Check the 'test --filter' option first, then from discover
@@ -719,10 +718,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         if prune:
             # Save fmf metadata
             clonedir = self.clone_dirpath / 'tests'
-            for path in tmt.utils.filter_paths(tree_path, [r'\.fmf']):
+            clone_tree_path = clonedir / path.unrooted()
+            for file_path in tmt.utils.filter_paths(tree_path, [r'\.fmf']):
                 shutil.copytree(
-                    path,
-                    clonedir / path.relative_to(tree_path),
+                    file_path,
+                    clone_tree_path / file_path.relative_to(tree_path),
                     dirs_exist_ok=True,
                 )
 
@@ -730,9 +730,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             upgrade_path = self.get('upgrade_path')
             if upgrade_path:
                 upgrade_path = f"{upgrade_path.lstrip('/')}.fmf"
-                (clonedir / upgrade_path).parent.mkdir()
-                shutil.copyfile(tree_path / upgrade_path, clonedir / upgrade_path)
-                shutil.copymode(tree_path / upgrade_path, clonedir / upgrade_path)
+                (clone_tree_path / upgrade_path).parent.mkdir()
+                shutil.copyfile(tree_path / upgrade_path, clone_tree_path / upgrade_path)
+                shutil.copymode(tree_path / upgrade_path, clone_tree_path / upgrade_path)
 
         # Prefix tests and handle library requires
         for test in self._tests:
@@ -745,7 +745,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 relative_test_path = test.path.unrooted()
                 shutil.copytree(
                     tree_path / relative_test_path,
-                    clonedir / relative_test_path,
+                    clone_tree_path / relative_test_path,
                     dirs_exist_ok=True,
                 )
 
@@ -756,12 +756,12 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     if (tree_path / parent_dir / 'main.fmf').exists():
                         shutil.copyfile(
                             tree_path / parent_dir / 'main.fmf',
-                            clonedir / parent_dir / 'main.fmf',
+                            clone_tree_path / parent_dir / 'main.fmf',
                         )
 
             # Prefix test path with 'tests' and possible 'path' prefix
             assert test.path is not None  # narrow type
-            test.path = prefix_path / test.path.unrooted()
+            test.path = Path('/tests') / path.unrooted() / test.path.unrooted()
             # Check for possible required beakerlib libraries
             if test.require or test.recommend:
                 test.require, test.recommend, _ = tmt.libraries.dependencies(
