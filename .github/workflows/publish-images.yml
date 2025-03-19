@@ -12,14 +12,12 @@ jobs:
         id: build-image-tmt
         with:
           image: tmt
-          tags: latest
           containerfiles: ./containers/Containerfile.mini
       - name: Build - tmt-all
         uses: redhat-actions/buildah-build@v2
         id: build-image-tmt-all
         with:
           image: tmt-all
-          tags: latest
           containerfiles: ./containers/Containerfile.full
       - name: Push To quay.io - tmt
         id: push-to-quay-tmt
