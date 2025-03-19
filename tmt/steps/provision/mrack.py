@@ -1474,11 +1474,14 @@ class GuestLogBeaker(tmt.steps.provision.GuestLog):
     guest: GuestBeaker
     url: str
 
-    def fetch(self) -> str:
+    def fetch(self) -> Optional[str]:
         """
         Fetch and return content of a log.
 
         :returns: content of the log, or ``None`` if the log cannot be retrieved.
         """
-
-        return tmt.utils.get_url_content(self.url) if self.url else ''
+        try:
+            content = tmt.utils.get_url_content(self.url)
+        except Exception:
+            content = None
+        return content
