@@ -3982,7 +3982,7 @@ class Run(tmt.utils.Common):
             if data.plans is None:
                 plan_names = []
             else:
-                plan_names = [f"^{plan_name}$" for plan_name in data.plans]
+                plan_names = [f"^{re.escape(plan_name)}$" for plan_name in data.plans]
 
             self._plans = self.tree.plans(run=self, names=plan_names)
 
