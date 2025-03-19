@@ -61,12 +61,6 @@ example: |
 /shell:
     summary:
         Prepare system using shell (bash) commands
-    description:
-        Execute arbitrary shell commands to set up the system.
-
-        Default shell options are applied to the script, see the
-        :ref:`/spec/tests/test` key specification for more
-        details.
 
     example: |
         prepare:
