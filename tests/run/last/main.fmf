@@ -1,0 +1,8 @@
+summary: Last run should load only selected plans
+description:
+    When a filter is used to select only a subset of plans to be
+    executed, only the same subset of the plans should be loaded
+    when using `tmt run --last` or selecting the run by id. The
+    remaining plans should not appear in the workdir at all
+link:
+  - verifies: https://github.com/teemtee/tmt/issues/3558

@@ -1,0 +1,20 @@
+/plans:
+    discover:
+        how: fmf
+    provision:
+        how: local
+    execute:
+        how: tmt
+
+    /one:
+        discover+:
+            test: /tests/one
+    /two:
+        discover+:
+            test: /tests/two
+
+/tests:
+    /one:
+        test: echo first good
+    /two:
+        test: echo second good
