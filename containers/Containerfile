@@ -1,0 +1,17 @@
+# Base Containerfile for all tmt images
+# Build with:
+#   podman build -t tmt:mini -f containers/Containerfile --build-arg VARIANT=tmt .
+#   podman build -t tmt:full -f containers/Containerfile --build-arg VARIANT=tmt+all .
+
+FROM quay.io/fedora/fedora-minimal:latest
+
+# Build argument to control which variant to install (default is full)
+ARG VARIANT=tmt+all
+
+# Install tmt package with specified variant
+RUN microdnf install -y --nodocs --setopt=install_weak_deps=False ${VARIANT} && \
+    microdnf clean all
+
+# Set entrypoint to tmt
+ENTRYPOINT ["/usr/bin/tmt"]
+CMD ["--help"]
