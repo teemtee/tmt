@@ -142,6 +142,17 @@ class Try(tmt.utils.Common):
             options={"interactive": True},
         )
 
+    def _show_exception(self, exc: Exception) -> None:
+        """
+        A little helper for consistent exception reporting.
+        """
+
+        tmt.utils.show_exception(
+            exc,
+            traceback_verbosity=tmt.utils.TracebackVerbosity.DEFAULT,
+            include_logfiles=True,
+        )
+
     def check_tree(self) -> None:
         """
         Make sure there is a sane metadata tree
@@ -348,11 +359,7 @@ class Try(tmt.utils.Common):
         try:
             plan.prepare.go()
         except GeneralError as error:
-            tmt.utils.show_exception(
-                error,
-                traceback_verbosity=tmt.utils.TracebackVerbosity.DEFAULT,
-                include_logfiles=True,
-            )
+            self._show_exception(error)
             return
         plan.execute.go()
 
@@ -367,11 +374,7 @@ class Try(tmt.utils.Common):
         try:
             plan.prepare.go()
         except GeneralError as error:
-            tmt.utils.show_exception(
-                error,
-                traceback_verbosity=tmt.utils.TracebackVerbosity.DEFAULT,
-                include_logfiles=True,
-            )
+            self._show_exception(error)
             return
         assert plan.login is not None  # Narrow type
         plan.login.go(force=True)
@@ -472,11 +475,7 @@ class Try(tmt.utils.Common):
         try:
             plan.prepare.go(force=True)
         except GeneralError as error:
-            tmt.utils.show_exception(
-                error,
-                traceback_verbosity=tmt.utils.TracebackVerbosity.DEFAULT,
-                include_logfiles=True,
-            )
+            self._show_exception(error)
 
     def action_execute(self, plan: Plan) -> None:
         """
