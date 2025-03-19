@@ -976,7 +976,7 @@ class GuestData(SerializableContainer):
 class GuestLog:
     name: str
 
-    def fetch(self) -> str:
+    def fetch(self) -> Optional[str]:
         """
         Fetch and return content of a log.
 
@@ -984,7 +984,7 @@ class GuestLog:
         """
         raise NotImplementedError
 
-    def store(self, path: Path, logname: Optional[str] = None) -> None:
+    def store(self, logger: tmt.log.Logger, path: Path, logname: Optional[str] = None) -> None:
         """
         Save log content to a file.
 
@@ -994,14 +994,20 @@ class GuestLog:
         :param logname: name of the log, if not set, logpath
             is supposed to be a file path.
         """
-        # if path is file path
-        if not path.is_dir():
-            path.write_text(self.fetch())
-        # if path is a directory
-        elif logname:
-            (path / logname).write_text(self.fetch())
+        log_content = self.fetch()
+        if log_content:
+            # if path is file path
+            if not path.is_dir():
+                path.write_text(log_content)
+            # if path is a directory
+            elif logname:
+                (path / logname).write_text(log_content)
+            else:
+                raise tmt.utils.GeneralError(
+                    'Log path is a directory but log name is not defined.'
+                )
         else:
-            raise tmt.utils.GeneralError('Log path is a directory but log name is not defined.')
+            logger.warning(f'Failed to fetch log:{self.name}')
 
 
 class Guest(tmt.utils.Common):
@@ -1743,7 +1749,10 @@ class Guest(tmt.utils.Common):
         return self.workdir / 'logs' if self.workdir else None
 
     def fetch_logs(
-        self, dirpath: Optional[Path] = None, guest_logs: Optional[list[GuestLog]] = None
+        self,
+        logger: tmt.log.Logger,
+        dirpath: Optional[Path] = None,
+        guest_logs: Optional[list[GuestLog]] = None,
     ) -> None:
         """
         Get log content and save it to a directory.
@@ -1757,10 +1766,9 @@ class Guest(tmt.utils.Common):
         guest_logs = guest_logs or self.guest_logs or []
 
         dirpath = dirpath or self.logdir or Path.cwd()
-        if dirpath == self.logdir:
-            self.logdir.mkdir(parents=True, exist_ok=True)
+        dirpath.mkdir(parents=True, exist_ok=True)
         for log in guest_logs:
-            log.store(dirpath, log.name)
+            log.store(logger, dirpath, log.name)
 
 
 @container
