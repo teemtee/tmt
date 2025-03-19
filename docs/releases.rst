@@ -13,6 +13,9 @@ step now saves the data to the correct temporary directory and
 respects the structure of the original repository. This ensures
 that the test attributes have correct paths.
 
+When running ``tmt try`` failure in ``prepare`` phase drops the user
+to the menu to be able to login to the machine and possibly try it again.
+
 
 tmt-1.44.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
