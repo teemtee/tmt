@@ -3978,11 +3978,13 @@ class Run(tmt.utils.Common):
         plan_options = ['names', 'filters', 'conditions', 'links', 'default']
         if not any(Plan._opt(option) for option in plan_options):
             assert self.tree is not None  # narrow type
-            self._plans = [
-                plan
-                for plan in self.tree.plans(run=self)
-                if data.plans and plan.name in data.plans
-            ]
+
+            if data.plans is None:
+                plan_names = []
+            else:
+                plan_names = [f"^{plan_name}$" for plan_name in data.plans]
+
+            self._plans = self.tree.plans(run=self, names=plan_names)
 
         # Initialize steps only if not selected on the command line
         step_options = 'all since until after before skip'.split()
