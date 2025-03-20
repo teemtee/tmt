@@ -1285,14 +1285,17 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                     raise ProvisionError('Failed to create, provisioning failed.')
 
                 if state == 'Reserved':
-                    for key in response["logs"]:
+                    for key in response.get('logs', []):
                         self.guest_logs.append(
                             GuestLogBeaker(key.replace('.log', ''), self, response["logs"][key])
                         )
                     # console.log contains dmesg, and accessible even when the system is dead.
-                    self.guest_logs.append(
-                        GuestLogBeaker('dmesg', self, response["logs"]["console.log"])
-                    )
+                    if response.get('logs', []).get('console.log'):
+                        self.guest_logs.append(
+                            GuestLogBeaker('dmesg', self, response.get('logs').get('console.log'))
+                        )
+                    else:
+                        self.warn('No console.log available.')
                     return current
 
                 raise tmt.utils.WaitingIncompleteError
@@ -1474,14 +1477,14 @@ class GuestLogBeaker(tmt.steps.provision.GuestLog):
     guest: GuestBeaker
     url: str
 
-    def fetch(self) -> Optional[str]:
+    def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
         """
         Fetch and return content of a log.
 
         :returns: content of the log, or ``None`` if the log cannot be retrieved.
         """
         try:
-            content = tmt.utils.get_url_content(self.url)
-        except Exception:
-            content = None
-        return content
+            return tmt.utils.get_url_content(self.url)
+        except Exception as error:
+            logger.warning(f'Failed to fetch log: {error}')
+            return None

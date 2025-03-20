@@ -976,7 +976,7 @@ class GuestData(SerializableContainer):
 class GuestLog:
     name: str
 
-    def fetch(self) -> Optional[str]:
+    def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
         """
         Fetch and return content of a log.
 
@@ -994,7 +994,7 @@ class GuestLog:
         :param logname: name of the log, if not set, ``path``
             is supposed to be a file path.
         """
-        log_content = self.fetch()
+        log_content = self.fetch(logger)
         if log_content:
             # if path is file path
             if not path.is_dir():
