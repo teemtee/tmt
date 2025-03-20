@@ -1,6 +1,8 @@
 import os
 from typing import TYPE_CHECKING, Optional, cast
 
+import click
+
 import tmt
 import tmt.base
 import tmt.hardware
@@ -152,6 +154,16 @@ class BootcData(tmt.steps.provision.testcloud.ProvisionTestcloudData):
              """,
     )
 
+    build_disk_image_only: bool = field(
+        default=False,
+        is_flag=True,
+        option='--build-disk-image-only',
+        help="""
+             Only build a bootc disk image from a container image and quit.
+             Guest VM will not start.
+             """,
+    )
+
 
 @tmt.steps.provides_method('bootc')
 class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
@@ -208,6 +220,16 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
     _guest_class = GuestTestcloud
     _guest = None
     _rootless = True
+
+    @property
+    def is_in_standalone_mode(self) -> bool:
+        """
+        Enable standalone mode when build_disk_image_only is True
+        """
+
+        if self.data.build_disk_image_only:
+            return True
+        return super().is_in_standalone_mode
 
     def _get_id(self) -> str:
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
@@ -409,6 +431,11 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
 
         built_image.rename(renamed_image)
         data.image = f"file://{renamed_image}"
+
+        if data.build_disk_image_only:
+            self.info("The disk image is converted and saved")
+            click.echo(tmt.log.indent(data.image, level=2))
+            return
 
         self._guest = GuestBootc(
             logger=self._logger,
