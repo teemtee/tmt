@@ -29,7 +29,12 @@ prepare+:
     script: |
         tmt run --remove plan --default provision --how virtual finish
         for image in /var/tmp/tmt/testcloud/images/*qcow2; do
-            virt-customize --add $image --run-command 'dnf --refresh install -y beakerlib'
+            if [[ $image =~ (Fedora|CentOS-Stream) ]]; then
+                if [[ $image =~ CentOS-Stream ]]; then
+                  virt-customize --add $image --run-command 'dnf install -y epel-release --enablerepo="crb"'
+                fi
+                virt-customize --add $image --run-command 'dnf --refresh install -y beakerlib'
+            fi
         done
 
 context+:
