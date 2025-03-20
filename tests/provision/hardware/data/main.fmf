@@ -59,3 +59,31 @@
 /plan/virtual:
     provision+:
         how: virtual
+
+/plan/and-does-not-combine:
+    provision:
+        hardware:
+            memory: "1 GB"
+            and:
+              - memory: "2 GB"
+              - memory: "3 GB"
+
+/plan/or-does-not-combine:
+    provision:
+        hardware:
+            memory: "1 GB"
+            or:
+              - memory: "2 GB"
+              - memory: "3 GB"
+
+/plan/and-or-safe:
+    provision:
+        hardware:
+            and:
+              - memory: "1 GB"
+              - and:
+                - memory: "2 GB"
+                - memory: "3 GB"
+              - or:
+                - memory: "4 GB"
+                - memory: "5 GB"
