@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     XMLElement: TypeAlias = Any
 
 
-DEFAULT_NAME = 'junit.xml'
+DEFAULT_FILENAME = 'junit.xml'
 DEFAULT_FLAVOR_NAME = 'default'
 CUSTOM_FLAVOR_NAME = 'custom'
 
@@ -515,10 +515,18 @@ class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
                 "The '--template-path' can be used only with '--flavor=custom'."
             )
 
-    def prune(self, logger: tmt.log.Logger) -> None:
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
         """
-        Do not prune generated junit report
+        A set of members of the step workdir that should not be removed.
         """
+
+        members = super()._preserved_workdir_members
+
+        if self.data.file is None:
+            members = {*members, DEFAULT_FILENAME}
+
+        return members
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
@@ -530,7 +538,7 @@ class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
         self.check_options()
 
         assert self.workdir is not None
-        f_path = self.data.file or self.workdir / DEFAULT_NAME
+        f_path = self.data.file or self.workdir / DEFAULT_FILENAME
 
         xml_data = make_junit_xml(
             phase=self,

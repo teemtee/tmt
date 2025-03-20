@@ -15,6 +15,8 @@ from tmt.utils import Path
 
 HTML_TEMPLATE_PATH = tmt.utils.resource_files('steps/report/html/template.html.j2')
 
+DEFAULT_FILENAME = 'index.html'
+
 
 @container
 class ReportHtmlData(tmt.steps.report.ReportStepData):
@@ -71,10 +73,13 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
 
     _data_class = ReportHtmlData
 
-    def prune(self, logger: tmt.log.Logger) -> None:
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
         """
-        Do not prune generated html report
+        A set of members of the step workdir that should not be removed.
         """
+
+        return {DEFAULT_FILENAME}
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
@@ -117,7 +122,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
             display_guest = len(seen_guests) > 1
 
         # Write the report
-        filename = Path('index.html')
+        filename = Path(DEFAULT_FILENAME)
 
         self.write(
             filename,

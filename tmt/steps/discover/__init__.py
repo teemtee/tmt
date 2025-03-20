@@ -218,7 +218,6 @@ class Discover(tmt.steps.Step):
     """
 
     _plugin_base_class = DiscoverPlugin
-    _preserved_workdir_members = ['step.yaml', 'tests.yaml']
 
     def __init__(
         self,
@@ -239,6 +238,14 @@ class Discover(tmt.steps.Step):
 
         # Test will be (re)discovered in other phases/steps
         self.extract_tests_later: bool = False
+
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
+        """
+        A set of members of the step workdir that should not be removed.
+        """
+
+        return {*super()._preserved_workdir_members, 'tests.yaml'}
 
     def load(self) -> None:
         """

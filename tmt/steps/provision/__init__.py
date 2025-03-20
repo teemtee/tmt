@@ -3047,8 +3047,6 @@ class Provision(tmt.steps.Step):
 
     _plugin_base_class = ProvisionPlugin
 
-    _preserved_workdir_members = ['step.yaml', 'guests.yaml']
-
     #: All known guests.
     #:
     #: .. warning::
@@ -3102,6 +3100,14 @@ class Provision(tmt.steps.Step):
 
         self.guests = []
         self._guest_data: dict[str, GuestData] = {}
+
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
+        """
+        A set of members of the step workdir that should not be removed.
+        """
+
+        return {*super()._preserved_workdir_members, 'guests.yaml'}
 
     @property
     def is_multihost(self) -> bool:

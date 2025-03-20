@@ -13,7 +13,7 @@ from tmt.utils import Path
 
 from .junit import ResultsContext, make_junit_xml
 
-DEFAULT_NAME = 'xunit.xml'
+DEFAULT_FILENAME = 'xunit.xml'
 
 
 @container
@@ -268,10 +268,18 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
 
     _data_class = ReportPolarionData
 
-    def prune(self, logger: tmt.log.Logger) -> None:
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
         """
-        Do not prune generated xunit report
+        A set of members of the step workdir that should not be removed.
         """
+
+        members = super()._preserved_workdir_members
+
+        if self.data.file is None:
+            members = {*members, DEFAULT_FILENAME}
+
+        return members
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
@@ -417,7 +425,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             results_context=results_context,
         )
 
-        f_path = self.data.file or self.workdir / DEFAULT_NAME
+        f_path = self.data.file or self.workdir / DEFAULT_FILENAME
 
         try:
             f_path.write_text(xml_data)
