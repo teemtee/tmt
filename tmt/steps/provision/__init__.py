@@ -972,6 +972,44 @@ class GuestData(SerializableContainer):
             logger.info(key_to_option(key).replace('-', ' '), printable_value, color='green')
 
 
+@container
+class GuestLog:
+    name: str
+
+    def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
+        """
+        Fetch and return content of a log.
+
+        :returns: content of the log, or ``None`` if the log cannot be retrieved.
+        """
+        raise NotImplementedError
+
+    def store(self, logger: tmt.log.Logger, path: Path, logname: Optional[str] = None) -> None:
+        """
+        Save log content to a file.
+
+        :param logger: logger to use for logging.
+        :param path: a path to save into, could be a directory
+            or a file path.
+        :param logname: name of the log, if not set, ``path``
+            is supposed to be a file path.
+        """
+        log_content = self.fetch(logger)
+        if log_content:
+            # if path is file path
+            if not path.is_dir():
+                path.write_text(log_content)
+            # if path is a directory
+            elif logname:
+                (path / logname).write_text(log_content)
+            else:
+                raise tmt.utils.GeneralError(
+                    'Log path is a directory but log name is not defined.'
+                )
+        else:
+            logger.warning(f'Failed to fetch log: {self.name}')
+
+
 class Guest(tmt.utils.Common):
     """
     Guest provisioned for test execution
@@ -1038,6 +1076,7 @@ class Guest(tmt.utils.Common):
         """
         Initialize guest data
         """
+        self.guest_logs: list[GuestLog] = []
 
         super().__init__(logger=logger, parent=parent, name=name)
         self.load(data)
@@ -1701,6 +1740,36 @@ class Guest(tmt.utils.Common):
         """
 
         return []
+
+    @property
+    def logdir(self) -> Optional[Path]:
+        """
+        Path to store logs
+        """
+        return self.workdir / 'logs' if self.workdir else None
+
+    def fetch_logs(
+        self,
+        logger: tmt.log.Logger,
+        dirpath: Optional[Path] = None,
+        guest_logs: Optional[list[GuestLog]] = None,
+    ) -> None:
+        """
+        Get log content and save it to a directory.
+
+        :param logger: logger to use for logging.
+        :param dirpath: a directory to save into. If not set, :py:attr:`logdir`,
+            or current working directory will be used.
+        :param guest_logs: optional list of :py:attr:`GuestLog`. If not set,
+            all guest logs from :py:attr:`Guest.guest_logs` would be collected.
+        """
+
+        guest_logs = guest_logs or self.guest_logs
+
+        dirpath = dirpath or self.logdir or Path.cwd()
+        dirpath.mkdir(parents=True, exist_ok=True)
+        for log in guest_logs:
+            log.store(logger, dirpath, log.name)
 
 
 @container
@@ -2614,6 +2683,8 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
 
     # TODO: Generics would provide a better type, https://github.com/teemtee/tmt/issues/1437
     _guest: Optional[Guest] = None
+
+    _preserved_workdir_members = {'logs'}
 
     @classmethod
     def base_command(
