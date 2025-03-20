@@ -119,6 +119,9 @@ TMT_TEST_CONTAINER_IMAGES := $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine:late
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/stream10/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/coreos:stable \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/coreos/ostree:stable \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/latest:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/latest/upstream:latest \
+                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/latest/unprivileged:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/rawhide:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/rawhide/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/rawhide/unprivileged:latest \
@@ -215,6 +218,15 @@ $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/r
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/rawhide/unprivileged\:latest:
 	$(call build-test-container-image,$@,fedora/rawhide/Containerfile.unprivileged)
+
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/latest\:latest:
+	$(call build-test-container-image,$@,fedora/latest/Containerfile)
+
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/latest/upstream\:latest:
+	$(call build-test-container-image,$@,fedora/latest/Containerfile.upstream)
+
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/latest/unprivileged\:latest:
+	$(call build-test-container-image,$@,fedora/latest/Containerfile.unprivileged)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/41\:latest:
 	$(call build-test-container-image,$@,fedora/41/Containerfile)
