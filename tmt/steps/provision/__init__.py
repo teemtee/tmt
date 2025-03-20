@@ -741,6 +741,19 @@ class GuestFacts(SerializableContainer):
         Update stored facts to reflect the given guest
         """
 
+        # First check if bash is available, to get a cleaner error message when it's missing
+        try:
+            guest.execute(Command(tmt.utils.DEFAULT_SHELL, '--version'), silent=True)
+        except tmt.utils.RunError as exc:
+            if (
+                exc.stderr
+                and f'executable file `{tmt.utils.DEFAULT_SHELL}` not found' in exc.stderr
+            ):
+                raise tmt.utils.GeneralError(
+                    f'{tmt.utils.DEFAULT_SHELL} is required on the guest.'
+                ) from exc
+            # For other errors, continue with the sync
+
         self.os_release_content = self._fetch_keyval_file(guest, Path('/etc/os-release'))
         self.lsb_release_content = self._fetch_keyval_file(guest, Path('/etc/lsb-release'))
 
