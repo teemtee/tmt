@@ -1,0 +1,7 @@
+summary: Common feature to enable FIPS
+description:
+    Make sure enable FIPS works.
+tag+:
+  - provision-only
+  - provision-container
+  - provision-virtual

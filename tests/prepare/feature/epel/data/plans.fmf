@@ -5,6 +5,7 @@ execute:
     how: tmt
 
 /epel:
+
     discover:
         how: shell
         tests:

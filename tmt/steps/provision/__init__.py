@@ -353,6 +353,7 @@ class GuestFacts(SerializableContainer):
     is_ostree: Optional[bool] = None
     is_toolbox: Optional[bool] = None
     toolbox_container_name: Optional[str] = None
+    is_container: Optional[bool] = None
 
     #: Various Linux capabilities and whether they are permitted to
     #: commands executed on this guest.
@@ -650,6 +651,20 @@ class GuestFacts(SerializableContainer):
 
         return None
 
+    def _query_is_container(self, guest: 'Guest') -> Optional[bool]:
+        """
+        Detect whether guest is a container (running systemd)
+
+        In containers running systemd pid 1 has environment variable ``container`` set
+        (e.g. container=podman). See https://systemd.io/CONTAINER_INTERFACE/ for more details.
+        """
+        output = self._execute(guest, Command('eval', 'echo', '-n', '$container'))
+
+        if output is None or output.stdout is None:
+            return None
+
+        return len(output.stdout) > 0
+
     def _query_capabilities(self, guest: 'Guest') -> dict[GuestCapability, bool]:
         # TODO: there must be a canonical way of getting permitted capabilities.
         # For now, we're interested in whether we can access kernel message buffer.
@@ -675,6 +690,7 @@ class GuestFacts(SerializableContainer):
         self.is_ostree = self._query_is_ostree(guest)
         self.is_toolbox = self._query_is_toolbox(guest)
         self.toolbox_container_name = self._query_toolbox_container_name(guest)
+        self.is_container = self._query_is_container(guest)
         self.capabilities = self._query_capabilities(guest)
 
         self.in_sync = True
@@ -697,6 +713,7 @@ class GuestFacts(SerializableContainer):
         )
         yield 'has_selinux', 'selinux', 'yes' if self.has_selinux else 'no'
         yield 'is_superuser', 'is superuser', 'yes' if self.is_superuser else 'no'
+        yield 'is_container', 'is_container', 'yes' if self.is_container else 'no'
 
 
 GUEST_FACTS_INFO_FIELDS: list[str] = ['arch', 'distro']
