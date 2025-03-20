@@ -1758,10 +1758,10 @@ class Guest(tmt.utils.Common):
         Get log content and save it to a directory.
 
         :param logger: logger to use for logging.
-        :param dirpath: a directory to save into. If not set, (:py:attr:`logdir`),
+        :param dirpath: a directory to save into. If not set, :py:attr:`logdir`,
             or current working directory will be used.
-        :param guest_logs: list of GuestLog need to be handled. If not set, all guest logs
-            would be collected, as reported by (:py:attr:`guest_logs`).
+        :param guest_logs: optional list of :py:attr:`GuestLog`. If not set,
+            all guest logs from :py:attr:`Guest.guest_logs` would be collected.
         """
 
         guest_logs = guest_logs or self.guest_logs
