@@ -988,10 +988,10 @@ class GuestLog:
         """
         Save log content to a file.
 
+        :param logger: logger to use for logging.
         :param path: a path to save into, could be a directory
             or a file path.
-        :param content: content of the log.
-        :param logname: name of the log, if not set, logpath
+        :param logname: name of the log, if not set, ``path``
             is supposed to be a file path.
         """
         log_content = self.fetch()
@@ -1007,7 +1007,7 @@ class GuestLog:
                     'Log path is a directory but log name is not defined.'
                 )
         else:
-            logger.warning(f'Failed to fetch log:{self.name}')
+            logger.warning(f'Failed to fetch log: {self.name}')
 
 
 class Guest(tmt.utils.Common):
@@ -1757,13 +1757,14 @@ class Guest(tmt.utils.Common):
         """
         Get log content and save it to a directory.
 
-        :param dirpath: a directory to save into. If not set, step's working directory
-            (:py:attr:`workdir`) or current working directory will be used.
-        :param lognames: name list of logs need to be handled. If not set, all guest logs
-            would be collected, as reported by :py:attr:`lognames`.
+        :param logger: logger to use for logging.
+        :param dirpath: a directory to save into. If not set, (:py:attr:`logdir`),
+            or current working directory will be used.
+        :param guest_logs: list of GuestLog need to be handled. If not set, all guest logs
+            would be collected, as reported by (:py:attr:`guest_logs`).
         """
 
-        guest_logs = guest_logs or self.guest_logs or []
+        guest_logs = guest_logs or self.guest_logs
 
         dirpath = dirpath or self.logdir or Path.cwd()
         dirpath.mkdir(parents=True, exist_ok=True)
