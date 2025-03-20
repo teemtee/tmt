@@ -1,9 +1,13 @@
 discover:
-    how: fmf
+  - how: fmf
     test:
      - abort
-     - do-not-run
+     - do-not-run/1
+  - how: fmf
+    test:
+     - do-not-run/2
 provision:
     how: container
+    image: localhost/tmt/container/test/fedora/rawhide:latest
 execute:
     how: tmt

@@ -21,6 +21,13 @@ subset of plans, commands such as ``tmt run --last report`` will
 load the respective plans only instead of all available plans to
 save disk space and speed up the execution.
 
+Aborted tests and tests that failed when
+:ref:`/spec/plans/execute/exit-first` was enabled did not skip all
+remaining tests, only tests from the current ``discover`` phase. Plans
+with multiple ``discover`` phases would start ``execute`` step for
+remaining ``discover`` phases. This is now fixed, aborted test and
+:ref:`/spec/plans/execute/exit-first` will skip **all** remaining tests.
+
 
 tmt-1.44.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -3,4 +3,7 @@ description:
     Verify that the tmt-abort functionality
     can be executed successfully.
 contact: Philip Daly <pdaly@redhat.com>
-tag+: [beakerlib]
+tag+:
+  - beakerlib
+  - provision-container
+  - provision-only
