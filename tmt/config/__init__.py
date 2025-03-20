@@ -1,14 +1,19 @@
 import functools
 import os
 from contextlib import suppress
-from typing import Optional, cast
+from typing import Optional, TypeVar, cast
 
 import fmf
 import fmf.utils
 
 import tmt.utils
 from tmt._compat.pathlib import Path
+from tmt._compat.pydantic import ValidationError
 from tmt.config.models.link import LinkConfig
+from tmt.config.models.themes import Theme, ThemeConfig
+from tmt.container import MetadataContainer
+
+MetadataContainerT = TypeVar('MetadataContainerT', bound='MetadataContainer')
 
 # Config directory
 DEFAULT_CONFIG_DIR = Path('~/.config/tmt')
@@ -79,24 +84,52 @@ class Config:
             raise tmt.utils.GeneralError(f"Unable to save last run '{self.path}'.\n{error}")
 
     @functools.cached_property
-    def fmf_tree(self) -> fmf.Tree:
+    def fmf_tree(self) -> Optional[fmf.Tree]:
         """
         Return the configuration tree
         """
 
         try:
             return fmf.Tree(self.path)
-        except fmf.utils.RootError as error:
-            raise tmt.utils.MetadataError(f"Config tree not found in '{self.path}'.") from error
+        except fmf.utils.RootError:
+            self.logger.debug(f"Config tree not found in '{self.path}'.")
 
-    @property
+            return None
+
+    def _parse_config_subtree(
+        self, path: str, model: type[MetadataContainerT]
+    ) -> Optional[MetadataContainerT]:
+        if self.fmf_tree is None:
+            return None
+
+        subtree = cast(Optional[fmf.Tree], self.fmf_tree.find(path))
+
+        if not subtree:
+            self.logger.debug(f"Config path '{path}' not found in '{self.path}'.")
+
+            return None
+
+        try:
+            return model.parse_obj(subtree.data)
+
+        except ValidationError as error:
+            raise tmt.utils.SpecificationError(
+                f"Invalid configuration in '{subtree.name}'."
+            ) from error
+
+    @functools.cached_property
     def link(self) -> Optional[LinkConfig]:
         """
         Return the link configuration, if present.
         """
 
-        link_config = cast(Optional[fmf.Tree], self.fmf_tree.find('/link'))
-        if not link_config:
-            return None
+        return self._parse_config_subtree('/link', LinkConfig)
 
-        return LinkConfig.from_fmf(link_config)
+    @functools.cached_property
+    def theme(self) -> Theme:
+        theme_config = self._parse_config_subtree('/theme', ThemeConfig)
+
+        if theme_config is None:
+            return ThemeConfig.get_default_theme()
+
+        return theme_config.get_active_theme()
