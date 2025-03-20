@@ -281,10 +281,12 @@ class Copr(tmt.utils.Common):
         if not repositories:
             return
 
+        package_manager = self.guest.package_manager
+
         # Try to install copr plugin
         self.debug('Make sure the copr plugin is available.')
         try:
-            self.guest.package_manager.install(Package(self.copr_plugin))
+            package_manager.install(Package(self.copr_plugin))
 
         # Enable repositories manually for epel6
         except tmt.utils.RunError:
@@ -299,8 +301,8 @@ class Copr(tmt.utils.Common):
 
                 self.guest.execute(
                     ShellScript(
-                        f"{self.guest.package_manager.command.to_script()} copr "
-                        f"{self.guest.package_manager.options.to_script()} enable -y {repository}"
+                        f"{package_manager.engine.command.to_script()} copr "
+                        f"{package_manager.engine.options.to_script()} enable -y {repository}"
                     )
                 )
 
