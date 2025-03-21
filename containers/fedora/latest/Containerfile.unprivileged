@@ -1,0 +1,26 @@
+#
+# A latest Fedora image tailored for tmt test suite, with unprivileged account & password-less sudo
+#
+# tmt/tests/fedora/latest/unprivileged:latest
+#
+
+FROM quay.io/fedora/fedora:latest
+
+# hadolint ignore=DL3040
+RUN <<EOF
+set -ex
+
+# Populate dnf cache
+dnf makecache
+
+# Make sure the image is built with the latest packages
+dnf update -y
+
+# Create unprivileged user and setup sudo for it
+dnf install -y /usr/sbin/useradd
+useradd fedora
+usermod -aG wheel fedora
+printf "fedora\tALL=(ALL)\tNOPASSWD: ALL" >> /etc/sudoers
+EOF
+
+USER fedora
