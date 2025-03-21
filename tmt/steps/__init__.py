@@ -2350,7 +2350,7 @@ class Login(Action):
 
     def after_test(
         self,
-        result: 'tmt.base.Result',
+        results: list['tmt.base.Result'],
         cwd: Optional[Path] = None,
         env: Optional[tmt.utils.Environment] = None,
     ) -> None:
@@ -2358,7 +2358,7 @@ class Login(Action):
         Check and login after test execution
         """
 
-        if self._enabled_by_results([result]):
+        if self._enabled_by_results(results):
             self._login(cwd, env)
 
 

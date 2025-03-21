@@ -834,7 +834,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     else:
                         cwd = self.discover.workdir / test.path.unrooted()
                     self._login_after_test.after_test(
-                        result,
+                        invocation.results,
                         cwd=cwd,
                         env=self._test_environment(
                             invocation=invocation,
