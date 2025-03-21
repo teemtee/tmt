@@ -87,8 +87,8 @@ def test_execute_no_connection_closed(
 
 @pytest.mark.containers
 @pytest.mark.parametrize(
-    'container',
-    ((TEST_CONTAINERS[container_name],) for container_name in sorted(TEST_CONTAINERS.keys())),
+    ('container',),  # noqa: PT006
+    [(TEST_CONTAINERS[container_name],) for container_name in sorted(TEST_CONTAINERS.keys())],
     indirect=["container"],
     ids=[TEST_CONTAINERS[container_name].url for container_name in sorted(TEST_CONTAINERS.keys())],
 )
