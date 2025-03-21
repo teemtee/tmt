@@ -146,7 +146,7 @@ properties:
             type: string
             enum:
               - replace
-              - parent
+              - become-parent
 
           limit:
             type: string
