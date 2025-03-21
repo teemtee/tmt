@@ -125,7 +125,8 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
         prepare --how ansible --playbook ansible/packages.yml
 
     Run multiple playbooks in one phase, with extra arguments for
-    ``ansible-playbook``:
+    ``ansible-playbook``. Each of them will be applied in the given order.
+    The path must be relative to the metadata tree root.
 
     .. code-block:: yaml
 
