@@ -5,5 +5,5 @@ plan:
 
         ref: main
 
-        importing: parent
+        importing: become-parent
         limit: all-plans
