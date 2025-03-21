@@ -1,51 +1,49 @@
 /replace:
-    /single:
+    /first-plan-only:
         plan:
             import:
                 url: https://github.com/teemtee/tmt
-                name: /plans/provision/connect
+                name: /plans/provision
                 importing: replace
                 limit: first-plan-only
 
-    /all:
-        /allow-all-plans:
-            plan:
-                import:
-                    url: https://github.com/teemtee/tmt
-                    name: /plans/connect
-                    importing: replace
-                    limit: all-plans
-
-        /allow-only-one:
-            plan:
-                import:
-                    url: https://github.com/teemtee/tmt
-                    name: /plans/provision
-                    importing: replace
-                    limit: first-plan-only
-
-/import-as-children:
-    /single:
+    /all-plans:
         plan:
             import:
                 url: https://github.com/teemtee/tmt
-                name: /plans/provision/connect
-                importing: import-as-children
+                name: /plans/provision
+                importing: replace
+                limit: all-plans
+
+    /single-plan-only:
+        plan:
+            import:
+                url: https://github.com/teemtee/tmt
+                name: /plans/provision
+                importing: replace
+                limit: single-plan-only
+
+/become-parent:
+    /first-plan-only:
+        plan:
+            import:
+                url: https://github.com/teemtee/tmt
+                name: /plans/provision
+                importing: become-parent
                 limit: first-plan-only
 
-    /all:
-        /allow-all-plans:
-            plan:
-                import:
-                    url: https://github.com/teemtee/tmt
-                    name: /plans/connect
-                    importing: import-as-children
-                    limit: all-plans
+    /all-plans:
+        plan:
+            import:
+                url: https://github.com/teemtee/tmt
+                name: /plans/provision
+                importing: become-parent
+                limit: all-plans
 
-        /allow-only-one:
-            plan:
-                import:
-                    url: https://github.com/teemtee/tmt
-                    name: /plans/provision
-                    importing: import-as-children
-                    limit: first-plan-only
+    /single-plan-only:
+        plan:
+            import:
+                url: https://github.com/teemtee/tmt
+                name: /plans/provision
+                importing: become-parent
+                limit: single-plan-only

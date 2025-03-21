@@ -3039,10 +3039,8 @@ class Plan(
                 return True
 
             raise GeneralError(
-                f"""
-                Cannot import multiple plans through '{self.name}',
-                may import only single plan, and already imported '{imported_plans[0][0].name}'.
-                """
+                f"Cannot import multiple plans through '{self.name}', "
+                f"may import only single plan, and already imported '{imported_plans[0][0].name}'."
             )
 
         def _test_replace() -> None:
@@ -3053,10 +3051,8 @@ class Plan(
                 return
 
             raise GeneralError(
-                f"""
-                Cannot import multiple plans through '{self.name}',
-                already replacing '{self.name}' with imported '{imported_plans[0][0].name}'.
-                """
+                f"Cannot import multiple plans through '{self.name}', "
+                f"already replacing '{self.name}' with imported '{imported_plans[0][0].name}'."
             )
 
         try:
