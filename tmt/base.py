@@ -1859,14 +1859,14 @@ class _RemotePlanReference(_RawFmfId):
     limit: Optional[str]
 
 
-class RemotePlanReferenceReplace(enum.Enum):
+class RemotePlanReferenceImporting(enum.Enum):
     REPLACE = 'replace'
     BECOME_PARENT = 'become-parent'
 
     @classmethod
-    def from_spec(cls, spec: str) -> 'RemotePlanReferenceReplace':
+    def from_spec(cls, spec: str) -> 'RemotePlanReferenceImporting':
         try:
-            return RemotePlanReferenceReplace(spec)
+            return RemotePlanReferenceImporting(spec)
         except ValueError:
             raise tmt.utils.SpecificationError(f"Invalid remote plan replacement '{spec}'.")
 
@@ -1892,7 +1892,7 @@ class RemotePlanReference(
 ):
     VALID_KEYS: ClassVar[list[str]] = [*FmfId.VALID_KEYS, 'importing', 'limit']
 
-    importing: RemotePlanReferenceReplace = RemotePlanReferenceReplace.REPLACE
+    importing: RemotePlanReferenceImporting = RemotePlanReferenceImporting.REPLACE
     limit: RemotePlanReferenceImportLimit = RemotePlanReferenceImportLimit.FIRST_PLAN_ONLY
 
     @functools.cached_property
@@ -1970,8 +1970,8 @@ class RemotePlanReference(
             raw_path = cast(Optional[str], raw.get(key, None))
             setattr(reference, key, Path(raw_path) if raw_path is not None else None)
 
-        reference.importing = RemotePlanReferenceReplace.from_spec(
-            str(raw.get('importing', RemotePlanReferenceReplace.REPLACE.value))
+        reference.importing = RemotePlanReferenceImporting.from_spec(
+            str(raw.get('importing', RemotePlanReferenceImporting.REPLACE.value))
         )
         reference.limit = RemotePlanReferenceImportLimit.from_spec(
             str(raw.get('limit', RemotePlanReferenceImportLimit.FIRST_PLAN_ONLY.value))
@@ -3027,7 +3027,7 @@ class Plan(
                 node.data['enabled'] = False
 
             # Put the plan into its position by giving it the correct name
-            if reference.importing == RemotePlanReferenceReplace.REPLACE:
+            if reference.importing == RemotePlanReferenceImporting.REPLACE:
                 node.name = self.name
 
             else:
@@ -3066,14 +3066,14 @@ class Plan(
                         )
 
                     if reference.limit == RemotePlanReferenceImportLimit.ALL_PLANS:
-                        if reference.importing == RemotePlanReferenceReplace.REPLACE:
+                        if reference.importing == RemotePlanReferenceImporting.REPLACE:
                             raise GeneralError(
                                 f"Cannot import multiple plans through '{self.name}', "
                                 f"already replacing '{self.name}' with imported "
                                 f"'{imported_plans[0][0].name}'."
                             )
 
-                        if reference.importing == RemotePlanReferenceReplace.BECOME_PARENT:
+                        if reference.importing == RemotePlanReferenceImporting.BECOME_PARENT:
                             imported_plans.append((node, _convert_node(node.copy())))
 
                             continue
