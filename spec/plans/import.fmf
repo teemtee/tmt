@@ -45,7 +45,12 @@ description: |
           import:
             ...
 
-            # This is the default, only a single plan is allowed.
+            # This is the default, only the first discovered plan is imported,
+            # the rest is ignored.
+            limit: first-plan-only
+
+            # To limit the import to one and one plan only, and fail if
+            # more plans would match the criteria:
             limit: single-plan-only
 
             # To allow import of multiple plans:
