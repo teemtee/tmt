@@ -5,5 +5,5 @@ plan:
 
         ref: main
 
-        replace: import-as-children
+        importing: parent
         limit: all-plans

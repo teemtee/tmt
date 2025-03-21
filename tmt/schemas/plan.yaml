@@ -142,11 +142,11 @@ properties:
             type: string
             format: regex
 
-          replace:
+          importing:
             type: string
             enum:
               - replace
-              - import-as-children
+              - parent
 
           limit:
             type: string
