@@ -4,7 +4,7 @@
 {# {{ "-" * intro | length }} #}
 
     {% if registry %}
-        {% for plugin_id in registry.iter_plugin_ids() %}
+        {% for plugin_id in registry.iter_plugin_ids() | sort %}
 * ``{{ plugin_id }}``
         {% endfor %}
     {% else %}

@@ -2,73 +2,27 @@
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
 EXPECTED_PLUGIN_LIST=\
-"export.plan:
-  - dict
-  - json
-  - template
-  - yaml
-export.story:
-  - dict
-  - json
-  - template
-  - rst
-  - yaml
-export.test:
-  - dict
-  - json
-  - nitrate
-  - polarion
-  - template
-  - yaml
-package_managers:
-  - apk
-  - apt
-  - dnf
-  - dnf5
-  - yum
-  - rpm-ostree
-plan_shapers:
-  - max-tests
-step.discover:
-  - fmf
-  - shell
-step.execute:
-  - tmt
-  - upgrade
-step.finish:
-  - ansible
-  - shell
-step.prepare:
-  - install
-  - ansible
-  - shell
-  - feature
-step.provision:
-  - artemis
-  - virtual.testcloud
-  - bootc
-  - connect
-  - local
-  - beaker
-  - container
-step.report:
-  - display
-  - html
-  - junit
-  - polarion
-  - reportportal
-test.check:
-  - avc
-  - dmesg
-  - watchdog
-test.framework:
-  - beakerlib
-  - shell"
+"export.plan: dict json template yaml
+export.story: dict json rst template yaml
+export.test: dict json nitrate polarion template yaml
+package_managers: apk apt dnf dnf5 rpm-ostree yum
+plan_shapers: max-tests repeat
+step.discover: fmf shell
+step.execute: tmt upgrade
+step.finish: ansible shell
+step.prepare: ansible feature install shell
+step.provision: artemis beaker bootc connect container local virtual.testcloud
+step.report: display html junit polarion reportportal
+test.check: avc dmesg watchdog
+test.framework: beakerlib shell"
 
 
 rlJournalStart
     rlPhaseStartSetup
         rlRun "set -o pipefail"
+        rlRun "tmpdir=$(mktemp -d)"
+
+        rlRun "echo \"$EXPECTED_PLUGIN_LIST\" > $tmpdir/expected-plugin-list.txt"
     rlPhaseEnd
 
     rlPhaseStartTest "List plugins as human-readable output"
@@ -90,18 +44,20 @@ rlJournalStart
         rlAssertGrep "Report step plugins" $rlRun_LOG
     rlPhaseEnd
 
-    rlPhaseStartSetup "List plugins as YAML"
+    # Hello, traveller. Is this test failing for you? Then you
+    # probably added new plugin, or changed existing ones, e.g.
+    # by renaming their registry or moving plugins around. The
+    # test is a sanity one, making sure tmt discovers all it can,
+    # updating $EXPECTED_PLUGIN_LIST should turn the tide of
+    # misfortune.
+    rlPhaseStartTest "List plugins as YAML"
         rlRun -s "tmt about plugins ls --how yaml"
+        rlRun "yq -r '. | to_entries[] | \"\(.key): \(.value | sort | join(\" \"))\"' $rlRun_LOG | sort > $tmpdir/actual-plugin-list.txt"
 
-        # Hello, traveller. Is this test failing for you? Then you
-        # probably added new plugin, or changed existing ones, e.g.
-        # by renaming their registry or moving plugins around. The
-        # test is a sanity one, making sure tmt discovers all it can,
-        # updating $EXPECTED_PLUGIN_LIST should turn the tide of
-        # misfortune.
-        rlAssertEquals "Compare the list of discovered output with the expected one" "$EXPECTED_PLUGIN_LIST" "$(yq -y --sort-keys '.' $rlRun_LOG)"
+        rlRun "diff -u $tmpdir/expected-plugin-list.txt $tmpdir/actual-plugin-list.txt"
     rlPhaseEnd
 
     rlPhaseStartCleanup
+        rlRun "rm -rf $tmpdir"
     rlPhaseEnd
 rlJournalEnd
