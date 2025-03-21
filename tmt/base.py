@@ -2906,6 +2906,10 @@ class Plan(
     def _resolve_import_to_nodes(
         self, reference: RemotePlanReference, tree: fmf.Tree
     ) -> Iterator[fmf.Tree]:
+        """
+        Discover all plan-like fmf nodes in a given tree.
+        """
+
         self.debug(
             f"Looking for plans in '{tree.root}' matching '{reference.name_pattern}", level=3
         )
@@ -2915,6 +2919,13 @@ class Plan(
                 yield node
 
     def _resolve_import_from_git(self, reference: RemotePlanReference) -> Iterator[fmf.Tree]:
+        """
+        Discover plan-like nodes matching the given reference in its git repo.
+
+        The referenced git repository is cloned, and we will look for
+        plan-like fmf nodes in it.
+        """
+
         # TODO: consider better type than inheriting from fully optional fmf id...
         assert reference.url is not None
         assert reference.name is not None
@@ -2944,6 +2955,10 @@ class Plan(
         yield from self._resolve_import_to_nodes(reference, fmf.Tree(str(destination)))
 
     def _resolve_import_from_fmf_cache(self, reference: RemotePlanReference) -> Iterator[fmf.Tree]:
+        """
+        Discover plan-like nodes matching the given reference in fmf cache.
+        """
+
         if str(reference.ref).startswith('@'):
             self.debug(
                 f"Not enough data to evaluate dynamic ref '{reference.ref}', "
@@ -2977,12 +2992,12 @@ class Plan(
             ),
         )
 
-    def _resolve_import(self, reference: RemotePlanReference) -> list['Plan']:
+    def _resolve_import_reference(self, reference: RemotePlanReference) -> list['Plan']:
         """
-        Discover and import plans matching a given fmf id.
+        Discover and import plans matching a given remote plan reference.
 
-        :param plan_id: fmf id representing one or more plans to import.
-        :yields: new :py:class:`Plan` for each imported plan.
+        :param reference: identifies one or more plans to import.
+        :returns: list of imported plans.
         """
 
         if reference.url is None:
@@ -2997,11 +3012,9 @@ class Plan(
         )
 
         def _convert_node(node: fmf.Tree) -> 'Plan':
-            #        if not node:
-            #            raise tmt.utils.DiscoverError(
-            #                f"Failed to find plan '{plan_id.name}' "
-            #                f"at 'url: {plan_id.url}, 'ref: {plan_id.ref}'."
-            #            )
+            """
+            Convert a single fmf node to a plan.
+            """
 
             self.debug(f"Turning node '{node.name}' into a plan.", level=3)
 
@@ -3013,6 +3026,7 @@ class Plan(
             if not self.enabled:
                 node.data['enabled'] = False
 
+            # Put the plan into its position by giving it the correct name
             if reference.importing == RemotePlanReferenceReplace.REPLACE:
                 node.name = self.name
 
@@ -3025,8 +3039,13 @@ class Plan(
             return Plan(node=node, run=self.my_run, logger=self._logger.clone())
 
         def _generate_plans(nodes: Iterable[fmf.Tree]) -> list[Plan]:
-            # Save also the original node, because if we replace the current
-            # plan, we loose original names that are better for logging.
+            """
+            Convert a list of fmf nodes into a list of plans.
+            """
+
+            # Collect all imported plans here. Save also the original
+            # node, because if we replace the current plan, we lose
+            # original names that are better for logging.
             imported_plans: list[tuple[fmf.Tree, Plan]] = []
 
             for node in nodes:
@@ -3083,7 +3102,7 @@ class Plan(
         """
         Resolve possible references to remote plans.
 
-        :returns: one or more plans replacing the current one. The
+        :returns: one or more plans **replacing** the current one. The
             current plan may also be one of the returned ones.
         """
 
@@ -3092,7 +3111,7 @@ class Plan(
 
         if not self._imported_plans:
             for reference in self._imported_plan_references:
-                for imported_plan in self._resolve_import(reference):
+                for imported_plan in self._resolve_import_reference(reference):
                     imported_plan._original_plan = self
                     imported_plan._original_plan_fmf_id = self.fmf_id
 
