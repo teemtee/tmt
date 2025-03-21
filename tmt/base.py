@@ -1855,13 +1855,13 @@ def expand_node_data(data: T, fmf_context: FmfContext) -> T:
 
 
 class _RemotePlanReference(_RawFmfId):
-    replace: Optional[str]
+    importing: Optional[str]
     limit: Optional[str]
 
 
 class RemotePlanReferenceReplace(enum.Enum):
     REPLACE = 'replace'
-    IMPORT_AS_CHILDREN = 'import-as-children'
+    PARENT = 'parent'
 
     @classmethod
     def from_spec(cls, spec: str) -> 'RemotePlanReferenceReplace':
@@ -1891,7 +1891,7 @@ class RemotePlanReference(
 ):
     VALID_KEYS: ClassVar[list[str]] = [*FmfId.VALID_KEYS, 'replace', 'limit']
 
-    replace: RemotePlanReferenceReplace = RemotePlanReferenceReplace.REPLACE
+    importing: RemotePlanReferenceReplace = RemotePlanReferenceReplace.REPLACE
     limit: RemotePlanReferenceImportLimit = RemotePlanReferenceImportLimit.SINGLE_PLAN_ONLY
 
     @functools.cached_property
@@ -1927,7 +1927,7 @@ class RemotePlanReference(
 
         spec = self.to_dict()
 
-        spec['replace'] = self.replace.value
+        spec['importing'] = self.importing.value
         spec['limit'] = self.limit.value
 
         return spec
@@ -1939,7 +1939,7 @@ class RemotePlanReference(
 
         spec = self.to_minimal_dict()
 
-        spec['replace'] = self.replace.value
+        spec['importing'] = self.importing.value
         spec['limit'] = self.limit.value
 
         return spec
@@ -1969,8 +1969,8 @@ class RemotePlanReference(
             raw_path = cast(Optional[str], raw.get(key, None))
             setattr(reference, key, Path(raw_path) if raw_path is not None else None)
 
-        reference.replace = RemotePlanReferenceReplace.from_spec(
-            str(raw.get('replace', RemotePlanReferenceReplace.REPLACE.value))
+        reference.importing = RemotePlanReferenceReplace.from_spec(
+            str(raw.get('importing', RemotePlanReferenceReplace.REPLACE.value))
         )
         reference.limit = RemotePlanReferenceImportLimit.from_spec(
             str(raw.get('limit', RemotePlanReferenceImportLimit.SINGLE_PLAN_ONLY.value))
@@ -3012,7 +3012,7 @@ class Plan(
             if not self.enabled:
                 node.data['enabled'] = False
 
-            if reference.replace == RemotePlanReferenceReplace.REPLACE:
+            if reference.importing == RemotePlanReferenceReplace.REPLACE:
                 node.name = self.name
 
             else:
@@ -3042,13 +3042,10 @@ class Plan(
             )
 
         def _test_replace() -> None:
-            print(f'{imported_plans=}')
-            print(f'{reference.replace=}')
-
             if not imported_plans:
                 return
 
-            if reference.replace != RemotePlanReferenceReplace.REPLACE:
+            if reference.importing != RemotePlanReferenceReplace.REPLACE:
                 return
 
             raise GeneralError(
