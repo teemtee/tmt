@@ -52,7 +52,7 @@ description: |
             limit: all-plans
 
     If, instead of replacing the current plan, you can make the imported
-    plans "children" of the current plan with the ``replace-importing``
+    plans "children" of the current plan with the ``importing``
     key:
 
     .. code-block:: yaml
@@ -63,10 +63,10 @@ description: |
             ...
 
             # This is the default, replace the current plan.
-            replace-importing: replace
+            importing: replace
 
             # All imported plans will get their names to begin with `/some-plan/...`.
-            replace-importing: import-as-children
+            importing: parent
 
     The ``name`` key is treated as a
     :ref:`regular expression <regular-expressions>`, and only plans with
