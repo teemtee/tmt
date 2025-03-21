@@ -1861,7 +1861,7 @@ class _RemotePlanReference(_RawFmfId):
 
 class RemotePlanReferenceReplace(enum.Enum):
     REPLACE = 'replace'
-    PARENT = 'parent'
+    BECOME_PARENT = 'become-parent'
 
     @classmethod
     def from_spec(cls, spec: str) -> 'RemotePlanReferenceReplace':

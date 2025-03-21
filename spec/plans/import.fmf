@@ -66,7 +66,7 @@ description: |
             importing: replace
 
             # All imported plans will get their names to begin with `/some-plan/...`.
-            importing: parent
+            importing: become-parent
 
     The ``name`` key is treated as a
     :ref:`regular expression <regular-expressions>`, and only plans with
