@@ -140,6 +140,7 @@ properties:
 
           name:
             type: string
+            format: regex
 
           replace:
             type: string
