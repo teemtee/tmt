@@ -3024,62 +3024,60 @@ class Plan(
 
             return Plan(node=node, run=self.my_run, logger=self._logger.clone())
 
-        # Save also the original node, because if we replace the current
-        # plan, we loose original names that are better for logging.
-        imported_plans: list[tuple[fmf.Tree, Plan]] = []
+        def _generate_plans(nodes: Iterable[fmf.Tree]) -> list[Plan]:
+            # Save also the original node, because if we replace the current
+            # plan, we loose original names that are better for logging.
+            imported_plans: list[tuple[fmf.Tree, Plan]] = []
 
-        def _test_limit() -> bool:
-            if not imported_plans:
-                return True
+            for node in nodes:
+                if imported_plans:
+                    if reference.limit == RemotePlanReferenceImportLimit.FIRST_PLAN_ONLY:
+                        self.warn(
+                            f"Cannot import remote plan '{node.name}' through '{self.name}', "
+                            f"already imported '{imported_plans[0][0].name}' as the first plan."
+                        )
 
-            if reference.limit == RemotePlanReferenceImportLimit.FIRST_PLAN_ONLY:
-                return False
+                        continue
 
-            if reference.limit == RemotePlanReferenceImportLimit.ALL_PLANS:
-                return True
+                    if reference.limit == RemotePlanReferenceImportLimit.SINGLE_PLAN_ONLY:
+                        raise GeneralError(
+                            f"Cannot import multiple plans through '{self.name}', "
+                            "may import only single plan, and already imported "
+                            f"'{imported_plans[0][0].name}'."
+                        )
 
-            raise GeneralError(
-                f"Cannot import multiple plans through '{self.name}', "
-                f"may import only single plan, and already imported '{imported_plans[0][0].name}'."
-            )
+                    if reference.limit == RemotePlanReferenceImportLimit.ALL_PLANS:
+                        if reference.importing == RemotePlanReferenceReplace.REPLACE:
+                            raise GeneralError(
+                                f"Cannot import multiple plans through '{self.name}', "
+                                f"already replacing '{self.name}' with imported "
+                                f"'{imported_plans[0][0].name}'."
+                            )
 
-        def _test_replace() -> None:
-            if not imported_plans:
-                return
+                        if reference.importing == RemotePlanReferenceReplace.BECOME_PARENT:
+                            imported_plans.append((node, _convert_node(node.copy())))
 
-            if reference.importing != RemotePlanReferenceReplace.REPLACE:
-                return
+                            continue
 
-            raise GeneralError(
-                f"Cannot import multiple plans through '{self.name}', "
-                f"already replacing '{self.name}' with imported '{imported_plans[0][0].name}'."
-            )
+                    raise GeneralError("Unhandled importing plan state.")
+
+                imported_plans.append((node, _convert_node(node.copy())))
+
+            return [plan for _, plan in imported_plans]
 
         try:
             # Clone the whole git repository if executing tests (run is attached)
             if self.my_run and not self.my_run.is_dry_run:
-                for node in self._resolve_import_from_git(reference):
-                    if not _test_limit():
-                        break
-
-                    _test_replace()
-
-                    imported_plans.append((node, _convert_node(node.copy())))
+                nodes = self._resolve_import_from_git(reference)
 
             # Use fmf cache for exploring plans (the whole git repo is not needed)
             else:
-                for node in self._resolve_import_from_fmf_cache(reference):
-                    if not _test_limit():
-                        break
+                nodes = self._resolve_import_from_fmf_cache(reference)
 
-                    _test_replace()
-
-                    imported_plans.append((node, _convert_node(node.copy())))
+            return _generate_plans(nodes)
 
         except Exception as exc:
             raise GeneralError(f"Failed to import remote plan from '{self.name}'.") from exc
-
-        return [plan for _, plan in imported_plans]
 
     def resolve_imports(self) -> list['Plan']:
         """
