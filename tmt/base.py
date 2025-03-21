@@ -1872,6 +1872,7 @@ class RemotePlanReferenceReplace(enum.Enum):
 
 
 class RemotePlanReferenceImportLimit(enum.Enum):
+    FIRST_PLAN_ONLY = 'first-plan-only'
     SINGLE_PLAN_ONLY = 'single-plan-only'
     ALL_PLANS = 'all-plans'
 
@@ -1889,10 +1890,10 @@ class RemotePlanReference(
     # Repeat the SpecBasedContainer, with more fitting in/out spec type.
     SpecBasedContainer[_RemotePlanReference, _RemotePlanReference],
 ):
-    VALID_KEYS: ClassVar[list[str]] = [*FmfId.VALID_KEYS, 'replace', 'limit']
+    VALID_KEYS: ClassVar[list[str]] = [*FmfId.VALID_KEYS, 'importing', 'limit']
 
     importing: RemotePlanReferenceReplace = RemotePlanReferenceReplace.REPLACE
-    limit: RemotePlanReferenceImportLimit = RemotePlanReferenceImportLimit.SINGLE_PLAN_ONLY
+    limit: RemotePlanReferenceImportLimit = RemotePlanReferenceImportLimit.FIRST_PLAN_ONLY
 
     @functools.cached_property
     def name_pattern(self) -> Pattern[str]:
@@ -1973,7 +1974,7 @@ class RemotePlanReference(
             str(raw.get('importing', RemotePlanReferenceReplace.REPLACE.value))
         )
         reference.limit = RemotePlanReferenceImportLimit.from_spec(
-            str(raw.get('limit', RemotePlanReferenceImportLimit.SINGLE_PLAN_ONLY.value))
+            str(raw.get('limit', RemotePlanReferenceImportLimit.FIRST_PLAN_ONLY.value))
         )
 
         return reference
@@ -3027,12 +3028,15 @@ class Plan(
         # plan, we loose original names that are better for logging.
         imported_plans: list[tuple[fmf.Tree, Plan]] = []
 
-        def _test_limit() -> None:
+        def _test_limit() -> bool:
             if not imported_plans:
-                return
+                return True
 
-            if reference.limit != RemotePlanReferenceImportLimit.SINGLE_PLAN_ONLY:
-                return
+            if reference.limit == RemotePlanReferenceImportLimit.FIRST_PLAN_ONLY:
+                return False
+
+            if reference.limit == RemotePlanReferenceImportLimit.ALL_PLANS:
+                return True
 
             raise GeneralError(
                 f"""
@@ -3059,7 +3063,9 @@ class Plan(
             # Clone the whole git repository if executing tests (run is attached)
             if self.my_run and not self.my_run.is_dry_run:
                 for node in self._resolve_import_from_git(reference):
-                    _test_limit()
+                    if not _test_limit():
+                        break
+
                     _test_replace()
 
                     imported_plans.append((node, _convert_node(node.copy())))
@@ -3067,7 +3073,9 @@ class Plan(
             # Use fmf cache for exploring plans (the whole git repo is not needed)
             else:
                 for node in self._resolve_import_from_fmf_cache(reference):
-                    _test_limit()
+                    if not _test_limit():
+                        break
+
                     _test_replace()
 
                     imported_plans.append((node, _convert_node(node.copy())))

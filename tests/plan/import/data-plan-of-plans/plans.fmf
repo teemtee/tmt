@@ -4,8 +4,8 @@
             import:
                 url: https://github.com/teemtee/tmt
                 name: /plans/provision/connect
-                replace: replace
-                limit: single-plan-only
+                importing: replace
+                limit: first-plan-only
 
     /all:
         /allow-all-plans:
@@ -13,7 +13,7 @@
                 import:
                     url: https://github.com/teemtee/tmt
                     name: /plans/connect
-                    replace: replace
+                    importing: replace
                     limit: all-plans
 
         /allow-only-one:
@@ -21,8 +21,8 @@
                 import:
                     url: https://github.com/teemtee/tmt
                     name: /plans/provision
-                    replace: replace
-                    limit: single-plan-only
+                    importing: replace
+                    limit: first-plan-only
 
 /import-as-children:
     /single:
@@ -30,8 +30,8 @@
             import:
                 url: https://github.com/teemtee/tmt
                 name: /plans/provision/connect
-                replace: import-as-children
-                limit: single-plan-only
+                importing: import-as-children
+                limit: first-plan-only
 
     /all:
         /allow-all-plans:
@@ -39,7 +39,7 @@
                 import:
                     url: https://github.com/teemtee/tmt
                     name: /plans/connect
-                    replace: import-as-children
+                    importing: import-as-children
                     limit: all-plans
 
         /allow-only-one:
@@ -47,5 +47,5 @@
                 import:
                     url: https://github.com/teemtee/tmt
                     name: /plans/provision
-                    replace: import-as-children
-                    limit: single-plan-only
+                    importing: import-as-children
+                    limit: first-plan-only
