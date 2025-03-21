@@ -1889,7 +1889,7 @@ class RemotePlanReference(
     # Repeat the SpecBasedContainer, with more fitting in/out spec type.
     SpecBasedContainer[_RemotePlanReference, _RemotePlanReference],
 ):
-    VALID_KEYS: ClassVar[list[str]] = [*FmfId.VALID_KEYS, 'replace']
+    VALID_KEYS: ClassVar[list[str]] = [*FmfId.VALID_KEYS, 'replace', 'limit']
 
     replace: RemotePlanReferenceReplace = RemotePlanReferenceReplace.REPLACE
     limit: RemotePlanReferenceImportLimit = RemotePlanReferenceImportLimit.SINGLE_PLAN_ONLY
@@ -1970,7 +1970,7 @@ class RemotePlanReference(
             setattr(reference, key, Path(raw_path) if raw_path is not None else None)
 
         reference.replace = RemotePlanReferenceReplace.from_spec(
-            str(raw.get('replace-importing', RemotePlanReferenceReplace.REPLACE.value))
+            str(raw.get('replace', RemotePlanReferenceReplace.REPLACE.value))
         )
         reference.limit = RemotePlanReferenceImportLimit.from_spec(
             str(raw.get('limit', RemotePlanReferenceImportLimit.SINGLE_PLAN_ONLY.value))
@@ -3042,6 +3042,9 @@ class Plan(
             )
 
         def _test_replace() -> None:
+            print(f'{imported_plans=}')
+            print(f'{reference.replace=}')
+
             if not imported_plans:
                 return
 
@@ -3055,21 +3058,25 @@ class Plan(
                 """
             )
 
-        # Clone the whole git repository if executing tests (run is attached)
-        if self.my_run and not self.my_run.is_dry_run:
-            for node in self._resolve_import_from_git(reference):
-                _test_limit()
-                _test_replace()
+        try:
+            # Clone the whole git repository if executing tests (run is attached)
+            if self.my_run and not self.my_run.is_dry_run:
+                for node in self._resolve_import_from_git(reference):
+                    _test_limit()
+                    _test_replace()
 
-                imported_plans.append((node, _convert_node(node.copy())))
+                    imported_plans.append((node, _convert_node(node.copy())))
 
-        # Use fmf cache for exploring plans (the whole git repo is not needed)
-        else:
-            for node in self._resolve_import_from_fmf_cache(reference):
-                _test_limit()
-                _test_replace()
+            # Use fmf cache for exploring plans (the whole git repo is not needed)
+            else:
+                for node in self._resolve_import_from_fmf_cache(reference):
+                    _test_limit()
+                    _test_replace()
 
-                imported_plans.append((node, _convert_node(node.copy())))
+                    imported_plans.append((node, _convert_node(node.copy())))
+
+        except Exception as exc:
+            raise GeneralError(f"Failed to import remote plan from '{self.name}'.") from exc
 
         return [plan for _, plan in imported_plans]
 
