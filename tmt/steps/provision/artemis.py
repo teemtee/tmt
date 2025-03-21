@@ -1,6 +1,6 @@
 import datetime
 import functools
-from typing import Any, Optional, TypedDict, cast
+from typing import Any, Optional, TypedDict, Union, cast
 
 import requests
 
@@ -14,7 +14,9 @@ import tmt.utils
 import tmt.utils.signals
 from tmt.container import container, field
 from tmt.utils import (
+    Command,
     ProvisionError,
+    ShellScript,
     UpdatableMessage,
     dict_to_yaml,
     normalize_string_dict,
@@ -663,6 +665,61 @@ class GuestArtemis(tmt.GuestSsh):
             self.info(
                 'guest', f"Failed to remove, unhandled API response '{response.status_code}'."
             )
+
+    def reboot(
+        self,
+        hard: bool = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
+        """
+        Reboot the guest, and wait for the guest to recover.
+
+        :param hard: if set, force the reboot. This may result in a loss of
+            data. The default of ``False`` will attempt a graceful reboot.
+        :param command: a command to run on the guest to trigger the reboot.
+        :param timeout: amount of time in which the guest must become available
+            again.
+        :param tick: how many seconds to wait between two consecutive attempts
+            of contacting the guest.
+        :param tick_increase: a multiplier applied to ``tick`` after every
+            attempt.
+        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
+        """
+
+        if hard:
+            if self.guestname is None:
+                raise ArtemisProvisionError("Cannot reboot - guest does not exist")
+
+            self.debug("Hard reboot using the Artemis API.")
+
+            def trigger_reboot() -> None:
+                response = self.api.query(f'/guests/{self.guestname}/reboot', method='post')
+                if response.status_code == 202:
+                    self.info('guest', 'reboot requested', 'green')
+                else:
+                    raise ArtemisProvisionError('Failed to reboot guest', response=response)
+
+            return self.perform_reboot(
+                trigger_reboot,
+                timeout=timeout,
+                tick=tick,
+                tick_increase=tick_increase,
+                fetch_boot_time=False,
+            )
+
+        actual_command = command or tmt.steps.DEFAULT_REBOOT_COMMAND
+        self.debug(f"Reboot using the command '{actual_command}'.")
+
+        return super().reboot(
+            hard=False,
+            command=actual_command,
+            timeout=timeout,
+            tick=tick,
+            tick_increase=tick_increase,
+        )
 
 
 @tmt.steps.provides_method('artemis')
