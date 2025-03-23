@@ -41,7 +41,6 @@ DEFAULT_RESULT_CHECK_HEADER_TEMPLATE = """
 
 DEFAULT_SUBRESULT_HEADER_TEMPLATE = """
 {{ RESULT | format_duration | style(fg="cyan") }}{{ '\u00a0' * 4 }}{{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }}
-{%- if CONTEXT.display_guest %} (on {{ RESULT.guest | guest_full_name }}){% endif %}
 """  # noqa: E501
 
 DEFAULT_SUBRESULT_CHECK_HEADER_TEMPLATE = """
