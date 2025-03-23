@@ -147,6 +147,21 @@ link:
           - implemented-by: /tmt/trying.py
           - implemented-by: /tmt/steps/prepare/feature/epel.py
 
+    /fips:
+        story:
+            As a user I want an easy way to enable FIPS mode
+        description: |
+            Enable FIPS mode
+
+            .. versionadded:: 1.45
+
+        example:
+            - tmt try centos-stream-9@virtual --fips
+
+        link:
+          - implemented-by: /tmt/trying.py
+          - implemented-by: /tmt/steps/prepare/feature/fips.py
+
     /install:
         story:
             As a user I want an easy way to install local rpm package on the guest.
