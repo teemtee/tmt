@@ -28,6 +28,11 @@ with multiple ``discover`` phases would start ``execute`` step for
 remaining ``discover`` phases. This is now fixed, aborted test and
 :ref:`/spec/plans/execute/exit-first` will skip **all** remaining tests.
 
+FIPS mode can now be enabled for RHEL or CentosStream 8, 9 or 10 by
+a prepare step feature ``fips``. Moreover, the ``tmt try`` command
+now supports the new :ref:`/stories/cli/try/option/fips` option backed
+by the :ref:`prepare/feature</plugins/prepare/feature>` plugin.
+
 
 tmt-1.44.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
