@@ -36,15 +36,15 @@ DEFAULT_RESULT_HEADER_TEMPLATE = """
 """  # noqa: E501
 
 DEFAULT_RESULT_CHECK_HEADER_TEMPLATE = """
-{{ RESULT | format_duration | style(fg="cyan") }}{{ '\u00a0' * 4 }}{{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }} ({{ RESULT.event.value }} check)
+{{ RESULT | format_duration | style(fg="cyan") }}{{ ' ' * 4 }}{{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }} ({{ RESULT.event.value }} check)
 """  # noqa: E501
 
 DEFAULT_SUBRESULT_HEADER_TEMPLATE = """
-{{ RESULT | format_duration | style(fg="cyan") }}{{ '\u00a0' * 4 }}{{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }}
+{{ RESULT | format_duration | style(fg="cyan") }}{{ ' ' * 4 }}{{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }}
 """  # noqa: E501
 
 DEFAULT_SUBRESULT_CHECK_HEADER_TEMPLATE = """
-{{ RESULT | format_duration | style(fg="cyan") }}{{ '\u00a0' * 8 }}{{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }} ({{ RESULT.event.value }} check)
+{{ RESULT | format_duration | style(fg="cyan") }}{{ ' ' * 8 }}{{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }} ({{ RESULT.event.value }} check)
 """  # noqa: E501
 
 
