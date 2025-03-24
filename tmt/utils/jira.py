@@ -99,8 +99,6 @@ class JiraInstance:
             link_config = tmt.config.Config().link
         except tmt.utils.SpecificationError:
             raise
-        except tmt.utils.MetadataError:
-            return None
         if not link_config:
             return None
 

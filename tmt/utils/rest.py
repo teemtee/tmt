@@ -6,11 +6,12 @@ help texts.
 """
 
 import functools
+import re
 import sys
+import textwrap
 from collections.abc import Mapping, Sequence
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 
-import click
 import docutils.frontend
 import docutils.nodes
 import docutils.parsers.rst
@@ -19,8 +20,13 @@ import docutils.parsers.rst.states
 import docutils.utils
 
 import tmt.log
+import tmt.utils
+from tmt.config import Config
 from tmt.log import Logger
 from tmt.utils import GeneralError
+
+if TYPE_CHECKING:
+    from tmt.config.models.themes import Style
 
 # We may be sharing parser structures with Sphinx, when it's generating
 # docs. And that lead to problems, our roles conflicting with those
@@ -36,6 +42,31 @@ REST_RENDERING_ALLOWED = 'sphinx-build' not in sys.argv[0]
 #: paragraphs.
 NL = ''
 
+BREAK = '-' * tmt.utils.OUTPUT_WIDTH
+
+ADMONITION_FOOTER = BREAK
+
+NOTE_HEADER = f'---\u00a0NOTE\u00a0{"-" * (tmt.utils.OUTPUT_WIDTH - 9)}'
+NOTE_FOOTER = ADMONITION_FOOTER
+
+WARNING_HEADER = f'---\u00a0WARNING\u00a0{"-" * (tmt.utils.OUTPUT_WIDTH - 12)}'
+WARNING_FOOTER = ADMONITION_FOOTER
+
+REMOVE_ANSI_PATTERN = re.compile(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]')
+
+
+class ANSIString(str):
+    def __len__(self) -> int:
+        if '\n' in self:
+            raise ValueError('String contains multiple lines.')
+
+        return len(REMOVE_ANSI_PATTERN.sub('', self))
+
+
+class TextWrapper(textwrap.TextWrapper):
+    def _split(self, text: str) -> list[str]:
+        return [ANSIString(chunk) for chunk in super()._split(text)]
+
 
 class RestVisitor(docutils.nodes.NodeVisitor):
     """
@@ -49,17 +80,17 @@ class RestVisitor(docutils.nodes.NodeVisitor):
     node, filling "rendered paragraphs" list with rendered strings.
     """
 
+    def log_visit(self, node: Union[docutils.nodes.Node, docutils.nodes.Body]) -> None:
+        self.logger.debug('visit ', str(node), level=4, topic=tmt.log.Topic.HELP_RENDERING)
+
+    def log_departure(self, node: Union[docutils.nodes.Node, docutils.nodes.Body]) -> None:
+        self.logger.debug('depart', str(node), level=4, topic=tmt.log.Topic.HELP_RENDERING)
+
     def __init__(self, document: docutils.nodes.document, logger: Logger) -> None:
         super().__init__(document)
 
         self.logger = logger
         self.debug = functools.partial(logger.debug, level=4, topic=tmt.log.Topic.HELP_RENDERING)
-        self.log_visit = functools.partial(
-            logger.debug, 'visit', level=4, topic=tmt.log.Topic.HELP_RENDERING
-        )
-        self.log_departure = functools.partial(
-            logger.debug, 'depart', level=4, topic=tmt.log.Topic.HELP_RENDERING
-        )
 
         #: Collects all rendered paragraps - text, blocks, lists, etc.
         self._rendered_paragraphs: list[str] = []
@@ -68,13 +99,14 @@ class RestVisitor(docutils.nodes.NodeVisitor):
         self._rendered_paragraph: list[str] = []
 
         self.in_literal_block: bool = False
-        self.in_note: bool = False
-        self.in_warning: bool = False
 
         #: Used by rendering of nested blocks, e.g. paragraphs positioned
         #: as list items.
         self._indent: int = 0
         self._text_prefix: Optional[str] = None
+
+        self._theme = Config().theme
+        self._style_stack: list[Style] = [self._theme.restructuredtext_text]
 
     @property
     def rendered(self) -> str:
@@ -93,7 +125,7 @@ class RestVisitor(docutils.nodes.NodeVisitor):
         Add a string to the paragraph being rendered
         """
 
-        self._rendered_paragraph.append(s)
+        self._rendered_paragraph.append(ANSIString(s))
 
     def _emit_paragraphs(self, paragraphs: list[str]) -> None:
         """
@@ -111,7 +143,23 @@ class RestVisitor(docutils.nodes.NodeVisitor):
             self.nl()
 
         else:
-            self._emit_paragraphs([''.join(self._rendered_paragraph)])
+            self._emit_paragraphs(
+                [
+                    '\n'.join(
+                        TextWrapper(
+                            width=tmt.utils.OUTPUT_WIDTH - self._indent,
+                            break_long_words=False,
+                            drop_whitespace=True,
+                            replace_whitespace=True,
+                            break_on_hyphens=False,
+                            tabsize=4,
+                            initial_indent='',
+                            subsequent_indent=' ' * self._indent,
+                        ).wrap(''.join(self._rendered_paragraph))
+                    ).strip()
+                ]
+            )
+
             self._rendered_paragraph = []
 
     def nl(self) -> None:
@@ -127,21 +175,36 @@ class RestVisitor(docutils.nodes.NodeVisitor):
 
     # Simple logging for nodes that have no effect
     def _noop_visit(self, node: docutils.nodes.Node) -> None:
-        self.log_visit(str(node))
+        self.log_visit(node)
 
     def _noop_departure(self, node: docutils.nodes.Node) -> None:
-        self.log_departure(str(node))
+        self.log_departure(node)
 
     # Node renderers
     visit_document = _noop_visit
 
     def depart_document(self, node: docutils.nodes.document) -> None:
-        self.log_departure(str(node))
+        self.log_departure(node)
 
         self.flush()
 
+    visit_section = _noop_visit
+    depart_section = _noop_departure
+
+    def visit_title(self, node: docutils.nodes.title) -> None:
+        self.log_visit(node)
+
+        self._emit('--- ' + node.astext() + ' ---')
+        self.flush()
+
+        self.nl()
+
+        raise docutils.nodes.SkipChildren
+
+    depart_title = _noop_departure
+
     def visit_paragraph(self, node: docutils.nodes.paragraph) -> None:
-        self.log_visit(str(node))
+        self.log_visit(node)
 
         if isinstance(node.parent, docutils.nodes.list_item):
             if self._text_prefix:
@@ -151,107 +214,88 @@ class RestVisitor(docutils.nodes.NodeVisitor):
             else:
                 self._emit(' ' * self._indent)
 
-        elif self.in_note:
-            self._emit(click.style('NOTE: ', fg='blue', bold=True))
-            return
-
-        elif self.in_warning:
-            self._emit(click.style('WARNING: ', fg='yellow', bold=True))
-            return
-
     def depart_paragraph(self, node: docutils.nodes.paragraph) -> None:
-        self.log_departure(str(node))
-
-        # Top-level paragraphs should be followed by an empty line to
-        # prevent paragraphs sticking together. Only the top-level ones
-        # though, we do not want empty lines after every paragraph-like
-        # string, because a lot of nodes are also paragraphs.
-        if isinstance(node.parent, docutils.nodes.document):
-            self.nl()
+        self.log_departure(node)
 
         self.flush()
+        self.nl()
 
     def visit_Text(self, node: docutils.nodes.Text) -> None:  # noqa: N802
-        self.log_visit(str(node))
+        self.log_visit(node)
 
         if isinstance(node.parent, docutils.nodes.literal):
             return
 
-        if self.in_literal_block:
-            return
-
-        if self.in_note:
-            self._emit(click.style(node.astext(), fg='blue'))
-
-            return
-
-        if self.in_warning:
-            self._emit(click.style(node.astext(), fg='yellow'))
-
-            return
-
-        self._emit(node.astext())
+        self._emit(self._style_stack[-1].apply(node.astext().replace('\n', ' ')))
 
     depart_Text = _noop_departure  # noqa: N815
 
     def visit_literal(self, node: docutils.nodes.literal) -> None:
-        self.log_visit(str(node))
+        self.log_visit(node)
 
-        self._emit(click.style(node.astext(), fg='green'))
+        self._emit(self._theme.restructuredtext_literal.apply(node.astext()))
 
     depart_literal = _noop_departure
 
-    def visit_emphasis(self, node: docutils.nodes.literal) -> None:
-        self.log_visit(str(node))
+    def visit_emphasis(self, node: docutils.nodes.emphasis) -> None:
+        self.log_visit(node)
 
-        self._emit(click.style(node.astext(), fg='yellow'))
+        self._emit(self._theme.restructuredtext_emphasis.apply(node.astext()))
+
+        raise docutils.nodes.SkipChildren
 
     depart_emphasis = _noop_departure
 
+    def visit_strong(self, node: docutils.nodes.strong) -> None:
+        self.log_visit(node)
+
+        self._emit(self._theme.restructuredtext_strong.apply(node.astext()))
+
+        raise docutils.nodes.SkipChildren
+
+    depart_strong = _noop_departure
+
     def visit_literal_block(self, node: docutils.nodes.literal_block) -> None:
-        self.log_visit(str(node))
+        self.log_visit(node)
 
         self.flush()
 
-        fg: str = 'cyan'
-
         if 'yaml' in node.attributes['classes']:
-            pass
+            style = self._theme.restructuredtext_literalblock_yaml
 
         elif 'shell' in node.attributes['classes']:
-            fg = 'yellow'
+            style = self._theme.restructuredtext_literalblock_shell
 
-        self._emit_paragraphs(
-            [f'    {click.style(line, fg=fg)}' for line in node.astext().splitlines()]
-        )
+        else:
+            style = self._theme.restructuredtext_literalblock
 
-        self.in_literal_block = True
+        self._emit_paragraphs([f'    {style.apply(line)}' for line in node.astext().splitlines()])
+
+        raise docutils.nodes.SkipChildren
 
     def depart_literal_block(self, node: docutils.nodes.literal_block) -> None:
-        self.log_departure(str(node))
-
-        self.in_literal_block = False
+        self.log_departure(node)
 
         self.nl()
 
     def visit_bullet_list(self, node: docutils.nodes.bullet_list) -> None:
-        self.log_visit(str(node))
+        self.log_visit(node)
 
         self.nl()
 
     def depart_bullet_list(self, node: docutils.nodes.bullet_list) -> None:
-        self.log_departure(str(node))
+        self.log_departure(node)
 
         self.nl()
 
     def visit_list_item(self, node: docutils.nodes.list_item) -> None:
-        self.log_visit(str(node))
+        self.log_visit(node)
 
-        self._text_prefix = '* '
+        self._text_prefix = self._style_stack[-1].apply('* ')
         self._indent += 2
 
     def depart_list_item(self, node: docutils.nodes.list_item) -> None:
-        self.log_departure(str(node))
+        self.log_departure(node)
 
         self._indent -= 2
 
@@ -261,29 +305,50 @@ class RestVisitor(docutils.nodes.NodeVisitor):
     visit_reference = _noop_visit
     depart_reference = _noop_departure
 
-    def visit_note(self, node: docutils.nodes.note) -> None:
-        self.log_visit(str(node))
+    def _visit_admonition(self, node: docutils.nodes.Admonition, header: str) -> None:
+        self.log_visit(node)
+
+        self._emit(self._style_stack[-1].apply(header))
+        self.flush()
 
         self.nl()
-        self.in_note = True
+
+    def _depart_admonition(self, node: docutils.nodes.Admonition, footer: str) -> None:
+        self.log_departure(node)
+
+        self._emit(self._style_stack[-1].apply(footer))
+        self.flush()
+
+        self.nl()
+
+    def visit_note(self, node: docutils.nodes.note) -> None:
+        self._style_stack.append(self._theme.restructuredtext_admonition_note)
+
+        self._visit_admonition(node, NOTE_HEADER)
 
     def depart_note(self, node: docutils.nodes.note) -> None:
-        self.log_departure(str(node))
+        self._depart_admonition(node, NOTE_FOOTER)
 
-        self.in_note = False
-        self.nl()
+        self._style_stack.pop(-1)
 
     def visit_warning(self, node: docutils.nodes.warning) -> None:
-        self.log_visit(str(node))
+        self._style_stack.append(self._theme.restructuredtext_admonition_warning)
 
-        self.nl()
-        self.in_warning = True
+        self._visit_admonition(node, WARNING_HEADER)
 
     def depart_warning(self, node: docutils.nodes.warning) -> None:
-        self.log_departure(str(node))
+        self._depart_admonition(node, WARNING_FOOTER)
 
-        self.in_warning = False
+        self._style_stack.pop(-1)
+
+    def visit_transition(self, node: docutils.nodes.transition) -> None:
+        self.log_visit(node)
+
+        self._emit(BREAK)
+        self.flush()
         self.nl()
+
+    depart_transition = _noop_departure
 
     def unknown_visit(self, node: docutils.nodes.Node) -> None:
         raise GeneralError(f"Unhandled ReST node '{node}'.")

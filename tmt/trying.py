@@ -208,8 +208,8 @@ class Try(tmt.utils.Common):
         # Check user config for custom default plans. Search for all
         # plans starting with the default user plan name (there might be
         # more than just one).
-        try:
-            config_tree = tmt.config.Config().fmf_tree
+        config_tree = tmt.config.Config().fmf_tree
+        if config_tree is not None:
             plan_name = re.escape(USER_PLAN_NAME)
             # cast: once fmf is properly annotated, cast() would not be needed.
             # pyright isn't able to infer the type.
@@ -220,8 +220,6 @@ class Try(tmt.utils.Common):
                     self.tree.tree.update(plan_dict)
                 self.debug("Use the default user plan config.")
                 return self.tree.plans(names=[f"^{plan_name}"], run=run)
-        except MetadataError:
-            self.debug("User config tree not found.")
 
         # Use the default plan template otherwise
         plan_name = re.escape(tmt.templates.DEFAULT_PLAN_NAME)
