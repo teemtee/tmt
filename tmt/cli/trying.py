@@ -54,6 +54,12 @@ from tmt.options import option
     help="Enable epel repository.",
 )
 @option(
+    "--fips",
+    is_flag=True,
+    default=False,
+    help="Enable FIPS mode.",
+)
+@option(
     "--install",
     default=[],
     metavar="PACKAGE",

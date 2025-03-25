@@ -129,7 +129,7 @@ class Try(tmt.utils.Common):
         self.tests: list[tmt.Test] = []
         self.plans: list[Plan] = []
         self.image_and_how = self.opt("image_and_how")
-        self.cli_options = ["epel", "install"]
+        self.cli_options = ["epel", "fips", "install"]
 
         # Use the verbosity level 3 unless user explicitly requested
         # a different level on the command line
@@ -552,6 +552,39 @@ class Try(tmt.utils.Common):
             name="tmt-try-epel",
             how='feature',
             epel="enabled",  # type: ignore[reportCallIssue,call-arg,unused-ignore]
+        )
+
+        phase: PreparePlugin[Any] = cast(
+            PreparePlugin[Any],
+            PreparePlugin.delegate(plan.prepare, data=data),
+        )
+
+        plan.prepare._phases.append(phase)
+
+    def handle_fips(self, plan: Plan) -> None:
+        """
+        Enable FIPS mode
+        """
+
+        # tmt run prepare --how feature --fips enabled
+        # cast: linters do not detect the class `get_class_data()`
+        # returns, it's reported as `type[Unknown]`. mypy does not care,
+        # pyright does.
+        prepare_data_class = cast(  # type: ignore[redundant-cast]
+            type[tmt.steps.prepare.feature.PrepareFeatureData],
+            tmt.steps.prepare.feature.PrepareFeature.get_data_class(),
+        )
+
+        if not tmt.container.container_has_field(prepare_data_class, 'fips'):
+            raise GeneralError("Feature 'fips' is not available.")
+
+        # ignore[reportCallIssue,call-arg,unused-ignore]: thanks to
+        # dynamic nature of the data class, the field is indeed unknown
+        # to type checkers.
+        data = prepare_data_class(
+            name="tmt-try-fips",
+            how='feature',
+            fips="enabled",  # type: ignore[reportCallIssue,call-arg,unused-ignore]
         )
 
         phase: PreparePlugin[Any] = cast(
