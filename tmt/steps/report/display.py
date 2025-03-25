@@ -25,9 +25,7 @@ RESULT_SHIFT = 0
 RESULT_CHECK_SHIFT = 1
 SUBRESULT_SHIFT = RESULT_CHECK_SHIFT
 SUBRESULT_CHECK_SHIFT = SUBRESULT_SHIFT + 1
-
-NOTE_SHIFT = 1
-NOTE_PREFIX = (NOTE_SHIFT * INDENT) * ' '
+NOTE_SHIFT = 2
 
 DEFAULT_RESULT_HEADER_TEMPLATE = """
 {{ RESULT | format_duration | style(fg="cyan") }} {{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }}
@@ -46,6 +44,13 @@ DEFAULT_SUBRESULT_HEADER_TEMPLATE = """
 DEFAULT_SUBRESULT_CHECK_HEADER_TEMPLATE = """
 {{ RESULT | format_duration | style(fg="cyan") }}{{ ' ' * 8 }}{{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }} ({{ RESULT.event.value }} check)
 """  # noqa: E501
+
+DEFAULT_NOTE_TEMPLATE = """
+{{ "Note:" | style(fg="yellow") }} {{ NOTE_LINES.pop(0) }}
+{% for line in NOTE_LINES %}
+      {{ line }}
+{% endfor %}
+"""
 
 
 @container
@@ -89,6 +94,7 @@ class ResultRenderer:
     result_check_header_template: str = DEFAULT_RESULT_CHECK_HEADER_TEMPLATE
     subresult_header_template: str = DEFAULT_SUBRESULT_HEADER_TEMPLATE
     subresult_check_header_template: str = DEFAULT_SUBRESULT_CHECK_HEADER_TEMPLATE
+    note_template: str = DEFAULT_NOTE_TEMPLATE
 
     def __post_init__(self) -> None:
         self.environment = default_template_environment()
@@ -107,27 +113,31 @@ class ResultRenderer:
                 for line in item.splitlines():
                     yield f'{(INDENT * level) * " "}{line}'
 
-    @staticmethod
-    def render_note(note: str) -> Iterator[str]:
+    def render_note(self, note: str) -> Iterator[str]:
         """
         Render a single result note.
         """
 
-        note_lines = note.splitlines()
+        yield from self._indent(
+            NOTE_SHIFT,
+            [
+                render_template(
+                    self.note_template,
+                    environment=self.environment,
+                    CONTEXT=self,
+                    NOTE_LINES=note.splitlines(),
+                    **self.variables,
+                )
+            ],
+        )
 
-        yield f'{NOTE_PREFIX}* Note: {note_lines.pop(0)}'
-
-        for note_line in note_lines:
-            yield f'{NOTE_PREFIX}        {note_line}'
-
-    @classmethod
-    def render_notes(cls, result: BaseResult) -> Iterator[str]:
+    def render_notes(self, result: BaseResult) -> Iterator[str]:
         """
         Render result notes.
         """
 
         for note in result.note:
-            yield from cls.render_note(note)
+            yield from self.render_note(note)
 
     @staticmethod
     def render_log_info(log: Path) -> Iterator[str]:
