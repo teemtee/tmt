@@ -11,8 +11,6 @@
 
     {% block testsuites %}
         {% for result in RESULTS %}
-            {% set main_log = result.log | first | read_log %}
-            {% set main_log_failures = main_log | failures | e %}
             {% set main_test_duration = result.duration | duration_to_seconds %}
 
             {# TODO: Fix the test counts in testsuite tag #}
@@ -27,39 +25,37 @@
                 #}
                 <testcase name="{{ result.name | e }}" {% if result_test_duration %}time="{{ result_test_duration }}"{% endif %}>
                     {% if result.result.value == 'error' or result.result.value == 'warn' %}
-                        <error type="error" message="{{ result.result.value | e }}">{{ main_log_failures }}</error>
+                        <error type="error" message="{{ result.result.value | e }}">{{ result.log | first | read_log | failures | e }}</error>
                     {% elif result.result.value == 'fail' %}
-                        <failure type="failure" message="{{ result.result.value | e }}">{{ main_log_failures }}</failure>
+                        <failure type="failure" message="{{ result.result.value | e }}">{{ result.log | first | read_log | failures | e }}</failure>
                     {% elif result.result.value == 'info' %}
-                        <skipped type="skipped" message="{{ result.result.value | e }}">{{ main_log_failures }}</skipped>
+                        <skipped type="skipped" message="{{ result.result.value | e }}">{{ result.log | first | read_log | failures | e }}</skipped>
                     {% endif %}
 
-                    {% if INCLUDE_OUTPUT_LOG and main_log %}
-                        <system-out>{{ main_log | e }}</system-out>
+                    {% if INCLUDE_OUTPUT_LOG and result.log %}
+                        <system-out>{{ result.log | first | read_log | e }}</system-out>
                     {% endif %}
                 </testcase>
 
                 {% for subresult in result.subresult %}
-                    {% set subresult_log = subresult.log | first | read_log %}
-                    {% set subresult_log_failures = main_log | failures | e %}
                     {% set subresult_test_duration = subresult.duration | duration_to_seconds %}
 
                     <testcase name="{{ subresult.name | e }}" {% if subresult_test_duration %}time="{{ subresult_test_duration }}"{% endif %}>
                         {% if subresult.result.value == 'error' or subresult.result.value == 'warn' %}
-                            <error type="error" message="{{ subresult.result.value | e }}">{{ subresult_log_failures }}</error>
+                            <error type="error" message="{{ subresult.result.value | e }}">{{ subresult.log | first | read_log | failures | e }}</error>
                         {% elif subresult.result.value == 'fail' %}
-                            <failure type="failure" message="{{ subresult.result.value | e }}">{{ subresult_log_failures }}</failure>
+                            <failure type="failure" message="{{ subresult.result.value | e }}">{{ subresult.log | first | read_log | failures | e }}</failure>
                         {% elif subresult.result.value == 'info' %}
-                            <skipped type="skipped" message="{{ subresult.result.value | e }}">{{ subresult_log_failures }}</skipped>
+                            <skipped type="skipped" message="{{ subresult.result.value | e }}">{{ subresult.log | first | read_log | failures | e }}</skipped>
                         {% endif %}
 
-                        {% if INCLUDE_OUTPUT_LOG and subresult_log %}
-                            <system-out>{{ subresult_log | e }}</system-out>
+                        {% if INCLUDE_OUTPUT_LOG and subresult.log %}
+                            <system-out>{{ subresult.log | first | read_log | e }}</system-out>
                         {% endif %}
                     </testcase>
                 {% endfor %}
 
-                {# Optionally add the result properties #}
+                {# Optionally add the main result properties #}
                 {% if result.properties is defined %}
                     {% with properties=result.properties %}
                         {% include "includes/_properties.xml.j2" %}
