@@ -10,9 +10,9 @@ description: |
     In some cases we want to run additional checks while running a
     test. A nice example is a check for unexpected SELinux AVCs
     produced during the test, this can point to additional issues
-    the user can run into. Another useful checks would be kernel
-    panic detection, core dump collection or collection of system
-    logs.
+    the user can run into. Other useful checks include kernel panic
+    detection, system crash detection via coredump, or collection of
+    system logs.
 
     By default, the check results affect the overall test outcome.
     To change this behaviour, use the ``result`` key, which accepts
@@ -74,9 +74,18 @@ example:
       - how: dmesg
         result: info
 
+  - |
+    # Configure the coredump check with ignore patterns
+    check:
+      - how: coredump
+        ignore-pattern:
+          - 'Process.*\\(sleep\\).*dumped core'  # Ignore sleep crashes
+          - 'Signal: .*\\(SIGSEGV\\)'            # Ignore segmentation faults
+
 link:
   - implemented-by: /tmt/checks
   - implemented-by: /tmt/result.py
   - verified-by: /tests/test/check/avc
   - verified-by: /tests/test/check/dmesg
+  - verified-by: /tests/test/check/coredump
   - verified-by: /tests/execute/result/check

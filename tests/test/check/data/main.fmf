@@ -61,6 +61,28 @@
                       ls -alZ /root/passwd.log; \
                       rm -f /root/passwd.log" || /bin/true
 
+/coredump:
+    check:
+      - how: coredump
+
+    /harmless:
+        test: /bin/true
+        summary: Test coredump check passes with no crashes
+
+    /segfault:
+        test: |
+            sleep 10 & kill -SIGSEGV %1
+        summary: Test coredump check fails with segfault
+
+    /ignore-pattern:
+        check:
+          - how: coredump
+            ignore-patterns:
+              - 'Signal:\s+\d+\s+\((SIG)?SEGV\)'
+        test: |
+            sleep 10 & kill -SIGSEGV %1
+        summary: Test coredump check passes with ignored crash pattern
+
 /watchdog/ping:
   require:
     - /usr/bin/uptime
