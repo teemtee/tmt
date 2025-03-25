@@ -19,10 +19,12 @@
             <testsuite name="{{ result.name | trim | e }}" disabled="0" errors="{{ result.subresult.errored | length }}" failures="{{ result.subresult.failed | length }}" skipped="{{ result.subresult.skipped | length }}" tests="{{ result.subresult | length }}" time="{{ main_test_duration }}" timestamp="{{ result.start_time }}">
 
                 {#
-                    Always include a `testcase` representing the main result.
-                    The `error/failure/skipped` tags must not exists inside a
-                    `testsuite`, they are only allowed inside of a `testcase`.
+                    Always include an extra `testcase` representing the main
+                    result. The `error/failure/skipped` tags must not exists
+                    inside a `testsuite`, they are only allowed inside of a
+                    `testcase`.
                 #}
+                <!-- The extra testcase representing the parent result. -->
                 <testcase name="{{ result.name | e }}" {% if result_test_duration %}time="{{ result_test_duration }}"{% endif %}>
                     {% if result.result.value == 'error' or result.result.value == 'warn' %}
                         <error type="error" message="{{ result.result.value | e }}">{{ result.log | first | read_log | failures | e }}</error>
