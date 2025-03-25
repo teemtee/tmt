@@ -786,41 +786,47 @@ def test_command_run_without_streaming(root_logger: Logger, caplog) -> None:
 def test_get_distgit_handler():
     for _wrong_remotes in [[], ["blah"]]:
         with pytest.raises(tmt.utils.GeneralError):
-            tmt.utils.get_distgit_handler([])
+            tmt.utils.git.get_distgit_handler([])
     # Fedora detection
-    returned_object = tmt.utils.get_distgit_handler(
+    returned_object = tmt.utils.git.get_distgit_handler(
         """
         remote.origin.url ssh://lzachar@pkgs.fedoraproject.org/rpms/tmt
         remote.lzachar.url ssh://lzachar@pkgs.fedoraproject.org/forks/lzachar/rpms/tmt.git
         """.split('\n')
     )
-    assert isinstance(returned_object, tmt.utils.FedoraDistGit)
+    assert isinstance(returned_object, tmt.utils.git.FedoraDistGit)
     # CentOS detection
-    returned_object = tmt.utils.get_distgit_handler(
+    returned_object = tmt.utils.git.get_distgit_handler(
         """
         remote.origin.url git+ssh://git@gitlab.com/redhat/centos-stream/rpms/ruby.git
         """.split('\n')
     )
-    assert isinstance(returned_object, tmt.utils.CentOSDistGit)
+    assert isinstance(returned_object, tmt.utils.git.CentOSDistGit)
     # RH Gitlab detection
-    returned_object = tmt.utils.get_distgit_handler(
+    returned_object = tmt.utils.git.get_distgit_handler(
         [
             "remote.origin.url https://<redacted_credentials>@gitlab.com/redhat/rhel/rpms/osbuild.git",
         ]
     )
-    assert isinstance(returned_object, tmt.utils.RedHatGitlab)
+    assert isinstance(returned_object, tmt.utils.git.RedHatDistGit)
+    returned_object = tmt.utils.git.get_distgit_handler(
+        [
+            "remote.origin.url ssh://<redacted_credentials>@pkgs.devel.redhat.com/rpms/ruby",
+        ]
+    )
+    assert isinstance(returned_object, tmt.utils.git.RedHatDistGit)
 
 
 def test_get_distgit_handler_explicit():
-    instance = tmt.utils.get_distgit_handler(usage_name='redhatgitlab')
-    assert instance.__class__.__name__ == 'RedHatGitlab'
+    instance = tmt.utils.git.get_distgit_handler(usage_name='redhat')
+    assert instance.__class__.__name__ == 'RedHatDistGit'
 
 
 def test_fedora_dist_git(tmppath):
     # Fake values, production hash is too long
     (tmppath / 'sources').write_text('SHA512 (fn-1.tar.gz) = 09af\n')
     (tmppath / 'tmt.spec').write_text('')
-    fedora_sources_obj = tmt.utils.FedoraDistGit()
+    fedora_sources_obj = tmt.utils.git.FedoraDistGit()
     assert fedora_sources_obj.url_and_name(cwd=tmppath) == [
         (
             "https://src.fedoraproject.org/repo/pkgs/rpms/tmt/fn-1.tar.gz/sha512/09af/fn-1.tar.gz",
