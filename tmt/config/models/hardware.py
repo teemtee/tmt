@@ -9,7 +9,7 @@ class MrackTranslation(MetadataContainer):
 
      beaker:
        translations:
-         - requirement : cpu.processors
+         - requirement: cpu.processors
            template: '{"cpu": {"processors": {"_op": "{{ OPERATOR }}", "_value": "{{ VALUE }}"}}}'
 
     """
