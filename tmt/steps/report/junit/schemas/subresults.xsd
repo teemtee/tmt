@@ -68,11 +68,6 @@
         <xs:complexType>
             <xs:sequence>
                 <xs:element ref="testcase" minOccurs="0" maxOccurs="unbounded"/>
-
-                <!-- TODO: These should not be probably allowed
-                <xs:element ref="system-out" minOccurs="0" maxOccurs="1"/>
-                <xs:element ref="system-err" minOccurs="0" maxOccurs="1"/>
-                -->
             </xs:sequence>
             <xs:attribute name="name" type="xs:string" use="required"/>
             <xs:attribute name="tests" type="xs:string" use="required"/>
