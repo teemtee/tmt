@@ -33,6 +33,10 @@ a prepare step feature ``fips``. Moreover, the ``tmt try`` command
 now supports the new :ref:`/stories/cli/try/option/fips` option backed
 by the :ref:`prepare/feature</plugins/prepare/feature>` plugin.
 
+Added support translate hardware constraints using config file for ``beaker``
+provision plugin. It will try to get the config file, and find translations
+that would match the constraints.
+
 
 tmt-1.44.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -72,13 +72,10 @@ def _get_constraint_translations() -> list[MrackTranslation]:
     :returns: translations loaded from configuration, or an empty list if
         the configuration is missing.
     """
-    try:
-        config = tmt.config.Config()
-    except tmt.utils.MetadataError:
-        raise
-    if config.hardware:
-        return config.hardware.beaker.translations if config.hardware.beaker else []
-    return []
+    config = tmt.config.Config()
+    return (
+        config.hardware.beaker.translations if config.hardware and config.hardware.beaker else []
+    )
 
 
 # Type annotation for "data" package describing a guest instance. Passed
@@ -271,6 +268,10 @@ def _translate_constraint_by_config(
     constraint_translations: list[MrackTranslation],
     logger: tmt.log.Logger,
 ) -> BeakerizedConstraint:
+    """
+    Translate hardware constraints to Mrack-compatible dictionary tree.
+    """
+
     suitable_translations = [
         translation
         for translation in constraint_translations
