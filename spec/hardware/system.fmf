@@ -23,13 +23,13 @@ description: |
            # System management interface
            management-interface:
 
-               # String, name of the management interface protocol
+               # String, a name of the management interface protocol.
                protocol: IPMI
 
-               # Integer or string, management interface vendor name or id
+               # Integer or string, an management interface vendor name or id.
                vendor: "~ MontaVista Software, Inc."
 
-               # Integer or string, management interface product name or id
+               # Integer or string, an management interface product name or id.
                product: 0x4010
 
     .. versionchanged:: 1.45
