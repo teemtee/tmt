@@ -10,6 +10,7 @@ import tmt.log
 import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
+import tmt.utils.hints
 import tmt.utils.templates
 from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
@@ -21,6 +22,7 @@ from tmt.utils import (
     format_timestamp,
     render_command_report,
 )
+from tmt.utils.hints import get_hints
 
 if TYPE_CHECKING:
     import tmt.base
@@ -356,7 +358,14 @@ class AvcCheck(Check):
         return spec
 
 
-@provides_check('avc')
+@provides_check(
+    'avc',
+    hints={
+        'detection-skipped': """
+            The detection of AVC denials was skipped because the guest was not compatible.
+            """,
+    },
+)
 class AvcDenials(CheckPlugin[AvcCheck]):
     #
     # This plugin docstring has been reviewed and updated to follow
@@ -436,10 +445,27 @@ class AvcDenials(CheckPlugin[AvcCheck]):
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if not invocation.guest.facts.has_selinux:
-            return [CheckResult(name='avc', result=ResultOutcome.SKIP)]
+            return [
+                CheckResult(
+                    name='avc',
+                    result=ResultOutcome.SKIP,
+                    note=[
+                        hint.summary_ref
+                        for hint in get_hints(
+                            'test-checks/avc/detection-skipped', 'selinux-not-available'
+                        )
+                    ],
+                )
+            ]
 
         if not invocation.is_guest_healthy:
-            return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
+            return [
+                CheckResult(
+                    name='avc',
+                    result=ResultOutcome.SKIP,
+                    note=[hint.summary_ref for hint in get_hints('guest-not-healthy')],
+                )
+            ]
 
         assert invocation.phase.step.workdir is not None  # narrow type
 
