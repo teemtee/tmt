@@ -994,13 +994,17 @@ class GuestTestcloud(tmt.GuestSsh):
         # Prepare DomainConfiguration object before Instance object
         self._domain = DomainConfiguration(self.instance_name)
 
+        assert self.workdir is not None  # narrow type
+        assert isinstance(self.parent, tmt.steps.Step)  # narrow type
+        assert self.parent.plan.my_run is not None  # narrow type
+
         # Make sure that the workdir has the right selinux type set
         # and set the 'console.log' file destination path
-        assert self.workdir is not None  # narrow type
-        assert self.parent is not None  # narrow type
         if self.parent.plan.my_run.runner.facts.has_selinux:
+            policy = self.workdir / "policy.cil"
+            policy.write_text("( allow virtlogd_t user_tmp_t ( dir ( search )))")
             self._run_guest_command(
-                Command("chcon", "--type=virt_tmp_t", self.workdir),
+                Command("semodule", "--install", policy),
                 silent=True,
             )
         self._domain.console_log_file = self.workdir / 'console.log'
