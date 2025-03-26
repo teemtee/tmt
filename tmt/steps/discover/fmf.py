@@ -538,7 +538,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         for filter_ in filters:
             self.info('filter', filter_, 'green')
         # Names of tests selected by --test option
-        names = self.get('test', [])
+        names = [name.rstrip('/') for name in self.get('test', [])]
         if names:
             self.info('tests', fmf.utils.listed(names), 'green')
 
