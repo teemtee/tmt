@@ -32,10 +32,12 @@ require+:
     enabled: false
 
     adjust+:
-      - when: initiator is not defined or distro == fedora-39
-        because: Enable locally or in CI on Fedora 39
-
+      - when: initiator is not defined or distro == fedora-rawhide
         enabled: true
+        because:
+            We want to run this locally and it's enough to execute
+            on a single distro when run in the CI. We don't need
+            to exercise this again and again across all distros.
 
     /basic:
         summary: Basic unit tests (development packages)

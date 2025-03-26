@@ -2,6 +2,7 @@ summary: Story keys are correctly displayed
 title: Concise title
 story: As a user I want this and that
 description: Some description
+author: Original Author <original@author.org>
 contact: Some Body <somebody@somewhere.org>
 priority: must have
 example: Inspiring example

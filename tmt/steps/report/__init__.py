@@ -1,4 +1,3 @@
-import dataclasses
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 import click
@@ -6,6 +5,7 @@ import click
 import tmt
 import tmt.plugins
 import tmt.steps
+from tmt.container import container
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     import tmt.cli
 
 
-@dataclasses.dataclass
+@container
 class ReportStepData(tmt.steps.StepData):
     pass
 
@@ -23,7 +23,9 @@ ReportStepDataT = TypeVar('ReportStepDataT', bound=ReportStepData)
 
 
 class ReportPlugin(tmt.steps.GuestlessPlugin[ReportStepDataT, None]):
-    """ Common parent of report plugins """
+    """
+    Common parent of report plugins
+    """
 
     # ignore[assignment]: as a base class, ReportStepData is not included in
     # ReportStepDataT.
@@ -37,10 +39,13 @@ class ReportPlugin(tmt.steps.GuestlessPlugin[ReportStepDataT, None]):
 
     @classmethod
     def base_command(
-            cls,
-            usage: str,
-            method_class: Optional[type[click.Command]] = None) -> click.Command:
-        """ Create base click command (common for all report plugins) """
+        cls,
+        usage: str,
+        method_class: Optional[type[click.Command]] = None,
+    ) -> click.Command:
+        """
+        Create base click command (common for all report plugins)
+        """
 
         # Prepare general usage message for the step
         if method_class:
@@ -50,8 +55,11 @@ class ReportPlugin(tmt.steps.GuestlessPlugin[ReportStepDataT, None]):
         @click.command(cls=method_class, help=usage)
         @click.pass_context
         @option(
-            '-h', '--how', metavar='METHOD',
-            help='Use specified method for results reporting.')
+            '-h',
+            '--how',
+            metavar='METHOD',
+            help='Use specified method for results reporting.',
+        )
         @tmt.steps.PHASE_OPTIONS
         def report(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             context.obj.steps.add('report')
@@ -60,13 +68,17 @@ class ReportPlugin(tmt.steps.GuestlessPlugin[ReportStepDataT, None]):
         return report
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        """ Perform actions shared among plugins when beginning their tasks """
+        """
+        Perform actions shared among plugins when beginning their tasks
+        """
 
         self.go_prolog(logger or self._logger)
 
 
 class Report(tmt.steps.Step):
-    """ Provide test results overview and send reports. """
+    """
+    Provide test results overview and send reports.
+    """
 
     # Default implementation for report is display
     DEFAULT_HOW = 'display'
@@ -74,7 +86,10 @@ class Report(tmt.steps.Step):
     _plugin_base_class = ReportPlugin
 
     def wake(self) -> None:
-        """ Wake up the step (process workdir and command line) """
+        """
+        Wake up the step (process workdir and command line)
+        """
+
         super().wake()
 
         # Choose the right plugin and wake it up
@@ -82,26 +97,32 @@ class Report(tmt.steps.Step):
             # FIXME: cast() - see https://github.com/teemtee/tmt/issues/1599
             plugin = cast(
                 ReportPlugin[ReportStepData],
-                ReportPlugin.delegate(self, data=data))
+                ReportPlugin.delegate(self, data=data),
+            )
             plugin.wake()
             self._phases.append(plugin)
 
         # Nothing more to do if already done and not asked to run again
         if self.status() == 'done' and not self.should_run_again:
-            self.debug(
-                'Report wake up complete (already done before).', level=2)
+            self.debug('Report wake up complete (already done before).', level=2)
         # Save status and step data (now we know what to do)
         else:
             self.status('todo')
             self.save()
 
     def summary(self) -> None:
-        """ Give a concise report summary """
+        """
+        Give a concise report summary
+        """
+
         summary = tmt.result.Result.summary(self.plan.execute.results())
         self.info('summary', summary, 'green', shift=1)
 
     def go(self, force: bool = False) -> None:
-        """ Report the results """
+        """
+        Report the results
+        """
+
         super().go(force=force)
 
         # Nothing more to do if already done

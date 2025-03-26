@@ -32,32 +32,35 @@ def _run_precommit() -> None:  # pyright: ignore[reportUnusedFunction] (used by 
 
     # At this point we need to check and re-order the arguments if needed
     for pattern, nargs in [
-            (r"(--root$|-r)", 1),
-            (r"(--root=.*)", 0),
-            (r"(--verbose$|-v+)", 0),
-            (r"(--debug$|-d+)", 0),
-            (r"(--pre-check$)", 0),
-            ]:
-        if any(match := re.match(pattern, arg) for arg in argv[1:last_arg + 1]):
+        (r"(--root$|-r)", 1),
+        (r"(--root=.*)", 0),
+        (r"(--verbose$|-v+)", 0),
+        (r"(--debug$|-d+)", 0),
+        (r"(--pre-check$)", 0),
+    ]:
+        if any(match := re.match(pattern, arg) for arg in argv[1 : last_arg + 1]):
             assert match
             # Actual argument matched
             actual_arg = match.group(1)
-            indx = argv.index(actual_arg)
+            index = argv.index(actual_arg)
             # Example of reorder args:
             # ["tmt", "tests", "lint", "--fix", "--root", "/some/path", "some_file"]
             # - argv[0]: name of the program is always first
             #   ["tmt"]
-            # - argv[indx:indx+1+nargs]: args to move (pass to `tmt.cli._root.main`)
+            # - argv[index:index+1+nargs]: args to move (pass to `tmt.cli._root.main`)
             #   ["--root", "/some/path"]
-            # - argv[1:indx]: all other keywords (`lint` keyword is in here)
+            # - argv[1:index]: all other keywords (`lint` keyword is in here)
             #   ["tests", "lint", "--fix"]
-            # - argv[indx+1+nargs:]: All remaining keywords
+            # - argv[index+1+nargs:]: All remaining keywords
             #   ["some_file"]
             # After reorder:
             # ["tmt", "--root", "/some/path", "tests", "lint", "--fix", "some_file"]
             argv = (
-                argv[0:1] + argv[indx: indx + 1 + nargs] + argv[1:indx] + argv[indx + 1 + nargs:]
-                )
+                argv[0:1]
+                + argv[index : index + 1 + nargs]
+                + argv[1:index]
+                + argv[index + 1 + nargs :]
+            )
     # Finally move the reordered args to sys.argv and run the cli
     sys.argv = argv
     run_cli()

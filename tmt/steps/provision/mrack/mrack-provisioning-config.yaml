@@ -63,8 +63,10 @@ beaker:
         fedora-38: Fedora-38%
         fedora-39: Fedora-39%
         fedora-40: Fedora-40%
-        fedora-latest: Fedora-40%
-        fedora: Fedora-40%
+        fedora-41: Fedora-41%
+        fedora-42: Fedora-42%
+        fedora-latest: Fedora-41%
+        fedora: Fedora-41%
         fedora-rawhide: Fedora-Rawhide-%
 
     distro_variants:
@@ -85,6 +87,8 @@ beaker:
         Fedora-38%: Server
         Fedora-39%: Server
         Fedora-40%: Server
+        Fedora-41%: Server
+        Fedora-42%: Server
 
     distro_tags:
         RHEL-9.0%:

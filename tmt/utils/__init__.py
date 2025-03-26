@@ -1,4 +1,6 @@
-""" Test Metadata Utilities """
+"""
+Test Metadata Utilities
+"""
 
 import contextlib
 import copy
@@ -7,7 +9,6 @@ import datetime
 import enum
 import functools
 import importlib.resources
-import inspect
 import io
 import json
 import os
@@ -26,7 +27,7 @@ import unicodedata
 import urllib.parse
 import warnings
 from collections import Counter
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Iterator
 from math import ceil
 from re import Pattern
 from threading import RLock, Thread
@@ -44,7 +45,7 @@ from typing import (
     Union,
     cast,
     overload,
-    )
+)
 
 import click
 import fmf
@@ -65,14 +66,12 @@ from urllib3.response import HTTPResponse
 
 import tmt.log
 from tmt._compat.pathlib import Path
+from tmt.container import container
 from tmt.log import LoggableValue
 
 if TYPE_CHECKING:
-    from _typeshed import DataclassInstance
-
     import tmt.base
     import tmt.cli
-    import tmt.options
     import tmt.steps
     from tmt._compat.typing import Self, TypeAlias
     from tmt.hardware import Size
@@ -97,7 +96,8 @@ def configure_optional_constant(default: Optional[int], envvar: str) -> Optional
 
     except ValueError as exc:
         raise tmt.utils.GeneralError(
-            f"Could not parse '{envvar}={os.environ[envvar]}' as integer.") from exc
+            f"Could not parse '{envvar}={os.environ[envvar]}' as integer."
+        ) from exc
 
 
 def configure_constant(default: int, envvar: str) -> int:
@@ -116,11 +116,34 @@ def configure_constant(default: int, envvar: str) -> int:
 
     except ValueError as exc:
         raise tmt.utils.GeneralError(
-            f"Could not parse '{envvar}={os.environ[envvar]}' as integer.") from exc
+            f"Could not parse '{envvar}={os.environ[envvar]}' as integer."
+        ) from exc
+
+
+def configure_bool_constant(default: bool, envvar: str) -> bool:
+    """
+    Deduce the bool value of global constant.
+
+    Value '1' means True, all other values mean False.
+
+    :param default: the default value of the constant.
+    :param envvar: name of the optional environment variable which would
+        override the default value.
+    :returns: value extracted from the environment variable, or the
+        given default value if the variable did not exist.
+    """
+    value = os.environ.get(envvar)
+    if value is None:
+        return default
+    return value == "1"
 
 
 log = fmf.utils.Logging('tmt').logger
 
+
+#: How many leading characters to display in tracebacks with
+#: ``TMT_SHOW_TRACEBACK=2``.
+TRACEBACK_LOCALS_TRIM = 1024
 
 # Default workdir root and max
 WORKDIR_ROOT = Path('/var/tmp/tmt')  # noqa: S108 insecure usage of temporary dir
@@ -141,13 +164,8 @@ OUTPUT_WIDTH: int = configure_constant(DEFAULT_OUTPUT_WIDTH, 'TMT_OUTPUT_WIDTH')
 # Hierarchy indent
 INDENT = 4
 
-# Default name and order for step plugins
+# Default name for step plugins
 DEFAULT_NAME = 'default'
-DEFAULT_PLUGIN_ORDER = 50
-DEFAULT_PLUGIN_ORDER_MULTIHOST = 10
-DEFAULT_PLUGIN_ORDER_ESSENTIAL_REQUIRES = 30
-DEFAULT_PLUGIN_ORDER_REQUIRES = 70
-DEFAULT_PLUGIN_ORDER_RECOMMENDS = 75
 
 
 # Special process return codes
@@ -180,12 +198,16 @@ class ProcessExitCodes(enum.IntEnum):
 
     @classmethod
     def is_pidfile(cls, exit_code: Optional[int]) -> bool:
-        return exit_code in (ProcessExitCodes.TEST_PIDFILE_LOCK_FAILED,
-                             ProcessExitCodes.TEST_PIDFILE_UNLOCK_FAILED)
+        return exit_code in (
+            ProcessExitCodes.TEST_PIDFILE_LOCK_FAILED,
+            ProcessExitCodes.TEST_PIDFILE_UNLOCK_FAILED,
+        )
 
     @classmethod
     def format(cls, exit_code: int) -> Optional[str]:
-        """ Format a given exit code for nicer logging """
+        """
+        Format a given exit code for nicer logging
+        """
 
         member = cls._value2member_map_.get(exit_code)
 
@@ -221,8 +243,8 @@ DEFAULT_RETRIABLE_HTTP_CODES: Optional[tuple[int, ...]] = (
     500,  # Internal Server Error
     502,  # Bad Gateway
     503,  # Service Unavailable
-    504   # Gateway Timeout
-    )
+    504,  # Gateway Timeout
+)
 
 # Default for wait()-related options
 DEFAULT_WAIT_TICK: float = 30.0
@@ -231,7 +253,8 @@ DEFAULT_WAIT_TICK_INCREASE: float = 1.0
 # Defaults for GIT attempts and interval
 DEFAULT_GIT_CLONE_TIMEOUT: Optional[int] = None
 GIT_CLONE_TIMEOUT: Optional[int] = configure_optional_constant(
-    DEFAULT_GIT_CLONE_TIMEOUT, 'TMT_GIT_CLONE_TIMEOUT')
+    DEFAULT_GIT_CLONE_TIMEOUT, 'TMT_GIT_CLONE_TIMEOUT'
+)
 
 DEFAULT_GIT_CLONE_ATTEMPTS: int = 3
 GIT_CLONE_ATTEMPTS: int = configure_constant(DEFAULT_GIT_CLONE_ATTEMPTS, 'TMT_GIT_CLONE_ATTEMPTS')
@@ -254,6 +277,7 @@ def effective_workdir_root(workdir_root_option: Optional[Path] = None) -> Path:
     Otherwise, the ``TMT_WORKDIR_ROOT`` environment variable is used if set.
     If neither is specified, the default value of :py:data:``WORKDIR_ROOT`` is used.
     """
+
     if workdir_root_option:
         return workdir_root_option
 
@@ -285,15 +309,17 @@ class FmfContext(dict[str, list[str]]):
             -c arch=x86_64,ppc64 -> {'arch': ['x86_64', 'ppc64']}
         """
 
-        return FmfContext({
-            key: value.split(',')
-            for key, value in Environment.from_sequence(spec, logger).items()})
+        return FmfContext(
+            {
+                key: value.split(',')
+                for key, value in Environment.from_sequence(spec, logger).items()
+            }
+        )
 
     @classmethod
     def _normalize_fmf(
-            cls,
-            spec: dict[str, Union[str, list[str]]],
-            logger: tmt.log.Logger) -> 'FmfContext':
+        cls, spec: dict[str, Union[str, list[str]]], logger: tmt.log.Logger
+    ) -> 'FmfContext':
         """
         Normalize fmf context specification from fmf node.
 
@@ -339,7 +365,9 @@ class FmfContext(dict[str, list[str]]):
         raise NormalizationError(key_address, spec, 'a list of strings or a dictionary')
 
     def to_spec(self) -> dict[str, Any]:
-        """ Convert to a form suitable for saving in a specification file """
+        """
+        Convert to a form suitable for saving in a specification file
+        """
 
         return dict(self)
 
@@ -353,7 +381,9 @@ EnvVarName: 'TypeAlias' = str
 
 
 class EnvVarValue(str):
-    """ A type of environment variable value """
+    """
+    A type of environment variable value
+    """
 
     def __new__(cls, raw_value: Any) -> 'EnvVarValue':
         if isinstance(raw_value, str):
@@ -363,7 +393,8 @@ class EnvVarValue(str):
             return str.__new__(cls, str(raw_value))
 
         raise GeneralError(
-            f"Only strings and paths can be environment variables, '{type(raw_value)}' found.")
+            f"Only strings and paths can be environment variables, '{type(raw_value)}' found."
+        )
 
 
 class Environment(dict[str, EnvVarValue]):
@@ -422,23 +453,23 @@ class Environment(dict[str, EnvVarValue]):
         if not isinstance(yaml, dict):
             raise GeneralError(
                 'Failed to extract variables from YAML format, '
-                'YAML defining variables must be a dictionary.')
+                'YAML defining variables must be a dictionary.'
+            )
 
         if any(isinstance(v, (dict, list)) for v in yaml.values()):
             raise GeneralError(
                 'Failed to extract variables from YAML format, '
-                'only primitive types are accepted as values.')
+                'only primitive types are accepted as values.'
+            )
 
-        return Environment({
-            key: EnvVarValue(str(value))
-            for key, value in yaml.items()
-            })
+        return Environment({key: EnvVarValue(str(value)) for key, value in yaml.items()})
 
     @classmethod
     def from_yaml_file(
-            cls,
-            filepath: Path,
-            logger: tmt.log.Logger) -> 'Environment':
+        cls,
+        filepath: Path,
+        logger: tmt.log.Logger,
+    ) -> 'Environment':
         """
         Construct environment from a YAML file.
 
@@ -454,16 +485,18 @@ class Environment(dict[str, EnvVarValue]):
             content = filepath.read_text()
 
         except Exception as exc:
-            raise GeneralError(f"Failed to extract variables from YAML file '{filepath}'.") \
-                from exc
+            raise GeneralError(
+                f"Failed to extract variables from YAML file '{filepath}'."
+            ) from exc
 
         return cls.from_yaml(content)
 
     @classmethod
     def from_sequence(
-            cls,
-            variables: Union[str, list[str]],
-            logger: tmt.log.Logger) -> 'Environment':
+        cls,
+        variables: Union[str, list[str]],
+        logger: tmt.log.Logger,
+    ) -> 'Environment':
         """
         Construct environment from a sequence of variables.
 
@@ -499,8 +532,7 @@ class Environment(dict[str, EnvVarValue]):
             for var in shlex.split(variable):
                 if var.startswith('@'):
                     if not var[1:]:
-                        raise GeneralError(
-                            f"Invalid variable file specification '{var}'.")
+                        raise GeneralError(f"Invalid variable file specification '{var}'.")
 
                     filepath = Path(var[1:])
 
@@ -522,11 +554,12 @@ class Environment(dict[str, EnvVarValue]):
 
     @classmethod
     def from_file(
-            cls,
-            *,
-            filename: str,
-            root: Optional[Path] = None,
-            logger: tmt.log.Logger) -> 'Environment':
+        cls,
+        *,
+        filename: str,
+        root: Optional[Path] = None,
+        logger: tmt.log.Logger,
+    ) -> 'Environment':
         """
         Construct environment from a file.
 
@@ -564,14 +597,15 @@ class Environment(dict[str, EnvVarValue]):
                 allowed_methods=('GET',),
                 status_forcelist=DEFAULT_RETRIABLE_HTTP_CODES,
                 logger=logger,
-                )
+            )
             try:
                 response = session.get(filename)
                 response.raise_for_status()
                 content = response.text
             except requests.RequestException as error:
-                raise GeneralError(f"Failed to extract variables from URL '{filename}'.") \
-                    from error
+                raise GeneralError(
+                    f"Failed to extract variables from URL '{filename}'."
+                ) from error
 
         # Read a local file
         else:
@@ -583,7 +617,8 @@ class Environment(dict[str, EnvVarValue]):
             if not environment_filepath.is_relative_to(root):
                 raise GeneralError(
                     f"Failed to extract variables from file '{environment_filepath}' as it "
-                    f"lies outside the metadata tree root '{root}'.")
+                    f"lies outside the metadata tree root '{root}'."
+                )
             if not environment_filepath.is_file():
                 raise GeneralError(f"File '{environment_filepath}' doesn't exist.")
 
@@ -605,11 +640,12 @@ class Environment(dict[str, EnvVarValue]):
 
     @classmethod
     def from_files(
-            cls,
-            *,
-            filenames: Iterable[str],
-            root: Optional[Path] = None,
-            logger: tmt.log.Logger) -> 'Environment':
+        cls,
+        *,
+        filenames: Iterable[str],
+        root: Optional[Path] = None,
+        logger: tmt.log.Logger,
+    ) -> 'Environment':
         """
         Read environment variables from the given list of files.
 
@@ -647,15 +683,16 @@ class Environment(dict[str, EnvVarValue]):
 
     @classmethod
     def from_inputs(
-            cls,
-            *,
-            raw_fmf_environment: Any = None,
-            raw_fmf_environment_files: Any = None,
-            raw_cli_environment: Any = None,
-            raw_cli_environment_files: Any = None,
-            file_root: Optional[Path] = None,
-            key_address: Optional[str] = None,
-            logger: tmt.log.Logger) -> 'Environment':
+        cls,
+        *,
+        raw_fmf_environment: Any = None,
+        raw_fmf_environment_files: Any = None,
+        raw_cli_environment: Any = None,
+        raw_cli_environment_files: Any = None,
+        file_root: Optional[Path] = None,
+        key_address: Optional[str] = None,
+        logger: tmt.log.Logger,
+    ) -> 'Environment':
         """
         Extract environment variables from various sources.
 
@@ -696,12 +733,14 @@ class Environment(dict[str, EnvVarValue]):
             from_fmf_files = cls.from_files(
                 filenames=raw_fmf_environment_files,
                 root=file_root,
-                logger=logger)
+                logger=logger,
+            )
         else:
             raise NormalizationError(
                 f'{key_address_prefix}environment-file',
                 raw_fmf_environment_files,
-                'unset or a list of paths')
+                'unset or a list of paths',
+            )
 
         if raw_fmf_environment is None:
             pass
@@ -709,7 +748,8 @@ class Environment(dict[str, EnvVarValue]):
             from_fmf_dict = Environment.from_dict(raw_fmf_environment)
         else:
             raise NormalizationError(
-                f'{key_address_prefix}environment', raw_fmf_environment, 'unset or a dictionary')
+                f'{key_address_prefix}environment', raw_fmf_environment, 'unset or a dictionary'
+            )
 
         if raw_cli_environment_files is None:
             pass
@@ -717,10 +757,12 @@ class Environment(dict[str, EnvVarValue]):
             from_cli_files = Environment.from_files(
                 filenames=raw_cli_environment_files,
                 root=file_root,
-                logger=logger)
+                logger=logger,
+            )
         else:
             raise NormalizationError(
-                'environment-file', raw_cli_environment_files, 'unset or a list of paths')
+                'environment-file', raw_cli_environment_files, 'unset or a list of paths'
+            )
 
         if raw_cli_environment is None:
             pass
@@ -728,85 +770,94 @@ class Environment(dict[str, EnvVarValue]):
             from_cli = Environment.from_sequence(list(raw_cli_environment), logger)
         else:
             raise NormalizationError(
-                'environment', raw_cli_environment, 'unset or a list of key/value pairs')
+                'environment', raw_cli_environment, 'unset or a list of key/value pairs'
+            )
 
         # Combine all sources into one mapping, honor the order in which they override
         # other sources.
-        return Environment({
-            **from_fmf_files,
-            **from_fmf_dict,
-            **from_cli_files,
-            **from_cli
-            })
+        return Environment(
+            {
+                **from_fmf_files,
+                **from_fmf_dict,
+                **from_cli_files,
+                **from_cli,
+            }
+        )
 
     @classmethod
     def from_dict(cls, data: Optional[dict[str, Any]] = None) -> 'Environment':
-        """ Create environment variables from a dictionary """
+        """
+        Create environment variables from a dictionary
+        """
+
         if not data:
             return Environment()
 
-        return Environment({
-            str(key): EnvVarValue(str(value))
-            for key, value in data.items()
-            })
+        return Environment({str(key): EnvVarValue(str(value)) for key, value in data.items()})
 
     @classmethod
     def from_environ(cls) -> 'Environment':
-        """ Extract environment variables from the live environment """
+        """
+        Extract environment variables from the live environment
+        """
 
-        return Environment({
-            key: EnvVarValue(value) for key, value in os.environ.items()
-            })
+        return Environment({key: EnvVarValue(value) for key, value in os.environ.items()})
 
     @classmethod
     def from_fmf_context(cls, fmf_context: FmfContext) -> 'Environment':
-        """ Create environment variables from an fmf context """
+        """
+        Create environment variables from an fmf context
+        """
 
-        return Environment({
-            key: EnvVarValue(','.join(value))
-            for key, value in fmf_context.items()
-            })
+        return Environment(
+            {key: EnvVarValue(','.join(value)) for key, value in fmf_context.items()}
+        )
 
     @classmethod
     def from_fmf_spec(cls, data: Optional[dict[str, Any]] = None) -> 'Environment':
-        """ Create environment from an fmf specification """
+        """
+        Create environment from an fmf specification
+        """
 
         if not data:
             return Environment()
 
-        return Environment({
-            key: EnvVarValue(str(value)) for key, value in data.items()
-            })
+        return Environment({key: EnvVarValue(str(value)) for key, value in data.items()})
 
     def to_fmf_spec(self) -> dict[str, str]:
-        """ Convert to an fmf specification """
+        """
+        Convert to an fmf specification
+        """
 
-        return {
-            key: str(value) for key, value in self.items()
-            }
+        return {key: str(value) for key, value in self.items()}
 
     def to_popen(self) -> dict[str, str]:
-        """ Convert to a form accepted by :py:class:`subprocess.Popen` """
+        """
+        Convert to a form accepted by :py:class:`subprocess.Popen`
+        """
 
         return self.to_environ()
 
     def to_environ(self) -> dict[str, str]:
-        """ Convert to a form compatible with :py:attr:`os.environ` """
+        """
+        Convert to a form compatible with :py:attr:`os.environ`
+        """
 
-        return {
-            key: str(value) for key, value in self.items()
-            }
+        return {key: str(value) for key, value in self.items()}
 
     def copy(self) -> 'Environment':
         return Environment(self)
 
     @classmethod
     def normalize(
-            cls,
-            key_address: str,
-            value: Any,
-            logger: tmt.log.Logger) -> 'Environment':
-        """ Normalize value of ``environment`` key """
+        cls,
+        key_address: str,
+        value: Any,
+        logger: tmt.log.Logger,
+    ) -> 'Environment':
+        """
+        Normalize value of ``environment`` key
+        """
 
         # Note: this normalization callback is an exception, it does not
         # bother with CLI input. Environment handling is complex, and CLI
@@ -817,9 +868,7 @@ class Environment(dict[str, EnvVarValue]):
             return cls()
 
         if isinstance(value, dict):
-            return cls({
-                k: EnvVarValue(str(v)) for k, v in value.items()
-                })
+            return cls({k: EnvVarValue(str(v)) for k, v in value.items()})
 
         raise NormalizationError(key_address, value, 'unset or a dictionary')
 
@@ -859,8 +908,8 @@ PLAN_SKIP_WORKTREE_INIT = 'plan_skip_worktree_init'
 # List of schemas that need to be ignored in a plan
 PLAN_SCHEMA_IGNORED_IDS: list[str] = [
     '/schemas/provision/hardware',
-    '/schemas/provision/kickstart'
-    ]
+    '/schemas/provision/kickstart',
+]
 
 
 # TODO: `StreamLogger` is a dedicated thread following given stream, passing their content to
@@ -883,13 +932,14 @@ class StreamLogger(Thread):
     """
 
     def __init__(
-            self,
-            log_header: str,
-            *,
-            stream: Optional[IO[bytes]] = None,
-            logger: Optional[tmt.log.LoggingFunction] = None,
-            click_context: Optional[click.Context] = None,
-            stream_output: bool = True) -> None:
+        self,
+        log_header: str,
+        *,
+        stream: Optional[IO[bytes]] = None,
+        logger: Optional[tmt.log.LoggingFunction] = None,
+        click_context: Optional[click.Context] = None,
+        stream_output: bool = True,
+    ) -> None:
         super().__init__(daemon=True)
 
         self.stream = stream
@@ -912,11 +962,7 @@ class StreamLogger(Thread):
         for _line in self.stream:
             line = _line.decode('utf-8', errors='replace')
             if self.stream_output and line != '':
-                self.logger(
-                    self.log_header,
-                    line.rstrip('\n'),
-                    'yellow',
-                    level=3)
+                self.logger(self.log_header, line.rstrip('\n'), 'yellow', level=3)
             self.output.append(line)
 
     def get_output(self) -> Optional[str]:
@@ -960,18 +1006,20 @@ RawCommand = list[RawCommandElement]
 #: child process.
 OnProcessStartCallback = Callable[
     ['Command', subprocess.Popen[bytes], tmt.log.Logger],
-    None
-    ]
+    None,
+]
 
 
-@dataclasses.dataclass(frozen=True)
+@container(frozen=True)
 class CommandOutput:
     stdout: Optional[str]
     stderr: Optional[str]
 
 
 class ShellScript:
-    """ A shell script, a free-form blob of text understood by a shell. """
+    """
+    A shell script, a free-form blob of text understood by a shell.
+    """
 
     def __init__(self, script: str) -> None:
         """
@@ -1021,7 +1069,9 @@ class ShellScript:
         return ShellScript('; '.join(script._script for script in scripts if bool(script)))
 
     def to_element(self) -> _CommandElement:
-        """ Convert a shell script to a command element """
+        """
+        Convert a shell script to a command element
+        """
 
         return self._script
 
@@ -1037,7 +1087,9 @@ class ShellScript:
 
 
 class Command:
-    """ A command with its arguments. """
+    """
+    A command with its arguments.
+    """
 
     def __init__(self, *elements: RawCommandElement) -> None:
         self._command = [str(element) for element in elements]
@@ -1072,29 +1124,32 @@ class Command:
         return ShellScript(' '.join(shlex.quote(s) for s in self._command))
 
     def to_popen(self) -> list[str]:
-        """ Convert a command to form accepted by :py:mod:`subprocess.Popen` """
+        """
+        Convert a command to form accepted by :py:mod:`subprocess.Popen`
+        """
 
         return list(self._command)
 
     def run(
-            self,
-            *,
-            cwd: Optional[Path],
-            shell: bool = False,
-            env: Optional[Environment] = None,
-            dry: bool = False,
-            join: bool = False,
-            interactive: bool = False,
-            timeout: Optional[int] = None,
-            on_process_start: Optional[OnProcessStartCallback] = None,
-            # Logging
-            message: Optional[str] = None,
-            friendly_command: Optional[str] = None,
-            log: Optional[tmt.log.LoggingFunction] = None,
-            silent: bool = False,
-            stream_output: bool = True,
-            caller: Optional['Common'] = None,
-            logger: tmt.log.Logger) -> CommandOutput:
+        self,
+        *,
+        cwd: Optional[Path],
+        shell: bool = False,
+        env: Optional[Environment] = None,
+        dry: bool = False,
+        join: bool = False,
+        interactive: bool = False,
+        timeout: Optional[int] = None,
+        on_process_start: Optional[OnProcessStartCallback] = None,
+        # Logging
+        message: Optional[str] = None,
+        friendly_command: Optional[str] = None,
+        log: Optional[tmt.log.LoggingFunction] = None,
+        silent: bool = False,
+        stream_output: bool = True,
+        caller: Optional['Common'] = None,
+        logger: tmt.log.Logger,
+    ) -> CommandOutput:
         """
         Run command, give message, handle errors.
 
@@ -1172,6 +1227,7 @@ class Command:
         executable = DEFAULT_SHELL if shell else None
 
         if interactive:
+
             def _spawn_process() -> subprocess.Popen[bytes]:
                 return subprocess.Popen(
                     self.to_popen(),
@@ -1187,9 +1243,11 @@ class Command:
                     stdin=None,
                     stdout=None,
                     stderr=None,
-                    executable=executable)
+                    executable=executable,
+                )
 
         else:
+
             def _spawn_process() -> subprocess.Popen[bytes]:
                 return subprocess.Popen(
                     self.to_popen(),
@@ -1200,7 +1258,8 @@ class Command:
                     stdin=subprocess.DEVNULL,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT if join else subprocess.PIPE,
-                    executable=executable)
+                    executable=executable,
+                )
 
         # Spawn the child process
         try:
@@ -1219,7 +1278,8 @@ class Command:
                 stream=process.stdout,
                 logger=output_logger,
                 click_context=click.get_current_context(silent=True),
-                stream_output=stream_output)
+                stream_output=stream_output,
+            )
 
             if join:
                 stderr_logger: StreamLogger = UnusedStreamLogger('err')
@@ -1230,7 +1290,8 @@ class Command:
                     stream=process.stderr,
                     logger=output_logger,
                     click_context=click.get_current_context(silent=True),
-                    stream_output=stream_output)
+                    stream_output=stream_output,
+                )
 
             stdout_logger.start()
             stderr_logger.start()
@@ -1246,7 +1307,8 @@ class Command:
                 'Command event',
                 f'{_event_timestamp()} {msg}',
                 level=4,
-                topic=tmt.log.Topic.COMMAND_EVENTS)
+                topic=tmt.log.Topic.COMMAND_EVENTS,
+            )
 
         log_event('waiting for process to finish')
 
@@ -1288,7 +1350,9 @@ class Command:
 
         logger.debug(
             f"Command returned '{process.returncode}' "
-            f"({ProcessExitCodes.format(process.returncode)}).", level=3)
+            f"({ProcessExitCodes.format(process.returncode)}).",
+            level=3,
+        )
 
         # Handle the exit code, return output
         if process.returncode != ProcessExitCodes.SUCCESS:
@@ -1307,7 +1371,8 @@ class Command:
                 process.returncode,
                 stdout=stdout,
                 stderr=stderr,
-                caller=caller)
+                caller=caller,
+            )
 
         return CommandOutput(stdout, stderr)
 
@@ -1432,16 +1497,17 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self._logger = logger
 
     def __init__(
-            self,
-            *,
-            parent: Optional[CommonDerivedType] = None,
-            name: Optional[str] = None,
-            workdir: WorkdirArgumentType = None,
-            workdir_root: Optional[Path] = None,
-            relative_indent: int = 1,
-            cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
-            logger: tmt.log.Logger,
-            **kwargs: Any) -> None:
+        self,
+        *,
+        parent: Optional[CommonDerivedType] = None,
+        name: Optional[str] = None,
+        workdir: WorkdirArgumentType = None,
+        workdir_root: Optional[Path] = None,
+        relative_indent: int = 1,
+        cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
+        logger: tmt.log.Logger,
+        **kwargs: Any,
+    ) -> None:
         """
         Initialize name and relation with the parent object
 
@@ -1457,7 +1523,8 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             workdir=workdir,
             relative_indent=relative_indent,
             logger=logger,
-            **kwargs)
+            **kwargs,
+        )
 
         # Use lowercase class name as the default name
         self.name = name or self.__class__.__name__.lower()
@@ -1512,7 +1579,10 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         return sanitize_name(self.name, allow_slash=False)
 
     def __str__(self) -> str:
-        """ Name is the default string representation """
+        """
+        Name is the default string representation
+        """
+
         return self.name
 
     #
@@ -1534,9 +1604,10 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
     @classmethod
     def store_cli_invocation(
-            cls,
-            context: Optional['tmt.cli.Context'],
-            options: Optional[dict[str, Any]] = None) -> 'tmt.cli.CliInvocation':
+        cls,
+        context: Optional['tmt.cli.Context'],
+        options: Optional[dict[str, Any]] = None,
+    ) -> 'tmt.cli.CliInvocation':
         """
         Record a CLI invocation and options it carries for later use.
 
@@ -1555,7 +1626,8 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         if cls.cli_invocation is not None:
             raise GeneralError(
-                f"{cls.__name__} attempted to save a second CLI context: {cls.cli_invocation}")
+                f"{cls.__name__} attempted to save a second CLI context: {cls.cli_invocation}"
+            )
 
         if options is not None:
             cls.cli_invocation = tmt.cli.CliInvocation.from_options(options)
@@ -1563,7 +1635,8 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             cls.cli_invocation = tmt.cli.CliInvocation.from_context(context)
         else:
             raise GeneralError(
-                "Either context or options have to be provided to store_cli_invocation().")
+                "Either context or options have to be provided to store_cli_invocation()."
+            )
 
         return cls.cli_invocation
 
@@ -1654,7 +1727,9 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
     @property
     def _fmf_context(self) -> FmfContext:
-        """ An fmf context set for this object. """
+        """
+        An fmf context set for this object.
+        """
 
         # By default, the only fmf context available is one provided via CLI.
         # But some derived classes can and will override this, because fmf
@@ -1673,7 +1748,10 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
     @classmethod
     def _opt(cls, option: str, default: Any = None) -> Any:
-        """ Get an option from the command line context (class version) """
+        """
+        Get an option from the command line context (class version)
+        """
+
         if cls.ignore_class_options:
             return default
 
@@ -1697,12 +1775,16 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         Environment variables override command line options.
         """
+
         # Translate dashes to underscores to match click's conversion
         option = option.replace('-', '_')
 
         # Get local option
-        local = self._inherited_cli_invocation.options.get(
-            option, default) if self._inherited_cli_invocation else None
+        local = (
+            self._inherited_cli_invocation.options.get(option, default)
+            if self._inherited_cli_invocation
+            else None
+        )
 
         # Check parent option
         parent = None
@@ -1712,29 +1794,41 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
     @property
     def debug_level(self) -> int:
-        """ The current debug level applied to this object """
+        """
+        The current debug level applied to this object
+        """
 
         return self._logger.debug_level
 
     @debug_level.setter
     def debug_level(self, level: int) -> None:
-        """ Update the debug level attached to this object """
+        """
+        Update the debug level attached to this object
+        """
+
         self._logger.debug_level = level
 
     @property
     def verbosity_level(self) -> int:
-        """ The current verbosity level applied to this object """
+        """
+        The current verbosity level applied to this object
+        """
 
         return self._logger.verbosity_level
 
     @verbosity_level.setter
     def verbosity_level(self, level: int) -> None:
-        """ Update the verbosity level attached to this object """
+        """
+        Update the verbosity level attached to this object
+        """
+
         self._logger.verbosity_level = level
 
     @property
     def quietness(self) -> bool:
-        """ The current quietness level applied to this object """
+        """
+        The current quietness level applied to this object
+        """
 
         return self._logger.quiet
 
@@ -1772,53 +1866,64 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
     @property
     def is_dry_run(self) -> bool:
-        """ Whether the current run is a dry-run """
+        """
+        Whether the current run is a dry-run
+        """
 
         return self._get_cli_flag('is_dry_run', 'dry', False)
 
     @property
     def is_forced_run(self) -> bool:
-        """ Whether the current run is allowed to overwrite files and data """
+        """
+        Whether the current run is allowed to overwrite files and data
+        """
 
         return self._get_cli_flag('is_forced_run', 'force', False)
 
     @property
     def should_run_again(self) -> bool:
-        """ Whether selected step or the whole run should be run again """
+        """
+        Whether selected step or the whole run should be run again
+        """
 
         return self._get_cli_flag('should_run_again', 'again', False)
 
     @property
     def is_feeling_safe(self) -> bool:
-        """ Whether the current run is allowed to run unsafe actions """
+        """
+        Whether the current run is allowed to run unsafe actions
+        """
 
         return self._get_cli_flag('is_feeling_safe', 'feeling_safe', False)
 
     def _level(self) -> int:
-        """ Hierarchy level """
+        """
+        Hierarchy level
+        """
+
         if self.parent is None:
             return -1
         return self.parent._level() + self._relative_indent
 
     def _indent(
-            self,
-            key: str,
-            value: Optional[str] = None,
-            color: Optional[str] = None,
-            shift: int = 0) -> str:
-        """ Indent message according to the object hierarchy """
+        self,
+        key: str,
+        value: Optional[str] = None,
+        color: Optional[str] = None,
+        shift: int = 0,
+    ) -> str:
+        """
+        Indent message according to the object hierarchy
+        """
 
-        return tmt.log.indent(
-            key,
-            value=value,
-            color=color,
-            level=self._level() + shift)
+        return tmt.log.indent(key, value=value, color=color, level=self._level() + shift)
 
     def print(
-            self,
-            text: str,
-            color: Optional[str] = None,
-            shift: int = 0) -> None:
+        self,
+        text: str,
+        color: Optional[str] = None,
+        shift: int = 0,
+    ) -> None:
         """
         Print out an output.
 
@@ -1833,82 +1938,100 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self._logger.print(text, color=color, shift=shift)
 
     def info(
-            self,
-            key: str,
-            value: Optional[LoggableValue] = None,
-            color: Optional[str] = None,
-            shift: int = 0) -> None:
-        """ Show a message unless in quiet mode """
+        self,
+        key: str,
+        value: Optional[LoggableValue] = None,
+        color: Optional[str] = None,
+        shift: int = 0,
+    ) -> None:
+        """
+        Show a message unless in quiet mode
+        """
+
         self._logger.info(key, value=value, color=color, shift=shift)
 
     def verbose(
-            self,
-            key: str,
-            value: Optional[LoggableValue] = None,
-            color: Optional[str] = None,
-            shift: int = 0,
-            level: int = 1,
-            topic: Optional[tmt.log.Topic] = None) -> None:
+        self,
+        key: str,
+        value: Optional[LoggableValue] = None,
+        color: Optional[str] = None,
+        shift: int = 0,
+        level: int = 1,
+        topic: Optional[tmt.log.Topic] = None,
+    ) -> None:
         """
         Show message if in requested verbose mode level
 
         In quiet mode verbose messages are not displayed.
         """
+
         self._logger.verbose(key, value=value, color=color, shift=shift, level=level, topic=topic)
 
     def debug(
-            self,
-            key: str,
-            value: Optional[LoggableValue] = None,
-            color: Optional[str] = None,
-            shift: int = 0,
-            level: int = 1,
-            topic: Optional[tmt.log.Topic] = None) -> None:
+        self,
+        key: str,
+        value: Optional[LoggableValue] = None,
+        color: Optional[str] = None,
+        shift: int = 0,
+        level: int = 1,
+        topic: Optional[tmt.log.Topic] = None,
+    ) -> None:
         """
         Show message if in requested debug mode level
 
         In quiet mode debug messages are not displayed.
         """
+
         self._logger.debug(key, value=value, color=color, shift=shift, level=level, topic=topic)
 
     def warn(self, message: str, shift: int = 0) -> None:
-        """ Show a yellow warning message on info level, send to stderr """
+        """
+        Show a yellow warning message on info level, send to stderr
+        """
+
         self._logger.warning(message, shift=shift)
 
     def fail(self, message: str, shift: int = 0) -> None:
-        """ Show a red failure message on info level, send to stderr """
+        """
+        Show a red failure message on info level, send to stderr
+        """
+
         self._logger.fail(message, shift=shift)
 
     def _command_verbose_logger(
-            self,
-            key: str,
-            value: Optional[str] = None,
-            color: Optional[str] = None,
-            shift: int = 1,
-            level: int = 3,
-            topic: Optional[tmt.log.Topic] = None) -> None:
+        self,
+        key: str,
+        value: Optional[str] = None,
+        color: Optional[str] = None,
+        shift: int = 1,
+        level: int = 3,
+        topic: Optional[tmt.log.Topic] = None,
+    ) -> None:
         """
         Reports the executed command in verbose mode.
 
         This is a tailored verbose() function used for command logging where
         default parameters are adjusted (to preserve the function type).
         """
+
         self.verbose(key=key, value=value, color=color, shift=shift, level=level, topic=topic)
 
-    def run(self,
-            command: Command,
-            friendly_command: Optional[str] = None,
-            silent: bool = False,
-            message: Optional[str] = None,
-            cwd: Optional[Path] = None,
-            ignore_dry: bool = False,
-            shell: bool = False,
-            env: Optional[Environment] = None,
-            interactive: bool = False,
-            join: bool = False,
-            log: Optional[tmt.log.LoggingFunction] = None,
-            timeout: Optional[int] = None,
-            on_process_start: Optional[OnProcessStartCallback] = None) -> CommandOutput:
+    def run(
+        self,
+        command: Command,
+        friendly_command: Optional[str] = None,
+        silent: bool = False,
+        message: Optional[str] = None,
+        cwd: Optional[Path] = None,
+        ignore_dry: bool = False,
+        shell: bool = False,
+        env: Optional[Environment] = None,
+        interactive: bool = False,
+        join: bool = False,
+        log: Optional[tmt.log.LoggingFunction] = None,
+        timeout: Optional[int] = None,
+        on_process_start: Optional[OnProcessStartCallback] = None,
+    ) -> CommandOutput:
         """
         Run command, give message, handle errors
 
@@ -1942,11 +2065,14 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             log=log,
             timeout=timeout,
             caller=self,
-            logger=self._logger
-            )
+            logger=self._logger,
+        )
 
     def read(self, path: Path, level: int = 2) -> str:
-        """ Read a file from the workdir """
+        """
+        Read a file from the workdir
+        """
+
         if self.workdir:
             path = self.workdir / path
         self.debug(f"Read file '{path}'.", level=level)
@@ -1957,12 +2083,16 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             raise FileError(f"Failed to read from '{path}'.") from error
 
     def write(
-            self,
-            path: Path,
-            data: str,
-            mode: WriteMode = 'w',
-            level: int = 2) -> None:
-        """ Write a file to the workdir """
+        self,
+        path: Path,
+        data: str,
+        mode: WriteMode = 'w',
+        level: int = 2,
+    ) -> None:
+        """
+        Write a file to the workdir
+        """
+
         if self.workdir:
             path = self.workdir / path
         action = 'Append to' if mode == 'a' else 'Write'
@@ -1996,11 +2126,13 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             workdir = workdir.resolve()
         # Weird workdir id
         elif id_ is not None:
-            raise GeneralError(
-                f"Invalid workdir '{id_}', expected a path or None.")
+            raise GeneralError(f"Invalid workdir '{id_}', expected a path or None.")
 
         def _check_or_create_workdir_root_with_perms() -> None:
-            """ If created workdir_root has to be 1777 for multi-user"""
+            """
+            If created workdir_root has to be 1777 for multi-user
+            """
+
             if not self.workdir_root.is_dir():
                 try:
                     self.workdir_root.mkdir(exist_ok=True, parents=True)
@@ -2023,8 +2155,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
                 except FileExistsError:
                     pass
             else:
-                raise GeneralError(
-                    f"Workdir full. Cleanup the '{self.workdir_root}' directory.")
+                raise GeneralError(f"Workdir full. Cleanup the '{self.workdir_root}' directory.")
         else:
             # Cleanup possible old workdir if called with --scratch
             if self.opt('scratch'):
@@ -2034,11 +2165,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
                 _check_or_create_workdir_root_with_perms()
 
             # Create the workdir
-            create_directory(
-                path=workdir,
-                name='workdir',
-                quiet=True,
-                logger=self._logger)
+            create_directory(path=workdir, name='workdir', quiet=True, logger=self._logger)
 
         # TODO: chicken and egg problem: when `Common` is instantiated, the workdir
         # path might be already known, but it's often not created yet. Therefore
@@ -2051,7 +2178,10 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self._workdir = workdir
 
     def _workdir_name(self) -> Optional[Path]:
-        """ Construct work directory name from parent workdir """
+        """
+        Construct work directory name from parent workdir
+        """
+
         # Need the parent workdir
         if self.parent is None or self.parent.workdir is None:
             return None
@@ -2064,13 +2194,17 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         If workdir=True, the directory name is automatically generated.
         """
+
         if workdir is True:
             self._workdir_init()
         elif workdir is not None:
             self._workdir_init(workdir)
 
     def _workdir_cleanup(self, path: Optional[Path] = None) -> None:
-        """ Clean up the work directory """
+        """
+        Clean up the work directory
+        """
+
         directory = path or self._workdir_name()
         if directory is not None and directory.is_dir():
             self.debug(f"Clean up workdir '{directory}'.", level=2)
@@ -2079,18 +2213,17 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
     @property
     def workdir(self) -> Optional[Path]:
-        """ Get the workdir, create if does not exist """
+        """
+        Get the workdir, create if does not exist
+        """
+
         if self._workdir is None:
             self._workdir = self._workdir_name()
             # Workdir not enabled, even parent does not have one
             if self._workdir is None:
                 return None
             # Create a child workdir under the parent workdir
-            create_directory(
-                path=self._workdir,
-                name='workdir',
-                quiet=True,
-                logger=self._logger)
+            create_directory(path=self._workdir, name='workdir', quiet=True, logger=self._logger)
 
         return self._workdir
 
@@ -2103,6 +2236,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         else) from cloned repos for filtering purposes, it is removed at
         the end of relevant step.
         """
+
         if not self._clone_dirpath:
             self._clone_dirpath = Path(tempfile.TemporaryDirectory(dir=self.workdir).name)
 
@@ -2143,9 +2277,10 @@ class MultiInvokableCommon(Common, metaclass=_MultiInvokableCommonMeta):
 
     @classmethod
     def store_cli_invocation(
-            cls,
-            context: Optional['tmt.cli.Context'],
-            options: Optional[dict[str, Any]] = None) -> 'tmt.cli.CliInvocation':
+        cls,
+        context: Optional['tmt.cli.Context'],
+        options: Optional[dict[str, Any]] = None,
+    ) -> 'tmt.cli.CliInvocation':
         """
         Save a CLI context and options it carries for later use.
 
@@ -2170,7 +2305,8 @@ class MultiInvokableCommon(Common, metaclass=_MultiInvokableCommonMeta):
             invocation = tmt.cli.CliInvocation.from_context(context)
         else:
             raise GeneralError(
-                "Either context or options have to be provided to store_cli_invocation().")
+                "Either context or options have to be provided to store_cli_invocation()."
+            )
 
         cls.cli_invocations.append(invocation)
 
@@ -2185,14 +2321,17 @@ class MultiInvokableCommon(Common, metaclass=_MultiInvokableCommonMeta):
 
 
 class GeneralError(Exception):
-    """ General error """
+    """
+    General error
+    """
 
     def __init__(
-            self,
-            message: str,
-            causes: Optional[list[Exception]] = None,
-            *args: Any,
-            **kwargs: Any) -> None:
+        self,
+        message: str,
+        causes: Optional[list[Exception]] = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """
         General error.
 
@@ -2211,26 +2350,33 @@ class GeneralError(Exception):
 
 
 class GitUrlError(GeneralError):
-    """ Remote git url is not reachable """
+    """
+    Remote git url is not reachable
+    """
 
 
 class FileError(GeneralError):
-    """ File operation error """
+    """
+    File operation error
+    """
 
 
 class RunError(GeneralError):
-    """ Command execution error """
+    """
+    Command execution error
+    """
 
     def __init__(
-            self,
-            message: str,
-            command: Command,
-            returncode: int,
-            stdout: Optional[str] = None,
-            stderr: Optional[str] = None,
-            caller: Optional[Common] = None,
-            *args: Any,
-            **kwargs: Any) -> None:
+        self,
+        message: str,
+        command: Command,
+        returncode: int,
+        stdout: Optional[str] = None,
+        stderr: Optional[str] = None,
+        caller: Optional[Common] = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(message, *args, **kwargs)
         self.command = command
         self.returncode = returncode
@@ -2261,32 +2407,40 @@ class RunError(GeneralError):
 
 
 class MetadataError(GeneralError):
-    """ General metadata error """
+    """
+    General metadata error
+    """
 
 
 class SpecificationError(MetadataError):
-    """ Metadata specification error """
+    """
+    Metadata specification error
+    """
 
     def __init__(
-            self,
-            message: str,
-            validation_errors: Optional[list[tuple[jsonschema.ValidationError, str]]] = None,
-            *args: Any,
-            **kwargs: Any) -> None:
+        self,
+        message: str,
+        validation_errors: Optional[list[tuple[jsonschema.ValidationError, str]]] = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(message, *args, **kwargs)
         self.validation_errors = validation_errors
 
 
 class NormalizationError(SpecificationError):
-    """ Raised when a key normalization fails """
+    """
+    Raised when a key normalization fails
+    """
 
     def __init__(
-            self,
-            key_address: str,
-            raw_value: Any,
-            expected_type: str,
-            *args: Any,
-            **kwargs: Any) -> None:
+        self,
+        key_address: str,
+        raw_value: Any,
+        expected_type: str,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """
         Raised when a key normalization fails.
 
@@ -2303,7 +2457,8 @@ class NormalizationError(SpecificationError):
         super().__init__(
             f"Field '{key_address}' must be {expected_type}, '{type(raw_value).__name__}' found.",
             *args,
-            **kwargs)
+            **kwargs,
+        )
 
         self.key_address = key_address
         self.raw_value = raw_value
@@ -2311,39 +2466,47 @@ class NormalizationError(SpecificationError):
 
 
 class ConvertError(MetadataError):
-    """ Metadata conversion error """
+    """
+    Metadata conversion error
+    """
 
 
 class StructuredFieldError(GeneralError):
-    """ StructuredField parsing error """
+    """
+    StructuredField parsing error
+    """
 
 
 class WaitingIncompleteError(GeneralError):
-    """ Waiting incomplete """
+    """
+    Waiting incomplete
+    """
 
     def __init__(self) -> None:
         super().__init__('Waiting incomplete')
 
 
 class WaitingTimedOutError(GeneralError):
-    """ Waiting ran out of time """
+    """
+    Waiting ran out of time
+    """
 
     def __init__(
-            self,
-            check: 'WaitCheckType[T]',
-            timeout: datetime.timedelta,
-            check_success: bool = False) -> None:
+        self,
+        check: 'WaitCheckType[T]',
+        timeout: datetime.timedelta,
+        check_success: bool = False,
+    ) -> None:
         if check_success:
             super().__init__(
                 f"Waiting for condition '{check.__name__}' succeeded but took too much time "
                 f"after waiting {timeout}."
-                )
+            )
 
         else:
             super().__init__(
-                f"Waiting for condition '{check.__name__}' timed out "
-                f"after waiting {timeout}."
-                )
+                f"Waiting for condition '{check.__name__}' timed out after waiting {timeout}."
+            )
 
         self.check = check
         self.timeout = timeout
@@ -2351,55 +2514,80 @@ class WaitingTimedOutError(GeneralError):
 
 
 class RetryError(GeneralError):
-    """ Retries unsuccessful """
+    """
+    Retries unsuccessful
+    """
 
     def __init__(self, label: str, causes: list[Exception]) -> None:
         super().__init__(f"Retries of '{label}' unsuccessful.", causes)
 
 
 class BackwardIncompatibleDataError(GeneralError):
-    """ A backward incompatible data cannot be processed """
+    """
+    A backward incompatible data cannot be processed
+    """
 
 
 # Step exceptions
 
 
 class DiscoverError(GeneralError):
-    """ Discover step error """
+    """
+    Discover step error
+    """
 
 
 class ProvisionError(GeneralError):
-    """ Provision step error """
+    """
+    Provision step error
+    """
 
 
 class PrepareError(GeneralError):
-    """ Prepare step error """
+    """
+    Prepare step error
+    """
 
 
 class ExecuteError(GeneralError):
-    """ Execute step error """
+    """
+    Execute step error
+    """
 
 
 class RebootTimeoutError(ExecuteError):
-    """ Reboot failed due to a timeout """
+    """
+    Reboot failed due to a timeout
+    """
 
 
 class ReportError(GeneralError):
-    """ Report step error """
+    """
+    Report step error
+    """
 
 
 class FinishError(GeneralError):
-    """ Finish step error """
+    """
+    Finish step error
+    """
 
 
 class TracebackVerbosity(enum.Enum):
-    """ Levels of logged traveback verbosity """
+    """
+    Levels of logged traveback verbosity
+    """
 
     #: Render only exception and its causes.
     DEFAULT = '0'
     #: Render also call stack for exception and each of its causes.
     VERBOSE = '1'
-    #: Render also call stack and local variables for exception and each of its causes.
+    #: Render also call stack for exception and each of its causes,
+    #: plus all local variables in each frame, trimmed to first 1024
+    #: characters of their values.
+    LOCALS = '2'
+    #: Render everything that can be shown: all causes, their call
+    #: stacks, all frames and all locals in their completeness.
     FULL = 'full'
 
     @classmethod
@@ -2416,10 +2604,13 @@ class TracebackVerbosity(enum.Enum):
 
 
 def render_run_exception_streams(
-        output: CommandOutput,
-        verbose: int = 0,
-        comment_sign: str = '#') -> Iterator[str]:
-    """ Render run exception output streams for printing """
+    output: CommandOutput,
+    verbose: int = 0,
+    comment_sign: str = '#',
+) -> Iterator[str]:
+    """
+    Render run exception output streams for printing
+    """
 
     for name, content in (('stdout', output.stdout), ('stderr', output.stderr)):
         if not content:
@@ -2443,31 +2634,34 @@ def render_run_exception_streams(
 
 @overload
 def render_command_report(
-        *,
-        label: str,
-        command: Optional[Union[ShellScript, Command]] = None,
-        output: CommandOutput,
-        exc: None = None) -> Iterator[str]:
+    *,
+    label: str,
+    command: Optional[Union[ShellScript, Command]] = None,
+    output: CommandOutput,
+    exc: None = None,
+) -> Iterator[str]:
     pass
 
 
 @overload
 def render_command_report(
-        *,
-        label: str,
-        command: Optional[Union[ShellScript, Command]] = None,
-        output: None = None,
-        exc: RunError) -> Iterator[str]:
+    *,
+    label: str,
+    command: Optional[Union[ShellScript, Command]] = None,
+    output: None = None,
+    exc: RunError,
+) -> Iterator[str]:
     pass
 
 
 def render_command_report(
-        *,
-        label: str,
-        command: Optional[Union[ShellScript, Command]] = None,
-        output: Optional[CommandOutput] = None,
-        exc: Optional[RunError] = None,
-        comment_sign: str = '#') -> Iterator[str]:
+    *,
+    label: str,
+    command: Optional[Union[ShellScript, Command]] = None,
+    output: Optional[CommandOutput] = None,
+    exc: Optional[RunError] = None,
+    comment_sign: str = '#',
+) -> Iterator[str]:
     """
     Format a command output for a report file.
 
@@ -2480,6 +2674,8 @@ def render_command_report(
         ## ${label}
 
         # ${command}
+
+        # exit code ${exit_code}
 
         # stdout (N lines)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2510,14 +2706,20 @@ def render_command_report(
         yield ''
 
     if output is not None:
+        yield f'{comment_sign} exit code: finished successfully'
+        yield ''
         yield from render_run_exception_streams(output, verbose=1)
 
     elif exc is not None:
+        yield f'{comment_sign} exit code: {exc.returncode}'
+        yield ''
         yield from render_run_exception_streams(exc.output, verbose=1)
 
 
 def render_run_exception(exception: RunError) -> Iterator[str]:
-    """ Render detailed output upon command execution errors for printing """
+    """
+    Render detailed output upon command execution errors for printing
+    """
 
     # Check verbosity level used during raising exception,
     if exception.logger:
@@ -2531,15 +2733,19 @@ def render_run_exception(exception: RunError) -> Iterator[str]:
 
 
 def render_exception_stack(
-        exception: BaseException,
-        traceback_verbosity: TracebackVerbosity = TracebackVerbosity.DEFAULT) -> Iterator[str]:
-    """ Render traceback of the given exception """
+    exception: BaseException,
+    traceback_verbosity: TracebackVerbosity = TracebackVerbosity.DEFAULT,
+) -> Iterator[str]:
+    """
+    Render traceback of the given exception
+    """
 
     exception_traceback = traceback.TracebackException(
         type(exception),
         exception,
         exception.__traceback__,
-        capture_locals=True)
+        capture_locals=True,
+    )
 
     # N806: allow upper-case names to make them look like formatting
     # tags in strings below.
@@ -2554,19 +2760,33 @@ def render_exception_stack(
         yield f'File {Y(frame.filename)}, line {Y(str(frame.lineno))}, in {Y(frame.name)}'
         yield f'  {B(frame.line)}'
 
-        if traceback_verbosity is TracebackVerbosity.FULL and frame.locals:
+        if frame.locals:
             yield ''
 
-            for k, v in frame.locals.items():
-                yield f'  {B(k)} = {Y(v)}'
+            if traceback_verbosity is TracebackVerbosity.LOCALS:
+                for k, v in frame.locals.items():
+                    v_formatted = (
+                        (v[:TRACEBACK_LOCALS_TRIM] + '...')
+                        if len(v) > TRACEBACK_LOCALS_TRIM
+                        else v
+                    )
+
+                    yield f'  {B(k)} = {Y(v_formatted)}'
+
+            elif traceback_verbosity is TracebackVerbosity.FULL:
+                for k, v in frame.locals.items():
+                    yield f'  {B(k)} = {Y(v)}'
 
             yield ''
 
 
 def render_exception(
-        exception: BaseException,
-        traceback_verbosity: TracebackVerbosity = TracebackVerbosity.DEFAULT) -> Iterator[str]:
-    """ Render the exception and its causes for printing """
+    exception: BaseException,
+    traceback_verbosity: TracebackVerbosity = TracebackVerbosity.DEFAULT,
+) -> Iterator[str]:
+    """
+    Render the exception and its causes for printing
+    """
 
     def _indent(iterable: Iterable[str]) -> Iterator[str]:
         for item in iterable:
@@ -2585,8 +2805,9 @@ def render_exception(
 
     if traceback_verbosity is not TracebackVerbosity.DEFAULT:
         yield ''
-        yield from _indent(render_exception_stack(
-            exception, traceback_verbosity=traceback_verbosity))
+        yield from _indent(
+            render_exception_stack(exception, traceback_verbosity=traceback_verbosity)
+        )
 
     # Follow the chain and render all causes
     def _render_cause(number: int, cause: BaseException) -> Iterator[str]:
@@ -2615,8 +2836,10 @@ def render_exception(
 
 
 def show_exception(
-        exception: BaseException,
-        include_logfiles: bool = True) -> None:
+    exception: BaseException,
+    traceback_verbosity: Optional[TracebackVerbosity] = None,
+    include_logfiles: bool = True,
+) -> None:
     """
     Display the exception and its causes.
 
@@ -2627,7 +2850,7 @@ def show_exception(
 
     from tmt.cli import EXCEPTION_LOGGER
 
-    traceback_verbosity = TracebackVerbosity.from_env()
+    traceback_verbosity = traceback_verbosity or TracebackVerbosity.from_env()
 
     def _render_exception(traceback_verbosity: TracebackVerbosity) -> Iterator[str]:
         yield ''
@@ -2655,9 +2878,10 @@ def show_exception(
                 except Exception as exc:
                     show_exception(
                         GeneralError(f"Cannot log error into logfile '{path}'.", causes=[exc]),
-                        include_logfiles=False)
+                        include_logfiles=False,
+                    )
 
-            for line in _render_exception(traceback_verbosity=TracebackVerbosity.FULL):
+            for line in _render_exception(traceback_verbosity=TracebackVerbosity.LOCALS):
                 for stream in logfile_streams:
                     logger.print(line, file=stream)
 
@@ -2668,12 +2892,18 @@ def show_exception(
 
 
 def uniq(values: list[T]) -> list[T]:
-    """ Return a list of all unique items from ``values`` """
+    """
+    Return a list of all unique items from ``values``
+    """
+
     return list(set(values))
 
 
 def duplicates(values: Iterable[Optional[T]]) -> Iterator[T]:
-    """ Iterate over all duplicate values in ``values`` """
+    """
+    Iterate over all duplicate values in ``values``
+    """
+
     seen = Counter(values)
     for value, count in seen.items():
         if value is None or count == 1:
@@ -2697,12 +2927,18 @@ def flatten(lists: Iterable[list[T]], unique: bool = False) -> list[T]:
 
 
 def quote(string: str) -> str:
-    """ Surround a string with double quotes """
+    """
+    Surround a string with double quotes
+    """
+
     return f'"{string}"'
 
 
 def pure_ascii(text: Any) -> bytes:
-    """ Transliterate special unicode characters into pure ascii """
+    """
+    Transliterate special unicode characters into pure ascii
+    """
+
     if not isinstance(text, str):
         text = str(text)
     return unicodedata.normalize('NFKD', text).encode('ascii', 'ignore')
@@ -2715,6 +2951,7 @@ def get_full_metadata(fmf_tree_path: Path, node_path: str) -> Any:
     Go through fmf tree nodes using given relative node path
     and return full data as dictionary.
     """
+
     try:
         return fmf.Tree(fmf_tree_path).find(node_path).data
     except AttributeError:
@@ -2727,6 +2964,7 @@ def filter_paths(directory: Path, searching: list[str], files_only: bool = False
 
     Returns list of matching paths.
     """
+
     all_paths = list(directory.rglob('*'))  # get all filepaths for given dir recursively
     alldirs = [str(d) for d in all_paths if d.is_dir()]
     allfiles = [str(file) for file in all_paths if not file.is_dir()]
@@ -2750,11 +2988,15 @@ def filter_paths(directory: Path, searching: list[str], files_only: bool = False
 
 
 def dict_to_yaml(
-        data: Union[dict[str, Any], list[Any], 'tmt.base._RawFmfId'],
-        width: Optional[int] = None,
-        sort: bool = False,
-        start: bool = False) -> str:
-    """ Convert dictionary into yaml """
+    data: Union[dict[str, Any], list[Any], 'tmt.base._RawFmfId'],
+    width: Optional[int] = None,
+    sort: bool = False,
+    start: bool = False,
+) -> str:
+    """
+    Convert dictionary into yaml
+    """
+
     output = io.StringIO()
     yaml = YAML()
     yaml.indent(mapping=4, sequence=4, offset=2)
@@ -2804,23 +3046,27 @@ def dict_to_yaml(
 YamlTypType = Literal['rt', 'safe', 'unsafe', 'base']
 
 
-def yaml_to_dict(data: Any,
-                 yaml_type: Optional[YamlTypType] = None) -> dict[Any, Any]:
-    """ Convert yaml into dictionary """
+def yaml_to_dict(data: Any, yaml_type: Optional[YamlTypType] = None) -> dict[Any, Any]:
+    """
+    Convert yaml into dictionary
+    """
+
     yaml = YAML(typ=yaml_type)
     loaded_data = yaml.load(data)
     if loaded_data is None:
         return {}
     if not isinstance(loaded_data, dict):
         raise GeneralError(
-            f"Expected dictionary in yaml data, "
-            f"got '{type(loaded_data).__name__}'.")
+            f"Expected dictionary in yaml data, got '{type(loaded_data).__name__}'."
+        )
     return loaded_data
 
 
-def yaml_to_list(data: Any,
-                 yaml_type: Optional[YamlTypType] = 'safe') -> list[Any]:
-    """ Convert yaml into list """
+def yaml_to_list(data: Any, yaml_type: Optional[YamlTypType] = 'safe') -> list[Any]:
+    """
+    Convert yaml into list
+    """
+
     yaml = YAML(typ=yaml_type)
     try:
         loaded_data = yaml.load(data)
@@ -2830,14 +3076,14 @@ def yaml_to_list(data: Any,
     if loaded_data is None:
         return []
     if not isinstance(loaded_data, list):
-        raise GeneralError(
-            f"Expected list in yaml data, "
-            f"got '{type(loaded_data).__name__}'.")
+        raise GeneralError(f"Expected list in yaml data, got '{type(loaded_data).__name__}'.")
     return loaded_data
 
 
 def json_to_list(data: Any) -> list[Any]:
-    """ Convert json into list """
+    """
+    Convert json into list
+    """
 
     try:
         loaded_data = json.loads(data)
@@ -2845,579 +3091,8 @@ def json_to_list(data: Any) -> list[Any]:
         raise GeneralError(f"Invalid json syntax: {error}")
 
     if not isinstance(loaded_data, list):
-        raise GeneralError(
-            f"Expected list in json data, "
-            f"got '{type(loaded_data).__name__}'.")
+        raise GeneralError(f"Expected list in json data, got '{type(loaded_data).__name__}'.")
     return loaded_data
-
-
-#: A type representing compatible sources of keys and values.
-KeySource = Union[dict[str, Any], fmf.Tree]
-
-#: Type of field's normalization callback.
-NormalizeCallback = Callable[[str, Any, tmt.log.Logger], T]
-
-#: Type of field's exporter callback.
-FieldExporter = Callable[[T], Any]
-
-#: Type of field's CLI option specification.
-FieldCLIOption = Union[str, Sequence[str]]
-
-#: Type of field's serialization callback.
-SerializeCallback = Callable[[T], Any]
-
-#: Type of field's unserialization callback.
-UnserializeCallback = Callable[[Any], T]
-
-#: Types for generic "data container" classes and instances. In tmt code, this
-#: reduces to data classes and data class instances. Our :py:class:`DataContainer`
-#: are perfectly compatible data classes, but some helper methods may be used
-#: on raw data classes, not just on ``DataContainer`` instances.
-ContainerClass: 'TypeAlias' = type['DataclassInstance']
-ContainerInstance: 'TypeAlias' = 'DataclassInstance'
-Container = Union[ContainerClass, ContainerInstance]
-
-
-def key_to_option(key: str) -> str:
-    """ Convert a key name to corresponding option name """
-
-    return key.replace('_', '-')
-
-
-def option_to_key(option: str) -> str:
-    """ Convert an option name to corresponding key name """
-
-    return option.replace('-', '_')
-
-
-@dataclasses.dataclass
-class FieldMetadata(Generic[T]):
-    """
-    A dataclass metadata container used by our custom dataclass field management.
-
-    Attached to fields defined with :py:func:`field`
-    """
-
-    internal: bool = False
-
-    #: Help text documenting the field.
-    help: Optional[str] = None
-
-    #: If field accepts a value, this string would represent it in documentation.
-    #: This stores the metavar provided when field was created - it may be unset.
-    #: py:attr:`metavar` provides the actual metavar to be used.
-    _metavar: Optional[str] = None
-
-    #: The default value for the field.
-    default: Optional[T] = None
-
-    #: A zero-argument callable that will be called when a default value is
-    #: needed for the field.
-    default_factory: Optional[Callable[[], T]] = None
-
-    #: Marks the fields as a flag.
-    is_flag: bool = False
-
-    #: Marks the field as accepting multiple values. When used on command line,
-    #: the option could be used multiple times, accumulating values.
-    multiple: bool = False
-
-    #: If set, show the default value in command line help.
-    show_default: bool = False
-
-    #: Either a list of allowed values the field can take, or a zero-argument
-    #: callable that would return such a list.
-    _choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None
-
-    #: Environment variable providing value for the field.
-    envvar: Optional[str] = None
-
-    #: Mark the option as deprecated. Instance of :py:class:`Deprecated`
-    #: describes the version in which the field was deprecated plus an optional
-    #: hint with the recommended alternative. Documentation and help texts would
-    #: contain this info.
-    deprecated: Optional['tmt.options.Deprecated'] = None
-
-    #: One or more command-line option names.
-    cli_option: Optional[FieldCLIOption] = None
-
-    #: A normalization callback to call when loading the value from key source
-    #: (performed by :py:class:`NormalizeKeysMixin`).
-    normalize_callback: Optional['NormalizeCallback[T]'] = None
-
-    # Callbacks for custom serialize/unserialize operations (performed by
-    # :py:class:`SerializableContainer`).
-    serialize_callback: Optional['SerializeCallback[T]'] = None
-    unserialize_callback: Optional['SerializeCallback[T]'] = None
-
-    #: An export callback to call when exporting the field (performed by
-    #: :py:class:`tmt.export.Exportable`).
-    export_callback: Optional['FieldExporter[T]'] = None
-
-    #: CLI option parameters, for lazy option creation.
-    _option_args: Optional['FieldCLIOption'] = None
-    _option_kwargs: dict[str, Any] = dataclasses.field(default_factory=dict)
-
-    #: A :py:func:`click.option` decorator defining a corresponding CLI option.
-    _option: Optional['tmt.options.ClickOptionDecoratorType'] = None
-
-    @functools.cached_property
-    def choices(self) -> Optional[Sequence[str]]:
-        """ A list of allowed values the field can take """
-
-        if isinstance(self._choices, (list, tuple)):
-            return list(self._choices)
-
-        if callable(self._choices):
-            return self._choices()
-
-        return None
-
-    @functools.cached_property
-    def metavar(self) -> Optional[str]:
-        """ Placeholder for field's value in documentation and help """
-
-        if self._metavar:
-            return self._metavar
-
-        if self.choices:
-            return '|'.join(self.choices)
-
-        return None
-
-    @property
-    def has_default(self) -> bool:
-        """ Whether the field has a default value """
-
-        return self.default_factory is not None \
-            or self.default is not dataclasses.MISSING
-
-    @property
-    def materialized_default(self) -> Optional[T]:
-        """ Returns the actual default value of the field """
-
-        if self.default_factory is not None:
-            return self.default_factory()
-
-        if self.default is not dataclasses.MISSING:
-            return self.default
-
-        return None
-
-    @property
-    def option(self) -> Optional['tmt.options.ClickOptionDecoratorType']:
-        if self._option is None and self.cli_option:
-            from tmt.options import option
-
-            self._option_args = (self.cli_option,) if isinstance(self.cli_option, str) \
-                else self.cli_option
-
-            self._option_kwargs.update({
-                'is_flag': self.is_flag,
-                'multiple': self.multiple,
-                'envvar': self.envvar,
-                'metavar': self.metavar,
-                'choices': self.choices,
-                'show_default': self.show_default,
-                'help': self.help,
-                'deprecated': self.deprecated
-                })
-
-            if self.default is not dataclasses.MISSING and not self.is_flag:
-                self._option_kwargs['default'] = self.default
-
-            self._option = option(
-                *self._option_args,
-                **self._option_kwargs
-                )
-
-        return self._option
-
-
-def container_fields(container: Container) -> Iterator[dataclasses.Field[Any]]:
-    yield from dataclasses.fields(container)
-
-
-def container_has_field(container: Container, key: str) -> bool:
-    return key in list(container_keys(container))
-
-
-def container_keys(container: Container) -> Iterator[str]:
-    """ Iterate over key names in a container """
-
-    for field in container_fields(container):
-        yield field.name
-
-
-def container_values(container: ContainerInstance) -> Iterator[Any]:
-    """ Iterate over values in a container """
-
-    for field in container_fields(container):
-        yield container.__dict__[field.name]
-
-
-def container_items(container: ContainerInstance) -> Iterator[tuple[str, Any]]:
-    """ Iterate over key/value pairs in a container """
-
-    for field in container_fields(container):
-        yield field.name, container.__dict__[field.name]
-
-
-def container_field(
-        container: Container,
-        key: str) -> tuple[str, str, Any, dataclasses.Field[Any], 'FieldMetadata[Any]']:
-    """
-    Return a dataclass/data container field info by the field's name.
-
-    Surprisingly, :py:mod:`dataclasses` package does not have a helper for
-    this. One can iterate over fields, but there's no *public* API for
-    retrieving a field when one knows its name.
-
-    :param cls: a dataclass/data container class whose fields to search.
-    :param key: field name to retrieve.
-    :raises GeneralError: when the field does not exist.
-    """
-
-    for field in container_fields(container):
-        if field.name != key:
-            continue
-
-        metadata = field.metadata.get('tmt', FieldMetadata())
-        return (
-            field.name,
-            key_to_option(field.name),
-            container.__dict__[field.name] if not inspect.isclass(container) else None,
-            field,
-            metadata)
-
-    if isinstance(container, DataContainer):
-        raise GeneralError(
-            f"Could not find field '{key}' in class '{container.__class__.__name__}'.")
-
-    raise GeneralError(f"Could not find field '{key}' in class '{container}'.")
-
-
-@dataclasses.dataclass
-class DataContainer:
-    """ A base class for objects that have keys and values """
-
-    def to_dict(self) -> dict[str, Any]:
-        """
-        Convert to a mapping.
-
-        See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
-        for more details.
-        """
-
-        return dict(self.items())
-
-    def to_minimal_dict(self) -> dict[str, Any]:
-        """
-        Convert to a mapping with unset keys omitted.
-
-        See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
-        for more details.
-        """
-
-        return {
-            key: value for key, value in self.items() if value is not None
-            }
-
-    # This method should remain a class-method: 1. list of keys is known
-    # already, therefore it's not necessary to create an instance, and
-    # 2. some functionality makes use of this knowledge.
-    @classmethod
-    def keys(cls) -> Iterator[str]:
-        """ Iterate over key names """
-
-        yield from container_keys(cls)
-
-    def values(self) -> Iterator[Any]:
-        """ Iterate over key values """
-
-        yield from container_values(self)
-
-    def items(self) -> Iterator[tuple[str, Any]]:
-        """ Iterate over key/value pairs """
-
-        yield from container_items(self)
-
-    @classmethod
-    def _default(cls, key: str, default: Any = None) -> Any:
-        """
-        Return a default value for a given key.
-
-        Keys may have a default value, or a default *factory* has been specified.
-
-        :param key: key to look for.
-        :param default: when key has no default value, ``default`` is returned.
-        :returns: a default value defined for the key, or its ``default_factory``'s
-            return value of ``default_factory``, or ``default`` when key has no
-            default value.
-        """
-
-        for field in container_fields(cls):
-            if key != field.name:
-                continue
-
-            if not isinstance(field.default_factory, dataclasses._MISSING_TYPE):
-                return field.default_factory()
-
-            if not isinstance(field.default, dataclasses._MISSING_TYPE):
-                return field.default
-
-        else:
-            return default
-
-    @property
-    def is_bare(self) -> bool:
-        """
-        Check whether all keys are either unset or have their default value.
-
-        :returns: ``True`` if all keys either hold their default value
-            or are not set at all, ``False`` otherwise.
-        """
-
-        for field in container_fields(self):
-            value = getattr(self, field.name)
-
-            if not isinstance(field.default_factory, dataclasses._MISSING_TYPE):
-                if value != field.default_factory():
-                    return False
-
-            elif not isinstance(field.default, dataclasses._MISSING_TYPE):
-                if value != field.default:
-                    return False
-
-            else:
-                pass
-
-        return True
-
-
-#: A typevar bound to spec-based container base class. A stand-in for all classes
-#: derived from :py:class:`SpecBasedContainer`.
-SpecBasedContainerT = TypeVar(
-    'SpecBasedContainerT',
-    # ignore[type-arg]: generic bounds are not supported by mypy.
-    bound='SpecBasedContainer')  # type: ignore[type-arg]
-
-# It may look weird, having two different typevars for "spec", but it does make
-# sense: tmt is fairly open to what it accepts, e.g. "a string or a list of
-# strings". This is the input part of the flow. But then the input is normalized,
-# and the output may be just a subset of types tmt is willing to accept. For
-# example, if `tag` can be either a string or a list of strings, when processed
-# by tmt and converted back to spec, a list of strings is the only output, even
-# if the original was a single string. Therefore `SpecBasedContainer` accepts
-# two types, one for each direction. Usually, the output one would be a subset
-# of the input one.
-
-#: A typevar representing an *input* specification consumed by :py:class:`SpecBasedContainer`.
-SpecInT = TypeVar('SpecInT')
-#: A typevar representing an *output* specification produced by :py:class:`SpecBasedContainer`.
-SpecOutT = TypeVar('SpecOutT')
-
-
-class SpecBasedContainer(Generic[SpecInT, SpecOutT], DataContainer):
-    @classmethod
-    def from_spec(cls: type[SpecBasedContainerT], spec: SpecInT) -> SpecBasedContainerT:
-        """
-        Convert from a specification file or from a CLI option
-
-        See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
-        for more details.
-
-        See :py:meth:`to_spec` for its counterpart.
-        """
-
-        raise NotImplementedError
-
-    def to_spec(self) -> SpecOutT:
-        """
-        Convert to a form suitable for saving in a specification file
-
-        See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
-        for more details.
-
-        See :py:meth:`from_spec` for its counterpart.
-        """
-
-        return cast(SpecOutT, self.to_dict())
-
-    def to_minimal_spec(self) -> SpecOutT:
-        """
-        Convert to specification, skip default values
-
-        See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
-        for more details.
-
-        See :py:meth:`from_spec` for its counterpart.
-        """
-
-        return cast(SpecOutT, self.to_minimal_dict())
-
-
-SerializableContainerDerivedType = TypeVar(
-    'SerializableContainerDerivedType',
-    bound='SerializableContainer')
-
-
-@dataclasses.dataclass
-class SerializableContainer(DataContainer):
-    """ A mixin class for saving and loading objects """
-
-    @classmethod
-    def default(cls, key: str, default: Any = None) -> Any:
-        return cls._default(key, default=default)
-
-    #
-    # Moving data between containers and objects owning them
-    #
-
-    def inject_to(self, obj: Any) -> None:
-        """ Inject keys from this container into attributes of a given object """
-
-        for name, value in self.items():
-            setattr(obj, name, value)
-
-    @classmethod
-    def extract_from(cls: type[SerializableContainerDerivedType],
-                     obj: Any) -> SerializableContainerDerivedType:
-        """ Extract keys from given object, and save them in a container """
-
-        data = cls()
-        # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`
-        # "NormalizeKeysMixin" has no attribute "__iter__" (not iterable)
-        for key in cls.keys():  # noqa: SIM118
-            value = getattr(obj, key)
-            if value is not None:
-                setattr(data, key, value)
-
-        return data
-
-    #
-    # Serialization - writing containers into YAML files, and restoring
-    # them later.
-    #
-
-    def to_serialized(self) -> dict[str, Any]:
-        """
-        Convert to a form suitable for saving in a file.
-
-        See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
-        for more details.
-
-        See :py:meth:`from_serialized` for its counterpart.
-        """
-
-        def _produce_serialized() -> Iterator[tuple[str, Any]]:
-            for key in container_keys(self):
-                _, option, value, _, metadata = container_field(self, key)
-
-                if metadata.serialize_callback:
-                    yield option, metadata.serialize_callback(value)
-
-                else:
-                    yield option, value
-
-        serialized = dict(_produce_serialized())
-
-        # Add a special field tracking what class we just shattered to pieces.
-        serialized['__class__'] = {
-            'module': self.__class__.__module__,
-            'name': self.__class__.__name__
-            }
-
-        return serialized
-
-    @classmethod
-    def from_serialized(
-            cls: type[SerializableContainerDerivedType],
-            serialized: dict[str, Any]) -> SerializableContainerDerivedType:
-        """
-        Convert from a serialized form loaded from a file.
-
-        See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
-        for more details.
-
-        See :py:meth:`to_serialized` for its counterpart.
-        """
-
-        # Our special key may or may not be present, depending on who
-        # calls this method.  In any case, it is not needed, because we
-        # already know what class to restore: this one.
-        serialized.pop('__class__', None)
-
-        def _produce_unserialized() -> Iterator[tuple[str, Any]]:
-            for option, value in serialized.items():
-                key = option_to_key(option)
-
-                _, _, _, _, metadata = container_field(cls, key)
-
-                if metadata.unserialize_callback:
-                    yield key, metadata.unserialize_callback(value)
-
-                else:
-                    yield key, value
-
-        # Set attribute by adding it to __dict__ directly. Messing with setattr()
-        # might cause reuse of mutable values by other instances.
-        # obj.__dict__[keyname] = unserialize_callback(value)
-
-        return cls(**dict(_produce_unserialized()))
-
-    # ignore[misc,type-var]: mypy is correct here, method does return a
-    # TypeVar, but there is no way to deduce the actual type, because
-    # the method is static. That's on purpose, method tries to find the
-    # class to unserialize, therefore it's simply unknown. Returning Any
-    # would make mypy happy, but we do know the return value will be
-    # derived from SerializableContainer. We can mention that, and
-    # silence mypy about the missing actual type.
-    @staticmethod
-    def unserialize(
-            serialized: dict[str, Any],
-            logger: tmt.log.Logger
-            ) -> SerializableContainerDerivedType:  # type: ignore[misc,type-var]
-        """
-        Convert from a serialized form loaded from a file.
-
-        Similar to :py:meth:`from_serialized`, but this method knows
-        nothing about container's class, and will locate the correct
-        module and class by inspecting serialized data. Discovered
-        class' :py:meth:`from_serialized` is then used to create the
-        container.
-
-        Used to transform data read from a YAML file into original
-        containers when their classes are not know to the code.
-        Restoring such containers requires inspection of serialized data
-        and dynamic imports of modules as needed.
-
-        See https://tmt.readthedocs.io/en/stable/code/classes.html#class-conversions
-        for more details.
-
-        See :py:meth:`to_serialized` for its counterpart.
-        """
-
-        from tmt.plugins import import_member
-
-        # Unpack class info, to get nicer variable names
-        if "__class__" not in serialized:
-            raise GeneralError(
-                "Failed to load saved state, probably because of old data format.\n"
-                "Use 'tmt clean runs' to clean up old runs.")
-
-        klass_info = serialized.pop('__class__')
-        klass = import_member(
-            module=klass_info['module'],
-            member=klass_info['name'],
-            logger=logger)[1]
-
-        # Stay away from classes that are not derived from this one, to
-        # honor promise given by return value annotation.
-        assert issubclass(klass, SerializableContainer)
-
-        # Apparently, the issubclass() check above is not good enough for mypy.
-        return cast(SerializableContainerDerivedType, klass.from_serialized(serialized))
 
 
 def markdown_to_html(filename: Path) -> str:
@@ -3427,6 +3102,7 @@ def markdown_to_html(filename: Path) -> str:
     Expects: Markdown document as a file.
     Returns: An HTML document as a string.
     """
+
     try:
         import markdown
     except ImportError:
@@ -3441,8 +3117,7 @@ def markdown_to_html(filename: Path) -> str:
         raise ConvertError(f"Unable to open '{filename}'.")
 
 
-def shell_variables(
-        data: Union[list[str], tuple[str, ...], dict[str, Any]]) -> list[str]:
+def shell_variables(data: Union[list[str], tuple[str, ...], dict[str, Any]]) -> list[str]:
     """
     Prepare variables to be consumed by shell
 
@@ -3471,12 +3146,13 @@ def duration_to_seconds(duration: str, injected_default: Optional[str] = None) -
     Optional 'injected_default' argument to evaluate 'duration' when
     it contains only multiplication.
     """
+
     units = {
         's': 1,
         'm': 60,
         'h': 60 * 60,
         'd': 60 * 60 * 24,
-        }
+    }
     # Couldn't create working validation regexp to accept '2 1m 4'
     # thus fixing the string so \b can be used as word boundary
     fixed_duration = re.sub(r'([smhd])(\d)', r'\1 \2', str(duration))
@@ -3498,12 +3174,17 @@ def duration_to_seconds(duration: str, injected_default: Optional[str] = None) -
                 )
             )\b # Needs to end with word boundary to avoid splitting
         '''
-    re_validate = re.compile(r'''
+    re_validate = re.compile(
+        r'''
         ^(  # Match beginning, opening of input group
-        ''' + raw_groups + r'''
+        '''
+        + raw_groups
+        + r'''
         \s* # Optional spaces in the case of multiple inputs
         )+$ # Inputs can repeat
-        ''', re.VERBOSE)
+        ''',
+        re.VERBOSE,
+    )
     re_split = re.compile(raw_groups, re.VERBOSE)
     if re_validate.match(fixed_duration) is None:
         raise SpecificationError(f"Invalid duration '{duration}'.")
@@ -3523,33 +3204,36 @@ def duration_to_seconds(duration: str, injected_default: Optional[str] = None) -
 
 @overload
 def verdict(
-        decision: bool,
-        comment: Optional[str] = None,
-        good: str = 'pass',
-        bad: str = 'fail',
-        problem: str = 'warn',
-        **kwargs: Any) -> bool:
+    decision: bool,
+    comment: Optional[str] = None,
+    good: str = 'pass',
+    bad: str = 'fail',
+    problem: str = 'warn',
+    **kwargs: Any,
+) -> bool:
     pass
 
 
 @overload
 def verdict(
-        decision: None,
-        comment: Optional[str] = None,
-        good: str = 'pass',
-        bad: str = 'fail',
-        problem: str = 'warn',
-        **kwargs: Any) -> None:
+    decision: None,
+    comment: Optional[str] = None,
+    good: str = 'pass',
+    bad: str = 'fail',
+    problem: str = 'warn',
+    **kwargs: Any,
+) -> None:
     pass
 
 
 def verdict(
-        decision: Optional[bool],
-        comment: Optional[str] = None,
-        good: str = 'pass',
-        bad: str = 'fail',
-        problem: str = 'warn',
-        **kwargs: Any) -> Optional[bool]:
+    decision: Optional[bool],
+    comment: Optional[str] = None,
+    good: str = 'pass',
+    bad: str = 'fail',
+    problem: str = 'warn',
+    **kwargs: Any,
+) -> Optional[bool]:
     """
     Print verdict in green, red or yellow based on the decision
 
@@ -3570,8 +3254,7 @@ def verdict(
     elif decision is None:
         text = style(problem, fg='yellow')
     else:
-        raise GeneralError(
-            "Invalid decision value, must be 'True', 'False' or 'None'.")
+        raise GeneralError("Invalid decision value, must be 'True', 'False' or 'None'.")
     if comment:
         text = text + ' ' + comment
     echo(text, **kwargs)
@@ -3592,7 +3275,9 @@ FormatWrap = Literal[True, False, 'auto']
 
 
 class ListFormat(enum.Enum):
-    """ How to format lists """
+    """
+    How to format lists
+    """
 
     #: Use :py:func:`fmf.utils.listed`.
     LISTED = enum.auto()
@@ -3621,16 +3306,20 @@ def assert_window_size(window_size: Optional[int]) -> None:
         return
 
     raise GeneralError(
-        f"Allowed width of terminal exhausted, output cannot fit into {OUTPUT_WIDTH} columns.")
+        f"Allowed width of terminal exhausted, output cannot fit into {OUTPUT_WIDTH} columns."
+    )
 
 
 def _format_bool(
-        value: bool,
-        window_size: Optional[int],
-        key_color: Optional[str],
-        list_format: ListFormat,
-        wrap: FormatWrap) -> Iterator[str]:
-    """ Format a ``bool`` value """
+    value: bool,
+    window_size: Optional[int],
+    key_color: Optional[str],
+    list_format: ListFormat,
+    wrap: FormatWrap,
+) -> Iterator[str]:
+    """
+    Format a ``bool`` value
+    """
 
     assert_window_size(window_size)
 
@@ -3638,12 +3327,15 @@ def _format_bool(
 
 
 def _format_list(
-        value: list[Any],
-        window_size: Optional[int],
-        key_color: Optional[str],
-        list_format: ListFormat,
-        wrap: FormatWrap) -> Iterator[str]:
-    """ Format a list """
+    value: list[Any],
+    window_size: Optional[int],
+    key_color: Optional[str],
+    list_format: ListFormat,
+    wrap: FormatWrap,
+) -> Iterator[str]:
+    """
+    Format a list
+    """
 
     assert_window_size(window_size)
 
@@ -3655,11 +3347,9 @@ def _format_list(
 
     # UX: if there's just a single item, it's also a trivial case.
     if len(value) == 1:
-        yield '\n'.join(_format_value(
-            value[0],
-            window_size=window_size,
-            key_color=key_color,
-            wrap=wrap))
+        yield '\n'.join(
+            _format_value(value[0], window_size=window_size, key_color=key_color, wrap=wrap)
+        )
         return
 
     # Render each item in the list. We get a list of possibly multiline strings,
@@ -3667,7 +3357,7 @@ def _format_list(
     formatted_items = [
         '\n'.join(_format_value(item, window_size=window_size, key_color=key_color, wrap=wrap))
         for item in value
-        ]
+    ]
 
     # There are nice ways how to format a string, but those can be tried out
     # only when:
@@ -3706,12 +3396,15 @@ def _format_list(
 
 
 def _format_str(
-        value: str,
-        window_size: Optional[int],
-        key_color: Optional[str],
-        list_format: ListFormat,
-        wrap: FormatWrap) -> Iterator[str]:
-    """ Format a string """
+    value: str,
+    window_size: Optional[int],
+    key_color: Optional[str],
+    list_format: ListFormat,
+    wrap: FormatWrap,
+) -> Iterator[str]:
+    """
+    Format a string
+    """
 
     assert_window_size(window_size)
 
@@ -3753,12 +3446,15 @@ def _format_str(
 
 
 def _format_dict(
-        value: dict[Any, Any],
-        window_size: Optional[int],
-        key_color: Optional[str],
-        list_format: ListFormat,
-        wrap: FormatWrap) -> Iterator[str]:
-    """ Format a dictionary """
+    value: dict[Any, Any],
+    window_size: Optional[int],
+    key_color: Optional[str],
+    list_format: ListFormat,
+    wrap: FormatWrap,
+) -> Iterator[str]:
+    """
+    Format a dictionary
+    """
 
     assert_window_size(window_size)
 
@@ -3777,15 +3473,10 @@ def _format_dict(
         # key.
         if window_size:
             v_formatted = _format_value(
-                v,
-                window_size=window_size - k_size,
-                key_color=key_color,
-                wrap=wrap)
+                v, window_size=window_size - k_size, key_color=key_color, wrap=wrap
+            )
         else:
-            v_formatted = _format_value(
-                v,
-                key_color=key_color,
-                wrap=wrap)
+            v_formatted = _format_value(v, key_color=key_color, wrap=wrap)
 
         # Now attach key and value in a nice and respectful way.
         if len(v_formatted) == 0:
@@ -3885,9 +3576,8 @@ def _format_dict(
 
 #: A type describing a per-type formatting helper.
 ValueFormatter = Callable[
-    [Any, Optional[int], Optional[str], ListFormat, FormatWrap],
-    Iterator[str]
-    ]
+    [Any, Optional[int], Optional[str], ListFormat, FormatWrap], Iterator[str]
+]
 
 
 #: Available formatters, as ``type``/``formatter`` pairs. If a value is instance
@@ -3897,15 +3587,16 @@ _VALUE_FORMATTERS: list[tuple[Any, ValueFormatter]] = [
     (str, _format_str),
     (list, _format_list),
     (dict, _format_dict),
-    ]
+]
 
 
 def _format_value(
-        value: Any,
-        window_size: Optional[int] = None,
-        key_color: Optional[str] = None,
-        list_format: ListFormat = ListFormat.LISTED,
-        wrap: FormatWrap = 'auto') -> list[str]:
+    value: Any,
+    window_size: Optional[int] = None,
+    key_color: Optional[str] = None,
+    list_format: ListFormat = ListFormat.LISTED,
+    wrap: FormatWrap = 'auto',
+) -> list[str]:
     """
     Render a nicely-formatted string representation of a value.
 
@@ -3939,11 +3630,12 @@ def _format_value(
 
 
 def format_value(
-        value: Any,
-        window_size: Optional[int] = None,
-        key_color: Optional[str] = None,
-        list_format: ListFormat = ListFormat.LISTED,
-        wrap: FormatWrap = 'auto') -> str:
+    value: Any,
+    window_size: Optional[int] = None,
+    key_color: Optional[str] = None,
+    list_format: ListFormat = ListFormat.LISTED,
+    wrap: FormatWrap = 'auto',
+) -> str:
     """
     Render a nicely-formatted string representation of a value.
 
@@ -3965,11 +3657,8 @@ def format_value(
     assert_window_size(window_size)
 
     formatted_value = _format_value(
-        value,
-        window_size=window_size,
-        key_color=key_color,
-        list_format=list_format,
-        wrap=wrap)
+        value, window_size=window_size, key_color=key_color, list_format=list_format, wrap=wrap
+    )
 
     # UX: post-process lists: this top-level is the "container" of the list,
     # and therefore needs to apply indentation and prefixes.
@@ -4006,14 +3695,15 @@ def format_value(
 
 
 def format(
-        key: str,
-        value: Union[None, float, bool, str, list[Any], dict[Any, Any]] = None,
-        indent: int = 24,
-        window_size: int = OUTPUT_WIDTH,
-        wrap: FormatWrap = 'auto',
-        key_color: Optional[str] = 'green',
-        value_color: Optional[str] = 'black',
-        list_format: ListFormat = ListFormat.LISTED) -> str:
+    key: str,
+    value: Union[None, float, bool, str, list[Any], dict[Any, Any]] = None,
+    indent: int = 24,
+    window_size: int = OUTPUT_WIDTH,
+    wrap: FormatWrap = 'auto',
+    key_color: Optional[str] = 'green',
+    value_color: Optional[str] = 'black',
+    list_format: ListFormat = ListFormat.LISTED,
+) -> str:
     """
     Nicely format and indent a key-value pair
 
@@ -4052,7 +3742,8 @@ def format(
         window_size=window_size - indent,
         key_color=key_color,
         list_format=list_format,
-        wrap=wrap)
+        wrap=wrap,
+    )
 
     # A special care must be taken when joining key and some types of values
     if isinstance(value, list):
@@ -4080,13 +3771,16 @@ def format(
             wrap = any(len(line) + indent - 7 > window_size for line in value_as_lines)
 
         if wrap:
-            return output \
+            return (
+                output
                 + wrap_text(
                     value,
                     width=window_size,
                     preserve_paragraphs=True,
                     initial_indent=indent_string,
-                    subsequent_indent=indent_string).lstrip()
+                    subsequent_indent=indent_string,
+                ).lstrip()
+            )
 
         return output + ('\n' + indent_string).join(value_as_lines)
 
@@ -4094,12 +3788,13 @@ def format(
 
 
 def create_directory(
-        *,
-        path: Path,
-        name: str,
-        dry: bool = False,
-        quiet: bool = False,
-        logger: tmt.log.Logger) -> None:
+    *,
+    path: Path,
+    name: str,
+    dry: bool = False,
+    quiet: bool = False,
+    logger: tmt.log.Logger,
+) -> None:
     """
     Create a new directory.
 
@@ -4152,15 +3847,16 @@ def create_directory(
 
 
 def create_file(
-        *,
-        path: Path,
-        content: str,
-        name: str,
-        dry: bool = False,
-        force: bool = False,
-        mode: int = 0o664,
-        quiet: bool = False,
-        logger: tmt.log.Logger) -> None:
+    *,
+    path: Path,
+    content: str,
+    name: str,
+    dry: bool = False,
+    force: bool = False,
+    mode: int = 0o664,
+    quiet: bool = False,
+    logger: tmt.log.Logger,
+) -> None:
     """
     Create a new file.
 
@@ -4230,11 +3926,14 @@ def create_file(
 
 @functools.cache
 def fmf_id(
-        *,
-        name: str,
-        fmf_root: Path,
-        logger: tmt.log.Logger) -> 'tmt.base.FmfId':
-    """ Return full fmf identifier of the node """
+    *,
+    name: str,
+    fmf_root: Path,
+    logger: tmt.log.Logger,
+) -> 'tmt.base.FmfId':
+    """
+    Return full fmf identifier of the node
+    """
 
     from tmt.base import FmfId
     from tmt.utils.git import GitInfo
@@ -4260,7 +3959,9 @@ def fmf_id(
 
 
 class TimeoutHTTPAdapter(requests.adapters.HTTPAdapter):
-    """ Spice up request's session with custom timeout """
+    """
+    Spice up request's session with custom timeout
+    """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.timeout = kwargs.pop('timeout', None)
@@ -4270,9 +3971,8 @@ class TimeoutHTTPAdapter(requests.adapters.HTTPAdapter):
     # ignore[override]: signature does not match superclass on purpose.
     # send() does declare plenty of parameters we do not care about.
     def send(  # type: ignore[override]
-            self,
-            request: requests.PreparedRequest,
-            **kwargs: Any) -> requests.Response:
+        self, request: requests.PreparedRequest, **kwargs: Any
+    ) -> requests.Response:
         """
         Send request.
 
@@ -4297,7 +3997,10 @@ class RetryStrategy(urllib3.util.retry.Retry):
         return new_retry
 
     def _log_rate_limit_info(self, headers: urllib3._collections.HTTPHeaderDict) -> None:
-        """Log current GitHub rate limit information"""
+        """
+        Log current GitHub rate limit information
+        """
+
         if not self.logger:
             return
 
@@ -4307,7 +4010,10 @@ class RetryStrategy(urllib3.util.retry.Retry):
         self.logger.debug("Resource", headers.get('X-RateLimit-Resource', 'unknown'))
 
     def _log_response_info(self, response: HTTPResponse) -> None:
-        """Log detailed response information for debugging"""
+        """
+        Log detailed response information for debugging
+        """
+
         if not self.logger:
             return
 
@@ -4315,11 +4021,7 @@ class RetryStrategy(urllib3.util.retry.Retry):
         self.logger.debug("Response headers", dict(response.headers))
         self.logger.debug("Response text", response.data.decode('utf-8'))
 
-    def increment(
-            self,
-            *args: Any,
-            **kwargs: Any
-            ) -> urllib3.util.retry.Retry:
+    def increment(self, *args: Any, **kwargs: Any) -> urllib3.util.retry.Retry:
         error = cast(Optional[Exception], kwargs.get('error'))
 
         # Detect a subset of exception we do not want to follow with a retry.
@@ -4328,9 +4030,9 @@ class RetryStrategy(urllib3.util.retry.Retry):
         if error is not None:  # noqa: SIM102
             # Failed certificate verification - this issue will probably not get any better
             # should we try again.
-            if isinstance(error, urllib3.exceptions.SSLError) \
-                    and 'certificate verify failed' in str(error):
-
+            if isinstance(
+                error, urllib3.exceptions.SSLError
+            ) and 'certificate verify failed' in str(error):
                 # [mpr] I'm not sure how stable this *iternal* API is, but pool seems to be the
                 # only place aware of the remote hostname. Try our best to get the hostname for
                 # a better error message, but don't crash because of a missing attribute or
@@ -4366,8 +4068,7 @@ class RetryStrategy(urllib3.util.retry.Retry):
         # Check if this is actually a rate limit issue
         if 'X-RateLimit-Resource' in headers:
             # Primary rate limit exceeded
-            if ('X-RateLimit-Remaining' in headers and
-                    int(headers['X-RateLimit-Remaining']) == 0):
+            if 'X-RateLimit-Remaining' in headers and int(headers['X-RateLimit-Remaining']) == 0:
                 reset_time = int(headers['X-RateLimit-Reset'])
                 wait_time = reset_time - int(time.time())
                 if wait_time > 0:
@@ -4375,40 +4076,37 @@ class RetryStrategy(urllib3.util.retry.Retry):
                     wait_time += 1
 
                     if self.logger:
-                        self.logger.info("Primary rate limit exceeded. Waiting "
-                                         f"{wait_time + 1} seconds.")
+                        self.logger.info(
+                            f"Primary rate limit exceeded. Waiting {wait_time + 1} seconds."
+                        )
                     time.sleep(wait_time)
 
             if 'Retry-After' in headers:
                 retry_after = int(headers['Retry-After'])
                 retry_after += 1
                 if self.logger:
-                    self.logger.info(
-                        f"Secondary rate limit hit. Waiting {retry_after} seconds."
-                        )
+                    self.logger.info(f"Secondary rate limit hit. Waiting {retry_after} seconds.")
                 time.sleep(retry_after)
 
             # Exponential backoff for unclear rate limit cases
             if self.total is not None:
-                wait_time = min(2 ** self.total, 60)
+                wait_time = min(2**self.total, 60)
                 if self.logger:
                     self.logger.info(
                         "Rate limit detected but no wait time specified. "
                         f"Using exponential backoff: {wait_time} seconds"
-                        )
+                    )
                 time.sleep(wait_time)
 
         # Handle other 403 cases
         elif 'X-GitHub-Request-Id' in headers:
             try:
-                error_msg = json.loads(response.data.decode('utf-8')
-                                       ).get('message', '').lower()
+                error_msg = json.loads(response.data.decode('utf-8')).get('message', '').lower()
                 if self.logger:
                     self.logger.warning(f"GitHub API error: {error_msg}")
             except (ValueError, AttributeError) as e:
                 if self.logger:
-                    self.logger.warning(
-                        f"Failed to parse error message from response: {e}")
+                    self.logger.warning(f"Failed to parse error message from response: {e}")
 
         return super().increment(*args, **kwargs)
 
@@ -4418,11 +4116,13 @@ class RetryStrategy(urllib3.util.retry.Retry):
 
         try:
             error_msg = response.json().get('message', '').lower()
-            is_rate_limit = ('rate limit exceeded' in error_msg or
-                             'secondary rate limit' in error_msg)
+            is_rate_limit = (
+                'rate limit exceeded' in error_msg or 'secondary rate limit' in error_msg
+            )
             if self.logger:
                 self.logger.debug(
-                    f"Rate limit error detection: {is_rate_limit} (message: {error_msg})")
+                    f"Rate limit error detection: {is_rate_limit} (message: {error_msg})"
+                )
             return is_rate_limit
         except (ValueError, AttributeError) as e:
             if self.logger:
@@ -4433,18 +4133,19 @@ class RetryStrategy(urllib3.util.retry.Retry):
 # ignore[type-arg]: base class is a generic class, but we cannot list
 # its parameter type, because in Python 3.6 the class "is not subscriptable".
 class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg]  # noqa: N801
-    """ Context manager for :py:class:`requests.Session` with retries and timeout """
+    """
+    Context manager for :py:class:`requests.Session` with retries and timeout
+    """
 
     @staticmethod
     def create(
-            retries: int = DEFAULT_RETRY_SESSION_RETRIES,
-            backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
-            allowed_methods: Optional[tuple[str, ...]] = None,
-            status_forcelist: Optional[tuple[int, ...]] = None,
-            timeout: Optional[int] = None,
-            logger: Optional[tmt.log.Logger] = None
-            ) -> requests.Session:
-
+        retries: int = DEFAULT_RETRY_SESSION_RETRIES,
+        backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
+        allowed_methods: Optional[tuple[str, ...]] = None,
+        status_forcelist: Optional[tuple[int, ...]] = None,
+        timeout: Optional[int] = None,
+        logger: Optional[tmt.log.Logger] = None,
+    ) -> requests.Session:
         # `method_whitelist`` has been renamed to `allowed_methods` since
         # urllib3 1.26, and it will be removed in urllib3 2.0.
         # `allowed_methods` is therefore the future-proof name, but for the
@@ -4456,7 +4157,8 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
                 status_forcelist=status_forcelist,
                 method_whitelist=allowed_methods,
                 backoff_factor=backoff_factor,
-                logger=logger)
+                logger=logger,
+            )
 
         else:
             retry_strategy = RetryStrategy(
@@ -4464,14 +4166,15 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
                 status_forcelist=status_forcelist,
                 allowed_methods=allowed_methods,
                 backoff_factor=backoff_factor,
-                logger=logger)
+                logger=logger,
+            )
 
         if timeout is not None:
             http_adapter: requests.adapters.HTTPAdapter = TimeoutHTTPAdapter(
-                timeout=timeout, max_retries=retry_strategy)
+                timeout=timeout, max_retries=retry_strategy
+            )
         else:
-            http_adapter = requests.adapters.HTTPAdapter(
-                max_retries=retry_strategy)
+            http_adapter = requests.adapters.HTTPAdapter(max_retries=retry_strategy)
 
         session = requests.Session()
         session.mount('http://', http_adapter)
@@ -4480,14 +4183,14 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
         return session
 
     def __init__(
-            self,
-            retries: int = DEFAULT_RETRY_SESSION_RETRIES,
-            backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
-            allowed_methods: Optional[tuple[str, ...]] = None,
-            status_forcelist: Optional[tuple[int, ...]] = None,
-            timeout: Optional[int] = None,
-            logger: Optional[tmt.log.Logger] = None
-            ) -> None:
+        self,
+        retries: int = DEFAULT_RETRY_SESSION_RETRIES,
+        backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
+        allowed_methods: Optional[tuple[str, ...]] = None,
+        status_forcelist: Optional[tuple[int, ...]] = None,
+        timeout: Optional[int] = None,
+        logger: Optional[tmt.log.Logger] = None,
+    ) -> None:
         self.retries = retries
         self.backoff_factor = backoff_factor
         self.allowed_methods = allowed_methods
@@ -4500,21 +4203,26 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
             backoff_factor=self.backoff_factor,
             allowed_methods=self.allowed_methods,
             status_forcelist=self.status_forcelist,
-            timeout=self.timeout)
+            timeout=self.timeout,
+        )
 
     def __exit__(self, *args: object) -> None:
         pass
 
 
 def remove_color(text: str) -> str:
-    """ Remove ansi color sequences from the string """
+    """
+    Remove ansi color sequences from the string
+    """
+
     return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
 
 
-def generate_runs(
-        path: Path,
-        id_: tuple[str, ...]) -> Iterator[Path]:
-    """ Generate absolute paths to runs from path """
+def generate_runs(path: Path, id_: tuple[str, ...]) -> Iterator[Path]:
+    """
+    Generate absolute paths to runs from path
+    """
+
     # Prepare absolute workdir path if --id was used
     run_path = None
     for id_name in id_:
@@ -4523,8 +4231,7 @@ def generate_runs(
             if '/' not in id_name:
                 run_path = path / run_path
             if not run_path.exists():
-                raise tmt.utils.GeneralError(
-                    f"Directory '{run_path}' does not exist.")
+                raise tmt.utils.GeneralError(f"Directory '{run_path}' does not exist.")
             if run_path.is_absolute() and run_path.exists():
                 yield run_path
         else:
@@ -4547,7 +4254,10 @@ def generate_runs(
 
 
 def load_run(run: 'tmt.base.Run') -> tuple[bool, Optional[Exception]]:
-    """ Load a run and its steps from the workdir """
+    """
+    Load a run and its steps from the workdir
+    """
+
     try:
         run.load_from_workdir()
 
@@ -4561,160 +4271,22 @@ def load_run(run: 'tmt.base.Run') -> tuple[bool, Optional[Exception]]:
     return True, None
 
 
-class DistGitHandler:
-    """ Common functionality for DistGit handlers """
-
-    sources_file_name = 'sources'
-    uri = "/rpms/{name}/{filename}/{hashtype}/{hash}/{filename}"
-
-    usage_name: str  # Name to use for dist-git-type
-    re_source: Pattern[str]
-    # https://www.gnu.org/software/tar/manual/tar.html#auto_002dcompress
-    re_supported_extensions: Pattern[str] = re.compile(
-        r'\.((tar\.(gz|Z|bz2|lz|lzma|lzo|xz|zst))|tgz|taz|taZ|tz2|tbz2|tbz|tlz|tzst)$')
-    lookaside_server: str
-    remote_substring: Pattern[str]
-
-    def url_and_name(self, cwd: Optional[Path] = None) -> list[tuple[str, str]]:
-        """
-        Return list of urls and basenames of the used source
-
-        The 'cwd' parameter has to be a DistGit directory.
-        """
-        cwd = cwd or Path.cwd()
-        # Assumes <package>.spec
-        globbed = list(cwd.glob('*.spec'))
-        if len(globbed) != 1:
-            raise GeneralError(f"No .spec file is present in '{cwd}'.")
-        package = globbed[0].stem
-        ret_values = []
-        try:
-            for line in (cwd / self.sources_file_name).splitlines():
-                match = self.re_source.match(line)
-                if match is None:
-                    raise GeneralError(
-                        f"Couldn't match '{self.sources_file_name}' "
-                        f"content with '{self.re_source.pattern}'.")
-                used_hash, source_name, hash_value = match.groups()
-                ret_values.append((self.lookaside_server + self.uri.format(
-                    name=package,
-                    filename=source_name,
-                    hash=hash_value,
-                    hashtype=used_hash.lower()
-                    ), source_name))
-        except Exception as error:
-            raise GeneralError(f"Couldn't read '{self.sources_file_name}' file.") from error
-        if not ret_values:
-            raise GeneralError(
-                "No sources found in '{self.sources_file_name}' file.")
-        return ret_values
-
-    def its_me(self, remotes: list[str]) -> bool:
-        """ True if self can work with remotes """
-        return any(self.remote_substring.search(item) for item in remotes)
-
-
-class FedoraDistGit(DistGitHandler):
-    """ Fedora Handler """
-
-    usage_name = "fedora"
-    re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
-    lookaside_server = "https://src.fedoraproject.org/repo/pkgs"
-    remote_substring = re.compile(r'fedoraproject\.org')
-
-
-class CentOSDistGit(DistGitHandler):
-    """ CentOS Handler """
-
-    usage_name = "centos"
-    re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
-    lookaside_server = "https://sources.stream.centos.org/sources"
-    remote_substring = re.compile(r'redhat/centos')
-
-
-class RedHatGitlab(DistGitHandler):
-    """ Red Hat on Gitlab """
-
-    usage_name = "redhatgitlab"
-    re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
-    # Location already public (standard-test-roles)
-    lookaside_server = "http://pkgs.devel.redhat.com/repo"
-    remote_substring = re.compile(r'redhat/rhel/')
-
-
-def get_distgit_handler(
-        remotes: Optional[list[str]] = None,
-        usage_name: Optional[str] = None) -> DistGitHandler:
-    """
-    Return the right DistGitHandler
-
-    Pick the DistGitHandler class which understands specified
-    remotes or by usage_name.
-    """
-    for candidate_class in DistGitHandler.__subclasses__():
-        if usage_name is not None and usage_name == candidate_class.usage_name:
-            return candidate_class()
-        if remotes is not None:
-            ret_val = candidate_class()
-            if ret_val.its_me(remotes):
-                return ret_val
-    raise GeneralError(f"No known remote in '{remotes}'.")
-
-
-def get_distgit_handler_names() -> list[str]:
-    """ All known distgit handlers """
-    return [i.usage_name for i in DistGitHandler.__subclasses__()]
-
-
-def distgit_download(
-        *,
-        distgit_dir: Path,
-        target_dir: Path,
-        handler_name: Optional[str] = None,
-        caller: Optional['Common'] = None,
-        logger: tmt.log.Logger
-        ) -> None:
-    """
-    Download sources to the target_dir
-
-    distgit_dir is path to the DistGit repository
-    """
-    # Get the handler unless specified
-    if handler_name is None:
-        cmd = Command("git", "config", "--get-regexp", '^remote\\..*.url')
-        output = cmd.run(cwd=distgit_dir,
-                         caller=caller,
-                         logger=logger)
-        if output.stdout is None:
-            raise tmt.utils.GeneralError("Missing remote origin url.")
-        remotes = output.stdout.split('\n')
-        handler = get_distgit_handler(remotes=remotes)
-    else:
-        handler = get_distgit_handler(usage_name=handler_name)
-
-    for url, source_name in handler.url_and_name(distgit_dir):
-        logger.debug(f"Download sources from '{url}'.")
-        with retry_session() as session:
-            response = session.get(url)
-        response.raise_for_status()
-        target_dir.mkdir(exist_ok=True, parents=True)
-        (target_dir / source_name).write_bytes(response.content)
-
-
 # ignore[type-arg]: base class is a generic class, but we cannot list its parameter type, because
 # in Python 3.6 the class "is not subscriptable".
 class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-arg]
-    """ Updatable message suitable for progress-bar-like reporting """
+    """
+    Updatable message suitable for progress-bar-like reporting
+    """
 
     def __init__(
-            self,
-            key: str,
-            enabled: bool = True,
-            indent_level: int = 0,
-            key_color: Optional[str] = None,
-            default_value_color: Optional[str] = None,
-            clear_on_exit: bool = False
-            ) -> None:
+        self,
+        key: str,
+        enabled: bool = True,
+        indent_level: int = 0,
+        key_color: Optional[str] = None,
+        default_value_color: Optional[str] = None,
+        clear_on_exit: bool = False,
+    ) -> None:
         """
         Updatable message suitable for progress-bar-like reporting.
 
@@ -4762,7 +4334,9 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
         sys.stdout.flush()
 
     def clear(self) -> None:
-        """ Clear the message area """
+        """
+        Clear the message area
+        """
 
         self._update_message_area('')
 
@@ -4794,11 +4368,10 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
 
         message = tmt.log.indent(
             self.key,
-            value=style(
-                message,
-                fg=color or self.default_value_color),
+            value=style(message, fg=color or self.default_value_color),
             color=self.key_color,
-            level=self.indent_level)
+            level=self.indent_level,
+        )
 
         sys.stdout.write(f"\r{message}")
         sys.stdout.flush()
@@ -4822,6 +4395,7 @@ def find_fmf_root(path: Path, ignore_paths: Optional[list[Path]] = None) -> list
 
     Raise `MetadataError` if no fmf root is found.
     """
+
     fmf_roots = []
     for _root, _, files in os.walk(path):
         root = Path(_root)
@@ -4881,23 +4455,18 @@ def _patch_plan_schema(schema: Schema, store: SchemaStore) -> None:
     for step in ('discover', 'execute', 'finish', 'prepare', 'provision', 'report'):
         step_schema_prefix = f'/schemas/{step}/'
 
-        step_plugin_schema_ids = [schema_id for schema_id in store if schema_id.startswith(
-            step_schema_prefix) and schema_id not in PLAN_SCHEMA_IGNORED_IDS]
+        step_plugin_schema_ids = [
+            schema_id
+            for schema_id in store
+            if schema_id.startswith(step_schema_prefix)
+            and schema_id not in PLAN_SCHEMA_IGNORED_IDS
+        ]
 
-        refs: list[Schema] = [
-            {'$ref': schema_id} for schema_id in step_plugin_schema_ids
-            ]
+        refs: list[Schema] = [{'$ref': schema_id} for schema_id in step_plugin_schema_ids]
 
         schema['properties'][step] = {
-            'oneOf': [*refs,
-                      {
-                          'type': 'array',
-                          'items': {
-                              'anyOf': refs
-                              }
-                          }
-                      ]
-            }
+            'oneOf': [*refs, {'type': 'array', 'items': {'anyOf': refs}}]
+        }
 
 
 def _load_schema(schema_filepath: Path) -> Schema:
@@ -5022,7 +4591,9 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
     import tmt.steps
 
     def _process_step(step_name: str, step: dict[Any, Any]) -> None:
-        """ Process a single step configuration """
+        """
+        Process a single step configuration
+        """
 
         # If `how` is set, don't touch it, and there's nothing to do.
         if 'how' in step:
@@ -5042,18 +4613,22 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
         step_class = import_member(
             module=step_module_name,
             member=step_class_name,
-            logger=logger)[1]
+            logger=logger,
+        )[1]
 
         if not issubclass(step_class, tmt.steps.Step):
             raise GeneralError(
                 'Possible step {step_name} implementation '
                 f'{step_module_name}.{step_class_name} is not a subclass '
-                'of tmt.steps.Step class.')
+                'of tmt.steps.Step class.'
+            )
 
         step['how'] = step_class.DEFAULT_HOW
 
     def _process_step_collection(step_name: str, step_collection: Any) -> None:
-        """ Process a collection of step configurations """
+        """
+        Process a collection of step configurations
+        """
 
         # Ignore anything that is not a step.
         if step_name not in tmt.steps.STEPS:
@@ -5082,8 +4657,9 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
 
 
 def preformat_jsonschema_validation_errors(
-        raw_errors: list[jsonschema.ValidationError],
-        prefix: Optional[str] = None) -> list[tuple[jsonschema.ValidationError, str]]:
+    raw_errors: list[jsonschema.ValidationError],
+    prefix: Optional[str] = None,
+) -> list[tuple[jsonschema.ValidationError, str]]:
     """
     A helper to preformat JSON schema validation errors.
 
@@ -5113,10 +4689,13 @@ def preformat_jsonschema_validation_errors(
 
 
 def validate_fmf_node(
-        node: fmf.Tree,
-        schema_name: str,
-        logger: tmt.log.Logger) -> list[tuple[jsonschema.ValidationError, str]]:
-    """ Validate a given fmf node """
+    node: fmf.Tree,
+    schema_name: str,
+    logger: tmt.log.Logger,
+) -> list[tuple[jsonschema.ValidationError, str]]:
+    """
+    Validate a given fmf node
+    """
 
     node = _prenormalize_fmf_node(node, schema_name, logger)
 
@@ -5133,12 +4712,12 @@ WaitCheckType = Callable[[], T]
 
 
 def wait(
-        parent: Common,
-        check: WaitCheckType[T],
-        timeout: datetime.timedelta,
-        tick: float = DEFAULT_WAIT_TICK,
-        tick_increase: float = DEFAULT_WAIT_TICK_INCREASE
-        ) -> T:
+    parent: Common,
+    check: WaitCheckType[T],
+    timeout: datetime.timedelta,
+    tick: float = DEFAULT_WAIT_TICK,
+    tick_increase: float = DEFAULT_WAIT_TICK_INCREASE,
+) -> T:
     """
     Wait for a condition to become true.
 
@@ -5150,6 +4729,8 @@ def wait(
     * decide more time is needed. This is not a successful outcome, ``check``
       shall then raise :py:class:`WaitingIncomplete` exception, and ``wait()``
       will try again later.
+
+    ``wait()`` will also stop and quit if tmt has been interrupted.
 
     :param parent: "owner" of the wait process. Used for its logging capability.
     :param check: a callable responsible for testing the condition. Accepts no
@@ -5166,10 +4747,13 @@ def wait(
     :returns: value returned by ``check`` reporting success.
     :raises GeneralError: when ``tick`` is not a positive integer.
     :raises WaitingTimedOutError: when time quota has been consumed.
+    :raises Interrupted: when tmt has been interrupted.
     """
 
     if tick <= 0:
         raise GeneralError('Tick must be a positive integer')
+
+    from tmt.utils.signals import INTERRUPT_PENDING, Interrupted
 
     monotomic_clock = time.monotonic
 
@@ -5179,16 +4763,21 @@ def wait(
         'wait',
         f"waiting for condition '{check.__name__}' with timeout {timeout},"
         f" deadline in {timeout.total_seconds()} seconds,"
-        f" checking every {tick:.2f} seconds")
+        f" checking every {tick:.2f} seconds",
+    )
 
     while True:
+        if INTERRUPT_PENDING.is_set():
+            parent.debug('wait', f"'{check.__name__}' interrupted")
+
+            raise Interrupted
+
         now = monotomic_clock()
 
         if now > deadline:
             parent.debug(
-                'wait',
-                f"'{check.__name__}' did not succeed,"
-                f" {now - deadline:.2f} over quota")
+                'wait', f"'{check.__name__}' did not succeed, {now - deadline:.2f} over quota"
+            )
 
             raise WaitingTimedOutError(check, timeout)
 
@@ -5203,14 +4792,15 @@ def wait(
                 parent.debug(
                     'wait',
                     f"'{check.__name__}' finished successfully but took too much time,"
-                    f" {now - deadline:.2f} over quota")
+                    f" {now - deadline:.2f} over quota",
+                )
 
                 raise WaitingTimedOutError(check, timeout, check_success=True)
 
             parent.debug(
                 'wait',
-                f"'{check.__name__}' finished successfully,"
-                f" {deadline - now:.2f} seconds left")
+                f"'{check.__name__}' finished successfully, {deadline - now:.2f} seconds left",
+            )
 
             return ret
 
@@ -5223,7 +4813,8 @@ def wait(
                 'wait',
                 f"'{check.__name__}' still pending,"
                 f" {deadline - now:.2f} seconds left,"
-                f" current tick {tick:.2f} seconds")
+                f" current tick {tick:.2f} seconds",
+            )
 
             time.sleep(tick)
 
@@ -5241,32 +4832,35 @@ class ValidateFmfMixin(_CommonBase):
     """
 
     def _validate_fmf_node(
-            self,
-            node: fmf.Tree,
-            raise_on_validation_error: bool,
-            logger: tmt.log.Logger) -> None:
-        """ Validate a given fmf node """
+        self,
+        node: fmf.Tree,
+        raise_on_validation_error: bool,
+        logger: tmt.log.Logger,
+    ) -> None:
+        """
+        Validate a given fmf node
+        """
 
-        errors = validate_fmf_node(
-            node, f'{self.__class__.__name__.lower()}.yaml', logger)
+        errors = validate_fmf_node(node, f'{self.__class__.__name__.lower()}.yaml', logger)
 
         if errors:
             if raise_on_validation_error:
                 raise SpecificationError(
-                    f'fmf node {node.name} failed validation',
-                    validation_errors=errors)
+                    f'fmf node {node.name} failed validation', validation_errors=errors
+                )
 
             for _, error_message in errors:
                 logger.warning(error_message, shift=1)
 
     def __init__(
-            self,
-            *,
-            node: fmf.Tree,
-            skip_validation: bool = False,
-            raise_on_validation_error: bool = False,
-            logger: tmt.log.Logger,
-            **kwargs: Any) -> None:
+        self,
+        *,
+        node: fmf.Tree,
+        skip_validation: bool = False,
+        raise_on_validation_error: bool = False,
+        logger: tmt.log.Logger,
+        **kwargs: Any,
+    ) -> None:
         # Validate *before* letting next class in line touch the data.
         if not skip_validation:
             self._validate_fmf_node(node, raise_on_validation_error, logger)
@@ -5275,11 +4869,12 @@ class ValidateFmfMixin(_CommonBase):
 
 
 def dataclass_normalize_field(
-        container: Any,
-        key_address: str,
-        keyname: str,
-        raw_value: Any,
-        logger: tmt.log.Logger) -> Any:
+    container: Any,
+    key_address: str,
+    keyname: str,
+    raw_value: Any,
+    logger: tmt.log.Logger,
+) -> Any:
     """
     Normalize and assign a value to container field.
 
@@ -5288,13 +4883,16 @@ def dataclass_normalize_field(
     and the return value is assigned to container field instead of ``value``.
     """
 
+    from tmt.container import container_field
+
     # Find out whether there's a normalization callback, and use it. Otherwise,
     # the raw value is simply used.
     value = raw_value
 
     if dataclasses.is_dataclass(container):
         _, _, _, _, metadata = container_field(
-            type(container) if not isinstance(container, type) else container, keyname)
+            type(container) if not isinstance(container, type) else container, keyname
+        )
 
         if metadata.normalize_callback:
             value = metadata.normalize_callback(key_address, raw_value, logger)
@@ -5310,36 +4908,35 @@ def dataclass_normalize_field(
             f'field "{key_address}" normalized to false-ish value',
             f'{container.__class__.__name__}.{keyname}',
             level=4,
-            topic=tmt.log.Topic.KEY_NORMALIZATION)
+            topic=tmt.log.Topic.KEY_NORMALIZATION,
+        )
 
         with_getattr = getattr(container, keyname, None)
         with_dict = container.__dict__.get(keyname, None)
 
-        logger.debug(
-            'value',
-            str(value),
-            level=4,
-            shift=1,
-            topic=tmt.log.Topic.KEY_NORMALIZATION)
+        logger.debug('value', str(value), level=4, shift=1, topic=tmt.log.Topic.KEY_NORMALIZATION)
         logger.debug(
             'current value (getattr)',
             str(with_getattr),
             level=4,
             shift=1,
-            topic=tmt.log.Topic.KEY_NORMALIZATION)
+            topic=tmt.log.Topic.KEY_NORMALIZATION,
+        )
         logger.debug(
             'current value (__dict__)',
             str(with_dict),
             level=4,
             shift=1,
-            topic=tmt.log.Topic.KEY_NORMALIZATION)
+            topic=tmt.log.Topic.KEY_NORMALIZATION,
+        )
 
         if value != with_getattr or with_getattr != with_dict:
             logger.debug(
                 'known values do not match',
                 level=4,
                 shift=2,
-                topic=tmt.log.Topic.KEY_NORMALIZATION)
+                topic=tmt.log.Topic.KEY_NORMALIZATION,
+            )
 
     # Set attribute by adding it to __dict__ directly. Messing with setattr()
     # might cause reuse of mutable values by other instances.
@@ -5349,9 +4946,10 @@ def dataclass_normalize_field(
 
 
 def normalize_int(
-        key_address: str,
-        value: Any,
-        logger: tmt.log.Logger) -> int:
+    key_address: str,
+    value: Any,
+    logger: tmt.log.Logger,
+) -> int:
     """
     Normalize an integer.
 
@@ -5370,9 +4968,10 @@ def normalize_int(
 
 
 def normalize_optional_int(
-        key_address: str,
-        value: Any,
-        logger: tmt.log.Logger) -> Optional[int]:
+    key_address: str,
+    value: Any,
+    logger: tmt.log.Logger,
+) -> Optional[int]:
     """
     Normalize an integer that may be unset as well.
 
@@ -5394,9 +4993,10 @@ def normalize_optional_int(
 
 
 def normalize_storage_size(
-        key_address: str,
-        value: Any,
-        logger: tmt.log.Logger) -> int:
+    key_address: str,
+    value: Any,
+    logger: tmt.log.Logger,
+) -> int:
     """
     Normalize a storage size.
 
@@ -5409,9 +5009,10 @@ def normalize_storage_size(
 
 
 def normalize_string_list(
-        key_address: str,
-        value: Any,
-        logger: tmt.log.Logger) -> list[str]:
+    key_address: str,
+    value: Any,
+    logger: tmt.log.Logger,
+) -> list[str]:
     """
     Normalize a string-or-list-of-strings input value.
 
@@ -5454,9 +5055,10 @@ def normalize_string_list(
 
 
 def normalize_pattern_list(
-        key_address: str,
-        value: Any,
-        logger: tmt.log.Logger) -> list[Pattern[str]]:
+    key_address: str,
+    value: Any,
+    logger: tmt.log.Logger,
+) -> list[Pattern[str]]:
     """
     Normalize a pattern-or-list-of-patterns input value.
 
@@ -5479,14 +5081,16 @@ def normalize_pattern_list(
 
                 except Exception:
                     raise NormalizationError(
-                        f'{key_address}[{i}]', raw_pattern, 'a regular expression')
+                        f'{key_address}[{i}]', raw_pattern, 'a regular expression'
+                    )
 
             elif isinstance(raw_pattern, re.Pattern):
                 patterns.append(raw_pattern)
 
             else:
                 raise NormalizationError(
-                    f'{key_address}[{i}]', raw_pattern, 'a regular expression')
+                    f'{key_address}[{i}]', raw_pattern, 'a regular expression'
+                )
 
         return patterns
 
@@ -5500,15 +5104,15 @@ def normalize_pattern_list(
         return _normalize(list(value))
 
     raise NormalizationError(
-        key_address,
-        value,
-        'a regular expression or a list of regular expressions')
+        key_address, value, 'a regular expression or a list of regular expressions'
+    )
 
 
 def normalize_integer_list(
-        key_address: str,
-        value: Any,
-        logger: tmt.log.Logger) -> list[int]:
+    key_address: str,
+    value: Any,
+    logger: tmt.log.Logger,
+) -> list[int]:
     """
     Normalize an integer-or-list-of-integers input value.
 
@@ -5542,10 +5146,13 @@ def normalize_integer_list(
 
 
 def normalize_path(
-        key_address: str,
-        value: Any,
-        logger: tmt.log.Logger) -> Optional[Path]:
-    """ Normalize content of the test `path` key """
+    key_address: str,
+    value: Any,
+    logger: tmt.log.Logger,
+) -> Optional[Path]:
+    """
+    Normalize content of the test `path` key
+    """
 
     if value is None:
         return None
@@ -5560,9 +5167,10 @@ def normalize_path(
 
 
 def normalize_path_list(
-        key_address: str,
-        value: Union[None, str, list[str]],
-        logger: tmt.log.Logger) -> list[Path]:
+    key_address: str,
+    value: Union[None, str, list[str]],
+    logger: tmt.log.Logger,
+) -> list[Path]:
     """
     Normalize a path-or-list-of-paths input value.
 
@@ -5596,9 +5204,10 @@ def normalize_path_list(
 
 
 def normalize_shell_script_list(
-        key_address: str,
-        value: Union[None, str, list[str]],
-        logger: tmt.log.Logger) -> list[ShellScript]:
+    key_address: str,
+    value: Union[None, str, list[str]],
+    logger: tmt.log.Logger,
+) -> list[ShellScript]:
     """
     Normalize a string-or-list-of-strings input value.
 
@@ -5632,9 +5241,10 @@ def normalize_shell_script_list(
 
 
 def normalize_shell_script(
-        key_address: str,
-        value: Union[None, str],
-        logger: tmt.log.Logger) -> Optional[ShellScript]:
+    key_address: str,
+    value: Union[None, str],
+    logger: tmt.log.Logger,
+) -> Optional[ShellScript]:
     """
     Normalize a single shell script input that may be unset.
 
@@ -5651,10 +5261,8 @@ def normalize_shell_script(
 
 
 def normalize_adjust(
-        key_address: str,
-        raw_value: Any,
-        logger: tmt.log.Logger) -> Optional[list['tmt.base._RawAdjustRule']]:
-
+    key_address: str, raw_value: Any, logger: tmt.log.Logger
+) -> Optional[list['tmt.base._RawAdjustRule']]:
     if raw_value is None:
         return []
     if isinstance(raw_value, list):
@@ -5663,9 +5271,10 @@ def normalize_adjust(
 
 
 def normalize_string_dict(
-        key_address: str,
-        raw_value: Any,
-        logger: tmt.log.Logger) -> dict[str, str]:
+    key_address: str,
+    raw_value: Any,
+    logger: tmt.log.Logger,
+) -> dict[str, str]:
     """
     Normalize a key/value dictionary.
 
@@ -5686,9 +5295,7 @@ def normalize_string_dict(
     """
 
     if isinstance(raw_value, dict):
-        return {
-            str(key).strip(): str(value).strip() for key, value in raw_value.items()
-            }
+        return {str(key).strip(): str(value).strip() for key, value in raw_value.items()}
 
     if isinstance(raw_value, (list, tuple)):
         normalized = {}
@@ -5698,22 +5305,22 @@ def normalize_string_dict(
                 key, value = datum.split('=', 1)
 
             except ValueError as exc:
-                raise NormalizationError(
-                    key_address, datum, 'a KEY=VALUE string') from exc
+                raise NormalizationError(key_address, datum, 'a KEY=VALUE string') from exc
 
             normalized[key.strip()] = value.strip()
 
         return normalized
 
     raise tmt.utils.NormalizationError(
-        key_address, value, 'a dictionary or a list of KEY=VALUE strings')
+        key_address, value, 'a dictionary or a list of KEY=VALUE strings'
+    )
 
 
 def normalize_data_amount(
-        key_address: str,
-        raw_value: Any,
-        logger: tmt.log.Logger) -> 'Size':
-
+    key_address: str,
+    raw_value: Any,
+    logger: tmt.log.Logger,
+) -> 'Size':
     from pint import Quantity
 
     if isinstance(raw_value, Quantity):
@@ -5808,16 +5415,23 @@ class NormalizeKeysMixin(_CommonBase):
     # type annotations land, there should be no need for extra _keys attribute.
     @classmethod
     def _keys(cls) -> list[str]:
-        """ Return a list of names of object's keys. """
+        """
+        Return a list of names of object's keys.
+        """
 
         return list(cls.keys())
 
     def _load_keys(
-            self,
-            key_source: dict[str, Any],
-            key_source_name: str,
-            logger: tmt.log.Logger) -> None:
-        """ Extract values for class-level attributes, and verify they match declared types. """
+        self,
+        key_source: dict[str, Any],
+        key_source_name: str,
+        logger: tmt.log.Logger,
+    ) -> None:
+        """
+        Extract values for class-level attributes, and verify they match declared types.
+        """
+
+        from tmt.container import key_to_option
 
         log_shift, log_level = 2, 4
 
@@ -5825,12 +5439,14 @@ class NormalizeKeysMixin(_CommonBase):
             logger.debug,
             shift=log_shift - 1,
             level=log_level,
-            topic=tmt.log.Topic.KEY_NORMALIZATION)
+            topic=tmt.log.Topic.KEY_NORMALIZATION,
+        )
         debug = functools.partial(
             logger.debug,
             shift=log_shift,
             level=log_level,
-            topic=tmt.log.Topic.KEY_NORMALIZATION)
+            topic=tmt.log.Topic.KEY_NORMALIZATION,
+        )
 
         debug_intro('key source')
         for k, v in key_source.items():
@@ -5915,227 +5531,15 @@ class NormalizeKeysMixin(_CommonBase):
 
 class LoadFmfKeysMixin(NormalizeKeysMixin):
     def __init__(
-            self,
-            *,
-            node: fmf.Tree,
-            logger: tmt.log.Logger,
-            **kwargs: Any) -> None:
+        self,
+        *,
+        node: fmf.Tree,
+        logger: tmt.log.Logger,
+        **kwargs: Any,
+    ) -> None:
         self._load_keys(node.get(), node.name, logger)
 
         super().__init__(node=node, logger=logger, **kwargs)
-
-
-@overload
-def field(
-        *,
-        default: bool,
-        # Options
-        option: Optional[FieldCLIOption] = None,
-        is_flag: bool = True,
-        choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
-        multiple: bool = False,
-        metavar: Optional[str] = None,
-        envvar: Optional[str] = None,
-        deprecated: Optional['tmt.options.Deprecated'] = None,
-        help: Optional[str] = None,
-        show_default: bool = False,
-        internal: bool = False,
-        # Input data normalization - not needed, the field is a boolean
-        # flag.
-        # normalize: Optional[NormalizeCallback[T]] = None
-        # Custom serialization
-        # serialize: Optional[SerializeCallback[bool]] = None,
-        # unserialize: Optional[UnserializeCallback[bool]] = None
-        # Custom exporter
-        # exporter: Optional[FieldExporter[T]] = None
-        ) -> bool:
-    pass
-
-
-@overload
-def field(
-        *,
-        default: T,
-        # Options
-        option: Optional[FieldCLIOption] = None,
-        is_flag: bool = False,
-        choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
-        multiple: bool = False,
-        metavar: Optional[str] = None,
-        envvar: Optional[str] = None,
-        deprecated: Optional['tmt.options.Deprecated'] = None,
-        help: Optional[str] = None,
-        show_default: bool = False,
-        internal: bool = False,
-        # Input data normalization
-        normalize: Optional[NormalizeCallback[T]] = None,
-        # Custom serialization
-        serialize: Optional[SerializeCallback[T]] = None,
-        unserialize: Optional[UnserializeCallback[T]] = None,
-        # Custom exporter
-        exporter: Optional[FieldExporter[T]] = None
-        ) -> T:
-    pass
-
-
-@overload
-def field(
-        *,
-        default_factory: Callable[[], T],
-        # Options
-        option: Optional[FieldCLIOption] = None,
-        is_flag: bool = False,
-        choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
-        multiple: bool = False,
-        metavar: Optional[str] = None,
-        envvar: Optional[str] = None,
-        deprecated: Optional['tmt.options.Deprecated'] = None,
-        help: Optional[str] = None,
-        show_default: bool = False,
-        internal: bool = False,
-        # Input data normalization
-        normalize: Optional[NormalizeCallback[T]] = None,
-        # Custom serialization
-        serialize: Optional[SerializeCallback[T]] = None,
-        unserialize: Optional[UnserializeCallback[T]] = None,
-        # Custom exporter
-        exporter: Optional[FieldExporter[T]] = None
-        ) -> T:
-    pass
-
-
-@overload
-def field(
-        *,
-        # Options
-        option: Optional[FieldCLIOption] = None,
-        is_flag: bool = False,
-        choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
-        multiple: bool = False,
-        metavar: Optional[str] = None,
-        envvar: Optional[str] = None,
-        deprecated: Optional['tmt.options.Deprecated'] = None,
-        help: Optional[str] = None,
-        show_default: bool = False,
-        internal: bool = False,
-        # Input data normalization
-        normalize: Optional[NormalizeCallback[T]] = None,
-        # Custom serialization
-        serialize: Optional[SerializeCallback[T]] = None,
-        unserialize: Optional[UnserializeCallback[T]] = None,
-        # Custom exporter
-        exporter: Optional[FieldExporter[T]] = None
-        ) -> T:
-    pass
-
-
-def field(
-        *,
-        default: Any = dataclasses.MISSING,
-        default_factory: Any = None,
-        # Options
-        option: Optional[FieldCLIOption] = None,
-        is_flag: bool = False,
-        choices: Union[None, Sequence[str], Callable[[], Sequence[str]]] = None,
-        multiple: bool = False,
-        metavar: Optional[str] = None,
-        envvar: Optional[str] = None,
-        deprecated: Optional['tmt.options.Deprecated'] = None,
-        help: Optional[str] = None,
-        show_default: bool = False,
-        internal: bool = False,
-        # Input data normalization
-        normalize: Optional[NormalizeCallback[T]] = None,
-        # Custom serialization
-        serialize: Optional[SerializeCallback[T]] = None,
-        unserialize: Optional[UnserializeCallback[T]] = None,
-        # Custom exporter
-        exporter: Optional[FieldExporter[T]] = None
-        ) -> Any:
-    """
-    Define a :py:class:`DataContainer` field.
-
-    Effectively a fancy wrapper over :py:func:`dataclasses.field`, tailored for
-    tmt code needs and simplification of various common tasks.
-
-    :param default: if provided, this will be the default value for this field.
-        Passed directly to :py:func:`dataclass.field`.
-        It is an error to specify both ``default`` and ``default_factory``.
-    :param default_factory: if provided, it must be a zero-argument callable
-        that will be called when a default value is needed for this field.
-        Passed directly to :py:func:`dataclass.field`.
-        It is an error to specify both ``default`` and ``default_factory``.
-    :param option: one or more command-line option names.
-        Passed directly to :py:func:`click.option`.
-    :param is_flag: marks this option as a flag.
-        Passed directly to :py:func:`click.option`.
-    :param choices: if provided, the command-line option would accept only
-        the listed input values.
-        Passed to :py:func:`click.option` as a :py:class:`click.Choice` instance.
-    :param multiple: accept multiple arguments of the same name.
-        Passed directly to :py:func:`click.option`.
-    :param metavar: how the input value is represented in the help page.
-        Passed directly to :py:func:`click.option`.
-    :param envvar: environment variable used for this option.
-        Passed directly to :py:func:`click.option`.
-    :param deprecated: mark the option as deprecated
-        Provide an instance of Deprecated() with version in which the
-        option was obsoleted and an optional hint with the recommended
-        alternative. A warning message will be added to the option help.
-    :param help: the help string for the command-line option. Multiline strings
-        can be used, :py:func:`textwrap.dedent` is applied before passing
-        ``help`` to :py:func:`click.option`.
-    :param show_default: show default value
-        Passed directly to :py:func:`click.option`.
-    :param internal: if set, the field is treated as internal-only, and will not
-        appear when showing objects via ``show()`` method, or in export created
-        by :py:meth:`Core._export`.
-    :param normalize: a callback for normalizing the input value. Consumed by
-        :py:class:`NormalizeKeysMixin`.
-    :param serialize: a callback for custom serialization of the field value.
-        Consumed by :py:class:`SerializableKeysMixin`.
-    :param unserialize: a callback for custom unserialization of the field value.
-        Consumed by :py:class:`SerializableKeysMixin`.
-    :param exporter: a callback for custom export of the field value.
-        Consumed by :py:class:`tmt.export.Exportable`.
-    """
-
-    if option:
-        if is_flag is False and isinstance(default, bool):
-            raise GeneralError(
-                "Container field must be a flag to have boolean default value.")
-
-        if is_flag is True and not isinstance(default, bool):
-            raise GeneralError(
-                "Container field must have a boolean default value when it is a flag.")
-
-    metadata: FieldMetadata[T] = FieldMetadata(
-        internal=internal,
-        help=textwrap.dedent(help).strip() if help else None,
-        _metavar=metavar,
-        default=default,
-        default_factory=default_factory,
-        show_default=show_default,
-        is_flag=is_flag,
-        multiple=multiple,
-        _choices=choices,
-        envvar=envvar,
-        deprecated=deprecated,
-        cli_option=option,
-        normalize_callback=normalize,
-        serialize_callback=serialize,
-        unserialize_callback=unserialize,
-        export_callback=exporter)
-
-    # ignore[call-overload]: returning "wrong" type on purpose. field() must be annotated
-    # as if returning the value of type matching the field declaration, and the original
-    # field() is called with wider argument types than expected, because we use our own
-    # overloading to narrow types *our* custom field() accepts.
-    return dataclasses.field(  # type: ignore[call-overload]
-        default=default,
-        default_factory=default_factory or dataclasses.MISSING,
-        metadata={'tmt': metadata}
-        )
 
 
 def locate_key_origin(node: fmf.Tree, key: str) -> Optional[fmf.Tree]:
@@ -6190,6 +5594,7 @@ def resource_files(path: Union[str, Path], package: Union[str, ModuleType] = "tm
     :param package: package in which to search for the file/directory.
     :returns: an absolute path to the requested file or directory.
     """
+
     return Path(importlib.resources.files(package)) / path  # type: ignore[arg-type]
 
 
@@ -6214,13 +5619,17 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
 
 
 def format_timestamp(timestamp: datetime.datetime) -> str:
-    """ Convert timestamp to a human readable format """
+    """
+    Convert timestamp to a human readable format
+    """
 
     return timestamp.isoformat()
 
 
 def format_duration(duration: datetime.timedelta) -> str:
-    """ Convert duration to a human readable format """
+    """
+    Convert duration to a human readable format
+    """
 
     # A helper variable to hold the duration while we cut away days, hours and seconds.
     counter = int(duration.total_seconds())
@@ -6232,14 +5641,14 @@ def format_duration(duration: datetime.timedelta) -> str:
 
 
 def retry(
-        func: Callable[..., T],
-        attempts: int,
-        interval: int,
-        label: str,
-        logger: tmt.log.Logger,
-        *args: Any,
-        **kwargs: Any
-        ) -> T:
+    func: Callable[..., T],
+    attempts: int,
+    interval: int,
+    label: str,
+    logger: tmt.log.Logger,
+    *args: Any,
+    **kwargs: Any,
+) -> T:
     """
     Retry functionality to be used elsewhere in the code.
 
@@ -6250,6 +5659,7 @@ def retry(
     :param label: action to retry
     :returns: propagates return value of ``func``.
     """
+
     exceptions: list[Exception] = []
     for i in range(attempts):
         try:
@@ -6259,14 +5669,18 @@ def retry(
             logger.debug(
                 'retry',
                 f"{label} failed, {attempts - i} retries left, "
-                f"trying again in {interval:.2f} seconds.")
+                f"trying again in {interval:.2f} seconds.",
+            )
             logger.fail(str(exc))
             time.sleep(interval)
     raise RetryError(label, causes=exceptions)
 
 
 def get_url_content(url: str) -> str:
-    """ Get content of a given URL as a string """
+    """
+    Get content of a given URL as a string
+    """
+
     try:
         with retry_session() as session:
             response = session.get(url)
@@ -6281,7 +5695,10 @@ def get_url_content(url: str) -> str:
 
 
 def is_url(url: str) -> bool:
-    """ Check if the given string is a valid URL """
+    """
+    Check if the given string is a valid URL
+    """
+
     parsed = urllib.parse.urlparse(url)
     return bool(parsed.scheme and parsed.netloc)
 
@@ -6293,8 +5710,9 @@ ActionType = Literal['default', 'error', 'ignore', 'always', 'module', 'once']
 
 @contextlib.contextmanager
 def catch_warnings_safe(
-        action: ActionType,
-        category: type[Warning] = Warning) -> Iterator[None]:
+    action: ActionType,
+    category: type[Warning] = Warning,
+) -> Iterator[None]:
     """
     Optionally catch the given warning category.
 
@@ -6311,6 +5729,7 @@ def catch_warnings_safe(
         with catch_warnings_safe('ignore', urllib3.exceptions.InsecureRequestWarning):
             ...
     """
+
     with _catch_warning_lock, warnings.catch_warnings():
         warnings.simplefilter(action=action, category=category)
         yield

@@ -95,7 +95,7 @@ rlJournalStart
     rlPhaseStartTest "${testName}"
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 2 "Test provides partial result with wrong value"
         rlAssertGrep "Invalid partial custom result 'errrrrr'." $rlRun_LOG
-        rlAssertGrep "warn: Result format violation: 0.result - 'errrrrr' is not one of \\['pass', 'fail', 'info', 'warn', 'error', 'skip'\\]" $rlRun_LOG
+        rlAssertGrep "warn: Result format violation: 0.result - 'errrrrr' is not one of \\['pass', 'fail', 'info', 'warn', 'error', 'skip', 'pending'\\]" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

@@ -21,17 +21,17 @@ description: |
        name: /test/one
 
        # fmf ID of the test.
-       fmf_id:
+       fmf-id:
          url: http://some.git.host.com/project/tests.git
          ref: main
          name: /test/one
          path: /
 
        # String, the effective outcome of the test execution.
-       result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+       result: "pass"|"fail"|"info"|"warn"|"error"|"skip"|"pending"
 
        # String, the original outcome of the test execution.
-       original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+       original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"|"pending"
 
        # List of strings, optional comments to report with the result.
        note:
@@ -84,10 +84,10 @@ description: |
       # relate to each check alone.
       check:
           # String, the effective outcome of the check execution.
-        - result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+        - result: "pass"|"fail"|"info"|"warn"|"error"|"skip"|"pending"
 
           # String, the original outcome of the check execution.
-          original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+          original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"|"pending"
 
           # List of strings, optional comments to report with the result.
           note:
@@ -123,10 +123,10 @@ description: |
         - name: First test case
 
           # String, the effective outcome of the phase execution.
-          result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+          result: "pass"|"fail"|"info"|"warn"|"error"|"skip"|"pending"
 
           # String, the original outcome of the phase execution.
-          original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"
+          original-result: "pass"|"fail"|"info"|"warn"|"error"|"skip"|"pending"
 
           # List of strings, optional comments to report with the result.
           note:
@@ -187,6 +187,10 @@ description: |
         a single process produces multiple results but not all
         tests were run.
 
+    pending
+        Test was discovered and is waiting for execution.
+
+
     The ``name`` and ``result`` keys are required. Also, ``name``, ``result``,
     and ``event`` keys are required for entries under ``check`` key, and
     ``name`` and ``result`` keys are required for entries under ``subresult``
@@ -206,7 +210,7 @@ description: |
     The first ``log`` item is considered to be the "main" log, presented
     to the user by default.
 
-    The ``serial-number``, ``guest`` and ``fmf_id`` keys, if present in the
+    The ``serial-number``, ``guest`` and ``fmf-id`` keys, if present in the
     custom results file, will be overwritten by tmt during their import after
     test completes. This happens on purpose, to assure this vital
     information is correct.

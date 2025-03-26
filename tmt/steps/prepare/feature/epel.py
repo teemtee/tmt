@@ -1,25 +1,47 @@
-import dataclasses
 from typing import Any, Optional
 
 import tmt.log
 import tmt.steps.prepare
 import tmt.utils
-from tmt.steps.prepare.feature import Feature, PrepareFeatureData, provides_feature
+from tmt.container import container, field
+from tmt.steps.prepare.feature import PrepareFeatureData, ToggleableFeature, provides_feature
 from tmt.steps.provision import Guest
-from tmt.utils import field
 
 
-@dataclasses.dataclass
+@container
 class EpelStepData(PrepareFeatureData):
     epel: Optional[str] = field(
         default=None,
         option='--epel',
         metavar='enabled|disabled',
-        help='Whether EPEL repository should be installed & enabled or disabled.')
+        help='Whether EPEL repository should be installed & enabled or disabled.',
+    )
 
 
 @provides_feature('epel')
-class Epel(Feature):
+class Epel(ToggleableFeature):
+    """
+    Control Extra Packages for Enterprise Linux (EPEL) repository.
+
+    `EPEL`__ is an initiative within the Fedora Project to provide high
+    quality additional packages for CentOS Stream and Red Hat Enterprise
+    Linux (RHEL).
+
+    Enable or disable EPEL repository on the guest:
+
+    .. code-block:: yaml
+
+        prepare:
+            how: feature
+            epel: enabled
+
+    .. code-block:: shell
+
+        prepare --how feature --epel enabled
+
+    __ https://docs.fedoraproject.org/en-US/epel/
+    """
+
     NAME = "epel"
 
     _data_class = EpelStepData

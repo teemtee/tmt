@@ -1,0 +1,97 @@
+# On RHEL/CentosStream 8 and 9 FIPS is enabled as follows:
+#
+# 1. Install crypto-policies-scripts, dracut-fips and grubby
+# 2. Execute fips-mode-setup --enable
+# 3. Reboot
+#
+# https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/security_hardening/switching-rhel-to-fips-mode_security-hardening
+#
+# On RHEL/CentosStream 10 FIPS is enabled as follows:
+#
+# 1. Install grubby
+# 2. Add fips=1 and boot= (if needed) to bootloader kernel arguments [*]
+# 3. Reboot
+#
+# [*] fips-mode-setup is not longer available on RHEL/CentosStream 10
+#
+# https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10-beta/html/security_hardening/switching-rhel-to-fips-mode
+---
+- name: Enable FIPS mode on RHEL/CentosStream 8, 9 or 10
+  hosts: all
+
+  tasks:
+
+    - name: Install crypto-policies-scripts and dracut-fips
+      ansible.builtin.dnf:
+        name:
+          - crypto-policies-scripts
+          - dracut-fips
+        state: present
+      when: ansible_distribution_major_version | int < 10
+
+    - name: Install grubby
+      ansible.builtin.dnf:
+        name: grubby
+        state: present
+
+    - name: Modify bootloader
+      when: ansible_distribution_major_version | int == 10
+      block:
+
+        - name: Add parameters fips and boot (if applicable)
+          ansible.builtin.shell: |
+            boot_device="$(stat -c %d:%m /boot)"
+            root_device="$(stat -c %d:%m /)"
+            boot_device_opt=""
+            if [ "$boot_device" != "$root_device" ]; then
+              # Trigger autofs if boot is mounted by automount.boot.
+              pushd /boot >/dev/null 2>&1 && popd
+              FINDMNT_UUID="findmnt --first-only -t noautofs --noheadings --output uuid"
+              boot_uuid=$(
+                $FINDMNT_UUID --mountpoint /boot --fstab ||
+                $FINDMNT_UUID /boot --fstab ||
+                $FINDMNT_UUID --mountpoint /boot ||
+                $FINDMNT_UUID /boot
+              )
+              boot_device_opt=" boot=UUID=$boot_uuid"
+            fi
+            grubby --update-kernel=ALL --args="fips=1 $boot_device_opt"
+          register: output
+          changed_when: output.rc == 0
+
+        - name: Execute zipl
+          ansible.builtin.command: zipl
+          register: output
+          changed_when: output.rc == 0
+          when: ansible_architecture == "s390x"
+
+    - name: Enable FIPS mode
+      ansible.builtin.command: fips-mode-setup --enable
+      environment:
+        FIPS_MODE_SETUP_SKIP_WARNING: "1"
+      register: output
+      changed_when: output.rc == 0
+      when: ansible_distribution_major_version | int < 10
+
+    - name: Reboot
+      ansible.builtin.reboot:
+
+    - name: Kernel is running in FIPS mode
+      ansible.builtin.command: grep 1 /proc/sys/crypto/fips_enabled
+      changed_when: false
+
+    - name: Userspace is running in FIPS mode
+      ansible.builtin.command: test -e /etc/system-fips
+      changed_when: false
+      when: ansible_distribution_major_version | int < 10
+
+    - name: FIPS mode is reported by fips-mode-setup
+      ansible.builtin.command: fips-mode-setup --is-enabled
+      changed_when: false
+      when: ansible_distribution_major_version | int < 10
+
+    # On RHEL-10, FIPS policy is set by "auto-policy" feature without touching
+    # /etc/crypto-policies/state/current and hence we cannot inspect that file.
+    - name: Check that FIPS policy is enabled
+      ansible.builtin.shell: test "$(update-crypto-policies --show)" == "FIPS"
+      changed_when: false

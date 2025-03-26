@@ -1,4 +1,6 @@
-""" Handle libraries """
+"""
+Handle libraries
+"""
 
 from typing import TYPE_CHECKING, Optional, Union
 
@@ -23,13 +25,13 @@ ImportedIdentifiersType = Optional[list[Dependency]]
 LibraryType = Union['BeakerLib', 'File']
 
 # A type for Beakerlib dependencies
-LibraryDependenciesType = tuple[
-    list[Dependency], list[Dependency], list['LibraryType']
-    ]
+LibraryDependenciesType = tuple[list[Dependency], list[Dependency], list['LibraryType']]
 
 
 class LibraryError(Exception):
-    """ Used when library cannot be parsed from the identifier """
+    """
+    Used when library cannot be parsed from the identifier
+    """
 
 
 class Library:
@@ -40,11 +42,15 @@ class Library:
     """
 
     def __init__(
-            self,
-            *,
-            parent: Optional[tmt.utils.Common] = None,
-            logger: tmt.log.Logger) -> None:
-        """ Process the library identifier and fetch the library """
+        self,
+        *,
+        parent: Optional[tmt.utils.Common] = None,
+        logger: tmt.log.Logger,
+    ) -> None:
+        """
+        Process the library identifier and fetch the library
+        """
+
         # Use an empty common class if parent not provided (for logging, cache)
         self.parent = parent or tmt.utils.Common(logger=logger, workdir=True)
         self._logger: tmt.log.Logger = logger
@@ -56,27 +62,40 @@ class Library:
 
     @property
     def hostname(self) -> str:
-        """ Get hostname from url or default to local """
+        """
+        Get hostname from url or default to local
+        """
+
         return 'local'
 
     @property
     def fmf_node_path(self) -> Path:
-        """ Path to fmf node """
+        """
+        Path to fmf node
+        """
+
         return Path(self.name.strip('/'))
 
     def __str__(self) -> str:
-        """ Use repo/name for string representation """
+        """
+        Use repo/name for string representation
+        """
+
         return f"{self.repo}{self.name}"
 
 
 def library_factory(
-        *,
-        identifier: Dependency,
-        parent: Optional[tmt.utils.Common] = None,
-        logger: tmt.log.Logger,
-        source_location: Optional[Path] = None,
-        target_location: Optional[Path] = None) -> LibraryType:
-    """ Factory function to get correct library instance """
+    *,
+    identifier: Dependency,
+    parent: Optional[tmt.utils.Common] = None,
+    logger: tmt.log.Logger,
+    source_location: Optional[Path] = None,
+    target_location: Optional[Path] = None,
+) -> LibraryType:
+    """
+    Factory function to get correct library instance
+    """
+
     from .beakerlib import BeakerLib
     from .file import File
 
@@ -91,14 +110,16 @@ def library_factory(
     # therefore an `else` with an exception.
     # ignore[unused-ignore]: silencing mypy's complaint about silencing
     # pyright's warning :)
-    elif isinstance(
-            identifier,
-            DependencyFile):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
+    elif isinstance(identifier, DependencyFile):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
         assert source_location is not None
         assert target_location is not None  # narrow type
         library = File(
-            identifier=identifier, parent=parent, logger=logger,
-            source_location=source_location, target_location=target_location)
+            identifier=identifier,
+            parent=parent,
+            logger=logger,
+            source_location=source_location,
+            target_location=target_location,
+        )
 
     # Something weird
     else:
@@ -110,21 +131,23 @@ def library_factory(
     except fmf.utils.RootError as exc:
         if isinstance(library, BeakerLib):
             raise tmt.utils.SpecificationError(
-                f"Repository '{library.url}' does not contain fmf metadata.") from exc
+                f"Repository '{library.url}' does not contain fmf metadata."
+            ) from exc
         raise exc
 
     return library
 
 
 def dependencies(
-        *,
-        original_require: list[Dependency],
-        original_recommend: Optional[list[Dependency]] = None,
-        parent: Optional[tmt.utils.Common] = None,
-        imported_lib_ids: ImportedIdentifiersType = None,
-        logger: tmt.log.Logger,
-        source_location: Optional[Path] = None,
-        target_location: Optional[Path] = None) -> LibraryDependenciesType:
+    *,
+    original_require: list[Dependency],
+    original_recommend: Optional[list[Dependency]] = None,
+    parent: Optional[tmt.utils.Common] = None,
+    imported_lib_ids: ImportedIdentifiersType = None,
+    logger: tmt.log.Logger,
+    source_location: Optional[Path] = None,
+    target_location: Optional[Path] = None,
+) -> LibraryDependenciesType:
     """
     Check dependencies for possible beakerlib libraries
 
@@ -137,6 +160,7 @@ def dependencies(
     Avoid infinite recursion by keeping track of imported library identifiers
     and not trying to fetch those again.
     """
+
     # Initialize lists, use set for require & recommend
     processed_require: set[Dependency] = set()
     processed_recommend: set[Dependency] = set()
@@ -156,12 +180,17 @@ def dependencies(
         # Library require/recommend
         try:
             library = library_factory(
-                logger=logger, identifier=dependency, parent=parent,
-                source_location=source_location, target_location=target_location)
+                logger=logger,
+                identifier=dependency,
+                parent=parent,
+                source_location=source_location,
+                target_location=target_location,
+            )
             gathered_libraries.append(library)
             imported_lib_ids.append(library.identifier)
 
             from .beakerlib import BeakerLib
+
             if isinstance(library, BeakerLib):
                 # Recursively check for possible dependent libraries
                 assert parent is not None  # narrow type
@@ -178,7 +207,8 @@ def dependencies(
                     imported_lib_ids=imported_lib_ids,
                     logger=logger,
                     source_location=library.source_directory,
-                    target_location=Path(library.tree.root))
+                    target_location=Path(library.tree.root),
+                )
                 processed_require.update(set(requires))
                 processed_recommend.update(set(recommends))
                 gathered_libraries.extend(libraries)

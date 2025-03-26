@@ -6,7 +6,7 @@
 #
 
 # A preix shared by all images built for tests.
-TEST_IMAGE_PREFIX="localhost/tmt/tests/container"
+TEST_IMAGE_PREFIX="localhost/tmt/container/test"
 
 # Directory where the top-level Makefile lives. It might be possible to
 # rely on tmt, but sometimes one might want to run a test directly,
@@ -21,7 +21,7 @@ _MAKEFILE_DIR="$(dirname $(readlink -f ${BASH_SOURCE[0]}))/.."
 TEST_CONTAINER_IMAGES="${TEST_CONTAINER_IMAGES:-$TEST_IMAGE_PREFIX/alpine:latest
 $TEST_IMAGE_PREFIX/centos/7/upstream:latest
 $TEST_IMAGE_PREFIX/centos/stream9/upstream:latest
-$TEST_IMAGE_PREFIX/fedora/39/upstream:latest
+$TEST_IMAGE_PREFIX/centos/stream10/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/40/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/41/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/rawhide/upstream:latest
@@ -37,7 +37,7 @@ $TEST_IMAGE_PREFIX/debian/12.7/upstream:latest}"
 # TODO: enable Ubuntu
 # TODO: enable centos-7 again with modified repo files
 TEST_VIRTUAL_IMAGES="${TEST_VIRTUAL_IMAGES:-centos-stream-9
-fedora-39
+centos-stream-10
 fedora-40
 fedora-41
 fedora-rawhide
@@ -65,16 +65,16 @@ function is_fedora_40 () {
     return 1
 }
 
-function is_fedora_39 () {
-    [[ "$1" =~ ^.*fedora/39[:/].* ]] && return 0
-    [[ "$1" = "fedora-39" ]] && return 0
+function is_centos_stream_9 () {
+    [[ "$1" =~ ^.*centos/stream9[:/].* ]] && return 0
+    [[ "$1" = "centos-stream-9" ]] && return 0
 
     return 1
 }
 
-function is_centos_stream_9 () {
-    [[ "$1" =~ ^.*centos/stream9[:/].* ]] && return 0
-    [[ "$1" = "centos-stream-9" ]] && return 0
+function is_centos_stream_10 () {
+    [[ "$1" =~ ^.*centos/stream10[:/].* ]] && return 0
+    [[ "$1" = "centos-stream-10" ]] && return 0
 
     return 1
 }
@@ -155,8 +155,16 @@ function build_container_image () {
 
     # Try several times to build the container
     # https://github.com/teemtee/tmt/issues/2063
-    build="make -C $_MAKEFILE_DIR images-tests/tmt/tests/container/$1"
+    build="make -C $_MAKEFILE_DIR images/test/tmt/container/test/$1"
     rlWaitForCmd "$build" -m 5 -d 5 -t 3600 || rlDie "Unable to prepare the image"
+
+    # TODO: temporarily silencing AVC checks during image builds. The call
+    # to tmt-check-avc-mark should do the trick, but it's not available
+    # in TF yet.
+    #
+    # tmt-check-avc-mark
+    sleep 1
+    LC_ALL=C bash -c 'echo "export AVC_SINCE=\"$(date "+%x %H:%M:%S")\""' > "$(dirname $TMT_TEST_DATA)/checks/avc-mark.txt"
 }
 
 
@@ -168,6 +176,14 @@ function build_container_images () {
 
     # Try several times to build the container
     # https://github.com/teemtee/tmt/issues/2063
-    build="make -C $_MAKEFILE_DIR images-tests"
+    build="make -C $_MAKEFILE_DIR images/test"
     rlWaitForCmd "$build" -m 5 -d 5 -t 3600 || rlDie "Unable to prepare the images"
+
+    # TODO: temporarily silencing AVC checks during image builds. The call
+    # to tmt-check-avc-mark should do the trick, but it's not available
+    # in TF yet.
+    #
+    # tmt-check-avc-mark
+    sleep 1
+    LC_ALL=C bash -c 'echo "export AVC_SINCE=\"$(date "+%x %H:%M:%S")\""' > "$(dirname $TMT_TEST_DATA)/checks/avc-mark.txt"
 }

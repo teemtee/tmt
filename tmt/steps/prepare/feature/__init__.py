@@ -1,15 +1,17 @@
 import dataclasses
 import inspect
-from typing import Callable, Optional, cast
+from typing import Any, Callable, Optional, cast
 
 import tmt
 import tmt.base
+import tmt.container
 import tmt.log
 import tmt.options
 import tmt.steps
 import tmt.steps.prepare
 import tmt.steps.provision
 import tmt.utils
+from tmt.container import container
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
@@ -17,12 +19,11 @@ from tmt.utils import Path
 
 FEATURE_PLAYEBOOK_DIRECTORY = tmt.utils.resource_files('steps/prepare/feature')
 
-FeatureClass = type['Feature']
+FeatureClass = type['FeatureBase']
 _FEATURE_PLUGIN_REGISTRY: PluginRegistry[FeatureClass] = PluginRegistry()
 
 
-def provides_feature(
-        feature: str) -> Callable[[FeatureClass], FeatureClass]:
+def provides_feature(feature: str) -> Callable[[FeatureClass], FeatureClass]:
     """
     A decorator for registering feature plugins.
     Decorate a feature plugin class to register a feature.
@@ -32,7 +33,8 @@ def provides_feature(
         _FEATURE_PLUGIN_REGISTRY.register_plugin(
             plugin_id=feature,
             plugin=feature_cls,
-            logger=tmt.log.Logger.get_bootstrap_logger())
+            logger=tmt.log.Logger.get_bootstrap_logger(),
+        )
 
         return feature_cls
 
@@ -50,18 +52,19 @@ def find_plugin(name: str) -> 'FeatureClass':
 
     if plugin is None:
         raise tmt.utils.GeneralError(
-            f"Feature plugin '{name}' was not found in the feature registry.")
+            f"Feature plugin '{name}' was not found in the feature registry."
+        )
 
     return plugin
 
 
-@dataclasses.dataclass
+@container
 class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
     pass
 
 
-class Feature(tmt.utils.Common):
-    """ Base class for ``feature`` prepare plugin implementations """
+class FeatureBase(tmt.utils.Common):
+    """Base class for ``feature`` plugins"""
 
     NAME: str
 
@@ -81,24 +84,8 @@ class Feature(tmt.utils.Common):
 
         return cls._data_class
 
-    def __init__(
-            self,
-            *,
-            parent: 'PrepareFeature',
-            guest: Guest,
-            logger: tmt.log.Logger) -> None:
-        """ Initialize feature data """
-        super().__init__(logger=logger, parent=parent, relative_indent=0)
-
-        self.guest = guest
-
-    @classmethod
-    def enable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
-        raise NotImplementedError
-
-    @classmethod
-    def disable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
-        raise NotImplementedError
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
 
     @classmethod
     def _find_playbook(cls, filename: str, logger: tmt.log.Logger) -> Optional[Path]:
@@ -115,24 +102,61 @@ class Feature(tmt.utils.Common):
 
     @classmethod
     def _run_playbook(
-            cls,
-            op: str,
-            playbook_filename: str,
-            guest: Guest,
-            logger: tmt.log.Logger) -> None:
+        cls,
+        op: str,
+        playbook_filename: str,
+        guest: Guest,
+        logger: tmt.log.Logger,
+    ) -> None:
         playbook_path = cls._find_playbook(playbook_filename, logger)
         if not playbook_path:
             raise tmt.utils.GeneralError(
-                f"{op.capitalize()} {cls.NAME.upper()} is not supported on this guest.")
+                f"{op.capitalize()} {cls.NAME.upper()} is not supported on this guest."
+            )
 
         logger.info(f'{op.capitalize()} {cls.NAME.upper()}')
         guest.ansible(playbook_path)
+
+
+class ToggleableFeature(FeatureBase):
+    """Base class for ``feature`` plugins that enable/disable a feature"""
+
+    NAME: str
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+    @classmethod
+    def enable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
+        raise NotImplementedError
+
+    @classmethod
+    def disable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
+        raise NotImplementedError
+
+
+class Feature(FeatureBase):
+    """Base class for ``feature`` plugins that enable a feature"""
+
+    NAME: str
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+    @classmethod
+    def enable(cls, guest: Guest, value: str, logger: tmt.log.Logger) -> None:
+        raise NotImplementedError
 
 
 @tmt.steps.provides_method('feature')
 class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
     """
     Enable or disable common features like repositories on the guest.
+
+    .. note::
+
+       The plugin requires a working Ansible to be available on the
+       test runner.
 
     .. warning::
 
@@ -147,21 +171,26 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
          before using ``feature`` plugin from an alternative repository
          or local build.
 
-    Example config:
-
-    .. code-block:: yaml
-
-        prepare:
-            how: feature
-            epel: enabled
-
-    Or
+    Control enablement of various features on the guest:
 
     .. code-block:: yaml
 
         prepare:
             how: feature
             epel: disabled
+            crb: enabled
+            fips: enabled
+            ...
+
+    .. code-block:: shell
+
+        prepare --how feature --epel disabled --crb enabled --fips enabled ...
+
+    .. note::
+
+       Features available via this plugin are implemented and shipped as
+       plugins too. The list of available features and configuration keys
+       will depend on which plugins you have installed.
     """
 
     _data_class = PrepareFeatureData
@@ -186,34 +215,38 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
             # from classes returned by plugins. These fields will be
             # provided by the base class, and repeating them would raise
             # an exception.
-            baseclass_fields = list(tmt.utils.container_fields(PrepareFeatureData))
+            baseclass_fields = list(tmt.container.container_fields(PrepareFeatureData))
             baseclass_field_names = [field.name for field in baseclass_fields]
 
             component_fields = [
                 field
                 for plugin in _FEATURE_PLUGIN_REGISTRY.iter_plugins()
-                for field in tmt.utils.container_fields(plugin.get_data_class())
+                for field in tmt.container.container_fields(plugin.get_data_class())
                 if field.name not in baseclass_field_names
-                ]
+            ]
 
             cls._data_class = cast(
                 type[PrepareFeatureData],
                 dataclasses.make_dataclass(
                     'PrepareFeatureData',
-                    [
-                        (field.name, field.type, field)
-                        for field in component_fields],
-                    bases=(PrepareFeatureData,)))
+                    [(field.name, field.type, field) for field in component_fields],
+                    bases=(PrepareFeatureData,),
+                ),
+            )
 
         return cls._data_class
 
     def go(
-            self,
-            *,
-            guest: 'Guest',
-            environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> list[PhaseResult]:
-        """ Prepare the guests """
+        self,
+        *,
+        guest: 'Guest',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[PhaseResult]:
+        """
+        Prepare the guests
+        """
+
         results = super().go(guest=guest, environment=environment, logger=logger)
 
         # Nothing to do in dry mode
@@ -221,19 +254,27 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
             return []
 
         for plugin_id in _FEATURE_PLUGIN_REGISTRY.iter_plugin_ids():
-            plugin = find_plugin(plugin_id)
+            plugin_class = find_plugin(plugin_id)
 
-            value = cast(Optional[str], getattr(self.data, plugin.NAME, None))
+            value = cast(Optional[str], getattr(self.data, plugin_class.NAME, None))
             if value is None:
                 continue
 
-            value = value.lower()
-            if value == 'enabled':
-                plugin.enable(guest, logger)
-            elif value == 'disabled':
-                plugin.disable(guest, logger)
+            if issubclass(plugin_class, ToggleableFeature):
+                value = value.lower()
+
+                if value == 'enabled':
+                    plugin_class.enable(guest, logger)
+                elif value == 'disabled':
+                    plugin_class.disable(guest, logger)
+                else:
+                    raise tmt.utils.GeneralError(f"Unknown plugin setting '{value}'.")
+
+            elif issubclass(plugin_class, Feature):
+                plugin_class.enable(guest, value, logger)
+
             else:
-                raise tmt.utils.GeneralError(f"Unknown plugin setting '{value}'.")
+                raise tmt.utils.GeneralError(f"Unknown plugin implementation '{plugin_class}'.")
 
         return results
 

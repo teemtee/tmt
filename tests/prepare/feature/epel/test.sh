@@ -1,6 +1,6 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
-. ../../images.sh || exit 1
+. ../../../images.sh || exit 1
 
 rlJournalStart
     rlPhaseStartSetup
@@ -30,6 +30,16 @@ rlJournalStart
             rlRun -s "tmt -vvv run -a plan --name '/epel/disabled' provision --how container --image $image"
         rlPhaseEnd
     done
+
+    # Environment profiles
+    # TODO: chicken and egg: we need profile to test whether tmt can apply it, and we need tmt
+    # with support for profiles so we could test profiles and start shipping them...
+    # Once we get the tmt, we can continue with profiles and eventually enable the test below.
+    #
+    # rlPhaseStartTest "Enable EPEL on $image"
+    #     rlRun -s "tmt -vvv run -a plan --name '/profile' provision --how container --image fedora"
+    # rlPhaseEnd
+
 
     rlPhaseStartCleanup
         rlRun "popd"

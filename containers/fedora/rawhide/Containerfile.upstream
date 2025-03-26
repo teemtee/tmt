@@ -6,5 +6,12 @@
 
 FROM quay.io/fedora/fedora:rawhide
 
-    # Populate dnf cache
-RUN dnf makecache
+RUN <<EOF
+set -ex
+
+# Populate dnf cache
+dnf makecache
+
+# Make sure the image is built with the latest packages
+dnf update -y
+EOF

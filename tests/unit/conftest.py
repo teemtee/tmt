@@ -54,8 +54,7 @@ try:
     from _pytest.tmpdir import tmp_path_factory  # noqa: F401
 
     @pytest.fixture(scope='session')
-    def tmppath_factory(
-        tmp_path_factory: '_pytest.tmpdir.TempPathFactory') -> TempPathFactory:  # noqa: F811
+    def tmppath_factory(tmp_path_factory: '_pytest.tmpdir.TempPathFactory') -> TempPathFactory:  # noqa: F811
         return TempPathFactory(tmp_path_factory)
 
     @pytest.fixture
@@ -71,8 +70,8 @@ except ImportError:
     # pytest, therefore things are safe.
     @pytest.fixture(scope='session')
     def tmppath_factory(
-            tmpdir_factory: '_pytest.tmpdir.TempdirFactory'  # type: ignore[name-defined]
-            ) -> TempPathFactory:
+        tmpdir_factory: '_pytest.tmpdir.TempdirFactory',  # type: ignore[name-defined]
+    ) -> TempPathFactory:
         return TempPathFactory(tmpdir_factory)
 
     @pytest.fixture
@@ -82,7 +81,10 @@ except ImportError:
 
 @pytest.fixture(scope='module')
 def source_dir(tmppath_factory: TempPathFactory) -> Path:
-    """ Create dummy directory structure and remove it after tests """
+    """
+    Create dummy directory structure and remove it after tests
+    """
+
     source_location = tmppath_factory.mktemp('source')
     (source_location / 'library').mkdir(parents=True)
     (source_location / 'lib_folder').mkdir()
@@ -96,7 +98,10 @@ def source_dir(tmppath_factory: TempPathFactory) -> Path:
 
 @pytest.fixture
 def target_dir(tmppath_factory: TempPathFactory) -> Path:
-    """ Return target directory path and clean up after tests """
+    """
+    Return target directory path and clean up after tests
+    """
+
     return tmppath_factory.mktemp('target')
 
 

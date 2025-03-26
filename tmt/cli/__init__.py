@@ -1,11 +1,12 @@
-""" Basic classes and code for tmt command line interface """
+"""
+Basic classes and code for tmt command line interface
+"""
 
 import collections
-import dataclasses
 import enum
 import functools
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, cast
 
 import click
 import fmf
@@ -17,6 +18,7 @@ import tmt.log
 import tmt.plugins
 import tmt.utils
 import tmt.utils.rest
+from tmt.container import container, simple_field
 
 if TYPE_CHECKING:
     from tmt._compat.typing import Concatenate, ParamSpec
@@ -76,7 +78,7 @@ class TmtExitCode(enum.IntEnum):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-@dataclasses.dataclass
+@container
 class ContextObject:
     """
     Click Context Object container.
@@ -94,11 +96,15 @@ class ContextObject:
     common: tmt.utils.Common
     fmf_context: tmt.utils.FmfContext
     tree: tmt.Tree
-    steps: set[str] = dataclasses.field(default_factory=set)
+    steps: set[str] = simple_field(default_factory=set)
     clean: Optional[tmt.Clean] = None
     clean_logger: Optional[tmt.log.Logger] = None
-    clean_partials: collections.defaultdict[str, list[tmt.base.CleanCallback]] = dataclasses.field(
-        default_factory=lambda: collections.defaultdict(list))
+    clean_partials: collections.defaultdict[str, list[tmt.base.CleanCallback]] = simple_field(
+        default_factory=lambda: cast(
+            collections.defaultdict[str, list[tmt.base.CleanCallback]],
+            collections.defaultdict(list),
+        )
+    )
     run: Optional[tmt.Run] = None
 
 
@@ -139,7 +145,7 @@ def pass_context(fn: 'Callable[Concatenate[Context, P], R]') -> 'Callable[P, R]'
     return click.pass_context(fn)  # type: ignore[arg-type]
 
 
-@dataclasses.dataclass
+@container
 class CliInvocation:
     """
     A single CLI invocation of a tmt subcommand.
@@ -162,7 +168,10 @@ class CliInvocation:
 
     @classmethod
     def from_options(cls, options: dict[str, Any]) -> 'CliInvocation':
-        """ Inject custom options coming from the command line """
+        """
+        Inject custom options coming from the command line
+        """
+
         invocation = CliInvocation(context=None, options=options)
 
         # ignore[reportGeneralTypeIssues]: pyright has troubles understanding it
@@ -171,9 +180,8 @@ class CliInvocation:
         # ignore[unused-ignore]: silencing mypy's complaint about silencing
         # pyright's warning :)
         invocation.option_sources = {  # type: ignore[reportGeneralTypeIssues,unused-ignore]
-            key: click.core.ParameterSource.COMMANDLINE
-            for key in options
-            }
+            key: click.core.ParameterSource.COMMANDLINE for key in options
+        }
         return invocation
 
     @functools.cached_property
@@ -188,23 +196,32 @@ class CliInvocation:
 #  Custom Group
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
 class CustomGroup(click.Group):
-    """ Custom Click Group """
+    """
+    Custom Click Group
+    """
 
     # ignore[override]: expected, we want to use more specific `Context`
     # type than the one declared in superclass.
     def list_commands(self, context: Context) -> list[str]:  # type: ignore[override]
-        """ Prevent alphabetical sorting """
+        """
+        Prevent alphabetical sorting
+        """
+
         return list(self.commands.keys())
 
     # ignore[override]: expected, we want to use more specific `Context`
     # type than the one declared in superclass.
     def get_command(  # type: ignore[override]
-            self,
-            context: Context,
-            cmd_name: str
-            ) -> Optional[click.Command]:
-        """ Allow command shortening """
+        self,
+        context: Context,
+        cmd_name: str,
+    ) -> Optional[click.Command]:
+        """
+        Allow command shortening
+        """
+
         # Backward-compatible 'test convert' (just temporary for now FIXME)
         cmd_name = cmd_name.replace('convert', 'import')
         # Support both story & stories
@@ -212,8 +229,9 @@ class CustomGroup(click.Group):
         found = click.Group.get_command(self, context, cmd_name)
         if found is not None:
             return found
-        matches = [command for command in self.list_commands(context)
-                   if command.startswith(cmd_name)]
+        matches = [
+            command for command in self.list_commands(context) if command.startswith(cmd_name)
+        ]
         if not matches:
             return None
         if len(matches) == 1:
@@ -223,18 +241,20 @@ class CustomGroup(click.Group):
 
 
 class HelpFormatter(click.HelpFormatter):
-    """ Custom help formatter capable of rendering ReST syntax """
+    """
+    Custom help formatter capable of rendering ReST syntax
+    """
 
     # Override parent implementation
     def write_dl(
-            self,
-            rows: Sequence[tuple[str, str]],
-            col_max: int = 30,
-            col_spacing: int = 2) -> None:
+        self,
+        rows: Sequence[tuple[str, str]],
+        col_max: int = 30,
+        col_spacing: int = 2,
+    ) -> None:
         rows = [
-            (option, tmt.utils.rest.render_rst(help, _BOOTSTRAP_LOGGER))
-            for option, help in rows
-            ]
+            (option, tmt.utils.rest.render_rst(help, _BOOTSTRAP_LOGGER)) for option, help in rows
+        ]
 
         super().write_dl(rows, col_max=col_max, col_spacing=col_spacing)
 

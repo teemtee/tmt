@@ -5,11 +5,145 @@
 ======================
 
 
-tmt-1.42.0
+tmt-1.45.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When pruning a repository with a specified ``path``, the ``discover``
+step now saves the data to the correct temporary directory and
+respects the structure of the original repository. This ensures
+that the test attributes have correct paths.
+
+When running ``tmt try`` failure in ``prepare`` phase drops the user
+to the menu to be able to login to the machine and possibly try it again.
+
+When working with an existing run which involved executing only a
+subset of plans, commands such as ``tmt run --last report`` will
+load the respective plans only instead of all available plans to
+save disk space and speed up the execution.
+
+Aborted tests and tests that failed when
+:ref:`/spec/plans/execute/exit-first` was enabled did not skip all
+remaining tests, only tests from the current ``discover`` phase. Plans
+with multiple ``discover`` phases would start ``execute`` step for
+remaining ``discover`` phases. This is now fixed, aborted test and
+:ref:`/spec/plans/execute/exit-first` will skip **all** remaining tests.
+
+FIPS mode can now be enabled for RHEL or CentosStream 8, 9 or 10 by
+a prepare step feature ``fips``. Moreover, the ``tmt try`` command
+now supports the new :ref:`/stories/cli/try/option/fips` option backed
+by the :ref:`prepare/feature</plugins/prepare/feature>` plugin.
+
+Added support for translating hardware constraints using a config
+file for the :ref:`/plugins/provision/beaker` provision plugin. It
+will try to get the config file, and find translations that would
+match the constraints. See
+:py:class:`tmt.config.models.hardware.MrackTranslation` for an
+example translation config.
+
+
+tmt-1.44.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``results.yaml`` file is now populated with test results
+right after the ``discover`` step is finished and the file is
+continuously updated during test execution to provide the latest
+results. This change also adds a new ``pending`` result outcome
+to the :ref:`/spec/results` specification for tests that were
+discovered but not yet executed.
+
+Execute tmt option ``--ignore-duration`` makes tmt to execute
+the test as long as it needs. Execute plugin doesn't need to be
+specified on the commandline for :ref:`plugin-variables` to work
+for this option.
+
+Add the ``--command`` option for the ``tmt run reboot`` so that
+users specify the command to run on guest to trigger the reboot.
+
+A new plan shaping plugin has been implemented to repeat a plan N times,
+demonstrating how one plan can be turned into many plans.
+
+The ``deployment-mode`` context dimension is now included in test run
+exports to Polarion.
+
+
+tmt-1.43.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add the ``--workdir-root`` option for the ``tmt clean images``
+command so that users can specify the directory they want.
+
+A new ``upload-subresults`` key has been introduced for the
+:ref:`/plugins/report/reportportal` plugin, allowing the import of
+tmt subresults as child test items into ReportPortal. This
+behavior is optional and is disabled by default.
+
+Option ``tmt run --max N`` can split plan to multiple plans to
+include N tests at max.
+
+Test name is logged in kernel buffer before and after the
+:ref:`/plugins/test-checks/dmesg` check is executed.
+
+
+tmt-1.42.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``tmt show`` command now prints in verbose mode manual test
 instructions as well.
+
+A new context :ref:`/spec/context/dimension` ``deployment-mode``
+has been added to the specification. It can be used to
+:ref:`/spec/core/adjust` test and plan metadata for the
+``package`` or ``image`` mode context.
+
+The ``ansible-core`` package is now a recommended dependency package
+for tmt. It is used by plugins that use Ansible under the hood,
+:ref:`prepare/ansible</plugins/prepare/ansible>`,
+:ref:`finish/ansible</plugins/finish/ansible>`,
+and :ref:`prepare/feature</plugins/prepare/feature>`.
+
+A new core attribute :ref:`/spec/core/author` has been implemented
+for tracking the original author of the test, plan or story. In
+contrast to the :ref:`/spec/core/contact` key, this field is not
+supposed to be updated and can be useful when trying to track down
+the original author for consultation.
+
+The ``container`` executor now works in `Fedora Toolbx`__ when Podman is run
+using ``flatpak-spawn --host`` on the host system.
+
+__ https://docs.fedoraproject.org/en-US/fedora-silverblue/toolbox/
+
+Add support for running playbooks from Ansible collections specified
+using the ``namespace.collection.playbook`` notation.
+
+Added ``--dry`` option for the ``beaker`` provision plugin. When
+used it prints the Beaker Job XML without submitting it.
+
+:ref:`Results specification documentation</spec/results>` has now
+a dedicated place in the specification for improved discoverability.
+
+The ``rpm-ostree`` package installation now includes the
+``--assumeyes`` option for improved compatibility.
+
+Verbosity levels in ``tmt * show`` commands are now honored.
+
+Added new traceback verbosity level, ``TMT_SHOW_TRACEBACK=2``, which
+prints local variables in every frame, shorterning long values. See
+:ref:`command-variables` for details.
+
+Fixed an issue where ``execute`` step incorrectly attempted to run
+disabled ``discover`` phases.
+
+Pre-defined order values of :ref:`prepare phases</spec/plans/prepare>`
+were documented.
+
+
+tmt-1.41.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Fedora Rawhide transitioned files from ``/usr/sbin`` to
+``/usr/bin``, breaking path-based requirements installation for
+the AVC check. This update adjusts the check to rely on packages,
+restoring the functionality on Fedora Rawhide.
 
 
 tmt-1.41.0

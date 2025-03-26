@@ -6,8 +6,17 @@
 
 FROM quay.io/fedora/fedora:41
 
-    # Populate dnf cache
-RUN    dnf makecache \
-    # Inject `dnf5` to make things more complicated for `dnf` family of
-    # package manager implementations
-    && dnf install -y dnf5
+# hadolint ignore=DL3040
+RUN <<EOF
+set -ex
+
+# Populate dnf cache
+dnf makecache
+
+# Make sure the image is built with the latest packages
+dnf update -y
+
+# Inject `dnf5` to make things more complicated for `dnf` family of
+# package manager implementations
+dnf install -y dnf5
+EOF

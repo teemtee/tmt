@@ -14,18 +14,15 @@ from tmt.steps.execute import TEST_OUTPUT_FILENAME, TestInvocation
 class Shell(TestFramework):
     @classmethod
     def get_test_command(
-            cls,
-            invocation: 'TestInvocation',
-            logger: tmt.log.Logger) -> tmt.utils.ShellScript:
-
+        cls, invocation: 'TestInvocation', logger: tmt.log.Logger
+    ) -> tmt.utils.ShellScript:
         # Use default options for shell tests
         return tmt.utils.ShellScript(f"{tmt.utils.SHELL_OPTIONS}; {invocation.test.test}")
 
     @classmethod
     def _process_results_reduce(
-            cls,
-            invocation: TestInvocation,
-            results: list['tmt.result.RawResult']) -> list['tmt.result.Result']:
+        cls, invocation: TestInvocation, results: list['tmt.result.RawResult']
+    ) -> list['tmt.result.Result']:
         """
         Reduce given results to one outcome.
 
@@ -59,7 +56,8 @@ class Shell(TestFramework):
                 ResultOutcome.SKIP,
                 ResultOutcome.PASS,
                 ResultOutcome.WARN,
-                ResultOutcome.FAIL]
+                ResultOutcome.FAIL,
+            ]
 
             outcome_indices = [hierarchy.index(outcome) for outcome in outcomes]
             actual_outcome = original_outcome = hierarchy[max(outcome_indices)]
@@ -81,19 +79,23 @@ class Shell(TestFramework):
 
                 break
 
-        return [tmt.Result.from_test_invocation(
-            invocation=invocation,
-            result=actual_outcome,
-            log=test_logs,
-            note=[note] if note else [],
-            subresult=[result.to_subresult() for result in results])]
+        return [
+            tmt.Result.from_test_invocation(
+                invocation=invocation,
+                result=actual_outcome,
+                log=test_logs,
+                note=[note] if note else [],
+                subresult=[result.to_subresult() for result in results],
+            )
+        ]
 
     @classmethod
     def extract_results(
-            cls,
-            invocation: 'TestInvocation',
-            results: list[tmt.result.Result],
-            logger: tmt.log.Logger) -> list[tmt.result.Result]:
+        cls,
+        invocation: 'TestInvocation',
+        results: list[tmt.result.Result],
+        logger: tmt.log.Logger,
+    ) -> list[tmt.result.Result]:
         """
         Check result of a shell test.
 
@@ -130,8 +132,11 @@ class Shell(TestFramework):
             elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.return_code):
                 note.append('pidfile locking')
 
-        return [tmt.Result.from_test_invocation(
-            invocation=invocation,
-            result=result,
-            log=[invocation.relative_path / tmt.steps.execute.TEST_OUTPUT_FILENAME],
-            note=note)]
+        return [
+            tmt.Result.from_test_invocation(
+                invocation=invocation,
+                result=result,
+                log=[invocation.relative_path / tmt.steps.execute.TEST_OUTPUT_FILENAME],
+                note=note,
+            )
+        ]

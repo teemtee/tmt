@@ -1,15 +1,32 @@
+discover:
+    how: fmf
 provision:
     how: local
 execute:
-    script:
-      - /bin/false
-      - /bin/true
+    how: tmt
+    exit-first: true
 
-/do-not-exit:
-    /tmt:
-        execute+:
-            how: tmt
+/good:
+    summary: Execution should finish successfully
+    discover+:
+        test:
+          - /test/info
+          - /test/warn
+          - /test/pass
+          - /test/another-pass
 
-/exit-first:
-    execute+:
-        exit-first: true
+/fail:
+    summary: Execution should stop on first failure
+    discover+:
+        test:
+          - /test/pass
+          - /test/fail
+          - /test/another-pass
+
+/error:
+    summary: Execution should stop on first error
+    discover+:
+        test:
+          - /test/pass
+          - /test/error
+          - /test/another-pass

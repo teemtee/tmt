@@ -1,4 +1,6 @@
-""" ``tmt lint`` and ``tmt * lint`` implementation """
+"""
+``tmt lint`` and ``tmt * lint`` implementation
+"""
 
 from typing import Any, Optional, Union
 
@@ -18,24 +20,26 @@ from tmt.cli._root import (
     stories,
     tests,
     verbosity_options,
-    )
+)
 
 
 def _apply_linters(
-        lintable: Union[tmt.lint.Lintable[tmt.base.Test],
-                        tmt.lint.Lintable[tmt.base.Plan],
-                        tmt.lint.Lintable[tmt.base.Story],
-                        tmt.lint.Lintable[tmt.base.LintableCollection]],
-        linters: list[tmt.lint.Linter],
-        failed_only: bool,
-        enforce_checks: list[str],
-        outcomes: list[tmt.lint.LinterOutcome]) -> tuple[
-            bool, Optional[list[tmt.lint.LinterRuling]]]:
-    """Apply linters on a lintable and filter out disallowed outcomes."""
+    lintable: Union[
+        tmt.lint.Lintable[tmt.base.Test],
+        tmt.lint.Lintable[tmt.base.Plan],
+        tmt.lint.Lintable[tmt.base.Story],
+        tmt.lint.Lintable[tmt.base.LintableCollection],
+    ],
+    linters: list[tmt.lint.Linter],
+    failed_only: bool,
+    enforce_checks: list[str],
+    outcomes: list[tmt.lint.LinterOutcome],
+) -> tuple[bool, Optional[list[tmt.lint.LinterRuling]]]:
+    """
+    Apply linters on a lintable and filter out disallowed outcomes.
+    """
 
-    valid, rulings = lintable.lint(
-        linters=linters,
-        enforce_checks=enforce_checks or None)
+    valid, rulings = lintable.lint(linters=linters, enforce_checks=enforce_checks or None)
 
     # If the object pass the checks, and we're asked to show only the failed
     # ones, display nothing.
@@ -55,15 +59,18 @@ def _apply_linters(
 
 
 def _lint_class(
-        context: Context,
-        klass: Union[type[tmt.base.Test], type[tmt.base.Plan], type[tmt.base.Story]],
-        failed_only: bool,
-        enable_checks: list[str],
-        disable_checks: list[str],
-        enforce_checks: list[str],
-        outcomes: list[tmt.lint.LinterOutcome],
-        **kwargs: Any) -> int:
-    """ Lint a single class of objects """
+    context: Context,
+    klass: Union[type[tmt.base.Test], type[tmt.base.Plan], type[tmt.base.Story]],
+    failed_only: bool,
+    enable_checks: list[str],
+    disable_checks: list[str],
+    enforce_checks: list[str],
+    outcomes: list[tmt.lint.LinterOutcome],
+    **kwargs: Any,
+) -> int:
+    """
+    Lint a single class of objects
+    """
 
     # FIXME: Workaround https://github.com/pallets/click/pull/1840 for click 7
     context.params.update(**kwargs)
@@ -73,11 +80,13 @@ def _lint_class(
 
     linters = klass.resolve_enabled_linters(
         enable_checks=enable_checks or None,
-        disable_checks=disable_checks or None)
+        disable_checks=disable_checks or None,
+    )
 
     for lintable in klass.from_tree(context.obj.tree):
         valid, allowed_rulings = _apply_linters(
-            lintable, linters, failed_only, enforce_checks, outcomes)
+            lintable, linters, failed_only, enforce_checks, outcomes
+        )
         if allowed_rulings is None:
             continue
 
@@ -94,15 +103,18 @@ def _lint_class(
 
 
 def _lint_collection(
-        context: Context,
-        klasses: list[Union[type[tmt.base.Test], type[tmt.base.Plan], type[tmt.base.Story]]],
-        failed_only: bool,
-        enable_checks: list[str],
-        disable_checks: list[str],
-        enforce_checks: list[str],
-        outcomes: list[tmt.lint.LinterOutcome],
-        **kwargs: Any) -> int:
-    """ Lint a collection of objects """
+    context: Context,
+    klasses: list[Union[type[tmt.base.Test], type[tmt.base.Plan], type[tmt.base.Story]]],
+    failed_only: bool,
+    enable_checks: list[str],
+    disable_checks: list[str],
+    enforce_checks: list[str],
+    outcomes: list[tmt.lint.LinterOutcome],
+    **kwargs: Any,
+) -> int:
+    """
+    Lint a collection of objects
+    """
 
     # FIXME: Workaround https://github.com/pallets/click/pull/1840 for click 7
     context.params.update(**kwargs)
@@ -111,19 +123,15 @@ def _lint_collection(
 
     linters = tmt.base.LintableCollection.resolve_enabled_linters(
         enable_checks=enable_checks or None,
-        disable_checks=disable_checks or None)
+        disable_checks=disable_checks or None,
+    )
 
-    objs: list[tmt.base.Core] = [
-        obj for cls in klasses
-        for obj in cls.from_tree(context.obj.tree)]
+    objs: list[tmt.base.Core] = [obj for cls in klasses for obj in cls.from_tree(context.obj.tree)]
     lintable = tmt.base.LintableCollection(objs)
 
     valid, allowed_rulings = _apply_linters(
-        lintable,
-        linters,
-        failed_only,
-        enforce_checks,
-        outcomes)
+        lintable, linters, failed_only, enforce_checks, outcomes
+    )
     if allowed_rulings is None:
         return exit_code
 
@@ -140,16 +148,19 @@ def _lint_collection(
 
 
 def do_lint(
-        context: Context,
-        klasses: list[Union[type[tmt.base.Test], type[tmt.base.Plan], type[tmt.base.Story]]],
-        list_checks: bool,
-        failed_only: bool,
-        enable_checks: list[str],
-        disable_checks: list[str],
-        enforce_checks: list[str],
-        outcomes: list[tmt.lint.LinterOutcome],
-        **kwargs: Any) -> int:
-    """ Core of all ``lint`` commands """
+    context: Context,
+    klasses: list[Union[type[tmt.base.Test], type[tmt.base.Plan], type[tmt.base.Story]]],
+    list_checks: bool,
+    failed_only: bool,
+    enable_checks: list[str],
+    disable_checks: list[str],
+    enforce_checks: list[str],
+    outcomes: list[tmt.lint.LinterOutcome],
+    **kwargs: Any,
+) -> int:
+    """
+    Core of all ``lint`` commands
+    """
 
     if list_checks:
         for klass in klasses:
@@ -160,16 +171,19 @@ def do_lint(
 
         return 0
 
-    res_single = max(_lint_class(
-        context,
-        klass,
-        failed_only,
-        enable_checks,
-        disable_checks,
-        enforce_checks,
-        outcomes,
-        **kwargs)
-        for klass in klasses)
+    res_single = max(
+        _lint_class(
+            context,
+            klass,
+            failed_only,
+            enable_checks,
+            disable_checks,
+            enforce_checks,
+            outcomes,
+            **kwargs,
+        )
+        for klass in klasses
+    )
 
     res_collection = _lint_collection(
         context,
@@ -179,14 +193,13 @@ def do_lint(
         disable_checks,
         enforce_checks,
         outcomes,
-        **kwargs)
+        **kwargs,
+    )
 
     return max(res_single, res_collection)
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@tests.command(name='lint')  # type: ignore[arg-type]
+@tests.command(name='lint')
 @pass_context
 @filtering_options
 @fmf_source_options
@@ -194,14 +207,16 @@ def do_lint(
 @fix_options
 @verbosity_options
 def tests_lint(
-        context: Context,
-        list_checks: bool,
-        failed_only: bool,
-        enable_checks: list[str],
-        disable_checks: list[str],
-        enforce_checks: list[str],
-        outcome_only: tuple[str, ...],
-        **kwargs: Any) -> None:
+    context: Context,
+    /,
+    list_checks: bool,
+    failed_only: bool,
+    enable_checks: list[str],
+    disable_checks: list[str],
+    enforce_checks: list[str],
+    outcome_only: tuple[str, ...],
+    **kwargs: Any,
+) -> None:
     """
     Check tests against the L1 metadata specification.
 
@@ -218,14 +233,13 @@ def tests_lint(
         disable_checks,
         enforce_checks,
         [tmt.lint.LinterOutcome(outcome) for outcome in outcome_only],
-        **kwargs)
+        **kwargs,
+    )
 
     raise SystemExit(exit_code)
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@plans.command(name='lint')  # type: ignore[arg-type]
+@plans.command(name='lint')
 @pass_context
 @filtering_options
 @fmf_source_options
@@ -233,14 +247,16 @@ def tests_lint(
 @fix_options
 @verbosity_options
 def plans_lint(
-        context: Context,
-        list_checks: bool,
-        failed_only: bool,
-        enable_checks: list[str],
-        disable_checks: list[str],
-        enforce_checks: list[str],
-        outcome_only: tuple[str, ...],
-        **kwargs: Any) -> None:
+    context: Context,
+    /,
+    list_checks: bool,
+    failed_only: bool,
+    enable_checks: list[str],
+    disable_checks: list[str],
+    enforce_checks: list[str],
+    outcome_only: tuple[str, ...],
+    **kwargs: Any,
+) -> None:
     """
     Check plans against the L2 metadata specification.
 
@@ -257,14 +273,13 @@ def plans_lint(
         disable_checks,
         enforce_checks,
         [tmt.lint.LinterOutcome(outcome) for outcome in outcome_only],
-        **kwargs)
+        **kwargs,
+    )
 
     raise SystemExit(exit_code)
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@stories.command(name='lint')  # type: ignore[arg-type]
+@stories.command(name='lint')
 @pass_context
 @filtering_options
 @fmf_source_options
@@ -272,14 +287,16 @@ def plans_lint(
 @fix_options
 @verbosity_options
 def stories_lint(
-        context: Context,
-        list_checks: bool,
-        failed_only: bool,
-        enable_checks: list[str],
-        disable_checks: list[str],
-        enforce_checks: list[str],
-        outcome_only: tuple[str, ...],
-        **kwargs: Any) -> None:
+    context: Context,
+    /,
+    list_checks: bool,
+    failed_only: bool,
+    enable_checks: list[str],
+    disable_checks: list[str],
+    enforce_checks: list[str],
+    outcome_only: tuple[str, ...],
+    **kwargs: Any,
+) -> None:
     """
     Check stories against the L3 metadata specification.
 
@@ -296,14 +313,13 @@ def stories_lint(
         disable_checks,
         enforce_checks,
         [tmt.lint.LinterOutcome(outcome) for outcome in outcome_only],
-        **kwargs)
+        **kwargs,
+    )
 
     raise SystemExit(exit_code)
 
 
-# ignore[arg-type]: click code expects click.Context, but we use our own type for better type
-# inference. See Context and ContextObjects above.
-@main.command(name='lint')  # type: ignore[arg-type]
+@main.command(name='lint')
 @pass_context
 @filtering_options
 @fmf_source_options
@@ -311,14 +327,16 @@ def stories_lint(
 @fix_options
 @verbosity_options
 def lint(
-        context: Context,
-        list_checks: bool,
-        enable_checks: list[str],
-        disable_checks: list[str],
-        enforce_checks: list[str],
-        failed_only: bool,
-        outcome_only: tuple[str, ...],
-        **kwargs: Any) -> None:
+    context: Context,
+    /,
+    list_checks: bool,
+    enable_checks: list[str],
+    disable_checks: list[str],
+    enforce_checks: list[str],
+    failed_only: bool,
+    outcome_only: tuple[str, ...],
+    **kwargs: Any,
+) -> None:
     """
     Check all the present metadata against the specification.
 
@@ -339,7 +357,7 @@ def lint(
         disable_checks,
         enforce_checks,
         [tmt.lint.LinterOutcome(outcome) for outcome in outcome_only],
-        **kwargs
-        )
+        **kwargs,
+    )
 
     raise SystemExit(exit_code)

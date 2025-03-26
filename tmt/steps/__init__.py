@@ -1,8 +1,8 @@
-
-""" Step Classes """
+"""
+Step Classes
+"""
 
 import collections
-import dataclasses
 import functools
 import itertools
 import re
@@ -22,7 +22,7 @@ from typing import (
     Union,
     cast,
     overload,
-    )
+)
 
 import click
 import fmf.context
@@ -37,7 +37,17 @@ import tmt.options
 import tmt.queue
 import tmt.utils
 import tmt.utils.rest
-from tmt.options import option, show_step_method_hints
+from tmt.container import (
+    SerializableContainer,
+    SpecBasedContainer,
+    container,
+    container_field,
+    container_keys,
+    field,
+    key_to_option,
+    option_to_key,
+)
+from tmt.options import option
 from tmt.utils import (
     DEFAULT_NAME,
     Environment,
@@ -45,18 +55,10 @@ from tmt.utils import (
     GeneralError,
     Path,
     RunError,
-    SerializableContainer,
-    SpecBasedContainer,
-    container_field,
-    container_keys,
-    field,
-    key_to_option,
-    option_to_key,
-    )
+)
 from tmt.utils.templates import render_template
 
 if TYPE_CHECKING:
-
     import tmt.base
     import tmt.cli
     import tmt.plugins
@@ -68,13 +70,39 @@ if TYPE_CHECKING:
 
 
 DEFAULT_ALLOWED_HOW_PATTERN: Pattern[str] = re.compile(r'.*')
-DEFAULT_PLUGIN_METHOD_ORDER: int = 50
 
+_PLUGIN_CLASS_NAME_TO_STEP_PATTERN = re.compile(r'tmt.steps.([a-z]+)')
+
+#
+# Following are default and predefined order values for various special phases
+# recognized by tmt. When adding new special phase, add its order below, and
+# do not forget to update either the corresponding step specification
+# where the list of step-specific `order` values should be documented,
+# or the documentation of plugin that defines the new value.
+#
+# Please, keep the name prefix, so it's easy to find all `PHASE_ORDER_*`
+# constants for documentation.
+#
+
+#: The default order of any object.
+# TODO: this is a duplication of tmt.base.DEFAULT_ORDER. Unfortunately, tmt.base
+# imports tmt.steps, not the other way around.
+# `PHASE_ORDER_DEFAULT = tmt.base.DEFAULT_ORDER` would be way better.
+PHASE_ORDER_DEFAULT = 50
+#: Installation of essential plugin and check requirements.
+PHASE_ORDER_PREPARE_INSTALL_ESSENTIAL_REQUIRES = 30
+#: Installation of packages :ref:`required</spec/tests/require>` by tests.
+PHASE_ORDER_PREPARE_INSTALL_REQUIRES = 70
+#: Installation of packages :ref:`recommended</spec/tests/recommend>` by tests.
+PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS = 75
 
 # Supported steps and actions
 STEPS: list[str] = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish']
 ACTIONS: list[str] = ['login', 'reboot']
 DEFAULT_LOGIN_COMMAND = 'bash'
+
+#: A default command to trigger a guest reboot when executed remotely.
+DEFAULT_REBOOT_COMMAND = tmt.utils.ShellScript('reboot')
 
 # Step phase order
 PHASE_START = 10
@@ -86,45 +114,52 @@ TEST_TOPOLOGY_FILENAME_BASE = 'tmt-test-topology'
 CODE_BLOCK_REGEXP = re.compile(r"^\s*\.\. code-block::.*$\n", re.MULTILINE)
 
 
-PHASE_OPTIONS = tmt.options.create_options_decorator([
-    option(
-        '--insert',
-        is_flag=True,
-        default=False,
-        help='Add this phase instead of overwriting the existing ones.'),
-    option(
-        '--update',
-        is_flag=True,
-        default=False,
-        help="""
+PHASE_OPTIONS = tmt.options.create_options_decorator(
+    [
+        option(
+            '--insert',
+            is_flag=True,
+            default=False,
+            help='Add this phase instead of overwriting the existing ones.',
+        ),
+        option(
+            '--update',
+            is_flag=True,
+            default=False,
+            help="""
             Update existing phase. Use --name to specify which one, or omit --name
             and update all existing phases.
-            """),
-    option(
-        '--update-missing',
-        is_flag=True,
-        default=False,
-        help="""
+            """,
+        ),
+        option(
+            '--update-missing',
+            is_flag=True,
+            default=False,
+            help="""
             Update existing phase, but make changes to fields that were not set by fmf data
             or previous command line options. Use --name to specify which one, or omit --name and
             update all existing phases.
-            """),
-    option(
-        '--allowed-how',
-        metavar='PATTERN',
-        default=None,
-        help='If set, only ``how`` matching given regular expression is allowed.'
+            """,
         ),
-    option(
-        '--name',
-        type=str,
-        help="Name of the existing phase which should be updated when '--update' is used."),
-    option(
-        '--order',
-        type=int,
-        default=DEFAULT_PLUGIN_METHOD_ORDER,
-        help='Order in which the phase should be handled.')
-    ])
+        option(
+            '--allowed-how',
+            metavar='PATTERN',
+            default=None,
+            help='If set, only ``how`` matching given regular expression is allowed.',
+        ),
+        option(
+            '--name',
+            type=str,
+            help="Name of the existing phase which should be updated when '--update' is used.",
+        ),
+        option(
+            '--order',
+            type=int,
+            default=PHASE_ORDER_DEFAULT,
+            help='Order in which the phase should be handled.',
+        ),
+    ]
+)
 
 
 class DefaultNameGenerator:
@@ -165,7 +200,9 @@ class DefaultNameGenerator:
         return DefaultNameGenerator(actual_name_keys)
 
     def restart(self) -> None:
-        """ Reset the generator and start from the beginning again """
+        """
+        Reset the generator and start from the beginning again
+        """
 
         def _generator() -> Iterator[str]:
             for i in itertools.count(start=0):
@@ -184,18 +221,19 @@ class DefaultNameGenerator:
 
 
 class Phase(tmt.utils.Common):
-    """ A phase of a step """
+    """
+    A phase of a step
+    """
 
-    def __init__(
-            self,
-            *,
-            order: int = tmt.utils.DEFAULT_PLUGIN_ORDER,
-            **kwargs: Any):
+    def __init__(self, *, order: int = PHASE_ORDER_DEFAULT, **kwargs: Any):
         super().__init__(**kwargs)
         self.order: int = order
 
     def enabled_on_guest(self, guest: 'Guest') -> bool:
-        """ Phases are enabled across all guests by default """
+        """
+        Phases are enabled across all guests by default
+        """
+
         return True
 
     @functools.cached_property
@@ -213,6 +251,7 @@ class Phase(tmt.utils.Common):
         behaviour from the regular behaviour based on options
         (e.g. listing images inside a provision plugin).
         """
+
         return False
 
     def assert_feeling_safe(self, deprecated_in_version: str, subject: str) -> None:
@@ -222,13 +261,17 @@ class Phase(tmt.utils.Common):
         :param deprecated_in_version: Version from which feeling-safe is required, e.g. '1.38'.
         :param subject: Subject requiring feeling-safe, e.g. 'Local provision plugin'.
         """
+
         if self.is_feeling_safe:
             return
 
-        if packaging.version.Version(tmt.__version__) \
-                < packaging.version.Version(deprecated_in_version):
-            self.warn(f"{subject} will require '--feeling-safe' option "
-                      f"from version {deprecated_in_version}.")
+        if packaging.version.Version(tmt.__version__) < packaging.version.Version(
+            deprecated_in_version
+        ):
+            self.warn(
+                f"{subject} will require '--feeling-safe' option "
+                f"from version {deprecated_in_version}."
+            )
 
         else:
             raise tmt.utils.GeneralError(f"{subject} requires '--feeling-safe' option.")
@@ -264,11 +307,12 @@ PluginReturnValueT = TypeVar('PluginReturnValueT')
 ResultT = TypeVar('ResultT', bound='BaseResult')
 
 
-@dataclasses.dataclass
+@container
 class StepData(
-        SpecBasedContainer[_RawStepData, _RawStepData],
-        tmt.utils.NormalizeKeysMixin,
-        SerializableContainer):
+    SpecBasedContainer[_RawStepData, _RawStepData],
+    tmt.utils.NormalizeKeysMixin,
+    SerializableContainer,
+):
     """
     Keys necessary to describe, create, save and restore a step.
 
@@ -291,42 +335,49 @@ class StepData(
     name: str = field(help='The name of the step phase.')
     how: str = field()
     order: int = field(
-        default=tmt.utils.DEFAULT_PLUGIN_ORDER,
-        help='Order in which the phase should be handled.')
+        default=PHASE_ORDER_DEFAULT,
+        help='Order in which the phase should be handled.',
+    )
     when: list[str] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_string_list,
         metavar='RULE',
-        help='If specified, phase is run only if any rule matches plan context.'
-        )
+        help='If specified, phase is run only if any rule matches plan context.',
+    )
     summary: Optional[str] = field(
-        default=None,
-        help='Concise summary describing purpose of the phase.')
+        default=None, help='Concise summary describing purpose of the phase.'
+    )
 
     def to_spec(self) -> _RawStepData:
-        """ Convert to a form suitable for saving in a specification file """
+        """
+        Convert to a form suitable for saving in a specification file
+        """
 
-        return cast(_RawStepData, {
-            key_to_option(key): value
-            for key, value in self.items()
-            })
+        return cast(_RawStepData, {key_to_option(key): value for key, value in self.items()})
 
     @classmethod
     def pre_normalization(cls, raw_data: _RawStepData, logger: tmt.log.Logger) -> None:
-        """ Called before normalization, useful for tweaking raw data """
+        """
+        Called before normalization, useful for tweaking raw data
+        """
 
         logger.debug(f'{cls.__name__}: original raw data', str(raw_data), level=4)
 
     def post_normalization(self, raw_data: _RawStepData, logger: tmt.log.Logger) -> None:
-        """ Called after normalization, useful for tweaking normalized data """
+        """
+        Called after normalization, useful for tweaking normalized data
+        """
 
     # ignore[override]: expected, we need to accept one extra parameter, `logger`.
     @classmethod
     def from_spec(  # type: ignore[override]
-            cls: type[StepDataT],
-            raw_data: _RawStepData,
-            logger: tmt.log.Logger) -> StepDataT:
-        """ Convert from a specification file or from a CLI option """
+        cls: type[StepDataT],
+        raw_data: _RawStepData,
+        logger: tmt.log.Logger,
+    ) -> StepDataT:
+        """
+        Convert from a specification file or from a CLI option
+        """
 
         cls.pre_normalization(raw_data, logger)
 
@@ -347,7 +398,7 @@ class RawWhereableStepData(TypedDict, total=False):
     where: Union[str, list[str]]
 
 
-@dataclasses.dataclass
+@container
 class WhereableStepData:
     """
     Keys shared by step data that may be limited to a particular guest.
@@ -364,12 +415,14 @@ class WhereableStepData:
         default_factory=list,
         normalize=tmt.utils.normalize_string_list,
         metavar='GUEST|ROLE',
-        help='Run this phase on given guest or guests with the given role only.'
-        )
+        help='Run this phase on given guest or guests with the given role only.',
+    )
 
 
 class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
-    """ Common parent of all test steps """
+    """
+    Common parent of all test steps
+    """
 
     # Default implementation for all steps is "shell", but some
     # steps like provision may have better defaults for their
@@ -399,14 +452,18 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
     _preserved_workdir_members: list[str] = ['step.yaml']
 
     def __init__(
-            self,
-            *,
-            plan: 'Plan',
-            data: Optional[RawStepDataArgument] = None,
-            name: Optional[str] = None,
-            workdir: tmt.utils.WorkdirArgumentType = None,
-            logger: tmt.log.Logger) -> None:
-        """ Initialize and check the step data """
+        self,
+        *,
+        plan: 'Plan',
+        data: Optional[RawStepDataArgument] = None,
+        name: Optional[str] = None,
+        workdir: tmt.utils.WorkdirArgumentType = None,
+        logger: tmt.log.Logger,
+    ) -> None:
+        """
+        Initialize and check the step data
+        """
+
         logger.apply_verbosity_options(cli_invocation=self.__class__.cli_invocation)
 
         super().__init__(name=name, parent=plan, workdir=workdir, logger=logger)
@@ -437,8 +494,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
         # Shout about invalid configuration
         else:
-            raise tmt.utils.GeneralError(
-                f"Invalid '{self}' config in '{self.plan}'.")
+            raise tmt.utils.GeneralError(f"Invalid '{self}' config in '{self.plan}'.")
 
         raw_data = self._set_default_names(raw_data)
         raw_data = self._apply_cli_invocations(raw_data)
@@ -450,13 +506,17 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         return functools.partial(self.debug, level=4, topic=tmt.log.Topic.CLI_INVOCATIONS)
 
     def _check_duplicate_names(self, raw_data: list[_RawStepData]) -> None:
-        """ Check for duplicate names in phases """
+        """
+        Check for duplicate names in phases
+        """
 
         for name in tmt.utils.duplicates(raw_datum.get('name', None) for raw_datum in raw_data):
             raise tmt.utils.GeneralError(f"Duplicate phase name '{name}' in step '{self.name}'.")
 
     def _set_default_names(self, raw_data: list[_RawStepData]) -> list[_RawStepData]:
-        """ Set default values for ``name`` keys if not specified """
+        """
+        Set default values for ``name`` keys if not specified
+        """
 
         debug1 = self._cli_invocation_logger
         debug2 = functools.partial(debug1, shift=1)
@@ -480,7 +540,9 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         return raw_data
 
     def _set_default_how(self, raw_data: list[_RawStepData]) -> list[_RawStepData]:
-        """ Set default values for ``how`` keys if not specified """
+        """
+        Set default values for ``how`` keys if not specified
+        """
 
         debug1 = self._cli_invocation_logger
         debug2 = functools.partial(debug1, shift=1)
@@ -502,9 +564,8 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         return raw_data
 
     def _normalize_data(
-            self,
-            raw_data: list[_RawStepData],
-            logger: tmt.log.Logger) -> list[StepData]:
+        self, raw_data: list[_RawStepData], logger: tmt.log.Logger
+    ) -> list[StepData]:
         """
         Normalize step data entries.
 
@@ -533,23 +594,22 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         return data
 
     def _export(
-            self,
-            *,
-            keys: Optional[list[str]] = None,
-            include_internal: bool = False) -> tmt.export._RawExportedInstance:
+        self,
+        *,
+        keys: Optional[list[str]] = None,
+        include_internal: bool = False,
+    ) -> tmt.export._RawExportedInstance:
         # TODO: one day, this should recurse down into each materialized plugin,
         # to give them chance to affect the export of their data.
         def _export_datum(raw_datum: _RawStepData) -> _RawStepData:
             return cast(
-                _RawStepData,
-                {
-                    key_to_option(key): value
-                    for key, value in raw_datum.items()
-                    })
+                _RawStepData, {key_to_option(key): value for key, value in raw_datum.items()}
+            )
 
         return cast(
             tmt.export._RawExportedInstance,
-            [_export_datum(raw_datum) for raw_datum in self._raw_data])
+            [_export_datum(raw_datum) for raw_datum in self._raw_data],
+        )
 
     @property
     def step_name(self) -> str:
@@ -573,7 +633,10 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
     @property
     def enabled(self) -> Optional[bool]:
-        """ True if the step is enabled """
+        """
+        True if the step is enabled
+        """
+
         if self.plan.my_run is None or self.plan.my_run._cli_context_object is None:
             return None
 
@@ -581,16 +644,16 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
     @functools.cached_property
     def allowed_methods_pattern(self) -> Pattern[str]:
-        """ Return a pattern allowed methods must match """
+        """
+        Return a pattern allowed methods must match
+        """
 
         try:
-            patterns: list[Pattern[str]] = [
-                DEFAULT_ALLOWED_HOW_PATTERN
-                ] + [
+            patterns: list[Pattern[str]] = [DEFAULT_ALLOWED_HOW_PATTERN] + [
                 re.compile(invocation.options[option_to_key('allowed_how')])
                 for invocation in self.cli_invocations
                 if invocation.options.get(option_to_key('allowed-how'))
-                ]
+            ]
 
         except re.error as exc:
             if exc.pattern is None:
@@ -613,18 +676,21 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         behaviour from the regular behaviour based on options
         (e.g. listing images inside provision).
         """
+
         return sum(phase.is_in_standalone_mode for phase in self.phases())
 
     @classmethod
     def usage(cls, method_overview: str) -> str:
-        """ Prepare general usage message for the step """
+        """
+        Prepare general usage message for the step
+        """
+
         # Main description comes from the class docstring
         if cls.__name__ is None:
             raise tmt.utils.GeneralError("Missing name of the step.")
 
         if cls.__doc__ is None:
-            raise tmt.utils.GeneralError(
-                f"Missing docstring of the step {cls.__name__.lower()}.")
+            raise tmt.utils.GeneralError(f"Missing docstring of the step {cls.__name__.lower()}.")
 
         usage = textwrap.dedent(cls.__doc__)
         # Append the list of supported methods
@@ -633,7 +699,8 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         name = cls.__name__.lower()
         usage += (
             f"\n\nUse 'tmt run {name} --how <method> --help' to learn more "
-            f"about given {name} method and all its supported options.")
+            f"about given {name} method and all its supported options."
+        )
         return usage
 
     def status(self, status: Optional[str] = None) -> Optional[str]:
@@ -644,6 +711,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         todo ... config, data and command line processed (we know what to do)
         done ... the final result of the step stored to workdir (we are done)
         """
+
         # Update status
         if status is not None:
             # Check for valid values
@@ -657,7 +725,9 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         return self._status
 
     def show(self) -> None:
-        """ Show step details """
+        """
+        Show step details
+        """
 
         for data in self.data:
             self._plugin_base_class.delegate(self, data=data).show()
@@ -668,10 +738,14 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
         To be implemented by each step.
         """
+
         raise NotImplementedError
 
     def load(self) -> None:
-        """ Load status and step data from the workdir """
+        """
+        Load status and step data from the workdir
+        """
+
         try:
             raw_step_data: dict[Any, Any] = tmt.utils.yaml_to_dict(self.read(Path('step.yaml')))
 
@@ -682,13 +756,9 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         self.debug('Successfully loaded step data.', level=2)
 
         self.data = [
-            StepData.unserialize(raw_datum, self._logger)
-            for raw_datum in raw_step_data['data']
-            ]
-        self._raw_data = [
-            datum.to_spec()
-            for datum in self.data
-            ]
+            StepData.unserialize(raw_datum, self._logger) for raw_datum in raw_step_data['data']
+        ]
+        self._raw_data = [datum.to_spec() for datum in self.data]
         self.status(raw_step_data['status'])
 
         # After loading data, we need to make sure we re-apply all CLI
@@ -697,25 +767,29 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         self.plan._applied_cli_invocations = []
 
     def save(self) -> None:
-        """ Save status and step data to the workdir """
+        """
+        Save status and step data to the workdir
+        """
+
         content: dict[str, Any] = {
             'status': self.status(),
-            'data': [datum.to_serialized() for datum in self.data]
-            }
+            'data': [datum.to_serialized() for datum in self.data],
+        }
         self.write(Path('step.yaml'), tmt.utils.dict_to_yaml(content))
 
     def _load_results(
-            self,
-            result_class: type[ResultT],
-            allow_missing: bool = False) -> list[ResultT]:
-        """ Load results of this step from the workdir """
+        self,
+        result_class: type[ResultT],
+        allow_missing: bool = False,
+    ) -> list[ResultT]:
+        """
+        Load results of this step from the workdir
+        """
 
         try:
             raw_results: list[Any] = tmt.utils.yaml_to_list(self.read(Path('results.yaml')))
 
-            return [
-                result_class.from_serialized(raw_result) for raw_result in raw_results
-                ]
+            return [result_class.from_serialized(raw_result) for raw_result in raw_results]
 
         except tmt.utils.FileError as exc:
             if allow_missing:
@@ -728,7 +802,9 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             raise GeneralError('Cannot load step results.') from exc
 
     def _save_results(self, results: Sequence['BaseResult']) -> None:
-        """ Save results of this step to the workdir """
+        """
+        Save results of this step to the workdir
+        """
 
         try:
             raw_results = [result.to_serialized() for result in results]
@@ -739,7 +815,10 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             raise GeneralError('Cannot save step results.') from exc
 
     def wake(self) -> None:
-        """ Wake up the step (process workdir and command line) """
+        """
+        Wake up the step (process workdir and command line)
+        """
+
         # Cleanup possible old workdir if called with --force, but not
         # if running the step --again which should reuse saved step data
         if self.is_forced_run and not self.should_run_again:
@@ -766,8 +845,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         # Special handling for the report step to always enable force mode in
         # order to cover a very frequent use case 'tmt run --last report'
         # FIXME find a better way how to enable always-force per plugin
-        if (isinstance(self, tmt.steps.report.Report) and
-                self.data[0].how in ['display', 'html']):
+        if isinstance(self, tmt.steps.report.Report) and self.data[0].how in ['display', 'html']:
             self.debug("Report step always force mode enabled.")
             self._workdir_cleanup()
             self.status('todo')
@@ -823,10 +901,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
                     yield key_to_option(name), value
 
-            return cast(
-                _RawStepData,
-                dict(_iter_options())
-                )
+            return cast(_RawStepData, dict(_iter_options()))
 
         # In this list, we collect all known phases, represented by their raw step data. The list
         # will be inspected by code below, e.g. when evaluationg `--update` CLI option, but also
@@ -848,7 +923,9 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         name_generator = DefaultNameGenerator.from_raw_phases(raw_data)
 
         def _ensure_name(raw_datum: _RawStepData) -> _RawStepData:
-            """ Make sure a phase specification does have a name """
+            """
+            Make sure a phase specification does have a name
+            """
 
             if not raw_datum.get('name'):
                 raw_datum['name'] = name_generator.get()
@@ -856,10 +933,11 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             return raw_datum
 
         def _patch_raw_datum(
-                raw_datum: _RawStepData,
-                incoming_raw_datum: _RawStepData,
-                invocation: 'tmt.cli.CliInvocation',
-                missing_only: bool = False) -> None:
+            raw_datum: _RawStepData,
+            incoming_raw_datum: _RawStepData,
+            invocation: 'tmt.cli.CliInvocation',
+            missing_only: bool = False,
+        ) -> None:
             """
             Copy options from one phase specification onto another.
 
@@ -958,7 +1036,8 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
                     else:
                         raise GeneralError(
-                            f"Cannot update phase '{needle}', no such name was found.")
+                            f"Cannot update phase '{needle}', no such name was found."
+                        )
 
                 else:
                     debug3('needle-less update (postponed)')
@@ -978,16 +1057,15 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                             continue
 
                         _patch_raw_datum(
-                            raw_datum,
-                            incoming_raw_datum,
-                            invocation,
-                            missing_only=True)
+                            raw_datum, incoming_raw_datum, invocation, missing_only=True
+                        )
 
                         break
 
                     else:
                         raise GeneralError(
-                            f"Cannot update phase '{needle}', no such name was found.")
+                            f"Cannot update phase '{needle}', no such name was found."
+                        )
 
                 else:
                     debug3('needle-less update (postponed)')
@@ -1027,8 +1105,9 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                 else:
                     debug3('incompatible step data')
 
-                    data_base = cast(type[BasePlugin[StepData, Any]],
-                                     self._plugin_base_class).get_data_class()
+                    data_base = cast(
+                        type[BasePlugin[StepData, Any]], self._plugin_base_class
+                    ).get_data_class()
 
                     debug3('compatible base', f'{data_base.__module__}.{data_base.__name__}')
                     debug3('compatible keys', ', '.join(k for k in data_base.keys()))  # noqa: SIM118
@@ -1039,11 +1118,14 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
                     # even though ruff thinks StepData looks like a dict, it's not one.
                     # ignore[literal-required]: we do create raw step data, but _RawStepData
                     # is very minimal.
-                    raw_datum = cast(_RawStepData, {
-                        key: raw_datum[key]  # type: ignore[literal-required]
-                        for key in data_base.keys()  # noqa: SIM118
-                        if key in raw_datum
-                        })
+                    raw_datum = cast(
+                        _RawStepData,
+                        {
+                            key: raw_datum[key]  # type: ignore[literal-required]
+                            for key in data_base.keys()  # noqa: SIM118
+                            if key in raw_datum
+                        },
+                    )
 
                 if invocation.options.get('update_missing'):
                     _patch_raw_datum(raw_datum, incoming_raw_datum, invocation, missing_only=True)
@@ -1063,17 +1145,23 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         return self._set_default_how(raw_data)
 
     def setup_actions(self) -> None:
-        """ Insert login and reboot plugins if requested """
+        """
+        Insert login and reboot plugins if requested
+        """
+
         for login_plugin in Login.plugins(step=self):
             self.debug(
-                f"Insert a login plugin into the '{self}' step "
-                f"with order '{login_plugin.order}'.", level=2)
+                f"Insert a login plugin into the '{self}' step with order '{login_plugin.order}'.",
+                level=2,
+            )
             self._phases.append(login_plugin)
 
         for reboot_plugin in Reboot.plugins(step=self):
             self.debug(
                 f"Insert a reboot plugin into the '{self}' step "
-                f"with order '{reboot_plugin.order}'.", level=2)
+                f"with order '{reboot_plugin.order}'.",
+                level=2,
+            )
             self._phases.append(reboot_plugin)
 
     @overload
@@ -1088,8 +1176,9 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
     def phases(self, classes: tuple[type[PhaseT], ...]) -> list[PhaseT]:
         pass
 
-    def phases(self, classes: Optional[Union[type[PhaseT],
-               tuple[type[PhaseT], ...]]] = None) -> list[PhaseT]:
+    def phases(
+        self, classes: Optional[Union[type[PhaseT], tuple[type[PhaseT], ...]]] = None
+    ) -> list[PhaseT]:
         """
         Iterate over phases by their order
 
@@ -1109,15 +1198,22 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
         return sorted(
             [cast(PhaseT, phase) for phase in self._phases if isinstance(phase, _classes)],
-            key=lambda phase: phase.order)
+            key=lambda phase: phase.order,
+        )
 
     def actions(self) -> None:
-        """ Run all loaded Login or Reboot action instances of the step """
+        """
+        Run all loaded Login or Reboot action instances of the step
+        """
+
         for phase in self.phases(classes=Action):
             phase.go()
 
     def go(self, force: bool = False) -> None:
-        """ Execute the test step """
+        """
+        Execute the test step
+        """
+
         # Clean up the workdir and switch status if force is requested
         if force:
             self._workdir_cleanup()
@@ -1130,7 +1226,10 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
             self.debug('workdir', self.workdir, 'magenta')
 
     def prune(self, logger: tmt.log.Logger) -> None:
-        """ Remove all uninteresting files from the step workdir """
+        """
+        Remove all uninteresting files from the step workdir
+        """
+
         if self.workdir is None:
             return
 
@@ -1164,16 +1263,21 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
 
 class Method:
-    """ Step implementation method """
+    """
+    Step implementation method
+    """
 
     def __init__(
-            self,
-            name: str,
-            class_: Optional[PluginClass] = None,
-            doc: Optional[str] = None,
-            order: int = DEFAULT_PLUGIN_METHOD_ORDER
-            ) -> None:
-        """ Store method data """
+        self,
+        name: str,
+        class_: PluginClass,
+        doc: Optional[str] = None,
+        order: int = PHASE_ORDER_DEFAULT,
+        installation_hint: Optional[str] = None,
+    ) -> None:
+        """
+        Store method data
+        """
 
         doc = textwrap.dedent(doc or class_.__doc__ or '').strip()
 
@@ -1183,9 +1287,20 @@ class Method:
 
             raise tmt.utils.GeneralError(f"Plugin method '{name}' provides no docstring.")
 
+        if installation_hint is not None:
+            doc = (
+                doc
+                + '\n\n.. note::\n\n'
+                + textwrap.indent(textwrap.dedent(installation_hint), '   ')
+            )
+
         self.name = name
         self.class_ = class_
-        self.doc = tmt.utils.rest.render_rst(doc, tmt.log.Logger.get_bootstrap_logger())
+        self.doc = (
+            tmt.utils.rest.render_rst(doc, tmt.log.Logger.get_bootstrap_logger())
+            if tmt.utils.rest.REST_RENDERING_ALLOWED
+            else doc
+        )
         self.order = order
 
         # Parse summary and description from provided doc string
@@ -1198,11 +1313,17 @@ class Method:
         return f'<{self.name} from {self.class_.__module__}>'
 
     def describe(self) -> str:
-        """ Format name and summary for a nice method overview """
+        """
+        Format name and summary for a nice method overview
+        """
+
         return f'{self.name} '.ljust(22, '.') + f' {self.summary}'
 
     def usage(self) -> str:
-        """ Prepare a detailed usage from summary and description """
+        """
+        Prepare a detailed usage from summary and description
+        """
+
         if self.description:
             usage: str = self.summary + '\n\n' + self.description
         else:
@@ -1212,9 +1333,11 @@ class Method:
 
 
 def provides_method(
-        name: str,
-        doc: Optional[str] = None,
-        order: int = DEFAULT_PLUGIN_METHOD_ORDER) -> Callable[[PluginClass], PluginClass]:
+    name: str,
+    doc: Optional[str] = None,
+    order: int = PHASE_ORDER_DEFAULT,
+    installation_hint: Optional[str] = None,
+) -> Callable[[PluginClass], PluginClass]:
     """
     A plugin class decorator to register plugin's method with tmt steps.
 
@@ -1234,18 +1357,25 @@ def provides_method(
     """
 
     def _method(cls: PluginClass) -> PluginClass:
-        plugin_method = Method(name, class_=cls, doc=doc, order=order)
+        plugin_method = Method(
+            name, cls, doc=doc, order=order, installation_hint=installation_hint
+        )
 
         # FIXME: make sure cls.__bases__[0] is really BasePlugin class
         # TODO: BasePlugin[Any]: it's tempting to use StepDataT, but I was
         # unable to introduce the type var into annotations. Apparently, `cls`
         # is a more complete type, e.g. `type[ReportJUnit]`, which does not show
         # space for type var. But it's still something to fix later.
-        cast('BasePlugin[Any, Any]', cls.__bases__[0])._supported_methods \
-            .register_plugin(
-                plugin_id=name,
-                plugin=plugin_method,
-                logger=tmt.log.Logger.get_bootstrap_logger())
+        base_class = cast('BasePlugin[Any, Any]', cls.__bases__[0])
+
+        base_class._supported_methods.register_plugin(
+            plugin_id=name, plugin=plugin_method, logger=tmt.log.Logger.get_bootstrap_logger()
+        )
+
+        if installation_hint is not None:
+            from tmt.utils.hints import register_hint
+
+            register_hint(f'{base_class.get_step_name()}/{name}', installation_hint)
 
         return cls
 
@@ -1253,7 +1383,9 @@ def provides_method(
 
 
 class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
-    """ Common parent of all step plugins """
+    """
+    Common parent of all step plugins
+    """
 
     # Deprecated, use @provides_method(...) instead. left for backward
     # compatibility with out-of-tree plugins.
@@ -1274,6 +1406,8 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
 
     _data_class: type[StepDataT]
 
+    _preserved_workdir_members: set[str] = set()
+
     @classmethod
     def get_data_class(cls) -> type[StepDataT]:
         """
@@ -1287,6 +1421,14 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
 
     data: StepDataT
 
+    @classmethod
+    def get_step_name(cls) -> str:
+        match = _PLUGIN_CLASS_NAME_TO_STEP_PATTERN.match(cls.__module__)
+
+        assert match is not None  # must be
+
+        return match.group(1)
+
     # TODO: do we need this list? Can whatever code is using it use _data_class directly?
     # List of supported keys
     # (used for import/export to/from attributes during load and save)
@@ -1295,22 +1437,23 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         return list(self.get_data_class().keys())
 
     def __init__(
-            self,
-            *,
-            step: Step,
-            data: StepDataT,
-            workdir: tmt.utils.WorkdirArgumentType = None,
-            logger: tmt.log.Logger) -> None:
-        """ Store plugin name, data and parent step """
+        self,
+        *,
+        step: Step,
+        data: StepDataT,
+        workdir: tmt.utils.WorkdirArgumentType = None,
+        logger: tmt.log.Logger,
+    ) -> None:
+        """
+        Store plugin name, data and parent step
+        """
+
         logger.apply_verbosity_options(cli_invocation=self.__class__.cli_invocation)
 
         # Store name, data and parent step
         super().__init__(
-            logger=logger,
-            parent=step,
-            name=data.name,
-            workdir=workdir,
-            order=data.order)
+            logger=logger, parent=step, name=data.name, workdir=workdir, order=data.order
+        )
 
         # It is not possible to use TypedDict here because
         # all keys are not known at the time of the class definition
@@ -1330,33 +1473,43 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
 
     @classmethod
     def base_command(
-            cls,
-            usage: str,
-            method_class: Optional[type[click.Command]] = None) -> click.Command:
-        """ Create base click command (common for all step plugins) """
+        cls,
+        usage: str,
+        method_class: Optional[type[click.Command]] = None,
+    ) -> click.Command:
+        """
+        Create base click command (common for all step plugins)
+        """
+
         raise NotImplementedError
 
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
-        """ Prepare command line options for given method """
+        """
+        Prepare command line options for given method
+        """
+
         # Include common options supported across all plugins
         return [
             metadata.option
             for _, _, _, _, metadata in (
                 container_field(cls.get_data_class(), key)
                 for key in container_keys(cls.get_data_class())
-                )
+            )
             if metadata.option is not None
-            ] + (
-                tmt.options.VERBOSITY_OPTIONS +
-                tmt.options.FORCE_DRY_OPTIONS +
-                tmt.options.AGAIN_OPTION +
-                tmt.options.FEELING_SAFE_OPTION
-                )
+        ] + (
+            tmt.options.VERBOSITY_OPTIONS
+            + tmt.options.FORCE_DRY_OPTIONS
+            + tmt.options.AGAIN_OPTION
+            + tmt.options.FEELING_SAFE_OPTION
+        )
 
     @classmethod
     def command(cls) -> click.Command:
-        """ Prepare click command for all supported methods """
+        """
+        Prepare click command for all supported methods
+        """
+
         # Create one command for each supported method
         commands: dict[str, click.Command] = {}
         method_overview: str = f'Supported methods ({cls.how} by default):\n\n\b'
@@ -1379,8 +1532,11 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
                 assert command.name is not None  # narrow type
                 assert param.name is not None  # narrow type
 
-                command_name, method_name, param_name = \
-                    command.name.upper(), method.name.upper(), param.name.upper()
+                command_name, method_name, param_name = (
+                    command.name.upper(),
+                    method.name.upper(),
+                    param.name.upper(),
+                )
 
                 envvar = f'TMT_PLUGIN_{command_name}_{method_name}_{param_name}'
 
@@ -1404,7 +1560,8 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
                 else:
                     raise tmt.utils.GeneralError(
                         f"Envvar property of '{param.name}' option "
-                        f"set to unexpected type '{type(param.envvar)}'.")
+                        f"set to unexpected type '{type(param.envvar)}'."
+                    )
 
         # Create base command with common options using method class
         method_class = tmt.options.create_method_class(commands)
@@ -1416,26 +1573,31 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
 
     @classmethod
     def methods(cls) -> list[Method]:
-        """ Return all supported methods ordered by priority """
+        """
+        Return all supported methods ordered by priority
+        """
+
         return sorted(cls._supported_methods.iter_plugins(), key=lambda method: method.order)
 
     @classmethod
     def allowed_methods(cls, step: Step) -> list[Method]:
-        """ Return all allowed methods """
+        """
+        Return all allowed methods
+        """
 
         return [
             method
             for method in cls._supported_methods.iter_plugins()
             if step.allowed_methods_pattern.match(method.name)
-            ]
+        ]
 
     @classmethod
     def delegate(
-            cls,
-            step: Step,
-            data: Optional[StepDataT] = None,
-            raw_data: Optional[_RawStepData] = None
-            ) -> 'BasePlugin[StepDataT, PluginReturnValueT]':
+        cls,
+        step: Step,
+        data: Optional[StepDataT] = None,
+        raw_data: Optional[_RawStepData] = None,
+    ) -> 'BasePlugin[StepDataT, PluginReturnValueT]':
         """
         Return plugin instance implementing the data['how'] method
 
@@ -1455,8 +1617,8 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
             raise tmt.utils.GeneralError('Either data or raw data must be given.')
 
         step.debug(
-            f'{cls.__name__}.delegate(step={step}, data={data}, raw_data={raw_data})',
-            level=3)
+            f'{cls.__name__}.delegate(step={step}, data={data}, raw_data={raw_data})', level=3
+        )
 
         # Filter matching methods, pick the one with the lowest order
         allowed_methods = cls.allowed_methods(step)
@@ -1466,16 +1628,18 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
             if method.name.startswith(how):
                 if method not in allowed_methods:
                     step.warn(
-                        f"Suitable provision method '{method.name}' disallowed by configuration.")
+                        f"Suitable provision method '{method.name}' disallowed by configuration."
+                    )
                     continue
 
                 step.debug(
-                    f"Using the '{method.class_.__name__}' plugin "
-                    f"for the '{how}' method.", level=2)
+                    f"Using the '{method.class_.__name__}' plugin for the '{how}' method.", level=2
+                )
 
                 plugin_class = method.class_
                 plugin_data_class = cast(
-                    type[BasePlugin[StepDataT, PluginReturnValueT]], plugin_class).get_data_class()
+                    type[BasePlugin[StepDataT, PluginReturnValueT]], plugin_class
+                ).get_data_class()
 
                 # If we're given raw data, construct a step data instance, applying
                 # normalization in the process.
@@ -1485,32 +1649,37 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
 
                     except Exception as exc:
                         raise tmt.utils.GeneralError(
-                            f'Failed to load step data for {plugin_data_class.__name__}: {exc}') \
-                            from exc
+                            f'Failed to load step data for {plugin_data_class.__name__}: {exc}'
+                        ) from exc
 
                 assert data is not None
-                assert data.__class__ is plugin_data_class, \
-                    (f'Data package is instance of {data.__class__.__name__}, '
-                     f'plugin {plugin_class.__name__} expects {plugin_data_class.__name__}')
+                assert data.__class__ is plugin_data_class, (
+                    f'Data package is instance of {data.__class__.__name__}, '
+                    f'plugin {plugin_class.__name__} expects {plugin_data_class.__name__}'
+                )
 
                 plugin = plugin_class(
-                    logger=step._logger.descend(logger_name=None),
-                    step=step,
-                    data=data
-                    )
+                    logger=step._logger.descend(logger_name=None), step=step, data=data
+                )
                 assert isinstance(plugin, BasePlugin)
                 return plugin
 
-        show_step_method_hints(step.name, how, step._logger)
+        from tmt.utils.hints import print_hint
+
+        print_hint(id_=f'{step.name}/{how}', ignore_missing=True, logger=step._logger)
+        print_hint(id_=step.name, ignore_missing=True, logger=step._logger)
+
         # Report invalid method
         if step.plan is None:
             raise tmt.utils.GeneralError(f"Plan for {step.name} is not set.")
         raise tmt.utils.SpecificationError(
-            f"Unsupported {step.name} method '{how}' "
-            f"in the '{step.plan.name}' plan.")
+            f"Unsupported {step.name} method '{how}' in the '{step.plan.name}' plan."
+        )
 
     def default(self, option: str, default: Optional[Any] = None) -> Any:
-        """ Return default data for given option """
+        """
+        Return default data for given option
+        """
 
         value = self.get_data_class().default(option_to_key(option), default=default)
 
@@ -1520,7 +1689,9 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         return value
 
     def get(self, option: str, default: Optional[Any] = None) -> Any:
-        """ Get option from plugin data, user/system config or defaults """
+        """
+        Get option from plugin data, user/system config or defaults
+        """
 
         # Check plugin data first
         #
@@ -1560,7 +1731,10 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         return self.default(option, default)
 
     def show(self, keys: Optional[list[str]] = None) -> None:
-        """ Show plugin details for given or all available keys """
+        """
+        Show plugin details for given or all available keys
+        """
+
         # Avoid circular imports
         import tmt.base
 
@@ -1568,9 +1742,11 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         if self.data.is_bare and not self.verbosity_level:
             return
         # Step name (and optional summary)
-        echo(tmt.utils.format(
-            self.step.name, self.get('summary') or '',
-            key_color='blue', value_color='blue'))
+        echo(
+            tmt.utils.format(
+                self.step.name, self.get('summary') or '', key_color='blue', value_color='blue'
+            )
+        )
         # Show all or requested step attributes
         if keys is None:
             keys = list(set(self.data.keys()))
@@ -1593,7 +1769,7 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
             value = self.get(key)
 
             # No need to show the default order
-            if key == 'order' and value == tmt.base.DEFAULT_ORDER:
+            if key == 'order' and value == PHASE_ORDER_DEFAULT:
                 return
 
             if value is None:
@@ -1627,7 +1803,10 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
 
     @functools.cached_property
     def enabled_by_when(self) -> bool:
-        """ Check if the plugin is enabled by 'when' keyword """
+        """
+        Check if the plugin is enabled by 'when' keyword
+        """
+
         fmf_context = fmf.context.Context(**self.step.plan._fmf_context)
         when_rules = self.get('when', [])
         if not when_rules:
@@ -1641,7 +1820,9 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         return False
 
     def enabled_on_guest(self, guest: 'Guest') -> bool:
-        """ Check if the plugin is enabled on the specific guest """
+        """
+        Check if the plugin is enabled on the specific guest
+        """
 
         # FIXME: cast() - typeless "dispatcher" method
         where = cast(list[str], self.get('where'))
@@ -1665,9 +1846,10 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         selected ones.
         """
 
-        assert self.data.__class__ is self.get_data_class(), \
-            (f'Plugin {self.__class__.__name__} woken with incompatible '
-             f'data {self.data}, expects {self.get_data_class().__name__}')
+        assert self.data.__class__ is self.get_data_class(), (
+            f'Plugin {self.__class__.__name__} woken with incompatible '
+            f'data {self.data}, expects {self.get_data_class().__name__}'
+        )
 
         if self.step.status() == 'done':
             self.debug('step is done, not overwriting plugin data')
@@ -1691,7 +1873,9 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
     # Therefore we need a different name, and a way how not to forget to call this
     # method from child classes.
     def go_prolog(self, logger: tmt.log.Logger) -> None:
-        """ Perform actions shared among plugins when beginning their tasks """
+        """
+        Perform actions shared among plugins when beginning their tasks
+        """
 
         logger = logger or self._logger
 
@@ -1726,47 +1910,81 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         override this method to keep files and directories which are
         useful for inspection when the run is finished.
         """
+
         if self.workdir is None:
             return
-        logger.debug(f"Remove '{self.name}' workdir '{self.workdir}'.", level=3)
-        try:
-            shutil.rmtree(self.workdir)
-        except OSError as error:
-            logger.warning(f"Unable to remove '{self.workdir}': {error}")
+        preservable_members = [
+            member
+            for member in self.workdir.iterdir()
+            if member.name in self._preserved_workdir_members
+        ]
+        removable_members = [
+            member for member in self.workdir.iterdir() if member not in preservable_members
+        ]
+        if preservable_members:
+            for member in removable_members:
+                logger.debug(f"Remove '{member}'.", level=3)
+                try:
+                    if member.is_file() or member.is_symlink():
+                        member.unlink()
+                    else:
+                        shutil.rmtree(member)
+                except OSError as error:
+                    logger.warning(f"Unable to remove '{member}': {error}")
+        else:
+            logger.debug(f"Remove '{self.name}' workdir '{self.workdir}'.", level=3)
+            try:
+                shutil.rmtree(self.workdir)
+            except OSError as error:
+                logger.warning(f"Unable to remove '{self.workdir}': {error}")
 
 
 class GuestlessPlugin(BasePlugin[StepDataT, PluginReturnValueT]):
-    """ Common parent of all step plugins that do not work against a particular guest """
+    """
+    Common parent of all step plugins that do not work against a particular guest
+    """
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> PluginReturnValueT:
-        """ Perform actions shared among plugins when beginning their tasks """
+        """
+        Perform actions shared among plugins when beginning their tasks
+        """
 
         raise NotImplementedError
 
 
 class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
-    """ Common parent of all step plugins that do work against a particular guest """
+    """
+    Common parent of all step plugins that do work against a particular guest
+    """
 
     def go(
-            self,
-            *,
-            guest: 'Guest',
-            environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> PluginReturnValueT:
-        """ Perform actions shared among plugins when beginning their tasks """
+        self,
+        *,
+        guest: 'Guest',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> PluginReturnValueT:
+        """
+        Perform actions shared among plugins when beginning their tasks
+        """
 
         raise NotImplementedError
 
 
 class Action(Phase, tmt.utils.MultiInvokableCommon):
-    """ A special action performed during a normal step. """
+    """
+    A special action performed during a normal step.
+    """
 
     # Dictionary containing list of requested phases for each enabled step
     _phases: Optional[dict[str, list[int]]] = None
 
     @classmethod
     def phases(cls, step: Step) -> list[int]:
-        """ Return list of phases enabled for given step """
+        """
+        Return list of phases enabled for given step
+        """
+
         # Build the phase list unless done before
         if cls._phases is None:
             cls._phases = cls._parse_phases(step)
@@ -1778,7 +1996,10 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
 
     @classmethod
     def _parse_phases(cls, step: Step) -> dict[str, list[int]]:
-        """ Parse options and store phase order """
+        """
+        Parse options and store phase order
+        """
+
         phases = {}
         options: list[str] = cls._opt('step', default=[])
 
@@ -1788,12 +2009,10 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
             # The last run may have failed before all enabled steps were
             # completed, select the last step done
             if step.plan is None:
-                raise tmt.utils.GeneralError(
-                    f"Plan for {step.name} is not set.")
+                raise tmt.utils.GeneralError(f"Plan for {step.name} is not set.")
             assert step.plan.my_run is not None  # narrow type
             if step.plan.my_run.opt('last'):
-                steps: list[Step] = [
-                    s for s in step.plan.steps() if s.status() == 'done']
+                steps: list[Step] = [s for s in step.plan.steps() if s.status() == 'done']
                 login_during = steps[-1] if steps else None
             # Default to the last enabled step if no completed step found
             if login_during is None:
@@ -1818,8 +2037,7 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
             except ValueError:
                 # Convert 'start' and 'end' aliases
                 try:
-                    phase = cast(dict[str, int],
-                                 {'start': PHASE_START, 'end': PHASE_END})[phase]
+                    phase = cast(dict[str, int], {'start': PHASE_START, 'end': PHASE_END})[phase]
                 except KeyError:
                     raise tmt.utils.GeneralError(f"Invalid phase '{phase}'.")
             # Store the phase for given step
@@ -1834,31 +2052,53 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
 
 
 class Reboot(Action):
-    """ Reboot guest """
+    """
+    Reboot guest
+    """
 
     # True if reboot enabled
     _enabled: bool = False
 
     def __init__(self, *, step: Step, order: int, logger: tmt.log.Logger) -> None:
-        """ Initialize relations, store the reboot order """
+        """
+        Initialize relations, store the reboot order
+        """
+
         super().__init__(logger=logger, parent=step, name='reboot', order=order)
 
     @classmethod
     def command(
-            cls,
-            method_class: Optional[Method] = None,
-            usage: Optional[str] = None) -> click.Command:
-        """ Create the reboot command """
+        cls,
+        method_class: Optional[Method] = None,
+        usage: Optional[str] = None,
+    ) -> click.Command:
+        """
+        Create the reboot command
+        """
+
         @click.command()
         @click.pass_context
         @option(
-            '-s', '--step', metavar='STEP[:PHASE]', multiple=True,
-            help='Reboot machine during given phase of selected step(s).')
+            '-s',
+            '--step',
+            metavar='STEP[:PHASE]',
+            multiple=True,
+            help='Reboot machine during given phase of selected step(s).',
+        )
         @option(
-            '--hard', is_flag=True,
-            help='Hard reboot of the machine. Unsaved data may be lost.')
+            '--hard', is_flag=True, help='Hard reboot of the machine. Unsaved data may be lost.'
+        )
+        @option(
+            '--command',
+            type=str,
+            default=str(DEFAULT_REBOOT_COMMAND),
+            help='A command to run on the guest to trigger the reboot.',
+        )
         def reboot(context: 'tmt.cli.Context', **kwargs: Any) -> None:
-            """ Reboot the guest. """
+            """
+            Reboot the guest.
+            """
+
             Reboot.store_cli_invocation(context)
             Reboot._enabled = True
 
@@ -1866,25 +2106,35 @@ class Reboot(Action):
 
     @classmethod
     def plugins(cls, step: Step) -> list['Reboot']:
-        """ Return list of reboot instances for given step """
+        """
+        Return list of reboot instances for given step
+        """
+
         if not Reboot._enabled:
             return []
-        return [Reboot(logger=step._logger.descend(), step=step, order=phase)
-                for phase in cls.phases(step)]
+        return [
+            Reboot(logger=step._logger.descend(), step=step, order=phase)
+            for phase in cls.phases(step)
+        ]
 
     def go(self) -> None:
-        """ Reboot the guest(s) """
+        """
+        Reboot the guest(s)
+        """
+
         self.info('reboot', 'Rebooting guest', color='yellow')
         assert isinstance(self.parent, Step)
         assert hasattr(self.parent, 'plan')
         assert self.parent.plan is not None
-        for guest in self.parent.plan.provision.guests():
-            guest.reboot(hard=self.opt('hard'))
+        for guest in self.parent.plan.provision.ready_guests:
+            guest.reboot(hard=self.opt('hard'), command=tmt.utils.ShellScript(self.opt('command')))
         self.info('reboot', 'Reboot finished', color='yellow')
 
 
 class Login(Action):
-    """ Log into the guest """
+    """
+    Log into the guest
+    """
 
     # TODO: remove when Step becomes Generic (#1372)
     # Change typing of inherited attr
@@ -1894,34 +2144,56 @@ class Login(Action):
     _enabled: bool = False
 
     def __init__(self, *, step: Step, order: int, logger: tmt.log.Logger) -> None:
-        """ Initialize relations, store the login order """
+        """
+        Initialize relations, store the login order
+        """
+
         super().__init__(logger=logger, parent=step, name='login', order=order)
 
     @classmethod
     def command(
-            cls,
-            method_class: Optional[Method] = None,
-            usage: Optional[str] = None) -> click.Command:
-        """ Create the login command """
+        cls,
+        method_class: Optional[Method] = None,
+        usage: Optional[str] = None,
+    ) -> click.Command:
+        """
+        Create the login command
+        """
+
         # Avoid circular imports
         from tmt.result import ResultOutcome
 
         @click.command()
         @click.pass_context
         @option(
-            '-s', '--step', metavar='STEP[:PHASE]', multiple=True,
-            help='Log in during given phase of selected step(s).')
+            '-s',
+            '--step',
+            metavar='STEP[:PHASE]',
+            multiple=True,
+            help='Log in during given phase of selected step(s).',
+        )
         @option(
-            '-w', '--when', metavar='RESULT', multiple=True,
+            '-w',
+            '--when',
+            metavar='RESULT',
+            multiple=True,
             choices=[m.value for m in ResultOutcome.__members__.values()],
-            help='Log in if a test finished with given result(s).')
+            help='Log in if a test finished with given result(s).',
+        )
         @option(
-            '-c', '--command', metavar='COMMAND',
-            multiple=True, default=[DEFAULT_LOGIN_COMMAND],
-            help="Run given command(s). Default is 'bash'.")
+            '-c',
+            '--command',
+            metavar='COMMAND',
+            multiple=True,
+            default=[DEFAULT_LOGIN_COMMAND],
+            help="Run given command(s). Default is 'bash'.",
+        )
         @option(
-            '-t', '--test', is_flag=True,
-            help='Log into the guest after each executed test in the execute phase.')
+            '-t',
+            '--test',
+            is_flag=True,
+            help='Log into the guest after each executed test in the execute phase.',
+        )
         def login(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             """
             Provide user with an interactive shell on the guest.
@@ -1948,6 +2220,7 @@ class Login(Action):
             the tests finished with given result (pass, info, fail,
             warn, error).
             """
+
             Login.store_cli_invocation(context)
             Login._enabled = True
 
@@ -1955,24 +2228,37 @@ class Login(Action):
 
     @classmethod
     def plugins(cls, step: Step) -> list['Login']:
-        """ Return list of login instances for given step """
+        """
+        Return list of login instances for given step
+        """
+
         if not Login._enabled:
             return []
-        return [Login(logger=step._logger.descend(), step=step, order=phase)
-                for phase in cls.phases(step)]
+        return [
+            Login(logger=step._logger.descend(), step=step, order=phase)
+            for phase in cls.phases(step)
+        ]
 
     def go(self, force: bool = False) -> None:
-        """ Login to the guest(s) """
+        """
+        Login to the guest(s)
+        """
 
         if force or self._enabled_by_results(self.parent.plan.execute.results()):
             self._login()
 
     def _enabled_by_results(self, results: list['tmt.base.Result']) -> bool:
-        """ Verify possible test result condition """
+        """
+        Verify possible test result condition
+        """
+
         # Avoid circular imports
         from tmt.result import ResultOutcome
-        expected_results: Optional[list[ResultOutcome]] = [ResultOutcome.from_spec(
-            raw_expected_result) for raw_expected_result in self.opt('when', [])]
+
+        expected_results: Optional[list[ResultOutcome]] = [
+            ResultOutcome.from_spec(raw_expected_result)
+            for raw_expected_result in self.opt('when', [])
+        ]
 
         # Return True by default -> no expected results
         if not expected_results:
@@ -1987,15 +2273,20 @@ class Login(Action):
             return False
 
     def _login(
-            self,
-            cwd: Optional[Path] = None,
-            env: Optional[tmt.utils.Environment] = None) -> None:
-        """ Run the interactive command """
+        self,
+        cwd: Optional[Path] = None,
+        env: Optional[tmt.utils.Environment] = None,
+    ) -> None:
+        """
+        Run the interactive command
+        """
+
         scripts = [
             tmt.utils.ShellScript(script)
-            for script in self.opt('command', (DEFAULT_LOGIN_COMMAND,))]
+            for script in self.opt('command', (DEFAULT_LOGIN_COMMAND,))
+        ]
         self.info('login', 'Starting interactive shell', color='yellow')
-        for guest in self.parent.plan.provision.guests():
+        for guest in self.parent.plan.provision.ready_guests:
             # Attempt to push the workdir to the guest
             try:
                 guest.push()
@@ -2004,14 +2295,18 @@ class Login(Action):
                     # current working directory
                     worktree = self.parent.plan.worktree
                     tests = self.parent.plan.discover.tests()
-                    test_path = tests[-1].path if tests else None
+                    test_path = tests[-1].test.path if tests else None
                     if test_path is None or worktree is None:
                         cwd = worktree
                     else:
                         try:
                             cwd = worktree.parent / "discover" / test_path.unrooted()
-                            guest.execute(tmt.utils.ShellScript("/bin/true"),
-                                          interactive=True, cwd=cwd, env=env)
+                            guest.execute(
+                                tmt.utils.ShellScript("/bin/true"),
+                                interactive=True,
+                                cwd=cwd,
+                                env=env,
+                            )
                         except RunError:
                             cwd = worktree
 
@@ -2030,18 +2325,24 @@ class Login(Action):
         self.info('login', 'Interactive shell finished', color='yellow')
 
     def after_test(
-            self,
-            result: 'tmt.base.Result',
-            cwd: Optional[Path] = None,
-            env: Optional[tmt.utils.Environment] = None) -> None:
-        """ Check and login after test execution """
+        self,
+        result: 'tmt.base.Result',
+        cwd: Optional[Path] = None,
+        env: Optional[tmt.utils.Environment] = None,
+    ) -> None:
+        """
+        Check and login after test execution
+        """
+
         if self._enabled_by_results([result]):
             self._login(cwd, env)
 
 
-@dataclasses.dataclass
+@container
 class GuestTopology(SerializableContainer):
-    """ Describes a guest in the topology of provisioned tmt guests """
+    """
+    Describes a guest in the topology of provisioned tmt guests
+    """
 
     name: str
     role: Optional[str]
@@ -2053,9 +2354,11 @@ class GuestTopology(SerializableContainer):
         self.hostname = guest.topology_address
 
 
-@dataclasses.dataclass(init=False)
+@container(init=False)
 class Topology(SerializableContainer):
-    """ Describes the topology of provisioned tmt guests """
+    """
+    Describes the topology of provisioned tmt guests
+    """
 
     guest: Optional[GuestTopology]
 
@@ -2082,9 +2385,8 @@ class Topology(SerializableContainer):
 
         self.role_names = list(roles.keys())
         self.roles = {
-            role: [guest.name for guest in role_guests]
-            for role, role_guests in roles.items()
-            }
+            role: [guest.name for guest in role_guests] for role, role_guests in roles.items()
+        }
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -2097,10 +2399,7 @@ class Topology(SerializableContainer):
         data = super().to_dict()
 
         data['guest'] = self.guest.to_dict() if self.guest else None
-        data['guests'] = {
-            guest_name: guest.to_dict() for guest_name, guest in self.guests.items()
-
-            }
+        data['guests'] = {guest_name: guest.to_dict() for guest_name, guest in self.guests.items()}
 
         return data
 
@@ -2146,51 +2445,38 @@ class Topology(SerializableContainer):
 
         lines: list[str] = []
 
-        def _emit_guest(guest: GuestTopology, variable: str,
-                        key: Optional[str] = None) -> list[str]:
+        def _emit_guest(
+            guest: GuestTopology, variable: str, key: Optional[str] = None
+        ) -> list[str]:
             return [
                 f'{variable}[{key or ""}name]="{guest.name}"',
                 f'{variable}[{key or ""}role]="{guest.role or ""}"',
-                f'{variable}[{key or ""}hostname]="{guest.hostname or ""}"'
-                ]
+                f'{variable}[{key or ""}hostname]="{guest.hostname or ""}"',
+            ]
 
         if self.guest:
-            lines += [
-                'declare -A TMT_GUEST',
-                *_emit_guest(self.guest, 'TMT_GUEST'),
-                ''
-                ]
+            lines += ['declare -A TMT_GUEST', *_emit_guest(self.guest, 'TMT_GUEST'), '']
 
-        lines += [
-            f'TMT_GUEST_NAMES="{" ".join(self.guest_names)}"',
-            '',
-            'declare -A TMT_GUESTS'
-            ]
+        lines += [f'TMT_GUEST_NAMES="{" ".join(self.guest_names)}"', '', 'declare -A TMT_GUESTS']
 
         for guest_info in self.guests.values():
             lines += _emit_guest(guest_info, 'TMT_GUESTS', key=f'{guest_info.name}.')
 
-        lines += [
-            '',
-            f'TMT_ROLE_NAMES="{" ".join(self.role_names)}"',
-            '',
-            'declare -A TMT_ROLES'
-            ]
+        lines += ['', f'TMT_ROLE_NAMES="{" ".join(self.role_names)}"', '', 'declare -A TMT_ROLES']
 
         for role, guest_names in self.roles.items():
-            lines += [
-                f'TMT_ROLES[{role}]="{" ".join(guest_names)}"'
-                ]
+            lines += [f'TMT_ROLES[{role}]="{" ".join(guest_names)}"']
 
         filepath.write_text("\n".join(lines))
 
         return filepath
 
     def save(
-            self,
-            *,
-            dirpath: Path,
-            filename_base: Optional[Path] = None) -> list[Path]:
+        self,
+        *,
+        dirpath: Path,
+        filename_base: Optional[Path] = None,
+    ) -> list[Path]:
         """
         Save the topology in files.
 
@@ -2202,20 +2488,24 @@ class Topology(SerializableContainer):
 
         return [
             self.save_yaml(
-                dirpath,
-                filename=Path(f'{filename_base}.yaml') if filename_base else None),
+                dirpath, filename=Path(f'{filename_base}.yaml') if filename_base else None
+            ),
             self.save_bash(
-                dirpath,
-                filename=Path(f'{filename_base}.sh') if filename_base else None)]
+                dirpath, filename=Path(f'{filename_base}.sh') if filename_base else None
+            ),
+        ]
 
     def push(
-            self,
-            *,
-            dirpath: Path,
-            guest: 'Guest',
-            filename_base: Optional[Path] = None,
-            logger: tmt.log.Logger) -> Environment:
-        """ Save and push topology to a given guest """
+        self,
+        *,
+        dirpath: Path,
+        guest: 'Guest',
+        filename_base: Optional[Path] = None,
+        logger: tmt.log.Logger,
+    ) -> Environment:
+        """
+        Save and push topology to a given guest
+        """
 
         topology_filepaths = self.save(dirpath=dirpath, filename_base=filename_base)
 
@@ -2227,7 +2517,8 @@ class Topology(SerializableContainer):
             guest.push(
                 source=filepath,
                 destination=filepath,
-                options=["-s", "-p", "--chmod=755"])
+                options=["-s", "-p", "--chmod=755"],
+            )
 
             if filepath.suffix == '.sh':
                 environment['TMT_TOPOLOGY_BASH'] = EnvVarValue(filepath)
@@ -2241,18 +2532,16 @@ class Topology(SerializableContainer):
         return environment
 
 
-@dataclasses.dataclass
+@container
 class ActionTask(tmt.queue.GuestlessTask[None]):
-    """ A task to run an action """
+    """
+    A task to run an action
+    """
 
     phase: Action
 
     # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
-    def __init__(
-            self,
-            logger: tmt.log.Logger,
-            phase: Action,
-            **kwargs: Any) -> None:
+    def __init__(self, logger: tmt.log.Logger, phase: Action, **kwargs: Any) -> None:
         super().__init__(logger, **kwargs)
 
         self.phase = phase
@@ -2265,20 +2554,25 @@ class ActionTask(tmt.queue.GuestlessTask[None]):
         self.phase.go()
 
 
-@dataclasses.dataclass
-class PluginTask(tmt.queue.MultiGuestTask[PluginReturnValueT],
-                 Generic[StepDataT, PluginReturnValueT]):
-    """ A task to run a phase on a given set of guests """
+@container
+class PluginTask(
+    tmt.queue.MultiGuestTask[PluginReturnValueT],
+    Generic[StepDataT, PluginReturnValueT],
+):
+    """
+    A task to run a phase on a given set of guests
+    """
 
     phase: Plugin[StepDataT, PluginReturnValueT]
 
     # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
     def __init__(
-            self,
-            logger: tmt.log.Logger,
-            guests: list['Guest'],
-            phase: Plugin[StepDataT, PluginReturnValueT],
-            **kwargs: Any) -> None:
+        self,
+        logger: tmt.log.Logger,
+        guests: list['Guest'],
+        phase: Plugin[StepDataT, PluginReturnValueT],
+        **kwargs: Any,
+    ) -> None:
         super().__init__(logger, guests, **kwargs)
 
         self.phase = phase
@@ -2291,7 +2585,12 @@ class PluginTask(tmt.queue.MultiGuestTask[PluginReturnValueT],
         # name, which is always the same, would be the name of the discover
         # phase it's supposed to process.
         if isinstance(self.phase, ExecutePlugin):
-            return self.phase.discover_phase or self.phase.discover.name
+            # mypy reports `self.phase` as `Never` type, probably some
+            # issue in how it's declared above.
+            return (
+                cast(ExecutePlugin[Any], self.phase).discover_phase
+                or cast(ExecutePlugin[Any], self.phase).discover.name
+            )
 
         return self.phase.name
 
@@ -2304,43 +2603,32 @@ class PluginTask(tmt.queue.MultiGuestTask[PluginReturnValueT],
 
 
 class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginReturnValueT]]]):
-    """ Queue class for running phases on guests """
+    """
+    Queue class for running phases on guests
+    """
 
-    def enqueue_action(
-            self,
-            *,
-            phase: Action) -> None:
-        self.enqueue_task(ActionTask(
-            logger=phase._logger,
-            phase=phase
-            ))
+    def enqueue_action(self, *, phase: Action) -> None:
+        self.enqueue_task(ActionTask(logger=phase._logger, phase=phase))
 
     def enqueue_plugin(
-            self,
-            *,
-            phase: Plugin[StepDataT, PluginReturnValueT],
-            guests: list['Guest']) -> None:
+        self, *, phase: Plugin[StepDataT, PluginReturnValueT], guests: list['Guest']
+    ) -> None:
         if not guests:
             raise tmt.utils.MetadataError(
-                f'No guests queued for phase "{phase}". A typo in "where" key?')
+                f'No guests queued for phase "{phase}". A typo in "where" key?'
+            )
 
-        self.enqueue_task(PluginTask(
-            logger=phase._logger,
-            guests=guests,
-            phase=phase
-            ))
+        self.enqueue_task(PluginTask(logger=phase._logger, guests=guests, phase=phase))
 
 
-@dataclasses.dataclass
+@container
 class PushTask(tmt.queue.MultiGuestTask[None]):
-    """ Task performing a workdir push to a guest """
+    """
+    Task performing a workdir push to a guest
+    """
 
     # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
-    def __init__(
-            self,
-            logger: tmt.log.Logger,
-            guests: list['Guest'],
-            **kwargs: Any) -> None:
+    def __init__(self, logger: tmt.log.Logger, guests: list['Guest'], **kwargs: Any) -> None:
         super().__init__(logger, guests, **kwargs)
 
     @property
@@ -2351,19 +2639,22 @@ class PushTask(tmt.queue.MultiGuestTask[None]):
         guest.push()
 
 
-@dataclasses.dataclass
+@container
 class PullTask(tmt.queue.MultiGuestTask[None]):
-    """ Task performing a workdir pull from a guest """
+    """
+    Task performing a workdir pull from a guest
+    """
 
     source: Optional[Path]
 
     # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
     def __init__(
-            self,
-            logger: tmt.log.Logger,
-            guests: list['Guest'],
-            source: Optional[Path] = None,
-            **kwargs: Any) -> None:
+        self,
+        logger: tmt.log.Logger,
+        guests: list['Guest'],
+        source: Optional[Path] = None,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(logger, guests, **kwargs)
 
         self.source = source
@@ -2380,10 +2671,11 @@ GuestSyncTaskT = TypeVar('GuestSyncTaskT', PushTask, PullTask)
 
 
 def sync_with_guests(
-        step: Step,
-        action: str,
-        task: GuestSyncTaskT,
-        logger: tmt.log.Logger) -> None:
+    step: Step,
+    action: str,
+    task: GuestSyncTaskT,
+    logger: tmt.log.Logger,
+) -> None:
     """
     Push and pull stuff from guests in a parallel manner.
 
@@ -2399,8 +2691,8 @@ def sync_with_guests(
     """
 
     queue: tmt.queue.Queue[GuestSyncTaskT] = tmt.queue.Queue(
-        action,
-        logger.descend(logger_name=action))
+        action, logger.descend(logger_name=action)
+    )
 
     queue.enqueue_task(task)
 
@@ -2416,8 +2708,9 @@ def sync_with_guests(
     if failed_actions:
         # TODO: needs a better message...
         # Shall be fixed with https://github.com/teemtee/tmt/pull/2094
-        raise tmt.utils.GeneralError(f'{step.__class__.__name__.lower()} step failed') \
-            from failed_actions[0].exc
+        raise tmt.utils.GeneralError(
+            f'{step.__class__.__name__.lower()} step failed'
+        ) from failed_actions[0].exc
 
 
 def safe_filename(template: str, phase: Phase, guest: 'Guest', **variables: Any) -> Path:
@@ -2445,7 +2738,7 @@ def safe_filename(template: str, phase: Phase, guest: 'Guest', **variables: Any)
     3. the phase name is included to avoid reuse of the filename by different
        phases. A plugin may be invoked by multiple phases, and it might use a
        "constant" name for the file. That would lead to the filename being
-       re-used by different plugin executions. Adding the phase name should
+       reused by different plugin executions. Adding the phase name should
        lower confusion: it would be immediately clear which phase used which
        filename, or whether a filename was or was not created by given phase.
 
@@ -2460,8 +2753,4 @@ def safe_filename(template: str, phase: Phase, guest: 'Guest', **variables: Any)
 
     template += '-{{ PHASE.safe_name }}-{{ GUEST.safe_name }}'
 
-    return Path(render_template(
-        template,
-        PHASE=phase,
-        GUEST=guest,
-        **variables))
+    return Path(render_template(template, PHASE=phase, GUEST=guest, **variables))

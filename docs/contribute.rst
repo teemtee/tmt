@@ -58,7 +58,7 @@ as something that will be pasted into release notes:
 Why should I care?
 
 * It helps others (and yourself) find relevant commits quickly.
-* The summary line will be re-used later (e.g. for rpm changelog).
+* The summary line will be reused later (e.g. for rpm changelog).
 * Some tools do not handle wrapping, so it is then hard to read.
 * You will make the maintainers happy to read beautiful commits :)
 
@@ -312,17 +312,17 @@ For example, the following images can be found:
 .. code-block::
 
     # Latest Alpine, with added Bash to simulate proper essential setup:
-    localhost/tmt/tests/container/alpine
+    localhost/tmt/container/test/alpine
 
     # Various CentOS releases:
-    localhost/tmt/tests/container/centos/7
-    localhost/tmt/tests/container/centos/stream9
+    localhost/tmt/container/test/centos/7
+    localhost/tmt/container/test/centos/stream9
 
     # Fedora rawhide, with dnf5 pre-installed:
-    localhost/tmt/tests/container/fedora/rawhide
+    localhost/tmt/container/test/fedora/rawhide
 
     # Same, but with password-less sudo set up:
-    localhost/tmt/tests/container/fedora/rawhide/unprivileged
+    localhost/tmt/container/test/fedora/rawhide/unprivileged
 
 __ https://ostreedev.github.io/ostree/
 
@@ -331,17 +331,17 @@ To build these images, run the following:
 .. code-block:: shell
 
     # Build all images...
-    make images-tests
+    make images/test
 
     # ... or just a single one:
-    make images-tests/tmt/tests/container/fedora/rawhide:latest
+    make images/test/tmt/container/test/fedora/rawhide:latest
 
 Tests that need to use various container images should trigger this
 command before running the actual test cases:
 
 .. code-block:: bash
 
-    rlRun "make -C images-tests"
+    rlRun "make -C images/test"
 
 To list built container images, run the following:
 
@@ -353,7 +353,7 @@ To remove these images from your local system, run the following:
 
 .. code-block:: shell
 
-    make clean-test-images
+    make clean/images/test
 
 
 .. _docs:
@@ -746,7 +746,7 @@ Handle manually what did not went well:
 __ https://github.com/teemtee/tmt/releases/
 __ https://tmt.readthedocs.io/en/stable/releases.html
 __ https://src.fedoraproject.org/rpms/tmt/pull-requests
-__ https://copr.fedorainfracloud.org/coprs/g/teemtee/tmt/builds/
+__ https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/builds/
 __ https://quay.io/repository/teemtee/tmt
 __ https://pypi.org/project/tmt/
 
@@ -766,3 +766,31 @@ fix needs to be released before the regular schedule:
 * Tag the commit and publish the release in the same way as for
   regular release
 * Create a pull request with the hotfix release notes changes
+
+
+Releaser
+------------------------------------------------------------------
+
+Taking care of a new ``tmt`` release is not just about performing
+the final steps described above. In this role you should shepherd
+the issues and pull requests like sheep so that they make it to
+the ``main`` branch by the proposed deadline. Here's a couple of
+recommendations which could help you to make the release process
+smooth and timely:
+
+* continually watch the issues & pull requests and gently push
+  them forward if any of them seems to get stuck
+* bring attention especially to those with the high priority, the
+  ``priority | must`` issues and pull requests should be finished
+  ideally one week before the release deadline
+* regularly check the pull request progress and highlight those
+  which are waiting for feedback on the review sessions
+* if there is anything not clear and needs discussion bring it to
+  the chat or raise the topic on the weekly sessions
+* do not hesitate to contact assignees directly, e.g. on the chat,
+  if there is no update for a longer time, consider also
+  reassigning the issue to another contributor if necessary
+* if there are pull requests ready for merging but not included in
+  the release, it might make sense to squeeze them in, to make the
+  development more fluent, just make sure they do not slow down
+  important issues

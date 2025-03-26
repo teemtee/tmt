@@ -1,4 +1,3 @@
-import dataclasses
 import os
 import subprocess
 import textwrap
@@ -14,9 +13,16 @@ import tmt.options
 import tmt.steps
 import tmt.steps.execute
 import tmt.utils
+from tmt.container import container, field
 from tmt.result import BaseResult, Result, ResultOutcome
 from tmt.steps import safe_filename
-from tmt.steps.execute import SCRIPTS, TEST_OUTPUT_FILENAME, TMT_REBOOT_SCRIPT, TestInvocation
+from tmt.steps.execute import (
+    SCRIPTS,
+    TEST_OUTPUT_FILENAME,
+    TMT_REBOOT_SCRIPT,
+    AbortExecute,
+    TestInvocation,
+)
 from tmt.steps.provision import Guest
 from tmt.utils import (
     Command,
@@ -25,10 +31,9 @@ from tmt.utils import (
     Path,
     ShellScript,
     Stopwatch,
-    field,
     format_duration,
     format_timestamp,
-    )
+)
 
 TEST_PIDFILE_FILENAME = 'tmt-test.pid'
 TEST_PIDFILE_LOCK_FILENAME = f'{TEST_PIDFILE_FILENAME}.lock'
@@ -51,32 +56,36 @@ def effective_pidfile_root() -> Path:
     return TEST_PIDFILE_ROOT
 
 
-#: A template for the shell wrapper in which the test script is
-#: saved.
-#:
-#: It is passed to :py:func:`tmt.utils.safe_filename`, but
-#: includes also test name and serial number to make it unique
-#: even among all test wrappers. See https://github.com/teemtee/tmt/issues/2997
-#: for issue motivating the inclusion, it seems to be a good idea
-#: to prevent accidental reuse in general.
-TEST_WRAPPER_FILENAME_TEMPLATE = \
-    'tmt-test-wrapper.sh-{{ INVOCATION.test.pathless_safe_name }}-{{ INVOCATION.test.serial_number }}'  # noqa: E501
-
-# tmt test wrapper is getting complex. Besides honoring the timeout
-# and interactivity request, it also must play nicely with reboots
-# and `tmt-reboot`. The wrapper must present consistent info on what
-# is the PID to kill from `tmt-reboot`, and where to save additional
-# reboot info.
 #
-# For the duration of the test, the wrapper creates so-called "test
-# pidfile". The pidfile contains test wrapper PID and path to the
+# Shell wrappers for the test script.
+#
+# tmt must make sure running a test must allow for multiple external
+# factors: the test timeout, interactivity, reboots and `tmt-reboot`
+# invocations. tmt must present consistent info on what is the PID to
+# kill from `tmt-reboot`, and where to save additional reboot info.
+#
+# To achieve these goals, tmt uses two wrappers, the inner and the outer
+# one. The inner one wraps the actual test script as defined in test
+# metadata, the outer one then runs the inner wrapper while performing
+# other necessary steps. tmt invokes the outer wrapper which then
+# invokes the inner wrapper which then invokes the test script.
+#
+# The inner wrapper exists to give tmt a single command to run to invoke
+# the test. Test script may be a single command, but also a multiline,
+# complicated shell script. To avoid issues with quotes and escaping
+# things here and there, tmt saves the test script into the inner
+# wrapper, and then the outer wrapper can work with just a single
+# executable shell script.
+#
+# For the duration of the test, the outer wrapper creates so-called
+# "test pidfile". The pidfile contains outer wrapper PID and path to the
 # reboot-request file corresponding to the test being run. All actions
 # against the pidfile must be taken while holding the pidfile lock,
 # to serialize access between the wrapper and `tmt-reboot`. The file
 # might be missing, that's allowed, but if it exists, it must contain
 # correct info.
 #
-# Before quitting the wrapper, the pidfile is removed. There seems
+# Before quitting the outer wrapper, the pidfile is removed. There seems
 # to be an apparent race condition: test quits -> `tmt-reboot` is
 # called from a parallel session, grabs a pidfile lock, inspects
 # pidfile, updates reboot-request, and sends signal to designed PID
@@ -99,7 +108,7 @@ TEST_WRAPPER_FILENAME_TEMPLATE = \
 # tty is required (#2381), the tty can be kept on request with
 # the `tty: true` test attribute.
 #
-# The wrapper script handles 3 execution modes for REMOTE_COMMAND:
+# The outer wrapper handles 3 execution modes for the test command:
 #
 # * In `tmt` interactive mode, stdin and stdout are unhandled, it is expected
 #   user interacts with the executed command.
@@ -110,46 +119,123 @@ TEST_WRAPPER_FILENAME_TEMPLATE = \
 # * In non-interactive mode with a tty, stdin is available to the tests
 #   and simulation of tty not available for output is not run.
 #
-TEST_WRAPPER_TEMPLATE = jinja2.Template(textwrap.dedent("""
-if ! grep -q "{{ GUEST_SCRIPTS_PATH }}" <<< "${PATH}"; then
-    export PATH={{ GUEST_SCRIPTS_PATH }}:${PATH}
-fi
+
+#: A template for the inner test wrapper filename.
+#:
+#: .. note::
+#:
+#:    It is passed to :py:func:`tmt.utils.safe_filename`, but includes
+#:    also test name and serial number to make it unique even among all
+#:    test wrappers. See #2997 for issue motivating the inclusion, it
+#:    seems to be a good idea to prevent accidental reuse in general.
+TEST_INNER_WRAPPER_FILENAME_TEMPLATE = 'tmt-test-wrapper-inner.sh-{{ INVOCATION.test.pathless_safe_name }}-{{ INVOCATION.test.serial_number }}'  # noqa: E501
+
+#: A template for the outer test wrapper filename.
+#:
+#: .. note::
+#:
+#:    It is passed to :py:func:`tmt.utils.safe_filename`, but includes
+#:    also test name and serial number to make it unique even among all
+#:    test wrappers. See #2997 for issue motivating the inclusion, it
+#:    seems to be a good idea to prevent accidental reuse in general.
+TEST_OUTER_WRAPPER_FILENAME_TEMPLATE = 'tmt-test-wrapper-outer.sh-{{ INVOCATION.test.pathless_safe_name }}-{{ INVOCATION.test.serial_number }}'  # noqa: E501
+
+#: A template for the inner test wrapper which invokes the test script.
+TEST_INNER_WRAPPER_TEMPLATE = jinja2.Template(
+    textwrap.dedent("""
+{{ INVOCATION.test.test_framework.get_test_command(INVOCATION, LOGGER) }}
+""")
+)
+
+#: A template for the outer test wrapper which handles most of the
+#: orchestration and invokes the inner wrapper.
+TEST_OUTER_WRAPPER_TEMPLATE = jinja2.Template(
+    textwrap.dedent(
+        """
+{% macro log_to_dmesg(msg) %}
+    {%- if not INVOCATION.guest.facts.is_superuser %}
+        {%- if INVOCATION.guest.become %}
+# Logging test into kernel log
+sudo bash -c "echo \\\"{{ msg }}\\\" > /dev/kmsg"
+        {%- else %}
+# Not logging into kernel log: not a superuser, 'become' not enabled
+# echo \"{{ msg }}\" > /dev/kmsg
+        {%- endif %}
+    {%- else %}
+# Logging test into kernel log
+echo "{{ msg }}" > /dev/kmsg
+    {%- endif %}
+{% endmacro %}
 
 {% macro enter() %}
+# Updating the tmt test pid file
+mkdir -p "$(dirname $TMT_TEST_PIDFILE_LOCK)"
 flock "$TMT_TEST_PIDFILE_LOCK" -c "echo '${test_pid} ${TMT_REBOOT_REQUEST}' > ${TMT_TEST_PIDFILE}" || exit 122
+
+{{
+    log_to_dmesg(
+      "Running test '%s' (serial number %d) with reboot count %d and test restart count %d. (Be aware the test name is sanitized!)"
+      | format(INVOCATION.test.safe_name, INVOCATION.test.serial_number, INVOCATION._reboot_count, INVOCATION._restart_count)
+    )
+}}
 {%- endmacro %}
 
 {% macro exit() %}
+{{
+    log_to_dmesg(
+        "Leaving test '%s' (serial number %d). (Be aware the test name is sanitized!)"
+        | format(INVOCATION.test.safe_name, INVOCATION.test.serial_number)
+    )
+}}
+
+# Updating the tmt test pid file
+mkdir -p "$(dirname $TMT_TEST_PIDFILE_LOCK)"
 flock "$TMT_TEST_PIDFILE_LOCK" -c "rm -f ${TMT_TEST_PIDFILE}" || exit 123
 {%- endmacro %}
 
+# Make sure guest scripts path is searched by shell
+if ! grep -q "{{ INVOCATION.guest.scripts_path }}" <<< "${PATH}"; then
+    export PATH={{ INVOCATION.guest.scripts_path }}:${PATH}
+fi
+
 [ ! -z "$TMT_DEBUG" ] && set -x
 
-test_pid="$$";
+test_pid="$$"
 
-mkdir -p "$(dirname $TMT_TEST_PIDFILE_LOCK)"
+{% if INVOCATION.phase.data.interactive %}
+{{ enter() }}
 
-{% if INTERACTIVE %}
-    {{ enter() }};
-    {{ REMOTE_COMMAND }};
-    _exit_code="$?";
-    {{ exit() }};
-{% elif TTY %}
-    set -o pipefail;
-    {{ enter() }};
-    {{ REMOTE_COMMAND }} 2>&1;
-    _exit_code="$?";
-    {{ exit () }};
+{{ TEST_COMMAND }}
+_exit_code="$?"
+
+{{ exit() }}
+
+{% elif INVOCATION.test.tty %}
+set -o pipefail
+
+{{ enter() }}
+
+{{ TEST_COMMAND }} 2>&1
+_exit_code="$?"
+
+{{ exit () }}
+
 {% else %}
-    set -o pipefail;
-    {{ enter() }};
-    {{ REMOTE_COMMAND }} </dev/null |& cat;
-    _exit_code="$?";
-    {{ exit () }};
+set -o pipefail
+
+{{ enter() }}
+
+{{ TEST_COMMAND }} </dev/null |& cat
+_exit_code="$?"
+
+{{ exit () }}
 {% endif %}
-exit $_exit_code;
+
+# Return the original exit code of the test script
+exit $_exit_code
 """  # noqa: E501
-))
+    )
+)
 
 
 class UpdatableMessage(tmt.utils.UpdatableMessage):
@@ -167,7 +253,8 @@ class UpdatableMessage(tmt.utils.UpdatableMessage):
             enabled=not plugin.verbosity_level and not plugin.data.no_progress_bar,
             indent_level=plugin._level(),
             key_color='cyan',
-            clear_on_exit=True)
+            clear_on_exit=True,
+        )
 
         self.plugin = plugin
         self.debug_level = plugin.debug_level
@@ -187,17 +274,30 @@ class UpdatableMessage(tmt.utils.UpdatableMessage):
             self._update_message_area(message)
 
 
-@dataclasses.dataclass
+@container
 class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
     script: list[ShellScript] = field(
         default_factory=list,
         option=('-s', '--script'),
         metavar='SCRIPT',
         multiple=True,
-        help='Shell script to be executed as a test.',
+        help="""
+            Execute arbitrary shell commands and check their exit
+            code which is used as a test result. The ``script`` field
+            is provided to cover simple test use cases only and must
+            not be combined with the :ref:`/spec/plans/discover` step
+            which is more suitable for more complex test scenarios.
+
+            Default shell options are applied to the script, see
+            :ref:`/spec/tests/test` for more details. The default
+            :ref:`/spec/tests/duration` for tests defined directly
+            under the execute step is ``1h``. Use the ``duration``
+            attribute to modify the default limit.
+            """,
         normalize=tmt.utils.normalize_shell_script_list,
         serialize=lambda scripts: [str(script) for script in scripts],
-        unserialize=lambda serialized: [ShellScript(script) for script in serialized])
+        unserialize=lambda serialized: [ShellScript(script) for script in serialized],
+    )
     interactive: bool = field(
         default=False,
         option=('-i', '--interactive'),
@@ -207,12 +307,14 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
              shared with tmt itself. This allows input to be passed to tests
              via stdin, e.g. responding to password prompts. Test output in this
              mode is not captured, and ``duration`` has no effect.
-             """)
+             """,
+    )
     no_progress_bar: bool = field(
         default=False,
         option='--no-progress-bar',
         is_flag=True,
-        help='Disable interactive progress bar showing the current test.')
+        help='Disable interactive progress bar showing the current test.',
+    )
 
     # ignore[override] & cast: two base classes define to_spec(), with conflicting
     # formal types.
@@ -226,12 +328,51 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
 @tmt.steps.provides_method('tmt')
 class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
     """
-    Use the internal tmt executor to execute tests
+    Use the internal tmt executor to execute tests.
 
-    The internal tmt executor runs tests on the guest one by one, shows
-    testing progress and supports interactive debugging as well. Test
-    result is based on the script exit code (for shell tests) or the
-    results file (for beakerlib tests).
+    The internal tmt executor runs tests on the guest one by one directly
+    from the tmt code which shows testing :ref:`/stories/cli/steps/execute/progress`
+    and supports :ref:`/stories/cli/steps/execute/interactive` debugging as well.
+    This is the default execute step implementation. Test result is based on the
+    script exit code (for shell tests) or the results file (for beakerlib tests).
+
+    The executor provides the following shell scripts which can be used by the tests
+    for certain operations.
+
+    ``tmt-file-submit`` - archive the given file in the tmt test data directory.
+    See the :ref:`/stories/features/report-log` section for more details.
+
+    ``tmt-reboot`` - soft reboot the machine from inside the test. After reboot
+    the execution starts from the test which rebooted the machine.
+    An environment variable ``TMT_REBOOT_COUNT`` is provided which
+    the test can use to handle the reboot. The variable holds the
+    number of reboots performed by the test. For more information
+    see the :ref:`/stories/features/reboot` feature documentation.
+
+    ``tmt-report-result`` - generate a result report file from inside the test.
+    Can be called multiple times by the test. The generated report
+    file will be overwritten if a higher hierarchical result is
+    reported by the test. The hierarchy is as follows:
+    SKIP, PASS, WARN, FAIL. For more information see the
+    :ref:`/stories/features/report-result` feature documentation.
+
+    ``tmt-abort`` - generate an abort file from inside the test. This will
+    set the current test result to failed and terminate
+    the execution of subsequent tests. For more information see the
+    :ref:`/stories/features/abort` feature documentation.
+
+    The scripts are hosted by default in the ``/usr/local/bin`` directory, except
+    for guests using ``rpm-ostree``, where ``/var/lib/tmt/scripts`` is used.
+    The directory can be forced using the ``TMT_SCRIPTS_DIR`` environment variable.
+    Note that for guests using ``rpm-ostree``, the directory is added to
+    executable paths using the system-wide ``/etc/profile.d/tmt.sh`` profile script.
+
+    .. warning::
+
+        Please be aware that for guests using ``rpm-ostree``
+        the provided scripts will only be available in a shell that
+        loads the profile scripts. This is the default for
+        ``bash``-like shells, but might not work for others.
     """
 
     _data_class = ExecuteInternalData
@@ -243,12 +384,15 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         self.scripts = SCRIPTS
 
     def _test_environment(
-            self,
-            *,
-            invocation: TestInvocation,
-            extra_environment: Optional[Environment] = None,
-            logger: tmt.log.Logger) -> Environment:
-        """ Return test environment """
+        self,
+        *,
+        invocation: TestInvocation,
+        extra_environment: Optional[Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> Environment:
+        """
+        Return test environment
+        """
 
         extra_environment = extra_environment or Environment()
 
@@ -259,18 +403,23 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         assert self.parent.plan.my_run is not None
 
         environment['TMT_TEST_PIDFILE'] = EnvVarValue(
-            effective_pidfile_root() / TEST_PIDFILE_FILENAME)
+            effective_pidfile_root() / TEST_PIDFILE_FILENAME
+        )
         environment['TMT_TEST_PIDFILE_LOCK'] = EnvVarValue(
-            effective_pidfile_root() / TEST_PIDFILE_LOCK_FILENAME)
+            effective_pidfile_root() / TEST_PIDFILE_LOCK_FILENAME
+        )
         environment["TMT_TEST_NAME"] = EnvVarValue(invocation.test.name)
         environment["TMT_TEST_DATA"] = EnvVarValue(invocation.test_data_path)
         environment['TMT_TEST_SERIAL_NUMBER'] = EnvVarValue(str(invocation.test.serial_number))
         environment['TMT_TEST_ITERATION_ID'] = EnvVarValue(
-            f"{self.parent.plan.my_run.unique_id}-{invocation.test.serial_number}")
+            f"{self.parent.plan.my_run.unique_id}-{invocation.test.serial_number}"
+        )
         environment["TMT_TEST_METADATA"] = EnvVarValue(
-            invocation.path / tmt.steps.execute.TEST_METADATA_FILENAME)
+            invocation.path / tmt.steps.execute.TEST_METADATA_FILENAME
+        )
         environment["TMT_REBOOT_REQUEST"] = EnvVarValue(
-            invocation.test_data_path / TMT_REBOOT_SCRIPT.created_file)
+            invocation.test_data_path / TMT_REBOOT_SCRIPT.created_file
+        )
         # Set all supported reboot variables
         for reboot_variable in TMT_REBOOT_SCRIPT.related_variables:
             environment[reboot_variable] = EnvVarValue(str(invocation._reboot_count))
@@ -278,29 +427,36 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Add variables the framework wants to expose
         environment.update(
-            invocation.test.test_framework.get_environment_variables(
-                invocation, logger))
+            invocation.test.test_framework.get_environment_variables(invocation, logger)
+        )
 
         return environment
 
     def _test_output_logger(
-            self,
-            key: str,
-            value: Optional[str] = None,
-            color: Optional[str] = None,
-            shift: int = 2,
-            level: int = 3,
-            topic: Optional[tmt.log.Topic] = None) -> None:
-        """ Custom logger for test output with shift 2 and level 3 defaults """
+        self,
+        key: str,
+        value: Optional[str] = None,
+        color: Optional[str] = None,
+        shift: int = 2,
+        level: int = 3,
+        topic: Optional[tmt.log.Topic] = None,
+    ) -> None:
+        """
+        Custom logger for test output with shift 2 and level 3 defaults
+        """
+
         self.verbose(key=key, value=value, color=color, shift=shift, level=level)
 
     def execute(
-            self,
-            *,
-            invocation: TestInvocation,
-            extra_environment: Optional[Environment] = None,
-            logger: tmt.log.Logger) -> list[Result]:
-        """ Run test on the guest """
+        self,
+        *,
+        invocation: TestInvocation,
+        extra_environment: Optional[Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[Result]:
+        """
+        Run test on the guest
+        """
 
         test, guest = invocation.test, invocation.guest
 
@@ -314,83 +470,87 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Create data directory, prepare test environment
         environment = self._test_environment(
-            invocation=invocation,
-            extra_environment=extra_environment,
-            logger=logger)
+            invocation=invocation, extra_environment=extra_environment, logger=logger
+        )
 
-        # tmt wrapper filename *must* be "unique" - the plugin might be handling
-        # the same `discover` phase for different guests at the same time, and
-        # must keep them isolated. The wrapper script, while being prepared, is
-        # a shared global state, and we must prevent race conditions.
-        test_wrapper_filename = safe_filename(
-            TEST_WRAPPER_FILENAME_TEMPLATE, self, guest, INVOCATION=invocation)
-        test_wrapper_filepath = workdir / test_wrapper_filename
+        def _prepare_test_wrapper(
+            label: str, filename_template: str, template: jinja2.Template, **variables: Any
+        ) -> Path:
+            # tmt wrapper filenames *must* be "unique" - the plugin might be handling
+            # the same `discover` phase for different guests at the same time, and
+            # must keep them isolated. The wrapper scripts, while being prepared, are
+            # a shared global state, and we must prevent race conditions.
+            test_wrapper_filename = safe_filename(
+                filename_template, self, guest, INVOCATION=invocation
+            )
 
-        logger.debug('test wrapper', test_wrapper_filepath)
+            test_wrapper_filepath = workdir / test_wrapper_filename
+            logger.debug(f'test {label} wrapper', test_wrapper_filepath)
 
-        # Prepare the test command
-        test_command = test.test_framework.get_test_command(invocation, logger)
-        self.debug('Test script', test_command, level=3)
+            test_wrapper = ShellScript(
+                template.render(LOGGER=logger, INVOCATION=invocation, **variables).strip()
+            )
+            self.debug(f'Test {label} wrapper', test_wrapper, level=3)
 
-        # Prepare the wrapper, push to guest
-        self.write(test_wrapper_filepath, str(test_command), 'w')
-        test_wrapper_filepath.chmod(0o755)
-        guest.push(
-            source=test_wrapper_filepath,
-            destination=test_wrapper_filepath,
-            options=["-s", "-p", "--chmod=755"])
+            self.write(test_wrapper_filepath, str(test_wrapper), 'w')
+            test_wrapper_filepath.chmod(0o755)
+            guest.push(
+                source=test_wrapper_filepath,
+                destination=test_wrapper_filepath,
+                options=["-s", "-p", "--chmod=755"],
+            )
+
+            return test_wrapper_filepath
+
+        # The inner test wrapper envelops the test script...
+        test_inner_wrapper_filepath = _prepare_test_wrapper(
+            'inner', TEST_INNER_WRAPPER_FILENAME_TEMPLATE, TEST_INNER_WRAPPER_TEMPLATE
+        )
+
+        # ... and it's a command the outer plugin invoke execute.
+        test_outer_wrapper_filepath = _prepare_test_wrapper(
+            'outer',
+            TEST_OUTER_WRAPPER_FILENAME_TEMPLATE,
+            TEST_OUTER_WRAPPER_TEMPLATE,
+            TEST_COMMAND=ShellScript(f'./{test_inner_wrapper_filepath.name}'),
+        )
 
         # Create topology files
-        topology = tmt.steps.Topology(self.step.plan.provision.guests())
+        topology = tmt.steps.Topology(self.step.plan.provision.ready_guests)
         topology.guest = tmt.steps.GuestTopology(guest)
 
-        environment.update(topology.push(
-            dirpath=invocation.path,
-            guest=guest,
-            logger=logger))
+        environment.update(topology.push(dirpath=invocation.path, guest=guest, logger=logger))
 
-        command: str
-        if guest.become and not guest.facts.is_superuser:
-            command = f'sudo -E ./{test_wrapper_filename}'
-        else:
-            command = f'./{test_wrapper_filename}'
         # Prepare the actual remote command
-        remote_command = ShellScript(TEST_WRAPPER_TEMPLATE.render(
-            INTERACTIVE=self.data.interactive,
-            TTY=test.tty,
-            REMOTE_COMMAND=ShellScript(command),
-            GUEST_SCRIPTS_PATH=guest.scripts_path
-            ).strip())
+        remote_command: ShellScript
+        if guest.become and not guest.facts.is_superuser:
+            remote_command = ShellScript(f'sudo -E ./{test_outer_wrapper_filepath.name}')
+        else:
+            remote_command = ShellScript(f'./{test_outer_wrapper_filepath.name}')
 
         def _test_output_logger(
-                key: str,
-                value: Optional[str] = None,
-                color: Optional[str] = None,
-                shift: int = 2,
-                level: int = 3,
-                topic: Optional[tmt.log.Topic] = None) -> None:
+            key: str,
+            value: Optional[str] = None,
+            color: Optional[str] = None,
+            shift: int = 2,
+            level: int = 3,
+            topic: Optional[tmt.log.Topic] = None,
+        ) -> None:
             logger.verbose(
-                key=key,
-                value=value,
-                color=color,
-                shift=shift,
-                level=level,
-                topic=topic)
+                key=key, value=value, color=color, shift=shift, level=level, topic=topic
+            )
 
         def _save_process(
-                command: Command,
-                process: subprocess.Popen[bytes],
-                logger: tmt.log.Logger) -> None:
+            command: Command, process: subprocess.Popen[bytes], logger: tmt.log.Logger
+        ) -> None:
             with invocation.process_lock:
                 invocation.process = process
 
         # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
         # to use some reusable decorator.
         invocation.check_results = self.run_checks_before_test(
-            invocation=invocation,
-            environment=environment,
-            logger=logger
-            )
+            invocation=invocation, environment=environment, logger=logger
+        )
 
         # Execute the test, save the output and return code
         with Stopwatch() as timer:
@@ -401,13 +561,19 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             if self.data.interactive:
                 if test.duration:
                     logger.warning(
-                        'Ignoring requested duration, not supported in interactive mode.')
+                        'Ignoring requested duration, not supported in interactive mode.'
+                    )
 
+                timeout = None
+
+            elif self.data.ignore_duration:
+                logger.debug("Test duration is not effective due ignore-duration option.")
                 timeout = None
 
             else:
                 timeout = tmt.utils.duration_to_seconds(
-                    test.duration, tmt.base.DEFAULT_TEST_DURATION_L1)
+                    test.duration, tmt.base.DEFAULT_TEST_DURATION_L1
+                )
 
             try:
                 output = guest.execute(
@@ -421,7 +587,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     timeout=timeout,
                     on_process_start=_save_process,
                     test_session=True,
-                    friendly_command=str(test.test))
+                    friendly_command=str(test.test),
+                )
                 invocation.return_code = 0
                 stdout = output.stdout
             except tmt.utils.RunError as error:
@@ -442,9 +609,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Save the captured output. Do not let the follow-up pulls
         # overwrite it.
-        self.write(
-            invocation.path / TEST_OUTPUT_FILENAME,
-            stdout or '', mode='a', level=3)
+        self.write(invocation.path / TEST_OUTPUT_FILENAME, stdout or '', mode='a', level=3)
 
         # Fetch #1: we need logs and everything the test produced so we could
         # collect its results.
@@ -453,18 +618,18 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 source=invocation.path,
                 extend_options=[
                     *test.test_framework.get_pull_options(invocation, logger),
-                    '--exclude', str(invocation.path / TEST_OUTPUT_FILENAME)
-                    ])
+                    '--exclude',
+                    str(invocation.path / TEST_OUTPUT_FILENAME),
+                ],
+            )
             # Fetch plan data content as well in order to prevent
             # losing logs if the guest becomes later unresponsive.
             guest.pull(source=self.step.plan.data_directory)
 
         # Run after-test checks before extracting results
         invocation.check_results += self.run_checks_after_test(
-            invocation=invocation,
-            environment=environment,
-            logger=logger
-            )
+            invocation=invocation, environment=environment, logger=logger
+        )
 
         # Extract test results and store them in the invocation. Note
         # that these results will be overwritten with a fresh set of
@@ -478,8 +643,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 source=invocation.path,
                 extend_options=[
                     *test.test_framework.get_pull_options(invocation, logger),
-                    '--exclude', str(invocation.path / TEST_OUTPUT_FILENAME)
-                    ])
+                    '--exclude',
+                    str(invocation.path / TEST_OUTPUT_FILENAME),
+                ],
+            )
             # Fetch plan data content as well in order to prevent
             # losing logs if the guest becomes later unresponsive.
             guest.pull(source=self.step.plan.data_directory)
@@ -494,12 +661,16 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         return invocation.results
 
     def go(
-            self,
-            *,
-            guest: 'Guest',
-            environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> None:
-        """ Execute available tests """
+        self,
+        *,
+        guest: 'Guest',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> None:
+        """
+        Execute available tests
+        """
+
         super().go(guest=guest, environment=environment, logger=logger)
 
         # Nothing to do in dry mode
@@ -510,12 +681,15 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         self._run_tests(guest=guest, extra_environment=environment, logger=logger)
 
     def _run_tests(
-            self,
-            *,
-            guest: Guest,
-            extra_environment: Optional[Environment] = None,
-            logger: tmt.log.Logger) -> None:
-        """ Execute tests on provided guest """
+        self,
+        *,
+        guest: Guest,
+        extra_environment: Optional[Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> None:
+        """
+        Execute tests on provided guest
+        """
 
         # Prepare tests and helper scripts, check options
         test_invocations = self.prepare_tests(guest, logger)
@@ -529,6 +703,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # We cannot use enumerate here due to continue in the code
         index = 0
 
+        # TODO: plugin does not return any value. Results are exchanged
+        # via `self.results`, to signal abort we need a bigger gun. Once
+        # we get back to refactoring the plugin, this would turn into a
+        # better way of transporting "plugin outcome" back to the step.
+        abort_execute_exception: Optional[AbortExecute] = None
+
         with UpdatableMessage(self) as progress_bar:
             while index < len(test_invocations):
                 invocation = test_invocations[index]
@@ -537,13 +717,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
                 progress = f"{index + 1}/{len(test_invocations)}"
                 progress_bar.update(progress, test.name)
-                logger.verbose(
-                    'test', test.summary or test.name, color='cyan', shift=1, level=2)
+                logger.verbose('test', test.summary or test.name, color='cyan', shift=1, level=2)
 
                 self.execute(
-                    invocation=invocation,
-                    extra_environment=extra_environment,
-                    logger=logger)
+                    invocation=invocation, extra_environment=extra_environment, logger=logger
+                )
 
                 assert invocation.real_duration is not None  # narrow type
                 duration = click.style(invocation.real_duration, fg='cyan')
@@ -568,13 +746,13 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                             result.result = ResultOutcome.ERROR
                             result.note.append(
                                 'crashed too many times, '
-                                'you may want to set restart-max-count larger')
+                                'you may want to set restart-max-count larger'
+                            )
 
-                # Handle reboot, abort, exit-first
+                # Handle reboot
                 if invocation.reboot_requested:
                     # Output before the reboot
-                    logger.verbose(
-                        f"{duration} {test.name} [{progress}]", shift=shift)
+                    logger.verbose(f"{duration} {test.name} [{progress}]", shift=shift)
                     try:
                         if invocation.handle_reboot():
                             continue
@@ -589,6 +767,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                         result.note.append('aborted')
 
                 self._results.extend(invocation.results)
+                self.step.plan.execute.update_results(self.results())
+                self.step.plan.execute.save()
 
                 # If test duration information is missing, print 8 spaces to keep indentation
                 def _format_duration(result: BaseResult) -> str:
@@ -596,8 +776,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
                 for result in invocation.results:
                     logger.verbose(
-                        f"{_format_duration(result)} {result.show()} [{progress}]",
-                        shift=shift)
+                        f"{_format_duration(result)} {result.show()} [{progress}]", shift=shift
+                    )
 
                     for check_result in result.check:
                         # Indent the check one extra level, to make it clear it belongs to
@@ -607,19 +787,30 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                             f'{" " * tmt.utils.INDENT}'
                             f'{check_result.show()} '
                             f'({check_result.event.value} check)',
-                            shift=shift)
+                            shift=shift,
+                        )
 
-                if invocation.abort_requested or (
-                    self.data.exit_first and any(
-                        result.result not in (
-                            ResultOutcome.PASS,
-                            ResultOutcome.INFO) for result in invocation.results)):
-                    # Clear the progress bar before outputting
+                abort_execute = invocation.abort_requested or (
+                    self.data.exit_first
+                    and any(
+                        result.result in (ResultOutcome.FAIL, ResultOutcome.ERROR)
+                        for result in invocation.results
+                    )
+                )
+
+                if abort_execute:
+                    if invocation.abort_requested:
+                        abort_message = f'Test {test.name} aborted, stopping execution.'
+
+                    else:
+                        abort_message = f'Test {test.name} failed, stopping execution.'
+
+                    abort_execute_exception = AbortExecute(abort_message)
+
                     progress_bar.clear()
-                    what_happened = "aborted" if invocation.abort_requested else "failed"
-                    self.warn(
-                        f'Test {test.name} {what_happened}, stopping execution.')
+
                     break
+
                 index += 1
 
                 # Log into the guest after each executed test if "login
@@ -637,15 +828,22 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                         env=self._test_environment(
                             invocation=invocation,
                             extra_environment=extra_environment,
-                            logger=logger),
-                        )
+                            logger=logger,
+                        ),
+                    )
 
         # Pull artifacts created in the plan data directory
         self.debug("Pull the plan data directory.", level=2)
         guest.pull(source=self.step.plan.data_directory)
 
+        if abort_execute_exception:
+            raise abort_execute_exception
+
     def results(self) -> list[Result]:
-        """ Return test results """
+        """
+        Return test results
+        """
+
         return self._results
 
     def essential_requires(self) -> list[tmt.base.Dependency]:
@@ -658,6 +856,4 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         :returns: a list of requirements.
         """
 
-        return [
-            tmt.base.DependencySimple('/usr/bin/flock')
-            ]
+        return [tmt.base.DependencySimple('/usr/bin/flock')]

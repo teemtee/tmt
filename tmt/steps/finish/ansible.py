@@ -6,7 +6,8 @@ from tmt.steps.prepare.ansible import PrepareAnsible
 
 @tmt.steps.provides_method('ansible')
 class FinishAnsible(
-        tmt.steps.finish.FinishPlugin[tmt.steps.finish.FinishStepData], PrepareAnsible):
+    tmt.steps.finish.FinishPlugin[tmt.steps.finish.FinishStepData], PrepareAnsible
+):
     """
     Perform finishing tasks using ansible
 
@@ -47,7 +48,7 @@ class FinishAnsible(
     should happen if there are multiple configs. Default order is '50'.
     """
 
-    # We are re-using "prepare" step for "finish",
+    # We are reusing "prepare" step for "finish",
     # and they both have different expectations
     _data_class = tmt.steps.prepare.ansible.PrepareAnsibleData
 

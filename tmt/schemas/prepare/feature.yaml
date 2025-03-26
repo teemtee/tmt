@@ -25,6 +25,15 @@ properties:
       - enabled
       - disabled
 
+  profile:
+    type: string
+
+  fips:
+    type: string
+    enum:
+      - enabled
+      - disabled
+
   name:
     type: string
 

@@ -25,7 +25,8 @@ def report_fix(tmppath: Path, root_logger):
         logger=root_logger,
         step=step_mock,
         data=ReportJUnitData(name='x', how='junit', file=out_file_path),
-        workdir=tmppath / 'junit')
+        workdir=tmppath / 'junit',
+    )
     report.info = MagicMock()
 
     results = []
@@ -42,7 +43,9 @@ def report_fix(tmppath: Path, root_logger):
 # with Python 3.6, changing order or attributes from time to time. Therefore
 # taking the longer, more verbose approach.
 def _compare_xml_node(tree_path: list[str], expected: xml.dom.Node, actual: xml.dom.Node) -> None:
-    """ Assert two XML nodes have the same content """
+    """
+    Assert two XML nodes have the same content
+    """
 
     # All of this would be doable in a much, much simpler, condensed manner,
     # but being more verbose allows for way more specific error message when
@@ -51,9 +54,10 @@ def _compare_xml_node(tree_path: list[str], expected: xml.dom.Node, actual: xml.
     tree_path_joined = '.'.join(tree_path)
 
     # Make sure node names do match.
-    assert expected.nodeName == actual.nodeName, \
-        (f"Element name mismatch at {tree_path_joined}: "
-         f"expected {expected.nodeName}, found {actual.nodeName}")
+    assert expected.nodeName == actual.nodeName, (
+        f"Element name mismatch at {tree_path_joined}: "
+        f"expected {expected.nodeName}, found {actual.nodeName}"
+    )
 
     # If nodes have the same tag, move on to attributes. Make sure both nodes
     # have the same set of attributes, with same respective values.
@@ -63,16 +67,21 @@ def _compare_xml_node(tree_path: list[str], expected: xml.dom.Node, actual: xml.
     expected_attributes = sorted((expected.attributes or {}).items())
     actual_attributes = sorted((actual.attributes or {}).items())
 
-    assert len(expected_attributes) == len(actual_attributes), \
-        (f"Attribute count mismatch at {tree_path_joined}: "
-         f"expected {len(expected_attributes)}, found {len(actual_attributes)}")
+    assert len(expected_attributes) == len(actual_attributes), (
+        f"Attribute count mismatch at {tree_path_joined}: "
+        f"expected {len(expected_attributes)}, found {len(actual_attributes)}"
+    )
 
     for (expected_name, expected_value), (actual_name, actual_value) in zip(
-            expected_attributes, actual_attributes):
-        assert expected_name == actual_name, (f'Attribute mismatch at {tree_path_joined}: '
-                                              f'expected {expected_name}="{expected_value}"')
-        assert expected_value == actual_value, (f'Attribute mismatch at {tree_path_joined}: '
-                                                f'found {actual_name}="{actual_value}"')
+        expected_attributes, actual_attributes
+    ):
+        assert expected_name == actual_name, (
+            f'Attribute mismatch at {tree_path_joined}: '
+            f'expected {expected_name}="{expected_value}"'
+        )
+        assert expected_value == actual_value, (
+            f'Attribute mismatch at {tree_path_joined}: found {actual_name}="{actual_value}"'
+        )
 
     # Hooray, attributes match. Dig deeper, how about children?
     # To compare children, use this very function to compare each child with
@@ -84,35 +93,35 @@ def _compare_xml_node(tree_path: list[str], expected: xml.dom.Node, actual: xml.
     # nodes.
     def _valid_children(node: xml.dom.Node) -> list[xml.dom.Node]:
         return [
-            child for child in node.childNodes
+            child
+            for child in node.childNodes
             if child.nodeType != xml.dom.Node.TEXT_NODE or child.data.strip()
-            ]
+        ]
 
     expected_children = _valid_children(expected)
     actual_children = _valid_children(actual)
 
-    assert len(expected_children) == len(actual_children), \
-        (f"Children count mismatch at {tree_path_joined}: "
-         f"expected {len(expected_children)}, found {len(actual_children)}")
+    assert len(expected_children) == len(actual_children), (
+        f"Children count mismatch at {tree_path_joined}: "
+        f"expected {len(expected_children)}, found {len(actual_children)}"
+    )
 
     return all(
-        _compare_xml_node(
-            [*tree_path, expected_child.nodeName],
-            expected_child,
-            actual_child) for expected_child,
-        actual_child in zip(
-            expected.childNodes,
-            actual.childNodes))
+        _compare_xml_node([*tree_path, expected_child.nodeName], expected_child, actual_child)
+        for expected_child, actual_child in zip(expected.childNodes, actual.childNodes)
+    )
 
 
 def assert_xml(actual_filepath, expected):
-    with open(actual_filepath) as f, xml.dom.minidom.parse(f) as actual_dom, \
-            xml.dom.minidom.parseString(expected) as expected_dom:
+    with (
+        open(actual_filepath) as f,
+        xml.dom.minidom.parse(f) as actual_dom,
+        xml.dom.minidom.parseString(expected) as expected_dom,
+    ):
         assert _compare_xml_node([expected_dom.nodeName], expected_dom, actual_dom)
 
 
-@pytest.mark.skipif(pytest.__version__.startswith('3'),
-                    reason="too old pytest")
+@pytest.mark.skipif(pytest.__version__.startswith('3'), reason="too old pytest")
 class TestStateMapping:
     def test_pass(self, report_fix):
         report, results, out_file_path = report_fix
@@ -120,7 +129,9 @@ class TestStateMapping:
 
         report.go()
 
-        assert_xml(out_file_path, """<?xml version='1.0' encoding='utf-8'?>
+        assert_xml(
+            out_file_path,
+            """<?xml version='1.0' encoding='utf-8'?>
 <testsuites disabled="0" errors="0" failures="0" tests="1" time="0.0">
   <testsuite name="name" disabled="0" errors="0" failures="0" skipped="0" tests="1" time="0.0">
     <testcase name="/pass">
@@ -129,14 +140,17 @@ class TestStateMapping:
                 </testcase>
   </testsuite>
 </testsuites>
-""")
+""",
+        )
 
     def test_info(self, report_fix):
         report, results, out_file_path = report_fix
         results.append(Result(result=ResultOutcome.INFO, name="/info", serial_number=1))
         report.go()
 
-        assert_xml(out_file_path, """<?xml version='1.0' encoding='utf-8'?>
+        assert_xml(
+            out_file_path,
+            """<?xml version='1.0' encoding='utf-8'?>
 <testsuites disabled="0" errors="0" failures="0" tests="1" time="0.0">
   <testsuite name="name" disabled="0" errors="0" failures="0" skipped="1" tests="1" time="0.0">
     <testcase name="/info">
@@ -144,14 +158,17 @@ class TestStateMapping:
     </testcase>
   </testsuite>
 </testsuites>
-""")
+""",
+        )
 
     def test_warn(self, report_fix):
         report, results, out_file_path = report_fix
         results.append(Result(result=ResultOutcome.WARN, name="/warn", serial_number=1))
         report.go()
 
-        assert_xml(out_file_path, """<?xml version='1.0' encoding='utf-8'?>
+        assert_xml(
+            out_file_path,
+            """<?xml version='1.0' encoding='utf-8'?>
 <testsuites disabled="0" errors="1" failures="0" tests="1" time="0.0">
   <testsuite name="name" disabled="0" errors="1" failures="0" skipped="0" tests="1" time="0.0">
     <testcase name="/warn">
@@ -159,14 +176,17 @@ class TestStateMapping:
     </testcase>
   </testsuite>
 </testsuites>
-""")
+""",
+        )
 
     def test_error(self, report_fix):
         report, results, out_file_path = report_fix
         results.append(Result(result=ResultOutcome.ERROR, name="/error", serial_number=1))
         report.go()
 
-        assert_xml(out_file_path, """<?xml version='1.0' encoding='utf-8'?>
+        assert_xml(
+            out_file_path,
+            """<?xml version='1.0' encoding='utf-8'?>
 <testsuites disabled="0" errors="1" failures="0" tests="1" time="0.0">
   <testsuite name="name" disabled="0" errors="1" failures="0" skipped="0" tests="1" time="0.0">
     <testcase name="/error">
@@ -174,14 +194,17 @@ class TestStateMapping:
     </testcase>
   </testsuite>
 </testsuites>
-""")
+""",
+        )
 
     def test_fail(self, report_fix):
         report, results, out_file_path = report_fix
         results.append(Result(result=ResultOutcome.FAIL, name="/fail", serial_number=1))
         report.go()
 
-        assert_xml(out_file_path, """<?xml version='1.0' encoding='utf-8'?>
+        assert_xml(
+            out_file_path,
+            """<?xml version='1.0' encoding='utf-8'?>
 <testsuites disabled="0" errors="0" failures="1" tests="1" time="0.0">
   <testsuite name="name" disabled="0" errors="0" failures="1" skipped="0" tests="1" time="0.0">
     <testcase name="/fail">
@@ -189,4 +212,5 @@ class TestStateMapping:
     </testcase>
   </testsuite>
 </testsuites>
-""")
+""",
+        )

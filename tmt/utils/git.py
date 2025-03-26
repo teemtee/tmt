@@ -1,7 +1,7 @@
-""" Test Metadata Utilities """
+"""
+Test Metadata Utilities
+"""
 
-
-import dataclasses
 import functools
 import os
 import re
@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Optional
 
 import tmt.log
 import tmt.utils
+from tmt.container import container
 from tmt.utils import (
     Command,
     CommandOutput,
@@ -22,15 +23,17 @@ from tmt.utils import (
     MetadataError,
     Path,
     RunError,
-    )
+)
 
 if TYPE_CHECKING:
     import tmt.base
 
 
-@dataclasses.dataclass
+@container
 class GitInfo:
-    """ Data container for commonly queried git data. """
+    """
+    Data container for commonly queried git data.
+    """
 
     #: Path to the git root.
     git_root: Path
@@ -63,6 +66,7 @@ class GitInfo:
             Run command, return output.
             We don't need the stderr here, but we need exit status.
             """
+
             result = command.run(cwd=fmf_root, logger=logger)
             if result.stdout is None:
                 return ""
@@ -114,19 +118,15 @@ class GitInfo:
 
         logger.debug("curr_ref used", curr_ref, level=3)
         remote_name = run(
-            Command(
-                "git",
-                "for-each-ref",
-                "--format=%(upstream:remotename)",
-                curr_ref))
+            Command("git", "for-each-ref", "--format=%(upstream:remotename)", curr_ref)
+        )
         if not remote_name:
             # If no specific upstream is defined, default to `origin`
             remote_name = "origin"
         try:
             remote = run(Command("git", "config", "--get", f"remote.{remote_name}.url"))
             url = public_git_url(remote)
-            _default_branch = default_branch(
-                repository=_git_root, remote=remote, logger=logger)
+            _default_branch = default_branch(repository=_git_root, remote=remote, logger=logger)
         except RunError:
             url = None
             _default_branch = None
@@ -136,20 +136,25 @@ class GitInfo:
             ref=ref,
             remote=remote_name,
             url=url,
-            default_branch=_default_branch
-            )
+            default_branch=_default_branch,
+        )
 
 
 # Avoid multiple subprocess calls for the same url
 @functools.cache
 def check_git_url(url: str, logger: tmt.log.Logger) -> str:
-    """ Check that a remote git url is accessible """
+    """
+    Check that a remote git url is accessible
+    """
+
     try:
         logger.debug(f"Check git url '{url}'.")
         subprocess.check_call(
             ["git", "ls-remote", "--heads", url],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-            env={"GIT_ASKPASS": "echo", "GIT_TERMINAL_PROMPT": "0"})
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            env={"GIT_ASKPASS": "echo", "GIT_TERMINAL_PROMPT": "0"},
+        )
         return url
     except subprocess.CalledProcessError:
         raise GitUrlError(f"Unable to contact remote git via '{url}'.")
@@ -162,17 +167,15 @@ PUBLIC_GIT_URL_PATTERNS: list[tuple[str, str]] = [
     # new: https://pkgs.devel.redhat.com/git/tests/bash
     (
         r'(?:git@|https://)gitlab.com[:/]redhat/rhel(/.+)',
-        r'https://pkgs.devel.redhat.com/git\1'
-        ),
-
+        r'https://pkgs.devel.redhat.com/git\1',
+    ),
     # GitHub, GitLab
     # old: git@github.com:teemtee/tmt.git
     # new: https://github.com/teemtee/tmt.git
     (
         r'git@(.*):(.*)',
-        r'https://\1/\2'
-        ),
-
+        r'https://\1/\2',
+    ),
     # RHEL packages
     # old: git+ssh://psplicha@pkgs.devel.redhat.com/tests/bash
     # old: ssh://psplicha@pkgs.devel.redhat.com/tests/bash
@@ -180,18 +183,17 @@ PUBLIC_GIT_URL_PATTERNS: list[tuple[str, str]] = [
     # new: https://pkgs.devel.redhat.com/git/tests/bash
     (
         r'(git\+)?ssh://(\w+@)?(pkgs\.devel\.redhat\.com)/(.*)',
-        r'https://\3/git/\4'
-        ),
-
+        r'https://\3/git/\4',
+    ),
     # Fedora packages, Pagure
     # old: git+ssh://psss@pkgs.fedoraproject.org/tests/shell
     # old: ssh://psss@pkgs.fedoraproject.org/tests/shell
     # new: https://pkgs.fedoraproject.org/tests/shell
     (
         r'(git\+)?ssh://(\w+@)?([^/]*)/(.*)',
-        r'https://\3/\4'
-        )
-    ]
+        r'https://\3/\4',
+    ),
+]
 
 
 def public_git_url(url: str) -> str:
@@ -202,6 +204,7 @@ def public_git_url(url: str) -> str:
     :returns: URL that is publicly accessible without authentication,
         or the original URL if no applicable conversion was found.
     """
+
     return rewrite_git_url(url, PUBLIC_GIT_URL_PATTERNS)
 
 
@@ -213,6 +216,7 @@ def rewrite_git_url(url: str, patterns: list[tuple[str, str]]) -> str:
     :param patterns: List of patterns to try in order
     :returns: Modified url or the original one if no pattern was be applied.
     """
+
     for pattern, replacement in patterns:
         public_url = re.sub(pattern, replacement, url)
 
@@ -238,18 +242,20 @@ def inject_auth_git_url(url: str) -> str:
     :returns: URL with injected authentication based on pattern from the environment
         or unmodified URL
     """
+
     # Try all environment variables sorted by their name
     for name, value in sorted(os.environ.items(), key=lambda x: x[0]):
         # First one which matches url is taken into the account
         if name.startswith(INJECT_CREDENTIALS_URL_PREFIX) and re.search(value, url):
-            unique_suffix = name[len(INJECT_CREDENTIALS_URL_PREFIX):]
+            unique_suffix = name[len(INJECT_CREDENTIALS_URL_PREFIX) :]
             variable_with_value = f'{INJECT_CREDENTIALS_VALUE_PREFIX}{unique_suffix}'
             # Get credentials value
             try:
                 creds = os.environ[variable_with_value]
             except KeyError:
                 raise GitUrlError(
-                    f'Missing "{variable_with_value}" variable with credentials for "{url}"')
+                    f'Missing "{variable_with_value}" variable with credentials for "{url}"'
+                )
             # Return original url if credentials is an empty value
             if not creds:
                 return url
@@ -265,13 +271,16 @@ CLONABLE_GIT_URL_PATTERNS: list[tuple[str, str]] = [
     # new: https://pkgs.devel.redhat.com/git/tests/bash
     (
         r'git://(pkgs\.devel\.redhat\.com)/(.*)',
-        r'https://\1/git/\2'
-        ),
-    ]
+        r'https://\1/git/\2',
+    ),
+]
 
 
 def clonable_git_url(url: str) -> str:
-    """ Modify the git repo url so it can be cloned """
+    """
+    Modify the git repo url so it can be cloned
+    """
+
     url = rewrite_git_url(url, CLONABLE_GIT_URL_PATTERNS)
     return inject_auth_git_url(url)
 
@@ -283,6 +292,7 @@ def web_git_url(url: str, ref: str, path: Optional[Path] = None) -> str:
     Compose a clickable link from git url, ref and path to file
     for the most common git servers.
     """
+
     if path:
         path = Path(urllib.parse.quote_plus(str(path), safe="/"))
 
@@ -314,14 +324,17 @@ def git_hash(*, directory: Path, logger: tmt.log.Logger) -> Optional[str]:
     :param logger: used for logging.
     :returns: short hash as string
     """
+
     cmd = Command("git", "rev-parse", "--short", "HEAD")
     result = cmd.run(cwd=directory, logger=logger)
 
     if result.stdout is None:
-        raise RunError(message="No output from 'git' when looking for the hash of HEAD.",
-                       command=cmd,
-                       returncode=0,
-                       stderr=result.stderr)
+        raise RunError(
+            message="No output from 'git' when looking for the hash of HEAD.",
+            command=cmd,
+            returncode=0,
+            stderr=result.stderr,
+        )
 
     return result.stdout.strip()
 
@@ -356,6 +369,7 @@ def git_add(*, path: Path, logger: tmt.log.Logger) -> None:
     :param path: path to add to the git index.
     :param logger: used for logging.
     """
+
     path = path.resolve()
 
     try:
@@ -384,18 +398,22 @@ def git_ignore(*, root: Path, logger: tmt.log.Logger) -> list[Path]:
         # List untracked files matching exclusion patterns
         '-oi',
         # If a whole directory is to be ignored, list only its name with a trailing slash
-        '--directory') \
-        .run(cwd=root, logger=logger)
+        '--directory',
+    ).run(cwd=root, logger=logger)
 
     return [Path(line.strip()) for line in output.stdout.splitlines()] if output.stdout else []
 
 
 def default_branch(
-        *,
-        repository: Path,
-        remote: str = 'origin',
-        logger: tmt.log.Logger) -> Optional[str]:
-    """ Detect default branch from given local git repository """
+    *,
+    repository: Path,
+    remote: str = 'origin',
+    logger: tmt.log.Logger,
+) -> Optional[str]:
+    """
+    Detect default branch from given local git repository
+    """
+
     # Make sure '.git' is present and it is a file or a directory
     dot_git = repository / '.git'
     if not dot_git.exists():
@@ -408,7 +426,8 @@ def default_branch(
         try:
             result = Command("git", "rev-parse", "--path-format=absolute", "--git-common-dir").run(
                 cwd=repository,
-                logger=logger)
+                logger=logger,
+            )
         except RunError:
             return None
         if result.stdout is None:
@@ -426,7 +445,8 @@ def default_branch(
         try:
             Command('git', 'remote', 'set-head', f'{remote}', '--auto').run(
                 cwd=repository,
-                logger=logger)
+                logger=logger,
+            )
         except BaseException:
             return None
 
@@ -454,8 +474,8 @@ def validate_git_status(test: 'tmt.base.Test') -> tuple[bool, str]:
 
     sources = [
         *test.fmf_sources,
-        test.fmf_root / '.fmf' / 'version'
-        ]
+        test.fmf_root / '.fmf' / 'version',
+    ]
 
     # Use tmt's run instead of subprocess.run
     run = Common(logger=test._logger).run
@@ -468,17 +488,15 @@ def validate_git_status(test: 'tmt.base.Test') -> tuple[bool, str]:
     # Check for not committed metadata changes
     cmd = Command(
         'git',
-        'status', '--porcelain',
+        'status',
+        '--porcelain',
         '--',
-        *[str(source) for source in sources]
-        )
+        *[str(source) for source in sources],
+    )
     try:
         result = run(cmd, cwd=cwd, join=True)
     except RunError as error:
-        return (
-            False,
-            f"Failed to run git status: {error.stdout}"
-            )
+        return (False, f"Failed to run git status: {error.stdout}")
 
     not_committed: list[str] = []
     assert result.stdout is not None
@@ -495,10 +513,7 @@ def validate_git_status(test: 'tmt.base.Test') -> tuple[bool, str]:
     try:
         result = run(cmd, cwd=cwd)
     except RunError as error:
-        return (
-            False,
-            f'Failed to get remote branch, error raised: "{error.stderr}"'
-            )
+        return (False, f'Failed to get remote branch, error raised: "{error.stderr}"')
 
     assert result.stdout is not None
     remote_ref = result.stdout.strip()
@@ -509,14 +524,12 @@ def validate_git_status(test: 'tmt.base.Test') -> tuple[bool, str]:
         f'HEAD..{remote_ref}',
         '--name-status',
         '--',
-        *[str(source) for source in sources]
-        )
+        *[str(source) for source in sources],
+    )
     try:
         result = run(cmd, cwd=cwd)
     except RunError as error:
-        return (
-            False,
-            f'Failed to diff against remote branch, error raised: "{error.stderr}"')
+        return (False, f'Failed to diff against remote branch, error raised: "{error.stderr}"')
 
     not_pushed: list[str] = []
     assert result.stdout is not None
@@ -531,7 +544,9 @@ def validate_git_status(test: 'tmt.base.Test') -> tuple[bool, str]:
 
 
 class DistGitHandler:
-    """ Common functionality for DistGit handlers """
+    """
+    Common functionality for DistGit handlers
+    """
 
     sources_file_name = 'sources'
     uri = "/rpms/{name}/{filename}/{hashtype}/{hash}/{filename}"
@@ -540,7 +555,8 @@ class DistGitHandler:
     re_source: Pattern[str]
     # https://www.gnu.org/software/tar/manual/tar.html#auto_002dcompress
     re_supported_extensions: Pattern[str] = re.compile(
-        r'\.((tar\.(gz|Z|bz2|lz|lzma|lzo|xz|zst))|tgz|taz|taZ|tz2|tbz2|tbz|tlz|tzst)$')
+        r'\.((tar\.(gz|Z|bz2|lz|lzma|lzo|xz|zst))|tgz|taz|taZ|tz2|tbz2|tbz|tlz|tzst)$'
+    )
     lookaside_server: str
     remote_substring: Pattern[str]
 
@@ -550,6 +566,7 @@ class DistGitHandler:
 
         The 'cwd' parameter has to be a DistGit directory.
         """
+
         cwd = cwd or Path.cwd()
         # Assumes <package>.spec
         globbed = list(cwd.glob('*.spec'))
@@ -563,28 +580,39 @@ class DistGitHandler:
                 if match is None:
                     raise GeneralError(
                         f"Couldn't match '{self.sources_file_name}' "
-                        f"content with '{self.re_source.pattern}'.")
+                        f"content with '{self.re_source.pattern}'."
+                    )
                 used_hash, source_name, hash_value = match.groups()
-                ret_values.append((self.lookaside_server + self.uri.format(
-                    name=package,
-                    filename=source_name,
-                    hash=hash_value,
-                    hashtype=used_hash.lower()
-                    ), source_name))
+                ret_values.append(
+                    (
+                        self.lookaside_server
+                        + self.uri.format(
+                            name=package,
+                            filename=source_name,
+                            hash=hash_value,
+                            hashtype=used_hash.lower(),
+                        ),
+                        source_name,
+                    )
+                )
         except Exception as error:
             raise GeneralError(f"Couldn't read '{self.sources_file_name}' file.") from error
         if not ret_values:
-            raise GeneralError(
-                "No sources found in '{self.sources_file_name}' file.")
+            raise GeneralError("No sources found in '{self.sources_file_name}' file.")
         return ret_values
 
     def its_me(self, remotes: list[str]) -> bool:
-        """ True if self can work with remotes """
+        """
+        True if self can work with remotes
+        """
+
         return any(self.remote_substring.search(item) for item in remotes)
 
 
 class FedoraDistGit(DistGitHandler):
-    """ Fedora Handler """
+    """
+    Fedora Handler
+    """
 
     usage_name = "fedora"
     re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
@@ -593,7 +621,9 @@ class FedoraDistGit(DistGitHandler):
 
 
 class CentOSDistGit(DistGitHandler):
-    """ CentOS Handler """
+    """
+    CentOS Handler
+    """
 
     usage_name = "centos"
     re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
@@ -601,25 +631,29 @@ class CentOSDistGit(DistGitHandler):
     remote_substring = re.compile(r'redhat/centos')
 
 
-class RedHatGitlab(DistGitHandler):
-    """ Red Hat on Gitlab """
+class RedHatDistGit(DistGitHandler):
+    """
+    Red Hat Handler
+    """
 
-    usage_name = "redhatgitlab"
+    usage_name = "redhat"
     re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
     # Location already public (standard-test-roles)
     lookaside_server = "http://pkgs.devel.redhat.com/repo"
-    remote_substring = re.compile(r'redhat/rhel/')
+    remote_substring = re.compile(r'redhat/rhel/|pkgs\.devel\.redhat\.com')
 
 
 def get_distgit_handler(
-        remotes: Optional[list[str]] = None,
-        usage_name: Optional[str] = None) -> DistGitHandler:
+    remotes: Optional[list[str]] = None,
+    usage_name: Optional[str] = None,
+) -> DistGitHandler:
     """
     Return the right DistGitHandler
 
     Pick the DistGitHandler class which understands specified
     remotes or by usage_name.
     """
+
     for candidate_class in DistGitHandler.__subclasses__():
         if usage_name is not None and usage_name == candidate_class.usage_name:
             return candidate_class()
@@ -631,35 +665,37 @@ def get_distgit_handler(
 
 
 def get_distgit_handler_names() -> list[str]:
-    """ All known distgit handlers """
+    """
+    All known distgit handlers
+    """
+
     return [i.usage_name for i in DistGitHandler.__subclasses__()]
 
 
 def distgit_download(
-        *,
-        distgit_dir: Path,
-        target_dir: Path,
-        handler_name: Optional[str] = None,
-        caller: Optional['Common'] = None,
-        logger: tmt.log.Logger
-        ) -> None:
+    *,
+    distgit_dir: Path,
+    target_dir: Path,
+    handler_name: Optional[str] = None,
+    caller: Optional['Common'] = None,
+    logger: tmt.log.Logger,
+) -> None:
     """
     Download sources to the target_dir
 
     distgit_dir is path to the DistGit repository
     """
+
     # Get the handler unless specified
     if handler_name is None:
         cmd = Command("git", "config", "--get-regexp", '^remote\\..*.url')
-        output = cmd.run(cwd=distgit_dir,
-                         caller=caller,
-                         logger=logger)
+        output = cmd.run(cwd=distgit_dir, caller=caller, logger=logger)
         if output.stdout is None:
             raise tmt.utils.GeneralError("Missing remote origin url.")
         remotes = output.stdout.split('\n')
-        handler = tmt.utils.get_distgit_handler(remotes=remotes)
+        handler = get_distgit_handler(remotes=remotes)
     else:
-        handler = tmt.utils.get_distgit_handler(usage_name=handler_name)
+        handler = get_distgit_handler(usage_name=handler_name)
 
     for url, source_name in handler.url_and_name(distgit_dir):
         logger.debug(f"Download sources from '{url}'.")
@@ -671,16 +707,17 @@ def distgit_download(
 
 
 def git_clone(
-        *,
-        url: str,
-        destination: Path,
-        shallow: bool = False,
-        can_change: bool = True,
-        env: Optional[Environment] = None,
-        attempts: Optional[int] = None,
-        interval: Optional[int] = None,
-        timeout: Optional[int] = None,
-        logger: tmt.log.Logger) -> CommandOutput:
+    *,
+    url: str,
+    destination: Path,
+    shallow: bool = False,
+    can_change: bool = True,
+    env: Optional[Environment] = None,
+    attempts: Optional[int] = None,
+    interval: Optional[int] = None,
+    timeout: Optional[int] = None,
+    logger: tmt.log.Logger,
+) -> CommandOutput:
     """
     Clone git repository from provided url to the destination directory
 
@@ -700,16 +737,20 @@ def git_clone(
     """
 
     def clone_the_repo(
-            url: str,
-            destination: Path,
-            shallow: bool = False,
-            env: Optional[Environment] = None,
-            timeout: Optional[int] = None) -> CommandOutput:
-        """ Clone the repo, handle history depth """
+        url: str,
+        destination: Path,
+        shallow: bool = False,
+        env: Optional[Environment] = None,
+        timeout: Optional[int] = None,
+    ) -> CommandOutput:
+        """
+        Clone the repo, handle history depth
+        """
 
         depth = ['--depth=1'] if shallow else []
         return Command('git', 'clone', *depth, url, destination).run(
-            cwd=Path('/'), env=env, timeout=timeout, logger=logger)
+            cwd=Path('/'), env=env, timeout=timeout, logger=logger
+        )
 
     from tmt.utils import GIT_CLONE_ATTEMPTS, GIT_CLONE_INTERVAL, GIT_CLONE_TIMEOUT
 
@@ -729,7 +770,8 @@ def git_clone(
                 url=url,
                 destination=destination,
                 env=env,
-                timeout=timeout)
+                timeout=timeout,
+            )
         except RunError:
             logger.debug(f"Shallow clone of '{url}' failed, let's try with the full history.")
 
@@ -744,4 +786,5 @@ def git_clone(
         shallow=False,
         env=env,
         timeout=timeout,
-        logger=logger)
+        logger=logger,
+    )

@@ -24,12 +24,10 @@
           register: output
           changed_when: output.rc != 0
 
-    - name: Enable EPEL and EPEL-Next repos on RHEL 8, 9
+    - name: Enable EPEL and EPEL-Next repos on RHEL 8 and later
       when:
         - ansible_distribution == "RedHat"
         - ansible_distribution_major_version | int >= 8
-        # Drop the following line once EPEL10 becomes available
-        - ansible_distribution_major_version | int < 10
       block:
         - name: Install package 'epel-release'
           ansible.builtin.dnf:
@@ -42,8 +40,9 @@
             name: "https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"  # yamllint disable rule:line-length
             disable_gpg_check: true
             state: present
-          # EPEL Next is available for CentOS Stream 9 and newer only
-          when: ansible_distribution_major_version | int >= 9
+          # EPEL Next is available for CentOS Stream 9
+          # Enable for Stream 10 once epel-next is available
+          when: ansible_distribution_major_version | int == 9
 
         - name: Install 'dnf config-manager'
           ansible.builtin.command: dnf -y install 'dnf-command(config-manager)'
@@ -59,8 +58,9 @@
           ansible.builtin.command: dnf config-manager --enable epel-next epel-next-debuginfo epel-next-source
           register: output
           changed_when: output.rc != 0
-          # EPEL Next is available for CentOS Stream 9 and newer only
-          when: ansible_distribution_major_version | int >= 9
+          # EPEL Next is available for CentOS Stream 9
+          # Enable for Stream 10 once epel-next is available
+          when: ansible_distribution_major_version | int == 9
 
     - name: Enable EPEL repos on CentOS 7
       when:
@@ -82,12 +82,10 @@
           register: output
           changed_when: output.rc != 0
 
-    - name: Enable EPEL and EPEL-Next repos on CentOS Stream 8, 9
+    - name: Enable EPEL and EPEL-Next repos on CentOS Stream 8 and later
       when:
         - ansible_distribution == "CentOS"
         - ansible_distribution_major_version | int >= 8
-        # Drop the following line once EPEL10 becomes available
-        - ansible_distribution_major_version | int < 10
       block:
         - name: Install package 'epel-release'
           ansible.builtin.dnf:
@@ -98,8 +96,9 @@
           ansible.builtin.dnf:
             name: epel-next-release
             state: present
-          # EPEL Next is available for CentOS Stream 9 and newer only
-          when: ansible_distribution_major_version | int >= 9
+          # EPEL Next is available for CentOS Stream 9
+          # Enable for Stream 10 once epel-next is available
+          when: ansible_distribution_major_version | int == 9
 
         - name: Install 'dnf config-manager'
           ansible.builtin.command: dnf -y install 'dnf-command(config-manager)'
@@ -115,5 +114,6 @@
           ansible.builtin.command: dnf config-manager --enable epel-next epel-next-debuginfo epel-next-source
           register: output
           changed_when: output.rc != 0
-          # EPEL Next is available for CentOS Stream 9 and newer only
-          when: ansible_distribution_major_version | int >= 9
+          # EPEL Next is available for CentOS Stream 9
+          # Enable for Stream 10 once epel-next is available
+          when: ansible_distribution_major_version | int == 9

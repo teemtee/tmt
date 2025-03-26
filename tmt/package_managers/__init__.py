@@ -1,4 +1,3 @@
-import dataclasses
 import shlex
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union
@@ -7,6 +6,7 @@ import tmt
 import tmt.log
 import tmt.plugins
 import tmt.utils
+from tmt.container import container, simple_field
 from tmt.utils import Command, CommandOutput, Path
 
 if TYPE_CHECKING:
@@ -21,7 +21,9 @@ if TYPE_CHECKING:
 # Installable objects
 #
 class Package(str):
-    """ A package name """
+    """
+    A package name
+    """
 
     def __lt__(self, other: Any) -> bool:
         if not isinstance(other, (Package, PackageUrl, FileSystemPath, PackagePath)):
@@ -31,7 +33,9 @@ class Package(str):
 
 
 class PackageUrl(str):
-    """ A URL of a package file """
+    """
+    A URL of a package file
+    """
 
     def __lt__(self, other: Any) -> bool:
         if not isinstance(other, (Package, PackageUrl, FileSystemPath, PackagePath)):
@@ -41,7 +45,9 @@ class PackageUrl(str):
 
 
 class FileSystemPath(Path):
-    """ A filesystem path provided by a package """
+    """
+    A filesystem path provided by a package
+    """
 
     def __lt__(self, other: Any) -> bool:
         if not isinstance(other, (Package, PackageUrl, FileSystemPath, PackagePath)):
@@ -51,7 +57,9 @@ class FileSystemPath(Path):
 
 
 class PackagePath(Path):
-    """ A path to a package file """
+    """
+    A path to a package file
+    """
 
     def __lt__(self, other: Any) -> bool:
         if not isinstance(other, (Package, PackageUrl, FileSystemPath, PackagePath)):
@@ -67,12 +75,14 @@ Installable = Union[Package, FileSystemPath, PackagePath, PackageUrl]
 PackageManagerClass = type['PackageManager']
 
 
-_PACKAGE_MANAGER_PLUGIN_REGISTRY: tmt.plugins.PluginRegistry[PackageManagerClass] = \
+_PACKAGE_MANAGER_PLUGIN_REGISTRY: tmt.plugins.PluginRegistry[PackageManagerClass] = (
     tmt.plugins.PluginRegistry()
+)
 
 
 def provides_package_manager(
-        package_manager: str) -> Callable[[PackageManagerClass], PackageManagerClass]:
+    package_manager: str,
+) -> Callable[[PackageManagerClass], PackageManagerClass]:
     """
     A decorator for registering package managers.
 
@@ -83,7 +93,8 @@ def provides_package_manager(
         _PACKAGE_MANAGER_PLUGIN_REGISTRY.register_plugin(
             plugin_id=package_manager,
             plugin=package_manager_cls,
-            logger=tmt.log.Logger.get_bootstrap_logger())
+            logger=tmt.log.Logger.get_bootstrap_logger(),
+        )
 
         return package_manager_cls
 
@@ -101,7 +112,8 @@ def find_package_manager(name: 'GuestPackageManager') -> 'PackageManagerClass':
 
     if plugin is None:
         raise tmt.utils.GeneralError(
-            f"Package manager '{name}' was not found in package manager registry.")
+            f"Package manager '{name}' was not found in package manager registry."
+        )
 
     return plugin
 
@@ -112,10 +124,10 @@ def escape_installables(*installables: Installable) -> Iterator[str]:
 
 
 # TODO: find a better name, "options" is soooo overloaded...
-@dataclasses.dataclass(frozen=True)
+@container(frozen=True)
 class Options:
     #: A list of packages to exclude from installation.
-    excluded_packages: list[Package] = dataclasses.field(default_factory=list)
+    excluded_packages: list[Package] = simple_field(default_factory=list)
 
     #: If set, a failure to install a given package would not cause an error.
     skip_missing: bool = False
@@ -137,7 +149,9 @@ class Options:
 
 
 class PackageManager(tmt.utils.Common):
-    """ A base class for package manager plugins """
+    """
+    A base class for package manager plugins
+    """
 
     NAME: str
 
@@ -162,29 +176,38 @@ class PackageManager(tmt.utils.Common):
         self.command, self.options = self.prepare_command()
 
     def prepare_command(self) -> tuple[Command, Command]:
-        """ Prepare installation command and subcommand options """
+        """
+        Prepare installation command and subcommand options
+        """
+
         raise NotImplementedError
 
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
-        """ Return a presence status for each given installable """
+        """
+        Return a presence status for each given installable
+        """
+
         raise NotImplementedError
 
     def install(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
         raise NotImplementedError
 
     def reinstall(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
         raise NotImplementedError
 
     def install_debuginfo(
-            self,
-            *installables: Installable,
-            options: Optional[Options] = None) -> CommandOutput:
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
         raise NotImplementedError
 
     def refresh_metadata(self) -> CommandOutput:

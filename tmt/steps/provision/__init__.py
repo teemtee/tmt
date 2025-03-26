@@ -20,12 +20,13 @@ from typing import (
     Any,
     Callable,
     Literal,
+    NewType,
     Optional,
     TypeVar,
     Union,
     cast,
     overload,
-    )
+)
 
 import click
 import fmf
@@ -41,6 +42,7 @@ import tmt.queue
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.container import SerializableContainer, container, field, key_to_option
 from tmt.log import Logger
 from tmt.options import option
 from tmt.package_managers import FileSystemPath, Package, PackageManagerClass
@@ -48,20 +50,19 @@ from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue
 from tmt.utils import (
     Command,
+    GeneralError,
     OnProcessStartCallback,
     Path,
     ProvisionError,
-    SerializableContainer,
     ShellScript,
     configure_constant,
     effective_workdir_root,
-    field,
-    key_to_option,
-    )
+)
 
 if TYPE_CHECKING:
     import tmt.base
     import tmt.cli
+    from tmt._compat.typing import TypeAlias
 
 
 #: How many seconds to wait for a connection to succeed after guest reboot.
@@ -78,9 +79,18 @@ REBOOT_TIMEOUT: int = configure_constant(DEFAULT_REBOOT_TIMEOUT, 'TMT_REBOOT_TIM
 RECONNECT_WAIT_TICK = 5
 RECONNECT_WAIT_TICK_INCREASE = 1.0
 
+# Types for things Ansible can execute
+ANSIBLE_COLLECTION_PLAYBOOK_PATTERN = re.compile(r'[a-zA-z0-9_]+\.[a-zA-z0-9_]+\.[a-zA-z0-9_]+')
+
+AnsiblePlaybook: 'TypeAlias' = Path
+AnsibleCollectionPlaybook = NewType('AnsibleCollectionPlaybook', str)
+AnsibleApplicable = Union[AnsibleCollectionPlaybook, AnsiblePlaybook]
+
 
 def configure_ssh_options() -> tmt.utils.RawCommand:
-    """ Extract custom SSH options from environment variables """
+    """
+    Extract custom SSH options from environment variables
+    """
 
     options: tmt.utils.RawCommand = []
 
@@ -101,16 +111,14 @@ DEFAULT_SSH_OPTIONS: tmt.utils.RawCommand = [
     '-oForwardX11=no',
     '-oStrictHostKeyChecking=no',
     '-oUserKnownHostsFile=/dev/null',
-
     # Try establishing connection multiple times before giving up.
     '-oConnectionAttempts=5',
     '-oConnectTimeout=60',
-
     # Prevent ssh from disconnecting if no data has been
     # received from the server for a long time (#868).
     '-oServerAliveInterval=5',
-    '-oServerAliveCountMax=60'
-    ]
+    '-oServerAliveCountMax=60',
+]
 
 #: Base SSH options.
 #: This is the base set of SSH options tmt would use for all SSH
@@ -141,37 +149,40 @@ SSH_MASTER_SOCKET_MAX_HASH_LENGTH = 64
 
 @overload
 def _socket_path_trivial(
-        *,
-        socket_dir: Path,
-        guest_id: str,
-        limit_size: Literal[True] = True,
-        logger: tmt.log.Logger) -> Optional[Path]:
+    *,
+    socket_dir: Path,
+    guest_id: str,
+    limit_size: Literal[True] = True,
+    logger: tmt.log.Logger,
+) -> Optional[Path]:
     pass
 
 
 @overload
 def _socket_path_trivial(
-        *,
-        socket_dir: Path,
-        guest_id: str,
-        limit_size: Literal[False] = False,
-        logger: tmt.log.Logger) -> Path:
+    *,
+    socket_dir: Path,
+    guest_id: str,
+    limit_size: Literal[False] = False,
+    logger: tmt.log.Logger,
+) -> Path:
     pass
 
 
 def _socket_path_trivial(
-        *,
-        socket_dir: Path,
-        guest_id: str,
-        limit_size: bool = True,
-        logger: tmt.log.Logger) -> Optional[Path]:
-    """ Generate SSH socket path using guest IDs """
+    *,
+    socket_dir: Path,
+    guest_id: str,
+    limit_size: bool = True,
+    logger: tmt.log.Logger,
+) -> Optional[Path]:
+    """
+    Generate SSH socket path using guest IDs
+    """
 
     socket_path = socket_dir / f'{guest_id}.socket'
 
-    logger.debug(
-        f"Possible SSH master socket path '{socket_path}' (trivial method).",
-        level=4)
+    logger.debug(f"Possible SSH master socket path '{socket_path}' (trivial method).", level=4)
 
     if not limit_size:
         return socket_path
@@ -180,11 +191,12 @@ def _socket_path_trivial(
 
 
 def _socket_path_hash(
-        *,
-        socket_dir: Path,
-        guest_id: str,
-        limit_size: bool = True,
-        logger: tmt.log.Logger) -> Optional[Path]:
+    *,
+    socket_dir: Path,
+    guest_id: str,
+    limit_size: bool = True,
+    logger: tmt.log.Logger,
+) -> Optional[Path]:
     """
     Generate SSH socket path using a hash of guest IDs.
 
@@ -210,16 +222,12 @@ def _socket_path_hash(
     # a placeholder: once atomically created, no other guest can grab
     # the given socket path.
     for i in range(SSH_MASTER_SOCKET_MIN_HASH_LENGTH, SSH_MASTER_SOCKET_MAX_HASH_LENGTH):
-        digest = hashlib \
-            .sha256(guest_id.encode()) \
-            .hexdigest()[:i]
+        digest = hashlib.sha256(guest_id.encode()).hexdigest()[:i]
 
         socket_path = socket_dir / f'{digest}.socket'
         socket_reservation_path = f'{socket_path}.reservation'
 
-        logger.debug(
-            f"Possible SSH master socket path '{socket_path}' (hash method).",
-            level=4)
+        logger.debug(f"Possible SSH master socket path '{socket_path}' (hash method).", level=4)
 
         if limit_size and len(str(socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
             return None
@@ -244,14 +252,10 @@ def _socket_path_hash(
 
 
 # Default rsync options
-DEFAULT_RSYNC_OPTIONS = [
-    "-s", "-R", "-r", "-z", "--links", "--safe-links", "--delete"]
+DEFAULT_RSYNC_OPTIONS = ["-s", "-R", "-r", "-z", "--links", "--safe-links", "--delete"]
 
 DEFAULT_RSYNC_PUSH_OPTIONS = ["-s", "-R", "-r", "-z", "--links", "--safe-links", "--delete"]
 DEFAULT_RSYNC_PULL_OPTIONS = ["-s", "-R", "-r", "-z", "--links", "--safe-links", "--protect-args"]
-
-#: A default command to trigger a guest reboot when executed remotely.
-DEFAULT_REBOOT_COMMAND = Command('reboot')
 
 #: A pattern to extract ``btime`` from ``/proc/stat`` file.
 STAT_BTIME_PATTERN = re.compile(r'btime\s+(\d+)')
@@ -261,20 +265,45 @@ STAT_BTIME_PATTERN = re.compile(r'btime\s+(\d+)')
 # because `tmt.base` needs to be imported and that creates a circular
 # import loop.
 def essential_ansible_requires() -> list['tmt.base.Dependency']:
-    """ Return essential requirements for running Ansible modules """
+    """
+    Return essential requirements for running Ansible modules
+    """
 
-    return [
-        tmt.base.DependencySimple('/usr/bin/python3')
-        ]
+    return [tmt.base.DependencySimple('/usr/bin/python3')]
 
 
 def format_guest_full_name(name: str, role: Optional[str]) -> str:
-    """ Render guest's full name, i.e. name and its role """
+    """
+    Render guest's full name, i.e. name and its role
+    """
 
     if role is None:
         return name
 
     return f'{name} ({role})'
+
+
+class RebootModeNotSupportedError(ProvisionError):
+    """A requested reboot mode is not supported by the guest"""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        guest: Optional['Guest'] = None,
+        hard: bool = False,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        if message is not None:
+            pass
+
+        elif guest is not None:
+            message = f"Guest '{guest.multihost_name}' does not support {'hard' if hard else 'soft'} reboot."  # noqa: E501
+
+        else:
+            message = f"Guest does not support {'hard' if hard else 'soft'} reboot."
+
+        super().__init__(message, *args, **kwargs)
 
 
 class CheckRsyncOutcome(enum.Enum):
@@ -286,7 +315,9 @@ T = TypeVar('T')
 
 
 class GuestCapability(enum.Enum):
-    """ Various Linux capabilities """
+    """
+    Various Linux capabilities
+    """
 
     # See man 2 syslog:
     #: Read all messages remaining in the ring buffer.
@@ -295,7 +326,7 @@ class GuestCapability(enum.Enum):
     SYSLOG_ACTION_READ_CLEAR = 'syslog-action-read-clear'
 
 
-@dataclasses.dataclass
+@container
 class GuestFacts(SerializableContainer):
     """
     Contains interesting facts about the guest.
@@ -314,25 +345,30 @@ class GuestFacts(SerializableContainer):
     package_manager: Optional['tmt.package_managers.GuestPackageManager'] = field(
         # cast: since the default is None, mypy cannot infere the full type,
         # and reports `package_manager` parameter to be `object`.
-        default=cast(Optional['tmt.package_managers.GuestPackageManager'], None))
+        default=cast(Optional['tmt.package_managers.GuestPackageManager'], None)
+    )
 
     has_selinux: Optional[bool] = None
     is_superuser: Optional[bool] = None
     is_ostree: Optional[bool] = None
+    is_toolbox: Optional[bool] = None
+    toolbox_container_name: Optional[str] = None
+    is_container: Optional[bool] = None
 
     #: Various Linux capabilities and whether they are permitted to
     #: commands executed on this guest.
     capabilities: dict[GuestCapability, bool] = field(
         default_factory=cast(Callable[[], dict[GuestCapability, bool]], dict),
         serialize=lambda capabilities: {
-            capability.value: enabled
-            for capability, enabled in capabilities.items()
-            } if capabilities else {},
+            capability.value: enabled for capability, enabled in capabilities.items()
+        }
+        if capabilities
+        else {},
         unserialize=lambda raw_value: {
             GuestCapability(raw_capability): enabled
             for raw_capability, enabled in raw_value.items()
-            }
-        )
+        },
+    )
 
     os_release_content: dict[str, str] = field(default_factory=dict)
     lsb_release_content: dict[str, str] = field(default_factory=dict)
@@ -346,10 +382,7 @@ class GuestFacts(SerializableContainer):
     # TODO nothing but a fancy helper, to check for some special errors that
     # may appear this soon in provisioning. But, would it make sense to put
     # this detection into the `GuestSsh.execute()` method?
-    def _execute(
-            self,
-            guest: 'Guest',
-            command: Command) -> Optional[tmt.utils.CommandOutput]:
+    def _execute(self, guest: 'Guest', command: Command) -> Optional[tmt.utils.CommandOutput]:
         """
         Run a command on the given guest.
 
@@ -369,10 +402,13 @@ class GuestFacts(SerializableContainer):
         except tmt.utils.RunError as exc:
             if exc.stdout and 'Please login as the user' in exc.stdout:
                 raise tmt.utils.GeneralError(f'Login to the guest failed.\n{exc.stdout}') from exc
-            if exc.stderr and \
-                    f'executable file `{tmt.utils.DEFAULT_SHELL}` not found' in exc.stderr:
+            if (
+                exc.stderr
+                and f'executable file `{tmt.utils.DEFAULT_SHELL}` not found' in exc.stderr
+            ):
                 raise tmt.utils.GeneralError(
-                    f'{tmt.utils.DEFAULT_SHELL.capitalize()} is required on the guest.') from exc
+                    f'{tmt.utils.DEFAULT_SHELL.capitalize()} is required on the guest.'
+                ) from exc
 
         return None
 
@@ -423,7 +459,8 @@ class GuestFacts(SerializableContainer):
                 if not match:
                     raise tmt.utils.ProvisionError(
                         f"Cannot parse line {line_number} in '{filepath}' on guest '{guest.name}':"
-                        f" {line}")
+                        f" {line}"
+                    )
 
                 key, value = match.groups()
 
@@ -434,10 +471,7 @@ class GuestFacts(SerializableContainer):
 
         return dict(_iter_pairs())
 
-    def _probe(
-            self,
-            guest: 'Guest',
-            probes: list[tuple[Command, T]]) -> Optional[T]:
+    def _probe(self, guest: 'Guest', probes: list[tuple[Command, T]]) -> Optional[T]:
         """
         Find a first successful command.
 
@@ -454,10 +488,7 @@ class GuestFacts(SerializableContainer):
 
         return None
 
-    def _query(
-            self,
-            guest: 'Guest',
-            probes: list[tuple[Command, str]]) -> Optional[str]:
+    def _query(self, guest: 'Guest', probes: list[tuple[Command, str]]) -> Optional[str]:
         """
         Find a first successful command, and extract info from its output.
 
@@ -486,11 +517,7 @@ class GuestFacts(SerializableContainer):
         return None
 
     def _query_arch(self, guest: 'Guest') -> Optional[str]:
-        return self._query(
-            guest,
-            [
-                (Command('arch'), r'(.+)')
-                ])
+        return self._query(guest, [(Command('arch'), r'(.+)')])
 
     def _query_distro(self, guest: 'Guest') -> Optional[str]:
         # Try some low-hanging fruits first. We already might have the answer,
@@ -506,19 +533,16 @@ class GuestFacts(SerializableContainer):
             guest,
             [
                 (Command('cat', '/etc/redhat-release'), r'(.*)'),
-                (Command('cat', '/etc/fedora-release'), r'(.*)')
-                ])
+                (Command('cat', '/etc/fedora-release'), r'(.*)'),
+            ],
+        )
 
     def _query_kernel_release(self, guest: 'Guest') -> Optional[str]:
-        return self._query(
-            guest,
-            [
-                (Command('uname', '-r'), r'(.+)')
-                ])
+        return self._query(guest, [(Command('uname', '-r'), r'(.+)')])
 
     def _query_package_manager(
-            self,
-            guest: 'Guest') -> Optional['tmt.package_managers.GuestPackageManager']:
+        self, guest: 'Guest'
+    ) -> Optional['tmt.package_managers.GuestPackageManager']:
         # Discover as many package managers as possible: sometimes, the
         # first discovered package manager is not the only or the best
         # one available. Collect them, and sort them by their priorities
@@ -526,8 +550,10 @@ class GuestFacts(SerializableContainer):
 
         discovered_package_managers: list[PackageManagerClass] = []
 
-        for _, package_manager_class \
-                in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items():
+        for (
+            _,
+            package_manager_class,
+        ) in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items():
             if self._execute(guest, package_manager_class.probe_command):
                 discovered_package_managers.append(package_manager_class)
 
@@ -537,7 +563,8 @@ class GuestFacts(SerializableContainer):
             guest.debug(
                 'Discovered package managers',
                 fmf.utils.listed([pm.NAME for pm in discovered_package_managers]),
-                level=4)
+                level=4,
+            )
 
             return discovered_package_managers[0].NAME
 
@@ -572,23 +599,84 @@ class GuestFacts(SerializableContainer):
             Command(
                 tmt.utils.DEFAULT_SHELL,
                 '-c',
-                'if [ -e /run/ostree-booted ] || [ -L /ostree ]; then echo yes; else echo no; fi'))
+                'if [ -e /run/ostree-booted ] || [ -L /ostree ]; then echo yes; else echo no; fi',
+            ),
+        )
 
         if output is None or output.stdout is None:
             return None
 
         return output.stdout.strip() == 'yes'
 
+    def _query_is_toolbox(self, guest: 'Guest') -> Optional[bool]:
+        # https://www.reddit.com/r/Fedora/comments/g6flgd/toolbox_specific_environment_variables/
+        output = self._execute(
+            guest,
+            Command(
+                tmt.utils.DEFAULT_SHELL,
+                '-c',
+                'if [ -e /run/.toolboxenv ]; then echo yes; else echo no; fi',
+            ),
+        )
+
+        if output is None or output.stdout is None:
+            return None
+
+        return output.stdout.strip() == 'yes'
+
+    def _query_toolbox_container_name(self, guest: 'Guest') -> Optional[str]:
+        output = self._execute(
+            guest,
+            Command(
+                tmt.utils.DEFAULT_SHELL,
+                '-c',
+                'if [ -e /run/.containerenv ]; then echo yes; else echo no; fi',
+            ),
+        )
+
+        if output is None or output.stdout is None:
+            return None
+
+        if output.stdout.strip() == 'no':
+            return None
+
+        output = self._execute(guest, Command('cat', '/run/.containerenv'))
+
+        if output is None or output.stdout is None:
+            return None
+
+        for line in output.stdout.splitlines():
+            if line.startswith('name="'):
+                return line[6:-1]
+
+        return None
+
+    def _query_is_container(self, guest: 'Guest') -> Optional[bool]:
+        """
+        Detect whether guest is a container (running systemd)
+
+        In containers running systemd pid 1 has environment variable ``container`` set
+        (e.g. container=podman). See https://systemd.io/CONTAINER_INTERFACE/ for more details.
+        """
+        output = self._execute(guest, Command('eval', 'echo', '-n', '$container'))
+
+        if output is None or output.stdout is None:
+            return None
+
+        return len(output.stdout) > 0
+
     def _query_capabilities(self, guest: 'Guest') -> dict[GuestCapability, bool]:
         # TODO: there must be a canonical way of getting permitted capabilities.
         # For now, we're interested in whether we can access kernel message buffer.
         return {
             GuestCapability.SYSLOG_ACTION_READ_ALL: True,
-            GuestCapability.SYSLOG_ACTION_READ_CLEAR: True
-            }
+            GuestCapability.SYSLOG_ACTION_READ_CLEAR: True,
+        }
 
     def sync(self, guest: 'Guest') -> None:
-        """ Update stored facts to reflect the given guest """
+        """
+        Update stored facts to reflect the given guest
+        """
 
         self.os_release_content = self._fetch_keyval_file(guest, Path('/etc/os-release'))
         self.lsb_release_content = self._fetch_keyval_file(guest, Path('/etc/lsb-release'))
@@ -600,6 +688,9 @@ class GuestFacts(SerializableContainer):
         self.has_selinux = self._query_has_selinux(guest)
         self.is_superuser = self._query_is_superuser(guest)
         self.is_ostree = self._query_is_ostree(guest)
+        self.is_toolbox = self._query_is_toolbox(guest)
+        self.toolbox_container_name = self._query_toolbox_container_name(guest)
+        self.is_container = self._query_is_container(guest)
         self.capabilities = self._query_capabilities(guest)
 
         self.in_sync = True
@@ -615,25 +706,31 @@ class GuestFacts(SerializableContainer):
         yield 'arch', 'arch', self.arch or 'unknown'
         yield 'distro', 'distro', self.distro or 'unknown'
         yield 'kernel_release', 'kernel', self.kernel_release or 'unknown'
-        yield 'package_manager', \
-            'package manager', \
-            self.package_manager if self.package_manager else 'unknown'
+        yield (
+            'package_manager',
+            'package manager',
+            self.package_manager if self.package_manager else 'unknown',
+        )
         yield 'has_selinux', 'selinux', 'yes' if self.has_selinux else 'no'
         yield 'is_superuser', 'is superuser', 'yes' if self.is_superuser else 'no'
+        yield 'is_container', 'is_container', 'yes' if self.is_container else 'no'
 
 
 GUEST_FACTS_INFO_FIELDS: list[str] = ['arch', 'distro']
 GUEST_FACTS_VERBOSE_FIELDS: list[str] = [
     # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`
     # "NormalizeKeysMixin" has no attribute "__iter__" (not iterable)
-    key for key in GuestFacts.keys()  # noqa: SIM118
-    if key not in GUEST_FACTS_INFO_FIELDS]
+    key
+    for key in GuestFacts.keys()  # noqa: SIM118
+    if key not in GUEST_FACTS_INFO_FIELDS
+]
 
 
 def normalize_hardware(
-        key_address: str,
-        raw_hardware: Union[None, tmt.hardware.Spec, tmt.hardware.Hardware],
-        logger: tmt.log.Logger) -> Optional[tmt.hardware.Hardware]:
+    key_address: str,
+    raw_hardware: Union[None, tmt.hardware.Spec, tmt.hardware.Hardware],
+    logger: tmt.log.Logger,
+) -> Optional[tmt.hardware.Hardware]:
     """
     Normalize a ``hardware`` key value.
 
@@ -655,17 +752,22 @@ def normalize_hardware(
         for raw_datum in raw_hardware:
             components = tmt.hardware.ConstraintComponents.from_spec(raw_datum)
 
-            if components.name not in tmt.hardware.CHILDLESS_CONSTRAINTS \
-                    and components.child_name is None:
+            if (
+                components.name not in tmt.hardware.CHILDLESS_CONSTRAINTS
+                and components.child_name is None
+            ):
                 raise tmt.utils.SpecificationError(
                     f"Hardware requirement '{raw_datum}' lacks "
-                    f"child property ({components.name}[N].M).")
+                    f"child property ({components.name}[N].M)."
+                )
 
-            if components.name in tmt.hardware.INDEXABLE_CONSTRAINTS \
-                    and components.peer_index is None:
+            if (
+                components.name in tmt.hardware.INDEXABLE_CONSTRAINTS
+                and components.peer_index is None
+            ):
                 raise tmt.utils.SpecificationError(
-                    f"Hardware requirement '{raw_datum}' lacks "
-                    f"entry index ({components.name}[N]).")
+                    f"Hardware requirement '{raw_datum}' lacks entry index ({components.name}[N])."
+                )
 
             if components.peer_index is not None:
                 # This should not happen, the test above already ruled
@@ -684,8 +786,9 @@ def normalize_hardware(
                 if placeholders > 0:
                     merged[components.name].extend([{} for _ in range(placeholders)])
 
-                merged[components.name][components.peer_index][components.child_name] = \
+                merged[components.name][components.peer_index][components.child_name] = (
                     f'{components.operator} {components.value}'
+                )
 
             elif components.name == 'cpu' and components.child_name == 'flag':
                 if components.name not in merged:
@@ -700,8 +803,9 @@ def normalize_hardware(
                 if components.name not in merged:
                     merged[components.name] = {}
 
-                merged[components.name][components.child_name] = \
+                merged[components.name][components.child_name] = (
                     f'{components.operator} {components.value}'
+                )
 
             else:
                 merged[components.name] = f'{components.operator} {components.value}'
@@ -742,7 +846,7 @@ def normalize_hardware(
 GuestDataT = TypeVar('GuestDataT', bound='GuestData')
 
 
-@dataclasses.dataclass
+@container
 class GuestData(SerializableContainer):
     """
     Keys necessary to describe, create, save and restore a guest.
@@ -769,21 +873,21 @@ class GuestData(SerializableContainer):
         help="""
              Marks related guests so that common actions can be applied to all
              such guests at once.
-             """
-        )
+             """,
+    )
 
     become: bool = field(
         default=False,
         is_flag=True,
         option=('-b', '--become'),
-        help='Whether to run shell scripts in tests, prepare, and finish with sudo.'
-        )
+        help='Whether to run shell scripts in tests, prepare, and finish with sudo.',
+    )
 
     facts: GuestFacts = field(
         default_factory=GuestFacts,
         serialize=lambda facts: facts.to_serialized(),
-        unserialize=lambda serialized: GuestFacts.from_serialized(serialized)
-        )
+        unserialize=lambda serialized: GuestFacts.from_serialized(serialized),
+    )
 
     hardware: Optional[tmt.hardware.Hardware] = field(
         default=cast(Optional[tmt.hardware.Hardware], None),
@@ -794,7 +898,9 @@ class GuestData(SerializableContainer):
         normalize=normalize_hardware,
         serialize=lambda hardware: hardware.to_spec() if hardware else None,
         unserialize=lambda serialized: tmt.hardware.Hardware.from_spec(serialized)
-        if serialized is not None else None)
+        if serialized is not None
+        else None,
+    )
 
     # TODO: find out whether this could live in DataContainer. It probably could,
     # but there are containers not backed by options... Maybe a mixin then?
@@ -816,23 +922,29 @@ class GuestData(SerializableContainer):
 
     @classmethod
     def from_plugin(
-            cls: type[GuestDataT],
-            container: 'ProvisionPlugin[ProvisionStepDataT]') -> GuestDataT:
-        """ Create guest data from plugin and its current configuration """
+        cls: type[GuestDataT],
+        container: 'ProvisionPlugin[ProvisionStepDataT]',
+    ) -> GuestDataT:
+        """
+        Create guest data from plugin and its current configuration
+        """
 
-        return cls(**{
-            key: container.get(option)
-            # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`.
-            # "Type[ArtemisGuestData]" has no attribute "__iter__" (not iterable)
-            for key, option in cls.options()
-            })
+        return cls(
+            **{
+                key: container.get(option)
+                # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`.
+                # "Type[ArtemisGuestData]" has no attribute "__iter__" (not iterable)
+                for key, option in cls.options()
+            }
+        )
 
     def show(
-            self,
-            *,
-            keys: Optional[list[str]] = None,
-            verbose: int = 0,
-            logger: tmt.log.Logger) -> None:
+        self,
+        *,
+        keys: Optional[list[str]] = None,
+        verbose: int = 0,
+        logger: tmt.log.Logger,
+    ) -> None:
         """
         Display guest data in a nice way.
 
@@ -874,10 +986,45 @@ class GuestData(SerializableContainer):
             else:
                 printable_value = str(value)
 
-            logger.info(
-                tmt.utils.key_to_option(key).replace('-', ' '),
-                printable_value,
-                color='green')
+            logger.info(key_to_option(key).replace('-', ' '), printable_value, color='green')
+
+
+@container
+class GuestLog:
+    name: str
+
+    def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
+        """
+        Fetch and return content of a log.
+
+        :returns: content of the log, or ``None`` if the log cannot be retrieved.
+        """
+        raise NotImplementedError
+
+    def store(self, logger: tmt.log.Logger, path: Path, logname: Optional[str] = None) -> None:
+        """
+        Save log content to a file.
+
+        :param logger: logger to use for logging.
+        :param path: a path to save into, could be a directory
+            or a file path.
+        :param logname: name of the log, if not set, ``path``
+            is supposed to be a file path.
+        """
+        log_content = self.fetch(logger)
+        if log_content:
+            # if path is file path
+            if not path.is_dir():
+                path.write_text(log_content)
+            # if path is a directory
+            elif logname:
+                (path / logname).write_text(log_content)
+            else:
+                raise tmt.utils.GeneralError(
+                    'Log path is a directory but log name is not defined.'
+                )
+        else:
+            logger.warning(f'Failed to fetch log: {self.name}')
 
 
 class Guest(tmt.utils.Common):
@@ -935,27 +1082,40 @@ class Guest(tmt.utils.Common):
     def _keys(self) -> list[str]:
         return list(self.get_data_class().keys())
 
-    def __init__(self,
-                 *,
-                 data: GuestData,
-                 name: Optional[str] = None,
-                 parent: Optional[tmt.utils.Common] = None,
-                 logger: tmt.log.Logger) -> None:
-        """ Initialize guest data """
+    def __init__(
+        self,
+        *,
+        data: GuestData,
+        name: Optional[str] = None,
+        parent: Optional[tmt.utils.Common] = None,
+        logger: tmt.log.Logger,
+    ) -> None:
+        """
+        Initialize guest data
+        """
+        self.guest_logs: list[GuestLog] = []
+
         super().__init__(logger=logger, parent=parent, name=name)
         self.load(data)
 
     def _random_name(self, prefix: str = '', length: int = 16) -> str:
-        """ Generate a random name """
+        """
+        Generate a random name
+        """
+
         # Append at least 5 random characters
         min_random_part = max(5, length - len(prefix))
         name = prefix + ''.join(
-            secrets.choice(string.ascii_letters) for _ in range(min_random_part))
+            secrets.choice(string.ascii_letters) for _ in range(min_random_part)
+        )
         # Return tail (containing random characters) of name
         return name[-length:]
 
     def _tmt_name(self) -> str:
-        """ Generate a name prefixed with tmt run id """
+        """
+        Generate a name prefixed with tmt run id
+        """
+
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
 
@@ -966,13 +1126,17 @@ class Guest(tmt.utils.Common):
 
     @functools.cached_property
     def multihost_name(self) -> str:
-        """ Return guest's multihost name, i.e. name and its role """
+        """
+        Return guest's multihost name, i.e. name and its role
+        """
 
         return format_guest_full_name(self.name, self.role)
 
     @property
     def is_ready(self) -> bool:
-        """ Detect guest is ready or not """
+        """
+        Detect guest is ready or not
+        """
 
         raise NotImplementedError
 
@@ -980,25 +1144,34 @@ class Guest(tmt.utils.Common):
     def package_manager(self) -> 'tmt.package_managers.PackageManager':
         if not self.facts.package_manager:
             raise tmt.utils.GeneralError(
-                f"Package manager was not detected on guest '{self.name}'.")
+                f"Package manager was not detected on guest '{self.name}'."
+            )
 
-        return tmt.package_managers.find_package_manager(
-            self.facts.package_manager)(guest=self, logger=self._logger)
+        return tmt.package_managers.find_package_manager(self.facts.package_manager)(
+            guest=self, logger=self._logger
+        )
 
     @functools.cached_property
     def scripts_path(self) -> Path:
-        """ Absolute path to tmt scripts directory """
+        """
+        Absolute path to tmt scripts directory
+        """
 
         import tmt.steps.execute
 
         # For rpm-ostree based distributions use a different default destination directory
         return tmt.steps.execute.effective_scripts_dest_dir(
             default=tmt.steps.execute.DEFAULT_SCRIPTS_DEST_DIR_OSTREE
-            if self.facts.is_ostree else tmt.steps.execute.DEFAULT_SCRIPTS_DEST_DIR)
+            if self.facts.is_ostree
+            else tmt.steps.execute.DEFAULT_SCRIPTS_DEST_DIR
+        )
 
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
-        """ Prepare command line options related to guests """
+        """
+        Prepare command line options related to guests
+        """
+
         return []
 
     def load(self, data: GuestData) -> None:
@@ -1014,6 +1187,7 @@ class Guest(tmt.utils.Common):
         line options / L2 metadata / user configuration and wake up data
         stored by the save() method below.
         """
+
         data.inject_to(self)
 
     def save(self) -> GuestData:
@@ -1025,6 +1199,7 @@ class Guest(tmt.utils.Common):
         the guest. Everything needed to attach to a running instance
         should be added into the data dictionary by child classes.
         """
+
         return self.get_data_class().extract_from(self)
 
     def wake(self) -> None:
@@ -1035,6 +1210,7 @@ class Guest(tmt.utils.Common):
         attach to a running guest instance and execute commands. Called
         after load() is completed so all guest data should be prepared.
         """
+
         self.debug(f"Doing nothing to wake up guest '{self.primary_address}'.")
 
     def start(self) -> None:
@@ -1045,6 +1221,7 @@ class Guest(tmt.utils.Common):
         any configuration necessary to get it started. Called after
         load() is completed so all guest data should be available.
         """
+
         self.debug(f"Doing nothing to start guest '{self.primary_address}'.")
 
     def setup(self) -> None:
@@ -1094,13 +1271,18 @@ class Guest(tmt.utils.Common):
             self.__dict__['facts'] = GuestFacts.from_serialized(facts)
 
     def show(self, show_multihost_name: bool = True) -> None:
-        """ Show guest details such as distro and kernel """
+        """
+        Show guest details such as distro and kernel
+        """
 
         if show_multihost_name:
             self.info('multihost name', self.multihost_name, color='green')
 
         # Skip active checks in dry mode
         if self.is_dry_run:
+            return
+
+        if not self.is_ready:
             return
 
         for key, key_formatted, value_formatted in self.facts.format():
@@ -1111,20 +1293,29 @@ class Guest(tmt.utils.Common):
                 self.verbose(key_formatted, value_formatted, color='green')
 
     def _ansible_verbosity(self) -> list[str]:
-        """ Prepare verbose level based on the --debug option count """
+        """
+        Prepare verbose level based on the --debug option count
+        """
+
         if self.debug_level < 3:
             return []
         return ['-' + (self.debug_level - 2) * 'v']
 
     @staticmethod
     def _ansible_extra_args(extra_args: Optional[str]) -> list[str]:
-        """ Prepare extra arguments for ansible-playbook"""
+        """
+        Prepare extra arguments for ansible-playbook
+        """
+
         if extra_args is None:
             return []
         return shlex.split(str(extra_args))
 
     def _ansible_summary(self, output: Optional[str]) -> None:
-        """ Check the output for ansible result summary numbers """
+        """
+        Check the output for ansible result summary numbers
+        """
+
         if not output:
             return
         keys = 'ok changed unreachable failed skipped rescued ignored'.split()
@@ -1135,9 +1326,8 @@ class Guest(tmt.utils.Common):
                 self.verbose(key, tasks, 'green')
 
     def _sanitize_ansible_playbook_path(
-            self,
-            playbook: Path,
-            playbook_root: Optional[Path]) -> Path:
+        self, playbook: AnsibleApplicable, playbook_root: Optional[Path]
+    ) -> AnsibleApplicable:
         """
         Prepare full ansible playbook path.
 
@@ -1150,27 +1340,45 @@ class Guest(tmt.utils.Common):
             the eventual playbook path is not absolute.
         """
 
-        # Some playbooks must be under playbook root, which is often
-        # a metadata tree root.
-        if playbook_root is not None:
-            playbook = playbook_root / playbook.unrooted()
+        # Handle the individual types under the hood of `AnsibleApplicable`.
+        # Note that `isinstance()` calls do not use our fancy names,
+        # `AnsibleCollectionPlaybook` and `AnsiblePlaybook`. These are
+        # extremely helpful to type checkers, but Python interpreter
+        # sees only the aliased types, `Path` and `str`.
 
-            if not playbook.is_relative_to(playbook_root):
-                raise tmt.utils.GeneralError(
-                    f"'{playbook}' is not relative to the expected root '{playbook_root}'.")
+        # First, a path:
+        if isinstance(playbook, Path):
+            # Some playbooks must be under playbook root, which is often
+            # a metadata tree root.
+            if playbook_root is not None:
+                playbook = playbook_root / playbook.unrooted()
 
-        if not playbook.exists():
-            raise tmt.utils.FileError(f"Playbook '{playbook}' does not exist.")
+                if not playbook.is_relative_to(playbook_root):
+                    raise tmt.utils.GeneralError(
+                        f"'{playbook}' is not relative to the expected root '{playbook_root}'."
+                    )
 
-        self.debug(f"Playbook full path: '{playbook}'", level=2)
+            if not playbook.exists():
+                raise tmt.utils.FileError(f"Playbook '{playbook}' does not exist.")
 
-        return playbook
+            self.debug(f"Playbook full path: '{playbook}'", level=2)
+
+            return playbook
+
+        # Second, a collection playbook:
+        if isinstance(playbook, str):
+            self.debug(f"Collection playbook: '{playbook}'", level=2)
+
+            return playbook
+
+        raise GeneralError(f"Unknown Ansible object type, '{type(playbook)}'.")
 
     def _prepare_environment(
-        self,
-        execute_environment: Optional[tmt.utils.Environment] = None
-            ) -> tmt.utils.Environment:
-        """ Prepare dict of environment variables """
+        self, execute_environment: Optional[tmt.utils.Environment] = None
+    ) -> tmt.utils.Environment:
+        """
+        Prepare dict of environment variables
+        """
         # Prepare environment variables so they can be correctly passed
         # to shell. Create a copy to prevent modifying source.
         environment = tmt.utils.Environment()
@@ -1185,24 +1393,28 @@ class Guest(tmt.utils.Common):
 
     @staticmethod
     def _export_environment(environment: tmt.utils.Environment) -> list[ShellScript]:
-        """ Prepare shell export of environment variables """
+        """
+        Prepare shell export of environment variables
+        """
+
         if not environment:
             return []
         return [
             ShellScript(f'export {variable}')
             for variable in tmt.utils.shell_variables(environment)
-            ]
+        ]
 
     def _run_guest_command(
-            self,
-            command: Command,
-            friendly_command: Optional[str] = None,
-            silent: bool = False,
-            cwd: Optional[Path] = None,
-            env: Optional[tmt.utils.Environment] = None,
-            interactive: bool = False,
-            log: Optional[tmt.log.LoggingFunction] = None,
-            **kwargs: Any) -> tmt.utils.CommandOutput:
+        self,
+        command: Command,
+        friendly_command: Optional[str] = None,
+        silent: bool = False,
+        cwd: Optional[Path] = None,
+        env: Optional[tmt.utils.Environment] = None,
+        interactive: bool = False,
+        log: Optional[tmt.log.LoggingFunction] = None,
+        **kwargs: Any,
+    ) -> tmt.utils.CommandOutput:
         """
         Run a command, local or remote, related to the guest.
 
@@ -1239,16 +1451,18 @@ class Guest(tmt.utils.Common):
             env=env,
             interactive=interactive,
             log=log if log else self._command_verbose_logger,
-            **kwargs)
+            **kwargs,
+        )
 
     def _run_ansible(
-            self,
-            playbook: Path,
-            playbook_root: Optional[Path] = None,
-            extra_args: Optional[str] = None,
-            friendly_command: Optional[str] = None,
-            log: Optional[tmt.log.LoggingFunction] = None,
-            silent: bool = False) -> tmt.utils.CommandOutput:
+        self,
+        playbook: AnsibleApplicable,
+        playbook_root: Optional[Path] = None,
+        extra_args: Optional[str] = None,
+        friendly_command: Optional[str] = None,
+        log: Optional[tmt.log.LoggingFunction] = None,
+        silent: bool = False,
+    ) -> tmt.utils.CommandOutput:
         """
         Run an Ansible playbook on the guest.
 
@@ -1271,13 +1485,14 @@ class Guest(tmt.utils.Common):
         raise NotImplementedError
 
     def ansible(
-            self,
-            playbook: Path,
-            playbook_root: Optional[Path] = None,
-            extra_args: Optional[str] = None,
-            friendly_command: Optional[str] = None,
-            log: Optional[tmt.log.LoggingFunction] = None,
-            silent: bool = False) -> None:
+        self,
+        playbook: AnsibleApplicable,
+        playbook_root: Optional[Path] = None,
+        extra_args: Optional[str] = None,
+        friendly_command: Optional[str] = None,
+        log: Optional[tmt.log.LoggingFunction] = None,
+        silent: bool = False,
+    ) -> None:
         """
         Run an Ansible playbook on the guest.
 
@@ -1303,52 +1518,59 @@ class Guest(tmt.utils.Common):
             extra_args=extra_args,
             friendly_command=friendly_command,
             log=log if log else self._command_verbose_logger,
-            silent=silent)
+            silent=silent,
+        )
 
         self._ansible_summary(output.stdout)
 
     @overload
-    def execute(self,
-                command: tmt.utils.ShellScript,
-                cwd: Optional[Path] = None,
-                env: Optional[tmt.utils.Environment] = None,
-                friendly_command: Optional[str] = None,
-                test_session: bool = False,
-                tty: bool = False,
-                silent: bool = False,
-                log: Optional[tmt.log.LoggingFunction] = None,
-                interactive: bool = False,
-                on_process_start: Optional[OnProcessStartCallback] = None,
-                **kwargs: Any) -> tmt.utils.CommandOutput:
+    def execute(
+        self,
+        command: tmt.utils.ShellScript,
+        cwd: Optional[Path] = None,
+        env: Optional[tmt.utils.Environment] = None,
+        friendly_command: Optional[str] = None,
+        test_session: bool = False,
+        tty: bool = False,
+        silent: bool = False,
+        log: Optional[tmt.log.LoggingFunction] = None,
+        interactive: bool = False,
+        on_process_start: Optional[OnProcessStartCallback] = None,
+        **kwargs: Any,
+    ) -> tmt.utils.CommandOutput:
         pass
 
     @overload
-    def execute(self,
-                command: tmt.utils.Command,
-                cwd: Optional[Path] = None,
-                env: Optional[tmt.utils.Environment] = None,
-                friendly_command: Optional[str] = None,
-                test_session: bool = False,
-                tty: bool = False,
-                silent: bool = False,
-                log: Optional[tmt.log.LoggingFunction] = None,
-                interactive: bool = False,
-                on_process_start: Optional[OnProcessStartCallback] = None,
-                **kwargs: Any) -> tmt.utils.CommandOutput:
+    def execute(
+        self,
+        command: tmt.utils.Command,
+        cwd: Optional[Path] = None,
+        env: Optional[tmt.utils.Environment] = None,
+        friendly_command: Optional[str] = None,
+        test_session: bool = False,
+        tty: bool = False,
+        silent: bool = False,
+        log: Optional[tmt.log.LoggingFunction] = None,
+        interactive: bool = False,
+        on_process_start: Optional[OnProcessStartCallback] = None,
+        **kwargs: Any,
+    ) -> tmt.utils.CommandOutput:
         pass
 
-    def execute(self,
-                command: Union[tmt.utils.Command, tmt.utils.ShellScript],
-                cwd: Optional[Path] = None,
-                env: Optional[tmt.utils.Environment] = None,
-                friendly_command: Optional[str] = None,
-                test_session: bool = False,
-                tty: bool = False,
-                silent: bool = False,
-                log: Optional[tmt.log.LoggingFunction] = None,
-                interactive: bool = False,
-                on_process_start: Optional[OnProcessStartCallback] = None,
-                **kwargs: Any) -> tmt.utils.CommandOutput:
+    def execute(
+        self,
+        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
+        cwd: Optional[Path] = None,
+        env: Optional[tmt.utils.Environment] = None,
+        friendly_command: Optional[str] = None,
+        test_session: bool = False,
+        tty: bool = False,
+        silent: bool = False,
+        log: Optional[tmt.log.LoggingFunction] = None,
+        interactive: bool = False,
+        on_process_start: Optional[OnProcessStartCallback] = None,
+        **kwargs: Any,
+    ) -> tmt.utils.CommandOutput:
         """
         Execute a command on the guest.
 
@@ -1360,21 +1582,29 @@ class Guest(tmt.utils.Common):
 
         raise NotImplementedError
 
-    def push(self,
-             source: Optional[Path] = None,
-             destination: Optional[Path] = None,
-             options: Optional[list[str]] = None,
-             superuser: bool = False) -> None:
-        """ Push files to the guest """
+    def push(
+        self,
+        source: Optional[Path] = None,
+        destination: Optional[Path] = None,
+        options: Optional[list[str]] = None,
+        superuser: bool = False,
+    ) -> None:
+        """
+        Push files to the guest
+        """
 
         raise NotImplementedError
 
-    def pull(self,
-             source: Optional[Path] = None,
-             destination: Optional[Path] = None,
-             options: Optional[list[str]] = None,
-             extend_options: Optional[list[str]] = None) -> None:
-        """ Pull files from the guest """
+    def pull(
+        self,
+        source: Optional[Path] = None,
+        destination: Optional[Path] = None,
+        options: Optional[list[str]] = None,
+        extend_options: Optional[list[str]] = None,
+    ) -> None:
+        """
+        Pull files from the guest
+        """
 
         raise NotImplementedError
 
@@ -1389,33 +1619,67 @@ class Guest(tmt.utils.Common):
 
         raise NotImplementedError
 
+    @overload
     def reboot(
-            self,
-            hard: bool = False,
-            command: Optional[Union[Command, ShellScript]] = None,
-            timeout: Optional[int] = None) -> bool:
+        self,
+        hard: Literal[True] = True,
+        command: None = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
+        pass
+
+    @overload
+    def reboot(
+        self,
+        hard: Literal[False] = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
+        pass
+
+    def reboot(
+        self,
+        hard: bool = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
         """
-        Reboot the guest, return True if successful
+        Reboot the guest, and wait for the guest to recover.
 
-        Parameter 'hard' set to True means that guest should be
-        rebooted by way which is not clean in sense that data can be
-        lost. When set to False reboot should be done gracefully.
+        .. note::
 
-        Use the 'command' parameter to specify a custom reboot command
-        instead of the default 'reboot'.
+           Custom reboot command can be used only in combination with a
+           soft reboot. If both ``hard`` and ``command`` are set, a hard
+           reboot will be requested, and ``command`` will be ignored.
 
-        Parameter 'timeout' can be used to specify time (in seconds) to
-        wait for the guest to come back up after rebooting.
+        :param hard: if set, force the reboot. This may result in a loss
+            of data. The default of ``False`` will attempt a graceful
+            reboot.
+        :param command: a command to run on the guest to trigger the
+            reboot. If ``hard`` is also set, ``command`` is ignored.
+        :param timeout: amount of time in which the guest must become available
+            again.
+        :param tick: how many seconds to wait between two consecutive attempts
+            of contacting the guest.
+        :param tick_increase: a multiplier applied to ``tick`` after every
+            attempt.
+        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
         raise NotImplementedError
 
     def reconnect(
-            self,
-            timeout: Optional[int] = None,
-            tick: float = RECONNECT_WAIT_TICK,
-            tick_increase: float = RECONNECT_WAIT_TICK_INCREASE
-            ) -> bool:
+        self,
+        timeout: Optional[int] = None,
+        tick: float = RECONNECT_WAIT_TICK,
+        tick_increase: float = RECONNECT_WAIT_TICK_INCREASE,
+    ) -> bool:
         """
         Ensure the connection to the guest is working
 
@@ -1423,6 +1687,7 @@ class Guest(tmt.utils.Common):
         provided in the `timeout` parameter. This may be useful when long
         operations (such as system upgrade) are performed.
         """
+
         # The default is handled here rather than in the argument so that
         # the caller can pass in None as an argument (i.e. don't care value)
         timeout = timeout or REBOOT_TIMEOUT
@@ -1441,7 +1706,8 @@ class Guest(tmt.utils.Common):
                 try_whoami,
                 datetime.timedelta(seconds=timeout),
                 tick=tick,
-                tick_increase=tick_increase)
+                tick_increase=tick_increase,
+            )
 
         except tmt.utils.WaitingTimedOutError:
             self.debug("Connection to guest failed after reboot.")
@@ -1456,6 +1722,7 @@ class Guest(tmt.utils.Common):
         Completely remove all guest instance data so that it does not
         consume any disk resources.
         """
+
         self.debug(f"Doing nothing to remove guest '{self.primary_address}'.")
 
     def _check_rsync(self) -> CheckRsyncOutcome:
@@ -1491,8 +1758,38 @@ class Guest(tmt.utils.Common):
 
         return []
 
+    @property
+    def logdir(self) -> Optional[Path]:
+        """
+        Path to store logs
+        """
+        return self.workdir / 'logs' if self.workdir else None
 
-@dataclasses.dataclass
+    def fetch_logs(
+        self,
+        logger: tmt.log.Logger,
+        dirpath: Optional[Path] = None,
+        guest_logs: Optional[list[GuestLog]] = None,
+    ) -> None:
+        """
+        Get log content and save it to a directory.
+
+        :param logger: logger to use for logging.
+        :param dirpath: a directory to save into. If not set, :py:attr:`logdir`,
+            or current working directory will be used.
+        :param guest_logs: optional list of :py:attr:`GuestLog`. If not set,
+            all guest logs from :py:attr:`Guest.guest_logs` would be collected.
+        """
+
+        guest_logs = guest_logs or self.guest_logs
+
+        dirpath = dirpath or self.logdir or Path.cwd()
+        dirpath.mkdir(parents=True, exist_ok=True)
+        for log in guest_logs:
+            log.store(logger, dirpath, log.name)
+
+
+@container
 class GuestSshData(GuestData):
     """
     Keys necessary to describe, create, save and restore a guest with SSH
@@ -1507,23 +1804,27 @@ class GuestSshData(GuestData):
         option=('-P', '--port'),
         metavar='PORT',
         help='Use specific port to connect to.',
-        normalize=tmt.utils.normalize_optional_int)
+        normalize=tmt.utils.normalize_optional_int,
+    )
     user: Optional[str] = field(
         default=None,
         option=('-u', '--user'),
         metavar='USERNAME',
-        help='Username to use for all guest operations.')
+        help='Username to use for all guest operations.',
+    )
     key: list[str] = field(
         default_factory=list,
         option=('-k', '--key'),
         metavar='PATH',
         help='Private key for login into the guest system.',
-        normalize=tmt.utils.normalize_string_list)
+        normalize=tmt.utils.normalize_string_list,
+    )
     password: Optional[str] = field(
         default=None,
         option=('-p', '--password'),
         metavar='PASSWORD',
-        help='Password for login into the guest system.')
+        help='Password for login into the guest system.',
+    )
     ssh_option: list[str] = field(
         default_factory=list,
         option='--ssh-option',
@@ -1533,7 +1834,8 @@ class GuestSshData(GuestData):
              Specify an additional SSH option. Value is passed to SSH's -o option, see
              ssh_config(5) for supported options. Can be specified multiple times.
              """,
-        normalize=tmt.utils.normalize_string_list)
+        normalize=tmt.utils.normalize_string_list,
+    )
 
 
 class GuestSsh(Guest):
@@ -1565,35 +1867,46 @@ class GuestSsh(Guest):
     _ssh_master_process_lock: threading.Lock
     _ssh_master_process: Optional['subprocess.Popen[bytes]'] = None
 
-    def __init__(self,
-                 *,
-                 data: GuestData,
-                 name: Optional[str] = None,
-                 parent: Optional[tmt.utils.Common] = None,
-                 logger: tmt.log.Logger) -> None:
+    def __init__(
+        self,
+        *,
+        data: GuestData,
+        name: Optional[str] = None,
+        parent: Optional[tmt.utils.Common] = None,
+        logger: tmt.log.Logger,
+    ) -> None:
         self._ssh_master_process_lock = threading.Lock()
 
         super().__init__(data=data, logger=logger, parent=parent, name=name)
 
     @functools.cached_property
     def _ssh_guest(self) -> str:
-        """ Return user@guest """
+        """
+        Return user@guest
+        """
+
         return f'{self.user}@{self.primary_address}'
 
     @functools.cached_property
     def _is_ssh_master_socket_path_acceptable(self) -> bool:
-        """ Whether the SSH master socket path we create is acceptable by SSH """
+        """
+        Whether the SSH master socket path we create is acceptable by SSH
+        """
 
         if len(str(self._ssh_master_socket_path)) >= SSH_MASTER_SOCKET_LENGTH_LIMIT:
-            self.warn("SSH multiplexing will not be used because the SSH master socket path "
-                      f"'{self._ssh_master_socket_path}' is too long.")
+            self.warn(
+                "SSH multiplexing will not be used because the SSH master socket path "
+                f"'{self._ssh_master_socket_path}' is too long."
+            )
             return False
 
         return True
 
     @property
     def is_ssh_multiplexing_enabled(self) -> bool:
-        """ Whether SSH multiplexing should be used """
+        """
+        Whether SSH multiplexing should be used
+        """
 
         if self.primary_address is None:
             return False
@@ -1605,7 +1918,9 @@ class GuestSsh(Guest):
 
     @functools.cached_property
     def _ssh_master_socket_path(self) -> Path:
-        """ Return path to the SSH master socket """
+        """
+        Return path to the SSH master socket
+        """
 
         # Can be any step opening the connection
         assert isinstance(self.parent, tmt.steps.Step)
@@ -1644,14 +1959,13 @@ class GuestSsh(Guest):
         guest_id = '-'.join(guest_id_components)
 
         socket_path = _socket_path_trivial(
-            socket_dir=socket_dir,
-            guest_id=guest_id,
-            logger=self._logger)
+            socket_dir=socket_dir, guest_id=guest_id, logger=self._logger
+        )
 
         if socket_path is not None:
             self.debug(
-                f"SSH master socket path will be '{socket_path}' (trivial method).",
-                level=4)
+                f"SSH master socket path will be '{socket_path}' (trivial method).", level=4
+            )
 
             return socket_path
 
@@ -1661,14 +1975,11 @@ class GuestSsh(Guest):
         # in use - extremely unlikely, yet possible - try a slightly
         # longer one.
         socket_path = _socket_path_hash(
-            socket_dir=socket_dir,
-            guest_id=guest_id,
-            logger=self._logger)
+            socket_dir=socket_dir, guest_id=guest_id, logger=self._logger
+        )
 
         if socket_path is not None:
-            self.debug(
-                f"SSH master socket path will be '{socket_path}' (hash method).",
-                level=4)
+            self.debug(f"SSH master socket path will be '{socket_path}' (hash method).", level=4)
 
             return socket_path
 
@@ -1676,14 +1987,13 @@ class GuestSsh(Guest):
         # Return the most readable one, and let caller decide whether
         # they use it or not. We run out of options.
         socket_path = _socket_path_trivial(
-            socket_dir=socket_dir,
-            guest_id=guest_id,
-            limit_size=False,
-            logger=self._logger)
+            socket_dir=socket_dir, guest_id=guest_id, limit_size=False, logger=self._logger
+        )
 
         self.debug(
             f"SSH master socket path will be '{socket_path}' (trivial method, no size limit).",
-            level=4)
+            level=4,
+        )
 
         return socket_path
 
@@ -1693,7 +2003,9 @@ class GuestSsh(Guest):
 
     @property
     def _ssh_options(self) -> Command:
-        """ Return common SSH options """
+        """
+        Return common SSH options
+        """
 
         options = BASE_SSH_OPTIONS[:]
 
@@ -1725,23 +2037,24 @@ class GuestSsh(Guest):
 
     @property
     def _base_ssh_command(self) -> Command:
-        """ A base SSH command shared by all SSH processes """
+        """
+        A base SSH command shared by all SSH processes
+        """
 
-        command = Command(
-            *(["sshpass", "-p", self.password] if self.password else []),
-            "ssh"
-            )
+        command = Command(*(["sshpass", "-p", self.password] if self.password else []), "ssh")
 
         return command + self._ssh_options
 
     def _spawn_ssh_master_process(self) -> subprocess.Popen[bytes]:
-        """ Spawn the SSH master process """
+        """
+        Spawn the SSH master process
+        """
 
-        # NOTE: do not modify `command`, it might be re-used by the caller. To
+        # NOTE: do not modify `command`, it might be reused by the caller. To
         # be safe, include it in our own command.
-        ssh_master_command = self._base_ssh_command \
-            + self._ssh_options \
-            + Command("-MNnT", self._ssh_guest)
+        ssh_master_command = (
+            self._base_ssh_command + self._ssh_options + Command("-MNnT", self._ssh_guest)
+        )
 
         self.debug(f"Spawning the SSH master process: {ssh_master_command}")
 
@@ -1749,31 +2062,34 @@ class GuestSsh(Guest):
             ssh_master_command.to_popen(),
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL)
+            stderr=subprocess.DEVNULL,
+        )
 
     def _cleanup_ssh_master_process(
-            self,
-            signal: _signal.Signals = _signal.SIGTERM,
-            logger: Optional[tmt.log.Logger] = None) -> None:
+        self, signal: _signal.Signals = _signal.SIGTERM, logger: Optional[tmt.log.Logger] = None
+    ) -> None:
         logger = logger or self._logger
 
         if not self.is_ssh_multiplexing_enabled:
-            logger.debug('The SSH master process cannot be terminated because it is disabled.',
-                         level=3)
+            logger.debug(
+                'The SSH master process cannot be terminated because it is disabled.', level=3
+            )
 
             return
 
         with self._ssh_master_process_lock:
             if self._ssh_master_process is None:
-                logger.debug('The SSH master process cannot be terminated because it is unset.',
-                             level=3)
+                logger.debug(
+                    'The SSH master process cannot be terminated because it is unset.', level=3
+                )
 
                 return
 
             logger.debug(
                 f'Terminating the SSH master process {self._ssh_master_process.pid}'
                 f' with {signal.name}.',
-                level=3)
+                level=3,
+            )
 
             self._ssh_master_process.send_signal(signal)
 
@@ -1783,14 +2099,16 @@ class GuestSsh(Guest):
 
             except subprocess.TimeoutExpired:
                 logger.warning(
-                    f'Terminating the SSH master process {self._ssh_master_process.pid}'
-                    ' timed out.')
+                    f'Terminating the SSH master process {self._ssh_master_process.pid} timed out.'
+                )
 
             self._ssh_master_process = None
 
     @property
     def _ssh_command(self) -> Command:
-        """ A base SSH command shared by all SSH processes """
+        """
+        A base SSH command shared by all SSH processes
+        """
 
         if self.is_ssh_multiplexing_enabled:
             with self._ssh_master_process_lock:
@@ -1820,13 +2138,14 @@ class GuestSsh(Guest):
             del self._ssh_master_socket_reservation_path
 
     def _run_ansible(
-            self,
-            playbook: Path,
-            playbook_root: Optional[Path] = None,
-            extra_args: Optional[str] = None,
-            friendly_command: Optional[str] = None,
-            log: Optional[tmt.log.LoggingFunction] = None,
-            silent: bool = False) -> tmt.utils.CommandOutput:
+        self,
+        playbook: AnsibleApplicable,
+        playbook_root: Optional[Path] = None,
+        extra_args: Optional[str] = None,
+        friendly_command: Optional[str] = None,
+        log: Optional[tmt.log.LoggingFunction] = None,
+        silent: bool = False,
+    ) -> tmt.utils.CommandOutput:
         """
         Run an Ansible playbook on the guest.
 
@@ -1854,24 +2173,37 @@ class GuestSsh(Guest):
             ansible_command += self._ansible_extra_args(extra_args)
 
         ansible_command += Command(
-            '--ssh-common-args', self._ssh_options.to_element(),
-            '-i', f'{self._ssh_guest},',
-            playbook)
+            '--ssh-common-args',
+            self._ssh_options.to_element(),
+            '-i',
+            f'{self._ssh_guest},',
+            playbook,
+        )
 
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
 
-        return self._run_guest_command(
-            ansible_command,
-            friendly_command=friendly_command,
-            silent=silent,
-            cwd=parent.plan.worktree,
-            env=self._prepare_environment(),
-            log=log)
+        try:
+            return self._run_guest_command(
+                ansible_command,
+                friendly_command=friendly_command,
+                silent=silent,
+                cwd=parent.plan.worktree,
+                env=self._prepare_environment(),
+                log=log,
+            )
+        except tmt.utils.RunError as exc:
+            if "File 'ansible-playbook' not found." in exc.message:
+                from tmt.utils.hints import print_hint
+
+                print_hint(id_='ansible-not-available', logger=self._logger)
+            raise exc
 
     @property
     def is_ready(self) -> bool:
-        """ Detect guest is ready or not """
+        """
+        Detect guest is ready or not
+        """
 
         # Enough for now, ssh connection can be created later
         return self.primary_address is not None
@@ -1882,24 +2214,29 @@ class GuestSsh(Guest):
         if not self.facts.is_superuser and self.become:
             self.package_manager.install(FileSystemPath('/usr/bin/setfacl'))
             workdir_root = effective_workdir_root()
-            self.execute(ShellScript(
-                f"""
+            self.execute(
+                ShellScript(
+                    f"""
                     mkdir -p {workdir_root};
                     setfacl -d -m o:rX {workdir_root}
-                    """))
+                    """
+                )
+            )
 
-    def execute(self,
-                command: Union[tmt.utils.Command, tmt.utils.ShellScript],
-                cwd: Optional[Path] = None,
-                env: Optional[tmt.utils.Environment] = None,
-                friendly_command: Optional[str] = None,
-                test_session: bool = False,
-                tty: bool = False,
-                silent: bool = False,
-                log: Optional[tmt.log.LoggingFunction] = None,
-                interactive: bool = False,
-                on_process_start: Optional[OnProcessStartCallback] = None,
-                **kwargs: Any) -> tmt.utils.CommandOutput:
+    def execute(
+        self,
+        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
+        cwd: Optional[Path] = None,
+        env: Optional[tmt.utils.Environment] = None,
+        friendly_command: Optional[str] = None,
+        test_session: bool = False,
+        tty: bool = False,
+        silent: bool = False,
+        log: Optional[tmt.log.LoggingFunction] = None,
+        interactive: bool = False,
+        on_process_start: Optional[OnProcessStartCallback] = None,
+        **kwargs: Any,
+    ) -> tmt.utils.CommandOutput:
         """
         Execute a command on the guest.
 
@@ -1932,7 +2269,7 @@ class GuestSsh(Guest):
         # string passed to SSH to execute on the remote machine.
         remote_commands: ShellScript = ShellScript.from_scripts(
             self._export_environment(self._prepare_environment(env))
-            )
+        )
 
         # Change to given directory on guest if cwd provided
         if cwd:
@@ -1946,10 +2283,7 @@ class GuestSsh(Guest):
 
         remote_command = remote_commands.to_element()
 
-        ssh_command += [
-            self._ssh_guest,
-            remote_command
-            ]
+        ssh_command += [self._ssh_guest, remote_command]
 
         self.debug(f"Execute command '{remote_command}' on guest '{self.primary_address}'.")
 
@@ -1961,25 +2295,31 @@ class GuestSsh(Guest):
             cwd=cwd,
             interactive=interactive,
             on_process_start=on_process_start,
-            **kwargs)
+            **kwargs,
+        )
 
         # Drop ssh connection closed messages, #2524
         if test_session and output.stdout:
             # Get last line index
             last_line_index = output.stdout.rfind(os.linesep, 0, -2)
             # Drop the connection closed message line, keep the ending lineseparator
-            if 'Shared connection to ' in output.stdout[last_line_index:] \
-                    or 'Connection to ' in output.stdout[last_line_index:]:
+            if (
+                'Shared connection to ' in output.stdout[last_line_index:]
+                or 'Connection to ' in output.stdout[last_line_index:]
+            ):
                 output = dataclasses.replace(
-                    output, stdout=output.stdout[:last_line_index + len(os.linesep)])
+                    output, stdout=output.stdout[: last_line_index + len(os.linesep)]
+                )
 
         return output
 
-    def push(self,
-             source: Optional[Path] = None,
-             destination: Optional[Path] = None,
-             options: Optional[list[str]] = None,
-             superuser: bool = False) -> None:
+    def push(
+        self,
+        source: Optional[Path] = None,
+        destination: Optional[Path] = None,
+        options: Optional[list[str]] = None,
+        superuser: bool = False,
+    ) -> None:
         """
         Push files to the guest
 
@@ -1991,6 +2331,7 @@ class GuestSsh(Guest):
         Set 'superuser' if rsync command has to run as root or passwordless
         sudo on the Guest (e.g. pushing to r/o destination)
         """
+
         # Abort if guest is unavailable
         if self.primary_address is None and not self.is_dry_run:
             raise tmt.utils.GeneralError('The guest is not available.')
@@ -2011,7 +2352,10 @@ class GuestSsh(Guest):
             self.debug(f"Copy '{source}' to '{destination}' on the guest.")
 
         def rsync() -> None:
-            """ Run the rsync command """
+            """
+            Run the rsync command
+            """
+
             # In closure, mypy has hard times to reason about the state of used variables.
             assert options
             assert source
@@ -2021,13 +2365,17 @@ class GuestSsh(Guest):
             if superuser and self.user != 'root':
                 cmd += ['--rsync-path', 'sudo rsync']
 
-            self._run_guest_command(Command(
-                *cmd,
-                *options,
-                "-e", self._ssh_command.to_element(),
-                source,
-                f"{self._ssh_guest}:{destination}"
-                ), silent=True)
+            self._run_guest_command(
+                Command(
+                    *cmd,
+                    *options,
+                    "-e",
+                    self._ssh_command.to_element(),
+                    source,
+                    f"{self._ssh_guest}:{destination}",
+                ),
+                silent=True,
+            )
 
         # Try to push twice, check for rsync after the first failure
         try:
@@ -2041,14 +2389,17 @@ class GuestSsh(Guest):
                 # Provide a reasonable error to the user
                 self.fail(
                     f"Failed to push workdir to the guest. This usually means "
-                    f"that login as '{self.user}' to the guest does not work.")
+                    f"that login as '{self.user}' to the guest does not work."
+                )
                 raise
 
-    def pull(self,
-             source: Optional[Path] = None,
-             destination: Optional[Path] = None,
-             options: Optional[list[str]] = None,
-             extend_options: Optional[list[str]] = None) -> None:
+    def pull(
+        self,
+        source: Optional[Path] = None,
+        destination: Optional[Path] = None,
+        options: Optional[list[str]] = None,
+        extend_options: Optional[list[str]] = None,
+    ) -> None:
         """
         Pull files from the guest
 
@@ -2058,6 +2409,7 @@ class GuestSsh(Guest):
         default options :py:data:`DEFAULT_RSYNC_PULL_OPTIONS`
         and 'extend_options' to extend them (e.g. by exclude).
         """
+
         # Abort if guest is unavailable
         if self.primary_address is None and not self.is_dry_run:
             raise tmt.utils.GeneralError('The guest is not available.')
@@ -2080,19 +2432,26 @@ class GuestSsh(Guest):
             self.debug(f"Copy '{source}' from the guest to '{destination}'.")
 
         def rsync() -> None:
-            """ Run the rsync command """
+            """
+            Run the rsync command
+            """
+
             # In closure, mypy has hard times to reason about the state of used variables.
             assert options
             assert source
             assert destination
 
-            self._run_guest_command(Command(
-                "rsync",
-                *options,
-                "-e", self._ssh_command.to_element(),
-                f"{self._ssh_guest}:{source}",
-                destination
-                ), silent=True)
+            self._run_guest_command(
+                Command(
+                    "rsync",
+                    *options,
+                    "-e",
+                    self._ssh_command.to_element(),
+                    f"{self._ssh_guest}:{source}",
+                    destination,
+                ),
+                silent=True,
+            )
 
         # Try to pull twice, check for rsync after the first failure
         try:
@@ -2107,7 +2466,8 @@ class GuestSsh(Guest):
                 self.fail(
                     f"Failed to pull workdir from the guest. "
                     f"This usually means that login as '{self.user}' "
-                    f"to the guest does not work.")
+                    f"to the guest does not work."
+                )
                 raise
 
     def stop(self) -> None:
@@ -2125,28 +2485,42 @@ class GuestSsh(Guest):
         # Remove the ssh socket
         self._unlink_ssh_master_socket_path()
 
-    def perform_reboot(self,
-                       command: Callable[[], tmt.utils.CommandOutput],
-                       timeout: Optional[int] = None,
-                       tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-                       tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
-                       hard: bool = False) -> bool:
+    def perform_reboot(
+        self,
+        action: Callable[[], Any],
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        fetch_boot_time: bool = True,
+    ) -> bool:
         """
         Perform the actual reboot and wait for the guest to recover.
 
-        :param command: a callable running the actual command triggering
-            the reboot.
+        This is the core implementation of the common task of triggering
+        a reboot and waiting for the guest to recover. :py:meth:`reboot`
+        is the public API of guest classes, and feeds
+        :py:meth:`perform_reboot` with the right ``action`` callable.
+
+        :param action: a callable which will trigger the requested reboot.
         :param timeout: amount of time in which the guest must become available
             again.
         :param tick: how many seconds to wait between two consecutive attempts
             of contacting the guest.
         :param tick_increase: a multiplier applied to ``tick`` after every
             attempt.
+        :param fetch_boot_time: if set, the current boot time of the
+            guest would be read first, and used for testing whether the
+            reboot has been performed. This will require communication
+            with the guest, therefore it is recommended to use ``False``
+            with hard reboot of unhealthy guests.
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
         def get_boot_time() -> int:
-            """ Reads btime from /proc/stat """
+            """
+            Reads btime from /proc/stat
+            """
+
             stdout = self.execute(Command("cat", "/proc/stat")).stdout
             assert stdout
 
@@ -2157,17 +2531,16 @@ class GuestSsh(Guest):
 
             return int(match.group(1))
 
-        current_boot_time = 0 if hard else get_boot_time()
+        current_boot_time = get_boot_time() if fetch_boot_time else 0
 
         try:
-            command()
+            action()
 
         except tmt.utils.RunError as error:
             # Connection can be closed by the remote host even before the
             # reboot command is completed. Let's ignore such errors.
             if error.returncode == 255:
-                self.debug(
-                    "Seems the connection was closed too fast, ignoring.")
+                self.debug("Seems the connection was closed too fast, ignoring.")
             else:
                 raise
 
@@ -2196,7 +2569,8 @@ class GuestSsh(Guest):
                 check_boot_time,
                 datetime.timedelta(seconds=timeout),
                 tick=tick,
-                tick_increase=tick_increase)
+                tick_increase=tick_increase,
+            )
 
         except tmt.utils.WaitingTimedOutError:
             self.debug("Connection to guest failed after reboot.")
@@ -2205,19 +2579,50 @@ class GuestSsh(Guest):
         self.debug("Connection to guest succeeded after reboot.")
         return True
 
+    @overload
     def reboot(
-            self,
-            hard: bool = False,
-            command: Optional[Union[Command, ShellScript]] = None,
-            timeout: Optional[int] = None,
-            tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-            tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
+        self,
+        hard: Literal[True] = True,
+        command: None = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
+        pass
+
+    @overload
+    def reboot(
+        self,
+        hard: Literal[False] = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
+        pass
+
+    def reboot(
+        self,
+        hard: bool = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
 
-        :param hard: if set, force the reboot. This may result in a loss of
-            data. The default of ``False`` will attempt a graceful reboot.
-        :param command: a command to run on the guest to trigger the reboot.
+        .. note::
+
+           Custom reboot command can be used only in combination with a
+           soft reboot. If both ``hard`` and ``command`` are set, a hard
+           reboot will be requested, and ``command`` will be ignored.
+
+        :param hard: if set, force the reboot. This may result in a loss
+            of data. The default of ``False`` will attempt a graceful
+            reboot.
+        :param command: a command to run on the guest to trigger the
+            reboot. If ``hard`` is also set, ``command`` is ignored.
         :param timeout: amount of time in which the guest must become available
             again.
         :param tick: how many seconds to wait between two consecutive attempts
@@ -2229,18 +2634,19 @@ class GuestSsh(Guest):
 
         if hard:
             raise tmt.utils.ProvisionError(
-                f"Guest '{self.multihost_name}' does not support hard reboot.")
+                f"Guest '{self.multihost_name}' does not support hard reboot."
+            )
 
-        actual_command = command or DEFAULT_REBOOT_COMMAND
+        actual_command = command or tmt.steps.DEFAULT_REBOOT_COMMAND
 
-        self.debug(f"Reboot using the command '{actual_command}'.")
+        self.debug(f"Soft reboot using command '{actual_command}'.")
 
         return self.perform_reboot(
             lambda: self.execute(actual_command),
             timeout=timeout,
             tick=tick,
             tick_increase=tick_increase,
-            hard=hard)
+        )
 
     def remove(self) -> None:
         """
@@ -2249,10 +2655,11 @@ class GuestSsh(Guest):
         Completely remove all guest instance data so that it does not
         consume any disk resources.
         """
+
         self.debug(f"Doing nothing to remove guest '{self.primary_address}'.")
 
 
-@dataclasses.dataclass
+@container
 class ProvisionStepData(tmt.steps.StepData):
     # guest role in the multihost scenario
     role: Optional[str] = None
@@ -2262,14 +2669,18 @@ class ProvisionStepData(tmt.steps.StepData):
         normalize=normalize_hardware,
         serialize=lambda hardware: hardware.to_spec() if hardware else None,
         unserialize=lambda serialized: tmt.hardware.Hardware.from_spec(serialized)
-        if serialized is not None else None)
+        if serialized is not None
+        else None,
+    )
 
 
 ProvisionStepDataT = TypeVar('ProvisionStepDataT', bound=ProvisionStepData)
 
 
 class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
-    """ Common parent of provision plugins """
+    """
+    Common parent of provision plugins
+    """
 
     # ignore[assignment]: as a base class, ProvisionStepData is not included in
     # ProvisionStepDataT.
@@ -2290,12 +2701,17 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
     # TODO: Generics would provide a better type, https://github.com/teemtee/tmt/issues/1437
     _guest: Optional[Guest] = None
 
+    _preserved_workdir_members = {'logs'}
+
     @classmethod
     def base_command(
-            cls,
-            usage: str,
-            method_class: Optional[type[click.Command]] = None) -> click.Command:
-        """ Create base click command (common for all provision plugins) """
+        cls,
+        usage: str,
+        method_class: Optional[type[click.Command]] = None,
+    ) -> click.Command:
+        """
+        Create base click command (common for all provision plugins)
+        """
 
         # Prepare general usage message for the step
         if method_class:
@@ -2304,9 +2720,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
         # Create the command
         @click.command(cls=method_class, help=usage)
         @click.pass_context
-        @option(
-            '-h', '--how', metavar='METHOD',
-            help='Use specified method for provisioning.')
+        @option('-h', '--how', metavar='METHOD', help='Use specified method for provisioning.')
         @tmt.steps.PHASE_OPTIONS
         def provision(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             context.obj.steps.add('provision')
@@ -2315,13 +2729,17 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
         return provision
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        """ Perform actions shared among plugins when beginning their tasks """
+        """
+        Perform actions shared among plugins when beginning their tasks
+        """
 
         self.go_prolog(logger or self._logger)
 
     # TODO: this might be needed until https://github.com/teemtee/tmt/issues/1696 is resolved
     def opt(self, option: str, default: Optional[Any] = None) -> Any:
-        """ Get an option from the command line options """
+        """
+        Get an option from the command line options
+        """
 
         if option == 'ssh-option':
             value = super().opt(option, default=default)
@@ -2340,25 +2758,24 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
         Override data with command line options.
         Wake up the guest based on provided guest data.
         """
+
         super().wake()
 
         if data is not None:
             guest = self._guest_class(
-                logger=self._logger,
-                data=data,
-                name=self.name,
-                parent=self.step)
+                logger=self._logger, data=data, name=self.name, parent=self.step
+            )
             guest.wake()
             self._guest = guest
 
+    # TODO: getter. Like in Java. Do we need it?
+    @property
     def guest(self) -> Optional[Guest]:
         """
-        Return provisioned guest
-
-        Each ProvisionPlugin has to implement this method.
-        Should return a provisioned Guest() instance.
+        Return the provisioned guest.
         """
-        raise NotImplementedError
+
+        return self._guest
 
     def essential_requires(self) -> list['tmt.base.Dependency']:
         """
@@ -2378,12 +2795,18 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
 
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
-        """ Return list of options. """
+        """
+        Return list of options.
+        """
+
         return super().options(how) + cls._guest_class.options(how)
 
     @classmethod
-    def clean_images(cls, clean: 'tmt.base.Clean', dry: bool) -> bool:
-        """ Remove the images of one particular plugin """
+    def clean_images(cls, clean: 'tmt.base.Clean', dry: bool, workdir_root: Path) -> bool:
+        """
+        Remove the images of one particular plugin
+        """
+
         return True
 
     def show(self, keys: Optional[list[str]] = None) -> None:
@@ -2403,9 +2826,11 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
                 echo(tmt.utils.format('hardware', tmt.utils.dict_to_yaml(hardware.to_spec())))
 
 
-@dataclasses.dataclass
+@container
 class ProvisionTask(tmt.queue.GuestlessTask[None]):
-    """ A task to run provisioning of multiple guests """
+    """
+    A task to run provisioning of multiple guests
+    """
 
     #: Phases describing guests to provision. In the ``provision`` step,
     #: each phase describes one guest.
@@ -2422,9 +2847,7 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
     def go(self) -> Iterator['ProvisionTask']:
         multiple_guests = len(self.phases) > 1
 
-        new_loggers = tmt.queue.prepare_loggers(
-            self.logger,
-            [phase.name for phase in self.phases])
+        new_loggers = tmt.queue.prepare_loggers(self.logger, [phase.name for phase in self.phases])
         old_loggers: dict[str, Logger] = {}
 
         with ThreadPoolExecutor(max_workers=len(self.phases)) as executor:
@@ -2440,9 +2863,7 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
                     new_logger.info('started', color='cyan')
 
                 # Submit each phase as a distinct job for executor pool...
-                futures[
-                    executor.submit(phase.go)
-                    ] = phase
+                futures[executor.submit(phase.go)] = phase
 
             # ... and then sit and wait as they get delivered to us as they
             # finish.
@@ -2466,57 +2887,59 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
                     yield ProvisionTask(
                         logger=new_logger,
                         result=None,
-                        guest=None,
+                        guest=phase.guest,
                         exc=None,
                         requested_exit=exc,
-                        phases=[]
-                        )
+                        phases=[],
+                    )
 
                 except Exception as exc:
                     yield ProvisionTask(
                         logger=new_logger,
                         result=None,
-                        guest=None,
+                        guest=phase.guest,
                         exc=exc,
                         requested_exit=None,
-                        phases=[]
-                        )
+                        phases=[],
+                    )
 
                 else:
                     yield ProvisionTask(
                         logger=new_logger,
                         result=None,
-                        guest=phase.guest(),
+                        guest=phase.guest,
                         exc=None,
                         requested_exit=None,
                         phases=[],
-                        phase=phase
-                        )
+                        phase=phase,
+                    )
 
                 # Don't forget to restore the original logger.
                 phase.inject_logger(old_logger)
 
 
 class ProvisionQueue(tmt.queue.Queue[ProvisionTask]):
-    """ Queue class for running provisioning tasks """
+    """
+    Queue class for running provisioning tasks
+    """
 
-    def enqueue(
-            self,
-            *,
-            phases: list[ProvisionPlugin[ProvisionStepData]],
-            logger: Logger) -> None:
-        self.enqueue_task(ProvisionTask(
-            logger=logger,
-            result=None,
-            guest=None,
-            exc=None,
-            requested_exit=None,
-            phases=phases
-            ))
+    def enqueue(self, *, phases: list[ProvisionPlugin[ProvisionStepData]], logger: Logger) -> None:
+        self.enqueue_task(
+            ProvisionTask(
+                logger=logger,
+                result=None,
+                guest=None,
+                exc=None,
+                requested_exit=None,
+                phases=phases,
+            )
+        )
 
 
 class Provision(tmt.steps.Step):
-    """ Provision an environment for testing or use localhost. """
+    """
+    Provision an environment for testing or use localhost.
+    """
 
     # Default implementation for provision is a virtual machine
     DEFAULT_HOW = 'virtual'
@@ -2525,25 +2948,81 @@ class Provision(tmt.steps.Step):
 
     _preserved_workdir_members = ['step.yaml', 'guests.yaml']
 
+    #: All known guests.
+    #:
+    #: .. warning::
+    #:
+    #:    Guests may not necessarily be fully provisioned. They are
+    #:    from plugins as soon as possible, and guests may easily be
+    #:    still waiting for their infrastructure to finish the task.
+    #:    For the list of successfully provisioned guests, see
+    #:    :py:attr:`ready_guests`.
+    guests: list[Guest]
+
+    @property
+    def ready_guests(self) -> list[Guest]:
+        """
+        All successfully provisioned guests.
+
+        Most of the time, after ``provision`` step finishes successfully,
+        the list should be the same as :py:attr:`guests`, i.e. it should
+        contain all known guests. There are situations when
+        ``ready_guests`` will be a subset of ``guests``, and their users
+        must decide which collection is the best for the desired goal:
+
+        * when ``provision`` is still running. ``ready_guests`` will be
+          slowly gaining new guests as they get up and running.
+        * in dry-run mode, no actual provisioning is expected to happen,
+          therefore there are no unsuccessfully provisioned guests. In
+          this mode, all known guests are considered as ready, and
+          ``ready_guests`` is the same as ``guests``.
+        * if tmt is interrupted by a signal or user. Not all guests will
+          finish their provisioning process, and ``ready_guests`` may
+          contain just the finished ones.
+        """
+
+        if self.is_dry_run:
+            return self.guests
+
+        return [guest for guest in self.guests if guest.is_ready]
+
     def __init__(
-            self,
-            *,
-            plan: 'tmt.Plan',
-            data: tmt.steps.RawStepDataArgument,
-            logger: tmt.log.Logger) -> None:
-        """ Initialize provision step data """
+        self,
+        *,
+        plan: 'tmt.Plan',
+        data: tmt.steps.RawStepDataArgument,
+        logger: tmt.log.Logger,
+    ) -> None:
+        """
+        Initialize provision step data
+        """
+
         super().__init__(plan=plan, data=data, logger=logger)
 
-        # List of provisioned guests and loaded guest data
-        self._guests: list[Guest] = []
+        self.guests = []
         self._guest_data: dict[str, GuestData] = {}
 
     @property
     def is_multihost(self) -> bool:
         return len(self.data) > 1
 
+    def get_guests_info(self) -> list[tuple[str, Optional[str]]]:
+        """
+        Get a list containing the names and roles of guests that should be enabled.
+        """
+
+        phases = [
+            cast(ProvisionPlugin[ProvisionStepData], phase)
+            for phase in self.phases(classes=ProvisionPlugin)
+            if phase.enabled_by_when
+        ]
+        return [(phase.data.name, phase.data.role) for phase in phases]
+
     def load(self) -> None:
-        """ Load guest data from the workdir """
+        """
+        Load guest data from the workdir
+        """
+
         super().load()
         try:
             raw_guest_data = tmt.utils.yaml_to_dict(self.read(Path('guests.yaml')))
@@ -2551,61 +3030,72 @@ class Provision(tmt.steps.Step):
             self._guest_data = {
                 name: SerializableContainer.unserialize(guest_data, self._logger)
                 for name, guest_data in raw_guest_data.items()
-                }
+            }
 
         except tmt.utils.FileError:
             self.debug('Provisioned guests not found.', level=2)
 
     def save(self) -> None:
-        """ Save guest data to the workdir """
+        """
+        Save guest data to the workdir
+        """
+
         super().save()
         try:
-            raw_guest_data = {guest.name: guest.save().to_serialized()
-                              for guest in self.guests()}
+            raw_guest_data = {
+                guest.name: guest.save().to_serialized() for guest in self.ready_guests
+            }
 
             self.write(Path('guests.yaml'), tmt.utils.dict_to_yaml(raw_guest_data))
         except tmt.utils.FileError:
             self.debug('Failed to save provisioned guests.')
 
     def wake(self) -> None:
-        """ Wake up the step (process workdir and command line) """
+        """
+        Wake up the step (process workdir and command line)
+        """
+
         super().wake()
 
         # Choose the right plugin and wake it up
         for data in self.data:
             # FIXME: cast() - see https://github.com/teemtee/tmt/issues/1599
             plugin = cast(
-                ProvisionPlugin[ProvisionStepData],
-                ProvisionPlugin.delegate(self, data=data))
+                ProvisionPlugin[ProvisionStepData], ProvisionPlugin.delegate(self, data=data)
+            )
             self._phases.append(plugin)
             # If guest data loaded, perform a complete wake up
             plugin.wake(data=self._guest_data.get(plugin.name))
 
-            guest = plugin.guest()
-            if guest:
-                self._guests.append(guest)
+            if plugin.guest:
+                self.guests.append(plugin.guest)
 
         # Nothing more to do if already done and not asked to run again
         if self.status() == 'done' and not self.should_run_again:
-            self.debug(
-                'Provision wake up complete (already done before).', level=2)
+            self.debug('Provision wake up complete (already done before).', level=2)
         # Save status and step data (now we know what to do)
         else:
             self.status('todo')
             self.save()
 
     def summary(self) -> None:
-        """ Give a concise summary of the provisioning """
+        """
+        Give a concise summary of the provisioning
+        """
+
         # Summary of provisioned guests
-        guests = fmf.utils.listed(self.guests(), 'guest')
+        guests = fmf.utils.listed(self.ready_guests, 'guest')
         self.info('summary', f'{guests} provisioned', 'green', shift=1)
         # Guest list in verbose mode
-        for guest in self.guests():
+        for guest in self.ready_guests:
             if not guest.name.startswith(tmt.utils.DEFAULT_NAME):
                 self.verbose(guest.name, color='red', shift=2)
 
     def go(self, force: bool = False) -> None:
-        """ Provision all guests """
+        """
+        Provision all guests
+        """
+
         super().go(force=force)
 
         # Nothing more to do if already done
@@ -2616,11 +3106,11 @@ class Provision(tmt.steps.Step):
             return
 
         # Provision guests
-        self._guests = []
+        self.guests = []
 
         def _run_provision_phases(
-                phases: list[ProvisionPlugin[ProvisionStepData]]
-                ) -> tuple[list[ProvisionTask], list[ProvisionTask]]:
+            phases: list[ProvisionPlugin[ProvisionStepData]],
+        ) -> tuple[list[ProvisionTask], list[ProvisionTask]]:
             """
             Run the given set of ``provision`` phases.
 
@@ -2632,8 +3122,8 @@ class Provision(tmt.steps.Step):
             """
 
             queue: ProvisionQueue = ProvisionQueue(
-                'provision.provision',
-                self._logger.descend(logger_name=f'{self}.queue'))
+                'provision.provision', self._logger.descend(logger_name=f'{self}.queue')
+            )
 
             queue.enqueue(phases=phases, logger=queue._logger)
 
@@ -2648,15 +3138,10 @@ class Provision(tmt.steps.Step):
 
                     failed_tasks.append(outcome)
 
-                    continue
+                if outcome.guest:
+                    outcome.guest.show()
 
-                guest = outcome.guest
-
-                if guest:
-                    guest.show()
-
-                    if guest.is_ready or self.is_dry_run:
-                        self._guests.append(guest)
+                    self.guests.append(outcome.guest)
 
             return all_tasks, failed_tasks
 
@@ -2672,8 +3157,8 @@ class Provision(tmt.steps.Step):
             """
 
             queue: PhaseQueue[ProvisionStepData, None] = PhaseQueue(
-                'provision.action',
-                self._logger.descend(logger_name=f'{self}.queue'))
+                'provision.action', self._logger.descend(logger_name=f'{self}.queue')
+            )
 
             for action in phases:
                 queue.enqueue_action(phase=action)
@@ -2702,51 +3187,64 @@ class Provision(tmt.steps.Step):
             p
             for p in self.phases(classes=(Action, ProvisionPlugin))
             if isinstance(p, Action) or p.enabled_by_when
-            ]
+        ]
         all_phases.sort(key=lambda x: x.order)
 
         all_outcomes: list[Union[ActionTask, ProvisionTask]] = []
         failed_outcomes: list[Union[ActionTask, ProvisionTask]] = []
 
-        while all_phases:
-            # Start looking for sequences of phases of the same kind. Collect
-            # as many as possible, until hitting a different one
-            phase = all_phases.pop(0)
+        # Wrapping the code with try/except catching KeyboardInterrupt
+        # exceptions that signals tmt has been interrupted. We need to
+        # collect all known guests and populate `self.guests` so finish
+        # can release them if necessary.
+        try:
+            while all_phases:
+                # Start looking for sequences of phases of the same kind. Collect
+                # as many as possible, until hitting a different one
+                phase = all_phases.pop(0)
 
-            if isinstance(phase, Action):
-                action_phases: list[Action] = [phase]
+                if isinstance(phase, Action):
+                    action_phases: list[Action] = [phase]
 
-                while all_phases and isinstance(all_phases[0], Action):
-                    action_phases.append(cast(Action, all_phases.pop(0)))
+                    while all_phases and isinstance(all_phases[0], Action):
+                        action_phases.append(cast(Action, all_phases.pop(0)))
 
-                all_action_outcomes, failed_action_outcomes = _run_action_phases(action_phases)
+                    all_action_outcomes, failed_action_outcomes = _run_action_phases(action_phases)
 
-                all_outcomes += all_action_outcomes
-                failed_outcomes += failed_action_outcomes
+                    all_outcomes += all_action_outcomes
+                    failed_outcomes += failed_action_outcomes
 
-            else:
-                plugin_phases: list[ProvisionPlugin[ProvisionStepData]] = [
-                    phase]  # type: ignore[list-item]
+                else:
+                    plugin_phases: list[ProvisionPlugin[ProvisionStepData]] = [phase]  # type: ignore[list-item]
 
-                # ignore[attr-defined]: mypy does not recognize `phase` as `ProvisionPlugin`.
-                if phase._thread_safe:  # type: ignore[attr-defined]
-                    while all_phases:
-                        if not isinstance(all_phases[0], ProvisionPlugin):
-                            break
+                    # ignore[attr-defined]: mypy does not recognize `phase` as `ProvisionPlugin`.
+                    if phase._thread_safe:  # type: ignore[attr-defined]
+                        while all_phases:
+                            if not isinstance(all_phases[0], ProvisionPlugin):
+                                break
 
-                        if not all_phases[0]._thread_safe:
-                            break
+                            if not all_phases[0]._thread_safe:
+                                break
 
-                        plugin_phases.append(
-                            cast(
-                                ProvisionPlugin[ProvisionStepData],
-                                all_phases.pop(0)))
+                            plugin_phases.append(
+                                cast(ProvisionPlugin[ProvisionStepData], all_phases.pop(0))
+                            )
 
-                all_plugin_outcomes, failed_plugin_outcomes = _run_provision_phases(
-                    plugin_phases)
+                    all_plugin_outcomes, failed_plugin_outcomes = _run_provision_phases(
+                        plugin_phases
+                    )
 
-                all_outcomes += all_plugin_outcomes
-                failed_outcomes += failed_plugin_outcomes
+                    all_outcomes += all_plugin_outcomes
+                    failed_outcomes += failed_plugin_outcomes
+
+        except KeyboardInterrupt:
+            self.guests = [
+                phase.guest
+                for phase in self.phases(classes=ProvisionPlugin)
+                if phase.guest is not None
+            ]
+
+            raise
 
         # A plugin will only raise SystemExit if the exit is really desired
         # and no other actions should be done. An example of this is
@@ -2758,9 +3256,7 @@ class Provision(tmt.steps.Step):
         # an exception to signal this, but rather set/return a special object,
         # leaving the materialization into `SystemExit` to the step and/or tmt.
         # Or not do any one-shot actions under the disguise of provisioning...
-        exiting_tasks = [
-            outcome for outcome in all_outcomes if outcome.requested_exit is not None
-            ]
+        exiting_tasks = [outcome for outcome in all_outcomes if outcome.requested_exit is not None]
 
         if exiting_tasks:
             assert exiting_tasks[0].requested_exit is not None
@@ -2770,8 +3266,8 @@ class Provision(tmt.steps.Step):
         if failed_outcomes:
             raise tmt.utils.GeneralError(
                 'provision step failed',
-                causes=[outcome.exc for outcome in failed_outcomes if outcome.exc is not None]
-                )
+                causes=[outcome.exc for outcome in failed_outcomes if outcome.exc is not None],
+            )
 
         # To separate "provision" from the follow-up logging visually
         self.info('')
@@ -2780,7 +3276,3 @@ class Provision(tmt.steps.Step):
         self.summary()
         self.status('done')
         self.save()
-
-    def guests(self) -> list[Guest]:
-        """ Return the list of all provisioned guests """
-        return self._guests

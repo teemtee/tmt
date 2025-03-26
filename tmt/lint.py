@@ -1,4 +1,3 @@
-
 """
 Metadata linting.
 
@@ -63,7 +62,6 @@ following examples:
        ...
 """
 
-import dataclasses
 import enum
 import re
 import textwrap
@@ -76,12 +74,13 @@ from typing import (
     Generic,
     Optional,
     TypeVar,
-    )
+)
 
 from click import style
 
 import tmt
 import tmt.utils
+from tmt.container import container
 
 if TYPE_CHECKING:
     import tmt.base
@@ -115,16 +114,16 @@ _OUTCOME_TO_MARK = {
     LinterOutcome.PASS: 'pass',
     LinterOutcome.FAIL: 'fail',
     LinterOutcome.WARN: 'warn',
-    LinterOutcome.FIXED: 'fix '
-    }
+    LinterOutcome.FIXED: 'fix ',
+}
 
 _OUTCOME_TO_COLOR = {
     LinterOutcome.SKIP: 'blue',
     LinterOutcome.PASS: 'green',
     LinterOutcome.FAIL: 'red',
     LinterOutcome.WARN: 'yellow',
-    LinterOutcome.FIXED: 'green'
-    }
+    LinterOutcome.FIXED: 'green',
+}
 
 
 #: Info on how a linter decided: linter itself, its outcome & the message.
@@ -137,18 +136,23 @@ LinterReturn = Iterator[tuple[LinterOutcome, str]]
 # a bigger patch than a mere bump of mypy version. Leaving for later.
 LinterCallback = Callable[['Lintable'], LinterReturn]  # type: ignore[type-arg]
 
-_LINTER_DESCRIPTION_PATTERN = re.compile(r"""
+_LINTER_DESCRIPTION_PATTERN = re.compile(
+    r"""
     ^                      # must match the whole string
     (?P<id>[CTPSG]\d\d\d): # check ID, the class initials & a three-digit number
     \s*                    # optional white space
     (?P<short>.+)          # check description
     $                      # must match the whole string
-    """, re.VERBOSE)
+    """,
+    re.VERBOSE,
+)
 
 
-@dataclasses.dataclass(init=False)
+@container(init=False)
 class Linter:
-    """ A single linter """
+    """
+    A single linter
+    """
 
     callback: LinterCallback
     id: str
@@ -180,13 +184,13 @@ class Linter:
             logging or help texts, in the form of lines of text.
         """
 
-        return [
-            f'{self.id}: {self.help}'
-            ]
+        return [f'{self.id}: {self.help}']
 
 
 class Lintable(Generic[LintableT]):
-    """ Mixin class adding support for linting of class instances """
+    """
+    Mixin class adding support for linting of class instances
+    """
 
     # Declare linter registry as a class variable, but do not initialize it. If initialized
     # here, the mapping would be shared by all classes, which is not a desirable attribute.
@@ -200,7 +204,9 @@ class Lintable(Generic[LintableT]):
     # Cannot use @property as this must remain classmethod
     @classmethod
     def get_linter_registry(cls) -> list[Linter]:
-        """ Return - or initialize - linter registry """
+        """
+        Return - or initialize - linter registry
+        """
 
         if not hasattr(cls, '_linter_registry'):
             cls._linter_registry = []
@@ -224,10 +230,10 @@ class Lintable(Generic[LintableT]):
 
     @classmethod
     def resolve_enabled_linters(
-            cls,
-            enable_checks: Optional[list[str]] = None,
-            disable_checks: Optional[list[str]] = None
-            ) -> list[Linter]:
+        cls,
+        enable_checks: Optional[list[str]] = None,
+        disable_checks: Optional[list[str]] = None,
+    ) -> list[Linter]:
         """
         Produce a list of enabled linters from all registered ones.
 
@@ -256,26 +262,20 @@ class Lintable(Generic[LintableT]):
             linters = []
 
             for needle in enable_checks:
-                linters += [
-                    linter
-                    for linter in cls.get_linter_registry()
-                    if needle in linter.id
-                    ]
+                linters += [linter for linter in cls.get_linter_registry() if needle in linter.id]
 
         if disable_checks:
-            linters = [
-                linter for linter in linters
-                if linter.id not in disable_checks
-                ]
+            linters = [linter for linter in linters if linter.id not in disable_checks]
 
         return linters
 
     def lint(
-            self,
-            enable_checks: Optional[list[str]] = None,
-            disable_checks: Optional[list[str]] = None,
-            enforce_checks: Optional[list[str]] = None,
-            linters: Optional[list[Linter]] = None) -> tuple[bool, list[LinterRuling]]:
+        self,
+        enable_checks: Optional[list[str]] = None,
+        disable_checks: Optional[list[str]] = None,
+        enforce_checks: Optional[list[str]] = None,
+        linters: Optional[list[Linter]] = None,
+    ) -> tuple[bool, list[LinterRuling]]:
         """
         Check the instance against a battery of linters and report results.
 
@@ -296,9 +296,13 @@ class Lintable(Generic[LintableT]):
 
         enforce_checks = enforce_checks or []
 
-        linters = linters if linters is not None else self.resolve_enabled_linters(
-            enable_checks=enable_checks,
-            disable_checks=disable_checks)
+        linters = (
+            linters
+            if linters is not None
+            else self.resolve_enabled_linters(
+                enable_checks=enable_checks, disable_checks=disable_checks
+            )
+        )
 
         valid = True
         rulings: list[LinterRuling] = []
@@ -342,8 +346,9 @@ class Lintable(Generic[LintableT]):
 
 
 def filter_allowed_checks(
-        rulings: Iterable[LinterRuling],
-        outcomes: Optional[list[LinterOutcome]] = None) -> Iterator[LinterRuling]:
+    rulings: Iterable[LinterRuling],
+    outcomes: Optional[list[LinterOutcome]] = None,
+) -> Iterator[LinterRuling]:
     """
     Filter only rulings whose outcomes are allowed.
 
@@ -377,23 +382,24 @@ def format_rulings(rulings: Iterable[LinterRuling]) -> Iterator[str]:
     # can display just one outcome, they are both same, and indentation and
     # padding would be simpler.
     display_eventual = any(
-        actual_outcome != eventual_outcome for _, actual_outcome, eventual_outcome, _ in rulings)
+        actual_outcome != eventual_outcome for _, actual_outcome, eventual_outcome, _ in rulings
+    )
 
     for linter, actual_outcome, eventual_outcome, message in rulings:
         assert actual_outcome in _OUTCOME_TO_MARK
         assert actual_outcome in _OUTCOME_TO_COLOR
 
         actual_status = style(
-            _OUTCOME_TO_MARK[actual_outcome],
-            fg=_OUTCOME_TO_COLOR[actual_outcome])
+            _OUTCOME_TO_MARK[actual_outcome], fg=_OUTCOME_TO_COLOR[actual_outcome]
+        )
 
         if display_eventual:
             assert eventual_outcome in _OUTCOME_TO_MARK
             assert eventual_outcome in _OUTCOME_TO_COLOR
 
             eventual_status = style(
-                _OUTCOME_TO_MARK[eventual_outcome],
-                fg=_OUTCOME_TO_COLOR[eventual_outcome])
+                _OUTCOME_TO_MARK[eventual_outcome], fg=_OUTCOME_TO_COLOR[eventual_outcome]
+            )
 
             eventual = ' ' * 8 if actual_outcome == eventual_outcome else f' -> {eventual_status}'
 

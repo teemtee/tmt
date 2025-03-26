@@ -1,4 +1,6 @@
-""" Convert metadata into the new format """
+"""
+Convert metadata into the new format
+"""
 
 import copy
 import os
@@ -33,8 +35,7 @@ if TYPE_CHECKING:
 RELEVANCY_LEGACY_HEADER = r"relevancy:\s*$(.*)"
 RELEVANCY_COMMENT = r"^([^#]*?)\s*#\s*(.+)$"
 RELEVANCY_RULE = r"^([^:]+)\s*:\s*(.+)$"
-RELEVANCY_EXPRESSION = (
-    r"^\s*(.*?)\s*(!?contains|!?defined|[=<>!]+)\s*(.*?)\s*$")
+RELEVANCY_EXPRESSION = r"^\s*(.*?)\s*(!?contains|!?defined|[=<>!]+)\s*(.*?)\s*$"
 GENERAL_PLAN = r"(\S+?)\s*/\s*General"
 
 # Bug url prefixes
@@ -51,14 +52,20 @@ SYSTEM_OTHER = 42
 #  Convert
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
 def read_manual(
-        plan_id: int,
-        case_id: int,
-        disabled: bool,
-        with_script: bool,
-        logger: tmt.log.Logger) -> None:
-    """ Reads metadata of manual test cases from Nitrate """
+    plan_id: int,
+    case_id: int,
+    disabled: bool,
+    with_script: bool,
+    logger: tmt.log.Logger,
+) -> None:
+    """
+    Reads metadata of manual test cases from Nitrate
+    """
+
     import tmt.export.nitrate
+
     nitrate = tmt.export.nitrate.import_nitrate()
     # Turns off nitrate caching
     nitrate.set_cache_level(0)
@@ -118,7 +125,10 @@ def read_manual(
 
 
 def read_manual_data(testcase: 'TestCase') -> dict[str, str]:
-    """ Read test data from manual fields """
+    """
+    Read test data from manual fields
+    """
+
     md_content = {}
     md_content['setup'] = html_to_markdown(testcase.setup)
     md_content['action'] = html_to_markdown(testcase.action)
@@ -128,9 +138,13 @@ def read_manual_data(testcase: 'TestCase') -> dict[str, str]:
 
 
 def html_to_markdown(html: str) -> str:
-    """ Convert html to markdown """
+    """
+    Convert html to markdown
+    """
+
     try:
         import html2text
+
         md_handler = html2text.HTML2Text()
     except ImportError:
         raise ConvertError("Install tmt+test-convert to import tests.")
@@ -143,7 +157,10 @@ def html_to_markdown(html: str) -> str:
 
 
 def write_markdown(path: Path, content: dict[str, str]) -> None:
-    """ Write gathered metadata in the markdown format """
+    """
+    Write gathered metadata in the markdown format
+    """
+
     to_print = ""
     if content['setup']:
         to_print += "# Setup\n" + content['setup'] + '\n\n'
@@ -163,9 +180,16 @@ def write_markdown(path: Path, content: dict[str, str]) -> None:
         raise ConvertError(f"Unable to write '{path}'.")
 
 
-def add_link(target: str, data: NitrateDataType,
-             system: int = SYSTEM_BUGZILLA, type_: str = 'relates') -> None:
-    """ Add relevant link into data under the 'link' key """
+def add_link(
+    target: str,
+    data: NitrateDataType,
+    system: int = SYSTEM_BUGZILLA,
+    type_: str = 'relates',
+) -> None:
+    """
+    Add relevant link into data under the 'link' key
+    """
+
     new_link = {}
     if system == SYSTEM_BUGZILLA:
         new_link[type_] = f"{BUGZILLA_URL}{target}"
@@ -185,12 +209,12 @@ def add_link(target: str, data: NitrateDataType,
 
 
 def read_datafile(
-        path: Path,
-        filename: str,
-        datafile: str,
-        types: list[str],
-        testinfo: Optional[str] = None
-        ) -> tuple[str, NitrateDataType]:
+    path: Path,
+    filename: str,
+    datafile: str,
+    types: list[str],
+    testinfo: Optional[str] = None,
+) -> tuple[str, NitrateDataType]:
     """
     Read data values from supplied Makefile or metadata file.
     Returns task name and a dictionary of the collected values.
@@ -270,7 +294,8 @@ def read_datafile(
                 search_result = re.search(
                     makefile_regex_test,
                     makefile_path.read_text(encoding='utf-8'),
-                    re.MULTILINE)
+                    re.MULTILINE,
+                )
             except OSError:
                 raise ConvertError("Makefile is missing.")
             # Retrieve the path to the test file from the Makefile
@@ -299,8 +324,7 @@ def read_datafile(
         search_result = re.search(r'^RunFor:[ \t]*(.*)$', testinfo, re.MULTILINE)
         if search_result is not None:
             data['component'] = search_result.group(1).split()
-            echo(style('component: ', fg='green') +
-                 ' '.join(data['component']))
+            echo(style('component: ', fg='green') + ' '.join(data['component']))
 
     # Duration
     search_result = re.search(regex_duration, testinfo, re.MULTILINE)
@@ -320,7 +344,10 @@ def read_datafile(
             echo(format_value(data['environment']))
 
     def sanitize_name(name: str) -> str:
-        """ Raise if package name starts with '-' (negative require) """
+        """
+        Raise if package name starts with '-' (negative require)
+        """
+
         if name.startswith('-'):
             # Beaker supports excluding packages but tmt does not
             # https://github.com/teemtee/tmt/issues/1165#issuecomment-1122293224
@@ -328,25 +355,31 @@ def read_datafile(
                 "Excluding packages is not supported by tmt require/recommend. "
                 "Plan can take care of such situation in Prepare step, "
                 "but cannot be created automatically. "
-                f"(Found '{name}' during conversion).")
+                f"(Found '{name}' during conversion)."
+            )
         return name
 
     # RhtsRequires or repoRequires (optional) goes to require
     requires = re.findall(regex_require, testinfo, re.MULTILINE)
     if requires:
         data['require'] = [
-            sanitize_name(require.strip()) for line in requires
-            for require in line.split(rec_separator) if require.strip()]
+            sanitize_name(require.strip())
+            for line in requires
+            for require in line.split(rec_separator)
+            if require.strip()
+        ]
         echo(style('require: ', fg='green') + ' '.join(data['require']))
 
     # Requires or softDependencies (optional) goes to recommend
     recommends = re.findall(regex_recommend, testinfo, re.MULTILINE)
     if recommends:
         data['recommend'] = [
-            sanitize_name(recommend.strip()) for line in recommends
-            for recommend in line.split(rec_separator) if recommend.strip()]
-        echo(
-            style('recommend: ', fg='green') + ' '.join(data['recommend']))
+            sanitize_name(recommend.strip())
+            for line in recommends
+            for recommend in line.split(rec_separator)
+            if recommend.strip()
+        ]
+        echo(style('recommend: ', fg='green') + ' '.join(data['recommend']))
 
     if filename == 'Makefile':
         # Convert Type into tags
@@ -356,8 +389,7 @@ def read_datafile(
             if 'all' in [type_.lower() for type_ in types]:
                 tags = makefile_type.split()
             else:
-                tags = [type_ for type_ in types
-                        if type_.lower() in makefile_type.lower().split()]
+                tags = [type_ for type_ in types if type_.lower() in makefile_type.lower().split()]
             if tags:
                 echo(style("tag: ", fg="green") + " ".join(tags))
                 data["tag"] = tags
@@ -373,20 +405,20 @@ ReadOutputType = tuple[NitrateDataType, list[NitrateDataType]]
 
 
 def read(
-        path: Path,
-        makefile: bool,
-        restraint: bool,
-        nitrate: bool,
-        polarion: bool,
-        polarion_case_id: list[str],
-        link_polarion: bool,
-        purpose: bool,
-        disabled: bool,
-        types: list[str],
-        general: bool,
-        dry_run: bool,
-        logger: tmt.log.Logger
-        ) -> ReadOutputType:
+    path: Path,
+    makefile: bool,
+    restraint: bool,
+    nitrate: bool,
+    polarion: bool,
+    polarion_case_id: list[str],
+    link_polarion: bool,
+    purpose: bool,
+    disabled: bool,
+    types: list[str],
+    general: bool,
+    dry_run: bool,
+    logger: tmt.log.Logger,
+) -> ReadOutputType:
     """
     Read old metadata from various sources
 
@@ -417,7 +449,8 @@ def read(
     # Raise an assertion if the file is not found.
     if not makefile and not restraint and not polarion:
         raise ConvertError(
-            "Please specify either a Makefile or a Restraint file or a Polarion case ID.")
+            "Please specify either a Makefile or a Restraint file or a Polarion case ID."
+        )
     if makefile and restraint:
         if 'metadata' in filenames:
             filename = 'metadata'
@@ -461,8 +494,7 @@ def read(
             old_testinfo = testinfo_path.read_text(encoding='utf-8')
             testinfo_path.unlink()
         except OSError:
-            raise ConvertError(
-                f"Unable to open '{testinfo_path}'.")
+            raise ConvertError(f"Unable to open '{testinfo_path}'.")
     else:
         old_testinfo = None
 
@@ -473,20 +505,23 @@ def read(
         datafile = re.sub(
             r'^include /usr/share/rhts/lib/rhts-make.include',
             '-include /usr/share/rhts/lib/rhts-make.include',
-            datafile, flags=re.MULTILINE)
+            datafile,
+            flags=re.MULTILINE,
+        )
         datafile = re.sub('.*rhts-lint.*', '', datafile)
         # Create testinfo.desc file with resolved variables
         try:
             subprocess.run(
                 ["make", "testinfo.desc", "-C", path, "-f", "-"],
-                input=datafile, check=True, encoding='utf-8',
-                stdout=subprocess.DEVNULL)
+                input=datafile,
+                check=True,
+                encoding='utf-8',
+                stdout=subprocess.DEVNULL,
+            )
         except FileNotFoundError:
-            raise ConvertError(
-                f"Install tmt+test-convert to convert metadata from {filename}.")
+            raise ConvertError(f"Install tmt+test-convert to convert metadata from {filename}.")
         except subprocess.CalledProcessError:
-            raise ConvertError(
-                "Failed to convert metadata using 'make testinfo.desc'.")
+            raise ConvertError("Failed to convert metadata using 'make testinfo.desc'.")
 
         # Read testinfo.desc
         try:
@@ -497,18 +532,19 @@ def read(
     # restraint
     if restraint_file:
         assert filename is not None  # type check
-        beaker_task, data = \
-            read_datafile(path, filename, datafile, types)
+        beaker_task, data = read_datafile(path, filename, datafile, types)
 
     # Makefile (extract summary, test, duration and requires)
     elif makefile:
         assert filename is not None  # type check
-        beaker_task, data = \
-            read_datafile(path, filename, datafile, types, testinfo)
+        beaker_task, data = read_datafile(path, filename, datafile, types, testinfo)
 
         # Warn if makefile has extra lines in run target
         def target_content_run() -> list[str]:
-            """ Extract lines from the run content """
+            """
+            Extract lines from the run content
+            """
+
             newline_stub = '_XXX_NEWLINE_0x734'
             datafile_test = datafile
             if '\\\n' in datafile:
@@ -526,7 +562,10 @@ def read(
 
         # Warn if makefile has extra lines in build target
         def target_content_build() -> list[str]:
-            """ Extract lines from the build content """
+            """
+            Extract lines from the build content
+            """
+
             regexp = r'^build:.*\n((?:\t[^\n]*\n?)*)'
             search_result = re.search(regexp, datafile, re.MULTILINE)
             if search_result is None:
@@ -538,17 +577,13 @@ def read(
         run_target_list = target_content_run()
         run_target_list.remove(data["test"])
         if run_target_list:
-            echo(style(
-                "warn: Extra lines detected in the 'run' target:",
-                fg="yellow"))
+            echo(style("warn: Extra lines detected in the 'run' target:", fg="yellow"))
             for line in run_target_list:
                 echo(f"    {line}")
 
         build_target_list = target_content_build()
         if len(build_target_list) > 1:
-            echo(style(
-                "warn: Multiple lines detected in the 'build' target:",
-                fg="yellow"))
+            echo(style("warn: Multiple lines detected in the 'build' target:", fg="yellow"))
             for line in build_target_list:
                 echo(f"    {line}")
 
@@ -558,8 +593,7 @@ def read(
                 testinfo_path.write_text(old_testinfo, encoding='utf-8')
 
             except OSError:
-                raise ConvertError(
-                    f"Unable to write '{testinfo_path}'.")
+                raise ConvertError(f"Unable to write '{testinfo_path}'.")
         # Remove created testinfo.desc otherwise
         else:
             testinfo_path.unlink()
@@ -585,7 +619,8 @@ def read(
     # Nitrate (extract contact, environment and relevancy)
     if nitrate and beaker_task:
         common_data, individual_data = read_nitrate(
-            beaker_task, data, disabled, general, dry_run, logger)
+            beaker_task, data, disabled, general, dry_run, logger
+        )
     else:
         common_data = data
         individual_data = []
@@ -593,7 +628,8 @@ def read(
     # Polarion (extract summary, assignee, id, component, tags, links)
     if polarion:
         read_polarion(
-            common_data, individual_data, polarion_case_id, link_polarion, filenames, dry_run)
+            common_data, individual_data, polarion_case_id, link_polarion, filenames, dry_run
+        )
 
     # Remove keys which are inherited from parent
     parent_path = path.parent
@@ -611,9 +647,13 @@ def read(
 
 
 def filter_common_data(
-        common_data: NitrateDataType,
-        individual_data: list[NitrateDataType]) -> None:
-    """ Filter common data out from individual data """
+    common_data: NitrateDataType,
+    individual_data: list[NitrateDataType],
+) -> None:
+    """
+    Filter common data out from individual data
+    """
+
     common_candidates = copy.copy(individual_data[0])
     histogram = {}
     for key in individual_data[0]:
@@ -648,14 +688,16 @@ def filter_common_data(
 
 
 def read_nitrate(
-        beaker_task: str,
-        common_data: NitrateDataType,
-        disabled: bool,
-        general: bool,
-        dry_run: bool,
-        logger: tmt.log.Logger
-        ) -> ReadOutputType:
-    """ Read old metadata from nitrate test cases """
+    beaker_task: str,
+    common_data: NitrateDataType,
+    disabled: bool,
+    general: bool,
+    dry_run: bool,
+    logger: tmt.log.Logger,
+) -> ReadOutputType:
+    """
+    Read old metadata from nitrate test cases
+    """
 
     # Need to import nitrate only when really needed. Otherwise we get
     # traceback when nitrate is not installed or config file not available.
@@ -676,15 +718,21 @@ def read_nitrate(
             testcases = list(nitrate.TestCase.search(script=beaker_task))
         # Find testcases that do not have 'DISABLED' status
         else:
-            testcases = list(nitrate.TestCase.search(
-                script=beaker_task, case_status__in=[1, 2, 4]))
-    except (nitrate.NitrateError,
-            nitrate.xmlrpc_driver.NitrateXmlrpcError,
-            gssapi.raw.misc.GSSError) as error:
+            testcases = list(
+                nitrate.TestCase.search(script=beaker_task, case_status__in=[1, 2, 4])
+            )
+    except (
+        nitrate.NitrateError,
+        nitrate.xmlrpc_driver.NitrateXmlrpcError,
+        gssapi.raw.misc.GSSError,
+    ) as error:
         raise ConvertError(str(error))
     if not testcases:
-        echo("No {}testcase found for '{}'.".format(
-            '' if disabled else 'non-disabled ', beaker_task))
+        echo(
+            "No {}testcase found for '{}'.".format(
+                '' if disabled else 'non-disabled ', beaker_task
+            )
+        )
         return common_data, []
     if len(testcases) > 1:
         echo(f"Multiple test cases found for '{beaker_task}'.")
@@ -700,7 +748,8 @@ def read_nitrate(
             testcase=testcase,
             makefile_data=common_data,
             general=general,
-            logger=logger)
+            logger=logger,
+        )
         individual_data.append(data)
         # Check testcase for manual data
         md_content_tmp = read_manual_data(testcase)
@@ -718,13 +767,11 @@ def read_nitrate(
     else:
         try:
             md_path.unlink()
-            echo(style(f"Test case file '{md_path}' "
-                       "successfully removed.", fg='magenta'))
+            echo(style(f"Test case file '{md_path}' successfully removed.", fg='magenta'))
         except FileNotFoundError:
             pass
         except OSError:
-            raise ConvertError(
-                f"Unable to remove '{md_path}'.")
+            raise ConvertError(f"Unable to remove '{md_path}'.")
 
     # Merge environment from Makefile and Nitrate
     if 'environment' in common_data:
@@ -737,8 +784,7 @@ def read_nitrate(
     # Merge description from PURPOSE with header/footer from Nitrate notes
     for testcase in individual_data:
         if 'description' in common_data:
-            testcase['description'] = common_data['description'] + \
-                testcase['description']
+            testcase['description'] = common_data['description'] + testcase['description']
 
     if 'description' in common_data:
         common_data.pop('description')
@@ -754,6 +800,7 @@ def read_tier(tag: str, data: NitrateDataType) -> None:
     Check for the tier attribute, if there are multiple TierX tags, pick
     the one with the lowest index.
     """
+
     tier_match = re.match(r'^Tier ?(?P<num>\d+)$', tag, re.IGNORECASE)
     if tier_match:
         num = tier_match.group('num')
@@ -767,13 +814,17 @@ def read_tier(tag: str, data: NitrateDataType) -> None:
 
 
 def read_polarion(
-        common_data: NitrateDataType,
-        individual_data: list[NitrateDataType],
-        polarion_case_id: list[str],
-        link_polarion: bool,
-        filenames: list[str],
-        dry_run: bool) -> None:
-    """ Read data from Polarion """
+    common_data: NitrateDataType,
+    individual_data: list[NitrateDataType],
+    polarion_case_id: list[str],
+    link_polarion: bool,
+    filenames: list[str],
+    dry_run: bool,
+) -> None:
+    """
+    Read data from Polarion
+    """
+
     if not polarion_case_id:
         read_polarion_case(common_data, None, link_polarion, dry_run)
     elif len(polarion_case_id) == 1:
@@ -802,9 +853,13 @@ def read_polarion(
     if individual_data and (common_data.get(tmt.identifier.ID_KEY) or common_data.get('filename')):
         common_data.pop('filename', None)
         common_data.pop(tmt.identifier.ID_KEY, None)
-        echo(style(
-            'You are trying to match one Polarion case to multiple Nitrate cases, '
-            'please run export and sync these test cases', fg='red'))
+        echo(
+            style(
+                'You are trying to match one Polarion case to multiple Nitrate cases, '
+                'please run export and sync these test cases',
+                fg='red',
+            )
+        )
 
     # Remove filename for a single test case to keep default name
     elif not individual_data and ':' not in polarion_case_id[0]:
@@ -812,12 +867,17 @@ def read_polarion(
 
 
 def read_polarion_case(
-        data: Union[NitrateDataType, list[NitrateDataType]],
-        polarion_case_id: Optional[str],
-        link_polarion: bool,
-        dry_run: bool) -> None:
-    """ Read data of specific case from Polarion """
+    data: Union[NitrateDataType, list[NitrateDataType]],
+    polarion_case_id: Optional[str],
+    link_polarion: bool,
+    dry_run: bool,
+) -> None:
+    """
+    Read data of specific case from Polarion
+    """
+
     import tmt.export.polarion
+
     file_name: Optional[str] = None
 
     # Find Polarion case
@@ -826,15 +886,18 @@ def read_polarion_case(
         if ':' in polarion_case_id:
             polarion_case_id, file_name = polarion_case_id.split(':', 1)
         polarion_case = tmt.export.polarion.get_polarion_case(
-            {}, polarion_case_id=polarion_case_id)
+            {}, polarion_case_id=polarion_case_id
+        )
     else:
         # If Polarion case ID is not provided only common data is edited
         # data shouldn't be a list in that case
         if isinstance(data, list):
             raise ConvertError(
-                'Common data ended up being a list which is wrong, this is likely a bug.')
+                'Common data ended up being a list which is wrong, this is likely a bug.'
+            )
         polarion_case = tmt.export.polarion.get_polarion_case(
-            data, polarion_case_id=polarion_case_id)
+            data, polarion_case_id=polarion_case_id
+        )
     if not polarion_case:
         raise ConvertError('Failed to find test case in Polarion.')
 
@@ -842,10 +905,12 @@ def read_polarion_case(
     if isinstance(data, list):
         for testcase in data:
             if (
-                    (polarion_case.tcmscaseid and
-                     polarion_case.tcmscaseid in testcase.get('extra-nitrate', '')) or
-                    (testcase.get('extra-task') and
-                     testcase.get('extra-task') in polarion_case.description)):
+                polarion_case.tcmscaseid
+                and polarion_case.tcmscaseid in testcase.get('extra-nitrate', '')
+            ) or (
+                testcase.get('extra-task')
+                and testcase.get('extra-task') in polarion_case.description
+            ):
                 current_data = testcase
                 break
         else:
@@ -885,8 +950,9 @@ def read_polarion_case(
 
     # Update assignee
     if polarion_case.assignee:
-        current_data['contact'] = str(polarion_case.assignee[0].name).replace(
-            '(', ' <').replace(')', '@redhat.com>')
+        current_data['contact'] = (
+            str(polarion_case.assignee[0].name).replace('(', ' <').replace(')', '@redhat.com>')
+        )
         echo(style('contact: ', fg='green') + current_data['contact'])
 
     # Set tmt id if available in Polarion, otherwise generate
@@ -906,10 +972,13 @@ def read_polarion_case(
                 polarion_case.tmtid = ''
                 polarion_case.reload()
                 if not polarion_case.tmtid:
-                    echo(style(
-                        f"Can't add ID because {polarion_case.project_id} project "
-                        "doesn't have the 'tmtid' field defined.",
-                        fg='yellow'))
+                    echo(
+                        style(
+                            f"Can't add ID because {polarion_case.project_id} project "
+                            "doesn't have the 'tmtid' field defined.",
+                            fg='yellow',
+                        )
+                    )
     current_data[tmt.identifier.ID_KEY] = uuid
     echo(style('ID: ', fg='green') + uuid)
 
@@ -948,13 +1017,18 @@ def read_polarion_case(
         for link in polarion_case.linked_work_items:
             if link.role == 'verifies':
                 add_link(
-                    f'{server_url}#/project/{link.project_id}/'
-                    f'workitem?id={link.work_item_id!s}',
-                    current_data, system=SYSTEM_OTHER, type_=str(link.role))
+                    f'{server_url}#/project/{link.project_id}/workitem?id={link.work_item_id!s}',
+                    current_data,
+                    system=SYSTEM_OTHER,
+                    type_=str(link.role),
+                )
         add_link(
             f'{server_url}#/project/{polarion_case.project_id}/workitem?id='
             f'{polarion_case.work_item_id!s}',
-            current_data, system=SYSTEM_OTHER, type_='implements')
+            current_data,
+            system=SYSTEM_OTHER,
+            type_='implements',
+        )
         if not file_name:
             file_name = str(polarion_case.work_item_id)
 
@@ -967,10 +1041,11 @@ def read_polarion_case(
 RelevancyType = Union[str, list[str]]
 
 
-def extract_relevancy(
-        notes: str,
-        field: StructuredField) -> Optional[RelevancyType]:
-    """ Get relevancy from testcase, respecting sf priority """
+def extract_relevancy(notes: str, field: StructuredField) -> Optional[RelevancyType]:
+    """
+    Get relevancy from testcase, respecting sf priority
+    """
+
     try:
         if "relevancy" in field:
             return field.get("relevancy")
@@ -990,13 +1065,16 @@ def extract_relevancy(
 
 
 def read_nitrate_case(
-        *,
-        testcase: 'TestCase',
-        makefile_data: Optional[NitrateDataType] = None,
-        general: bool = False,
-        logger: tmt.log.Logger
-        ) -> NitrateDataType:
-    """ Read old metadata from nitrate test case """
+    *,
+    testcase: 'TestCase',
+    makefile_data: Optional[NitrateDataType] = None,
+    general: bool = False,
+    logger: tmt.log.Logger,
+) -> NitrateDataType:
+    """
+    Read old metadata from nitrate test case
+    """
+
     import tmt.export.nitrate
 
     data: NitrateDataType = {'tag': []}
@@ -1053,9 +1131,7 @@ def read_nitrate_case(
                 if match:
                     component = match.group(1)
                     if component not in data['component']:
-                        echo(
-                            f"Adding component '{component}' "
-                            f"from the linked general plan.")
+                        echo(f"Adding component '{component}' from the linked general plan.")
                         data['component'].append(component)
     else:
         # Or from test case components
@@ -1085,8 +1161,7 @@ def read_nitrate_case(
         add_link(bug.bug, data, bug.system)
 
     # Header and footer from notes (do not import the warning back)
-    data['description'] = re.sub(
-        tmt.export.nitrate.WARNING, '', field.header() + field.footer())
+    data['description'] = re.sub(tmt.export.nitrate.WARNING, '', field.header() + field.footer())
 
     # Extras: [pepa] and [hardware]
     try:
@@ -1110,7 +1185,9 @@ def read_nitrate_case(
 
 
 def adjust_runtest(path: Path) -> None:
-    """ Adjust runtest.sh content and permission """
+    """
+    Adjust runtest.sh content and permission
+    """
 
     # Nothing to do if there is no runtest.sh
     if not path.exists():
@@ -1127,15 +1204,20 @@ def adjust_runtest(path: Path) -> None:
             runtest.seek(0)
             for line in lines:
                 if rhts_line in line:
-                    echo(style(
-                        "Removing sourcing of 'rhts-environment.sh' "
-                        "from 'runtest.sh'.", fg='magenta'))
-                elif (old_beakerlib_path1 in line
-                        or old_beakerlib_path2 in line):
+                    echo(
+                        style(
+                            "Removing sourcing of 'rhts-environment.sh' from 'runtest.sh'.",
+                            fg='magenta',
+                        )
+                    )
+                elif old_beakerlib_path1 in line or old_beakerlib_path2 in line:
                     runtest.write(new_beakerlib_path)
-                    echo(style(
-                        "Replacing old beakerlib path with new one "
-                        "in 'runtest.sh'.", fg='magenta'))
+                    echo(
+                        style(
+                            "Replacing old beakerlib path with new one in 'runtest.sh'.",
+                            fg='magenta',
+                        )
+                    )
                 else:
                     runtest.write(line)
             runtest.truncate()
@@ -1146,17 +1228,23 @@ def adjust_runtest(path: Path) -> None:
     try:
         path.chmod(0o755)
     except OSError:
-        raise tmt.convert.ConvertError(
-            f"Could not make '{path}' executable.")
+        raise tmt.convert.ConvertError(f"Could not make '{path}' executable.")
 
 
 def write(path: Path, data: NitrateDataType, quiet: bool = False) -> None:
-    """ Write gathered metadata in the fmf format """
+    """
+    Write gathered metadata in the fmf format
+    """
+
     # Put keys into a reasonable order
     extra_keys = [
-        'adjust', 'extra-nitrate',
-        'extra-summary', 'extra-task',
-        'extra-hardware', 'extra-pepa']
+        'adjust',
+        'extra-nitrate',
+        'extra-summary',
+        'extra-task',
+        'extra-hardware',
+        'extra-pepa',
+    ]
     sorted_data = {}
     for key in tmt.base.Test._keys() + extra_keys:
         with suppress(KeyError):
@@ -1169,19 +1257,20 @@ def write(path: Path, data: NitrateDataType, quiet: bool = False) -> None:
     except OSError:
         raise ConvertError(f"Unable to write '{path}'")
     if not quiet:
-        echo(style(
-            f"Metadata successfully stored into '{path}'.", fg='magenta'))
+        echo(style(f"Metadata successfully stored into '{path}'.", fg='magenta'))
 
 
 def relevancy_to_adjust(
-        relevancy: RelevancyType,
-        logger: tmt.log.Logger) -> list[NitrateDataType]:
+    relevancy: RelevancyType,
+    logger: tmt.log.Logger,
+) -> list[NitrateDataType]:
     """
     Convert the old test case relevancy into adjust rules
 
     Expects a string or list of strings with relevancy rules.
     Returns a list of dictionaries with adjust rules.
     """
+
     rules = []
     rule = {}
     if isinstance(relevancy, list):
@@ -1200,8 +1289,7 @@ def relevancy_to_adjust(
         # Split rule
         search_result = re.search(RELEVANCY_RULE, line)
         if search_result is None:
-            raise tmt.utils.ConvertError(
-                f"Invalid test case relevancy rule '{line}'.")
+            raise tmt.utils.ConvertError(f"Invalid test case relevancy rule '{line}'.")
         condition, decision = search_result.groups()
 
         # Handle the decision
@@ -1211,8 +1299,7 @@ def relevancy_to_adjust(
             try:
                 rule['environment'] = tmt.utils.Environment.from_sequence(decision, logger)
             except tmt.utils.GeneralError:
-                raise tmt.utils.ConvertError(
-                    f"Invalid test case relevancy decision '{decision}'.")
+                raise tmt.utils.ConvertError(f"Invalid test case relevancy decision '{decision}'.")
 
         # Adjust condition syntax
         expressions = []
@@ -1220,7 +1307,8 @@ def relevancy_to_adjust(
             search_result = re.search(RELEVANCY_EXPRESSION, expression)
             if search_result is None:
                 raise tmt.utils.ConvertError(
-                    f"Invalid test case relevancy expression '{expression}'.")
+                    f"Invalid test case relevancy expression '{expression}'."
+                )
             left, operator, right = search_result.groups()
             # Always use double == for equality comparison
             if operator == '=':
@@ -1239,10 +1327,11 @@ def relevancy_to_adjust(
                         '!contains': '!=',
                         'defined': 'is defined',
                         '!defined': 'is not defined',
-                        }[operator]
+                    }[operator]
                 except KeyError:
                     raise tmt.utils.ConvertError(
-                        f"Invalid test case relevancy operator '{operator}'.")
+                        f"Invalid test case relevancy operator '{operator}'."
+                    )
             # Special handling for the '!=' operator with comma-separated
             # values (in relevancy this was treated as 'no value equals')
             values = re.split(r'\s*,\s*', right)
@@ -1251,8 +1340,7 @@ def relevancy_to_adjust(
                     expressions.append(f"{left} != {value}")
                 continue
             # Join 'left operator right' with spaces
-            expressions.append(
-                ' '.join([item for item in [left, operator, right] if item]))
+            expressions.append(' '.join([item for item in [left, operator, right] if item]))
 
         # Finish the rule definition
         rule['when'] = ' and '.join(expressions)

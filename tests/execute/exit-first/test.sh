@@ -9,35 +9,41 @@ rlJournalStart
         rlRun "set -o pipefail"
     rlPhaseEnd
 
-    for execute_method in tmt; do
-        rlPhaseStartTest "Plan key - $execute_method"
-            plan="--scratch -i $run plan -n exit-first"
-            rlRun -s "tmt run -a $plan execute -h $execute_method" 1
-            # The second test (passing) should not be executed
-            rlAssertNotGrep "1 test passed" $rlRun_LOG
-            rlAssertGrep "1 test failed" $rlRun_LOG
-            rlRun "rm $rlRun_LOG"
-        rlPhaseEnd
+    tmt_command="tmt run -vv --scratch --id ${run} plan --name"
 
-        rlPhaseStartTest "Option - $execute_method"
-            plan="--scratch -i $run plan -n do-not-exit/$execute_method"
-            rlRun -s "tmt run -a $plan execute -h $execute_method" 1
-            rlAssertGrep "1 test passed and 1 test failed" $rlRun_LOG
-            rlRun "rm $rlRun_LOG"
+    planName="/plan/good"
+    rlPhaseStartTest "Execution finishes successfully"
+        rlRun -s "${tmt_command} ${planName} 2>&1 >/dev/null" 1 "Warning is expected"
+        rlAssertGrep "info /test/info" $rlRun_LOG
+        rlAssertGrep "warn /test/warn" $rlRun_LOG
+        rlAssertGrep "pass /test/pass" $rlRun_LOG
+        rlAssertGrep "pass /test/another-pass" $rlRun_LOG
+        rlAssertNotGrep "fail: Test .* stopping execution." $rlRun_LOG
+        rlAssertGrep "summary: 4 tests executed" $rlRun_LOG
+        rlAssertGrep "total: 2 tests passed, 1 info and 1 warn" $rlRun_LOG
+    rlPhaseEnd
 
-            # As an option of execute
-            rlRun -s "tmt run -a $plan execute --exit-first" 1
-            rlAssertNotGrep "1 test passed" $rlRun_LOG
-            rlAssertGrep "1 test failed" $rlRun_LOG
-            rlRun "rm $rlRun_LOG"
+    planName="/plan/fail"
+    rlPhaseStartTest "Execution stops after the first failure"
+        rlRun -s "${tmt_command} ${planName} 2>&1 >/dev/null" 1 "Failure is expected"
+        rlAssertGrep "pass /test/pass" $rlRun_LOG
+        rlAssertGrep "fail /test/fail" $rlRun_LOG
+        rlAssertNotGrep "pass /test/another-pass" $rlRun_LOG
+        rlAssertGrep "fail: Test /test/fail failed, stopping execution." $rlRun_LOG
+        rlAssertGrep "summary: 2 tests executed" $rlRun_LOG
+        rlAssertGrep "total: 1 test passed, 1 test failed and 1 pending" $rlRun_LOG
+    rlPhaseEnd
 
-            # As an option of execute method
-            rlRun -s "tmt run -a $plan execute -h $execute_method -x" 1
-            rlAssertNotGrep "1 test passed" $rlRun_LOG
-            rlAssertGrep "1 test failed" $rlRun_LOG
-            rlRun "rm $rlRun_LOG"
-        rlPhaseEnd
-    done
+    planName="/plan/error"
+    rlPhaseStartTest "Execution stops after the first error"
+        rlRun -s "${tmt_command} ${planName} 2>&1 >/dev/null" 2 "Error is expected"
+        rlAssertGrep "pass /test/pass" $rlRun_LOG
+        rlAssertGrep "errr /test/error" $rlRun_LOG
+        rlAssertNotGrep "pass /test/another-pass" $rlRun_LOG
+        rlAssertGrep "fail: Test /test/error failed, stopping execution." $rlRun_LOG
+        rlAssertGrep "summary: 2 tests executed" $rlRun_LOG
+        rlAssertGrep "total: 1 test passed, 1 error and 1 pending" $rlRun_LOG
+    rlPhaseEnd
 
     rlPhaseStartCleanup
         rlRun "popd"

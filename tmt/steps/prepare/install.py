@@ -1,4 +1,3 @@
-import dataclasses
 import re
 import shutil
 from collections.abc import Iterator
@@ -15,6 +14,7 @@ import tmt.package_managers
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
+from tmt.container import container, field
 from tmt.package_managers import (
     FileSystemPath,
     Installable,
@@ -22,10 +22,10 @@ from tmt.package_managers import (
     Package,
     PackagePath,
     PackageUrl,
-    )
+)
 from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
-from tmt.utils import Command, Path, ShellScript, field
+from tmt.utils import Command, Path, ShellScript
 
 COPR_URL = 'https://copr.fedorainfracloud.org/coprs'
 
@@ -34,7 +34,9 @@ T = TypeVar('T')
 
 
 class InstallBase(tmt.utils.Common):
-    """ Base class for installation implementations """
+    """
+    Base class for installation implementations
+    """
 
     guest: Guest
 
@@ -49,16 +51,20 @@ class InstallBase(tmt.utils.Common):
     package_directory: Path
 
     def __init__(
-            self,
-            *,
-            parent: 'PrepareInstall',
-            guest: Guest,
-            dependencies: list[tmt.base.DependencySimple],
-            directories: list[Path],
-            exclude: list[str],
-            logger: tmt.log.Logger,
-            **kwargs: Any) -> None:
-        """ Initialize installation data """
+        self,
+        *,
+        parent: 'PrepareInstall',
+        guest: Guest,
+        dependencies: list[tmt.base.DependencySimple],
+        directories: list[Path],
+        exclude: list[str],
+        logger: tmt.log.Logger,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Initialize installation data
+        """
+
         super().__init__(logger=logger, parent=parent, relative_indent=0, guest=guest, **kwargs)
 
         if not dependencies and not directories:
@@ -73,10 +79,14 @@ class InstallBase(tmt.utils.Common):
         self.prepare_installables(dependencies, directories)
 
     def prepare_installables(
-            self,
-            dependencies: list[tmt.base.DependencySimple],
-            directories: list[Path]) -> None:
-        """ Process package names and directories """
+        self,
+        dependencies: list[tmt.base.DependencySimple],
+        directories: list[Path],
+    ) -> None:
+        """
+        Process package names and directories
+        """
+
         self.packages = []
         self.local_packages = []
         self.remote_packages = []
@@ -92,11 +102,8 @@ class InstallBase(tmt.utils.Common):
                 # Strip the '-debuginfo' string from package name
                 # (installing with it doesn't work on RHEL7)
                 self.debuginfo_packages.append(
-                    Package(
-                        re.sub(
-                            r"-debuginfo((?=\.)|$)",
-                            "",
-                            str(dependency))))
+                    Package(re.sub(r"-debuginfo((?=\.)|$)", "", str(dependency)))
+                )
 
             elif dependency.startswith('/'):
                 self.packages.append(FileSystemPath(dependency))
@@ -115,11 +122,16 @@ class InstallBase(tmt.utils.Common):
                     self.local_packages.append(PackagePath(filepath))
 
     def prepare_repository(self) -> None:
-        """ Configure additional repository """
+        """
+        Configure additional repository
+        """
+
         raise NotImplementedError
 
     def list_installables(self, title: str, *installables: Installable) -> Iterator[Installable]:
-        """ Show package info and return package names """
+        """
+        Show package info and return package names
+        """
 
         # Show a brief summary by default
         if not self.verbosity_level:
@@ -135,7 +147,10 @@ class InstallBase(tmt.utils.Common):
         yield from installables
 
     def prepare_install_local(self) -> None:
-        """ Copy packages to the test system """
+        """
+        Copy packages to the test system
+        """
+
         assert self.parent is not None
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         workdir = cast(PrepareInstall, self.parent).step.workdir
@@ -152,19 +167,30 @@ class InstallBase(tmt.utils.Common):
         self.guest.push()
 
     def install_from_repository(self) -> None:
-        """ Default base install method for packages from repositories """
+        """
+        Default base install method for packages from repositories
+        """
 
     def install_local(self) -> None:
-        """ Default base install method for local packages """
+        """
+        Default base install method for local packages
+        """
 
     def install_from_url(self) -> None:
-        """ Default base install method for packages which are from URL """
+        """
+        Default base install method for packages which are from URL
+        """
 
     def install_debuginfo(self) -> None:
-        """ Default base install method for debuginfo packages """
+        """
+        Default base install method for debuginfo packages
+        """
 
     def install(self) -> None:
-        """ Perform the actual installation """
+        """
+        Perform the actual installation
+        """
+
         try:
             self._install()
 
@@ -182,7 +208,10 @@ class InstallBase(tmt.utils.Common):
                 raise exc2 from exc1
 
     def _install(self) -> None:
-        """ Helper method to perform the actual installation steps """
+        """
+        Helper method to perform the actual installation steps
+        """
+
         if self.local_packages:
             self.prepare_install_local()
             self.install_local()
@@ -196,8 +225,10 @@ class InstallBase(tmt.utils.Common):
     def rpm_check(self, package: str, mode: str = '-q') -> None:
         """
         Run rpm command to check package existence
+
         Throws tmt.utils.RunError
         """
+
         output = self.guest.execute(Command('rpm', mode, package), silent=True)
         assert output.stdout
         self.debug(f"Package '{output.stdout.strip()}' already installed.")
@@ -215,7 +246,10 @@ class Copr(tmt.utils.Common):
         self.guest = guest
 
     def enable_copr_epel6(self, copr: str) -> None:
-        """ Manually enable copr repositories for epel6 """
+        """
+        Manually enable copr repositories for epel6
+        """
+
         # Parse the copr repo name
         matched = re.match("^(@)?([^/]+)/([^/]+)$", copr)
         if not matched:
@@ -229,16 +263,20 @@ class Copr(tmt.utils.Common):
         url = '/'.join(parts)
         # Download the repo file on guest
         try:
-            self.guest.execute(Command('curl', '-LOf', url),
-                               cwd=Path('/etc/yum.repos.d'), silent=True)
+            self.guest.execute(
+                Command('curl', '-LOf', url),
+                cwd=Path('/etc/yum.repos.d'),
+                silent=True,
+            )
         except tmt.utils.RunError as error:
             if error.stderr and 'not found' in error.stderr.lower():
-                raise tmt.utils.PrepareError(
-                    f"Copr repository '{copr}' not found.")
+                raise tmt.utils.PrepareError(f"Copr repository '{copr}' not found.")
             raise
 
     def enable_copr(self, repositories: list[str]) -> None:
-        """ Enable requested copr repositories """
+        """
+        Enable requested copr repositories
+        """
 
         if not repositories:
             return
@@ -259,101 +297,122 @@ class Copr(tmt.utils.Common):
             for repository in repositories:
                 self.info('copr', repository, 'green')
 
-                self.guest.execute(ShellScript(
-                    f"{self.guest.package_manager.command.to_script()} copr "
-                    f"{self.guest.package_manager.options.to_script()} enable -y {repository}"
-                    ))
+                self.guest.execute(
+                    ShellScript(
+                        f"{self.guest.package_manager.command.to_script()} copr "
+                        f"{self.guest.package_manager.options.to_script()} enable -y {repository}"
+                    )
+                )
 
 
 class InstallDnf(InstallBase, Copr):
-    """ Install packages using dnf """
+    """
+    Install packages using dnf
+    """
 
     copr_plugin = "dnf-plugins-core"
 
     def install_local(self) -> None:
-        """ Install packages stored in a local directory """
+        """
+        Install packages stored in a local directory
+        """
 
         # Use both dnf install/reinstall to get all packages refreshed
         # FIXME Simplify this once BZ#1831022 is fixed/implemented.
-        filelist = [PackagePath(self.package_directory / filename.name)
-                    for filename in self.local_packages]
+        filelist = [
+            PackagePath(self.package_directory / filename.name) for filename in self.local_packages
+        ]
 
         self.guest.package_manager.install(
             *filelist,
             options=Options(
                 excluded_packages=self.exclude,
                 skip_missing=self.skip_missing,
-                check_first=False
-                )
-            )
+                check_first=False,
+            ),
+        )
 
         self.guest.package_manager.reinstall(
             *filelist,
             options=Options(
                 excluded_packages=self.exclude,
                 skip_missing=self.skip_missing,
-                check_first=False
-                )
-            )
+                check_first=False,
+            ),
+        )
 
         summary = fmf.utils.listed([str(path) for path in self.local_packages], 'local package')
         self.info('total', f"{summary} installed", 'green')
 
     def install_from_url(self) -> None:
-        """ Install packages stored on a remote URL """
+        """
+        Install packages stored on a remote URL
+        """
 
         self.guest.package_manager.install(
             *self.list_installables("remote package", *self.remote_packages),
             options=Options(
                 excluded_packages=self.exclude,
-                skip_missing=self.skip_missing
-                )
-            )
+                skip_missing=self.skip_missing,
+            ),
+        )
 
     def install_from_repository(self) -> None:
-        """ Install packages from a repository """
+        """
+        Install packages from a repository
+        """
 
         self.guest.package_manager.install(
             *self.list_installables("package", *self.packages),
             options=Options(
                 excluded_packages=self.exclude,
-                skip_missing=self.skip_missing
-                )
-            )
+                skip_missing=self.skip_missing,
+            ),
+        )
 
     def install_debuginfo(self) -> None:
-        """ Install debuginfo packages """
+        """
+        Install debuginfo packages
+        """
+
         packages = self.list_installables("debuginfo", *self.debuginfo_packages)
 
         self.guest.package_manager.install_debuginfo(
             *packages,
             options=Options(
                 excluded_packages=self.exclude,
-                skip_missing=self.skip_missing
-                )
-            )
+                skip_missing=self.skip_missing,
+            ),
+        )
 
         # Check the packages are installed on the guest because 'debuginfo-install'
         # returns 0 even though it didn't manage to install the required packages
         if not self.skip_missing:
             self.guest.package_manager.check_presence(
-                *[Package(f'{package}-debuginfo') for package in self.debuginfo_packages])
+                *[Package(f'{package}-debuginfo') for package in self.debuginfo_packages]
+            )
 
 
 class InstallDnf5(InstallDnf):
-    """ Install packages using dnf5 """
+    """
+    Install packages using dnf5
+    """
 
     copr_plugin = "dnf5-command(copr)"
 
 
 class InstallYum(InstallDnf):
-    """ Install packages using yum """
+    """
+    Install packages using yum
+    """
 
     copr_plugin = "yum-plugin-copr"
 
 
 class InstallRpmOstree(InstallBase, Copr):
-    """ Install packages using rpm-ostree """
+    """
+    Install packages using rpm-ostree
+    """
 
     copr_plugin = "dnf-plugins-core"
 
@@ -361,7 +420,9 @@ class InstallRpmOstree(InstallBase, Copr):
     required_packages: list[Union[Package, FileSystemPath]]
 
     def enable_copr(self, repositories: list[str]) -> None:
-        """ Enable requested copr repositories """
+        """
+        Enable requested copr repositories
+        """
 
         # rpm-ostree can step outside of its zone of competence, and use
         # another package manager to enable copr. We just need to cheat
@@ -376,11 +437,15 @@ class InstallRpmOstree(InstallBase, Copr):
             dependencies=[],
             directories=[],
             exclude=[],
-            logger=self._logger).enable_copr(repositories)
+            logger=self._logger,
+        ).enable_copr(repositories)
         self.guest.facts.package_manager = 'rpm-ostree'
 
     def sort_packages(self) -> None:
-        """ Identify required and recommended packages """
+        """
+        Identify required and recommended packages
+        """
+
         self.recommended_packages = []
         self.required_packages = []
         for package in self.packages:
@@ -393,20 +458,24 @@ class InstallRpmOstree(InstallBase, Copr):
                     self.required_packages.append(package)
 
     def install_debuginfo(self) -> None:
-        """ Install debuginfo packages """
+        """
+        Install debuginfo packages
+        """
+
         self.warn("Installation of debuginfo packages not supported yet.")
 
     def install_local(self) -> None:
-        """ Install copied local packages """
+        """
+        Install copied local packages
+        """
+
         local_packages_installed: list[PackagePath] = []
         for package in self.local_packages:
             try:
                 self.guest.package_manager.install(
                     PackagePath(self.package_directory / package.name),
-                    options=Options(
-                        check_first=False
-                        )
-                    )
+                    options=Options(check_first=False),
+                )
                 local_packages_installed.append(package)
             except tmt.utils.RunError as error:
                 self.warn(f"Local package '{package}' not installed: {error.stderr}")
@@ -414,7 +483,10 @@ class InstallRpmOstree(InstallBase, Copr):
         self.info('total', f"{summary} installed", 'green')
 
     def install_from_repository(self) -> None:
-        """ Install packages from the repository """
+        """
+        Install packages from the repository
+        """
+
         self.sort_packages()
 
         # Install recommended packages
@@ -431,79 +503,96 @@ class InstallRpmOstree(InstallBase, Copr):
         # Install required packages
         if self.required_packages:
             self.guest.package_manager.install(
-                *self.list_installables("package", *self.required_packages))
+                *self.list_installables("package", *self.required_packages)
+            )
 
 
 class InstallApt(InstallBase):
-    """ Install packages using apt """
+    """
+    Install packages using apt
+    """
 
     def install_local(self) -> None:
-        """ Install packages stored in a local directory """
+        """
+        Install packages stored in a local directory
+        """
 
-        filelist = [PackagePath(self.package_directory / filename)
-                    for filename in self.local_packages]
+        filelist = [
+            PackagePath(self.package_directory / filename) for filename in self.local_packages
+        ]
 
         self.guest.package_manager.install(
             *self.list_installables('local packages', *filelist),
             options=Options(
-                excluded_packages=self.exclude,
-                skip_missing=self.skip_missing,
-                check_first=False
-                )
-            )
+                excluded_packages=self.exclude, skip_missing=self.skip_missing, check_first=False
+            ),
+        )
 
         summary = fmf.utils.listed([str(path) for path in self.local_packages], 'local package')
         self.info('total', f"{summary} installed", 'green')
 
     def install_from_url(self) -> None:
-        """ Install packages stored on a remote URL """
+        """
+        Install packages stored on a remote URL
+        """
 
         self.guest.package_manager.install(
             *self.list_installables("remote package", *self.remote_packages),
             options=Options(
                 excluded_packages=self.exclude,
-                skip_missing=self.skip_missing
-                )
-            )
+                skip_missing=self.skip_missing,
+            ),
+        )
 
     def install_from_repository(self) -> None:
-        """ Install packages from a repository """
+        """
+        Install packages from a repository
+        """
 
         self.guest.package_manager.install(
             *self.list_installables("package", *self.packages),
             options=Options(
                 excluded_packages=self.exclude,
-                skip_missing=self.skip_missing
-                )
-            )
+                skip_missing=self.skip_missing,
+            ),
+        )
 
     def install_debuginfo(self) -> None:
-        """ Install debuginfo packages """
+        """
+        Install debuginfo packages
+        """
+
         packages = self.list_installables("debuginfo", *self.debuginfo_packages)
 
         self.guest.package_manager.install_debuginfo(
             *packages,
             options=Options(
                 excluded_packages=self.exclude,
-                skip_missing=self.skip_missing
-                )
-            )
+                skip_missing=self.skip_missing,
+            ),
+        )
 
         # Check the packages are installed on the guest because 'debuginfo-install'
         # returns 0 even though it didn't manage to install the required packages
         if not self.skip_missing:
             self.guest.package_manager.check_presence(
-                *[Package(f'{package}-debuginfo') for package in self.debuginfo_packages])
+                *[Package(f'{package}-debuginfo') for package in self.debuginfo_packages]
+            )
 
 
 class InstallApk(InstallBase):
-    """ Install packages using apk """
+    """
+    Install packages using apk
+    """
 
     def install_local(self) -> None:
-        """ Install packages stored in a local directory """
+        """
+        Install packages stored in a local directory
+        """
 
-        filelist = [PackagePath(self.package_directory / filename)
-                    for filename in self.local_packages]
+        filelist = [
+            PackagePath(self.package_directory / filename) for filename in self.local_packages
+        ]
 
         self.guest.package_manager.install(
             *self.list_installables('local packages', *filelist),
@@ -511,40 +600,48 @@ class InstallApk(InstallBase):
                 excluded_packages=self.exclude,
                 skip_missing=self.skip_missing,
                 allow_untrusted=True,
-                check_first=False
-                )
-            )
+                check_first=False,
+            ),
+        )
 
         summary = fmf.utils.listed([str(path) for path in self.local_packages], 'local package')
         self.info('total', f"{summary} installed", 'green')
 
     def install_from_url(self) -> None:
-        """ Install packages stored on a remote URL """
+        """
+        Install packages stored on a remote URL
+        """
 
         raise tmt.utils.PrepareError(
             f'Package manager "{self.guest.facts.package_manager}" '
-            'does not support installing from a remote URL.')
+            'does not support installing from a remote URL.'
+        )
 
     def install_from_repository(self) -> None:
-        """ Install packages from a repository """
+        """
+        Install packages from a repository
+        """
 
         self.guest.package_manager.install(
             *self.list_installables("package", *self.packages),
             options=Options(
                 excluded_packages=self.exclude,
-                skip_missing=self.skip_missing
-                )
-            )
+                skip_missing=self.skip_missing,
+            ),
+        )
 
     def install_debuginfo(self) -> None:
-        """ Install debuginfo packages """
+        """
+        Install debuginfo packages
+        """
 
         raise tmt.utils.PrepareError(
             f'Package manager "{self.guest.facts.package_manager}" does not support '
-            'installing debuginfo packages.')
+            'installing debuginfo packages.'
+        )
 
 
-@dataclasses.dataclass
+@container
 class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
     package: list[tmt.base.DependencySimple] = field(
         default_factory=list,
@@ -556,13 +653,13 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
         normalize=lambda key_address, value, logger: tmt.base.assert_simple_dependencies(
             tmt.base.normalize_require(key_address, value, logger),
             "'install' plugin support simple packages only, no fmf links are allowed",
-            logger),
+            logger,
+        ),
         serialize=lambda packages: [package.to_spec() for package in packages],
         unserialize=lambda serialized: [
-            tmt.base.DependencySimple.from_spec(package)
-            for package in serialized
-            ]
-        )
+            tmt.base.DependencySimple.from_spec(package) for package in serialized
+        ],
+    )
 
     directory: list[Path] = field(
         default_factory=list,
@@ -570,8 +667,8 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
         metavar='PATH',
         multiple=True,
         help='Path to a local directory with rpm packages.',
-        normalize=tmt.utils.normalize_path_list
-        )
+        normalize=tmt.utils.normalize_path_list,
+    )
 
     copr: list[str] = field(
         default_factory=list,
@@ -579,8 +676,8 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
         metavar='REPO',
         multiple=True,
         help='Copr repository to be enabled.',
-        normalize=tmt.utils.normalize_string_list
-        )
+        normalize=tmt.utils.normalize_string_list,
+    )
 
     exclude: list[str] = field(
         default_factory=list,
@@ -588,8 +685,8 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
         metavar='PACKAGE',
         multiple=True,
         help='Packages to be skipped during installation.',
-        normalize=tmt.utils.normalize_string_list
-        )
+        normalize=tmt.utils.normalize_string_list,
+    )
 
     # TODO: use enum
     missing: Literal['skip', 'fail'] = field(
@@ -597,8 +694,8 @@ class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
         option=('-m', '--missing'),
         metavar='ACTION',
         choices=['fail', 'skip'],
-        help='Action on missing packages, fail (default) or skip.'
-        )
+        help='Action on missing packages, fail (default) or skip.',
+    )
 
 
 @tmt.steps.provides_method('install')
@@ -655,12 +752,16 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
     _data_class = PrepareInstallData
 
     def go(
-            self,
-            *,
-            guest: 'Guest',
-            environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> list[PhaseResult]:
-        """ Perform preparation for the guests """
+        self,
+        *,
+        guest: 'Guest',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[PhaseResult]:
+        """
+        Perform preparation for the guests
+        """
+
         results = super().go(guest=guest, environment=environment, logger=logger)
 
         # Nothing to do in dry mode
@@ -680,7 +781,8 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
                 dependencies=self.data.package,
                 directories=self.data.directory,
                 exclude=self.data.exclude,
-                guest=guest)
+                guest=guest,
+            )
 
         elif guest.facts.package_manager == 'dnf5':
             installer = InstallDnf5(
@@ -689,7 +791,8 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
                 dependencies=self.data.package,
                 directories=self.data.directory,
                 exclude=self.data.exclude,
-                guest=guest)
+                guest=guest,
+            )
 
         elif guest.facts.package_manager == 'dnf':
             installer = InstallDnf(
@@ -698,7 +801,8 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
                 dependencies=self.data.package,
                 directories=self.data.directory,
                 exclude=self.data.exclude,
-                guest=guest)
+                guest=guest,
+            )
 
         elif guest.facts.package_manager == 'yum':
             installer = InstallYum(
@@ -707,7 +811,8 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
                 dependencies=self.data.package,
                 directories=self.data.directory,
                 exclude=self.data.exclude,
-                guest=guest)
+                guest=guest,
+            )
 
         elif guest.facts.package_manager == 'apt':
             installer = InstallApt(
@@ -716,7 +821,8 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
                 dependencies=self.data.package,
                 directories=self.data.directory,
                 exclude=self.data.exclude,
-                guest=guest)
+                guest=guest,
+            )
 
         elif guest.facts.package_manager == 'apk':
             installer = InstallApk(
@@ -725,7 +831,8 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
                 dependencies=self.data.package,
                 directories=self.data.directory,
                 exclude=self.data.exclude,
-                guest=guest)
+                guest=guest,
+            )
 
         elif guest.facts.package_manager is None:
             raise tmt.utils.PrepareError('Unrecognized package manager.')
@@ -733,7 +840,8 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         else:
             raise tmt.utils.PrepareError(
                 f"Package manager '{guest.facts.package_manager}' "
-                "is not supported by 'prepare/install'.")
+                "is not supported by 'prepare/install'."
+            )
 
         # Enable copr repositories...
         if isinstance(installer, Copr):

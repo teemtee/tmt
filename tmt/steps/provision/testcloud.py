@@ -1,6 +1,4 @@
-
 import collections
-import dataclasses
 import datetime
 import functools
 import itertools
@@ -23,6 +21,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt.container import container, field
 from tmt.utils import (
     WORKDIR_ROOT,
     Command,
@@ -30,9 +29,8 @@ from tmt.utils import (
     ProvisionError,
     ShellScript,
     configure_constant,
-    field,
     retry_session,
-    )
+)
 
 if TYPE_CHECKING:
     import tmt.base
@@ -56,8 +54,11 @@ RawStorageDevice: Any
 TPMConfiguration: Any
 
 
-def import_testcloud() -> None:
-    """ Import testcloud module only when needed """
+def import_testcloud(logger: tmt.log.Logger) -> None:
+    """
+    Import testcloud module only when needed
+    """
+
     global testcloud
     global libvirt
     global Workarounds
@@ -87,11 +88,14 @@ def import_testcloud() -> None:
             TPMConfiguration,
             UserNetworkConfiguration,
             X86_64ArchitectureConfiguration,
-            )
+        )
         from testcloud.workarounds import Workarounds
     except ImportError as error:
-        raise ProvisionError(
-            "Install 'tmt+provision-virtual' to provision using this method.") from error
+        from tmt.utils.hints import print_hint
+
+        print_hint(id_='provision/virtual.testcloud', logger=logger)
+
+        raise ProvisionError('Could not import testcloud package.') from error
 
     # Version-aware TPM configuration is added in
     # https://pagure.io/testcloud/c/89f1c024ca829543de7f74f89329158c6dee3d83
@@ -102,7 +106,7 @@ def import_testcloud() -> None:
 # Testcloud cache to our tmt's workdir root
 TESTCLOUD_DATA = (
     Path(os.environ['TMT_WORKDIR_ROOT']) if os.getenv('TMT_WORKDIR_ROOT') else WORKDIR_ROOT
-    ) / 'testcloud'
+) / 'testcloud'
 TESTCLOUD_IMAGES = TESTCLOUD_DATA / 'images'
 
 TESTCLOUD_WORKAROUNDS: list[str] = []  # A list of commands to be executed during guest boot up
@@ -170,7 +174,7 @@ CONNECT_TIMEOUT: int = configure_constant(DEFAULT_CONNECT_TIMEOUT, 'TMT_CONNECT_
 #: How many times should the timeouts be multiplied in kvm-less cases.
 #: These include emulating a different architecture than the host,
 #: some nested virtualization cases, and hosts with degraded virt caps.
-NON_KVM_TIMEOUT_COEF = 10      # times
+NON_KVM_TIMEOUT_COEF = 10  # times
 
 # SSH key type, set None for ssh-keygen default one
 SSH_KEYGEN_TYPE = "ecdsa"
@@ -192,21 +196,23 @@ TPM_CONFIG_ALLOWS_VERSIONS: bool = False
 TPM_VERSION_ALLOWED_OPERATORS: tuple[tmt.hardware.Operator, ...] = (
     tmt.hardware.Operator.EQ,
     tmt.hardware.Operator.GTE,
-    tmt.hardware.Operator.LTE)
+    tmt.hardware.Operator.LTE,
+)
 
 #: TPM versions supported by the plugin. The key is :py:const:`TPM_CONFIG_ALLOWS_VERSIONS`.
 TPM_VERSION_SUPPORTED_VERSIONS = {
     True: ['2.0', '2', '1.2'],
     # This is the default version used by testcloud before version became
     # an input parameter of TPM configuration.
-    False: ['2.0', '2']
-    }
+    False: ['2.0', '2'],
+}
 
 
 def normalize_memory_size(
-        key_address: str,
-        value: Any,
-        logger: tmt.log.Logger) -> Optional['Size']:
+    key_address: str,
+    value: Any,
+    logger: tmt.log.Logger,
+) -> Optional['Size']:
     """
     Normalize memory size.
 
@@ -265,46 +271,56 @@ def normalize_disk_size(key_address: str, value: Any, logger: tmt.log.Logger) ->
 def _report_hw_requirement_support(constraint: tmt.hardware.Constraint[Any]) -> bool:
     components = constraint.expand_name()
 
-    if components.name == 'memory' \
-        and constraint.operator in (tmt.hardware.Operator.EQ,
-                                    tmt.hardware.Operator.GTE,
-                                    tmt.hardware.Operator.LTE):
+    if components.name == 'memory' and constraint.operator in (
+        tmt.hardware.Operator.EQ,
+        tmt.hardware.Operator.GTE,
+        tmt.hardware.Operator.LTE,
+    ):
         return True
 
-    if components.name == 'cpu' \
-        and components.child_name == 'processors' \
-        and constraint.operator in (tmt.hardware.Operator.EQ,
-                                    tmt.hardware.Operator.LTE,
-                                    tmt.hardware.Operator.GTE,
-                                    tmt.hardware.Operator.NEQ,
-                                    tmt.hardware.Operator.LT,
-                                    tmt.hardware.Operator.GT):
+    if (
+        components.name == 'cpu'
+        and components.child_name == 'processors'
+        and constraint.operator
+        in (
+            tmt.hardware.Operator.EQ,
+            tmt.hardware.Operator.LTE,
+            tmt.hardware.Operator.GTE,
+            tmt.hardware.Operator.NEQ,
+            tmt.hardware.Operator.LT,
+            tmt.hardware.Operator.GT,
+        )
+    ):
         return True
 
-    if components.name == 'disk' \
-        and components.child_name == 'size' \
-        and constraint.operator in (tmt.hardware.Operator.EQ,
-                                    tmt.hardware.Operator.GTE,
-                                    tmt.hardware.Operator.LTE):
+    if (
+        components.name == 'disk'
+        and components.child_name == 'size'
+        and constraint.operator
+        in (tmt.hardware.Operator.EQ, tmt.hardware.Operator.GTE, tmt.hardware.Operator.LTE)
+    ):
         return True
 
-    if components.name == 'tpm' \
-            and components.child_name == 'version' \
-            and constraint.value in TPM_VERSION_SUPPORTED_VERSIONS[TPM_CONFIG_ALLOWS_VERSIONS] \
-            and constraint.operator in TPM_VERSION_ALLOWED_OPERATORS:
+    if (
+        components.name == 'tpm'
+        and components.child_name == 'version'
+        and constraint.value in TPM_VERSION_SUPPORTED_VERSIONS[TPM_CONFIG_ALLOWS_VERSIONS]
+        and constraint.operator in TPM_VERSION_ALLOWED_OPERATORS
+    ):
         return True
 
     return False
 
 
-@dataclasses.dataclass
+@container
 class TestcloudGuestData(tmt.steps.provision.GuestSshData):
     # Override parent class with our defaults
     user: str = field(
         default=DEFAULT_USER,
         option=('-u', '--user'),
         metavar='USERNAME',
-        help='Username to use for all guest operations.')
+        help='Username to use for all guest operations.',
+    )
 
     image: str = field(
         default=DEFAULT_IMAGE,
@@ -313,7 +329,8 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
         help="""
              Select image to be used. Provide a short name, full path to a local file
              or a complete url.
-             """)
+             """,
+    )
     memory: Optional['Size'] = field(
         default=cast(Optional['Size'], None),
         option=('-m', '--memory'),
@@ -322,7 +339,9 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
         normalize=normalize_memory_size,
         serialize=lambda value: str(value) if value is not None else None,
         unserialize=lambda serialized: tmt.hardware.UNITS(serialized)
-        if serialized is not None else None)
+        if serialized is not None
+        else None,
+    )
     disk: Optional['Size'] = field(
         default=cast(Optional['Size'], None),
         option=('-D', '--disk'),
@@ -331,40 +350,47 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
         normalize=normalize_disk_size,
         serialize=lambda value: str(value) if value is not None else None,
         unserialize=lambda serialized: tmt.hardware.UNITS(serialized)
-        if serialized is not None else None)
+        if serialized is not None
+        else None,
+    )
     connection: str = field(
         default=DEFAULT_CONNECTION,
         option=('-c', '--connection'),
         choices=['session', 'system'],
-        help="What session type to use, 'session' by default.")
+        help="What session type to use, 'session' by default.",
+    )
     arch: str = field(
         default=DEFAULT_ARCH,
         option=('-a', '--arch'),
         choices=['x86_64', 'aarch64', 's390x', 'ppc64le'],
-        help="What architecture to virtualize, host arch by default.")
+        help="What architecture to virtualize, host arch by default.",
+    )
 
     list_local_images: bool = field(
         default=False,
         option='--list-local-images',
         is_flag=True,
-        help="List locally available images.")
+        help="List locally available images.",
+    )
 
     image_url: Optional[str] = field(
         default=None,
-        internal=True)
+        internal=True,
+    )
     instance_name: Optional[str] = field(
         default=None,
-        internal=True)
+        internal=True,
+    )
 
     # TODO: custom handling for two fields - when the formatting moves into
     # field(), this should not be necessary.
     def show(
-            self,
-            *,
-            keys: Optional[list[str]] = None,
-            verbose: int = 0,
-            logger: tmt.log.Logger) -> None:
-
+        self,
+        *,
+        keys: Optional[list[str]] = None,
+        verbose: int = 0,
+        logger: tmt.log.Logger,
+    ) -> None:
         keys = keys or list(self.keys())
         super_keys = [key for key in keys if key not in ('memory', 'disk')]
 
@@ -376,24 +402,24 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
         logger.info('disk', f'{(self.disk or DEFAULT_DISK).to("GB")}', 'green')
 
 
-@dataclasses.dataclass
+@container
 class ProvisionTestcloudData(TestcloudGuestData, tmt.steps.provision.ProvisionStepData):
     pass
 
 
 def _apply_hw_tpm(
-        hardware: Optional[tmt.hardware.Hardware],
-        domain: 'DomainConfiguration',
-        logger: tmt.log.Logger) -> None:
-    """ Apply ``tpm`` constraint to given VM domain """
+    hardware: Optional[tmt.hardware.Hardware],
+    domain: 'DomainConfiguration',
+    logger: tmt.log.Logger,
+) -> None:
+    """
+    Apply ``tpm`` constraint to given VM domain
+    """
 
     domain.tpm_configuration = None
 
     if not hardware or not hardware.constraint:
-        logger.debug(
-            'tpm.version',
-            "not included because of no constraints",
-            level=4)
+        logger.debug('tpm.version', "not included because of no constraints", level=4)
 
         return
 
@@ -404,32 +430,32 @@ def _apply_hw_tpm(
         for constraint in variant
         if isinstance(constraint, tmt.hardware.TextConstraint)
         and constraint.expand_name().name == 'tpm'
-        and constraint.expand_name().child_name == 'version']
+        and constraint.expand_name().child_name == 'version'
+    ]
 
     if not tpm_constraints:
         logger.debug(
-            'tpm.version',
-            "not included because of no 'tpm.version' constraints",
-            level=4)
+            'tpm.version', "not included because of no 'tpm.version' constraints", level=4
+        )
 
         return
 
     for constraint in tpm_constraints:
         if constraint.operator not in TPM_VERSION_ALLOWED_OPERATORS:
             logger.warning(
-                f"Cannot apply hardware requirement '{constraint}', operator not supported.")
+                f"Cannot apply hardware requirement '{constraint}', operator not supported."
+            )
             return
 
         if constraint.value not in TPM_VERSION_SUPPORTED_VERSIONS[TPM_CONFIG_ALLOWS_VERSIONS]:
             logger.warning(
-                f"Cannot apply hardware requirement '{constraint}',"
-                " TPM version not supported.")
+                f"Cannot apply hardware requirement '{constraint}', TPM version not supported."
+            )
             return
 
         logger.debug(
-            'tpm.version',
-            f"set to '{constraint.value}' because of '{constraint}'",
-            level=4)
+            'tpm.version', f"set to '{constraint.value}' because of '{constraint}'", level=4
+        )
 
         if TPM_CONFIG_ALLOWS_VERSIONS:
             domain.tpm_configuration = TPMConfiguration(version=constraint.value)
@@ -439,15 +465,20 @@ def _apply_hw_tpm(
 
 
 def _apply_hw_disk_size(
-        hardware: Optional[tmt.hardware.Hardware],
-        domain: 'DomainConfiguration',
-        logger: tmt.log.Logger) -> None:
-    """ Apply ``disk`` constraint to given VM domain """
+    hardware: Optional[tmt.hardware.Hardware],
+    domain: 'DomainConfiguration',
+    logger: tmt.log.Logger,
+) -> None:
+    """
+    Apply ``disk`` constraint to given VM domain
+    """
 
     final_size: Size = DEFAULT_DISK
 
     def _generate_disk_filepaths() -> Iterator[Path]:
-        """ Generate paths to use for files representing VM storage """
+        """
+        Generate paths to use for files representing VM storage
+        """
 
         # Start with the path already decided by testcloud...
         yield Path(domain.local_disk)
@@ -459,16 +490,13 @@ def _apply_hw_disk_size(
     disk_filepath_generator = _generate_disk_filepaths()
 
     if not hardware or not hardware.constraint:
-        logger.debug(
-            'disk[0].size',
-            f"set to '{final_size}' because of no constraints",
-            level=4)
+        logger.debug('disk[0].size', f"set to '{final_size}' because of no constraints", level=4)
 
         domain.storage_devices = [
             QCow2StorageDevice(
-                str(next(disk_filepath_generator)),
-                int(final_size.to('GB').magnitude))
-            ]
+                str(next(disk_filepath_generator)), int(final_size.to('GB').magnitude)
+            )
+        ]
 
         return
 
@@ -480,19 +508,19 @@ def _apply_hw_disk_size(
         for constraint in variant
         if isinstance(constraint, tmt.hardware.SizeConstraint)
         and constraint.expand_name().name == 'disk'
-        and constraint.expand_name().child_name == 'size']
+        and constraint.expand_name().child_name == 'size'
+    ]
 
     if not disk_size_constraints:
         logger.debug(
-            'disk[0].size',
-            f"set to '{final_size}' because of no 'disk.size' constraints",
-            level=4)
+            'disk[0].size', f"set to '{final_size}' because of no 'disk.size' constraints", level=4
+        )
 
         domain.storage_devices = [
             QCow2StorageDevice(
-                str(next(disk_filepath_generator)),
-                int(final_size.to('GB').magnitude))
-            ]
+                str(next(disk_filepath_generator)), int(final_size.to('GB').magnitude)
+            )
+        ]
 
         return
 
@@ -502,11 +530,13 @@ def _apply_hw_disk_size(
 
     for constraint in disk_size_constraints:
         if constraint.operator not in (
-                tmt.hardware.Operator.EQ,
-                tmt.hardware.Operator.GTE,
-                tmt.hardware.Operator.LTE):
+            tmt.hardware.Operator.EQ,
+            tmt.hardware.Operator.GTE,
+            tmt.hardware.Operator.LTE,
+        ):
             raise ProvisionError(
-                f"Cannot apply hardware requirement '{constraint}', operator not supported.")
+                f"Cannot apply hardware requirement '{constraint}', operator not supported."
+            )
 
         components = constraint.expand_name()
 
@@ -524,30 +554,31 @@ def _apply_hw_disk_size(
             logger.debug(
                 f'disk[{peer_index}].size',
                 f"set to '{constraint.value}' because of '{constraint}'",
-                level=4)
+                level=4,
+            )
 
             final_size = constraint.value
 
         domain.storage_devices.append(
             QCow2StorageDevice(
-                str(next(disk_filepath_generator)),
-                int(final_size.to('GB').magnitude))
+                str(next(disk_filepath_generator)), int(final_size.to('GB').magnitude)
             )
+        )
 
 
 def _apply_hw_cpu_processors(
-        hardware: Optional[tmt.hardware.Hardware],
-        domain: 'DomainConfiguration',
-        logger: tmt.log.Logger) -> None:
-    """ Apply ``cpu.processors`` constraint to given VM domain """
+    hardware: Optional[tmt.hardware.Hardware],
+    domain: 'DomainConfiguration',
+    logger: tmt.log.Logger,
+) -> None:
+    """
+    Apply ``cpu.processors`` constraint to given VM domain
+    """
 
     domain.cpu_count = DEFAULT_CPU_COUNT
 
     if not hardware or not hardware.constraint:
-        logger.debug(
-            'cpu.processors',
-            "not included because of no constraints",
-            level=4)
+        logger.debug('cpu.processors', "not included because of no constraints", level=4)
 
         return
 
@@ -558,40 +589,44 @@ def _apply_hw_cpu_processors(
         for constraint in variant
         if isinstance(constraint, tmt.hardware.IntegerConstraint)
         and constraint.expand_name().name == 'cpu'
-        and constraint.expand_name().child_name == 'processors']
+        and constraint.expand_name().child_name == 'processors'
+    ]
 
     if not cpu_processors_constraints:
         logger.debug(
-            'cpu.processors',
-            "not included because of no 'cpu.processors' constraints",
-            level=4)
+            'cpu.processors', "not included because of no 'cpu.processors' constraints", level=4
+        )
 
         return
 
     for constraint in cpu_processors_constraints:
         if constraint.operator in (
-                tmt.hardware.Operator.EQ,
-                tmt.hardware.Operator.LTE,
-                tmt.hardware.Operator.GTE):
+            tmt.hardware.Operator.EQ,
+            tmt.hardware.Operator.LTE,
+            tmt.hardware.Operator.GTE,
+        ):
             logger.debug(
-                'cpu.processors',
-                f"set to '{constraint.value}' because of '{constraint}'",
-                level=4)
+                'cpu.processors', f"set to '{constraint.value}' because of '{constraint}'", level=4
+            )
 
             domain.cpu_count = constraint.value
 
-        elif constraint.operator is tmt.hardware.Operator.NEQ \
-                and domain.cpu_count != constraint.value:
+        elif (
+            constraint.operator is tmt.hardware.Operator.NEQ
+            and domain.cpu_count != constraint.value
+        ):
             logger.debug(
                 'cpu.processors',
                 f"kept at '{constraint.value}' because of '{constraint}'",
-                level=4)
+                level=4,
+            )
 
         elif constraint.operator is tmt.hardware.Operator.LT:
             logger.debug(
                 'cpu.processors',
                 f"set to '{constraint.value - 1}' because of '{constraint}'",
-                level=4)
+                level=4,
+            )
 
             domain.cpu_count = constraint.value - 1
 
@@ -599,13 +634,15 @@ def _apply_hw_cpu_processors(
             logger.debug(
                 'cpu.processors',
                 f"set to '{constraint.value + 1}' because of '{constraint}'",
-                level=4)
+                level=4,
+            )
 
             domain.cpu_count = constraint.value + 1
 
         else:
             raise ProvisionError(
-                f"Cannot apply hardware requirement '{constraint}', operator not supported.")
+                f"Cannot apply hardware requirement '{constraint}', operator not supported."
+            )
 
 
 class GuestTestcloud(tmt.GuestSsh):
@@ -638,7 +675,8 @@ class GuestTestcloud(tmt.GuestSsh):
     _image: Optional['testcloud.image.Image'] = None  # type: ignore[name-defined]
     _instance: Optional['testcloud.instance.Instance'] = None  # type: ignore[name-defined]
     _domain: Optional[  # type: ignore[name-defined]
-        'testcloud.domain_configuration.DomainConfiguration'] = None
+        'testcloud.domain_configuration.DomainConfiguration'
+    ] = None
 
     #: The lock protects calls into the testcloud library. We suspect it might
     #: be unprepared for multi-threaded use. After the dust settles, we may
@@ -653,8 +691,7 @@ class GuestTestcloud(tmt.GuestSsh):
         assert testcloud is not None
         assert libvirt is not None
         try:
-            state = testcloud.instance._find_domain(
-                self._instance.name, self._instance.connection)
+            state = testcloud.instance._find_domain(self._instance.name, self._instance.connection)
             # Note the type of variable 'state' is 'Any'. Hence, we don't use:
             #     return state == 'running'
             # to avoid error from type checking.
@@ -681,7 +718,9 @@ class GuestTestcloud(tmt.GuestSsh):
         return bool(re.search('coreos|rhcos', self.image.lower()))
 
     def _get_url(self, url: str, message: str) -> requests.Response:
-        """ Get url, retry when fails, return response """
+        """
+        Get url, retry when fails, return response
+        """
 
         def try_get_url() -> requests.Response:
             try:
@@ -698,15 +737,16 @@ class GuestTestcloud(tmt.GuestSsh):
 
         try:
             return tmt.utils.wait(
-                self, try_get_url, datetime.timedelta(
-                    seconds=CONNECT_TIMEOUT), tick=1)
+                self, try_get_url, datetime.timedelta(seconds=CONNECT_TIMEOUT), tick=1
+            )
 
         except tmt.utils.WaitingTimedOutError:
-            raise ProvisionError(
-                f'Failed to {message} in {CONNECT_TIMEOUT}s.')
+            raise ProvisionError(f'Failed to {message} in {CONNECT_TIMEOUT}s.')
 
     def _guess_image_url(self, name: str) -> str:
-        """ Guess image url for given name """
+        """
+        Guess image url for given name
+        """
 
         # Try to check if given url is a local file
         name_as_path = Path(name)
@@ -727,10 +767,11 @@ class GuestTestcloud(tmt.GuestSsh):
         return url
 
     def wake(self) -> None:
-        """ Wake up the guest """
-        self.debug(
-            f"Waking up testcloud instance '{self.instance_name}'.",
-            level=2, shift=0)
+        """
+        Wake up the guest
+        """
+
+        self.debug(f"Waking up testcloud instance '{self.instance_name}'.", level=2, shift=0)
         self.prepare_config()
         assert testcloud is not None
         self._image = testcloud.image.Image(self.image_url)
@@ -745,11 +786,16 @@ class GuestTestcloud(tmt.GuestSsh):
 
         self._instance = testcloud.instance.Instance(
             domain_configuration=self._domain,
-            image=self._image, desired_arch=self.arch,
-            connection=f"qemu:///{self.connection}")
+            image=self._image,
+            desired_arch=self.arch,
+            connection=f"qemu:///{self.connection}",
+        )
 
     def prepare_ssh_key(self, key_type: Optional[str] = None) -> str:
-        """ Prepare ssh key for authentication """
+        """
+        Prepare ssh key for authentication
+        """
+
         assert self.workdir is not None
 
         # Use existing key
@@ -773,8 +819,11 @@ class GuestTestcloud(tmt.GuestSsh):
         return public_key
 
     def prepare_config(self) -> None:
-        """ Prepare common configuration """
-        import_testcloud()
+        """
+        Prepare common configuration
+        """
+
+        import_testcloud(self._logger)
 
         # Get configuration
         assert testcloud is not None
@@ -792,7 +841,9 @@ class GuestTestcloud(tmt.GuestSsh):
         self.config.STORE_DIR = TESTCLOUD_IMAGES
 
     def _combine_hw_memory(self) -> None:
-        """ Combine ``hardware`` with ``--memory`` option """
+        """
+        Combine ``hardware`` with ``--memory`` option
+        """
 
         if not self.hardware:
             self.hardware = tmt.hardware.Hardware.from_spec({})
@@ -801,12 +852,15 @@ class GuestTestcloud(tmt.GuestSsh):
             return
 
         memory_constraint = tmt.hardware.SizeConstraint.from_specification(
-            'memory', str(self.memory))
+            'memory', str(self.memory)
+        )
 
         self.hardware.and_(memory_constraint)
 
     def _combine_hw_disk_size(self) -> None:
-        """ Combine ``hardware`` with ``--disk`` option """
+        """
+        Combine ``hardware`` with ``--disk`` option
+        """
 
         if not self.hardware:
             self.hardware = tmt.hardware.Hardware.from_spec({})
@@ -815,19 +869,18 @@ class GuestTestcloud(tmt.GuestSsh):
             return
 
         disk_size_constraint = tmt.hardware.SizeConstraint.from_specification(
-            'disk[0].size',
-            str(self.disk))
+            'disk[0].size', str(self.disk)
+        )
 
         self.hardware.and_(disk_size_constraint)
 
     def _apply_hw_memory(self, domain: 'DomainConfiguration') -> None:
-        """ Apply ``memory`` constraint to given VM domain """
+        """
+        Apply ``memory`` constraint to given VM domain
+        """
 
         if not self.hardware or not self.hardware.constraint:
-            self.debug(
-                'memory',
-                f"set to '{DEFAULT_MEMORY}' because of no constraints",
-                level=4)
+            self.debug('memory', f"set to '{DEFAULT_MEMORY}' because of no constraints", level=4)
 
             domain.memory_size = int(DEFAULT_MEMORY.to('kB').magnitude)
 
@@ -839,13 +892,13 @@ class GuestTestcloud(tmt.GuestSsh):
             constraint
             for constraint in variant
             if isinstance(constraint, tmt.hardware.SizeConstraint)
-            and constraint.expand_name().name == 'memory']
+            and constraint.expand_name().name == 'memory'
+        ]
 
         if not memory_constraints:
             self.debug(
-                'memory',
-                f"set to '{DEFAULT_MEMORY}' because of no 'memory' constraints",
-                level=4)
+                'memory', f"set to '{DEFAULT_MEMORY}' because of no 'memory' constraints", level=4
+            )
 
             domain.memory_size = int(DEFAULT_MEMORY.to('kB').magnitude)
 
@@ -853,16 +906,15 @@ class GuestTestcloud(tmt.GuestSsh):
 
         for constraint in memory_constraints:
             if constraint.operator not in (
-                    tmt.hardware.Operator.EQ,
-                    tmt.hardware.Operator.GTE,
-                    tmt.hardware.Operator.LTE):
+                tmt.hardware.Operator.EQ,
+                tmt.hardware.Operator.GTE,
+                tmt.hardware.Operator.LTE,
+            ):
                 raise ProvisionError(
-                    f"Cannot apply hardware requirement '{constraint}', operator not supported.")
+                    f"Cannot apply hardware requirement '{constraint}', operator not supported."
+                )
 
-            self.debug(
-                'memory',
-                f"set to '{constraint.value}' because of '{constraint}'",
-                level=4)
+            self.debug('memory', f"set to '{constraint.value}' because of '{constraint}'", level=4)
 
             domain.memory_size = int(constraint.value.to('kB').magnitude)
 
@@ -871,27 +923,34 @@ class GuestTestcloud(tmt.GuestSsh):
             domain.system_architecture = X86_64ArchitectureConfiguration(
                 kvm=kvm,
                 uefi=False,  # Configurable
-                model="q35" if not legacy_os else "pc")
+                model="q35" if not legacy_os else "pc",
+            )
         elif self.arch == "aarch64":
             domain.system_architecture = AArch64ArchitectureConfiguration(
                 kvm=kvm,
                 uefi=True,  # Always enabled
-                model="virt")
+                model="virt",
+            )
         elif self.arch == "ppc64le":
             domain.system_architecture = Ppc64leArchitectureConfiguration(
                 kvm=kvm,
                 uefi=False,  # Always disabled
-                model="pseries")
+                model="pseries",
+            )
         elif self.arch == "s390x":
             domain.system_architecture = S390xArchitectureConfiguration(
                 kvm=kvm,
                 uefi=False,  # Always disabled
-                model="s390-ccw-virtio")
+                model="s390-ccw-virtio",
+            )
         else:
             raise tmt.utils.ProvisionError("Unknown architecture requested.")
 
     def start(self) -> None:
-        """ Start provisioned guest """
+        """
+        Start provisioned guest
+        """
+
         if self.is_dry_run:
             return
         # Make sure required directories exist
@@ -919,16 +978,14 @@ class GuestTestcloud(tmt.GuestSsh):
         try:
             self._image.prepare()
         except FileNotFoundError as error:
-            raise ProvisionError(
-                f"Image '{self._image.local_path}' not found.") from error
-        except (testcloud.exceptions.TestcloudPermissionsError,
-                PermissionError) as error:
+            raise ProvisionError(f"Image '{self._image.local_path}' not found.") from error
+        except (testcloud.exceptions.TestcloudPermissionsError, PermissionError) as error:
             raise ProvisionError(
                 f"Failed to prepare the image. Check the '{TESTCLOUD_IMAGES}' "
-                f"directory permissions.") from error
+                f"directory permissions."
+            ) from error
         except KeyError as error:
-            raise ProvisionError(
-                f"Failed to prepare image '{self.image_url}'.") from error
+            raise ProvisionError(f"Failed to prepare image '{self.image_url}'.") from error
 
         # Prepare hostname (get rid of possible unwanted characters)
         hostname = re.sub(r"[^a-zA-Z0-9\-]+", "-", self.name.lower()).strip("-")
@@ -951,10 +1008,7 @@ class GuestTestcloud(tmt.GuestSsh):
         self._combine_hw_disk_size()
 
         if self.hardware:
-            self.verbose(
-                'effective hardware',
-                self.hardware.to_spec(),
-                color='green')
+            self.verbose('effective hardware', self.hardware.to_spec(), color='green')
 
             for line in self.hardware.format_variants():
                 self._logger.debug('effective hardware', line, level=4)
@@ -978,15 +1032,15 @@ class GuestTestcloud(tmt.GuestSsh):
         mac_address = testcloud.util.generate_mac_address()
         if f"qemu:///{self.connection}" == "qemu:///system":
             self._domain.network_configuration = SystemNetworkConfiguration(
-                mac_address=mac_address)
+                mac_address=mac_address
+            )
         elif f"qemu:///{self.connection}" == "qemu:///session":
             device_type = "virtio-net-pci" if not self.is_legacy_os else "e1000"
             with GuestTestcloud._testcloud_lock:
                 port = testcloud.util.spawn_instance_port_file(self.instance_name)
             self._domain.network_configuration = UserNetworkConfiguration(
-                mac_address=mac_address,
-                port=port,
-                device_type=device_type)
+                mac_address=mac_address, port=port, device_type=device_type
+            )
         else:
             raise tmt.utils.ProvisionError("Only system, or session connection is supported.")
 
@@ -999,7 +1053,8 @@ class GuestTestcloud(tmt.GuestSsh):
             image=self._image,
             connection=f"qemu:///{self.connection}",
             domain_configuration=self._domain,
-            workarounds=self._workarounds)
+            workarounds=self._workarounds,
+        )
 
         self.verbose('name', self.instance_name, 'green')
 
@@ -1014,10 +1069,12 @@ class GuestTestcloud(tmt.GuestSsh):
             # prepare_ssh_key() writes key directly to COREOS_DATA
             self._instance.ssh_path = []
             data_tpl = Template(COREOS_DATA).safe_substitute(
-                user_name=self.user, public_key=public_key)
+                user_name=self.user, public_key=public_key
+            )
         else:
             data_tpl = Template(USER_DATA).safe_substitute(
-                user_name=self.user, public_key=public_key)
+                user_name=self.user, public_key=public_key
+            )
 
         # Boot the virtual machine
         self.info('progress', 'booting...', 'cyan')
@@ -1027,10 +1084,8 @@ class GuestTestcloud(tmt.GuestSsh):
             self._instance.prepare(data_tpl=data_tpl)
             self._instance.spawn_vm()
             self._instance.start(BOOT_TIMEOUT * time_coeff)
-        except (testcloud.exceptions.TestcloudInstanceError,
-                libvirt.libvirtError) as error:
-            raise ProvisionError(
-                f'Failed to boot testcloud instance ({error}).')
+        except (testcloud.exceptions.TestcloudInstanceError, libvirt.libvirtError) as error:
+            raise ProvisionError(f'Failed to boot testcloud instance ({error}).')
         self.primary_address = self.topology_address = self._instance.get_ip()
         self.port = int(self._instance.get_instance_port())
         self.verbose('primary address', self.primary_address, 'green')
@@ -1039,15 +1094,14 @@ class GuestTestcloud(tmt.GuestSsh):
         self._instance.create_ip_file(self.primary_address)
 
         # Wait a bit until the box is up
-        if not self.reconnect(
-                timeout=CONNECT_TIMEOUT *
-                time_coeff,
-                tick=1):
-            raise ProvisionError(
-                f"Failed to connect in {CONNECT_TIMEOUT * time_coeff}s.")
+        if not self.reconnect(timeout=CONNECT_TIMEOUT * time_coeff, tick=1):
+            raise ProvisionError(f"Failed to connect in {CONNECT_TIMEOUT * time_coeff}s.")
 
     def stop(self) -> None:
-        """ Stop provisioned guest """
+        """
+        Stop provisioned guest
+        """
+
         super().stop()
         # Stop only if the instance successfully booted
         if self._instance and self.primary_address:
@@ -1056,40 +1110,106 @@ class GuestTestcloud(tmt.GuestSsh):
             try:
                 self._instance.stop()
             except testcloud.exceptions.TestcloudInstanceError as error:
-                raise tmt.utils.ProvisionError(
-                    f"Failed to stop testcloud instance: {error}")
+                raise tmt.utils.ProvisionError(f"Failed to stop testcloud instance: {error}")
 
             self.info('guest', 'stopped', 'green')
 
     def remove(self) -> None:
-        """ Remove the guest (disk cleanup) """
+        """
+        Remove the guest (disk cleanup)
+        """
+
         if self._instance:
             self.debug(f"Removing testcloud instance '{self.instance_name}'.")
             try:
                 self._instance.remove(autostop=True)
             except FileNotFoundError as error:
-                raise tmt.utils.ProvisionError(
-                    f"Failed to remove testcloud instance: {error}")
+                raise tmt.utils.ProvisionError(f"Failed to remove testcloud instance: {error}")
 
             self.info('guest', 'removed', 'green')
 
-    def reboot(self,
-               hard: bool = False,
-               command: Optional[Union[Command, ShellScript]] = None,
-               timeout: Optional[int] = None,
-               tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-               tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE) -> bool:
-        """ Reboot the guest, return True if successful """
-        # Use custom reboot command if provided
+    def reboot(
+        self,
+        hard: bool = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        timeout: Optional[int] = None,
+        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
+        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+    ) -> bool:
+        """
+        Reboot the guest, and wait for the guest to recover.
+
+        .. note::
+
+           Custom reboot command can be used only in combination with a
+           soft reboot. If both ``hard`` and ``command`` are set, a hard
+           reboot will be requested, and ``command`` will be ignored.
+
+        :param hard: if set, force the reboot. This may result in a loss
+            of data. The default of ``False`` will attempt a graceful
+            reboot.
+        :param command: a command to run on the guest to trigger the
+            reboot. If ``hard`` is also set, ``command`` is ignored.
+        :param timeout: amount of time in which the guest must become available
+            again.
+        :param tick: how many seconds to wait between two consecutive attempts
+            of contacting the guest.
+        :param tick_increase: a multiplier applied to ``tick`` after every
+            attempt.
+        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
+        """
+
+        if hard:
+            if self._instance is None:
+                raise tmt.utils.ProvisionError("No instance initialized.")
+
+            self.debug("Hard reboot using the testcloud API.")
+
+            # ignore[union-attr]: mypy still considers `self._instance` as possibly
+            # being `None`, missing the explicit check above.
+            return self.perform_reboot(
+                lambda: self._instance.reboot(soft=False),  # type: ignore[union-attr]
+                timeout=timeout,
+                tick=tick,
+                tick_increase=tick_increase,
+                fetch_boot_time=False,
+            )
+
         if command:
-            return super().reboot(hard=hard, command=command, timeout=timeout)
-        if not self._instance:
+            return super().reboot(
+                hard=False,
+                command=command,
+                timeout=timeout,
+                tick=tick,
+                tick_increase=tick_increase,
+            )
+
+        if self._instance is None:
             raise tmt.utils.ProvisionError("No instance initialized.")
-        self._instance.reboot(soft=not hard)
-        return self.reconnect(timeout=timeout)
+
+        # ignore[union-attr]: mypy still considers `self._instance` as possibly
+        # being `None`, missing the explicit check above.
+        return self.perform_reboot(
+            lambda: self._instance.reboot(soft=True),  # type: ignore[union-attr]
+            timeout=timeout,
+            tick=tick,
+            tick_increase=tick_increase,
+        )
 
 
-@tmt.steps.provides_method('virtual.testcloud')
+@tmt.steps.provides_method(
+    'virtual.testcloud',
+    installation_hint="""
+        Make sure ``testcloud`` and ``libvirt`` packages are installed and configured, they are
+        required for VM-backed guests provided by ``provision/virtual.testcloud`` plugin.
+
+        * Users who installed tmt from system repositories should install ``tmt+provision-virtual``
+          package.
+        * Users who installed tmt from PyPI should also install ``tmt+provision-virtual`` package,
+          as it will install required system dependencies. After doing so, they should install
+          ``tmt[provision-virtual]`` extra.
+    """,
+)
 class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudData]):
     """
     Local virtual machine using ``testcloud`` library.
@@ -1142,6 +1262,10 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
 
     In addition to the qcow2 format, Vagrant boxes can be used as well,
     testcloud will take care of unpacking the image for you.
+
+    To trigger hard reboot of a guest, plugin uses testcloud API. It is
+    also used to trigger soft reboot unless a custom reboot command was
+    specified via ``tmt-reboot -c ...``.
     """
 
     _data_class = ProvisionTestcloudData
@@ -1153,7 +1277,10 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
     _guest = None
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        """ Provision the testcloud instance """
+        """
+        Provision the testcloud instance
+        """
+
         super().go(logger=logger)
 
         if self.data.list_local_images:
@@ -1177,7 +1304,8 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
                     setattr(data, int_key, int(value))
                 except ValueError as exc:
                     raise tmt.utils.NormalizationError(
-                        f'{self.name}:{int_key}', value, 'an integer') from exc
+                        f'{self.name}:{int_key}', value, 'an integer'
+                    ) from exc
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
@@ -1188,47 +1316,54 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
                 self._logger.debug('hardware', line, level=4)
 
             if data.memory is not None and data.hardware.constraint.uses_constraint(
-                    'memory', self._logger):
+                'memory', self._logger
+            ):
                 self._logger.warning(
                     "Hardware requirement 'memory' is specified in 'hardware' key,"
-                    " it will be overruled by 'memory' key.")
+                    " it will be overruled by 'memory' key."
+                )
 
             if data.disk is not None and data.hardware.constraint.uses_constraint(
-                    'disk.size', self._logger):
+                'disk.size', self._logger
+            ):
                 self._logger.warning(
                     "Hardware requirement 'disk.size' is specified in 'hardware' key,"
-                    " it will be overruled by 'disk' key.")
+                    " it will be overruled by 'disk' key."
+                )
 
         # Create a new GuestTestcloud instance and start it
         self._guest = GuestTestcloud(
             logger=self._logger,
             data=data,
             name=self.name,
-            parent=self.step)
+            parent=self.step,
+        )
         self._guest.start()
         self._guest.setup()
 
-    def guest(self) -> Optional[tmt.Guest]:
-        """ Return the provisioned guest """
-        return self._guest
-
     def _print_local_images(self) -> None:
-        """ Print images which are already cached """
+        """
+        Print images which are already cached
+        """
+
         self.info("Locally available images")
         for filename in sorted(TESTCLOUD_IMAGES.glob('*.qcow2')):
             self.info(filename.name, shift=1, color='yellow')
             click.echo(f"{TESTCLOUD_IMAGES / filename}")
 
     @classmethod
-    def clean_images(cls, clean: 'tmt.base.Clean', dry: bool) -> bool:
-        """ Remove the testcloud images """
+    def clean_images(cls, clean: 'tmt.base.Clean', dry: bool, workdir_root: Path) -> bool:
+        """
+        Remove the testcloud images
+        """
+
+        testcloud_images = workdir_root / 'testcloud/images'
         clean.info('testcloud', shift=1, color='green')
-        if not TESTCLOUD_IMAGES.exists():
-            clean.warn(
-                f"Directory '{TESTCLOUD_IMAGES}' does not exist.", shift=2)
+        if not testcloud_images.exists():
+            clean.warn(f"Directory '{testcloud_images}' does not exist.", shift=2)
             return True
         successful = True
-        for image in TESTCLOUD_IMAGES.iterdir():
+        for image in testcloud_images.iterdir():
             if dry:
                 clean.verbose(f"Would remove '{image}'.", shift=2)
             else:

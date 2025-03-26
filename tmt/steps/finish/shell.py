@@ -1,4 +1,3 @@
-import dataclasses
 from typing import Any, Optional, cast
 
 import fmf
@@ -7,15 +6,16 @@ import tmt
 import tmt.steps
 import tmt.steps.finish
 import tmt.utils
+from tmt.container import container, field
 from tmt.result import PhaseResult
 from tmt.steps import safe_filename
 from tmt.steps.provision import Guest
-from tmt.utils import ShellScript, field
+from tmt.utils import ShellScript
 
 FINISH_WRAPPER_FILENAME = 'tmt-finish-wrapper.sh'
 
 
-@dataclasses.dataclass
+@container
 class FinishShellData(tmt.steps.finish.FinishStepData):
     script: list[ShellScript] = field(
         default_factory=list,
@@ -25,8 +25,8 @@ class FinishShellData(tmt.steps.finish.FinishStepData):
         help='Shell script to be executed. Can be used multiple times.',
         normalize=tmt.utils.normalize_shell_script_list,
         serialize=lambda scripts: [str(script) for script in scripts],
-        unserialize=lambda serialized: [ShellScript(script) for script in serialized]
-        )
+        unserialize=lambda serialized: [ShellScript(script) for script in serialized],
+    )
 
     # TODO: well, our brave new field() machinery should be able to deal with all of this...
     # ignore[override] & cast: two base classes define to_spec(), with conflicting
@@ -60,12 +60,16 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
     _data_class = FinishShellData
 
     def go(
-            self,
-            *,
-            guest: 'Guest',
-            environment: Optional[tmt.utils.Environment] = None,
-            logger: tmt.log.Logger) -> list[PhaseResult]:
-        """ Perform finishing tasks on given guest """
+        self,
+        *,
+        guest: 'Guest',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[PhaseResult]:
+        """
+        Perform finishing tasks on given guest
+        """
+
         results = super().go(guest=guest, environment=environment, logger=logger)
 
         # Give a short summary
@@ -90,7 +94,8 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
             guest.push(
                 source=finish_wrapper_path,
                 destination=finish_wrapper_path,
-                options=["-s", "-p", "--chmod=755"])
+                options=["-s", "-p", "--chmod=755"],
+            )
             command: ShellScript
             if guest.become and not guest.facts.is_superuser:
                 command = tmt.utils.ShellScript(f'sudo -E {finish_wrapper_path}')

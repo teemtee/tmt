@@ -1,5 +1,7 @@
 #!/usr/bin/python3
-""" A simple script to parse the output of 'tmt test export .' """
+"""
+A simple script to parse the output of 'tmt test export .'
+"""
 
 import sys
 
@@ -8,10 +10,12 @@ import ruamel.yaml
 
 def verify(obj, obj_id, field, exp):
     got = obj[field]
-    sys.stdout.write(f">>> Verify {obj_id}'s field '{field}' ......\n"
-                     f"...\texp: {exp}\n"
-                     f"...\tgot: {got}\n"
-                     f"...\tres: ")
+    sys.stdout.write(
+        f">>> Verify {obj_id}'s field '{field}' ......\n"
+        f"...\texp: {exp}\n"
+        f"...\tgot: {got}\n"
+        f"...\tres: "
+    )
     assert got == exp
     sys.stdout.write("PASSED\n\n")
 
