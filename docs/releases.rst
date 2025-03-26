@@ -8,13 +8,18 @@
 tmt-1.45.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When pruning a repository with a specified ``path``, the ``discover``
-step now saves the data to the correct temporary directory and
-respects the structure of the original repository. This ensures
-that the test attributes have correct paths.
+FIPS mode can now be enabled for RHEL or CentosStream 8, 9 or 10
+by a prepare step feature ``fips``. Moreover, the ``tmt try``
+command now supports the new :ref:`/stories/cli/try/option/fips`
+option backed by the :ref:`/plugins/prepare/feature` plugin.
 
-When running ``tmt try`` failure in ``prepare`` phase drops the user
-to the menu to be able to login to the machine and possibly try it again.
+New option ``--build-disk-image-only`` is now supported by the
+:ref:`/plugins/provision/bootc` plugin and can be used for just
+building the disk image without actually provisioning the guest.
+
+When running ``tmt try``, failure in ``prepare`` phase drops the
+user to the menu to be able to login to the machine and possibly
+try it again.
 
 When working with an existing run which involved executing only a
 subset of plans, commands such as ``tmt run --last report`` will
@@ -23,15 +28,11 @@ save disk space and speed up the execution.
 
 Aborted tests and tests that failed when
 :ref:`/spec/plans/execute/exit-first` was enabled did not skip all
-remaining tests, only tests from the current ``discover`` phase. Plans
-with multiple ``discover`` phases would start ``execute`` step for
-remaining ``discover`` phases. This is now fixed, aborted test and
-:ref:`/spec/plans/execute/exit-first` will skip **all** remaining tests.
-
-FIPS mode can now be enabled for RHEL or CentosStream 8, 9 or 10 by
-a prepare step feature ``fips``. Moreover, the ``tmt try`` command
-now supports the new :ref:`/stories/cli/try/option/fips` option backed
-by the :ref:`prepare/feature</plugins/prepare/feature>` plugin.
+remaining tests, only tests from the current ``discover`` phase.
+Plans with multiple ``discover`` phases would start ``execute``
+step for remaining ``discover`` phases. This is now fixed, aborted
+test and :ref:`/spec/plans/execute/exit-first` will skip **all**
+remaining tests.
 
 Added support for translating hardware constraints using a config
 file for the :ref:`/plugins/provision/beaker` provision plugin. It
@@ -39,6 +40,18 @@ will try to get the config file, and find translations that would
 match the constraints. See
 :py:class:`tmt.config.models.hardware.MrackTranslation` for an
 example translation config.
+
+When pruning a repository with a specified ``path``, the
+``discover`` step now saves the data to the correct temporary
+directory and respects the structure of the original repository.
+This ensures that the test attributes have correct paths.
+
+The latest ``fmf`` package is now required to ensure that the
+``deployment-mode`` context :ref:`/spec/context/dimension` is
+fully supported.
+
+The default :ref:`/plugins/provision/ssh-options` used for
+connecting to provisioned guests are now documented.
 
 
 tmt-1.44.0

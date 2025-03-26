@@ -20,6 +20,8 @@ Following plugins fully implement hard reboot:
 .. include:: hardware-matrix.rst
 
 
+.. _/plugins/provision/ssh-options:
+
 SSH options
 -----------
 

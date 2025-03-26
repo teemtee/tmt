@@ -800,7 +800,7 @@ Qinghua Cheng, Michael Engel, Anatoli Babenia, Colin Walters,
 Link Dupont, Mario Casquero, Martin Klusoň, Pavel Holica,
 Otto Šabart, Ismail Ibrahim Quwarah, Sergei Petrosian, Tom
 Koscielniak, Han Han, Luigi Pellecchia, Siteshwar Vashisht,
-Chris Kyrouac and Xiaofeng Wang.
+Chris Kyrouac, Xiaofeng Wang, Coiby Xu and Michal Pospíšil.
 
 
 Copyright
