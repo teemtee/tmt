@@ -20,6 +20,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 import tmt.utils.signals
+from tmt.config.models.hardware import MrackTranslation
 from tmt.container import container, field, simple_field
 from tmt.utils import (
     Command,
@@ -28,6 +29,7 @@ from tmt.utils import (
     ShellScript,
     UpdatableMessage,
 )
+from tmt.utils.templates import render_template
 
 MRACK_VERSION: Optional[str] = None
 
@@ -61,6 +63,19 @@ def mrack_constructs_ks_pre() -> bool:
     assert MRACK_VERSION is not None
 
     return packaging.version.Version(MRACK_VERSION) >= packaging.version.Version('1.21.0')
+
+
+def _get_constraint_translations() -> list[MrackTranslation]:
+    """
+    Load the list of hardware requirement translations from configuration.
+
+    :returns: translations loaded from configuration, or an empty list if
+        the configuration is missing.
+    """
+    config = tmt.config.Config()
+    return (
+        config.hardware.beaker.translations if config.hardware and config.hardware.beaker else []
+    )
 
 
 # Type annotation for "data" package describing a guest instance. Passed
@@ -178,6 +193,9 @@ class MrackHWKeyValue(MrackHWElement):
         self.attributes = {'_key': name, '_op': operator, '_value': value}
 
 
+BeakerizedConstraint = Union[MrackBaseHWElement, dict[str, Any]]
+
+
 @container
 class MrackHWGroup(MrackBaseHWElement):
     """
@@ -186,15 +204,24 @@ class MrackHWGroup(MrackBaseHWElement):
     This type of element is not allowed to have any attributes.
     """
 
-    children: list[MrackBaseHWElement] = simple_field(default_factory=list)
+    children: list[BeakerizedConstraint] = simple_field(default_factory=list)
 
     def to_mrack(self) -> dict[str, Any]:
         # Another unexpected behavior of mrack dictionary tree: if there is just
         # a single child, it is "packed" into its parent as a key/dict item.
-        if len(self.children) == 1 and self.name not in ('and', 'or'):
+        if (
+            len(self.children) == 1
+            and self.name not in ('and', 'or')
+            and not isinstance(self.children[0], dict)
+        ):
             return {self.name: self.children[0].to_mrack()}
 
-        return {self.name: [child.to_mrack() for child in self.children]}
+        return {
+            self.name: [
+                child.to_mrack() if isinstance(child, MrackBaseHWElement) else child
+                for child in self.children
+            ]
+        }
 
 
 @container
@@ -234,6 +261,37 @@ def _transform_unsupported(
     logger.warning(f"Hardware requirement '{constraint.printable_name}' will have no effect.")
 
     return MrackHWOrGroup()
+
+
+def _translate_constraint_by_config(
+    constraint: tmt.hardware.Constraint[Any],
+    constraint_translations: list[MrackTranslation],
+    logger: tmt.log.Logger,
+) -> BeakerizedConstraint:
+    """
+    Translate hardware constraints to Mrack-compatible dictionary tree.
+    """
+
+    suitable_translations = [
+        translation
+        for translation in constraint_translations
+        if translation.requirement == constraint.printable_name
+    ]
+
+    if not suitable_translations:
+        return _transform_unsupported(constraint, logger)
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator, constraint.value
+    )
+    return tmt.utils.yaml_to_dict(
+        render_template(
+            suitable_translations[0].template,
+            CONSTRAINT=constraint,
+            BEAKER_OPERATOR=beaker_operator,
+            BEAKER_VALUE=actual_value,
+            BEAKER_NEGATE=negate,
+        )
+    )
 
 
 def _transform_beaker_pool(
@@ -676,7 +734,7 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
 
 def constraint_to_beaker_filter(
     constraint: tmt.hardware.BaseConstraint, logger: tmt.log.Logger
-) -> MrackBaseHWElement:
+) -> BeakerizedConstraint:
     """
     Convert a hardware constraint into a Mrack-compatible filter
     """
@@ -709,6 +767,10 @@ def constraint_to_beaker_filter(
 
     if transformer:
         return transformer(constraint, logger)
+    config = _get_constraint_translations()
+    if not config:
+        return _transform_unsupported(constraint, logger)
+    return _translate_constraint_by_config(constraint, config, logger)
 
     return _transform_unsupported(constraint, logger)
 
@@ -772,8 +834,10 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
             # groups. And our `constraint_to_beaker_filter()` does that,
             # even for groups nested deeper in the tree.
             transformed = constraint_to_beaker_filter(hw.constraint, logger)
+            if isinstance(transformed, MrackBaseHWElement):
+                transformed = transformed.to_mrack()
 
-            logger.debug('Transformed hardware', tmt.utils.dict_to_yaml(transformed.to_mrack()))
+            logger.debug('Transformed hardware', tmt.utils.dict_to_yaml(transformed))
 
             # Mrack does not handle well situation when the filter
             # consists of just a single filtering element, e.g. just
