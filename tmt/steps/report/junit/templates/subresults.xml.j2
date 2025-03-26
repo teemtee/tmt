@@ -21,7 +21,7 @@
 
             {% set num_of_errored = result.subresult.errored | length %}
             {% set num_of_failed = result.subresult.failed | length %}
-            {% set num_of_skipped = result.subresult.failed | length %}
+            {% set num_of_skipped = result.subresult.skipped | length %}
 
             {#
                 Fix the test counts in testsuite tag for errors, failures and
