@@ -274,11 +274,13 @@ def _translate_constraint_by_config(
     suitable_translations = [
         translation
         for translation in constraint_translations
-        if translation.requirement == constraint.printable_name
+        if translation.requirement == constraint.printable_name.replace('-', '_')
     ]
-
     if not suitable_translations:
-        return _transform_unsupported(constraint, logger)
+        transformer = _CONSTRAINT_TRANSFORMERS.get(constraint.printable_name.replace('-', '_'))
+        if not transformer:
+            return _transform_unsupported(constraint, logger)
+        return transformer(constraint, logger)
     beaker_operator, actual_value, negate = operator_to_beaker_op(
         constraint.operator, constraint.value
     )
@@ -756,22 +758,10 @@ def constraint_to_beaker_filter(
 
     assert isinstance(constraint, tmt.hardware.Constraint)
 
-    name, _, child_name = constraint.expand_name()
-
-    if child_name:
-        transformer = _CONSTRAINT_TRANSFORMERS.get(f'{name}.{child_name}')
-
-    else:
-        transformer = _CONSTRAINT_TRANSFORMERS.get(name)
-
-    if transformer:
-        return transformer(constraint, logger)
     config = _get_constraint_translations()
     if not config:
         return _transform_unsupported(constraint, logger)
     return _translate_constraint_by_config(constraint, config, logger)
-
-    return _transform_unsupported(constraint, logger)
 
 
 def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) -> None:
