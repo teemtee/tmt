@@ -26,10 +26,10 @@ description: |
                # String, a name of the management interface protocol.
                protocol: IPMI
 
-               # Integer or string, an management interface vendor name or id.
+               # Integer or string, an ID or name of the management interface vendor.
                vendor: "~ MontaVista Software, Inc."
 
-               # Integer or string, an management interface product name or id.
+               # Integer or string, an ID or name of the management interface product.
                product: 0x4010
 
     .. versionchanged:: 1.45
