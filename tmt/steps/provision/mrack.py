@@ -266,33 +266,36 @@ def _translate_constraint_by_config(
     constraint: tmt.hardware.Constraint[Any],
     constraint_translations: list[MrackTranslation],
     logger: tmt.log.Logger,
-) -> BeakerizedConstraint:
+) -> dict[str, Any]:
     """
-    Translate hardware constraints to Mrack-compatible dictionary tree.
+    Translate hardware constraints to Mrack-compatible dictionary tree with config.
     """
 
-    suitable_translations = [
-        translation
-        for translation in constraint_translations
-        if translation.requirement == constraint.printable_name.replace('-', '_')
-    ]
-    if not suitable_translations:
-        transformer = _CONSTRAINT_TRANSFORMERS.get(constraint.printable_name.replace('-', '_'))
-        if not transformer:
-            return _transform_unsupported(constraint, logger)
-        return transformer(constraint, logger)
     beaker_operator, actual_value, negate = operator_to_beaker_op(
         constraint.operator, constraint.value
     )
     return tmt.utils.yaml_to_dict(
         render_template(
-            suitable_translations[0].template,
+            constraint_translations[0].template,
             CONSTRAINT=constraint,
             BEAKER_OPERATOR=beaker_operator,
             BEAKER_VALUE=actual_value,
             BEAKER_NEGATE=negate,
         )
     )
+
+
+def _translate_constraint_by_transformer(
+    constraint: tmt.hardware.Constraint[Any],
+    logger: tmt.log.Logger,
+) -> BeakerizedConstraint:
+    """
+    Translate hardware constraints to Mrack-compatible dictionary tree with transformer.
+    """
+    transformer = _CONSTRAINT_TRANSFORMERS.get(constraint.printable_name.replace('-', '_'))
+    if not transformer:
+        return _transform_unsupported(constraint, logger)
+    return transformer(constraint, logger)
 
 
 def _transform_beaker_pool(
@@ -757,11 +760,15 @@ def constraint_to_beaker_filter(
         )
 
     assert isinstance(constraint, tmt.hardware.Constraint)
-
     config = _get_constraint_translations()
-    if not config:
-        return _transform_unsupported(constraint, logger)
-    return _translate_constraint_by_config(constraint, config, logger)
+    suitable_translations = [
+        translation
+        for translation in config
+        if translation.requirement == constraint.printable_name.replace('-', '_')
+    ]
+    if suitable_translations:
+        return _translate_constraint_by_config(constraint, suitable_translations, logger)
+    return _translate_constraint_by_transformer(constraint, logger)
 
 
 def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) -> None:
