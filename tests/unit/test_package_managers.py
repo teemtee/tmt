@@ -380,7 +380,7 @@ def _parametrize_test_install() -> Iterator[
                 container,
                 package_manager_class,
                 Package('tree'),
-                r".*?dpkg-query --show \$installable_packages \\\n^\|\| apt install -y  \$installable_packages.*",  # noqa: E501
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree\"\s+dpkg-query --show \$installable_packages \\\s+\|\| apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
                 'Setting up tree',
             )
 
@@ -471,7 +471,7 @@ def _parametrize_test_refresh_metadata() -> Iterator[
                 container,
                 package_manager_class,
                 r"export DEBIAN_FRONTEND=noninteractive; apt update",
-                'packages',
+                'Fetched',
             )
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
@@ -589,7 +589,7 @@ def _parametrize_test_install_nonexistent() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r".*?dpkg-query --show \$installable_packages \\\n^\|\| apt install -y  \$installable_packages.*",  # noqa: E501
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree-but-spelled-wrong\"\s+dpkg-query --show \$installable_packages \\\s+\|\| apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
                 'E: Unable to locate package tree-but-spelled-wrong',
             )
 
@@ -704,7 +704,7 @@ def _parametrize_test_install_nonexistent_skip() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r".*?dpkg-query --show \$installable_packages \\\n^\|\| apt install -y --ignore-missing \$installable_packages.*",  # noqa: E501
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree-but-spelled-wrong\"\s+dpkg-query --show \$installable_packages \\\s+\|\| apt install -y --ignore-missing \$installable_packages\s+exit 0",  # noqa: E501
                 'E: Unable to locate package tree-but-spelled-wrong',
             )
 
@@ -807,7 +807,7 @@ def _parametrize_test_install_dont_check_first() -> Iterator[
                 container,
                 package_manager_class,
                 Package('tree'),
-                r".*?/bin/false \\\n^\|\| apt install -y  \$installable_packages.*",
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree\"\s+/bin/false \\\s+\|\| apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
                 'Setting up tree',
             )
 
@@ -921,7 +921,7 @@ def _parametrize_test_reinstall() -> Iterator[
                 package_manager_class,
                 Package('tar'),
                 True,
-                r".*?dpkg-query --show \$installable_packages \\\n^&& apt reinstall -y  \$installable_packages.*",  # noqa: E501
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tar\"\s+dpkg-query --show \$installable_packages \\\s+&& apt reinstall -y  \$installable_packages\s+exit \$\?",  # noqa: E501
                 'Setting up tar',
             )
 
@@ -1046,7 +1046,7 @@ def _generate_test_reinstall_nonexistent_matrix() -> Iterator[
                 container,
                 package_manager_class,
                 True,
-                r".*?dpkg-query --show \$installable_packages \\\n^&& apt reinstall -y  \$installable_packages.*",  # noqa: E501
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree-but-spelled-wrong\"\s+dpkg-query --show \$installable_packages \\\s+&& apt reinstall -y  \$installable_packages\s+exit \$\?",  # noqa: E501
                 'dpkg-query: no packages found matching tree-but-spelled-wrong',
             )
 
@@ -1317,7 +1317,7 @@ def _generate_test_check_presence() -> Iterator[
                 package_manager_class,
                 Package('util-linux'),
                 True,
-                r".*?echo \"PRESENCE-TEST:util-linux:util-linux:\$\(dpkg-query --show util-linux\).*?",  # noqa: E501
+                r".*?echo \"PRESENCE-TEST:util-linux:util-linux:\$\(dpkg-query --show util-linux\)\".*?",  # noqa: E501
                 r'\s+out:\s+PRESENCE-TEST:util-linux:util-linux:util-linux',
             )
 
@@ -1326,7 +1326,7 @@ def _generate_test_check_presence() -> Iterator[
                 package_manager_class,
                 Package('tree-but-spelled-wrong'),
                 False,
-                r".*?echo \"PRESENCE-TEST:tree-but-spelled-wrong:tree-but-spelled-wrong:\$\(dpkg-query --show tree-but-spelled-wrong\).*?",  # noqa: E501
+                r".*?echo \"PRESENCE-TEST:tree-but-spelled-wrong:tree-but-spelled-wrong:\$\(dpkg-query --show tree-but-spelled-wrong\)\".*?",  # noqa: E501
                 r'\s+err:\s+dpkg-query: no packages found matching tree-but-spelled-wrong',
             )
 
@@ -1335,7 +1335,7 @@ def _generate_test_check_presence() -> Iterator[
                 package_manager_class,
                 FileSystemPath('/usr/bin/flock'),
                 True,
-                r".*?echo \"PRESENCE-TEST:/usr/bin/flock:\$\{fs_path_package\}:\$\(dpkg-query --show \$fs_path_package\)\".*?",  # noqa: E501
+                r".*?set -x\s+export DEBIAN_FRONTEND=noninteractive\s+fs_path_package=\"\$\(apt-file search --package-only /usr/bin/flock\)\".*echo \"PRESENCE-TEST:/usr/bin/flock:\$\{fs_path_package\}:\$\(dpkg-query --show \$fs_path_package\)\".*?",  # noqa: E501
                 r'\s+out:\s+PRESENCE-TEST:/usr/bin/flock:util-linux:util-linux',
             )
 
@@ -1496,7 +1496,7 @@ def _parametrize_test_install_filesystempath() -> Iterator[
                 container,
                 package_manager_class,
                 FileSystemPath('/usr/bin/dos2unix'),
-                r".*?dpkg-query --show \$installable_packages \\\n^\|\| apt install -y  \$installable_packages.*",  # noqa: E501
+                r".*?set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"\"\s+fs_path_package=\"\$\(apt-file search --package-only /usr/bin/dos2unix\)\"\s+\[ -z \"\$fs_path_package\" \] && echo \"No package found for path /usr/bin/dos2unix\" && exit 1\s+installable_packages=\"\$installable_packages \$fs_path_package\"\s+dpkg-query --show \$installable_packages \\\s+\|\| apt install -y\s+\$installable_packages\s+exit \$\?",  # noqa: E501
                 "Setting up dos2unix",
             )
 
@@ -1633,7 +1633,7 @@ def _parametrize_test_install_multiple() -> Iterator[
                 container,
                 package_manager_class,
                 (Package('tree'), Package('nano')),
-                r".*?dpkg-query --show \$installable_packages \\\n^\|\| apt install -y  \$installable_packages.*",  # noqa: E501
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree nano\"\s+dpkg-query --show \$installable_packages \\\s+\|\| apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
                 'Setting up tree',
             )
 
