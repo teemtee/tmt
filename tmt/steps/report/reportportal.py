@@ -10,6 +10,7 @@ import tmt.hardware
 import tmt.log
 import tmt.steps.report
 import tmt.utils
+import tmt.utils.templates
 from tmt.container import container, field
 from tmt.result import ResultOutcome
 from tmt.utils import ActionType, catch_warnings_safe, format_timestamp, yaml_to_dict
@@ -268,6 +269,17 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         help="Enable/disable uploading of tmt subresults into the ReportPortal.",
     )
 
+    link_template: Optional[str] = field(
+        metavar="LINK_TEMPLATE",
+        option="--link-template",
+        default=_str_env_to_default('link_template', None),
+        help="""
+             Jinja template that will be rendered for each test result and appended to the end
+             of its description. It can contain the following variables for tmt to render:
+             ``TMT_PLAN_NAME``, ``TMT_TEST_SERIAL_NUMBER``, ``TMT_GUEST_NAME``.
+             """,
+    )
+
     launch_url: Optional[str] = None
     launch_uuid: Optional[str] = None
     suite_uuid: Optional[str] = None
@@ -480,6 +492,25 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             else:
                 curr_description = self.data.launch_description
         return curr_description
+
+    def append_link_template(
+        self,
+        description: str,
+        link_template: str,
+        serial_number: int,
+        guest_name: str,
+    ) -> str:
+        """
+        Extend text with rendered link template
+        """
+
+        url = tmt.utils.templates.render_template(
+            link_template,
+            TMT_PLAN_NAME=self.step.plan.pathless_safe_name,
+            TMT_TEST_SERIAL_NUMBER=serial_number,
+            TMT_GUEST_NAME=guest_name,
+        )
+        return f'{description}<br>{url}' if description else url
 
     def upload_result_logs(
         self,
@@ -755,6 +786,14 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         self.data.upload_to_launch and launch_per_plan
                     ) or self.data.upload_to_suite:
                         test_description = self.append_description(test_description)
+
+                    if result and self.data.link_template:
+                        test_description = self.append_link_template(
+                            test_description,
+                            self.data.link_template,
+                            serial_number,
+                            result.guest.name,
+                        )
 
                     # Create a test item
                     self.info("test", test_name, color="cyan")

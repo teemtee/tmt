@@ -16,6 +16,13 @@ results are represented as ``<testsuite>`` tags, each containing a
 ``<testcase>`` tag for the main result, along with additional
 ``<testcase>`` tags for any subresults.
 
+When reporting results to ReportPortal, each test result can now
+directly link to ``oculus`` test result. To achieve this, a new
+option ``--link-template`` was added to the
+:ref:`/plugins/report/reportportal` plugin, which can be used
+to provide a template that will be rendered for each test result
+and appended to the end of its description.
+
 
 tmt-1.45.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
