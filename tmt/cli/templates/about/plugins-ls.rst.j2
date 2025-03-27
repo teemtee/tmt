@@ -1,0 +1,16 @@
+{% for registry in REGISTRIES %}
+    {% set intro = find_intro(registry) %}
+{{ intro }}
+{# {{ "-" * intro | length }} #}
+
+    {% if registry %}
+        {% for plugin_id in registry.iter_plugin_ids() | sort %}
+* ``{{ plugin_id }}``
+        {% endfor %}
+    {% else %}
+No plugins discovered.
+    {% endif %}
+
+----
+
+{% endfor %}
