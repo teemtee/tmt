@@ -253,14 +253,13 @@ class MrackHWNotGroup(MrackHWGroup):
 
 def _transform_unsupported(
     constraint: tmt.hardware.Constraint[Any], logger: tmt.log.Logger
-) -> MrackBaseHWElement:
+) -> dict[str, Any]:
     # Unsupported constraint has been already logged via report_support(). Make
     # sure user is aware it would have no effect, and since we have to return
-    # something, return an empty `or` group - no harm done, composable with other
-    # elements.
+    # something, return an {}- no harm done, composable with other elements.
     logger.warning(f"Hardware requirement '{constraint.printable_name}' will have no effect.")
 
-    return MrackHWOrGroup()
+    return {}
 
 
 def _translate_constraint_by_config(
@@ -532,7 +531,7 @@ def _transform_tpm_version(
 
 def _transform_virtualization_is_virtualized(
     constraint: tmt.hardware.FlagConstraint, logger: tmt.log.Logger
-) -> MrackBaseHWElement:
+) -> BeakerizedConstraint:
     beaker_operator, actual_value, _ = operator_to_beaker_op(
         constraint.operator, str(constraint.value)
     )
@@ -615,7 +614,7 @@ def _transform_zcrypt_mode(
 
 def _transform_iommu_is_supported(
     constraint: tmt.hardware.FlagConstraint, logger: tmt.log.Logger
-) -> MrackBaseHWElement:
+) -> BeakerizedConstraint:
     test = (constraint.operator, constraint.value)
 
     if test in [(tmt.hardware.Operator.EQ, True), (tmt.hardware.Operator.NEQ, False)]:
