@@ -197,9 +197,9 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         if (
             parent
             and parent.plan._original_plan
-            and parent.plan._original_plan._imported_plan_fmf_ids
+            and parent.plan._original_plan._imported_plan_references
         ):
-            for remote_plan_id in parent.plan._original_plan._imported_plan_fmf_ids:
+            for remote_plan_id in parent.plan._original_plan._imported_plan_references:
                 # FIXME: cast() - https://github.com/python/mypy/issues/7981
                 # Note the missing Optional for values - to_minimal_dict() would
                 # not include unset keys, therefore all values should be valid.
