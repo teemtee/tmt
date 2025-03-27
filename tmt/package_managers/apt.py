@@ -1,13 +1,14 @@
 import re
 from typing import Optional, Union
 
-import tmt.package_managers
 import tmt.utils
 from tmt.package_managers import (
     FileSystemPath,
     Installable,
     Options,
     Package,
+    PackageManager,
+    PackageManagerEngine,
     PackagePath,
     escape_installables,
     provides_package_manager,
@@ -15,22 +16,70 @@ from tmt.package_managers import (
 from tmt.utils import (
     Command,
     CommandOutput,
-    Environment,
-    EnvVarValue,
     GeneralError,
     RunError,
     ShellScript,
 )
+from tmt.utils.templates import render_template
 
 ReducedPackages = list[Union[Package, PackagePath]]
 
 
-@provides_package_manager('apt')
-class Apt(tmt.package_managers.PackageManager):
-    NAME = 'apt'
+PRESENCE_TEMPLATE = """
+set -x
 
-    probe_command = Command('apt', '--version')
+export DEBIAN_FRONTEND=noninteractive
 
+{% for installable in REAL_PACKAGES %}
+echo "PRESENCE-TEST:{{ installable }}:{{ installable }}:$(dpkg-query --show {{ installable }})"
+{% endfor %}
+
+{% if FILESYSTEM_PATHS %}
+  {% for installable in FILESYSTEM_PATHS %}
+fs_path_package="$(apt-file search --package-only {{ installable }})"
+if [ -z "$fs_path_package" ]; then
+    echo "PRESENCE-TEST:{{ installable }}::"
+else
+    echo "PRESENCE-TEST:{{ installable }}:${fs_path_package}:$(dpkg-query --show $fs_path_package)"
+fi
+  {% endfor %}
+{% endif %}
+"""
+
+
+INSTALL_TEMPLATE = """
+set -x
+
+export DEBIAN_FRONTEND=noninteractive
+
+installable_packages="{{ REAL_PACKAGES | join(' ') }}"
+
+{% if FILESYSTEM_PATHS %}
+  {% for installable in FILESYSTEM_PATHS %}
+fs_path_package="$(apt-file search --package-only {{ installable }})"
+    {% if not OPTIONS.skip_missing %}
+[ -z "$fs_path_package" ] && echo "No package found for path {{ installable }}" && exit 1
+    {% endif %}
+installable_packages="$installable_packages $fs_path_package"
+  {% endfor %}
+{% endif %}
+
+{% if OPTIONS.check_first %}
+dpkg-query --show $installable_packages \\
+{% else -%}
+/bin/false \\
+{% endif -%}
+{{ '||' if COMMAND == 'install' else '&&' }} {{ ENGINE.command.to_script() }} {{ COMMAND }} {{ ENGINE.options.to_script() }} {{ EXTRA_OPTIONS }} $installable_packages
+
+{% if OPTIONS.skip_missing %}
+exit 0
+{% else %}
+exit $?
+{% endif %}
+"""  # noqa: E501
+
+
+class AptEngine(PackageManagerEngine):
     install_command = Command('install')
 
     _sudo_prefix: Command
@@ -54,58 +103,152 @@ class Apt(tmt.package_managers.PackageManager):
 
         return (command, options)
 
-    def _enable_apt_file(self) -> None:
-        self.install(Package('apt-file'))
-        self.guest.execute(ShellScript(f'{self._sudo_prefix} apt-file update'))
+    def _enable_apt_file(self) -> ShellScript:
+        return ShellScript(
+            f'( {self.install(Package("apt-file"))} ) && {self._sudo_prefix} apt-file update'
+        )
 
-    def path_to_package(self, path: FileSystemPath) -> Package:
-        """
-        Find a package providing given filesystem path.
-
-        This is not trivial as some are used to from ``yum`` or ``dnf``,
-        it requires installation of ``apt-file`` utility and building
-        an index of packages and filesystem paths.
-        """
-
-        self._enable_apt_file()
-
-        output = self.guest.execute(ShellScript(f'apt-file search {path} || exit 0'))
-
-        assert output.stdout is not None
-
-        package_names = output.stdout.strip().splitlines()
-
-        if not package_names:
-            raise GeneralError(f"No package provides {path}.")
-
-        return Package(package_names[0].split(':')[0])
-
-    def _reduce_to_packages(self, *installables: Installable) -> ReducedPackages:
-        packages: ReducedPackages = []
+    def _reduce_to_packages(
+        self, *installables: Installable
+    ) -> tuple[list[Union[Package, PackagePath]], list[FileSystemPath]]:
+        real_packages: list[Union[Package, PackagePath]] = []
+        filesystem_paths: list[FileSystemPath] = []
 
         for installable in installables:
             if isinstance(installable, (Package, PackagePath)):
-                packages.append(installable)
+                real_packages.append(installable)
 
             elif isinstance(installable, FileSystemPath):
-                packages.append(self.path_to_package(installable))
+                filesystem_paths.append(installable)
 
             else:
                 raise GeneralError(f"Package specification '{installable}' is not supported.")
 
-        return packages
+        return (real_packages, filesystem_paths)
 
-    def _construct_presence_script(
-        self, *installables: Installable
-    ) -> tuple[ReducedPackages, ShellScript]:
-        reduced_packages = self._reduce_to_packages(*installables)
+    def check_presence(self, *installables: Installable) -> ShellScript:
+        real_packages, filesystem_paths = self._reduce_to_packages(*installables)
 
-        return reduced_packages, ShellScript(
-            f'dpkg-query --show {" ".join(escape_installables(*reduced_packages))}'
+        if filesystem_paths:
+            return self._enable_apt_file() + ShellScript(
+                render_template(
+                    PRESENCE_TEMPLATE,
+                    ENGINE=self,
+                    REAL_PACKAGES=escape_installables(*real_packages),
+                    FILESYSTEM_PATHS=escape_installables(*filesystem_paths),
+                )
+            )
+
+        return ShellScript(
+            render_template(
+                PRESENCE_TEMPLATE,
+                ENGINE=self,
+                REAL_PACKAGES=escape_installables(*real_packages),
+                FILESYSTEM_PATHS=escape_installables(*filesystem_paths),
+            )
         )
 
+    def _extra_options(self, options: Options) -> Command:
+        extra_options = Command()
+
+        if options.skip_missing:
+            extra_options += Command('--ignore-missing')
+
+        return extra_options
+
+    def refresh_metadata(self) -> ShellScript:
+        return ShellScript(
+            f'export DEBIAN_FRONTEND=noninteractive; {self.command.to_script()} update'
+        )
+
+    def install(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> ShellScript:
+        options = options or Options()
+        extra_options = self._extra_options(options)
+
+        real_packages, filesystem_paths = self._reduce_to_packages(*installables)
+
+        if filesystem_paths:
+            return self._enable_apt_file() & ShellScript(
+                render_template(
+                    INSTALL_TEMPLATE,
+                    ENGINE=self,
+                    COMMAND='install',
+                    OPTIONS=options,
+                    EXTRA_OPTIONS=extra_options,
+                    REAL_PACKAGES=escape_installables(*real_packages),
+                    FILESYSTEM_PATHS=escape_installables(*filesystem_paths),
+                )
+            )
+
+        return ShellScript(
+            render_template(
+                INSTALL_TEMPLATE,
+                ENGINE=self,
+                COMMAND='install',
+                OPTIONS=options,
+                EXTRA_OPTIONS=extra_options,
+                REAL_PACKAGES=escape_installables(*real_packages),
+                FILESYSTEM_PATHS=escape_installables(*filesystem_paths),
+            )
+        )
+
+    def reinstall(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> ShellScript:
+        options = options or Options()
+        extra_options = self._extra_options(options)
+
+        real_packages, filesystem_paths = self._reduce_to_packages(*installables)
+
+        if filesystem_paths:
+            return self._enable_apt_file() & ShellScript(
+                render_template(
+                    INSTALL_TEMPLATE,
+                    ENGINE=self,
+                    COMMAND='reinstall',
+                    OPTIONS=options,
+                    EXTRA_OPTIONS=extra_options,
+                    REAL_PACKAGES=escape_installables(*real_packages),
+                    FILESYSTEM_PATHS=escape_installables(*filesystem_paths),
+                )
+            )
+
+        return ShellScript(
+            render_template(
+                INSTALL_TEMPLATE,
+                ENGINE=self,
+                COMMAND='reinstall',
+                OPTIONS=options,
+                EXTRA_OPTIONS=extra_options,
+                REAL_PACKAGES=real_packages,
+                FILESYSTEM_PATHS=filesystem_paths,
+            )
+        )
+
+    def install_debuginfo(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> ShellScript:
+        raise tmt.utils.GeneralError("There is no support for debuginfo packages in apt.")
+
+
+@provides_package_manager('apt')
+class Apt(PackageManager[AptEngine]):
+    NAME = 'apt'
+
+    _engine_class = AptEngine
+
+    probe_command = Command('apt', '--version')
+
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
-        reduced_packages, presence_script = self._construct_presence_script(*installables)
+        presence_script = self.engine.check_presence(*installables)
 
         try:
             output = self.guest.execute(presence_script)
@@ -119,92 +262,21 @@ class Apt(tmt.package_managers.PackageManager):
 
         results: dict[Installable, bool] = {}
 
-        for installable, package in zip(installables, reduced_packages):
+        for installable in installables:
+            results[installable] = False
+
             match = re.search(
-                rf'dpkg-query: no packages found matching {re.escape(str(package))}', stderr
+                rf'(?m)^PRESENCE-TEST:{"".join(escape_installables(installable))}:.*?:(.*?)$',
+                stdout,
             )
 
-            if match is not None:
-                results[installable] = False
+            if match is None:
                 continue
 
-            match = re.search(rf'^{re.escape(str(package))}\s', stdout)
-
-            if match is not None:
+            if match.group(1):
                 results[installable] = True
-                continue
 
         return results
-
-    def _extra_options(self, options: Options) -> Command:
-        extra_options = Command()
-
-        if options.skip_missing:
-            extra_options += Command('--ignore-missing')
-
-        return extra_options
-
-    def refresh_metadata(self) -> CommandOutput:
-        script = ShellScript(f'{self.command.to_script()} update')
-
-        return self.guest.execute(
-            script, env=Environment({'DEBIAN_FRONTEND': EnvVarValue('noninteractive')})
-        )
-
-    def install(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-        options = options or Options()
-
-        extra_options = self._extra_options(options)
-        packages = self._reduce_to_packages(*installables)
-
-        script = ShellScript(
-            f'{self.command.to_script()} install '
-            f'{self.options.to_script()} {extra_options} '
-            f'{" ".join(escape_installables(*packages))}'
-        )
-
-        if options.check_first:
-            script = self._construct_presence_script(*packages)[1] | script
-
-        # TODO: find a better way to handle `skip_missing`, this may hide other
-        # kinds of errors. But `--ignore-missing` does not turn exit code into
-        # zero :/
-        if options.skip_missing:
-            script = script | ShellScript('/bin/true')
-
-        return self.guest.execute(
-            script, env=Environment({'DEBIAN_FRONTEND': EnvVarValue('noninteractive')})
-        )
-
-    def reinstall(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-        options = options or Options()
-
-        extra_options = self._extra_options(options)
-        packages = self._reduce_to_packages(*installables)
-
-        script = ShellScript(
-            f'{self.command.to_script()} reinstall '
-            f'{self.options.to_script()} {extra_options} '
-            f'{" ".join(escape_installables(*packages))}'
-        )
-
-        if options.check_first:
-            script = self._construct_presence_script(*packages)[1] & script
-
-        if options.skip_missing:
-            script = script | ShellScript('/bin/true')
-
-        return self.guest.execute(
-            script, env=Environment({'DEBIAN_FRONTEND': EnvVarValue('noninteractive')})
-        )
 
     def install_debuginfo(
         self,

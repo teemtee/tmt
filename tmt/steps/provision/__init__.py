@@ -45,7 +45,11 @@ import tmt.utils
 from tmt.container import SerializableContainer, container, field, key_to_option
 from tmt.log import Logger
 from tmt.options import option
-from tmt.package_managers import FileSystemPath, Package, PackageManagerClass
+from tmt.package_managers import (
+    FileSystemPath,
+    Package,
+    PackageManagerClass,
+)
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue
 from tmt.utils import (
@@ -548,7 +552,9 @@ class GuestFacts(SerializableContainer):
         # one available. Collect them, and sort them by their priorities
         # to find the most suitable one.
 
-        discovered_package_managers: list[PackageManagerClass] = []
+        discovered_package_managers: list[
+            PackageManagerClass[tmt.package_managers.PackageManagerEngine]
+        ] = []
 
         for (
             _,
@@ -1141,7 +1147,9 @@ class Guest(tmt.utils.Common):
         raise NotImplementedError
 
     @functools.cached_property
-    def package_manager(self) -> 'tmt.package_managers.PackageManager':
+    def package_manager(
+        self,
+    ) -> 'tmt.package_managers.PackageManager[tmt.package_managers.PackageManagerEngine]':
         if not self.facts.package_manager:
             raise tmt.utils.GeneralError(
                 f"Package manager was not detected on guest '{self.name}'."
