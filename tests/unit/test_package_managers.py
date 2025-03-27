@@ -471,7 +471,7 @@ def _parametrize_test_refresh_metadata() -> Iterator[
                 container,
                 package_manager_class,
                 r"export DEBIAN_FRONTEND=noninteractive; apt update",
-                'Fetched',
+                'Reading package list',
             )
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
