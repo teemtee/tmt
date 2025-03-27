@@ -481,6 +481,24 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 curr_description = self.data.launch_description
         return curr_description
 
+    def append_test_url(
+        self,
+        description: str,
+        base_url: str,
+        serial_number: int,
+        guest_name: str,
+    ) -> str:
+        """
+        Extend text with the test URL (if provided)
+        """
+
+        assert self.step.plan.my_run is not None
+        assert self.step.plan.my_run.workdir is not None
+        run_id = self.step.plan.my_run.workdir.name
+        plan_name = self.step.plan.pathless_safe_name
+        url = f'{base_url}#{run_id}_{plan_name}_{serial_number}_{guest_name}'
+        return f'{description}<br>{url}' if description else url
+
     def upload_result_logs(
         self,
         result: tmt.result.BaseResult,
@@ -755,6 +773,14 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         self.data.upload_to_launch and launch_per_plan
                     ) or self.data.upload_to_suite:
                         test_description = self.append_description(test_description)
+
+                    if self.data.artifacts_url and result:
+                        test_description = self.append_test_url(
+                            test_description,
+                            self.data.artifacts_url,
+                            serial_number,
+                            result.guest.name,
+                        )
 
                     # Create a test item
                     self.info("test", test_name, color="cyan")
