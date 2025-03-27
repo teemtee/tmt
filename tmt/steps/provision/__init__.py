@@ -1213,6 +1213,16 @@ class Guest(tmt.utils.Common):
 
         self.debug(f"Doing nothing to wake up guest '{self.primary_address}'.")
 
+    def suspend(self) -> None:
+        """
+        Suspend the guest.
+
+        Perform any actions necessary before quitting step and tmt. The
+        guest may be reused by future tmt invocations.
+        """
+
+        self.debug(f"Suspending guest '{self.name}'.")
+
     def start(self) -> None:
         """
         Start the guest
@@ -2470,6 +2480,22 @@ class GuestSsh(Guest):
                 )
                 raise
 
+    def suspend(self) -> None:
+        """
+        Suspend the guest.
+
+        Perform any actions necessary before quitting step and tmt. The
+        guest may be reused by future tmt invocations.
+        """
+
+        super().suspend()
+
+        # Close the master ssh connection
+        self._cleanup_ssh_master_process()
+
+        # Remove the ssh socket
+        self._unlink_ssh_master_socket_path()
+
     def stop(self) -> None:
         """
         Stop the guest
@@ -2479,11 +2505,7 @@ class GuestSsh(Guest):
         necessary to store the instance status to disk.
         """
 
-        # Close the master ssh connection
-        self._cleanup_ssh_master_process()
-
-        # Remove the ssh socket
-        self._unlink_ssh_master_socket_path()
+        self.suspend()
 
     def perform_reboot(
         self,
@@ -3077,6 +3099,12 @@ class Provision(tmt.steps.Step):
         else:
             self.status('todo')
             self.save()
+
+    def suspend(self) -> None:
+        super().suspend()
+
+        for guest in self.guests:
+            guest.suspend()
 
     def summary(self) -> None:
         """
