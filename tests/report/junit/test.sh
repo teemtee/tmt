@@ -116,7 +116,7 @@ rlJournalStart
             rlAssertGrep '<testcase name="/pass-subtest/good1">' "subresults-out.xml"
             rlAssertGrep '<testcase name="/pass-subtest/good2">' "subresults-out.xml"
 
-            rlAssertGrep '<testsuite name="/test/beakerlib/subresults" disabled="0" errors="1" failures="3" skipped="2" tests="10"' "subresults-out.xml"
+            rlAssertGrep '<testsuite name="/test/beakerlib/subresults" disabled="0" errors="1" failures="3" skipped="1" tests="10"' "subresults-out.xml"
             rlAssertGrep '<testcase name="/test/beakerlib/subresults">' "subresults-out.xml"
             rlAssertGrep '<testcase name="/phase-setup">' "subresults-out.xml"
             rlAssertGrep '<testcase name="/phase-test-pass">' "subresults-out.xml"
@@ -127,8 +127,6 @@ rlJournalStart
             rlAssertGrep '<testcase name="/extra-tmt-report-result/skip">' "subresults-out.xml"
             rlAssertGrep '<testcase name="/phase-test-multiple-tmt-report-result">' "subresults-out.xml"
             rlAssertGrep '<testcase name="/phase-cleanup">' "subresults-out.xml"
-
-
         rlPhaseEnd
     done
 
