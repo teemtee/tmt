@@ -1,6 +1,8 @@
 beaker:
   translations:
     - requirement : cpu.processors
-      template: '{"cpu": {"processors": {"_op": "{{ BEAKER_OPERATOR }}", "_value": "{{ BEAKER_VALUE }}"}}}'
-    - requirement : cpu.model_name
-      template: '{"cpu": {"dummyname": {"_op": "{{ BEAKER_OPERATOR }}", "_value": "{{ BEAKER_VALUE }}"}}}'
+      template: |
+        cpu:
+          processors:
+            _op: "{{ BEAKER_OPERATOR }}"
+            _value: "{{ BEAKER_VALUE }}"
