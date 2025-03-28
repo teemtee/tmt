@@ -429,7 +429,7 @@ class ReportJUnitData(tmt.steps.report.ReportStepData):
     flavor: str = field(
         default=DEFAULT_FLAVOR_NAME,
         option='--flavor',
-        choices=[DEFAULT_FLAVOR_NAME, CUSTOM_FLAVOR_NAME],
+        choices=[DEFAULT_FLAVOR_NAME, CUSTOM_FLAVOR_NAME, 'subresults'],
         help='Name of a JUnit flavor to generate.',
     )
 

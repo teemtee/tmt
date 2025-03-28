@@ -1,0 +1,99 @@
+{% extends "_base.xml.j2" %}
+
+{#
+    This flavor changes the level of `<testsuite>` and `<testcase>` tags. The
+    `tmt.Result` becomes ``<testsuite>`` instead of ``testcase`` and
+    ``<testcase>`` tags become ``tmt.SubResult``.
+#}
+
+{% block content %}
+    <testsuites disabled="0" errors="{{ RESULTS.errored | length }}" failures="{{ RESULTS.failed | length }}" tests="{{ RESULTS | length }}" time="{{ RESULTS.duration }}">
+
+    {% block testsuites %}
+        {% for result in RESULTS %}
+            {% set main_test_duration = result.duration | duration_to_seconds %}
+
+            {#
+                Fix the count of test cases in the testsuite, because one extra
+                test case for a parent result is added.
+            #}
+            {% set num_of_tests = result.subresult | length + 1 %}
+
+            {% set num_of_errored = result.subresult.errored | length %}
+            {% set num_of_failed = result.subresult.failed | length %}
+            {% set num_of_skipped = result.subresult.skipped | length %}
+
+            {#
+                Fix the test counts in testsuite tag for errors, failures and
+                skipped params. This is due to an extra parent test case which
+                must also get counted.
+            #}
+            {% if result.result.value == "error" %}
+                {% set num_of_errored = num_of_errored + 1 %}
+            {% elif result.result.value == "fail" %}
+                {% set num_of_failed = num_of_failed + 1 %}
+            {% elif result.result.value == "info" %}
+                {% set num_of_skipped = num_of_skipped + 1 %}
+            {% endif %}
+
+            <testsuite name="{{ result.name | trim | e }}" disabled="0" errors="{{ num_of_errored }}" failures="{{ num_of_failed }}" skipped="{{ num_of_skipped }}" tests="{{ num_of_tests }}" time="{{ main_test_duration }}" timestamp="{{ result.start_time }}">
+
+                {#
+                    Always include an extra `testcase` representing the main
+                    result. The `error/failure/skipped` tags must not exists
+                    inside a `testsuite`, they are only allowed inside of a
+                    `testcase`.
+                #}
+                <!-- The extra test case representing the parent result. -->
+                <testcase name="{{ result.name | e }}" {% if result_test_duration %}time="{{ result_test_duration }}"{% endif %}>
+                    {% if result.result.value == 'error' or result.result.value == 'warn' %}
+                        <error type="error" message="{{ result.result.value | e }}">{{ result.log | first | read_log | failures | e }}</error>
+                    {% elif result.result.value == 'fail' %}
+                        <failure type="failure" message="{{ result.result.value | e }}">{{ result.log | first | read_log | failures | e }}</failure>
+                    {% elif result.result.value == 'info' %}
+                        <skipped type="skipped" message="{{ result.result.value | e }}">{{ result.log | first | read_log | failures | e }}</skipped>
+                    {% endif %}
+
+                    {% if INCLUDE_OUTPUT_LOG and result.log %}
+                        <system-out>{{ result.log | first | read_log | e }}</system-out>
+                    {% endif %}
+                </testcase>
+                <!-- End of the extra parent test case. -->
+
+                {% for subresult in result.subresult %}
+                    {% set subresult_test_duration = subresult.duration | duration_to_seconds %}
+
+                    <testcase name="{{ subresult.name | e }}" {% if subresult_test_duration %}time="{{ subresult_test_duration }}"{% endif %}>
+                        {% if subresult.result.value == 'error' or subresult.result.value == 'warn' %}
+                            <error type="error" message="{{ subresult.result.value | e }}">{{ subresult.log | first | read_log | failures | e }}</error>
+                        {% elif subresult.result.value == 'fail' %}
+                            <failure type="failure" message="{{ subresult.result.value | e }}">{{ subresult.log | first | read_log | failures | e }}</failure>
+                        {% elif subresult.result.value == 'info' %}
+                            <skipped type="skipped" message="{{ subresult.result.value | e }}">{{ subresult.log | first | read_log | failures | e }}</skipped>
+                        {% endif %}
+
+                        {% if INCLUDE_OUTPUT_LOG and subresult.log %}
+                            <system-out>{{ subresult.log | first | read_log | e }}</system-out>
+                        {% endif %}
+                    </testcase>
+                {% endfor %}
+
+                {# Optionally add the main result properties #}
+                {% if result.properties is defined %}
+                    {% with properties=result.properties %}
+                        {% include "includes/_properties.xml.j2" %}
+                    {% endwith %}
+                {% endif %}
+            </testsuite>
+        {% endfor %}
+    {% endblock %}
+
+    {# Optionally include the properties section in testsuites tag #}
+    {% if RESULTS.properties is defined %}
+        {% with properties=RESULTS.properties %}
+            {% include "includes/_properties.xml.j2" %}
+        {% endwith %}
+    {% endif %}
+
+    </testsuites>
+{% endblock %}
