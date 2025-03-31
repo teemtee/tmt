@@ -6,6 +6,7 @@ from typing import Optional, TypeVar, cast
 import fmf
 import fmf.utils
 
+import tmt.log
 import tmt.utils
 from tmt._compat.pathlib import Path
 from tmt._compat.pydantic import ValidationError
@@ -39,13 +40,13 @@ class Config:
     User configuration
     """
 
-    def __init__(self) -> None:
+    def __init__(self, logger: tmt.log.Logger) -> None:
         """
         Initialize config directory path
         """
 
         self.path = effective_config_dir()
-        self.logger = tmt.utils.log
+        self.logger = logger
 
         try:
             self.path.mkdir(parents=True, exist_ok=True)

@@ -10,6 +10,7 @@ import fmf
 import pytest
 
 import tmt.config
+from tmt.log import Logger
 from tmt.utils import Path
 
 
@@ -21,29 +22,31 @@ def config_path(tmppath: Path, monkeypatch) -> Path:
     return config_path
 
 
-def test_config(config_path: Path):
+def test_config(config_path: Path, root_logger: Logger):
     """
     Config smoke test
     """
 
     run = Path('/var/tmp/tmt/test')
-    config1 = tmt.config.Config()
+    config1 = tmt.config.Config(root_logger)
     config1.last_run = run
-    config2 = tmt.config.Config()
+    config2 = tmt.config.Config(root_logger)
     assert config2.last_run.resolve() == run.resolve()
 
 
-def test_last_run_race(tmppath: Path, monkeypatch):
+def test_last_run_race(tmppath: Path, monkeypatch, root_logger: Logger):
     """
     Race in last run symlink shouldn't be fatal
     """
+
+    logger = root_logger.clone()
 
     config_path = tmppath / 'config'
     config_path.mkdir()
     monkeypatch.setattr(tmt.config, 'effective_config_dir', MagicMock(return_value=config_path))
     mock_logger = unittest.mock.MagicMock()
-    monkeypatch.setattr(tmt.utils.log, 'warning', mock_logger)
-    config = tmt.config.Config()
+    monkeypatch.setattr(logger, 'warning', mock_logger)
+    config = tmt.config.Config(logger)
     results = queue.Queue()
     threads = []
 
@@ -77,7 +80,7 @@ def test_last_run_race(tmppath: Path, monkeypatch):
     assert config.last_run, "Some run was stored as last run"
 
 
-def test_link_config_invalid(config_path: Path):
+def test_link_config_invalid(config_path: Path, root_logger: Logger):
     config_yaml = textwrap.dedent("""
         issue-tracker:
           - type: jiRA
@@ -91,7 +94,7 @@ def test_link_config_invalid(config_path: Path):
     (config_path / 'link.fmf').write_text(config_yaml)
 
     with pytest.raises(tmt.utils.MetadataError) as error:
-        _ = tmt.config.Config().link
+        _ = tmt.config.Config(root_logger).link
 
     cause = str(error.value.__cause__)
     assert '6 validation errors for LinkConfig' in cause
@@ -103,7 +106,7 @@ def test_link_config_invalid(config_path: Path):
     assert re.search(r'additional_key\s*extra fields not permitted', cause)
 
 
-def test_link_config_valid(config_path: Path):
+def test_link_config_valid(config_path: Path, root_logger: Logger):
     config_yaml = textwrap.dedent("""
         issue-tracker:
           - type: jira
@@ -114,7 +117,7 @@ def test_link_config_valid(config_path: Path):
     fmf.Tree.init(path=config_path)
     (config_path / 'link.fmf').write_text(config_yaml)
 
-    link = tmt.config.Config().link
+    link = tmt.config.Config(root_logger).link
 
     assert link.issue_tracker[0].type == 'jira'
     assert link.issue_tracker[0].url == 'https://issues.redhat.com'
@@ -122,18 +125,18 @@ def test_link_config_valid(config_path: Path):
     assert link.issue_tracker[0].token == 'secret'
 
 
-def test_link_config_missing(config_path: Path):
+def test_link_config_missing(config_path: Path, root_logger: Logger):
     fmf.Tree.init(path=config_path)
 
-    assert tmt.config.Config().link is None
+    assert tmt.config.Config(root_logger).link is None
 
 
-def test_link_config_empty(config_path: Path):
+def test_link_config_empty(config_path: Path, root_logger: Logger):
     fmf.Tree.init(path=config_path)
     (config_path / 'link.fmf').touch()
 
     with pytest.raises(tmt.utils.SpecificationError) as error:
-        _ = tmt.config.Config().link
+        _ = tmt.config.Config(root_logger).link
 
     cause = str(error.value.__cause__)
     assert '1 validation error for LinkConfig' in cause
