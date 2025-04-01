@@ -5,7 +5,7 @@
                 url: https://github.com/teemtee/tmt
                 name: /plans/provision
                 importing: replace
-                limit: first-plan-only
+                scope: first-plan-only
 
     /all-plans:
         plan:
@@ -13,7 +13,7 @@
                 url: https://github.com/teemtee/tmt
                 name: /plans/provision
                 importing: replace
-                limit: all-plans
+                scope: all-plans
 
     /single-plan-only:
         plan:
@@ -21,7 +21,7 @@
                 url: https://github.com/teemtee/tmt
                 name: /plans/provision
                 importing: replace
-                limit: single-plan-only
+                scope: single-plan-only
 
 /become-parent:
     /first-plan-only:
@@ -30,7 +30,7 @@
                 url: https://github.com/teemtee/tmt
                 name: /plans/provision
                 importing: become-parent
-                limit: first-plan-only
+                scope: first-plan-only
 
     /all-plans:
         plan:
@@ -38,7 +38,7 @@
                 url: https://github.com/teemtee/tmt
                 name: /plans/provision
                 importing: become-parent
-                limit: all-plans
+                scope: all-plans
 
     /single-plan-only:
         plan:
@@ -46,4 +46,4 @@
                 url: https://github.com/teemtee/tmt
                 name: /plans/provision
                 importing: become-parent
-                limit: single-plan-only
+                scope: single-plan-only

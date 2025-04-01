@@ -36,7 +36,7 @@ description: |
 
     By default, only a single remote plan is allowed to be imported,
     and it always replaces the importing plan. To import multiple plans,
-    set ``limit`` key to ``all-plans``:
+    set ``scope`` key to ``all-plans``:
 
     .. code-block:: yaml
 
@@ -47,14 +47,14 @@ description: |
 
             # This is the default, only the first discovered plan is imported,
             # the rest is ignored.
-            limit: first-plan-only
+            scope: first-plan-only
 
             # To limit the import to one and one plan only, and fail if
             # more plans would match the criteria:
-            limit: single-plan-only
+            scope: single-plan-only
 
             # To allow import of multiple plans:
-            limit: all-plans
+            scope: all-plans
 
     If, instead of replacing the current plan, you can make the imported
     plans "children" of the current plan with the ``importing``
