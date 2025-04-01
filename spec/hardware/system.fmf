@@ -38,7 +38,7 @@ description: |
                # String, a name of the management interface device (product).
                device-name: "~ Some device name"
 
-    .. versionchanged:: 1.45
+    .. versionchanged:: 1.46
        added ``management-interface`` specification
 
     .. versionchanged:: 1.39
