@@ -30,32 +30,13 @@ example: |
         image: fedora
 
 /virtual:
-    summary: Provision a virtual machine (default)
-    description:
-        Create a new virtual machine on the localhost using
-        testcloud (libvirt). Testcloud takes care of downloading
-        an image and making necessary changes to it for optimal
-        experience (such as disabling UseDNS and GSSAPI for SSH).
-
+    summary: Provision a virtual machine using ``Testcloud``
     example:
       - |
         # Provision a fedora virtual machine
         provision:
             how: virtual
             image: fedora
-      - |
-        # Provision a virtual machine from a specific QCOW2 file,
-        # using specific memory and disk settings, using the fedora user,
-        # and using sudo to run scripts.
-        provision:
-            how: virtual
-            image: https://download.fedoraproject.org/pub/fedora/linux/releases/39/Cloud/x86_64/images/Fedora-Cloud-Base-39-1.5.x86_64.qcow2
-            user: fedora
-            become: true
-            # in MB
-            memory: 2048
-            # in GB
-            disk: 30
 
     link:
       - implemented-by: /tmt/steps/provision/testcloud.py
