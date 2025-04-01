@@ -148,7 +148,7 @@ properties:
               - replace
               - become-parent
 
-          limit:
+          scope:
             type: string
             enum:
               - first-plan-only

@@ -1856,7 +1856,7 @@ def expand_node_data(data: T, fmf_context: FmfContext) -> T:
 
 class _RemotePlanReference(_RawFmfId):
     importing: Optional[str]
-    limit: Optional[str]
+    scope: Optional[str]
 
 
 class RemotePlanReferenceImporting(enum.Enum):
@@ -1871,17 +1871,17 @@ class RemotePlanReferenceImporting(enum.Enum):
             raise tmt.utils.SpecificationError(f"Invalid remote plan replacement '{spec}'.")
 
 
-class RemotePlanReferenceImportLimit(enum.Enum):
+class RemotePlanReferenceImportScope(enum.Enum):
     FIRST_PLAN_ONLY = 'first-plan-only'
     SINGLE_PLAN_ONLY = 'single-plan-only'
     ALL_PLANS = 'all-plans'
 
     @classmethod
-    def from_spec(cls, spec: str) -> 'RemotePlanReferenceImportLimit':
+    def from_spec(cls, spec: str) -> 'RemotePlanReferenceImportScope':
         try:
-            return RemotePlanReferenceImportLimit(spec)
+            return RemotePlanReferenceImportScope(spec)
         except ValueError:
-            raise tmt.utils.SpecificationError(f"Invalid remote plan match limit '{spec}'.")
+            raise tmt.utils.SpecificationError(f"Invalid remote plan match scope '{spec}'.")
 
 
 @container
@@ -1890,10 +1890,10 @@ class RemotePlanReference(
     # Repeat the SpecBasedContainer, with more fitting in/out spec type.
     SpecBasedContainer[_RemotePlanReference, _RemotePlanReference],
 ):
-    VALID_KEYS: ClassVar[list[str]] = [*FmfId.VALID_KEYS, 'importing', 'limit']
+    VALID_KEYS: ClassVar[list[str]] = [*FmfId.VALID_KEYS, 'importing', 'scope']
 
     importing: RemotePlanReferenceImporting = RemotePlanReferenceImporting.REPLACE
-    limit: RemotePlanReferenceImportLimit = RemotePlanReferenceImportLimit.FIRST_PLAN_ONLY
+    scope: RemotePlanReferenceImportScope = RemotePlanReferenceImportScope.FIRST_PLAN_ONLY
 
     @functools.cached_property
     def name_pattern(self) -> Pattern[str]:
@@ -1929,7 +1929,7 @@ class RemotePlanReference(
         spec = self.to_dict()
 
         spec['importing'] = self.importing.value
-        spec['limit'] = self.limit.value
+        spec['scope'] = self.scope.value
 
         return spec
 
@@ -1941,7 +1941,7 @@ class RemotePlanReference(
         spec = self.to_minimal_dict()
 
         spec['importing'] = self.importing.value
-        spec['limit'] = self.limit.value
+        spec['scope'] = self.scope.value
 
         return spec
 
@@ -1973,8 +1973,8 @@ class RemotePlanReference(
         reference.importing = RemotePlanReferenceImporting.from_spec(
             str(raw.get('importing', RemotePlanReferenceImporting.REPLACE.value))
         )
-        reference.limit = RemotePlanReferenceImportLimit.from_spec(
-            str(raw.get('limit', RemotePlanReferenceImportLimit.FIRST_PLAN_ONLY.value))
+        reference.scope = RemotePlanReferenceImportScope.from_spec(
+            str(raw.get('scope', RemotePlanReferenceImportScope.FIRST_PLAN_ONLY.value))
         )
 
         return reference
@@ -3050,7 +3050,7 @@ class Plan(
 
             for node in nodes:
                 if imported_plans:
-                    if reference.limit == RemotePlanReferenceImportLimit.FIRST_PLAN_ONLY:
+                    if reference.scope == RemotePlanReferenceImportScope.FIRST_PLAN_ONLY:
                         self.warn(
                             f"Cannot import remote plan '{node.name}' through '{self.name}', "
                             f"already imported '{imported_plans[0][0].name}' as the first plan."
@@ -3058,14 +3058,14 @@ class Plan(
 
                         continue
 
-                    if reference.limit == RemotePlanReferenceImportLimit.SINGLE_PLAN_ONLY:
+                    if reference.scope == RemotePlanReferenceImportScope.SINGLE_PLAN_ONLY:
                         raise GeneralError(
                             f"Cannot import multiple plans through '{self.name}', "
                             "may import only single plan, and already imported "
                             f"'{imported_plans[0][0].name}'."
                         )
 
-                    if reference.limit == RemotePlanReferenceImportLimit.ALL_PLANS:
+                    if reference.scope == RemotePlanReferenceImportScope.ALL_PLANS:
                         if reference.importing == RemotePlanReferenceImporting.REPLACE:
                             raise GeneralError(
                                 f"Cannot import multiple plans through '{self.name}', "
