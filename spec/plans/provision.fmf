@@ -76,10 +76,6 @@ example: |
 
 /container:
     summary: Provision a container
-    description:
-        Download (if necessary) and start a new container using
-        podman or docker.
-
     example:
       - |
         # Use the fedora:latest image
