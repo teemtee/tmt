@@ -88,8 +88,45 @@ rlJournalStart
             rlAssertGrep '<subresult name="/skip-subtest/extra-skip" outcome="skip"/>' "custom-subresults-template-out.xml"
             rlAssertGrep '<result name="/test/shell/subresults/skip" disabled="0" errors="0" failures="0" skipped="1" tests="2" time="0" outcome="pass"' "custom-subresults-template-out.xml"
             rlAssertGrep '<result name="/test/shell/subresults/sleep" disabled="0" errors="0" failures="1" skipped="0" tests="2" time="5"' "custom-subresults-template-out.xml"
+        rlPhaseEnd
 
-            rlAssertGrep '<subresult name="/fail-subtest/good" outcome="pass"/>' "custom-subresults-template-out.xml"
+        rlPhaseStartTest "[$method] Check the 'subresults' flavor"
+            rlRun "tmt run -avr execute -h $method report -h junit --file subresults-out.xml --flavor subresults 2>&1 >/dev/null | tee output" 2
+
+            rlAssertGrep '<testsuites disabled="0" errors="2" failures="5" tests="13"' "subresults-out.xml"
+
+            # Parent result recorded in testuite tag
+            rlAssertGrep '<testsuite name="/test/beakerlib/fail" disabled="0" errors="0" failures="2" skipped="0" tests="2"' "subresults-out.xml"
+
+            # Parent result testsuite must have its respective testcase tag with the same name
+            rlAssertGrep '<testcase name="/test/beakerlib/fail">' "subresults-out.xml"
+
+            rlAssertGrep '<testsuite name="/test/beakerlib/pass" disabled="0" errors="0" failures="0" skipped="0" tests="2" ' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/test/beakerlib/pass">' "subresults-out.xml"
+
+            rlAssertGrep '<testsuite name="/test/shell/big-output" disabled="0" errors="0" failures="0" skipped="0" tests="1"' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/test/shell/big-output">' "subresults-out.xml"
+
+            rlAssertGrep '<testsuite name="/test/shell/fail" disabled="0" errors="0" failures="1" skipped="0" tests="1"' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/test/shell/fail">' "subresults-out.xml"
+
+            rlAssertGrep '<testsuite name="/test/shell/subresults/pass" disabled="0" errors="0" failures="0" skipped="0" tests="4"' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/test/shell/subresults/pass">' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/pass-subtest/good0">' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/pass-subtest/good1">' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/pass-subtest/good2">' "subresults-out.xml"
+
+            rlAssertGrep '<testsuite name="/test/beakerlib/subresults" disabled="0" errors="1" failures="3" skipped="1" tests="10"' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/test/beakerlib/subresults">' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/phase-setup">' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/phase-test-pass">' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/phase-test-fail">' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/extra-tmt-report-result/good">' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/extra-tmt-report-result/bad">' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/extra-tmt-report-result/weird">' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/extra-tmt-report-result/skip">' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/phase-test-multiple-tmt-report-result">' "subresults-out.xml"
+            rlAssertGrep '<testcase name="/phase-cleanup">' "subresults-out.xml"
         rlPhaseEnd
     done
 

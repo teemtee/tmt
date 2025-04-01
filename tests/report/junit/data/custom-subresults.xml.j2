@@ -9,6 +9,5 @@
                 <subresult name="{{ subresult.name | e }}" {% if subresult_test_duration %}time="{{ subresult_test_duration }}"{% endif %} outcome="{{ subresult.result.value }}"></subresult>
             {% endfor %}
         </result>
-
     {% endfor %}
 </tests>
