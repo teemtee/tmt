@@ -1,32 +1,20 @@
 import re
 from typing import Optional, cast
 
-import tmt.package_managers
 from tmt.package_managers import (
     FileSystemPath,
     Installable,
     Options,
     Package,
+    PackageManager,
+    PackageManagerEngine,
     escape_installables,
     provides_package_manager,
 )
-from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScript
+from tmt.utils import Command, GeneralError, RunError, ShellScript
 
 
-@provides_package_manager('dnf')
-class Dnf(tmt.package_managers.PackageManager):
-    NAME = 'dnf'
-
-    probe_command = ShellScript(
-        """
-        type dnf && ((dnf --version | grep -E 'dnf5 version') && exit 1 || exit 0)
-        """
-    ).to_shell_command()
-    # The priority of preference: `rpm-ostree` > `dnf5` > `dnf` > `yum`.
-    # `rpm-ostree` has its own implementation and its own priority, and
-    # the `dnf` family just stays below it.
-    probe_priority = 50
-
+class DnfEngine(PackageManagerEngine):
     _base_command = Command('dnf')
     _base_debuginfo_command = Command('debuginfo-install')
 
@@ -78,33 +66,8 @@ class Dnf(tmt.package_managers.PackageManager):
 
         return ShellScript(f'rpm -q {" ".join(escape_installables(*installables))}')
 
-    def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
-        try:
-            output = self.guest.execute(self._construct_presence_script(*installables))
-            stdout = output.stdout
-
-        except RunError as exc:
-            stdout = exc.stdout
-
-        if stdout is None:
-            raise GeneralError("rpm presence check provided no output")
-
-        results: dict[Installable, bool] = {}
-
-        for line, installable in zip(stdout.strip().splitlines(), installables):
-            match = re.match(rf'package {re.escape(str(installable))} is not installed', line)
-            if match is not None:
-                results[installable] = False
-                continue
-
-            match = re.match(rf'no package provides {re.escape(str(installable))}', line)
-            if match is not None:
-                results[installable] = False
-                continue
-
-            results[installable] = True
-
-        return results
+    def check_presence(self, *installables: Installable) -> ShellScript:
+        return self._construct_presence_script(*installables)
 
     def _construct_install_script(
         self, *installables: Installable, options: Optional[Options] = None
@@ -155,38 +118,36 @@ class Dnf(tmt.package_managers.PackageManager):
             f'{" ".join(escape_installables(*installables))}'
         )
 
-    def refresh_metadata(self) -> CommandOutput:
-        script = ShellScript(
+    def refresh_metadata(self) -> ShellScript:
+        return ShellScript(
             f'{self.command.to_script()} makecache {self.options.to_script()} --refresh'
         )
-
-        return self.guest.execute(script)
 
     def install(
         self,
         *installables: Installable,
         options: Optional[Options] = None,
-    ) -> CommandOutput:
-        return self.guest.execute(self._construct_install_script(*installables, options=options))
+    ) -> ShellScript:
+        return self._construct_install_script(*installables, options=options)
 
     def reinstall(
         self,
         *installables: Installable,
         options: Optional[Options] = None,
-    ) -> CommandOutput:
-        return self.guest.execute(self._construct_reinstall_script(*installables, options=options))
+    ) -> ShellScript:
+        return self._construct_reinstall_script(*installables, options=options)
 
     def install_debuginfo(
         self,
         *installables: Installable,
         options: Optional[Options] = None,
-    ) -> CommandOutput:
+    ) -> ShellScript:
         # Make sure debuginfo-install is present on the target system
-        self.install(FileSystemPath('/usr/bin/debuginfo-install'))
+        script = self.install(FileSystemPath('/usr/bin/debuginfo-install'))
 
         options = options or Options()
 
-        script = cast(  # type: ignore[redundant-cast]
+        script &= cast(  # type: ignore[redundant-cast]
             ShellScript,
             self._construct_install_debuginfo_script(  # type: ignore[reportGeneralIssues,unused-ignore]
                 *installables, options=options
@@ -203,31 +164,70 @@ class Dnf(tmt.package_managers.PackageManager):
                 ),
             )
 
-        return self.guest.execute(script)
+        return script
+
+
+@provides_package_manager('dnf')
+class Dnf(PackageManager[DnfEngine]):
+    NAME = 'dnf'
+
+    _engine_class = DnfEngine
+
+    probe_command = ShellScript(
+        """
+        type dnf && ((dnf --version | grep -E 'dnf5 version') && exit 1 || exit 0)
+        """
+    ).to_shell_command()
+    # The priority of preference: `rpm-ostree` > `dnf5` > `dnf` > `yum`.
+    # `rpm-ostree` has its own implementation and its own priority, and
+    # the `dnf` family just stays below it.
+    probe_priority = 50
+
+    def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
+        try:
+            output = self.guest.execute(self.engine.check_presence(*installables))
+            stdout = output.stdout
+
+        except RunError as exc:
+            stdout = exc.stdout
+
+        if stdout is None:
+            raise GeneralError("rpm presence check provided no output")
+
+        results: dict[Installable, bool] = {}
+
+        for line, installable in zip(stdout.strip().splitlines(), installables):
+            match = re.match(rf'package {re.escape(str(installable))} is not installed', line)
+            if match is not None:
+                results[installable] = False
+                continue
+
+            match = re.match(rf'no package provides {re.escape(str(installable))}', line)
+            if match is not None:
+                results[installable] = False
+                continue
+
+            results[installable] = True
+
+        return results
+
+
+class Dnf5Engine(DnfEngine):
+    _base_command = Command('dnf5')
+    skip_missing_packages_option = '--skip-unavailable'
 
 
 @provides_package_manager('dnf5')
 class Dnf5(Dnf):
     NAME = 'dnf5'
 
+    _engine_class = Dnf5Engine
+
     probe_command = probe_command = Command('dnf5', '--version')
     probe_priority = 60
 
-    _base_command = Command('dnf5')
-    skip_missing_packages_option = '--skip-unavailable'
 
-
-@provides_package_manager('yum')
-class Yum(Dnf):
-    NAME = 'yum'
-
-    probe_command = ShellScript(
-        """
-        type yum && ((yum --version | grep -E 'dnf5 version') && exit 1 || exit 0)
-        """
-    ).to_shell_command()
-    probe_priority = 40
-
+class YumEngine(DnfEngine):
     _base_command = Command('yum')
 
     # TODO: get rid of those `type: ignore` below. I think it's caused by the
@@ -236,7 +236,7 @@ class Yum(Dnf):
     # for now.
     def install(
         self, *installables: Installable, options: Optional[Options] = None
-    ) -> CommandOutput:
+    ) -> ShellScript:
         options = options or Options()
 
         script = cast(  # type: ignore[redundant-cast]
@@ -258,11 +258,11 @@ class Yum(Dnf):
                 ),
             )
 
-        return self.guest.execute(script)
+        return script
 
     def reinstall(
         self, *installables: Installable, options: Optional[Options] = None
-    ) -> CommandOutput:
+    ) -> ShellScript:
         options = options or Options()
 
         script = cast(  # type: ignore[redundant-cast]
@@ -284,9 +284,21 @@ class Yum(Dnf):
                 ),
             )
 
-        return self.guest.execute(script)
+        return script
 
-    def refresh_metadata(self) -> CommandOutput:
-        script = ShellScript(f'{self.command.to_script()} makecache')
+    def refresh_metadata(self) -> ShellScript:
+        return ShellScript(f'{self.command.to_script()} makecache')
 
-        return self.guest.execute(script)
+
+@provides_package_manager('yum')
+class Yum(Dnf):
+    NAME = 'yum'
+
+    _engine_class = YumEngine
+
+    probe_command = ShellScript(
+        """
+        type yum && ((yum --version | grep -E 'dnf5 version') && exit 1 || exit 0)
+        """
+    ).to_shell_command()
+    probe_priority = 40

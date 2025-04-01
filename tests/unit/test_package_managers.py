@@ -380,7 +380,7 @@ def _parametrize_test_install() -> Iterator[
                 container,
                 package_manager_class,
                 Package('tree'),
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree \|\| apt install -y  tree",  # noqa: E501
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree\"\s+dpkg-query --show \$installable_packages \\\s+\|\| apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
                 'Setting up tree',
             )
 
@@ -436,7 +436,8 @@ def test_install(
     output = package_manager.install(package)
 
     assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
+        caplog,
+        message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
     )
 
     assert_output(expected_output, output.stdout, output.stderr)
@@ -470,7 +471,7 @@ def _parametrize_test_refresh_metadata() -> Iterator[
                 container,
                 package_manager_class,
                 r"export DEBIAN_FRONTEND=noninteractive; apt update",
-                'packages',
+                'Reading package list',
             )
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
@@ -588,7 +589,7 @@ def _parametrize_test_install_nonexistent() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree-but-spelled-wrong \|\| apt install -y  tree-but-spelled-wrong",  # noqa: E501
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree-but-spelled-wrong\"\s+dpkg-query --show \$installable_packages \\\s+\|\| apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
                 'E: Unable to locate package tree-but-spelled-wrong',
             )
 
@@ -634,7 +635,8 @@ def test_install_nonexistent(
         package_manager.install(Package('tree-but-spelled-wrong'))
 
     assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
+        caplog,
+        message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
     )
 
     assert excinfo.type is tmt.utils.RunError
@@ -702,7 +704,7 @@ def _parametrize_test_install_nonexistent_skip() -> Iterator[
             yield (
                 container,
                 package_manager_class,
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree-but-spelled-wrong \|\| apt install -y --ignore-missing tree-but-spelled-wrong \|\| /bin/true",  # noqa: E501
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree-but-spelled-wrong\"\s+dpkg-query --show \$installable_packages \\\s+\|\| apt install -y --ignore-missing \$installable_packages\s+exit 0",  # noqa: E501
                 'E: Unable to locate package tree-but-spelled-wrong',
             )
 
@@ -749,7 +751,8 @@ def test_install_nonexistent_skip(
     )
 
     assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
+        caplog,
+        message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
     )
 
     assert_output(expected_output, output.stdout, output.stderr)
@@ -804,7 +807,7 @@ def _parametrize_test_install_dont_check_first() -> Iterator[
                 container,
                 package_manager_class,
                 Package('tree'),
-                r"export DEBIAN_FRONTEND=noninteractive; apt install -y  tree",
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree\"\s+/bin/false \\\s+\|\| apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
                 'Setting up tree',
             )
 
@@ -860,7 +863,8 @@ def test_install_dont_check_first(
     output = package_manager.install(package, options=Options(check_first=False))
 
     assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
+        caplog,
+        message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
     )
 
     assert_output(expected_output, output.stdout, output.stderr)
@@ -917,7 +921,7 @@ def _parametrize_test_reinstall() -> Iterator[
                 package_manager_class,
                 Package('tar'),
                 True,
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tar && apt reinstall -y  tar",  # noqa: E501
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tar\"\s+dpkg-query --show \$installable_packages \\\s+&& apt reinstall -y  \$installable_packages\s+exit \$\?",  # noqa: E501
                 'Setting up tar',
             )
 
@@ -974,7 +978,7 @@ def test_reinstall(
 
         assert_log(
             caplog,
-            message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
+            message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
         )
 
     else:
@@ -1042,7 +1046,7 @@ def _generate_test_reinstall_nonexistent_matrix() -> Iterator[
                 container,
                 package_manager_class,
                 True,
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree-but-spelled-wrong && apt reinstall -y  tree-but-spelled-wrong",  # noqa: E501
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree-but-spelled-wrong\"\s+dpkg-query --show \$installable_packages \\\s+&& apt reinstall -y  \$installable_packages\s+exit \$\?",  # noqa: E501
                 'dpkg-query: no packages found matching tree-but-spelled-wrong',
             )
 
@@ -1089,7 +1093,7 @@ def test_reinstall_nonexistent(
 
         assert_log(
             caplog,
-            message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
+            message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
         )
 
         assert excinfo.type is tmt.utils.RunError
@@ -1313,8 +1317,8 @@ def _generate_test_check_presence() -> Iterator[
                 package_manager_class,
                 Package('util-linux'),
                 True,
-                r"dpkg-query --show util-linux",
-                r'\s+out:\s+util-linux',
+                r".*?echo \"PRESENCE-TEST:util-linux:util-linux:\$\(dpkg-query --show util-linux\)\".*?",  # noqa: E501
+                r'\s+out:\s+PRESENCE-TEST:util-linux:util-linux:util-linux',
             )
 
             yield (
@@ -1322,7 +1326,7 @@ def _generate_test_check_presence() -> Iterator[
                 package_manager_class,
                 Package('tree-but-spelled-wrong'),
                 False,
-                r"dpkg-query --show tree-but-spelled-wrong",
+                r".*?echo \"PRESENCE-TEST:tree-but-spelled-wrong:tree-but-spelled-wrong:\$\(dpkg-query --show tree-but-spelled-wrong\)\".*?",  # noqa: E501
                 r'\s+err:\s+dpkg-query: no packages found matching tree-but-spelled-wrong',
             )
 
@@ -1331,8 +1335,8 @@ def _generate_test_check_presence() -> Iterator[
                 package_manager_class,
                 FileSystemPath('/usr/bin/flock'),
                 True,
-                r"dpkg-query --show util-linux",
-                r'\s+out:\s+util-linux',
+                r".*?set -x\s+export DEBIAN_FRONTEND=noninteractive\s+fs_path_package=\"\$\(apt-file search --package-only /usr/bin/flock\)\".*echo \"PRESENCE-TEST:/usr/bin/flock:\$\{fs_path_package\}:\$\(dpkg-query --show \$fs_path_package\)\".*?",  # noqa: E501
+                r'\s+out:\s+PRESENCE-TEST:/usr/bin/flock:util-linux:util-linux',
             )
 
         elif package_manager_class is tmt.package_managers.rpm_ostree.RpmOstree:
@@ -1438,7 +1442,8 @@ def test_check_presence(
     assert package_manager.check_presence(installable) == {installable: expected_result}
 
     assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
+        caplog,
+        message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
     )
 
     if expected_output:
@@ -1491,7 +1496,7 @@ def _parametrize_test_install_filesystempath() -> Iterator[
                 container,
                 package_manager_class,
                 FileSystemPath('/usr/bin/dos2unix'),
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show dos2unix \|\| apt install -y  dos2unix",  # noqa: E501
+                r".*?set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"\"\s+fs_path_package=\"\$\(apt-file search --package-only /usr/bin/dos2unix\)\"\s+\[ -z \"\$fs_path_package\" \] && echo \"No package found for path /usr/bin/dos2unix\" && exit 1\s+installable_packages=\"\$installable_packages \$fs_path_package\"\s+dpkg-query --show \$installable_packages \\\s+\|\| apt install -y\s+\$installable_packages\s+exit \$\?",  # noqa: E501
                 "Setting up dos2unix",
             )
 
@@ -1547,7 +1552,8 @@ def test_install_filesystempath(
     output = package_manager.install(installable)
 
     assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
+        caplog,
+        message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
     )
 
     assert_output(expected_output, output.stdout, output.stderr)
@@ -1627,7 +1633,7 @@ def _parametrize_test_install_multiple() -> Iterator[
                 container,
                 package_manager_class,
                 (Package('tree'), Package('nano')),
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree nano \|\| apt install -y  tree nano",  # noqa: E501
+                r"set -x\s+export DEBIAN_FRONTEND=noninteractive\s+installable_packages=\"tree nano\"\s+dpkg-query --show \$installable_packages \\\s+\|\| apt install -y  \$installable_packages\s+exit \$\?",  # noqa: E501
                 'Setting up tree',
             )
 
@@ -1683,7 +1689,8 @@ def test_install_multiple(
     output = package_manager.install(*packages)
 
     assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
+        caplog,
+        message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
     )
 
     assert_output(expected_output, output.stdout, output.stderr)
@@ -1799,7 +1806,7 @@ def _parametrize_test_install_downloaded() -> Iterator[
                 package_manager_class,
                 (Package('tree'), Package('nano')),
                 ('tree*.x86_64.rpm', 'nano*.x86_64.rpm'),
-                r"export DEBIAN_FRONTEND=noninteractive; dpkg-query --show tree nano \|\| apt install -y  tree nano",  # noqa: E501
+                r".*?dpkg-query --show \$installable_packages \\\n^\|\| apt install -y  \$installable_packages.*",  # noqa: E501
                 'Setting up tree',
                 marks=pytest.mark.skip(reason="not supported yet"),
             )
@@ -1876,7 +1883,8 @@ def test_install_downloaded(
         output = package_manager.install(*installables, options=Options(check_first=False))
 
     assert_log(
-        caplog, message=MATCH(rf"Run command: podman exec .+? /bin/bash -c '{expected_command}'")
+        caplog,
+        message=MATCH(rf"(?sm)Run command: podman exec .+? /bin/bash -c '{expected_command}'"),
     )
 
     assert_output(expected_output, output.stdout, output.stderr)
@@ -1902,14 +1910,11 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                 container,
                 package_manager_class,
                 (Package('dos2unix'), Package('tree')),
-                r"debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",
+                r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| dnf5 install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",  # noqa: E501
                 None,
             )
 
-        elif (
-            package_manager_class is tmt.package_managers.dnf.Dnf
-            or package_manager_class is tmt.package_managers.dnf.Yum
-        ):
+        elif package_manager_class is tmt.package_managers.dnf.Dnf:
             if 'centos' in container.url:
                 yield pytest.param(
                     container,
@@ -1927,7 +1932,7 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('dconf'), Package('libpng')),
-                    r"debuginfo-install -y  dconf libpng && rpm -q dconf-debuginfo libpng-debuginfo",  # noqa: E501
+                    r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| dnf install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dconf libpng && rpm -q dconf-debuginfo libpng-debuginfo",  # noqa: E501
                     None,
                 )
 
@@ -1936,7 +1941,38 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('dos2unix'), Package('tree')),
+                    r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| dnf install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",  # noqa: E501
+                    None,
+                )
+
+        elif package_manager_class is tmt.package_managers.dnf.Yum:
+            if 'centos' in container.url:
+                yield pytest.param(
+                    container,
+                    package_manager_class,
+                    (Package('dos2unix'), Package('tree')),
                     r"debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",  # noqa: E501
+                    None,
+                    marks=pytest.mark.skip(
+                        reason='centos comes without debuginfo repos, we do not enable them yet'
+                    ),
+                )
+
+            elif 'ubi/8' in container.url:
+                yield (
+                    container,
+                    package_manager_class,
+                    (Package('dconf'), Package('libpng')),
+                    r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| yum install -y  /usr/bin/debuginfo-install && rpm -q --whatprovides /usr/bin/debuginfo-install && debuginfo-install -y  dconf libpng && rpm -q dconf-debuginfo libpng-debuginfo",  # noqa: E501
+                    None,
+                )
+
+            else:
+                yield (
+                    container,
+                    package_manager_class,
+                    (Package('dos2unix'), Package('tree')),
+                    r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| yum install -y  /usr/bin/debuginfo-install && rpm -q --whatprovides /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",  # noqa: E501
                     None,
                 )
 
@@ -1998,16 +2034,30 @@ def _parametrize_test_install_debuginfo_nonexistent() -> Iterator[
     tuple[Container, PackageManagerClass, tuple[Package, Package], str, Optional[str]]
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
-        if (
-            package_manager_class is tmt.package_managers.dnf.Dnf5
-            or package_manager_class is tmt.package_managers.dnf.Dnf
-            or package_manager_class is tmt.package_managers.dnf.Yum
-        ):
+        if package_manager_class is tmt.package_managers.dnf.Dnf5:
             yield (
                 container,
                 package_manager_class,
                 (Package('dos2unix'), Package('tree-but-spelled-wrong')),
-                r"debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
+                r"rpm -q --whatprovides /usr/bin/debuginfo-install || dnf5 install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
+                None,
+            )
+
+        elif package_manager_class is tmt.package_managers.dnf.Dnf:
+            yield (
+                container,
+                package_manager_class,
+                (Package('dos2unix'), Package('tree-but-spelled-wrong')),
+                r"rpm -q --whatprovides /usr/bin/debuginfo-install || dnf install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
+                None,
+            )
+
+        elif package_manager_class is tmt.package_managers.dnf.Yum:
+            yield (
+                container,
+                package_manager_class,
+                (Package('dos2unix'), Package('tree-but-spelled-wrong')),
+                r"rpm -q --whatprovides /usr/bin/debuginfo-install || yum install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree-but-spelled-wrong && rpm -q dos2unix-debuginfo tree-but-spelled-wrong-debuginfo",  # noqa: E501
                 None,
             )
 
@@ -2089,14 +2139,11 @@ def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
                 container,
                 package_manager_class,
                 (Package('dos2unix'), Package('tree-but-spelled-wrong')),
-                r"debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong",
+                r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| dnf5 install -y  /usr/bin/debuginfo-install && debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong",  # noqa: E501
                 None,
             )
 
-        elif (
-            package_manager_class is tmt.package_managers.dnf.Dnf
-            or package_manager_class is tmt.package_managers.dnf.Yum
-        ):
+        elif package_manager_class is tmt.package_managers.dnf.Dnf:
             if 'centos' in container.url:
                 yield pytest.param(
                     container,
@@ -2114,7 +2161,29 @@ def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
                     container,
                     package_manager_class,
                     (Package('dos2unix'), Package('tree-but-spelled-wrong')),
+                    r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| dnf install -y  /usr/bin/debuginfo-install && debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong",  # noqa: E501
+                    None,
+                )
+
+        elif package_manager_class is tmt.package_managers.dnf.Yum:
+            if 'centos' in container.url:
+                yield pytest.param(
+                    container,
+                    package_manager_class,
+                    (Package('dos2unix'), Package('tree-but-spelled-wrong')),
                     r"debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong",
+                    None,
+                    marks=pytest.mark.skip(
+                        reason='centos comes without debuginfo repos, we do not enable them yet'
+                    ),
+                )
+
+            else:
+                yield (
+                    container,
+                    package_manager_class,
+                    (Package('dos2unix'), Package('tree-but-spelled-wrong')),
+                    r"rpm -q --whatprovides /usr/bin/debuginfo-install || yum install -y  /usr/bin/debuginfo-install && rpm -q --whatprovides /usr/bin/debuginfo-install && debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong",  # noqa: E501
                     None,
                 )
 

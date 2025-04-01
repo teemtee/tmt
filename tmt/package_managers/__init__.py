@@ -1,13 +1,13 @@
 import shlex
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, Union
 
 import tmt
 import tmt.log
 import tmt.plugins
 import tmt.utils
 from tmt.container import container, simple_field
-from tmt.utils import Command, CommandOutput, Path
+from tmt.utils import Command, CommandOutput, Path, ShellScript
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
@@ -72,27 +72,32 @@ class PackagePath(Path):
 Installable = Union[Package, FileSystemPath, PackagePath, PackageUrl]
 
 
-PackageManagerClass = type['PackageManager']
+PackageManagerEngineT = TypeVar('PackageManagerEngineT', bound='PackageManagerEngine')
+PackageManagerClass = type['PackageManager[PackageManagerEngineT]']
 
 
-_PACKAGE_MANAGER_PLUGIN_REGISTRY: tmt.plugins.PluginRegistry[PackageManagerClass] = (
-    tmt.plugins.PluginRegistry()
-)
+_PACKAGE_MANAGER_PLUGIN_REGISTRY: tmt.plugins.PluginRegistry[
+    'PackageManagerClass[PackageManagerEngine]'
+] = tmt.plugins.PluginRegistry()
 
 
 def provides_package_manager(
     package_manager: str,
-) -> Callable[[PackageManagerClass], PackageManagerClass]:
+) -> Callable[
+    ['PackageManagerClass[PackageManagerEngineT]'], 'PackageManagerClass[PackageManagerEngineT]'
+]:
     """
     A decorator for registering package managers.
 
     Decorate a package manager plugin class to register a package manager.
     """
 
-    def _provides_package_manager(package_manager_cls: PackageManagerClass) -> PackageManagerClass:
+    def _provides_package_manager(
+        package_manager_cls: 'PackageManagerClass[PackageManagerEngineT]',
+    ) -> 'PackageManagerClass[PackageManagerEngineT]':
         _PACKAGE_MANAGER_PLUGIN_REGISTRY.register_plugin(
             plugin_id=package_manager,
-            plugin=package_manager_cls,
+            plugin=package_manager_cls,  # type: ignore[arg-type]
             logger=tmt.log.Logger.get_bootstrap_logger(),
         )
 
@@ -101,7 +106,9 @@ def provides_package_manager(
     return _provides_package_manager
 
 
-def find_package_manager(name: 'GuestPackageManager') -> 'PackageManagerClass':
+def find_package_manager(
+    name: 'GuestPackageManager',
+) -> 'PackageManagerClass[PackageManagerEngine]':
     """
     Find a package manager by its name.
 
@@ -148,12 +155,65 @@ class Options:
     allow_untrusted: bool = False
 
 
-class PackageManager(tmt.utils.Common):
+class PackageManagerEngine(tmt.utils.Common):
+    command: Command
+    options: Command
+
+    def __init__(self, *, guest: 'Guest', logger: tmt.log.Logger) -> None:
+        super().__init__(logger=logger)
+
+        self.guest = guest
+
+        self.command, self.options = self.prepare_command()
+
+    def prepare_command(self) -> tuple[Command, Command]:
+        """
+        Prepare installation command and subcommand options
+        """
+
+        raise NotImplementedError
+
+    def check_presence(self, *installables: Installable) -> ShellScript:
+        """
+        Return a presence status for each given installable
+        """
+
+        raise NotImplementedError
+
+    def install(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> ShellScript:
+        raise NotImplementedError
+
+    def reinstall(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> ShellScript:
+        raise NotImplementedError
+
+    def install_debuginfo(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> ShellScript:
+        raise NotImplementedError
+
+    def refresh_metadata(self) -> ShellScript:
+        raise NotImplementedError
+
+
+class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
     """
     A base class for package manager plugins
     """
 
     NAME: str
+
+    _engine_class: type[PackageManagerEngineT]
+    engine: PackageManagerEngineT
 
     #: A command to run to check whether the package manager is available on
     #: a guest.
@@ -166,21 +226,12 @@ class PackageManager(tmt.utils.Common):
     #: may be installed togethers, and therefore a priority is needed.
     probe_priority: int = 0
 
-    command: Command
-    options: Command
-
     def __init__(self, *, guest: 'Guest', logger: tmt.log.Logger) -> None:
         super().__init__(logger=logger)
 
+        self.engine = self._engine_class(guest=guest, logger=logger)
+
         self.guest = guest
-        self.command, self.options = self.prepare_command()
-
-    def prepare_command(self) -> tuple[Command, Command]:
-        """
-        Prepare installation command and subcommand options
-        """
-
-        raise NotImplementedError
 
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
         """
@@ -194,21 +245,21 @@ class PackageManager(tmt.utils.Common):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        raise NotImplementedError
+        return self.guest.execute(self.engine.install(*installables, options=options))
 
     def reinstall(
         self,
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        raise NotImplementedError
+        return self.guest.execute(self.engine.reinstall(*installables, options=options))
 
     def install_debuginfo(
         self,
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        raise NotImplementedError
+        return self.guest.execute(self.engine.install_debuginfo(*installables, options=options))
 
     def refresh_metadata(self) -> CommandOutput:
-        raise NotImplementedError
+        return self.guest.execute(self.engine.refresh_metadata())
