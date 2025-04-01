@@ -4,7 +4,8 @@
     Releases
 ======================
 
-tmt-1.XX.0
+
+tmt-1.46.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :ref:`/plugins/report/junit` report plugin now supports a new
