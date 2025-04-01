@@ -6,4 +6,4 @@ plan:
         ref: main
 
         importing: become-parent
-        limit: all-plans
+        scope: all-plans
