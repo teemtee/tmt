@@ -26,11 +26,17 @@ description: |
                # String, name of the management interface protocol
                protocol: IPMI
 
-               # Integer or string, management interface vendor name or id
-               vendor: "~ MontaVista Software, Inc."
+               # Number or string, an ID of the management interface vendor.
+               vendor: "0x04b3"
 
-               # Integer or string, management interface product name or id
-               product: 0x4010
+               # String, a name of the management interface vendor.
+               vendor-name: "~ MontaVista Software, Inc."
+
+               # Number or string, an ID of the management interface device (product).
+               device: "0x04b3"
+
+               # String, a name of the management interface device (product).
+               device-name: "~ Some device name"
 
     .. versionchanged:: 1.45
        added ``management-interface`` specification

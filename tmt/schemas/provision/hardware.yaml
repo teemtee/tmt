@@ -317,15 +317,21 @@ definitions:
           protocol:
             type: string
 
-          product:
+          device:
             anyOf:
               - type: string
               - type: integer
+
+          device-name:
+            type: string
 
           vendor:
             anyOf:
               - type: string
               - type: integer
+
+          vendor-name:
+            type: string
 
     additionalProperties: false
 
