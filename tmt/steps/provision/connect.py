@@ -180,14 +180,18 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
     """
     Connect to a provisioned guest using SSH.
 
-    Private key authentication:
+    Do not provision a new system. Instead, use provided
+    authentication data to connect to a running machine.
+
+    Private key authentication (using ``sudo`` to run scripts):
 
     .. code-block:: yaml
 
         provision:
             how: connect
             guest: host.example.org
-            user: root
+            user: fedora
+            become: true
             key: /home/psss/.ssh/example_rsa
 
     Password authentication:
