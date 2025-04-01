@@ -171,21 +171,7 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
          before using ``feature`` plugin from an alternative repository
          or local build.
 
-    The ``feature`` plugin provides a comfortable way to
-    enable and disable some commonly used functionality on the guest.
-    As for now enabling and disabling the ``epel`` repository is
-    supported, ``crb`` and ``fips`` are coming in the near
-    future.
-
-    Example config:
-
-    .. code-block:: yaml
-
-        prepare:
-            how: feature
-            epel: enabled
-
-    Or
+    Control enablement of various features on the guest:
 
     .. code-block:: yaml
 
