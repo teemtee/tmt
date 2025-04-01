@@ -270,13 +270,13 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
     )
 
     link_template: Optional[str] = field(
-        metavar="LINK_TEMPLATE",
+        metavar="TEMPLATE",
         option="--link-template",
         default=_str_env_to_default('link_template', None),
         help="""
              Jinja template that will be rendered for each test result and appended to the end
-             of its description. It can contain the following variables for tmt to render:
-             ``TMT_PLAN_NAME``, ``TMT_TEST_SERIAL_NUMBER``, ``TMT_GUEST_NAME``.
+             of its description. The following variables are passed to the template:
+             ``PLAN_NAME``, ``RESULT``.
              """,
     )
 
@@ -497,8 +497,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         self,
         description: str,
         link_template: str,
-        serial_number: int,
-        guest_name: str,
+        result: tmt.result.Result,
     ) -> str:
         """
         Extend text with rendered link template
@@ -506,9 +505,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
         url = tmt.utils.templates.render_template(
             link_template,
-            TMT_PLAN_NAME=self.step.plan.pathless_safe_name,
-            TMT_TEST_SERIAL_NUMBER=serial_number,
-            TMT_GUEST_NAME=guest_name,
+            PLAN_NAME=self.step.plan.pathless_safe_name,
+            RESULT=result,
         )
         return f'{description}<br>{url}' if description else url
 
@@ -791,8 +789,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         test_description = self.append_link_template(
                             test_description,
                             self.data.link_template,
-                            serial_number,
-                            result.guest.name,
+                            result,
                         )
 
                     # Create a test item
