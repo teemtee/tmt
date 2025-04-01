@@ -50,7 +50,6 @@ def test_maximal_constraint(root_logger: Logger) -> None:
     assert hw.constraint is not None
 
     result = constraint_to_beaker_filter(hw.constraint, root_logger)
-
     assert result.to_mrack() == {
         'and': [
             {
@@ -59,8 +58,8 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                     '_value': 'foo.*',
                 },
             },
-            {'or': []},
-            {'and': [{'or': []}, {'or': []}]},
+            {},
+            {'and': [{}, {}]},
             {
                 'and': [
                     {
@@ -68,20 +67,18 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                             'processors': {'_op': '>', '_value': '8'},
                         },
                     },
-                    {
-                        'or': [],
-                    },
+                    {},
                     {
                         'cpu': {
                             'cores': {'_op': '==', '_value': '2'},
                         },
                     },
-                    {'or': []},
-                    {'or': []},
-                    {'or': []},
+                    {},
+                    {},
+                    {},
                     {'cpu': {'model': {'_op': '==', '_value': '62'}}},
                     {'cpu': {'family': {'_op': '<', '_value': '6'}}},
-                    {'or': []},
+                    {},
                     {
                         'cpu': {
                             'stepping': {
@@ -98,7 +95,7 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                             },
                         },
                     },
-                    {'or': []},
+                    {},
                     {
                         'not': {'cpu': {'model_name': {'_op': 'like', '_value': 'Haswell'}}},
                     },
@@ -120,8 +117,8 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                     {'cpu': {'hyper': {'_op': '==', '_value': 'True'}}},
                 ]
             },
-            {'and': [{'or': []}, {'or': []}, {'or': []}, {'or': []}, {'or': []}]},
-            {'and': [{'or': []}, {'or': []}, {'or': []}, {'or': []}, {'or': []}]},
+            {'and': [{}, {}, {}, {}, {}]},
+            {'and': [{}, {}, {}, {}, {}]},
             {'system': {'memory': {'_op': '==', '_value': '8192'}}},
             {
                 'and': [
@@ -145,22 +142,22 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                 'and': [
                     {
                         'and': [
-                            {'or': []},
-                            {'or': []},
-                            {'or': []},
-                            {'or': []},
-                            {'or': []},
-                            {'or': []},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
                         ]
                     },
-                    {'or': []},
+                    {},
                 ],
             },
             {'hostname': {'_op': 'like', '_value': '%.foo.redhat.com'}},
             {'labcontroller': {'_op': '!=', '_value': 'lab-1.bar.redhat.com'}},
             {
                 'and': [
-                    {'or': []},
+                    {},
                     {
                         'system': {
                             'vendor': {
@@ -169,7 +166,7 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                             },
                         },
                     },
-                    {'or': []},
+                    {},
                     {
                         'system': {
                             'numanodes': {
@@ -198,7 +195,7 @@ def test_maximal_constraint(root_logger: Logger) -> None:
             {
                 'and': [
                     {'system': {'hypervisor': {'_op': '==', '_value': ''}}},
-                    {'or': []},
+                    {},
                     {'system': {'hypervisor': {'_op': 'like', '_value': 'xen'}}},
                 ]
             },
