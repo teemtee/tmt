@@ -58,7 +58,7 @@ example:
       - avc
       - kernel-panic
       - how: test-inspector
-        enable: false
+        enabled: false
 
   - |
     # Expect the AVC check to fail
