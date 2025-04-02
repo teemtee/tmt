@@ -252,9 +252,7 @@ class MrackHWNotGroup(MrackHWGroup):
 
 
 def _transform_unsupported(constraint: tmt.hardware.Constraint[Any]) -> dict[str, Any]:
-    # Unsupported constraint has been already logged via report_support(). Make
-    # sure user is aware it would have no effect, and since we have to return
-    # something, return an {}- no harm done, composable with other elements.
+    # We have to return something, return an {}- no harm done, composable with other elements.
 
     return {}
 
@@ -783,6 +781,8 @@ def constraint_to_beaker_filter(
     ) or _translate_constraint_by_transformer(constraint, logger)
 
     if not transformed:
+        # Unsupported constraint has been already logged via report_support().
+        # Make sure user is aware it would have no effect.
         logger.warning(f"Hardware requirement '{constraint.printable_name}' will have no effect.")
     return transformed
 
