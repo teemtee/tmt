@@ -24,6 +24,15 @@ result and appended to the end of its description. In cooperation with
 Testing Farm, this will allow ReportPortal test results to directly
 point to their respective artifacts.
 
+A new ``restraint-compatible`` key has been implemented for the
+:ref:`/plugins/execute/tmt` execute plugin which allows to enable
+and disable the :ref:`restraint-compatibility` features. For now
+it only affects whether the ``$OUTPUTFILE`` variable is respected
+or not. In the future this will allow users to enable/disable all
+restraint compatibility features. Please, update your plans with
+``restraint-compatibility: true`` as soon as possible if your
+tests depend on the restraint features.
+
 
 tmt-1.45.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

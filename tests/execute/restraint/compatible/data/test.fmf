@@ -1,0 +1,15 @@
+summary:
+    Check that test output it correctly collected
+
+test: |
+    tmp=$(mktemp -d)
+
+    echo ok | tee $tmp/fine.txt
+    tmt-report-result good-with-log PASS -o $tmp/fine.txt
+    OUTPUTFILE=$tmp/fine.txt tmt-report-result good-with-var PASS
+
+    echo ko | tee $tmp/wrong.txt
+    tmt-report-result bad-with-log FAIL -o $tmp/wrong.txt
+    OUTPUTFILE=$tmp/wrong.txt tmt-report-result bad-with-var FAIL
+
+    rm -rf $tmp

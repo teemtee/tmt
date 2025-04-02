@@ -2,8 +2,16 @@
 set -o errexit -o pipefail -o noclobber -o nounset
 
 REPORT_RESULT_OUTPUTFILE="$TMT_TEST_DATA/tmt-report-results.yaml"
-outputFile=
+TMT_RESTRAINT_COMPATIBLE="${TMT_RESTRAINT_COMPATIBLE:-1}"
 help=False
+
+# In the restraint-compatible mode check the $OUTPUTFILE variable
+# as well for the default log file location
+if [ "$TMT_RESTRAINT_COMPATIBLE" == "1" ]; then
+    outputFile="${OUTPUTFILE:-}"
+else
+    outputFile=""
+fi
 
 die() { echo "$*" >&2; exit 2; }  # complain to STDERR and exit with error
 needs_arg() { if [ -z "$OPTARG" ]; then die "No arg for --$OPT option"; fi; }

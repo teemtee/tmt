@@ -1,0 +1,4 @@
+summary: Verify the restraint-compatible option
+description:
+    Make sure that the restraint compatibility features can be
+    enabled and disabled using the ``restraint-compatible`` key.
