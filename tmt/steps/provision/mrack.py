@@ -566,7 +566,6 @@ def _transform_virtualization_is_virtualized(
     if test in [(tmt.hardware.Operator.EQ, False), (tmt.hardware.Operator.NEQ, True)]:
         return MrackHWGroup('system', children=[MrackHWBinOp('hypervisor', '==', '')])
 
-    logger.warning(f"Hardware requirement '{constraint.printable_name}' will have no effect.")
     return _transform_unsupported(constraint)
 
 
@@ -646,7 +645,6 @@ def _transform_iommu_is_supported(
     if test in [(tmt.hardware.Operator.EQ, False), (tmt.hardware.Operator.NEQ, True)]:
         return MrackHWKeyValue('VIRT_IOMMU', '==', '0')
 
-    logger.warning(f"Hardware requirement '{constraint.printable_name}' will have no effect.")
     return _transform_unsupported(constraint)
 
 
