@@ -4,10 +4,9 @@
 
 from typing import Any, Optional, Union
 
-from click import echo
-
 import tmt.base
 import tmt.lint
+import tmt.log
 import tmt.utils
 from tmt.cli import Context, pass_context
 from tmt.cli._root import (
@@ -66,6 +65,7 @@ def _lint_class(
     disable_checks: list[str],
     enforce_checks: list[str],
     outcomes: list[tmt.lint.LinterOutcome],
+    logger: tmt.log.Logger,
     **kwargs: Any,
 ) -> int:
     """
@@ -92,12 +92,12 @@ def _lint_class(
 
         lintable.ls()
 
-        echo('\n'.join(tmt.lint.format_rulings(allowed_rulings)))
+        logger.print('\n'.join(tmt.lint.format_rulings(allowed_rulings)))
 
         if not valid:
             exit_code = 1
 
-        echo()
+        logger.print()
 
     return exit_code
 
@@ -110,6 +110,7 @@ def _lint_collection(
     disable_checks: list[str],
     enforce_checks: list[str],
     outcomes: list[tmt.lint.LinterOutcome],
+    logger: tmt.log.Logger,
     **kwargs: Any,
 ) -> int:
     """
@@ -137,12 +138,12 @@ def _lint_collection(
 
     lintable.print_header()
 
-    echo('\n'.join(tmt.lint.format_rulings(allowed_rulings)))
+    logger.print('\n'.join(tmt.lint.format_rulings(allowed_rulings)))
 
     if not valid:
         exit_code = 1
 
-    echo()
+    logger.print()
 
     return exit_code
 
@@ -156,6 +157,7 @@ def do_lint(
     disable_checks: list[str],
     enforce_checks: list[str],
     outcomes: list[tmt.lint.LinterOutcome],
+    logger: tmt.log.Logger,
     **kwargs: Any,
 ) -> int:
     """
@@ -165,9 +167,9 @@ def do_lint(
     if list_checks:
         for klass in klasses:
             klass_label = 'stories' if klass is tmt.base.Story else f'{klass.__name__.lower()}s'
-            echo(f'Linters available for {klass_label}')
-            echo(klass.format_linters())
-            echo()
+            logger.print(f'Linters available for {klass_label}')
+            logger.print(klass.format_linters())
+            logger.print()
 
         return 0
 
@@ -180,6 +182,7 @@ def do_lint(
             disable_checks,
             enforce_checks,
             outcomes,
+            logger,
             **kwargs,
         )
         for klass in klasses
@@ -193,6 +196,7 @@ def do_lint(
         disable_checks,
         enforce_checks,
         outcomes,
+        logger,
         **kwargs,
     )
 
@@ -233,6 +237,7 @@ def tests_lint(
         disable_checks,
         enforce_checks,
         [tmt.lint.LinterOutcome(outcome) for outcome in outcome_only],
+        context.obj.logger,
         **kwargs,
     )
 
@@ -273,6 +278,7 @@ def plans_lint(
         disable_checks,
         enforce_checks,
         [tmt.lint.LinterOutcome(outcome) for outcome in outcome_only],
+        context.obj.logger,
         **kwargs,
     )
 
@@ -313,6 +319,7 @@ def stories_lint(
         disable_checks,
         enforce_checks,
         [tmt.lint.LinterOutcome(outcome) for outcome in outcome_only],
+        context.obj.logger,
         **kwargs,
     )
 
@@ -357,6 +364,7 @@ def lint(
         disable_checks,
         enforce_checks,
         [tmt.lint.LinterOutcome(outcome) for outcome in outcome_only],
+        context.obj.logger,
         **kwargs,
     )
 
