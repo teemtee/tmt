@@ -18,19 +18,6 @@ example: []
 
 /junit:
     summary: Generate a JUnit report file
-    story:
-        As a tester I want to review results in a JUnit xml file.
-    description:
-        Create a JUnit file ``junit.xml`` with test results.
-    example: |
-        # Enable junit report from the command line
-        tmt run --all report --how junit
-        tmt run --all report --how junit --file test.xml
-
-        # Use junit as the default report for given plan
-        report:
-            how: junit
-            file: test.xml
     link:
         - implemented-by: /tmt/steps/report/junit.py
 

@@ -478,11 +478,24 @@ class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
     """
     Save test results in chosen JUnit flavor format.
 
+    *As a tester I want to review results in a JUnit xml file.*
+
     When flavor is set to custom, the ``template-path`` with a path to a custom template must be
     provided.
 
     When ``file`` is not specified, output is written into a file named ``junit.xml`` located in
     the current workdir.
+
+    .. code-block:: yaml
+
+        # Enable junit report from the command line
+        tmt run --all report --how junit
+        tmt run --all report --how junit --file test.xml
+
+        # Use junit as the default report for given plan
+        report:
+            how: junit
+            file: test.xml
     """
 
     _data_class = ReportJUnitData
