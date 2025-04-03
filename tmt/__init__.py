@@ -3,6 +3,7 @@ Test Management Tool
 """
 
 import importlib.metadata
+from os import getenv
 
 __version__ = importlib.metadata.version(__name__)
 
@@ -24,3 +25,8 @@ from tmt.base import Clean, Plan, Run, Status, Story, Test, Tree
 from tmt.log import Logger
 from tmt.result import Result
 from tmt.steps.provision import Guest, GuestSsh
+
+# Import early to enable benchmarking if requested
+if getenv("TMT_COPYTREE_METHOD"):
+    from tmt.utils.copytree_benchmark import install_benchmarks
+    install_benchmarks()
