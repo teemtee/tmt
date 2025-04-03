@@ -74,7 +74,7 @@ rlJournalStart
         has_systemd=$(check_systemd_availability)
 
         # This test should pass regardless of systemd availability
-        rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /coredump/ignore-pattern"
+        rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /coredump/ignore-pattern -ddddvvvv"
         rlRun "cat $results"
 
         if [ "$has_systemd" = "false" ]; then

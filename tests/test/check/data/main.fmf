@@ -82,7 +82,7 @@
         check:
           - how: coredump
             ignore-patterns:
-              - 'Process.*\\(sleep\\).*SIGSEGV'
+              - 'Signal:\s+\d+\s+\((SIG)?SEGV\)'
         test: |
             sleep 10 & kill -SIGSEGV %1
         summary: Test coredump check passes with ignored crash pattern

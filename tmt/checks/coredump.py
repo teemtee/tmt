@@ -147,32 +147,28 @@ class CoredumpCheck(Check):
                 return False
 
     def _has_required_permissions(self, guest: "Guest", logger: tmt.log.Logger) -> bool:
-        """Check if we have sufficient permissions to access coredump data."""
+        """
+        Check if we have sufficient permissions to access coredump data.
+
+        Note: coredumpctl returns 1 when no dumps are found, which is a valid
+        case that indicates we have proper permissions.
+        """
         # Try without sudo first
         try:
-            guest.execute(ShellScript("coredumpctl list --no-pager"), silent=True)
+            guest.execute(ShellScript("coredumpctl info &>/dev/null || [ $? -eq 1 ]"), silent=True)
+            logger.debug("Has permission to access coredump data")
             return True
-        except tmt.utils.RunError as exc:
-            # Check if this is just an empty list (which returns exit code 1)
-            # but actually indicates we have the right permissions
-            if exc.returncode == 1 and (exc.stderr and "No coredumps found." in exc.stderr):
-                logger.debug("No coredumps found, but we have access permission")
-                return True
-
+        except tmt.utils.RunError:
             # If failed, try with sudo if the user is not already root
             if guest.facts.is_superuser is False:
                 try:
-                    guest.execute(ShellScript("sudo coredumpctl list --no-pager"), silent=True)
+                    guest.execute(
+                        ShellScript("sudo coredumpctl info &>/dev/null || [ $? -eq 1 ]"),
+                        silent=True,
+                    )
                     logger.debug("Access to coredump data requires sudo, which is available")
                     return True
-                except tmt.utils.RunError as sudo_exc:
-                    # Check again for empty list with sudo
-                    if sudo_exc.returncode == 1 and (
-                        sudo_exc.stderr and "No coredumps found." in sudo_exc.stderr
-                    ):
-                        logger.debug("No coredumps found with sudo, but we have access permission")
-                        return True
-
+                except tmt.utils.RunError:
                     logger.debug("Cannot access coredump data even with sudo - permission issues")
                     return False
             else:
@@ -218,6 +214,49 @@ class CoredumpCheck(Check):
 
         return True, ""
 
+    def _wait_for_coredump_processes(self, guest: "Guest", logger: tmt.log.Logger) -> None:
+        """
+        Wait for systemd-coredump processes to finish processing dumps.
+
+        Uses progressive waiting with a timeout to avoid getting stuck.
+        """
+        need_sudo = guest.facts.is_superuser is False
+        sudo_prefix = "sudo " if need_sudo else ""
+
+        total_wait = 0
+        max_wait = 60  # Total maximum wait time in seconds
+        wait_time = 1  # Start with 1 second, will increase progressively
+
+        logger.debug("Checking if systemd-coredump processes are running")
+        while total_wait < max_wait:
+            try:
+                # Check if any systemd-coredump processes are running
+                cmd = f"{sudo_prefix}pgrep systemd-coredump || true"
+                result = guest.execute(ShellScript(cmd), silent=True)
+
+                # If no processes found, we're good to go
+                if not result.stdout:
+                    logger.debug("No systemd-coredump processes found")
+                    return
+
+                # If processes are still running, wait and try again
+                process_count = len(result.stdout.splitlines())
+                logger.debug(
+                    f"Found {process_count} systemd-coredump processes, waiting {wait_time}s"
+                )
+                sleep(wait_time)
+
+                # Increase wait time progressively (1, 2, 3, 4...)
+                total_wait += wait_time
+                wait_time = min(wait_time + 1, 5)  # Cap at 5 seconds per wait
+
+            except tmt.utils.RunError:
+                # If we can't check, just return
+                logger.debug("Unable to check for systemd-coredump processes")
+                return
+
+        logger.debug(f"Timed out after {total_wait}s waiting for systemd-coredump processes")
+
     def _check_for_crashes(
         self, guest: "Guest", logger: tmt.log.Logger, check_files_path: Path, start_time: str
     ) -> bool:
@@ -226,10 +265,13 @@ class CoredumpCheck(Check):
         need_sudo = guest.facts.is_superuser is False
         sudo_prefix = "sudo " if need_sudo else ""
 
+        # Make sure dumps are processed
+        self._wait_for_coredump_processes(guest, logger)
+
         try:
             # Get list of all crashes since test start
             # Not using `--json` as it's not available on el8.
-            cmd = f"{sudo_prefix}coredumpctl list --no-legend --no-pager --since={start_time}"
+            cmd = f"{sudo_prefix}coredumpctl list --no-legend --no-pager"
             output = guest.execute(ShellScript(cmd)).stdout
 
             if not output:
@@ -248,7 +290,6 @@ class CoredumpCheck(Check):
                 # Get detailed info for this crash
                 cmd = f"{sudo_prefix}coredumpctl info --no-pager {pid}"
                 crash_info = guest.execute(ShellScript(cmd)).stdout
-
                 if not crash_info:
                     logger.debug(f"No crash info available for PID {pid}")
                     continue
@@ -352,13 +393,13 @@ class CoredumpCheck(Check):
         )
         # Create timestamp directory and store current time for --since filtering
         try:
-            result = invocation.guest.execute(
+            invocation.guest.execute(
                 ShellScript(f"mkdir -p {invocation.check_files_path!s}")
                 and ShellScript(
                     f"date '+%Y-%m-%d %H:%M:%S' > {self.coredump_timestamp_filepath!s}"
                 )
             )
-            return bool(result.stdout or result.stderr is None)
+            return True
         except tmt.utils.RunError:
             return False
 
@@ -415,7 +456,7 @@ class Coredump(CheckPlugin[CoredumpCheck]):
     - Ignore crashes during a specific command:
       `'Command Line: .*specific-command-pattern.*'`
 
-    .. versionadded:: 1.41
+    .. versionadded:: 1.46
     """
 
     @staticmethod
