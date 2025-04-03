@@ -243,10 +243,20 @@ TMT_ETC_PROFILE_D = ScriptTemplate(
 )
 
 
+# Script to ensure proper UEFI boot order for unexpected reboots
+TMT_ENSURE_EFIBOOT_ORDER_SCRIPT = Script(
+    source_filename='tmt-ensure-efiboot-order',
+    destination_path=None,
+    aliases=[],
+    related_variables=[],
+    enabled=lambda _: True,
+)
+
 # List of all available scripts
 SCRIPTS = (
     TMT_ABORT_SCRIPT,
     TMT_ETC_PROFILE_D,
+    TMT_ENSURE_EFIBOOT_ORDER_SCRIPT,
     TMT_FILE_SUBMIT_SCRIPT,
     TMT_REBOOT_SCRIPT,
     TMT_REBOOT_CORE_SCRIPT,

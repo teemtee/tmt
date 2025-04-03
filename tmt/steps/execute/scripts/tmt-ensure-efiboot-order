@@ -1,0 +1,38 @@
+#!/bin/bash
+# tmt-ensure-efiboot-order - Ensure UEFI systems boot to the current OS entry on next boot
+
+[ -n "$TMT_DEBUG" ] && set -x
+
+PATH=/sbin:/usr/sbin:$PATH
+
+# Check if system is booted in UEFI mode
+if [ ! -d /sys/firmware/efi ]; then
+    logger -s "System not booted in UEFI mode, no action needed"
+    exit 0
+fi
+
+# Check if efibootmgr is available
+if ! command -v efibootmgr &>/dev/null; then
+    logger -s "efibootmgr not available, cannot configure UEFI boot order"
+    exit 1
+fi
+
+# Get current boot entry
+os_boot_entry=$(efibootmgr | awk '/BootCurrent/ { print $2 }')
+
+# fall back to /root/EFI_BOOT_ENTRY.TXT if it exists and BootCurrent is not available
+if [[ -z "$os_boot_entry" && -f /root/EFI_BOOT_ENTRY.TXT ]]; then
+    os_boot_entry=$(</root/EFI_BOOT_ENTRY.TXT)
+fi
+
+if [[ -n "$os_boot_entry" ]]; then
+    # Save boot entry to file for persistence
+    echo "$os_boot_entry" > /root/EFI_BOOT_ENTRY.TXT
+
+    # Configure next boot
+    logger -s "Setting next boot entry to $os_boot_entry"
+    efibootmgr -n $os_boot_entry
+else
+    logger -s "Could not determine current boot entry!"
+    exit 1
+fi
