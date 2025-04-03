@@ -25,7 +25,7 @@ from tmt.package_managers import (
     PackageManagerClass,
     PackagePath,
 )
-from tmt.steps.provision.podman import GuestContainer, PodmanGuestData
+from tmt.steps.provision.podman import GuestContainer
 from tmt.utils import ShellScript
 
 from . import MATCH, assert_log
@@ -38,43 +38,20 @@ logger.add_console_handler()
 tmt.plugins.explore(logger)
 
 # Local images created via `make images/test`, reference to local registry
-CONTAINER_FEDORA_RAWHIDE = Container(
-    url='containers-storage:localhost/tmt/container/test/fedora/rawhide/upstream:latest'
+from . import (  # noqa: E402
+    CONTAINER_ALPINE,
+    CONTAINER_CENTOS_7,
+    CONTAINER_CENTOS_STREAM_9,
+    CONTAINER_CENTOS_STREAM_10,
+    CONTAINER_DEBIAN_127,
+    CONTAINER_FEDORA_40,
+    CONTAINER_FEDORA_41,
+    CONTAINER_FEDORA_COREOS,
+    CONTAINER_FEDORA_COREOS_OSTREE,
+    CONTAINER_FEDORA_RAWHIDE,
+    CONTAINER_UBI_8,
+    CONTAINER_UBUNTU_2204,
 )
-CONTAINER_FEDORA_41 = Container(
-    url='containers-storage:localhost/tmt/container/test/fedora/41/upstream:latest'
-)
-CONTAINER_FEDORA_40 = Container(
-    url='containers-storage:localhost/tmt/container/test/fedora/40/upstream:latest'
-)
-CONTAINER_FEDORA_39 = Container(
-    url='containers-storage:localhost/tmt/container/test/fedora/39/upstream:latest'
-)
-CONTAINER_CENTOS_STREAM_10 = Container(
-    url='containers-storage:localhost/tmt/container/test/centos/stream10/upstream:latest'
-)
-CONTAINER_CENTOS_STREAM_9 = Container(
-    url='containers-storage:localhost/tmt/container/test/centos/stream9/upstream:latest'
-)
-CONTAINER_CENTOS_7 = Container(
-    url='containers-storage:localhost/tmt/container/test/centos/7/upstream:latest'
-)
-CONTAINER_UBI_8 = Container(
-    url='containers-storage:localhost/tmt/container/test/ubi/8/upstream:latest'
-)
-CONTAINER_UBUNTU_2204 = Container(
-    url='containers-storage:localhost/tmt/container/test/ubuntu/22.04/upstream:latest'
-)
-CONTAINER_DEBIAN_127 = Container(
-    url='containers-storage:localhost/tmt/container/test/debian/12.7/upstream:latest'
-)
-CONTAINER_FEDORA_COREOS = Container(
-    url='containers-storage:localhost/tmt/container/test/fedora/coreos:stable'
-)
-CONTAINER_FEDORA_COREOS_OSTREE = Container(
-    url='containers-storage:localhost/tmt/container/test/fedora/coreos/ostree:stable'
-)
-CONTAINER_ALPINE = Container(url='containers-storage:localhost/tmt/container/test/alpine:latest')
 
 PACKAGE_MANAGER_DNF5 = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('dnf5')
 PACKAGE_MANAGER_DNF = tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.get_plugin('dnf')
@@ -182,32 +159,6 @@ for container, package_manager_class in CONTAINER_BASE_MATRIX:
         continue
 
     CONTAINER_DISCOVERY_MATRIX[container.url] = (container, package_manager_class)
-
-
-@pytest.fixture(name='guest')
-def fixture_guest(container: ContainerData, root_logger: tmt.log.Logger) -> GuestContainer:
-    guest_data = PodmanGuestData(image=container.image_url_or_id, container=container.container_id)
-
-    guest = GuestContainer(logger=root_logger, data=guest_data, name='dummy-container')
-
-    guest.start()
-
-    return guest
-
-
-@pytest.fixture(name='guest_per_test')
-def fixture_guest_per_test(
-    container_per_test: ContainerData, root_logger: tmt.log.Logger
-) -> GuestContainer:
-    guest_data = PodmanGuestData(
-        image=container_per_test.image_url_or_id, container=container_per_test.container_id
-    )
-
-    guest = GuestContainer(logger=root_logger, data=guest_data, name='dummy-container')
-
-    guest.start()
-
-    return guest
 
 
 def is_dnf5_preinstalled(container: ContainerData) -> bool:
