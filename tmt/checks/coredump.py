@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from tmt.steps.provision import Guest
 
 
-COREDUMP_TIMESTAMP_FILENAME = "coredump-timestamp"
+COREDUMP_LAST_DUMP_FILENAME = "coredump-latest"
 
 # Can be set in /etc/coredumpct.conf.d/
 # See `man coredump.conf`
@@ -51,6 +51,10 @@ class CoredumpCheck(Check):
     # Internal flag to track if we can run coredumpctl on the host
     is_available: bool = True
     is_availability_reason: str = ""
+
+    # Path to the file storing information about coredumps before test execution
+    # Default is current directory, will be properly set in _save_existing_coredumps
+    coredump_last_dumps_filepath: Path = field(default_factory=Path, internal=True)
 
     def to_spec(self) -> _RawCheck:
         """Convert to raw specification."""
@@ -258,9 +262,18 @@ class CoredumpCheck(Check):
         logger.debug(f"Timed out after {total_wait}s waiting for systemd-coredump processes")
 
     def _check_for_crashes(
-        self, guest: "Guest", logger: tmt.log.Logger, check_files_path: Path, start_time: str
+        self,
+        guest: "Guest",
+        logger: tmt.log.Logger,
+        check_files_path: Path,
+        previous_dumps_file: Path,
     ) -> bool:
-        """Check if any crashes have been detected."""
+        """
+        Check if any new crashes have been detected since the test started.
+
+        Uses the timestamp of the latest coredump before the test to identify
+        new coredumps created during test execution.
+        """
         # Determine if we need sudo
         need_sudo = guest.facts.is_superuser is False
         sudo_prefix = "sudo " if need_sudo else ""
@@ -269,26 +282,57 @@ class CoredumpCheck(Check):
         self._wait_for_coredump_processes(guest, logger)
 
         try:
-            # Get list of all crashes since test start
-            # Not using `--json` as it's not available on el8.
-            cmd = f"{sudo_prefix}coredumpctl list --no-legend --no-pager"
+            # Get the timestamp of the latest coredump before the test
+            latest_timestamp = ""
+            try:
+                previous_output = guest.execute(Command("cat", previous_dumps_file)).stdout
+                if previous_output:
+                    # The output should contain just one line for the latest coredump
+                    # Extract the timestamp (first two fields) if we have data
+                    fields = previous_output.strip().split()
+                    if len(fields) >= 2:
+                        # Combine the date and time fields as the timestamp
+                        latest_timestamp = f"{fields[0]} {fields[1]}"
+                        logger.debug(
+                            f"Latest coredump before test had timestamp: {latest_timestamp}"
+                        )
+            except tmt.utils.RunError:
+                logger.debug("Unable to read previous dumps file, assuming no prior coredumps")
+
+            # Get list of coredumps newer than the latest one before the test
+            # Use --all to check coredumps from all users, not just current user
+            if latest_timestamp:
+                since_param = f'--since="{latest_timestamp}"'
+                cmd = f"{sudo_prefix}coredumpctl list --all --no-legend --no-pager {since_param}"
+                logger.debug(f"Checking for coredumps newer than: {latest_timestamp}")
+            else:
+                # If we have no prior timestamp, get all coredumps
+                cmd = f"{sudo_prefix}coredumpctl list --all --no-legend --no-pager"
+                logger.debug("No prior coredumps found, checking all available coredumps")
+
             output = guest.execute(ShellScript(cmd)).stdout
 
             if not output:
                 return False
 
             # Process each crash entry
-            has_crashes = False
+            has_new_crashes = False
             for line in output.splitlines():
                 fields = line.split()
+                if len(fields) < 10:  # Ensure we have enough fields
+                    logger.debug(f"Skipping malformed coredump line: {line}")
+                    continue
 
                 pid = fields[4]
                 sig = fields[7]
                 corefile = fields[8]
                 exe = fields[9].replace("/", "_")
 
-                # Get detailed info for this crash
-                cmd = f"{sudo_prefix}coredumpctl info --no-pager {pid}"
+                # We're now using the timestamp to filter,
+                # so all dumps in this list are already post-test
+
+                # Get detailed info for this crash (use --all to ensure we can access it)
+                cmd = f"{sudo_prefix}coredumpctl info --all --no-pager {pid}"
                 crash_info = guest.execute(ShellScript(cmd)).stdout
                 if not crash_info:
                     logger.debug(f"No crash info available for PID {pid}")
@@ -301,12 +345,12 @@ class CoredumpCheck(Check):
                     logger.debug(f"Ignoring crash due to pattern match in: {crash_info}")
                     continue
 
-                # Save the crash info
+                # Save the crash info (with --all to ensure we can access it)
                 info_filename = f"dump.{exe}_{sig}_{pid}.txt"
                 info_path = check_files_path / info_filename
                 guest.execute(
                     ShellScript(
-                        f"sh -c {sudo_prefix}coredumpctl info --no-pager {pid} > {info_path!s}"
+                        f"sh -c {sudo_prefix}coredumpctl info --all --no-pager {pid} > {info_path!s}"  # noqa: E501
                     )
                 )
                 logger.debug(f"Saved crash info to {info_path}")
@@ -318,7 +362,7 @@ class CoredumpCheck(Check):
                     try:
                         guest.execute(
                             ShellScript(
-                                f"{sudo_prefix}coredumpctl dump --no-pager -o {dump_path!s} {pid}"
+                                f"{sudo_prefix}coredumpctl dump --all --no-pager -o {dump_path!s} {pid}"  # noqa: E501
                             )
                         )
                         logger.debug(f"Saved coredump to {dump_path}")
@@ -327,10 +371,10 @@ class CoredumpCheck(Check):
                 else:
                     logger.debug(f"Skipping dump for PID {pid}, corefile status: {corefile}")
 
-                # This is a non-ignored crash
-                has_crashes = True
+                # This is a new, non-ignored crash
+                has_new_crashes = True
 
-            return has_crashes
+            return has_new_crashes
 
         except tmt.utils.RunError as exc:
             logger.debug(f"Failed to check for crashes: {exc}")
@@ -347,24 +391,12 @@ class CoredumpCheck(Check):
         """
         log_files: list[Path] = []
 
-        # Check for crash reports in after_test
-        try:
-            output = invocation.guest.execute(
-                Command("cat", self.coredump_timestamp_filepath)
-            ).stdout
-
-            if not output:
-                logger.debug("Failed to read timestamp file")
-                return ResultOutcome.ERROR, log_files
-        except tmt.utils.RunError as exc:
-            logger.debug(f"Failed to read timestamp file: {exc}")
-            return ResultOutcome.ERROR, log_files
-
-        start_time = output.strip()
-
-        # Check for crashes
+        # Check for crashes by comparing with the saved file of previous dumps
         has_crashes = self._check_for_crashes(
-            invocation.guest, logger, invocation.check_files_path, start_time
+            invocation.guest,
+            logger,
+            invocation.check_files_path,
+            self.coredump_last_dumps_filepath,
         )
 
         # Get list of generated files
@@ -387,16 +419,31 @@ class CoredumpCheck(Check):
 
         return ResultOutcome.PASS, log_files
 
-    def _create_coredump_timestamp(self, invocation: "TestInvocation") -> bool:
-        self.coredump_timestamp_filepath = (
-            invocation.check_files_path / COREDUMP_TIMESTAMP_FILENAME
+    def _save_existing_coredumps(self, invocation: "TestInvocation") -> bool:
+        """
+        Save information about the latest coredump before the test.
+
+        This allows us to only check for newer coredumps after the test.
+        """
+        self.coredump_last_dumps_filepath = (
+            invocation.check_files_path / COREDUMP_LAST_DUMP_FILENAME
         )
-        # Create timestamp directory and store current time for --since filtering
+
         try:
+            # Create directory for check files
+            invocation.guest.execute(ShellScript(f"mkdir -p {invocation.check_files_path!s}"))
+
+            # Determine if sudo is needed
+            need_sudo = invocation.guest.facts.is_superuser is False
+            sudo_prefix = "sudo " if need_sudo else ""
+
+            # Get only the latest coredump before the test using -1 flag
+            # and save it to a file. If there are no dumps, create an empty file.
+            # Use --all to check coredumps from all users, not just current user
             invocation.guest.execute(
-                ShellScript(f"mkdir -p {invocation.check_files_path!s}")
-                and ShellScript(
-                    f"date '+%Y-%m-%d %H:%M:%S' > {self.coredump_timestamp_filepath!s}"
+                ShellScript(
+                    f"({sudo_prefix}coredumpctl list -1 --all --no-legend --no-pager || true) > "
+                    f"{self.coredump_last_dumps_filepath!s}"
                 )
             )
             return True
@@ -507,11 +554,11 @@ class Coredump(CheckPlugin[CoredumpCheck]):
                 )
             ]
 
-        # Initialize outcome to ERROR in case timestamp creation fails
+        # Initialize outcome to ERROR in case we can't save the current coredumps list
         outcome = ResultOutcome.ERROR
         log_files: list[Path] = []
 
-        if check._create_coredump_timestamp(invocation):
+        if check._save_existing_coredumps(invocation):
             check._configure_coredump(invocation.guest, logger)
             outcome, log_files = check._check_coredump(invocation, CheckEvent.BEFORE_TEST, logger)
 
