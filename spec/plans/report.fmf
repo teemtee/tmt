@@ -8,18 +8,6 @@ example: []
 
 /display:
     summary: Show results in the terminal window
-    story:
-        As a tester I want to see test results in the plain text
-        form in my shell session.
-    description:
-        Test results will be displayed as part of the command line
-        tool output directly in the terminal. Allows to select the
-        desired level of verbosity
-    example: |
-        tmt run -l report        # overall summary only
-        tmt run -l report -v     # individual test results
-        tmt run -l report -vv    # show full paths to logs
-        tmt run -l report -vvv   # provide complete test output
     link:
       - implemented-by: /tmt/steps/report/display.py
 
