@@ -80,6 +80,9 @@ properties:
   upload-subresults:
     type: boolean
 
+  link-template:
+    type: string
+
   when:
     $ref: "/schemas/common#/definitions/when"
 
