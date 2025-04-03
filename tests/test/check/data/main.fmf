@@ -87,6 +87,15 @@
             sleep 10 & kill -SIGSEGV %1
         summary: Test coredump check passes with ignored crash pattern
 
+    /match-pattern:
+        check:
+          - how: coredump
+            match-patterns:
+              - 'Signal:\s+\d+\s+\((SIG)?ABRT\)'
+        test: |
+            sleep 10 & kill -SIGSEGV %1
+        summary: Test coredump check passes when crash doesn't match required pattern
+
 /watchdog/ping:
   require:
     - /usr/bin/uptime

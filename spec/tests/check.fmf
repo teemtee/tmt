@@ -82,6 +82,13 @@ example:
           - 'Process.*\\(sleep\\).*dumped core'  # Ignore sleep crashes
           - 'Signal: .*\\(SIGSEGV\\)'            # Ignore segmentation faults
 
+  - |
+    # Configure the coredump check to only fail on specific patterns
+    check:
+      - how: coredump
+        match-patterns:
+          - 'Signal: .*\\(SIGABRT\\)'            # Only fail on abort signals
+
 link:
   - implemented-by: /tmt/checks
   - implemented-by: /tmt/result.py

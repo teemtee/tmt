@@ -48,6 +48,22 @@ class CoredumpCheck(Check):
         unserialize=lambda serialized: [re.compile(pattern) for pattern in serialized],
     )
 
+    # Patterns to match in crash reports
+    match_patterns: list[Pattern[str]] = field(
+        default_factory=list,
+        help="""
+             Optional list of regular expressions to match in crash reports.
+             If specified, a test will only fail if a crash report matches one of
+             these patterns. If no patterns are specified, any crash will cause
+             a failure (subject to ignore-patterns).
+             """,
+        metavar="PATTERN",
+        normalize=tmt.utils.normalize_pattern_list,
+        exporter=lambda patterns: [pattern.pattern for pattern in patterns],
+        serialize=lambda patterns: [pattern.pattern for pattern in patterns],
+        unserialize=lambda serialized: [re.compile(pattern) for pattern in serialized],
+    )
+
     # Internal flag to track if we can run coredumpctl on the host
     is_available: bool = True
     is_availability_reason: str = ""
@@ -59,6 +75,11 @@ class CoredumpCheck(Check):
         spec["ignore-patterns"] = [  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
             pattern.pattern for pattern in self.ignore_patterns
         ]
+
+        if self.match_patterns:
+            spec["match-patterns"] = [  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
+                pattern.pattern for pattern in self.match_patterns
+            ]
 
         return spec
 
@@ -301,6 +322,15 @@ class CoredumpCheck(Check):
                     logger.debug(f"Ignoring crash due to pattern match in: {crash_info}")
                     continue
 
+                # Skip if match patterns are specified but none match this crash
+                if self.match_patterns and not any(
+                    pattern.search(crash_info) for pattern in self.match_patterns
+                ):
+                    logger.debug(
+                        f"Ignoring crash as it doesn't match any required patterns: {crash_info}"
+                    )
+                    continue
+
                 # Save the crash info
                 info_filename = f"dump.{exe}_{sig}_{pid}.txt"
                 info_path = check_files_path / info_filename
@@ -441,6 +471,16 @@ class Coredump(CheckPlugin[CoredumpCheck]):
     The patterns are matched against the full coredumpctl info output, which includes
     fields like Process, Command Line, Signal, etc. You can use 'coredumpctl info'
     to see the available fields and their format.
+
+    You can use `match-patterns` to only fail when crashes match specific patterns.
+    This is useful when you expect some crashes but want to detect specific ones:
+
+    .. code-block:: yaml
+
+        check:
+          - how: coredump
+            match-patterns:
+              - 'Signal: .*\\(SIGABRT\\)'  # Only fail on abort signals
 
     Common pattern examples:
 

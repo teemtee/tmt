@@ -92,6 +92,30 @@ rlJournalStart
         fi
     rlPhaseEnd
 
+    rlPhaseStartTest "Test match pattern with $PROVISION_HOW"
+        # This test uses a SIGSEGV but the pattern only matches SIGABRT
+        # Check if systemd is available in the provisioner
+        has_systemd=$(check_systemd_availability)
+
+        # This test should pass regardless of systemd availability
+        rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /coredump/match-pattern -ddddvvvv"
+        rlRun "cat $results"
+
+        if [ "$has_systemd" = "false" ]; then
+            # No systemd means no coredump capabilities
+            assert_check_result "coredump as a before-test should skip without systemd" "skip" "before-test" "/coredump/match-pattern"
+            assert_check_result "coredump as an after-test should skip without systemd" "skip" "after-test" "/coredump/match-pattern"
+        else
+            # Even though there's a crash, it should pass because it doesn't match the pattern
+            assert_check_result "coredump as a before-test should pass" "pass" "before-test" "/coredump/match-pattern"
+            assert_check_result "coredump as an after-test should pass" "pass" "after-test" "/coredump/match-pattern"
+
+            # Verify the crash was still logged even though it didn't match
+            rlRun "ls -l $run/plan/execute/data/guest/default-0/coredump/match-pattern-1/checks/"
+            rlLogInfo "$(ls -l $run/plan/execute/data/guest/default-0/coredump/match-pattern-1/checks/)"
+        fi
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $run" 0 "Remove run directory"

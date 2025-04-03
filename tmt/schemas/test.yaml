@@ -170,5 +170,11 @@ definitions:
           - type: array
             items:
               type: string
+      match-patterns:
+        oneOf:
+          - type: string
+          - type: array
+            items:
+              type: string
     required:
       - how
