@@ -189,6 +189,26 @@ Note that these scripts cover only the common use cases and some
 of their irrelevant options, such as ``--server`` used for the
 restraint server, are ignored.
 
+.. warning::
+
+    Currently this functionality is enabled by default. If your
+    tests depend on these compatibility scripts, please ensure
+    that the ``restraint-compatible`` option is enabled under the
+    :ref:`/plugins/execute/tmt` execute step. In the future these
+    scripts will be available on the guest only if this option is
+    enabled.
+
+    .. code-block:: yaml
+
+        execute:
+            how: tmt
+            restraint-compatible: true
+
+    If possible, we recommend to update your existing tests and
+    use ``tmt-abort``, ``tmt-reboot``, ``tmt-file-submit`` and
+    ``tmt-report-result`` scripts instead. These are not planned
+    to be removed and will be supported in the future.
+
 __ https://restraint.readthedocs.io/
 
 
