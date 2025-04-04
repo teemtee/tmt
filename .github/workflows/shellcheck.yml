@@ -26,6 +26,7 @@ jobs:
         name: Differential ShellCheck
         uses: redhat-plumbers-in-action/differential-shellcheck@v4
         with:
+          # Keep exclusions in sync with shellcheck-py hook in .pre-commit-config.yaml
           exclude-path: |
             tests/**
             examples/**/test.sh
