@@ -28,7 +28,7 @@ def style(
     Apply a style to a string.
 
     ``style`` is the most preferred argument, and, if set, no other
-    arguments would be used. If ``style` is not given, remaining keyword
+    arguments would be used. If ``style`` is not given, remaining keyword
     arguments are passed directly to :py:func:`click.style`.
 
     :param s: string to colorize.
