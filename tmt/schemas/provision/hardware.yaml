@@ -310,7 +310,7 @@ definitions:
           - type: string
           - type: integer
 
-      management-interface:
+      management-controller:
         type: object
 
         properties:
