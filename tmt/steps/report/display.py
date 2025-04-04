@@ -38,8 +38,18 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
     """
     Show test results on the terminal.
 
+    *As a tester I want to see test results in the plain text
+    form in my shell session.*
+
     Give a concise summary of test results directly on the terminal.
-    List individual test results in verbose mode.
+    Allows to select the desired level of verbosity
+
+    .. code-block:: yaml
+
+        tmt run -l report        # overall summary only
+        tmt run -l report -v     # individual test results
+        tmt run -l report -vv    # show full paths to logs
+        tmt run -l report -vvv   # provide complete test output
     """
 
     _data_class = ReportDisplayData
