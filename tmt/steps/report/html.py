@@ -14,10 +14,19 @@ from tmt.container import container, field
 from tmt.utils import Path
 
 HTML_TEMPLATE_PATH = tmt.utils.resource_files('steps/report/html/template.html.j2')
+DEFAULT_NAME = 'index.html'
 
 
 @container
 class ReportHtmlData(tmt.steps.report.ReportStepData):
+    file: Optional[Path] = field(
+        default=None,
+        option='--file',
+        metavar='PATH',
+        help='Path to the file to store HTML report to.',
+        normalize=tmt.utils.normalize_path,
+    )
+
     open: bool = field(
         default=False,
         option=('-o', '--open'),
@@ -106,34 +115,36 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
             display_guest = len(seen_guests) > 1
 
         # Write the report
-        filename = Path('index.html')
+        assert self.workdir is not None
+        filepath = self.data.file or self.workdir / DEFAULT_NAME
 
-        self.write(
-            filename,
-            data=tmt.utils.templates.render_template_file(
-                HTML_TEMPLATE_PATH,
-                environment,
-                results=self.step.plan.execute.results(),
-                base_dir=self.step.plan.execute.workdir,
-                plan=self.step.plan,
-                display_guest=display_guest,
-            ),
-        )
+        try:
+            filepath.write_text(
+                tmt.utils.templates.render_template_file(
+                    HTML_TEMPLATE_PATH,
+                    environment,
+                    results=self.step.plan.execute.results(),
+                    base_dir=self.step.plan.execute.workdir,
+                    plan=self.step.plan,
+                    display_guest=display_guest,
+                ),
+            )
+
+        except Exception as error:
+            raise tmt.utils.ReportError(f"Failed to write the output '{filepath}'.") from error
 
         # Nothing more to do in dry mode
         if self.is_dry_run:
             return
 
         # Show output file path
-        assert self.workdir is not None
-        target = self.workdir / filename
-        self.info("output", target, color='yellow')
+        self.info("output", filepath, color='yellow')
         if not self.data.open:
             return
 
         # Open target in webbrowser
         try:
-            if webbrowser.open(f"file://{target}", new=0):
+            if webbrowser.open(f"file://{filepath}", new=0):
                 self.info('open', 'Successfully opened in the web browser.', color='green')
                 return
             self.fail("Failed to open the web browser.")
