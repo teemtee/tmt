@@ -291,6 +291,10 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
     """
     Report test results and their subresults to a ReportPortal instance via API.
 
+    *As a tester I want to review results in a nicely arranged
+    web page, filter them via context attributes and get links
+    to detailed test output and other test information.*
+
     For communication with Report Portal API is necessary to provide
     following options:
 
@@ -305,18 +309,32 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
         export TMT_PLUGIN_REPORT_REPORTPORTAL_${MY_OPTION}=${MY_VALUE}
 
+        # Boolean options are activated with value of 1:
+        TMT_PLUGIN_REPORT_REPORTPORTAL_SUITE_PER_PLAN=1
+
     Assuming the URL and token are provided by the environment variables,
     the plan config can look like this:
 
     .. code-block:: yaml
 
+        # Use ReportPortal as the default report for given plan
         report:
             how: reportportal
             project: baseosqe
 
+        # Report context attributes for given plan
         context:
             ...
 
+        environment:
+            ...
+
+    .. code-block:: yaml
+
+        # Report description, contact, id and environment variables for given test
+        summary: ...
+        contact: ...
+        id: ...
         environment:
             ...
 
@@ -330,18 +348,53 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
     Two types of data structures are supported for reporting to ReportPortal:
 
-    * 'launch-per-plan' mapping (default) that results in launch-test structure.
-    * 'suite-per-plan' mapping that results in launch-suite-test structure.
+    * ``launch-per-plan`` mapping (default) that results in launch-test structure.
+    * ``suite-per-plan`` mapping that results in launch-suite-test structure.
 
     Supported report use cases:
 
     * Report a new run in launch-suite-test or launch-test structure
-    * Report an additional rerun with 'launch-rerun' option and same launch name (->Retry items)
-      or by reusing the run and reporting with 'again' option (->append logs)
+    * Report an additional rerun with ``launch-rerun`` option and same launch name (-> Retry items)
+      or by reusing the run and reporting with ``again`` option (-> append logs)
     * To see plan progress, discover and report an empty (IDLE) run
-      and reuse the run for execution and updating the report with 'again' option
+      and reuse the run for execution and updating the report with ``again`` option
     * Report contents of a new run to an existing launch via the URL ID in three ways:
       tests to launch, suites to launch and tests to suite.
+
+    Example:
+
+    .. code-block:: yaml
+
+        # Enable ReportPortal report from the command line depending on the use case:
+
+        ## Simple upload with url and token exported in environment variable
+        tmt run --all report --how reportportal --project=baseosqe
+
+        ## Upload with project name in fmf data, filtering out parameters (environment variables)
+        ## that tend to be unique and break the history aggregation
+        tmt run --all report --how reportportal --exclude-variables="^(TMT|PACKIT|TESTING_FARM).*"
+
+        ## Rerun the launch with suite structure for the test results to be uploaded
+        ## into the latest launch with the same name as a new 'Retry' tab
+        ## (mapping based on unique paths)
+        tmt run --all report --how reportportal --suite-per-plan --launch=Errata --launch-rerun
+
+        ## Rerun the tmt run and append the new result logs under the previous one
+        ## uploaded in ReportPortal (precise mapping)
+        tmt run --id run-012 --all report --how reportportal --again
+
+        ## Additional upload of new suites into given launch with suite structure
+        tmt run --all report --how reportportal --suite-per-plan --upload-to-launch=4321
+
+        ## Additional upload of new tests into given launch with non-suite structure
+        tmt run --all report --how reportportal --launch-per-plan --upload-to-launch=1234
+
+        ## Additional upload of new tests into given suite
+        tmt run --all report --how reportportal --upload-to-suite=123456
+
+        ## Upload Idle tests, then execute it and add result logs into prepared empty tests
+        tmt run discover report --how reportportal --defect-type=Idle
+        tmt run --last --all report --how reportportal --again
     """
 
     _data_class = ReportReportPortalData
