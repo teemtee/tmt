@@ -1,6 +1,7 @@
 from typing import Any, Optional, Union
 
-import click
+# TID251: this use of `click.style()` is expected, and on purpose.
+from click import style as _style  # noqa: TID251
 
 import tmt.utils
 from tmt._compat.pydantic import ValidationError
@@ -29,7 +30,7 @@ class Style(MetadataContainer):
         Apply this style to a given string.
         """
 
-        return click.style(text, **self.dict())
+        return _style(text, **self.dict())
 
 
 _DEFAULT_STYLE = Style()
