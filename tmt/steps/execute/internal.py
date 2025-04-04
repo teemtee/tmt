@@ -309,6 +309,20 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
              mode is not captured, and ``duration`` has no effect.
              """,
     )
+    restraint_compatible: bool = field(
+        default=False,
+        option=('--restraint-compatible / --no-restraint-compatible'),
+        is_flag=True,
+        help="""
+             Run tests in the restraint-compatible mode. Enable this if
+             your tests depend on the restraint scripts such as
+             ``rstrnt-report-result`` or ``rstrnt-report-log``.
+             Currently this option only affects whether the
+             ``$OUTPUTFILE`` variable is respected, but in the future it
+             will be used to enable/disable all restraint compatibility
+             features.
+             """,
+    )
     no_progress_bar: bool = field(
         default=False,
         option='--no-progress-bar',
@@ -420,6 +434,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         environment["TMT_REBOOT_REQUEST"] = EnvVarValue(
             invocation.test_data_path / TMT_REBOOT_SCRIPT.created_file
         )
+
+        # Set the restraint-compatible mode if enabled
+        environment["TMT_RESTRAINT_COMPATIBLE"] = EnvVarValue(
+            str(int(self.data.restraint_compatible))
+        )
+
         # Set all supported reboot variables
         for reboot_variable in TMT_REBOOT_SCRIPT.related_variables:
             environment[reboot_variable] = EnvVarValue(str(invocation._reboot_count))
