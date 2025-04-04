@@ -7,6 +7,7 @@ import fmf
 
 import tmt
 import tmt.base
+import tmt.checks
 import tmt.log
 import tmt.steps
 import tmt.steps.discover
@@ -136,6 +137,15 @@ class TestDescription(
         unserialize=lambda serialized: tmt.utils.Environment.from_fmf_spec(serialized),
         exporter=lambda environment: environment.to_fmf_spec(),
     )
+    check: list[tmt.checks.Check] = field(
+        default_factory=list,
+        normalize=tmt.checks.normalize_test_checks,
+        serialize=lambda checks: [check.to_spec() for check in checks],
+        unserialize=lambda serialized: [
+            tmt.checks.Check.from_spec(**check) for check in serialized
+        ],
+        exporter=lambda value: [check.to_minimal_spec() for check in value],
+    )
     duration: str = '1h'
     result: str = 'respect'
 
@@ -163,6 +173,7 @@ class TestDescription(
         data['link'] = self.link.to_spec() if self.link else None
         data['require'] = [require.to_spec() for require in self.require]
         data['recommend'] = [recommend.to_spec() for recommend in self.recommend]
+        data['check'] = [check.to_spec() for check in self.check]
         data['test'] = str(self.test)
 
         return data
