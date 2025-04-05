@@ -16,6 +16,12 @@ results are represented as ``<testsuite>`` tags, each containing a
 ``<testcase>`` tag for the main result, along with additional
 ``<testcase>`` tags for any subresults.
 
+A new :ref:`/plugins/test-checks/coredump` check plugin has been added
+to detect system crashes using systemd-coredump during test execution.
+The plugin monitors for any segmentation faults and other crashes that
+produce core dumps. It can be configured to ignore specific crash patterns,
+and crash details are saved for further investigation.
+
 When reporting results to ReportPortal, each test result can now
 directly link to a URL. To achieve this, a new key ``link-template``
 was added to the :ref:`/plugins/report/reportportal` plugin, which

@@ -354,6 +354,7 @@ class GuestFacts(SerializableContainer):
     )
 
     has_selinux: Optional[bool] = None
+    has_systemd: Optional[bool] = None
     is_superuser: Optional[bool] = None
     is_ostree: Optional[bool] = None
     is_toolbox: Optional[bool] = None
@@ -591,6 +592,17 @@ class GuestFacts(SerializableContainer):
 
         return 'selinux' in output.stdout
 
+    def _query_has_systemd(self, guest: 'Guest') -> Optional[bool]:
+        """
+        Detect whether guest uses systemd.
+        For detection we check if systemctl exists and is executable.
+        """
+        try:
+            guest.execute(Command('systemctl', '--version'), silent=True)
+            return True
+        except tmt.utils.RunError:
+            return False
+
     def _query_is_superuser(self, guest: 'Guest') -> Optional[bool]:
         output = self._execute(guest, Command('whoami'))
 
@@ -693,6 +705,7 @@ class GuestFacts(SerializableContainer):
         self.kernel_release = self._query_kernel_release(guest)
         self.package_manager = self._query_package_manager(guest)
         self.has_selinux = self._query_has_selinux(guest)
+        self.has_systemd = self._query_has_systemd(guest)
         self.is_superuser = self._query_is_superuser(guest)
         self.is_ostree = self._query_is_ostree(guest)
         self.is_toolbox = self._query_is_toolbox(guest)
@@ -719,6 +732,7 @@ class GuestFacts(SerializableContainer):
             self.package_manager if self.package_manager else 'unknown',
         )
         yield 'has_selinux', 'selinux', 'yes' if self.has_selinux else 'no'
+        yield 'has_systemd', 'systemd', 'yes' if self.has_systemd else 'no'
         yield 'is_superuser', 'is superuser', 'yes' if self.is_superuser else 'no'
         yield 'is_container', 'is_container', 'yes' if self.is_container else 'no'
 
