@@ -57,7 +57,7 @@ import urllib3
 import urllib3._collections
 import urllib3.exceptions
 import urllib3.util.retry
-from click import echo, style, wrap_text
+from click import echo, wrap_text
 from ruamel.yaml import YAML, scalarstring
 from ruamel.yaml.comments import CommentedMap
 from ruamel.yaml.parser import ParserError
@@ -68,11 +68,13 @@ import tmt.log
 from tmt._compat.pathlib import Path
 from tmt.container import container
 from tmt.log import LoggableValue
+from tmt.utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.base
     import tmt.cli
     import tmt.steps
+    import tmt.utils.themes
     from tmt._compat.typing import Self, TypeAlias
     from tmt.hardware import Size
 
@@ -1909,7 +1911,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self,
         key: str,
         value: Optional[str] = None,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
     ) -> str:
         """
@@ -1921,7 +1923,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     def print(
         self,
         text: str,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
     ) -> None:
         """
@@ -1941,7 +1943,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self,
         key: str,
         value: Optional[LoggableValue] = None,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
     ) -> None:
         """
@@ -1954,7 +1956,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self,
         key: str,
         value: Optional[LoggableValue] = None,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         level: int = 1,
         topic: Optional[tmt.log.Topic] = None,
@@ -1971,7 +1973,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self,
         key: str,
         value: Optional[LoggableValue] = None,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         level: int = 1,
         topic: Optional[tmt.log.Topic] = None,
@@ -2002,7 +2004,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self,
         key: str,
         value: Optional[str] = None,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 1,
         level: int = 3,
         topic: Optional[tmt.log.Topic] = None,
@@ -2749,16 +2751,17 @@ def render_exception_stack(
 
     # N806: allow upper-case names to make them look like formatting
     # tags in strings below.
-    R = functools.partial(click.style, fg='red')  # noqa: N806
-    Y = functools.partial(click.style, fg='yellow')  # noqa: N806
-    B = functools.partial(click.style, fg='blue')  # noqa: N806
+    R = functools.partial(style, fg='red')  # noqa: N806
+    Y = functools.partial(style, fg='yellow')  # noqa: N806
+    B = functools.partial(style, fg='blue')  # noqa: N806
 
     yield R('Traceback (most recent call last):')
     yield ''
 
     for frame in exception_traceback.stack:
         yield f'File {Y(frame.filename)}, line {Y(str(frame.lineno))}, in {Y(frame.name)}'
-        yield f'  {B(frame.line)}'
+        if frame.line:
+            yield f'  {B(frame.line)}'
 
         if frame.locals:
             yield ''
@@ -2797,7 +2800,7 @@ def render_exception(
                 for line in item.splitlines():
                     yield f'{INDENT * " "}{line}'
 
-    yield click.style(str(exception), fg='red')
+    yield style(str(exception), fg='red')
 
     if isinstance(exception, RunError):
         yield ''
@@ -3313,7 +3316,7 @@ def assert_window_size(window_size: Optional[int]) -> None:
 def _format_bool(
     value: bool,
     window_size: Optional[int],
-    key_color: Optional[str],
+    key_color: 'tmt.utils.themes.Style',
     list_format: ListFormat,
     wrap: FormatWrap,
 ) -> Iterator[str]:
@@ -3329,7 +3332,7 @@ def _format_bool(
 def _format_list(
     value: list[Any],
     window_size: Optional[int],
-    key_color: Optional[str],
+    key_color: 'tmt.utils.themes.Style',
     list_format: ListFormat,
     wrap: FormatWrap,
 ) -> Iterator[str]:
@@ -3398,7 +3401,7 @@ def _format_list(
 def _format_str(
     value: str,
     window_size: Optional[int],
-    key_color: Optional[str],
+    key_color: 'tmt.utils.themes.Style',
     list_format: ListFormat,
     wrap: FormatWrap,
 ) -> Iterator[str]:
@@ -3448,7 +3451,7 @@ def _format_str(
 def _format_dict(
     value: dict[Any, Any],
     window_size: Optional[int],
-    key_color: Optional[str],
+    key_color: 'tmt.utils.themes.Style',
     list_format: ListFormat,
     wrap: FormatWrap,
 ) -> Iterator[str]:
@@ -3465,7 +3468,7 @@ def _format_dict(
 
     for k, v in value.items():
         # First, render the key.
-        k_formatted = click.style(k, fg=key_color) if key_color else k
+        k_formatted = style(k, style=key_color)
         k_size = len(k) + 2
 
         # Then, render the value. If the window size is known, the value must be
@@ -3576,7 +3579,7 @@ def _format_dict(
 
 #: A type describing a per-type formatting helper.
 ValueFormatter = Callable[
-    [Any, Optional[int], Optional[str], ListFormat, FormatWrap], Iterator[str]
+    [Any, Optional[int], 'tmt.utils.themes.Style', ListFormat, FormatWrap], Iterator[str]
 ]
 
 
@@ -3593,7 +3596,7 @@ _VALUE_FORMATTERS: list[tuple[Any, ValueFormatter]] = [
 def _format_value(
     value: Any,
     window_size: Optional[int] = None,
-    key_color: Optional[str] = None,
+    key_color: 'tmt.utils.themes.Style' = None,
     list_format: ListFormat = ListFormat.LISTED,
     wrap: FormatWrap = 'auto',
 ) -> list[str]:
@@ -3632,7 +3635,7 @@ def _format_value(
 def format_value(
     value: Any,
     window_size: Optional[int] = None,
-    key_color: Optional[str] = None,
+    key_color: 'tmt.utils.themes.Style' = None,
     list_format: ListFormat = ListFormat.LISTED,
     wrap: FormatWrap = 'auto',
 ) -> str:
@@ -3700,8 +3703,8 @@ def format(
     indent: int = 24,
     window_size: int = OUTPUT_WIDTH,
     wrap: FormatWrap = 'auto',
-    key_color: Optional[str] = 'green',
-    value_color: Optional[str] = 'black',
+    key_color: 'tmt.utils.themes.Style' = 'green',
+    value_color: 'tmt.utils.themes.Style' = 'black',
     list_format: ListFormat = ListFormat.LISTED,
 ) -> str:
     """
@@ -3732,9 +3735,7 @@ def format(
     indent_string = (indent + 1) * ' '
 
     # Format the key first
-    output = f"{str(key).rjust(indent, ' ')} "
-    if key_color is not None:
-        output = style(output, fg=key_color)
+    output = style(f"{str(key).rjust(indent, ' ')} ", style=key_color)
 
     # Then the value
     formatted_value = format_value(
@@ -4283,8 +4284,8 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
         key: str,
         enabled: bool = True,
         indent_level: int = 0,
-        key_color: Optional[str] = None,
-        default_value_color: Optional[str] = None,
+        key_color: 'tmt.utils.themes.Style' = None,
+        default_value_color: 'tmt.utils.themes.Style' = None,
         clear_on_exit: bool = False,
     ) -> None:
         """
@@ -4340,7 +4341,7 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
 
         self._update_message_area('')
 
-    def _update_message_area(self, value: str, color: Optional[str] = None) -> None:
+    def _update_message_area(self, value: str, color: 'tmt.utils.themes.Style' = None) -> None:
         """
         Update message area with given value.
 
@@ -4368,7 +4369,7 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
 
         message = tmt.log.indent(
             self.key,
-            value=style(message, fg=color or self.default_value_color),
+            value=style(message, style=color or self.default_value_color),
             color=self.key_color,
             level=self.indent_level,
         )
@@ -4376,7 +4377,7 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
         sys.stdout.write(f"\r{message}")
         sys.stdout.flush()
 
-    def update(self, value: str, color: Optional[str] = None) -> None:
+    def update(self, value: str, color: 'tmt.utils.themes.Style' = None) -> None:
         """
         Update progress message.
 

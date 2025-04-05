@@ -7,6 +7,7 @@ import tmt.log
 import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
+import tmt.utils.themes
 from tmt.checks import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome
@@ -71,7 +72,7 @@ class DmesgCheck(Check):
         def _test_output_logger(
             key: str,
             value: Optional[str] = None,
-            color: Optional[str] = None,
+            color: tmt.utils.themes.Style = None,
             shift: int = 2,
             level: int = 3,
             topic: Optional[tmt.log.Topic] = None,

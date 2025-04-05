@@ -76,11 +76,10 @@ from typing import (
     TypeVar,
 )
 
-from click import style
-
 import tmt
 import tmt.utils
 from tmt.container import container
+from tmt.utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.base
