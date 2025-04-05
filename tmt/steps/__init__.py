@@ -2598,8 +2598,8 @@ class PluginTask(
     def name(self) -> str:
         return f'{self.phase_name} on {fmf.utils.listed(self.guest_ids)}'
 
-    def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
-        self.phase.go(guest=guest, logger=logger)
+    def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> PluginReturnValueT:
+        return self.phase.go(guest=guest, logger=logger)
 
 
 class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginReturnValueT]]]):
