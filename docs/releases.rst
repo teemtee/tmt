@@ -16,6 +16,18 @@ results are represented as ``<testsuite>`` tags, each containing a
 ``<testcase>`` tag for the main result, along with additional
 ``<testcase>`` tags for any subresults.
 
+A new :ref:`/plugins/test-checks/coredump` check plugin has been added
+to detect system crashes using systemd-coredump during test execution.
+The plugin monitors for any segmentation faults and other crashes that
+produce core dumps. It can be configured to ignore specific crash patterns,
+and crash details are saved for further investigation.
+
+A new ``tmt-ensure-efiboot-order`` script has been added to help manage
+boot order on UEFI systems. This script ensures that UEFI systems boot
+to the current OS entry on the next boot, which is particularly useful
+for tests that may cause (un)expected reboots or crashes or otherwise
+cannot rely on running ``tmt-reboot``.
+
 When reporting results to ReportPortal, each test result can now
 directly link to a URL. To achieve this, a new key ``link-template``
 was added to the :ref:`/plugins/report/reportportal` plugin, which
