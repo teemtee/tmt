@@ -5,6 +5,7 @@ import itertools
 import os
 import platform
 import re
+import shutil
 import threading
 import types
 from collections.abc import Iterator
@@ -996,6 +997,21 @@ class GuestTestcloud(tmt.GuestSsh):
         # Prepare DomainConfiguration object before Instance object
         self._domain = DomainConfiguration(self.instance_name)
 
+        assert self.workdir is not None  # narrow type
+        assert isinstance(self.parent, tmt.steps.Step)  # narrow type
+        assert self.parent.plan.my_run is not None  # narrow type
+
+        # Make sure that the workdir has the right selinux type set
+        # and set the 'console.log' file destination path
+        if self.parent.plan.my_run.runner.facts.has_selinux:
+            policy = self.workdir / "policy.cil"
+            policy.write_text("( allow virtlogd_t user_tmp_t ( dir ( search )))")
+            self._run_guest_command(
+                Command("semodule", "--install", policy),
+                silent=True,
+            )
+        self._domain.console_log_file = self.workdir / 'console.log'
+
         # Prepare Workarounds object
         self._workarounds = Workarounds(defaults=True)
         for cmd in TESTCLOUD_WORKAROUNDS:
@@ -1374,3 +1390,25 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
                     clean.fail(f"Failed to remove '{image}'.", shift=2)
                     successful = False
         return successful
+
+    def prune(self, logger: tmt.log.Logger) -> None:
+        """
+        Do not prune console logs.
+        """
+        assert self.workdir is not None  # narrow type
+        _console_log = self.workdir / 'console.log'
+        if _console_log.exists():
+            for member in self.workdir.iterdir():
+                if member.name == "console.log":
+                    logger.debug(f"Preserve '{member.relative_to(self.workdir)}'.", level=3)
+                    continue
+                logger.debug(f"Remove '{member}'.", level=3)
+                try:
+                    if member.is_file() or member.is_symlink():
+                        member.unlink()
+                    else:
+                        shutil.rmtree(member)
+                except OSError as error:
+                    logger.warning(f"Unable to remove '{member}': {error}")
+        else:
+            super().prune(logger)
