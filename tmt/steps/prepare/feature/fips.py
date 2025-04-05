@@ -26,9 +26,9 @@ class FipsStepData(PrepareFeatureData):
 
 @provides_feature('fips')
 class Fips(ToggleableFeature):
-    NAME = "fips"
-
     _data_class = FipsStepData
+
+    PLAYBOOKS = {'fips-enable.yaml'}
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
