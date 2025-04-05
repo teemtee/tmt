@@ -251,37 +251,37 @@ class MrackHWNotGroup(MrackHWGroup):
     name: str = 'not'
 
 
-def _transform_unsupported(
-    constraint: tmt.hardware.Constraint[Any], logger: tmt.log.Logger
-) -> dict[str, Any]:
-    # Unsupported constraint has been already logged via report_support(). Make
-    # sure user is aware it would have no effect, and since we have to return
-    # something, return an {}- no harm done, composable with other elements.
-    logger.warning(f"Hardware requirement '{constraint.printable_name}' will have no effect.")
+def _transform_unsupported(constraint: tmt.hardware.Constraint[Any]) -> dict[str, Any]:
+    # We have to return something, return an {}- no harm done, composable with other elements.
 
     return {}
 
 
 def _translate_constraint_by_config(
     constraint: tmt.hardware.Constraint[Any],
-    constraint_translations: list[MrackTranslation],
-    logger: tmt.log.Logger,
-) -> BeakerizedConstraint:
+) -> dict[str, Any]:
     """
-    Translate hardware constraints to Mrack-compatible dictionary tree.
+    Translate hardware constraints to Mrack-compatible dictionary tree with config.
     """
+
+    config = _get_constraint_translations()
+
+    if not config:
+        return _transform_unsupported(constraint)
 
     suitable_translations = [
         translation
-        for translation in constraint_translations
+        for translation in config
         if translation.requirement == constraint.printable_name
     ]
 
     if not suitable_translations:
-        return _transform_unsupported(constraint, logger)
+        return _transform_unsupported(constraint)
+
     beaker_operator, actual_value, negate = operator_to_beaker_op(
         constraint.operator, constraint.value
     )
+
     return tmt.utils.yaml_to_dict(
         render_template(
             suitable_translations[0].template,
@@ -291,6 +291,26 @@ def _translate_constraint_by_config(
             BEAKER_NEGATE=negate,
         )
     )
+
+
+def _translate_constraint_by_transformer(
+    constraint: tmt.hardware.Constraint[Any],
+    logger: tmt.log.Logger,
+) -> BeakerizedConstraint:
+    """
+    Translate hardware constraints to Mrack-compatible dictionary tree with transformer.
+    """
+
+    name, _, child_name = constraint.expand_name()
+
+    if child_name:
+        transformer = _CONSTRAINT_TRANSFORMERS.get(f'{name}.{child_name}')
+
+    else:
+        transformer = _CONSTRAINT_TRANSFORMERS.get(name)
+    if not transformer:
+        return _transform_unsupported(constraint)
+    return transformer(constraint, logger)
 
 
 def _transform_beaker_pool(
@@ -544,7 +564,7 @@ def _transform_virtualization_is_virtualized(
     if test in [(tmt.hardware.Operator.EQ, False), (tmt.hardware.Operator.NEQ, True)]:
         return MrackHWGroup('system', children=[MrackHWBinOp('hypervisor', '==', '')])
 
-    return _transform_unsupported(constraint, logger)
+    return _transform_unsupported(constraint)
 
 
 def _transform_virtualization_hypervisor(
@@ -623,7 +643,7 @@ def _transform_iommu_is_supported(
     if test in [(tmt.hardware.Operator.EQ, False), (tmt.hardware.Operator.NEQ, True)]:
         return MrackHWKeyValue('VIRT_IOMMU', '==', '0')
 
-    return _transform_unsupported(constraint, logger)
+    return _transform_unsupported(constraint)
 
 
 def _transform_location_lab_controller(
@@ -756,22 +776,15 @@ def constraint_to_beaker_filter(
 
     assert isinstance(constraint, tmt.hardware.Constraint)
 
-    name, _, child_name = constraint.expand_name()
+    transformed = _translate_constraint_by_config(
+        constraint
+    ) or _translate_constraint_by_transformer(constraint, logger)
 
-    if child_name:
-        transformer = _CONSTRAINT_TRANSFORMERS.get(f'{name}.{child_name}')
-
-    else:
-        transformer = _CONSTRAINT_TRANSFORMERS.get(name)
-
-    if transformer:
-        return transformer(constraint, logger)
-    config = _get_constraint_translations()
-    if not config:
-        return _transform_unsupported(constraint, logger)
-    return _translate_constraint_by_config(constraint, config, logger)
-
-    return _transform_unsupported(constraint, logger)
+    if not transformed:
+        # Unsupported constraint has been already logged via report_support().
+        # Make sure user is aware it would have no effect.
+        logger.warning(f"Hardware requirement '{constraint.printable_name}' will have no effect.")
+    return transformed
 
 
 def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) -> None:
