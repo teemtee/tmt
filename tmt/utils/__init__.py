@@ -138,9 +138,6 @@ def configure_bool_constant(default: bool, envvar: str) -> bool:
     return value == "1"
 
 
-log = fmf.utils.Logging('tmt').logger
-
-
 #: How many leading characters to display in tracebacks with
 #: ``TMT_SHOW_TRACEBACK=2``.
 TRACEBACK_LOCALS_TRIM = 1024

@@ -105,7 +105,7 @@ class RestVisitor(docutils.nodes.NodeVisitor):
         self._indent: int = 0
         self._text_prefix: Optional[str] = None
 
-        self._theme = Config().theme
+        self._theme = Config(logger).theme
         self._style_stack: list[Style] = [self._theme.restructuredtext_text]
 
     @property
