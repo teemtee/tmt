@@ -9,7 +9,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Check hardware custom config"
-        rlRun -s "TMT_CONFIG_DIR='config' tmt run --dry"
+        rlRun -s "BEAKER_CONF='config/client.conf' TMT_CONFIG_DIR='config' tmt run --dry"
 
         rlAssertGrep '<dummyname op="==" value="dummy"/>' $rlRun_LOG
     rlPhaseEnd
