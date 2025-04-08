@@ -367,12 +367,18 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
         # Enable ReportPortal report from the command line depending on the use case:
 
+        ## Simple upload with all project, url endpoint and user token passed in command line
+        tmt run --all report --how reportportal --project=baseosqe --url="https://reportportal.xxx.com" --token="abc...789"
+
         ## Simple upload with url and token exported in environment variable
         tmt run --all report --how reportportal --project=baseosqe
 
         ## Upload with project name in fmf data, filtering out parameters (environment variables)
         ## that tend to be unique and break the history aggregation
         tmt run --all report --how reportportal --exclude-variables="^(TMT|PACKIT|TESTING_FARM).*"
+
+        ## Upload all plans as suites into one ReportPortal launch
+        tmt run --all report --how reportportal --suite-per-plan --launch=Errata --launch-description="..."
 
         ## Rerun the launch with suite structure for the test results to be uploaded
         ## into the latest launch with the same name as a new 'Retry' tab
@@ -395,7 +401,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         ## Upload Idle tests, then execute it and add result logs into prepared empty tests
         tmt run discover report --how reportportal --defect-type=Idle
         tmt run --last --all report --how reportportal --again
-    """
+    """  # noqa: E501
 
     _data_class = ReportReportPortalData
 
