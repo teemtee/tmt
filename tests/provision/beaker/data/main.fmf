@@ -1,0 +1,10 @@
+/plan:
+    execute:
+        how: tmt
+
+    provision:
+        how: beaker
+        hardware:
+            cpu:
+                model-name: dummy
+                processors: 6
