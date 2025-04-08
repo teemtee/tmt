@@ -1,0 +1,36 @@
+summary: UEFI boot order preservation and crash detection
+description: |
+    This example demonstrates how to:
+
+    1. Use the tmt-ensure-efiboot-order script in test scripts to preserve UEFI boot order
+       for unexpected reboots or crashes
+    2. Combine it with crash detection features like coredump and dmesg checks
+
+    The new tmt-ensure-efiboot-order script ensures that after a crash or unexpected
+    reboot, a UEFI system will boot into the OS rather than getting stuck in PXE boot
+    or using whatever the default is.
+
+test: |
+    #!/bin/bash
+    # Set up UEFI boot order at the beginning of the test,
+    # before any potential crashes can occur
+    if command -v tmt-ensure-efiboot-order &>/dev/null; then
+        echo "Setting up UEFI boot order for crash recovery"
+        tmt-ensure-efiboot-order
+    fi
+
+    # Rest of your test code...
+    echo "Test completed successfully"
+    exit 0
+
+framework: shell
+duration: 5m
+
+# Optional: Add crash detection with the coredump check
+check:
+    - how: coredump
+    - how: dmesg
+      failure-pattern:
+        - 'NMI watchdog: BUG: soft lockup'   # Detect kernel soft lockups
+        - 'Hardware event.*failed'           # Hardware errors
+        - 'I/O error.*dev'                   # Disk errors
