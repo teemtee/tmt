@@ -94,7 +94,7 @@ class CoredumpCheck(Check):
                 guest.execute(
                     ShellScript("sudo mkdir -p /etc/systemd/coredump.conf.d")
                     & ShellScript(
-                        f"echo '{COREDUMP_CONFIG}' | sudo tee"
+                        f"echo '{COREDUMP_CONFIG}' | sudo tee "
                         "/etc/systemd/coredump.conf.d/50-tmt.conf > /dev/null"
                     )
                 )
@@ -591,7 +591,6 @@ class Coredump(CheckPlugin[CoredumpCheck]):
         # from tmt.utils.hints import get_hints
 
         # Skip if coredumpctl is not available, as detected in before-test
-        sleep(1)
         if not check.is_available:
             return [
                 CheckResult(
