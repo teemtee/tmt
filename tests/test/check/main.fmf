@@ -29,3 +29,10 @@ tier: 2
       - provision-only
       - provision-container
       - provision-virtual
+
+/coredump:
+    test: ./test-coredump.sh
+    tag+:
+      - provision-only
+      - provision-container
+      - provision-virtual
