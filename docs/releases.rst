@@ -16,11 +16,12 @@ results are represented as ``<testsuite>`` tags, each containing a
 ``<testcase>`` tag for the main result, along with additional
 ``<testcase>`` tags for any subresults.
 
-A new :ref:`/plugins/test-checks/coredump` check plugin has been added
-to detect system crashes using systemd-coredump during test execution.
-The plugin monitors for any segmentation faults and other crashes that
-produce core dumps. It can be configured to ignore specific crash patterns,
-and crash details are saved for further investigation.
+As a tech preview, a new :ref:`/plugins/test-checks/coredump` check
+plugin has been added to detect system crashes using systemd-coredump
+during test execution. The plugin monitors for any segmentation
+faults and other crashes that produce core dumps. It can be configured
+to ignore specific crash patterns and crash details are saved for
+further investigation.
 
 When reporting results to ReportPortal, each test result can now
 directly link to a URL. To achieve this, a new key ``link-template``
@@ -39,6 +40,11 @@ restraint compatibility features. Please, update your plans with
 ``restraint-compatibility: true`` as soon as possible if your
 tests depend on the restraint features.
 
+A new :ref:`system.management-controller</spec/hardware/system>`
+hardware property has been proposed to allow specifying the desired
+system management interface (e.g., IPMI) when provisioning hardware.
+While not yet implemented, this feature aims to support more precise
+hardware selection in the future.
 
 tmt-1.45.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
