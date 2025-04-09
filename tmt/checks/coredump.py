@@ -33,7 +33,7 @@ class CoredumpCheck(Check):
     """Configuration for the coredump check."""
 
     # Patterns to ignore in crash reports
-    ignore_patterns: list[Pattern[str]] = field(
+    ignore_pattern: list[Pattern[str]] = field(
         default_factory=list,
         help="""
              Optional list of regular expressions to ignore in crash reports.
@@ -61,7 +61,7 @@ class CoredumpCheck(Check):
         spec = super().to_spec()
 
         spec["ignore-pattern"] = [  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
-            pattern.pattern for pattern in self.ignore_patterns
+            pattern.pattern for pattern in self.ignore_pattern
         ]
 
         return spec
@@ -341,13 +341,9 @@ class CoredumpCheck(Check):
                     continue
 
                 # Skip if this crash matches any ignore pattern
-                if self.ignore_patterns:
+                if self.ignore_pattern:
                     matching_pattern = next(
-                        (
-                            pattern
-                            for pattern in self.ignore_patterns
-                            if pattern.search(crash_info)
-                        ),
+                        (pattern for pattern in self.ignore_pattern if pattern.search(crash_info)),
                         None,
                     )
                     if matching_pattern:
