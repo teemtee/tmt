@@ -77,7 +77,7 @@
     /ignore-pattern:
         check:
           - how: coredump
-            ignore-patterns:
+            ignore-pattern:
               - 'Signal:\s+\d+\s+\((SIG)?SEGV\)'
         test: |
             sleep 10 & kill -SIGSEGV %1

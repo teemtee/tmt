@@ -60,7 +60,7 @@ class CoredumpCheck(Check):
         """Convert to raw specification."""
         spec = super().to_spec()
 
-        spec["ignore-patterns"] = [  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
+        spec["ignore-pattern"] = [  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
             pattern.pattern for pattern in self.ignore_patterns
         ]
 
@@ -494,7 +494,7 @@ class Coredump(CheckPlugin[CoredumpCheck]):
 
         check:
           - how: coredump
-            ignore-patterns:
+            ignore-pattern:
               - 'Process.*\\(sleep\\).*dumped core'  # Ignore sleep crashes
               - 'Package: ddcutil/2.1.2-2.fc41'      # Ignore dumps of a specific package
 

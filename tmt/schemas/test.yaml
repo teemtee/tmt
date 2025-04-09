@@ -164,7 +164,7 @@ definitions:
           - respect
           - xfail
           - info
-      ignore-patterns:
+      ignore-pattern:
         oneOf:
           - type: string
           - type: array
