@@ -1267,17 +1267,27 @@ class Method:
     Step implementation method
     """
 
+    tech_preview: bool
+    tech_preview_hint_id: Optional[str]
+    tech_preview_shown: bool = False
+
     def __init__(
         self,
         name: str,
         class_: PluginClass,
+        base_class: PluginClass,
         doc: Optional[str] = None,
         order: int = PHASE_ORDER_DEFAULT,
         installation_hint: Optional[str] = None,
+        tech_preview: bool = False,
     ) -> None:
         """
         Store method data
         """
+
+        self.tech_preview = tech_preview
+        self.tech_preview_shown = False
+        self.tech_preview_hint_id = f'{base_class.get_step_name()}/{name}/tech-preview'
 
         doc = textwrap.dedent(doc or class_.__doc__ or '').strip()
 
@@ -1288,10 +1298,30 @@ class Method:
             raise tmt.utils.GeneralError(f"Plugin method '{name}' provides no docstring.")
 
         if installation_hint is not None:
+            from tmt.utils.hints import register_hint
+
+            register_hint(f'{base_class.get_step_name()}/{name}', installation_hint)
+
             doc = (
                 doc
                 + '\n\n.. note::\n\n'
                 + textwrap.indent(textwrap.dedent(installation_hint), '   ')
+            )
+
+        if self.tech_preview:
+            from tmt.utils.hints import register_hint
+
+            tech_preview_hint = f"""
+                The ``{base_class.get_step_name()}/{name}`` plugin is marked as *tech preview*.
+                Be aware that some of its functionality may be limited.
+                """
+
+            register_hint(self.tech_preview_hint_id, tech_preview_hint)
+
+            doc = (
+                doc
+                + '\n\n.. note::\n\n'
+                + textwrap.indent(textwrap.dedent(tech_preview_hint).strip(), '   ')
             )
 
         self.name = name
@@ -1337,6 +1367,7 @@ def provides_method(
     doc: Optional[str] = None,
     order: int = PHASE_ORDER_DEFAULT,
     installation_hint: Optional[str] = None,
+    tech_preview: bool = False,
 ) -> Callable[[PluginClass], PluginClass]:
     """
     A plugin class decorator to register plugin's method with tmt steps.
@@ -1357,25 +1388,28 @@ def provides_method(
     """
 
     def _method(cls: PluginClass) -> PluginClass:
-        plugin_method = Method(
-            name, cls, doc=doc, order=order, installation_hint=installation_hint
-        )
-
         # FIXME: make sure cls.__bases__[0] is really BasePlugin class
         # TODO: BasePlugin[Any]: it's tempting to use StepDataT, but I was
         # unable to introduce the type var into annotations. Apparently, `cls`
         # is a more complete type, e.g. `type[ReportJUnit]`, which does not show
         # space for type var. But it's still something to fix later.
-        base_class = cast('BasePlugin[Any, Any]', cls.__bases__[0])
+        base_class = cast('type[BasePlugin[Any, Any]]', cls.__bases__[0])
+
+        plugin_method = Method(
+            name,
+            cls,
+            base_class,
+            doc=doc,
+            order=order,
+            installation_hint=installation_hint,
+            tech_preview=tech_preview,
+        )
+
+        cls._method = plugin_method
 
         base_class._supported_methods.register_plugin(
             plugin_id=name, plugin=plugin_method, logger=tmt.log.Logger.get_bootstrap_logger()
         )
-
-        if installation_hint is not None:
-            from tmt.utils.hints import register_hint
-
-            register_hint(f'{base_class.get_step_name()}/{name}', installation_hint)
 
         return cls
 
@@ -1390,6 +1424,7 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
     # Deprecated, use @provides_method(...) instead. left for backward
     # compatibility with out-of-tree plugins.
     _methods: list[Method] = []
+    _method: Method
 
     # Default implementation for all steps is shell
     # except for provision (virtual) and report (display)
@@ -1878,6 +1913,17 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         """
 
         logger = logger or self._logger
+
+        plugin_method = self.__class__._method
+
+        if plugin_method.tech_preview and not plugin_method.tech_preview_shown:
+            from tmt.utils.hints import render_hints
+
+            assert plugin_method.tech_preview_hint_id is not None  # narrow type
+
+            logger.warning(render_hints(plugin_method.tech_preview_hint_id, logger=logger), 0)
+
+            plugin_method.tech_preview_shown = True
 
         # Show the method
         logger.info('how', self.get('how'), 'magenta')
