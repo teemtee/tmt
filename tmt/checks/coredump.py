@@ -7,7 +7,7 @@ import tmt.log
 import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
-from tmt.checks import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
+from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome
 from tmt.utils import Command, Path, ShellScript
@@ -389,7 +389,7 @@ class CoredumpCheck(Check):
             return False
 
     def _check_coredump(
-        self, invocation: "TestInvocation", event: CheckEvent, logger: tmt.log.Logger
+        self, invocation: "TestInvocation", logger: tmt.log.Logger
     ) -> tuple[ResultOutcome, list[Path]]:
         """
         Check coredump status and return appropriate result.
@@ -568,7 +568,7 @@ class Coredump(CheckPlugin[CoredumpCheck]):
 
         if check._save_existing_coredumps(invocation):
             check._configure_coredump(invocation.guest, logger)
-            outcome, log_files = check._check_coredump(invocation, CheckEvent.BEFORE_TEST, logger)
+            outcome, log_files = check._check_coredump(invocation, logger)
 
         return [CheckResult(name="coredump", result=outcome, log=log_files)]
 
@@ -604,5 +604,5 @@ class Coredump(CheckPlugin[CoredumpCheck]):
                 )
             ]
 
-        outcome, log_files = check._check_coredump(invocation, CheckEvent.AFTER_TEST, logger)
+        outcome, log_files = check._check_coredump(invocation, logger)
         return [CheckResult(name="coredump", result=outcome, log=log_files)]
