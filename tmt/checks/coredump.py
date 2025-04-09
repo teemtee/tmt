@@ -355,14 +355,13 @@ class CoredumpCheck(Check):
                         continue
 
                 # Save the crash info (with --all to ensure we can access it)
-                info_filename = f"dump.{exe}_{sig}_{pid}.txt"
-                info_path = check_files_path / info_filename
+                info_filepath = check_files_path / f"dump.{exe}_{sig}_{pid}.txt"
                 guest.execute(
                     ShellScript(
-                        f"sh -c {sudo_prefix}coredumpctl info --all --no-pager {pid} > {info_path!s}"  # noqa: E501
+                        f"sh -c {sudo_prefix}coredumpctl info --all --no-pager {pid} > {info_filepath!s}"  # noqa: E501
                     )
                 )
-                logger.debug(f"Saved crash info to {info_path}")
+                logger.debug(f"Saved crash info to {info_filepath}")
 
                 # Try to save the coredump if available
                 if corefile not in ("none", "missing"):
