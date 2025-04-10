@@ -36,7 +36,7 @@ See the https://tmt.readthedocs.io web for detailed documentation.
     :target: https://src.fedoraproject.org/rpms/tmt
     :alt: Fedora package
 
-.. |copr-build| image:: https://img.shields.io/badge/dynamic/json?color=blue&label=copr&query=builds.latest.state&url=https%3A%2F%2Fcopr.fedorainfracloud.org%2Fapi_3%2Fpackage%3Fownername%3D%40teemtee%26projectname%3Dtmt%26packagename%3Dtmt%26with_latest_build%3DTrue
+.. |copr-build| image:: https://img.shields.io/badge/dynamic/json?color=blue&label=copr&query=builds.latest.state&url=https%3A%2F%2Fcopr.fedorainfracloud.org%2Fapi_3%2Fpackage%3Fownername%3D%40teemtee%26projectname%3Dlatest%26packagename%3Dtmt%26with_latest_build%3DTrue
     :target: https://copr.fedorainfracloud.org/coprs/g/teemtee/tmt/
     :alt: Copr build status
 
