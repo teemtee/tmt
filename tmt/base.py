@@ -3801,7 +3801,7 @@ class Run(tmt.utils.Common):
         Initialize tree, workdir and plans
         """
         # Use the last run id if requested
-        self.config = tmt.config.Config()
+        self.config = tmt.config.Config(logger)
 
         if cli_invocation is not None:
             if cli_invocation.options.get('last'):

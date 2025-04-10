@@ -13,6 +13,7 @@ from typing import Any, Callable, Optional, TypedDict, Union, cast
 import packaging.version
 
 import tmt
+import tmt.config
 import tmt.hardware
 import tmt.log
 import tmt.options
@@ -65,14 +66,14 @@ def mrack_constructs_ks_pre() -> bool:
     return packaging.version.Version(MRACK_VERSION) >= packaging.version.Version('1.21.0')
 
 
-def _get_constraint_translations() -> list[MrackTranslation]:
+def _get_constraint_translations(logger: tmt.log.Logger) -> list[MrackTranslation]:
     """
     Load the list of hardware requirement translations from configuration.
 
     :returns: translations loaded from configuration, or an empty list if
         the configuration is missing.
     """
-    config = tmt.config.Config()
+    config = tmt.config.Config(logger)
     return (
         config.hardware.beaker.translations if config.hardware and config.hardware.beaker else []
     )
@@ -259,12 +260,13 @@ def _transform_unsupported(constraint: tmt.hardware.Constraint[Any]) -> dict[str
 
 def _translate_constraint_by_config(
     constraint: tmt.hardware.Constraint[Any],
+    logger: tmt.log.Logger,
 ) -> dict[str, Any]:
     """
     Translate hardware constraints to Mrack-compatible dictionary tree with config.
     """
 
-    config = _get_constraint_translations()
+    config = _get_constraint_translations(logger)
 
     if not config:
         return _transform_unsupported(constraint)
@@ -777,7 +779,7 @@ def constraint_to_beaker_filter(
     assert isinstance(constraint, tmt.hardware.Constraint)
 
     transformed = _translate_constraint_by_config(
-        constraint
+        constraint, logger
     ) or _translate_constraint_by_transformer(constraint, logger)
 
     if not transformed:
