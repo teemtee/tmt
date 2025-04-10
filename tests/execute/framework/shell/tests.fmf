@@ -1,0 +1,23 @@
+framework: shell
+duration: 5m
+
+/success:
+  test: ./shell.sh 0
+
+/failure:  
+  test: ./shell.sh 1
+
+/error:  
+  test: ./shell.sh 2
+
+/pidlock:
+  test: ./shell.sh 122
+
+/timeout:
+  test: ./shell.sh 124
+
+/notfound:
+  test: ./nosuchfile.sh
+
+/notexec:
+  test: /dev/null

@@ -1,7 +1,14 @@
-summary: Verify test framework selection
-description:
-    Check test framework selection in the L1 metadata.
-    Combining different frameworks under a single plan.
+/selection:
+    summary: Verify test framework selection
+    description:
+        Check test framework selection in the L1 metadata.
+        Combining different frameworks under a single plan.
+/shell:
+    test: ./shell.sh
+    summary: Verify tmt outcomes against shell results
+    description:
+        tests verifying tmt outcomes to be as expected 
+        for the different shell tests results.
 duration: 30m
 tier: 3
 tag+: [beakerlib]
