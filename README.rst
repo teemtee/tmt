@@ -24,25 +24,25 @@ efficiently, preventing unnecessary duplication.
 
 See the https://tmt.readthedocs.io web for detailed documentation.
 
-.. |docs| image:: https://img.shields.io/readthedocs/tmt
+.. |docs| image:: https://img.shields.io/badge/Read%20the%20Docs-8CA1AF?logo=readthedocs&logoColor=fff
     :target: https://tmt.readthedocs.io/
-    :alt: Documentation Status
+    :alt: Documentation
 
-.. |matrix| image:: https://img.shields.io/badge/Matrix-green?logo=matrix&logoColor=white&color=black
+.. |matrix| image:: https://img.shields.io/badge/Matrix-000?logo=matrix&logoColor=fff
     :target: https://matrix.to/#/#tmt:fedoraproject.org
     :alt: Matrix chat
 
-.. |fedora-pkg| image:: https://img.shields.io/fedora/v/tmt?logo=fedora&logoColor=white
+.. |fedora-pkg| image:: https://img.shields.io/fedora/v/tmt?logo=fedora&logoColor=fff&color=fff&labelColor=51a2da
     :target: https://src.fedoraproject.org/rpms/tmt
     :alt: Fedora package
 
-.. |copr-build| image:: https://img.shields.io/badge/dynamic/json?color=blue&label=copr&query=builds.latest.state&url=https%3A%2F%2Fcopr.fedorainfracloud.org%2Fapi_3%2Fpackage%3Fownername%3D%40teemtee%26projectname%3Dlatest%26packagename%3Dtmt%26with_latest_build%3DTrue
+.. |copr-build| image:: https://img.shields.io/badge/dynamic/json?color=blue&label=Copr&query=builds.latest.state&url=https%3A%2F%2Fcopr.fedorainfracloud.org%2Fapi_3%2Fpackage%3Fownername%3D%40teemtee%26projectname%3Dlatest%26packagename%3Dtmt%26with_latest_build%3DTrue
     :target: https://copr.fedorainfracloud.org/coprs/g/teemtee/tmt/
     :alt: Copr build status
 
-.. |pypi-version| image:: https://img.shields.io/pypi/v/tmt
+.. |pypi-version| image:: https://img.shields.io/badge/PyPI-3775A9?logo=pypi&logoColor=fff
     :target: https://pypi.org/project/tmt/
-    :alt: PyPI version
+    :alt: PyPI
 
 .. |python-versions| image:: https://img.shields.io/pypi/pyversions/tmt
     :target: https://pypi.org/project/tmt/
@@ -53,8 +53,8 @@ See the https://tmt.readthedocs.io web for detailed documentation.
     :alt: Ruff
 
 .. |pre-commit| image:: https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit
-    :target: https://github.com/pre-commit/pre-commit
-    :alt: pre-commit
+   :target: https://github.com/pre-commit/pre-commit
+   :alt: pre-commit
 
 .. |license| image:: https://img.shields.io/badge/license-MIT-blue.svg
     :target: https://opensource.org/licenses/MIT
