@@ -1,7 +1,7 @@
 # Provision plugins
 /tmt/steps/provision/artemis.py     @happz
 /tmt/steps/provision/mrack*         @dav-pascual
-/tmt/steps/provision/testcloud.py   @frantisekz
+/tmt/steps/provision/testcloud.py   @lbrabec
 
 # Report plugins
 /tmt/steps/report/polarion.py       @KwisatzHaderach
