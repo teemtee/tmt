@@ -1482,6 +1482,24 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
     """
     Provision guest on Beaker system using mrack.
 
+    Reserve a machine from the Beaker pool using the ``mrack``
+    plugin. ``mrack`` is a multicloud provisioning library
+    supporting multiple cloud services including Beaker.
+
+    The following two files are used for configuration:
+
+    ``/etc/tmt/mrack.conf`` for basic configuration
+
+    ``/etc/tmt/provisioning-config.yaml`` configuration per supported provider
+
+    Beaker installs distribution specified by the ``image``
+    key. If the image can not be translated using the
+    ``provisioning-config.yaml`` file mrack passes the image
+    value to Beaker hub and tries to request distribution
+    based on the image value. This way we can bypass default
+    translations and use desired distribution specified like
+    the one in the example below.
+
     Minimal configuration could look like this:
 
     .. code-block:: yaml
@@ -1497,6 +1515,20 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
 
         ``bkr system-power`` command is executed on the runner, not
         on the guest.
+
+    .. code-block:: yaml
+
+        # Specify the distro directly
+        provision:
+            how: beaker
+            image: Fedora-37%
+
+    .. code-block:: yaml
+
+        # Set custom whiteboard description (added in 1.30)
+        provision:
+            how: beaker
+            whiteboard: Just a smoke test for now
     """
 
     _data_class = ProvisionBeakerData

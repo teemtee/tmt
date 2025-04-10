@@ -1213,6 +1213,9 @@ class GuestTestcloud(tmt.GuestSsh):
 class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudData]):
     """
     Local virtual machine using ``testcloud`` library.
+    Testcloud takes care of downloading an image and
+    making necessary changes to it for optimal experience
+    (such as disabling ``UseDNS`` and ``GSSAPI`` for SSH).
 
     Minimal config which uses the latest Fedora image:
 
@@ -1225,11 +1228,18 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
 
     .. code-block:: yaml
 
+        # Provision a virtual machine from a specific QCOW2 file,
+        # using specific memory and disk settings, using the fedora user,
+        # and using sudo to run scripts.
         provision:
             how: virtual
-            image: fedora
-            user: root
+            image: https://mirror.vpsnet.com/fedora/linux/releases/41/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-41-1.4.x86_64.qcow2
+            user: fedora
+            become: true
+            # in MB
             memory: 2048
+            # in GB
+            disk: 30
 
     As the image use ``fedora`` for the latest released Fedora compose,
     ``fedora-rawhide`` for the latest Rawhide compose, short aliases such as
