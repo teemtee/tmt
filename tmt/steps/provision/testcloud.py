@@ -5,6 +5,8 @@ import itertools
 import os
 import platform
 import re
+import shutil
+import tempfile
 import threading
 import types
 from collections.abc import Iterator
@@ -110,6 +112,9 @@ TESTCLOUD_DATA = (
 TESTCLOUD_IMAGES = TESTCLOUD_DATA / 'images'
 
 TESTCLOUD_WORKAROUNDS: list[str] = []  # A list of commands to be executed during guest boot up
+
+# Target filename to store the console log
+CONSOLE_LOG_FILE = "console.txt"
 
 # Userdata for cloud-init
 # TODO: Explore migration to jinja from string.Template
@@ -378,6 +383,10 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
         internal=True,
     )
     instance_name: Optional[str] = field(
+        default=None,
+        internal=True,
+    )
+    logs_directory: Optional[str] = field(
         default=None,
         internal=True,
     )
@@ -668,6 +677,7 @@ class GuestTestcloud(tmt.GuestSsh):
     disk: Optional['Size']
     connection: str
     arch: str
+    logs_directory: Optional[Path]
 
     # Not to be saved, recreated from image_url/instance_name/... every
     # time guest is instantiated.
@@ -839,6 +849,7 @@ class GuestTestcloud(tmt.GuestSsh):
         # Configure to tmt's storage directories
         self.config.DATA_DIR = TESTCLOUD_DATA
         self.config.STORE_DIR = TESTCLOUD_IMAGES
+        self.config.CONSOLE_LOG_DIR = self.logs_directory
 
     def _combine_hw_memory(self) -> None:
         """
@@ -957,6 +968,14 @@ class GuestTestcloud(tmt.GuestSsh):
         os.makedirs(TESTCLOUD_DATA, exist_ok=True)
         os.makedirs(TESTCLOUD_IMAGES, exist_ok=True)
 
+        # Special directory is needed for console logs with the right
+        # selinux context so that virtlogd is able to write there.
+        self.logs_directory = Path(tempfile.mkdtemp(prefix="testcloud-"))
+        self.logs_directory.chmod(0o755)
+        self._run_guest_command(
+            Command("chcon", "--type", "virt_log_t", self.logs_directory), silent=True
+        )
+
         # Prepare config
         self.prepare_config()
 
@@ -995,6 +1014,9 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Prepare DomainConfiguration object before Instance object
         self._domain = DomainConfiguration(self.instance_name)
+
+        assert self.workdir is not None  # narrow type
+        self._domain.console_log_file = self.workdir / CONSOLE_LOG_FILE
 
         # Prepare Workarounds object
         self._workarounds = Workarounds(defaults=True)
@@ -1125,6 +1147,26 @@ class GuestTestcloud(tmt.GuestSsh):
                 self._instance.remove(autostop=True)
             except FileNotFoundError as error:
                 raise tmt.utils.ProvisionError(f"Failed to remove testcloud instance: {error}")
+
+            # Replace the console log symlink created by testcloud with
+            # the actual content
+            self.debug("Replace console log symlink with the actual content.", level=3)
+            try:
+                assert self.workdir is not None  # Narrow type
+                symlink_path = self.workdir / CONSOLE_LOG_FILE
+                target_path = symlink_path.resolve()
+                symlink_path.unlink()
+                shutil.copy2(target_path, symlink_path)
+            except OSError as error:
+                self.warn(f"Failed to replace console log symlink: {error}")
+
+            # Remove completely the logs temporary directory
+            self.debug(f"Remove testcloud logs directory '{self.logs_directory}'.", level=3)
+            try:
+                assert self.logs_directory is not None  # Narrow type
+                shutil.rmtree(self.logs_directory)
+            except OSError as error:
+                self.warn(f"Failed to remove logs directory '{self.logs_directory}': {error}")
 
             self.info('guest', 'removed', 'green')
 
@@ -1374,3 +1416,25 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
                     clean.fail(f"Failed to remove '{image}'.", shift=2)
                     successful = False
         return successful
+
+    def prune(self, logger: tmt.log.Logger) -> None:
+        """
+        Do not prune console logs.
+        """
+        assert self.workdir is not None  # narrow type
+        _console_log = self.workdir / CONSOLE_LOG_FILE
+        if _console_log.exists():
+            for member in self.workdir.iterdir():
+                if member.name == CONSOLE_LOG_FILE:
+                    logger.debug(f"Preserve '{member.relative_to(self.workdir)}'.", level=3)
+                    continue
+                logger.debug(f"Remove '{member}'.", level=3)
+                try:
+                    if member.is_file() or member.is_symlink():
+                        member.unlink()
+                    else:
+                        shutil.rmtree(member)
+                except OSError as error:
+                    logger.warning(f"Unable to remove '{member}': {error}")
+        else:
+            super().prune(logger)
