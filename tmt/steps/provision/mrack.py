@@ -260,12 +260,13 @@ def _transform_unsupported(constraint: tmt.hardware.Constraint[Any]) -> dict[str
 
 def _translate_constraint_by_config(
     constraint: tmt.hardware.Constraint[Any],
+    logger: tmt.log.Logger,
 ) -> dict[str, Any]:
     """
     Translate hardware constraints to Mrack-compatible dictionary tree with config.
     """
 
-    config = _get_constraint_translations()
+    config = _get_constraint_translations(logger)
 
     if not config:
         return _transform_unsupported(constraint)
@@ -778,7 +779,7 @@ def constraint_to_beaker_filter(
     assert isinstance(constraint, tmt.hardware.Constraint)
 
     transformed = _translate_constraint_by_config(
-        constraint
+        constraint, logger
     ) or _translate_constraint_by_transformer(constraint, logger)
 
     if not transformed:
