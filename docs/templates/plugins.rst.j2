@@ -103,6 +103,9 @@ The following keys are accepted by all plugins of the ``{{ STEP }}`` step.
 
 {# Emit the warning only for plugins that have not been reviewed yet. #}
 {% set plugin_full_id = STEP + "/" + PLUGIN_ID %}
+{% set plugin_installation_hint_id = plugin_full_id %}
+{% set plugin_tech_preview_hint = "%s/tech-preview" | format(plugin_full_id) %}
+
 {% if plugin_full_id not in REVIEWED_PLUGINS %}
 .. warning::
 
@@ -116,10 +119,16 @@ The following keys are accepted by all plugins of the ``{{ STEP }}`` step.
 {{ PLUGIN.__doc__ | dedent | trim }}
 {% endif %}
 
-{% if plugin_full_id in HINTS %}
+{% if plugin_installation_hint_id in HINTS %}
 .. note::
 
-{{ HINTS[plugin_full_id] | indent(3, first=true) }}
+{{ HINTS[plugin_installation_hint_id] | indent(3, first=true) }}
+{% endif %}
+
+{% if plugin_tech_preview_hint in HINTS %}
+.. note::
+
+{{ HINTS[plugin_tech_preview_hint] | indent(3, first=true) }}
 {% endif %}
 
 {% if STEP == 'prepare-feature' %}
