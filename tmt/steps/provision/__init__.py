@@ -1,7 +1,6 @@
 import ast
 import contextlib
 import dataclasses
-import datetime
 import enum
 import functools
 import hashlib
@@ -43,6 +42,7 @@ import tmt.queue
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+import tmt.utils.wait
 from tmt.container import SerializableContainer, container, field, key_to_option
 from tmt.log import Logger
 from tmt.options import option
@@ -63,6 +63,7 @@ from tmt.utils import (
     configure_constant,
     effective_workdir_root,
 )
+from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
     import tmt.base
@@ -79,10 +80,32 @@ DEFAULT_REBOOT_TIMEOUT: int = 10 * 60
 #: ``TMT_REBOOT_TIMEOUT``.
 REBOOT_TIMEOUT: int = configure_constant(DEFAULT_REBOOT_TIMEOUT, 'TMT_REBOOT_TIMEOUT')
 
+
+def default_reboot_waiting() -> Waiting:
+    """
+    Create default waiting context for guest reboots.
+    """
+
+    return Waiting(deadline=Deadline.from_seconds(REBOOT_TIMEOUT))
+
+
 # When waiting for guest to recover from reboot, try re-connecting every
 # this many seconds.
 RECONNECT_WAIT_TICK = 5
 RECONNECT_WAIT_TICK_INCREASE = 1.0
+
+
+def default_reconnect_waiting() -> Waiting:
+    """
+    Create default waiting context for guest reconnect.
+    """
+
+    return Waiting(
+        deadline=Deadline.from_seconds(REBOOT_TIMEOUT),
+        tick=RECONNECT_WAIT_TICK,
+        tick_increase=RECONNECT_WAIT_TICK_INCREASE,
+    )
+
 
 # Types for things Ansible can execute
 ANSIBLE_COLLECTION_PLAYBOOK_PATTERN = re.compile(r'[a-zA-z0-9_]+\.[a-zA-z0-9_]+\.[a-zA-z0-9_]+')
@@ -1647,9 +1670,7 @@ class Guest(tmt.utils.Common):
         self,
         hard: Literal[True] = True,
         command: None = None,
-        timeout: Optional[int] = None,
-        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        waiting: Optional[Waiting] = None,
     ) -> bool:
         pass
 
@@ -1658,9 +1679,7 @@ class Guest(tmt.utils.Common):
         self,
         hard: Literal[False] = False,
         command: Optional[Union[Command, ShellScript]] = None,
-        timeout: Optional[int] = None,
-        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        waiting: Optional[Waiting] = None,
     ) -> bool:
         pass
 
@@ -1668,9 +1687,7 @@ class Guest(tmt.utils.Common):
         self,
         hard: bool = False,
         command: Optional[Union[Command, ShellScript]] = None,
-        timeout: Optional[int] = None,
-        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        waiting: Optional[Waiting] = None,
     ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
@@ -1699,9 +1716,7 @@ class Guest(tmt.utils.Common):
 
     def reconnect(
         self,
-        timeout: Optional[int] = None,
-        tick: float = RECONNECT_WAIT_TICK,
-        tick_increase: float = RECONNECT_WAIT_TICK_INCREASE,
+        wait: Optional[Waiting] = None,
     ) -> bool:
         """
         Ensure the connection to the guest is working
@@ -1711,9 +1726,8 @@ class Guest(tmt.utils.Common):
         operations (such as system upgrade) are performed.
         """
 
-        # The default is handled here rather than in the argument so that
-        # the caller can pass in None as an argument (i.e. don't care value)
-        timeout = timeout or REBOOT_TIMEOUT
+        wait = wait or default_reconnect_waiting()
+
         self.debug("Wait for a connection to the guest.")
 
         def try_whoami() -> None:
@@ -1721,18 +1735,12 @@ class Guest(tmt.utils.Common):
                 self.execute(Command('whoami'), silent=True)
 
             except tmt.utils.RunError:
-                raise tmt.utils.WaitingIncompleteError
+                raise tmt.utils.wait.WaitingIncompleteError
 
         try:
-            tmt.utils.wait(
-                self,
-                try_whoami,
-                datetime.timedelta(seconds=timeout),
-                tick=tick,
-                tick_increase=tick_increase,
-            )
+            wait.wait(try_whoami, self._logger)
 
-        except tmt.utils.WaitingTimedOutError:
+        except tmt.utils.wait.WaitingTimedOutError:
             self.debug("Connection to guest failed after reboot.")
             return False
 
@@ -2589,9 +2597,7 @@ class GuestSsh(Guest):
     def perform_reboot(
         self,
         action: Callable[[], Any],
-        timeout: Optional[int] = None,
-        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        wait: Waiting,
         fetch_boot_time: bool = True,
     ) -> bool:
         """
@@ -2656,24 +2662,16 @@ class GuestSsh(Guest):
                     return
 
                 # Same boot time, reboot didn't happen yet, retrying
-                raise tmt.utils.WaitingIncompleteError
+                raise tmt.utils.wait.WaitingIncompleteError
 
             except tmt.utils.RunError:
                 self.debug('Failed to connect to the guest.')
-                raise tmt.utils.WaitingIncompleteError
-
-        timeout = timeout or REBOOT_TIMEOUT
+                raise tmt.utils.wait.WaitingIncompleteError
 
         try:
-            tmt.utils.wait(
-                self,
-                check_boot_time,
-                datetime.timedelta(seconds=timeout),
-                tick=tick,
-                tick_increase=tick_increase,
-            )
+            wait.wait(check_boot_time, self._logger)
 
-        except tmt.utils.WaitingTimedOutError:
+        except tmt.utils.wait.WaitingTimedOutError:
             self.debug("Connection to guest failed after reboot.")
             return False
 
@@ -2685,9 +2683,7 @@ class GuestSsh(Guest):
         self,
         hard: Literal[True] = True,
         command: None = None,
-        timeout: Optional[int] = None,
-        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        waiting: Optional[Waiting] = None,
     ) -> bool:
         pass
 
@@ -2696,9 +2692,7 @@ class GuestSsh(Guest):
         self,
         hard: Literal[False] = False,
         command: Optional[Union[Command, ShellScript]] = None,
-        timeout: Optional[int] = None,
-        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        waiting: Optional[Waiting] = None,
     ) -> bool:
         pass
 
@@ -2706,9 +2700,7 @@ class GuestSsh(Guest):
         self,
         hard: bool = False,
         command: Optional[Union[Command, ShellScript]] = None,
-        timeout: Optional[int] = None,
-        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        waiting: Optional[Waiting] = None,
     ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
@@ -2738,16 +2730,12 @@ class GuestSsh(Guest):
                 f"Guest '{self.multihost_name}' does not support hard reboot."
             )
 
-        actual_command = command or tmt.steps.DEFAULT_REBOOT_COMMAND
+        command = command or tmt.steps.DEFAULT_REBOOT_COMMAND
+        waiting = waiting or default_reboot_waiting()
 
-        self.debug(f"Soft reboot using command '{actual_command}'.")
+        self.debug(f"Soft reboot using command '{command}'.")
 
-        return self.perform_reboot(
-            lambda: self.execute(actual_command),
-            timeout=timeout,
-            tick=tick,
-            tick_increase=tick_increase,
-        )
+        return self.perform_reboot(lambda: self.execute(command), waiting)
 
     def remove(self) -> None:
         """

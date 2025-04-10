@@ -1,4 +1,3 @@
-import datetime
 import logging
 import queue
 import re
@@ -31,12 +30,9 @@ from tmt.utils import (
     Path,
     ShellScript,
     StructuredFieldError,
-    WaitingIncompleteError,
-    WaitingTimedOutError,
     _CommonBase,
     duration_to_seconds,
     filter_paths,
-    wait,
 )
 from tmt.utils.git import (
     clonable_git_url,
@@ -46,6 +42,7 @@ from tmt.utils.git import (
     validate_git_status,
 )
 from tmt.utils.structured_field import StructuredField
+from tmt.utils.wait import Deadline, Waiting, WaitingIncompleteError, WaitingTimedOutError
 
 from . import MATCH, assert_log, assert_not_log
 
@@ -1009,17 +1006,8 @@ class TestGitAdd:
 
 
 #
-# tmt.utils.wait() & waiting for things to happen
+# tmt.utils.wait & waiting for things to happen
 #
-def test_wait_bad_tick(root_logger):
-    """
-    :py:func:`wait` shall raise an exception when invalid ``tick`` is given
-    """
-
-    with pytest.raises(GeneralError, match='Tick must be a positive integer'):
-        wait(Common(logger=root_logger), lambda: False, datetime.timedelta(seconds=1), tick=-1)
-
-
 def test_wait_deadline_already_passed(root_logger):
     """
     :py:func:`wait` shall not call ``check`` if the given timeout leads to
@@ -1029,9 +1017,7 @@ def test_wait_deadline_already_passed(root_logger):
     ticks = []
 
     with pytest.raises(WaitingTimedOutError):
-        wait(
-            Common(logger=root_logger), lambda: ticks.append(1), datetime.timedelta(seconds=-86400)
-        )
+        Waiting(Deadline.from_seconds(-86400)).wait(lambda: ticks.append(1), root_logger)
 
     # our callback should not have been called at all
     assert not ticks
@@ -1059,7 +1045,7 @@ def test_wait(root_logger):
         raise WaitingIncompleteError
 
     # We want to reach end of our list, give enough time budget.
-    r = wait(Common(logger=root_logger), check, datetime.timedelta(seconds=3600), tick=0.01)
+    r = Waiting(Deadline.from_seconds(3600), tick=0.01).wait(check, root_logger)
 
     assert r is return_value
     assert not ticks
@@ -1075,7 +1061,7 @@ def test_wait_timeout(root_logger):
 
     # We want to reach end of time budget before reaching end of the list.
     with pytest.raises(WaitingTimedOutError):
-        wait(Common(logger=root_logger), check, datetime.timedelta(seconds=1), tick=0.1)
+        Waiting(Deadline.from_seconds(1), tick=0.1).wait(check, root_logger)
 
     # Verify our callback has been called. It's hard to predict how often it
     # should have been called, hopefully 10 times (1 / 0.1), but timing things
@@ -1096,7 +1082,7 @@ def test_wait_success_but_too_late(root_logger):
         time.sleep(5)
 
     with pytest.raises(WaitingTimedOutError):
-        wait(Common(logger=root_logger), check, datetime.timedelta(seconds=1))
+        Waiting(Deadline.from_seconds(1)).wait(check, root_logger)
 
 
 def test_import_member(root_logger):
