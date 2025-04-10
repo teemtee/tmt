@@ -668,9 +668,7 @@ class GuestArtemis(tmt.GuestSsh):
         self,
         hard: bool = False,
         command: Optional[Union[Command, ShellScript]] = None,
-        timeout: Optional[int] = None,
-        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        waiting: Optional[Waiting] = None,
     ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
@@ -687,6 +685,8 @@ class GuestArtemis(tmt.GuestSsh):
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
+        waiting = waiting or tmt.steps.provision.default_reboot_waiting()
+
         if hard:
             if self.guestname is None:
                 raise ArtemisProvisionError("Cannot reboot - guest does not exist")
@@ -702,9 +702,7 @@ class GuestArtemis(tmt.GuestSsh):
 
             return self.perform_reboot(
                 trigger_reboot,
-                timeout=timeout,
-                tick=tick,
-                tick_increase=tick_increase,
+                waiting,
                 fetch_boot_time=False,
             )
 
@@ -714,9 +712,7 @@ class GuestArtemis(tmt.GuestSsh):
         return super().reboot(
             hard=False,
             command=actual_command,
-            timeout=timeout,
-            tick=tick,
-            tick_increase=tick_increase,
+            waiting=waiting,
         )
 
 
