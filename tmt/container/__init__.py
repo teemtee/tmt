@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, Uni
 import fmf
 
 from tmt._compat.pydantic import BaseModel, Extra, ValidationError
+from tmt._compat.typing import Self
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
@@ -448,7 +449,7 @@ SpecOutT = TypeVar('SpecOutT')
 @container
 class SpecBasedContainer(Generic[SpecInT, SpecOutT], DataContainer):
     @classmethod
-    def from_spec(cls: type[SpecBasedContainerT], spec: SpecInT) -> SpecBasedContainerT:
+    def from_spec(cls, spec: SpecInT) -> Self:
         """
         Convert from a specification file or from a CLI option
 
@@ -513,9 +514,7 @@ class SerializableContainer(DataContainer):
             setattr(obj, name, value)
 
     @classmethod
-    def extract_from(
-        cls: type[SerializableContainerDerivedType], obj: Any
-    ) -> SerializableContainerDerivedType:
+    def extract_from(cls, obj: Any) -> Self:
         """
         Extract keys from given object, and save them in a container
         """
@@ -566,9 +565,7 @@ class SerializableContainer(DataContainer):
         return serialized
 
     @classmethod
-    def from_serialized(
-        cls: type[SerializableContainerDerivedType], serialized: dict[str, Any]
-    ) -> SerializableContainerDerivedType:
+    def from_serialized(cls, serialized: dict[str, Any]) -> Self:
         """
         Convert from a serialized form loaded from a file.
 
@@ -918,7 +915,7 @@ class MetadataContainer(BaseModel):
         validate_assignment = True
 
     @classmethod
-    def from_fmf(cls: type[MetadataContainerT], tree: fmf.Tree) -> MetadataContainerT:
+    def from_fmf(cls, tree: fmf.Tree) -> Self:
         try:
             return cls.parse_obj(tree.data)
 

@@ -43,6 +43,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 import tmt.utils.wait
+from tmt._compat.typing import Self
 from tmt.container import SerializableContainer, container, field, key_to_option
 from tmt.log import Logger
 from tmt.options import option
@@ -966,9 +967,9 @@ class GuestData(SerializableContainer):
 
     @classmethod
     def from_plugin(
-        cls: type[GuestDataT],
+        cls,
         container: 'ProvisionPlugin[ProvisionStepDataT]',
-    ) -> GuestDataT:
+    ) -> Self:
         """
         Create guest data from plugin and its current configuration
         """
@@ -1364,7 +1365,7 @@ class Guest(tmt.utils.Common):
 
         if not output:
             return
-        keys = 'ok changed unreachable failed skipped rescued ignored'.split()
+        keys = ['ok', 'changed', 'unreachable', 'failed', 'skipped', 'rescued', 'ignored']
         for key in keys:
             matched = re.search(rf'^.*\s:\s.*{key}=(\d+).*$', output, re.MULTILINE)
             if matched and int(matched.group(1)) > 0:

@@ -48,6 +48,7 @@ import pint
 
 import tmt.log
 import tmt.utils
+from tmt._compat.typing import Self
 from tmt.container import SpecBasedContainer, container
 from tmt.utils import SpecificationError
 
@@ -514,15 +515,15 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
 
     @classmethod
     def _from_specification(
-        cls: type[T],
+        cls,
         name: str,
         raw_value: str,
         as_quantity: bool = True,
-        as_cast: Optional[Callable[[str], ConstraintValueT]] = None,
+        as_cast: Optional[Callable[[str], Any]] = None,
         original_constraint: Optional['Constraint[Any]'] = None,
         allowed_operators: Optional[list[Operator]] = None,
         default_unit: Optional[Any] = "bytes",
-    ) -> T:
+    ) -> Self:
         """
         Parse raw constraint specification into our internal representation.
 
@@ -564,7 +565,7 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
         raw_value = groups['value']
 
         if as_quantity:
-            value: ConstraintValue = UNITS(raw_value)
+            value: Any = UNITS(raw_value)
 
             # Number-like raw_value, without units, get converted into
             # pure `int` or `float`. Force `Quantity` for quantities by
@@ -586,7 +587,7 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
             name=name,
             operator=operator,
             operator_handler=OPERATOR_TO_HANDLER[operator],
-            value=value,
+            value=cast(ConstraintValueT, value),
             raw_value=raw_value,
             original_constraint=original_constraint,
         )
@@ -681,13 +682,13 @@ class SizeConstraint(Constraint['Size']):
 
     @classmethod
     def from_specification(
-        cls: type[T],
+        cls,
         name: str,
         raw_value: str,
         original_constraint: Optional['Constraint[Any]'] = None,
         allowed_operators: Optional[list[Operator]] = None,
         default_unit: Optional[Any] = 'bytes',
-    ) -> T:
+    ) -> Self:
         return cls._from_specification(
             name,
             raw_value,
@@ -705,12 +706,12 @@ class FlagConstraint(Constraint[bool]):
 
     @classmethod
     def from_specification(
-        cls: type[T],
+        cls,
         name: str,
         raw_value: bool,
         original_constraint: Optional['Constraint[Any]'] = None,
         allowed_operators: Optional[list[Operator]] = None,
-    ) -> T:
+    ) -> Self:
         return cls._from_specification(
             name,
             str(raw_value),
@@ -728,12 +729,12 @@ class IntegerConstraint(Constraint[int]):
 
     @classmethod
     def from_specification(
-        cls: type[T],
+        cls,
         name: str,
         raw_value: str,
         original_constraint: Optional['Constraint[Any]'] = None,
         allowed_operators: Optional[list[Operator]] = None,
-    ) -> T:
+    ) -> Self:
         def _cast_int(raw_value: Any) -> int:
             if isinstance(raw_value, int):
                 return raw_value
@@ -765,13 +766,13 @@ class NumberConstraint(Constraint['Quantity']):
 
     @classmethod
     def from_specification(
-        cls: type[T],
+        cls,
         name: str,
         raw_value: str,
         original_constraint: Optional['Constraint[Any]'] = None,
         allowed_operators: Optional[list[Operator]] = None,
         default_unit: Optional[Any] = None,
-    ) -> T:
+    ) -> Self:
         def _cast_number(raw_value: Any) -> float:
             if isinstance(raw_value, float):
                 return raw_value
@@ -800,12 +801,12 @@ class TextConstraint(Constraint[str]):
 
     @classmethod
     def from_specification(
-        cls: type[T],
+        cls,
         name: str,
         raw_value: str,
         original_constraint: Optional['Constraint[Any]'] = None,
         allowed_operators: Optional[list[Operator]] = None,
-    ) -> T:
+    ) -> Self:
         return cls._from_specification(
             name,
             raw_value,

@@ -13,6 +13,7 @@ import tmt.steps
 import tmt.steps.discover
 import tmt.utils
 import tmt.utils.git
+from tmt._compat.typing import Self
 from tmt.container import SerializableContainer, SpecBasedContainer, container, field
 from tmt.steps.prepare.distgit import insert_to_prepare_step
 from tmt.utils import (
@@ -153,8 +154,8 @@ class TestDescription(
     # type than the one declared in superclass.
     @classmethod
     def from_spec(  # type: ignore[override]
-        cls: type[T], raw_data: dict[str, Any], logger: tmt.log.Logger
-    ) -> T:
+        cls, raw_data: dict[str, Any], logger: tmt.log.Logger
+    ) -> Self:
         """
         Convert from a specification file or from a CLI option
         """

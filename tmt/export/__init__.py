@@ -29,6 +29,7 @@ from click import echo
 import tmt
 import tmt.log
 import tmt.utils
+from tmt._compat.typing import Self
 from tmt.plugins import PluginRegistry
 from tmt.utils import Path
 from tmt.utils.themes import style
@@ -166,9 +167,9 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase):
 
     @classmethod
     def export_collection(
-        cls: type[ExportableT],
+        cls,
         *,
-        collection: list[ExportableT],
+        collection: list[Self],
         format: str,
         keys: Optional[list[str]] = None,
         **kwargs: Any,

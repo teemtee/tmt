@@ -58,6 +58,7 @@ import tmt.templates
 import tmt.utils
 import tmt.utils.git
 import tmt.utils.jira
+from tmt._compat.typing import Self
 from tmt.checks import Check
 from tmt.container import (
     SerializableContainer,
@@ -788,7 +789,7 @@ class Core(
         return self.name
 
     @classmethod
-    def from_tree(cls: type[T], tree: 'tmt.Tree') -> list[T]:
+    def from_tree(cls, tree: 'tmt.Tree') -> list[Self]:
         """
         Gather list of instances of this class in a given tree.
 
@@ -799,7 +800,7 @@ class Core(
         :param tree: tree to search for objects.
         """
 
-        return cast(list[T], getattr(tree, f'{cls.__name__.lower()}s')())
+        return cast(list[Self], getattr(tree, f'{cls.__name__.lower()}s')())
 
     def _update_metadata(self) -> None:
         """
@@ -3999,7 +4000,7 @@ class Run(tmt.utils.Common):
             self._plans = self.tree.plans(run=self, names=plan_names)
 
         # Initialize steps only if not selected on the command line
-        step_options = 'all since until after before skip'.split()
+        step_options = ['all', 'since', 'until', 'after', 'before', 'skip']
         selected = any(self.opt(option) for option in step_options)
         assert self._cli_context_object is not None  # narrow type
         if not selected and not self._cli_context_object.steps:

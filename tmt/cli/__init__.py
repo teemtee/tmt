@@ -179,9 +179,7 @@ class CliInvocation:
         # simplified implementation.
         # ignore[unused-ignore]: silencing mypy's complaint about silencing
         # pyright's warning :)
-        invocation.option_sources = {  # type: ignore[reportGeneralTypeIssues,unused-ignore]
-            key: click.core.ParameterSource.COMMANDLINE for key in options
-        }
+        invocation.option_sources = dict.fromkeys(options, click.core.ParameterSource.COMMANDLINE)
         return invocation
 
     @functools.cached_property
