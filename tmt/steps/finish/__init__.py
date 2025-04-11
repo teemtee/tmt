@@ -97,10 +97,13 @@ class Finish(tmt.steps.Step):
 
     _plugin_base_class = FinishPlugin
 
-    _preserved_workdir_members = [
-        *tmt.steps.Step._preserved_workdir_members,
-        'results.yaml',
-    ]
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
+        """
+        A set of members of the step workdir that should not be removed.
+        """
+
+        return {*super()._preserved_workdir_members, 'results.yaml'}
 
     def wake(self) -> None:
         """
