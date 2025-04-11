@@ -498,12 +498,9 @@ def validate_git_status(test: 'tmt.base.Test') -> tuple[bool, str]:
     except RunError as error:
         return (False, f"Failed to run git status: {error.stdout}")
 
-    not_committed: list[str] = []
     assert result.stdout is not None
-    for line in result.stdout.split('\n'):
-        if line:
-            # XY PATH or XY ORIG -> PATH. XY and PATH are separated by space
-            not_committed.append(line[3:])
+    # XY PATH or XY ORIG -> PATH. XY and PATH are separated by space
+    not_committed = [line[3:] for line in result.stdout.split('\n') if line]
 
     if not_committed:
         return (False, "Uncommitted changes in " + " ".join(not_committed))

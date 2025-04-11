@@ -484,10 +484,11 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         ]
         result_dict = merged_plans[0]
         for current_plan in merged_plans[1:]:
-            tmp_dict = {}
-            for key, value in current_plan.items():
-                if key in result_dict and result_dict[key] == value:
-                    tmp_dict[key] = value
+            tmp_dict = {
+                key: value
+                for key, value in current_plan.items()
+                if key in result_dict and result_dict[key] == value
+            }
             result_dict = tmp_dict
         return [{'key': key, 'value': value} for key, value in result_dict.items()]
 
