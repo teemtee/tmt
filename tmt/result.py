@@ -17,7 +17,6 @@ from tmt.utils import GeneralError, Path
 if TYPE_CHECKING:
     import tmt.base
     import tmt.steps.execute
-    import tmt.steps.provision
 
 # Extra keys used for identification in Result class
 EXTRA_RESULT_IDENTIFICATION_KEYS = ['extra-nitrate', 'extra-task']
@@ -366,9 +365,9 @@ class Result(BaseResult):
         default_ids: ResultIds = {tmt.identifier.ID_KEY: invocation.test.id}
 
         for key in EXTRA_RESULT_IDENTIFICATION_KEYS:
-            value: Any = invocation.test.node.get(key)
+            value: Any = cast(Any, invocation.test.node.get(key))
 
-            default_ids[key] = None if value is None else str(value)
+            default_ids[key] = None if value is None else str(cast(object, value))
 
         default_ids.update(ids)
         ids = default_ids
@@ -461,9 +460,10 @@ class Result(BaseResult):
             return self
 
         # Interpret check results (aggregated by the check name)
-        check_outcomes: list[ResultOutcome] = []
-        for check_name in tmt.utils.uniq([check.name for check in self.check]):
-            check_outcomes.append(self.interpret_check_result(check_name, interpret_checks))
+        check_outcomes: list[ResultOutcome] = [
+            self.interpret_check_result(check_name, interpret_checks)
+            for check_name in tmt.utils.uniq([check.name for check in self.check])
+        ]
 
         # Aggregate check results with the main test result
         self.result = ResultOutcome.reduce([self.result, *check_outcomes])
@@ -513,7 +513,7 @@ class Result(BaseResult):
         Return dictionary with total stats for given results
         """
 
-        stats = {result: 0 for result in RESULT_OUTCOME_COLORS}
+        stats = dict.fromkeys(RESULT_OUTCOME_COLORS, 0)
 
         for result in results:
             stats[result.result] += 1

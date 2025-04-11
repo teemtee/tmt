@@ -472,15 +472,21 @@ class InstallRpmOstree(InstallBase, Copr):
         """
 
         local_packages_installed: list[PackagePath] = []
-        for package in self.local_packages:
+
+        def try_install_local_package(pkg: PackagePath) -> bool:
             try:
                 self.guest.package_manager.install(
-                    PackagePath(self.package_directory / package.name),
+                    PackagePath(self.package_directory / pkg.name),
                     options=Options(check_first=False),
                 )
-                local_packages_installed.append(package)
+                return True
             except tmt.utils.RunError as error:
-                self.warn(f"Local package '{package}' not installed: {error.stderr}")
+                self.warn(f"Local package '{pkg}' not installed: {error.stderr}")
+                return False
+
+        local_packages_installed = [
+            package for package in self.local_packages if try_install_local_package(package)
+        ]
         summary = fmf.utils.listed(local_packages_installed, 'local package')
         self.info('total', f"{summary} installed", 'green')
 
@@ -494,13 +500,18 @@ class InstallRpmOstree(InstallBase, Copr):
         # Install recommended packages
         if self.recommended_packages:
             self.list_installables("package", *self.recommended_packages)
-            for package in self.recommended_packages:
+
+            def try_install_recommended_package(pkg: Any) -> bool:
                 try:
-                    self.guest.package_manager.install(package)
+                    self.guest.package_manager.install(pkg)
+                    return True
                 except tmt.utils.RunError as error:
                     self.debug(f"Package installation failed: {error}")
-                    self.warn(f"Unable to install recommended package '{package}'.")
-                    continue
+                    self.warn(f"Unable to install recommended package '{pkg}'.")
+                    return False
+
+            for package in self.recommended_packages:
+                try_install_recommended_package(package)
 
         # Install required packages
         if self.required_packages:

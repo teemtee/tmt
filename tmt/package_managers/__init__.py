@@ -134,7 +134,7 @@ def escape_installables(*installables: Installable) -> Iterator[str]:
 @container(frozen=True)
 class Options:
     #: A list of packages to exclude from installation.
-    excluded_packages: list[Package] = simple_field(default_factory=list)
+    excluded_packages: list[Package] = simple_field(default_factory=list[Package])
 
     #: If set, a failure to install a given package would not cause an error.
     skip_missing: bool = False
