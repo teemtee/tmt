@@ -8,7 +8,6 @@ import fmf
 import fmf.utils
 
 import tmt
-import tmt.base
 import tmt.log
 import tmt.utils
 from tmt.base import Dependency, DependencyFile, DependencyFmfId, DependencySimple

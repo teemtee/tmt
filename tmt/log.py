@@ -27,7 +27,6 @@ managing handlers themselves, which would be very messy given the propagation of
 import enum
 import itertools
 import logging
-import logging.handlers
 import os
 import sys
 from typing import (

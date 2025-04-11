@@ -4,8 +4,6 @@ from time import sleep
 from typing import TYPE_CHECKING, Optional
 
 import tmt.log
-import tmt.steps.execute
-import tmt.steps.provision
 import tmt.utils
 from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
@@ -13,7 +11,6 @@ from tmt.result import CheckResult, ResultOutcome
 from tmt.utils import Command, Path, ShellScript
 
 if TYPE_CHECKING:
-    import tmt.base
     from tmt.steps.execute import TestInvocation
     from tmt.steps.provision import Guest
 
