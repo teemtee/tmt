@@ -46,6 +46,13 @@ system management interface (e.g., IPMI) when provisioning hardware.
 While not yet implemented, this feature aims to support more precise
 hardware selection in the future.
 
+When `tmt` works with the image mode images, it now uses native package
+installation method instead of using `rpm-ostree`: `tmt` creates a
+`Containerfile` based on the booted image, adds needed packages there,
+builds the image and reboot a system to use the fresh image with needed
+packages.
+
+
 tmt-1.45.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

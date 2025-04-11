@@ -15,7 +15,7 @@ execute:
             add-tmt-dependencies: true
             container-image: localhost/tmt-bootc-needs-deps
         environment:
-            PATTERN: localhost/tmtmodified
+            PATTERN: localhost/tmt/bootc/
 
     /includes-deps:
         summary: "Image that already includes dependencies"
@@ -23,7 +23,7 @@ execute:
             add-tmt-dependencies: false
             container-image: localhost/tmt-bootc-includes-deps
         environment:
-            PATTERN: localhost/tmt-bootc-includes-deps
+            PATTERN: localhost/tmt/bootc/
 
 /containerfile:
 
@@ -33,7 +33,7 @@ execute:
             add-tmt-dependencies: true
             container-file: needs-deps.containerfile
         environment:
-            PATTERN: localhost/tmtmodified
+            PATTERN: localhost/tmt/bootc/
 
     /includes-deps:
         summary: "Containerfile that already includes dependencies"
@@ -42,4 +42,4 @@ execute:
             add-tmt-dependencies: false
             container-file: includes-deps.containerfile
         environment:
-            PATTERN: localhost/tmtbase
+            PATTERN: localhost/tmt/bootc/
