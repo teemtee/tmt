@@ -442,7 +442,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             def assert_git_url(plan_name: Optional[str] = None) -> None:
                 try:
                     subprocess.run(
-                        'git rev-parse --show-toplevel'.split(),
+                        ['git', 'rev-parse', '--show-toplevel'],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.DEVNULL,
                         check=True,
