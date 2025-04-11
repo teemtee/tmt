@@ -15,7 +15,7 @@ from typing import (
 )
 
 import fmf.context
-from click import echo, style
+from click import echo
 
 import tmt.export
 import tmt.identifier
@@ -23,6 +23,7 @@ import tmt.utils
 import tmt.utils.git
 from tmt.utils import ConvertError, Path
 from tmt.utils.structured_field import StructuredField
+from tmt.utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.base

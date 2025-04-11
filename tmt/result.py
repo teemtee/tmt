@@ -2,7 +2,6 @@ import enum
 import re
 from typing import TYPE_CHECKING, Any, Callable, Optional, cast
 
-import click
 import fmf
 import fmf.utils
 
@@ -13,6 +12,7 @@ import tmt.utils
 from tmt.checks import CheckEvent, CheckResultInterpret
 from tmt.container import SerializableContainer, container, field
 from tmt.utils import GeneralError, Path
+from tmt.utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.base
@@ -211,7 +211,7 @@ class BaseResult(SerializableContainer):
         result = 'errr' if self.result == ResultOutcome.ERROR else self.result.value
 
         components: list[str] = [
-            click.style(result, fg=RESULT_OUTCOME_COLORS[self.result]),
+            style(result, fg=RESULT_OUTCOME_COLORS[self.result]),
             self.name,
         ]
 
@@ -528,26 +528,26 @@ class Result(BaseResult):
         stats = Result.total(results)
         comments = []
         if stats.get(ResultOutcome.PASS):
-            passed = ' ' + click.style('passed', fg='green')
+            passed = ' ' + style('passed', fg='green')
             comments.append(fmf.utils.listed(stats[ResultOutcome.PASS], 'test') + passed)
         if stats.get(ResultOutcome.FAIL):
-            failed = ' ' + click.style('failed', fg='red')
+            failed = ' ' + style('failed', fg='red')
             comments.append(fmf.utils.listed(stats[ResultOutcome.FAIL], 'test') + failed)
         if stats.get(ResultOutcome.SKIP):
-            skipped = ' ' + click.style('skipped', fg='bright_black')
+            skipped = ' ' + style('skipped', fg='bright_black')
             comments.append(fmf.utils.listed(stats[ResultOutcome.SKIP], 'test') + skipped)
         if stats.get(ResultOutcome.INFO):
             count, comment = fmf.utils.listed(stats[ResultOutcome.INFO], 'info').split()
-            comments.append(count + ' ' + click.style(comment, fg='blue'))
+            comments.append(count + ' ' + style(comment, fg='blue'))
         if stats.get(ResultOutcome.WARN):
             count, comment = fmf.utils.listed(stats[ResultOutcome.WARN], 'warn').split()
-            comments.append(count + ' ' + click.style(comment, fg='yellow'))
+            comments.append(count + ' ' + style(comment, fg='yellow'))
         if stats.get(ResultOutcome.ERROR):
             count, comment = fmf.utils.listed(stats[ResultOutcome.ERROR], 'error').split()
-            comments.append(count + ' ' + click.style(comment, fg='magenta'))
+            comments.append(count + ' ' + style(comment, fg='magenta'))
         if stats.get(ResultOutcome.PENDING):
             count, comment = str(stats[ResultOutcome.PENDING]), 'pending'
-            comments.append(count + ' ' + click.style(comment, fg='cyan'))
+            comments.append(count + ' ' + style(comment, fg='cyan'))
         # FIXME: cast() - https://github.com/teemtee/fmf/issues/185
         return cast(str, fmf.utils.listed(comments or ['no results found']))
 
@@ -561,7 +561,7 @@ class Result(BaseResult):
         result = 'errr' if self.result == ResultOutcome.ERROR else self.result.value
 
         components: list[str] = [
-            click.style(result, fg=RESULT_OUTCOME_COLORS[self.result]),
+            style(result, fg=RESULT_OUTCOME_COLORS[self.result]),
             self.name,
         ]
 

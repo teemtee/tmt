@@ -11,6 +11,7 @@ import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
 import tmt.utils.templates
+import tmt.utils.themes
 from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome
@@ -158,7 +159,7 @@ def _run_script(
     def _output_logger(
         key: str,
         value: Optional[str] = None,
-        color: Optional[str] = None,
+        color: tmt.utils.themes.Style = None,
         shift: int = 2,
         level: int = 3,
         topic: Optional[tmt.log.Topic] = None,
