@@ -17,7 +17,6 @@ from tmt.utils.themes import style
 if TYPE_CHECKING:
     import tmt.base
     import tmt.steps.execute
-    import tmt.steps.provision
 
 # Extra keys used for identification in Result class
 EXTRA_RESULT_IDENTIFICATION_KEYS = ['extra-nitrate', 'extra-task']

@@ -4,7 +4,6 @@ from re import Pattern
 from typing import TYPE_CHECKING, Optional
 
 import tmt.log
-import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
 import tmt.utils.themes
