@@ -288,6 +288,13 @@ The steps documentation was deduplicated, and all information
 from the specs was moved to the ``plugins`` section.
 
 
+tmt-1.47.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``tmt lint`` command now fails with an exit code 1 instead of a
+warn with an exit code 0 when an invalid key is encountered in fmf
+metadata.
+
 tmt-1.46.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
