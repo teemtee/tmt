@@ -42,6 +42,30 @@
                       ls -alZ /root/passwd.log; \
                       rm -f /root/passwd.log" || /bin/true
 
+    /backlog:
+      test: |
+        set -x
+        systemctl status auditd || /bin/true
+        systemctl start auditd
+
+        # Generate a lot of audit events rapidly
+        for i in $(seq 1 100); do
+          # Create temporary files with specific contexts
+          sudo touch /tmp/avctest-$i
+          sudo ls -Z /tmp/avctest-$i
+          # This should generate audit events
+          sudo chmod 600 /tmp/avctest-$i
+          sudo chcon -t httpd_sys_content_t /tmp/avctest-$i 2>/dev/null || true
+        done
+
+        # Now create an AVC denial
+        sudo bash -c "passwd --help &> /root/passwd.log; \
+                      ls -alZ /root/passwd.log; \
+                      rm -f /root/passwd.log" || /bin/true
+
+        # Clean up
+        sudo rm -f /tmp/avctest-*
+
   /timestamp:
     check:
       - how: avc
@@ -60,6 +84,30 @@
         sudo bash -c "passwd --help &> /root/passwd.log; \
                       ls -alZ /root/passwd.log; \
                       rm -f /root/passwd.log" || /bin/true
+
+    /backlog:
+      test: |
+        set -x
+        systemctl status auditd || /bin/true
+        systemctl start auditd
+
+        # Generate a lot of audit events rapidly
+        for i in $(seq 1 100); do
+          # Create temporary files with specific contexts
+          sudo touch /tmp/avctest-$i
+          sudo ls -Z /tmp/avctest-$i
+          # This should generate audit events
+          sudo chmod 600 /tmp/avctest-$i
+          sudo chcon -t httpd_sys_content_t /tmp/avctest-$i 2>/dev/null || true
+        done
+
+        # Now create an AVC denial
+        sudo bash -c "passwd --help &> /root/passwd.log; \
+                      ls -alZ /root/passwd.log; \
+                      rm -f /root/passwd.log" || /bin/true
+
+        # Clean up
+        sudo rm -f /tmp/avctest-*
 
 /watchdog/ping:
   require:

@@ -28,7 +28,7 @@ rlJournalStart
         rlPhaseEnd
 
         rlPhaseStartTest "Test harmless AVC check with $PROVISION_HOW ($method method)"
-            rlRun "avc_log=$run/plan/execute/data/guest/default-0/avc/$method/harmless-2/checks/avc.txt"
+            rlRun "avc_log=$run/plan/execute/data/guest/default-0/avc/$method/harmless-3/checks/avc.txt"
             rlAssertExists "$avc_log"
             rlRun "cat $avc_log"
 
@@ -45,12 +45,35 @@ rlJournalStart
         rlPhaseEnd
 
         rlPhaseStartTest "Test nasty AVC check with $PROVISION_HOW ($method method)"
-            rlRun "avc_log=$run/plan/execute/data/guest/default-0/avc/$method/nasty-1/checks/avc.txt"
+            rlRun "avc_log=$run/plan/execute/data/guest/default-0/avc/$method/nasty-2/checks/avc.txt"
             rlAssertExists "$avc_log"
             rlRun "cat $avc_log"
 
             assert_check_result "avc as an after-test should report AVC denials" "fail" "after-test" "/avc/$method/nasty"
 
+            rlAssertGrep "avc:  denied" "$avc_log"
+            rlAssertGrep "path=/root/passwd.log" "$avc_log"
+            rlAssertGrep "## mark" "$avc_log"
+
+            if [ "$method" = "checkpoint" ]; then
+                /bin/true
+            else
+                rlAssertGrep "export 'AVC_SINCE=[[:digit:]]{2}/[[:digit:]]{2}/[[:digit:]]{2} [[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2}'" "$avc_log" -E
+            fi
+        rlPhaseEnd
+
+        rlPhaseStartTest "Test backlog handling with $PROVISION_HOW ($method method)"
+            rlRun "avc_log=$run/plan/execute/data/guest/default-0/avc/$method/backlog-1/checks/avc.txt"
+            rlAssertExists "$avc_log"
+            rlRun "cat $avc_log"
+
+            assert_check_result "avc with backlog should report AVC denials" "fail" "after-test" "/avc/$method/backlog"
+
+            # Check if backlog handling is working
+            rlAssertGrep "Current audit backlog:" "$avc_log"
+            rlAssertGrep "Audit backlog processed" "$avc_log"
+
+            # Verify denial was detected
             rlAssertGrep "avc:  denied" "$avc_log"
             rlAssertGrep "path=/root/passwd.log" "$avc_log"
             rlAssertGrep "## mark" "$avc_log"
