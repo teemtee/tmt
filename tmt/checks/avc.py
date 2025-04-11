@@ -65,8 +65,9 @@ AUSEARCH_MARK_FILENAME = 'avc-mark.txt'
 INTERESTING_PACKAGES = ['audit', 'selinux-policy']
 
 
-# Common shell functions to be included in both templates
-SHELL_COMMON_FUNCTIONS = """
+# Single script template that handles both setup and test actions
+SCRIPT_TEMPLATE = jinja2.Template(
+    textwrap.dedent("""
 # Basic shell setup
 set -x
 export LC_ALL=C
@@ -74,7 +75,7 @@ export LC_ALL=C
 # Function to check and wait for audit backlog to clear
 wait_for_backlog() {
     max_wait=10
-    poll_interval=0.5
+    poll_interval_seconds=0.5
     waited=0
 
     while [ $waited -lt $max_wait ]; do
@@ -93,44 +94,34 @@ wait_for_backlog() {
             sleep 1
             return 0
         fi
-        sleep $poll_interval
-        waited=$(echo "$waited + $poll_interval" | bc)
+        sleep $poll_interval_seconds
+        waited=$(echo "$waited + $poll_interval_seconds" | bc 2>/dev/null || echo $(($waited + 1)))
     done
 
     echo "Timed out waiting for audit backlog to clear, falling back to 1s sleep" >&2
     sleep 1
     return 0
 }
-"""
 
-# Setup script with the common functions
-SETUP_SCRIPT = jinja2.Template(
-    textwrap.dedent(f"""
-{SHELL_COMMON_FUNCTIONS}
-
-# Wait for any pending events to be processed before setting mark
+# Wait for any pending events to be processed
 wait_for_backlog
-{{% if CHECK.test_method.value == 'timestamp' %}}
-echo "export AVC_SINCE=\"$( date "+%x %H:%M:%S")\"" > {{{{ MARK_FILEPATH }}}}
-{{% else %}}
-ausearch --input-logs --checkpoint {{{{ MARK_FILEPATH }}}} > /dev/null
-{{% endif %}}
-""")
-)
 
-# Test script with the common functions
-TEST_SCRIPT = jinja2.Template(
-    textwrap.dedent(f"""
-{SHELL_COMMON_FUNCTIONS}
-
-# Wait for any pending events to be processed before checking for denials
-wait_for_backlog
-{{% if CHECK.test_method.value == 'timestamp' %}}
-source {{{{ MARK_FILEPATH }}}}
-ausearch --input-logs -m AVC -m USER_AVC -m SELINUX_ERR -i -ts $AVC_SINCE
-{{% else %}}
-ausearch --input-logs -m AVC -m USER_AVC -m SELINUX_ERR --checkpoint {{{{ MARK_FILEPATH }}}} -ts checkpoint
-{{% endif %}}
+if [ "{{ ACTION }}" = "prepare" ]; then
+    # Setting the mark
+    {% if CHECK.test_method.value == 'timestamp' %}
+    echo "export AVC_SINCE=\\"$( date "+%x %H:%M:%S")\\"" > {{ MARK_FILEPATH }}
+    {% else %}
+    ausearch --input-logs --checkpoint {{ MARK_FILEPATH }} > /dev/null
+    {% endif %}
+else
+    # Checking for denials
+    {% if CHECK.test_method.value == 'timestamp' %}
+    source {{ MARK_FILEPATH }}
+    ausearch --input-logs -m AVC -m USER_AVC -m SELINUX_ERR -i -ts $AVC_SINCE
+    {% else %}
+    ausearch --input-logs -m AVC -m USER_AVC -m SELINUX_ERR --checkpoint {{ MARK_FILEPATH }} -ts checkpoint
+    {% endif %}
+fi
 """)  # noqa: E501
 )
 
@@ -239,7 +230,9 @@ def create_ausearch_mark(
     report: list[str] = []
 
     script = ShellScript(
-        SETUP_SCRIPT.render(CHECK=check, MARK_FILEPATH=ausearch_mark_filepath).strip()
+        SCRIPT_TEMPLATE.render(
+            ACTION="prepare", CHECK=check, MARK_FILEPATH=ausearch_mark_filepath
+        ).strip()
     )
 
     output, exc = _run_script(invocation=invocation, script=script, logger=logger)
@@ -309,7 +302,9 @@ def create_final_report(
 
     # Finally, run `ausearch`, to list AVC denials from the time the test started.
     script = ShellScript(
-        TEST_SCRIPT.render(CHECK=check, MARK_FILEPATH=ausearch_mark_filepath).strip()
+        SCRIPT_TEMPLATE.render(
+            ACTION="check", CHECK=check, MARK_FILEPATH=ausearch_mark_filepath
+        ).strip()
     )
 
     output, exc = _run_script(invocation=invocation, script=script, needs_sudo=True, logger=logger)
@@ -362,17 +357,6 @@ class AvcCheck(Check):
         exporter=lambda method: method.value,
     )
 
-    delay_before_report: int = field(
-        default=5,
-        metavar='SECONDS',
-        help="""
-             How many seconds to wait before running ``ausearch`` after
-             the test. Increasing it may help when events do reach logs
-             fast enough for ``ausearch`` report them.
-             """,
-        normalize=tmt.utils.normalize_int,
-    )
-
     # TODO: fix `to_spec` of `Check` to support nested serializables
     def to_spec(self) -> _RawCheck:
         spec = super().to_spec()
@@ -410,6 +394,11 @@ class AvcDenials(CheckPlugin[AvcCheck]):
         check may report unexpected results.
 
     .. versionadded:: 1.28
+
+    .. versionchanged:: 1.46
+       ``delay-before-report`` option has been removed. Check now automatically
+       waits for audit backlog to be processed before running ausearch commands.
+       Default method changed from ``timestamp`` to ``checkpoint``.
     """
 
     _check_class = AvcCheck
