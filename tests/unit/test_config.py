@@ -60,8 +60,7 @@ def test_last_run_race(tmppath: Path, monkeypatch, root_logger: Logger):
             results.put(err)
 
     total = 20
-    for i in range(total):
-        threads.append(threading.Thread(target=create_last_run, args=(config, i)))
+    threads = [threading.Thread(target=create_last_run, args=(config, i)) for i in range(total)]
     for t in threads:
         t.start()
     for t in threads:

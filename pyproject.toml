@@ -303,6 +303,7 @@ select = [
     "W",  # pycodestyle warning
     "I",  # isort
     "N",  # pep8-naming
+    "PERF",  # Perflint
     "D",    # pydocstyle
     "UP",  # pyupgrade
     "YTT",  # flake8-2020
@@ -357,6 +358,7 @@ ignore = [
     "S607",  # Starting a process with a partial executable path
     "S105",  # Possible hardcoded password assigned to: "PASS"
     "SIM103",  # Return the condition directly - can hurt readability
+    "PERF203", # `try`-`except` within a loop incurs performance overhead
     "D200",  # One-line docstring should fit on one line
     "D212",  # Multi-line docstring summary should start at the first line
 
