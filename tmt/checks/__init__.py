@@ -3,7 +3,6 @@ import functools
 from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypedDict, TypeVar, cast
 
 import tmt.log
-import tmt.steps.provision
 import tmt.utils
 from tmt.container import (
     SerializableContainer,

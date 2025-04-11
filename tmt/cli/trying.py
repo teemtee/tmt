@@ -9,7 +9,6 @@ import click
 
 import tmt.steps.provision
 import tmt.trying
-import tmt.utils
 from tmt.cli import Context, pass_context
 from tmt.cli._root import force_dry_options, main, verbosity_options
 from tmt.options import option
