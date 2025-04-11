@@ -154,7 +154,7 @@ class FieldMetadata(Generic[T]):
 
     #: CLI option parameters, for lazy option creation.
     _option_args: Optional['FieldCLIOption'] = None
-    _option_kwargs: dict[str, Any] = simple_field(default_factory=dict)
+    _option_kwargs: dict[str, Any] = simple_field(default_factory=dict[str, Any])
 
     #: A :py:func:`click.option` decorator defining a corresponding CLI option.
     _option: Optional['tmt.options.ClickOptionDecoratorType'] = None
@@ -166,7 +166,7 @@ class FieldMetadata(Generic[T]):
         """
 
         if isinstance(self._choices, (list, tuple)):
-            return list(self._choices)
+            return list(cast(Sequence[str], self._choices))
 
         if callable(self._choices):
             return self._choices()

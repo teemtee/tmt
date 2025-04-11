@@ -365,9 +365,9 @@ class Result(BaseResult):
         default_ids: ResultIds = {tmt.identifier.ID_KEY: invocation.test.id}
 
         for key in EXTRA_RESULT_IDENTIFICATION_KEYS:
-            value: Any = invocation.test.node.get(key)
+            value: Any = cast(Any, invocation.test.node.get(key))
 
-            default_ids[key] = None if value is None else str(value)
+            default_ids[key] = None if value is None else str(cast(object, value))
 
         default_ids.update(ids)
         ids = default_ids

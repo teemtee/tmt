@@ -270,7 +270,7 @@ class LogRecordDetails:
     color: 'tmt.utils.themes.Style' = None
     shift: int = 0
 
-    logger_labels: list[str] = simple_field(default_factory=list)
+    logger_labels: list[str] = simple_field(default_factory=list[str])
     logger_labels_padding: int = 0
 
     logger_verbosity_level: int = 0
@@ -282,7 +282,7 @@ class LogRecordDetails:
     logger_quiet: bool = False
     ignore_quietness: bool = False
 
-    logger_topics: set[Topic] = simple_field(default_factory=set)
+    logger_topics: set[Topic] = simple_field(default_factory=set[Topic])
     message_topic: Optional[Topic] = None
 
 
@@ -322,7 +322,7 @@ class _Formatter(logging.Formatter):
 
         # Otherwise render the message.
         elif record.msg and record.args:
-            record.message = record.msg % record.args
+            record.message = cast(str, record.msg % record.args)
 
         else:
             record.message = record.msg
