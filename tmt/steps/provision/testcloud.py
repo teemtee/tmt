@@ -265,7 +265,7 @@ def normalize_disk_size(key_address: str, value: Any, logger: tmt.log.Logger) ->
     raise tmt.utils.NormalizationError(key_address, value, 'an integer')
 
 
-def _report_hw_requirement_support(constraint: tmt.hardware.Constraint[Any]) -> bool:
+def _report_hw_requirement_support(constraint: tmt.hardware.Constraint) -> bool:
     components = constraint.expand_name()
 
     if components.name == 'memory' and constraint.operator in (
