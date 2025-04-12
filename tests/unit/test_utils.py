@@ -795,9 +795,7 @@ def test_get_distgit_handler():
     # CentOS detection
     returned_object = tmt.utils.git.get_distgit_handler(
         [
-            "",
-            "        remote.origin.url git+ssh://git@gitlab.com/redhat/centos-stream/rpms/ruby.git",
-            "        ",
+            "remote.origin.url git+ssh://git@gitlab.com/redhat/centos-stream/rpms/ruby.git",
         ]
     )
     assert isinstance(returned_object, tmt.utils.git.CentOSDistGit)
