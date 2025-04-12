@@ -767,7 +767,6 @@ class Logger:
         self,
         text: str,
         color: Optional[str] = None,
-        shift: int = 0,
     ) -> str:
         """
         Format the given text in a way suitable for :py:meth:`print`
@@ -777,7 +776,7 @@ class Logger:
             text,
             # Always apply colors - message can be decolorized later.
             color=color,
-            level=shift + self._base_shift,
+            level=0,
             labels=self.labels,
             labels_padding=self.labels_padding,
         )
@@ -788,12 +787,11 @@ class Logger:
         self,
         text: str,
         color: Optional[str] = None,
-        shift: int = 0,
         file: Optional[TextIO] = None,
     ) -> None:
         file = file or sys.stdout
 
-        print(self.print_format(text, color=color, shift=shift), file=file)
+        print(self.print_format(text, color=color), file=file)
 
     def info(
         self,

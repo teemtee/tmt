@@ -1919,7 +1919,6 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self,
         text: str,
         color: Optional[str] = None,
-        shift: int = 0,
     ) -> None:
         """
         Print out an output.
@@ -1932,7 +1931,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         **logging** but not the actual command output.
         """
 
-        self._logger.print(text, color=color, shift=shift)
+        self._logger.print(text, color=color)
 
     def info(
         self,
