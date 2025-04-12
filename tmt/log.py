@@ -322,7 +322,7 @@ class _Formatter(logging.Formatter):
 
         # Otherwise render the message.
         elif record.msg and record.args:
-            record.message = cast(str, record.msg % record.args)
+            record.message = record.msg % record.args
 
         else:
             record.message = record.msg
