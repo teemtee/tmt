@@ -301,8 +301,17 @@ def _translate_constraint_by_config(
     if not (suitable_translations or suitable_translations_default):
         return _transform_unsupported(constraint)
 
-    beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator, constraint.value
+    if constraint.printable_name == 'boot.method':
+        beaker_operator = (
+            tmt.hardware.Operator.EQ
+            if constraint.operator is tmt.hardware.Operator.CONTAINS
+            else tmt.hardware.Operator.NEQ
+        )
+    else:
+        beaker_operator = constraint.operator
+
+    actual_operator, actual_value, negate = operator_to_beaker_op(
+        beaker_operator, constraint.value
     )
 
     return tmt.utils.yaml_to_dict(
@@ -311,7 +320,7 @@ def _translate_constraint_by_config(
                 0
             ].template,
             CONSTRAINT=constraint,
-            BEAKER_OPERATOR=beaker_operator,
+            BEAKER_OPERATOR=actual_operator,
             BEAKER_VALUE=actual_value,
             BEAKER_NEGATE=negate,
         )
