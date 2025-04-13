@@ -150,6 +150,7 @@ mkdir -p %{buildroot}%{_datadir}/bash-completion/completions
 install -pm 644 completions/bash/%{name} %{buildroot}%{_datadir}/bash-completion/completions/%{name}
 mkdir -p %{buildroot}/etc/%{name}/
 install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
+install -pm 644 %{name}/steps/provision/hardware.fmf %{buildroot}/etc/%{name}/
 
 %check
 %pyproject_check_import
@@ -165,7 +166,7 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %files -n tmt+provision-bootc -f %{_pyproject_ghost_distinfo}
 %files -n tmt+test-convert -f %{_pyproject_ghost_distinfo}
 %files -n tmt+provision-beaker -f %{_pyproject_ghost_distinfo}
-%config(noreplace) %{_sysconfdir}/%{name}/mrack*
+%config(noreplace) %{_sysconfdir}/%{name}/*
 %files -n tmt+all -f %{_pyproject_ghost_distinfo}
 
 %changelog

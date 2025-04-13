@@ -1,0 +1,11 @@
+#examples:
+#beaker:
+#  translations:
+#    - requirement : boot.method
+#      template: '
+#      {% if (BEAKER_OPERATOR, BEAKER_VALUE) in [("==", "bios"), ("!=", "uefi")] %}
+#        {"key_value": {"_key": "NETBOOT_METHOD", "_value": "pxe"},}
+#      {% elif (BEAKER_OPERATOR, BEAKER_VALUE) in [("==", "uefi"), ("!=", "bios")] %}
+#        {"or": [{"key_value": {"_key": "NETBOOT_METHOD", "_value": "grub2"},}, {"key_value": {"_key": "NETBOOT_METHOD", "_value": "efigrub"},}]}
+#      {% endif %}
+#      '

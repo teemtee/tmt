@@ -79,6 +79,21 @@ def _get_constraint_translations(logger: tmt.log.Logger) -> list[MrackTranslatio
     )
 
 
+def _get_default_constraint_translations(logger: tmt.log.Logger) -> list[MrackTranslation]:
+    """
+    Load the list of hardware requirement translations from default configuration.
+
+    :returns: translations loaded from configuration, or an empty list if
+        the configuration is missing.
+    """
+    config = tmt.config.Config(logger)
+    return (
+        config.default_hardware.beaker.translations
+        if config.default_hardware and config.default_hardware.beaker
+        else []
+    )
+
+
 # Type annotation for "data" package describing a guest instance. Passed
 # between load() and save() calls
 
@@ -267,8 +282,8 @@ def _translate_constraint_by_config(
     """
 
     config = _get_constraint_translations(logger)
-
-    if not config:
+    config_default = _get_default_constraint_translations(logger)
+    if not (config or config_default):
         return _transform_unsupported(constraint)
 
     suitable_translations = [
@@ -277,7 +292,13 @@ def _translate_constraint_by_config(
         if translation.requirement == constraint.printable_name
     ]
 
-    if not suitable_translations:
+    suitable_translations_default = [
+        translation
+        for translation in config_default
+        if translation.requirement == constraint.printable_name
+    ]
+
+    if not (suitable_translations or suitable_translations_default):
         return _transform_unsupported(constraint)
 
     beaker_operator, actual_value, negate = operator_to_beaker_op(
@@ -286,7 +307,9 @@ def _translate_constraint_by_config(
 
     return tmt.utils.yaml_to_dict(
         render_template(
-            suitable_translations[0].template,
+            (suitable_translations if suitable_translations else suitable_translations_default)[
+                0
+            ].template,
             CONSTRAINT=constraint,
             BEAKER_OPERATOR=beaker_operator,
             BEAKER_VALUE=actual_value,

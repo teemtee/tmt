@@ -19,6 +19,7 @@ MetadataContainerT = TypeVar('MetadataContainerT', bound='MetadataContainer')
 
 # Config directory
 DEFAULT_CONFIG_DIR = Path('~/.config/tmt')
+DEFAULT_HARDWARE_FILE = Path('/etc/tmt/hardware.fmf')
 
 
 def effective_config_dir() -> Path:
@@ -143,3 +144,10 @@ class Config:
         """
 
         return self._parse_config_subtree('/hardware', HardwareConfig)
+
+    @property
+    def default_hardware(self) -> Optional[HardwareConfig]:
+        """
+        Return the default hardware configuration.
+        """
+        return HardwareConfig.parse_obj(tmt.utils.yaml_to_dict(DEFAULT_HARDWARE_FILE.read_text()))
