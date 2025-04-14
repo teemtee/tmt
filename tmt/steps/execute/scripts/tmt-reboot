@@ -25,6 +25,13 @@ done
 if [ $efi = True ]; then
     if efibootmgr &>/dev/null ; then
         os_boot_entry=$(efibootmgr | awk '/BootCurrent/ { print $2 }')
+	first_boot=$(efibootmgr | awk '/BootOrder/ { print $2 }' | cut -d, -f1)
+	# if somehow os boot entry is configured to the top of boot order,
+	# we move it to the end of the order, to avoid breaking the system.
+	if [[ $first_boot == $os_boot_entry ]]; then
+	       BOOT_LIST=$(efibootmgr | awk '/BootOrder/ { print $2 }' | cut -d, -f2-)
+	       efibootmgr -o "${BOOT_LIST},${BOOTC_BOOT}"
+	fi
         # fall back to /root/EFI_BOOT_ENTRY.TXT if it exists and BootCurrent is not available
         if [[ -z "$os_boot_entry" && -f /root/EFI_BOOT_ENTRY.TXT ]] ; then
             os_boot_entry=$(</root/EFI_BOOT_ENTRY.TXT)
