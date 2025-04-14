@@ -676,14 +676,6 @@ class GuestTestcloud(tmt.GuestSsh):
     #: remove the lock.
     _testcloud_lock = threading.Lock()
 
-    @functools.cached_property
-    def testcloud_data_dirpath(self) -> Path:
-        return self.workdir_root / 'testcloud'
-
-    @functools.cached_property
-    def testcloud_image_dirpath(self) -> Path:
-        return self.testcloud_data_dirpath / 'images'
-
     @property
     def is_ready(self) -> bool:
         if self._instance is None:
@@ -839,12 +831,13 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # We can't assign a not-exists path to STORE_DIR,
         # so we should make sure required directories exist
-        os.makedirs(self.testcloud_data_dirpath, exist_ok=True)
-        os.makedirs(self.testcloud_image_dirpath, exist_ok=True)
+        assert isinstance(self.parent, ProvisionTestcloud)
+        os.makedirs(self.parent.testcloud_data_dirpath, exist_ok=True)
+        os.makedirs(self.parent.testcloud_image_dirpath, exist_ok=True)
 
         # Configure to tmt's storage directories
-        self.config.DATA_DIR = self.testcloud_data_dirpath
-        self.config.STORE_DIR = self.testcloud_image_dirpath
+        self.config.DATA_DIR = self.parent.testcloud_data_dirpath
+        self.config.STORE_DIR = self.parent.testcloud_image_dirpath
 
     def _combine_hw_memory(self) -> None:
         """
@@ -984,7 +977,7 @@ class GuestTestcloud(tmt.GuestSsh):
             raise ProvisionError(f"Image '{self._image.local_path}' not found.") from error
         except (testcloud.exceptions.TestcloudPermissionsError, PermissionError) as error:
             raise ProvisionError(
-                f"Failed to prepare the image. Check the '{self.testcloud_image_dirpath}' "
+                f"Failed to prepare the image. Check the '{self.config.STORE_DIR}' "
                 f"directory permissions."
             ) from error
         except KeyError as error:
@@ -1279,6 +1272,14 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
     # Guest instance
     _guest = None
 
+    @functools.cached_property
+    def testcloud_data_dirpath(self) -> Path:
+        return self.workdir_root / 'testcloud'
+
+    @functools.cached_property
+    def testcloud_image_dirpath(self) -> Path:
+        return self.testcloud_data_dirpath / 'images'
+
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
         Provision the testcloud instance
@@ -1349,11 +1350,10 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
         Print images which are already cached
         """
 
-        store_dir = self.workdir_root / 'testcloud/images'
         self.info("Locally available images")
-        for filename in sorted(store_dir.glob('*.qcow2')):
+        for filename in sorted(self.testcloud_image_dirpath.glob('*.qcow2')):
             self.info(filename.name, shift=1, color='yellow')
-            click.echo(f"{store_dir / filename}")
+            click.echo(f"{self.testcloud_image_dirpath / filename}")
 
     @classmethod
     def clean_images(cls, clean: 'tmt.base.Clean', dry: bool, workdir_root: Path) -> bool:
