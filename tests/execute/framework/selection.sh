@@ -3,7 +3,7 @@
 
 rlJournalStart
     rlPhaseStartSetup
-        rlRun "pushd data"
+        rlRun "pushd selection"
     rlPhaseEnd
 
     rlPhaseStartTest "Combine shell and beakerlib"
