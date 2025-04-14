@@ -21,6 +21,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 import tmt.utils.signals
+from tmt.config.models import DefaultConfig
 from tmt.config.models.hardware import MrackTranslation
 from tmt.container import container, field, simple_field
 from tmt.utils import (
@@ -79,7 +80,7 @@ def _get_constraint_translations(logger: tmt.log.Logger) -> list[MrackTranslatio
     )
 
 
-def _get_default_constraint_translations(logger: tmt.log.Logger) -> list[MrackTranslation]:
+def _get_default_config(logger: tmt.log.Logger) -> Optional[DefaultConfig]:
     """
     Load the list of hardware requirement translations from default configuration.
 
@@ -87,11 +88,7 @@ def _get_default_constraint_translations(logger: tmt.log.Logger) -> list[MrackTr
         the configuration is missing.
     """
     config = tmt.config.Config(logger)
-    return (
-        config.default_hardware.beaker.translations
-        if config.default_hardware and config.default_hardware.beaker
-        else []
-    )
+    return config.default_config
 
 
 # Type annotation for "data" package describing a guest instance. Passed
@@ -282,8 +279,13 @@ def _translate_constraint_by_config(
     """
 
     config = _get_constraint_translations(logger)
-    config_default = _get_default_constraint_translations(logger)
-    if not (config or config_default):
+    config_default = _get_default_config(logger)
+    default_hardware = (
+        config_default.hardware.beaker.translations
+        if config_default and config_default.hardware and config_default.hardware.beaker
+        else []
+    )
+    if not (config or default_hardware):
         return _transform_unsupported(constraint)
 
     suitable_translations = [
@@ -294,7 +296,7 @@ def _translate_constraint_by_config(
 
     suitable_translations_default = [
         translation
-        for translation in config_default
+        for translation in default_hardware
         if translation.requirement == constraint.printable_name
     ]
 

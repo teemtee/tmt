@@ -10,6 +10,7 @@ import tmt.log
 import tmt.utils
 from tmt._compat.pathlib import Path
 from tmt._compat.pydantic import ValidationError
+from tmt.config.models import DefaultConfig
 from tmt.config.models.hardware import HardwareConfig
 from tmt.config.models.link import LinkConfig
 from tmt.config.models.themes import Theme, ThemeConfig
@@ -19,7 +20,7 @@ MetadataContainerT = TypeVar('MetadataContainerT', bound='MetadataContainer')
 
 # Config directory
 DEFAULT_CONFIG_DIR = Path('~/.config/tmt')
-DEFAULT_HARDWARE_FILE = Path('/etc/tmt/hardware.fmf')
+DEFAULT_HARDWARE_FILE = Path('/etc/tmt/config.fmf')
 
 
 def effective_config_dir() -> Path:
@@ -146,8 +147,8 @@ class Config:
         return self._parse_config_subtree('/hardware', HardwareConfig)
 
     @property
-    def default_hardware(self) -> Optional[HardwareConfig]:
+    def default_config(self) -> Optional[DefaultConfig]:
         """
         Return the default hardware configuration.
         """
-        return HardwareConfig.parse_obj(tmt.utils.yaml_to_dict(DEFAULT_HARDWARE_FILE.read_text()))
+        return DefaultConfig.parse_obj(tmt.utils.yaml_to_dict(DEFAULT_HARDWARE_FILE.read_text()))
