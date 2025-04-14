@@ -3,11 +3,14 @@ from typing import Any, Optional
 
 import tmt
 import tmt.config
+import tmt.log
 import tmt.utils
 import tmt.utils.templates
 from tmt.utils import Path
 
-DEFAULT_CUSTOM_TEMPLATES_PATH = tmt.config.effective_config_dir() / 'templates'
+DEFAULT_CUSTOM_TEMPLATES_PATH = (
+    tmt.config.Config(tmt.log.Logger.get_bootstrap_logger()).user_path / 'templates'
+)
 DEFAULT_PLAN_NAME = "/default/plan"
 INIT_TEMPLATES = ['mini', 'base', 'full']
 TEMPLATE_FILE_SUFFIX = '.j2'

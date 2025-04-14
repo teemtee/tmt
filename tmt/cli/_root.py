@@ -1896,7 +1896,7 @@ def setup_completion(shell: str, install: bool, context: Context, logger: tmt.lo
         script = Path('~/.config/fish/completions/tmt.fish').expanduser()
     # Bash and zsh get installed to tmt's config directory.
     else:
-        script = Path(config.path) / f'{COMPLETE_SCRIPT}.{shell}'
+        script = Path(config.user_path) / f'{COMPLETE_SCRIPT}.{shell}'
 
     env_var = {COMPLETE_VARIABLE: f'{shell}_source'}
 
