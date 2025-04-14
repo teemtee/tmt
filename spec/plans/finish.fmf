@@ -3,37 +3,16 @@ summary: Finishing tasks
 description:
     Additional actions to be performed after the test execution
     has been completed.  Counterpart of the ``prepare`` step,
-    useful for various cleanup actions.
+    useful for various cleanup actions. For more info see the :ref:`/plugins/finish`
 
 example: |
     finish:
-        how: shell
+      - how: shell
         script: upload-logs.sh
-
-/shell:
-    summary:
-        Perform finishing tasks using shell (bash) scripts.
-    example: |
-        finish:
-            how: shell
-            script:
-            - upload-logs.sh || true
-            - rm -rf /tmp/temporary-files
-    link:
-      - implemented-by: /tmt/steps/finish/shell.py
-
-/ansible:
-    summary:
-        Perform finishing tasks using ansible
-    example: |
-        finish:
-            how: ansible
-            playbook:
-                - playbooks/common.yml
-                - playbooks/os/rhel7.yml
-                - https://foo.bar/rhel7-final-touches.yml
-    link:
-      - implemented-by: /tmt/steps/finish/ansible.py
+      - how: ansible
+        playbook: playbooks/cleanup.yaml
+link:
+    - implemented-by: /tmt/steps/finish
 
 /where:
     summary: Perform finishing tasks on selected guests
