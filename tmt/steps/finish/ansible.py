@@ -46,13 +46,14 @@ class FinishAnsible(
         finish:
             how: ansible
             playbook:
-              - playbook/one.yml
-              - playbook/two.yml
-              - playbook/three.yml
+              - playbooks/common.yml
+              - playbooks/os/rhel9.yml
+              - https://foo.bar/rhel9-final-touches.yml
 
-    The playbook path should be relative to the metadata tree root.
-    Use the :ref:`/spec/core/order` attribute to select in which order finishing
-    tasks should happen if there are multiple configs. Default order is ``50``.
+    The playbook path should be relative to the metadata tree root. Use
+    the :ref:`/spec/core/order` attribute to select in which order
+    finishing tasks should happen if there are multiple configs. Default
+    order is ``50``.
     """
 
     # We are reusing "prepare" step for "finish",
