@@ -709,6 +709,14 @@ class GuestTestcloud(tmt.GuestSsh):
     #: remove the lock.
     _testcloud_lock = threading.Lock()
 
+    @functools.cached_property
+    def testcloud_data_dirpath(self) -> Path:
+        return self.workdir_root / 'testcloud'
+
+    @functools.cached_property
+    def testcloud_image_dirpath(self) -> Path:
+        return self.testcloud_data_dirpath / 'images'
+
     @property
     def is_ready(self) -> bool:
         if self._instance is None:
@@ -862,17 +870,14 @@ class GuestTestcloud(tmt.GuestSsh):
         self.config.DOWNLOAD_PROGRESS = self.debug_level > 2
         self.config.DOWNLOAD_PROGRESS_VERBOSE = False
 
-        # We can't assign the path to STORE_DIR because it must exist first
-        data_dir = self.workdir_root / 'testcloud'
-        store_dir = data_dir / 'images'
-
-        # Make sure required directories exist
-        os.makedirs(data_dir, exist_ok=True)
-        os.makedirs(store_dir, exist_ok=True)
+        # We can't assign a not-exists path to STORE_DIR,
+        # so we should make sure required directories exist
+        os.makedirs(self.testcloud_data_dirpath, exist_ok=True)
+        os.makedirs(self.testcloud_image_dirpath, exist_ok=True)
 
         # Configure to tmt's storage directories
-        self.config.DATA_DIR = data_dir
-        self.config.STORE_DIR = store_dir
+        self.config.DATA_DIR = self.testcloud_data_dirpath
+        self.config.STORE_DIR = self.testcloud_image_dirpath
 
         self.config.STOP_RETRIES = self.stop_retries
         self.config.STOP_RETRY_WAIT = self.stop_retry_delay
@@ -1026,7 +1031,7 @@ class GuestTestcloud(tmt.GuestSsh):
             raise ProvisionError(f"Image '{self._image.local_path}' not found.") from error
         except (testcloud.exceptions.TestcloudPermissionsError, PermissionError) as error:
             raise ProvisionError(
-                f"Failed to prepare the image. Check the '{self.config.STORE_DIR}' "
+                f"Failed to prepare the image. Check the '{self.testcloud_image_dirpath}' "
                 f"directory permissions."
             ) from error
         except KeyError as error:
