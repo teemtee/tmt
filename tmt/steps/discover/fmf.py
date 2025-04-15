@@ -541,7 +541,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             if not dist_git_source or dist_git_merge:
                 self.debug(f"Copy '{directory}' to '{self.testdir}'.")
                 if not self.is_dry_run:
-                    tmt.utils.filesystem.copy_tree(directory, self.testdir, self._logger)
+                    # Needed for mypy check
+                    assert isinstance(self.run, tmt.Run)
+                    tmt.utils.filesystem.copy_tree(
+                        directory, self.testdir, self._logger, self.run.workdir_root
+                    )
 
         # Prepare path of the dynamic reference
         try:
@@ -580,10 +584,13 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 )
                 # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
                 # FIXME 'worktree' could be used as sourcedir when 'url' is not set
+                # Explicitly cast self.run to tmt.Run to help mypy
+                assert isinstance(self.run, tmt.Run)
                 tmt.utils.filesystem.copy_tree(
                     self.testdir if ref else git_root,
                     sourcedir,
                     self._logger,
+                    self.run.workdir_root,
                 )
                 # patch & rediscover will happen later in the prepare step
                 if not self.get('dist-git-download-only'):
@@ -719,11 +726,15 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             # Save fmf metadata
             clonedir = self.clone_dirpath / 'tests'
             clone_tree_path = clonedir / path.unrooted()
+            # Explicitly cast self.run once before the loop
+            assert isinstance(self.run, tmt.Run)
+            _workdir_root_prune_fmf = self.run.workdir_root
             for file_path in tmt.utils.filter_paths(tree_path, [r'\.fmf']):
                 tmt.utils.filesystem.copy_tree(
                     file_path,
                     clone_tree_path / file_path.relative_to(tree_path),
                     self._logger,
+                    _workdir_root_prune_fmf,
                 )
 
             # Save upgrade plan
@@ -735,6 +746,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 shutil.copymode(tree_path / upgrade_path, clone_tree_path / upgrade_path)
 
         # Prefix tests and handle library requires
+        # Explicitly cast self.run once before the loop
+        assert isinstance(self.run, tmt.Run)
+        _workdir_root_prune_tests = self.run.workdir_root
         for test in self._tests:
             # Propagate `where` key
             test.where = cast(tmt.steps.discover.DiscoverStepData, self.data).where
@@ -747,6 +761,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     tree_path / relative_test_path,
                     clone_tree_path / relative_test_path,
                     self._logger,
+                    _workdir_root_prune_tests,
                 )
 
                 # Copy all parent main.fmf files
@@ -779,7 +794,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             # Clean self.testdir and copy back only required tests and files from clonedir
             # This is to have correct paths in tests
             shutil.rmtree(self.testdir, ignore_errors=True)
-            tmt.utils.filesystem.copy_tree(clonedir, self.testdir, self._logger)
+            # Explicitly cast self.run to tmt.Run to help mypy
+            assert isinstance(self.run, tmt.Run)
+            tmt.utils.filesystem.copy_tree(
+                clonedir, self.testdir, self._logger, self.run.workdir_root
+            )
 
         # Cleanup clone directories
         if self.clone_dirpath.exists():
@@ -856,6 +875,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 copy_these = [dist_git_extract.relative_to(sourcedir)]
             else:
                 copy_these = [top_fmf_root.relative_to(sourcedir)]
+            # Explicitly cast self.run once before the loop
+            assert isinstance(self.run, tmt.Run)
+            _workdir_root_distgit = self.run.workdir_root
             for to_copy in copy_these:
                 src = sourcedir / to_copy
                 if src.is_dir():
@@ -863,6 +885,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                         sourcedir / to_copy,
                         self.testdir if flatten else self.testdir / to_copy,
                         self._logger,
+                        _workdir_root_distgit,
                     )
                 else:
                     shutil.copyfile(src, self.testdir / to_copy)
