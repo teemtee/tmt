@@ -76,9 +76,6 @@
 
     .. code-block:: yaml
 
-       # how: {{ plugin_id }}
-       # ...
-
     {% if metadata.metavar %}
        {{ option }}: {{ metadata.metavar }}
 
@@ -95,27 +92,25 @@
 
     .. code-block:: shell
 
-       # tmt run ... {{ STEP }} --how {{ plugin_id }} ...
-
     {% if metadata.metavar %}
-       {{ plugin_id }} --{{ option }} {{ metadata.metavar | shell_quote }} ...
+       --{{ option }} {{ metadata.metavar | shell_quote }}
        export {{ envvar }}={{ metadata.metavar | shell_quote }}
 
         {% for example in metadata.help_example_values %}
-       {{ plugin_id }} --{{ option }} {{ example | shell_quote }}
+       --{{ option }} {{ example | shell_quote }}
         {% endfor %}
         {% for example in metadata.help_example_values %}
        export {{ envvar }}={{ example | shell_quote }}
         {% endfor %}
     {% elif metadata.default is boolean %}
-       {{ plugin_id }} --{{ option }}
+       --{{ option }}
        export {{ envvar }}=1|0
     {% else %}
-       {{ plugin_id }} --{{ option }} ...
+       --{{ option }} ...
        export {{ envvar }}=...
 
         {% for example in metadata.help_example_values %}
-       {{ plugin_id }} --{{ option }} {{ example | shell_quote }}
+       --{{ option }} {{ example | shell_quote }}
         {% endfor %}
         {% for example in metadata.help_example_values %}
        export {{ envvar }}={{ example | shell_quote }}
