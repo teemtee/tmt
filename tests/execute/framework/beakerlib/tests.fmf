@@ -1,0 +1,5 @@
+framework: shell
+duration: 5m
+
+/success:
+  test: ./beakerlib.sh
