@@ -21,8 +21,8 @@ def style(
     *,
     style: Style = None,
     fg: Optional[str] = None,
-    bold: bool = False,
-    underline: bool = False,
+    bold: Optional[bool] = None,
+    underline: Optional[bool] = None,
 ) -> str:
     """
     Apply a style to a string.

@@ -274,8 +274,8 @@ RLP = render_labels(["foo", "bar"]) + '   '
 @pytest.mark.parametrize(
     ('key', 'value', 'color', 'level', 'labels', 'labels_padding', 'expected'),
     [
-        ('dummy-key', None, None, 0, None, 0, 'dummy-key'),
-        ('dummy-key', 'dummy-value', None, 0, None, 0, 'dummy-key: dummy-value'),
+        ('dummy-key', None, None, 0, None, 0, 'dummy-key\033[0m'),
+        ('dummy-key', 'dummy-value', None, 0, None, 0, 'dummy-key\033[0m: dummy-value'),
         (
             'dummy-key',
             'dummy\nmultiline\nvalue',
@@ -283,10 +283,10 @@ RLP = render_labels(["foo", "bar"]) + '   '
             0,
             None,
             0,
-            'dummy-key:\n    dummy\n    multiline\n    value',
+            'dummy-key\033[0m:\n    dummy\n    multiline\n    value',
         ),
-        ('dummy-key', None, None, 2, None, 0, '        dummy-key'),
-        ('dummy-key', 'dummy-value', None, 2, None, 0, '        dummy-key: dummy-value'),
+        ('dummy-key', None, None, 2, None, 0, '        dummy-key\033[0m'),
+        ('dummy-key', 'dummy-value', None, 2, None, 0, '        dummy-key\033[0m: dummy-value'),
         (
             'dummy-key',
             'dummy\nmultiline\nvalue',
@@ -294,7 +294,7 @@ RLP = render_labels(["foo", "bar"]) + '   '
             2,
             None,
             0,
-            '        dummy-key:\n            dummy\n            multiline\n            value',
+            '        dummy-key\033[0m:\n            dummy\n            multiline\n            value',  # noqa: E501
         ),
         (
             'dummy-key',
@@ -303,7 +303,7 @@ RLP = render_labels(["foo", "bar"]) + '   '
             2,
             ['foo', 'bar'],
             0,
-            f'{RL}         dummy-key:\n'
+            f'{RL}         dummy-key\033[0m:\n'
             f'{RL}             dummy\n'
             f'{RL}             multiline\n'
             f'{RL}             value',
@@ -316,7 +316,7 @@ RLP = render_labels(["foo", "bar"]) + '   '
             ['foo', 'bar'],
             # Pad labels to occupy their actual length plus 3 more characters
             len(RL) + 3,
-            f'{RLP}         dummy-key:\n'
+            f'{RLP}         dummy-key\033[0m:\n'
             f'{RLP}             dummy\n'
             f'{RLP}             multiline\n'
             f'{RLP}             value',
