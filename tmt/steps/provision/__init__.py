@@ -1607,13 +1607,19 @@ class Guest(tmt.utils.Common):
 
     def push(
         self,
-        source: Optional[Path] = None,
+        source: Optional[Union[Path, list[Path]]] = None,
         destination: Optional[Path] = None,
         options: Optional[list[str]] = None,
         superuser: bool = False,
     ) -> None:
         """
-        Push files to the guest
+        Push files or directories to the guest.
+
+        :param source: Path or list of paths on the local machine to push.
+                       If None, the plan workdir is pushed.
+        :param destination: Path on the guest where to push. If None, defaults to '/'.
+        :param options: List of rsync options to use.
+        :param superuser: If True, run rsync with sudo on the guest.
         """
 
         raise NotImplementedError
@@ -2416,21 +2422,19 @@ class GuestSsh(Guest):
 
     def push(
         self,
-        source: Optional[Path] = None,
+        source: Optional[Union[Path, list[Path]]] = None,
         destination: Optional[Path] = None,
         options: Optional[list[str]] = None,
         superuser: bool = False,
     ) -> None:
         """
-        Push files to the guest
+        Push files or directories to the guest using rsync.
 
-        By default the whole plan workdir is synced to the same location
-        on the guest. Use the 'source' and 'destination' to sync custom
-        location and the 'options' parameter to modify default options
-        which are '-Rrz --links --safe-links --delete'.
-
-        Set 'superuser' if rsync command has to run as root or passwordless
-        sudo on the Guest (e.g. pushing to r/o destination)
+        :param source: Path or list of paths on the local machine to push.
+                       If None, the plan workdir is pushed.
+        :param destination: Path on the guest where to push. If None, defaults to '/'.
+        :param options: List of rsync options to use.
+        :param superuser: If True, run rsync with sudo on the guest.
         """
 
         # Abort if guest is unavailable
@@ -2441,42 +2445,46 @@ class GuestSsh(Guest):
         options = options or DEFAULT_RSYNC_PUSH_OPTIONS
         if destination is None:
             destination = Path("/")
+
+        sources: list[Path]
+        log_message: str
+
         if source is None:
             # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
             parent = cast(Provision, self.parent)
-
             assert parent.plan.workdir is not None
+            sources = [parent.plan.workdir]
+            log_message = f"Push workdir to guest '{self.primary_address}'."
+        elif isinstance(source, Path):
+            sources = [source]
+            log_message = f"Copy '{source}' to '{destination}' on the guest."
+        else:  # source is a list of Paths
+            sources = source
+            log_message = f"Copy {len(sources)} files/dirs to '{destination}' on the guest."
 
-            source = parent.plan.workdir
-            self.debug(f"Push workdir to guest '{self.primary_address}'.")
-        else:
-            self.debug(f"Copy '{source}' to '{destination}' on the guest.")
+        self.debug(log_message)
 
         def rsync() -> None:
-            """
-            Run the rsync command
-            """
-
-            # In closure, mypy has hard times to reason about the state of used variables.
-            assert options
-            assert source
-            assert destination
+            """Run the rsync command"""
+            assert options is not None
+            assert sources is not None
+            assert destination is not None
 
             cmd = ['rsync']
             if superuser and self.user != 'root':
                 cmd += ['--rsync-path', 'sudo rsync']
 
-            self._run_guest_command(
-                Command(
-                    *cmd,
-                    *options,
-                    "-e",
-                    self._ssh_command.to_element(),
-                    source,
-                    f"{self._ssh_guest}:{destination}",
-                ),
-                silent=True,
+            # Construct the rsync command with potentially multiple sources
+            rsync_cmd = Command(
+                *cmd,
+                *options,
+                "-e",
+                self._ssh_command.to_element(),
+                *[str(s) for s in sources],  # Unpack all source paths
+                f"{self._ssh_guest}:{destination}",
             )
+
+            self._run_guest_command(rsync_cmd, silent=True)
 
         # Try to push twice, check for rsync after the first failure
         try:

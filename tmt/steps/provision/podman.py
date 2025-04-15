@@ -452,7 +452,7 @@ class GuestContainer(tmt.Guest):
 
     def push(
         self,
-        source: Optional[Path] = None,
+        source: Optional[Union[Path, list[Path]]] = None,
         destination: Optional[Path] = None,
         options: Optional[list[str]] = None,
         superuser: bool = False,
@@ -483,16 +483,15 @@ class GuestContainer(tmt.Guest):
         # to the container. If running in toolbox, make sure to copy from the toolbox
         # container instead of localhost.
         if source and destination:
+            sources = source if isinstance(source, list) else [source]
             container_name: Optional[str] = None
             if self.parent.plan.my_run.runner.facts.is_toolbox:
                 container_name = self.parent.plan.my_run.runner.facts.toolbox_container_name
-            self.podman(
-                Command(
-                    "cp",
-                    f"{container_name}:{source}" if container_name else source,
-                    f"{self.container}:{destination}",
-                )
-            )
+
+            for src in sources:
+                source_spec = f"{container_name}:{src}" if container_name else str(src)
+                dest_spec = f"{self.container}:{destination}"
+                self.podman(Command("cp", source_spec, dest_spec))
 
     def pull(
         self,

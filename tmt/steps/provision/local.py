@@ -160,7 +160,7 @@ class GuestLocal(tmt.Guest):
 
     def push(
         self,
-        source: Optional[Path] = None,
+        source: Optional[Union[Path, list[Path]]] = None,
         destination: Optional[Path] = None,
         options: Optional[list[str]] = None,
         superuser: bool = False,

@@ -133,8 +133,11 @@ class ScriptTemplate(Script):
     context: dict[str, str]
 
     _rendered_script_path: Optional[Path] = None
+    _delete_on_exit: bool = True  # Flag to control cleanup
 
     def __enter__(self) -> Path:
+        # Ensure flag is reset for each use
+        self._delete_on_exit = True
         with NamedTemporaryFile(mode='w', delete=False) as rendered_script:
             rendered_script.write(
                 render_template_file(
@@ -147,8 +150,19 @@ class ScriptTemplate(Script):
         return self._rendered_script_path
 
     def __exit__(self, *args: object) -> None:
-        assert self._rendered_script_path
-        os.unlink(self._rendered_script_path)
+        # Only cleanup if the flag is set
+        if self._delete_on_exit:
+            self.cleanup()
+
+    def cleanup(self) -> None:
+        """Explicitly cleans up the rendered script file."""
+        if self._rendered_script_path and self._rendered_script_path.exists():
+            self._rendered_script_path.unlink()
+            self._rendered_script_path = None
+
+    def keep_rendered_file(self) -> None:
+        """Prevents automatic deletion on __exit__."""
+        self._delete_on_exit = False
 
 
 def effective_scripts_dest_dir(default: Path = DEFAULT_SCRIPTS_DEST_DIR) -> Path:
@@ -794,28 +808,107 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
     def prepare_scripts(self, guest: "tmt.steps.provision.Guest") -> None:
         """
-        Prepare additional scripts for testing
+        Prepare additional scripts for testing by copying them to the guest.
+
+        Scripts destined for the default guest scripts path are pushed in
+        a single batch operation. Scripts with custom destination paths are
+        handled individually. Aliases are created as symbolic links after
+        the scripts are pushed.
         """
-
-        # Make sure scripts directory exists
-        command = Command("mkdir", "-p", f"{guest.scripts_path}")
-
+        # Ensure the main default scripts directory exists on the guest
+        scripts_dest_dir = guest.scripts_path
+        mkdir_command = Command("mkdir", "-p", f"{scripts_dest_dir}")
         if not guest.facts.is_superuser:
-            command = Command("sudo") + command
+            mkdir_command = Command("sudo") + mkdir_command
+        guest.execute(mkdir_command)
 
-        guest.execute(command)
+        # Group scripts by their target directory on the guest
+        # Key: Target directory path on guest
+        # Value: List of source paths (local paths) to copy into that directory
+        scripts_by_target_dir: dict[Path, list[Path]] = {}
+        # Store aliases: key is the target path on guest, value is list of alias names
+        # Aliases are created in the default scripts_dest_dir
+        aliases_to_create: dict[Path, list[str]] = {}
+        # Keep track of ScriptTemplate instances for later cleanup
+        templates_to_cleanup: list[ScriptTemplate] = []
 
-        # Install all scripts on guest
         for script in self.scripts:
+            if not script.enabled(guest):
+                continue
+
             with script as source:
-                for filename in [script.source_filename, *script.aliases]:
-                    if script.enabled(guest):
-                        guest.push(
-                            source=source,
-                            destination=script.destination_path or guest.scripts_path / filename,
-                            options=["-p", "--chmod=755"],
-                            superuser=guest.facts.is_superuser is not True,
-                        )
+                # If it's a template, prevent immediate cleanup and track it
+                if isinstance(script, ScriptTemplate):
+                    script.keep_rendered_file()
+                    templates_to_cleanup.append(script)
+                    # Use the actual rendered path as the source
+                    source_path = script._rendered_script_path
+                    assert source_path is not None  # Should be set by __enter__
+                else:
+                    source_path = source  # Use the path from __enter__ directly
+
+                destination_path = script.destination_path
+                target_dir: Path
+                final_target_path_on_guest: Path
+
+                if destination_path is None:
+                    # Default destination directory
+                    target_dir = scripts_dest_dir
+                    final_target_path_on_guest = target_dir / script.source_filename
+                    # Store aliases associated with the final target path in the default dir
+                    if script.aliases:
+                        aliases_to_create[final_target_path_on_guest] = script.aliases
+                else:
+                    # Custom destination path - treat it as the final file path
+                    target_dir = destination_path.parent
+                    final_target_path_on_guest = destination_path
+                    # Ensure the custom parent directory exists
+                    mkdir_parent_cmd = Command("mkdir", "-p", f"{target_dir}")
+                    if not guest.facts.is_superuser:
+                        mkdir_parent_cmd = Command("sudo") + mkdir_parent_cmd
+                    guest.execute(mkdir_parent_cmd)
+
+                # Add the source path to the list for its target directory
+                if target_dir not in scripts_by_target_dir:
+                    scripts_by_target_dir[target_dir] = []
+                scripts_by_target_dir[target_dir].append(source_path)
+
+        # Push script batches grouped by target directory
+        for target_dir, source_paths in scripts_by_target_dir.items():
+            if not source_paths:
+                continue
+
+            self.debug(f"Pushing script batch ({len(source_paths)} files) to {target_dir}")
+            guest.push(
+                source=source_paths,
+                destination=target_dir,
+                options=["-s", "-p", "--chmod=755"],
+                superuser=guest.facts.is_superuser is not True,
+            )
+
+        # Create aliases on the guest (only within the default scripts_dest_dir)
+        full_alias_command = ShellScript("")  # Start with an empty script
+        alias_count = 0
+        for target_path, aliases in aliases_to_create.items():
+            for alias in aliases:
+                link_path = scripts_dest_dir / alias
+                # Use absolute path for symlink target for simplicity/robustness
+                single_alias_cmd = ShellScript(
+                    f"ln -sf {target_path.as_posix()} {link_path.as_posix()}"
+                )
+                if alias_count == 0:
+                    full_alias_command = single_alias_cmd
+                else:
+                    full_alias_command &= single_alias_cmd  # Use the '&' operator (__and__)
+                alias_count += 1
+
+        if alias_count > 0:
+            self.debug("Creating script aliases on guest.")
+            guest.execute(full_alias_command, friendly_command="Create script aliases")
+
+        # Cleanup rendered templates now that they've been pushed
+        for template_script in templates_to_cleanup:
+            template_script.cleanup()
 
     def _tmt_report_results_filepath(self, invocation: TestInvocation) -> Path:
         """
