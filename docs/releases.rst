@@ -4,6 +4,15 @@
     Releases
 ======================
 
+
+tmt-1.48.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Fixed a bug that caused executed tests to remain in the
+``pending`` state when the machine became unresponsive. Tests will
+now correctly transition to the ``error`` state.
+
+
 tmt-1.47.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
