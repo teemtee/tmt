@@ -150,7 +150,7 @@ mkdir -p %{buildroot}%{_datadir}/bash-completion/completions
 install -pm 644 completions/bash/%{name} %{buildroot}%{_datadir}/bash-completion/completions/%{name}
 mkdir -p %{buildroot}/etc/%{name}/
 install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
-install -pm 644 %{name}/config/config.fmf %{buildroot}/etc/%{name}/
+install -pm 644 %{name}/config/config-dir/* %{buildroot}/etc/%{name}/config/
 
 %check
 %pyproject_check_import
