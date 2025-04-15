@@ -48,7 +48,9 @@ def main() -> None:
         if hw_requirement == 'arch':
             continue
 
-        matrix[hw_requirement] = dict.fromkeys(known_methods, (False, int))
+        matrix[hw_requirement] = {method: (False, int) for method in known_methods}  # noqa: C420
+        # C420: current implementation creates a new tuple for each method
+        # https://github.com/teemtee/tmt/pull/3662#discussion_r2040669353
 
         if not story.link:
             pass
