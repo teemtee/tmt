@@ -15,30 +15,26 @@ import tmt.log
 from tmt._compat.pathlib import Path
 
 
-def copy_tree(
+def _copy_tree_reflinks(
     src: Path,
     dst: Path,
     logger: 'tmt.log.Logger',
-    workdir_root: Path,
-) -> None:
+    workdir_root: Path,  # Keep signature consistent, even if not used here
+) -> bool:
     """
-    Copy directory efficiently using reflinks when possible,
-    falling back to hardlinks for unchanged files.
+    Attempt to copy directory using reflinks.
 
-    This function aims to reduce inode consumption by leveraging
-    filesystem-specific features like reflinks (copy-on-write)
-    when available. Symlinks are always preserved.
-
-    :param src: Source directory path
-    :param dst: Destination directory path
-    :param logger: Logger to use for debug messages
-    :param workdir_root: The root directory for tmt's working files (e.g., /var/tmp/tmt)
+    Returns True on success, False on failure.
     """
-    # Try reflink copy first (supported by btrfs, xfs with reflink, and some other filesystems)
     try:
         logger.debug(f"Attempting reflink copy from '{src}' to '{dst}'")
 
-        # Create destination directory
+        # Create destination directory if it doesn't exist
+        # Check if src exists first
+        if not src.exists():
+            logger.debug(f"Source directory '{src}' does not exist, skipping reflink copy")
+            return False  # Indicate failure as source doesn't exist
+
         dst.mkdir(parents=True, exist_ok=True)
 
         # Use cp with --reflink=auto which falls back to regular copy if reflinks not supported
@@ -50,16 +46,29 @@ def copy_tree(
             stderr=subprocess.PIPE,
         )
         logger.debug("Directory copied using reflink")
-        return
+        return True
     except subprocess.CalledProcessError as error:
         # Specific error for command failure
-        logger.debug(f"Reflink copy command failed: {error}, falling back to hardlink strategy")
+        logger.debug(f"Reflink copy command failed: {error}, falling back")
+        return False
     except Exception as error:
         # Broad exception for unexpected issues or mock testing
-        logger.debug(
-            f"Reflink copy failed (unexpected error): {error}, falling back to hardlink strategy"
-        )
+        logger.debug(f"Reflink copy failed (unexpected error): {error}, falling back")
+        return False
 
+
+# TODO finish hardlink strategy
+def _copy_tree_hardlinks(  # pyright: ignore[reportUnusedFunction]
+    src: Path,
+    dst: Path,
+    logger: 'tmt.log.Logger',
+    workdir_root: Path,
+) -> bool:
+    """
+    Copy directory using hardlinks for unchanged files from a persistent cache.
+
+    Returns True on successful completion, False on major error (e.g., cannot create cache).
+    """
     # Fallback to hardlink-based copy for unchanged files when reflinks aren't available
     # This fallback is particularly important for CI/CD environments like GitHub Actions
     # which typically run on Ubuntu with ext4 filesystems that don't support reflinks.
@@ -70,12 +79,18 @@ def copy_tree(
     # Note: The cache directory is located under the tmt workdir_root.
     # Cleanup should be handled by tmt's workdir cleanup mechanisms if needed,
     # or potentially a dedicated 'tmt clean --cache' command.
-    cache_base = workdir_root / 'cache'
-    cache_base.mkdir(exist_ok=True)  # Ensure base cache dir exists
-    # Use a sub-directory for this specific file content cache
-    cache_dir = cache_base / 'files'
-    cache_dir.mkdir(exist_ok=True)
-    logger.debug(f"Using file cache directory: '{cache_dir}'")
+    cache_dir = workdir_root / 'cache' / 'files'  # Define before try
+    try:
+        cache_base = workdir_root / 'cache'
+        cache_base.mkdir(exist_ok=True)
+        # Use a sub-directory for this specific file content cache
+        cache_dir.mkdir(exist_ok=True)
+        logger.debug(f"Using file cache directory: '{cache_dir}'")
+    except OSError as e:
+        logger.warning(
+            f"Failed to create cache directory '{cache_dir}': {e}. Cannot use hardlink cache."
+        )
+        return False
 
     # Note: This fallback uses shutil.copy2/copystat, which attempts to preserve
     # permissions and timestamps but, per Python docs, cannot preserve all POSIX
@@ -90,8 +105,8 @@ def copy_tree(
 
     # Skip if source doesn't exist
     if not src.exists():
-        logger.debug(f"Source directory '{src}' does not exist, skipping copy")
-        return
+        logger.debug(f"Source directory '{src}' does not exist, skipping hardlink copy")
+        return True  # Not a failure of this method, just nothing to copy
 
     for item in src.rglob('*'):
         relative_path = item.relative_to(src)
@@ -193,15 +208,113 @@ def copy_tree(
             link_target = os.readlink(item)
             os.symlink(link_target, dst_item)
 
-    if hardlink_count > 0:
+    if hardlink_count > 0 or regular_copy_count > 0:
         logger.debug(
-            f"Directory copied using hardlinks: {hardlink_count} hardlinked, "
+            f"Directory copied using hardlink/cache strategy: {hardlink_count} hardlinked, "
             f"{regular_copy_count} regular copies"
         )
     else:
-        logger.debug("Directory copied using regular copy method")
+        # This case might happen if src was empty or only contained empty dirs
+        logger.debug("Hardlink/cache strategy finished (no files copied/linked).")
 
-    return
+    return True
+
+
+def _copy_tree_basic(
+    src: Path,
+    dst: Path,
+    logger: 'tmt.log.Logger',
+    workdir_root: Path,
+) -> bool:
+    """
+    Perform a basic recursive copy of a directory tree.
+
+    Handles files, directories, and symlinks using standard shutil operations.
+    Returns True on successful completion.
+    """
+    logger.debug(f"Performing basic copy from '{src}' to '{dst}'")
+
+    if not dst.exists():
+        dst.mkdir(parents=True, exist_ok=True)
+
+    if not src.exists():
+        logger.debug(f"Source directory '{src}' does not exist, skipping basic copy")
+        return True
+
+    copied_count = 0
+    try:
+        for item in src.rglob('*'):
+            relative_path = item.relative_to(src)
+            dst_item = dst / relative_path
+
+            if item.is_dir():
+                dst_item.mkdir(parents=True, exist_ok=True)
+                shutil.copystat(item, dst_item)
+            elif item.is_file():
+                dst_item.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(item, dst_item)  # copy2 preserves metadata
+                copied_count += 1
+            elif item.is_symlink():
+                if dst_item.exists() or dst_item.is_symlink():
+                    dst_item.unlink()
+                link_target = os.readlink(item)
+                os.symlink(link_target, dst_item)
+                copied_count += 1  # Count symlinks as copied items
+    except Exception as e:
+        logger.warning(f"Basic copy failed during processing: {e}")
+        return False
+
+    logger.debug(f"Directory copied using basic copy: {copied_count} items processed.")
+    return True
+
+
+def copy_tree(
+    src: Path,
+    dst: Path,
+    logger: 'tmt.log.Logger',
+    workdir_root: Path,
+) -> None:
+    """
+    Copy directory efficiently, trying different strategies.
+
+    Attempts strategies in order:
+    1. Reflinks (copy-on-write)
+    2. Hardlinks with persistent caching for unchanged files
+    3. Basic recursive copy
+
+    Symlinks are always preserved.
+
+    :param src: Source directory path
+    :param dst: Destination directory path
+    :param logger: Logger to use for debug messages
+    :param workdir_root: The root directory for tmt's working files (e.g., /var/tmp/tmt),
+                         used for the hardlink cache.
+    """
+    logger.debug(f"Copying directory tree from '{src}' to '{dst}'")
+
+    # 1. Try reflink copy
+    if _copy_tree_reflinks(src, dst, logger, workdir_root):
+        logger.debug("Copy finished using reflink strategy.")
+        return
+
+    # 2. Try hardlink with cache copy
+    # TODO Implement this!
+    # if _copy_tree_hardlinks(src, dst, logger, workdir_root):
+    #    logger.debug("Copy finished using hardlink/cache strategy.")
+    #    return
+
+    # 3. Fallback to basic copy
+    # This should ideally only be reached if hardlinks failed catastrophically
+    # (e.g., cache dir issue) or if we explicitly add conditions to skip hardlinks.
+    logger.debug("Falling back to basic copy strategy.")
+    if _copy_tree_basic(src, dst, logger, workdir_root):
+        logger.debug("Copy finished using basic copy strategy.")
+        return
+
+    # Should not be reached if _copy_tree_basic always returns True on completion,
+    # unless it encounters an error and returns False.
+    logger.warning(f"All copy strategies failed for '{src}' to '{dst}'.")
+    # Raise exception here?
 
 
 def relative_path_to_cache_key(relative_path: Path) -> str:

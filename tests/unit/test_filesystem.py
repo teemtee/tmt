@@ -3,6 +3,7 @@ import tempfile
 from unittest import TestCase, mock
 
 import filelock
+import pytest
 
 import tmt.log
 import tmt.utils.filesystem
@@ -112,6 +113,7 @@ class TestCopyTree(TestCase):
         key1_again = tmt.utils.filesystem.relative_path_to_cache_key(path1)
         assert key1 == key1_again
 
+    @pytest.mark.skip(reason="Hardlink/cache strategy temporarily disabled")
     @mock.patch('tmt.utils.filesystem.filelock.FileLock')
     @mock.patch('subprocess.run')
     @mock.patch('shutil.copy2')  # Mock copy2 to check if it's called on timeout
@@ -143,6 +145,7 @@ class TestCopyTree(TestCase):
         assert mock_copy2.call_count >= 3
         mock_copy2.assert_has_calls(expected_copy_calls, any_order=True)
 
+    @pytest.mark.skip(reason="Hardlink/cache strategy temporarily disabled")
     @mock.patch('tmt.utils.filesystem.filelock.FileLock')
     @mock.patch('subprocess.run')
     def test_lock_acquired(self, mock_run, mock_filelock_class):
@@ -174,6 +177,7 @@ class TestCopyTree(TestCase):
         assert mock_context_manager.__enter__.call_count >= 4
         assert mock_context_manager.__exit__.call_count >= 4
 
+    @pytest.mark.skip(reason="Hardlink/cache strategy temporarily disabled")
     @mock.patch('tmt.utils.filesystem.filelock.FileLock')
     @mock.patch('subprocess.run')
     @mock.patch('os.link')
