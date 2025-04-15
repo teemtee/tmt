@@ -1,4 +1,5 @@
-from typing import Any, Optional, Union
+import shutil
+from typing import Any, Optional, Union, cast
 
 import tmt
 import tmt.base
@@ -165,8 +166,45 @@ class GuestLocal(tmt.Guest):
         superuser: bool = False,
     ) -> None:
         """
-        Nothing to be done to push workdir
+        Push files to the guest (localhost)
+
+        Essentially copies files/directories to the target destination.
         """
+        if source is None:
+            # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
+            parent = cast(tmt.steps.provision.Provision, self.parent)
+            assert parent.plan.workdir is not None
+            source = parent.plan.workdir
+            self.debug(f"Push workdir to guest '{self.primary_address}'.")
+        else:
+            self.debug(f"Copy '{source}' to '{destination}' on the guest.")
+
+        if destination is None:
+            destination = Path("/")
+
+        # Ensure the destination exists
+        if not destination.exists():
+            try:
+                destination.mkdir(parents=True, exist_ok=True)
+            except OSError as e:
+                raise tmt.utils.ProvisionError(
+                    f"Failed to create destination directory '{destination}': {e}"
+                ) from e
+
+        # Perform the copy
+        try:
+            if source.is_dir():
+                # Use copytree for directories, copy contents into destination
+                shutil.copytree(source, destination, dirs_exist_ok=True, symlinks=True)
+            elif source.is_file():
+                # Use copy2 for files to preserve metadata
+                shutil.copy2(source, destination)
+            else:
+                self.warn(f"Source '{source}' is neither a file nor a directory, skipping.")
+        except Exception as e:
+            raise tmt.utils.ProvisionError(
+                f"Failed to copy '{source}' to '{destination}': {e}"
+            ) from e
 
     def pull(
         self,
