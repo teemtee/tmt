@@ -1709,6 +1709,14 @@ class Guest(tmt.utils.Common):
     ) -> None:
         """
         Push files to the guest
+
+        By default the whole plan workdir is synced to the same location
+        on the guest. Use the 'source' and 'destination' to sync custom
+        location and the 'options' parameter to modify default options
+        which are '-Rrz --links --safe-links --delete'.
+
+        Set 'superuser' if rsync command has to run as root or passwordless
+        sudo on the Guest (e.g. pushing to r/o destination)
         """
 
         raise NotImplementedError
