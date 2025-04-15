@@ -96,7 +96,7 @@ class ContextObject:
     common: tmt.utils.Common
     fmf_context: tmt.utils.FmfContext
     tree: tmt.Tree
-    steps: set[str] = simple_field(default_factory=lambda: set[str]())
+    steps: set[str] = simple_field(default_factory=set[str])
     clean: Optional[tmt.Clean] = None
     clean_logger: Optional[tmt.log.Logger] = None
     clean_partials: collections.defaultdict[str, list[tmt.base.CleanCallback]] = simple_field(
