@@ -5,11 +5,11 @@ description: |
     environment should be prepared so that the tests can be
     successfully executed.
 
-    The :ref:`/spec/plans/prepare/install` plugin provides an easy
+    The :ref:`/plugins/prepare/install` plugin provides an easy
     way to install required or recommended packages from disk and
     from the official distribution or copr repositories. Use the
-    :ref:`/spec/plans/prepare/ansible` plugin for applying custom
-    playbooks or execute :ref:`/spec/plans/prepare/shell` scripts
+    :ref:`/plugins/prepare/ansible` plugin for applying custom
+    playbooks or execute :ref:`/plugins/prepare/shell` scripts
     to perform arbitrary preparation tasks.
 
     Use the ``order`` attribute to select in which order the
@@ -57,60 +57,6 @@ example: |
       - name: service
         how: shell
         script: systemctl start httpd
-
-/shell:
-    summary:
-        Prepare system using shell (bash) commands
-
-    example: |
-        prepare:
-            how: shell
-            script: dnf install -y httpd
-    link:
-      - implemented-by: /tmt/steps/provision
-
-/ansible:
-    summary:
-        Apply ansible playbook to get the desired final state.
-    description: |
-        .. note::
-
-            Depending on the specific setup of the test runner,
-            there might be limitations affecting which playbooks
-            can be used, for example the list of available ansible
-            collections. See the :ref:`test-runner` section for
-            details.
-
-    example: |
-        prepare:
-            how: ansible
-            playbook:
-                - playbooks/common.yml
-                - playbooks/os/rhel7.yml
-                - https://foo.bar/rhel7-final-touches.yml
-            extra-args: '-vvv'
-    link:
-      - implemented-by: /tmt/steps/provision
-      - verified-by: /tests/prepare/ansible
-
-/feature:
-    summary:
-        Easily enable and disable common features
-    example: |
-        prepare:
-            how: feature
-            epel: enabled
-    link:
-      - implemented-by: /tmt/steps/prepare/feature
-      - verified-by: /tests/prepare/feature
-
-/install:
-    summary:
-        Install packages on the guest
-
-    link:
-      - implemented-by: /tmt/steps/provision
-      - verified-by: /tests/prepare/install
 
 /where:
     summary: Apply preparation on selected guests
