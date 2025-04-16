@@ -72,7 +72,7 @@ def _collect_playbook_modules(feature_cls: FeatureClass, logger: tmt.log.Logger)
 
     # Find module-like keys in playbooks, inspecting one by one.
     def _collect_from_playbooks(playbooks: set[str]) -> Iterator[str]:
-        for playbook_filename in feature_cls.PLAYBOOKS:
+        for playbook_filename in playbooks:
             playbook_filepath = feature_cls._find_playbook(playbook_filename, logger)
 
             if playbook_filepath is None:
