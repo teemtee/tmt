@@ -1,208 +1,14 @@
 summary: Report test results
-story:
-    As a tester I want to have a nice overview of results once
-    the testing is finished.
 description:
-    Report test results according to user preferences.
+    Report test results according to user preferences. For more information
+    about the supported report methods, check the :ref:`/plugins/report`
+    documentation.
 example: []
-
-/display:
-    summary: Show results in the terminal window
-    story:
-        As a tester I want to see test results in the plain text
-        form in my shell session.
-    description:
-        Test results will be displayed as part of the command line
-        tool output directly in the terminal. Allows to select the
-        desired level of verbosity
-    example: |
-        tmt run -l report        # overall summary only
-        tmt run -l report -v     # individual test results
-        tmt run -l report -vv    # show full paths to logs
-        tmt run -l report -vvv   # provide complete test output
-    link:
-      - implemented-by: /tmt/steps/report/display.py
-
-/html:
-    summary: Generate a web page with test results
-    story:
-        As a tester I want to review results in a nicely arranged
-        web page with links to detailed test output.
-    description:
-        Create a local ``html`` file with test results arranged in
-        a table. Optionally open the page in the default browser.
-    example: |
-        # Enable html report from the command line
-        tmt run --all report --how html
-        tmt run --all report --how html --open
-        tmt run -l report -h html -o
-
-        # Use html as the default report for given plan
-        report:
-            how: html
-            open: true
-    link:
-      - implemented-by: /tmt/steps/report/html.py
-
-/junit:
-    summary: Generate a JUnit report file
-    story:
-        As a tester I want to review results in a JUnit xml file.
-    description:
-        Create a JUnit file ``junit.xml`` with test results.
-    example: |
-        # Enable junit report from the command line
-        tmt run --all report --how junit
-        tmt run --all report --how junit --file test.xml
-
-        # Use junit as the default report for given plan
-        report:
-            how: junit
-            file: test.xml
-    link:
-        - implemented-by: /tmt/steps/report/junit.py
-
-/polarion:
-    summary: Generate an xUnit file and export it into Polarion
-    story:
-        As a tester I want to review tests in Polarion
-        and have all results linked to existing test cases there.
-    description: |
-        Write test results into an xUnit file and upload to Polarion.
-
-        In order to get quickly started create a pylero config
-        file ``~/.pylero`` in your home directory with the
-        following content:
-
-        .. code-block:: ini
-
-            [webservice]
-            url=https://{your polarion web URL}/polarion
-            svn_repo=https://{your polarion web URL}/repo
-            default_project={your project name}
-            user={your username}
-            password={your password}
-
-        See the `Pylero Documentation`__ for more details on how
-        to configure the ``pylero`` module.
-
-        __ https://github.com/RedHatQE/pylero
-
-        .. note::
-
-            For Polarion report to export correctly you need to
-            use password authentication, since exporting the
-            report happens through Polarion XUnit importer which
-            does not support using tokens. You can still
-            authenticate with token to only generate the report
-            using ``--no-upload`` argument.
-
-        .. note::
-
-            Your Polarion project might need a custom value format
-            for the ``arch``, ``planned-in`` and other fields. The
-            format of these fields might differ across Polarion
-            projects, for example, ``x8664`` can be used instead
-            of ``x86_64`` for the architecture.
-
-    example:
-      - |
-        # Enable polarion report from the command line
-        tmt run --all report --how polarion --project-id tmt
-        tmt run --all report --how polarion --project-id tmt --no-upload --file test.xml
-
-      - |
-        # Use polarion as the default report for given plan
-        report:
-            how: polarion
-            file: test.xml
-            project-id: tmt
-            title: tests_that_pass
-            planned-in: RHEL-9.1.0
-            pool-team: sst_tmt
-    link:
-        - implemented-by: /tmt/steps/report/polarion.py
-
-/reportportal:
-    summary: Report test results to a ReportPortal instance
-    story:
-        As a tester I want to review results in a nicely arranged
-        web page, filter them via context attributes and get links
-        to detailed test output and other test information.
-    description:
-        Provide test results and fmf data per each plan,
-        and send it to a Report Portal instance via its API
-        with token, url and project name given.
-
-        Note that all options can be passed as environment variables
-        in the format TMT_PLUGIN_REPORT_REPORTPORTAL_${OPTION}
-        to enable execution purely via metadata and/or
-        environment variables (e.g. in Testing Farm).
-
-    example:
-      - |
-        # Optionally set environment variables according to TMT_PLUGIN_REPORT_REPORTPORTAL_${OPTION}
-        export TMT_PLUGIN_REPORT_REPORTPORTAL_URL=${url-to-RP-instance}
-        export TMT_PLUGIN_REPORT_REPORTPORTAL_TOKEN=${token-from-RP-profile}
-
-        # Boolean options are activated with value of 1:
-        TMT_PLUGIN_REPORT_REPORTPORTAL_SUITE_PER_PLAN=1
-
-      - |
-        # Enable ReportPortal report from the command line depending on the use case:
-
-        ## Simple upload with all project, url endpoint and user token passed in command line
-        tmt run --all report --how reportportal --project=baseosqe --url="https://reportportal.xxx.com" --token="abc...789"
-
-        ## Simple upload with url and token exported in environment variable
-        tmt run --all report --how reportportal --project=baseosqe
-
-        ## Upload with project name in fmf data, filtering out parameters (environment variables) that tend to be unique and break the history aggregation
-        tmt run --all report --how reportportal --exclude-variables="^(TMT|PACKIT|TESTING_FARM).*"
-
-        ## Upload all plans as suites into one ReportPortal launch
-        tmt run --all report --how reportportal --suite-per-plan --launch=Errata --launch-description="..."
-
-        ## Rerun the launch with suite structure for the test results to be uploaded into the latest launch with the same name as a new 'Retry' tab (mapping based on unique paths)
-        tmt run --all report --how reportportal --suite-per-plan --launch=Errata --launch-rerun
-
-        ## Rerun the tmt run and append the new result logs under the previous one uploaded in ReportPortal (precise mapping)
-        tmt run --id run-012 --all report --how reportportal --again
-
-        ## Additional upload of new suites into given launch with suite structure
-        tmt run --all report --how reportportal --suite-per-plan --upload-to-launch=4321
-
-        ## Additional upload of new tests into given launch with non-suite structure
-        tmt run --all report --how reportportal --launch-per-plan --upload-to-launch=1234
-
-        ## Additional upload of new tests into given suite
-        tmt run --all report --how reportportal --upload-to-suite=123456
-
-        ## Upload Idle tests, then execute it and add result logs into prepared empty tests
-        tmt run discover report --how reportportal --defect-type=Idle
-        tmt run --last --all report --how reportportal --again
-      - |
-        # Use ReportPortal as the default report for given plan
-        report:
-            how: reportportal
-            project: baseosqe
-
-        # Report context attributes for given plan
-        context:
-            ...
-      - |
-        # Report description, contact, id and environment variables for given test
-        summary: ...
-        contact: ...
-        id: ...
-        environment:
-            ...
-    link:
-        - implemented-by: /tmt/steps/report/reportportal.py
+link:
+    - implemented-by: /tmt/steps/report
 
 /file:
     description: |
-
         Save the report into a ``report.yaml`` file.
 
         The ``OVERALL_RESULT`` is the overall result of all plan
@@ -261,6 +67,9 @@ example: []
                         result: TEST_RESULT
                         log:
                           - LOG_PATH
+    # Not implemented yet, do not inherit link from parent
+    link:
+
 /when:
     summary: Conditional step configuration
     description: |

@@ -483,6 +483,19 @@ class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
 
     When ``file`` is not specified, output is written into a file named ``junit.xml`` located in
     the current workdir.
+
+    .. code-block:: yaml
+
+        # Enable junit report from the command line
+        tmt run --all report --how junit
+        tmt run --all report --how junit --file test.xml
+
+    .. code-block:: yaml
+
+        # Use junit as the default report for given plan
+        report:
+            how: junit
+            file: test.xml
     """
 
     _data_class = ReportJUnitData
