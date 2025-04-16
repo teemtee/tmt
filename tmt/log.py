@@ -41,8 +41,6 @@ from typing import (
     cast,
 )
 
-import click
-
 from tmt._compat.pathlib import Path
 from tmt._compat.warnings import deprecated
 from tmt.container import container, simple_field
@@ -50,6 +48,7 @@ from tmt.container import container, simple_field
 if TYPE_CHECKING:
     import tmt.cli
     import tmt.utils
+    import tmt.utils.themes
 
 # Log in workdir
 LOG_FILENAME = 'log.txt'
@@ -188,10 +187,12 @@ def render_labels(labels: list[str]) -> str:
     if not labels:
         return ''
 
+    from tmt.utils.themes import style
+
     return ''.join(
         # TODO: color here is questionable - it will be removed, but I'd rather not
         # add it at first place, and it should be configurable.
-        click.style(LABEL_FORMAT.format(label=label), fg='cyan')
+        style(LABEL_FORMAT.format(label=label), fg='cyan')
         for label in labels
     )
 
@@ -199,7 +200,7 @@ def render_labels(labels: list[str]) -> str:
 def indent(
     key: str,
     value: Optional[LoggableValue] = None,
-    color: Optional[str] = None,
+    color: 'tmt.utils.themes.Style' = None,
     level: int = 0,
     labels: Optional[list[str]] = None,
     labels_padding: int = 0,
@@ -222,11 +223,12 @@ def indent(
         length.
     """
 
+    from tmt.utils.themes import style
+
     indent = ' ' * INDENT * level
 
     # Colorize
-    if color is not None:
-        key = click.style(key, fg=color)
+    key = style(key, style=color)
 
     # Prepare prefix if labels provided
     prefix = render_labels(labels).ljust(labels_padding) + ' ' if labels else ''
@@ -266,7 +268,7 @@ class LogRecordDetails:
     key: str
     value: Optional[LoggableValue] = None
 
-    color: Optional[str] = None
+    color: 'tmt.utils.themes.Style' = None
     shift: int = 0
 
     logger_labels: list[str] = simple_field(default_factory=list)
@@ -435,7 +437,7 @@ class LoggingFunction(Protocol):
         self,
         key: str,
         value: Optional[str] = None,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         level: int = 1,
         topic: Optional[Topic] = None,
@@ -766,7 +768,7 @@ class Logger:
     def print_format(
         self,
         text: str,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
     ) -> str:
         """
@@ -787,7 +789,7 @@ class Logger:
     def print(
         self,
         text: str,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         file: Optional[TextIO] = None,
     ) -> None:
@@ -799,7 +801,7 @@ class Logger:
         self,
         key: str,
         value: Optional[LoggableValue] = None,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
     ) -> None:
         self._log(logging.INFO, LogRecordDetails(key=key, value=value, color=color, shift=shift))
@@ -808,7 +810,7 @@ class Logger:
         self,
         key: str,
         value: Optional[LoggableValue] = None,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         level: int = 1,
         topic: Optional[Topic] = None,
@@ -829,7 +831,7 @@ class Logger:
         self,
         key: str,
         value: Optional[LoggableValue] = None,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         level: int = 1,
         topic: Optional[Topic] = None,

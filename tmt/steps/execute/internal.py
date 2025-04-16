@@ -3,7 +3,6 @@ import subprocess
 import textwrap
 from typing import Any, Optional, cast
 
-import click
 import jinja2
 
 import tmt
@@ -13,6 +12,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.execute
 import tmt.utils
+import tmt.utils.themes
 from tmt.container import container, field
 from tmt.result import BaseResult, Result, ResultOutcome
 from tmt.steps import safe_filename
@@ -34,6 +34,7 @@ from tmt.utils import (
     format_duration,
     format_timestamp,
 )
+from tmt.utils.themes import style
 
 TEST_PIDFILE_FILENAME = 'tmt-test.pid'
 TEST_PIDFILE_LOCK_FILENAME = f'{TEST_PIDFILE_FILENAME}.lock'
@@ -456,7 +457,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         self,
         key: str,
         value: Optional[str] = None,
-        color: Optional[str] = None,
+        color: tmt.utils.themes.Style = None,
         shift: int = 2,
         level: int = 3,
         topic: Optional[tmt.log.Topic] = None,
@@ -551,7 +552,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         def _test_output_logger(
             key: str,
             value: Optional[str] = None,
-            color: Optional[str] = None,
+            color: tmt.utils.themes.Style = None,
             shift: int = 2,
             level: int = 3,
             topic: Optional[tmt.log.Topic] = None,
@@ -744,7 +745,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 )
 
                 assert invocation.real_duration is not None  # narrow type
-                duration = click.style(invocation.real_duration, fg='cyan')
+                duration = style(invocation.real_duration, fg='cyan')
                 shift = 1 if self.verbosity_level < 2 else 2
 
                 # Handle test restart. May include guest reboot too.
@@ -792,7 +793,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
                 # If test duration information is missing, print 8 spaces to keep indentation
                 def _format_duration(result: BaseResult) -> str:
-                    return click.style(result.duration, fg='cyan') if result.duration else 8 * ' '
+                    return style(result.duration, fg='cyan') if result.duration else 8 * ' '
 
                 for result in invocation.results:
                     logger.verbose(

@@ -1337,10 +1337,10 @@ _test_format_value_big_list = list(range(1, 20))
             {'foo': 1, 'bar': 2.34, 'baz': 'qux', 'corge': False},
             None,
             """
-            foo: 1
-            bar: 2.34
-            baz: qux
-            corge: false
+            foo\033[0m: 1
+            bar\033[0m: 2.34
+            baz\033[0m: qux
+            corge\033[0m: false
             """,
         ),
         # string
@@ -1378,29 +1378,29 @@ _test_format_value_big_list = list(range(1, 20))
             _test_format_value_complex_structure,
             None,
             """
-            foo:
+            foo\033[0m:
               - bar
               - baz
-              - qux: fred
-                xyyzy:
+              - qux\033[0m: fred
+                xyyzy\033[0m:
                   - 1
                   - false
                   - 17.19
               - corge
-            nested1:
-                n2:
-                    nest3: true
-                n4: true
-                n5: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-            some boolean: true
-            empty list:
-            nested empty list:
+            nested1\033[0m:
+                n2\033[0m:
+                    nest3\033[0m: true
+                n4\033[0m: true
+                n5\033[0m: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+            some boolean\033[0m: true
+            empty list\033[0m:
+            nested empty list\033[0m:
               - 1
               - false
               - []
               - 17.19
-            single item list: false
-            another single item list:
+            single item list\033[0m: false
+            another single item list\033[0m:
               - foo
                 bar
             """,  # noqa: E501
@@ -1410,20 +1410,20 @@ _test_format_value_big_list = list(range(1, 20))
             _test_format_value_complex_structure,
             30,
             """
-            foo:
+            foo\033[0m:
               - bar
               - baz
-              - qux: fred
-                xyyzy:
+              - qux\033[0m: fred
+                xyyzy\033[0m:
                   - 1
                   - false
                   - 17.19
               - corge
-            nested1:
-                n2:
-                    nest3: true
-                n4: true
-                n5:
+            nested1\033[0m:
+                n2\033[0m:
+                    nest3\033[0m: true
+                n4\033[0m: true
+                n5\033[0m:
                     Lorem ipsum dolor
                     sit amet,
                     consectetur
@@ -1433,15 +1433,15 @@ _test_format_value_big_list = list(range(1, 20))
                     ut labore et
                     dolore magna
                     aliqua.
-            some boolean: true
-            empty list:
-            nested empty list:
+            some boolean\033[0m: true
+            empty list\033[0m:
+            nested empty list\033[0m:
               - 1
               - false
               - []
               - 17.19
-            single item list: false
-            another single item list:
+            single item list\033[0m: false
+            another single item list\033[0m:
               - foo
                 bar
             """,
@@ -1451,24 +1451,24 @@ _test_format_value_big_list = list(range(1, 20))
             _test_format_value_complex_structure,
             120,
             """
-            foo:
+            foo\033[0m:
               - bar
               - baz
-              - qux: fred
-                xyyzy: '1', 'false' and '17.19'
+              - qux\033[0m: fred
+                xyyzy\033[0m: '1', 'false' and '17.19'
               - corge
-            nested1:
-                n2:
-                    nest3: true
-                n4: true
-                n5:
+            nested1\033[0m:
+                n2\033[0m:
+                    nest3\033[0m: true
+                n4\033[0m: true
+                n5\033[0m:
                     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
                     dolore magna aliqua.
-            some boolean: true
-            empty list:
-            nested empty list: '1', 'false', [] and '17.19'
-            single item list: false
-            another single item list:
+            some boolean\033[0m: true
+            empty list\033[0m:
+            nested empty list\033[0m: '1', 'false', [] and '17.19'
+            single item list\033[0m: false
+            another single item list\033[0m:
               - foo
                 bar
             """,  # noqa: E501
@@ -1534,13 +1534,13 @@ _test_format_value_big_list = list(range(1, 20))
             """,  # noqa: E501
         ),
         # environment
-        (tmt.utils.Environment.from_dict({'FOO': 'BAR'}), None, 'FOO: BAR'),
+        (tmt.utils.Environment.from_dict({'FOO': 'BAR'}), None, 'FOO\033[0m: BAR'),
         # fmf context
         (
             tmt.utils.FmfContext({'foo': ['bar', 'baz']}),
             None,
             """
-            foo:
+            foo\033[0m:
               - bar
               - baz
             """,

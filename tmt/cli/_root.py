@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Optional
 import click
 import fmf
 import fmf.utils
-from click import echo, style
+from click import echo
 
 import tmt
 import tmt.base
@@ -36,6 +36,7 @@ import tmt.utils.rest
 from tmt.cli import CliInvocation, Context, ContextObject, CustomGroup, pass_context
 from tmt.options import Deprecated, create_options_decorator, option
 from tmt.utils import Command, Path, effective_workdir_root
+from tmt.utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.steps.discover

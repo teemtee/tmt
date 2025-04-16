@@ -31,7 +31,7 @@ import fmf
 import fmf.base
 import fmf.utils
 import jsonschema
-from click import confirm, echo, style
+from click import confirm, echo
 from fmf.utils import listed
 from ruamel.yaml.error import MarkedYAMLError
 
@@ -81,6 +81,7 @@ from tmt.utils import (
     normalize_shell_script,
     verdict,
 )
+from tmt.utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.cli
