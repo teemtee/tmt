@@ -17,6 +17,7 @@ import fmf.utils
 from click import echo
 
 import tmt
+import tmt._bootstrap
 import tmt.base
 import tmt.cli
 import tmt.config
@@ -160,7 +161,7 @@ def main(
     #
     # ignore[unused-ignore]: mypy does not report this issue, and the
     # ignore fools mypy into reporting the waiver as unused.
-    tmt.cli.EXCEPTION_LOGGER = logger  # type: ignore[reportConstantRedefinition,unused-ignore]
+    tmt._bootstrap.EXCEPTION_LOGGER = logger  # type: ignore[reportConstantRedefinition,unused-ignore]
 
     # Save click context and fmf context for future use
     tmt.utils.Common.store_cli_invocation(click_contex)
