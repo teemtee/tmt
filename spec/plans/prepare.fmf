@@ -12,6 +12,9 @@ description: |
     playbooks or execute :ref:`/plugins/prepare/shell` scripts
     to perform arbitrary preparation tasks.
 
+    See the :ref:`/plugins/prepare` section for the full list of
+    available prepare plugins and their supported options.
+
     Use the ``order`` attribute to select in which order the
     preparation should happen if there are multiple configs.
     The following are predefined ``order`` values of various
@@ -57,6 +60,11 @@ example: |
       - name: service
         how: shell
         script: systemctl start httpd
+
+link:
+    - implemented-by: /tmt/steps/prepare
+    - verified-by: /tests/prepare
+
 
 /where:
     summary: Apply preparation on selected guests
