@@ -49,9 +49,6 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
     """
     Format test results into an HTML report.
 
-    *As a tester I want to review results in a nicely arranged
-    web page with links to detailed test output.*
-
     Create a local ``html`` file with test results arranged in
     a table. Optionally open the page in the default browser.
 
@@ -63,6 +60,8 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
         tmt run --all report --how html
         tmt run --all report --how html --open
         tmt run -l report -h html -o
+
+    .. code-block:: yaml
 
         # Use html as the default report for given plan
         report:

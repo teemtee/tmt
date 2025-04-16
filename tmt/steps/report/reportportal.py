@@ -291,10 +291,6 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
     """
     Report test results and their subresults to a ReportPortal instance via API.
 
-    *As a tester I want to review results in a nicely arranged
-    web page, filter them via context attributes and get links
-    to detailed test output and other test information.*
-
     For communication with Report Portal API is necessary to provide
     following options:
 

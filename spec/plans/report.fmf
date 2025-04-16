@@ -1,7 +1,4 @@
 summary: Report test results
-story:
-    As a tester I want to have a nice overview of results once
-    the testing is finished.
 description:
     Report test results according to user preferences. For more information
     about the supported report methods, check the :ref:`/plugins/report`

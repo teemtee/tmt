@@ -211,9 +211,6 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
     """
     Write test results into an xUnit file and upload to Polarion.
 
-    *As a tester I want to review tests in Polarion
-    and have all results linked to existing test cases there.*
-
     In order to get quickly started create a pylero config
     file ``~/.pylero`` in your home directory with the
     following content:
