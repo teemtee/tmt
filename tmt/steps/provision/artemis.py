@@ -753,9 +753,9 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
 
     .. note::
 
-        When used together with TF infrastructure
+        When used together with the Testing Farm infrastructure
         some of the options from the first example below
-        will be filled for you by the TF service.
+        will be filled for you by the the Testing Farm service.
 
     .. note::
 
