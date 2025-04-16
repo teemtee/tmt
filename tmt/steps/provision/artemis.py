@@ -727,6 +727,21 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
     """
     Provision guest using Artemis backend.
 
+    Reserve a machine using the Artemis service.
+    Users can specify many requirements, mostly regarding the
+    desired OS, RAM, disk size and more. Most of the HW specifications
+    defined in the :ref:`/spec/hardware` are supported. Including the
+    :ref:`/spec/plans/provision/kickstart`.
+
+    Artemis takes machines from AWS, OpenStack, Beaker or Azure.
+    By default, Artemis handles the selection of a cloud provider
+    to its best abilities and the required specification. However, it
+    is possible to specify the keyword ``pool`` and select the
+    desired cloud provider.
+
+    Artemis project:
+    https://gitlab.com/testing-farm/artemis
+
     Minimal configuration could look like this:
 
     .. code-block:: yaml
@@ -735,6 +750,12 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
             how: artemis
             image: Fedora
             api-url: https://your-artemis.com/
+
+    .. note::
+
+        When used together with the Testing Farm infrastructure
+        some of the options from the first example below
+        will be filled for you by the Testing Farm service.
 
     .. note::
 

@@ -573,6 +573,16 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
             how: container
             image: fedora:latest
 
+    .. code-block:: yaml
+
+        # Use an image with a non-root user with sudo privileges,
+        # and run scripts with sudo.
+        provision:
+            how: container
+            image: image with non-root user with sudo privileges
+            user: tester
+            become: true
+
     In order to always pull the fresh container image use ``pull: true``.
 
     In order to run the container with different user as the default ``root``,

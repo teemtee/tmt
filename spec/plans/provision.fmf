@@ -1,16 +1,7 @@
 summary: Provision a system for testing
 
 description: |
-    Describes what environment is needed for testing and how it
-    should be provisioned. There are several provision plugins
-    supporting multiple ways to provision the environment for
-    testing, for example
-    :ref:`/spec/plans/provision/virtual`,
-    :ref:`/spec/plans/provision/container`,
-    :ref:`/spec/plans/provision/connect`,
-    :ref:`/spec/plans/provision/local` or
-    :ref:`/spec/plans/provision/artemis`.
-    See individual plugin documentation for details about
+    See the :ref:`/plugins/provision` documentation for details about
     supported options.
 
     As part of the provision step it is also possible to specify
@@ -29,73 +20,8 @@ example: |
         how: virtual
         image: fedora
 
-/virtual:
-    summary: Provision a virtual machine (default)
-    description:
-        Create a new virtual machine on the localhost using
-        testcloud (libvirt). Testcloud takes care of downloading
-        an image and making necessary changes to it for optimal
-        experience (such as disabling UseDNS and GSSAPI for SSH).
-
-    example:
-      - |
-        # Provision a fedora virtual machine
-        provision:
-            how: virtual
-            image: fedora
-      - |
-        # Provision a virtual machine from a specific QCOW2 file,
-        # using specific memory and disk settings, using the fedora user,
-        # and using sudo to run scripts.
-        provision:
-            how: virtual
-            image: https://download.fedoraproject.org/pub/fedora/linux/releases/39/Cloud/x86_64/images/Fedora-Cloud-Base-39-1.5.x86_64.qcow2
-            user: fedora
-            become: true
-            # in MB
-            memory: 2048
-            # in GB
-            disk: 30
-
-    link:
-      - implemented-by: /tmt/steps/provision/testcloud.py
-
-/local:
-    summary: Use the localhost for testing
-    description:
-        Do not provision any system. Tests will be executed
-        directly on the localhost. Note that for some actions like
-        installing additional packages you need root permission or
-        enabled sudo.
-    example: |
-        provision:
-            how: local
-    link:
-      - implemented-by: /tmt/steps/provision/local.py
-      - verified-by: /tests/init/base
-
-/container:
-    summary: Provision a container
-    description:
-        Download (if necessary) and start a new container using
-        podman or docker.
-
-    example:
-      - |
-        # Use the fedora:latest image
-        provision:
-            how: container
-            image: fedora:latest
-      - |
-        # Use an image with a non-root user with sudo privileges,
-        # and run scripts with sudo.
-        provision:
-            how: container
-            image: image with non-root user with sudo privileges
-            user: tester
-            become: true
-    link:
-      - implemented-by: /tmt/steps/provision/podman.py
+link:
+    - implemented-by: /tmt/steps/provision
 
 /openstack:
     summary: Provision a virtual machine in OpenStack
@@ -105,96 +31,6 @@ example: |
         provision:
             how: openstack
             image: f31
-
-/beaker:
-    summary: Provision a machine in Beaker
-    description: |
-        Reserve a machine from the Beaker pool using the ``mrack``
-        plugin.  `mrack`__ is a multicloud provisioning library
-        supporting multiple cloud services including Beaker.
-
-        The following two files are used for configuration:
-
-        /etc/tmt/mrack.conf
-            for basic configuration
-
-        /etc/tmt/provisioning-config.yaml
-            configuration per supported provider
-
-        Beaker installs distribution specified by the ``image``
-        key. If the image can not be translated using the
-        ``provisioning-config.yaml`` file mrack passes the image
-        value to Beaker hub and tries to request distribution
-        based on the image value. This way we can bypass default
-        translations and use desired distribution specified like
-        the one in the example below.
-
-        __ https://github.com/neoave/mrack
-
-        .. versionadded:: 1.22
-
-    example:
-      - |
-        # Use image name translation
-        provision:
-            how: beaker
-            image: fedora
-      - |
-        # Specify the distro directly
-        provision:
-            how: beaker
-            image: Fedora-37%
-      - |
-        # Set custom whiteboard description (added in 1.30)
-        provision:
-            how: beaker
-            whiteboard: Just a smoke test for now
-
-    link:
-      - implemented-by: /tmt/steps/provision/mrack.py
-      - verified-by: /plans/provision/beaker
-
-
-/connect:
-    summary: Connect to a provisioned box
-    description: |
-        Do not provision a new system. Instead, use provided
-        authentication data to connect to a running machine.
-
-        guest
-            hostname or ip address of the box
-        user
-            user name to be used to log in, ``root`` by default
-        become
-            whether to run scripts with ``sudo``, ignored if user
-            is already root, ``false`` by default
-        password
-            user password to be used to log in
-        key
-            path to the file with private key
-        port
-            use specific port to connect to
-    link:
-      - implemented-by: /tmt/steps/provision/connect.py
-
-    example:
-      - |
-        # Connect to existing box with username and password
-        provision:
-            how: connect
-            guest: hostname or ip address
-            user: username
-            password: password
-
-      - |
-        # Connect with user ``fedora`` using a key, and use
-        # ``sudo`` to run scripts
-        provision:
-            how: connect
-            guest: hostname or ip address
-            user: fedora
-            become: true
-            key: private-key-path
 
 /multihost:
     summary: Multihost testing specification

@@ -196,7 +196,7 @@ description: |
     .. note::
 
         Some plugins may support requirements that are impossible
-        to satisfy, e.g. the :ref:`/spec/plans/provision/local`
+        to satisfy, e.g. the :ref:`/plugins/provision/local`
         plugin can support the ``cpu.family`` requirement, but it
         is hard-locked to the CPU of one's own machine.
 

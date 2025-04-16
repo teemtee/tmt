@@ -186,6 +186,11 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
     """
     Use local host for test execution.
 
+    Do not provision any system. Tests will be executed
+    directly on the localhost. Note that for some actions like
+    installing additional packages you need root permission or
+    enabled sudo.
+
     .. warning::
 
         In general, it is not recommended to run tests on your local machine
