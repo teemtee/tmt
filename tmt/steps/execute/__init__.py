@@ -260,10 +260,7 @@ class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         # TODO: ugly circular dependency (see tmt.base.DEFAULT_TEST_DURATION_L2)
         default='1h',
         option='--duration',
-        help="""
-             The maximum time allowed for the test to run.
-             Only the tests specified by ``script`` are affected.
-             """,
+        help='The maximum time test specified by ``script`` is allowed to run.',
     )
     ignore_duration: bool = field(
         default=configure_bool_constant(False, 'TMT_PLUGIN_EXECUTE_TMT_IGNORE_DURATION'),
