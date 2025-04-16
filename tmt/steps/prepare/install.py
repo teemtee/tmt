@@ -715,23 +715,57 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             package: tmt-all
             missing: fail
 
-    Use ``copr`` for enabling desired Copr repository and ``missing`` to choose
+    Use ``copr`` for enabling a desired Copr repository and ``missing`` to choose
     whether missing packages should be silently ignored (``skip``) or a
     preparation error should be reported (``fail``), which is the default.
 
-    In addition to package name you can also use one or more paths to
-    local rpm files to be installed:
+    One or more RPM packages can be specified under the
+    ``package`` attribute. The packages will be installed
+    on the guest. They can either be specified using their
+    names, paths to local rpm files or urls to remote rpms.
 
     .. code-block:: yaml
 
+        # Install local rpms using file path
         prepare:
             how: install
             package:
                 - tmp/RPMS/noarch/tmt-0.15-1.fc31.noarch.rpm
                 - tmp/RPMS/noarch/python3-tmt-0.15-1.fc31.noarch.rpm
 
+    .. code-block:: yaml
+
+        # Install remote packages using url
+        prepare:
+            how: install
+            package:
+              - https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+              - https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-8.noarch.rpm
+
+    .. code-block:: yaml
+
+        # Install the whole directory, exclude selected packages
+        prepare:
+            how: install
+            directory:
+              - tmp/RPMS/noarch
+            exclude:
+              - tmt+all
+              - tmt+provision-virtual
+
+    .. code-block:: yaml
+
+        prepare:
+            how: install
+            # Repository with a group owner (@ prefixed) requires quotes, e.g.
+            # copr: "@osci/rpminspect"
+            copr: psss/tmt
+            package: tmt-all
+            missing: skip
+
     Use ``directory`` to install all packages from given folder and
-    ``exclude`` to skip selected packages:
+    ``exclude`` to skip selected packages (globbing characters are supported as
+    well).
 
     .. code-block:: yaml
 

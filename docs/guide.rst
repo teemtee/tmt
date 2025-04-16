@@ -193,9 +193,9 @@ Note that each of the steps above uses the ``how`` keyword to
 choose the desired method which should be applied. Steps can
 provide multiple implementations which enables you to choose the
 best one for your use case. For example to prepare the guest it's
-possible to use the :ref:`/spec/plans/prepare/install` method for
-simple package installations, :ref:`/spec/plans/prepare/ansible`
-for more complex system setup or :ref:`/spec/plans/prepare/shell`
+possible to use the :ref:`/plugins/prepare/install` method for
+simple package installations, :ref:`/plugins/prepare/ansible`
+for more complex system setup or :ref:`/plugins/prepare/shell`
 for arbitrary shell commands.
 
 

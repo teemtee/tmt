@@ -151,7 +151,11 @@ class Feature(FeatureBase):
 @tmt.steps.provides_method('feature')
 class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
     """
-    Enable or disable common features like repositories on the guest.
+    Easily enable and disable common features
+
+    The ``feature`` plugin provides a comfortable way to enable
+    and disable some commonly used functionality such as enabling
+    and disabling the ``epel`` repository or the ``fips`` mode.
 
     .. note::
 
@@ -170,8 +174,6 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
          workarounds: downgrade Ansible tmt uses, or install Python 3.7+
          before using ``feature`` plugin from an alternative repository
          or local build.
-
-    Control enablement of various features on the guest:
 
     .. code-block:: yaml
 

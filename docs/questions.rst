@@ -59,11 +59,11 @@ On the other hand - when tmt is used to execute tests on
 provisioned guest it depends if the plan will try to install any
 packages (either by test :ref:`/spec/tests/require`,
 :ref:`/spec/tests/recommend` or using prepare
-:ref:`/spec/plans/prepare/install` plugin) it will fail as tmt
+:ref:`/plugins/prepare/install` plugin) it will fail as tmt
 currently doesn't work with other package management tools. This
 can be worked around by installing the test dependencies (as well
-as the ``rsync`` command) using :ref:`/spec/plans/prepare/ansible`
-or :ref:`/spec/plans/prepare/shell` prepare plugins.
+as the ``rsync`` command) using :ref:`/plugins/prepare/ansible`
+or :ref:`/plugins/prepare/shell` prepare plugins.
 
 
 Virtualization Tips
