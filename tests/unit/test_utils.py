@@ -266,8 +266,7 @@ def test_workdir_root_race(tmppath, monkeypatch, root_logger):
             results.put(err)
 
     total = 30
-    for _ in range(total):
-        threads.append(threading.Thread(target=create_workdir))
+    threads = [threading.Thread(target=create_workdir) for _ in range(total)]
     for t in threads:
         t.start()
     for t in threads:
@@ -789,17 +788,19 @@ def test_get_distgit_handler():
             tmt.utils.git.get_distgit_handler([])
     # Fedora detection
     returned_object = tmt.utils.git.get_distgit_handler(
-        """
-        remote.origin.url ssh://lzachar@pkgs.fedoraproject.org/rpms/tmt
-        remote.lzachar.url ssh://lzachar@pkgs.fedoraproject.org/forks/lzachar/rpms/tmt.git
-        """.split('\n')
+        [
+            "remote.origin.url ssh://lzachar@pkgs.fedoraproject.org/rpms/tmt",
+            "remote.lzachar.url ssh://lzachar@pkgs.fedoraproject.org/forks/lzachar/rpms/tmt.git",
+        ]
     )
     assert isinstance(returned_object, tmt.utils.git.FedoraDistGit)
     # CentOS detection
     returned_object = tmt.utils.git.get_distgit_handler(
-        """
-        remote.origin.url git+ssh://git@gitlab.com/redhat/centos-stream/rpms/ruby.git
-        """.split('\n')
+        [
+            "",
+            "        remote.origin.url git+ssh://git@gitlab.com/redhat/centos-stream/rpms/ruby.git",
+            "        ",
+        ]
     )
     assert isinstance(returned_object, tmt.utils.git.CentOSDistGit)
     # RH Gitlab detection

@@ -5,7 +5,6 @@ from jinja2 import select_autoescape
 
 import tmt
 import tmt.log
-import tmt.options
 import tmt.steps
 import tmt.steps.report
 import tmt.utils

@@ -1,7 +1,6 @@
 from typing import Any, Optional
 
 import tmt.log
-import tmt.utils
 from tmt.container import container, field
 from tmt.steps.prepare.feature import Feature, PrepareFeatureData, provides_feature
 from tmt.steps.provision import AnsibleCollectionPlaybook, Guest

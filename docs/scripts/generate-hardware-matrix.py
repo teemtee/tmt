@@ -48,7 +48,7 @@ def main() -> None:
         if hw_requirement == 'arch':
             continue
 
-        matrix[hw_requirement] = {method: (False, int) for method in known_methods}
+        matrix[hw_requirement] = dict.fromkeys(known_methods, (False, int))
 
         if not story.link:
             pass

@@ -43,6 +43,7 @@ import tmt.queue
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt._compat.typing import Self
 from tmt.container import SerializableContainer, container, field, key_to_option
 from tmt.log import Logger
 from tmt.options import option
@@ -556,14 +557,11 @@ class GuestFacts(SerializableContainer):
 
         discovered_package_managers: list[
             PackageManagerClass[tmt.package_managers.PackageManagerEngine]
-        ] = []
-
-        for (
-            _,
-            package_manager_class,
-        ) in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items():
-            if self._execute(guest, package_manager_class.probe_command):
-                discovered_package_managers.append(package_manager_class)
+        ] = [
+            package_manager_class
+            for package_manager_id, package_manager_class in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items()  # noqa: E501
+            if self._execute(guest, package_manager_class.probe_command)
+        ]
 
         discovered_package_managers.sort(key=lambda pm: pm.probe_priority, reverse=True)
 
@@ -943,9 +941,9 @@ class GuestData(SerializableContainer):
 
     @classmethod
     def from_plugin(
-        cls: type[GuestDataT],
+        cls,
         container: 'ProvisionPlugin[ProvisionStepDataT]',
-    ) -> GuestDataT:
+    ) -> Self:
         """
         Create guest data from plugin and its current configuration
         """
@@ -1341,7 +1339,7 @@ class Guest(tmt.utils.Common):
 
         if not output:
             return
-        keys = 'ok changed unreachable failed skipped rescued ignored'.split()
+        keys = ['ok', 'changed', 'unreachable', 'failed', 'skipped', 'rescued', 'ignored']
         for key in keys:
             matched = re.search(rf'^.*\s:\s.*{key}=(\d+).*$', output, re.MULTILINE)
             if matched and int(matched.group(1)) > 0:
