@@ -9,7 +9,6 @@ link:
 
 /file:
     description: |
-
         Save the report into a ``report.yaml`` file.
 
         The ``OVERALL_RESULT`` is the overall result of all plan
@@ -68,6 +67,9 @@ link:
                         result: TEST_RESULT
                         log:
                           - LOG_PATH
+    # Not implemented yet, do not inherit link from parent
+    link:
+
 /when:
     summary: Conditional step configuration
     description: |
