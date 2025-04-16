@@ -2848,7 +2848,7 @@ def show_exception(
         logfiles as well as to standard error output.
     """
 
-    from tmt.cli import EXCEPTION_LOGGER
+    from tmt._bootstrap import EXCEPTION_LOGGER
 
     traceback_verbosity = traceback_verbosity or TracebackVerbosity.from_env()
 
