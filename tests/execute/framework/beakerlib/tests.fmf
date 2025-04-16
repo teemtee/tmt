@@ -1,5 +1,26 @@
-framework: shell
+framework: beakerlib
 duration: 5m
 
-/success:
-  test: ./beakerlib.sh
+/pass:
+  test: ./pass.sh
+
+/fail:
+  test: ./fail.sh
+
+/warn:
+  test: ./warn.sh
+
+/worst:
+  test: ./worst.sh
+
+/timeout:
+  test: ./timeout.sh
+
+/pidlock:
+  test: ./pidlock.sh
+
+/incomplete-fail:
+  test: ./incomplete-fail.sh
+
+/incomplete-pass:
+  test: ./incomplete-pass.sh

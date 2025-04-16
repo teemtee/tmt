@@ -11,11 +11,14 @@ rlJournalStart
 
     # all possible outcomes in TESTRESULT_RESULT_STRING (out of ['pass', 'fail', 'info', 'warn', 'error', 'skip', 'pending'])
 
+    # multiple rlPhase outcomes - the worst is the result
+
     # raise + "Invalid partial custom result '{spec}'" (TESTRESULT_RESULT_STRING is not one of the aforementioned)
 
     # error + note "TestResults FileError" (unable to open 'TestResults' file)
 
     # error + note "Result/State missing" (no TESTRESULT_RESULT_STRING/TESTRESULT_STATE in 'TestResults' file) 
+    # rlRun exit will create TESTRESULT_STATE=incomplete
 
     # error + note "timeout" (exit code 124)
 

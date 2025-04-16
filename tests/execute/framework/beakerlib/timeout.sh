@@ -3,6 +3,6 @@
 
 rlJournalStart
     rlPhaseStartTest
-        rlRun "echo 'this should count as a pass'"
+        rlRun "exit 124"
     rlPhaseEnd
 rlJournalEnd
