@@ -41,7 +41,7 @@ ANSIBLE_MODULE_NOTE_TEMPLATE = """
     {% endfor %}
 
     {% for module in MODULES %}
-        {% set module_components = module.split('.', 3) %}
+        {% set module_components = module.split('.', 2) %}
     __ https://docs.ansible.com/ansible/latest/collections/{{ module_components[0] }}/{{ module_components[1] }}/{{ module_components[2] }}_module.html
     {% endfor %}
 """  # noqa: E501
