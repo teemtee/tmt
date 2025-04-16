@@ -1,3 +1,13 @@
+Describes what environment is needed for testing and how it should be
+provisioned. There are several provision plugins supporting multiple ways
+to provision the environment for testing, for example:
+
+* :ref:`/plugins/provision/virtual.testcloud`
+* :ref:`/plugins/provision/container`
+* :ref:`/plugins/provision/connect`
+* :ref:`/plugins/provision/local`
+* :ref:`/plugins/provision/artemis`
+
 .. _/plugins/provision/hard-reboot:
 
 Hard reboot

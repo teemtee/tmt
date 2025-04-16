@@ -1,16 +1,7 @@
 summary: Provision a system for testing
 
 description: |
-    Describes what environment is needed for testing and how it
-    should be provisioned. There are several provision plugins
-    supporting multiple ways to provision the environment for
-    testing, for example
-    :ref:`/spec/plans/provision/virtual`,
-    :ref:`/spec/plans/provision/container`,
-    :ref:`/spec/plans/provision/connect`,
-    :ref:`/spec/plans/provision/local` or
-    :ref:`/spec/plans/provision/artemis`.
-    See individual plugin documentation for details about
+    See the :ref:`/plugins/provision` documentation for details about
     supported options.
 
     As part of the provision step it is also possible to specify
@@ -29,45 +20,8 @@ example: |
         how: virtual
         image: fedora
 
-/virtual:
-    summary: Provision a virtual machine using ``Testcloud``
-    example:
-      - |
-        # Provision a fedora virtual machine
-        provision:
-            how: virtual
-            image: fedora
-
-    link:
-      - implemented-by: /tmt/steps/provision/testcloud.py
-
-/local:
-    summary: Use the localhost for testing
-    example: |
-        provision:
-            how: local
-    link:
-      - implemented-by: /tmt/steps/provision/local.py
-      - verified-by: /tests/init/base
-
-/container:
-    summary: Provision a container
-    example:
-      - |
-        # Use the fedora:latest image
-        provision:
-            how: container
-            image: fedora:latest
-      - |
-        # Use an image with a non-root user with sudo privileges,
-        # and run scripts with sudo.
-        provision:
-            how: container
-            image: image with non-root user with sudo privileges
-            user: tester
-            become: true
-    link:
-      - implemented-by: /tmt/steps/provision/podman.py
+link:
+    - implemented-by: /tmt/steps/provision
 
 /openstack:
     summary: Provision a virtual machine in OpenStack
@@ -77,46 +31,6 @@ example: |
         provision:
             how: openstack
             image: f31
-
-/beaker:
-    summary: Provision a machine in Beaker
-
-    example:
-      - |
-        # Use image name translation
-        provision:
-            how: beaker
-            image: fedora
-      - |
-        # Specify the distro directly
-        provision:
-            how: beaker
-            image: Fedora-37%
-      - |
-        # Set custom whiteboard description (added in 1.30)
-        provision:
-            how: beaker
-            whiteboard: Just a smoke test for now
-
-    link:
-      - implemented-by: /tmt/steps/provision/mrack.py
-      - verified-by: /plans/provision/beaker
-
-
-/connect:
-    summary: Connect to a provisioned box
-    link:
-      - implemented-by: /tmt/steps/provision/connect.py
-
-    example:
-      - |
-        # Connect to existing box with username and password
-        provision:
-            how: connect
-            guest: hostname or ip address
-            user: username
-            password: password
-
 
 /multihost:
     summary: Multihost testing specification

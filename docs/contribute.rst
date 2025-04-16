@@ -200,23 +200,23 @@ The following tags can be used to enable given test under the
 respective provision method plan:
 
 provision-artemis
-    For tests checking the :ref:`/spec/plans/provision/artemis`
+    For tests checking the :ref:`/plugins/provision/artemis`
     plugin functionality.
 
 provision-beaker
-    For tests checking the :ref:`/spec/plans/provision/beaker`
+    For tests checking the :ref:`/plugins/provision/beaker`
     plugin functionality using the ``mrack`` plugin.
 
 provision-connect
-    For tests checking the :ref:`/spec/plans/provision/connect`
+    For tests checking the :ref:`/plugins/provision/connect`
     plugin functionality.
 
 provision-container
-    For tests checking the :ref:`/spec/plans/provision/container`
+    For tests checking the :ref:`/plugins/provision/container`
     provision method using the ``podman`` plugin.
 
 provision-virtual
-    For tests checking the :ref:`/spec/plans/provision/virtual`
+    For tests checking the :ref:`/plugins/provision/virtual.testcloud`
     provision method using the ``testcloud`` plugin.
 
 provision-ssh
@@ -253,7 +253,7 @@ __ https://requre.readthedocs.io/en/latest/
 Images
 ------------------------------------------------------------------
 
-Tests which exercise the :ref:`/spec/plans/provision/container`
+Tests which exercise the :ref:`/plugins/provision/container`
 provisioning plugin with various guest environments should use the
 custom-built set of container images rather than using the upstream ones
 directly. We built custom images to have better control over the initial
