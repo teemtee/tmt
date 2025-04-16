@@ -68,7 +68,7 @@ link:
                         log:
                           - LOG_PATH
     # Not implemented yet, do not inherit link from parent
-    link:
+    link: []
 
 /when:
     summary: Conditional step configuration
