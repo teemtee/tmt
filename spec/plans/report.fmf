@@ -3,33 +3,12 @@ story:
     As a tester I want to have a nice overview of results once
     the testing is finished.
 description:
-    Report test results according to user preferences.
+    Report test results according to user preferences. For more information
+    about the supported report methods, check the :ref:`/plugins/report`
+    documentation.
 example: []
-
-/display:
-    summary: Show results in the terminal window
-    link:
-      - implemented-by: /tmt/steps/report/display.py
-
-/html:
-    summary: Generate a web page with test results
-    link:
-      - implemented-by: /tmt/steps/report/html.py
-
-/junit:
-    summary: Generate a JUnit report file
-    link:
-        - implemented-by: /tmt/steps/report/junit.py
-
-/polarion:
-    summary: Generate an xUnit file and export it into Polarion
-    link:
-        - implemented-by: /tmt/steps/report/polarion.py
-
-/reportportal:
-    summary: Report test results to a ReportPortal instance
-    link:
-        - implemented-by: /tmt/steps/report/reportportal.py
+link:
+    - implemented-by: /tmt/steps/report
 
 /file:
     description: |

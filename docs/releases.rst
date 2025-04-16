@@ -735,7 +735,7 @@ changes. ``info`` results are now treated as ``pass`` results, and
 would be counted towards the successful exit code, ``0``, instead
 of the exit code ``2`` in older releases.
 
-The :ref:`/spec/plans/report/polarion` report now supports the
+The :ref:`/plugins/report/polarion` report now supports the
 ``fips`` field to store information about whether the FIPS mode
 was enabled or disabled on the guest during the test execution.
 
@@ -784,7 +784,7 @@ option which allows to use a user account and execute
 ``prepare``, ``execute`` and ``finish`` steps using ``sudo -E``
 when necessary.
 
-The :ref:`/spec/plans/report/html` report plugin now shows
+The :ref:`/plugins/report/html` report plugin now shows
 :ref:`/spec/tests/check` results so that it's possible to inspect
 detected AVC denials directly from the report.
 
@@ -801,7 +801,7 @@ can be used to update step phase fields only when not set in the
 ``fmf`` files. In this way it's possible to easily fill the gaps
 in the plans, for example provide the default distro image.
 
-The :ref:`/spec/plans/report/html` report plugin now shows
+The :ref:`/plugins/report/html` report plugin now shows
 provided :ref:`/spec/plans/context` and link to the test ``data``
 directory so that additional logs can be easily checked.
 
