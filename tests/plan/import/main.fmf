@@ -12,5 +12,5 @@
   test: ./modify.sh
 
 /local-and-remote:
-  summary: Make sure a plan defining execute and impor gets reported
+  summary: Make sure a plan defining execute and import gets reported
   test: ./local-and-remote.sh
