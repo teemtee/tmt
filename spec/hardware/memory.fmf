@@ -5,7 +5,7 @@ description: |
     .. code-block::
 
        # Number or string, the amount of memory requested.
-       # Bytes are assumed when no unit is specified.
+       # MiB is assumed when no unit is specified.
        memory: 1234|"2 GiB"
 
 example:
