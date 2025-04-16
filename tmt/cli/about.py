@@ -35,7 +35,7 @@ def _render_plugins_list_rest() -> str:
         r'export\.([a-z]+)': 'Export plugins for {{ MATCH.group(1).lower() }}',
         r'test.check': 'Test check plugins',
         r'test.framework': 'Test framework plugins',
-        r'package_manager': 'Package manager plugins',
+        r'package_managers': 'Package manager plugins',
         r'plan_shapers': 'Plan shapers',
         r'step\.([a-z]+)': '{{ MATCH.group(1).capitalize() }} step plugins',
     }
