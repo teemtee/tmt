@@ -574,6 +574,7 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
             image: fedora:latest
 
     .. code-block:: yaml
+
         # Use an image with a non-root user with sudo privileges,
         # and run scripts with sudo.
         provision:
