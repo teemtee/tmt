@@ -1,7 +1,6 @@
 import re
 from typing import TYPE_CHECKING
 
-import tmt.base
 import tmt.log
 import tmt.result
 import tmt.steps.execute
