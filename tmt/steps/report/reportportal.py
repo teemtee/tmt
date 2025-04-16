@@ -359,7 +359,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
     Example:
 
-    .. code-block:: yaml
+    .. code-block:: shell
 
         # Enable ReportPortal report from the command line depending on the use case:
 
