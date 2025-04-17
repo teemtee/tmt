@@ -1,0 +1,62 @@
+story:
+    As a tester I want to store test results of all plans into a
+    single file including the overall aggregated result.
+
+description: |
+    Save the report into a ``report.yaml`` file.
+
+    The ``OVERALL_RESULT`` is the overall result of all plan
+    results. It is counted the same way as ``PLAN_RESULT``.
+
+    The ``TEST_RESULT`` is the same as defined in the
+    :ref:`/spec/results` definition.
+
+        * info - test finished and produced only information
+          message
+        * passed - test finished and passed
+        * failed - test finished and failed
+        * error - a problem encountered during test execution
+
+    Note the priority  of test results is as written above, with
+    ``info`` having the lowest priority and ``error`` has the
+    highest. This is important for ``PLAN_RESULT``.
+
+    The ``PLAN_RESULT`` is the overall result or all test results
+    for the plan run. It has the same values as ``TEST_RESULT``.
+    Plan result is counted according to the priority of the test
+    outcome values. For example:
+
+        * if the test results are info, passed, passed - the
+          plan result will be passed
+        * if the test results are info, passed, failed - the
+          plan result will be failed
+        * if the test results are failed, error, passed - the
+          plan result will be error
+
+    The ``LOG_PATH`` is the test log output path, relative to the
+    execute step plan run directory. The ``log`` key will be a
+    list of such paths, even if there is just a single log.
+
+example: |
+    result: OVERALL_RESULT
+    plans:
+        /plan/one:
+            result: PLAN_RESULT
+            tests:
+                /test/one:
+                    result: TEST_RESULT
+                    log:
+                      - LOG_PATH
+
+                /test/two:
+                    result: TEST_RESULT
+                    log:
+                        - LOG_PATH
+                        - LOG_PATH
+                        - LOG_PATH
+        /plan/two:
+            result: PLAN_RESULT
+                /test/one:
+                    result: TEST_RESULT
+                    log:
+                      - LOG_PATH
