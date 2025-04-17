@@ -540,7 +540,7 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
     @property
     def _preserved_workdir_members(self) -> set[str]:
         """
-        A set of members of the step workdir that should not be removed.
+        A set of members of the step workdir that should not be removed during pruning.
         """
 
         return {'step.yaml'}
