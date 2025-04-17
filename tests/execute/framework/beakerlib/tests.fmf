@@ -2,25 +2,33 @@ framework: beakerlib
 duration: 5m
 
 /pass:
+  summary: Testing beakerlib success
   test: ./pass.sh
 
 /fail:
+  summary: Testing beakerlib failure
   test: ./fail.sh
 
 /warn:
+  summary: Testing beakerlib warning
   test: ./warn.sh
 
 /worst:
+  summary: Testing beakerlib picking the worst out of multiple outomes
   test: ./worst.sh
 
 /timeout:
+  summary: Testing beakerlib timeout
   test: ./timeout.sh
 
 /pidlock:
+  summary: Testing beakerlib pidlock
   test: ./pidlock.sh
 
 /incomplete-fail:
+  summary: Testing beakerlib incomplete while failing
   test: ./incomplete-fail.sh
 
 /incomplete-pass:
+  summary: Testing beakerlib incomplete while passing
   test: ./incomplete-pass.sh
