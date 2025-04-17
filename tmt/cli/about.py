@@ -37,6 +37,7 @@ def _render_plugins_list_rest() -> str:
         r'test.framework': 'Test framework plugins',
         r'package_managers': 'Package manager plugins',
         r'plan_shapers': 'Plan shapers',
+        r'prepare.feature': 'prepare/feature plugins',
         r'step\.([a-z]+)': '{{ MATCH.group(1).capitalize() }} step plugins',
     }
 
