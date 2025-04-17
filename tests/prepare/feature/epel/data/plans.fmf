@@ -31,6 +31,17 @@ execute:
         environment+:
             STATE: disabled
 
+/flac:
+    summary: Install flac
+    description: Check that crb repo is enabled
+    prepare:
+      - how: feature
+        epel: enabled
+      - how: install
+        package: flac
+    execute:
+        script: flac --help
+
 /profile:
     discover:
       how: shell

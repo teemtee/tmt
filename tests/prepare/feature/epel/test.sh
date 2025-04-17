@@ -29,6 +29,10 @@ rlJournalStart
         rlPhaseStartTest "Disable EPEL on $image"
             rlRun -s "tmt -vvv run -a plan --name '/epel/disabled' provision --how container --image $image"
         rlPhaseEnd
+
+        if is_centos_9; then
+            rlRun -s "tmt -vvv run -a plan --name '/flac' provision --how container --image $image"
+        fi
     done
 
     # Environment profiles
