@@ -37,16 +37,9 @@
 
 {% macro render_field(plugin_id, plugin_data_class, field_name) %}
     {% set _, option, _, _, metadata = container_field(plugin_data_class, field_name) %}
+    {% set envvar = metadata.envvar or "TMT_PLUGIN_%s_%s_%s" | format(STEP.upper(), plugin_id.upper(), field_name.replace('-', '_').upper()) %}
 
-    {% if metadata.metavar %}
-{{ option }}: ``{{ metadata.metavar }}``
-    {% elif metadata.default is boolean %}
-{{ option }}: ``true|false``
-    {% elif metadata.choices %}
-{{ option }}: ``{{ metadata.choices }}``
-    {% else %}
-{{ option }}:
-    {% endif %}
+{{ option }}
     {% if metadata.help %}
 {{ metadata.help | trim | indent(4, first=true) }}
     {% endif %}
@@ -75,6 +68,53 @@
             {% set error_message = "%s/%s.%s: could not render default value, '%s'" | format(STEP, plugin_id, field_name, actual_default) %}
             {{ raise_error(error_message) }}
         {% endif %}
+    {% endif %}
+
+    Environment variable: ``{{ envvar }}``
+
+    In plan metadata:
+
+    .. code-block:: yaml
+
+    {% if metadata.metavar %}
+       {{ option }}: {{ metadata.metavar }}
+
+        {% for example in metadata.help_example_values %}
+       {{ option }}: {{ example }}
+        {% endfor %}
+    {% elif metadata.default is boolean %}
+       {{ option }}: true|false
+    {% else %}
+       {{ option }}:
+    {% endif %}
+
+    On command-line:
+
+    .. code-block:: shell
+
+    {% if metadata.metavar %}
+       --{{ option }} {{ metadata.metavar | shell_quote }}
+       export {{ envvar }}={{ metadata.metavar | shell_quote }}
+
+        {% for example in metadata.help_example_values %}
+       --{{ option }} {{ example | shell_quote }}
+        {% endfor %}
+        {% for example in metadata.help_example_values %}
+       export {{ envvar }}={{ example | shell_quote }}
+        {% endfor %}
+    {% elif metadata.default is boolean %}
+       --{{ option }}
+       export {{ envvar }}=1|0
+    {% else %}
+       --{{ option }} ...
+       export {{ envvar }}=...
+
+        {% for example in metadata.help_example_values %}
+       --{{ option }} {{ example | shell_quote }}
+        {% endfor %}
+        {% for example in metadata.help_example_values %}
+       export {{ envvar }}={{ example | shell_quote }}
+        {% endfor %}
     {% endif %}
 {% endmacro %}
 

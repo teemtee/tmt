@@ -221,6 +221,7 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
               Size limit in bytes for traceback log upload to ReportPortal.
               The default limit is {DEFAULT_TRACEBACK_SIZE_LIMIT}.
               """,
+        help_example_values=[str(DEFAULT_TRACEBACK_SIZE_LIMIT), '1MB'],
         normalize=tmt.utils.normalize_data_amount,
         serialize=lambda limit: str(limit),
         unserialize=lambda serialized: tmt.hardware.UNITS(serialized),
