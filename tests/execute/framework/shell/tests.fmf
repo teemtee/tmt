@@ -4,10 +4,10 @@ duration: 5m
 /success:
   test: ./shell.sh 0
 
-/failure:  
+/failure:
   test: ./shell.sh 1
 
-/error:  
+/error:
   test: ./shell.sh 2
 
 /pidlock:

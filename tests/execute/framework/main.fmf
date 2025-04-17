@@ -7,7 +7,7 @@
 /shell:
     summary: Verify tmt outcomes against shell results
     description:
-        tests verifying tmt outcomes to be as expected 
+        tests verifying tmt outcomes to be as expected
         for the different shell tests results.
     test: ./shell.sh
 duration: 30m
