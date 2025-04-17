@@ -1,5 +1,7 @@
 import dataclasses
 import inspect
+import re
+from collections.abc import Iterator
 from typing import Any, Callable, Optional, cast
 
 import tmt
@@ -16,6 +18,7 @@ from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
 from tmt.utils import Path
+from tmt.utils.templates import render_template
 
 FEATURE_PLAYEBOOK_DIRECTORY = tmt.utils.resource_files('steps/prepare/feature')
 
@@ -23,18 +26,110 @@ FeatureClass = type['FeatureBase']
 _FEATURE_PLUGIN_REGISTRY: PluginRegistry[FeatureClass] = PluginRegistry()
 
 
+#: A pattern for matching module-like keys in Ansible playbooks.
+ANSIBLE_MODULE_NAME_PATTERN = re.compile(r'.+\..+\..+')
+
+#: A template for "used modules" note for plugin docstrings.
+ANSIBLE_MODULE_NOTE_TEMPLATE = """
+.. note::
+
+    This plugin requires the following Ansible modules be installed
+    on the runner:
+
+    {% for module in MODULES %}
+    * `{{ module }}`__
+    {% endfor %}
+
+    {% for module in MODULES %}
+        {% set module_components = module.split('.', 2) %}
+    __ https://docs.ansible.com/ansible/latest/collections/{{ module_components[0] }}/{{ module_components[1] }}/{{ module_components[2] }}_module.html
+    {% endfor %}
+"""  # noqa: E501
+
+
+def _collect_playbook_modules(feature_cls: FeatureClass, logger: tmt.log.Logger) -> set[str]:
+    """
+    Find all module-like keys in feature's Ansible playbooks.
+
+    Module-like keys are keys in dictionaries that match the pattern of
+    ``foo.bar.baz``, as we enforce fully-qualified module names to be
+    used.
+    """
+
+    # Find module-like keys in a given object, recursively.
+    def _collect_from_object(obj: Any) -> Iterator[str]:
+        if isinstance(obj, list):
+            for item in obj:
+                yield from _collect_from_object(item)
+
+        elif isinstance(obj, dict):
+            for key, value in obj.items():
+                if ANSIBLE_MODULE_NAME_PATTERN.match(key):
+                    yield key
+
+                else:
+                    yield from _collect_from_object(value)
+
+    # Find module-like keys in playbooks, inspecting one by one.
+    def _collect_from_playbooks(playbooks: set[str]) -> Iterator[str]:
+        for playbook_filename in playbooks:
+            playbook_filepath = feature_cls._find_playbook(playbook_filename, logger)
+
+            if playbook_filepath is None:
+                continue
+
+            yield from _collect_from_object(tmt.utils.yaml_to_list(playbook_filepath.read_text()))
+
+    return set(_collect_from_playbooks(feature_cls.PLAYBOOKS))
+
+
+def _add_modules_to_docstring(feature_cls: FeatureClass, logger: tmt.log.Logger) -> None:
+    """
+    Add a list of Ansible modules used by feature's playbooks to its docstring.
+    """
+
+    if not feature_cls.__doc__:
+        return
+
+    modules = _collect_playbook_modules(feature_cls, logger)
+
+    if not modules:
+        return
+
+    feature_cls.__doc__ += '\n' + render_template(ANSIBLE_MODULE_NOTE_TEMPLATE, MODULES=modules)
+
+
 def provides_feature(feature: str) -> Callable[[FeatureClass], FeatureClass]:
     """
     A decorator for registering feature plugins.
-    Decorate a feature plugin class to register a feature.
+
+    Decorate a feature plugin class to register a feature:
+
+    .. code-block:: python
+
+        @provides_feature('foo')
+        class Foo(ToggleableFeature):
+            ...
+
+    Decorator also inspects plugins :py:attr:`FeatureBase.PLAYBOOKS`,
+    gathers all Ansible modules from listed playbooks, and adds a note
+    to plugin's docstring reminding user about their necessity on the
+    runner.
     """
 
     def _provides_feature(feature_cls: FeatureClass) -> FeatureClass:
+        logger = tmt.log.Logger.get_bootstrap_logger()
+
+        feature_cls.FEATURE_NAME = feature
+
         _FEATURE_PLUGIN_REGISTRY.register_plugin(
             plugin_id=feature,
             plugin=feature_cls,
-            logger=tmt.log.Logger.get_bootstrap_logger(),
+            logger=logger,
         )
+
+        if feature_cls.PLAYBOOKS:
+            _add_modules_to_docstring(feature_cls, logger)
 
         return feature_cls
 
@@ -66,7 +161,8 @@ class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
 class FeatureBase(tmt.utils.Common):
     """Base class for ``feature`` plugins"""
 
-    NAME: str
+    FEATURE_NAME: str
+    PLAYBOOKS: set[str] = set()
 
     #: Plugin's data class listing keys this feature plugin accepts.
     #: It is eventually composed together with other feature plugins
@@ -111,17 +207,15 @@ class FeatureBase(tmt.utils.Common):
         playbook_path = cls._find_playbook(playbook_filename, logger)
         if not playbook_path:
             raise tmt.utils.GeneralError(
-                f"{op.capitalize()} {cls.NAME.upper()} is not supported on this guest."
+                f"{op.capitalize()} {cls.FEATURE_NAME.upper()} is not supported on this guest."
             )
 
-        logger.info(f'{op.capitalize()} {cls.NAME.upper()}')
+        logger.info(f'{op.capitalize()} {cls.FEATURE_NAME.upper()}')
         guest.ansible(playbook_path)
 
 
 class ToggleableFeature(FeatureBase):
     """Base class for ``feature`` plugins that enable/disable a feature"""
-
-    NAME: str
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -137,8 +231,6 @@ class ToggleableFeature(FeatureBase):
 
 class Feature(FeatureBase):
     """Base class for ``feature`` plugins that enable a feature"""
-
-    NAME: str
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -258,7 +350,7 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
         for plugin_id in _FEATURE_PLUGIN_REGISTRY.iter_plugin_ids():
             plugin_class = find_plugin(plugin_id)
 
-            value = cast(Optional[str], getattr(self.data, plugin_class.NAME, None))
+            value = cast(Optional[str], getattr(self.data, plugin_class.FEATURE_NAME, None))
             if value is None:
                 continue
 
