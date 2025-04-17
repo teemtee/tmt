@@ -29,7 +29,7 @@ description: |
              ref: ...
              path: ...
 
-    The ``url`` and ``name`` keys are requires, ``ref`` and ``path``
+    The ``url`` and ``name`` keys are required, ``ref`` and ``path``
     are optional. If ``ref`` is set, the given git ref will be
     checked out before looking for plans; ``path`` defines where in
     the remote repository the metadata tree lives.
