@@ -877,4 +877,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         :returns: a list of requirements.
         """
 
-        return [tmt.base.DependencySimple('/usr/bin/flock')]
+        return [
+            tmt.base.DependencySimple('/usr/bin/awk'),
+            tmt.base.DependencySimple('/usr/bin/flock'),
+        ]
