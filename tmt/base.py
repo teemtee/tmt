@@ -2911,7 +2911,7 @@ class Plan(
         """
 
         self.debug(
-            f"Looking for plans in '{tree.root}' matching '{reference.name_pattern}", level=3
+            f"Looking for plans in '{tree.root}' matching '{reference.name_pattern}'", level=3
         )
 
         for node in tree.prune(keys=['execute']):
