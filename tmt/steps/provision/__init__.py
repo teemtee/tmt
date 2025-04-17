@@ -2447,22 +2447,19 @@ class GuestSsh(Guest):
             destination = Path("/")
 
         sources: list[Path]
-        log_message: str
 
         if source is None:
             # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
             parent = cast(Provision, self.parent)
             assert parent.plan.workdir is not None
             sources = [parent.plan.workdir]
-            log_message = f"Push workdir to guest '{self.primary_address}'."
+            self.debug(f"Push workdir to guest '{self.primary_address}'.")
         elif isinstance(source, Path):
             sources = [source]
-            log_message = f"Copy '{source}' to '{destination}' on the guest."
+            self.debug(f"Copy '{source}' to '{destination}' on the guest.")
         else:  # source is a list of Paths
             sources = source
-            log_message = f"Copy {len(sources)} files/dirs to '{destination}' on the guest."
-
-        self.debug(log_message)
+            self.debug(f"Copy {len(sources)} files/dirs to '{destination}' on the guest.")
 
         def rsync() -> None:
             """Run the rsync command"""

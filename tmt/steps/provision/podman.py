@@ -491,7 +491,12 @@ class GuestContainer(tmt.Guest):
             for src in sources:
                 source_spec = f"{container_name}:{src}" if container_name else str(src)
                 dest_spec = f"{self.container}:{destination}"
-                self.podman(Command("cp", source_spec, dest_spec))
+                try:
+                    self.podman(Command("cp", source_spec, dest_spec))
+                except tmt.utils.RunError as err:
+                    raise tmt.utils.ProvisionError(
+                        f"Failed to copy '{src}' to '{destination}': {err}"
+                    ) from err
 
     def pull(
         self,

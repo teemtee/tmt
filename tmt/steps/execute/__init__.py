@@ -160,10 +160,6 @@ class ScriptTemplate(Script):
             self._rendered_script_path.unlink()
             self._rendered_script_path = None
 
-    def keep_rendered_file(self) -> None:
-        """Prevents automatic deletion on __exit__."""
-        self._delete_on_exit = False
-
 
 def effective_scripts_dest_dir(default: Path = DEFAULT_SCRIPTS_DEST_DIR) -> Path:
     """
@@ -839,7 +835,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             with script as source:
                 # If it's a template, prevent immediate cleanup and track it
                 if isinstance(script, ScriptTemplate):
-                    script.keep_rendered_file()
+                    script._delete_on_exit = False  # Prevent cleanup before push
                     templates_to_cleanup.append(script)
                     # Use the actual rendered path as the source
                     source_path = script._rendered_script_path
