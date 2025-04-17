@@ -191,7 +191,7 @@ class Bootc(PackageManager[BootcEngine]):
                 # First try if image is available in container registries.
                 # Next try the local container storage.
                 # As the last resort copy the booted image to the local container storage.
-                # Note that the last method wil be used when `bootc` provision plugin
+                # Note that the last method will be used when `bootc` provision plugin
                 # is used, where the container image is  built on the machine running `tmt`.
                 # We cannot use the last method by default because it does not preserve
                 # all the container image layers,  see 
