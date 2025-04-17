@@ -188,11 +188,14 @@ class Bootc(PackageManager[BootcEngine]):
             base_image = self.engine._get_current_bootc_image()
 
             try:
-                # First check if image is available in podman storage.
-                # Then check if it is accessible from bootc storage called containers-storage.
-                # If both fails, use bootc command to store it to podman storage.
-                # While bootc command is the easiest way to get the image, it is used as
-                # a last resort due to https://github.com/bootc-dev/bootc/issues/1259 bug.
+                # First try if image is available in container registries.
+                # Next try the local container storage.
+                # As the last resort copy the booted image to the local container storage.
+                # Note that the last method wil be used when `bootc` provision plugin
+                # is used, where the container image is  built on the machine running `tmt`.
+                # We cannot use the last method by default because it does not preserve
+                # all the container image layers,  see 
+                # https://github.com/bootc-dev/bootc/issues/1259  for more information.
                 self.guest.execute(
                     ShellScript(
                         f'( podman pull {base_image} || podman pull containers-storage:{base_image} ) || bootc image copy-to-storage --target {base_image}'  # noqa: E501
