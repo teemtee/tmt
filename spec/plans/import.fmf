@@ -56,7 +56,7 @@ description: |
             # To allow import of multiple plans:
             scope: all-plans
 
-    If, instead of replacing the current plan, you can make the imported
+    If, instead of replacing the current plan, you want to make the imported
     plans "children" of the current plan with the ``importing``
     key:
 
