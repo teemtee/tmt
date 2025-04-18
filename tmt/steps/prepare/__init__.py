@@ -55,7 +55,7 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, list[PhaseResult]]):
     _data_class = PrepareStepData  # type: ignore[assignment]
 
     # Methods ("how: ..." implementations) registered for the same step.
-    _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry()
+    _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry('step.prepare')
 
     @classmethod
     def base_command(

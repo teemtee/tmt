@@ -27,7 +27,7 @@ CheckT = TypeVar('CheckT', bound='Check')
 
 CheckPluginClass = type['CheckPlugin[Any]']
 
-_CHECK_PLUGIN_REGISTRY: PluginRegistry[CheckPluginClass] = PluginRegistry()
+_CHECK_PLUGIN_REGISTRY: PluginRegistry[CheckPluginClass] = PluginRegistry('test.check')
 
 
 def provides_check(check: str) -> Callable[[CheckPluginClass], CheckPluginClass]:
