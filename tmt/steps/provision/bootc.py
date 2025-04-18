@@ -165,7 +165,7 @@ class BootcData(tmt.steps.provision.testcloud.ProvisionTestcloudData):
     )
 
 
-@tmt.steps.provides_method('bootc')
+@tmt.steps.provides_method('bootc', tech_preview=True)
 class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
     """
     Provision a local virtual machine using a bootc container image
