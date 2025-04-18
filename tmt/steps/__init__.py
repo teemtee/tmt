@@ -1698,10 +1698,10 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
                 assert isinstance(plugin, BasePlugin)
                 return plugin
 
-        from tmt.utils.hints import print_hint
+        from tmt.utils.hints import print_hints
 
-        print_hint(id_=f'{step.name}/{how}', ignore_missing=True, logger=step._logger)
-        print_hint(id_=step.name, ignore_missing=True, logger=step._logger)
+        print_hints(f'{step.name}/{how}', ignore_missing=True, logger=step._logger)
+        print_hints(step.name, ignore_missing=True, logger=step._logger)
 
         # Report invalid method
         if step.plan is None:

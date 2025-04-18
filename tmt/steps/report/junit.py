@@ -336,9 +336,9 @@ def make_junit_xml(
         from lxml import etree
 
     except ImportError:
-        from tmt.utils.hints import print_hint
+        from tmt.utils.hints import print_hints
 
-        print_hint(id_='report/junit', logger=phase._logger)
+        print_hints('report/junit', logger=phase._logger)
 
         return xml_data
 
