@@ -162,6 +162,43 @@ PHASE_OPTIONS = tmt.options.create_options_decorator(
 )
 
 
+def prune_directory(path: Path, preserved_members: set[str], logger: tmt.log.Logger) -> set[str]:
+    """
+    Remove content of a given directory while preserving selected members.
+
+    :param path: a directory to prune.
+    :param preserved_members: names of directory entries that should not
+        be removed.
+    :param logger: used for logging.
+    :returns: names of members that were actually preserved, i.e. members
+        that exist in the directory, and were not removed.
+    """
+
+    actual_preserved_members: set[str] = set()
+
+    for member in path.iterdir():
+        if member.name in preserved_members:
+            logger.debug(f"Preserve '{member.relative_to(path)}'.", level=3)
+
+            actual_preserved_members = {*actual_preserved_members, member.name}
+
+            continue
+
+        logger.debug(f"Remove '{member}'.", level=3)
+
+        try:
+            if member.is_file() or member.is_symlink():
+                member.unlink()
+
+            else:
+                shutil.rmtree(member)
+
+        except OSError as error:
+            logger.warning(f"Unable to remove '{member}': {error}")
+
+    return actual_preserved_members
+
+
 class DefaultNameGenerator:
     """
     Generator of names for that do not have any.
@@ -446,11 +483,6 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
     #: by :py:meth:`_normalize_data`.
     _raw_data: list[_RawStepData]
 
-    # The step has pruning capability to remove all irrelevant files. All
-    # important file and directory names located in workdir should be specified
-    # in the list below to avoid deletion during pruning.
-    _preserved_workdir_members: list[str] = ['step.yaml']
-
     def __init__(
         self,
         *,
@@ -504,6 +536,14 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
     @property
     def _cli_invocation_logger(self) -> tmt.log.LoggingFunction:
         return functools.partial(self.debug, level=4, topic=tmt.log.Topic.CLI_INVOCATIONS)
+
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
+        """
+        A set of members of the step workdir that should not be removed during pruning.
+        """
+
+        return {'step.yaml'}
 
     def _check_duplicate_names(self, raw_data: list[_RawStepData]) -> None:
         """
@@ -1237,29 +1277,17 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         logger = logger.descend()
 
         # Collect all workdir members that shall not be removed
-        preserved_members: list[str] = self._preserved_workdir_members[:]
+        preserved_members: set[str] = self._preserved_workdir_members
 
         # Do not prune plugin workdirs, each plugin decides what should
         # be pruned from the workdir and what should be kept there
         plugins = self.phases(classes=BasePlugin)
         for plugin in plugins:
             if plugin.workdir is not None:
-                preserved_members.append(plugin.workdir.name)
+                preserved_members = {*preserved_members, plugin.workdir.name}
             plugin.prune(logger)
 
-        # Prune everything except for the preserved files
-        for member in self.workdir.iterdir():
-            if member.name in preserved_members:
-                logger.debug(f"Preserve '{member.relative_to(self.workdir)}'.", level=3)
-                continue
-            logger.debug(f"Remove '{member}'.", level=3)
-            try:
-                if member.is_file() or member.is_symlink():
-                    member.unlink()
-                else:
-                    shutil.rmtree(member)
-            except OSError as error:
-                logger.warning(f"Unable to remove '{member}': {error}")
+        prune_directory(self.workdir, preserved_members, self._logger)
 
 
 class Method:
@@ -1406,8 +1434,6 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
 
     _data_class: type[StepDataT]
 
-    _preserved_workdir_members: set[str] = set()
-
     @classmethod
     def get_data_class(cls) -> type[StepDataT]:
         """
@@ -1459,6 +1485,14 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         # all keys are not known at the time of the class definition
         self.data = data
         self.step = step
+
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
+        """
+        A set of members of the step workdir that should not be removed.
+        """
+
+        return set()
 
     @functools.cached_property
     def safe_name(self) -> str:
@@ -1913,25 +1947,14 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
 
         if self.workdir is None:
             return
-        preservable_members = [
-            member
-            for member in self.workdir.iterdir()
-            if member.name in self._preserved_workdir_members
-        ]
-        removable_members = [
-            member for member in self.workdir.iterdir() if member not in preservable_members
-        ]
-        if preservable_members:
-            for member in removable_members:
-                logger.debug(f"Remove '{member}'.", level=3)
-                try:
-                    if member.is_file() or member.is_symlink():
-                        member.unlink()
-                    else:
-                        shutil.rmtree(member)
-                except OSError as error:
-                    logger.warning(f"Unable to remove '{member}': {error}")
-        else:
+
+        preserved_members = prune_directory(
+            self.workdir, self._preserved_workdir_members, self._logger
+        )
+
+        # If no member was preserved in our workdir, we can remove the whole
+        # directory.
+        if not preserved_members:
             logger.debug(f"Remove '{self.name}' workdir '{self.workdir}'.", level=3)
             try:
                 shutil.rmtree(self.workdir)

@@ -1155,8 +1155,6 @@ class Execute(tmt.steps.Step):
 
     _plugin_base_class = ExecutePlugin
 
-    _preserved_workdir_members = ['step.yaml', 'results.yaml', 'data']
-
     def __init__(
         self,
         *,
@@ -1172,6 +1170,14 @@ class Execute(tmt.steps.Step):
         # List of Result() objects representing test results
         self._results: list[tmt.Result] = []
         self._old_results: list[tmt.Result] = []
+
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
+        """
+        A set of members of the step workdir that should not be removed.
+        """
+
+        return {*super()._preserved_workdir_members, 'data', 'results.yaml'}
 
     def load(self) -> None:
         """
