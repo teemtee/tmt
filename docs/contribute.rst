@@ -71,20 +71,23 @@ __ https://stackoverflow.com/questions/2290016/
 Develop
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In order to experiment, play with the latest bits and develop
-improvements it is best to use a virtual environment. Make sure
-that you have all required packages installed on your box:
+To install minimal set of packages for building the project, run
+the bootstrap script:
+
+..code-block:: shell
+
+    scripts/bootstrap
+
+To get complete development setup, run:
 
 .. code-block:: shell
 
     make develop
 
-Create a development virtual environment with hatch:
+Create a virtual environment with hatch:
 
 .. code-block:: shell
 
-    git clone https://github.com/teemtee/tmt
-    cd tmt
     hatch env create dev
 
 Enter the environment by running:
