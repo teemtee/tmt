@@ -193,18 +193,18 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         Log details about the imported plan
         """
 
-        parent = cast(Optional[tmt.steps.discover.Discover], self.parent)
+        parent = cast(Optional[Discover], self.parent)
         if (
             parent
             and parent.plan._original_plan
-            and parent.plan._original_plan._imported_plan_fmf_id
+            and parent.plan._original_plan._imported_plan_fmf_ids
         ):
-            remote_plan_id = parent.plan._original_plan._imported_plan_fmf_id
-            # FIXME: cast() - https://github.com/python/mypy/issues/7981
-            # Note the missing Optional for values - to_minimal_dict() would
-            # not include unset keys, therefore all values should be valid.
-            for key, value in cast(dict[str, str], remote_plan_id.to_minimal_spec()).items():
-                self.verbose(f'import {key}', value, 'green')
+            for remote_plan_id in parent.plan._original_plan._imported_plan_fmf_ids:
+                # FIXME: cast() - https://github.com/python/mypy/issues/7981
+                # Note the missing Optional for values - to_minimal_dict() would
+                # not include unset keys, therefore all values should be valid.
+                for key, value in cast(dict[str, str], remote_plan_id.to_minimal_spec()).items():
+                    self.verbose(f'import {key}', value, 'green')
 
     def post_dist_git(self, created_content: list[Path]) -> None:
         """
