@@ -3565,6 +3565,20 @@ class Tree(tmt.utils.Common):
             sources = None
 
         # Build the list, convert to objects, sort and filter
+        local_plans = list(self.tree.prune(keys=local_plan_keys, names=names, sources=sources))
+        importing_plans = list(
+            self.tree.prune(keys=remote_plan_keys, names=names, sources=sources)
+        )
+
+        for plan in importing_plans:
+            if plan in local_plans:
+                logger.warning(
+                    f"Plan '{plan}' defines both 'execute' and 'import',"
+                    " ignoring the 'execute' step."
+                )
+
+                local_plans.remove(plan)
+
         plans = [
             Plan(
                 node=plan,
@@ -3574,10 +3588,7 @@ class Tree(tmt.utils.Common):
                 ).apply_verbosity_options(cli_invocation=Plan.cli_invocation),
                 run=run,
             )
-            for plan in [
-                *self.tree.prune(keys=local_plan_keys, names=names, sources=sources),
-                *self.tree.prune(keys=remote_plan_keys, names=names, sources=sources),
-            ]
+            for plan in [*local_plans, *importing_plans]
         ]
 
         if not Plan._opt('shallow'):

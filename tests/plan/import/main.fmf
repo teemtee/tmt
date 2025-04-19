@@ -10,3 +10,7 @@
   summary: Check importing a plan into a plan and modify it with environment variable
   contact: Martin Zelený <mzeleny@redhat.com>
   test: ./modify.sh
+
+/local-and-remote:
+  summary: Make sure a plan defining execute and import gets reported
+  test: ./local-and-remote.sh
