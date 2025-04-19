@@ -21,6 +21,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 import tmt.utils.signals
+import tmt.utils.wait
 from tmt.config.models.hardware import MrackTranslation
 from tmt.container import container, field, simple_field
 from tmt.utils import (
@@ -31,6 +32,7 @@ from tmt.utils import (
     UpdatableMessage,
 )
 from tmt.utils.templates import render_template
+from tmt.utils.wait import Deadline, Waiting
 
 MRACK_VERSION: Optional[str] = None
 
@@ -1376,17 +1378,14 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                         self.warn('No console.log available.')
                     return current
 
-                raise tmt.utils.WaitingIncompleteError
+                raise tmt.utils.wait.WaitingIncompleteError
 
             try:
-                guest_info = tmt.utils.wait(
-                    self,
-                    get_new_state,
-                    datetime.timedelta(seconds=self.provision_timeout),
-                    tick=self.provision_tick,
-                )
+                guest_info = Waiting(
+                    Deadline.from_seconds(self.provision_timeout), tick=self.provision_tick
+                ).wait(get_new_state, self._logger)
 
-            except tmt.utils.WaitingTimedOutError:
+            except tmt.utils.wait.WaitingTimedOutError:
                 response = self.api.delete()
                 raise ProvisionError(
                     f'Failed to provision in the given amount '
@@ -1424,9 +1423,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         self,
         hard: bool = False,
         command: Optional[Union[Command, ShellScript]] = None,
-        timeout: Optional[int] = None,
-        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        waiting: Optional[Waiting] = None,
     ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
@@ -1455,6 +1452,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
+        waiting = waiting or tmt.steps.provision.default_reboot_waiting()
+
         if hard:
             self.debug("Hard reboot using the reboot command 'bkr system-power --action reboot'.")
 
@@ -1462,18 +1461,14 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
             return self.perform_reboot(
                 lambda: self._run_guest_command(reboot_script.to_shell_command()),
-                timeout=timeout,
-                tick=tick,
-                tick_increase=tick_increase,
+                waiting,
                 fetch_boot_time=False,
             )
 
         return super().reboot(
             hard=False,
             command=command,
-            timeout=timeout,
-            tick=tick,
-            tick_increase=tick_increase,
+            waiting=waiting,
         )
 
 
