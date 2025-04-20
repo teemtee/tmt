@@ -32,3 +32,11 @@ duration: 5m
 /incomplete-pass:
   summary: Testing beakerlib incomplete while passing
   test: ./incomplete-pass.sh
+
+/notfound:
+  summary: Testing beakerlib file not found
+  test: ./nosuchfile.sh
+
+/notexec:
+  summary: Testing beakerlib file permission denied
+  test: /dev/null

@@ -8,10 +8,6 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Creating run directory/id"
     rlPhaseEnd
 
-
-
-
-
     tmt_command="tmt run --scratch -a --id ${run} provision --how local execute -vv report -vvv test --name"
     extract_results_command="yq -er '.[] | \"\\(.name) \\(.\"serial-number\") \\(.result) \\(.guest.name) \\(.note[0])\"'"
 
@@ -138,6 +134,36 @@ rlJournalStart
         # tmt saves the correct results, including note, into results yaml
         rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
         rlAssertGrep "/tests/incomplete-pass 1 error default-0 beakerlib: State 'incomplete'" $rlRun_LOG
+    rlPhaseEnd
+
+    testName="/tests/notfound"
+    rlPhaseStartTest "${testName}"
+        rlRun -s "${tmt_command} ${testName} >/dev/null" 2 "Testing beakerlib file not found"
+        # tmt sent the correct command
+        rlAssertGrep "cmd: ./nosuchfile.sh" $rlRun_LOG
+        # beakerlib results as expected
+        rlAssertNotGrep "RESULT" $rlRun_LOG
+        # tmt prints the correct result into log
+        rlAssertGrep "errr /tests/notfound (beakerlib: TestResults FileError)" $rlRun_LOG
+        rlAssertGrep "No such file or directory" $rlRun_LOG
+        # tmt saves the correct results, including note, into results yaml
+        rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
+        rlAssertGrep "/tests/notfound 1 error default-0 beakerlib: TestResults FileError" $rlRun_LOG
+    rlPhaseEnd
+
+    testName="/tests/notexec"
+    rlPhaseStartTest "${testName}"
+        rlRun -s "${tmt_command} ${testName} >/dev/null" 2 "Testing beakerlib file permission denied"
+        # tmt sent the correct command
+        rlAssertGrep "cmd: /dev/null" $rlRun_LOG
+        # beakerlib results as expected
+        rlAssertNotGrep "RESULT" $rlRun_LOG
+        # tmt prints the correct result into log
+        rlAssertGrep "errr /tests/notexec (beakerlib: TestResults FileError)" $rlRun_LOG
+        rlAssertGrep "Permission denied" $rlRun_LOG
+        # tmt saves the correct results, including note, into results yaml
+        rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
+        rlAssertGrep "/tests/notexec 1 error default-0 beakerlib: TestResults FileError" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
