@@ -22,42 +22,6 @@ description: |
     with results for executed tests. The format of the file is described
     at :ref:`/spec/results`.
 
-/upgrade:
-    summary: Perform system upgrades during testing
-    story:
-        As a tester I want to verify that a configured application
-        or service still correctly works after the system upgrade.
-    example:
-      - |
-        # Main testing plan
-        discover:
-            how: fmf
-        execute:
-            how: upgrade
-            url: https://github.com/teemtee/upgrade
-            upgrade-path: /paths/fedora35to36
-
-      - |
-        # Upgrade path /paths/fedora35to36.fmf in the remote repository
-        discover: # Selects appropriate upgrade tasks (L1 tests)
-            how: fmf
-            filter: "tag:fedora"
-        environment: # This is passed to upgrade tasks
-            SOURCE: 35
-            TARGET: 36
-        execute:
-            how: tmt
-
-      - |
-        # Alternative main testing plan, without upgrade path
-        execute:
-            how: upgrade
-            url: https://github.com/teemtee/upgrade
-            filter: "tag:fedora"
-    link:
-      - implemented-by: /tmt/steps/execute/upgrade.py
-      - verified-by: /tests/execute/upgrade
-
 
 /isolate:
     summary: Run tests in an isolated environment
@@ -85,17 +49,6 @@ description: |
     link:
       - implemented-by: /tmt/steps/execute/internal.py
       - verified-by: /tests/execute/exit-first
-
-/tmt:
-    summary: Internal test executor
-    story: As a user I want to execute tests directly from tmt.
-
-    example: |
-        execute:
-            how: tmt
-    link:
-      - implemented-by: /tmt/steps/execute/internal.py
-      - verified-by: /tests/execute/framework
 
 /script:
     summary: Execute shell scripts

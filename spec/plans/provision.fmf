@@ -23,15 +23,6 @@ example: |
 link:
     - implemented-by: /tmt/steps/provision
 
-/openstack:
-    summary: Provision a virtual machine in OpenStack
-    description:
-        Create a virtual machine using OpenStack.
-    example: |
-        provision:
-            how: openstack
-            image: f31
-
 /multihost:
     summary: Multihost testing specification
 
