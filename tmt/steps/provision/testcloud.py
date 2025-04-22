@@ -383,10 +383,6 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
         default=None,
         internal=True,
     )
-    logs_directory: Optional[str] = field(
-        default=None,
-        internal=True,
-    )
 
     # TODO: custom handling for two fields - when the formatting moves into
     # field(), this should not be necessary.
@@ -674,7 +670,6 @@ class GuestTestcloud(tmt.GuestSsh):
     disk: Optional['Size']
     connection: str
     arch: str
-    logs_directory: Optional[Path]
 
     # Not to be saved, recreated from image_url/instance_name/... every
     # time guest is instantiated.
@@ -846,7 +841,6 @@ class GuestTestcloud(tmt.GuestSsh):
         # Configure to tmt's storage directories
         self.config.DATA_DIR = TESTCLOUD_DATA
         self.config.STORE_DIR = TESTCLOUD_IMAGES
-        self.config.CONSOLE_LOG_DIR = self.logs_directory
 
     def _combine_hw_memory(self) -> None:
         """
@@ -965,16 +959,17 @@ class GuestTestcloud(tmt.GuestSsh):
         os.makedirs(TESTCLOUD_DATA, exist_ok=True)
         os.makedirs(TESTCLOUD_IMAGES, exist_ok=True)
 
-        # Special directory is needed for console logs with the right
-        # selinux context so that virtlogd is able to write there.
-        self.logs_directory = Path(tempfile.mkdtemp(prefix="testcloud-"))
-        self.logs_directory.chmod(0o755)
-        self._run_guest_command(
-            Command("chcon", "--type", "virt_log_t", self.logs_directory), silent=True
+        # Prepare the console log
+        assert self.workdir is not None  # Narrow type
+        console_log = ConsoleLog(
+            name=CONSOLE_LOG_FILE, symlink=self.workdir / CONSOLE_LOG_FILE, guest=self
         )
+        console_log.prepare(logger=self._logger)
+        self.guest_logs.append(console_log)
 
         # Prepare config
         self.prepare_config()
+        self.config.CONSOLE_LOG_DIR = console_log.tmp
 
         # Kick off image URL with the given image
         self.image_url = self.image
@@ -1011,9 +1006,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Prepare DomainConfiguration object before Instance object
         self._domain = DomainConfiguration(self.instance_name)
-
-        assert self.workdir is not None  # narrow type
-        self._domain.console_log_file = self.workdir / CONSOLE_LOG_FILE
+        self._domain.console_log_file = console_log.symlink
 
         # Prepare Workarounds object
         self._workarounds = Workarounds(defaults=True)
@@ -1146,26 +1139,6 @@ class GuestTestcloud(tmt.GuestSsh):
                 self._instance.remove(autostop=True)
             except FileNotFoundError as error:
                 raise tmt.utils.ProvisionError(f"Failed to remove testcloud instance: {error}")
-
-            # Replace the console log symlink created by testcloud with
-            # the actual content
-            self.debug("Replace console log symlink with the actual content.", level=3)
-            try:
-                assert self.workdir is not None  # Narrow type
-                symlink_path = self.workdir / CONSOLE_LOG_FILE
-                target_path = symlink_path.resolve()
-                symlink_path.unlink()
-                shutil.copy2(target_path, symlink_path)
-            except OSError as error:
-                self.warn(f"Failed to replace console log symlink: {error}")
-
-            # Remove completely the logs temporary directory
-            self.debug(f"Remove testcloud logs directory '{self.logs_directory}'.", level=3)
-            try:
-                assert self.logs_directory is not None  # Narrow type
-                shutil.rmtree(self.logs_directory)
-            except OSError as error:
-                self.warn(f"Failed to remove logs directory '{self.logs_directory}': {error}")
 
             self.info('guest', 'removed', 'green')
 
@@ -1321,14 +1294,6 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
     # Guest instance
     _guest = None
 
-    @property
-    def _preserved_workdir_members(self) -> set[str]:
-        """
-        A set of members of the step workdir that should not be removed.
-        """
-
-        return {*super()._preserved_workdir_members, CONSOLE_LOG_FILE}
-
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
         Provision the testcloud instance
@@ -1427,3 +1392,66 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
                     clean.fail(f"Failed to remove '{image}'.", shift=2)
                     successful = False
         return successful
+
+
+@container
+class ConsoleLog(tmt.steps.provision.GuestLog):
+    # Linked guest
+    guest: GuestTestcloud
+
+    # Path where testcloud will create the symlink to the console log
+    symlink: Path
+
+    # Temporary directory for storing the console log content
+    tmp: Optional[Path] = None
+
+    def prepare(self, logger: tmt.log.Logger) -> None:
+        """
+        Prepare temporary directory for the console log
+
+        Special directory is needed for console logs with the right
+        selinux context so that virtlogd is able to write there.
+        """
+
+        self.tmp = Path(tempfile.mkdtemp(prefix="testcloud-"))
+        logger.debug(f"Created console log directory '{self.tmp}'.", level=3)
+
+        self.tmp.chmod(0o755)
+        self.guest._run_guest_command(
+            Command("chcon", "--type", "virt_log_t", self.tmp), silent=True
+        )
+
+    def cleanup(self, logger: tmt.log.Logger) -> None:
+        """
+        Remove the temporary directory
+        """
+
+        if self.tmp is None:
+            return
+
+        try:
+            logger.debug(f"Remove console log directory '{self.tmp}'.", level=3)
+            shutil.rmtree(self.tmp)
+            self.tmp = None
+
+        except OSError as error:
+            logger.warning(f"Failed to remove console log directory '{self.tmp}': {error}")
+
+    def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
+        """
+        Read the content of the symlink target prepared by testcloud
+        """
+
+        text = None
+
+        try:
+            logger.debug(f"Read the console log content from '{self.symlink}'.", level=3)
+            text = self.symlink.read_text(errors="ignore")
+
+        except OSError as error:
+            logger.warning(f"Failed to read the console log: {error}")
+
+        self.symlink.unlink()
+        self.cleanup(logger)
+
+        return text
