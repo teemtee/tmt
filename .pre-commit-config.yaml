@@ -188,19 +188,13 @@ repos:
           - single-statement-per-line
           - "--"
 
-  - repo: https://github.com/hadolint/hadolint
-    rev: v2.13.1-beta
+  - repo: https://github.com/AleksaC/hadolint-py
+    rev: v2.12.1b3
     hooks:
-      # * hadolint-docker depends hard on Docker, ignores podman
-      # * pre-commit check does not install hadolint binary,
-      #   see https://github.com/hadolint/hadolint/issues/886
-      #
-      # As of now, installing hadolint "manually" is the only viable
-      # option. It is required to exist on developer's workstation,
-      # and it is installed by a dedicated step in Github pre-commit
-      # action (.github/workflows/pre-commit.yml).
+
       - id: hadolint
         files: ^containers/.*
+
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.10.0.1
     hooks:
