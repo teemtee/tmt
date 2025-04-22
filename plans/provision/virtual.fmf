@@ -29,7 +29,7 @@ prepare+:
     script: |
         tmt run --remove plan --default provision --how virtual finish
         for image in /var/tmp/tmt/testcloud/images/*qcow2; do
-            virt-customize --add $image --run-command 'dnf --refresh install -y beakerlib'
+            virt-customize --add $image --run-command 'echo "nameserver 8.8.8.8" > /etc/resolv.conf; dnf --refresh install -y beakerlib'
         done
 
 context+:
