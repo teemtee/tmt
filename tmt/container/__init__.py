@@ -99,7 +99,7 @@ class FieldMetadata(Generic[T]):
 
     #: Specific values that should be shown in the documentation as
     #: interesting examples of the field usage.
-    help_example_values: list[str] = simple_field(default_factory=list)
+    help_example_values: list[str] = simple_field(default_factory=lambda: list[str]())
 
     #: If field accepts a value, this string would represent it in documentation.
     #: This stores the metavar provided when field was created - it may be unset.
@@ -862,7 +862,9 @@ def field(
             'tmt': FieldMetadata(
                 internal=internal,
                 help=textwrap.dedent(help).strip() if help else None,
-                help_example_values=help_example_values or [],
+                help_example_values=help_example_values
+                if help_example_values is not None
+                else list[str](),
                 _metavar=metavar,
                 default=default,
                 default_factory=default_factory,
