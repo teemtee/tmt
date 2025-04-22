@@ -55,7 +55,7 @@ def style(
 
     from tmt.config.models.themes import Style as ThemeStyle
 
-    # If `style`` is indeed a theme style, then apply it.
+    # If `style` is indeed a theme style, then apply it.
     if isinstance(style, ThemeStyle):
         return style.apply(s)
 
