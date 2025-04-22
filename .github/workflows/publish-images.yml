@@ -25,7 +25,7 @@ jobs:
         with:
           image: ${{ steps.build-image-tmt.outputs.image }}
           tags: ${{ steps.build-image-tmt.outputs.tags }}
-          registry: quay.io/teemtee/
+          registry: quay.io/teemtee
           username: teemtee+github_action
           password: ${{ secrets.QUAY_TEEMTEE_SECRET }}
       - name: Push To quay.io - tmt-all
@@ -34,6 +34,6 @@ jobs:
         with:
           image: ${{ steps.build-image-tmt-all.outputs.image }}
           tags: ${{ steps.build-image-tmt-all.outputs.tags }}
-          registry: quay.io/teemtee/
+          registry: quay.io/teemtee
           username: teemtee+github_action
           password: ${{ secrets.QUAY_TEEMTEE_SECRET }}
