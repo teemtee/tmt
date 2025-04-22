@@ -656,7 +656,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             # See issue https://github.com/teemtee/tmt/issues/3647.
             except tmt.utils.RunError:
                 # TODO: We rely here on the traceback to print a reasonable
-                #  failure message, should be improved later.
+                # failure message, should be improved later.
                 pass
 
         # Fetch #1: we need logs and everything the test produced so we could
