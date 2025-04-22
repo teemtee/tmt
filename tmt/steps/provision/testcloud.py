@@ -1321,6 +1321,14 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
     # Guest instance
     _guest = None
 
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
+        """
+        A set of members of the step workdir that should not be removed.
+        """
+
+        return {*super()._preserved_workdir_members, CONSOLE_LOG_FILE}
+
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
         Provision the testcloud instance
@@ -1419,25 +1427,3 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
                     clean.fail(f"Failed to remove '{image}'.", shift=2)
                     successful = False
         return successful
-
-    def prune(self, logger: tmt.log.Logger) -> None:
-        """
-        Do not prune console logs.
-        """
-        assert self.workdir is not None  # narrow type
-        _console_log = self.workdir / CONSOLE_LOG_FILE
-        if _console_log.exists():
-            for member in self.workdir.iterdir():
-                if member.name == CONSOLE_LOG_FILE:
-                    logger.debug(f"Preserve '{member.relative_to(self.workdir)}'.", level=3)
-                    continue
-                logger.debug(f"Remove '{member}'.", level=3)
-                try:
-                    if member.is_file() or member.is_symlink():
-                        member.unlink()
-                    else:
-                        shutil.rmtree(member)
-                except OSError as error:
-                    logger.warning(f"Unable to remove '{member}': {error}")
-        else:
-            super().prune(logger)

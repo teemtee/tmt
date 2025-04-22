@@ -2791,7 +2791,13 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
     # TODO: Generics would provide a better type, https://github.com/teemtee/tmt/issues/1437
     _guest: Optional[Guest] = None
 
-    _preserved_workdir_members = {'logs'}
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
+        """
+        A set of members of the step workdir that should not be removed.
+        """
+
+        return {*super()._preserved_workdir_members, "logs"}
 
     @classmethod
     def base_command(
