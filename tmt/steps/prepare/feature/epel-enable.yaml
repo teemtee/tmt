@@ -64,6 +64,7 @@
 
         - name: Enable the crb repository
           ansible.builtin.command: crb enable
+          register: output
           changed_when: output.rc != 0
 
     - name: Enable EPEL repos on CentOS 7
@@ -124,4 +125,5 @@
 
         - name: Enable the crb repository
           ansible.builtin.command: crb enable
+          register: output
           changed_when: output.rc != 0
