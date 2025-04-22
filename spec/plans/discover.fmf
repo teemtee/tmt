@@ -39,52 +39,6 @@ description: |
           description: Long test description.
           ...
 
-/fmf:
-    summary: Discover available tests using the fmf format
-    description: |
-        Use the `Flexible Metadata Format`_ to explore all
-        available tests in given repository.
-
-        See the `fmf identifier`_ and the :ref:`/plugins/discover/fmf`
-        plugin documentation for more details.
-
-        .. _fmf identifier: https://fmf.readthedocs.io/en/latest/concept.html#identifiers
-        .. _Flexible Metadata Format: https://fmf.readthedocs.io/
-
-    example:
-      - |
-        # Discover all fmf tests in the current repository
-        discover:
-            how: fmf
-      - |
-        # Fetch tests from a remote repo, filter by name/tier
-        discover:
-            how: fmf
-            url: https://github.com/teemtee/tmt
-            ref: main
-            path: /metadata/tree/path
-            test: [regexp]
-            filter: tier:1
-      - |
-        # Choose tests verifying given issue
-        discover:
-            how: fmf
-            link: verifies:issues/123$
-      - |
-        # Select only tests which have been modified
-        discover:
-            how: fmf
-            modified-only: true
-            modified-url: https://github.com/teemtee/tmt-official
-            modified-ref: reference/main
-      - |
-        # Extract tests from the distgit sources
-        discover:
-            how: fmf
-            dist-git-source: true
-    link:
-      - implemented-by: /tmt/steps/discover/fmf.py
-
 /dist-git-source:
     summary: Download rpm sources for dist-git repositories
     description: |
@@ -102,7 +56,7 @@ description: |
         order ``60``. All created files and directories by this command
         are directly in ``TMT_SOURCE_DIR``.
 
-        The :ref:`/spec/plans/discover/fmf` plugin supports
+        The :ref:`/plugins/discover/fmf` plugin supports
         additional dist-git options, see its documentation for
         details.
 
