@@ -567,12 +567,12 @@ class Constraint(BaseConstraint):
                 value = pint.Quantity(value, default_unit)
 
         elif as_cast is not None:
+            # Type depends on the `as_cast` function; subclasses handle the specific type.
             value = as_cast(raw_value)  # type: ignore[assignment]
-            # TODO Incompatible types in assignment (expression has type "Union[int, Quantity, str, float]", variable has type "Quantity")  [assignment]  # noqa: E501
 
         else:
+            # Type depends on `as_quantity`; subclasses handle the specific type.
             value = raw_value  # type: ignore[assignment]
-            # TODO Incompatible types in assignment (expression has type "Union[str, Any]", variable has type "Quantity")  [assignment]  # noqa: E501
 
         return cls(
             name=name,

@@ -283,8 +283,7 @@ def _translate_constraint_by_config(
         return _transform_unsupported(constraint)
 
     beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator,  # TODO Argument 2 to "operator_to_beaker_op" has incompatible type "Union[int, Quantity, str, bool, float]"; expected "str"  [arg-type]  # noqa: E501
-        constraint.value,  # type: ignore[arg-type]
+        constraint.operator, str(constraint.value)
     )
 
     return tmt.utils.yaml_to_dict(
