@@ -8,5 +8,6 @@
 
 /test:
     test: ./test.sh
+    framework: beakerlib
     require:
       - library(httpd/http)
