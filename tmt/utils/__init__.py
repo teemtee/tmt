@@ -79,6 +79,15 @@ if TYPE_CHECKING:
     from tmt.hardware import Size
 
 
+def sanitize_string(text: str) -> str:
+    """Remove invalid Unicode characters from a string"""
+    try:
+        text.encode('utf-8', errors='strict')
+        return text
+    except UnicodeEncodeError:
+        return text.encode("utf-8", errors="ignore").decode("utf-8")
+
+
 def configure_optional_constant(default: Optional[int], envvar: str) -> Optional[int]:
     """
     Deduce the actual value of a global constant which may be left unset.
