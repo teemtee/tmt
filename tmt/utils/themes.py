@@ -40,6 +40,8 @@ def style(
     :returns: colorized string.
     """
 
+    # If `style` is not set, then fall back to Click/colorama style
+    # of parameters, with various facets specified by separate arguments.
     if style is None:
         _colorama_kwargs = {'fg': fg, 'bold': bold, 'underline': underline}
 
@@ -53,7 +55,11 @@ def style(
 
     from tmt.config.models.themes import Style as ThemeStyle
 
+    # If `style` is indeed a theme style, then apply it.
     if isinstance(style, ThemeStyle):
         return style.apply(s)
 
-    return _style(s, fg=fg)
+    # Another compatibility fallback: `style` is a string, and to play
+    # nicely with code that does not use theme styles yet, it is treated
+    # as the foreground color.
+    return _style(s, fg=style)
