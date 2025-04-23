@@ -48,14 +48,6 @@ See the https://tmt.readthedocs.io web for detailed documentation.
     :target: https://pypi.org/project/tmt/
     :alt: Python versions
 
-.. |ruff| image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
-    :target: https://github.com/astral-sh/ruff
-    :alt: Ruff
-
-.. |pre-commit| image:: https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit
-   :target: https://github.com/pre-commit/pre-commit
-   :alt: pre-commit
-
 .. |license| image:: https://img.shields.io/badge/license-MIT-blue.svg
     :target: https://opensource.org/licenses/MIT
     :alt: MIT License
