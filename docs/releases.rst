@@ -4,15 +4,40 @@
     Releases
 ======================
 
-
 tmt-1.47.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When `tmt` works with the image mode images, it now uses native package
-installation method instead of using `rpm-ostree`: `tmt` creates a
-`Containerfile` based on the booted image, adds needed packages there,
-builds the image and reboots the system to use the fresh image with the
-necessary packages.
+When ``tmt`` works with image mode, it now uses the native
+package installation method instead of ``rpm-ostree``.
+``tmt`` creates a ``Containerfile`` based on the booted image,
+adds the required packages, builds a new image, and reboots the
+system to use the updated image with the necessary packages.
+
+If applicable, the ``crb`` repository is now automatically enabled
+when enabling ``epel`` repository.
+
+If a mixture of local and remote plans is detected, ``tmt`` now
+prints a warning and skips the ``local`` plan.
+
+In the ``execute`` step, the documentation of the ``duration``
+option was enhanced to correctly describe the effect of the
+option.
+
+The ``execute`` plugin now explicitly requires ``awk`` to be
+installed on the machine, due to its recent removal from
+Fedora containers.
+
+The documentation of the ``feature`` plugins now includes a list
+of required Ansible modules.
+
+The documentation of plugins was improved to include examples
+of keys with actual values.
+
+The default unit of the ``memory`` hardware requirement is now
+``MiB``. It is used if no unit was specified.
+
+The steps documentation was deduplicated, and all information
+from the specs was moved to the ``plugins`` section.
 
 
 tmt-1.46.0
