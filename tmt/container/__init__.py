@@ -99,7 +99,7 @@ class FieldMetadata(Generic[T]):
 
     #: Specific values that should be shown in the documentation as
     #: interesting examples of the field usage.
-    help_example_values: list[str] = simple_field(default_factory=lambda: list[str]())
+    help_example_values: list[str] = simple_field(default_factory=list[str])
 
     #: If field accepts a value, this string would represent it in documentation.
     #: This stores the metavar provided when field was created - it may be unset.
