@@ -8,7 +8,7 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Creating run directory/id"
     rlPhaseEnd
 
-    tmt_command="tmt run --scratch -a --id ${run} provision --how local execute -vv report -vvv test --name"
+    tmt_command="LANG=en_US.UTF-8 tmt run --scratch -a --id ${run} provision --how local execute -vv report -vvv test --name"
     extract_results_command="yq -er '.[] | \"\\(.name) \\(.\"serial-number\") \\(.result) \\(.guest.name) \\(.note[0])\"'"
 
     testName="/tests/success"
