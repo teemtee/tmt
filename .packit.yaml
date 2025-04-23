@@ -115,10 +115,11 @@ _:
           - ci | skip
 
   # Internal provisioning jobs
-  - &internal-provision
+  - &provision
     <<: *test-base
-    <<: *internal
     <<: *require-full-tests
+    targets:
+      - fedora-latest-stable
     tf_extra_params:
       environments:
         - tmt:
@@ -167,11 +168,11 @@ jobs:
     tmt_plan: '/plans/features/extended-unit-tests$'
 
   # Test provision plugins
-  - <<: *internal-provision
+  - <<: *provision
     identifier: provision-bootc
     tmt_plan: /plans/provision/bootc
 
-  - <<: *internal-provision
+  - <<: *provision
     identifier: provision-virtual
     tmt_plan: /plans/provision/virtual
 
