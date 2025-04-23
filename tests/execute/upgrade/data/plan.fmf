@@ -6,6 +6,9 @@ provision:
 execute:
     how: upgrade
     url: https://github.com/teemtee/upgrade
+    # TODO: revert once merged, workaround for 1.47 release
+    # https://github.com/teemtee/upgrade/pull/15
+    ref: dnf5
 
 /no-path:
     summary: Basic upgrade test with no upgrade path
