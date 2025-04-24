@@ -663,16 +663,16 @@ def create_method_class(methods: MethodDictType) -> type[click.Command]:
                         break
 
             if how and self._method is None:
-                from tmt.utils.hints import print_hint
+                from tmt.utils.hints import print_hints
 
                 # Use run for logging, steps may not be initialized yet
                 assert context.obj.run is not None  # narrow type
                 assert self.name is not None  # narrow type
 
-                print_hint(
-                    id_=f'{self.name}/{how}', ignore_missing=True, logger=context.obj.run._logger
+                print_hints(
+                    f'{self.name}/{how}', ignore_missing=True, logger=context.obj.run._logger
                 )
-                print_hint(id_=self.name, ignore_missing=True, logger=context.obj.run._logger)
+                print_hints(self.name, ignore_missing=True, logger=context.obj.run._logger)
 
                 raise tmt.utils.SpecificationError(f"Unsupported {self.name} method '{how}'.")
 

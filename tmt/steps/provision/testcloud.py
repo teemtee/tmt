@@ -91,9 +91,9 @@ def import_testcloud(logger: tmt.log.Logger) -> None:
         )
         from testcloud.workarounds import Workarounds
     except ImportError as error:
-        from tmt.utils.hints import print_hint
+        from tmt.utils.hints import print_hints
 
-        print_hint(id_='provision/virtual.testcloud', logger=logger)
+        print_hints('provision/virtual.testcloud', logger=logger)
 
         raise ProvisionError('Could not import testcloud package.') from error
 

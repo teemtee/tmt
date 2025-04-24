@@ -271,9 +271,9 @@ def _import_or_raise(
 
     except tmt.utils.GeneralError as exc:
         if hint_id is not None:
-            from tmt.utils.hints import print_hint
+            from tmt.utils.hints import print_hints
 
-            print_hint(id_=hint_id, logger=logger)
+            print_hints(hint_id, logger=logger)
 
         if exc_message is not None:
             raise exc_class(exc_message) from exc
