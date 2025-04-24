@@ -25,6 +25,12 @@ properties:
       - enabled
       - disabled
 
+  crb:
+    type: string
+    enum:
+      - enabled
+      - disabled
+
   profile:
     type: string
 
