@@ -7,7 +7,7 @@ export.story: dict json rst template yaml
 export.test: dict json nitrate polarion template yaml
 package_managers: apk apt bootc dnf dnf5 rpm-ostree yum
 plan_shapers: max-tests repeat
-prepare.feature: epel fips profile
+prepare.feature: crb epel fips profile
 step.discover: fmf shell
 step.execute: tmt upgrade
 step.finish: ansible shell
