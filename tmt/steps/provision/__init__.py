@@ -1036,7 +1036,11 @@ class GuestData(SerializableContainer):
 
 @container
 class GuestLog:
+    # Log file name
     name: str
+
+    # Linked guest
+    guest: "Guest"
 
     def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
         """
@@ -1794,8 +1798,17 @@ class Guest(tmt.utils.Common):
     def logdir(self) -> Optional[Path]:
         """
         Path to store logs
+
+        Create the directory if it does not exist yet.
         """
-        return self.workdir / 'logs' if self.workdir else None
+
+        if not self.workdir:
+            return None
+
+        dirpath = self.workdir / 'logs'
+        dirpath.mkdir(parents=True, exist_ok=True)
+
+        return dirpath
 
     def fetch_logs(
         self,

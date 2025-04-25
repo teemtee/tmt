@@ -960,16 +960,18 @@ class GuestTestcloud(tmt.GuestSsh):
         os.makedirs(TESTCLOUD_IMAGES, exist_ok=True)
 
         # Prepare the console log
-        assert self.workdir is not None  # Narrow type
+        assert self.logdir is not None  # Narrow type
         console_log = ConsoleLog(
-            name=CONSOLE_LOG_FILE, symlink=self.workdir / CONSOLE_LOG_FILE, guest=self
+            name=CONSOLE_LOG_FILE,
+            testcloud_symlink_path=self.logdir / CONSOLE_LOG_FILE,
+            guest=self,
         )
         console_log.prepare(logger=self._logger)
         self.guest_logs.append(console_log)
 
         # Prepare config
         self.prepare_config()
-        self.config.CONSOLE_LOG_DIR = console_log.tmp
+        self.config.CONSOLE_LOG_DIR = console_log.exchange_directory
 
         # Kick off image URL with the given image
         self.image_url = self.image
@@ -1006,7 +1008,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Prepare DomainConfiguration object before Instance object
         self._domain = DomainConfiguration(self.instance_name)
-        self._domain.console_log_file = console_log.symlink
+        self._domain.console_log_file = console_log.testcloud_symlink_path
 
         # Prepare Workarounds object
         self._workarounds = Workarounds(defaults=True)
@@ -1396,14 +1398,11 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
 
 @container
 class ConsoleLog(tmt.steps.provision.GuestLog):
-    # Linked guest
-    guest: GuestTestcloud
-
     # Path where testcloud will create the symlink to the console log
-    symlink: Path
+    testcloud_symlink_path: Path
 
     # Temporary directory for storing the console log content
-    tmp: Optional[Path] = None
+    exchange_directory: Optional[Path] = None
 
     def prepare(self, logger: tmt.log.Logger) -> None:
         """
@@ -1413,12 +1412,12 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
         selinux context so that virtlogd is able to write there.
         """
 
-        self.tmp = Path(tempfile.mkdtemp(prefix="testcloud-"))
-        logger.debug(f"Created console log directory '{self.tmp}'.", level=3)
+        self.exchange_directory = Path(tempfile.mkdtemp(prefix="testcloud-"))
+        logger.debug(f"Created console log directory '{self.exchange_directory}'.", level=3)
 
-        self.tmp.chmod(0o755)
+        self.exchange_directory.chmod(0o755)
         self.guest._run_guest_command(
-            Command("chcon", "--type", "virt_log_t", self.tmp), silent=True
+            Command("chcon", "--type", "virt_log_t", self.exchange_directory), silent=True
         )
 
     def cleanup(self, logger: tmt.log.Logger) -> None:
@@ -1426,16 +1425,18 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
         Remove the temporary directory
         """
 
-        if self.tmp is None:
+        if self.exchange_directory is None:
             return
 
         try:
-            logger.debug(f"Remove console log directory '{self.tmp}'.", level=3)
-            shutil.rmtree(self.tmp)
-            self.tmp = None
+            logger.debug(f"Remove console log directory '{self.exchange_directory}'.", level=3)
+            shutil.rmtree(self.exchange_directory)
+            self.exchange_directory = None
 
         except OSError as error:
-            logger.warning(f"Failed to remove console log directory '{self.tmp}': {error}")
+            logger.warning(
+                f"Failed to remove console log directory '{self.exchange_directory}': {error}"
+            )
 
     def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
         """
@@ -1445,13 +1446,15 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
         text = None
 
         try:
-            logger.debug(f"Read the console log content from '{self.symlink}'.", level=3)
-            text = self.symlink.read_text(errors="ignore")
+            logger.debug(
+                f"Read the console log content from '{self.testcloud_symlink_path}'.", level=3
+            )
+            text = self.testcloud_symlink_path.read_text(errors="ignore")
 
         except OSError as error:
             logger.warning(f"Failed to read the console log: {error}")
 
-        self.symlink.unlink()
+        self.testcloud_symlink_path.unlink()
         self.cleanup(logger)
 
         return text
