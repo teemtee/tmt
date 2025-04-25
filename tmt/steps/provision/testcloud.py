@@ -1092,6 +1092,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Boot the virtual machine
         self.info('progress', 'booting...', 'cyan')
+        self.verbose("console", console_log.testcloud_symlink_path, level=2, color="cyan")
         assert libvirt is not None
 
         try:
@@ -1251,6 +1252,9 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
             # in GB
             disk: 30
 
+    Images
+    ^^^^^^
+
     As the image use ``fedora`` for the latest released Fedora compose,
     ``fedora-rawhide`` for the latest Rawhide compose, short aliases such as
     ``fedora-32``, ``f-32`` or ``f32`` for specific release or a full url to
@@ -1283,9 +1287,22 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
     In addition to the qcow2 format, Vagrant boxes can be used as well,
     testcloud will take care of unpacking the image for you.
 
+    Reboot
+    ^^^^^^
+
     To trigger hard reboot of a guest, plugin uses testcloud API. It is
     also used to trigger soft reboot unless a custom reboot command was
     specified via ``tmt-reboot -c ...``.
+
+    Console
+    ^^^^^^^
+
+    The full console log is available, after the guest is booted, in the
+    ``logs`` directory under the provision step workdir, for example:
+    ``plan/provision/client/logs/console.txt``. Enable verbose mode
+    using ``-vv`` to get the full path printed to the terminal for easy
+    investigation.
+
     """
 
     _data_class = ProvisionTestcloudData
@@ -1406,7 +1423,7 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
 
     def prepare(self, logger: tmt.log.Logger) -> None:
         """
-        Prepare temporary directory for the console log
+        Prepare temporary directory for the console log.
 
         Special directory is needed for console logs with the right
         selinux context so that virtlogd is able to write there.
@@ -1422,7 +1439,7 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
 
     def cleanup(self, logger: tmt.log.Logger) -> None:
         """
-        Remove the temporary directory
+        Remove the temporary directory.
         """
 
         if self.exchange_directory is None:
@@ -1440,7 +1457,7 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
 
     def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
         """
-        Read the content of the symlink target prepared by testcloud
+        Read the content of the symlink target prepared by testcloud.
         """
 
         text = None
