@@ -123,6 +123,28 @@ description: |
               - cpu:
                     model: 69
 
+    .. note::
+
+        ``and`` and ``or`` operators cannot be combined with HW
+        requirements on the same level:
+
+        .. code-block:: yaml
+
+            # Incorrect:
+            hardware:
+              memory: 1 GB
+              or:
+                - hostname: foo.redhat.com
+                - hostname: bar.redhat.com
+
+            # Use this instead:
+            hardware:
+              and:
+                - memory: 1 GB
+                - or:
+                  - hostname: foo.redhat.com
+                  - hostname: bar.redhat.com
+
     Units
     -----
 
