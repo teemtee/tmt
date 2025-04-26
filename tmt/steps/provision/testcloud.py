@@ -1,5 +1,4 @@
 import collections
-import datetime
 import functools
 import itertools
 import os
@@ -21,6 +20,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+import tmt.utils.wait
 from tmt.container import container, field
 from tmt.utils import (
     WORKDIR_ROOT,
@@ -31,6 +31,7 @@ from tmt.utils import (
     configure_constant,
     retry_session,
 )
+from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
     import tmt.base
@@ -733,14 +734,14 @@ class GuestTestcloud(tmt.GuestSsh):
             except requests.RequestException:
                 pass
             finally:
-                raise tmt.utils.WaitingIncompleteError
+                raise tmt.utils.wait.WaitingIncompleteError
 
         try:
-            return tmt.utils.wait(
-                self, try_get_url, datetime.timedelta(seconds=CONNECT_TIMEOUT), tick=1
+            return Waiting(Deadline.from_seconds(CONNECT_TIMEOUT), tick=1).wait(
+                try_get_url, self._logger
             )
 
-        except tmt.utils.WaitingTimedOutError:
+        except tmt.utils.wait.WaitingTimedOutError:
             raise ProvisionError(f'Failed to {message} in {CONNECT_TIMEOUT}s.')
 
     def _guess_image_url(self, name: str) -> str:
@@ -1094,7 +1095,9 @@ class GuestTestcloud(tmt.GuestSsh):
         self._instance.create_ip_file(self.primary_address)
 
         # Wait a bit until the box is up
-        if not self.reconnect(timeout=CONNECT_TIMEOUT * time_coeff, tick=1):
+        if not self.reconnect(
+            Waiting(Deadline.from_seconds(CONNECT_TIMEOUT * time_coeff), tick=1)
+        ):
             raise ProvisionError(f"Failed to connect in {CONNECT_TIMEOUT * time_coeff}s.")
 
     def stop(self) -> None:
@@ -1132,9 +1135,7 @@ class GuestTestcloud(tmt.GuestSsh):
         self,
         hard: bool = False,
         command: Optional[Union[Command, ShellScript]] = None,
-        timeout: Optional[int] = None,
-        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        waiting: Optional[Waiting] = None,
     ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
@@ -1159,6 +1160,8 @@ class GuestTestcloud(tmt.GuestSsh):
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
+        waiting = waiting or tmt.steps.provision.default_reboot_waiting()
+
         if hard:
             if self._instance is None:
                 raise tmt.utils.ProvisionError("No instance initialized.")
@@ -1169,9 +1172,7 @@ class GuestTestcloud(tmt.GuestSsh):
             # being `None`, missing the explicit check above.
             return self.perform_reboot(
                 lambda: self._instance.reboot(soft=False),  # type: ignore[union-attr]
-                timeout=timeout,
-                tick=tick,
-                tick_increase=tick_increase,
+                waiting,
                 fetch_boot_time=False,
             )
 
@@ -1179,9 +1180,7 @@ class GuestTestcloud(tmt.GuestSsh):
             return super().reboot(
                 hard=False,
                 command=command,
-                timeout=timeout,
-                tick=tick,
-                tick_increase=tick_increase,
+                waiting=waiting,
             )
 
         if self._instance is None:
@@ -1191,9 +1190,7 @@ class GuestTestcloud(tmt.GuestSsh):
         # being `None`, missing the explicit check above.
         return self.perform_reboot(
             lambda: self._instance.reboot(soft=True),  # type: ignore[union-attr]
-            timeout=timeout,
-            tick=tick,
-            tick_increase=tick_increase,
+            waiting,
         )
 
 

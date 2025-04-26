@@ -245,10 +245,6 @@ DEFAULT_RETRIABLE_HTTP_CODES: Optional[tuple[int, ...]] = (
     504,  # Gateway Timeout
 )
 
-# Default for wait()-related options
-DEFAULT_WAIT_TICK: float = 30.0
-DEFAULT_WAIT_TICK_INCREASE: float = 1.0
-
 # Defaults for GIT attempts and interval
 DEFAULT_GIT_CLONE_TIMEOUT: Optional[int] = None
 GIT_CLONE_TIMEOUT: Optional[int] = configure_optional_constant(
@@ -2476,42 +2472,6 @@ class StructuredFieldError(GeneralError):
     """
 
 
-class WaitingIncompleteError(GeneralError):
-    """
-    Waiting incomplete
-    """
-
-    def __init__(self) -> None:
-        super().__init__('Waiting incomplete')
-
-
-class WaitingTimedOutError(GeneralError):
-    """
-    Waiting ran out of time
-    """
-
-    def __init__(
-        self,
-        check: 'WaitCheckType[T]',
-        timeout: datetime.timedelta,
-        check_success: bool = False,
-    ) -> None:
-        if check_success:
-            super().__init__(
-                f"Waiting for condition '{check.__name__}' succeeded but took too much time "
-                f"after waiting {timeout}."
-            )
-
-        else:
-            super().__init__(
-                f"Waiting for condition '{check.__name__}' timed out after waiting {timeout}."
-            )
-
-        self.check = check
-        self.timeout = timeout
-        self.check_success = check_success
-
-
 class RetryError(GeneralError):
     """
     Retries unsuccessful
@@ -4703,122 +4663,6 @@ def validate_fmf_node(
         return []
 
     return preformat_jsonschema_validation_errors(result.errors, prefix=node.name)
-
-
-# A type for callbacks given to wait()
-WaitCheckType = Callable[[], T]
-
-
-def wait(
-    parent: Common,
-    check: WaitCheckType[T],
-    timeout: datetime.timedelta,
-    tick: float = DEFAULT_WAIT_TICK,
-    tick_increase: float = DEFAULT_WAIT_TICK_INCREASE,
-) -> T:
-    """
-    Wait for a condition to become true.
-
-    To test the condition state, a ``check`` callback is called every ``tick``
-    seconds until ``check`` reports a success. The callback may:
-
-    * decide the condition has been fulfilled. This is a successful outcome,
-      ``check`` shall then simply return, and waiting ends. Or,
-    * decide more time is needed. This is not a successful outcome, ``check``
-      shall then raise :py:class:`WaitingIncomplete` exception, and ``wait()``
-      will try again later.
-
-    ``wait()`` will also stop and quit if tmt has been interrupted.
-
-    :param parent: "owner" of the wait process. Used for its logging capability.
-    :param check: a callable responsible for testing the condition. Accepts no
-        arguments. To indicate more time and attempts are needed, the callable
-        shall raise :py:class:`WaitingIncomplete`, otherwise it shall return
-        without exception. Its return value will be propagated by ``wait()`` up
-        to ``wait()``'s. All other exceptions raised by ``check`` will propagate
-        to ``wait()``'s caller as well, terminating the wait.
-    :param timeout: amount of time ``wait()`` is allowed to spend waiting for
-        successful outcome of ``check`` call.
-    :param tick: how many seconds to wait between two consecutive calls of
-        ``check``.
-    :param tick_increase: a multiplier applied to ``tick`` after every attempt.
-    :returns: value returned by ``check`` reporting success.
-    :raises GeneralError: when ``tick`` is not a positive integer.
-    :raises WaitingTimedOutError: when time quota has been consumed.
-    :raises Interrupted: when tmt has been interrupted.
-    """
-
-    if tick <= 0:
-        raise GeneralError('Tick must be a positive integer')
-
-    from tmt.utils.signals import INTERRUPT_PENDING, Interrupted
-
-    monotomic_clock = time.monotonic
-
-    deadline = monotomic_clock() + timeout.total_seconds()
-
-    parent.debug(
-        'wait',
-        f"waiting for condition '{check.__name__}' with timeout {timeout},"
-        f" deadline in {timeout.total_seconds()} seconds,"
-        f" checking every {tick:.2f} seconds",
-    )
-
-    while True:
-        if INTERRUPT_PENDING.is_set():
-            parent.debug('wait', f"'{check.__name__}' interrupted")
-
-            raise Interrupted
-
-        now = monotomic_clock()
-
-        if now > deadline:
-            parent.debug(
-                'wait', f"'{check.__name__}' did not succeed, {now - deadline:.2f} over quota"
-            )
-
-            raise WaitingTimedOutError(check, timeout)
-
-        try:
-            ret = check()
-
-            # Perform one extra check: if `check()` succeeded, but took more time than
-            # allowed, it should be recognized as a failed waiting too.
-            now = monotomic_clock()
-
-            if now > deadline:
-                parent.debug(
-                    'wait',
-                    f"'{check.__name__}' finished successfully but took too much time,"
-                    f" {now - deadline:.2f} over quota",
-                )
-
-                raise WaitingTimedOutError(check, timeout, check_success=True)
-
-            parent.debug(
-                'wait',
-                f"'{check.__name__}' finished successfully, {deadline - now:.2f} seconds left",
-            )
-
-            return ret
-
-        except WaitingIncompleteError:
-            # Update timestamp for more accurate logging - check() could have taken minutes
-            # to complete, using the pre-check timestamp for logging would be misleading.
-            now = monotomic_clock()
-
-            parent.debug(
-                'wait',
-                f"'{check.__name__}' still pending,"
-                f" {deadline - now:.2f} seconds left,"
-                f" current tick {tick:.2f} seconds",
-            )
-
-            time.sleep(tick)
-
-            tick *= tick_increase
-
-            continue
 
 
 class ValidateFmfMixin(_CommonBase):
