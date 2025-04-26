@@ -135,8 +135,9 @@ class Deadline:
 
         return datetime.timedelta(self._now - self._deadline)
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> 'Deadline':
         self._now = time.monotonic()
+        return self
 
     def __exit__(self, *args: object) -> None:
         pass
