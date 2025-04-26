@@ -13,7 +13,13 @@ import tmt.utils
 import tmt.utils.templates
 from tmt.container import container, field
 from tmt.result import ResultOutcome
-from tmt.utils import ActionType, catch_warnings_safe, format_timestamp, yaml_to_dict
+from tmt.utils import (
+    ActionType,
+    catch_warnings_safe,
+    format_timestamp,
+    sanitize_string,
+    yaml_to_dict,
+)
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
@@ -59,9 +65,8 @@ class LogFilterSettings:
 
 
 def _filter_invalid_chars(data: str, settings: LogFilterSettings) -> str:
-    return re.sub(
-        '[^\u0020-\ud7ff\u0009\u000a\u000d\ue000-\ufffd\U00010000-\U0010ffff]+', '', data
-    )
+    """Filter out invalid unicode characters"""
+    return sanitize_string(data)
 
 
 def _filter_log_per_size(data: str, settings: LogFilterSettings) -> str:
