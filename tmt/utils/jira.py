@@ -96,7 +96,7 @@ class JiraInstance:
 
         # Check for the 'link' config section, exit if config missing
         try:
-            link_config = tmt.config.Config().link
+            link_config = tmt.config.Config(logger).link
         except tmt.utils.SpecificationError:
             raise
         if not link_config:

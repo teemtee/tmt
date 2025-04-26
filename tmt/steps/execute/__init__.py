@@ -18,6 +18,7 @@ import tmt.base
 import tmt.log
 import tmt.steps
 import tmt.utils
+import tmt.utils.wait
 from tmt.checks import CheckEvent
 from tmt.container import container, field, simple_field
 from tmt.options import option
@@ -36,6 +37,7 @@ from tmt.utils import (
     format_timestamp,
 )
 from tmt.utils.templates import render_template_file
+from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -260,7 +262,10 @@ class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         # TODO: ugly circular dependency (see tmt.base.DEFAULT_TEST_DURATION_L2)
         default='1h',
         option='--duration',
-        help='The maximal time allowed for the test to run.',
+        help="""
+             The maximum time test specified by ``script`` is allowed to run.
+             This option does not affect the duration defined in test metadata.
+             """,
     )
     ignore_duration: bool = field(
         default=configure_bool_constant(False, 'TMT_PLUGIN_EXECUTE_TMT_IGNORE_DURATION'),
@@ -555,22 +560,24 @@ class TestInvocation:
             reboot_data = json.loads(self.reboot_request_path.read_text())
 
             reboot_command: Optional[ShellScript] = None
-            timeout: Optional[int] = None
 
             if reboot_data.get('command'):
                 with suppress(TypeError):
                     reboot_command = ShellScript(reboot_data.get('command'))
 
-            try:
-                timeout = int(reboot_data.get('timeout'))
-            except ValueError:
-                timeout = None
+            if reboot_data.get('timeout'):
+                deadline = Deadline.from_seconds(int(reboot_data.get('timeout')))
+
+            else:
+                deadline = Deadline.from_seconds(tmt.steps.provision.REBOOT_TIMEOUT)
+
+            waiting = Waiting(deadline=deadline)
 
             os.remove(self.reboot_request_path)
             self.guest.push(self.test_data_path)
 
             try:
-                rebooted = self.guest.reboot(hard=False, command=reboot_command, timeout=timeout)
+                rebooted = self.guest.reboot(hard=False, command=reboot_command, waiting=waiting)
 
             except tmt.utils.RunError:
                 if reboot_command is not None:
@@ -583,7 +590,7 @@ class TestInvocation:
             except tmt.steps.provision.RebootModeNotSupportedError:
                 self.logger.warning("Guest does not support soft reboot, trying hard reboot.")
 
-                rebooted = self.guest.reboot(hard=True, timeout=timeout)
+                rebooted = self.guest.reboot(hard=True, waiting=waiting)
 
         if not rebooted:
             raise tmt.utils.RebootTimeoutError("Reboot timed out.")
@@ -673,7 +680,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
     _data_class = ExecuteStepData  # type: ignore[assignment]
 
     # Methods ("how: ..." implementations) registered for the same step.
-    _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry()
+    _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry('step.execute')
 
     # Internal executor is the default implementation
     how = 'tmt'
@@ -1155,8 +1162,6 @@ class Execute(tmt.steps.Step):
 
     _plugin_base_class = ExecutePlugin
 
-    _preserved_workdir_members = ['step.yaml', 'results.yaml', 'data']
-
     def __init__(
         self,
         *,
@@ -1172,6 +1177,14 @@ class Execute(tmt.steps.Step):
         # List of Result() objects representing test results
         self._results: list[tmt.Result] = []
         self._old_results: list[tmt.Result] = []
+
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
+        """
+        A set of members of the step workdir that should not be removed.
+        """
+
+        return {*super()._preserved_workdir_members, 'data', 'results.yaml'}
 
     def load(self) -> None:
         """

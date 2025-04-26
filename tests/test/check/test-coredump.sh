@@ -63,7 +63,8 @@ rlJournalStart
             assert_check_result "coredump as an after-test should fail" "fail" "after-test" "/coredump/segfault"
 
             # Verify coredump was captured
-            rlRun "ls -l $run/plan/execute/data/guest/default-0/coredump/segfault-1/checks/dump._usr_bin_bash_SIGSEGV_*.core"
+            rlRun find $run/plan/execute/data/guest/default-0/coredump/segfault-1/checks/ -maxdepth 1 \  # grep needed as find returns 0 even without match
+            \( -name 'dump._usr_bin_bash_SIGSEGV_*.core' -o -name 'dump._usr_bin_sleep_SIGSEGV_*.core' \) -print | grep -q .
             rlLogInfo "$(ls -l $run/plan/execute/data/guest/default-0/coredump/segfault-1/checks/)"
         fi
     rlPhaseEnd

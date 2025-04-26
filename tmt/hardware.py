@@ -1466,6 +1466,7 @@ def _parse_memory(spec: Spec) -> BaseConstraint:
             Operator.GT,
             Operator.GTE,
         ],
+        default_unit='MiB',
     )
 
 

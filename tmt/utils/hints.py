@@ -7,6 +7,12 @@ available.
 
 Hints are shown when importing plugins fails, and rendered as part of
 both their CLI help and HTML documentation.
+
+Hints are registered, each having its own ID. A hint may take advantage
+of ReST to format its content for better readability.
+
+Hints should follow the rules of docstrings, i.e. provide a short summary
+on the first line, followed by more details in the rest of the text.
 """
 
 # NOTE (happz): in my plan, this module would be an unfinished, staging
@@ -18,18 +24,58 @@ both their CLI help and HTML documentation.
 # a package is missing. They would be coupled with exceptions tmt
 # raises, providing more info on command-line and in HTML docs.
 
+import functools
 import textwrap
 from collections.abc import Iterator
-from typing import Optional
 
+import tmt.container
 import tmt.log
 import tmt.utils
 import tmt.utils.rest
+from tmt.log import Logger
 
-HINTS: dict[str, str] = {
-    # Hints must be dedented & stripped of leading/trailing white space.
-    # For hints registered by plugins, this is done by `register_hint()`.
-    _hint_id: textwrap.dedent(_hint).strip()
+
+@tmt.container.container
+class Hint:
+    id: str
+    text: str
+
+    @functools.cached_property
+    def summary(self) -> str:
+        return self.text.splitlines()[0]
+
+    @functools.cached_property
+    def ref(self) -> str:
+        return f'For more details, see ``tmt about {self.id}``.'
+
+    @functools.cached_property
+    def summary_ref(self) -> str:
+        # TODO: once `tmt about` will be able to print hints, we shall
+        # add ref as well.
+        return self.summary
+
+    def __init__(self, hint_id: str, text: str) -> None:
+        self.id = hint_id
+        self.text = textwrap.dedent(text).strip()
+
+    def _render(self, s: str, logger: Logger) -> str:
+        if tmt.utils.rest.REST_RENDERING_ALLOWED:
+            return tmt.utils.rest.render_rst(s, logger)
+
+        return s
+
+    def render_summary(self, logger: Logger) -> str:
+        return self._render(self.summary, logger)
+
+    def render_summary_ref(self, logger: Logger) -> str:
+        return self._render(self.summary_ref, logger)
+
+    def render(self, logger: Logger) -> str:
+        return self._render(self.text, logger)
+
+
+HINTS: dict[str, Hint] = {
+    _hint_id: Hint(_hint_id, _hint)
     for _hint_id, _hint in {
         'provision': """
             You can use the ``local`` method to execute tests directly on your localhost.
@@ -78,104 +124,56 @@ def register_hint(id_: str, hint: str) -> None:
             f"Registering hint '{id_}' collides with an already registered hint."
         )
 
-    HINTS[id_] = textwrap.dedent(hint).strip()
+    HINTS[id_] = Hint(id_, hint)
 
 
-def render_hint(
-    *, id_: str, ignore_missing: bool = False, logger: tmt.log.Logger
-) -> Optional[str]:
+def get_hints(*ids: str, ignore_missing: bool = False) -> list[Hint]:
     """
-    Render a given hint to be printable.
+    Find given hints.
 
-    :param id_: id of the hint to render.
-    :param ignore_missing: if not set, non-existent hints will
-        raise an exception.
-    :param logger: to use for logging.
-    :returns: a printable representation of the hint. If the hint ID
-        does not exist and ``ignore_missing`` is set, ``None`` is
-        returned.
-    """
-
-    def _render_single_hint(hint: str) -> str:
-        if tmt.utils.rest.REST_RENDERING_ALLOWED:
-            return tmt.utils.rest.render_rst(hint, logger)
-
-        return hint
-
-    if ignore_missing:
-        hint = HINTS.get(id_)
-
-        if hint is None:
-            return None
-
-        return _render_single_hint(hint)
-
-    hint = HINTS.get(id_)
-
-    if hint is None:
-        raise tmt.utils.GeneralError(f"Could not find hint '{id_}'.")
-
-    return _render_single_hint(hint)
-
-
-def render_hints(*ids: str, ignore_missing: bool = False, logger: tmt.log.Logger) -> str:
-    """
-    Render multiple hints into a single screen of text.
-
-    :param ids: ids of hints to render.
+    :param ids: ids of hints to retrieve.
     :param ignore_missing: if not set, non-existent hints will
         raise an exception. Otherwise, non-existent hints will
         be skipped.
-    :param logger: to use for logging.
-    :returns: a printable representation of hints.
+    :returns: found hints.
     """
-
-    def _render_single_hint(hint: str) -> str:
-        if tmt.utils.rest.REST_RENDERING_ALLOWED:
-            return tmt.utils.rest.render_rst(hint, logger)
-
-        return hint
 
     if ignore_missing:
 
-        def _render_optional_hints() -> Iterator[str]:
+        def _get_optional_hints() -> Iterator[Hint]:
             for id_ in ids:
                 hint = HINTS.get(id_)
 
                 if hint is None:
                     continue
 
-                yield _render_single_hint(hint)
+                yield hint
 
-        return '\n'.join(_render_optional_hints())
+        return list(_get_optional_hints())
 
-    def _render_mandatory_hints() -> Iterator[str]:
+    def _render_mandatory_hints() -> Iterator[Hint]:
         for id_ in ids:
             hint = HINTS.get(id_)
 
             if hint is None:
                 raise tmt.utils.GeneralError(f"Could not find hint '{id_}'.")
 
-            yield _render_single_hint(hint)
+            yield hint
 
-    return '\n'.join(_render_mandatory_hints())
+    return list(_render_mandatory_hints())
 
 
-def print_hint(*, id_: str, ignore_missing: bool = False, logger: tmt.log.Logger) -> None:
+def print_hints(*ids: str, ignore_missing: bool = False, logger: tmt.log.Logger) -> None:
     """
-    Display a given hint by printing it as a warning.
+    Display given hints by printing them as info-level messages.
 
-    :param id_: id of the hint to render.
+    :param ids: ids of hints to render.
     :param ignore_missing: if not set, non-existent hints will
         raise an exception.
     :param logger: to use for logging.
     """
 
-    hint = render_hint(id_=id_, ignore_missing=ignore_missing, logger=logger)
+    hints = get_hints(*ids, ignore_missing=ignore_missing)
 
-    if hint is None:
-        return
-
-    logger.info(
-        'hint', render_hint(id_=id_, ignore_missing=ignore_missing, logger=logger), color='blue'
-    )
+    for hint in hints:
+        logger.info('hint', hint.render(logger), color='blue')

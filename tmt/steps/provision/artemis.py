@@ -1,4 +1,3 @@
-import datetime
 import functools
 from typing import Any, Optional, TypedDict, Union, cast
 
@@ -12,6 +11,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 import tmt.utils.signals
+import tmt.utils.wait
 from tmt.container import container, field
 from tmt.utils import (
     Command,
@@ -22,6 +22,7 @@ from tmt.utils import (
     normalize_string_dict,
     retry_session,
 )
+from tmt.utils.wait import Deadline, Waiting
 
 # List of Artemis API versions supported and understood by this plugin.
 # Since API gains support for new features over time, it is important to
@@ -605,17 +606,14 @@ class GuestArtemis(tmt.GuestSsh):
                 if state == 'ready':
                     return current
 
-                raise tmt.utils.WaitingIncompleteError
+                raise tmt.utils.wait.WaitingIncompleteError
 
             try:
-                guest_info = tmt.utils.wait(
-                    self,
-                    get_new_state,
-                    datetime.timedelta(seconds=self.provision_timeout),
-                    tick=self.provision_tick,
-                )
+                guest_info = Waiting(
+                    Deadline.from_seconds(self.provision_timeout), tick=self.provision_tick
+                ).wait(get_new_state, self._logger)
 
-            except tmt.utils.WaitingTimedOutError:
+            except tmt.utils.wait.WaitingTimedOutError:
                 # The provisioning chain has been already started, make sure we
                 # remove the guest.
                 self.remove()
@@ -670,9 +668,7 @@ class GuestArtemis(tmt.GuestSsh):
         self,
         hard: bool = False,
         command: Optional[Union[Command, ShellScript]] = None,
-        timeout: Optional[int] = None,
-        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        waiting: Optional[Waiting] = None,
     ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
@@ -689,6 +685,8 @@ class GuestArtemis(tmt.GuestSsh):
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
+        waiting = waiting or tmt.steps.provision.default_reboot_waiting()
+
         if hard:
             if self.guestname is None:
                 raise ArtemisProvisionError("Cannot reboot - guest does not exist")
@@ -704,9 +702,7 @@ class GuestArtemis(tmt.GuestSsh):
 
             return self.perform_reboot(
                 trigger_reboot,
-                timeout=timeout,
-                tick=tick,
-                tick_increase=tick_increase,
+                waiting,
                 fetch_boot_time=False,
             )
 
@@ -716,9 +712,7 @@ class GuestArtemis(tmt.GuestSsh):
         return super().reboot(
             hard=False,
             command=actual_command,
-            timeout=timeout,
-            tick=tick,
-            tick_increase=tick_increase,
+            waiting=waiting,
         )
 
 
@@ -726,6 +720,21 @@ class GuestArtemis(tmt.GuestSsh):
 class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]):
     """
     Provision guest using Artemis backend.
+
+    Reserve a machine using the Artemis service.
+    Users can specify many requirements, mostly regarding the
+    desired OS, RAM, disk size and more. Most of the HW specifications
+    defined in the :ref:`/spec/hardware` are supported. Including the
+    :ref:`/spec/plans/provision/kickstart`.
+
+    Artemis takes machines from AWS, OpenStack, Beaker or Azure.
+    By default, Artemis handles the selection of a cloud provider
+    to its best abilities and the required specification. However, it
+    is possible to specify the keyword ``pool`` and select the
+    desired cloud provider.
+
+    Artemis project:
+    https://gitlab.com/testing-farm/artemis
 
     Minimal configuration could look like this:
 
@@ -735,6 +744,12 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
             how: artemis
             image: Fedora
             api-url: https://your-artemis.com/
+
+    .. note::
+
+        When used together with the :ref:`testing-farm` infrastructure
+        some of the options from the first example below will be filled
+        for you by the Testing Farm service.
 
     .. note::
 

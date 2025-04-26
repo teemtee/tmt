@@ -105,7 +105,7 @@ class RestVisitor(docutils.nodes.NodeVisitor):
         self._indent: int = 0
         self._text_prefix: Optional[str] = None
 
-        self._theme = Config().theme
+        self._theme = Config(logger).theme
         self._style_stack: list[Style] = [self._theme.restructuredtext_text]
 
     @property
@@ -406,6 +406,8 @@ def render_rst(text: str, logger: Logger) -> str:
     """
     Render a ReST document
     """
+
+    logger.debug('text', text, level=4, topic=tmt.log.Topic.HELP_RENDERING)
 
     document = parse_rst(text)
     visitor = RestVisitor(document, logger)

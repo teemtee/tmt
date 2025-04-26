@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     XMLElement: TypeAlias = Any
 
 
-DEFAULT_NAME = 'junit.xml'
+DEFAULT_FILENAME = 'junit.xml'
 DEFAULT_FLAVOR_NAME = 'default'
 CUSTOM_FLAVOR_NAME = 'custom'
 
@@ -336,9 +336,9 @@ def make_junit_xml(
         from lxml import etree
 
     except ImportError:
-        from tmt.utils.hints import print_hint
+        from tmt.utils.hints import print_hints
 
-        print_hint(id_='report/junit', logger=phase._logger)
+        print_hints('report/junit', logger=phase._logger)
 
         return xml_data
 
@@ -483,6 +483,19 @@ class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
 
     When ``file`` is not specified, output is written into a file named ``junit.xml`` located in
     the current workdir.
+
+    .. code-block:: yaml
+
+        # Enable junit report from the command line
+        tmt run --all report --how junit
+        tmt run --all report --how junit --file test.xml
+
+    .. code-block:: yaml
+
+        # Use junit as the default report for given plan
+        report:
+            how: junit
+            file: test.xml
     """
 
     _data_class = ReportJUnitData
@@ -502,10 +515,18 @@ class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
                 "The '--template-path' can be used only with '--flavor=custom'."
             )
 
-    def prune(self, logger: tmt.log.Logger) -> None:
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
         """
-        Do not prune generated junit report
+        A set of members of the step workdir that should not be removed.
         """
+
+        members = super()._preserved_workdir_members
+
+        if self.data.file is None:
+            members = {*members, DEFAULT_FILENAME}
+
+        return members
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
@@ -517,7 +538,7 @@ class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
         self.check_options()
 
         assert self.workdir is not None
-        f_path = self.data.file or self.workdir / DEFAULT_NAME
+        f_path = self.data.file or self.workdir / DEFAULT_FILENAME
 
         xml_data = make_junit_xml(
             phase=self,

@@ -42,9 +42,9 @@ class Epel(ToggleableFeature):
     __ https://docs.fedoraproject.org/en-US/epel/
     """
 
-    NAME = "epel"
-
     _data_class = EpelStepData
+
+    PLAYBOOKS = {'epel-enable.yaml', 'epel-disable.yaml'}
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)

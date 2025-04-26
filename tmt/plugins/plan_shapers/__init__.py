@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 PlanShaperClass = type['PlanShaper']
 
 
-_PLAN_SHAPER_PLUGIN_REGISTRY: PluginRegistry[PlanShaperClass] = PluginRegistry()
+_PLAN_SHAPER_PLUGIN_REGISTRY: PluginRegistry[PlanShaperClass] = PluginRegistry('plan_shapers')
 
 
 def provides_plan_shaper(shaper: str) -> Callable[[PlanShaperClass], PlanShaperClass]:

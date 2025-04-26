@@ -1,0 +1,39 @@
+name: publish_images
+on: workflow_dispatch
+
+jobs:
+  publish-images:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build - tmt
+        uses: redhat-actions/buildah-build@v2
+        id: build-image-tmt
+        with:
+          image: tmt
+          containerfiles: ./containers/Containerfile.mini
+      - name: Build - tmt-all
+        uses: redhat-actions/buildah-build@v2
+        id: build-image-tmt-all
+        with:
+          image: tmt-all
+          containerfiles: ./containers/Containerfile.full
+      - name: Push To quay.io - tmt
+        id: push-to-quay-tmt
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build-image-tmt.outputs.image }}
+          tags: ${{ steps.build-image-tmt.outputs.tags }}
+          registry: quay.io/teemtee
+          username: teemtee+github_action
+          password: ${{ secrets.QUAY_TEEMTEE_SECRET }}
+      - name: Push To quay.io - tmt-all
+        id: push-to-quay-tmt-all
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build-image-tmt-all.outputs.image }}
+          tags: ${{ steps.build-image-tmt-all.outputs.tags }}
+          registry: quay.io/teemtee
+          username: teemtee+github_action
+          password: ${{ secrets.QUAY_TEEMTEE_SECRET }}

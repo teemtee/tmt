@@ -200,23 +200,23 @@ The following tags can be used to enable given test under the
 respective provision method plan:
 
 provision-artemis
-    For tests checking the :ref:`/spec/plans/provision/artemis`
+    For tests checking the :ref:`/plugins/provision/artemis`
     plugin functionality.
 
 provision-beaker
-    For tests checking the :ref:`/spec/plans/provision/beaker`
+    For tests checking the :ref:`/plugins/provision/beaker`
     plugin functionality using the ``mrack`` plugin.
 
 provision-connect
-    For tests checking the :ref:`/spec/plans/provision/connect`
+    For tests checking the :ref:`/plugins/provision/connect`
     plugin functionality.
 
 provision-container
-    For tests checking the :ref:`/spec/plans/provision/container`
+    For tests checking the :ref:`/plugins/provision/container`
     provision method using the ``podman`` plugin.
 
 provision-virtual
-    For tests checking the :ref:`/spec/plans/provision/virtual`
+    For tests checking the :ref:`/plugins/provision/virtual.testcloud`
     provision method using the ``testcloud`` plugin.
 
 provision-ssh
@@ -253,7 +253,7 @@ __ https://requre.readthedocs.io/en/latest/
 Images
 ------------------------------------------------------------------
 
-Tests which exercise the :ref:`/spec/plans/provision/container`
+Tests which exercise the :ref:`/plugins/provision/container`
 provisioning plugin with various guest environments should use the
 custom-built set of container images rather than using the upstream ones
 directly. We built custom images to have better control over the initial
@@ -730,9 +730,8 @@ Create a new `github release`__ based on the tag above
 Finally, if everything went well:
 
 * Close the corresponding release milestone
-* Once the non development `copr build`__ is completed, move the
-  ``quay`` branch to point to the release commit as well to build
-  fresh `container images`__.
+* Once the non development `copr build`__ is completed, run the
+  `publish-images`__ workflow to build fresh container image.
 
 Handle manually what did not went well:
 
@@ -747,7 +746,7 @@ __ https://github.com/teemtee/tmt/releases/
 __ https://tmt.readthedocs.io/en/stable/releases.html
 __ https://src.fedoraproject.org/rpms/tmt/pull-requests
 __ https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/builds/
-__ https://quay.io/repository/teemtee/tmt
+__ https://github.com/teemtee/tmt/actions/workflows/publish-images.yml
 __ https://pypi.org/project/tmt/
 
 

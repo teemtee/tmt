@@ -1,5 +1,4 @@
 import collections
-import datetime
 import functools
 import itertools
 import os
@@ -21,6 +20,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+import tmt.utils.wait
 from tmt.container import container, field
 from tmt.utils import (
     WORKDIR_ROOT,
@@ -31,6 +31,7 @@ from tmt.utils import (
     configure_constant,
     retry_session,
 )
+from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
     import tmt.base
@@ -91,9 +92,9 @@ def import_testcloud(logger: tmt.log.Logger) -> None:
         )
         from testcloud.workarounds import Workarounds
     except ImportError as error:
-        from tmt.utils.hints import print_hint
+        from tmt.utils.hints import print_hints
 
-        print_hint(id_='provision/virtual.testcloud', logger=logger)
+        print_hints('provision/virtual.testcloud', logger=logger)
 
         raise ProvisionError('Could not import testcloud package.') from error
 
@@ -136,20 +137,16 @@ passwd:
     - name: ${user_name}
       ssh_authorized_keys:
         - ${public_key}
-systemd:
-  units:
-    - name: ssh_root_login.service
-      enabled: true
-      contents: |
-        [Unit]
-        Before=sshd.service
-        [Service]
-        Type=oneshot
-        ExecStart=/usr/bin/sed -i \
-                  "s|^PermitRootLogin no$|PermitRootLogin yes|g" \
-                  /etc/ssh/sshd_config
-        [Install]
-        WantedBy=multi-user.target
+storage:
+  files:
+    - path: /etc/ssh/sshd_config.d/20-enable-root-login.conf
+      mode: 0644
+      contents:
+        inline: |
+          # CoreOS disables root SSH login by default.
+          # Enable it.
+          # This file must sort before 40-rhcos-defaults.conf.
+          PermitRootLogin yes
 """
 
 # VM defaults
@@ -733,14 +730,14 @@ class GuestTestcloud(tmt.GuestSsh):
             except requests.RequestException:
                 pass
             finally:
-                raise tmt.utils.WaitingIncompleteError
+                raise tmt.utils.wait.WaitingIncompleteError
 
         try:
-            return tmt.utils.wait(
-                self, try_get_url, datetime.timedelta(seconds=CONNECT_TIMEOUT), tick=1
+            return Waiting(Deadline.from_seconds(CONNECT_TIMEOUT), tick=1).wait(
+                try_get_url, self._logger
             )
 
-        except tmt.utils.WaitingTimedOutError:
+        except tmt.utils.wait.WaitingTimedOutError:
             raise ProvisionError(f'Failed to {message} in {CONNECT_TIMEOUT}s.')
 
     def _guess_image_url(self, name: str) -> str:
@@ -1094,7 +1091,9 @@ class GuestTestcloud(tmt.GuestSsh):
         self._instance.create_ip_file(self.primary_address)
 
         # Wait a bit until the box is up
-        if not self.reconnect(timeout=CONNECT_TIMEOUT * time_coeff, tick=1):
+        if not self.reconnect(
+            Waiting(Deadline.from_seconds(CONNECT_TIMEOUT * time_coeff), tick=1)
+        ):
             raise ProvisionError(f"Failed to connect in {CONNECT_TIMEOUT * time_coeff}s.")
 
     def stop(self) -> None:
@@ -1132,9 +1131,7 @@ class GuestTestcloud(tmt.GuestSsh):
         self,
         hard: bool = False,
         command: Optional[Union[Command, ShellScript]] = None,
-        timeout: Optional[int] = None,
-        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        waiting: Optional[Waiting] = None,
     ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
@@ -1159,6 +1156,8 @@ class GuestTestcloud(tmt.GuestSsh):
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
+        waiting = waiting or tmt.steps.provision.default_reboot_waiting()
+
         if hard:
             if self._instance is None:
                 raise tmt.utils.ProvisionError("No instance initialized.")
@@ -1169,9 +1168,7 @@ class GuestTestcloud(tmt.GuestSsh):
             # being `None`, missing the explicit check above.
             return self.perform_reboot(
                 lambda: self._instance.reboot(soft=False),  # type: ignore[union-attr]
-                timeout=timeout,
-                tick=tick,
-                tick_increase=tick_increase,
+                waiting,
                 fetch_boot_time=False,
             )
 
@@ -1179,9 +1176,7 @@ class GuestTestcloud(tmt.GuestSsh):
             return super().reboot(
                 hard=False,
                 command=command,
-                timeout=timeout,
-                tick=tick,
-                tick_increase=tick_increase,
+                waiting=waiting,
             )
 
         if self._instance is None:
@@ -1191,9 +1186,7 @@ class GuestTestcloud(tmt.GuestSsh):
         # being `None`, missing the explicit check above.
         return self.perform_reboot(
             lambda: self._instance.reboot(soft=True),  # type: ignore[union-attr]
-            timeout=timeout,
-            tick=tick,
-            tick_increase=tick_increase,
+            waiting,
         )
 
 
@@ -1213,6 +1206,9 @@ class GuestTestcloud(tmt.GuestSsh):
 class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudData]):
     """
     Local virtual machine using ``testcloud`` library.
+    Testcloud takes care of downloading an image and
+    making necessary changes to it for optimal experience
+    (such as disabling ``UseDNS`` and ``GSSAPI`` for SSH).
 
     Minimal config which uses the latest Fedora image:
 
@@ -1225,11 +1221,18 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
 
     .. code-block:: yaml
 
+        # Provision a virtual machine from a specific QCOW2 file,
+        # using specific memory and disk settings, using the fedora user,
+        # and using sudo to run scripts.
         provision:
             how: virtual
-            image: fedora
-            user: root
+            image: https://mirror.vpsnet.com/fedora/linux/releases/41/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-41-1.4.x86_64.qcow2
+            user: fedora
+            become: true
+            # in MB
             memory: 2048
+            # in GB
+            disk: 30
 
     As the image use ``fedora`` for the latest released Fedora compose,
     ``fedora-rawhide`` for the latest Rawhide compose, short aliases such as

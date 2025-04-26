@@ -8,7 +8,6 @@ import textwrap
 from collections.abc import Iterator
 from typing import Any, cast
 
-import click
 import fmf
 import fmf.utils
 
@@ -28,6 +27,7 @@ from tmt import Plan
 from tmt.base import RunData
 from tmt.steps.prepare import PreparePlugin
 from tmt.utils import GeneralError, MetadataError, Path
+from tmt.utils.themes import style
 
 USER_PLAN_NAME = "/user/plan"
 
@@ -87,9 +87,9 @@ class Action(enum.Enum):
 
         index = self.action.index(self.key)
 
-        before = click.style(self.action[0:index], fg="bright_blue")
-        key = click.style(self.key, fg="blue", bold=True, underline=True)
-        after = click.style(self.action[index + 1 :], fg="bright_blue")
+        before = style(self.action[0:index], fg="bright_blue")
+        key = style(self.key, fg="blue", bold=True, underline=True)
+        after = style(self.action[index + 1 :], fg="bright_blue")
 
         longest = max(len(action.name) for action in Action)
         padding = " " * (longest + 3 - len(self.action))
@@ -208,7 +208,7 @@ class Try(tmt.utils.Common):
         # Check user config for custom default plans. Search for all
         # plans starting with the default user plan name (there might be
         # more than just one).
-        config_tree = tmt.config.Config().fmf_tree
+        config_tree = tmt.config.Config(self._logger).fmf_tree
         if config_tree is not None:
             plan_name = re.escape(USER_PLAN_NAME)
             # cast: once fmf is properly annotated, cast() would not be needed.
@@ -265,9 +265,9 @@ class Try(tmt.utils.Common):
         parts = ["Let's try"]
 
         # Test names, login, or something
-        test_names = [click.style(test, fg="red") for test in self.tests]
+        test_names = [style(test.name, fg="red") for test in self.tests]
         if self.opt("login"):
-            parts += [click.style("login", fg="red")]
+            parts += [style("login", fg="red")]
         elif test_names and not self.opt("ask"):
             parts += [fmf.utils.listed(test_names, 'test', max=3)]
         else:
@@ -275,13 +275,13 @@ class Try(tmt.utils.Common):
         parts += ["with"]
 
         # Plan names
-        plan_names = [click.style(plan, fg="magenta") for plan in self.plans]
+        plan_names = [style(plan.name, fg="magenta") for plan in self.plans]
         parts += [fmf.utils.listed(plan_names, 'plan', max=3)]
 
         # Image names
         if self.image_and_how:
             parts += ["on"]
-            image_names = [click.style(image, fg="blue") for image in self.image_and_how]
+            image_names = [style(image, fg="blue") for image in self.image_and_how]
             parts += [fmf.utils.listed(image_names)]
 
         self.print(" ".join(parts) + ".")
@@ -336,7 +336,7 @@ class Try(tmt.utils.Common):
                 self.print("")
                 return Action.find(answer)
             except KeyError:
-                self.print(click.style(f"Invalid action '{answer}'.", fg="red"))
+                self.print(style(f"Invalid action '{answer}'.", fg="red"))
 
     def action_start(self, plan: Plan) -> None:
         """
@@ -502,7 +502,7 @@ class Try(tmt.utils.Common):
         """
 
         assert plan.my_run is not None  # Narrow type
-        run_id = click.style(plan.my_run.workdir, fg="magenta")
+        run_id = style(str(plan.my_run.workdir), fg="magenta")
         self.print(f"Run {run_id} kept unfinished. See you soon!")
 
     def action_quit(self, plan: Plan) -> None:
@@ -516,7 +516,7 @@ class Try(tmt.utils.Common):
 
         # Mention the run id and say good bye
         assert plan.my_run is not None  # Narrow type
-        run_id = click.style(plan.my_run.workdir, fg="magenta")
+        run_id = style(str(plan.my_run.workdir), fg="magenta")
         self.print(f"Run {run_id} successfully finished. Bye for now!")
 
     def handle_options(self, plan: Plan) -> None:

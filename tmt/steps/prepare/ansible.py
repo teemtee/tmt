@@ -53,6 +53,7 @@ class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
         option='--extra-args',
         metavar='ANSIBLE-PLAYBOOK-OPTIONS',
         help='Additional CLI options for ``ansible-playbook``.',
+        help_example_values=['-vvv'],
     )
 
     # ignore[override]: method violates a liskov substitution principle,
@@ -184,11 +185,9 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
             lowercased_playbook = _playbook.lower()
 
-            def normalize_remote_playbook(raw_playbook: str) -> Path:
-                assert self.step.plan.my_run is not None  # narrow type
-                assert self.step.plan.my_run.tree is not None  # narrow type
-                assert self.step.plan.my_run.tree.root is not None  # narrow type
-                root_path = self.step.plan.my_run.tree.root
+            def normalize_remote_playbook(raw_playbook: str) -> tuple[Path, AnsibleApplicable]:
+                assert self.step.workdir is not None  # narrow type
+                root_path = self.step.workdir
 
                 try:
                     with retry_session(
@@ -215,34 +214,32 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                     file.write(response.content)
                     file.flush()
 
-                    return Path(file.name).relative_to(root_path)
+                    return root_path, Path(file.name).relative_to(root_path)
 
-            def normalize_local_playbook(raw_playbook: str) -> Path:
+            def normalize_local_playbook(raw_playbook: str) -> tuple[Path, AnsibleApplicable]:
                 if raw_playbook.startswith('file://'):
-                    return Path(raw_playbook[7:])
+                    return self.step.plan.anchor_path, Path(raw_playbook[7:])
 
-                return Path(raw_playbook)
+                return self.step.plan.anchor_path, Path(raw_playbook)
 
-            def normalize_collection_playbook(raw_playbook: str) -> AnsibleCollectionPlaybook:
-                return AnsibleCollectionPlaybook(raw_playbook)
-
-            playbook: AnsibleApplicable
+            def normalize_collection_playbook(raw_playbook: str) -> tuple[Path, AnsibleApplicable]:
+                return self.step.plan.anchor_path, AnsibleCollectionPlaybook(raw_playbook)
 
             if lowercased_playbook.startswith(('http://', 'https://')):
-                playbook = normalize_remote_playbook(lowercased_playbook)
+                playbook_root, playbook = normalize_remote_playbook(lowercased_playbook)
 
             elif lowercased_playbook.startswith('file://'):
-                playbook = normalize_local_playbook(lowercased_playbook)
+                playbook_root, playbook = normalize_local_playbook(lowercased_playbook)
 
             elif ANSIBLE_COLLECTION_PLAYBOOK_PATTERN.match(lowercased_playbook):
-                playbook = normalize_collection_playbook(lowercased_playbook)
+                playbook_root, playbook = normalize_collection_playbook(lowercased_playbook)
 
             else:
-                playbook = normalize_local_playbook(lowercased_playbook)
+                playbook_root, playbook = normalize_local_playbook(lowercased_playbook)
 
             guest.ansible(
                 playbook,
-                playbook_root=self.step.plan.anchor_path,
+                playbook_root=playbook_root,
                 extra_args=self.data.extra_args,
             )
 

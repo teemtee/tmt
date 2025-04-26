@@ -16,6 +16,8 @@ from tmt.utils import Path
 HTML_TEMPLATE_PATH = tmt.utils.resource_files('steps/report/html/template.html.j2')
 DEFAULT_NAME = 'index.html'
 
+DEFAULT_FILENAME = 'index.html'
+
 
 @container
 class ReportHtmlData(tmt.steps.report.ReportStepData):
@@ -58,10 +60,21 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
     """
     Format test results into an HTML report.
 
+    Create a local ``html`` file with test results arranged in
+    a table. Optionally open the page in the default browser.
+
     Example config:
 
     .. code-block:: yaml
 
+        # Enable html report from the command line
+        tmt run --all report --how html
+        tmt run --all report --how html --open
+        tmt run -l report -h html -o
+
+    .. code-block:: yaml
+
+        # Use html as the default report for given plan
         report:
             how: html
             open: true
@@ -69,10 +82,13 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
 
     _data_class = ReportHtmlData
 
-    def prune(self, logger: tmt.log.Logger) -> None:
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
         """
-        Do not prune generated html report
+        A set of members of the step workdir that should not be removed.
         """
+
+        return {DEFAULT_FILENAME}
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
@@ -116,7 +132,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
 
         # Write the report
         assert self.workdir is not None
-        filepath = self.data.file or self.workdir / DEFAULT_NAME
+        filepath = self.data.file or self.workdir / DEFAULT_FILENAME
 
         try:
             filepath.write_text(

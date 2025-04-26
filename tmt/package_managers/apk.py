@@ -24,6 +24,7 @@ from tmt.utils import (
 ReducedPackages = list[Union[Package, PackagePath]]
 
 PACKAGE_PATH: dict[FileSystemPath, str] = {
+    FileSystemPath('/usr/bin/awk'): 'gawk',
     FileSystemPath('/usr/bin/arch'): 'busybox',
     FileSystemPath('/usr/bin/flock'): 'flock',
     FileSystemPath('/usr/bin/python3'): 'python3',

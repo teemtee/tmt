@@ -123,6 +123,28 @@ description: |
               - cpu:
                     model: 69
 
+    .. note::
+
+        ``and`` and ``or`` operators cannot be combined with HW
+        requirements on the same level:
+
+        .. code-block:: yaml
+
+            # Incorrect:
+            hardware:
+              memory: 1 GB
+              or:
+                - hostname: foo.redhat.com
+                - hostname: bar.redhat.com
+
+            # Use this instead:
+            hardware:
+              and:
+                - memory: 1 GB
+                - or:
+                  - hostname: foo.redhat.com
+                  - hostname: bar.redhat.com
+
     Units
     -----
 
@@ -196,7 +218,7 @@ description: |
     .. note::
 
         Some plugins may support requirements that are impossible
-        to satisfy, e.g. the :ref:`/spec/plans/provision/local`
+        to satisfy, e.g. the :ref:`/plugins/provision/local`
         plugin can support the ``cpu.family`` requirement, but it
         is hard-locked to the CPU of one's own machine.
 

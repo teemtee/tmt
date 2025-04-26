@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Optional
 import click
 import fmf
 import fmf.utils
-from click import echo, style
+from click import echo
 
 import tmt
 import tmt.base
@@ -36,6 +36,7 @@ import tmt.utils.rest
 from tmt.cli import CliInvocation, Context, ContextObject, CustomGroup, pass_context
 from tmt.options import Deprecated, create_options_decorator, option
 from tmt.utils import Command, Path, effective_workdir_root
+from tmt.utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.steps.discover
@@ -1884,12 +1885,12 @@ COMPLETE_VARIABLE = '_TMT_COMPLETE'
 COMPLETE_SCRIPT = 'tmt-complete'
 
 
-def setup_completion(shell: str, install: bool, context: Context) -> None:
+def setup_completion(shell: str, install: bool, context: Context, logger: tmt.log.Logger) -> None:
     """
     Setup completion based on the shell
     """
 
-    config = tmt.config.Config()
+    config = tmt.config.Config(logger)
     # Fish gets installed into its special location where it is automatically
     # loaded.
     if shell == 'fish':
@@ -1940,7 +1941,7 @@ def completion_bash(context: Context, install: bool, **kwargs: Any) -> None:
     Setup shell completions for bash
     """
 
-    setup_completion('bash', install, context)
+    setup_completion('bash', install, context, context.obj.logger)
 
 
 @completion.command(name='zsh')
@@ -1960,7 +1961,7 @@ def completion_zsh(context: Context, install: bool, **kwargs: Any) -> None:
     Setup shell completions for zsh
     """
 
-    setup_completion('zsh', install, context)
+    setup_completion('zsh', install, context, context.obj.logger)
 
 
 @completion.command(name='fish')
@@ -1977,7 +1978,7 @@ def completion_fish(context: Context, install: bool, **kwargs: Any) -> None:
     Setup shell completions for fish
     """
 
-    setup_completion('fish', install, context)
+    setup_completion('fish', install, context, context.obj.logger)
 
 
 @main.command(name='link')

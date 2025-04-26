@@ -43,7 +43,7 @@ class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, list[PhaseResult]]):
     _data_class = FinishStepData  # type: ignore[assignment]
 
     # Methods ("how: ..." implementations) registered for the same step.
-    _supported_methods: PluginRegistry[Method] = PluginRegistry()
+    _supported_methods: PluginRegistry[Method] = PluginRegistry('step.finish')
 
     @classmethod
     def base_command(
@@ -97,10 +97,13 @@ class Finish(tmt.steps.Step):
 
     _plugin_base_class = FinishPlugin
 
-    _preserved_workdir_members = [
-        *tmt.steps.Step._preserved_workdir_members,
-        'results.yaml',
-    ]
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
+        """
+        A set of members of the step workdir that should not be removed.
+        """
+
+        return {*super()._preserved_workdir_members, 'results.yaml'}
 
     def wake(self) -> None:
         """

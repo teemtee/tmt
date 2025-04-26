@@ -41,7 +41,12 @@ class FinishShellData(tmt.steps.finish.FinishStepData):
 @tmt.steps.provides_method('shell')
 class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
     """
-    Perform finishing tasks using shell (bash) scripts
+    Perform finishing tasks using shell (bash) scripts.
+
+    Execute arbitrary shell commands to finish the testing.
+    Default shell options are applied to the script, see the
+    :ref:`/spec/tests/test` key specification for more
+    details.
 
     Example config:
 
@@ -53,8 +58,9 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
               - upload-logs.sh || true
               - rm -rf /tmp/temporary-files
 
-    Use the 'order' attribute to select in which order finishing tasks
-    should happen if there are multiple configs. Default order is '50'.
+    Use the :ref:`/spec/core/order` attribute to select in which order
+    finishing tasks should happen if there are multiple configs. Default
+    order is ``50``.
     """
 
     _data_class = FinishShellData

@@ -13,6 +13,7 @@ from typing import Any, Callable, Optional, TypedDict, Union, cast
 import packaging.version
 
 import tmt
+import tmt.config
 import tmt.hardware
 import tmt.log
 import tmt.options
@@ -20,6 +21,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 import tmt.utils.signals
+import tmt.utils.wait
 from tmt.config.models.hardware import MrackTranslation
 from tmt.container import container, field, simple_field
 from tmt.utils import (
@@ -30,6 +32,7 @@ from tmt.utils import (
     UpdatableMessage,
 )
 from tmt.utils.templates import render_template
+from tmt.utils.wait import Deadline, Waiting
 
 MRACK_VERSION: Optional[str] = None
 
@@ -65,14 +68,14 @@ def mrack_constructs_ks_pre() -> bool:
     return packaging.version.Version(MRACK_VERSION) >= packaging.version.Version('1.21.0')
 
 
-def _get_constraint_translations() -> list[MrackTranslation]:
+def _get_constraint_translations(logger: tmt.log.Logger) -> list[MrackTranslation]:
     """
     Load the list of hardware requirement translations from configuration.
 
     :returns: translations loaded from configuration, or an empty list if
         the configuration is missing.
     """
-    config = tmt.config.Config()
+    config = tmt.config.Config(logger)
     return (
         config.hardware.beaker.translations if config.hardware and config.hardware.beaker else []
     )
@@ -259,12 +262,13 @@ def _transform_unsupported(constraint: tmt.hardware.Constraint[Any]) -> dict[str
 
 def _translate_constraint_by_config(
     constraint: tmt.hardware.Constraint[Any],
+    logger: tmt.log.Logger,
 ) -> dict[str, Any]:
     """
     Translate hardware constraints to Mrack-compatible dictionary tree with config.
     """
 
-    config = _get_constraint_translations()
+    config = _get_constraint_translations(logger)
 
     if not config:
         return _transform_unsupported(constraint)
@@ -777,7 +781,7 @@ def constraint_to_beaker_filter(
     assert isinstance(constraint, tmt.hardware.Constraint)
 
     transformed = _translate_constraint_by_config(
-        constraint
+        constraint, logger
     ) or _translate_constraint_by_transformer(constraint, logger)
 
     if not transformed:
@@ -1374,17 +1378,14 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                         self.warn('No console.log available.')
                     return current
 
-                raise tmt.utils.WaitingIncompleteError
+                raise tmt.utils.wait.WaitingIncompleteError
 
             try:
-                guest_info = tmt.utils.wait(
-                    self,
-                    get_new_state,
-                    datetime.timedelta(seconds=self.provision_timeout),
-                    tick=self.provision_tick,
-                )
+                guest_info = Waiting(
+                    Deadline.from_seconds(self.provision_timeout), tick=self.provision_tick
+                ).wait(get_new_state, self._logger)
 
-            except tmt.utils.WaitingTimedOutError:
+            except tmt.utils.wait.WaitingTimedOutError:
                 response = self.api.delete()
                 raise ProvisionError(
                     f'Failed to provision in the given amount '
@@ -1422,9 +1423,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         self,
         hard: bool = False,
         command: Optional[Union[Command, ShellScript]] = None,
-        timeout: Optional[int] = None,
-        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        waiting: Optional[Waiting] = None,
     ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
@@ -1453,6 +1452,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
+        waiting = waiting or tmt.steps.provision.default_reboot_waiting()
+
         if hard:
             self.debug("Hard reboot using the reboot command 'bkr system-power --action reboot'.")
 
@@ -1460,18 +1461,14 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
             return self.perform_reboot(
                 lambda: self._run_guest_command(reboot_script.to_shell_command()),
-                timeout=timeout,
-                tick=tick,
-                tick_increase=tick_increase,
+                waiting,
                 fetch_boot_time=False,
             )
 
         return super().reboot(
             hard=False,
             command=command,
-            timeout=timeout,
-            tick=tick,
-            tick_increase=tick_increase,
+            waiting=waiting,
         )
 
 
@@ -1479,6 +1476,24 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
     """
     Provision guest on Beaker system using mrack.
+
+    Reserve a machine from the Beaker pool using the ``mrack``
+    plugin. ``mrack`` is a multicloud provisioning library
+    supporting multiple cloud services including Beaker.
+
+    The following two files are used for configuration:
+
+    ``/etc/tmt/mrack.conf`` for basic configuration
+
+    ``/etc/tmt/provisioning-config.yaml`` configuration per supported provider
+
+    Beaker installs distribution specified by the ``image``
+    key. If the image can not be translated using the
+    ``provisioning-config.yaml`` file mrack passes the image
+    value to Beaker hub and tries to request distribution
+    based on the image value. This way we can bypass default
+    translations and use desired distribution specified like
+    the one in the example below.
 
     Minimal configuration could look like this:
 
@@ -1495,6 +1510,20 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
 
         ``bkr system-power`` command is executed on the runner, not
         on the guest.
+
+    .. code-block:: yaml
+
+        # Specify the distro directly
+        provision:
+            how: beaker
+            image: Fedora-37%
+
+    .. code-block:: yaml
+
+        # Set custom whiteboard description (added in 1.30)
+        provision:
+            how: beaker
+            whiteboard: Just a smoke test for now
     """
 
     _data_class = ProvisionBeakerData

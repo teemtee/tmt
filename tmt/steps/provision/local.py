@@ -8,6 +8,7 @@ import tmt.steps.provision
 import tmt.utils
 from tmt.container import container
 from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript
+from tmt.utils.wait import Waiting
 
 
 @container
@@ -81,9 +82,9 @@ class GuestLocal(tmt.Guest):
             # fmt: on
         except tmt.utils.RunError as exc:
             if exc.stderr and 'ansible-playbook: command not found' in exc.stderr:
-                from tmt.utils.hints import print_hint
+                from tmt.utils.hints import print_hints
 
-                print_hint(id_='ansible-not-available', logger=self._logger)
+                print_hints('ansible-not-available', logger=self._logger)
             raise exc
 
     def execute(
@@ -149,9 +150,7 @@ class GuestLocal(tmt.Guest):
         self,
         hard: bool = False,
         command: Optional[Union[Command, ShellScript]] = None,
-        timeout: Optional[int] = None,
-        tick: float = tmt.utils.DEFAULT_WAIT_TICK,
-        tick_increase: float = tmt.utils.DEFAULT_WAIT_TICK_INCREASE,
+        waiting: Optional[Waiting] = None,
     ) -> bool:
         # No localhost reboot allowed!
         self.debug(f"Doing nothing to reboot guest '{self.primary_address}'.")
@@ -185,6 +184,11 @@ class GuestLocal(tmt.Guest):
 class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
     """
     Use local host for test execution.
+
+    Do not provision any system. Tests will be executed
+    directly on the localhost. Note that for some actions like
+    installing additional packages you need root permission or
+    enabled sudo.
 
     .. warning::
 

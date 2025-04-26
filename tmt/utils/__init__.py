@@ -57,7 +57,7 @@ import urllib3
 import urllib3._collections
 import urllib3.exceptions
 import urllib3.util.retry
-from click import echo, style, wrap_text
+from click import echo, wrap_text
 from ruamel.yaml import YAML, scalarstring
 from ruamel.yaml.comments import CommentedMap
 from ruamel.yaml.parser import ParserError
@@ -68,13 +68,24 @@ import tmt.log
 from tmt._compat.pathlib import Path
 from tmt.container import container
 from tmt.log import LoggableValue
+from tmt.utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.base
     import tmt.cli
     import tmt.steps
+    import tmt.utils.themes
     from tmt._compat.typing import Self, TypeAlias
     from tmt.hardware import Size
+
+
+def sanitize_string(text: str) -> str:
+    """Remove invalid Unicode characters from a string"""
+    try:
+        text.encode('utf-8', errors='strict')
+        return text
+    except UnicodeEncodeError:
+        return text.encode("utf-8", errors="ignore").decode("utf-8")
 
 
 def configure_optional_constant(default: Optional[int], envvar: str) -> Optional[int]:
@@ -136,9 +147,6 @@ def configure_bool_constant(default: bool, envvar: str) -> bool:
     if value is None:
         return default
     return value == "1"
-
-
-log = fmf.utils.Logging('tmt').logger
 
 
 #: How many leading characters to display in tracebacks with
@@ -245,10 +253,6 @@ DEFAULT_RETRIABLE_HTTP_CODES: Optional[tuple[int, ...]] = (
     503,  # Service Unavailable
     504,  # Gateway Timeout
 )
-
-# Default for wait()-related options
-DEFAULT_WAIT_TICK: float = 30.0
-DEFAULT_WAIT_TICK_INCREASE: float = 1.0
 
 # Defaults for GIT attempts and interval
 DEFAULT_GIT_CLONE_TIMEOUT: Optional[int] = None
@@ -1909,7 +1913,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self,
         key: str,
         value: Optional[str] = None,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
     ) -> str:
         """
@@ -1921,7 +1925,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     def print(
         self,
         text: str,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
     ) -> None:
         """
@@ -1941,7 +1945,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self,
         key: str,
         value: Optional[LoggableValue] = None,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
     ) -> None:
         """
@@ -1954,7 +1958,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self,
         key: str,
         value: Optional[LoggableValue] = None,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         level: int = 1,
         topic: Optional[tmt.log.Topic] = None,
@@ -1971,7 +1975,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self,
         key: str,
         value: Optional[LoggableValue] = None,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         level: int = 1,
         topic: Optional[tmt.log.Topic] = None,
@@ -2002,7 +2006,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         self,
         key: str,
         value: Optional[str] = None,
-        color: Optional[str] = None,
+        color: 'tmt.utils.themes.Style' = None,
         shift: int = 1,
         level: int = 3,
         topic: Optional[tmt.log.Topic] = None,
@@ -2477,42 +2481,6 @@ class StructuredFieldError(GeneralError):
     """
 
 
-class WaitingIncompleteError(GeneralError):
-    """
-    Waiting incomplete
-    """
-
-    def __init__(self) -> None:
-        super().__init__('Waiting incomplete')
-
-
-class WaitingTimedOutError(GeneralError):
-    """
-    Waiting ran out of time
-    """
-
-    def __init__(
-        self,
-        check: 'WaitCheckType[T]',
-        timeout: datetime.timedelta,
-        check_success: bool = False,
-    ) -> None:
-        if check_success:
-            super().__init__(
-                f"Waiting for condition '{check.__name__}' succeeded but took too much time "
-                f"after waiting {timeout}."
-            )
-
-        else:
-            super().__init__(
-                f"Waiting for condition '{check.__name__}' timed out after waiting {timeout}."
-            )
-
-        self.check = check
-        self.timeout = timeout
-        self.check_success = check_success
-
-
 class RetryError(GeneralError):
     """
     Retries unsuccessful
@@ -2749,16 +2717,17 @@ def render_exception_stack(
 
     # N806: allow upper-case names to make them look like formatting
     # tags in strings below.
-    R = functools.partial(click.style, fg='red')  # noqa: N806
-    Y = functools.partial(click.style, fg='yellow')  # noqa: N806
-    B = functools.partial(click.style, fg='blue')  # noqa: N806
+    R = functools.partial(style, fg='red')  # noqa: N806
+    Y = functools.partial(style, fg='yellow')  # noqa: N806
+    B = functools.partial(style, fg='blue')  # noqa: N806
 
     yield R('Traceback (most recent call last):')
     yield ''
 
     for frame in exception_traceback.stack:
         yield f'File {Y(frame.filename)}, line {Y(str(frame.lineno))}, in {Y(frame.name)}'
-        yield f'  {B(frame.line)}'
+        if frame.line:
+            yield f'  {B(frame.line)}'
 
         if frame.locals:
             yield ''
@@ -2797,7 +2766,7 @@ def render_exception(
                 for line in item.splitlines():
                     yield f'{INDENT * " "}{line}'
 
-    yield click.style(str(exception), fg='red')
+    yield style(str(exception), fg='red')
 
     if isinstance(exception, RunError):
         yield ''
@@ -3313,7 +3282,7 @@ def assert_window_size(window_size: Optional[int]) -> None:
 def _format_bool(
     value: bool,
     window_size: Optional[int],
-    key_color: Optional[str],
+    key_color: 'tmt.utils.themes.Style',
     list_format: ListFormat,
     wrap: FormatWrap,
 ) -> Iterator[str]:
@@ -3329,7 +3298,7 @@ def _format_bool(
 def _format_list(
     value: list[Any],
     window_size: Optional[int],
-    key_color: Optional[str],
+    key_color: 'tmt.utils.themes.Style',
     list_format: ListFormat,
     wrap: FormatWrap,
 ) -> Iterator[str]:
@@ -3398,7 +3367,7 @@ def _format_list(
 def _format_str(
     value: str,
     window_size: Optional[int],
-    key_color: Optional[str],
+    key_color: 'tmt.utils.themes.Style',
     list_format: ListFormat,
     wrap: FormatWrap,
 ) -> Iterator[str]:
@@ -3448,7 +3417,7 @@ def _format_str(
 def _format_dict(
     value: dict[Any, Any],
     window_size: Optional[int],
-    key_color: Optional[str],
+    key_color: 'tmt.utils.themes.Style',
     list_format: ListFormat,
     wrap: FormatWrap,
 ) -> Iterator[str]:
@@ -3465,7 +3434,7 @@ def _format_dict(
 
     for k, v in value.items():
         # First, render the key.
-        k_formatted = click.style(k, fg=key_color) if key_color else k
+        k_formatted = style(k, style=key_color)
         k_size = len(k) + 2
 
         # Then, render the value. If the window size is known, the value must be
@@ -3576,7 +3545,7 @@ def _format_dict(
 
 #: A type describing a per-type formatting helper.
 ValueFormatter = Callable[
-    [Any, Optional[int], Optional[str], ListFormat, FormatWrap], Iterator[str]
+    [Any, Optional[int], 'tmt.utils.themes.Style', ListFormat, FormatWrap], Iterator[str]
 ]
 
 
@@ -3593,7 +3562,7 @@ _VALUE_FORMATTERS: list[tuple[Any, ValueFormatter]] = [
 def _format_value(
     value: Any,
     window_size: Optional[int] = None,
-    key_color: Optional[str] = None,
+    key_color: 'tmt.utils.themes.Style' = None,
     list_format: ListFormat = ListFormat.LISTED,
     wrap: FormatWrap = 'auto',
 ) -> list[str]:
@@ -3632,7 +3601,7 @@ def _format_value(
 def format_value(
     value: Any,
     window_size: Optional[int] = None,
-    key_color: Optional[str] = None,
+    key_color: 'tmt.utils.themes.Style' = None,
     list_format: ListFormat = ListFormat.LISTED,
     wrap: FormatWrap = 'auto',
 ) -> str:
@@ -3700,8 +3669,8 @@ def format(
     indent: int = 24,
     window_size: int = OUTPUT_WIDTH,
     wrap: FormatWrap = 'auto',
-    key_color: Optional[str] = 'green',
-    value_color: Optional[str] = 'black',
+    key_color: 'tmt.utils.themes.Style' = 'green',
+    value_color: 'tmt.utils.themes.Style' = 'black',
     list_format: ListFormat = ListFormat.LISTED,
 ) -> str:
     """
@@ -3732,9 +3701,7 @@ def format(
     indent_string = (indent + 1) * ' '
 
     # Format the key first
-    output = f"{str(key).rjust(indent, ' ')} "
-    if key_color is not None:
-        output = style(output, fg=key_color)
+    output = style(f"{str(key).rjust(indent, ' ')} ", style=key_color)
 
     # Then the value
     formatted_value = format_value(
@@ -4283,8 +4250,8 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
         key: str,
         enabled: bool = True,
         indent_level: int = 0,
-        key_color: Optional[str] = None,
-        default_value_color: Optional[str] = None,
+        key_color: 'tmt.utils.themes.Style' = None,
+        default_value_color: 'tmt.utils.themes.Style' = None,
         clear_on_exit: bool = False,
     ) -> None:
         """
@@ -4340,7 +4307,7 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
 
         self._update_message_area('')
 
-    def _update_message_area(self, value: str, color: Optional[str] = None) -> None:
+    def _update_message_area(self, value: str, color: 'tmt.utils.themes.Style' = None) -> None:
         """
         Update message area with given value.
 
@@ -4368,7 +4335,7 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
 
         message = tmt.log.indent(
             self.key,
-            value=style(message, fg=color or self.default_value_color),
+            value=style(message, style=color or self.default_value_color),
             color=self.key_color,
             level=self.indent_level,
         )
@@ -4376,7 +4343,7 @@ class UpdatableMessage(contextlib.AbstractContextManager):  # type: ignore[type-
         sys.stdout.write(f"\r{message}")
         sys.stdout.flush()
 
-    def update(self, value: str, color: Optional[str] = None) -> None:
+    def update(self, value: str, color: 'tmt.utils.themes.Style' = None) -> None:
         """
         Update progress message.
 
@@ -4705,122 +4672,6 @@ def validate_fmf_node(
         return []
 
     return preformat_jsonschema_validation_errors(result.errors, prefix=node.name)
-
-
-# A type for callbacks given to wait()
-WaitCheckType = Callable[[], T]
-
-
-def wait(
-    parent: Common,
-    check: WaitCheckType[T],
-    timeout: datetime.timedelta,
-    tick: float = DEFAULT_WAIT_TICK,
-    tick_increase: float = DEFAULT_WAIT_TICK_INCREASE,
-) -> T:
-    """
-    Wait for a condition to become true.
-
-    To test the condition state, a ``check`` callback is called every ``tick``
-    seconds until ``check`` reports a success. The callback may:
-
-    * decide the condition has been fulfilled. This is a successful outcome,
-      ``check`` shall then simply return, and waiting ends. Or,
-    * decide more time is needed. This is not a successful outcome, ``check``
-      shall then raise :py:class:`WaitingIncomplete` exception, and ``wait()``
-      will try again later.
-
-    ``wait()`` will also stop and quit if tmt has been interrupted.
-
-    :param parent: "owner" of the wait process. Used for its logging capability.
-    :param check: a callable responsible for testing the condition. Accepts no
-        arguments. To indicate more time and attempts are needed, the callable
-        shall raise :py:class:`WaitingIncomplete`, otherwise it shall return
-        without exception. Its return value will be propagated by ``wait()`` up
-        to ``wait()``'s. All other exceptions raised by ``check`` will propagate
-        to ``wait()``'s caller as well, terminating the wait.
-    :param timeout: amount of time ``wait()`` is allowed to spend waiting for
-        successful outcome of ``check`` call.
-    :param tick: how many seconds to wait between two consecutive calls of
-        ``check``.
-    :param tick_increase: a multiplier applied to ``tick`` after every attempt.
-    :returns: value returned by ``check`` reporting success.
-    :raises GeneralError: when ``tick`` is not a positive integer.
-    :raises WaitingTimedOutError: when time quota has been consumed.
-    :raises Interrupted: when tmt has been interrupted.
-    """
-
-    if tick <= 0:
-        raise GeneralError('Tick must be a positive integer')
-
-    from tmt.utils.signals import INTERRUPT_PENDING, Interrupted
-
-    monotomic_clock = time.monotonic
-
-    deadline = monotomic_clock() + timeout.total_seconds()
-
-    parent.debug(
-        'wait',
-        f"waiting for condition '{check.__name__}' with timeout {timeout},"
-        f" deadline in {timeout.total_seconds()} seconds,"
-        f" checking every {tick:.2f} seconds",
-    )
-
-    while True:
-        if INTERRUPT_PENDING.is_set():
-            parent.debug('wait', f"'{check.__name__}' interrupted")
-
-            raise Interrupted
-
-        now = monotomic_clock()
-
-        if now > deadline:
-            parent.debug(
-                'wait', f"'{check.__name__}' did not succeed, {now - deadline:.2f} over quota"
-            )
-
-            raise WaitingTimedOutError(check, timeout)
-
-        try:
-            ret = check()
-
-            # Perform one extra check: if `check()` succeeded, but took more time than
-            # allowed, it should be recognized as a failed waiting too.
-            now = monotomic_clock()
-
-            if now > deadline:
-                parent.debug(
-                    'wait',
-                    f"'{check.__name__}' finished successfully but took too much time,"
-                    f" {now - deadline:.2f} over quota",
-                )
-
-                raise WaitingTimedOutError(check, timeout, check_success=True)
-
-            parent.debug(
-                'wait',
-                f"'{check.__name__}' finished successfully, {deadline - now:.2f} seconds left",
-            )
-
-            return ret
-
-        except WaitingIncompleteError:
-            # Update timestamp for more accurate logging - check() could have taken minutes
-            # to complete, using the pre-check timestamp for logging would be misleading.
-            now = monotomic_clock()
-
-            parent.debug(
-                'wait',
-                f"'{check.__name__}' still pending,"
-                f" {deadline - now:.2f} seconds left,"
-                f" current tick {tick:.2f} seconds",
-            )
-
-            time.sleep(tick)
-
-            tick *= tick_increase
-
-            continue
 
 
 class ValidateFmfMixin(_CommonBase):

@@ -6,6 +6,7 @@ custom filters.
 """
 
 import re
+import shlex
 import textwrap
 from re import Match
 from typing import (
@@ -308,6 +309,21 @@ def _template_filter_web_git_url(  # type: ignore[reportUnusedFunction,unused-ig
 
     path = Path(path_str) if path_str else None
     return web_git_url(url, ref, path)
+
+
+def _template_filter_shell_quote(  # type: ignore[reportUnusedFunction,unused-ignore]
+    s: str,
+) -> str:
+    """
+    Return a shell-escaped version of the string.
+
+    .. code-block:: jinja
+
+        # "foo bar" -> "'foo bar'"
+        {{ "foo bar" | shell_quote }}
+    """
+
+    return shlex.quote(s)
 
 
 TEMPLATE_FILTERS: dict[str, Callable[..., Any]] = {

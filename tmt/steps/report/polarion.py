@@ -13,7 +13,7 @@ from tmt.utils import Path
 
 from .junit import ResultsContext, make_junit_xml
 
-DEFAULT_NAME = 'xunit.xml'
+DEFAULT_FILENAME = 'xunit.xml'
 
 
 @container
@@ -209,15 +209,77 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
 @tmt.steps.provides_method('polarion')
 class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
     """
-    Write test results into an xUnit file and upload to Polarion
+    Write test results into an xUnit file and upload to Polarion.
+
+    In order to get quickly started create a pylero config
+    file ``~/.pylero`` in your home directory with the
+    following content:
+
+    .. code-block:: ini
+
+        [webservice]
+        url=https://{your polarion web URL}/polarion
+        svn_repo=https://{your polarion web URL}/repo
+        default_project={your project name}
+        user={your username}
+        password={your password}
+
+    See the ``Pylero Documentation`` for more details on how
+    to configure the ``pylero`` module.
+
+    https://github.com/RedHatQE/pylero
+
+    .. note::
+
+        For Polarion report to export correctly you need to
+        use password authentication, since exporting the
+        report happens through Polarion XUnit importer which
+        does not support using tokens. You can still
+        authenticate with token to only generate the report
+        using ``--no-upload`` argument.
+
+    .. note::
+
+        Your Polarion project might need a custom value format
+        for the ``arch``, ``planned-in`` and other fields. The
+        format of these fields might differ across Polarion
+        projects, for example, ``x8664`` can be used instead
+        of ``x86_64`` for the architecture.
+
+    Examples:
+
+    .. code-block:: yaml
+
+        # Enable polarion report from the command line
+        tmt run --all report --how polarion --project-id tmt
+        tmt run --all report --how polarion --project-id tmt --no-upload --file test.xml
+
+    .. code-block:: yaml
+
+        # Use polarion as the default report for given plan
+        report:
+            how: polarion
+            file: test.xml
+            project-id: tmt
+            title: tests_that_pass
+            planned-in: RHEL-9.1.0
+            pool-team: sst_tmt
     """
 
     _data_class = ReportPolarionData
 
-    def prune(self, logger: tmt.log.Logger) -> None:
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
         """
-        Do not prune generated xunit report
+        A set of members of the step workdir that should not be removed.
         """
+
+        members = super()._preserved_workdir_members
+
+        if self.data.file is None:
+            members = {*members, DEFAULT_FILENAME}
+
+        return members
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
@@ -363,7 +425,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             results_context=results_context,
         )
 
-        f_path = self.data.file or self.workdir / DEFAULT_NAME
+        f_path = self.data.file or self.workdir / DEFAULT_FILENAME
 
         try:
             f_path.write_text(xml_data)

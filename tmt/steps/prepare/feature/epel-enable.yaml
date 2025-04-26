@@ -62,6 +62,11 @@
           # Enable for Stream 10 once epel-next is available
           when: ansible_distribution_major_version | int == 9
 
+        - name: Enable the crb repository
+          ansible.builtin.command: crb enable
+          register: output
+          changed_when: output.rc != 0
+
     - name: Enable EPEL repos on CentOS 7
       when:
         - ansible_distribution == "CentOS"
@@ -117,3 +122,8 @@
           # EPEL Next is available for CentOS Stream 9
           # Enable for Stream 10 once epel-next is available
           when: ansible_distribution_major_version | int == 9
+
+        - name: Enable the crb repository
+          ansible.builtin.command: crb enable
+          register: output
+          changed_when: output.rc != 0

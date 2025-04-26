@@ -55,7 +55,7 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, list[PhaseResult]]):
     _data_class = PrepareStepData  # type: ignore[assignment]
 
     # Methods ("how: ..." implementations) registered for the same step.
-    _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry()
+    _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry('step.prepare')
 
     @classmethod
     def base_command(
@@ -153,10 +153,13 @@ class Prepare(tmt.steps.Step):
 
     _plugin_base_class = PreparePlugin
 
-    _preserved_workdir_members = [
-        *tmt.steps.Step._preserved_workdir_members,
-        'results.yaml',
-    ]
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
+        """
+        A set of members of the step workdir that should not be removed.
+        """
+
+        return {*super()._preserved_workdir_members, 'results.yaml'}
 
     def __init__(
         self,

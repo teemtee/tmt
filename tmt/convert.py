@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 from uuid import UUID, uuid4
 
 import fmf.utils
-from click import echo, style
+from click import echo
 
 import tmt.base
 import tmt.export
@@ -21,6 +21,7 @@ import tmt.log
 import tmt.utils
 from tmt.utils import ConvertError, GeneralError, Path, format_value
 from tmt.utils.structured_field import StructuredField
+from tmt.utils.themes import style
 
 log = fmf.utils.Logging('tmt').logger
 

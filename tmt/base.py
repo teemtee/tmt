@@ -31,7 +31,7 @@ import fmf
 import fmf.base
 import fmf.utils
 import jsonschema
-from click import confirm, echo, style
+from click import confirm, echo
 from fmf.utils import listed
 from ruamel.yaml.error import MarkedYAMLError
 
@@ -81,6 +81,7 @@ from tmt.utils import (
     normalize_shell_script,
     verdict,
 )
+from tmt.utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -3564,6 +3565,20 @@ class Tree(tmt.utils.Common):
             sources = None
 
         # Build the list, convert to objects, sort and filter
+        local_plans = list(self.tree.prune(keys=local_plan_keys, names=names, sources=sources))
+        importing_plans = list(
+            self.tree.prune(keys=remote_plan_keys, names=names, sources=sources)
+        )
+
+        for plan in importing_plans:
+            if plan in local_plans:
+                logger.warning(
+                    f"Plan '{plan}' defines both 'execute' and 'import',"
+                    " ignoring the 'execute' step."
+                )
+
+                local_plans.remove(plan)
+
         plans = [
             Plan(
                 node=plan,
@@ -3573,10 +3588,7 @@ class Tree(tmt.utils.Common):
                 ).apply_verbosity_options(cli_invocation=Plan.cli_invocation),
                 run=run,
             )
-            for plan in [
-                *self.tree.prune(keys=local_plan_keys, names=names, sources=sources),
-                *self.tree.prune(keys=remote_plan_keys, names=names, sources=sources),
-            ]
+            for plan in [*local_plans, *importing_plans]
         ]
 
         if not Plan._opt('shallow'):
@@ -3801,7 +3813,7 @@ class Run(tmt.utils.Common):
         Initialize tree, workdir and plans
         """
         # Use the last run id if requested
-        self.config = tmt.config.Config()
+        self.config = tmt.config.Config(logger)
 
         if cli_invocation is not None:
             if cli_invocation.options.get('last'):

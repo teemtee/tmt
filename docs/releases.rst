@@ -4,6 +4,41 @@
     Releases
 ======================
 
+tmt-1.47.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When ``tmt`` works with image mode, it now uses the native
+package installation method instead of ``rpm-ostree``.
+``tmt`` creates a ``Containerfile`` based on the booted image,
+adds the required packages, builds a new image, and reboots the
+system to use the updated image with the necessary packages.
+
+If applicable, the ``crb`` repository is now automatically enabled
+when enabling ``epel`` repository.
+
+If a mixture of local and remote plans is detected, ``tmt`` now
+prints a warning and skips the ``local`` plan.
+
+In the ``execute`` step, the documentation of the ``duration``
+option was enhanced to correctly describe the effect of the
+option.
+
+The ``execute`` plugin now explicitly requires ``awk`` to be
+installed on the machine, due to its recent removal from
+Fedora containers.
+
+The documentation of the ``feature`` plugins now includes a list
+of required Ansible modules.
+
+The documentation of plugins was improved to include examples
+of keys with actual values.
+
+The default unit of the ``memory`` hardware requirement is now
+``MiB``. It is used if no unit was specified.
+
+The steps documentation was deduplicated, and all information
+from the specs was moved to the ``plugins`` section.
+
 
 tmt-1.46.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -45,6 +80,7 @@ hardware property has been proposed to allow specifying the desired
 system management interface (e.g., IPMI) when provisioning hardware.
 While not yet implemented, this feature aims to support more precise
 hardware selection in the future.
+
 
 tmt-1.45.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -735,7 +771,7 @@ changes. ``info`` results are now treated as ``pass`` results, and
 would be counted towards the successful exit code, ``0``, instead
 of the exit code ``2`` in older releases.
 
-The :ref:`/spec/plans/report/polarion` report now supports the
+The :ref:`/plugins/report/polarion` report now supports the
 ``fips`` field to store information about whether the FIPS mode
 was enabled or disabled on the guest during the test execution.
 
@@ -784,7 +820,7 @@ option which allows to use a user account and execute
 ``prepare``, ``execute`` and ``finish`` steps using ``sudo -E``
 when necessary.
 
-The :ref:`/spec/plans/report/html` report plugin now shows
+The :ref:`/plugins/report/html` report plugin now shows
 :ref:`/spec/tests/check` results so that it's possible to inspect
 detected AVC denials directly from the report.
 
@@ -801,7 +837,7 @@ can be used to update step phase fields only when not set in the
 ``fmf`` files. In this way it's possible to easily fill the gaps
 in the plans, for example provide the default distro image.
 
-The :ref:`/spec/plans/report/html` report plugin now shows
+The :ref:`/plugins/report/html` report plugin now shows
 provided :ref:`/spec/plans/context` and link to the test ``data``
 directory so that additional logs can be easily checked.
 

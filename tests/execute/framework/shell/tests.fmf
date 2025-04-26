@@ -1,0 +1,30 @@
+framework: shell
+duration: 5m
+
+/success:
+  summary: Testing success
+  test: ./shell.sh 0
+
+/failure:
+  summary: Testing failure
+  test: ./shell.sh 1
+
+/error:
+  summary: Testing error
+  test: ./shell.sh 2
+
+/pidlock:
+  summary: Testing pidlock
+  test: ./shell.sh 122
+
+/timeout:
+  summary: Testing timeout
+  test: ./shell.sh 124
+
+/notfound:
+  summary: Testing file not found
+  test: ./nosuchfile.sh
+
+/notexec:
+  summary: Testing file permission denied
+  test: /dev/null

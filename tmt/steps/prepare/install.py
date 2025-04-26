@@ -23,6 +23,7 @@ from tmt.package_managers import (
     PackagePath,
     PackageUrl,
 )
+from tmt.package_managers.bootc import Bootc, BootcEngine
 from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
 from tmt.utils import Command, Path, ShellScript
@@ -582,6 +583,84 @@ class InstallApt(InstallBase):
             )
 
 
+class InstallBootc(InstallBase):
+    """Install packages using bootc container image mode"""
+
+    def install_from_repository(self) -> None:
+        self.guest.package_manager.engine.install(
+            *self.list_installables("package", *self.packages),
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing,
+            ),
+        )
+
+    def install_from_url(self) -> None:
+        self.guest.package_manager.engine.install(
+            *self.list_installables("remote package", *self.remote_packages),
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing,
+            ),
+        )
+
+    def install_local(self) -> None:
+        # Filelist for packages on the guest
+        filelist = [
+            PackagePath(self.package_directory / filename.name) for filename in self.local_packages
+        ]
+
+        cast(BootcEngine, self.guest.package_manager.engine).containerfile_directives.append(
+            f'RUN mkdir -p {self.package_directory}'
+        )
+        cast(BootcEngine, self.guest.package_manager.engine).containerfile_directives.append(
+            f'COPY {" ".join(str(file) for file in filelist)} {self.package_directory}'
+        )
+
+        self.guest.package_manager.engine.install(
+            *filelist,
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing,
+                check_first=False,
+            ),
+        )
+
+        self.guest.package_manager.engine.reinstall(
+            *filelist,
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing,
+                check_first=False,
+            ),
+        )
+
+    def install_debuginfo(self) -> None:
+        packages = self.list_installables("debuginfo", *self.debuginfo_packages)
+
+        self.guest.package_manager.engine.install_debuginfo(
+            *packages,
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing,
+            ),
+        )
+
+        # Check the packages are installed on the guest because 'debuginfo-install'
+        # returns 0 even though it didn't manage to install the required packages
+        if not self.skip_missing:
+            self.guest.package_manager.engine.check_presence(
+                *[Package(f'{package}-debuginfo') for package in self.debuginfo_packages]
+            )
+
+    def _install(self) -> None:
+        """Coordinate installation process through containerfile building and switching"""
+        # Call base install methods to collect all package types
+        super()._install()
+
+        cast(Bootc, self.guest.package_manager).build_container()
+
+
 class InstallApk(InstallBase):
     """
     Install packages using apk
@@ -715,23 +794,57 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             package: tmt-all
             missing: fail
 
-    Use ``copr`` for enabling desired Copr repository and ``missing`` to choose
+    Use ``copr`` for enabling a desired Copr repository and ``missing`` to choose
     whether missing packages should be silently ignored (``skip``) or a
     preparation error should be reported (``fail``), which is the default.
 
-    In addition to package name you can also use one or more paths to
-    local rpm files to be installed:
+    One or more RPM packages can be specified under the
+    ``package`` attribute. The packages will be installed
+    on the guest. They can either be specified using their
+    names, paths to local rpm files or urls to remote rpms.
 
     .. code-block:: yaml
 
+        # Install local rpms using file path
         prepare:
             how: install
             package:
                 - tmp/RPMS/noarch/tmt-0.15-1.fc31.noarch.rpm
                 - tmp/RPMS/noarch/python3-tmt-0.15-1.fc31.noarch.rpm
 
+    .. code-block:: yaml
+
+        # Install remote packages using url
+        prepare:
+            how: install
+            package:
+              - https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+              - https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-8.noarch.rpm
+
+    .. code-block:: yaml
+
+        # Install the whole directory, exclude selected packages
+        prepare:
+            how: install
+            directory:
+              - tmp/RPMS/noarch
+            exclude:
+              - tmt+all
+              - tmt+provision-virtual
+
+    .. code-block:: yaml
+
+        prepare:
+            how: install
+            # Repository with a group owner (@ prefixed) requires quotes, e.g.
+            # copr: "@osci/rpminspect"
+            copr: psss/tmt
+            package: tmt-all
+            missing: skip
+
     Use ``directory`` to install all packages from given folder and
-    ``exclude`` to skip selected packages:
+    ``exclude`` to skip selected packages (globbing characters are supported as
+    well).
 
     .. code-block:: yaml
 
@@ -776,8 +889,18 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         # shipped as plugins, but we still need a matching *installation* class.
         # But do we really need a class per package manager family? Maybe the
         # code could be integrated into package manager plugins directly.
-        if guest.facts.package_manager == 'rpm-ostree':
-            installer: InstallBase = InstallRpmOstree(
+        if guest.facts.package_manager == 'bootc':
+            installer: InstallBase = InstallBootc(
+                logger=logger,
+                parent=self,
+                dependencies=self.data.package,
+                directories=self.data.directory,
+                exclude=self.data.exclude,
+                guest=guest,
+            )
+
+        elif guest.facts.package_manager == 'rpm-ostree':
+            installer = InstallRpmOstree(
                 logger=logger,
                 parent=self,
                 dependencies=self.data.package,
