@@ -23,7 +23,7 @@ from tmt.utils.templates import render_template
 FEATURE_PLAYEBOOK_DIRECTORY = tmt.utils.resource_files('steps/prepare/feature')
 
 FeatureClass = type['FeatureBase']
-_FEATURE_PLUGIN_REGISTRY: PluginRegistry[FeatureClass] = PluginRegistry()
+_FEATURE_PLUGIN_REGISTRY: PluginRegistry[FeatureClass] = PluginRegistry('prepare.feature')
 
 
 #: A pattern for matching module-like keys in Ansible playbooks.
