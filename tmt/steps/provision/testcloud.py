@@ -137,20 +137,16 @@ passwd:
     - name: ${user_name}
       ssh_authorized_keys:
         - ${public_key}
-systemd:
-  units:
-    - name: ssh_root_login.service
-      enabled: true
-      contents: |
-        [Unit]
-        Before=sshd.service
-        [Service]
-        Type=oneshot
-        ExecStart=/usr/bin/sed -i \
-                  "s|^PermitRootLogin no$|PermitRootLogin yes|g" \
-                  /etc/ssh/sshd_config
-        [Install]
-        WantedBy=multi-user.target
+storage:
+  files:
+    - path: /etc/ssh/sshd_config.d/20-enable-root-login.conf
+      mode: 0644
+      contents:
+        inline: |
+          # CoreOS disables root SSH login by default.
+          # Enable it.
+          # This file must sort before 40-rhcos-defaults.conf.
+          PermitRootLogin yes
 """
 
 # VM defaults
