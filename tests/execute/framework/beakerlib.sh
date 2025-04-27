@@ -55,7 +55,7 @@ rlJournalStart
 
     testName="/tests/worst"
     rlPhaseStartTest "${testName}"
-        rlRun -s "${tmt_command} ${testName} >/dev/null" 1 "Testing beakerlib picking the worst out of multiple outomes"
+        rlRun -s "${tmt_command} ${testName} >/dev/null" 1 "Testing beakerlib picking the worst out of multiple outcomes"
         # tmt sent the correct command
         rlAssertGrep "cmd: ./worst.sh" $rlRun_LOG
         # beakerlib results as expected
