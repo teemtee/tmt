@@ -2,41 +2,41 @@ framework: beakerlib
 duration: 5m
 
 /pass:
-  summary: Testing beakerlib success
+  summary: Testing success
   test: ./pass.sh
 
 /fail:
-  summary: Testing beakerlib failure
+  summary: Testing failure
   test: ./fail.sh
 
 /warn:
-  summary: Testing beakerlib warning
+  summary: Testing warning
   test: ./warn.sh
 
 /worst:
-  summary: Testing beakerlib picking the worst out of multiple outomes
+  summary: Testing picking the worst out of multiple outcomes
   test: ./worst.sh
 
 /timeout:
-  summary: Testing beakerlib timeout
+  summary: Testing timeout
   test: ./timeout.sh
 
 /pidlock:
-  summary: Testing beakerlib pidlock
+  summary: Testing pidlock
   test: ./pidlock.sh
 
 /incomplete-fail:
-  summary: Testing beakerlib incomplete while failing
+  summary: Testing incomplete while failing
   test: ./incomplete-fail.sh
 
 /incomplete-pass:
-  summary: Testing beakerlib incomplete while passing
+  summary: Testing incomplete while passing
   test: ./incomplete-pass.sh
 
 /notfound:
-  summary: Testing beakerlib file not found
+  summary: Testing file not found
   test: ./nosuchfile.sh
 
 /notexec:
-  summary: Testing beakerlib file permission denied
+  summary: Testing file permission denied
   test: /dev/null
