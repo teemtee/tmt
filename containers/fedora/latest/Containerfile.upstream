@@ -1,0 +1,17 @@
+#
+# A latest Fedora image tailored for tmt test suite
+#
+# tmt/tests/fedora/latest/upstream:latest
+#
+
+FROM quay.io/fedora/fedora:latest
+
+RUN <<EOF
+set -ex
+
+# Populate dnf cache
+dnf makecache
+
+# Make sure the image is built with the latest packages
+dnf update -y
+EOF
