@@ -1,0 +1,3 @@
+test-profile:
+  - test: |
+      scl enable gcc-toolset-15 {{ VALUE }}
