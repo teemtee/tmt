@@ -816,8 +816,7 @@ def constraint_to_beaker_filter(
     ) or _translate_constraint_by_transformer(constraint, logger)
 
     if not transformed:
-        # Unsupported constraint has been already logged via report_support().
-        # Make sure user is aware it would have no effect.
+        # Make sure user is aware constraint would have no effect.
         logger.warning(f"Hardware requirement '{constraint.printable_name}' will have no effect.")
     return transformed
 
@@ -1589,11 +1588,6 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
         data = BeakerGuestData.from_plugin(self)
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
-
-        if data.hardware:
-            data.hardware.report_support(
-                names=list(_CONSTRAINT_TRANSFORMERS.keys()), logger=self._logger
-            )
 
         self._guest = GuestBeaker(
             data=data,
