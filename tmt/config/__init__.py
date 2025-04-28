@@ -18,10 +18,11 @@ from tmt.container import MetadataContainer
 MetadataContainerT = TypeVar('MetadataContainerT', bound='MetadataContainer')
 
 # Config directory
-DEFAULT_CONFIG_DIR = Path('~/.config/tmt')
+DEFAULT_USER_CONFIG_DIR = Path('~/.config/tmt')
+DEFAULT_GLOBAL_CONFIG_DIR = Path('/etc/tmt/config')
 
 
-def effective_config_dir() -> Path:
+def effective_config_dir(config_source: Optional[str] = 'user') -> Path:
     """
     Find out what the actual config directory is.
 
@@ -32,7 +33,9 @@ def effective_config_dir() -> Path:
     if 'TMT_CONFIG_DIR' in os.environ:
         return Path(os.environ['TMT_CONFIG_DIR']).expanduser()
 
-    return DEFAULT_CONFIG_DIR.expanduser()
+    if config_source == 'user':
+        return DEFAULT_USER_CONFIG_DIR.expanduser()
+    return DEFAULT_GLOBAL_CONFIG_DIR
 
 
 class Config:
@@ -40,14 +43,13 @@ class Config:
     User configuration
     """
 
-    def __init__(self, logger: tmt.log.Logger) -> None:
+    def __init__(self, logger: tmt.log.Logger, config_source: Optional[str] = 'user') -> None:
         """
         Initialize config directory path
         """
 
-        self.path = effective_config_dir()
+        self.path = effective_config_dir(config_source)
         self.logger = logger
-
         try:
             self.path.mkdir(parents=True, exist_ok=True)
         except OSError as error:

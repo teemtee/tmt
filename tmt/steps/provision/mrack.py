@@ -68,14 +68,16 @@ def mrack_constructs_ks_pre() -> bool:
     return packaging.version.Version(MRACK_VERSION) >= packaging.version.Version('1.21.0')
 
 
-def _get_constraint_translations(logger: tmt.log.Logger) -> list[MrackTranslation]:
+def _get_constraint_translations(
+    config_source: str, logger: tmt.log.Logger
+) -> list[MrackTranslation]:
     """
     Load the list of hardware requirement translations from configuration.
 
     :returns: translations loaded from configuration, or an empty list if
         the configuration is missing.
     """
-    config = tmt.config.Config(logger)
+    config = tmt.config.Config(logger, config_source)
     return (
         config.hardware.beaker.translations if config.hardware and config.hardware.beaker else []
     )
@@ -268,27 +270,35 @@ def _translate_constraint_by_config(
     Translate hardware constraints to Mrack-compatible dictionary tree with config.
     """
 
-    config = _get_constraint_translations(logger)
-
-    if not config:
+    user_translations = _get_constraint_translations('user', logger)
+    default_translations = _get_constraint_translations('default', logger)
+    if not (user_translations or default_translations):
         return _transform_unsupported(constraint)
 
     suitable_translations = [
         translation
-        for translation in config
+        for translation in user_translations
         if translation.requirement == constraint.printable_name
     ]
 
-    if not suitable_translations:
+    suitable_translations_default = [
+        translation
+        for translation in default_translations
+        if translation.requirement == constraint.printable_name
+    ]
+
+    if not (suitable_translations or suitable_translations_default):
         return _transform_unsupported(constraint)
 
     beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator, constraint.value
+        tmt.hardware.Operator.EQ, constraint.value
     )
 
     return tmt.utils.yaml_to_dict(
         render_template(
-            suitable_translations[0].template,
+            (suitable_translations if suitable_translations else suitable_translations_default)[
+                0
+            ].template,
             CONSTRAINT=constraint,
             BEAKER_OPERATOR=beaker_operator,
             BEAKER_VALUE=actual_value,
