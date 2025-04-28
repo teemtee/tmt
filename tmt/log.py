@@ -66,6 +66,7 @@ class Topic(enum.Enum):
     COMMAND_EVENTS = 'command-events'
     ADJUST_DECISIONS = 'adjust-decisions'
     HELP_RENDERING = 'help-rendering'
+    PROFILE = 'profile'
 
 
 DEFAULT_TOPICS: set[Topic] = set()
