@@ -26,6 +26,7 @@ import tmt.log
 import tmt.options
 import tmt.plugins
 import tmt.plugins.plan_shapers
+import tmt.profiles
 import tmt.steps
 import tmt.templates
 import tmt.utils
@@ -886,6 +887,14 @@ _test_export_default = 'yaml'
     metavar='PATH',
     help="Path to a template to use for rendering the export. Used with '--how=template' only.",
 )
+@option(
+    '--profile',
+    '_profile',
+    metavar='PATH',
+    help="""
+         A file with instructions for modification of test metadata keys.
+         """,
+)
 def tests_export(
     context: Context,
     format: str,
@@ -893,6 +902,7 @@ def tests_export(
     nitrate: bool,
     bugzilla: bool,
     template: Optional[str],
+    _profile: Optional[str],
     **kwargs: Any,
 ) -> None:
     """
@@ -921,6 +931,8 @@ def tests_export(
             "The --bugzilla option is supported only with --nitrate or --polarion for now."
         )
 
+    profile = tmt.profiles.Profile.load(Path(_profile), context.obj.logger) if _profile else None
+
     if kwargs.get('fmf_id'):
         echo(
             tmt.base.FmfId.export_collection(
@@ -931,9 +943,15 @@ def tests_export(
         )
 
     else:
+        tests = context.obj.tree.tests()
+
+        if profile is not None:
+            profile.apply_to_tests(tests, context.obj.logger)
+            print()
+
         echo(
             tmt.Test.export_collection(
-                collection=context.obj.tree.tests(),
+                collection=tests,
                 format=how,
                 template=Path(template) if template else None,
             )

@@ -1,0 +1,18 @@
+test: dummy-command
+
+/basic:
+
+/full:
+  contact:
+    - foo
+    - bar
+
+  environment:
+    FOO: BAR
+    QUX: QUUX
+
+  check:
+    - how: avc
+      result: info
+    - how: dmesg
+      failure-pattern: ".*"
