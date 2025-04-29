@@ -3,7 +3,7 @@
                     tmt - Test Management Tool
 ==================================================================
 
-|docs| |matrix| |fedora-pkg| |copr-build| |pypi-version| |python-versions| |ruff| |pre-commit| |license|
+|docs| |matrix| |fedora-pkg| |copr-build| |pypi-version| |python-versions| |license|
 
 The ``tmt`` tool provides a user-friendly way to work with tests.
 You can comfortably create new tests, safely and easily run tests
