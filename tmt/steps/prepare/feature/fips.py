@@ -2,7 +2,6 @@ import re
 from typing import Any, Optional
 
 import tmt.log
-import tmt.steps.prepare
 import tmt.utils
 from tmt.container import container, field
 from tmt.steps.prepare.feature import PrepareFeatureData, ToggleableFeature, provides_feature

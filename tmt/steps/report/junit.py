@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, TypedDict, Union, cas
 from jinja2 import FileSystemLoader, select_autoescape
 
 import tmt
-import tmt.base
 import tmt.log
-import tmt.options
 import tmt.result
 import tmt.steps
 import tmt.steps.report

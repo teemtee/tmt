@@ -8,7 +8,6 @@ from click import echo
 
 import tmt.base
 import tmt.lint
-import tmt.utils
 from tmt.cli import Context, pass_context
 from tmt.cli._root import (
     filtering_options,

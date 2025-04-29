@@ -254,14 +254,14 @@ class MrackHWNotGroup(MrackHWGroup):
     name: str = 'not'
 
 
-def _transform_unsupported(constraint: tmt.hardware.Constraint[Any]) -> dict[str, Any]:
+def _transform_unsupported(constraint: tmt.hardware.Constraint) -> dict[str, Any]:
     # We have to return something, return an {}- no harm done, composable with other elements.
 
     return {}
 
 
 def _translate_constraint_by_config(
-    constraint: tmt.hardware.Constraint[Any],
+    constraint: tmt.hardware.Constraint,
     logger: tmt.log.Logger,
 ) -> dict[str, Any]:
     """
@@ -283,7 +283,7 @@ def _translate_constraint_by_config(
         return _transform_unsupported(constraint)
 
     beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator, constraint.value
+        constraint.operator, str(constraint.value)
     )
 
     return tmt.utils.yaml_to_dict(
@@ -298,7 +298,7 @@ def _translate_constraint_by_config(
 
 
 def _translate_constraint_by_transformer(
-    constraint: tmt.hardware.Constraint[Any],
+    constraint: tmt.hardware.Constraint,
     logger: tmt.log.Logger,
 ) -> BeakerizedConstraint:
     """
@@ -719,9 +719,7 @@ def _transform_system_vendor_name(
     return MrackHWGroup('system', children=[MrackHWBinOp('vendor', beaker_operator, actual_value)])
 
 
-ConstraintTransformer = Callable[
-    [tmt.hardware.Constraint[Any], tmt.log.Logger], MrackBaseHWElement
-]
+ConstraintTransformer = Callable[[tmt.hardware.Constraint, tmt.log.Logger], MrackBaseHWElement]
 
 _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
     'beaker.pool': _transform_beaker_pool,  # type: ignore[dict-item]

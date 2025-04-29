@@ -3,7 +3,6 @@ import time
 from typing import Callable, TypeVar
 
 import tmt.log
-import tmt.utils
 from tmt.container import container
 from tmt.utils import GeneralError
 

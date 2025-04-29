@@ -21,7 +21,6 @@ import tmt.base
 import tmt.cli
 import tmt.config
 import tmt.convert
-import tmt.export
 import tmt.identifier
 import tmt.log
 import tmt.options
@@ -29,10 +28,8 @@ import tmt.plugins
 import tmt.plugins.plan_shapers
 import tmt.steps
 import tmt.templates
-import tmt.trying
 import tmt.utils
 import tmt.utils.jira
-import tmt.utils.rest
 from tmt.cli import CliInvocation, Context, ContextObject, CustomGroup, pass_context
 from tmt.options import Deprecated, create_options_decorator, option
 from tmt.utils import Command, Path, effective_workdir_root

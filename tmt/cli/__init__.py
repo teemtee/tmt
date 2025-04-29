@@ -96,7 +96,7 @@ class ContextObject:
     common: tmt.utils.Common
     fmf_context: tmt.utils.FmfContext
     tree: tmt.Tree
-    steps: set[str] = simple_field(default_factory=set)
+    steps: set[str] = simple_field(default_factory=set[str])
     clean: Optional[tmt.Clean] = None
     clean_logger: Optional[tmt.log.Logger] = None
     clean_partials: collections.defaultdict[str, list[tmt.base.CleanCallback]] = simple_field(
@@ -179,9 +179,7 @@ class CliInvocation:
         # simplified implementation.
         # ignore[unused-ignore]: silencing mypy's complaint about silencing
         # pyright's warning :)
-        invocation.option_sources = {  # type: ignore[reportGeneralTypeIssues,unused-ignore]
-            key: click.core.ParameterSource.COMMANDLINE for key in options
-        }
+        invocation.option_sources = dict.fromkeys(options, click.core.ParameterSource.COMMANDLINE)
         return invocation
 
     @functools.cached_property

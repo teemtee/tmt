@@ -6,14 +6,11 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Optional
 
 import tmt.log
-import tmt.steps.execute
 import tmt.steps.provision
 import tmt.steps.provision.artemis
 import tmt.steps.provision.connect
 import tmt.steps.provision.local
 import tmt.steps.provision.mrack
-import tmt.steps.provision.podman
-import tmt.steps.provision.testcloud
 import tmt.utils
 from tmt.checks import Check, CheckPlugin, provides_check
 from tmt.container import container, field

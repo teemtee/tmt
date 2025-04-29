@@ -20,7 +20,6 @@ import tmt.steps
 import tmt.steps.execute
 import tmt.steps.prepare
 import tmt.steps.prepare.feature
-import tmt.steps.provision
 import tmt.templates
 import tmt.utils
 from tmt import Plan

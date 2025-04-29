@@ -1,6 +1,5 @@
 from typing import Optional
 
-import tmt.base
 import tmt.log
 import tmt.result
 import tmt.steps.execute

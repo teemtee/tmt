@@ -36,10 +36,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Generic,
     NamedTuple,
     Optional,
-    TypeVar,
     Union,
     cast,
 )
@@ -66,13 +64,6 @@ UNITS = pint.UnitRegistry()
 
 # The default formatting should use unit symbols rather than full names.
 UNITS.default_format = '~'
-
-
-# Special type variable, used in `Constraint.from_specification` - we bound this return value to
-# always be a subclass of `Constraint` class, instead of just any class in general.
-# ignore[type-arg]: `Constraint` is a generic type, and making typevar bound by a generic type
-# is hard. It's easier to silence mypy for now, and maybe pyright would serve us better.
-T = TypeVar('T', bound='Constraint')  # type: ignore[type-arg]
 
 
 class Operator(enum.Enum):
@@ -192,7 +183,6 @@ Spec = Any
 
 #: A type of constraint values.
 ConstraintValue = Union[int, 'Size', str, bool, float]
-ConstraintValueT = TypeVar('ConstraintValueT', int, 'Size', str, bool, float)
 
 # TODO: this was ported from Artemis but it's not used as of now. That should
 # change with future support for flavors aka instance types.
@@ -377,8 +367,8 @@ class BaseConstraint(SpecBasedContainer[Spec, Spec]):
         raise NotImplementedError
 
     def variants(
-        self, members: Optional[list['Constraint[Any]']] = None
-    ) -> Iterator[list['Constraint[Any]']]:
+        self, members: Optional[list['Constraint']] = None
+    ) -> Iterator[list['Constraint']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -393,7 +383,7 @@ class BaseConstraint(SpecBasedContainer[Spec, Spec]):
 
         raise NotImplementedError
 
-    def variant(self) -> list['Constraint[Any]']:
+    def variant(self) -> list['Constraint']:
         """
         Pick one of the available variants of this constraints.
 
@@ -461,8 +451,8 @@ class CompoundConstraint(BaseConstraint):
         )
 
     def variants(
-        self, members: Optional[list['Constraint[Any]']] = None
-    ) -> Iterator[list['Constraint[Any]']]:
+        self, members: Optional[list['Constraint']] = None
+    ) -> Iterator[list['Constraint']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -482,7 +472,7 @@ class CompoundConstraint(BaseConstraint):
 
 
 @container(repr=False)
-class Constraint(BaseConstraint, Generic[ConstraintValueT]):
+class Constraint(BaseConstraint):
     """
     A constraint imposing a particular limit to one of the guest properties
     """
@@ -500,7 +490,7 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
     operator_handler: OperatorHandlerType
 
     # Constraint value.
-    value: ConstraintValueT
+    value: ConstraintValue  # Subclasses will specialize further
 
     # Stored for possible inspection by more advanced processing.
     raw_value: str
@@ -510,19 +500,19 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
 
     # If set, it is a "bigger" constraint, to which this constraint logically
     # belongs as one of its aspects.
-    original_constraint: Optional['Constraint[Any]'] = None
+    original_constraint: Optional['Constraint'] = None
 
     @classmethod
     def _from_specification(
-        cls: type[T],
+        cls,
         name: str,
         raw_value: str,
         as_quantity: bool = True,
-        as_cast: Optional[Callable[[str], ConstraintValueT]] = None,
-        original_constraint: Optional['Constraint[Any]'] = None,
+        as_cast: Optional[Callable[[str], ConstraintValue]] = None,
+        original_constraint: Optional['Constraint'] = None,
         allowed_operators: Optional[list[Operator]] = None,
         default_unit: Optional[Any] = "bytes",
-    ) -> T:
+    ) -> 'Constraint':
         """
         Parse raw constraint specification into our internal representation.
 
@@ -564,7 +554,7 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
         raw_value = groups['value']
 
         if as_quantity:
-            value: ConstraintValue = UNITS(raw_value)
+            value = UNITS(raw_value)
 
             # Number-like raw_value, without units, get converted into
             # pure `int` or `float`. Force `Quantity` for quantities by
@@ -577,10 +567,12 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
                 value = pint.Quantity(value, default_unit)
 
         elif as_cast is not None:
-            value = as_cast(raw_value)
+            # Type depends on the `as_cast` function; subclasses handle the specific type.
+            value = as_cast(raw_value)  # type: ignore[assignment]
 
         else:
-            value = raw_value
+            # Type depends on `as_quantity`; subclasses handle the specific type.
+            value = raw_value  # type: ignore[assignment]
 
         return cls(
             name=name,
@@ -657,8 +649,8 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
         return self.expand_name().name == constraint_name
 
     def variants(
-        self, members: Optional[list['Constraint[ConstraintValueT]']] = None
-    ) -> Iterator[list['Constraint[ConstraintValueT]']]:
+        self, members: Optional[list['Constraint']] = None
+    ) -> Iterator[list['Constraint']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -674,66 +666,78 @@ class Constraint(BaseConstraint, Generic[ConstraintValueT]):
         yield (members or []) + [self]
 
 
-class SizeConstraint(Constraint['Size']):
+class SizeConstraint(Constraint):
     """
     A constraint representing a size of resource, usually a storage
     """
 
+    value: 'Size'
+
     @classmethod
     def from_specification(
-        cls: type[T],
+        cls,
         name: str,
         raw_value: str,
-        original_constraint: Optional['Constraint[Any]'] = None,
+        original_constraint: Optional['Constraint'] = None,
         allowed_operators: Optional[list[Operator]] = None,
         default_unit: Optional[Any] = 'bytes',
-    ) -> T:
-        return cls._from_specification(
-            name,
-            raw_value,
-            as_quantity=True,
-            original_constraint=original_constraint,
-            allowed_operators=allowed_operators,
-            default_unit=default_unit,
+    ) -> 'SizeConstraint':
+        return cast(
+            SizeConstraint,
+            cls._from_specification(
+                name,
+                raw_value,
+                as_quantity=True,
+                original_constraint=original_constraint,
+                allowed_operators=allowed_operators,
+                default_unit=default_unit,
+            ),
         )
 
 
-class FlagConstraint(Constraint[bool]):
+class FlagConstraint(Constraint):
     """
     A constraint representing a boolean flag, enabled/disabled, has/has not, etc.
     """
 
+    value: bool
+
     @classmethod
     def from_specification(
-        cls: type[T],
+        cls,
         name: str,
         raw_value: bool,
-        original_constraint: Optional['Constraint[Any]'] = None,
+        original_constraint: Optional['Constraint'] = None,
         allowed_operators: Optional[list[Operator]] = None,
-    ) -> T:
-        return cls._from_specification(
-            name,
-            str(raw_value),
-            as_quantity=False,
-            as_cast=lambda x: x.lower() == 'true',
-            original_constraint=original_constraint,
-            allowed_operators=allowed_operators,
+    ) -> 'FlagConstraint':
+        return cast(
+            FlagConstraint,
+            cls._from_specification(
+                name,
+                str(raw_value),
+                as_quantity=False,
+                as_cast=lambda x: x.lower() == 'true',
+                original_constraint=original_constraint,
+                allowed_operators=allowed_operators,
+            ),
         )
 
 
-class IntegerConstraint(Constraint[int]):
+class IntegerConstraint(Constraint):
     """
     A constraint representing a dimension-less int number
     """
 
+    value: int
+
     @classmethod
     def from_specification(
-        cls: type[T],
+        cls,
         name: str,
         raw_value: str,
-        original_constraint: Optional['Constraint[Any]'] = None,
+        original_constraint: Optional['Constraint'] = None,
         allowed_operators: Optional[list[Operator]] = None,
-    ) -> T:
+    ) -> 'IntegerConstraint':
         def _cast_int(raw_value: Any) -> int:
             if isinstance(raw_value, int):
                 return raw_value
@@ -748,30 +752,35 @@ class IntegerConstraint(Constraint[int]):
 
             raise SpecificationError(f"Could not convert '{raw_value}' to a number.")
 
-        return cls._from_specification(
-            name,
-            raw_value,
-            as_quantity=False,
-            as_cast=_cast_int,
-            original_constraint=original_constraint,
-            allowed_operators=allowed_operators,
+        return cast(
+            IntegerConstraint,
+            cls._from_specification(
+                name,
+                raw_value,
+                as_quantity=False,
+                as_cast=_cast_int,
+                original_constraint=original_constraint,
+                allowed_operators=allowed_operators,
+            ),
         )
 
 
-class NumberConstraint(Constraint['Quantity']):
+class NumberConstraint(Constraint):
     """
     A constraint representing a float number
     """
 
+    value: 'Quantity'
+
     @classmethod
     def from_specification(
-        cls: type[T],
+        cls,
         name: str,
         raw_value: str,
-        original_constraint: Optional['Constraint[Any]'] = None,
+        original_constraint: Optional['Constraint'] = None,
         allowed_operators: Optional[list[Operator]] = None,
         default_unit: Optional[Any] = None,
-    ) -> T:
+    ) -> 'NumberConstraint':
         def _cast_number(raw_value: Any) -> float:
             if isinstance(raw_value, float):
                 return raw_value
@@ -782,36 +791,44 @@ class NumberConstraint(Constraint['Quantity']):
 
             raise SpecificationError(f"Could not convert '{raw_value}' to a number.")
 
-        return cls._from_specification(
-            name,
-            raw_value,
-            as_quantity=True,
-            as_cast=_cast_number,
-            original_constraint=original_constraint,
-            allowed_operators=allowed_operators,
-            default_unit=default_unit,
+        return cast(
+            NumberConstraint,
+            cls._from_specification(
+                name,
+                raw_value,
+                as_quantity=True,
+                as_cast=_cast_number,
+                original_constraint=original_constraint,
+                allowed_operators=allowed_operators,
+                default_unit=default_unit,
+            ),
         )
 
 
-class TextConstraint(Constraint[str]):
+class TextConstraint(Constraint):
     """
     A constraint representing a string, e.g. a name
     """
 
+    value: str
+
     @classmethod
     def from_specification(
-        cls: type[T],
+        cls,
         name: str,
         raw_value: str,
-        original_constraint: Optional['Constraint[Any]'] = None,
+        original_constraint: Optional['Constraint'] = None,
         allowed_operators: Optional[list[Operator]] = None,
-    ) -> T:
-        return cls._from_specification(
-            name,
-            raw_value,
-            as_quantity=False,
-            original_constraint=original_constraint,
-            allowed_operators=allowed_operators,
+    ) -> 'TextConstraint':
+        return cast(
+            TextConstraint,
+            cls._from_specification(
+                name,
+                raw_value,
+                as_quantity=False,
+                original_constraint=original_constraint,
+                allowed_operators=allowed_operators,
+            ),
         )
 
 
@@ -831,8 +848,8 @@ class And(CompoundConstraint):
         super().__init__(all, constraints=constraints)
 
     def variants(
-        self, members: Optional[list[Constraint[Any]]] = None
-    ) -> Iterator[list[Constraint[Any]]]:
+        self, members: Optional[list['Constraint']] = None
+    ) -> Iterator[list['Constraint']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -849,7 +866,7 @@ class And(CompoundConstraint):
         members = members or []
 
         # List of non-compound constraints - we just slap these into every combination we generate
-        simple_constraints: list[Constraint[Any]] = [
+        simple_constraints: list[Constraint] = [
             constraint for constraint in self.constraints if isinstance(constraint, Constraint)
         ]
 
@@ -866,7 +883,7 @@ class And(CompoundConstraint):
         ):
             # Note that `product` returns an item for each iterable, and those items are lists,
             # because that's what `variants()` returns. Use `sum` to linearize the list of lists.
-            yield members + sum(compounds, cast(list[Constraint[Any]], [])) + simple_constraints
+            yield members + sum(compounds, cast(list['Constraint'], [])) + simple_constraints
 
 
 @container(repr=False)
@@ -885,8 +902,8 @@ class Or(CompoundConstraint):
         super().__init__(any, constraints=constraints)
 
     def variants(
-        self, members: Optional[list[Constraint[Any]]] = None
-    ) -> Iterator[list[Constraint[Any]]]:
+        self, members: Optional[list['Constraint']] = None
+    ) -> Iterator[list['Constraint']]:
         """
         Generate all distinct variants of constraints covered by this one.
 
@@ -1734,7 +1751,7 @@ class Hardware(SpecBasedContainer[Spec, Spec]):
         self,
         *,
         names: Optional[list[str]] = None,
-        check: Optional[Callable[[Constraint[Any]], bool]] = None,
+        check: Optional[Callable[['Constraint'], bool]] = None,
         logger: tmt.log.Logger,
     ) -> None:
         """

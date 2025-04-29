@@ -17,7 +17,6 @@ from tmt.utils.themes import style
 if TYPE_CHECKING:
     import tmt.base
     import tmt.steps.execute
-    import tmt.steps.provision
 
 # Extra keys used for identification in Result class
 EXTRA_RESULT_IDENTIFICATION_KEYS = ['extra-nitrate', 'extra-task']
@@ -366,7 +365,7 @@ class Result(BaseResult):
         default_ids: ResultIds = {tmt.identifier.ID_KEY: invocation.test.id}
 
         for key in EXTRA_RESULT_IDENTIFICATION_KEYS:
-            value: Any = invocation.test.node.get(key)
+            value: Any = cast(Any, invocation.test.node.get(key))
 
             default_ids[key] = None if value is None else str(value)
 
@@ -513,7 +512,7 @@ class Result(BaseResult):
         Return dictionary with total stats for given results
         """
 
-        stats = {result: 0 for result in RESULT_OUTCOME_COLORS}
+        stats = dict.fromkeys(RESULT_OUTCOME_COLORS, 0)
 
         for result in results:
             stats[result.result] += 1
