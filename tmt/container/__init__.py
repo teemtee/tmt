@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, Uni
 
 import fmf
 
-from tmt._compat.pydantic import BaseModel, Extra, ValidationError
+from tmt._compat.pydantic import BaseModel, Extra, Field, ValidationError
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
@@ -904,6 +904,8 @@ MetadataContainerT = TypeVar(
     bound='MetadataContainer',
 )
 
+metadata_field = Field
+
 
 class MetadataContainer(BaseModel):
     """
@@ -926,3 +928,13 @@ class MetadataContainer(BaseModel):
             import tmt.utils
 
             raise tmt.utils.SpecificationError(f"Invalid metadata in '{tree.name}'.") from error
+
+    @classmethod
+    def from_yaml(cls: type[MetadataContainerT], yaml: dict[str, Any]) -> MetadataContainerT:
+        try:
+            return cls.parse_obj(yaml)
+
+        except ValidationError as error:
+            import tmt.utils
+
+            raise tmt.utils.SpecificationError("Invalid metadata.") from error

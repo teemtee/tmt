@@ -3015,6 +3015,14 @@ def dict_to_yaml(
 YamlTypType = Literal['rt', 'safe', 'unsafe', 'base']
 
 
+def yaml_to_python(data: Any, yaml_type: Optional[YamlTypType] = None) -> Any:
+    """
+    Convert YAML into Python data types.
+    """
+
+    return YAML(typ=yaml_type).load(data)
+
+
 def yaml_to_dict(data: Any, yaml_type: Optional[YamlTypType] = None) -> dict[Any, Any]:
     """
     Convert yaml into dictionary
