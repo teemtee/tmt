@@ -31,9 +31,9 @@ rlJournalStart
         rlRun "cp -r faked-subresults-results.yaml $tmp/subresults/execute/results.yaml" 0 "Faking the execute/results.yaml with subresult data"
         rlRun -s "tmt run --last --id $tmp plan -n subresults report -h display -v"
         rlAssertGrep "pass /test$" "$rlRun_LOG"
-        rlAssertGrep "pass /test/good$" "$rlRun_LOG"
-        rlAssertGrep "fail /test/fail$" "$rlRun_LOG"
-        rlAssertGrep "warn /test/weird$" "$rlRun_LOG"
+        rlAssertGrep "pass /test/good (subresult)$" "$rlRun_LOG"
+        rlAssertGrep "fail /test/fail (subresult)$" "$rlRun_LOG"
+        rlAssertGrep "warn /test/weird (subresult)$" "$rlRun_LOG"
         rlAssertGrep "skip dmesg (before-test check)$" "$rlRun_LOG"
         rlAssertGrep "summary: 1 test passed$" "$rlRun_LOG"
     rlPhaseEnd
