@@ -155,7 +155,8 @@ class ResultRenderer:
         """
 
         with open(log) as f:
-            yield from f.readlines()
+            for line in f:
+                yield f'content: {line}'
 
     def render_logs_content(self, result: BaseResult) -> Iterator[str]:
         """
