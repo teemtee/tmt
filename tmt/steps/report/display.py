@@ -81,7 +81,7 @@ class ResultRenderer:
     display_guest: bool = True
 
     #: Additional variables to use when rendering templates.
-    variables: dict[str, Any] = simple_field(default_factory=dict)
+    variables: dict[str, Any] = simple_field(default_factory=dict[str, Any])
 
     result_header_template: str = DEFAULT_RESULT_HEADER_TEMPLATE
     result_check_header_template: str = DEFAULT_RESULT_CHECK_HEADER_TEMPLATE
