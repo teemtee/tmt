@@ -796,7 +796,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
                 ResultRenderer(
                     basepath=self.workdir,
-                    logger=self._logger,
+                    logger=logger,
                     shift=shift,
                     variables={'PROGRESS': f'[{progress}]'},
                 ).print_results(invocation.results)

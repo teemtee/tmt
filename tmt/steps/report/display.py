@@ -18,14 +18,7 @@ from tmt.steps.execute import TEST_OUTPUT_FILENAME
 from tmt.utils import INDENT, Path
 from tmt.utils.templates import default_template_environment, render_template
 
-# How much test and test check info should be shifted to the right in the output.
-# We want tests to be shifted by one extra level, with their checks shifted by
-# yet another level.
-RESULT_SHIFT = 0
-RESULT_CHECK_SHIFT = 1
-SUBRESULT_SHIFT = RESULT_CHECK_SHIFT
-SUBRESULT_CHECK_SHIFT = SUBRESULT_SHIFT + 1
-NOTE_SHIFT = 2
+PER_LEVEL_INDENT = ' ' * INDENT
 
 DEFAULT_RESULT_HEADER_TEMPLATE = """
 {{ RESULT | format_duration | style(fg="cyan") }} {{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }}
@@ -34,15 +27,15 @@ DEFAULT_RESULT_HEADER_TEMPLATE = """
 """  # noqa: E501
 
 DEFAULT_RESULT_CHECK_HEADER_TEMPLATE = """
-{{ RESULT | format_duration | style(fg="cyan") }}{{ ' ' * 4 }}{{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }} ({{ RESULT.event.value }} check)
+{{ RESULT | format_duration | style(fg="cyan") }} {{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }} ({{ RESULT.event.value }} check)
 """  # noqa: E501
 
 DEFAULT_SUBRESULT_HEADER_TEMPLATE = """
-{{ RESULT | format_duration | style(fg="cyan") }}{{ ' ' * 4 }}{{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }}
+{{ RESULT | format_duration | style(fg="cyan") }} {{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }} (subresult)
 """  # noqa: E501
 
 DEFAULT_SUBRESULT_CHECK_HEADER_TEMPLATE = """
-{{ RESULT | format_duration | style(fg="cyan") }}{{ ' ' * 8 }}{{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }} ({{ RESULT.event.value }} check)
+{{ RESULT | format_duration | style(fg="cyan") }}{{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }} ({{ RESULT.event.value }} check)
 """  # noqa: E501
 
 DEFAULT_NOTE_TEMPLATE = """
@@ -82,7 +75,7 @@ class ResultRenderer:
     shift: int
 
     #: When 2 or more, log info - name and path - would be printed out.
-    #: When 3 or more, og output would be printed out as well.
+    #: When 3 or more, log output would be printed out as well.
     verbosity: int = 0
     #: Whether guest from which results originated should be printed out.
     display_guest: bool = True
@@ -111,24 +104,19 @@ class ResultRenderer:
 
             else:
                 for line in item.splitlines():
-                    yield f'{(INDENT * level) * " "}{line}'
+                    yield f'{level * PER_LEVEL_INDENT}{line}'
 
     def render_note(self, note: str) -> Iterator[str]:
         """
         Render a single result note.
         """
 
-        yield from self._indent(
-            NOTE_SHIFT,
-            [
-                render_template(
-                    self.note_template,
-                    environment=self.environment,
-                    CONTEXT=self,
-                    NOTE_LINES=note.splitlines(),
-                    **self.variables,
-                )
-            ],
+        yield render_template(
+            self.note_template,
+            environment=self.environment,
+            CONTEXT=self,
+            NOTE_LINES=note.splitlines(),
+            **self.variables,
         )
 
     def render_notes(self, result: BaseResult) -> Iterator[str]:
@@ -147,15 +135,18 @@ class ResultRenderer:
 
         yield f'{log.name} ({log})'
 
-    def render_logs_info(self, result: BaseResult, shift: int) -> Iterator[str]:
+    def render_logs_info(self, result: BaseResult) -> Iterator[str]:
         """
         Render info about result logs.
         """
 
-        yield from self._indent(shift, ['logs:'])
+        if not result.log:
+            return
+
+        yield 'logs:'
 
         for log in result.log:
-            yield from self._indent(shift + 1, self.render_log_info(self.basepath / log))
+            yield from self._indent(1, self.render_log_info(self.basepath / log))
 
     @staticmethod
     def render_log_content(log: Path) -> Iterator[str]:
@@ -166,20 +157,23 @@ class ResultRenderer:
         with open(log) as f:
             yield from f.readlines()
 
-    def render_logs_content(self, result: BaseResult, shift: int) -> Iterator[str]:
+    def render_logs_content(self, result: BaseResult) -> Iterator[str]:
         """
         Render log info and content of result logs.
         """
 
-        yield from self._indent(shift, ['logs (with content):'])
+        if not result.log:
+            return
+
+        yield 'logs (with content):'
 
         for log in result.log:
-            yield from self._indent(shift + 1, self.render_log_info(self.basepath / log))
+            yield from self._indent(1, self.render_log_info(self.basepath / log))
 
             if log.name == TEST_OUTPUT_FILENAME:
-                yield from self._indent(shift + 2, self.render_log_content(self.basepath / log))
+                yield from self._indent(2, self.render_log_content(self.basepath / log))
 
-    def render_check_result(self, result: CheckResult, shift: int, template: str) -> Iterator[str]:
+    def render_check_result(self, result: CheckResult, template: str) -> Iterator[str]:
         """
         Render a single test check result.
         """
@@ -196,17 +190,15 @@ class ResultRenderer:
             **self.variables,
         )
 
-        yield from self._indent(shift + 1, self.render_notes(result))
+        yield from self._indent(1, self.render_notes(result))
 
-    def render_check_results(
-        self, results: Iterable[CheckResult], shift: int, template: str
-    ) -> Iterator[str]:
+    def render_check_results(self, results: Iterable[CheckResult], template: str) -> Iterator[str]:
         """
         Render test check results.
         """
 
         for result in results:
-            yield from self.render_check_result(result, shift, template)
+            yield from self.render_check_result(result, template)
 
     def render_subresult(self, result: SubResult) -> Iterator[str]:
         """
@@ -222,22 +214,21 @@ class ResultRenderer:
             RESULT=result,
             OUTCOME=outcome,
             OUTCOME_COLOR=RESULT_OUTCOME_COLORS[result.result],
-            INDENT=INDENT * ' ',
             **self.variables,
         )
 
-        yield from self._indent(SUBRESULT_SHIFT + 1, self.render_notes(result))
+        yield from self._indent(1, self.render_notes(result))
 
         # With verbosity increased to `-vvv` or more, display content of the main test log
         if self.verbosity > 2:
-            yield from self.render_logs_content(result, SUBRESULT_SHIFT + 1)
+            yield from self._indent(1, self.render_logs_content(result))
 
         # With verbosity increased to `-vv`, display the list of logs
         elif self.verbosity > 1:
-            yield from self.render_logs_info(result, SUBRESULT_SHIFT + 1)
+            yield from self._indent(1, self.render_logs_info(result))
 
-        yield from self.render_check_results(
-            result.check, SUBRESULT_CHECK_SHIFT, self.subresult_check_header_template
+        yield from self._indent(
+            1, self.render_check_results(result.check, self.subresult_check_header_template)
         )
 
     def render_subresults(self, results: Iterable[SubResult]) -> Iterator[str]:
@@ -265,20 +256,21 @@ class ResultRenderer:
             **self.variables,
         )
 
-        yield from self._indent(RESULT_SHIFT + 1, self.render_notes(result))
+        yield from self._indent(1, self.render_notes(result))
 
         # With verbosity increased to `-vvv` or more, display content of the main test log
         if self.verbosity > 2:
-            yield from self.render_logs_content(result, RESULT_SHIFT + 1)
+            yield from self._indent(1, self.render_logs_content(result))
 
         # With verbosity increased to `-vv`, display the list of logs
         elif self.verbosity > 1:
-            yield from self.render_logs_info(result, RESULT_SHIFT + 1)
+            yield from self._indent(1, self.render_logs_info(result))
 
-        yield from self.render_check_results(
-            result.check, RESULT_CHECK_SHIFT, self.result_check_header_template
+        yield from self._indent(
+            1, self.render_check_results(result.check, self.result_check_header_template)
         )
-        yield from self.render_subresults(result.subresult)
+
+        yield from self._indent(1, self.render_subresults(result.subresult))
 
     def render_results(self, results: Iterable[Result]) -> Iterator[str]:
         """

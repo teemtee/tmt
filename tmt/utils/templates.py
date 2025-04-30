@@ -17,7 +17,6 @@ from typing import (
     cast,
 )
 
-import click
 import fmf
 import fmf.utils
 import jinja2
@@ -335,16 +334,8 @@ def _template_filter_shell_quote(  # type: ignore[reportUnusedFunction,unused-ig
 def _template_filter_style(  # type: ignore[reportUnusedFunction,unused-ignore]
     s: str,
     fg: Optional[str] = None,
-    bg: Optional[str] = None,
     bold: Optional[bool] = None,
-    dim: Optional[bool] = None,
     underline: Optional[bool] = None,
-    overline: Optional[bool] = None,
-    italic: Optional[bool] = None,
-    blink: Optional[bool] = None,
-    reverse: Optional[bool] = None,
-    strikethrough: Optional[bool] = None,
-    reset: bool = True,
 ) -> str:
     """
     Evaluate terminal-style colorization tags supported by Click.
@@ -352,10 +343,9 @@ def _template_filter_style(  # type: ignore[reportUnusedFunction,unused-ignore]
     Implemented by passing all arguments to :py:func:`click.style`.
     """
 
-    kwargs = locals().copy()
-    kwargs.pop('s')
+    from tmt.utils.themes import style
 
-    return click.style(s, **kwargs)
+    return style(s, fg=fg, bold=bold, underline=underline)
 
 
 def _template_filter_guest_full_name(  # type: ignore[reportUnusedFunction,unused-ignore]
@@ -397,7 +387,7 @@ def _template_filter_format_duration(  # type: ignore[reportUnusedFunction,unuse
 
     # If test duration information is missing, print 8 spaces to keep indentation
 
-    return result.duration if result.duration else 6 * ' '
+    return result.duration if result.duration else '..:..:..'
 
 
 TEMPLATE_FILTERS: dict[str, Callable[..., Any]] = {
