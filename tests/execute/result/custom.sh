@@ -20,13 +20,14 @@ rlJournalStart
         rlAssertGrep "00:00:00 skip /test/custom-results/test/skipped" $rlRun_LOG
         # The duration of the main result is replaced with the duration measured by tmt for the whole test.
         rlAssertGrep "00:00:00 pass /test/custom-results (on default-0) \[1/1\]" $rlRun_LOG
-        rlAssertGrep "00:55:44 pass /test/custom-results/without-leading-slash.*name should start with '/'" $rlRun_LOG
+        rlAssertGrep "00:55:44 pass /test/custom-results/without-leading-slash" $rlRun_LOG
+        rlAssertGrep "Note: custom test result name should start with '/'" $rlRun_LOG
         rlAssertGrep "total: 3 tests passed, 1 test failed and 1 test skipped" $rlRun_LOG
 
-        rlAssertExists "$(sed -n 's/ *pass_log: \(.\+\)/\1/p' $rlRun_LOG)"
-        rlAssertExists "$(sed -n 's/ *fail_log: \(.\+\)/\1/p' $rlRun_LOG)"
-        rlAssertExists "$(sed -n 's/ *another_log: \(.\+\)/\1/p' $rlRun_LOG)"
-        rlAssertExists "$(sed -n 's/ *slash_log: \(.\+\)/\1/p' $rlRun_LOG)"
+        rlAssertExists "$(sed -n 's/ *pass_log (\(.\+\))/\1/p' $rlRun_LOG)"
+        rlAssertExists "$(sed -n 's/ *fail_log (\(.\+\))/\1/p' $rlRun_LOG)"
+        rlAssertExists "$(sed -n 's/ *another_log (\(.\+\))/\1/p' $rlRun_LOG)"
+        rlAssertExists "$(sed -n 's/ *slash_log (\(.\+\))/\1/p' $rlRun_LOG)"
 
         rlRun -s "yq -er '.[] | \"\\(.name) \\(.\"serial-number\") \\(.result) \\(.guest.name)\"' $run/default/plan/execute/results.yaml"
         rlAssertGrep "/test/custom-results/test/passing 1 pass default-0" $rlRun_LOG
@@ -44,9 +45,9 @@ rlJournalStart
         rlAssertGrep "00:00:00 pass /test/custom-json-results .* \[1/1\]" $rlRun_LOG
         rlAssertGrep "total: 2 tests passed and 1 test failed" $rlRun_LOG
 
-        rlAssertExists "$(sed -n 's/ *pass_log: \(.\+\)/\1/p' $rlRun_LOG)"
-        rlAssertExists "$(sed -n 's/ *fail_log: \(.\+\)/\1/p' $rlRun_LOG)"
-        rlAssertExists "$(sed -n 's/ *another_log: \(.\+\)/\1/p' $rlRun_LOG)"
+        rlAssertExists "$(sed -n 's/ *pass_log (\(.\+\))/\1/p' $rlRun_LOG)"
+        rlAssertExists "$(sed -n 's/ *fail_log (\(.\+\))/\1/p' $rlRun_LOG)"
+        rlAssertExists "$(sed -n 's/ *another_log (\(.\+\))/\1/p' $rlRun_LOG)"
     rlPhaseEnd
 
     testName="/test/missing-custom-results"

@@ -1,5 +1,5 @@
 /dmesg:
-    test: echo "some text"
+    test: /bin/true
     check: dmesg
 
     /harmless:
