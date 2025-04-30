@@ -376,16 +376,16 @@ def _template_filter_format_duration(  # type: ignore[reportUnusedFunction,unuse
     """
     Render result duration in the ``hh:mm:ss`` format.
 
+    If the duration is not defined, return a placeholder marker instead.
+
     .. code-block:: jinja
 
-        # {"duration": None} -> '    '
+        # {"duration": None} -> '..:..:..'
         {{ {"duration": None} | format_duration }}
 
         # {"duration": "12:34:56"} -> '12:34:56'
         {{ {"duration": "12:34:56"} | format_duration }}
     """
-
-    # If test duration information is missing, print 8 spaces to keep indentation
 
     return result.duration if result.duration else '..:..:..'
 
