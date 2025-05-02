@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# Minimal dependencies needed to run Makefile
+
+sudo dnf install -y make hatch
