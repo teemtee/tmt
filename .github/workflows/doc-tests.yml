@@ -42,4 +42,4 @@ jobs:
         run: hatch run docs:html -W
 
       - name: Run sphinx linkcheck
-        run: hatch run docs:linkcheck
+        run: hatch run docs:linkcheck -- -D linkcheck_ignore="https://stackoverflow.com/.*"
