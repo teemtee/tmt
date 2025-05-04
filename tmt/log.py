@@ -786,13 +786,16 @@ class Logger:
 
     def print(
         self,
-        text: str,
+        text: Optional[str] = None,
         color: 'tmt.utils.themes.Style' = None,
         file: Optional[TextIO] = None,
+        nl: bool = True,
     ) -> None:
+        text = text or ''
         file = file or sys.stdout
+        end = '\n' if nl else ''
 
-        print(self.print_format(text, color=color), file=file)
+        print(self.print_format(text, color=color), file=file, end=end)
 
     def info(
         self,
