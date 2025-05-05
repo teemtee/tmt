@@ -57,6 +57,7 @@ from tmt.steps import Action, ActionTask, PhaseQueue
 from tmt.utils import (
     Command,
     GeneralError,
+    OnProcessEndCallback,
     OnProcessStartCallback,
     Path,
     ProvisionError,
@@ -1583,6 +1584,7 @@ class Guest(tmt.utils.Common):
         log: Optional[tmt.log.LoggingFunction] = None,
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
+        on_process_end: Optional[OnProcessEndCallback] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         pass
@@ -1600,6 +1602,7 @@ class Guest(tmt.utils.Common):
         log: Optional[tmt.log.LoggingFunction] = None,
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
+        on_process_end: Optional[OnProcessEndCallback] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         pass
@@ -1616,6 +1619,7 @@ class Guest(tmt.utils.Common):
         log: Optional[tmt.log.LoggingFunction] = None,
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
+        on_process_end: Optional[OnProcessEndCallback] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
@@ -2345,6 +2349,7 @@ class GuestSsh(Guest):
         log: Optional[tmt.log.LoggingFunction] = None,
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
+        on_process_end: Optional[OnProcessEndCallback] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
@@ -2405,6 +2410,7 @@ class GuestSsh(Guest):
             cwd=cwd,
             interactive=interactive,
             on_process_start=on_process_start,
+            on_process_end=on_process_end,
             **kwargs,
         )
 
