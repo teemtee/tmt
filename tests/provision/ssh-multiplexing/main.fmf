@@ -3,3 +3,6 @@ tag+:
   - provision-only
   - provision-connect
   - provision-virtual
+
+require+:
+  - procps-ng
