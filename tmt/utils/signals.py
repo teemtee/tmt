@@ -28,14 +28,18 @@ delivered and needs handling:
 """
 
 import contextlib
+import itertools
 import signal
 import textwrap
 import threading
 from types import FrameType
-from typing import Any, NoReturn, Optional
+from typing import Any, Callable, NoReturn, Optional
 
 import tmt.log
 import tmt.utils
+from tmt._compat.typing import ParamSpec
+
+P = ParamSpec('P')
 
 #: All changes to :py:data:`_INTERRUPT_MASKED` and
 #: :py:data:`_INTERRUPT_PENDING` must be performed while holding this
@@ -57,6 +61,51 @@ class Interrupted(tmt.utils.GeneralError):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__('tmt was interrupted', *args, **kwargs)
+
+
+OnInterruptCallback = Callable[..., None]
+
+#: Callables to call when tmt is interrupted. The key is a "token",
+#: produced by :ref:`_ON_INTERRUPT_CALLBACK_TOKENS` when registering
+#: the callback.
+_ON_INTERRUPT_CALLBACKS: dict[int, tuple[OnInterruptCallback, Any, Any]] = {}
+
+#: Generator of unique tokens for callback registration.
+_ON_INTERRUPT_CALLBACK_TOKENS = itertools.count()
+
+#: Safeguards access to callback registry.
+_ON_INTERRUPT_CALLBACKS_LOCK = threading.Lock()
+
+
+def add_callback(fn: Callable[P, None], *args: P.args, **kwargs: P.kwargs) -> int:
+    """
+    Register a callback to be executed when tmt is interrupted.
+
+    :param fn: callable to execute:
+    :param args: position arguments to pass to ``fn``.
+    :param kwargs: keyword arguments to pass to ``fn``.
+    :returns: unique token to use when unregistering the callback via
+        :func:`remove_callback`.
+    """
+
+    with _ON_INTERRUPT_CALLBACKS_LOCK:
+        token = next(_ON_INTERRUPT_CALLBACK_TOKENS)
+
+        _ON_INTERRUPT_CALLBACKS[token] = (fn, args, kwargs)
+
+    return token
+
+
+def remove_callback(token: int) -> None:
+    """
+    Unregister a on-interrupt callback.
+
+    :param token: identifies the callback registered by
+        :py:func:`add_callback`.
+    """
+
+    with _ON_INTERRUPT_CALLBACKS_LOCK:
+        _ON_INTERRUPT_CALLBACKS.pop(token, None)
 
 
 def _quit_tmt(logger: tmt.log.Logger, repeated: bool = False) -> NoReturn:
@@ -91,6 +140,14 @@ def _quit_tmt(logger: tmt.log.Logger, repeated: bool = False) -> NoReturn:
                 """
             ).strip()
         )
+
+        with _ON_INTERRUPT_CALLBACKS_LOCK:
+            while _ON_INTERRUPT_CALLBACKS:
+                _, (fn, args, kwargs) = _ON_INTERRUPT_CALLBACKS.popitem()
+
+                logger.debug(f'Invoking on-interrupt callback {fn.__name__}(*{args}, **{kwargs})')
+
+                fn(*args, **kwargs)
 
     raise KeyboardInterrupt
 
