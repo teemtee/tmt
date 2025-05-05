@@ -32,11 +32,11 @@ rlJournalStart
         rlPhaseStartTest "Make sure SSH multiplexing does not block reuse of guests (#3520)"
             rlRun "tmt -vv run -i $run --scratch provision -h $PROVISION_HOW"
 
-            rlRun "ps xa | grep ssh"
+            rlRun "pgrep --full 'ssh .* -i $run/plan/provision/default-0/id_ecdsa'" 1 "Check whether the SSH master process is still running"
 
             rlRun -s "$tmpdir/test.exp"
-            rlAssertGrep "login: Starting interactive shell" $rlRun_LOG
-            rlAssertGrep "login: Interactive shell finished" $rlRun_LOG
+            rlAssertGrep "Starting interactive shell" $rlRun_LOG
+            rlAssertGrep "Interactive shell finished" $rlRun_LOG
 
             rlRun "tmt -vv run -i $run finish"
         rlPhaseEnd
