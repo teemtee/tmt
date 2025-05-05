@@ -150,8 +150,9 @@ class ScriptTemplate(Script):
         return self._rendered_script_path
 
     def __exit__(self, *args: object) -> None:
-        if self._rendered_script_path and self._rendered_script_path.exists():
-            self._rendered_script_path.unlink()
+        if self._rendered_script_path:
+            with suppress(FileNotFoundError):
+                self._rendered_script_path.unlink()
 
 
 def effective_scripts_dest_dir(default: Path = DEFAULT_SCRIPTS_DEST_DIR) -> Path:
@@ -871,6 +872,9 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
                     for alias in script.aliases:
                         alias_path_local = alias_dir_local / alias
                         try:
+                            # Remove existing file or symlink if present
+                            if alias_path_local.exists() or alias_path_local.is_symlink():
+                                alias_path_local.unlink()
                             # Create relative symlink using pathlib
                             alias_path_local.symlink_to(target_relative_to_alias_dir)
                             self.debug(
@@ -883,15 +887,14 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             # Push the entire staging directory content to the guest's root
             # Use options to preserve structure, links, and permissions.
             # -a implies -rlptgoD (archive mode)
-            # --chmod=... ensures execute permissions are set correctly during transfer
-            # Trailing slash on source ensures contents are copied *into* destination
-            self.debug(f"Pushing staged scripts from '{staging_root}/' to guest '/'")
+            self.debug(f"Pushing staged scripts from '{staging_root}' to guest")
             guest.push(
-                source=staging_root,  # Push the whole directory
+                source=staging_root,
                 destination=Path('/'),
                 options=[
                     "-a",  # Archive mode (-rlptgoD), includes preserving permissions
                     "--links",  # Copy symlinks as symlinks
+                    "--chmod=755",  # Just in case
                 ],
                 superuser=guest.facts.is_superuser is not True,
             )
