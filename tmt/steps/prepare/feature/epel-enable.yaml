@@ -64,6 +64,9 @@
 
         - name: Enable the crb repository
           ansible.builtin.command: crb enable
+          environment:
+            # Skips subscription-manager usage, which is generally not configured in test environment
+            FORCE_DNF: "1"
           register: output
           changed_when: output.rc != 0
 
@@ -125,5 +128,8 @@
 
         - name: Enable the crb repository
           ansible.builtin.command: crb enable
+          environment:
+            # Skips subscription-manager usage, which is generally not configured in test environment
+            FORCE_DNF: "1"
           register: output
           changed_when: output.rc != 0
