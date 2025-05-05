@@ -3,7 +3,7 @@
                     tmt - Test Management Tool
 ==================================================================
 
-|docs| |matrix| |fedora-pkg| |copr-build| |pypi-version| |python-versions| |license|
+|docs| |matrix| |fedora-pkg| |copr-build| |pypi-version| |license|
 
 The ``tmt`` tool provides a user-friendly way to work with tests.
 You can comfortably create new tests, safely and easily run tests
@@ -43,10 +43,6 @@ See the https://tmt.readthedocs.io web for detailed documentation.
 .. |pypi-version| image:: https://img.shields.io/badge/PyPI-3775A9?logo=pypi&logoColor=fff
     :target: https://pypi.org/project/tmt/
     :alt: PyPI
-
-.. |python-versions| image:: https://img.shields.io/pypi/pyversions/tmt
-    :target: https://pypi.org/project/tmt/
-    :alt: Python versions
 
 .. |license| image:: https://img.shields.io/badge/license-MIT-blue.svg
     :target: https://opensource.org/licenses/MIT
