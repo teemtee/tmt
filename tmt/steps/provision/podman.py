@@ -491,15 +491,8 @@ class GuestContainer(tmt.Guest):
 
             for src in sources:
                 # Prepare source specification for `podman cp`
-                if container_name:
-                    # If in toolbox, source path is relative to the toolbox container
-                    source_spec = f"{container_name}:{src}"
-                else:
-                    # Otherwise, source path is on the host
-                    source_spec = str(src)
-                    # Append '/.' to source path if it's a directory to copy its content
-                    if src.is_dir():
-                        source_spec += '/.'
+                # If in toolbox, source path is relative to the toolbox container
+                source_spec = f"{container_name}:{src}" if container_name else str(src)
 
                 dest_spec = f"{self.container}:{destination}"
                 try:
