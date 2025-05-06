@@ -47,7 +47,7 @@ rlJournalStart
         fi
 
         rlRun "package_cache=\$(mktemp -d)" 0 "Create cache directory for downloaded packages"
-        rlRun "run=\$(mktemp -d)" 0 "Create run directory"
+        rlRun "run=\$(mktemp -d -p /var/tmp)" 0 "Create run directory"
         rlRun "pushd data"
 
         rlRun "export TMT_BOOT_TIMEOUT=300"
@@ -96,7 +96,7 @@ rlJournalStart
                 rlRun "distro=fedora-coreos"
 
                 if is_ostree "$image"; then
-                    rlRun "package_manager=rpm-ostree"
+                    rlRun "package_manager=bootc"
 
                 elif [ "$PROVISION_HOW" = "virtual" ]; then
                     rlRun "package_manager=dnf"
