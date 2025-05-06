@@ -3,7 +3,7 @@
 
 rlJournalStart
     rlPhaseStartSetup
-        # bootc images do not persist /tmp on reboot, use /var/tmp instead
+        # use `/var/tmp` to persist the run dir during reboots, because `bootc` package manager used
         rlRun "run=\$(mktemp -d -p /var/tmp)" 0 "Create run directory"
         rlRun "pushd data"
     rlPhaseEnd
