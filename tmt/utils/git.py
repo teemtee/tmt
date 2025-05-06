@@ -159,7 +159,6 @@ def assert_git_url(plan_name: Optional[str] = None) -> None:
         )
 
 
-
 # Avoid multiple subprocess calls for the same url
 @functools.cache
 def check_git_url(url: str, logger: tmt.log.Logger) -> str:
