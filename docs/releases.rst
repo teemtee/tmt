@@ -4,6 +4,18 @@
     Releases
 ======================
 
+
+tmt-1.48.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When the login step was called in a separate command after the guest
+has been provisioned, the connection seemed to be stuck. This has been
+caused by the SSH master process not being terminated together with tmt,
+new tmt command would then spawn its own and conflict with the forgotten
+one. tmt no longer leaves the SSH master process running, preventing the
+issue.
+
+
 tmt-1.47.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
