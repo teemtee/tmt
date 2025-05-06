@@ -198,12 +198,10 @@ class Bootc(PackageManager[BootcEngine]):
                 # https://github.com/bootc-dev/bootc/issues/1259 for more information.
                 self.guest.execute(
                     ShellScript(
-                        f"""
-                        {sudo} ( \
-                            ( podman pull {base_image} || podman pull containers-storage:{base_image} ) \
-                            || bootc image copy-to-storage --target {base_image} \
-                        )
-                        """  # noqa: E501
+                        f'{sudo} {tmt.utils.DEFAULT_SHELL} -c "('
+                        f'  ( podman pull {base_image} || podman pull containers-storage:{base_image} )'  # noqa: E501
+                        f'  || bootc image copy-to-storage --target {base_image}'
+                        ')"'
                     )
                 )
                 self.guest.execute(
@@ -214,11 +212,7 @@ class Bootc(PackageManager[BootcEngine]):
                 # Build the container image
                 self.info("package", "building container image with dependencies", "green")
                 self.guest.execute(
-                    ShellScript(
-                        f"""
-                        {sudo} podman build -t {image_tag} -f {containerfile_path} .
-                        """
-                    )
+                    ShellScript(f'{sudo} podman build -t {image_tag} -f {containerfile_path} .')
                 )
 
                 # Switch to the new image for next boot
