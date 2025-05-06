@@ -1244,24 +1244,37 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         if self.job_id is None:
             return False
 
+        # Ensure mrack and its dependencies are loaded before trying to use them,
+        # especially mrack.errors in the except block and mrack in the assert below.
+        # self.api property getter also calls this, but we need it earlier here.
+        assert self.parent is not None
+        import_and_load_mrack_deps(self.parent.workdir, self.parent.name, self._logger)
+
         assert mrack is not None
 
         try:
             response = self.api.inspect()
 
             if response["status"] == "Aborted":
+                self._logger.debug(f"Guest {self.name} job {self.job_id} status is 'Aborted'.")
                 return False
 
             current = cast(GuestInspectType, response)
             state = current["status"]
             if state in {"Error, Aborted", "Cancelled"}:
+                self._logger.debug(f"Guest {self.name} job {self.job_id} status is '{state}'.")
                 return False
 
             if state == 'Reserved':
                 return True
+            # Any other state means not ready yet.
+            self._logger.debug(
+                f"Guest {self.name} job {self.job_id} status is '{state}', not 'Reserved' yet."
+            )
             return False
 
-        except mrack.errors.MrackError:
+        except mrack.errors.MrackError as e:
+            self._logger.warning(f"Guest {self.name} job {self.job_id} inspection failed: {e}")
             return False
 
     def _create(self, tmt_name: str) -> None:
