@@ -907,6 +907,16 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
         self._raw_data = raw_data
 
+    def suspend(self) -> None:
+        """
+        Suspend the step.
+
+        Perform any actions necessary before quitting the step and tmt.
+        The step may be revisited by future tmt invocations.
+        """
+
+        self.debug(f"Suspending step '{self.name}'.")
+
     def _apply_cli_invocations(self, raw_data: list[_RawStepData]) -> list[_RawStepData]:
         # Override step data with command line options
         #
