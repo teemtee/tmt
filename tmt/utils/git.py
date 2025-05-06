@@ -157,6 +157,25 @@ def assert_git_url(plan_name: Optional[str] = None) -> None:
             f" git repo."
         )
 
+def assert_git_url(plan_name: Optional[str] = None) -> None:
+    """
+    Assert that we're in a Git repository for fmf-id purposes.
+    """
+    try:
+        subprocess.run(
+            'git rev-parse --show-toplevel'.split(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            check=True,
+        )
+    except subprocess.CalledProcessError:
+        raise tmt.utils.DiscoverError(
+            f"`tmt run discover --fmf-id` without `url` option in "
+            f"plan `{plan_name}` can be used only within"
+            f" git repo."
+        )
+
+
 # Avoid multiple subprocess calls for the same url
 @functools.cache
 def check_git_url(url: str, logger: tmt.log.Logger) -> str:
