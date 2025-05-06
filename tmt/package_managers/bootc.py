@@ -29,14 +29,20 @@ class BootcEngine(PackageManagerEngine):
         """Initialize containerfile directives"""
         self.containerfile_directives = self._get_base_containerfile_directives()
 
+    def _prepare_sudo(self) -> Command:
+        """
+        Prepare sudo if needed.
+        """
+        if self.guest.facts.is_superuser is False:
+            return Command('sudo')
+
+        return Command('')
+
     def prepare_command(self) -> tuple[Command, Command]:
         """
         Prepare installation command for bootc
         """
-        command = Command()
-
-        if self.guest.facts.is_superuser is False:
-            command += Command('sudo')
+        command = self._prepare_sudo()
 
         command += Command('bootc')
         return (command, Command(''))
@@ -197,9 +203,10 @@ class Bootc(PackageManager[BootcEngine]):
                 # all the container image layers, see
                 # https://github.com/bootc-dev/bootc/issues/1259 for more information.
                 self.guest.execute(
-                    ShellScript(
+                    self.engine._prepare_sudo()
+                    + ShellScript(
                         f'( podman pull {base_image} || podman pull containers-storage:{base_image} ) || bootc image copy-to-storage --target {base_image}'  # noqa: E501
-                    )
+                    ).to_shell_command()
                 )
                 self.guest.execute(
                     ShellScript(f'cat <<EOF > {containerfile_path!s} \n{containerfile} \nEOF')
@@ -209,7 +216,10 @@ class Bootc(PackageManager[BootcEngine]):
                 # Build the container image
                 self.info("package", "building container image with dependencies", "green")
                 self.guest.execute(
-                    Command('podman', 'build', '-t', image_tag, '-f', str(containerfile_path), '.')
+                    self.engine._prepare_sudo()
+                    + Command(
+                        'podman', 'build', '-t', image_tag, '-f', str(containerfile_path), '.'
+                    )
                 )
 
                 # Switch to the new image for next boot

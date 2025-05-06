@@ -3,7 +3,8 @@
 
 rlJournalStart
     rlPhaseStartSetup
-        rlRun "run=\$(mktemp -d)" 0 "Create run directory"
+        # bootc images do not persist /tmp on reboot, use /var/tmp instead
+        rlRun "run=\$(mktemp -d -p /var/tmp)" 0 "Create run directory"
         rlRun "pushd data"
     rlPhaseEnd
 
