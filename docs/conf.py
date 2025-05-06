@@ -313,6 +313,8 @@ linkcheck_ignore = [
     r'https://github.com/packit/packit/blob/main/packit/utils/logging.py#L10',
     # The site repeatedly refuses to serve pages to github
     r'https://www.cpu-world.com.*',
+    # Stack Overflow uses captcha and these links are not essential
+    r'https://stackoverflow.com.*',
 ]
 
 
