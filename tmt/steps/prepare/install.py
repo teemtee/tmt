@@ -200,6 +200,8 @@ class InstallBase(tmt.utils.Common):
             # Wrapping them with try/except gives us a chance to attach the original exception
             # to whatever the code may raise, and therefore preserve the information attached
             # to the original exception.
+            self.warn('Installation failed, trying again after metadata refresh.')
+
             try:
                 # Refresh cache in case of recent but not updated change do repodata
                 self.guest.package_manager.refresh_metadata()

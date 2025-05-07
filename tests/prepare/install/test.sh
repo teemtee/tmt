@@ -270,7 +270,11 @@ rlJournalStart
                 rlAssertGrep "out: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ostree "$image"; then
-                rlAssertGrep "err: error: Packages not found: tree-but-spelled-wrong" $rlRun_LOG
+                if [ "$PROVISION_HOW" = "virtual" ]; then
+                    rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                else
+                    rlAssertGrep "err: error: Packages not found: tree-but-spelled-wrong" $rlRun_LOG
+                fi
 
             elif is_fedora_coreos "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
