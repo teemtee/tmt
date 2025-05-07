@@ -448,10 +448,10 @@ TMT_GIT_CREDENTIALS_URL_<suffix>, TMT_GIT_CREDENTIALS_VALUE_<suffix>
 
     Example usage:
 
-    `GitLab`__ credentials need to contain nonempty username followed by colon and token value::
+    `GitLab`__ credentials need to contain ``outh2`` as the username followed by colon and personal access token value::
 
         TMT_GIT_CREDENTIALS_URL_lab='gitlab.com/mysecretproject'
-        TMT_GIT_CREDENTIALS_VALUE_lab='foo:secrettoken'
+        TMT_GIT_CREDENTIALS_VALUE_lab='oauth2:accesstoken'
 
     `GitHub`__ credentials contain just the token value::
 
@@ -460,6 +460,7 @@ TMT_GIT_CREDENTIALS_URL_<suffix>, TMT_GIT_CREDENTIALS_VALUE_<suffix>
 
     .. versionadded:: 1.26
 
+__
 __ https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#clone-repository-using-personal-access-token
 __ https://github.blog/2012-09-21-easier-builds-and-deployments-using-git-over-https-and-oauth/
 
