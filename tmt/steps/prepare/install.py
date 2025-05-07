@@ -26,7 +26,7 @@ from tmt.package_managers import (
 from tmt.package_managers.bootc import Bootc, BootcEngine
 from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
-from tmt.utils import Command, Path, ShellScript
+from tmt.utils import Command, Path, ShellScript, effective_workdir_root
 
 COPR_URL = 'https://copr.fedorainfracloud.org/coprs'
 
@@ -624,9 +624,11 @@ class InstallBootc(InstallBase):
         ]
 
         self._engine.containerfile_directives.append(f'RUN mkdir -p {self.package_directory}')
-        self._engine.containerfile_directives.append(
-            f'COPY {" ".join(str(file) for file in filelist)} {self.package_directory}'
-        )
+
+        workdir = effective_workdir_root()
+        files = " ".join(str(file.relative_to(workdir)) for file in filelist)
+
+        self._engine.containerfile_directives.append(f'COPY {files} {self.package_directory}')
 
         self._engine.install(
             *filelist,
