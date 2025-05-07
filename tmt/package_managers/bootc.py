@@ -10,7 +10,6 @@ from tmt.package_managers import (
     Options,
     PackageManager,
     PackageManagerEngine,
-    dnf,
     provides_package_manager,
 )
 from tmt.utils import Command, CommandOutput, GeneralError, Path, RunError, ShellScript
@@ -21,7 +20,7 @@ class BootcEngine(PackageManagerEngine):
         """Initialize bootc engine for package management"""
         super().__init__(*args, **kwargs)
 
-        self.aux_engine = dnf.DnfEngine(*args, **kwargs)
+        self.aux_engine = self.guest.bootc_builder._engine_class(*args, **kwargs)
 
         self.initialize_containerfile_directives()
 
