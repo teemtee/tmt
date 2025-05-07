@@ -588,8 +588,14 @@ class InstallApt(InstallBase):
 class InstallBootc(InstallBase):
     """Install packages using bootc container image mode"""
 
+    @property
+    def _engine(self) -> BootcEngine:
+        assert isinstance(self.guest.package_manager.engine, BootcEngine)
+
+        return self.guest.package_manager.engine
+
     def install_from_repository(self) -> None:
-        self.guest.package_manager.engine.install(
+        self._engine.install(
             *self.list_installables("package", *self.packages),
             options=Options(
                 excluded_packages=self.exclude,
@@ -598,7 +604,7 @@ class InstallBootc(InstallBase):
         )
 
     def install_from_url(self) -> None:
-        self.guest.package_manager.engine.install(
+        self._engine.install(
             *self.list_installables("remote package", *self.remote_packages),
             options=Options(
                 excluded_packages=self.exclude,
@@ -607,19 +613,22 @@ class InstallBootc(InstallBase):
         )
 
     def install_local(self) -> None:
+        # Make sure the containerfile session has been initialized. The
+        # engine would do it for us, but we need to prepend some
+        # directives first before using the engine.
+        self._engine.open_containerfile_directives()
+
         # Filelist for packages on the guest
         filelist = [
             PackagePath(self.package_directory / filename.name) for filename in self.local_packages
         ]
 
-        cast(BootcEngine, self.guest.package_manager.engine).containerfile_directives.append(
-            f'RUN mkdir -p {self.package_directory}'
-        )
-        cast(BootcEngine, self.guest.package_manager.engine).containerfile_directives.append(
+        self._engine.containerfile_directives.append(f'RUN mkdir -p {self.package_directory}')
+        self._engine.containerfile_directives.append(
             f'COPY {" ".join(str(file) for file in filelist)} {self.package_directory}'
         )
 
-        self.guest.package_manager.engine.install(
+        self._engine.install(
             *filelist,
             options=Options(
                 excluded_packages=self.exclude,
@@ -628,7 +637,7 @@ class InstallBootc(InstallBase):
             ),
         )
 
-        self.guest.package_manager.engine.reinstall(
+        self._engine.reinstall(
             *filelist,
             options=Options(
                 excluded_packages=self.exclude,
@@ -640,7 +649,7 @@ class InstallBootc(InstallBase):
     def install_debuginfo(self) -> None:
         packages = self.list_installables("debuginfo", *self.debuginfo_packages)
 
-        self.guest.package_manager.engine.install_debuginfo(
+        self._engine.install_debuginfo(
             *packages,
             options=Options(
                 excluded_packages=self.exclude,
@@ -651,7 +660,7 @@ class InstallBootc(InstallBase):
         # Check the packages are installed on the guest because 'debuginfo-install'
         # returns 0 even though it didn't manage to install the required packages
         if not self.skip_missing:
-            self.guest.package_manager.engine.check_presence(
+            self._engine.check_presence(
                 *[Package(f'{package}-debuginfo') for package in self.debuginfo_packages]
             )
 

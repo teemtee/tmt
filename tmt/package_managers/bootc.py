@@ -16,17 +16,30 @@ from tmt.utils import Command, CommandOutput, GeneralError, Path, RunError, Shel
 
 
 class BootcEngine(PackageManagerEngine):
+    containerfile_directives: list[str]
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize bootc engine for package management"""
         super().__init__(*args, **kwargs)
 
         self.aux_engine = self.guest.bootc_builder._engine_class(*args, **kwargs)
+        self.containerfile_directives = []
 
-        self.initialize_containerfile_directives()
-
-    def initialize_containerfile_directives(self) -> None:
+    def open_containerfile_directives(self) -> None:
         """Initialize containerfile directives"""
+
+        if self.containerfile_directives:
+            self.debug('Already collecting containerfile directives.')
+            return
+
+        self.debug('Starting collection of directives for new container file.')
+
         self.containerfile_directives = self._get_base_containerfile_directives()
+
+    def flush_containerfile_directives(self) -> None:
+        self.debug('Closing collection of directives for a container file.')
+
+        self.containerfile_directives = []
 
     def prepare_command(self) -> tuple[Command, Command]:
         """
@@ -80,6 +93,8 @@ class BootcEngine(PackageManagerEngine):
         return [f'FROM containers-storage:{self._get_current_bootc_image()}']
 
     def check_presence(self, *installables: Installable) -> ShellScript:
+        self.open_containerfile_directives()
+
         script = self.aux_engine.check_presence(*installables)
         self.containerfile_directives.append(f'RUN {script}')
         return script
@@ -89,6 +104,8 @@ class BootcEngine(PackageManagerEngine):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> ShellScript:
+        self.open_containerfile_directives()
+
         script = self.aux_engine.install(*installables, options=options)
         self.containerfile_directives.append(f'RUN {script}')
         return script
@@ -98,6 +115,8 @@ class BootcEngine(PackageManagerEngine):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> ShellScript:
+        self.open_containerfile_directives()
+
         script = self.aux_engine.reinstall(*installables, options=options)
         self.containerfile_directives.append(f'RUN {script}')
         return script
@@ -107,11 +126,15 @@ class BootcEngine(PackageManagerEngine):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> ShellScript:
+        self.open_containerfile_directives()
+
         script = self.aux_engine.install_debuginfo(*installables, options=options)
         self.containerfile_directives.append(f'RUN {script}')
         return script
 
     def refresh_metadata(self) -> ShellScript:
+        self.open_containerfile_directives()
+
         script = self.aux_engine.refresh_metadata()
         self.containerfile_directives.append(f'RUN {script}')
         return script
@@ -226,8 +249,8 @@ class Bootc(PackageManager[BootcEngine]):
                 self.guest.reboot()
 
             finally:
-                # Re-initialize containerfile directives
-                self.engine.initialize_containerfile_directives()
+                # Reset containerfile directives
+                self.engine.flush_containerfile_directives()
 
     def refresh_metadata(self) -> CommandOutput:
         self.engine.refresh_metadata()
