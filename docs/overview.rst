@@ -460,7 +460,6 @@ TMT_GIT_CREDENTIALS_URL_<suffix>, TMT_GIT_CREDENTIALS_VALUE_<suffix>
 
     .. versionadded:: 1.26
 
-__
 __ https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#clone-repository-using-personal-access-token
 __ https://github.blog/2012-09-21-easier-builds-and-deployments-using-git-over-https-and-oauth/
 
