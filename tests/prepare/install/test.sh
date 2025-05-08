@@ -47,7 +47,7 @@ rlJournalStart
         fi
 
         rlRun "package_cache=\$(mktemp -d)" 0 "Create cache directory for downloaded packages"
-        rlRun "run=\$(mktemp -d)" 0 "Create run directory"
+        rlRun "run=\$(mktemp -d -p /var/tmp)" 0 "Create run directory"
         rlRun "pushd data"
 
         rlRun "export TMT_BOOT_TIMEOUT=300"
@@ -96,7 +96,14 @@ rlJournalStart
                 rlRun "distro=fedora-coreos"
 
                 if is_ostree "$image"; then
-                    rlRun "package_manager=rpm-ostree"
+
+                    if [ "$PROVISION_HOW" = "virtual" ]; then
+                      rlRun "package_manager=bootc"
+
+                    else
+                      rlRun "package_manager=rpm-ostree"
+
+                    fi
 
                 elif [ "$PROVISION_HOW" = "virtual" ]; then
                     rlRun "package_manager=dnf"
@@ -225,7 +232,11 @@ rlJournalStart
                 rlAssertGrep "out: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ostree "$image"; then
-                rlAssertGrep "err: error: Packages not found: tree-but-spelled-wrong" $rlRun_LOG
+                if [ "$PROVISION_HOW" = "virtual" ]; then
+                    rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                else
+                    rlAssertGrep "err: error: Packages not found: tree-but-spelled-wrong" $rlRun_LOG
+                fi
 
             elif is_fedora_coreos "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
@@ -259,7 +270,11 @@ rlJournalStart
                 rlAssertGrep "out: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ostree "$image"; then
-                rlAssertGrep "err: error: Packages not found: tree-but-spelled-wrong" $rlRun_LOG
+                if [ "$PROVISION_HOW" = "virtual" ]; then
+                    rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                else
+                    rlAssertGrep "err: error: Packages not found: tree-but-spelled-wrong" $rlRun_LOG
+                fi
 
             elif is_fedora_coreos "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
