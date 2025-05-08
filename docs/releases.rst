@@ -8,7 +8,7 @@ tmt-1.48.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A new ``tmt about`` command has been introduced,
-initially providing information about the :ref:`tmt plugins </plugins/index>`.
+initially providing information about the :ref:`tmt plugins <plugins>`.
 
 The :ref:`HTML report plugin </plugins/report/html>` now supports a
 new ``file`` key, allowing users to specify a custom output path for
