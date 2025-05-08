@@ -4,6 +4,35 @@
     Releases
 ======================
 
+tmt-1.48.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A new ``tmt about`` command has been introduced,
+initially providing information about the :ref:`tmt plugins </plugins/index>`.
+
+The :ref:`HTML report plugin </plugins/report/html>` now supports a
+new ``file`` key, allowing users to specify a custom output path for
+the generated HTML report.
+
+When using ``and``/``or`` groups in combination with
+:ref:`hardware requirements </spec/hardware>`, ``tmt`` will now emit
+a warning to alert users about potential ambiguity in how these
+constraints are applied.
+
+For users of the :ref:`testcloud provisioner </plugins/provision/virtual.testcloud>`,
+``PermitRootLogin`` is now enabled by default for Red Hat CoreOS (RHCOS)
+guests, simplifying access.
+
+An issue with saving remote :ref:`Ansible playbooks </plugins/prepare/ansible>`
+to the correct directory during provisioning and preparation has been fixed.
+
+The internal representation of an imported plan has been improved,
+though this should be largely transparent to users.
+
+Several internal improvements and updates to development tooling and
+CI processes have been made to enhance stability and maintainability.
+
+
 tmt-1.47.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
