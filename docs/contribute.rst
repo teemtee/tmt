@@ -716,7 +716,15 @@ Regular
 
 Follow the steps below to create a new major or minor release:
 
-* Update ``overview.rst`` with new contributors since the last release
+* Update ``overview.rst`` with new contributors since the last release.
+  To identify contributors whose first ever commit to the repository occurred *after*
+  the last release tag, run the following bash command in your repository's
+  root directory:
+
+  .. code-block:: bash
+
+     LAST_TAG_REF=$(git describe --tags --abbrev=0 HEAD 2>/dev/null); if [ -z "$LAST_TAG_REF" ]; then git log HEAD --format='%aN' --no-merges | sort -u; else comm -13 <(git log --no-merges --format='%aN' "$LAST_TAG_REF" | sort -u) <(git log --no-merges --format='%aN' HEAD | sort -u); fi
+
 * Review the release notes in ``releases.rst``, update as needed
 * Add a ``Release x.y.z`` commit, empty if needed: ``git commit --allow-empty -m "Release x.y.z"``
 * Create a pull request with the commit, ensure tests pass, merge it
