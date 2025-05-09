@@ -15,6 +15,7 @@ import sys
 import tempfile
 import time
 from collections.abc import Iterable, Iterator, Sequence
+from re import Pattern
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -30,6 +31,7 @@ from typing import (
 
 import fmf
 import fmf.base
+import fmf.context
 import fmf.utils
 import jsonschema
 from click import confirm, echo
@@ -76,6 +78,7 @@ from tmt.utils import (
     Environment,
     EnvVarValue,
     FmfContext,
+    GeneralError,
     Path,
     ShellScript,
     WorkdirArgumentType,
@@ -294,6 +297,32 @@ class FmfId(
         spec = self._drop_nonexportable(spec)
 
         return cast(tmt.export._RawExportedInstance, spec)
+
+    def resolve_dynamic_ref(self, git_repository: Path, plan: 'Plan') -> None:
+        """
+        Update ``ref`` with the final value for the dynamic reference.
+
+        :py:attr:`ref` remains unchanged when it is not a
+        :ref:`dynamic reference<dynamic-ref>`.
+        """
+
+        try:
+            dynamic_ref = resolve_dynamic_ref(
+                workdir=git_repository,
+                ref=self.ref,
+                plan=plan,
+                logger=plan._logger,
+            )
+
+            if self.ref != dynamic_ref:
+                plan.debug(f"Update 'ref' to '{dynamic_ref}'.")
+
+                self.ref = dynamic_ref
+
+        except tmt.utils.FileError as error:
+            raise tmt.utils.DiscoverError(
+                f"Failed to resolve dynamic ref of '{self.ref}'."
+            ) from error
 
 
 #
@@ -1825,6 +1854,132 @@ def expand_node_data(data: T, fmf_context: FmfContext) -> T:
     return data
 
 
+class _RemotePlanReference(_RawFmfId):
+    importing: Optional[str]
+    scope: Optional[str]
+
+
+class RemotePlanReferenceImporting(enum.Enum):
+    REPLACE = 'replace'
+    BECOME_PARENT = 'become-parent'
+
+    @classmethod
+    def from_spec(cls, spec: str) -> 'RemotePlanReferenceImporting':
+        try:
+            return RemotePlanReferenceImporting(spec)
+        except ValueError:
+            raise tmt.utils.SpecificationError(f"Invalid remote plan replacement '{spec}'.")
+
+
+class RemotePlanReferenceImportScope(enum.Enum):
+    FIRST_PLAN_ONLY = 'first-plan-only'
+    SINGLE_PLAN_ONLY = 'single-plan-only'
+    ALL_PLANS = 'all-plans'
+
+    @classmethod
+    def from_spec(cls, spec: str) -> 'RemotePlanReferenceImportScope':
+        try:
+            return RemotePlanReferenceImportScope(spec)
+        except ValueError:
+            raise tmt.utils.SpecificationError(f"Invalid remote plan match scope '{spec}'.")
+
+
+@container
+class RemotePlanReference(
+    FmfId,
+    # Repeat the SpecBasedContainer, with more fitting in/out spec type.
+    SpecBasedContainer[_RemotePlanReference, _RemotePlanReference],
+):
+    VALID_KEYS: ClassVar[list[str]] = [*FmfId.VALID_KEYS, 'importing', 'scope']
+
+    importing: RemotePlanReferenceImporting = RemotePlanReferenceImporting.REPLACE
+    scope: RemotePlanReferenceImportScope = RemotePlanReferenceImportScope.FIRST_PLAN_ONLY
+
+    @functools.cached_property
+    def name_pattern(self) -> Pattern[str]:
+        assert self.name is not None
+
+        try:
+            return re.compile(self.name)
+
+        except Exception as exc:
+            raise tmt.utils.SpecificationError(
+                "Invalid regular expression used as remote plan name."
+            ) from exc
+
+    # ignore[override]: expected, we do want to return more specific
+    # type than the one declared in superclass.
+    def to_dict(self) -> _RemotePlanReference:  # type: ignore[override]
+        return cast(_RemotePlanReference, super().to_dict())
+
+    # ignore[override]: expected, we do want to return more specific
+    # type than the one declared in superclass.
+    def to_minimal_dict(self) -> _RemotePlanReference:  # type: ignore[override]
+        """
+        Convert to a mapping with unset keys omitted
+        """
+
+        return cast(_RemotePlanReference, super().to_minimal_dict())
+
+    def to_spec(self) -> _RemotePlanReference:
+        """
+        Convert to a form suitable for saving in a specification file
+        """
+
+        spec = self.to_dict()
+
+        spec['importing'] = self.importing.value
+        spec['scope'] = self.scope.value
+
+        return spec
+
+    def to_minimal_spec(self) -> _RemotePlanReference:
+        """
+        Convert to specification, skip default values
+        """
+
+        spec = self.to_minimal_dict()
+
+        spec['importing'] = self.importing.value
+        spec['scope'] = self.scope.value
+
+        return spec
+
+    # ignore[override]: expected, we do want to accept and return more
+    # specific types than those declared in superclass.
+    @classmethod
+    def from_spec(cls, raw: _RemotePlanReference) -> 'RemotePlanReference':  # type: ignore[override]
+        """
+        Convert from a specification file or from a CLI option
+        """
+
+        # TODO: with mandatory validation, this can go away.
+        ref = raw.get('ref', None)
+        if not isinstance(ref, (type(None), str)):
+            # TODO: deliver better key address
+            raise tmt.utils.NormalizationError('ref', ref, 'unset or a string')
+
+        reference = RemotePlanReference()
+
+        for key in ('url', 'ref', 'name'):
+            raw_value = raw.get(key, None)
+
+            setattr(reference, key, None if raw_value is None else str(raw_value))
+
+        for key in ('path',):
+            raw_path = cast(Optional[str], raw.get(key, None))
+            setattr(reference, key, Path(raw_path) if raw_path is not None else None)
+
+        reference.importing = RemotePlanReferenceImporting.from_spec(
+            str(raw.get('importing', RemotePlanReferenceImporting.REPLACE.value))
+        )
+        reference.scope = RemotePlanReferenceImportScope.from_spec(
+            str(raw.get('scope', RemotePlanReferenceImportScope.FIRST_PLAN_ONLY.value))
+        )
+
+        return reference
+
+
 @container(repr=False)
 class Plan(
     Core,
@@ -1855,7 +2010,9 @@ class Plan(
     _original_plan: Optional['Plan'] = field(default=None, internal=True)
     _original_plan_fmf_id: Optional[FmfId] = field(default=None, internal=True)
 
-    _imported_plan_fmf_ids: list[FmfId] = field(default_factory=list, internal=True)
+    _imported_plan_references: list[RemotePlanReference] = field(
+        default_factory=list, internal=True
+    )
     _imported_plans: list['Plan'] = field(default_factory=list, internal=True)
 
     _derived_plans: list['Plan'] = field(default_factory=list, internal=True)
@@ -1904,14 +2061,14 @@ class Plan(
         # set, incorrect default value is generated, and the field ends up being
         # set to `None`. See https://github.com/teemtee/tmt/issues/2630.
         self._applied_cli_invocations = []
-        self._imported_plan_fmf_ids = []
+        self._imported_plan_references = []
         self._imported_plans = []
         self._derived_plans = []
 
         # Check for possible remote plan reference first
         reference = self.node.get(['plan', 'import'])
         if reference is not None:
-            self._imported_plan_fmf_ids = [FmfId.from_spec(reference)]
+            self._imported_plan_references = [RemotePlanReference.from_spec(reference)]
 
         # Save the run, prepare worktree and plan data directory
         self.my_run = run
@@ -2350,23 +2507,23 @@ class Plan(
             self._show_additional_keys()
 
         # Show fmf id of the remote plan in verbose mode
-        if (self._original_plan or self._imported_plan_fmf_ids) and self.verbosity_level:
+        if (self._original_plan or self._imported_plan_references) and self.verbosity_level:
             # Pick fmf id from the original plan by default, use the
             # current plan in shallow mode when no plans are fetched.
 
-            def _show_imported(fmf_id: FmfId) -> None:
+            def _show_imported(reference: RemotePlanReference) -> None:
                 echo(tmt.utils.format('import', '', key_color='blue'))
 
-                for key, value in fmf_id.items():
+                for key, value in reference.items():
                     echo(tmt.utils.format(key, value, key_color='green'))
 
             if self._original_plan is not None:
-                for fmf_id in self._original_plan._imported_plan_fmf_ids:
-                    _show_imported(fmf_id)
+                for reference in self._original_plan._imported_plan_references:
+                    _show_imported(reference)
 
             else:
-                for fmf_id in self._imported_plan_fmf_ids:
-                    _show_imported(fmf_id)
+                for reference in self._imported_plan_references:
+                    _show_imported(reference)
 
     # FIXME - Make additional attributes configurable
     def lint_unknown_keys(self) -> LinterReturn:
@@ -2744,120 +2901,208 @@ class Plan(
         """
         Check whether the plan is a remote plan reference
         """
-        return bool(self._imported_plan_fmf_ids)
+        return bool(self._imported_plan_references)
 
-    def _resolve_import(self, plan_id: FmfId) -> Iterator['Plan']:
+    def _resolve_import_to_nodes(
+        self, reference: RemotePlanReference, tree: fmf.Tree
+    ) -> Iterator[fmf.Tree]:
         """
-        Discover and import plans matching a given fmf id.
-
-        :param plan_id: fmf id representing one or more plans to import.
-        :yields: new :py:class:`Plan` for each imported plan.
+        Discover all plan-like fmf nodes in a given tree.
         """
 
-        self.debug(f"Import remote plan '{plan_id.name}' from '{plan_id.url}'.", level=3)
+        self.debug(
+            f"Looking for plans in '{tree.root}' matching '{reference.name_pattern}'", level=3
+        )
 
-        # Clone the whole git repository if executing tests (run is attached)
-        if self.my_run and not self.my_run.is_dry_run:
-            assert self.parent is not None  # narrow type
-            assert self.parent.workdir is not None  # narrow type
-            destination = self.parent.workdir / "import" / self.name.lstrip("/")
-            if plan_id.url is None:
-                raise tmt.utils.SpecificationError(
-                    f"No url provided for remote plan '{self.name}'."
-                )
-            if destination.exists():
-                self.debug(f"Seems that '{destination}' has been already cloned.", level=3)
-            else:
-                tmt.utils.git.git_clone(
-                    url=plan_id.url, destination=destination, logger=self._logger
-                )
-            if plan_id.ref:
-                # Attempt to evaluate dynamic reference
-                try:
-                    dynamic_ref = resolve_dynamic_ref(
-                        workdir=destination, ref=plan_id.ref, plan=self, logger=self._logger
-                    )
-                    if plan_id.ref != dynamic_ref:
-                        self.debug(f"Update 'ref' to '{dynamic_ref}'.")
-                        plan_id.ref = dynamic_ref
-                except tmt.utils.FileError as error:
-                    raise tmt.utils.DiscoverError(
-                        f"Failed to resolve dynamic ref of '{plan_id.ref}'."
-                    ) from error
-                if plan_id.ref:
-                    self.run(Command('git', 'checkout', plan_id.ref), cwd=destination)
-            if plan_id.path:
-                destination = destination / plan_id.path.unrooted()
-            node = fmf.Tree(str(destination)).find(plan_id.name)
+        for node in tree.prune(keys=['execute']):
+            if reference.name_pattern.match(node.name) is not None:
+                yield node
 
-        # Use fmf cache for exploring plans (the whole git repo is not needed)
+    def _resolve_import_from_git(self, reference: RemotePlanReference) -> Iterator[fmf.Tree]:
+        """
+        Discover plan-like nodes matching the given reference in its git repo.
+
+        The referenced git repository is cloned, and we will look for
+        plan-like fmf nodes in it.
+        """
+
+        # TODO: consider better type than inheriting from fully optional fmf id...
+        assert reference.url is not None
+        assert reference.name is not None
+
+        assert self.parent is not None  # narrow type
+        assert self.parent.workdir is not None  # narrow type
+
+        destination = self.parent.workdir / "import" / self.safe_name.lstrip("/")
+
+        if destination.exists():
+            self.debug(f"Seems that '{destination}' has been already cloned.", level=3)
+
         else:
-            if str(plan_id.ref).startswith('@'):
-                self.debug(
-                    f"Not enough data to evaluate dynamic ref '{plan_id.ref}', "
-                    "going to clone the repository to read dynamic ref definition."
-                )
-                with tempfile.TemporaryDirectory() as tmpdirname:
-                    tmt.utils.git.git_clone(
-                        url=str(plan_id.url),
-                        destination=Path(tmpdirname),
-                        shallow=True,
-                        env=None,
-                        logger=self._logger,
-                    )
-                    self.run(
-                        Command('git', 'checkout', 'HEAD', str(plan_id.ref)[1:]),
-                        cwd=Path(tmpdirname),
-                    )
-                    # Attempt to evaluate dynamic reference
-                    try:
-                        dynamic_ref = resolve_dynamic_ref(
-                            workdir=Path(tmpdirname),
-                            ref=plan_id.ref,
-                            plan=self,
-                            logger=self._logger,
-                        )
-                        if plan_id.ref != dynamic_ref:
-                            self.debug(f"Update 'ref' to '{dynamic_ref}'.")
-                            plan_id.ref = dynamic_ref
-                    except tmt.utils.FileError as error:
-                        raise tmt.utils.DiscoverError(
-                            f"Failed to resolve dynamic ref of '{plan_id.ref}'."
-                        ) from error
-            try:
-                node = fmf.Tree.node(plan_id.to_minimal_spec())
-            except fmf.utils.FetchError as error:
-                raise tmt.utils.GitUrlError(
-                    f"Failed to import remote plan '{self.name}', "
-                    f"use '--shallow' to skip cloning repositories.\n{error}"
-                )
-        if not node:
-            raise tmt.utils.DiscoverError(
-                f"Failed to find plan '{plan_id.name}' "
-                f"at 'url: {plan_id.url}, 'ref: {plan_id.ref}'."
+            tmt.utils.git.git_clone(
+                url=reference.url, destination=destination, logger=self._logger
             )
 
-        # Adjust the imported tree, to let any `adjust` rules defined in it take
-        # action.
-        node.adjust(fmf.context.Context(**self._fmf_context), case_sensitive=False)
+        if reference.ref:
+            reference.resolve_dynamic_ref(destination, self)
 
-        # If the local plan is disabled, disable the imported plan as well
-        if not self.enabled:
-            node.data['enabled'] = False
+            if reference.ref:
+                self.run(Command('git', 'checkout', reference.ref), cwd=destination)
 
-        # Override the plan name with the local one to ensure unique names
-        node.name = self.name
+        if reference.path:
+            destination = destination / reference.path.unrooted()
 
-        with self.environment.as_environ():
-            expand_node_data(node.data, self._fmf_context)
+        yield from self._resolve_import_to_nodes(reference, fmf.Tree(str(destination)))
 
-        yield Plan(node=node, run=self.my_run, logger=self._logger)
+    def _resolve_import_from_fmf_cache(self, reference: RemotePlanReference) -> Iterator[fmf.Tree]:
+        """
+        Discover plan-like nodes matching the given reference in fmf cache.
+        """
+
+        if str(reference.ref).startswith('@'):
+            self.debug(
+                f"Not enough data to evaluate dynamic ref '{reference.ref}', "
+                "going to clone the repository to read dynamic ref definition."
+            )
+
+            with tempfile.TemporaryDirectory() as _tmpdirname:
+                tmpdirname = Path(_tmpdirname)
+
+                tmt.utils.git.git_clone(
+                    url=str(reference.url),
+                    destination=tmpdirname,
+                    shallow=True,
+                    env=None,
+                    logger=self._logger,
+                )
+
+                self.run(
+                    Command('git', 'checkout', 'HEAD', str(reference.ref)[1:]),
+                    cwd=tmpdirname,
+                )
+
+                reference.resolve_dynamic_ref(tmpdirname, self)
+
+        yield from self._resolve_import_to_nodes(
+            reference,
+            fmf.utils.fetch_tree(
+                reference.url,
+                reference.ref,
+                str(reference.path.unrooted()) if reference.path else '.',
+            ),
+        )
+
+    def _resolve_import_reference(self, reference: RemotePlanReference) -> list['Plan']:
+        """
+        Discover and import plans matching a given remote plan reference.
+
+        :param reference: identifies one or more plans to import.
+        :returns: list of imported plans.
+        """
+
+        if reference.url is None:
+            raise tmt.utils.SpecificationError(f"No URL provided for remote plan '{self.name}'.")
+
+        if reference.name is None:
+            raise tmt.utils.SpecificationError(f"No name provided for remote plan '{self.name}'.")
+
+        self.debug(
+            f"Plan '{self.name}' importing plans '{reference.name}' from '{reference.url}'.",
+            level=3,
+        )
+
+        def _convert_node(node: fmf.Tree) -> 'Plan':
+            """
+            Convert a single fmf node to a plan.
+            """
+
+            self.debug(f"Turning node '{node.name}' into a plan.", level=3)
+
+            # Adjust the imported tree, to let any `adjust` rules defined in it take
+            # action.
+            node.adjust(fmf.context.Context(**self._fmf_context), case_sensitive=False)
+
+            # If the local plan is disabled, disable the imported plan as well
+            if not self.enabled:
+                node.data['enabled'] = False
+
+            # Put the plan into its position by giving it the correct name
+            if reference.importing == RemotePlanReferenceImporting.REPLACE:
+                node.name = self.name
+
+            else:
+                node.name = f'{self.name}{node.name}'
+
+            with self.environment.as_environ():
+                expand_node_data(node.data, self._fmf_context)
+
+            return Plan(node=node, run=self.my_run, logger=self._logger.clone())
+
+        def _generate_plans(nodes: Iterable[fmf.Tree]) -> list[Plan]:
+            """
+            Convert a list of fmf nodes into a list of plans.
+            """
+
+            # Collect all imported plans here. Save also the original
+            # node, because if we replace the current plan, we lose
+            # original names that are better for logging.
+            imported_plans: list[tuple[fmf.Tree, Plan]] = []
+
+            for node in nodes:
+                if imported_plans:
+                    if reference.scope == RemotePlanReferenceImportScope.FIRST_PLAN_ONLY:
+                        self.warn(
+                            f"Cannot import remote plan '{node.name}' through '{self.name}', "
+                            f"already imported '{imported_plans[0][0].name}' as the first plan."
+                        )
+
+                        continue
+
+                    if reference.scope == RemotePlanReferenceImportScope.SINGLE_PLAN_ONLY:
+                        raise GeneralError(
+                            f"Cannot import multiple plans through '{self.name}', "
+                            "may import only single plan, and already imported "
+                            f"'{imported_plans[0][0].name}'."
+                        )
+
+                    if reference.scope == RemotePlanReferenceImportScope.ALL_PLANS:
+                        if reference.importing == RemotePlanReferenceImporting.REPLACE:
+                            raise GeneralError(
+                                f"Cannot import multiple plans through '{self.name}', "
+                                f"already replacing '{self.name}' with imported "
+                                f"'{imported_plans[0][0].name}'."
+                            )
+
+                        if reference.importing == RemotePlanReferenceImporting.BECOME_PARENT:
+                            imported_plans.append((node, _convert_node(node.copy())))
+
+                            continue
+
+                    raise GeneralError("Unhandled importing plan state.")
+
+                imported_plans.append((node, _convert_node(node.copy())))
+
+            return [plan for _, plan in imported_plans]
+
+        try:
+            # Clone the whole git repository if executing tests (run is attached)
+            if self.my_run and not self.my_run.is_dry_run:
+                nodes = self._resolve_import_from_git(reference)
+
+            # Use fmf cache for exploring plans (the whole git repo is not needed)
+            else:
+                nodes = self._resolve_import_from_fmf_cache(reference)
+
+            return _generate_plans(nodes)
+
+        except Exception as exc:
+            raise GeneralError(f"Failed to import remote plan from '{self.name}'.") from exc
 
     def resolve_imports(self) -> list['Plan']:
         """
         Resolve possible references to remote plans.
 
-        :returns: one or more plans replacing the current one. The
+        :returns: one or more plans **replacing** the current one. The
             current plan may also be one of the returned ones.
         """
 
@@ -2865,8 +3110,8 @@ class Plan(
             return [self]
 
         if not self._imported_plans:
-            for plan_id in self._imported_plan_fmf_ids:
-                for imported_plan in self._resolve_import(plan_id):
+            for reference in self._imported_plan_references:
+                for imported_plan in self._resolve_import_reference(reference):
                     imported_plan._original_plan = self
                     imported_plan._original_plan_fmf_id = self.fmf_id
 
