@@ -12,34 +12,49 @@ permissions:
 env:
   HATCH_ENV_TYPE_VIRTUAL_PATH: ${{ github.workspace }}/.hatch_envs
 
+# Define common steps using YAML anchors
+x-common-steps: &common_steps
+  - uses: actions/checkout@v4
+    with:
+      persist-credentials: false
+
+  - uses: actions/setup-python@v5
+    with:
+      python-version: '3.x'
+      cache: 'pip'
+
+  - name: Cache Hatch environments
+    uses: actions/cache@v4
+    with:
+      path: |
+        ${{ github.workspace }}/.hatch_envs
+      key: hatch-envs-${{ hashFiles('pyproject.toml') }}
+
+  - name: Install hatch
+    run: pip install hatch
+
+  - name: Run sphinx html builder
+    # -W = warnings as error
+    run: hatch run docs:html -W
+
 jobs:
   doc-test:
     name: Sphinx Documentation Tests
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
+      - <<: *common_steps
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-          cache: 'pip'
+  # Run the linkcheck only on PRs with 'ready for merge' label
+  linkcheck-manual:
+    name: Sphinx Documentation Linkcheck
+    if: >
+      github.event.action == 'labeled' &&
+      github.event.label.name == 'status | ready for merge'
+    runs-on: ubuntu-latest
 
-      - name: Cache Hatch environments
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ github.workspace }}/.hatch_envs
-          key: hatch-envs-${{ hashFiles('pyproject.toml') }}
-
-      - name: Install hatch
-        run: pip install hatch
-
-      - name: Run sphinx html builder
-        # -W = warnings as error
-        run: hatch run docs:html -W
+    steps:
+      - <<: *common_steps
 
       - name: Run sphinx linkcheck
         run: hatch run docs:linkcheck
