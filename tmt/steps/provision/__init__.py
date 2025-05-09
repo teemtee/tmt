@@ -376,6 +376,11 @@ class GuestFacts(SerializableContainer):
         # and reports `package_manager` parameter to be `object`.
         default=cast(Optional['tmt.package_managers.GuestPackageManager'], None)
     )
+    bootc_builder: Optional['tmt.package_managers.GuestPackageManager'] = field(
+        # cast: since the default is None, mypy cannot infere the full type,
+        # and reports `bootc_builder` parameter to be `object`.
+        default=cast(Optional['tmt.package_managers.GuestPackageManager'], None)
+    )
 
     has_selinux: Optional[bool] = None
     has_systemd: Optional[bool] = None
@@ -602,6 +607,41 @@ class GuestFacts(SerializableContainer):
 
         return None
 
+    def _query_bootc_builder(
+        self, guest: 'Guest'
+    ) -> Optional['tmt.package_managers.GuestPackageManager']:
+        # Discover as many package managers as possible: sometimes, the
+        # first discovered package manager is not the only or the best
+        # one available. Collect them, and sort them by their priorities
+        # to find the most suitable one.
+
+        discovered_package_managers: list[
+            PackageManagerClass[tmt.package_managers.PackageManagerEngine]
+        ] = []
+
+        for (
+            _,
+            package_manager_class,
+        ) in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items():
+            if not package_manager_class.bootc_builder:
+                continue
+
+            if self._execute(guest, package_manager_class.probe_command):
+                discovered_package_managers.append(package_manager_class)
+
+        discovered_package_managers.sort(key=lambda pm: pm.probe_priority, reverse=True)
+
+        if discovered_package_managers:
+            guest.debug(
+                'Discovered bootc builders',
+                fmf.utils.listed([pm.NAME for pm in discovered_package_managers]),
+                level=4,
+            )
+
+            return discovered_package_managers[0].NAME
+
+        return None
+
     def _query_has_selinux(self, guest: 'Guest') -> Optional[bool]:
         """
         Detect whether guest uses SELinux.
@@ -728,6 +768,7 @@ class GuestFacts(SerializableContainer):
         self.distro = self._query_distro(guest)
         self.kernel_release = self._query_kernel_release(guest)
         self.package_manager = self._query_package_manager(guest)
+        self.bootc_builder = self._query_bootc_builder(guest)
         self.has_selinux = self._query_has_selinux(guest)
         self.has_systemd = self._query_has_systemd(guest)
         self.is_superuser = self._query_is_superuser(guest)
@@ -754,6 +795,11 @@ class GuestFacts(SerializableContainer):
             'package_manager',
             'package manager',
             self.package_manager if self.package_manager else 'unknown',
+        )
+        yield (
+            'bootc builder',
+            'bootc builder',
+            self.bootc_builder if self.bootc_builder else 'unknown',
         )
         yield 'has_selinux', 'selinux', 'yes' if self.has_selinux else 'no'
         yield 'has_systemd', 'systemd', 'yes' if self.has_systemd else 'no'
@@ -1199,6 +1245,17 @@ class Guest(tmt.utils.Common):
             )
 
         return tmt.package_managers.find_package_manager(self.facts.package_manager)(
+            guest=self, logger=self._logger
+        )
+
+    @functools.cached_property
+    def bootc_builder(
+        self,
+    ) -> 'tmt.package_managers.PackageManager[tmt.package_managers.PackageManagerEngine]':
+        if not self.facts.bootc_builder:
+            raise tmt.utils.GeneralError(f"Bootc builder was not detected on guest '{self.name}'.")
+
+        return tmt.package_managers.find_package_manager(self.facts.bootc_builder)(
             guest=self, logger=self._logger
         )
 
