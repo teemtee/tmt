@@ -1295,7 +1295,6 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                     job.toxml(prettyxml=True),
                     flags=re.MULTILINE,
                 ),
-                shift=-2,
             )
             return
 
