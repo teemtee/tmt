@@ -49,7 +49,6 @@ Provides:       tmt-test-convert == %{version}-%{release}
 Obsoletes:      tmt-test-convert < %{version}-%{release}
 %endif
 Requires:       tmt == %{version}-%{release}
-Requires:       make
 Requires:       python3-bugzilla
 Requires:       python3-nitrate
 Requires:       python3-html2text

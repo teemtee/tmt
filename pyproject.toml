@@ -1,14 +1,16 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.7.3,<0.8.0", "setuptools-scm>=8"]
+build-backend = "uv_build"
 
 [project]
 name = "tmt"
-dynamic = ["version"]
+# TODO uv support
+#dynamic = ["version"]
+version = "0.0.0"
 description = "Test Management Tool"
 readme = "README.rst"
 license = "MIT"
-license-file = "LICENSE"
+license-files = ["LICENSE"]
 requires-python = ">=3.9"
 authors = [
     { name = "Petr Splichal", email = "psplicha@redhat.com" },
@@ -21,7 +23,6 @@ keywords = [
     "testing",
     ]
 classifiers = [
-    "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.11",
@@ -102,31 +103,26 @@ tmt = "tmt.__main__:run_cli"
 [project.urls]
 Homepage = "https://github.com/teemtee/tmt"
 
-[tool.hatch.version]
-source = "vcs"
-raw-options.version_scheme = "release-branch-semver"
+#[tool.setuptools_scm]
+#version_scheme = "release-branch-semver"
 
-[tool.hatch.build.targets.sdist]
-include = [
-    "/tmt",
-    "/LICENSE",
-    "/examples",
-    "/README.rst",
-    "/tests",
-    "/tmt.spec",
-    "/tmt.1",
-    "/completions",
-    "/.fmf",
+# TODO artifacts = ["tmt.1"]
+
+[tool.uv]
+preview = true
+cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true } }]
+build-backend.module-root = ""
+build-backend.data = [
+    "examples",
+    "tmt.spec",
+    "tmt.1",
+    ".fmf",
     ]
 
-artifacts = ["tmt.1"]
 
-[tool.hatch.envs.default]
-platforms = ["linux"]
-
-[tool.hatch.envs.dev]
-description = "Development environment"
-dependencies = [
+[dependency-groups]
+# dev is default uv group
+dev = [
     "autopep8",
     "ruff",
     "mypy",
@@ -151,59 +147,88 @@ dependencies = [
     "types-babel",
     "types-docutils",
     "types-lxml",
-    ]
-features = ["all"]
+    "tmt[all]",
+    "poethepoet",
+]
+docs = [
+    "tmt[docs]",
+    "poethepoet",
+]
 
-[tool.hatch.envs.dev.scripts]
-lint = ["autopep8 {args:.}", "ruff --fix {args:.}"]
-type = ["mypy {args:tmt}"]
-check = ["lint", "type"]
+[tool.poe]
+executor = { type = "uv" }
 
-unit = "make images/test && pytest -vvv -ra --showlocals -n 0 tests/unit"
-smoke = "pytest -vvv -ra --showlocals -n 0 tests/unit/test_cli.py"
-cov = [
-    "coverage run --source=tmt -m pytest -vvv -ra --showlocals -n 0 tests",
-    "coverage report",
-    "coverage annotate",
-    ]
-requre = [
-    "cd {root}/tests/integration",
-    "pytest -vvv -ra --showlocals -n 0",
-    "requre-patch purge --replaces :milestone_url:str:SomeText --replaces :latency:float:0 tests/integration/test_data/test_nitrate/*",
-    ]
+[tool.poe.tasks]
+# Testing
+test = { cmd = "uv run -- pytest -vvv -ra --showlocals -n 0 tests/unit", help = "Run unit tests. Args are passed to pytest." }
+smoke = { cmd = "uv run -- pytest -vvv -ra --showlocals -n 0 tests/unit/test_cli.py", help = "Run smoke tests. Args are passed to pytest." }
+coverage = [
+    { cmd = "uv run -- coverage run --source=tmt -m pytest -vvv -ra --showlocals -n 0 tests" },
+    { cmd = "uv run -- coverage report" },
+    { cmd = "uv run -- coverage annotate" },
+]
+requre = { shell = """
+echo "Regenerating requre test data..."
+(cd $POE_ROOT/tests/integration && \\
+ uv run -- pytest -vvv -ra --showlocals -n 0 && \\
+ uv run -- requre-patch purge --replaces :milestone_url:str:SomeText --replaces :latency:float:0 tests/integration/test_data/test_nitrate/*)
+""", help = "Regenerate test data for integration tests" }
 
-[tool.hatch.envs.dev-not-editable]
-template = "dev"
-description = "Same as 'dev', but not using editable install"
-dev-mode = false
+# Documentation
+docs = { cmd = "uv run --group docs -- sphinx-build -b html docs docs/_build", help = "Build HTML documentation. Extra args are passed to sphinx-build." }
+linkcheck = { cmd = "uv run --group docs -- sphinx-build -b linkcheck docs docs/_build", help = "Run sphinx linkcheck. Extra args are passed to sphinx-build." }
 
-[tool.hatch.envs.test]
-template = "dev"
-description = "Run scripts with multiple Python versions"
+_prepare_man_rst = { shell = """
+cp $POE_ROOT/docs/header.txt $POE_ROOT/man.rst
+tail -n+8 $POE_ROOT/docs/overview.rst >> $POE_ROOT/man.rst
+sed '/versionadded::/d' -i $POE_ROOT/man.rst
+find $POE_ROOT -name man.rst
+""" }
+_generate_man_page = { shell = "uv run --group docs -- rst2man $POE_ROOT/man.rst > $POE_ROOT/tmt.1" }
+_cleanup_man_rst = { shell = "rm -f $POE_ROOT/man.rst" }
+man = { sequence = ["_prepare_man_rst", "_generate_man_page", "_cleanup_man_rst"], help = "Build the man page" }
 
-[[tool.hatch.envs.test.matrix]]
-python = ["3.9", "3.11", "3.12"]
+# Building & Packaging
+version = { cmd = "uv version --short", help = "Show project version" }
+_build_sdist_wheel = { cmd = "uv build", help = "Build sdist and wheel (core command)" }
+build = { sequence = ["clean", "man", "_build_sdist_wheel"], help = "Clean, build man page, then build project sdist and wheel" }
 
-[tool.hatch.envs.docs]
-dependencies = ["tmt[docs]"]
+_tmp_sources_dir = { shell = "mkdir -p $POE_ROOT/tmp/SOURCES" }
+tarball = { sequence = ["build", "_tmp_sources_dir", { shell = "cp $POE_ROOT/dist/tmt-*.tar.gz $POE_ROOT/tmp/SOURCES/" }], help = "Create source tarball in tmp/SOURCES" }
 
-[tool.hatch.envs.docs.scripts]
-# Note that in RTD there are a few additional flags (from RTD's default build
-# script) e.g. -E, -d, and -D. These should not affect generated documentation
-# files below, but it may be providing additional metadata for RTD to index.
-html = "sphinx-build -b html {root}/docs {root}/docs/_build {args}"
-linkcheck = "sphinx-build -b linkcheck {root}/docs {root}/docs/_build {args}"
-man = [
-    "cp {root}/docs/header.txt {root}/man.rst",
-    "tail -n+8 docs/overview.rst >> {root}/man.rst",
-    # TODO rst2man cannot process this directive, removed for now
-    "sed '/versionadded::/d' -i {root}/man.rst",
-    "rst2man.py {root}/man.rst > {root}/tmt.1",
-    "rm -f {root}/man.rst",
-    ]
+ver2spec = { shell = """
+  PROJECT_VERSION=$(uv version --short)
+  echo "Updating tmt.spec with version $PROJECT_VERSION..."
+  sed -E "s/^(Version:[[:space:]]*).*/\\1$PROJECT_VERSION/" -i $POE_ROOT/tmt.spec
+""", help = "Update tmt.spec with current project version" }
 
-[dirs.env]
-virtual = ".venv"
+rpm = { deps = ["tarball", "ver2spec"], shell = "rpmbuild --define '_topdir $POE_ROOT/tmp' -bb $POE_ROOT/tmt.spec || echo 'Hint: run `poe build-deps` to install build dependencies'", help = "Build RPMs" }
+srpm = { deps = ["tarball", "ver2spec"], shell = "rpmbuild --define '_topdir $POE_ROOT/tmp' -bs $POE_ROOT/tmt.spec", help = "Build SRPM" }
+packages = { sequence = ["rpm", "srpm"], help = "Build RPM and SRPM packages" }
+
+# TODO System Dependencies - can't be here really
+_deps = { shell = "sudo dnf install -y uv python3-devel rpm-build", help = "Install minimal system dependencies (sudo)" }
+build-deps = { sequence = ["_deps", "tarball", "ver2spec", { shell = "rpmbuild --define '_topdir $POE_ROOT/tmp' -br $POE_ROOT/tmt.spec || sudo dnf builddep -y $POE_ROOT/tmp/SRPMS/tmt-*buildreqs.nosrc.rpm" }], help = "Install RPM build dependencies (sudo)" }
+develop = { deps = ["_deps"], shell = "sudo dnf install -y expect gcc git python3-nitrate {libvirt,krb5,libpq,python3}-devel jq podman buildah /usr/bin/python3.9", help = "Install all development system dependencies (sudo)" }
+
+# Other Development Tasks
+tags = { shell = "find $POE_ROOT/tmt -name '*.py' | xargs ctags --python-kinds=-i", help = "Generate ctags" }
+nitrateconf = { shell = "test -e ~/.nitrate || echo -en '[nitrate]\\nurl = https://nitrate.server/xmlrpc/\\n' | tee ~/.nitrate", help = "Ensure ~/.nitrate configuration exists" }
+
+# Cleanup
+clean = { shell = """
+echo "Cleaning up..."
+rm -rf $POE_ROOT/tmp $POE_ROOT/build $POE_ROOT/dist $POE_ROOT/tmt.1 $POE_ROOT/man.rst
+rm -rf $POE_ROOT/.cache $POE_ROOT/.mypy_cache $POE_ROOT/.ruff_cache $POE_ROOT/.pytest_cache $POE_ROOT/.coverage $POE_ROOT/.venv
+find $POE_ROOT -type f -name "*.py[co]" -delete
+find $POE_ROOT -type f -name "*,cover" -delete
+find $POE_ROOT -type d -name "__pycache__" -delete
+rm -rf $POE_ROOT/examples/convert/{main.fmf,test.md,Manual} $POE_ROOT/Manual
+rm -f $POE_ROOT/tests/full/repo_copy.tgz
+""", help = "Clean up temporary files, build artifacts, and .venv" }
+
+# Top-Level Aliases
+all = { sequence = ["docs", "packages"], help = "Build documentation and packages" }
 
 [tool.mypy]
 # Be vewy, vewy stwict, we'we hunting wabbits^Wbugs.

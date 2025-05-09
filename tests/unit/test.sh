@@ -6,15 +6,10 @@ rlJournalStart
     rlPhaseStartSetup
         ENABLE_PARALLELIZATION="${ENABLE_PARALLELIZATION:-no}"
         ENABLE_CONTAINERS="${ENABLE_CONTAINERS:-no}"
-        # TODO: `test` seems more natural, but creates 3 environments,
-        # one per available Python installation. I need to check whether
-        # to disable or take advantage of it.
-        HATCH_ENVIRONMENT="${HATCH_ENVIRONMENT:-dev}"
 
         rlLogInfo "ENABLE_PARALLELIZATION=$ENABLE_PARALLELIZATION"
         rlLogInfo "ENABLE_CONTAINERS=$ENABLE_CONTAINERS"
         rlLogInfo "WITH_SYSTEM_PACKAGES=$WITH_SYSTEM_PACKAGES"
-        rlLogInfo "HATCH_ENVIRONMENT=$HATCH_ENVIRONMENT"
 
         if [ "$ENABLE_PARALLELIZATION" = "yes" ]; then
             PYTEST_PARALLELIZE="-n auto"
@@ -34,7 +29,7 @@ rlJournalStart
         rlRun "PYTEST_COMMAND='pytest -vvv -ra --showlocals'"
 
         rlLogInfo "pip is $(which pip), $(pip --version)"
-        rlLogInfo "hatch is $(which hatch), $(hatch --version)"
+        rlLogInfo "uv is $(which uv), $(uv --version 2>/dev/null || echo 'uv not found or version command failed')" # Added uv version check
 
         . ../images.sh || exit 1
         build_container_images --force
@@ -45,7 +40,7 @@ rlJournalStart
             rlRun "TEST_VENV=$(mktemp -d)"
 
             rlRun "python3 -m venv $TEST_VENV --system-site-packages"
-            rlRun "$TEST_VENV/bin/pip install 'pytest-container>=0.4.1' pytest-xdist"
+            rlRun "$TEST_VENV/bin/python -m uv pip install 'pytest-container>=0.4.1' pytest-xdist"
 
             # Note: we're not in the root directory!
             rlRun "$TEST_VENV/bin/python3 -m $PYTEST_COMMAND $PYTEST_PARALLELIZE $PYTEST_MARK ."
@@ -55,7 +50,7 @@ rlJournalStart
     else
         rlPhaseStartTest "Unit tests"
             # Note: we're not in the root directory!
-            rlRun "hatch -v run $HATCH_ENVIRONMENT:$PYTEST_COMMAND $PYTEST_PARALLELIZE $PYTEST_MARK ."
+            rlRun "uv run $PYTEST_COMMAND $PYTEST_PARALLELIZE $PYTEST_MARK ."
         rlPhaseEnd
     fi
 

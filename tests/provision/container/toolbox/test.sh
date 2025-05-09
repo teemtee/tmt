@@ -34,12 +34,11 @@ rlJournalStart
 
     rlPhaseStartTest "Local execution via tmt: Install tmt from TMT_TREE"
         TOOLBOX_TREE="/var/tmp/tree"
-        TMT_COMMAND="env -C ${TOOLBOX_TREE} hatch -e dev run env -C /tmp tmt"
+        TMT_COMMAND="env -C ${TOOLBOX_TREE} uv run env -C /tmp tmt"
 
         rlRun "type toolbox_run"
 
-        # Install make and hatch
-        rlRun "toolbox_run sudo dnf -y install make hatch"
+        rlRun "toolbox_run sudo dnf -y install uv git" # Ensure git is there for hatch-vcs
 
         # Create a copy of the tmt tree, to mitigate possible permission issues
         rlRun "cp -Rf ${TMT_TREE} ${TOOLBOX_TREE}"
@@ -52,10 +51,9 @@ rlJournalStart
 
         # Initialize git in tmt tree, it is required for development installation
         # and the tmt tree is not a git repository.
-        rlRun "toolbox_run git -C ${TOOLBOX_TREE} init"
-
-        # Install additional development dependencies
-        rlRun "toolbox_run make -C ${TOOLBOX_TREE} develop"
+        # Also, poe tasks use POE_ROOT which is based on pyproject.toml location.
+        # The commands inside poe tasks will run with POE_ROOT set to TOOLBOX_TREE.
+        rlRun "toolbox_run sh -c 'cd ${TOOLBOX_TREE} && git init && uv venv --python \$(which python3) && uv sync && uv run poe develop'"
     rlPhaseEnd
 
     rlPhaseStartTest "Print tmt version installed in toolbox"

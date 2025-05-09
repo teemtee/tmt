@@ -9,10 +9,6 @@ environment:
     ENABLE_CONTAINERS: "no"
     WITH_SYSTEM_PACKAGES: "no"
 
-adjust+:
-  - when: distro == centos-stream-9
-    environment+:
-      HATCH_ENVIRONMENT: dev-not-editable
 
 require+:
   - gcc
@@ -25,9 +21,9 @@ require+:
   - jq
   - podman
   - buildah
-  - hatch
+  - uv
 
-# Run against development packages via `hatch`.
+# Run against development packages via `uv`.
 /with-development-packages:
     enabled: false
 

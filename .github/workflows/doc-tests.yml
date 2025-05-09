@@ -9,9 +9,6 @@ on:
 permissions:
   contents: read
 
-env:
-  HATCH_ENV_TYPE_VIRTUAL_PATH: ${{ github.workspace }}/.hatch_envs
-
 jobs:
   doc-test:
     name: Sphinx Documentation Tests
@@ -23,23 +20,26 @@ jobs:
           persist-credentials: false
 
       - uses: actions/setup-python@v5
+        name: Set up Python
         with:
           python-version: '3.x'
-          cache: 'pip'
 
-      - name: Cache Hatch environments
-        uses: actions/cache@v4
+      - name: Install uv and cache dependencies
+        uses: astral-sh/setup-uv@v5
         with:
-          path: |
-            ${{ github.workspace }}/.hatch_envs
-          key: hatch-envs-${{ hashFiles('pyproject.toml') }}
+          enable-cache: true
+          cache-dependency-glob: pyproject.toml
 
-      - name: Install hatch
-        run: pip install hatch
+      - name: Setup uv virtual environment, install docs dependencies, and add to PATH
+        shell: bash
+        run: |
+          uv venv
+          uv sync --group docs
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
 
       - name: Run sphinx html builder
         # -W = warnings as error
-        run: hatch run docs:html -W
+        run: poe docs -- -W
 
       - name: Run sphinx linkcheck
-        run: hatch run docs:linkcheck
+        run: poe linkcheck

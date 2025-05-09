@@ -10,16 +10,15 @@ upstream_project_url: https://github.com/teemtee/tmt
 issue_repository: https://github.com/teemtee/tmt
 
 srpm_build_deps:
-  - hatch
-  - python3-hatch-vcs
+  - uv  # requires version ~0.7, might need pipx install uv
 
 actions: &base-actions
   create-archive:
-    - hatch run docs:man
-    - hatch build -t sdist
+    - uv run --group docs --no-dev poe man
+    - uv build --sdist
     - bash -c "ls dist/tmt-*.tar.gz"
   get-current-version:
-    - hatch version
+    - uv version --short
 
 targets: &all-targets
   - fedora-all

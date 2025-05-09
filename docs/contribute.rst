@@ -72,26 +72,23 @@ Develop
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In order to experiment, play with the latest bits and develop
-improvements it is best to use a virtual environment. Make sure
-that you have all required packages installed on your box:
-
-.. code-block:: shell
-
-    make develop
-
-Create a development virtual environment with hatch:
+improvements it is best to use a virtual environment.
+First, ensure system dependencies (including `uv`) are installed:
 
 .. code-block:: shell
 
     git clone https://github.com/teemtee/tmt
     cd tmt
-    hatch env create dev
+    uv venv
+    source .venv/bin/activate
+    uv pip install poethepoet
+    uv run --no-dev poe develop
 
-Enter the environment by running:
+Then, install the development dependencies:
 
 .. code-block:: shell
+    uv sync
 
-    hatch -e dev shell
 
 When interacting from within the development environment with
 services with internal certificates, you need to export the
@@ -147,29 +144,34 @@ __ https://direnv.net/#basic-installation
 Unit Tests
 ------------------------------------------------------------------
 
-To run unit tests in hatch environment using pytest and generate coverage report:
+To run unit tests using the uv-managed environment with pytest and generate a coverage report:
 
 .. code-block:: shell
 
-    make coverage
+    poe coverage
 
-To see all available scripts for running tests in hatch test virtual environments:
-
-.. code-block:: shell
-
-    hatch env show test
-
-To run 'unit' script for example, run:
+Most common test execution and development tasks are defined as tasks in `pyproject.toml` under `[tool.poe.tasks]`.
+You can list available tasks with `poe` (or `poe -h` for more details). For example, to run unit tests:
 
 .. code-block:: shell
 
-    hatch run test:unit
+    poe test
+    # This internally runs:
+    # uv run -- pytest -vvv -ra --showlocals -n 0 tests/unit
 
-When running tests using hatch, there are multiple virtual environments
-available, each using a different Python interpreter
-(generally the lowest and highest version supported).
-To run the tests in all environments, install the required Python
-versions. For example:
+To run tests against multiple Python versions, you would typically configure your CI environment
+or manually invoke `uv run --python <version_specifier> ...` for each desired Python version.
+`uv` itself manages Python installations via the `uv python` subcommand.
+For example, to install specific Python versions for testing:
+
+.. code-block:: shell
+
+    uv python install 3.9 3.13
+    # Then run tests with a specific version:
+    # uv run --python 3.9 pytest ...
+    # uv run --python 3.13 pytest ...
+
+Install the system-level Python versions if you prefer them for testing:
 
 .. code-block:: shell
 
@@ -330,18 +332,24 @@ To build these images, run the following:
 
 .. code-block:: shell
 
-    # Build all images...
-    make images/test
+    # Building container images is still primarily handled by direct podman commands
+    # or potentially dedicated scripts. The poethepoet tasks for images are not yet comprehensive.
+    # Example for a specific image (if defined as a poe task):
+    # poe image_test_alpine_latest
 
-    # ... or just a single one:
-    make images/test/tmt/container/test/fedora/rawhide:latest
+    # To pull base images for tests (if a poe task 'images_test_bases' is defined):
+    # poe images_test_bases
+    # Currently, this is in the justfile, if that was kept, or would need a poe task.
+    # For now, refer to podman commands or the old Makefile if image building is complex.
+    # The PoC for poe does not fully replicate dynamic image building from Makefile/justfile.
 
-Tests that need to use various container images should trigger this
-command before running the actual test cases:
+Tests that need to use various container images should trigger the
+relevant commands or scripts. If `images_test_bases` were a poe task:
 
 .. code-block:: bash
 
-    rlRun "make -C images/test"
+    # rlRun "poe images_test_bases"
+    # For now, this might still be a direct podman command or a script.
 
 To list built container images, run the following:
 
@@ -350,10 +358,12 @@ To list built container images, run the following:
     podman images | grep 'localhost/tmt/tests/' | sort
 
 To remove these images from your local system, run the following:
+(TODO: Add `just clean_images_test` recipe if full image building is translated)
 
 .. code-block:: shell
 
-    make clean/images/test
+    # Example: podman rmi tmt/container/test/alpine:latest
+    # make clean/images/test # Old command
 
 
 .. _docs:
@@ -455,32 +465,35 @@ Building documentation is then quite straightforward:
 
 .. code-block:: shell
 
-    make docs
+    poe docs
 
 Find the resulting html pages under the ``docs/_build/html``
-folder.
+folder. Any arguments after `poe docs -- ` will be passed to `sphinx-build`.
+
+.. code-block:: shell
+
+    poe docs -- -W  # Example: pass -W to sphinx-build
 
 Visual themes
 ------------------------------------------------------------------
 
 Use the ``TMT_DOCS_THEME`` variable to easily pick custom theme.
-If specified, ``make docs`` would use this theme for documentation
-rendering by Sphinx. The theme must be installed manually, ``make
-docs`` will not do so. Variable expects two strings, separated by
-a colon (``:``): theme package name, and theme name.
+If specified, the `poe docs` task (which calls `sphinx-build`) would allow Sphinx
+to pick this up if `conf.py` is configured to read it. The theme must be installed manually.
+The `poe docs` task passes extra arguments to `sphinx-build`, so you could potentially pass
+theme-related options if `sphinx-build` supports them directly.
 
+Example:
 .. code-block:: shell
 
     # Sphinx book theme, sphinx-book-theme:
-    TMT_DOCS_THEME="sphinx_book_theme:sphinx_book_theme" make docs
-
-    # Renku theme, renku-sphinx-theme - note that package name
-    # and theme name are *not* the same string:
-    TMT_DOCS_THEME="renku_sphinx_theme:renku" make docs
+    # Ensure sphinx_book_theme is in your 'docs' dependency group
+    # TMT_DOCS_THEME="sphinx_book_theme:sphinx_book_theme" poe docs
 
 By default, ``docs/_static/tmt-custom.css`` provides additional tweaks
 to the documentation theme. Use the ``TMT_DOCS_CUSTOM_HTML_STYLE``
-variable to include additional file:
+variable to include additional file. This environment variable would be
+read by Sphinx's `conf.py`.
 
 .. code-block:: shell
 
@@ -490,7 +503,7 @@ variable to include additional file:
         max-width: 1200px !important;
     }
 
-    TMT_DOCS_CUSTOM_HTML_STYLE=custom.local.css make docs
+    TMT_DOCS_CUSTOM_HTML_STYLE=custom.local.css poe docs
 
 .. note::
 
@@ -584,7 +597,7 @@ irrelevant for your change.
     * [ ] update the specification
     * [ ] adjust plugin docstring
     * [ ] modify the json schema
-    * [ ] mention the version
+    * [ ] mention the version (e.g., using `poe version`)
     * [ ] include a release note
 
 The version should be mentioned in the specification and a release
@@ -616,8 +629,11 @@ environment and check out the pull request branch or use the
 
 .. code-block:: shell
 
-    hatch -e dev shell         # enable the dev environment
+    # First, ensure you have followed the :ref:`develop` section to set up
+    # your uv virtual environment (uv venv, uv sync).
+    source .venv/bin/activate  # enable the dev environment
     git checkout the-feature   # if branch is in the tmt repo
+    # or for a PR from a fork:
     gh pr checkout 1234        # check out branch from a fork
 
 It is also possible to directly install packages freshly built by
@@ -666,37 +682,48 @@ the ``blocked`` label. For complex topics which need more eyes to
 review and discuss before merging use the ``discuss`` label.
 
 
-Makefile
+Poe the Poet (`pyproject.toml`)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are several Makefile targets defined to make the common
-daily tasks easy & efficient:
+Tasks for common development workflows are defined in `pyproject.toml`
+under the `[tool.poe.tasks]` section and run using `poe <task_name>`.
+You can list available tasks with `poe` or `poe -h`. Common tasks include:
 
-make test
+poe test
     Execute the unit test suite.
 
-make smoke
+poe smoke
     Perform quick basic functionality test.
 
-make coverage
+poe coverage
     Run the test suite under coverage and report results.
 
-make docs
-    Build documentation.
+poe docs
+    Build HTML documentation. Add arguments for sphinx-build after `--`.
 
-make packages
-    Build rpm and srpm packages.
+poe linkcheck
+    Check documentation links. Add arguments for sphinx-build after `--`.
 
-make images
-    Build container images.
+poe man
+    Build the man page.
 
-make tags
-    Create or update the Vim ``tags`` file for quick searching.
-    You might want to use ``set tags=./tags;`` in your ``.vimrc``
-    to enable parent directory search for the tags file as well.
+poe version
+    Show the project version.
 
-make clean
-    Cleanup all temporary files.
+poe build
+    Clean, build man page, then build sdist and wheel.
+
+poe packages
+    Build RPM and SRPM packages.
+
+poe tags
+    Create or update Vim ctags.
+
+poe clean
+    Cleanup temporary files, build artifacts, and the .venv directory.
+
+poe develop
+    Install system-level development dependencies (requires sudo).
 
 
 Release
@@ -737,7 +764,8 @@ Handle manually what did not went well:
 
 * If the automation triggered by publishing the new github release
   was not successful, publish the fresh code to the `pypi`__
-  repository manually using ``make wheel && make upload``
+  repository manually using ``poe build`` (which creates wheels/sdists in `dist/`)
+  and then a tool like `twine upload dist/*`.
 * If there was a problem with creating Fedora pull requests, you
   can trigger them manually using ``/packit propose-downstream``
   in any open issue.

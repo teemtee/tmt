@@ -30,17 +30,23 @@ jobs:
           ref: ${{ github.event.inputs.ref }}
           persist-credentials: false
 
-      # Setup python
-      - uses: actions/setup-python@v5
+      - name: Install uv and set up Python
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.x"
+          enable-cache: true
+          cache-dependency-glob: pyproject.toml
+
+      - name: Setup uv virtual environment and install build dependencies
+        shell: bash
+        run: |
+          uv venv
+          # Sync dev (includes tmt[all]) and docs (for rst2man) groups
+          uv sync --group docs
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
 
       # Build it
       - name: Build a binary wheel and a source tarball
-        run: |
-            python -m pip install hatch
-            hatch run docs:man
-            hatch build
+        run: poe build
 
       # Publish it
       - name: Publish to PyPI
