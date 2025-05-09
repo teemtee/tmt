@@ -4,6 +4,16 @@
     Releases
 ======================
 
+tmt-1.49.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Output of the :ref:`/plugins/report/internal` and
+:ref:`/plugins/report/display` is changing in this release, to provide
+slightly more details, headers and timestamps. ``execute`` now starts
+using ``display`` for its own progress reporting, providing the unified
+formatting and simplified code.
+
+
 tmt-1.48.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -12,10 +12,10 @@ rlJournalStart
 
     rlPhaseStartTest "Test /plans/compatible"
         rlRun -s "tmt run -vvv --id $run plan --name /plans/compatible" 1
-        rlRun "grep -A1 'pass /good-with-log' $rlRun_LOG | grep fine.txt"
-        rlRun "grep -A1 'pass /good-with-var' $rlRun_LOG | grep fine.txt"
-        rlRun "grep -A1 'fail /bad-with-log'  $rlRun_LOG | grep wrong.txt"
-        rlRun "grep -A1 'fail /bad-with-var'  $rlRun_LOG | grep wrong.txt"
+        rlRun "grep -A2 'pass /good-with-log' $rlRun_LOG | grep fine.txt"
+        rlRun "grep -A2 'pass /good-with-var' $rlRun_LOG | grep fine.txt"
+        rlRun "grep -A2 'fail /bad-with-log'  $rlRun_LOG | grep wrong.txt"
+        rlRun "grep -A2 'fail /bad-with-var'  $rlRun_LOG | grep wrong.txt"
     rlPhaseEnd
 
     # In the incompatible mode the OUTPUTFILE variable should be
@@ -24,10 +24,10 @@ rlJournalStart
     for plan in "/plans/default" "/plans/incompatible"; do
         rlPhaseStartTest "Test $plan"
             rlRun -s "tmt run -vvv --id $run plan --name $plan" 1
-            rlRun "grep -A1 'pass /good-with-log' $rlRun_LOG | grep fine.txt"
-            rlRun "grep -A1 'pass /good-with-var' $rlRun_LOG | grep txt" 1
-            rlRun "grep -A1 'fail /bad-with-log'  $rlRun_LOG | grep wrong.txt"
-            rlRun "grep -A1 'fail /bad-with-var'  $rlRun_LOG | grep txt" 1
+            rlRun "grep -A2 'pass /good-with-log' $rlRun_LOG | grep fine.txt"
+            rlRun "grep -A2 'pass /good-with-var' $rlRun_LOG | grep txt" 1
+            rlRun "grep -A2 'fail /bad-with-log'  $rlRun_LOG | grep wrong.txt"
+            rlRun "grep -A2 'fail /bad-with-var'  $rlRun_LOG | grep txt" 1
         rlPhaseEnd
     done
 
