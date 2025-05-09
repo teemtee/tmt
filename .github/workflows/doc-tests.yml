@@ -22,24 +22,39 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-          cache: 'pip'
-
-      - name: Cache Hatch environments
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ github.workspace }}/.hatch_envs
-          key: hatch-envs-${{ hashFiles('pyproject.toml') }}
-
-      - name: Install hatch
-        run: pip install hatch
+      - uses: ./.github/actions/setup-docs-env
 
       - name: Run sphinx html builder
-        # -W = warnings as error
         run: hatch run docs:html -W
 
+      - name: Check GitHub API Rate Limit
+        id: rate_limit_check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          API_URL="https://api.github.com/rate_limit"
+          RESPONSE=$(curl -s -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github.v3+json" $API_URL)
+          REMAINING_CORE=$(echo "$RESPONSE" | jq -r '.resources.core.remaining')
+          echo "Remaining core API calls: $REMAINING_CORE"
+          THRESHOLD=100
+          echo "remaining_core=$REMAINING_CORE" >> $GITHUB_OUTPUT
+          echo "threshold=$THRESHOLD" >> $GITHUB_OUTPUT
+          if [ "$REMAINING_CORE" -lt "$THRESHOLD" ]; then
+            echo "skip_linkcheck=true" >> $GITHUB_OUTPUT
+            echo "Low GitHub API core rate limit ($REMAINING_CORE remaining). Skipping linkcheck."
+          else
+            echo "skip_linkcheck=false" >> $GITHUB_OUTPUT
+            echo "Sufficient GitHub API core rate limit ($REMAINING_CORE remaining)."
+          fi
+        shell: bash
+
       - name: Run sphinx linkcheck
+        if: steps.rate_limit_check.outputs.skip_linkcheck == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: hatch run docs:linkcheck
+
+      - name: Report Skipped Linkcheck
+        if: steps.rate_limit_check.outputs.skip_linkcheck == 'true'
+        run: |
+          echo "::warning title=Linkcheck Skipped Due to Rate Limit::The Sphinx documentation link check was skipped because the remaining GitHub API core rate limit (${{ steps.rate_limit_check.outputs.remaining_core }} remaining) was below the threshold (${{ steps.rate_limit_check.outputs.threshold }}). The link check will be performed when the rate limit resets."
