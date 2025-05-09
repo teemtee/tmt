@@ -7,6 +7,9 @@
 tmt-1.48.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The console log content is now available for guests provisioned by
+the :ref:`/plugins/provision/virtual.testcloud` plugin.
+
 A new ``tmt about`` command has been introduced,
 initially providing information about the :ref:`tmt plugins <plugins>`.
 
