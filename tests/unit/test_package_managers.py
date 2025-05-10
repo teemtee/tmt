@@ -37,7 +37,7 @@ logger.add_console_handler()
 # Explore available plugins
 tmt.plugins.explore(logger)
 
-# Local images created via `make images/test`, reference to local registry
+# Local images created via `poe build-test`, reference to local registry
 from . import (  # noqa: E402
     CONTAINER_ALPINE,
     CONTAINER_CENTOS_7,

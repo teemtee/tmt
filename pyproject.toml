@@ -1,17 +1,18 @@
 [build-system]
+# TODO https://github.com/astral-sh/uv/issues/3957 uncertain. Might need/want to use setuptools or hatchling
 requires = ["uv_build>=0.7.3,<0.8.0", "setuptools-scm>=8"]
 build-backend = "uv_build"
 
 [project]
 name = "tmt"
-# TODO uv support
+# TODO uv preview = no dynamic metadata
 #dynamic = ["version"]
 version = "0.0.0"
 description = "Test Management Tool"
 readme = "README.rst"
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 authors = [
     { name = "Petr Splichal", email = "psplicha@redhat.com" },
     ]
@@ -24,24 +25,25 @@ keywords = [
     ]
 classifiers = [
     "Natural Language :: English",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Utilities",
     "Topic :: Software Development :: Testing",
     "Operating System :: POSIX :: Linux",
     ]
-dependencies = [              # F39 / PyPI
-    "click>=8.0.3,!=8.1.4",   # 8.1.3 / 8.1.6 TODO type annotations tmt.cli.Context -> click.core.Context click/issues/2558
-    "docutils>=0.16",         # 0.16 is the current one available for RHEL9
+dependencies = [
+    # Based on EPEL10
+    "click>=8.1.7, <9",
+    "docutils>=0.20.1",
     "fmf>=1.7.0",
-    "jinja2>=2.11.3",         # 3.1.2 / 3.1.2
-    "packaging>=20",          # 20 seems to be available with RHEL8
-    "pint>=0.16.1",           # 0.16.1
-    "pydantic>=1.10.14",
-    "pygments>=2.7.4",        # 2.7.4 is the current one available for RHEL9
-    "requests>=2.25.1",       # 2.28.2 / 2.31.0
-    "ruamel.yaml>=0.16.6",    # 0.17.32 / 0.17.32
-    "urllib3>=1.26.5, <3.0",  # 1.26.16 / 2.0.4
+    "jinja2>=3.1.5, <4",
+    "packaging>=24.2",
+    "pint>=0.24.4",
+    "pydantic>=2.9.2, <3",
+    "pygments>=2.18.0, <3",
+    "requests>=2.32.3, <3",
+    "ruamel.yaml>=0.18.5",  # TODO pulled by fmf
+    "urllib3>=1.26.19, <3.0", # 2.* on Fedora
     "typing-extensions>=4.9.0; python_version < '3.13'",
     ]
 
@@ -50,32 +52,32 @@ ansible = [
     "ansible-core",
     ]
 test-convert = [
-    "html2text>=2020.1.16",
-    "markdown>=3.3.4",
-    "nitrate>=1.8.2",
-    "python-bugzilla>=3.2.0",
+    "html2text>=2024.2.26",  # TODO no epel10
+    "markdown>=3.5.1, <4",
+    "nitrate>=1.9.0",  # TODO no epel10
+    "python-bugzilla>=3.3.0",
     ]
 export-polarion = [
-    "pylero>=0.0.8",
+    "pylero>=0.1.0",  # TODO no epel10
     ]
 provision-beaker = [
-    "mrack>=1.23.1",
+    "mrack>=1.23.2",  # TODO no epel10
     ]
 provision-virtual = [
-    "testcloud>=0.11.3",
+    "testcloud>=0.11.7",  # TODO no epel10
     ]
 provision-container = []
 provision-bootc = []
 report-junit = [
     # Required to support XML parsing and checking the XSD schemas.
-    "lxml>=4.6.5",
+    "lxml>=5.2.1, <6",
     ]
 report-polarion = [
     "tmt[report-junit]",
     "tmt[export-polarion]",
     ]
 link-jira = [
-    "jira>=3.5.0, <4",
+    "jira>=3.8.0, <4",
     ]
 all = [
     "tmt[test-convert]",
@@ -90,10 +92,10 @@ all = [
     ]
 # Needed for readthedocs and man page build. Not being packaged in rpm.
 docs = [
-    "renku-sphinx-theme==0.4.0",
+    "renku-sphinx-theme",
     "readthedocs-sphinx-ext",
-    "docutils>=0.18.1",
-    "Sphinx==7.3.7",
+    "docutils>=0.21.2",
+    "Sphinx==8.2.3",
     "fmf>=1.7.0",
     ]
 
@@ -106,7 +108,7 @@ Homepage = "https://github.com/teemtee/tmt"
 #[tool.setuptools_scm]
 #version_scheme = "release-branch-semver"
 
-# TODO artifacts = ["tmt.1"]
+#artifacts = ["tmt.1"]
 
 [tool.uv]
 preview = true
@@ -118,6 +120,9 @@ build-backend.data = [
     "tmt.1",
     ".fmf",
     ]
+build-backend.source-exclude = [
+    "examples/symlinks/**",  # symlinks are not valid
+]
 
 
 [dependency-groups]
@@ -131,15 +136,10 @@ dev = [
     "pytest-container",
     "pytest-xdist",
     "requre",
-    "yq==3.1.1",
+    "yq",
     "pre-commit",
-    # Do not install *types-click* - it's not recommended with Click 8 & newer,
-    # which is the version a developer encounters given the requirements are not
-    # frozen.
+    # Do not install *types-click* - it's not recommended with Click 8 & newer
     "types-Markdown",
-    # prevent conflict between types-requests and urllib3
-    "types-requests<2.31.0.7; python_version < '3.10'",
-    "types-requests; python_version >= '3.10'",
     "types-setuptools",
     "types-jsonschema",
     "types-urllib3",
@@ -159,10 +159,13 @@ docs = [
 executor = { type = "uv" }
 
 [tool.poe.tasks]
-# Testing
+# Defines various tasks that can be run with 'poe <task_name>'.
+
+# === Testing Tasks ===
 test = { cmd = "uv run -- pytest -vvv -ra --showlocals -n 0 tests/unit", help = "Run unit tests. Args are passed to pytest." }
 smoke = { cmd = "uv run -- pytest -vvv -ra --showlocals -n 0 tests/unit/test_cli.py", help = "Run smoke tests. Args are passed to pytest." }
 coverage = [
+    # This is a sequence task to generate a test coverage report.
     { cmd = "uv run -- coverage run --source=tmt -m pytest -vvv -ra --showlocals -n 0 tests" },
     { cmd = "uv run -- coverage report" },
     { cmd = "uv run -- coverage annotate" },
@@ -170,11 +173,11 @@ coverage = [
 requre = { shell = """
 echo "Regenerating requre test data..."
 (cd $POE_ROOT/tests/integration && \\
- uv run -- pytest -vvv -ra --showlocals -n 0 && \\
- uv run -- requre-patch purge --replaces :milestone_url:str:SomeText --replaces :latency:float:0 tests/integration/test_data/test_nitrate/*)
+  uv run -- pytest -vvv -ra --showlocals -n 0 && \\
+  uv run -- requre-patch purge --replaces :milestone_url:str:SomeText --replaces :latency:float:0 tests/integration/test_data/test_nitrate/*)
 """, help = "Regenerate test data for integration tests" }
 
-# Documentation
+# === Documentation Tasks ===
 docs = { cmd = "uv run --group docs -- sphinx-build -b html docs docs/_build", help = "Build HTML documentation. Extra args are passed to sphinx-build." }
 linkcheck = { cmd = "uv run --group docs -- sphinx-build -b linkcheck docs docs/_build", help = "Run sphinx linkcheck. Extra args are passed to sphinx-build." }
 
@@ -188,34 +191,35 @@ _generate_man_page = { shell = "uv run --group docs -- rst2man $POE_ROOT/man.rst
 _cleanup_man_rst = { shell = "rm -f $POE_ROOT/man.rst" }
 man = { sequence = ["_prepare_man_rst", "_generate_man_page", "_cleanup_man_rst"], help = "Build the man page" }
 
-# Building & Packaging
+# === Building & Packaging Tasks ===
 version = { cmd = "uv version --short", help = "Show project version" }
 _build_sdist_wheel = { cmd = "uv build", help = "Build sdist and wheel (core command)" }
 build = { sequence = ["clean", "man", "_build_sdist_wheel"], help = "Clean, build man page, then build project sdist and wheel" }
 
-_tmp_sources_dir = { shell = "mkdir -p $POE_ROOT/tmp/SOURCES" }
+_tmp_sources_dir = { shell = "mkdir -p $POE_ROOT/tmp/SOURCES", help = "Create temporary directory for source tarballs" }
 tarball = { sequence = ["build", "_tmp_sources_dir", { shell = "cp $POE_ROOT/dist/tmt-*.tar.gz $POE_ROOT/tmp/SOURCES/" }], help = "Create source tarball in tmp/SOURCES" }
 
 ver2spec = { shell = """
-  PROJECT_VERSION=$(uv version --short)
-  echo "Updating tmt.spec with version $PROJECT_VERSION..."
-  sed -E "s/^(Version:[[:space:]]*).*/\\1$PROJECT_VERSION/" -i $POE_ROOT/tmt.spec
+PROJECT_VERSION=$(uv version --short)
+echo "Updating tmt.spec with version $PROJECT_VERSION..."
+sed -E "s/^(Version:[[:space:]]*).*/\\1$PROJECT_VERSION/" -i $POE_ROOT/tmt.spec
 """, help = "Update tmt.spec with current project version" }
 
 rpm = { deps = ["tarball", "ver2spec"], shell = "rpmbuild --define '_topdir $POE_ROOT/tmp' -bb $POE_ROOT/tmt.spec || echo 'Hint: run `poe build-deps` to install build dependencies'", help = "Build RPMs" }
 srpm = { deps = ["tarball", "ver2spec"], shell = "rpmbuild --define '_topdir $POE_ROOT/tmp' -bs $POE_ROOT/tmt.spec", help = "Build SRPM" }
 packages = { sequence = ["rpm", "srpm"], help = "Build RPM and SRPM packages" }
 
-# TODO System Dependencies - can't be here really
+# === System Dependency Management Tasks ===
 _deps = { shell = "sudo dnf install -y uv python3-devel rpm-build", help = "Install minimal system dependencies (sudo)" }
 build-deps = { sequence = ["_deps", "tarball", "ver2spec", { shell = "rpmbuild --define '_topdir $POE_ROOT/tmp' -br $POE_ROOT/tmt.spec || sudo dnf builddep -y $POE_ROOT/tmp/SRPMS/tmt-*buildreqs.nosrc.rpm" }], help = "Install RPM build dependencies (sudo)" }
-develop = { deps = ["_deps"], shell = "sudo dnf install -y expect gcc git python3-nitrate {libvirt,krb5,libpq,python3}-devel jq podman buildah /usr/bin/python3.9", help = "Install all development system dependencies (sudo)" }
+develop = { deps = ["_deps"], shell = "sudo dnf install -y expect gcc git python3-nitrate {libvirt,krb5,libpq,python3}-devel jq podman buildah /usr/bin/python3.12", help = "Install all development system dependencies (sudo)" }
 
-# Other Development Tasks
+# === Other Development Tasks ===
 tags = { shell = "find $POE_ROOT/tmt -name '*.py' | xargs ctags --python-kinds=-i", help = "Generate ctags" }
 nitrateconf = { shell = "test -e ~/.nitrate || echo -en '[nitrate]\\nurl = https://nitrate.server/xmlrpc/\\n' | tee ~/.nitrate", help = "Ensure ~/.nitrate configuration exists" }
+all = { sequence = ["docs", "packages"], help = "Build documentation and packages" }
 
-# Cleanup
+# === Cleanup Task ===
 clean = { shell = """
 echo "Cleaning up..."
 rm -rf $POE_ROOT/tmp $POE_ROOT/build $POE_ROOT/dist $POE_ROOT/tmt.1 $POE_ROOT/man.rst
@@ -227,8 +231,24 @@ rm -rf $POE_ROOT/examples/convert/{main.fmf,test.md,Manual} $POE_ROOT/Manual
 rm -f $POE_ROOT/tests/full/repo_copy.tgz
 """, help = "Clean up temporary files, build artifacts, and .venv" }
 
-# Top-Level Aliases
-all = { sequence = ["docs", "packages"], help = "Build documentation and packages" }
+# === Container Image Management Tasks ===
+# Tasks for building and managing container images using a helper Python script.
+# These tasks call functions in 'scripts/manage_containers.py'.
+# TODO: finish manage_containers.py
+
+build-distro = { script = "scripts.manage_containers:handle_build_action(group='distro')", help = "Build all main tmt container images (e.g., tmt, tmt-all)." }
+build-test = { script = "scripts.manage_containers:handle_build_action(group='test')", help = "Build all tmt test container images." }
+build-all = { script = "scripts.manage_containers:handle_build_action(group='all')", help = "Build all tmt distro and test container images." }
+build-one = { script = "scripts.manage_containers:handle_build_action(key=key_arg)", help = "Build a single container image by its key. Usage: poe build-one key_arg=<image_key>", args = [{name = "key_arg", help="The unique key of the image to build (see script for keys)."}] }
+
+pull-bases-distro = { script = "scripts.manage_containers:handle_pull_bases_action(group='distro')", help = "Pull/update base images for the main tmt container images." }
+pull-bases-test = { script = "scripts.manage_containers:handle_pull_bases_action(group='test')", help = "Pull/update base images for the tmt test container images." }
+pull-bases-all = { script = "scripts.manage_containers:handle_pull_bases_action(group='all')", help = "Pull/update base images for all container images." }
+
+list-images = { script = "scripts.manage_containers:handle_list_images_action", help = "List available image configurations from the script." }
+list-built-distro = { script = "scripts.manage_containers:handle_list_built_action(group='distro')", help = "List built tmt distro images using podman." }
+list-built-tests = { script = "scripts.manage_containers:handle_list_built_action(group='test')", help = "List built tmt test images using podman." }
+
 
 [tool.mypy]
 # Be vewy, vewy stwict, we'we hunting wabbits^Wbugs.
@@ -244,7 +264,7 @@ show_error_codes = true
 # annotations across module boundaries.
 follow_imports = "normal"
 
-python_version = "3.9"
+python_version = "3.12"
 files = ["tmt/"]
 
 [[tool.mypy.overrides]]
@@ -300,7 +320,7 @@ ignore = [
     "tmt/hardware.py",  # pyright does not pick up pint's _typing.py or something :/
 ]
 
-pythonVersion = "3.9"
+pythonVersion = "3.12"
 pythonPlatform = "Linux"
 
 # Be vewy, vewy stwict, we'we hunting wabbits^Wbugs.
@@ -316,7 +336,7 @@ reportUnnecessaryCast = false  # Unnecessary "cast" call; type is already...
 [tool.ruff]
 line-length = 99
 src = ["tmt", "tests"]
-target-version = "py39"
+target-version = "py312"
 
 [tool.ruff.format]
 quote-style = "preserve"  # TODO: Convert to a specific quote style
@@ -405,6 +425,10 @@ ignore = [
     "D400",  # First line should end with a period
     "D401",  # First line of docstring should be in imperative mood
     "D415",  # First line should end with a period, question mark, or exclamation point
+
+    # TODO Python 3.12+
+    "UP",
+    "B905",
     ]
 
 logger-objects = ["tmt.log.Logger"]

@@ -189,7 +189,7 @@ def assert_not_log(
     )
 
 
-# Local images created via `make images/test`, reference to local registry
+# Local images created via `poe build-test`, reference to local registry
 CONTAINER_FEDORA_RAWHIDE = Container(
     url='containers-storage:localhost/tmt/container/test/fedora/rawhide/upstream:latest'
 )

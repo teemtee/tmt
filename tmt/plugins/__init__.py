@@ -147,7 +147,8 @@ def _explore_entry_point(entry_point: str, logger: Logger) -> None:
         if hasattr(eps, "select"):
             entry_point_group = eps.select(group=entry_point)
         else:
-            entry_point_group = eps[entry_point]
+            # EntryPoint (expression has type "EntryPoint", variable has type "EntryPoints")
+            entry_point_group = eps[entry_point]  # type: ignore[assignment]
 
         for found in entry_point_group:
             logger.debug(f"Loading plugin '{found.name}' ({found.value}).")
