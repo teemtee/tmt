@@ -7,10 +7,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 import jinja2
 
 import tmt.log
-import tmt.steps.execute
-import tmt.steps.provision
 import tmt.utils
-import tmt.utils.templates
 import tmt.utils.themes
 from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field

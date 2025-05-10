@@ -6,7 +6,6 @@ import requests
 import tmt
 import tmt.base
 import tmt.log
-import tmt.options
 import tmt.steps
 import tmt.steps.prepare
 import tmt.steps.provision

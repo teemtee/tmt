@@ -37,6 +37,7 @@ import tmt.options
 import tmt.queue
 import tmt.utils
 import tmt.utils.rest
+from tmt._compat.typing import Self
 from tmt.container import (
     SerializableContainer,
     SpecBasedContainer,
@@ -408,10 +409,10 @@ class StepData(
     # ignore[override]: expected, we need to accept one extra parameter, `logger`.
     @classmethod
     def from_spec(  # type: ignore[override]
-        cls: type[StepDataT],
+        cls,
         raw_data: _RawStepData,
         logger: tmt.log.Logger,
-    ) -> StepDataT:
+    ) -> Self:
         """
         Convert from a specification file or from a CLI option
         """

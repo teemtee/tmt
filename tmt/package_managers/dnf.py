@@ -173,6 +173,8 @@ class Dnf(PackageManager[DnfEngine]):
 
     _engine_class = DnfEngine
 
+    bootc_builder = True
+
     probe_command = ShellScript(
         """
         type dnf && ((dnf --version | grep -E 'dnf5 version') && exit 1 || exit 0)
@@ -295,6 +297,8 @@ class Yum(Dnf):
     NAME = 'yum'
 
     _engine_class = YumEngine
+
+    bootc_builder = False
 
     probe_command = ShellScript(
         """

@@ -635,7 +635,7 @@ Dynamic ``ref`` Evaluation
 ------------------------------------------------------------------
 
 When using test branching for test maintenance it becomes handy to
-be able to set :ref:`ref</spec/plans/discover/fmf>` dynamically
+be able to set :ref:`ref</plugins/discover/fmf>` dynamically
 depending on the provided :ref:`/spec/context`. This is possible
 using a special file in tmt format stored in a default branch of a
 tests repository. That special file should contain rules assigning

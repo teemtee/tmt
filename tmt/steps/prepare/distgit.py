@@ -17,7 +17,6 @@ from tmt.utils import Command, Path, ShellScript, uniq
 if TYPE_CHECKING:
     import tmt.base
     import tmt.steps.discover
-    import tmt.steps.prepare.install
 
 #: Application of patches by ``rpm-build`` command invoked by
 #: :ref:`discover/fmf</plugins/discover/fmf>` plugin when

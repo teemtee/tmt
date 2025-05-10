@@ -10,36 +10,46 @@ from tmt.package_managers import (
     Options,
     PackageManager,
     PackageManagerEngine,
-    dnf,
     provides_package_manager,
 )
 from tmt.utils import Command, CommandOutput, GeneralError, Path, RunError, ShellScript
 
 
 class BootcEngine(PackageManagerEngine):
+    containerfile_directives: list[str]
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize bootc engine for package management"""
         super().__init__(*args, **kwargs)
 
-        self.aux_engine = dnf.DnfEngine(*args, **kwargs)
+        self.aux_engine = self.guest.bootc_builder._engine_class(*args, **kwargs)
+        self.containerfile_directives = []
 
-        self.initialize_containerfile_directives()
-
-    def initialize_containerfile_directives(self) -> None:
+    def open_containerfile_directives(self) -> None:
         """Initialize containerfile directives"""
+
+        if self.containerfile_directives:
+            self.debug('Already collecting containerfile directives.')
+            return
+
+        self.debug('Starting collection of directives for new container file.')
+
         self.containerfile_directives = self._get_base_containerfile_directives()
+
+    def flush_containerfile_directives(self) -> None:
+        self.debug('Closing collection of directives for a container file.')
+
+        self.containerfile_directives = []
 
     def prepare_command(self) -> tuple[Command, Command]:
         """
         Prepare installation command for bootc
         """
-        command = Command()
 
         if self.guest.facts.is_superuser is False:
-            command += Command('sudo')
+            return (Command('sudo', 'bootc'), Command(''))
 
-        command += Command('bootc')
-        return (command, Command(''))
+        return (Command('bootc'), Command(''))
 
     def _get_current_bootc_image(self) -> str:
         """Get the current bootc image running on the system"""
@@ -83,6 +93,8 @@ class BootcEngine(PackageManagerEngine):
         return [f'FROM containers-storage:{self._get_current_bootc_image()}']
 
     def check_presence(self, *installables: Installable) -> ShellScript:
+        self.open_containerfile_directives()
+
         script = self.aux_engine.check_presence(*installables)
         self.containerfile_directives.append(f'RUN {script}')
         return script
@@ -92,6 +104,8 @@ class BootcEngine(PackageManagerEngine):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> ShellScript:
+        self.open_containerfile_directives()
+
         script = self.aux_engine.install(*installables, options=options)
         self.containerfile_directives.append(f'RUN {script}')
         return script
@@ -101,6 +115,8 @@ class BootcEngine(PackageManagerEngine):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> ShellScript:
+        self.open_containerfile_directives()
+
         script = self.aux_engine.reinstall(*installables, options=options)
         self.containerfile_directives.append(f'RUN {script}')
         return script
@@ -110,11 +126,15 @@ class BootcEngine(PackageManagerEngine):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> ShellScript:
+        self.open_containerfile_directives()
+
         script = self.aux_engine.install_debuginfo(*installables, options=options)
         self.containerfile_directives.append(f'RUN {script}')
         return script
 
     def refresh_metadata(self) -> ShellScript:
+        self.open_containerfile_directives()
+
         script = self.aux_engine.refresh_metadata()
         self.containerfile_directives.append(f'RUN {script}')
         return script
@@ -187,6 +207,8 @@ class Bootc(PackageManager[BootcEngine]):
 
             base_image = self.engine._get_current_bootc_image()
 
+            sudo = 'sudo' if self.guest.facts.is_superuser is False else ''
+
             try:
                 # First try if image is available in container registries.
                 # Next try the local container storage.
@@ -198,7 +220,10 @@ class Bootc(PackageManager[BootcEngine]):
                 # https://github.com/bootc-dev/bootc/issues/1259 for more information.
                 self.guest.execute(
                     ShellScript(
-                        f'( podman pull {base_image} || podman pull containers-storage:{base_image} ) || bootc image copy-to-storage --target {base_image}'  # noqa: E501
+                        f'{sudo} {tmt.utils.DEFAULT_SHELL} -c "('
+                        f'  ( podman pull {base_image} || podman pull containers-storage:{base_image} )'  # noqa: E501
+                        f'  || bootc image copy-to-storage --target {base_image}'
+                        ')"'
                     )
                 )
                 self.guest.execute(
@@ -209,7 +234,7 @@ class Bootc(PackageManager[BootcEngine]):
                 # Build the container image
                 self.info("package", "building container image with dependencies", "green")
                 self.guest.execute(
-                    Command('podman', 'build', '-t', image_tag, '-f', str(containerfile_path), '.')
+                    ShellScript(f'{sudo} podman build -t {image_tag} -f {containerfile_path} .')
                 )
 
                 # Switch to the new image for next boot
@@ -224,8 +249,8 @@ class Bootc(PackageManager[BootcEngine]):
                 self.guest.reboot()
 
             finally:
-                # Re-initialize containerfile directives
-                self.engine.initialize_containerfile_directives()
+                # Reset containerfile directives
+                self.engine.flush_containerfile_directives()
 
     def refresh_metadata(self) -> CommandOutput:
         self.engine.refresh_metadata()

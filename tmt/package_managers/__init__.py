@@ -134,7 +134,7 @@ def escape_installables(*installables: Installable) -> Iterator[str]:
 @container(frozen=True)
 class Options:
     #: A list of packages to exclude from installation.
-    excluded_packages: list[Package] = simple_field(default_factory=list)
+    excluded_packages: list[Package] = simple_field(default_factory=list[Package])
 
     #: If set, a failure to install a given package would not cause an error.
     skip_missing: bool = False
@@ -214,6 +214,10 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
     _engine_class: type[PackageManagerEngineT]
     engine: PackageManagerEngineT
+
+    #: If set, this package manager can be used for building derived
+    #: images under the hood of the ``bootc`` package manager.
+    bootc_builder: bool = False
 
     #: A command to run to check whether the package manager is available on
     #: a guest.

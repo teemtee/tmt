@@ -31,7 +31,7 @@ if [ $efi = True ]; then
         fi
         if [[ -n "$os_boot_entry" ]] ; then
             logger -s "efibootmgr -n $os_boot_entry"
-            efibootmgr -n $os_boot_entry
+            efibootmgr -n "$os_boot_entry"
         else
             logger -s "Could not determine value for BootNext!"
         fi
