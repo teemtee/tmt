@@ -16,6 +16,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.discover
 import tmt.utils
+import tmt.utils.filesystem
 import tmt.utils.git
 from tmt.base import _RawAdjustRule
 from tmt.container import container, field
@@ -540,7 +541,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             if not dist_git_source or dist_git_merge:
                 self.debug(f"Copy '{directory}' to '{self.testdir}'.")
                 if not self.is_dry_run:
-                    shutil.copytree(directory, self.testdir, symlinks=True)
+                    assert isinstance(self.run, tmt.Run)  # Needed for mypy check
+                    tmt.utils.filesystem.copy_tree(directory, self.testdir, self._logger)
 
         # Prepare path of the dynamic reference
         try:
@@ -579,11 +581,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 )
                 # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
                 # FIXME 'worktree' could be used as sourcedir when 'url' is not set
-                shutil.copytree(
+                assert isinstance(self.run, tmt.Run)  # Needed for mypy check
+                tmt.utils.filesystem.copy_tree(
                     self.testdir if ref else git_root,
                     sourcedir,
-                    symlinks=True,
-                    dirs_exist_ok=True,
+                    self._logger,
                 )
                 # patch & rediscover will happen later in the prepare step
                 if not self.get('dist-git-download-only'):
@@ -719,22 +721,24 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             # Save fmf metadata
             clonedir = self.clone_dirpath / 'tests'
             clone_tree_path = clonedir / path.unrooted()
+            assert isinstance(self.run, tmt.Run)  # Needed for mypy check
             for file_path in tmt.utils.filter_paths(tree_path, [r'\.fmf']):
-                shutil.copytree(
+                tmt.utils.filesystem.copy_tree(
                     file_path,
                     clone_tree_path / file_path.relative_to(tree_path),
-                    dirs_exist_ok=True,
+                    self._logger,
                 )
 
             # Save upgrade plan
             upgrade_path = self.get('upgrade_path')
             if upgrade_path:
                 upgrade_path = f"{upgrade_path.lstrip('/')}.fmf"
-                (clone_tree_path / upgrade_path).parent.mkdir()
+                (clone_tree_path / upgrade_path).parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(tree_path / upgrade_path, clone_tree_path / upgrade_path)
                 shutil.copymode(tree_path / upgrade_path, clone_tree_path / upgrade_path)
 
         # Prefix tests and handle library requires
+        assert isinstance(self.run, tmt.Run)  # Needed for mypy check
         for test in self._tests:
             # Propagate `where` key
             test.where = cast(tmt.steps.discover.DiscoverStepData, self.data).where
@@ -743,10 +747,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 # Save only current test data
                 assert test.path is not None  # narrow type
                 relative_test_path = test.path.unrooted()
-                shutil.copytree(
+                tmt.utils.filesystem.copy_tree(
                     tree_path / relative_test_path,
                     clone_tree_path / relative_test_path,
-                    dirs_exist_ok=True,
+                    self._logger,
                 )
 
                 # Copy all parent main.fmf files
@@ -754,6 +758,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 while parent_dir.resolve() != Path.cwd().resolve():
                     parent_dir = parent_dir.parent
                     if (tree_path / parent_dir / 'main.fmf').exists():
+                        # Ensure parent directory exists
+                        (clone_tree_path / parent_dir).mkdir(parents=True, exist_ok=True)
                         shutil.copyfile(
                             tree_path / parent_dir / 'main.fmf',
                             clone_tree_path / parent_dir / 'main.fmf',
@@ -777,7 +783,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             # Clean self.testdir and copy back only required tests and files from clonedir
             # This is to have correct paths in tests
             shutil.rmtree(self.testdir, ignore_errors=True)
-            shutil.copytree(clonedir, self.testdir)
+            assert isinstance(self.run, tmt.Run)  # Needed for mypy check
+            tmt.utils.filesystem.copy_tree(clonedir, self.testdir, self._logger)
 
         # Cleanup clone directories
         if self.clone_dirpath.exists():
@@ -854,14 +861,14 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 copy_these = [dist_git_extract.relative_to(sourcedir)]
             else:
                 copy_these = [top_fmf_root.relative_to(sourcedir)]
+            assert isinstance(self.run, tmt.Run)  # Needed for mypy check
             for to_copy in copy_these:
                 src = sourcedir / to_copy
                 if src.is_dir():
-                    shutil.copytree(
+                    tmt.utils.filesystem.copy_tree(
                         sourcedir / to_copy,
                         self.testdir if flatten else self.testdir / to_copy,
-                        symlinks=True,
-                        dirs_exist_ok=True,
+                        self._logger,
                     )
                 else:
                     shutil.copyfile(src, self.testdir / to_copy)
