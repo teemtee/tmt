@@ -90,10 +90,11 @@ class Beakerlib(TestFramework):
 
         # Initialize data, prepare log paths
         note: list[str] = []
-        log: list[Path] = []
-        for filename in [tmt.steps.execute.TEST_OUTPUT_FILENAME, 'journal.txt']:
-            if (invocation.path / filename).is_file():
-                log.append(invocation.relative_path / filename)
+        log: list[Path] = [
+            invocation.relative_path / filename
+            for filename in [tmt.steps.execute.TEST_OUTPUT_FILENAME, 'journal.txt']
+            if (invocation.path / filename).is_file()
+        ]
 
         # Check beakerlib log for the result
         beakerlib_results_filepath = invocation.path / 'TestResults'
