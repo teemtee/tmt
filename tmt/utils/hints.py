@@ -188,7 +188,7 @@ def check_for_message(patterns: list[re.Pattern[str]], outputs: list[Optional[st
     :param patterns: list of regular expressions to be searched for
     :param outputs: command output strings to be searched
 
-    :returns: true if if any pattern matches any of the provided outputs
+    :returns: True if any pattern matches any of the provided outputs
     """
 
     for output in outputs:
