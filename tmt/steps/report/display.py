@@ -35,7 +35,7 @@ DEFAULT_SUBRESULT_HEADER_TEMPLATE = """
 """  # noqa: E501
 
 DEFAULT_SUBRESULT_CHECK_HEADER_TEMPLATE = """
-{{ RESULT | format_duration | style(fg="cyan") }}{{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }} ({{ RESULT.event.value }} check)
+{{ RESULT | format_duration | style(fg="cyan") }} {{ OUTCOME | style(fg=OUTCOME_COLOR) }} {{ RESULT.name }} ({{ RESULT.event.value }} check)
 """  # noqa: E501
 
 DEFAULT_NOTE_TEMPLATE = """
