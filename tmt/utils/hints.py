@@ -25,8 +25,10 @@ on the first line, followed by more details in the rest of the text.
 # raises, providing more info on command-line and in HTML docs.
 
 import functools
+import re
 import textwrap
 from collections.abc import Iterator
+from typing import Optional
 
 import tmt.container
 import tmt.log
@@ -177,3 +179,24 @@ def print_hints(*ids: str, ignore_missing: bool = False, logger: tmt.log.Logger)
 
     for hint in hints:
         logger.info('hint', hint.render(logger), color='blue')
+
+
+def check_for_message(patterns: list[re.Pattern[str]], outputs: list[Optional[str]]) -> bool:
+    """
+    Check one or more output strings for expected error message
+
+    :param patterns: list of regular expressions to be searched for
+    :param outputs: command output strings to be searched
+
+    :returns: true if if any pattern matches any of the provided outputs
+    """
+
+    for output in outputs:
+        if output is None:
+            continue
+
+        for pattern in patterns:
+            if pattern.search(output):
+                return True
+
+    return False
