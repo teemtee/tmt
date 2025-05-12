@@ -60,6 +60,7 @@ class Epel(ToggleableFeature):
             and any(pattern.match(guest.facts.distro) for pattern in SUPPORTED_DISTRO_PATTERNS)
         ):
             logger.warning('EPEL prepare feature is supported on RHEL/CentOS-Stream 8, 9 or 10.')
+            return
         cls._run_playbook('enable', "epel-enable.yaml", guest, logger)
 
     @classmethod
