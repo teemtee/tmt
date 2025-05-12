@@ -64,6 +64,7 @@ from tmt.utils import (
     configure_constant,
     effective_workdir_root,
 )
+from tmt.utils.hints import check_for_message, print_hints
 from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
@@ -2373,9 +2374,10 @@ class GuestSsh(Guest):
                 log=log,
             )
         except tmt.utils.RunError as exc:
-            if "File 'ansible-playbook' not found." in exc.message:
-                from tmt.utils.hints import print_hints
-
+            if check_for_message(
+                patterns=[re.compile("ansible-playbook.*not found")],
+                outputs=[exc.stderr, exc.stdout, exc.message],
+            ):
                 print_hints('ansible-not-available', logger=self._logger)
             raise exc
 
