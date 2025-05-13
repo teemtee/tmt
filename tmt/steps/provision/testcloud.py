@@ -188,6 +188,16 @@ DEFAULT_DISK: 'Size' = tmt.hardware.UNITS('40 GB')
 DEFAULT_IMAGE = 'fedora'
 DEFAULT_CONNECTION = 'session'
 DEFAULT_ARCH = platform.machine()
+#: Default number of attempts to stop a VM.
+#:
+#: .. note::
+#:
+#:    The value :py:mod:`testcloud` starts with is ``3``, and we already
+#:    observed some VMs with bootc involved to not shut down in time.
+#:    Therefore starting with increased default on our side.
+DEFAULT_STOP_RETRIES = 10
+#: Default time, in seconds, to wait between attempts to stop a VM.
+DEFAULT_STOP_RETRY_DELAY = 1
 
 # Version-aware TPM configuration is added in
 # https://pagure.io/testcloud/c/89f1c024ca829543de7f74f89329158c6dee3d83
@@ -382,6 +392,24 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
     instance_name: Optional[str] = field(
         default=None,
         internal=True,
+    )
+
+    stop_retries: int = field(
+        default=DEFAULT_STOP_RETRIES,
+        metavar='N',
+        option='--stop-retries',
+        help="""
+             Number of attempts to stop a VM.
+             """,
+    )
+
+    stop_retry_delay: int = field(
+        default=DEFAULT_STOP_RETRY_DELAY,
+        metavar='SECONDS',
+        option='--stop-retry-delay',
+        help="""
+             Time to wait between attempts to stop a VM.
+             """,
     )
 
     # TODO: custom handling for two fields - when the formatting moves into
@@ -671,6 +699,9 @@ class GuestTestcloud(tmt.GuestSsh):
     connection: str
     arch: str
 
+    stop_retries: int
+    stop_retry_delay: int
+
     # Not to be saved, recreated from image_url/instance_name/... every
     # time guest is instantiated.
     # FIXME: ignore[name-defined]: https://github.com/teemtee/tmt/issues/1616
@@ -841,6 +872,9 @@ class GuestTestcloud(tmt.GuestSsh):
         # Configure to tmt's storage directories
         self.config.DATA_DIR = TESTCLOUD_DATA
         self.config.STORE_DIR = TESTCLOUD_IMAGES
+
+        self.config.STOP_RETRIES = self.stop_retries
+        self.config.STOP_RETRY_WAIT = self.stop_retry_delay
 
     def _combine_hw_memory(self) -> None:
         """
