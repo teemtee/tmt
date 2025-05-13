@@ -95,7 +95,7 @@ HINTS: dict[str, Hint] = {
             ``ansible-playbook --help``.
 
             * Users who installed tmt from system repositories should install ``ansible-core``
-            package.
+              package.
             * Users who installed tmt from PyPI should install ``tmt[ansible]`` extra.
             """,
         # TODO: once `minute` plugin provides its own hints, we can drop
