@@ -14,7 +14,9 @@ rlJournalStart
         rlRun -s "tmt run --id $workdir -vvv  $plan"
         rlAssertGrep "package: 1 package requested" "$rlRun_LOG" -F
         rlAssertGrep "test: Concise summary" "$rlRun_LOG" -F
-        rlAssertGrep '00:00:00 pass /first (on default-0) (test failed as expected, original test result: fail) [1/2]' "$rlRun_LOG" -F
+        rlAssertGrep '00:00:00 pass /first (on default-0) [1/2]' "$rlRun_LOG" -F
+        rlAssertGrep "Note: test failed as expected" $rlRun_LOG
+        rlAssertGrep "Note: original test result: fail" $rlRun_LOG
         rlAssertGrep '00:00:00 pass /second (on default-0) [2/2]' "$rlRun_LOG" -F
     rlPhaseEnd
 

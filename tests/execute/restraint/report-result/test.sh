@@ -70,11 +70,11 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest Output
-        rlRun "grep -A1 'pass /output/separate/good-no-log'   $rlRun_LOG | grep output.txt"
-        rlRun "grep -A1 'pass /output/separate/good-with-log' $rlRun_LOG | grep fine.txt"
-        rlRun "grep -A1 'fail /output/separate/bad-no-log'    $rlRun_LOG | grep output.txt"
-        rlRun "grep -A1 'fail /output/separate/bad-with-log'  $rlRun_LOG | grep wrong.txt"
-        rlRun "grep -A1 'fail /output/single'                 $rlRun_LOG | grep output.txt"
+        rlRun "grep -A2 'pass /output/separate/good-no-log'   $rlRun_LOG | grep output.txt"
+        rlRun "grep -A2 'pass /output/separate/good-with-log' $rlRun_LOG | grep fine.txt"
+        rlRun "grep -A2 'fail /output/separate/bad-no-log'    $rlRun_LOG | grep output.txt"
+        rlRun "grep -A2 'fail /output/separate/bad-with-log'  $rlRun_LOG | grep wrong.txt"
+        rlRun "grep -A2 'fail /output/single'                 $rlRun_LOG | grep output.txt"
     rlPhaseEnd
 
     rlPhaseStartCleanup
