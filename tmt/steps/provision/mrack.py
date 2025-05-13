@@ -2,6 +2,7 @@ import asyncio
 import dataclasses
 import datetime
 import importlib.metadata
+import json
 import logging
 import os
 import re
@@ -30,6 +31,7 @@ from tmt.utils import (
     ProvisionError,
     ShellScript,
     UpdatableMessage,
+    get_quay_repo_tag,
 )
 from tmt.utils.templates import render_template
 from tmt.utils.wait import Deadline, Waiting
@@ -863,7 +865,6 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
             """
 
             req: dict[str, Any] = super().create_host_requirement(host.to_mrack())
-
             if host.hardware and host.hardware.constraint:
                 req.update(self._translate_tmt_hw(host.hardware))
 
@@ -889,6 +890,24 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
 
             # Whiteboard must be added *after* request preparation, to overwrite the default one.
             req['whiteboard'] = host.whiteboard
+            if host.bootc:
+                req['ks_append'] = req['ks_append'] if req.get('ks_append') else []
+                ks_meta = req['ks_meta'] if req.get('ks_meta') else ''
+                req['ks_meta'] = (
+                    'no_default_harness_repo disable_debug_repos disable_onerror ' + ks_meta
+                )
+                ks_list = [
+                    f"""
+ostreecontainer --url {host.image_url}
+%pre
+#!/bin/sh
+cat > /etc/ostree/auth.json <<EOF
+{host.auth_dict}
+EOF
+%end
+"""
+                ]
+                req['ks_append'].extend(ks_list)
 
             logger.debug('mrack request', req, level=4)
 
@@ -1009,6 +1028,119 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              """,
     )
 
+    quay_secret: Optional[str] = field(
+        default=None,
+        option=('--quay-secret'),
+        metavar='QUAY_SECRET',
+        help="""
+             Specify quay secret.
+             """,
+    )
+
+    quay_user: Optional[str] = field(
+        default=None,
+        option=('--quay-user'),
+        metavar='QUAY_USER',
+        help="""
+             Specify quay user.
+             """,
+    )
+
+    quay_password: Optional[str] = field(
+        default=None,
+        option=('--quay-password'),
+        metavar='QUAY_PASSWORD',
+        help="""
+             Specify quay password.
+             """,
+    )
+
+    base_image_url: str = field(
+        default="quay.io/fedora/fedora-bootc:41",
+        option=('--tier1-image-url'),
+        metavar='TIER1_IMAGE_URL',
+        help="""
+             Select container image to be used to build a bootc disk.
+             This takes priority over Containerfile.
+             """,
+    )
+
+    test_image_name: str = field(
+        default="bootc-workflow-test",
+        option=('--test-image-name'),
+        metavar='IMAGENAME',
+        help="""
+             Specify test image name.
+             """,
+    )
+
+    base_repo: str = field(
+        default="quay.io/bootc-test",
+        option=('--base-repo'),
+        metavar='BASEREPO',
+        help="""
+             Select base quay repo to push the image to.
+             """,
+    )
+
+    customize_image: bool = field(
+        default=False,
+        is_flag=True,
+        option=('--customize-image'),
+        help="""
+             Customize container image or not, if not set,
+             base_image_url will be used to perform the installation.
+             """,
+    )
+
+    bootc: bool = field(
+        default=False,
+        is_flag=True,
+        option=('--bootc'),
+        help="""
+             bootc installation or not, if set, base_image_url need to be set.
+             """,
+    )
+
+    container_file: Optional[str] = field(
+        default=None,
+        option='--container-file',
+        metavar='CONTAINER_FILE',
+        help="""
+             Select container file to be used to build a container image
+             that is then used by bootc image builder to create a disk image.
+
+             Cannot be used with container-image.
+             """,
+    )
+
+    container_file_workdir: str = field(
+        default=".",
+        option=('--container-file-workdir'),
+        metavar='CONTAINER_FILE_WORKDIR',
+        help="""
+             Select working directory for the podman build invocation.
+             """,
+    )
+
+    distro_name: str = field(
+        default="42",
+        option=('--distro-name'),
+        metavar='DISTRO_NAME',
+        help="""
+             Specify the distro name to build the base image.
+             """,
+    )
+
+    image_tag: Optional[str] = field(
+        default=None,
+        option=('--image-tag'),
+        metavar='IMAGE_TAG',
+        help="""
+             Specify the image tag to build the image.
+             """,
+    )
+
 
 @container
 class ProvisionBeakerData(BeakerGuestData, tmt.steps.provision.ProvisionStepData):
@@ -1048,6 +1180,9 @@ class CreateJobParameters:
     beaker_job_owner: Optional[str]
     public_key: list[str]
     group: Optional[str]
+    auth_dict: Optional[str]
+    image_url: Optional[str]
+    bootc: Optional[bool]
 
     def to_mrack(self) -> dict[str, Any]:
         data = dataclasses.asdict(self)
@@ -1195,7 +1330,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     _api_timestamp: Optional[datetime.datetime] = None
 
     def __init__(self, *args: Any, **kwargs: Any):
-        """
+       """
         Make sure that the mrack module is available and imported
         """
 
@@ -1203,6 +1338,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
         assert isinstance(self.parent, tmt.steps.provision.Provision)
         import_and_load_mrack_deps(self.parent.workdir, self.parent.name, self._logger)
+        self.data = data
 
     @property
     def api(self) -> BeakerAPI:
@@ -1261,6 +1397,22 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         """
         Create beaker job xml request and submit it to Beaker hub
         """
+        auth_dict = None
+        image_url = ''
+        if self.data.bootc:
+            auth_dict = json.dumps(
+                {"auths": {"quay.io": {"auth": self.data.quay_secret}}}
+                if self.data.quay_secret
+                else {}
+            )
+            if self.data.customize_image:
+                assert self.data.base_repo
+                assert self.data.test_image_name
+                image_url = (
+                    f"{self.data.base_repo}/{self.data.test_image_name}:{self.data.image_tag}"
+                )
+            else:
+                image_url = self.data.base_image_url
 
         data = CreateJobParameters(
             tmt_name=tmt_name,
@@ -1273,6 +1425,9 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             beaker_job_owner=self.beaker_job_owner,
             public_key=self.public_key,
             group=self.beaker_job_group,
+            auth_dict=auth_dict,
+            image_url=image_url,
+            bootc=self.data.bootc,
         )
 
         if self.is_dry_run:
@@ -1541,12 +1696,118 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
                 logger=self._logger,
             )
 
+    def _build_base_image(self, container_file: str) -> str:
+        """
+        Build the base container image
+        """
+
+        self._logger.debug("Build container image.")
+        container_workdir = tmt.utils.expand_path(self.data.container_file_workdir)
+        image_tag = f'localhost/{self.data.test_image_name}:{self.data.distro_name}'
+        tmt.utils.Command(
+            "podman",
+            "build",
+            container_workdir,
+            "-f",
+            container_file,
+            "-t",
+            image_tag,
+        ).run(
+            cwd=self.workdir,
+            stream_output=True,
+            logger=self._logger,
+        )
+        return image_tag
+
+    def _build_derived_image(self) -> str:
+        """
+        Build the container image
+        """
+        platform_dict = {
+            "x86_64": "linux/amd64",
+            "aarch64": "linux/arm64",
+            "ppc64le": "linux/ppc64le",
+            "s390x": "linux/s390x",
+        }
+        distro_name = self.containerimage.split(':')[1]
+        if distro_name == '43':
+            distro_name = 'Rawhide'
+        harness_template = '''
+[beaker-harness]
+name=beaker-harness
+baseurl=http://beaker.engineering.redhat.com/harness/Fedora{{ distro_name }}/
+enabled=1
+gpgcheck=0
+        '''
+        harness_parsed = render_template(harness_template, distro_name=distro_name)
+        containerfile_template = '''
+FROM {{ base_image_url }}
+ADD http://lab-02.rhts.eng.rdu.redhat.com/beaker/anamon3 /usr/local/sbin/anamon
+COPY beaker-harness.repo /etc/yum.repos.d/beaker-harness.repo
+RUN <<EORUN
+set -xeuo pipefail
+chmod 755 /usr/local/sbin/anamon
+dnf install -y curl restraint restraint-rhts audit chrony
+dnf -y clean all
+rm -rf /var/cache /var/lib/dnf
+EORUN
+        '''
+        containerfile_parsed = render_template(
+            containerfile_template, base_image_url=self.containerimage
+        )
+        assert self.workdir
+        (self.workdir / 'beaker-harness.repo').write_text(harness_parsed)
+        (self.workdir / 'containerfile').write_text(containerfile_parsed)
+        self._logger.debug("Build container image.")
+        image_name = f"{self.data.test_image_name}:{self.data.image_tag}"
+        tmt.utils.Command(
+            "podman",
+            "build",
+            "--platform",
+            platform_dict[f'{self.data.arch}'],
+            "--from",
+            self.containerimage,
+            "-f",
+            f"{self.workdir}/containerfile",
+            "-t",
+            image_name,
+            self.workdir if self.workdir else os.getcwd(),
+        ).run(
+            cwd=self.workdir,
+            stream_output=True,
+            logger=self._logger,
+            env=None,
+        )
+        return image_name
+
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
         Provision the guest
         """
 
         super().go(logger=logger)
+        if self.data.bootc and self.data.customize_image:
+            if not self.data.image_tag:
+                image_tag = get_quay_repo_tag(self._logger)
+                assert image_tag
+                self.data.image_tag = image_tag.strip()
+            if self.data.quay_user and self.data.quay_password and self.data.quay_secret:
+                if self.data.container_file:
+                    self.containerimage = self._build_base_image(self.data.container_file)
+                else:
+                    self.containerimage = self.data.base_image_url
+                containerimage = self._build_derived_image()
+                tmt.utils.ShellScript(
+                    f"podman login -u {self.data.quay_user} -p {self.data.quay_password} quay.io"
+                ).to_shell_command().run(cwd=self.workdir, logger=self._logger)
+                tmt.utils.ShellScript(
+                    "podman push --tls-verify=false --quiet "
+                    f"{containerimage} {self.data.base_repo}/{containerimage}"
+                ).to_shell_command().run(cwd=self.workdir, logger=self._logger)
+            else:
+                raise tmt.utils.ProvisionError(
+                    "'quay_user', 'quay_password' and 'quay_secret' must be specified."
+                )
 
         data = BeakerGuestData.from_plugin(self)
 
