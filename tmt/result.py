@@ -1,5 +1,4 @@
 import enum
-import re
 from typing import TYPE_CHECKING, Any, Callable, Optional, cast
 
 import fmf
@@ -223,6 +222,18 @@ class BaseResult(SerializableContainer):
     def printable_note(self) -> str:
         return ', '.join(self.note)
 
+    def failures(self) -> list[Path]:
+        """
+        Return paths to all failures from the result
+        """
+
+        if self.result not in (ResultOutcome.FAIL, ResultOutcome.ERROR, ResultOutcome.WARN):
+            return []
+
+        return list(
+            {path for path in self.log if path.name == tmt.steps.execute.TEST_FAILURES_FILENAME}
+        )
+
 
 @container
 class CheckResult(BaseResult):
@@ -269,12 +280,15 @@ class SubResult(BaseResult):
         ],
     )
 
-    @staticmethod
-    def failures(log: Optional[str], msg_type: str = 'FAIL') -> str:
+    def failures(self) -> list[Path]:
         """
-        Filter stdout and get only messages with certain type
+        Return paths to all failures from the result
         """
-        return Result.failures(log, msg_type)
+
+        failures = super().failures()
+        for check in self.check:
+            failures.extend(check.failures())
+        return list(set(failures))
 
 
 @container
@@ -575,57 +589,15 @@ class Result(BaseResult):
 
         return ' '.join(components)
 
-    @staticmethod
-    def failures(log: Optional[str], msg_type: str = 'FAIL') -> str:
+    def failures(self) -> list[Path]:
         """
-        Filter stdout and get only messages with certain type
+        Return paths to all failures from the result
         """
 
-        if not log:
-            return ''
-        filtered = ''
-
-        # Filter beakerlib style logs in the following way:
-        # 1. Reverse the log string by lines
-        # 2. Search for each FAIL and extract every associated line.
-        # 3. For failed phases also extract phase name so the log is easier to understand
-        # 4. Reverse extracted lines back into correct order.
-        if re.search(':: \\[   FAIL   \\] ::', log):  # dumb check for a beakerlib log
-            copy_line = False
-            copy_phase_name = False
-            failure_log: list[str] = []
-            # we will be processing log lines in a reversed order
-            iterator = iter(reversed(log.split("\n")))
-            for line in iterator:
-                # found FAIL enables log extraction
-                if re.search(':: \\[   FAIL   \\] ::', line):
-                    copy_line = True
-                    copy_phase_name = True
-                # BEGIN of rlRun block or previous command or beginning of a test section
-                # disables extraction
-                elif re.search('(:: \\[.{10}\\] ::|[:]{80})', line):
-                    copy_line = False
-                # extract line from the log
-                if copy_line:
-                    failure_log.append(line)
-                # Add beakerlib phase name to a failure log, in order to properly match the phase
-                # name we need to do this in two steps.
-                if copy_phase_name and re.search('[:]{80}', line):
-                    # read the next line containing phase name
-                    line = next(iterator)
-                    failure_log.append(f'\n{line}')
-                    copy_phase_name = False
-            # reverse extracted lines to restore previous order
-            failure_log.reverse()
-            return '\n'.join(failure_log).strip()
-
-        # Check for other failures and errors when not using beakerlib
-        for m in re.findall(
-            rf'.*\b(?=error|fail|{msg_type})\b.*', log, re.IGNORECASE | re.MULTILINE
-        ):
-            filtered += m + '\n'
-
-        return filtered or log
+        failures = super().failures()
+        for check in self.check:
+            failures.extend(check.failures())
+        return list(set(failures))
 
 
 def results_to_exit_code(results: list[Result], execute_enabled: bool = True) -> int:

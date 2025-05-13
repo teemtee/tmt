@@ -305,11 +305,27 @@ def make_junit_xml(
         except tmt.utils.FileError:
             return ''
 
+    def _read_failures_filter(paths: list[Path]) -> str:
+        """
+        Read the contents of a given failures file
+        """
+        failures: list[str] = []
+        for path in paths:
+            if not path or not path.exists():
+                continue
+
+            try:
+                failures.extend(tmt.utils.yaml_to_list(phase.step.plan.execute.read(path)))
+            except tmt.utils.FileError:
+                continue
+
+        return '\n'.join(failures)
+
     environment.filters.update(
         {
             'read_log': _read_log_filter,
             'duration_to_seconds': _duration_to_seconds_filter,
-            'failures': tmt.result.Result.failures,
+            'read_failures': _read_failures_filter,
             # Use a wrapper function to also _escape_control_chars.
             'e': _escape_control_chars_filter(environment.filters['e']),
         }

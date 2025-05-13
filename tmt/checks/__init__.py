@@ -12,10 +12,11 @@ from tmt.container import (
     key_to_option,
 )
 from tmt.plugins import PluginRegistry
-from tmt.utils import NormalizeKeysMixin
+from tmt.utils import NormalizeKeysMixin, Path
 
 if TYPE_CHECKING:
     import tmt.base
+    import tmt.steps.execute
     from tmt.result import CheckResult
     from tmt.steps.execute import TestInvocation
     from tmt.steps.provision import Guest
@@ -61,6 +62,34 @@ def find_plugin(name: str) -> 'CheckPluginClass':
         raise tmt.utils.GeneralError(f"Test check '{name}' was not found in check registry.")
 
     return plugin
+
+
+def save_check_failures(
+    invocation: 'TestInvocation',
+    failures: list[str],
+    logger: tmt.log.Logger,
+) -> Optional[Path]:
+    """
+    Save check failures to a file.
+
+    :param invocation: test invocation.
+    :param failures: list of failures to save.
+    :param logger: to use for logging.
+    """
+
+    path = invocation.check_files_path / tmt.steps.execute.TEST_FAILURES_FILENAME
+    try:
+        invocation.phase.write(
+            path,
+            tmt.utils.dict_to_yaml(failures),
+            mode='a',
+        )
+    except tmt.utils.FileError as error:
+        logger.warning(f"Failed to save test failures: {error}")
+        return None
+
+    assert invocation.phase.step.workdir is not None  # narrow type
+    return path.relative_to(invocation.phase.step.workdir)
 
 
 # A "raw" test check as stored in fmf node data.

@@ -7,7 +7,14 @@ import tmt.log
 import tmt.steps.provision
 import tmt.utils
 import tmt.utils.themes
-from tmt.checks import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
+from tmt.checks import (
+    Check,
+    CheckEvent,
+    CheckPlugin,
+    _RawCheck,
+    provides_check,
+    save_check_failures,
+)
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome
 from tmt.steps.provision import GuestCapability
@@ -62,6 +69,13 @@ class DmesgCheck(Check):
     def to_minimal_spec(self) -> _RawCheck:
         return self.to_spec()
 
+    def _extract_failures(self, text: str) -> list[str]:
+        return [
+            line
+            for line in text.splitlines()
+            if any(pattern.search(line) for pattern in self.failure_pattern)
+        ]
+
     @classmethod
     def _fetch_dmesg(
         cls,
@@ -93,12 +107,14 @@ class DmesgCheck(Check):
 
     def _save_dmesg(
         self, invocation: 'TestInvocation', event: CheckEvent, logger: tmt.log.Logger
-    ) -> tuple[ResultOutcome, Path]:
+    ) -> tuple[ResultOutcome, list[Path]]:
         assert invocation.phase.step.workdir is not None  # narrow type
 
         timestamp = format_timestamp(datetime.datetime.now(datetime.timezone.utc))
 
         path = invocation.check_files_path / TEST_POST_DMESG_FILENAME.format(event=event.value)
+
+        failures: list[str] = []
 
         try:
             output = self._fetch_dmesg(invocation.guest, logger)
@@ -109,9 +125,10 @@ class DmesgCheck(Check):
 
         else:
             outcome = ResultOutcome.PASS
-
-            if any(pattern.search(output.stdout or '') for pattern in self.failure_pattern):
+            text = output.stdout or ''
+            if any(pattern.search(text) for pattern in self.failure_pattern):
                 outcome = ResultOutcome.FAIL
+                failures = self._extract_failures(text)
 
         invocation.phase.write(
             path,
@@ -119,7 +136,13 @@ class DmesgCheck(Check):
             mode='a',
         )
 
-        return outcome, path.relative_to(invocation.phase.step.workdir)
+        log_paths = [path.relative_to(invocation.phase.step.workdir)]
+
+        failures_path = save_check_failures(invocation, failures, logger) if failures else None
+        if failures_path:
+            log_paths.append(failures_path)
+
+        return outcome, log_paths
 
 
 @provides_check('dmesg')
@@ -193,9 +216,8 @@ class Dmesg(CheckPlugin[DmesgCheck]):
         if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
             return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
 
-        outcome, path = check._save_dmesg(invocation, CheckEvent.BEFORE_TEST, logger)
-
-        return [CheckResult(name='dmesg', result=outcome, log=[path])]
+        outcome, paths = check._save_dmesg(invocation, CheckEvent.BEFORE_TEST, logger)
+        return [CheckResult(name='dmesg', result=outcome, log=paths)]
 
     @classmethod
     def after_test(
@@ -212,6 +234,5 @@ class Dmesg(CheckPlugin[DmesgCheck]):
         if not invocation.is_guest_healthy:
             return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
 
-        outcome, path = check._save_dmesg(invocation, CheckEvent.AFTER_TEST, logger)
-
-        return [CheckResult(name='dmesg', result=outcome, log=[path])]
+        outcome, paths = check._save_dmesg(invocation, CheckEvent.AFTER_TEST, logger)
+        return [CheckResult(name='dmesg', result=outcome, log=paths)]

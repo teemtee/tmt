@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional
 
 import tmt.log
 import tmt.utils
-from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
+from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check, save_check_failures
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome
 from tmt.utils import Command, Path, ShellScript
@@ -260,15 +260,15 @@ class CoredumpCheck(Check):
 
         logger.debug(f"Timed out after {total_wait}s waiting for systemd-coredump processes")
 
-    def _check_for_crashes(
+    def _get_crashes(
         self,
         guest: "Guest",
         logger: tmt.log.Logger,
         check_files_path: Path,
         previous_dumps_file: Path,
-    ) -> bool:
+    ) -> list[str]:
         """
-        Check if any new crashes have been detected since the test started.
+        Get any new crashes that have been detected since the test started.
 
         Uses the timestamp of the latest coredump before the test to identify
         new coredumps created during test execution.
@@ -312,10 +312,10 @@ class CoredumpCheck(Check):
             output = guest.execute(ShellScript(cmd)).stdout
 
             if not output:
-                return False
+                return []
 
             # Process each crash entry
-            has_new_crashes = False
+            crashes: list[str] = []
             for line in output.splitlines():
                 fields = line.split()
                 if len(fields) < 10:  # Ensure we have enough fields
@@ -377,27 +377,27 @@ class CoredumpCheck(Check):
                     logger.debug(f"Skipping dump for PID {pid}, corefile status: {corefile}")
 
                 # This is a new, non-ignored crash
-                has_new_crashes = True
+                crashes.append(crash_info)
 
-            return has_new_crashes
+            return crashes
 
         except tmt.utils.RunError as exc:
             logger.debug(f"Failed to check for crashes: {exc}")
-            return False
+            return []
 
     def _check_coredump(
-        self, invocation: "TestInvocation", logger: tmt.log.Logger
+        self, invocation: "TestInvocation", logger: tmt.log.Logger, add_failures: bool = True
     ) -> tuple[ResultOutcome, list[Path]]:
         """
         Check coredump status and return appropriate result.
 
         :returns: A tuple of (outcome, log_files) where log_files is a list of
-                 paths to files with coredump information.
+                 paths to files with coredump information and potential failures.
         """
         log_files: list[Path] = []
 
         # Check for crashes by comparing with the saved file of previous dumps
-        has_crashes = self._check_for_crashes(
+        crashes = self._get_crashes(
             invocation.guest,
             logger,
             invocation.check_files_path,
@@ -419,7 +419,11 @@ class CoredumpCheck(Check):
         except tmt.utils.RunError:
             logger.debug("Failed to list coredump files")
 
-        if has_crashes:
+        if crashes:
+            if add_failures:
+                failures_path = save_check_failures(invocation, crashes, logger)
+                if failures_path:
+                    return ResultOutcome.FAIL, [*log_files, failures_path]
             return ResultOutcome.FAIL, log_files
 
         return ResultOutcome.PASS, log_files
@@ -565,7 +569,7 @@ class Coredump(CheckPlugin[CoredumpCheck]):
 
         if check._save_existing_coredumps(invocation):
             check._configure_coredump(invocation.guest, logger)
-            outcome, log_files = check._check_coredump(invocation, logger)
+            outcome, log_files = check._check_coredump(invocation, logger, add_failures=False)
 
         return [CheckResult(name="coredump", result=outcome, log=log_files)]
 
