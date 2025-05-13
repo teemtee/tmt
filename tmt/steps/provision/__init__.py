@@ -2737,6 +2737,8 @@ class GuestSsh(Guest):
 
         current_boot_time = get_boot_time() if fetch_boot_time else 0
 
+        self.debug(f"Triggering reboot with '{action}'.")
+
         try:
             action()
 
