@@ -60,5 +60,38 @@ properties:
   beaker-job-group:
     type: string
 
+  quay_secret:
+    type: string
+
+  quay_user:
+    type: string
+
+  quay_password:
+    type: string
+
+  base_image_url:
+    type: string
+
+  test_image_name:
+    type: string
+
+  base_repo:
+    type: string
+
+  bootc:
+    type: boolean
+
+  customize_image:
+    type: boolean
+
+  container-file:
+    type: string
+
+  container-file-workdir:
+    type: string
+
+  distro_name:
+    type: string
+
 required:
   - how
