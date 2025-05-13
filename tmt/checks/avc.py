@@ -9,7 +9,7 @@ import jinja2
 import tmt.log
 import tmt.utils
 import tmt.utils.themes
-from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
+from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check, save_check_failures
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome
 from tmt.utils import (
@@ -226,7 +226,7 @@ def create_final_report(
     invocation: 'TestInvocation',
     check: 'AvcCheck',
     logger: tmt.log.Logger,
-) -> tuple[ResultOutcome, Path]:
+) -> tuple[ResultOutcome, list[Path]]:
     """
     Collect the data, evaluate and create the final report
     """
@@ -246,6 +246,7 @@ def create_final_report(
     # Collect all report components
     report_timestamp = datetime.datetime.now(datetime.timezone.utc)
     report: list[str] = []
+    failures: list[str] = []
 
     # Flags indicating whether we were able to successfully fetch report components
     got_sestatus, got_rpm, got_ausearch, got_denials = False, False, False, False
@@ -261,7 +262,9 @@ def create_final_report(
         report += _report_success('sestatus', output)
 
     else:
-        report += _report_failure('sestatus', exc)
+        failure = _report_failure('sestatus', exc)
+        report += failure
+        failures.append('\n'.join(failure))
 
     # Record NVRs of interesting packages.
     interesting_packages = ' '.join(INTERESTING_PACKAGES)
@@ -277,7 +280,9 @@ def create_final_report(
         report += _report_success(f'rpm -q {interesting_packages}', output)
 
     else:
-        report += _report_failure(f'rpm -q {interesting_packages}', exc)
+        failure = _report_failure(f'rpm -q {interesting_packages}', exc)
+        report += failure
+        failures.append('\n'.join(failure))
 
     # Finally, run `ausearch`, to list AVC denials from the time the test started.
     script = ShellScript(
@@ -294,13 +299,18 @@ def create_final_report(
         got_ausearch = True
         got_denials = True
 
-        report += list(render_command_report(label='ausearch', output=output))
+        failure = list(render_command_report(label='ausearch', output=output))
+        report += failure
+        failures.append('\n'.join(failure))
 
     else:
+        failure = _report_failure('ausearch', exc)
+        report += failure
+
         if exc.returncode == 1 and exc.stderr and '<no matches>' in exc.stderr.strip():
             got_ausearch = True
-
-        report += _report_failure('ausearch', exc)
+        else:
+            failures.append('\n'.join(failure))
 
     # If we were able to fetch all components successfully, pick the result based on `ausearch`
     # output.
@@ -311,9 +321,15 @@ def create_final_report(
     else:
         outcome = ResultOutcome.ERROR
 
+    assert invocation.phase.step.workdir is not None  # narrow type
     report_filepath = _save_report(invocation, report, report_timestamp, append=True)
+    paths = [report_filepath.relative_to(invocation.phase.step.workdir)]
 
-    return outcome, report_filepath
+    failures_path = save_check_failures(invocation, failures, logger) if failures else None
+    if failures_path:
+        paths.append(failures_path)
+
+    return outcome, paths
 
 
 @container
@@ -441,10 +457,6 @@ class AvcDenials(CheckPlugin[AvcCheck]):
 
         assert invocation.phase.step.workdir is not None  # narrow type
 
-        outcome, path = create_final_report(invocation, check, logger)
+        outcome, paths = create_final_report(invocation, check, logger)
 
-        return [
-            CheckResult(
-                name='avc', result=outcome, log=[path.relative_to(invocation.phase.step.workdir)]
-            )
-        ]
+        return [CheckResult(name='avc', result=outcome, log=paths)]

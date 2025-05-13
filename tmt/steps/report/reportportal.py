@@ -608,26 +608,29 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             )
 
             # Optionally write out failures only for results which implement the failures callable
-            if hasattr(result, "failures") and index == 0 and write_out_failures:
-                message = _filter_log(
-                    result.failures(log),
-                    settings=LogFilterSettings(
-                        size=self.data.traceback_size_limit,
-                        is_traceback=True,
-                    ),
-                )
+            if index == 0 and write_out_failures:
+                for failure_file in result.failures():
+                    failures = tmt.utils.yaml_to_list(self.step.plan.execute.read(failure_file))
+                    for failure in failures:
+                        message = _filter_log(
+                            failure,
+                            settings=LogFilterSettings(
+                                size=self.data.traceback_size_limit,
+                                is_traceback=True,
+                            ),
+                        )
 
-                self.rp_api_post(
-                    session=session,
-                    path="log/entry",
-                    json={
-                        "message": message,
-                        "itemUuid": item_uuid,
-                        "launchUuid": launch_uuid,
-                        "level": "ERROR",
-                        "time": timestamp,
-                    },
-                )
+                        self.rp_api_post(
+                            session=session,
+                            path="log/entry",
+                            json={
+                                "message": message,
+                                "itemUuid": item_uuid,
+                                "launchUuid": launch_uuid,
+                                "level": "ERROR",
+                                "time": timestamp,
+                            },
+                        )
 
     def execute_rp_import(self) -> None:
         """
