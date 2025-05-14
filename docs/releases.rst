@@ -26,7 +26,7 @@ now it's possible to fully work with existing tmt runs as well.
 
 The :ref:`import of remote plans</spec/plans/import>` support has been
 extended to allow import of multiple plans. New keys,  ``scope`` and
-``importing``, allow users control which plans to import and how to
+``importing``, allow users to control which plans to import and how to
 connect them with the importing plans.
 
 
