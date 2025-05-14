@@ -13,6 +13,11 @@ slightly more details, headers and timestamps. ``execute`` now starts
 using ``display`` for its own progress reporting, providing the unified
 formatting and simplified code.
 
+The :ref:`import of remote plans</spec/plans/import>` support has been
+extended to allow import of multiple plans. New keys,  ``scope`` and
+``importing``, allow users control which plans to import and how to
+connect them with the importing plans.
+
 
 tmt-1.48.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
