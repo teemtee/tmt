@@ -2868,6 +2868,9 @@ class Plan(
                     self._source_plan_environment_file()
         # Make sure we run 'report' and 'finish' steps always if enabled
         finally:
+            for step in self.steps(skip=['finish', 'report']):
+                step.suspend()
+
             if not abort:
                 if self.report.enabled and self.report.status() != "done":
                     self.report.go()

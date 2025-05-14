@@ -1,0 +1,7 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+spawn tmt -vv run -i RUN login
+expect "root@default-0 tree"
+send -- "exit\r"
+expect eof
