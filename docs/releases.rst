@@ -14,7 +14,7 @@ using ``display`` for its own progress reporting, providing the unified
 formatting and simplified code.
 
 The :ref:`import of remote plans</spec/plans/import>` support has been
-extended to allow import of multiple plans. New keys,  ``scope`` and
+extended to allow import of multiple plans. New keys, ``scope`` and
 ``importing``, allow users to control which plans to import and how to
 connect them with the importing plans.
 
