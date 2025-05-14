@@ -15,7 +15,6 @@ import tmt.steps.provision
 import tmt.utils
 from tmt.container import container
 from tmt.plugins import PluginRegistry
-from tmt.result import PhaseResult
 from tmt.steps.provision import Guest
 from tmt.utils import Path
 from tmt.utils.templates import render_template
@@ -348,16 +347,16 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
         guest: 'Guest',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
-    ) -> list[PhaseResult]:
+    ) -> tmt.steps.PluginOutcome:
         """
         Prepare the guests
         """
 
-        results = super().go(guest=guest, environment=environment, logger=logger)
+        outcome = super().go(guest=guest, environment=environment, logger=logger)
 
         # Nothing to do in dry mode
         if self.opt('dry'):
-            return []
+            return outcome
 
         for plugin_id in _FEATURE_PLUGIN_REGISTRY.iter_plugin_ids():
             plugin_class = find_plugin(plugin_id)
@@ -382,7 +381,7 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
             else:
                 raise tmt.utils.GeneralError(f"Unknown plugin implementation '{plugin_class}'.")
 
-        return results
+        return outcome
 
     def essential_requires(self) -> list[tmt.base.Dependency]:
         """
