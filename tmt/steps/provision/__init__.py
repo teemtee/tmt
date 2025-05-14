@@ -1600,7 +1600,7 @@ class Guest(tmt.utils.Common):
         friendly_command: Optional[str] = None,
         log: Optional[tmt.log.LoggingFunction] = None,
         silent: bool = False,
-    ) -> None:
+    ) -> tmt.utils.CommandOutput:
         """
         Run an Ansible playbook on the guest.
 
@@ -1630,6 +1630,8 @@ class Guest(tmt.utils.Common):
         )
 
         self._ansible_summary(output.stdout)
+
+        return output
 
     @overload
     def execute(
