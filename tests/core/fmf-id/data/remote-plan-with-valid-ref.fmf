@@ -1,3 +1,9 @@
 plan:
     import:
-        ref: branch-or-tag-ref
+        url: https://github.com/teemtee/tmt.git
+        name: '.*'
+
+        ref: main
+
+        importing: become-parent
+        scope: all-plans

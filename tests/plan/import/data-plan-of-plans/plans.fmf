@@ -1,0 +1,49 @@
+/replace:
+    /first-plan-only:
+        plan:
+            import:
+                url: https://github.com/teemtee/tmt
+                name: /plans/provision
+                importing: replace
+                scope: first-plan-only
+
+    /all-plans:
+        plan:
+            import:
+                url: https://github.com/teemtee/tmt
+                name: /plans/provision
+                importing: replace
+                scope: all-plans
+
+    /single-plan-only:
+        plan:
+            import:
+                url: https://github.com/teemtee/tmt
+                name: /plans/provision
+                importing: replace
+                scope: single-plan-only
+
+/become-parent:
+    /first-plan-only:
+        plan:
+            import:
+                url: https://github.com/teemtee/tmt
+                name: /plans/provision
+                importing: become-parent
+                scope: first-plan-only
+
+    /all-plans:
+        plan:
+            import:
+                url: https://github.com/teemtee/tmt
+                name: /plans/provision
+                importing: become-parent
+                scope: all-plans
+
+    /single-plan-only:
+        plan:
+            import:
+                url: https://github.com/teemtee/tmt
+                name: /plans/provision
+                importing: become-parent
+                scope: single-plan-only
