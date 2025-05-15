@@ -585,14 +585,11 @@ class GuestFacts(SerializableContainer):
 
         discovered_package_managers: list[
             PackageManagerClass[tmt.package_managers.PackageManagerEngine]
-        ] = []
-
-        for (
-            _,
-            package_manager_class,
-        ) in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items():
-            if self._execute(guest, package_manager_class.probe_command):
-                discovered_package_managers.append(package_manager_class)
+        ] = [
+            package_manager_class
+            for package_manager_id, package_manager_class in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items()  # noqa: E501
+            if self._execute(guest, package_manager_class.probe_command)
+        ]
 
         discovered_package_managers.sort(key=lambda pm: pm.probe_priority, reverse=True)
 
@@ -620,9 +617,8 @@ class GuestFacts(SerializableContainer):
         ] = []
 
         for (
-            _,
-            package_manager_class,
-        ) in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items():
+            package_manager_class
+        ) in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.iter_plugins():
             if not package_manager_class.bootc_builder:
                 continue
 

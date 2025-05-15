@@ -1337,8 +1337,7 @@ def relevancy_to_adjust(
             # values (in relevancy this was treated as 'no value equals')
             values = re.split(r'\s*,\s*', right)
             if operator == '!=' and len(values) > 1:
-                for value in values:
-                    expressions.append(f"{left} != {value}")
+                expressions.extend([f"{left} != {value}" for value in values])
                 continue
             # Join 'left operator right' with spaces
             expressions.append(' '.join([item for item in [left, operator, right] if item]))
