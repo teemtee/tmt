@@ -832,7 +832,6 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         to the guest's root directory in a single operation.
         """
         staging_root: Optional[Path] = None
-        rendered_templates: list[Path] = []
 
         try:
             # Create a temporary local staging directory
@@ -880,11 +879,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
                 # Copy or render the script into the staging area
                 with script:
                     # Copy the script to the staging area
-                    rendered_path = script.copy_into(local_script_path)
-
-                    # Track rendered templates for cleanup if needed
-                    if rendered_path is not None:
-                        rendered_templates.append(rendered_path)
+                    script.copy_into(local_script_path)
 
                 self.debug(f"Staged script '{script.source_filename}' to '{local_script_path}'")
 
