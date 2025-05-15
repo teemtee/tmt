@@ -110,6 +110,16 @@ class Script:
     def __exit__(self, *args: object) -> None:
         pass
 
+    def copy_into(self, filepath: Path) -> Optional[Path]:
+        """
+        Copy the script to the specified filepath.
+
+        :param filepath: Path where the script should be copied
+        :returns: None for regular scripts, a Path for templates to be tracked for cleanup
+        """
+        shutil.copy2(SCRIPTS_SRC_DIR / self.source_filename, filepath)
+        return None
+
 
 @container
 class ScriptCreatingFile(Script):
@@ -153,6 +163,17 @@ class ScriptTemplate(Script):
         if self._rendered_script_path:
             with suppress(FileNotFoundError):
                 self._rendered_script_path.unlink()
+
+    def copy_into(self, filepath: Path) -> Optional[Path]:
+        """
+        Copy the rendered template script to the specified filepath.
+
+        :param filepath: Path where the script should be copied
+        :returns: The path to the rendered template for cleanup tracking
+        """
+        assert self._rendered_script_path is not None
+        shutil.copy2(self._rendered_script_path, filepath)
+        return self._rendered_script_path
 
 
 def effective_scripts_dest_dir(default: Path = DEFAULT_SCRIPTS_DEST_DIR) -> Path:
@@ -841,17 +862,13 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
                 local_script_path.parent.mkdir(parents=True, exist_ok=True)
 
                 # Copy or render the script into the staging area
-                with script as source_path:
-                    if isinstance(script, ScriptTemplate):
-                        # ScriptTemplate renders to a temporary file in __enter__
-                        rendered_path = script._rendered_script_path
-                        assert rendered_path is not None
-                        shutil.copy2(rendered_path, local_script_path)
-                        # Track rendered templates for cleanup, even though __exit__ handles it
+                with script:
+                    # Copy the script to the staging area
+                    rendered_path = script.copy_into(local_script_path)
+
+                    # Track rendered templates for cleanup if needed
+                    if rendered_path is not None:
                         rendered_templates.append(rendered_path)
-                    else:
-                        # Regular script, copy the source file
-                        shutil.copy2(source_path, local_script_path)
 
                 self.debug(f"Staged script '{script.source_filename}' to '{local_script_path}'")
 
