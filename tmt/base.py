@@ -4887,7 +4887,7 @@ class LinkNeedle:
         Specification is described in [1], this constructor takes care
         of parsing it into a corresponding ``LinkNeedle`` instance.
 
-        [1] https://tmt.readthedocs.io/en/stable/spec/plans.html#fmf
+        [1] https://tmt.readthedocs.io/en/stable/plugins/discover.html#fmf
         """
 
         parts = value.split(':', maxsplit=1)

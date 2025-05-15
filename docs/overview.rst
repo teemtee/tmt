@@ -492,7 +492,7 @@ TMT_SCRIPTS_DIR
 
     .. versionadded:: 1.38
 
-__ https://tmt.readthedocs.io/en/stable/spec/plans.html#tmt
+__ https://tmt.readthedocs.io/en/stable/plugins/execute.html#tmt
 
 TMT_SSH_*
     Every environment variable in this format would be treated as an SSH
