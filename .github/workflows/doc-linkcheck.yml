@@ -1,0 +1,50 @@
+name: doc-linkcheck
+run-name: Documentation Link Check
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+env:
+  HATCH_ENV_TYPE_VIRTUAL_PATH: ${{ github.workspace }}/.hatch_envs
+
+jobs:
+  linkcheck-docs:
+    name: Sphinx Documentation Link Check
+    runs-on: ubuntu-latest
+    # Run only when the specific label is added
+    if: github.event.label.name == 'status | ready for merge'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-docs-env
+
+      - name: Check GitHub API Rate Limit
+        id: rate_limit_check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          API_URL="https://api.github.com/rate_limit"
+          RESPONSE=$(curl -s -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github.v3+json" $API_URL)
+          REMAINING_CORE=$(echo "$RESPONSE" | jq -r '.resources.core.remaining')
+          echo "Remaining core API calls: $REMAINING_CORE"
+          THRESHOLD=100
+          if [ "$REMAINING_CORE" -lt "$THRESHOLD" ]; then
+            echo "skip_linkcheck=true" >> $GITHUB_OUTPUT
+            echo "Low GitHub API core rate limit ($REMAINING_CORE remaining). Skipping linkcheck."
+          else
+            echo "skip_linkcheck=false" >> $GITHUB_OUTPUT
+            echo "Sufficient GitHub API core rate limit ($REMAINING_CORE remaining)."
+          fi
+        shell: bash
+
+      - name: Run sphinx linkcheck
+        if: steps.rate_limit_check.outputs.skip_linkcheck != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: hatch run docs:linkcheck
