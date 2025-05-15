@@ -35,11 +35,16 @@ copy_outputfile_to_data_dir () {
     fileprefix=$(echo "$TESTNAME" | tr / _ | tr ' ' _)
     # Cut first char if underscore.
     [[ ${fileprefix:0:1} == '_' ]] && fileprefix=$(echo "$fileprefix" | cut -c 2-)
-    # Copy outputfile to data dir. Prefix with underscored test name.
-    cp -f "$outputFile" "${TMT_TEST_DATA}/${fileprefix}_${filename}"
+    # Construct the final outputfile.
+    relativeFinalOutputFile="${fileprefix}/${filename}.txt"
+    finalOutputFile="${TMT_TEST_DATA}/${relativeFinalOutputFile}"
+    # make sure the directory exists.
+    mkdir -p "$(dirname "$finalOutputFile")"
+    # Copy outputfile to data dir.
+    cp -f "$outputFile" "$finalOutputFile"
     # Make sure that the log file is readable for guest.pull()
-    chmod a+r "${TMT_TEST_DATA}/${fileprefix}_${filename}"
-    outputFile="$fileprefix"_"$filename"
+    chmod a+r "$finalOutputFile"
+    outputFile="${relativeFinalOutputFile}"
 }
 
 position=
