@@ -839,7 +839,15 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             staging_root = Path(tempfile.mkdtemp(prefix='tmt-scripts-staging-'))
             self.debug(f"Created local script staging directory: {staging_root}")
 
-            default_scripts_dest_dir_relative = guest.scripts_path.relative_to('/')
+            try:
+                default_scripts_dest_dir_relative = guest.scripts_path.relative_to('/')
+            except ValueError:
+                # Handle non-absolute paths by treating them as relative to root
+                self.warn(
+                    f"scripts_path '{guest.scripts_path}' is not absolute; "
+                    "treating it as relative to '/'"
+                )
+                default_scripts_dest_dir_relative = Path(str(guest.scripts_path).lstrip('/'))
 
             for script in self.scripts:
                 if not script.enabled(guest):
@@ -848,7 +856,15 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
                 # Determine the final path relative to the guest root '/'
                 if script.destination_path:
                     # Custom destination path provided
-                    relative_script_path = script.destination_path.relative_to('/')
+                    try:
+                        relative_script_path = script.destination_path.relative_to('/')
+                    except ValueError:
+                        # Handle non-absolute paths by treating them as relative to root
+                        self.warn(
+                            f"destination_path '{script.destination_path}' is not absolute; "
+                            "treating it as relative to '/'"
+                        )
+                        relative_script_path = Path(str(script.destination_path).lstrip('/'))
                 else:
                     # Default destination path
                     relative_script_path = (
