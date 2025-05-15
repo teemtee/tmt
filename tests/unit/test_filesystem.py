@@ -64,6 +64,125 @@ class TestCopyTree(TestCase):
             target = Path.readlink(self.dest_dir / "symlink.txt")
             assert Path(target).name == "file1.txt"
 
+    def test_copy_empty_source_directory(self):
+        """Test copying an empty source directory."""
+        # Create an empty directory
+        empty_src = self.temp_dir / "empty_src"
+        empty_dst = self.temp_dir / "empty_dst"
+        empty_src.mkdir()
+
+        # Copy the empty directory
+        tmt.utils.filesystem.copy_tree(empty_src, empty_dst, self.logger)
+
+        # Verify the destination directory exists and is empty
+        assert empty_dst.exists()
+        assert empty_dst.is_dir()
+        assert not list(empty_dst.iterdir())  # Directory is empty
+
+    def test_deeply_nested_directories(self):
+        """Test copying deeply nested directory structures."""
+        # Create a deeply nested directory structure
+        deep_src = self.temp_dir / "deep_src"
+        deep_dst = self.temp_dir / "deep_dst"
+        deep_src.mkdir()
+
+        # Create nested structure (10 levels deep)
+        current_dir = deep_src
+        test_content = "test content for deep copy"
+
+        for level in range(1, 11):
+            current_dir = current_dir / f"level_{level}"
+            current_dir.mkdir()
+
+            # Add a file at each level
+            test_file = current_dir / f"file_at_level_{level}.txt"
+            test_file.write_text(f"{test_content} at level {level}")
+
+            if level == 10:
+                pass
+
+        # Copy the deep directory structure
+        tmt.utils.filesystem.copy_tree(deep_src, deep_dst, self.logger)
+
+        # Check if the deepest directory and file exist in the copied structure
+        assert (
+            deep_dst
+            / "level_1"
+            / "level_2"
+            / "level_3"
+            / "level_4"
+            / "level_5"
+            / "level_6"
+            / "level_7"
+            / "level_8"
+            / "level_9"
+            / "level_10"
+        ).exists()
+
+        # Check content of a file in the deepest directory
+        deepest_file = (
+            deep_dst
+            / "level_1"
+            / "level_2"
+            / "level_3"
+            / "level_4"
+            / "level_5"
+            / "level_6"
+            / "level_7"
+            / "level_8"
+            / "level_9"
+            / "level_10"
+            / "file_at_level_10.txt"
+        )
+        assert deepest_file.exists()
+        assert deepest_file.read_text() == f"{test_content} at level 10"
+
+    @mock.patch('os.access')
+    def test_permission_error_handling(self, mock_access):
+        """Test handling of permission errors during copy."""
+        # Create test directory with restricted permissions
+        restricted_src = self.temp_dir / "restricted_src"
+        restricted_dst = self.temp_dir / "restricted_dst"
+        restricted_src.mkdir()
+
+        # Create a test file
+        test_file = restricted_src / "restricted_file.txt"
+        test_file.write_text("content that should be inaccessible")
+
+        # Mock os.access to simulate permission error for all files
+        mock_access.return_value = False
+
+        # Test with both cp and shutil failing due to permissions
+        with (
+            mock.patch('tmt.utils.filesystem._copy_tree_cp', return_value=False),
+            mock.patch(
+                'tmt.utils.filesystem._copy_tree_shutil',
+                side_effect=PermissionError("Simulated permission error"),
+            ),
+        ):
+            # Use pytest.raises only around the statement that raises the exception
+            with pytest.raises(tmt.utils.GeneralError) as excinfo:
+                tmt.utils.filesystem.copy_tree(restricted_src, restricted_dst, self.logger)
+
+            # Verify the error message contains information about permission error
+            assert (
+                "permission error" in str(excinfo.value).lower()
+                or "permission" in str(excinfo.value.__cause__).lower()
+            )
+
+    def test_nonexistent_source_directory(self):
+        """Test error handling when source directory doesn't exist."""
+        # Create a non-existent source path
+        nonexistent_src = self.temp_dir / "nonexistent_src"
+        destination = self.temp_dir / "destination"
+
+        # Attempt copy operation which should raise GeneralError
+        with pytest.raises(tmt.utils.GeneralError) as excinfo:
+            tmt.utils.filesystem.copy_tree(nonexistent_src, destination, self.logger)
+
+        # Verify the error message indicates the source doesn't exist
+        assert "not a directory or does not exist" in str(excinfo.value)
+
     def test_reflink_copy(self):
         """Test copy outcome when the 'cp' (reflink-aware) strategy is used."""
         # Note: Verifying reflink specifically without mocking is system-dependent.
