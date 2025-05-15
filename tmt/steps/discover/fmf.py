@@ -849,7 +849,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     git_root = self.get_git_root(Path(self.step.plan.node.root))
                     self.debug(f"Copy '{git_root}' to '{self.testdir}'.")
                     if not self.is_dry_run:
-                        shutil.copytree(git_root, self.testdir, symlinks=True, dirs_exist_ok=True)
+                        tmt.utils.filesystem.copy_tree(git_root, self.testdir, self._logger)
 
         # Copy extracted sources into testdir
         if not self.is_dry_run:
