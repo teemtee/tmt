@@ -21,17 +21,14 @@ def _copy_tree_cp(
     not supported by the filesystem.
     Returns True if successful, False if `cp` command fails with `RunError`.
     """
-    cmd = ['cp', '-a', '--reflink=auto']
-
-    logger.debug(f"Attempting copy from '{src}' to '{dst}' with {cmd}")
-
     try:
         # The '/./' at the end of the source path tells cp to copy the *contents* of the directory
         # rather than creating a new subdirectory in the destination
-        Command(*cmd, f"{src}/./", str(dst)).run(cwd=None, logger=logger, join=True, silent=True)
+        Command('cp', '-a', '--reflink=auto', f"{src}/./", str(dst)).run(
+            cwd=None, logger=logger, join=True, silent=True
+        )
         return True
-    except RunError as error:
-        logger.debug(f"cp copy command failed: {error}, falling back")
+    except RunError:
         return False
     # Let other exceptions (e.g. permissions, disk full) propagate
 
@@ -44,15 +41,10 @@ def _copy_tree_shutil(
     """
     Perform copy using shutil.copytree.
 
-    This is typically a fallback strategy. It ensures that the destination
-    directory `dst` and its parents exist before attempting the copy.
+    This is typically a fallback strategy. The destination directory must
+    exist before calling this function.
     """
     logger.debug(f"Performing shutil.copytree from '{src}' to '{dst}'")
-
-    # Ensure destination directory `dst` and its parents exist.
-    # shutil.copytree with dirs_exist_ok=True will then copy contents into `dst`,
-    # merging if `dst` already contains files (e.g. from a previous failed attempt).
-    dst.mkdir(parents=True, exist_ok=True)
 
     shutil.copytree(
         src,
@@ -112,6 +104,7 @@ def copy_tree(
 
     # 1. Try 'cp -a --reflink=auto' copy.
     #    'cp' itself handles fallback from reflink to standard copy if reflink=auto is used.
+    logger.debug(f"Attempting copy from '{src}' to '{dst}' using 'cp' with reflink")
     if _copy_tree_cp(src, dst, logger):
         logger.debug(
             "Copy finished using 'cp -a --reflink=auto' strategy (or its internal fallback)."
@@ -119,7 +112,7 @@ def copy_tree(
         return
 
     # 2. Fallback to shutil.copytree
-    logger.debug("Falling back to shutil.copytree strategy.")
+    logger.debug("cp command failed, falling back to shutil.copytree strategy.")
     try:
         _copy_tree_shutil(src, dst, logger)
         logger.debug("Copy finished using shutil.copytree strategy.")
