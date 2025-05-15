@@ -1,0 +1,3 @@
+summary: Basic sanity test of prepare/feature plugin
+tag+:
+  - provision-container

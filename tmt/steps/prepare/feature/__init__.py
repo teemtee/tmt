@@ -155,7 +155,11 @@ def find_plugin(name: str) -> 'FeatureClass':
 
 @container
 class PrepareFeatureData(tmt.steps.prepare.PrepareStepData):
-    pass
+    # PrepareFeatureData alone is **not** usable for unserialization.
+    # We need to provide the actual, composed class.
+    @classmethod
+    def unserialize_class(cls) -> Any:
+        return PrepareFeature.get_data_class()
 
 
 class FeatureBase(tmt.utils.Common):
