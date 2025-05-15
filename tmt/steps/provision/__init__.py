@@ -1082,7 +1082,11 @@ class GuestData(SerializableContainer):
 
 @container
 class GuestLog:
+    # Log file name
     name: str
+
+    # Linked guest
+    guest: "Guest"
 
     def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
         """
@@ -1316,6 +1320,16 @@ class Guest(tmt.utils.Common):
         """
 
         self.debug(f"Doing nothing to wake up guest '{self.primary_address}'.")
+
+    def suspend(self) -> None:
+        """
+        Suspend the guest.
+
+        Perform any actions necessary before quitting step and tmt. The
+        guest may be reused by future tmt invocations.
+        """
+
+        self.debug(f"Suspending guest '{self.name}'.")
 
     def start(self) -> None:
         """
@@ -1851,8 +1865,17 @@ class Guest(tmt.utils.Common):
     def logdir(self) -> Optional[Path]:
         """
         Path to store logs
+
+        Create the directory if it does not exist yet.
         """
-        return self.workdir / 'logs' if self.workdir else None
+
+        if not self.workdir:
+            return None
+
+        dirpath = self.workdir / 'logs'
+        dirpath.mkdir(parents=True, exist_ok=True)
+
+        return dirpath
 
     def fetch_logs(
         self,
@@ -2637,6 +2660,22 @@ class GuestSsh(Guest):
                 )
                 raise
 
+    def suspend(self) -> None:
+        """
+        Suspend the guest.
+
+        Perform any actions necessary before quitting step and tmt. The
+        guest may be reused by future tmt invocations.
+        """
+
+        super().suspend()
+
+        # Close the master ssh connection
+        self._cleanup_ssh_master_process()
+
+        # Remove the ssh socket
+        self._unlink_ssh_master_socket_path()
+
     def stop(self) -> None:
         """
         Stop the guest
@@ -2646,11 +2685,7 @@ class GuestSsh(Guest):
         necessary to store the instance status to disk.
         """
 
-        # Close the master ssh connection
-        self._cleanup_ssh_master_process()
-
-        # Remove the ssh socket
-        self._unlink_ssh_master_socket_path()
+        self.suspend()
 
     def perform_reboot(
         self,
@@ -2848,7 +2883,13 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
     # TODO: Generics would provide a better type, https://github.com/teemtee/tmt/issues/1437
     _guest: Optional[Guest] = None
 
-    _preserved_workdir_members = {'logs'}
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
+        """
+        A set of members of the step workdir that should not be removed.
+        """
+
+        return {*super()._preserved_workdir_members, "logs"}
 
     @classmethod
     def base_command(
@@ -3230,6 +3271,12 @@ class Provision(tmt.steps.Step):
         else:
             self.status('todo')
             self.save()
+
+    def suspend(self) -> None:
+        super().suspend()
+
+        for guest in self.guests:
+            guest.suspend()
 
     def summary(self) -> None:
         """

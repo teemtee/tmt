@@ -55,5 +55,11 @@ properties:
   role:
     $ref: "/schemas/common#/definitions/role"
 
+  stop-retries:
+    type: number
+
+  stop-retry-delay:
+    type: number
+
 required:
   - how

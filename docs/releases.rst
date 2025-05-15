@@ -4,8 +4,28 @@
     Releases
 ======================
 
+tmt-1.49.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Output of the :ref:`/plugins/execute/tmt` and
+:ref:`/plugins/report/display` is changing in this release, to provide
+slightly more details, headers and timestamps. ``execute`` now starts
+using ``display`` for its own progress reporting, providing the unified
+formatting and simplified code.
+
+When the login step was called in a separate command after the guest
+has been provisioned, the connection seemed to be stuck. This has been
+caused by the SSH master process not being terminated together with tmt,
+new tmt command would then spawn its own and conflict with the forgotten
+one. tmt no longer leaves the SSH master process running, preventing the
+issue.
+
+
 tmt-1.48.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The console log content is now available for guests provisioned by
+the :ref:`/plugins/provision/virtual.testcloud` plugin.
 
 A new ``tmt about`` command has been introduced,
 initially providing information about the :ref:`tmt plugins <plugins>`.

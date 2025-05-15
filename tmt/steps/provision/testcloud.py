@@ -4,6 +4,8 @@ import itertools
 import os
 import platform
 import re
+import shutil
+import tempfile
 import threading
 import types
 from collections.abc import Iterator
@@ -112,6 +114,9 @@ TESTCLOUD_IMAGES = TESTCLOUD_DATA / 'images'
 
 TESTCLOUD_WORKAROUNDS: list[str] = []  # A list of commands to be executed during guest boot up
 
+# Target filename to store the console log
+CONSOLE_LOG_FILE = "console.txt"
+
 # Userdata for cloud-init
 # TODO: Explore migration to jinja from string.Template
 USER_DATA = """#cloud-config
@@ -183,6 +188,16 @@ DEFAULT_DISK: 'Size' = tmt.hardware.UNITS('40 GB')
 DEFAULT_IMAGE = 'fedora'
 DEFAULT_CONNECTION = 'session'
 DEFAULT_ARCH = platform.machine()
+#: Default number of attempts to stop a VM.
+#:
+#: .. note::
+#:
+#:    The value :py:mod:`testcloud` starts with is ``3``, and we already
+#:    observed some VMs with bootc involved to not shut down in time.
+#:    Therefore starting with increased default on our side.
+DEFAULT_STOP_RETRIES = 10
+#: Default time, in seconds, to wait between attempts to stop a VM.
+DEFAULT_STOP_RETRY_DELAY = 1
 
 # Version-aware TPM configuration is added in
 # https://pagure.io/testcloud/c/89f1c024ca829543de7f74f89329158c6dee3d83
@@ -377,6 +392,24 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
     instance_name: Optional[str] = field(
         default=None,
         internal=True,
+    )
+
+    stop_retries: int = field(
+        default=DEFAULT_STOP_RETRIES,
+        metavar='N',
+        option='--stop-retries',
+        help="""
+             Number of attempts to stop a VM.
+             """,
+    )
+
+    stop_retry_delay: int = field(
+        default=DEFAULT_STOP_RETRY_DELAY,
+        metavar='SECONDS',
+        option='--stop-retry-delay',
+        help="""
+             Time to wait between attempts to stop a VM.
+             """,
     )
 
     # TODO: custom handling for two fields - when the formatting moves into
@@ -666,6 +699,9 @@ class GuestTestcloud(tmt.GuestSsh):
     connection: str
     arch: str
 
+    stop_retries: int
+    stop_retry_delay: int
+
     # Not to be saved, recreated from image_url/instance_name/... every
     # time guest is instantiated.
     # FIXME: ignore[name-defined]: https://github.com/teemtee/tmt/issues/1616
@@ -837,6 +873,9 @@ class GuestTestcloud(tmt.GuestSsh):
         self.config.DATA_DIR = TESTCLOUD_DATA
         self.config.STORE_DIR = TESTCLOUD_IMAGES
 
+        self.config.STOP_RETRIES = self.stop_retries
+        self.config.STOP_RETRY_WAIT = self.stop_retry_delay
+
     def _combine_hw_memory(self) -> None:
         """
         Combine ``hardware`` with ``--memory`` option
@@ -954,8 +993,19 @@ class GuestTestcloud(tmt.GuestSsh):
         os.makedirs(TESTCLOUD_DATA, exist_ok=True)
         os.makedirs(TESTCLOUD_IMAGES, exist_ok=True)
 
+        # Prepare the console log
+        assert self.logdir is not None  # Narrow type
+        console_log = ConsoleLog(
+            name=CONSOLE_LOG_FILE,
+            testcloud_symlink_path=self.logdir / CONSOLE_LOG_FILE,
+            guest=self,
+        )
+        console_log.prepare(logger=self._logger)
+        self.guest_logs.append(console_log)
+
         # Prepare config
         self.prepare_config()
+        self.config.CONSOLE_LOG_DIR = console_log.exchange_directory
 
         # Kick off image URL with the given image
         self.image_url = self.image
@@ -992,6 +1042,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Prepare DomainConfiguration object before Instance object
         self._domain = DomainConfiguration(self.instance_name)
+        self._domain.console_log_file = console_log.testcloud_symlink_path
 
         # Prepare Workarounds object
         self._workarounds = Workarounds(defaults=True)
@@ -1075,6 +1126,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Boot the virtual machine
         self.info('progress', 'booting...', 'cyan')
+        self.verbose("console", console_log.testcloud_symlink_path, level=2, color="cyan")
         assert libvirt is not None
 
         try:
@@ -1234,6 +1286,9 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
             # in GB
             disk: 30
 
+    Images
+    ^^^^^^
+
     As the image use ``fedora`` for the latest released Fedora compose,
     ``fedora-rawhide`` for the latest Rawhide compose, short aliases such as
     ``fedora-32``, ``f-32`` or ``f32`` for specific release or a full url to
@@ -1266,9 +1321,22 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
     In addition to the qcow2 format, Vagrant boxes can be used as well,
     testcloud will take care of unpacking the image for you.
 
+    Reboot
+    ^^^^^^
+
     To trigger hard reboot of a guest, plugin uses testcloud API. It is
     also used to trigger soft reboot unless a custom reboot command was
     specified via ``tmt-reboot -c ...``.
+
+    Console
+    ^^^^^^^
+
+    The full console log is available, after the guest is booted, in the
+    ``logs`` directory under the provision step workdir, for example:
+    ``plan/provision/client/logs/console.txt``. Enable verbose mode
+    using ``-vv`` to get the full path printed to the terminal for easy
+    investigation.
+
     """
 
     _data_class = ProvisionTestcloudData
@@ -1377,3 +1445,67 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
                     clean.fail(f"Failed to remove '{image}'.", shift=2)
                     successful = False
         return successful
+
+
+@container
+class ConsoleLog(tmt.steps.provision.GuestLog):
+    # Path where testcloud will create the symlink to the console log
+    testcloud_symlink_path: Path
+
+    # Temporary directory for storing the console log content
+    exchange_directory: Optional[Path] = None
+
+    def prepare(self, logger: tmt.log.Logger) -> None:
+        """
+        Prepare temporary directory for the console log.
+
+        Special directory is needed for console logs with the right
+        selinux context so that virtlogd is able to write there.
+        """
+
+        self.exchange_directory = Path(tempfile.mkdtemp(prefix="testcloud-"))
+        logger.debug(f"Created console log directory '{self.exchange_directory}'.", level=3)
+
+        self.exchange_directory.chmod(0o755)
+        self.guest._run_guest_command(
+            Command("chcon", "--type", "virt_log_t", self.exchange_directory), silent=True
+        )
+
+    def cleanup(self, logger: tmt.log.Logger) -> None:
+        """
+        Remove the temporary directory.
+        """
+
+        if self.exchange_directory is None:
+            return
+
+        try:
+            logger.debug(f"Remove console log directory '{self.exchange_directory}'.", level=3)
+            shutil.rmtree(self.exchange_directory)
+            self.exchange_directory = None
+
+        except OSError as error:
+            logger.warning(
+                f"Failed to remove console log directory '{self.exchange_directory}': {error}"
+            )
+
+    def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
+        """
+        Read the content of the symlink target prepared by testcloud.
+        """
+
+        text = None
+
+        try:
+            logger.debug(
+                f"Read the console log content from '{self.testcloud_symlink_path}'.", level=3
+            )
+            text = self.testcloud_symlink_path.read_text(errors="ignore")
+
+        except OSError as error:
+            logger.warning(f"Failed to read the console log: {error}")
+
+        self.testcloud_symlink_path.unlink()
+        self.cleanup(logger)
+
+        return text
