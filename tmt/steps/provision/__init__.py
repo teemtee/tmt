@@ -2579,19 +2579,15 @@ class GuestSsh(Guest):
 
             remote_target = f"{self._ssh_guest}:{dest_str}"
 
-            final_command_args = [
-                *cmd,
-                *options,
-                "-e",
-                self._ssh_command.to_element(),
-                source_str,
-                remote_target,
-            ]
-
-            self.debug(f"Executing rsync: {' '.join(map(str, final_command_args))}", level=3)
-
             self._run_guest_command(
-                Command(*final_command_args),
+                Command(
+                    *cmd,
+                    *options,
+                    "-e",
+                    self._ssh_command.to_element(),
+                    source_str,
+                    remote_target,
+                ),
                 silent=True,
             )
 
