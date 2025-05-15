@@ -617,9 +617,8 @@ class GuestFacts(SerializableContainer):
         ] = []
 
         for (
-            _,
-            package_manager_class,
-        ) in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items():
+            package_manager_class
+        ) in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.iter_plugins():
             if not package_manager_class.bootc_builder:
                 continue
 
