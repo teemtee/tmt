@@ -2553,6 +2553,7 @@ class GuestSsh(Guest):
                     self.debug(f"Source '{source}' is a directory, syncing contents.")
                 else:
                     self.debug(f"Source '{source}' is a file or does not exist, syncing item.")
+                    sync_source_contents = False
             except OSError as e:
                 # If we can't check, default to not adding the slash
                 self.warn(
@@ -2598,7 +2599,7 @@ class GuestSsh(Guest):
         try:
             rsync()
             self.debug(
-                f"Successfully pushed '{source_str}' to '{self._ssh_guest}:{dest_str}'", level=1
+                f"Successfully pushed '{source_str}' to '{self._ssh_guest}:{dest_str}'", level=2
             )
         except tmt.utils.RunError as first_error:
             self.debug(f"First rsync attempt failed: {first_error}", level=2)
@@ -2620,7 +2621,9 @@ class GuestSsh(Guest):
                 # If check passed, retry the command
                 self.debug("rsync check passed or installed, retrying command.")
                 rsync()  # Second attempt
-                self.debug(f"Pushed '{source_str}' to '{self._ssh_guest}:{dest_str}' on retry.")
+                self.debug(
+                    f"Pushed '{source_str}' to '{self._ssh_guest}:{dest_str}' on retry.", level=2
+                )
 
             except tmt.utils.RunError as second_error:
                 # Failure during the check or the second attempt
