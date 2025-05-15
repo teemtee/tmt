@@ -459,7 +459,20 @@ class GuestContainer(tmt.Guest):
         superuser: bool = False,
     ) -> None:
         """
-        Make sure that the workdir has a correct selinux context
+        Push files or directories to the container using podman cp.
+
+        When 'source' is a directory, its CONTENTS are pushed to the destination
+        (equivalent to copying each item in the directory separately). This is
+        always the behavior for consistency across all guest implementations.
+
+        If 'source' is None, the default behavior is to update the SELinux context
+        of the workdir (if SELinux is supported).
+
+        :param source: Path to a file or directory to push. If a directory,
+                      its contents (not the directory itself) are pushed.
+        :param destination: Path in the container where to push files.
+        :param options: Not used in container implementation.
+        :param superuser: Not used in container implementation.
         """
 
         if not self.is_ready:
@@ -490,17 +503,39 @@ class GuestContainer(tmt.Guest):
                 container_name = self.parent.plan.my_run.runner.facts.toolbox_container_name
 
             for src in sources:
-                # Prepare source specification for `podman cp`
-                # If in toolbox, source path is relative to the toolbox container
-                source_spec = f"{container_name}:{src}" if container_name else str(src)
-
-                dest_spec = f"{self.container}:{destination}"
+                # Check if the source is a directory - if so, push its contents
+                is_directory = False
                 try:
-                    self.podman(Command("cp", source_spec, dest_spec))
-                except tmt.utils.RunError as err:
-                    raise tmt.utils.ProvisionError(
-                        f"Failed to copy '{src}' to '{destination}': {err}"
-                    ) from err
+                    is_directory = src.exists() and src.is_dir()
+                except OSError:
+                    # If we can't check, use the path as-is
+                    self.debug(f"Could not check if '{src}' is a directory, using as-is")
+
+                # For directories, iterate through contents to maintain consistent behavior
+                if is_directory:
+                    self.debug(f"Source '{src}' is a directory, pushing contents")
+                    for item in src.iterdir():
+                        item_source_spec = (
+                            f"{container_name}:{item}" if container_name else str(item)
+                        )
+                        item_dest_spec = f"{self.container}:{destination}"
+                        try:
+                            self.debug(f"Pushing '{item}' to '{destination}'", level=2)
+                            self.podman(Command("cp", item_source_spec, item_dest_spec))
+                        except tmt.utils.RunError as err:
+                            raise tmt.utils.ProvisionError(
+                                f"Failed to push '{item}' to '{destination}': {err}"
+                            ) from err
+                else:
+                    # Regular file handling
+                    source_spec = f"{container_name}:{src}" if container_name else str(src)
+                    dest_spec = f"{self.container}:{destination}"
+                    try:
+                        self.podman(Command("cp", source_spec, dest_spec))
+                    except tmt.utils.RunError as err:
+                        raise tmt.utils.ProvisionError(
+                            f"Failed to copy '{src}' to '{destination}': {err}"
+                        ) from err
 
     def pull(
         self,

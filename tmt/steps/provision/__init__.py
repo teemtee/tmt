@@ -1708,7 +1708,21 @@ class Guest(tmt.utils.Common):
         superuser: bool = False,
     ) -> None:
         """
-        Push files to the guest
+        Push files or directories to the guest.
+
+        When 'source' is a directory, its CONTENTS are pushed to the destination
+        (equivalent to rsync source/ ...). This is always the behavior for
+        consistency across all guest implementations.
+
+        If 'source' is None, the plan workdir contents are pushed.
+        If 'destination' is None, files are pushed to '/' (root directory).
+
+        :param source: Path to a file or directory to push. If a directory,
+                      its contents (not the directory itself) are pushed.
+                      If None, the plan workdir is pushed.
+        :param destination: Path on the guest where to push. If None, defaults to '/'.
+        :param options: List of rsync options to use.
+        :param superuser: When set, run rsync with sudo on the guest.
         """
 
         raise NotImplementedError
@@ -2513,17 +2527,17 @@ class GuestSsh(Guest):
         """
         Push files or directories to the guest using rsync.
 
-        Handles rsync's trailing slash behavior automatically for the source path:
-        If 'source' is a directory that exists locally, its *contents* are synced
-        (equivalent to ``rsync source/ ...``). If 'source' is a file or does not
-        exist locally, it's synced as is (equivalent to ``rsync source ...``).
-        By default (if 'source' is None), the plan workdir *contents* are synced.
+        When 'source' is a directory, its CONTENTS are pushed to the destination
+        (equivalent to ``rsync source/ ...``). This is always the behavior for
+        consistency across all guest implementations.
 
         The 'destination' path on the guest will generally have a trailing slash
         appended (unless it's '/') to ensure files are copied *into* it.
 
-        Set 'superuser' if rsync command has to run as root or passwordless
-        sudo on the Guest (e.g. pushing to r/o destination)
+        By default (if 'source' is None), the plan workdir contents are pushed.
+
+        Set 'superuser' when rsync command has to run as root or passwordless
+        sudo on the Guest (e.g., pushing to r/o destination).
         """
 
         # Abort if guest is unavailable
@@ -2545,29 +2559,19 @@ class GuestSsh(Guest):
         else:
             self.debug(f"Copy '{source}' to '{destination}' on the guest.")
 
-            # Check if the provided source exists and is a directory locally
-            # to decide if we sync contents (add slash) or the item itself
+            # Always sync contents for directories by adding trailing slash
+            source_str = str(source)
             try:
                 if source.exists() and source.is_dir():
-                    sync_source_contents = True
+                    if not source_str.endswith('/'):
+                        source_str += '/'
                     self.debug(f"Source '{source}' is a directory, syncing contents.")
                 else:
+                    source_str = source_str.rstrip('/')
                     self.debug(f"Source '{source}' is a file or does not exist, syncing item.")
-                    sync_source_contents = False
             except OSError as e:
-                # If we can't check, default to not adding the slash
-                self.warn(
-                    f"Could not check source path '{source}': {e}. "
-                    f"Assuming it's a file/pattern (no trailing slash)."
-                )
-                sync_source_contents = False
-
-        source_str = str(source)
-        if sync_source_contents:
-            if not source_str.endswith('/'):
-                source_str += '/'
-        else:
-            source_str = source_str.rstrip('/')
+                # If we can't check, use the path as-is
+                self.warn(f"Could not check source path '{source}': {e}. Using path as provided.")
 
         dest_str = str(destination)
         # Ensure destination has a trailing slash if it's meant to be a target directory,

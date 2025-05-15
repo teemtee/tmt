@@ -917,6 +917,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             # -a implies -rlptgoD (archive mode)
             self.debug(f"Pushing staged scripts from '{staging_root}' to guest")
             guest.push(
+                # Directory contents are pushed automatically per standardized behavior
                 source=staging_root,
                 destination=Path('/'),
                 options=[
