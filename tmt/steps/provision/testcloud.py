@@ -25,7 +25,6 @@ import tmt.utils
 import tmt.utils.wait
 from tmt.container import container, field
 from tmt.utils import (
-    WORKDIR_ROOT,
     Command,
     Path,
     ProvisionError,
@@ -105,12 +104,6 @@ def import_testcloud(logger: tmt.log.Logger) -> None:
     global TPM_CONFIG_ALLOWS_VERSIONS
     TPM_CONFIG_ALLOWS_VERSIONS = hasattr(TPMConfiguration(), 'version')
 
-
-# Testcloud cache to our tmt's workdir root
-TESTCLOUD_DATA = (
-    Path(os.environ['TMT_WORKDIR_ROOT']) if os.getenv('TMT_WORKDIR_ROOT') else WORKDIR_ROOT
-) / 'testcloud'
-TESTCLOUD_IMAGES = TESTCLOUD_DATA / 'images'
 
 TESTCLOUD_WORKAROUNDS: list[str] = []  # A list of commands to be executed during guest boot up
 
@@ -716,6 +709,14 @@ class GuestTestcloud(tmt.GuestSsh):
     #: remove the lock.
     _testcloud_lock = threading.Lock()
 
+    @functools.cached_property
+    def testcloud_data_dirpath(self) -> Path:
+        return self.workdir_root / 'testcloud'
+
+    @functools.cached_property
+    def testcloud_image_dirpath(self) -> Path:
+        return self.testcloud_data_dirpath / 'images'
+
     @property
     def is_ready(self) -> bool:
         if self._instance is None:
@@ -869,9 +870,14 @@ class GuestTestcloud(tmt.GuestSsh):
         self.config.DOWNLOAD_PROGRESS = self.debug_level > 2
         self.config.DOWNLOAD_PROGRESS_VERBOSE = False
 
+        # We can't assign a not-exists path to STORE_DIR,
+        # so we should make sure required directories exist
+        os.makedirs(self.testcloud_data_dirpath, exist_ok=True)
+        os.makedirs(self.testcloud_image_dirpath, exist_ok=True)
+
         # Configure to tmt's storage directories
-        self.config.DATA_DIR = TESTCLOUD_DATA
-        self.config.STORE_DIR = TESTCLOUD_IMAGES
+        self.config.DATA_DIR = self.testcloud_data_dirpath
+        self.config.STORE_DIR = self.testcloud_image_dirpath
 
         self.config.STOP_RETRIES = self.stop_retries
         self.config.STOP_RETRY_WAIT = self.stop_retry_delay
@@ -989,9 +995,6 @@ class GuestTestcloud(tmt.GuestSsh):
 
         if self.is_dry_run:
             return
-        # Make sure required directories exist
-        os.makedirs(TESTCLOUD_DATA, exist_ok=True)
-        os.makedirs(TESTCLOUD_IMAGES, exist_ok=True)
 
         # Prepare the console log
         assert self.logdir is not None  # Narrow type
@@ -1028,7 +1031,7 @@ class GuestTestcloud(tmt.GuestSsh):
             raise ProvisionError(f"Image '{self._image.local_path}' not found.") from error
         except (testcloud.exceptions.TestcloudPermissionsError, PermissionError) as error:
             raise ProvisionError(
-                f"Failed to prepare the image. Check the '{TESTCLOUD_IMAGES}' "
+                f"Failed to prepare the image. Check the '{self.testcloud_image_dirpath}' "
                 f"directory permissions."
             ) from error
         except KeyError as error:
@@ -1417,10 +1420,11 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
         Print images which are already cached
         """
 
+        store_dir = self.workdir_root / 'testcloud/images'
         self.info("Locally available images")
-        for filename in sorted(TESTCLOUD_IMAGES.glob('*.qcow2')):
+        for filename in sorted(store_dir.glob('*.qcow2')):
             self.info(filename.name, shift=1, color='yellow')
-            click.echo(f"{TESTCLOUD_IMAGES / filename}")
+            click.echo(f"{store_dir / filename}")
 
     @classmethod
     def clean_images(cls, clean: 'tmt.base.Clean', dry: bool, workdir_root: Path) -> bool:
