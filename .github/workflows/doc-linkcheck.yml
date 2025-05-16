@@ -44,7 +44,7 @@ jobs:
         shell: bash
 
       - name: Run sphinx linkcheck
-        if: steps.rate_limit_decision.outputs.skip_linkcheck == 'false'
+        if: steps.rate_limit_check.outputs.skip_linkcheck == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: hatch run docs:linkcheck
