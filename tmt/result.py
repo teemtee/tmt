@@ -656,10 +656,14 @@ def save_failures(
     """
 
     path = directory / tmt.steps.execute.TEST_FAILURES_FILENAME
-    invocation.phase.write(
-        path,
-        tmt.utils.dict_to_yaml(failures),
-        mode='a',
-    )
+
+    try:
+        existing_failures = tmt.utils.yaml_to_list(invocation.phase.read(path))
+    except tmt.utils.FileError:
+        existing_failures = []
+
+    existing_failures += failures
+
+    invocation.phase.write(path, tmt.utils.dict_to_yaml(existing_failures))
     assert invocation.phase.step.workdir is not None  # narrow type
     return path.relative_to(invocation.phase.step.workdir)
