@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 
 import tmt.log
@@ -5,8 +6,20 @@ import tmt.result
 import tmt.steps.execute
 import tmt.utils
 from tmt.frameworks import TestFramework, provides_framework
-from tmt.result import ResultOutcome
+from tmt.result import ResultOutcome, save_failures
 from tmt.steps.execute import TEST_OUTPUT_FILENAME, TestInvocation
+from tmt.utils import Path
+
+
+def _extract_failures(log_path: Path, invocation: 'TestInvocation') -> list[str]:
+    if not log_path.is_file():
+        return []
+    try:
+        log = invocation.phase.read(log_path)
+    except tmt.utils.FileError:
+        return []
+
+    return re.findall(r'.*\b(?:error|fail)\b.*', log, re.IGNORECASE | re.MULTILINE)
 
 
 @provides_framework('shell')
@@ -20,7 +33,10 @@ class Shell(TestFramework):
 
     @classmethod
     def _process_results_reduce(
-        cls, invocation: TestInvocation, results: list['tmt.result.RawResult']
+        cls,
+        invocation: TestInvocation,
+        results: list['tmt.result.RawResult'],
+        logger: tmt.log.Logger,
     ) -> list['tmt.result.Result']:
         """
         Reduce given results to one outcome.
@@ -78,6 +94,13 @@ class Shell(TestFramework):
 
                 break
 
+        failures: list[str] = []
+        for test_log in test_logs:
+            failures += _extract_failures(test_log, invocation)
+
+        # Save failures to the file
+        test_logs.append(save_failures(invocation, invocation.test_data_path, failures))
+
         return [
             tmt.Result.from_test_invocation(
                 invocation=invocation,
@@ -114,7 +137,7 @@ class Shell(TestFramework):
         # Handle the `tmt-report-result` command results as a single test with assigned tmt
         # subresults.
         if results:
-            return cls._process_results_reduce(invocation, results)
+            return cls._process_results_reduce(invocation, results, logger)
 
         # If no extra results were passed (e.g. `tmt-report-result` was not called during the
         # test), just process the exit code of a shell test and return the result.
@@ -131,11 +154,19 @@ class Shell(TestFramework):
             elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.return_code):
                 note.append('pidfile locking')
 
+        log_path = invocation.relative_path / tmt.steps.execute.TEST_OUTPUT_FILENAME
+        paths = [
+            log_path,
+            save_failures(
+                invocation, invocation.test_data_path, _extract_failures(log_path, invocation)
+            ),
+        ]
+
         return [
             tmt.Result.from_test_invocation(
                 invocation=invocation,
                 result=result,
-                log=[invocation.relative_path / tmt.steps.execute.TEST_OUTPUT_FILENAME],
+                log=paths,
                 note=note,
             )
         ]

@@ -305,11 +305,26 @@ def make_junit_xml(
         except tmt.utils.FileError:
             return ''
 
+    def _failures_filter(paths: list[Path]) -> list[str]:
+        """
+        Return a list of failures from a given failure log file
+        """
+
+        failures: list[str] = []
+        for path in paths:
+            try:
+                failures += tmt.utils.yaml_to_list(phase.step.plan.execute.read(path))
+            except tmt.utils.FileError:
+                phase.warn(f"Unable to read failure log file: '{path}'")
+                continue
+
+        return failures
+
     environment.filters.update(
         {
             'read_log': _read_log_filter,
             'duration_to_seconds': _duration_to_seconds_filter,
-            'failures': tmt.result.Result.failures,
+            'failures': _failures_filter,
             # Use a wrapper function to also _escape_control_chars.
             'e': _escape_control_chars_filter(environment.filters['e']),
         }
