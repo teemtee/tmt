@@ -49,6 +49,12 @@ jobs:
           fi
         shell: bash
 
+      - name: Cache linkcheck results
+        uses: actions/cache@v4
+        with:
+          path: docs/_build/linkcheck_cache.json
+          key: linkcheck
+
       - name: Run sphinx linkcheck
         if: steps.rate_limit_check.outputs.skip_linkcheck == 'false'
         env:
