@@ -9,11 +9,11 @@
 
                 <testcase name="{{ result.name | e }}" {% if test_duration %}time="{{ test_duration }}"{% endif %}>
                     {% if result.result.value == 'error' or result.result.value == 'warn' %}
-                        <error type="error" message="{{ result.result.value | e }}">{{ result.failure_logs | read_failures | e }}</error>
+                        <error type="error" message="{{ result.result.value | e }}">{{ result.failure_logs | failures | join("\n") | e }}</error>
                     {% elif result.result.value == 'fail' %}
-                        <failure type="failure" message="{{ result.result.value | e }}">{{ result.failure_logs | read_failures | e }}</failure>
+                        <failure type="failure" message="{{ result.result.value | e }}">{{ result.failure_logs | failures | join("\n") | e }}</failure>
                     {% elif result.result.value == 'info' %}
-                        <skipped type="skipped" message="{{ result.result.value | e }}">{{ result.failure_logs | read_failures | e }}</skipped>
+                        <skipped type="skipped" message="{{ result.result.value | e }}">{{ result.failure_logs | failures | join("\n") | e }}</skipped>
                     {% endif %}
 
                     {% if INCLUDE_OUTPUT_LOG and result.log %}
