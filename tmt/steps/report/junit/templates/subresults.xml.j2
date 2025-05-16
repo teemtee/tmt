@@ -47,11 +47,11 @@
                 <!-- The extra test case representing the parent result. -->
                 <testcase name="{{ result.name | e }}" {% if result_test_duration %}time="{{ result_test_duration }}"{% endif %}>
                     {% if result.result.value == 'error' or result.result.value == 'warn' %}
-                        <error type="error" message="{{ result.result.value | e }}">{{ result.failures() | read_failures | e }}</error>
+                        <error type="error" message="{{ result.result.value | e }}">{{ result.failure_logs | read_failures | e }}</error>
                     {% elif result.result.value == 'fail' %}
-                        <failure type="failure" message="{{ result.result.value | e }}">{{ result.failures() | read_failures | e }}</failure>
+                        <failure type="failure" message="{{ result.result.value | e }}">{{ result.failure_logs | read_failures | e }}</failure>
                     {% elif result.result.value == 'info' %}
-                        <skipped type="skipped" message="{{ result.result.value | e }}">{{ result.failures() | read_failures | e }}</skipped>
+                        <skipped type="skipped" message="{{ result.result.value | e }}">{{ result.failure_logs | read_failures | e }}</skipped>
                     {% endif %}
 
                     {% if INCLUDE_OUTPUT_LOG and result.log %}
@@ -65,11 +65,11 @@
 
                     <testcase name="{{ subresult.name | e }}" {% if subresult_test_duration %}time="{{ subresult_test_duration }}"{% endif %}>
                         {% if subresult.result.value == 'error' or subresult.result.value == 'warn' %}
-                            <error type="error" message="{{ subresult.result.value | e }}">{{ subresult.failures() | read_failures | e }}</error>
+                            <error type="error" message="{{ subresult.result.value | e }}">{{ subresult.failure_logs | read_failures | e }}</error>
                         {% elif subresult.result.value == 'fail' %}
-                            <failure type="failure" message="{{ subresult.result.value | e }}">{{ subresult.failures() | read_failures | e }}</failure>
+                            <failure type="failure" message="{{ subresult.result.value | e }}">{{ subresult.failure_logs | read_failures | e }}</failure>
                         {% elif subresult.result.value == 'info' %}
-                            <skipped type="skipped" message="{{ subresult.result.value | e }}">{{ subresult.failures() | read_failures | e }}</skipped>
+                            <skipped type="skipped" message="{{ subresult.result.value | e }}">{{ subresult.failure_logs | read_failures | e }}</skipped>
                         {% endif %}
 
                         {% if INCLUDE_OUTPUT_LOG and subresult.log %}

@@ -609,8 +609,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
             # Optionally write out failures only for results which implement the failures callable
             if index == 0 and write_out_failures:
-                for failure_file in result.failures():
-                    failures = tmt.utils.yaml_to_list(self.step.plan.execute.read(failure_file))
+                for failure_log in result.failure_logs:
+                    failures = tmt.utils.yaml_to_list(self.step.plan.execute.read(failure_log))
                     for failure in failures:
                         message = _filter_log(
                             failure,
