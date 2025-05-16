@@ -23,8 +23,6 @@ if TYPE_CHECKING:
 
 import tmt.utils
 
-github_token = os.environ.get('GITHUB_TOKEN')
-
 _POSSIBLE_THEMES: list[tuple[Optional[str], str]] = [
     # Use renku as the default theme
     ('renku_sphinx_theme', 'renku'),
@@ -312,6 +310,8 @@ linkcheck_request_headers = {
         "User-Agent": "tmt-docs-linkcheck/1.0 (GitHub Actions)",
     },
 }
+
+github_token = os.environ.get('GITHUB_TOKEN')
 
 if github_token:
     linkcheck_request_headers[r"https://github\.com/.*"]["Authorization"] = (
