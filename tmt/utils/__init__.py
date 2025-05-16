@@ -79,6 +79,7 @@ if TYPE_CHECKING:
     from tmt.hardware import Size
 
 
+
 def sanitize_string(text: str) -> str:
     """Remove invalid Unicode characters from a string"""
     try:
@@ -5527,20 +5528,23 @@ def retry(
     raise RetryError(label, causes=exceptions)
 
 
-def get_url_content(url: str) -> str:
+def get_url_content(url: str, verify: Optional[bool] = True) -> str:
     """
     Get content of a given URL as a string
     """
 
     try:
         with retry_session() as session:
+            if not verify:
+                session.verify = False
+                urllib3.disable_warnings()
             response = session.get(url)
 
             if response.ok:
                 return response.text
 
     except Exception as error:
-        raise GeneralError(f"Could not open url '{url}'.") from error
+        raise GeneralError(f"Could not open url '{url}'.\n{error}") from error
 
     raise GeneralError(f"Could not open url '{url}'.")
 
