@@ -421,9 +421,7 @@ class CoredumpCheck(Check):
 
         if crashes:
             if add_failures:
-                failures_path = save_check_failures(invocation, crashes, logger)
-                if failures_path:
-                    return ResultOutcome.FAIL, [*log_files, failures_path]
+                return ResultOutcome.FAIL, [*log_files, save_check_failures(invocation, crashes)]
             return ResultOutcome.FAIL, log_files
 
         return ResultOutcome.PASS, log_files

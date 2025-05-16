@@ -102,9 +102,8 @@ class Shell(TestFramework):
                 failures.append(failure)
 
         # Save potential failures to the file
-        failures_path = save_test_failures(invocation, failures, logger) if failures else None
-        if failures_path:
-            test_logs.append(failures_path)
+        if failures:
+            test_logs.append(save_test_failures(invocation, failures))
 
         return [
             tmt.Result.from_test_invocation(
@@ -163,9 +162,8 @@ class Shell(TestFramework):
         paths = [log_path]
 
         failure = _extract_failure(log_path, invocation)
-        failures_path = save_test_failures(invocation, [failure], logger) if failure else None
-        if failures_path:
-            paths.append(failures_path)
+        if failure:
+            paths.append(save_test_failures(invocation, [failure]))
 
         return [
             tmt.Result.from_test_invocation(

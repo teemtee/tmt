@@ -138,9 +138,8 @@ class DmesgCheck(Check):
 
         log_paths = [path.relative_to(invocation.phase.step.workdir)]
 
-        failures_path = save_check_failures(invocation, failures, logger) if failures else None
-        if failures_path:
-            log_paths.append(failures_path)
+        if failures:
+            log_paths.append(save_check_failures(invocation, failures))
 
         return outcome, log_paths
 
