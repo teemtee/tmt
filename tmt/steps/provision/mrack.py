@@ -1022,6 +1022,15 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              """,
     )
 
+    tasks: Optional[list[dict[str, Any]]] = field(
+        default_factory=list,
+        option='--tasks',
+        metavar='TASKS',
+        help="""
+             Tasks added to the beaker job.
+             """,
+    )
+
 
 @container
 class ProvisionBeakerData(BeakerGuestData, tmt.steps.provision.ProvisionStepData):
@@ -1061,6 +1070,7 @@ class CreateJobParameters:
     beaker_job_owner: Optional[str]
     public_key: list[str]
     group: Optional[str]
+    tasks: Optional[list[dict[str, Any]]]
 
     def to_mrack(self) -> dict[str, Any]:
         data = dataclasses.asdict(self)
@@ -1080,6 +1090,8 @@ class CreateJobParameters:
                 data['beaker']['ks_append'] = kickstart
         if self.public_key:
             data['beaker']['pubkeys'] = self.public_key
+        if self.tasks:
+            data['beaker']['tasks'] = self.tasks
 
         return data
 
@@ -1203,6 +1215,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     provision_tick: int
     public_key: list[str]
     api_session_refresh_tick: int
+    tasks: list[dict[str, Any]]
 
     _api: Optional[BeakerAPI] = None
     _api_timestamp: Optional[datetime.datetime] = None
@@ -1280,6 +1293,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             beaker_job_owner=self.beaker_job_owner,
             public_key=self.public_key,
             group=self.beaker_job_group,
+            tasks=self.tasks,
         )
 
         if self.is_dry_run:
