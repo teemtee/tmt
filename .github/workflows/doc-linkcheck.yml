@@ -50,7 +50,7 @@ jobs:
         run: hatch run docs:linkcheck
 
       - name: Report Skipped Linkcheck and Fail Job
-        if: steps.rate_limit_decision.outputs.skip_linkcheck == 'true'
+        if: steps.rate_limit_check.outputs.skip_linkcheck == 'true'
         run: |
           echo "::error title=Linkcheck Skipped Due to Rate Limit::The Sphinx documentation link check was skipped because the remaining GitHub API core rate limit ($REMAINING_CORE remaining) was below the threshold ($THRESHOLD). This job is intentionally marked as failed to prevent a misleading green status. Please check back later or trigger the check when the rate limit has reset."
           exit 1 # This will cause the step, and therefore the job, to fail
