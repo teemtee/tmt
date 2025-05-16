@@ -19,7 +19,6 @@ from click import echo
 import tmt
 import tmt._bootstrap
 import tmt.base
-import tmt.cli
 import tmt.config
 import tmt.convert
 import tmt.identifier
