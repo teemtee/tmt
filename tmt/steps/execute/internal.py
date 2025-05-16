@@ -633,20 +633,35 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # overwrite it.
         self.write(invocation.path / TEST_OUTPUT_FILENAME, stdout or '', mode='a', level=3)
 
+        def pull_from_guest() -> None:
+            if not invocation.is_guest_healthy:
+                return
+
+            try:
+                guest.pull(
+                    source=invocation.path,
+                    extend_options=[
+                        *test.test_framework.get_pull_options(invocation, logger),
+                        '--exclude',
+                        str(invocation.path / TEST_OUTPUT_FILENAME),
+                    ],
+                )
+
+                # Fetch plan data content as well in order to prevent
+                # losing logs if the guest becomes later unresponsive.
+                guest.pull(source=self.step.plan.data_directory)
+
+            # Handle failing to pull test artifacts after guest becoming
+            # unresponsive. If not handled test would stay in 'pending' state.
+            # See issue https://github.com/teemtee/tmt/issues/3647.
+            except tmt.utils.RunError:
+                # TODO: We rely here on the traceback to print a reasonable
+                # failure message, should be improved later.
+                pass
+
         # Fetch #1: we need logs and everything the test produced so we could
         # collect its results.
-        if invocation.is_guest_healthy:
-            guest.pull(
-                source=invocation.path,
-                extend_options=[
-                    *test.test_framework.get_pull_options(invocation, logger),
-                    '--exclude',
-                    str(invocation.path / TEST_OUTPUT_FILENAME),
-                ],
-            )
-            # Fetch plan data content as well in order to prevent
-            # losing logs if the guest becomes later unresponsive.
-            guest.pull(source=self.step.plan.data_directory)
+        pull_from_guest()
 
         # Run after-test checks before extracting results
         invocation.check_results += self.run_checks_after_test(
@@ -658,20 +673,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # results after a successful reboot in the middle of a test.
         invocation.results = self.extract_results(invocation, logger)
 
-        if invocation.is_guest_healthy:
-            # Fetch #2: after-test checks might have produced remote files as well,
-            # we need to fetch them too.
-            guest.pull(
-                source=invocation.path,
-                extend_options=[
-                    *test.test_framework.get_pull_options(invocation, logger),
-                    '--exclude',
-                    str(invocation.path / TEST_OUTPUT_FILENAME),
-                ],
-            )
-            # Fetch plan data content as well in order to prevent
-            # losing logs if the guest becomes later unresponsive.
-            guest.pull(source=self.step.plan.data_directory)
+        # Fetch #2: after-test checks might have produced remote files as well,
+        # we need to fetch them too.
+        pull_from_guest()
 
         # Attach check results to every test result. There might be more than one,
         # and it's hard to pick the main one, who knows what custom results might

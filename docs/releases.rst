@@ -7,6 +7,10 @@
 tmt-1.49.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Fixed a bug that caused executed tests to remain in the
+``pending`` state when the machine became unresponsive. Tests will
+now correctly transition to the ``error`` state.
+
 Output of the :ref:`/plugins/execute/tmt` and
 :ref:`/plugins/report/display` is changing in this release, to provide
 slightly more details, headers and timestamps. ``execute`` now starts
