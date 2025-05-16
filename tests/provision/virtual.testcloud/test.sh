@@ -48,6 +48,7 @@ rlJournalStart
             rlAssertGrep "disk\\[0\\].size: set to '11 GB' because of 'disk\\[0\\].size: == 11 GB'" "$run/log.txt"
             rlAssertGrep "final domain memory: 2049000" "$run/log.txt"
             rlAssertGrep "final domain root disk size: 11" "$run/log.txt"
+            rlAssertGrep "\\[    0.000000\\] Linux version" "$run/plan/provision/default-0/logs/console.txt"
         fi
     rlPhaseEnd
 

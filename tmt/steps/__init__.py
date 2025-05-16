@@ -907,6 +907,16 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
 
         self._raw_data = raw_data
 
+    def suspend(self) -> None:
+        """
+        Suspend the step.
+
+        Perform any actions necessary before quitting the step and tmt.
+        The step may be revisited by future tmt invocations.
+        """
+
+        self.debug(f"Suspending step '{self.name}'.")
+
     def _apply_cli_invocations(self, raw_data: list[_RawStepData]) -> list[_RawStepData]:
         # Override step data with command line options
         #
@@ -2350,7 +2360,7 @@ class Login(Action):
 
     def after_test(
         self,
-        result: 'tmt.base.Result',
+        results: list['tmt.base.Result'],
         cwd: Optional[Path] = None,
         env: Optional[tmt.utils.Environment] = None,
     ) -> None:
@@ -2358,7 +2368,7 @@ class Login(Action):
         Check and login after test execution
         """
 
-        if self._enabled_by_results([result]):
+        if self._enabled_by_results(results):
             self._login(cwd, env)
 
 

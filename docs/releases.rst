@@ -4,6 +4,55 @@
     Releases
 ======================
 
+tmt-1.49.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Output of the :ref:`/plugins/execute/tmt` and
+:ref:`/plugins/report/display` is changing in this release, to provide
+slightly more details, headers and timestamps. ``execute`` now starts
+using ``display`` for its own progress reporting, providing the unified
+formatting and simplified code.
+
+When the login step was called in a separate command after the guest
+has been provisioned, the connection seemed to be stuck. This has been
+caused by the SSH master process not being terminated together with tmt,
+new tmt command would then spawn its own and conflict with the forgotten
+one. tmt no longer leaves the SSH master process running, preventing the
+issue.
+
+
+tmt-1.48.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The console log content is now available for guests provisioned by
+the :ref:`/plugins/provision/virtual.testcloud` plugin.
+
+A new ``tmt about`` command has been introduced,
+initially providing information about the :ref:`tmt plugins <plugins>`.
+
+The :ref:`HTML report plugin </plugins/report/html>` now supports a
+new ``file`` key, allowing users to specify a custom output path for
+the generated HTML report.
+
+When using ``and``/``or`` groups in combination with
+:ref:`hardware requirements </spec/hardware>`, ``tmt`` will now emit
+a warning to alert users about potential ambiguity in how these
+constraints are applied.
+
+For users of the :ref:`testcloud provisioner </plugins/provision/virtual.testcloud>`,
+``PermitRootLogin`` is now enabled by default for Red Hat CoreOS (RHCOS)
+guests, simplifying access.
+
+An issue with saving remote :ref:`Ansible playbooks </plugins/prepare/ansible>`
+to the correct directory during provisioning and preparation has been fixed.
+
+The internal representation of an imported plan has been improved,
+though this should be largely transparent to users.
+
+Several internal improvements and updates to development tooling and
+CI processes have been made to enhance stability and maintainability.
+
+
 tmt-1.47.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

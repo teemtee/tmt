@@ -263,8 +263,7 @@ def test_workdir_root_race(tmppath, monkeypatch, root_logger):
             results.put(err)
 
     total = 30
-    for _ in range(total):
-        threads.append(threading.Thread(target=create_workdir))
+    threads = [threading.Thread(target=create_workdir) for _ in range(total)]
     for t in threads:
         t.start()
     for t in threads:

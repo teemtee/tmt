@@ -17,10 +17,70 @@ description: |
 
     Remote plans are identified by the ``plan`` key which must
     contain an ``import`` dictionary with an `fmf identifier`__ of
-    the remote plan. The ``url`` and ``name`` keys have to be
-    defined, ``ref`` and ``path`` are optional. Only one remote
-    plan can be referenced and a full plan ``name`` must be used
-    (no string matching is applied).
+    the remote plan:
+
+    .. code-block:: yaml
+
+       /some-plan:
+         plan:
+           import:
+             url: ...
+             name: ...
+             ref: ...
+             path: ...
+
+    The ``url`` and ``name`` keys are required, ``ref`` and ``path``
+    are optional. If ``ref`` is set, the given git ref will be
+    checked out before looking for plans; ``path`` defines where in
+    the remote repository the metadata tree lives.
+
+    By default, only a single remote plan is allowed to be imported,
+    and it always replaces the importing plan. To import multiple plans,
+    set ``scope`` key to ``all-plans``:
+
+    .. code-block:: yaml
+
+      /some-plan:
+        plan:
+          import:
+            ...
+
+            # This is the default, only the first discovered plan is imported,
+            # the rest is ignored.
+            scope: first-plan-only
+
+            # To limit the import to one and one plan only, and fail if
+            # more plans would match the criteria:
+            scope: single-plan-only
+
+            # To allow import of multiple plans:
+            scope: all-plans
+
+    If, instead of replacing the current plan, you want to make the imported
+    plans "children" of the current plan with the ``importing``
+    key:
+
+    .. code-block:: yaml
+
+      /some-plan:
+        plan:
+          import:
+            ...
+
+            # This is the default, replace the current plan.
+            importing: replace
+
+            # All imported plans will get their names to begin with `/some-plan/...`.
+            importing: become-parent
+
+    The ``name`` key is treated as a
+    :ref:`regular expression <regular-expressions>`, and only plans with
+    matching names will be imported.
+
+    .. note::
+
+      Regular expression accepted by the ``name`` key is applied in the
+      "match" mode, i.e. it must match from the start of the string.
 
     Additionally, one can utilize dynamic ``ref`` assignment when
     importing a plan in order to avoid hardcoding ``ref`` value in
@@ -65,6 +125,13 @@ example:
             url: https://github.com/teemtee/tmt
             path: /examples/httpd
             name: /smoke
+
+  - |
+    # Use 'name' as a regular expression to import multiple plans
+    plan:
+        import:
+            url: https://github.com/teemtee/tmt
+            name: /plans/provision/(connect|local)
 
 link:
   - relates: https://github.com/teemtee/tmt/issues/975

@@ -197,9 +197,9 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         if (
             parent
             and parent.plan._original_plan
-            and parent.plan._original_plan._imported_plan_fmf_ids
+            and parent.plan._original_plan._imported_plan_references
         ):
-            for remote_plan_id in parent.plan._original_plan._imported_plan_fmf_ids:
+            for remote_plan_id in parent.plan._original_plan._imported_plan_references:
                 # FIXME: cast() - https://github.com/python/mypy/issues/7981
                 # Note the missing Optional for values - to_minimal_dict() would
                 # not include unset keys, therefore all values should be valid.
@@ -482,12 +482,14 @@ class Discover(tmt.steps.Step):
             assert isinstance(self.parent, tmt.base.Plan)  # narrow type
 
             # Get failed results from previous run execute
-            for result in self.parent.execute._results:
+            failed_results = [
+                result
+                for result in self.parent.execute._results
                 if (
                     result.result is not tmt.result.ResultOutcome.PASS
                     and result.result is not tmt.result.ResultOutcome.INFO
-                ):
-                    failed_results.append(result)
+                )
+            ]
 
             # Filter existing tests into another variable which is then used by tests() method
             for test_phase in self._tests:

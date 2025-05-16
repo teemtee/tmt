@@ -215,6 +215,10 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
     _engine_class: type[PackageManagerEngineT]
     engine: PackageManagerEngineT
 
+    #: If set, this package manager can be used for building derived
+    #: images under the hood of the ``bootc`` package manager.
+    bootc_builder: bool = False
+
     #: A command to run to check whether the package manager is available on
     #: a guest.
     probe_command: Command

@@ -492,7 +492,7 @@ TMT_SCRIPTS_DIR
 
     .. versionadded:: 1.38
 
-__ https://tmt.readthedocs.io/en/stable/spec/plans.html#tmt
+__ https://tmt.readthedocs.io/en/stable/plugins/execute.html#tmt
 
 TMT_SSH_*
     Every environment variable in this format would be treated as an SSH
@@ -800,7 +800,8 @@ Qinghua Cheng, Michael Engel, Anatoli Babenia, Colin Walters,
 Link Dupont, Mario Casquero, Martin Klusoň, Pavel Holica,
 Otto Šabart, Ismail Ibrahim Quwarah, Sergei Petrosian, Tom
 Koscielniak, Han Han, Luigi Pellecchia, Siteshwar Vashisht,
-Chris Kyrouac, Xiaofeng Wang, Coiby Xu and Michal Pospíšil.
+Chris Kyrouac, Xiaofeng Wang, Coiby Xu, Michal Pospíšil and Wayne
+Sun.
 
 
 Copyright
