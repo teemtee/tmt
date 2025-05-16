@@ -222,9 +222,10 @@ class BaseResult(SerializableContainer):
     def printable_note(self) -> str:
         return ', '.join(self.note)
 
-    def failures(self) -> list[Path]:
+    @property
+    def failure_logs(self) -> list[Path]:
         """
-        Return paths to all failures from the result
+        Return paths to all failure logs from the result
         """
 
         if self.result not in (ResultOutcome.FAIL, ResultOutcome.ERROR, ResultOutcome.WARN):
@@ -280,14 +281,15 @@ class SubResult(BaseResult):
         ],
     )
 
-    def failures(self) -> list[Path]:
+    @property
+    def failure_logs(self) -> list[Path]:
         """
-        Return paths to all failures from the result
+        Return paths to all failure logs from the result
         """
 
-        failures = super().failures()
+        failures = super().failure_logs
         for check in self.check:
-            failures.extend(check.failures())
+            failures += check.failure_logs
         return list(set(failures))
 
 
@@ -589,14 +591,15 @@ class Result(BaseResult):
 
         return ' '.join(components)
 
-    def failures(self) -> list[Path]:
+    @property
+    def failure_logs(self) -> list[Path]:
         """
-        Return paths to all failures from the result
+        Return paths to all failure logs from the result
         """
 
-        failures = super().failures()
+        failures = super().failure_logs
         for check in self.check:
-            failures.extend(check.failures())
+            failures += check.failure_logs
         return list(set(failures))
 
 
