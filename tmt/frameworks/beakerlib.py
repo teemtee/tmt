@@ -1,5 +1,5 @@
 import re
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import tmt.log
 import tmt.result
@@ -17,13 +17,13 @@ if TYPE_CHECKING:
 BEAKERLIB_REPORT_RESULT_COMMAND = 'rhts-report-result'
 
 
-def _extract_failure(log_path: Path, invocation: 'TestInvocation') -> Optional[str]:
+def _extract_failures(log_path: Path, invocation: 'TestInvocation') -> list[str]:
     if not log_path.is_file():
-        return None
+        return []
     try:
         log = invocation.phase.read(log_path)
     except tmt.utils.FileError:
-        return None
+        return []
 
     # Filter beakerlib style logs in the following way:
     # 1. Reverse the log string by lines
@@ -57,8 +57,8 @@ def _extract_failure(log_path: Path, invocation: 'TestInvocation') -> Optional[s
                 copy_phase_name = False
         # reverse extracted lines to restore previous order
         failure_log.reverse()
-        return '\n'.join(failure_log).strip()
-    return None
+        return ['\n'.join(failure_log).strip()]
+    return []
 
 
 @provides_framework('beakerlib')
@@ -142,12 +142,16 @@ class Beakerlib(TestFramework):
 
         # Check for failures in the beakerlib log
         if (invocation.path / tmt.steps.execute.TEST_OUTPUT_FILENAME).exists():
-            fail = _extract_failure(
-                invocation.path / tmt.steps.execute.TEST_OUTPUT_FILENAME, invocation
-            )
             # Save potential failures to the file
-            if fail:
-                log.append(save_failures(invocation, invocation.test_data_path, [fail]))
+            log.append(
+                save_failures(
+                    invocation,
+                    invocation.test_data_path,
+                    _extract_failures(
+                        invocation.path / tmt.steps.execute.TEST_OUTPUT_FILENAME, invocation
+                    ),
+                )
+            )
 
         # Check beakerlib log for the result
         beakerlib_results_filepath = invocation.path / 'TestResults'

@@ -11,16 +11,15 @@ from tmt.steps.execute import TEST_OUTPUT_FILENAME, TestInvocation
 from tmt.utils import Path
 
 
-def _extract_failure(log_path: Path, invocation: 'TestInvocation') -> Optional[str]:
+def _extract_failures(log_path: Path, invocation: 'TestInvocation') -> list[str]:
     if not log_path.is_file():
-        return None
+        return []
     try:
         log = invocation.phase.read(log_path)
     except tmt.utils.FileError:
-        return None
+        return []
 
-    failures = re.findall(r'.*\b(?:error|fail)\b.*', log, re.IGNORECASE | re.MULTILINE)
-    return '\n'.join(failures) if failures else None
+    return re.findall(r'.*\b(?:error|fail)\b.*', log, re.IGNORECASE | re.MULTILINE)
 
 
 @provides_framework('shell')
@@ -97,13 +96,10 @@ class Shell(TestFramework):
 
         failures: list[str] = []
         for test_log in test_logs:
-            failure = _extract_failure(test_log, invocation)
-            if failure:
-                failures.append(failure)
+            failures += _extract_failures(test_log, invocation)
 
-        # Save potential failures to the file
-        if failures:
-            test_logs.append(save_failures(invocation, invocation.test_data_path, failures))
+        # Save failures to the file
+        test_logs.append(save_failures(invocation, invocation.test_data_path, failures))
 
         return [
             tmt.Result.from_test_invocation(
@@ -159,11 +155,12 @@ class Shell(TestFramework):
                 note.append('pidfile locking')
 
         log_path = invocation.relative_path / tmt.steps.execute.TEST_OUTPUT_FILENAME
-        paths = [log_path]
-
-        failure = _extract_failure(log_path, invocation)
-        if failure:
-            paths.append(save_failures(invocation, invocation.test_data_path, [failure]))
+        paths = [
+            log_path,
+            save_failures(
+                invocation, invocation.test_data_path, _extract_failures(log_path, invocation)
+            ),
+        ]
 
         return [
             tmt.Result.from_test_invocation(
