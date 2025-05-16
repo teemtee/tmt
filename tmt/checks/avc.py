@@ -323,10 +323,10 @@ def create_final_report(
 
     assert invocation.phase.step.workdir is not None  # narrow type
     report_filepath = _save_report(invocation, report, report_timestamp, append=True)
-    paths = [report_filepath.relative_to(invocation.phase.step.workdir)]
-
-    if failures:
-        paths.append(save_failures(invocation, invocation.check_files_path, failures))
+    paths = [
+        report_filepath.relative_to(invocation.phase.step.workdir),
+        save_failures(invocation, invocation.check_files_path, failures),
+    ]
 
     return outcome, paths
 

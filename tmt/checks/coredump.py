@@ -386,7 +386,7 @@ class CoredumpCheck(Check):
             return []
 
     def _check_coredump(
-        self, invocation: "TestInvocation", logger: tmt.log.Logger, add_failures: bool = True
+        self, invocation: "TestInvocation", logger: tmt.log.Logger
     ) -> tuple[ResultOutcome, list[Path]]:
         """
         Check coredump status and return appropriate result.
@@ -419,12 +419,9 @@ class CoredumpCheck(Check):
         except tmt.utils.RunError:
             logger.debug("Failed to list coredump files")
 
+        log_files.append(save_failures(invocation, invocation.check_files_path, crashes))
+
         if crashes:
-            if add_failures:
-                return ResultOutcome.FAIL, [
-                    *log_files,
-                    save_failures(invocation, invocation.check_files_path, crashes),
-                ]
             return ResultOutcome.FAIL, log_files
 
         return ResultOutcome.PASS, log_files
@@ -570,7 +567,7 @@ class Coredump(CheckPlugin[CoredumpCheck]):
 
         if check._save_existing_coredumps(invocation):
             check._configure_coredump(invocation.guest, logger)
-            outcome, log_files = check._check_coredump(invocation, logger, add_failures=False)
+            outcome, log_files = check._check_coredump(invocation, logger)
 
         return [CheckResult(name="coredump", result=outcome, log=log_files)]
 
