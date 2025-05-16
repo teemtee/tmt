@@ -41,5 +41,11 @@ jobs:
         # -W = warnings as error
         run: hatch run docs:html -W
 
+      - name: Cache linkcheck results
+        uses: actions/cache@v4
+        with:
+          path: docs/_build/linkcheck_cache.json
+          key: linkcheck
+
       - name: Run sphinx linkcheck
         run: hatch run docs:linkcheck

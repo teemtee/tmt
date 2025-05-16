@@ -11,10 +11,13 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+import datetime
 import importlib
+import json
 import os
 import subprocess
 import sys
+from json import JSONDecodeError
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -315,6 +318,8 @@ linkcheck_ignore = [
     r'https://www.cpu-world.com.*',
     # Stack Overflow uses captcha and these links are not essential
     r'https://stackoverflow.com.*',
+    # Random location to store ignored locations for `linkcheck_check_cache`
+    r'/dev/null',
 ]
 
 
@@ -327,8 +332,36 @@ def generate_tmt_docs(app: Sphinx, config: Any) -> None:
     subprocess.run(["make", "generate"], cwd=conf_dir, check=True)
 
 
+def linkcheck_check_cache(app: Sphinx, uri: str) -> str | None:
+    # Get the cache result files
+    cache_file = app.outdir / "linkcheck_cache.json"
+    now = datetime.datetime.now(datetime.UTC)
+    cache_file.touch()
+    with cache_file.open("rt") as f:
+        try:
+            cache_data = json.load(f)
+        except JSONDecodeError:
+            cache_data = {}
+    # Check if we have cached this uri yet
+    if uri in cache_data:
+        # Check if the cache data is recent enough
+        cached_time = datetime.datetime.fromtimestamp(cache_data[uri], datetime.UTC)
+        age = (now - cached_time).total_seconds()
+        if age < 108000.0:
+            # cache is relatively recent, so we skip this uri
+            # right now we use a random location to match a hard-coded regex
+            return "/dev/null"
+    # If either check fails, we want to do the check and update the cache
+    cache_data[uri] = now.timestamp()
+    with cache_file.open("wt") as f:
+        json.dump(cache_data, f)
+    return uri
+
+
 def setup(app: Sphinx) -> None:
     # Generate sources after loading configuration. That should build
     # everything, including the logo, before Sphinx starts checking
     # whether all input files exist.
     app.connect("config-inited", generate_tmt_docs)
+    # Check a cached version of the linkcheck results
+    app.connect("linkcheck-process-uri", linkcheck_check_cache)
