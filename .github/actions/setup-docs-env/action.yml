@@ -1,0 +1,28 @@
+name: 'Setup Documentation Environment'
+description: 'Sets up Python and Hatch environment for documentation builds'
+
+inputs:
+  python-version:
+    description: 'Python version to use'
+    default: '3.x'
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: 'pip'
+
+    - name: Cache Hatch environments
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/.hatch_envs
+        key: hatch-envs-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
+        restore-keys: |
+          hatch-envs-${{ runner.os }}-
+
+    - name: Install hatch
+      run: pip install hatch
+      shell: bash
