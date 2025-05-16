@@ -5,8 +5,8 @@ import tmt.log
 import tmt.result
 import tmt.steps.execute
 import tmt.utils
-from tmt.frameworks import TestFramework, provides_framework, save_test_failures
-from tmt.result import ResultOutcome
+from tmt.frameworks import TestFramework, provides_framework
+from tmt.result import ResultOutcome, save_failures
 from tmt.steps.execute import TEST_OUTPUT_FILENAME, TestInvocation
 from tmt.utils import Path
 
@@ -103,7 +103,7 @@ class Shell(TestFramework):
 
         # Save potential failures to the file
         if failures:
-            test_logs.append(save_test_failures(invocation, failures))
+            test_logs.append(save_failures(invocation, invocation.test_data_path, failures))
 
         return [
             tmt.Result.from_test_invocation(
@@ -163,7 +163,7 @@ class Shell(TestFramework):
 
         failure = _extract_failure(log_path, invocation)
         if failure:
-            paths.append(save_test_failures(invocation, [failure]))
+            paths.append(save_failures(invocation, invocation.test_data_path, [failure]))
 
         return [
             tmt.Result.from_test_invocation(

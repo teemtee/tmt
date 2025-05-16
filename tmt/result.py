@@ -642,3 +642,24 @@ def results_to_exit_code(results: list[Result], execute_enabled: bool = True) ->
         return TmtExitCode.SUCCESS
 
     raise GeneralError("Unhandled combination of test result.")
+
+
+def save_failures(
+    invocation: 'tmt.steps.execute.TestInvocation', directory: Path, failures: list[str]
+) -> Path:
+    """
+    Save test failures to a file.
+
+    :param invocation: test invocation.
+    :param directory: directory to save the file in.
+    :param failures: list of failures to save.
+    """
+
+    path = directory / tmt.steps.execute.TEST_FAILURES_FILENAME
+    invocation.phase.write(
+        path,
+        tmt.utils.dict_to_yaml(failures),
+        mode='a',
+    )
+    assert invocation.phase.step.workdir is not None  # narrow type
+    return path.relative_to(invocation.phase.step.workdir)
