@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable
 
 import tmt.log
 import tmt.plugins
@@ -38,30 +38,20 @@ def provides_framework(framework: str) -> Callable[[TestFrameworkClass], TestFra
     return _provides_framework
 
 
-def save_test_failures(
-    invocation: 'TestInvocation',
-    failures: list[str],
-    logger: tmt.log.Logger,
-) -> Optional[Path]:
+def save_test_failures(invocation: 'TestInvocation', failures: list[str]) -> Path:
     """
     Save test failures to a file.
 
     :param invocation: test invocation.
     :param failures: list of failures to save.
-    :param logger: to use for logging.
     """
 
     path = invocation.test_data_path / tmt.steps.execute.TEST_FAILURES_FILENAME
-    try:
-        invocation.phase.write(
-            path,
-            tmt.utils.dict_to_yaml(failures),
-            mode='a',
-        )
-    except tmt.utils.FileError as error:
-        logger.warning(f"Failed to save test failures: {error}")
-        return None
-
+    invocation.phase.write(
+        path,
+        tmt.utils.dict_to_yaml(failures),
+        mode='a',
+    )
     assert invocation.phase.step.workdir is not None  # narrow type
     return path.relative_to(invocation.phase.step.workdir)
 

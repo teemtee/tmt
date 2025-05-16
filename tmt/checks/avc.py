@@ -325,9 +325,8 @@ def create_final_report(
     report_filepath = _save_report(invocation, report, report_timestamp, append=True)
     paths = [report_filepath.relative_to(invocation.phase.step.workdir)]
 
-    failures_path = save_check_failures(invocation, failures, logger) if failures else None
-    if failures_path:
-        paths.append(failures_path)
+    if failures:
+        paths.append(save_check_failures(invocation, failures))
 
     return outcome, paths
 

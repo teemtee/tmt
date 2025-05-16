@@ -146,9 +146,8 @@ class Beakerlib(TestFramework):
                 invocation.path / tmt.steps.execute.TEST_OUTPUT_FILENAME, invocation
             )
             # Save potential failures to the file
-            failures_path = save_test_failures(invocation, [fail], logger) if fail else None
-            if failures_path:
-                log.append(failures_path)
+            if fail:
+                log.append(save_test_failures(invocation, [fail]))
 
         # Check beakerlib log for the result
         beakerlib_results_filepath = invocation.path / 'TestResults'
