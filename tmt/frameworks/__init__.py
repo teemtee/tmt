@@ -4,10 +4,8 @@ import tmt.log
 import tmt.plugins
 import tmt.result
 import tmt.utils
-from tmt.utils import Path
 
 if TYPE_CHECKING:
-    import tmt.steps.execute
     from tmt.base import DependencySimple, Test
     from tmt.steps.execute import TestInvocation
 
@@ -36,24 +34,6 @@ def provides_framework(framework: str) -> Callable[[TestFrameworkClass], TestFra
         return framework_cls
 
     return _provides_framework
-
-
-def save_test_failures(invocation: 'TestInvocation', failures: list[str]) -> Path:
-    """
-    Save test failures to a file.
-
-    :param invocation: test invocation.
-    :param failures: list of failures to save.
-    """
-
-    path = invocation.test_data_path / tmt.steps.execute.TEST_FAILURES_FILENAME
-    invocation.phase.write(
-        path,
-        tmt.utils.dict_to_yaml(failures),
-        mode='a',
-    )
-    assert invocation.phase.step.workdir is not None  # narrow type
-    return path.relative_to(invocation.phase.step.workdir)
 
 
 class TestFramework:

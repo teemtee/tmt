@@ -5,8 +5,8 @@ import tmt.log
 import tmt.result
 import tmt.steps.execute
 import tmt.utils
-from tmt.frameworks import TestFramework, provides_framework, save_test_failures
-from tmt.result import ResultOutcome
+from tmt.frameworks import TestFramework, provides_framework
+from tmt.result import ResultOutcome, save_failures
 from tmt.utils import Environment, EnvVarValue, GeneralError, Path
 
 if TYPE_CHECKING:
@@ -147,7 +147,7 @@ class Beakerlib(TestFramework):
             )
             # Save potential failures to the file
             if fail:
-                log.append(save_test_failures(invocation, [fail]))
+                log.append(save_failures(invocation, invocation.test_data_path, [fail]))
 
         # Check beakerlib log for the result
         beakerlib_results_filepath = invocation.path / 'TestResults'

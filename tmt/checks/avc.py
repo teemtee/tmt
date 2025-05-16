@@ -9,9 +9,9 @@ import jinja2
 import tmt.log
 import tmt.utils
 import tmt.utils.themes
-from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check, save_check_failures
+from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
-from tmt.result import CheckResult, ResultOutcome
+from tmt.result import CheckResult, ResultOutcome, save_failures
 from tmt.utils import (
     CommandOutput,
     Path,
@@ -326,7 +326,7 @@ def create_final_report(
     paths = [report_filepath.relative_to(invocation.phase.step.workdir)]
 
     if failures:
-        paths.append(save_check_failures(invocation, failures))
+        paths.append(save_failures(invocation, invocation.check_files_path, failures))
 
     return outcome, paths
 

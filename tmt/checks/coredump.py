@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING, Optional
 
 import tmt.log
 import tmt.utils
-from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check, save_check_failures
+from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
-from tmt.result import CheckResult, ResultOutcome
+from tmt.result import CheckResult, ResultOutcome, save_failures
 from tmt.utils import Command, Path, ShellScript
 
 if TYPE_CHECKING:
@@ -421,7 +421,10 @@ class CoredumpCheck(Check):
 
         if crashes:
             if add_failures:
-                return ResultOutcome.FAIL, [*log_files, save_check_failures(invocation, crashes)]
+                return ResultOutcome.FAIL, [
+                    *log_files,
+                    save_failures(invocation, invocation.check_files_path, crashes),
+                ]
             return ResultOutcome.FAIL, log_files
 
         return ResultOutcome.PASS, log_files

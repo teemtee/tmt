@@ -7,16 +7,9 @@ import tmt.log
 import tmt.steps.provision
 import tmt.utils
 import tmt.utils.themes
-from tmt.checks import (
-    Check,
-    CheckEvent,
-    CheckPlugin,
-    _RawCheck,
-    provides_check,
-    save_check_failures,
-)
+from tmt.checks import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
-from tmt.result import CheckResult, ResultOutcome
+from tmt.result import CheckResult, ResultOutcome, save_failures
 from tmt.steps.provision import GuestCapability
 from tmt.utils import (
     Path,
@@ -139,7 +132,7 @@ class DmesgCheck(Check):
         log_paths = [path.relative_to(invocation.phase.step.workdir)]
 
         if failures:
-            log_paths.append(save_check_failures(invocation, failures))
+            log_paths.append(save_failures(invocation, invocation.check_files_path, failures))
 
         return outcome, log_paths
 
