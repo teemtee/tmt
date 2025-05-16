@@ -1,0 +1,41 @@
+summary: An alternative syntax for the ``where`` key
+
+story:
+    As a user I want a bit more concise way to define which tests
+    should run on which guest.
+
+description:
+    This is an alternative syntax proposed for the ``where`` key
+    which uses a dictionary encapsulating the ``discover`` config
+    under keys corresponding to guest names or roles. This can
+    result in much more concise config especially when defining
+    several shell scripts for each guest or role.
+
+example:
+  - |
+    # Filter discovered fmf tests by tag
+    discover:
+        where:
+            client:
+              - how: fmf
+                filter: tag:client-tests
+            server:
+              - how: fmf
+                filter: tag:server-tests
+
+  - |
+    # Directly define tests as shell scripts
+    discover:
+        where:
+            server:
+                how: shell
+                tests:
+                  - test: server-script-one.sh
+                  - test: server-script-two.sh
+                  - test: server-script-three.sh
+            client:
+                how: shell
+                tests:
+                  - test: client-script-one.sh
+                  - test: client-script-two.sh
+                  - test: client-script-three.sh
