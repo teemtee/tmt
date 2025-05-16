@@ -311,9 +311,6 @@ def make_junit_xml(
         """
         failures: list[str] = []
         for path in paths:
-            if not path or not path.exists():
-                continue
-
             try:
                 failures.extend(tmt.utils.yaml_to_list(phase.step.plan.execute.read(path)))
             except tmt.utils.FileError:
