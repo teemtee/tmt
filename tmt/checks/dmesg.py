@@ -107,21 +107,17 @@ class DmesgCheck(Check):
 
         path = invocation.check_files_path / TEST_POST_DMESG_FILENAME.format(event=event.value)
 
-        failures: list[str] = []
-
         try:
+            outcome = ResultOutcome.PASS
             output = self._fetch_dmesg(invocation.guest, logger)
 
         except tmt.utils.RunError as exc:
             outcome = ResultOutcome.ERROR
             output = exc.output
 
-        else:
-            outcome = ResultOutcome.PASS
-            text = output.stdout or ''
-            if any(pattern.search(text) for pattern in self.failure_pattern):
-                outcome = ResultOutcome.FAIL
-                failures = self._extract_failures(text)
+        failures = self._extract_failures(output.stdout or '')
+        if failures and outcome == ResultOutcome.PASS:
+            outcome = ResultOutcome.FAIL
 
         invocation.phase.write(
             path,
@@ -129,10 +125,10 @@ class DmesgCheck(Check):
             mode='a',
         )
 
-        log_paths = [path.relative_to(invocation.phase.step.workdir)]
-
-        if failures:
-            log_paths.append(save_failures(invocation, invocation.check_files_path, failures))
+        log_paths = [
+            path.relative_to(invocation.phase.step.workdir),
+            save_failures(invocation, invocation.check_files_path, failures),
+        ]
 
         return outcome, log_paths
 
