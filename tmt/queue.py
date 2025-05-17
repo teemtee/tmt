@@ -197,7 +197,7 @@ class MultiGuestTask(Task[TaskResultT]):
     def guest_ids(self) -> list[str]:
         return sorted([guest.multihost_name for guest in self.guests])
 
-    def run_on_guest(self, guest: 'Guest', logger: Logger) -> None:
+    def run_on_guest(self, guest: 'Guest', logger: Logger) -> TaskResultT:
         """
         Perform the task.
 
@@ -229,7 +229,7 @@ class MultiGuestTask(Task[TaskResultT]):
         old_loggers: dict[str, Logger] = {}
 
         with ThreadPoolExecutor(max_workers=len(self.guests)) as executor:
-            futures: dict[Future[None], Guest] = {}
+            futures: dict[Future[TaskResultT], Guest] = {}
 
             for guest in self.guests:
                 # Swap guest's logger for the one we prepared, with labels
