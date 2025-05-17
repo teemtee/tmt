@@ -524,8 +524,9 @@ during ``prepare``, ``execute`` and ``finish`` steps:
 
 TMT_TREE
     The full path of the working directory where the metadata tree
-    is copied. This usually contains the whole git repository from
-    which tests have been executed.
+    is copied. This usually contains the whole git repository where
+    tmt plans are located in. Notice that it might not contain tmt 
+    tests if tmt plans and tests are in different git repositories.
 
 TMT_PLAN_DATA
     Path to the common directory used for storing logs and other
