@@ -9,7 +9,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest
-        if ! rlRun "TMT_SHOW_TRACEBACK=full tmt run -vvvvdddd --id $run"; then
+        if ! rlRun "TMT_SHOW_TRACEBACK=full tmt -vv run --id $run"; then
             rlFileSubmit $run/log.txt
         fi
     rlPhaseEnd

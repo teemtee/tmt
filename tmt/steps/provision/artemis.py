@@ -706,12 +706,9 @@ class GuestArtemis(tmt.GuestSsh):
                 fetch_boot_time=False,
             )
 
-        actual_command = command or tmt.steps.DEFAULT_REBOOT_COMMAND
-        self.debug(f"Reboot using the command '{actual_command}'.")
-
         return super().reboot(
             hard=False,
-            command=actual_command,
+            command=command,
             waiting=waiting,
         )
 
