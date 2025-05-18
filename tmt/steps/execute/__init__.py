@@ -1310,8 +1310,8 @@ class Execute(tmt.steps.Step):
             if not test.where:
                 result_guests = guests
 
-            for guest in result_guests:
-                results.append(
+            results.extend(
+                [
                     Result(
                         name=test.name,
                         serial_number=test.serial_number,
@@ -1322,7 +1322,9 @@ class Execute(tmt.steps.Step):
                             role=guest[1],
                         ),
                     )
-                )
+                    for guest in result_guests
+                ]
+            )
         return results
 
     def go(self, force: bool = False) -> None:

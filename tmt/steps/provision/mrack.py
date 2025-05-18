@@ -883,11 +883,11 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
                     req['kernel_options_post'] = host.kickstart['kernel-options-post']
 
                 if not mrack_constructs_ks_pre():
-                    ks_components: list[str] = []
-
-                    for ks_section in ('pre-install', 'script', 'post-install'):
-                        if ks_section in host.kickstart:
-                            ks_components.append(host.kickstart[ks_section])
+                    ks_components: list[str] = [
+                        host.kickstart[ks_section]
+                        for ks_section in ('pre-install', 'script', 'post-install')
+                        if ks_section in host.kickstart
+                    ]
 
                     if ks_components:
                         req['ks_append'] = ['\n'.join(ks_components)]
