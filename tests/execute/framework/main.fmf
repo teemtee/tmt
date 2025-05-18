@@ -10,6 +10,12 @@
         tests verifying tmt outcomes to be as expected
         for the different shell tests results.
     test: ./shell.sh
+/beakerlib:
+    summary: Verify tmt outcomes against beakerlib results
+    description:
+        tests verifying tmt outcomes to be as expected
+        for the different beakerlib tests results.
+    test: ./beakerlib.sh
 duration: 30m
 tier: 3
 tag+: [beakerlib]
