@@ -20,6 +20,10 @@ new tmt command would then spawn its own and conflict with the forgotten
 one. tmt no longer leaves the SSH master process running, preventing the
 issue.
 
+An issue in the :ref:`/plugins/provision/beaker` provision plugin
+prevented reconnecting to running guests. This has been fixed so
+now it's possible to fully work with existing tmt runs as well.
+
 
 tmt-1.48.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
