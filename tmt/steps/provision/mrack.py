@@ -8,9 +8,10 @@ import re
 from collections.abc import Mapping
 from contextlib import suppress
 from functools import wraps
-from typing import Any, Callable, Optional, TypedDict, Union, cast
+from typing import Any, Callable, Optional, TypedDict, TypeVar, Union, cast
 
 import packaging.version
+from typing_extensions import ParamSpec
 
 import tmt
 import tmt.config
@@ -60,14 +61,17 @@ DEFAULT_API_SESSION_REFRESH = 3600
 # Store import parameters for lazy loading
 _MRACK_IMPORT_ARGS: Optional[tuple[Any, str, tmt.log.Logger]] = None
 
+P = ParamSpec('P')
+R = TypeVar('R')
 
-def ensure_mrack_imported(func: Callable[..., Any]) -> Callable[..., Any]:
+
+def ensure_mrack_imported(func: Callable[P, R]) -> Callable[P, R]:
     """
     Decorator to ensure mrack is imported before the function is called.
     """
 
     @wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         if not _MRACK_IMPORTED and _MRACK_IMPORT_ARGS is not None:
             workdir, name, logger = _MRACK_IMPORT_ARGS
             import_and_load_mrack_deps(workdir, name, logger)
@@ -1235,6 +1239,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     _api_timestamp: Optional[datetime.datetime] = None
 
     @property
+    @ensure_mrack_imported
     def api(self) -> BeakerAPI:
         """
         Create BeakerAPI leveraging mrack
