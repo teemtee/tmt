@@ -2531,8 +2531,8 @@ class GuestSsh(Guest):
         if destination is None:
             destination = Path("/")
 
-        # Default to syncing contents for workdir or directories
-        sync_source_contents = True
+        # Initialize source_str variable - will be set properly below
+        source_str = ""
 
         if source is None:
             # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
@@ -2542,32 +2542,32 @@ class GuestSsh(Guest):
 
             source = parent.plan.workdir
             self.debug(f"Push workdir to guest '{self.primary_address}'.")
+
+            # For workdir, we always sync contents (with trailing slash)
+            source_str = str(source)
+            if not source_str.endswith('/'):
+                source_str += '/'
         else:
             self.debug(f"Copy '{source}' to '{destination}' on the guest.")
 
             # Check if the provided source exists and is a directory locally
             # to decide if we sync contents (add slash) or the item itself
             try:
+                source_str = str(source)
                 if source.exists() and source.is_dir():
-                    sync_source_contents = True
                     self.debug(f"Source '{source}' is a directory, syncing contents.")
+                    if not source_str.endswith('/'):
+                        source_str += '/'
                 else:
                     self.debug(f"Source '{source}' is a file or does not exist, syncing item.")
-                    sync_source_contents = False
+                    source_str = source_str.rstrip('/')
             except OSError as e:
                 # If we can't check, default to not adding the slash
                 self.warn(
                     f"Could not check source path '{source}': {e}. "
                     f"Assuming it's a file/pattern (no trailing slash)."
                 )
-                sync_source_contents = False
-
-        source_str = str(source)
-        if sync_source_contents:
-            if not source_str.endswith('/'):
-                source_str += '/'
-        else:
-            source_str = source_str.rstrip('/')
+                source_str = str(source).rstrip('/')
 
         dest_str = str(destination)
         # Ensure destination has a trailing slash if it's meant to be a target directory,

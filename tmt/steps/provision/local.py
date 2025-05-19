@@ -165,7 +165,10 @@ class GuestLocal(tmt.Guest):
         superuser: bool = False,
     ) -> None:
         """
-        Nothing to be done to push workdir
+        Copy files or directories locally.
+
+        For local guests, this method copies files or directories to the specified
+        destinationNothing to be done to push workdir
         """
 
     def pull(
