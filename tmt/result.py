@@ -287,10 +287,10 @@ class SubResult(BaseResult):
         Return paths to all failure logs from the result
         """
 
-        failures = super().failure_logs
+        failure_logs = super().failure_logs
         for check in self.check:
-            failures += check.failure_logs
-        return list(set(failures))
+            failure_logs += check.failure_logs
+        return list(set(failure_logs))
 
 
 @container
@@ -597,10 +597,10 @@ class Result(BaseResult):
         Return paths to all failure logs from the result
         """
 
-        failures = super().failure_logs
+        failure_logs = super().failure_logs
         for check in self.check:
-            failures += check.failure_logs
-        return list(set(failures))
+            failure_logs += check.failure_logs
+        return list(set(failure_logs))
 
 
 def results_to_exit_code(results: list[Result], execute_enabled: bool = True) -> int:
