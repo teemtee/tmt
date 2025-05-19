@@ -1594,5 +1594,10 @@ class GuestLogBeaker(tmt.steps.provision.GuestLog):
         try:
             return tmt.utils.get_url_content(self.url)
         except Exception as error:
-            logger.warning(f'Failed to fetch log: {error}')
+            tmt.utils.show_exception_as_warning(
+                exception=error,
+                message=f"Failed to fetch '{self.url}' log",
+                logger=self.guest._logger,
+            )
+
             return None
