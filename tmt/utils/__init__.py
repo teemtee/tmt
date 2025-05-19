@@ -2840,6 +2840,58 @@ def render_exception(
         yield from _render_causes(causes)
 
 
+def _render_base_exception(
+    exception: BaseException, traceback_verbosity: TracebackVerbosity
+) -> Iterator[str]:
+    """
+    A small helper for functions showing exceptions.
+
+    On top of :py:func:`render_exception`, it requires verbosity and
+    adds one leading empty line to simplify formatting.
+
+    :param exception: exception to log.
+    :param traceback_verbosity: with what verbosity tracebacks should
+        be rendered.
+    """
+
+    yield ''
+    yield from render_exception(exception, traceback_verbosity=traceback_verbosity)
+
+
+def _render_exception_into_files(exception: BaseException, logger: tmt.log.Logger) -> None:
+    """
+    Render an exception into known log files.
+
+    :param exception: exception to log.
+    :param logger: logger to use for logging.
+    """
+
+    logger = logger.clone()
+    logger.apply_colors_output = False
+
+    logfile_streams: list[TextIO] = []
+
+    with contextlib.ExitStack() as stack:
+        for path in tmt.log.LogfileHandler.emitting_to:
+            try:
+                # SIM115: all opened files are added on exit stack, and they
+                # will get collected and closed properly.
+                stream: TextIO = open(path, 'a')  # noqa: SIM115
+
+                logfile_streams.append(stream)
+                stack.enter_context(stream)
+
+            except Exception as exc:
+                show_exception(
+                    GeneralError(f"Cannot log error into logfile '{path}'.", causes=[exc]),
+                    include_logfiles=False,
+                )
+
+        for line in _render_base_exception(exception, TracebackVerbosity.LOCALS):
+            for stream in logfile_streams:
+                logger.print(line, file=stream)
+
+
 def show_exception(
     exception: BaseException,
     traceback_verbosity: Optional[TracebackVerbosity] = None,
@@ -2857,38 +2909,37 @@ def show_exception(
 
     traceback_verbosity = traceback_verbosity or TracebackVerbosity.from_env()
 
-    def _render_exception(traceback_verbosity: TracebackVerbosity) -> Iterator[str]:
-        yield ''
-        yield from render_exception(exception, traceback_verbosity=traceback_verbosity)
-
-    for line in _render_exception(traceback_verbosity):
+    for line in _render_base_exception(exception, traceback_verbosity):
         EXCEPTION_LOGGER.print(line, file=sys.stderr)
 
     if include_logfiles:
-        logger = EXCEPTION_LOGGER.clone()
-        logger.apply_colors_output = False
+        _render_exception_into_files(exception, EXCEPTION_LOGGER)
 
-        logfile_streams: list[TextIO] = []
 
-        with contextlib.ExitStack() as stack:
-            for path in tmt.log.LogfileHandler.emitting_to:
-                try:
-                    # SIM115: all opened files are added on exit stack, and they
-                    # will get collected and closed properly.
-                    stream: TextIO = open(path, 'a')  # noqa: SIM115
+def show_exception_as_warning(
+    *,
+    exception: BaseException,
+    message: str,
+    include_logfiles: bool = True,
+    logger: tmt.log.Logger,
+) -> None:
+    """
+    Display the exception and its causes as a warning.
 
-                    logfile_streams.append(stream)
-                    stack.enter_context(stream)
+    :param exception: exception to log.
+    :param message: message to emit as a warning to introduce the
+        exception.
+    :param include_logfiles: if set, exception will be logged into known
+        logfiles as well as to standard error output.
+    """
 
-                except Exception as exc:
-                    show_exception(
-                        GeneralError(f"Cannot log error into logfile '{path}'.", causes=[exc]),
-                        include_logfiles=False,
-                    )
+    logger.warning(message)
 
-            for line in _render_exception(traceback_verbosity=TracebackVerbosity.LOCALS):
-                for stream in logfile_streams:
-                    logger.print(line, file=stream)
+    for line in _render_base_exception(exception, TracebackVerbosity.DEFAULT):
+        logger.warning(line)
+
+    if include_logfiles:
+        _render_exception_into_files(exception, logger)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
