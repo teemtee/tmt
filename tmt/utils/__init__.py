@@ -1947,12 +1947,13 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         value: Optional[LoggableValue] = None,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
+        topic: Optional[tmt.log.Topic] = None,
     ) -> None:
         """
         Show a message unless in quiet mode
         """
 
-        self._logger.info(key, value=value, color=color, shift=shift)
+        self._logger.info(key, value=value, color=color, shift=shift, topic=topic)
 
     def verbose(
         self,
@@ -4732,6 +4733,7 @@ def dataclass_normalize_field(
     key_address: str,
     keyname: str,
     raw_value: Any,
+    value_source: 'FieldValueSource',
     logger: tmt.log.Logger,
 ) -> Any:
     """
@@ -4800,6 +4802,7 @@ def dataclass_normalize_field(
     # Set attribute by adding it to __dict__ directly. Messing with setattr()
     # might cause reuse of mutable values by other instances.
     container.__dict__[keyname] = value
+    container._field_value_sources[keyname] = value_source
 
     return value
 
@@ -5193,6 +5196,23 @@ def normalize_data_amount(
     raise NormalizationError(key_address, raw_value, 'a quantity or a string')
 
 
+class FieldValueSource(enum.Enum):
+    """
+    Indicates source of metadata field value.
+    """
+
+    #: The value was provided by fmf node key.
+    FMF = 'fmf'
+
+    #: The value was provided by CLI option.
+    CLI = 'cli'
+
+    #: The value is the default value defined for the field.
+    DEFAULT = 'default'
+
+    PROFILE = 'profile'
+
+
 class NormalizeKeysMixin(_CommonBase):
     """
     Mixin adding support for loading fmf keys into object attributes.
@@ -5207,6 +5227,8 @@ class NormalizeKeysMixin(_CommonBase):
     needed, e.g. to convert the original value to a type more suitable for internal
     processing.
     """
+
+    _field_value_sources: dict[str, FieldValueSource]
 
     # If specified, keys would be iterated over in the order as listed here.
     _KEYS_SHOW_ORDER: list[str] = []
@@ -5230,7 +5252,12 @@ class NormalizeKeysMixin(_CommonBase):
 
             for name, value in klass.__dict__.get('__annotations__', {}).items():
                 # Skip special fields that are not keys.
-                if name in ('_KEYS_SHOW_ORDER', '_linter_registry', '_export_plugin_registry'):
+                if name in (
+                    '_KEYS_SHOW_ORDER',
+                    '_linter_registry',
+                    '_export_plugin_registry',
+                    '_field_value_sources',
+                ):
                     continue
 
                 yield (name, value)
@@ -5313,6 +5340,8 @@ class NormalizeKeysMixin(_CommonBase):
 
         debug('')
 
+        self._field_value_sources = {}
+
         for keyname, keytype in self._iter_key_annotations():
             key_address = f'{key_source_name}:{keyname}'
 
@@ -5327,6 +5356,7 @@ class NormalizeKeysMixin(_CommonBase):
             debug('desired type', str(keytype))
 
             value: Any = None
+            value_source: FieldValueSource
 
             # Verbose, let's hide it a bit deeper.
             debug('dict', self.__dict__, level=log_level + 1)
@@ -5348,30 +5378,44 @@ class NormalizeKeysMixin(_CommonBase):
 
                 if source_keyname in key_source:
                     value = key_source[source_keyname]
+                    value_source = FieldValueSource.FMF
 
                 elif source_keyname_cli in key_source:
                     value = key_source[source_keyname_cli]
+                    value_source = FieldValueSource.CLI
 
                 else:
                     value = default_value
+                    value_source = FieldValueSource.DEFAULT
 
                 debug('raw value', str(value))
                 debug('raw value type', str(type(value)))
+                debug('raw value source', value_source.name)
 
             else:
                 if source_keyname in key_source:
                     value = key_source[source_keyname]
+                    value_source = FieldValueSource.FMF
 
                 elif source_keyname_cli in key_source:
                     value = key_source[source_keyname_cli]
+                    value_source = FieldValueSource.CLI
+
+                else:
+                    value = None
+                    value_source = FieldValueSource.DEFAULT
 
                 debug('raw value', str(value))
                 debug('raw value type', str(type(value)))
+                debug('raw value source', value_source.name)
 
-            value = dataclass_normalize_field(self, key_address, keyname, value, logger)
+            value = dataclass_normalize_field(
+                self, key_address, keyname, value, value_source, logger
+            )
 
             debug('final value', str(value))
             debug('final value type', str(type(value)))
+            debug('final value source', value_source.name)
 
             # Apparently pointless, but makes the debugging output more readable.
             # There may be plenty of tests and plans and keys, a bit of spacing

@@ -49,6 +49,7 @@ import tmt.lint
 import tmt.log
 import tmt.plugins
 import tmt.plugins.plan_shapers
+import tmt.profiles
 import tmt.result
 import tmt.steps
 import tmt.steps.discover
@@ -4088,6 +4089,7 @@ class Run(tmt.utils.Common):
         cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
         parent: Optional[tmt.utils.Common] = None,
         workdir_root: Optional[Path] = None,
+        profiles: Optional[list[tmt.profiles.Profile]] = None,
         logger: tmt.log.Logger,
     ) -> None:
         """
@@ -4123,6 +4125,8 @@ class Run(tmt.utils.Common):
         self._environment_from_options: Optional[Environment] = None
         self.remove = self.opt('remove')
         self.unique_id = str(time.time()).split('.')[0]
+
+        self.profiles = profiles or []
 
     @functools.cached_property
     def runner(self) -> 'tmt.steps.provision.local.GuestLocal':

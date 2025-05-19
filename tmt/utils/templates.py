@@ -22,7 +22,7 @@ import fmf.utils
 import jinja2
 import jinja2.exceptions
 
-from tmt.utils import GeneralError, Path
+from tmt.utils import GeneralError, Path, dict_to_yaml
 from tmt.utils.git import web_git_url
 
 if TYPE_CHECKING:
@@ -388,6 +388,18 @@ def _template_filter_format_duration(  # type: ignore[reportUnusedFunction,unuse
     """
 
     return result.duration if result.duration else '..:..:..'
+
+
+def _template_filter_to_yaml(  # type: ignore[reportUnusedFunction,unused-ignore]
+    value: Any,
+) -> str:
+    return dict_to_yaml(value)
+
+
+def _template_filter_prefix(  # type: ignore[reportUnusedFunction,unused-ignore]
+    s: str, prefix: str
+) -> str:
+    return textwrap.indent(s, prefix)
 
 
 TEMPLATE_FILTERS: dict[str, Callable[..., Any]] = {

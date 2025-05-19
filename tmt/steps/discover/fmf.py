@@ -874,6 +874,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         for test in self._tests:
             test.environment['TMT_SOURCE_DIR'] = EnvVarValue(sourcedir)
 
+        # Apply tmt run profile
+        if self.step.plan.my_run is not None:
+            for profile in self.step.plan.my_run.profiles:
+                profile.apply_to_tests('', self._tests, self._logger)
+
         # Inject newly found tests into parent discover at the right position
         # FIXME
         # Prefix test name only if multiple plugins configured

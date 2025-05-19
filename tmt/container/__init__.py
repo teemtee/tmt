@@ -945,7 +945,7 @@ class MetadataContainer(BaseModel):
             raise tmt.utils.SpecificationError(f"Invalid metadata in '{tree.name}'.") from error
 
     @classmethod
-    def from_yaml(cls: type[MetadataContainerT], yaml: dict[str, Any]) -> MetadataContainerT:
+    def from_yaml(cls, yaml: dict[str, Any]) -> Self:
         try:
             return cls.parse_obj(yaml)
 
