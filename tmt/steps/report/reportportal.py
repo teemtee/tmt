@@ -585,13 +585,14 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         Upload all result log files into the ReportPortal instance
         """
 
-        for index, log_path in enumerate(result.log):
+        for log_path in result.log:
+            if log_path.name == tmt.steps.execute.TEST_FAILURES_FILENAME:
+                continue
             try:
                 log = self.step.plan.execute.read(log_path)
             except tmt.utils.FileError:
                 continue
 
-            level = "INFO" if index == 0 else "TRACE"
             message = _filter_log(log, settings=LogFilterSettings(size=self.data.log_size_limit))
 
             # Upload log
@@ -602,35 +603,35 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     "message": message,
                     "itemUuid": item_uuid,
                     "launchUuid": launch_uuid,
-                    "level": level,
+                    "level": "INFO",
                     "time": timestamp,
                 },
             )
 
-            # Optionally write out failures only for results which implement the failures callable
-            if index == 0 and write_out_failures:
-                for failure_log in result.failure_logs:
-                    failures = tmt.utils.yaml_to_list(self.step.plan.execute.read(failure_log))
-                    for failure in failures:
-                        message = _filter_log(
-                            failure,
-                            settings=LogFilterSettings(
-                                size=self.data.traceback_size_limit,
-                                is_traceback=True,
-                            ),
-                        )
+        # Optionally write out failures
+        if write_out_failures:
+            for failure_log in result.failure_logs:
+                failures = tmt.utils.yaml_to_list(self.step.plan.execute.read(failure_log))
+                for failure in failures:
+                    message = _filter_log(
+                        failure,
+                        settings=LogFilterSettings(
+                            size=self.data.traceback_size_limit,
+                            is_traceback=True,
+                        ),
+                    )
 
-                        self.rp_api_post(
-                            session=session,
-                            path="log/entry",
-                            json={
-                                "message": message,
-                                "itemUuid": item_uuid,
-                                "launchUuid": launch_uuid,
-                                "level": "ERROR",
-                                "time": timestamp,
-                            },
-                        )
+                    self.rp_api_post(
+                        session=session,
+                        path="log/entry",
+                        json={
+                            "message": message,
+                            "itemUuid": item_uuid,
+                            "launchUuid": launch_uuid,
+                            "level": "ERROR",
+                            "time": timestamp,
+                        },
+                    )
 
     def execute_rp_import(self) -> None:
         """
