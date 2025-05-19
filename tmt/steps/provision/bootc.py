@@ -71,23 +71,24 @@ class GuestBootc(GuestTestcloud):
         self._rootless = rootless
 
     def remove(self) -> None:
-        if self._instance:
-            tmt.utils.Command("podman", "rmi", self.containerimage).run(
-                cwd=self.workdir,
-                stream_output=True,
-                logger=self._logger,
-                env=PODMAN_ENV if self._rootless else None,
+        if not self._instance:
+            return
+        tmt.utils.Command("podman", "rmi", self.containerimage).run(
+            cwd=self.workdir,
+            stream_output=True,
+            logger=self._logger,
+            env=PODMAN_ENV if self._rootless else None,
+        )
+        try:
+            tmt.utils.Command("podman", "machine", "rm", "-f", PODMAN_MACHINE_NAME).run(
+                cwd=self.workdir, stream_output=True, logger=self._logger
             )
-            try:
-                tmt.utils.Command("podman", "machine", "rm", "-f", PODMAN_MACHINE_NAME).run(
-                    cwd=self.workdir, stream_output=True, logger=self._logger
-                )
-            except BaseException:
-                self._logger.debug(
-                    "Unable to remove podman machine '{PODMAN_MACHINE_NAME}', it might not exist."
-                )
+        except BaseException:
+            self._logger.debug(
+                "Unable to remove podman machine '{PODMAN_MACHINE_NAME}', it might not exist."
+            )
 
-            super().remove()
+        super().remove()
 
 
 @container
