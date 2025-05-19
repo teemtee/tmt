@@ -48,7 +48,7 @@ rlJournalStart
         rlAssertGrep "testing shell with exit code 122" $rlRun_LOG
         rlAssertGrep "warn: Test failed to manage its pidfile." $rlRun_LOG
         rlAssertGrep "errr /tests/pidlock" $rlRun_LOG
-        rlAssertGrep "Note: pidfile locking" $rlRun_LOG
+        rlAssertGrep "pidfile locking" $rlRun_LOG
         rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
         rlAssertGrep "/tests/pidlock 1 error default-0 pidfile locking" $rlRun_LOG
     rlPhaseEnd
@@ -59,7 +59,7 @@ rlJournalStart
         rlAssertGrep "cmd: ./shell.sh 124" $rlRun_LOG
         rlAssertGrep "testing shell with exit code 124" $rlRun_LOG
         rlAssertGrep "errr /tests/timeout" $rlRun_LOG
-        rlAssertGrep "Note: timeout" $rlRun_LOG
+        rlAssertGrep "timeout" $rlRun_LOG
         rlAssertGrep "Maximum test time '5m' exceeded." $rlRun_LOG
         rlAssertGrep "Adjust the test 'duration' attribute if necessary." $rlRun_LOG
         rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"

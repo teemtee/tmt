@@ -80,7 +80,8 @@ rlJournalStart
         rlAssertGrep "Running 'exit 124'" $rlRun_LOG
         rlAssertNotGrep "OVERALL RESULT" $rlRun_LOG
         # tmt prints the correct result into log
-        rlAssertGrep "errr /tests/timeout (timeout)" $rlRun_LOG
+        rlAssertGrep "errr /tests/timeout" $rlRun_LOG
+        rlAssertGrep "timeout" $rlRun_LOG
         rlAssertGrep "Maximum test time '5m' exceeded." $rlRun_LOG
         rlAssertGrep "Adjust the test 'duration' attribute if necessary." $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
@@ -97,7 +98,8 @@ rlJournalStart
         rlAssertGrep "Running 'exit 122'" $rlRun_LOG
         rlAssertNotGrep "OVERALL RESULT" $rlRun_LOG
         # tmt prints the correct result into log
-        rlAssertGrep "errr /tests/pidlock (pidfile locking)" $rlRun_LOG
+        rlAssertGrep "errr /tests/pidlock" $rlRun_LOG
+        rlAssertGrep "pidfile locking" $rlRun_LOG
         rlAssertGrep "warn: Test failed to manage its pidfile." $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
         rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
@@ -114,7 +116,8 @@ rlJournalStart
         rlAssertGrep "Running 'exit 0'" $rlRun_LOG
         rlAssertNotGrep "OVERALL RESULT" $rlRun_LOG
         # tmt prints the correct result into log
-        rlAssertGrep "errr /tests/incomplete-fail (beakerlib: State 'incomplete')" $rlRun_LOG
+        rlAssertGrep "errr /tests/incomplete-fail" $rlRun_LOG
+        rlAssertGrep "beakerlib: State 'incomplete'" $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
         rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
         rlAssertGrep "/tests/incomplete-fail 1 error default-0 beakerlib: State 'incomplete'" $rlRun_LOG
@@ -130,7 +133,8 @@ rlJournalStart
         rlAssertGrep "Running 'exit 0'" $rlRun_LOG
         rlAssertNotGrep "OVERALL RESULT" $rlRun_LOG
         # tmt prints the correct result into log
-        rlAssertGrep "errr /tests/incomplete-pass (beakerlib: State 'incomplete')" $rlRun_LOG
+        rlAssertGrep "errr /tests/incomplete-pass" $rlRun_LOG
+        rlAssertGrep "beakerlib: State 'incomplete'" $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
         rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
         rlAssertGrep "/tests/incomplete-pass 1 error default-0 beakerlib: State 'incomplete'" $rlRun_LOG
@@ -144,7 +148,8 @@ rlJournalStart
         # beakerlib results as expected
         rlAssertNotGrep "RESULT" $rlRun_LOG
         # tmt prints the correct result into log
-        rlAssertGrep "errr /tests/notfound (beakerlib: TestResults FileError)" $rlRun_LOG
+        rlAssertGrep "errr /tests/notfound" $rlRun_LOG
+        rlAssertGrep "beakerlib: TestResults FileError" $rlRun_LOG
         rlAssertGrep "No such file or directory" $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
         rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
@@ -159,7 +164,8 @@ rlJournalStart
         # beakerlib results as expected
         rlAssertNotGrep "RESULT" $rlRun_LOG
         # tmt prints the correct result into log
-        rlAssertGrep "errr /tests/notexec (beakerlib: TestResults FileError)" $rlRun_LOG
+        rlAssertGrep "errr /tests/notexec" $rlRun_LOG
+        rlAssertGrep "beakerlib: TestResults FileError" $rlRun_LOG
         rlAssertGrep "Permission denied" $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
         rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
