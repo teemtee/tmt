@@ -4002,6 +4002,14 @@ class Tree(tmt.utils.Common):
                 dry=dry,
                 logger=logger,
             )
+            tmt.Plan.create(
+                names=['/plans/example'],
+                template='tfaga',
+                path=path,
+                force=force,
+                dry=dry,
+                logger=logger,
+            )
         elif template == 'base':
             tmt.Test.create(
                 names=['/tests/example'],
