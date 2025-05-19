@@ -37,7 +37,7 @@ repos:
           - "pygments>=2.7.4"
           - "requests>=2.25.1"
           - "ruamel.yaml>=0.16.6"
-          - "urllib3>=1.26.5, <2.0"
+          - "urllib3>=1.26.5, <3.0"
           - "jira>=3.5.0, <4"
 
           # report-junit
