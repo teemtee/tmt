@@ -17,11 +17,9 @@ if TYPE_CHECKING:
 BEAKERLIB_REPORT_RESULT_COMMAND = 'rhts-report-result'
 
 
-def _extract_failures(log_path: Path, invocation: 'TestInvocation') -> list[str]:
-    if not log_path.is_file():
-        return []
+def _extract_failures(invocation: 'TestInvocation', log_path: Path) -> list[str]:
     try:
-        log = invocation.phase.read(log_path)
+        log = invocation.phase.step.plan.execute.read(log_path)
     except tmt.utils.FileError:
         return []
 
@@ -148,7 +146,8 @@ class Beakerlib(TestFramework):
                     invocation,
                     invocation.test_data_path,
                     _extract_failures(
-                        invocation.path / tmt.steps.execute.TEST_OUTPUT_FILENAME, invocation
+                        invocation,
+                        invocation.relative_path / tmt.steps.execute.TEST_OUTPUT_FILENAME,
                     ),
                 )
             )

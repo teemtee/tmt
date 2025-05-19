@@ -11,11 +11,9 @@ from tmt.steps.execute import TEST_OUTPUT_FILENAME, TestInvocation
 from tmt.utils import Path
 
 
-def _extract_failures(log_path: Path, invocation: 'TestInvocation') -> list[str]:
-    if not log_path.is_file():
-        return []
+def _extract_failures(invocation: 'TestInvocation', log_path: Path) -> list[str]:
     try:
-        log = invocation.phase.read(log_path)
+        log = invocation.phase.step.plan.execute.read(log_path)
     except tmt.utils.FileError:
         return []
 
@@ -96,7 +94,7 @@ class Shell(TestFramework):
 
         failures: list[str] = []
         for test_log in test_logs:
-            failures += _extract_failures(test_log, invocation)
+            failures += _extract_failures(invocation, test_log)
 
         # Save failures to the file
         test_logs.append(save_failures(invocation, invocation.test_data_path, failures))
@@ -158,7 +156,7 @@ class Shell(TestFramework):
         paths = [
             log_path,
             save_failures(
-                invocation, invocation.test_data_path, _extract_failures(log_path, invocation)
+                invocation, invocation.test_data_path, _extract_failures(invocation, log_path)
             ),
         ]
 
