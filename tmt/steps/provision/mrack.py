@@ -57,7 +57,26 @@ DEFAULT_PROVISION_TICK = 60  # poll job each minute
 #: Kerberos ticket.
 DEFAULT_API_SESSION_REFRESH = 3600
 
+# Store import parameters for lazy loading
+_MRACK_IMPORT_ARGS: Optional[tuple[Any, str, tmt.log.Logger]] = None
 
+
+def ensure_mrack_imported(func: Callable[..., Any]) -> Callable[..., Any]:
+    """
+    Decorator to ensure mrack is imported before the function is called.
+    """
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        if not _MRACK_IMPORTED and _MRACK_IMPORT_ARGS is not None:
+            workdir, name, logger = _MRACK_IMPORT_ARGS
+            import_and_load_mrack_deps(workdir, name, logger)
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+@ensure_mrack_imported
 def mrack_constructs_ks_pre() -> bool:
     """
     Kickstart construction has been improved in 1.21.0
@@ -753,6 +772,7 @@ _CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
 }
 
 
+@ensure_mrack_imported
 def constraint_to_beaker_filter(
     constraint: tmt.hardware.BaseConstraint, logger: tmt.log.Logger
 ) -> BeakerizedConstraint:
@@ -794,10 +814,13 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
     Import mrack module only when needed
     """
 
-    global _MRACK_IMPORTED
+    global _MRACK_IMPORTED, _MRACK_IMPORT_ARGS
 
     if _MRACK_IMPORTED:
         return
+
+    # Store args for potential later use
+    _MRACK_IMPORT_ARGS = (workdir, name, logger)
 
     global MRACK_VERSION
     global mrack
@@ -1092,6 +1115,7 @@ class BeakerAPI:
     # wrapping around the __init__ with async wrapper does mangle the method
     # and mypy complains as it no longer returns None but the coroutine
     @async_run
+    @ensure_mrack_imported
     async def __init__(self, guest: 'GuestBeaker') -> None:  # type: ignore[misc]
         """
         Initialize the API class with defaults and load the config
@@ -1144,6 +1168,7 @@ class BeakerAPI:
             self._bkr_job_id = guest.job_id
 
     @async_run
+    @ensure_mrack_imported
     async def create(self, data: CreateJobParameters) -> Any:
         """
         Create - or request creation of - a resource using mrack up.
@@ -1157,6 +1182,7 @@ class BeakerAPI:
         return self._mrack_provider._get_recipe_info(self._bkr_job_id, log_msg_start)
 
     @async_run
+    @ensure_mrack_imported
     async def inspect(
         self,
     ) -> Any:
@@ -1168,6 +1194,7 @@ class BeakerAPI:
         return self._mrack_provider._get_recipe_info(self._bkr_job_id, log_msg_start)
 
     @async_run
+    @ensure_mrack_imported
     async def delete(  # destroy
         self,
     ) -> Any:
@@ -1236,6 +1263,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         return self._api
 
     @property
+    @ensure_mrack_imported
     def is_ready(self) -> bool:
         """
         Check if provisioning of machine is done
@@ -1264,6 +1292,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         except mrack.errors.MrackError:
             return False
 
+    @ensure_mrack_imported
     def _create(self, tmt_name: str) -> None:
         """
         Create beaker job xml request and submit it to Beaker hub
@@ -1392,6 +1421,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
         self.primary_address = self.topology_address = guest_info['system']
 
+    @ensure_mrack_imported
     def start(self) -> None:
         """
         Start the guest
@@ -1407,6 +1437,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         self.verbose('primary address', self.primary_address, 'green')
         self.verbose('topology address', self.topology_address, 'green')
 
+    @ensure_mrack_imported
     def remove(self) -> None:
         """
         Remove the guest
@@ -1417,6 +1448,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
         self.api.delete()
 
+    @ensure_mrack_imported
     def reboot(
         self,
         hard: bool = False,
