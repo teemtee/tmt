@@ -2584,6 +2584,9 @@ class GuestSsh(Guest):
 
             remote_target = f"{self._ssh_guest}:{dest_str}"
 
+            # Log the actual rsync command for debugging
+            self.debug(f"Running rsync from '{source_str}' to '{remote_target}'", level=2)
+
             self._run_guest_command(
                 Command(
                     *cmd,

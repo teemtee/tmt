@@ -159,16 +159,13 @@ class GuestLocal(tmt.Guest):
 
     def push(
         self,
-        source: Optional[Union[Path, list[Path]]] = None,
+        source: Optional[Path] = None,
         destination: Optional[Path] = None,
         options: Optional[list[str]] = None,
         superuser: bool = False,
     ) -> None:
         """
-        Copy files or directories locally.
-
-        For local guests, this method copies files or directories to the specified
-        destinationNothing to be done to push workdir
+        Nothing to be done to push workdir
         """
 
     def pull(

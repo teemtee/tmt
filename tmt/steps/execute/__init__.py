@@ -117,7 +117,10 @@ class Script:
         :param filepath: Path where the script should be copied
         :returns: None for regular scripts, a Path for templates to be tracked for cleanup
         """
-        shutil.copy2(SCRIPTS_SRC_DIR / self.source_filename, filepath)
+        source_path = SCRIPTS_SRC_DIR / self.source_filename
+        # Make sure the parent directory exists
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source_path, filepath)
         return None
 
 
@@ -172,6 +175,8 @@ class ScriptTemplate(Script):
         :returns: The path to the rendered template for cleanup tracking
         """
         assert self._rendered_script_path is not None
+        # Make sure the parent directory exists
+        filepath.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(self._rendered_script_path, filepath)
         return self._rendered_script_path
 
@@ -915,9 +920,10 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             # Push the entire staging directory content to the guest's root
             # Use options to preserve structure, links, and permissions.
             # -a implies -rlptgoD (archive mode)
-            self.debug(f"Pushing staged scripts from '{staging_root}' to guest")
+            self.debug(f"Pushing staged scripts from '{staging_root}/' to guest")
             guest.push(
-                source=staging_root,
+                # Add trailing slash to ensure directory contents are copied
+                source=Path(f"{staging_root}/"),
                 destination=Path('/'),
                 options=[
                     "-a",  # Archive mode (-rlptgoD), includes preserving permissions
