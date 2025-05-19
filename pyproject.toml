@@ -62,7 +62,7 @@ export-polarion = [
     "pylero>=0.1.0",
     ]
 provision-beaker = [
-    "mrack>=1.23.3",
+    "mrack>=1.23.2",
     ]
 provision-virtual = [
     "testcloud>=0.11.7",
