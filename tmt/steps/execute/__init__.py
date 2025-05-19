@@ -921,9 +921,11 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             # Use options to preserve structure, links, and permissions.
             # -a implies -rlptgoD (archive mode)
             self.debug(f"Pushing staged scripts from '{staging_root}/' to guest")
+            # Ensure the source path string for rsync definitely ends with a slash
+            # to copy directory contents.
+            source_str_with_slash = str(staging_root).rstrip('/') + '/'
             guest.push(
-                # Add trailing slash to ensure directory contents are copied
-                source=Path(f"{staging_root}/"),
+                source=Path(source_str_with_slash),
                 destination=Path('/'),
                 options=[
                     "-a",  # Archive mode (-rlptgoD), includes preserving permissions
