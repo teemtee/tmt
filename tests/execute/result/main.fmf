@@ -20,3 +20,6 @@
       - provision-only
       - provision-local
       - provision-virtual
+/failure-logs:
+    summary: Test failure logs of the test result
+    test: ./failure-logs.sh
