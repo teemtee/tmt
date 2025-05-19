@@ -2530,6 +2530,10 @@ class GuestSsh(Guest):
         options = options or DEFAULT_RSYNC_PUSH_OPTIONS
         if destination is None:
             destination = Path("/")
+
+        # Default to syncing contents for workdir or directories
+        sync_source_contents = True
+
         if source is None:
             # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
             parent = cast(Provision, self.parent)
