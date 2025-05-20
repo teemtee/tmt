@@ -1,0 +1,39 @@
+summary: Additional user-specified metadata
+
+story:
+    As a developer or tester I want to specify additional test or
+    plan properties for use by external systems or tmt plugins.
+
+description: |
+    When a test or a plan contains metadata keys with names starting
+    with ``extra-``, the keys are automatically ignored by ``tmt lint``.
+    This allows the user to define ie. ``extra-myproject`` as a top
+    level YAML key and specify any arbitrary YAML-compliant metadata
+    under that key.
+
+    tmt does not otherwise interact with these keys except for a short
+    list of names used by ``tmt tests convert`` or ``tmt tests export``:
+
+    .. code-block::
+
+       extra-nitrate
+       extra-hardware
+       extra-pepa
+       extra-summary
+       extra-task
+
+    .. versionadded:: 1.50
+
+example: |
+    # Additional classification of a test, parsed by
+    # user scripts built on top of fmf
+    extra-compliance:
+        verifies-profile: stig
+        complete: no
+        stig-ids:
+          - RHEL-09-214015
+          - RHEL-09-215025
+
+link:
+  - implemented-by: /tmt/base.py
+  - verified-by: /tests/core/extra

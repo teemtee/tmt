@@ -164,3 +164,7 @@ oneOf:
       - execute
   - required:
       - plan
+
+# User-defined metadata
+patternProperties:
+  ^extra-: {}
