@@ -69,14 +69,14 @@ class Crb(ToggleableFeature):
         logger.info(f"{action.capitalize()} CRB repository.")
 
         # Inspired by crb executable from https://src.fedoraproject.org/rpms/epel-release
-        guest.execute(
-            ShellScript(
-                f"dnf config-manager --{action} $(dnf repolist --all |"
-                f" grep -i -e crb -e powertools -e codeready |"
-                f" grep -v -i -e debug -e source -e eus -e virt -e rhui |"
-                f" sed 's/^\\s*\\([^ ]*\\).*/\1/')"  # do not use awk
-            )
-        )
+        command_prefix = "sudo " if not guest.facts.is_superuser else ""
+        script_content = rf"""
+            {command_prefix}dnf config-manager --{action} $(dnf repolist --all | \
+            grep -i -e crb -e powertools -e codeready | \
+            grep -v -i -e debug -e source -e eus -e virt -e rhui | \
+            sed 's/^\s*\([^ ]*\).*/\1/')
+        """
+        guest.execute(ShellScript(script_content))
 
     @classmethod
     def enable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
