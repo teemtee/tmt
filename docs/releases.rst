@@ -33,6 +33,12 @@ Fixed a bug that caused executed tests to remain in the
 ``pending`` state when the machine became unresponsive. Tests will
 now correctly transition to the ``error`` state.
 
+Failures from tests and their checks were previously not fully saved
+or reported. Now, a separate ``failures.yaml`` file is created for each
+failed test and check, stored within their respective directories. When
+a failure occurs, the path to this file is included in the result logs.
+Check failures are now also reported to ReportPortal.
+
 
 tmt-1.48.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
