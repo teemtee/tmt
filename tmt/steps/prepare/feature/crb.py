@@ -2,7 +2,6 @@ import re
 from typing import Any, Optional
 
 import tmt.log
-import tmt.utils
 from tmt.container import container, field
 from tmt.package_managers import Package
 from tmt.steps.prepare.feature import PrepareFeatureData, ToggleableFeature, provides_feature
@@ -55,9 +54,7 @@ class Crb(ToggleableFeature):
             guest.facts.distro
             and any(pattern.match(guest.facts.distro) for pattern in SUPPORTED_DISTRO_PATTERNS)
         ):
-            raise tmt.utils.GeneralError(
-                'CRB prepare feature is supported on RHEL/CentOS-Stream 8, 9 or 10.'
-            )
+            logger.warning('CRB prepare feature is supported on RHEL/CentOS-Stream 8, 9 or 10.')
 
         guest.package_manager.install(Package("dnf-command(config-manager)"))
 
