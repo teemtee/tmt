@@ -2499,6 +2499,63 @@ class GuestSsh(Guest):
 
         return output
 
+    def _prepare_rsync_source_path(self, source: Optional[Path]) -> str:
+        """
+        Prepares the source path string for rsync.
+        """
+        if source is None:
+            # Default to plan workdir, sync contents
+            parent = cast(Provision, self.parent)
+            if parent.plan is None or parent.plan.workdir is None:
+                raise ValueError("Plan workdir is not set, but required for default source.")
+
+            effective_source_path = parent.plan.workdir
+            self.debug(f"Default source: workdir '{effective_source_path}', syncing contents.")
+
+            source_path_for_rsync = str(effective_source_path)
+            if not source_path_for_rsync.endswith('/'):
+                source_path_for_rsync += '/'
+            return source_path_for_rsync
+
+        source_path_for_rsync = str(source)
+        try:
+            if source.is_dir():  # True if exists and is a directory
+                self.debug(f"Source '{source}' is an existing directory, syncing its contents.")
+                if not source_path_for_rsync.endswith('/'):
+                    source_path_for_rsync += '/'
+            else:
+                if source.exists():
+                    self.debug(
+                        f"Source '{source}' is an existing file or special file, syncing as item."
+                    )
+                else:
+                    self.debug(
+                        f"Source '{source}' does not exist locally, syncing as item/pattern."
+                    )
+                source_path_for_rsync = source_path_for_rsync.rstrip('/')
+        except OSError as e:
+            self.warn(
+                f"Could not accurately determine type of source path '{source}'. OS error: {e}. "
+                f"Treating as an item/pattern (no trailing slash forced for source)."
+            )
+            source_path_for_rsync = str(source).rstrip('/')
+
+        return source_path_for_rsync
+
+    def _prepare_rsync_destination_path(self, destination: Optional[Path]) -> str:
+        """
+        Prepares the destination path string for rsync.
+        """
+        effective_dest_path = destination if destination is not None else Path("/")
+        dest_path_str = str(effective_dest_path)
+
+        if dest_path_str == "/":
+            return "/"
+
+        if not dest_path_str.endswith('/'):
+            return dest_path_str + '/'
+        return dest_path_str
+
     def push(
         self,
         source: Optional[Path] = None,
@@ -2508,139 +2565,94 @@ class GuestSsh(Guest):
     ) -> None:
         """
         Push files or directories to the guest using rsync.
-
-        Handles rsync's trailing slash behavior automatically for the source path:
-        If 'source' is a directory that exists locally, its *contents* are synced
-        (equivalent to ``rsync source/ ...``). If 'source' is a file or does not
-        exist locally, it's synced as is (equivalent to ``rsync source ...``).
-        By default (if 'source' is None), the plan workdir *contents* are synced.
-
-        The 'destination' path on the guest will generally have a trailing slash
-        appended (unless it's '/') to ensure files are copied *into* it.
-
-        Set 'superuser' if rsync command has to run as root or passwordless
-        sudo on the Guest (e.g. pushing to r/o destination)
         """
-
-        # Abort if guest is unavailable
         if self.primary_address is None and not self.is_dry_run:
-            raise tmt.utils.GeneralError('The guest is not available.')
+            raise GeneralError('The guest is not available.')
 
-        # Prepare options and the push command
-        options = options or DEFAULT_RSYNC_PUSH_OPTIONS
-        if destination is None:
-            destination = Path("/")
+        current_rsync_options = options or DEFAULT_RSYNC_PUSH_OPTIONS
 
-        # Initialize source_str variable - will be set properly below
-        source_str = ""
+        try:
+            source_str = self._prepare_rsync_source_path(source)
+            dest_str = self._prepare_rsync_destination_path(destination)
+        except ValueError as path_prep_error:
+            raise GeneralError(f"Failed to prepare rsync paths: {path_prep_error}")
 
-        if source is None:
-            # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
-            parent = cast(Provision, self.parent)
+        self.debug(
+            f"Resolved rsync paths: source='{source_str}',"
+            f" destination='{dest_str}' for guest '{self.primary_address}'"
+        )
 
-            assert parent.plan.workdir is not None
-
-            source = parent.plan.workdir
-            self.debug(f"Push workdir to guest '{self.primary_address}'.")
-
-            # For workdir, we always sync contents (with trailing slash)
-            source_str = str(source)
-            if not source_str.endswith('/'):
-                source_str += '/'
-        else:
-            self.debug(f"Copy '{source}' to '{destination}' on the guest.")
-
-            # Check if the provided source exists and is a directory locally
-            # to decide if we sync contents (add slash) or the item itself
-            try:
-                source_str = str(source)
-                if source.exists() and source.is_dir():
-                    self.debug(f"Source '{source}' is a directory, syncing contents.")
-                    if not source_str.endswith('/'):
-                        source_str += '/'
-                else:
-                    self.debug(f"Source '{source}' is a file or does not exist, syncing item.")
-                    source_str = source_str.rstrip('/')
-            except OSError as e:
-                # If we can't check, default to not adding the slash
-                self.warn(
-                    f"Could not check source path '{source}': {e}. "
-                    f"Assuming it's a file/pattern (no trailing slash)."
-                )
-                source_str = str(source).rstrip('/')
-
-        dest_str = str(destination)
-        # Ensure destination has a trailing slash if it's meant to be a target directory,
-        # unless it's the root directory itself ('/').
-        if dest_str != '/' and not dest_str.endswith('/'):
-            dest_str += '/'
-
-        def rsync() -> None:
-            """Run the rsync command"""  # assert options is not None
-
-            cmd = ['rsync']
+        def _execute_rsync_operation() -> None:
+            cmd_base = ['rsync']
             if superuser and self.user != 'root':
-                cmd += ['--rsync-path', 'sudo rsync']
+                cmd_base.extend(['--rsync-path', 'sudo rsync'])
 
+            ssh_command_str = self._ssh_command.to_element()
             remote_target = f"{self._ssh_guest}:{dest_str}"
 
-            # Log the actual rsync command for debugging
-            self.debug(f"Running rsync from '{source_str}' to '{remote_target}'", level=2)
+            full_cmd_list = [
+                *cmd_base,
+                *current_rsync_options,
+                "-e",
+                ssh_command_str,
+                source_str,
+                remote_target,
+            ]
 
+            self.debug(f"Executing rsync: {' '.join(repr(arg) for arg in full_cmd_list)}", level=2)
             self._run_guest_command(
-                Command(
-                    *cmd,
-                    *options,
-                    "-e",
-                    self._ssh_command.to_element(),
-                    source_str,
-                    remote_target,
-                ),
+                Command(*full_cmd_list),
                 silent=True,
             )
 
         try:
-            rsync()
+            _execute_rsync_operation()
             self.debug(
                 f"Successfully pushed '{source_str}' to '{self._ssh_guest}:{dest_str}'", level=2
             )
         except tmt.utils.RunError as first_error:
-            self.debug(f"First rsync attempt failed: {first_error}", level=2)
-            # Don't check/retry during dry run
+            self.debug(f"Initial rsync attempt failed: {first_error}", level=2)
             if self.is_dry_run:
-                self.warn("First rsync attempt failed during dry run, not retrying.")
-                raise first_error
+                self.warn("Rsync failed during dry run, not retrying.")
+                raise
 
+            self.debug("Checking rsync on guest and attempting retry...")
             try:
                 rsync_check_outcome = self._check_rsync()
 
-                # If rsync was already there, the first error is likely the real issue
                 if rsync_check_outcome == CheckRsyncOutcome.ALREADY_INSTALLED:
                     self.debug(
-                        "rsync already installed, first error likely connection/permission issue."
+                        "rsync reported as already installed. The original error is likely "
+                        "due to connection, permissions, or rsync arguments."
                     )
                     raise first_error
 
-                # If check passed, retry the command
-                self.debug("rsync check passed or installed, retrying command.")
-                rsync()  # Second attempt
+                self.debug("rsync check indicates a retry is warranted. Retrying push operation.")
+                _execute_rsync_operation()
                 self.debug(
-                    f"Pushed '{source_str}' to '{self._ssh_guest}:{dest_str}' on retry.", level=2
+                    f"Pushed '{source_str}' to '{self._ssh_guest}:{dest_str}' on retry.",
+                    level=2,
                 )
 
             except tmt.utils.RunError as second_error:
-                # Failure during the check or the second attempt
-                self.fail(
-                    f"Failed to push workdir to the guest. This usually means "
-                    f"that login as '{self.user}' to the guest does not work."
+                error_message = (
+                    f"Failed to push '{source_str}' to guest '{self._ssh_guest}' after retry. "
+                    f"This often indicates issues with login as '{self.user}', "
+                    f"rsync setup on the guest, or permissions.\n"
+                    f"Initial rsync error: {first_error}\n"
+                    f"Subsequent error during check/retry: {second_error}"
                 )
-                # Raise the second (more recent) error
-                raise second_error
+                self.fail(error_message)
+                raise second_error from first_error
             except Exception as check_retry_exception:
-                self.fail(f"Unexpected error during rsync check or retry: {check_retry_exception}")
+                self.fail(
+                    f"An unexpected error during rsync check or retry: {check_retry_exception}"
+                )
                 raise
-        except Exception as initial_exception:
-            self.fail(f"Unexpected error during initial rsync attempt: {initial_exception}")
+        except Exception as initial_unexpected_err:
+            self.fail(
+                f"An unexpected error during the initial rsync attempt: {initial_unexpected_err}"
+            )
             raise
 
     def pull(
