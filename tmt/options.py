@@ -71,7 +71,7 @@ class Path(click.ParamType):
         The ``param`` and ``ctx`` arguments may be ``None`` in certain
         situations, such as when converting prompt input.
 
-        If the value cannot be converted, call :meth:`fail` with a
+        If the value cannot be converted, call :py:meth:`fail` with a
         descriptive message.
 
         :param value: The value to convert.
