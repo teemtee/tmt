@@ -15,10 +15,10 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
     rlPhaseEnd
 
-    tmt_command="tmt run --scratch -a --id ${run} provision --how local execute -vv test --name"
+    tmt_command="tmt run --scratch -a --id ${run} execute -vv test --name"
 
     rlPhaseStartTest "Passing shell test has no failures"
-        failure_log="${run}/default/plan/execute/data/guest/default-0/tests/shell/pass-1/data/failures.yaml"
+        failure_log="${run}/plan/execute/data/guest/default-0/tests/shell/pass-1/data/failures.yaml"
         rlRun -s "${tmt_command} /tests/shell/pass" 0
         rlAssertGrep "pass /tests/shell/pass" $rlRun_LOG
         rlAssertExists "${failure_log}"
@@ -26,7 +26,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Failing shell test has failures"
-        failure_log="${run}/default/plan/execute/data/guest/default-0/tests/shell/fail-1/data/failures.yaml"
+        failure_log="${run}/plan/execute/data/guest/default-0/tests/shell/fail-1/data/failures.yaml"
         rlRun -s "${tmt_command} /tests/shell/fail" 1
         rlAssertGrep "fail /tests/shell/fail" $rlRun_LOG
         rlAssertExists "${failure_log}"
@@ -37,7 +37,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Passing beakerlib test has no failures"
-        failure_log="${run}/default/plan/execute/data/guest/default-0/tests/beakerlib/pass-1/data/failures.yaml"
+        failure_log="${run}/plan/execute/data/guest/default-0/tests/beakerlib/pass-1/data/failures.yaml"
         rlRun -s "${tmt_command} /tests/beakerlib/pass" 0
         rlAssertGrep "pass /tests/beakerlib/pass" $rlRun_LOG
         rlAssertExists "${failure_log}"
@@ -45,7 +45,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Failing beakerlib test has failures"
-        failure_log="${run}/default/plan/execute/data/guest/default-0/tests/beakerlib/fail-1/data/failures.yaml"
+        failure_log="${run}/plan/execute/data/guest/default-0/tests/beakerlib/fail-1/data/failures.yaml"
         rlRun -s "${tmt_command} /tests/beakerlib/fail" 1
         rlAssertGrep "fail /tests/beakerlib/fail" $rlRun_LOG
         rlAssertExists "${failure_log}"
