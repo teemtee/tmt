@@ -124,7 +124,7 @@ class GuestExample(tmt.Guest):
     """
     Guest provisioned for test execution
 
-    The following keys are expected in the 'data' dictionary::
+    The following keys are expected in the 'data' dictionary:
 
     guest ...... hostname or ip address
     port ....... port to connect to
