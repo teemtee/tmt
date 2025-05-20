@@ -71,7 +71,7 @@ class Crb(ToggleableFeature):
         # Inspired by crb executable from https://src.fedoraproject.org/rpms/epel-release
         guest.execute(
             ShellScript(
-                f"sudo dnf config-manager --{action} $(dnf repolist --all |"
+                f"dnf config-manager --{action} $(dnf repolist --all |"
                 f" grep -i -e crb -e powertools -e codeready |"
                 f" grep -v -i -e debug -e source -e eus -e virt -e rhui |"
                 f" sed 's/^\\s*\\([^ ]*\\).*/\1/')"  # do not use awk
