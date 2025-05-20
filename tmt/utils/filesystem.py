@@ -15,11 +15,13 @@ def _copy_tree_cp(
     logger: tmt.log.Logger,
 ) -> bool:
     """
-    Attempt to copy directory using 'cp -a --reflink=auto'.
+    Attempt to copy directory using ``cp -a --reflink=auto``.
 
-    The 'cp' command itself will fall back to a standard copy if reflink is
-    not supported by the filesystem.
-    Returns True if successful, False if `cp` command fails with `RunError`.
+    The ``cp`` command itself will fall back to a standard copy if
+    reflink is not supported by the filesystem.
+
+    :returns: ``True`` if successful, ``False`` if ``cp`` command fails
+        with :py:class:`RunError`.
     """
     try:
         # The '/./' at the end of the source path tells cp to copy the *contents* of the directory
@@ -63,22 +65,32 @@ def copy_tree(
     Copy directory efficiently, trying different strategies.
 
     Attempts strategies in order:
-    1. 'cp -a --reflink=auto' (copy-on-write, with cp's own fallback).
-       - Reflinks provide fast, space-efficient copies that behave like normal copies
-       - They don't use additional storage space unless the file is modified
-       - Supported on btrfs (Fedora default since F33) and XFS (CentOS Stream 8+)
-       - Using '--reflink=auto' means 'cp' automatically falls back to standard copy
-         if reflinks aren't supported by the filesystem
-    2. shutil.copytree as a final fallback.
-       - Used if the 'cp' command fails for any reason
-       - Maintains symlinks (symlinks=True)
-       - Merges with existing destination directories (dirs_exist_ok=True)
+    #. ``cp -a --reflink=auto`` (copy-on-write, with ``cp``'s own
+       fallback).
+
+       * Reflinks provide fast, space-efficient copies that behave like
+         normal copies
+       * They don't use additional storage space unless the file is
+         modified
+       * Supported on btrfs (Fedora default since F33) and XFS (CentOS
+         Stream 8+)
+       * Using ``--reflink=auto`` means ``cp`` automatically falls back
+         to standard copy if reflink isn't supported by the filesystem
+
+    #. :py:func:`shutil.copytree` as a final fallback.
+
+       * Used if the ``cp`` command fails for any reason
+       * Maintains symlinks (``symlinks=True``)
+       * Merges with existing destination directories (``dirs_exist_ok=True``)
 
     Symlinks are always preserved. The destination directory `dst` and its
     parents will be created if they do not exist. File permissions and timestamps
     are preserved in all copy strategies.
 
     Example usage:
+
+    .. code-block:: python
+
         # Copy a directory tree with all its content
         copy_tree(Path("/path/to/source"), Path("/path/to/destination"), logger)
 
@@ -88,8 +100,8 @@ def copy_tree(
     :param src: Source directory path. Must exist and be a directory.
     :param dst: Destination directory path.
     :param logger: Logger to use for debug messages.
-    :raises GeneralError: when copying fails using all strategies, or if `src`
-                         does not exist or is not a directory.
+    :raises GeneralError: when copying fails using all strategies, or if
+        ``src`` does not exist or is not a directory.
     """
     logger.debug(f"Copying directory tree from '{src}' to '{dst}'")
 
