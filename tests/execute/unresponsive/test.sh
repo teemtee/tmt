@@ -3,8 +3,6 @@
 
 rlJournalStart
     rlPhaseStartSetup
-        rlRun "tmp=\$(mktemp -d)" 0 "Creating tmp directory"
-        rlRun "export TMT_WORKDIR_ROOT=$tmp"
         rlRun "pushd data"
     rlPhaseEnd
 
@@ -17,6 +15,5 @@ rlJournalStart
 
     rlPhaseStartCleanup
         rlRun "popd"
-        rlRun "rm -rf $tmp" 0 "Removing tmp directory"
     rlPhaseEnd
 rlJournalEnd
