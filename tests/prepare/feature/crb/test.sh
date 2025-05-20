@@ -20,14 +20,14 @@ rlJournalStart "CRB Feature Test"
         # The plan itself contains the check (dnf repolist enabled | grep ...).
         # Expecting tmt run to succeed (exit code 0) as the check should pass.
         rlPhaseStartTest "Test /crb/enabled on $image"
-            rlRun "tmt run --all provision --how container --image $image prepare execute plan --name /crb/enabled" 0 "Run /crb/enabled plan for $image"
+            rlRun "tmt run --all provision --how container --image $image plan --name /crb/enabled" 0 "Run /crb/enabled plan for $image"
         rlPhaseEnd
 
         # Run the '/crb/disabled' plan, overriding the provision image.
         # The plan itself contains the checks (! dnf repolist enabled ... && dnf repolist disabled ...).
         # Expecting tmt run to succeed (exit code 0) as the checks should pass.
         rlPhaseStartTest "Test /crb/disabled on $image"
-            rlRun "tmt run --all provision --how container --image $image prepare execute plan --name /crb/disabled" 0 "Run /crb/disabled plan for $image"
+            rlRun "tmt run --all provision --how container --image $image plan --name /crb/disabled" 0 "Run /crb/disabled plan for $image"
         rlPhaseEnd
 
         # Run the '/crb_package' only on c9s

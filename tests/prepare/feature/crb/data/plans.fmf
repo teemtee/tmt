@@ -29,7 +29,7 @@ execute:
 
   /crb_package:
     prepare+:
-      - crb: enabled
+        crb: enabled
     execute:
       script: |
         dnf install -y sgx-rpm-macros
