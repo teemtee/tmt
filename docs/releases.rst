@@ -29,6 +29,10 @@ extended to allow import of multiple plans. New keys, ``scope`` and
 ``importing``, allow users to control which plans to import and how to
 connect them with the importing plans.
 
+Fixed a bug that caused executed tests to remain in the
+``pending`` state when the machine became unresponsive. Tests will
+now correctly transition to the ``error`` state.
+
 
 tmt-1.48.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
