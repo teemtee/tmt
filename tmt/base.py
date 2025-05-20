@@ -117,11 +117,6 @@ OBSOLETED_TEST_KEYS = [
 
 # Unofficial temporary test keys
 EXTRA_TEST_KEYS = [
-    "extra-nitrate",
-    "extra-hardware",
-    "extra-pepa",
-    "extra-summary",
-    "extra-task",
     "id",
 ]
 
@@ -129,6 +124,9 @@ EXTRA_TEST_KEYS = [
 EXTRA_STORY_KEYS = [
     "id",
 ]
+
+# User-defined custom metadata prefix
+EXTRA_KEYS_PREFIX = 'extra-'
 
 SECTIONS_HEADINGS = {
     'Setup': ['<h1>Setup</h1>'],
@@ -1018,7 +1016,11 @@ class Core(
 
         known_keys.extend(additional_keys)
 
-        return [key for key in self.node.get() if key not in known_keys]
+        return [
+            key
+            for key in self.node.get()
+            if key not in known_keys and not key.startswith(EXTRA_KEYS_PREFIX)
+        ]
 
     def lint_validate(self) -> LinterReturn:
         """

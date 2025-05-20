@@ -160,9 +160,9 @@ properties:
         tty:
           $ref: "/schemas/test#/properties/tty"
 
+      # User-defined metadata
       patternProperties:
-        ^extra-:
-          type: string
+        ^extra-: {}
 
       required:
         - name

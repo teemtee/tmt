@@ -1,0 +1,45 @@
+/valid-test:
+    summary: Test with valid custom metadata
+    test: ./test.sh
+    extra-number: 123
+    extra-string: string
+    extra-bool: true
+
+/valid-test-mapping:
+    summary: Test with valid dict-based custom metadata
+    test: ./test.sh
+    extra-mapping:
+        number: 123
+
+/valid-test-sequence:
+    summary: Test with valid list-based custom metadata
+    test: ./test.sh
+    extra-sequence:
+      - 123
+
+/invalid-test:
+    summary: Test with unknown non-extra keys
+    test: ./test.sh
+    user-defined: 123
+
+/valid-plan:
+    summary: Plan with valid custom metadata
+    execute:
+        how: tmt
+    extra-number: 123
+
+/invalid-plan:
+    summary: Plan with invalid custom metadata
+    execute:
+        how: tmt
+    user-defined: 123
+
+/valid-story:
+    summary: Story with valid custom metadata
+    story: Story description
+    extra-number: 123
+
+/invalid-story:
+    summary: Story with invalid custom metadata
+    story: Story description
+    user-defined: 123
