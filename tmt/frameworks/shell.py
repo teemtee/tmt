@@ -155,9 +155,7 @@ class Shell(TestFramework):
         log_path = invocation.relative_path / tmt.steps.execute.TEST_OUTPUT_FILENAME
         paths = [
             log_path,
-            save_failures(
-                invocation, invocation.test_data_path, _extract_failures(invocation, log_path)
-            ),
+            save_failures(invocation, invocation.path, _extract_failures(invocation, log_path)),
         ]
 
         return [

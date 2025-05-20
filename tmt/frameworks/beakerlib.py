@@ -144,7 +144,7 @@ class Beakerlib(TestFramework):
             log.append(
                 save_failures(
                     invocation,
-                    invocation.test_data_path,
+                    invocation.path,
                     _extract_failures(
                         invocation,
                         invocation.relative_path / tmt.steps.execute.TEST_OUTPUT_FILENAME,
