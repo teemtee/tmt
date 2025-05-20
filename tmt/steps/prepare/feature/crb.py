@@ -63,10 +63,10 @@ class Crb(ToggleableFeature):
 
     @classmethod
     def _manage_repo(cls, guest: Guest, logger: tmt.log.Logger, action: str) -> None:
-        """Enable or disable the repository using the upstream script"""
+        """Enable or disable the repository"""
         cls._check_distro(guest, logger)
 
-        logger.info(f"{action.capitalize()} CRB repository using upstream script.")
+        logger.info(f"{action.capitalize()} CRB repository.")
 
         # Inspired by crb executable from https://src.fedoraproject.org/rpms/epel-release
         guest.execute(
