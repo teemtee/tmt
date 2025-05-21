@@ -1,0 +1,3 @@
+summary: Verify that changing workdir root for virtual plugin works.
+tag+:
+  - provision-virtual
