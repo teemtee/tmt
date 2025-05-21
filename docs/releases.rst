@@ -14,14 +14,14 @@ import and how to connect them with the importing plans.
 
 New :ref:`/plugins/prepare/feature` prepare plugin ``crb`` has
 been implemented which allows to easily enable or disable the
-CodeReady Builder repository.
+CodeReady Builder repository on common test environments.
 
 Failures from tests and their checks were previously not fully
 saved or reported. Now, a separate ``failures.yaml`` file is
 created for each failed test and check, stored within their
 respective directories. When a failure occurs, the path to this
 file is included in the result logs. Check failures are now also
-reported to ReportPortal.
+being reported to ReportPortal.
 
 Output of the :ref:`/plugins/execute/tmt` and
 :ref:`/plugins/report/display` is changing in this release, to
