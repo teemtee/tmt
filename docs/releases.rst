@@ -16,6 +16,9 @@ New :ref:`/plugins/prepare/feature` prepare plugin ``crb`` has
 been implemented which allows to easily enable or disable the
 CodeReady Builder repository on common test environments.
 
+The console log content is now available for guests provisioned by
+the :ref:`/plugins/provision/virtual.testcloud` plugin.
+
 Failures from tests and their checks were previously not fully
 saved or reported. Now, a separate ``failures.yaml`` file is
 created for each failed test and check, stored within their
@@ -47,9 +50,6 @@ now correctly transition to the ``error`` state.
 
 tmt-1.48.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The console log content is now available for guests provisioned by
-the :ref:`/plugins/provision/virtual.testcloud` plugin.
 
 A new ``tmt about`` command has been introduced,
 initially providing information about the :ref:`tmt plugins <plugins>`.
