@@ -96,7 +96,7 @@ class DmesgCheck(Check):
         if not guest.facts.is_superuser:
             script = tmt.utils.ShellScript(f'sudo {script.to_shell_command()}')
 
-        return guest.execute(script, log=_test_output_logger)
+        return guest.execute(script, log=_test_output_logger, silent=True)
 
     def _save_dmesg(
         self, invocation: 'TestInvocation', event: CheckEvent, logger: tmt.log.Logger
