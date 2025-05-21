@@ -1,0 +1,24 @@
+/shell:
+    framework: shell
+
+    /pass:
+        summary: Passing shell test
+        test: |
+            echo "Some output."
+            exit 0
+    /fail:
+        summary: Failing shell test
+        test: |
+            echo "Output containing fail or error."
+            echo "Another output."
+            exit 1
+
+/beakerlib:
+    framework: beakerlib
+
+    /pass:
+        summary: Passing beakerlib test
+        test: ./test-pass.sh
+    /fail:
+        summary: Failing beakerlib test
+        test: ./test-fail.sh

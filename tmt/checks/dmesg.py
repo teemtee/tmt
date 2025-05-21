@@ -9,7 +9,7 @@ import tmt.utils
 import tmt.utils.themes
 from tmt.checks import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
-from tmt.result import CheckResult, ResultOutcome
+from tmt.result import CheckResult, ResultOutcome, save_failures
 from tmt.steps.provision import GuestCapability
 from tmt.utils import (
     Path,
@@ -62,6 +62,13 @@ class DmesgCheck(Check):
     def to_minimal_spec(self) -> _RawCheck:
         return self.to_spec()
 
+    def _extract_failures(self, text: str) -> list[str]:
+        return [
+            line
+            for line in text.splitlines()
+            if any(pattern.search(line) for pattern in self.failure_pattern)
+        ]
+
     @classmethod
     def _fetch_dmesg(
         cls,
@@ -93,7 +100,7 @@ class DmesgCheck(Check):
 
     def _save_dmesg(
         self, invocation: 'TestInvocation', event: CheckEvent, logger: tmt.log.Logger
-    ) -> tuple[ResultOutcome, Path]:
+    ) -> tuple[ResultOutcome, list[Path]]:
         assert invocation.phase.step.workdir is not None  # narrow type
 
         timestamp = format_timestamp(datetime.datetime.now(datetime.timezone.utc))
@@ -101,17 +108,16 @@ class DmesgCheck(Check):
         path = invocation.check_files_path / TEST_POST_DMESG_FILENAME.format(event=event.value)
 
         try:
+            outcome = ResultOutcome.PASS
             output = self._fetch_dmesg(invocation.guest, logger)
 
         except tmt.utils.RunError as exc:
             outcome = ResultOutcome.ERROR
             output = exc.output
 
-        else:
-            outcome = ResultOutcome.PASS
-
-            if any(pattern.search(output.stdout or '') for pattern in self.failure_pattern):
-                outcome = ResultOutcome.FAIL
+        failures = self._extract_failures(output.stdout or '')
+        if failures and outcome == ResultOutcome.PASS:
+            outcome = ResultOutcome.FAIL
 
         invocation.phase.write(
             path,
@@ -119,7 +125,12 @@ class DmesgCheck(Check):
             mode='a',
         )
 
-        return outcome, path.relative_to(invocation.phase.step.workdir)
+        log_paths = [
+            path.relative_to(invocation.phase.step.workdir),
+            save_failures(invocation, invocation.check_files_path, failures),
+        ]
+
+        return outcome, log_paths
 
 
 @provides_check('dmesg')
@@ -193,9 +204,8 @@ class Dmesg(CheckPlugin[DmesgCheck]):
         if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
             return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
 
-        outcome, path = check._save_dmesg(invocation, CheckEvent.BEFORE_TEST, logger)
-
-        return [CheckResult(name='dmesg', result=outcome, log=[path])]
+        outcome, paths = check._save_dmesg(invocation, CheckEvent.BEFORE_TEST, logger)
+        return [CheckResult(name='dmesg', result=outcome, log=paths)]
 
     @classmethod
     def after_test(
@@ -212,6 +222,5 @@ class Dmesg(CheckPlugin[DmesgCheck]):
         if not invocation.is_guest_healthy:
             return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
 
-        outcome, path = check._save_dmesg(invocation, CheckEvent.AFTER_TEST, logger)
-
-        return [CheckResult(name='dmesg', result=outcome, log=[path])]
+        outcome, paths = check._save_dmesg(invocation, CheckEvent.AFTER_TEST, logger)
+        return [CheckResult(name='dmesg', result=outcome, log=paths)]

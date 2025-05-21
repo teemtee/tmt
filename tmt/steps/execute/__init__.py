@@ -59,6 +59,9 @@ TEST_OUTPUT_FILENAME = 'output.txt'
 # Metadata file with details about the current test
 TEST_METADATA_FILENAME = 'metadata.yaml'
 
+# File containing test failures
+TEST_FAILURES_FILENAME = 'failures.yaml'
+
 #: Scripts source directory
 SCRIPTS_SRC_DIR = tmt.utils.resource_files('steps/execute/scripts')
 

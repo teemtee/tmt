@@ -44,7 +44,7 @@ rlJournalStart
         check_duration "$results" "/test/shell/bad"
 
         # Check log file exists
-        rlRun "yq -ery '.[] | select(.name == \"/test/shell/good\") | .log | .[] | test(\"^data/.+/output.txt$\")' $results" \
+        rlRun "yq -ery '.[] | select(.name == \"/test/shell/good\") | any(.log[]; test(\"^data/.+/output.txt$\"))' $results" \
             0 "Check output.txt log exists in $results"
     rlPhaseEnd
 

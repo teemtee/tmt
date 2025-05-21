@@ -6,7 +6,7 @@ import tmt.result
 import tmt.steps.execute
 import tmt.utils
 from tmt.frameworks import TestFramework, provides_framework
-from tmt.result import ResultOutcome
+from tmt.result import ResultOutcome, save_failures
 from tmt.utils import Environment, EnvVarValue, GeneralError, Path
 
 if TYPE_CHECKING:
@@ -15,6 +15,48 @@ if TYPE_CHECKING:
 
 
 BEAKERLIB_REPORT_RESULT_COMMAND = 'rhts-report-result'
+
+
+def _extract_failures(invocation: 'TestInvocation', log_path: Path) -> list[str]:
+    try:
+        log = invocation.phase.step.plan.execute.read(log_path)
+    except tmt.utils.FileError:
+        return []
+
+    # Filter beakerlib style logs in the following way:
+    # 1. Reverse the log string by lines
+    # 2. Search for each FAIL and extract every associated line.
+    # 3. For failed phases also extract phase name so the log is easier to understand
+    # 4. Reverse extracted lines back into correct order.
+    if re.search(':: \\[   FAIL   \\] ::', log):  # dumb check for a beakerlib log
+        copy_line = False
+        copy_phase_name = False
+        failure_log: list[str] = []
+        # we will be processing log lines in a reversed order
+        iterator = iter(reversed(log.split("\n")))
+        for line in iterator:
+            # found FAIL enables log extraction
+            if re.search(':: \\[   FAIL   \\] ::', line):
+                copy_line = True
+                copy_phase_name = True
+            # BEGIN of rlRun block or previous command or beginning of a test section
+            # disables extraction
+            elif re.search('(:: \\[.{10}\\] ::|[:]{80})', line):
+                copy_line = False
+            # extract line from the log
+            if copy_line:
+                failure_log.append(line)
+            # Add beakerlib phase name to a failure log, in order to properly match the phase
+            # name we need to do this in two steps.
+            if copy_phase_name and re.search('[:]{80}', line):
+                # read the next line containing phase name
+                line = next(iterator)
+                failure_log.append(f'\n{line}')
+                copy_phase_name = False
+        # reverse extracted lines to restore previous order
+        failure_log.reverse()
+        return ['\n'.join(failure_log).strip()]
+    return []
 
 
 @provides_framework('beakerlib')
@@ -95,6 +137,20 @@ class Beakerlib(TestFramework):
             for filename in [tmt.steps.execute.TEST_OUTPUT_FILENAME, 'journal.txt']
             if (invocation.path / filename).is_file()
         ]
+
+        # Check for failures in the beakerlib log
+        if (invocation.path / tmt.steps.execute.TEST_OUTPUT_FILENAME).exists():
+            # Save potential failures to the file
+            log.append(
+                save_failures(
+                    invocation,
+                    invocation.path,
+                    _extract_failures(
+                        invocation,
+                        invocation.relative_path / tmt.steps.execute.TEST_OUTPUT_FILENAME,
+                    ),
+                )
+            )
 
         # Check beakerlib log for the result
         beakerlib_results_filepath = invocation.path / 'TestResults'
