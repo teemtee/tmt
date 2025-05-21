@@ -20,8 +20,19 @@ human and machine readable way close to the source code. Thanks to
 inheritance and elasticity metadata are organized in the structure
 efficiently, preventing unnecessary duplication.
 
-See the `guide <https://tmt.readthedocs.io/en/stable/guide.html>`_
-for installation, first steps, and more.
+See the `guide`__ for installation, first steps, and more.
 
-Use ``tldr tmt`` for common usages. ``tldr --search tmt`` will
-list all ``tmt`` subcommands that have usage documentation.
+__ https://tmt.readthedocs.io/en/stable/guide.html
+
+Install the `tldr`__ package to easily access ``tmt`` console
+command cheatsheets.
+
+For common tmt usages::
+
+    tldr tmt
+
+To list all ``tmt`` subcommands that have usage documentation::
+
+    tldr --search tmt
+
+__ https://github.com/tldr-pages/tldr
