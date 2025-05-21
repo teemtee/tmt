@@ -305,6 +305,22 @@ man_pages = [(master_man, '', 'tmt Documentation', [author], 1)]
 # man_show_urls = False
 
 # -- Options for linkcheck builder ----------------------------------------
+linkcheck_request_headers = {
+    r"https://github\.com/.*": {
+        "User-Agent": "tmt-docs-linkcheck/1.0 (GitHub Actions)",
+    },
+}
+
+github_token = os.environ.get('GITHUB_TOKEN')
+
+if github_token:
+    linkcheck_request_headers[r"https://github\.com/.*"]["Authorization"] = (
+        f"Bearer {github_token}"
+    )
+    print("INFO: Using GITHUB_TOKEN for linkcheck requests to github.com")
+else:
+    print("INFO: GITHUB_TOKEN not found. linkcheck requests to github will be unauthenticated.")
+
 linkcheck_retries = 3
 linkcheck_ignore = [
     # Github "source code line" anchors are apparently too dynamic for linkcheck
