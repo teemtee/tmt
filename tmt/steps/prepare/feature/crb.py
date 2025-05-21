@@ -48,20 +48,18 @@ class Crb(ToggleableFeature):
         super().__init__(*args, **kwargs)
 
     @classmethod
-    def _check_distro(cls, guest: Guest, logger: tmt.log.Logger) -> None:
-        """Verify the guest distribution is supported and install config-manager if needed"""
+    def _manage_repo(cls, guest: Guest, logger: tmt.log.Logger, action: str) -> None:
+        """Enable or disable the repository"""
+
+        # Check if we're running on supported distro
         if not (
             guest.facts.distro
             and any(pattern.match(guest.facts.distro) for pattern in SUPPORTED_DISTRO_PATTERNS)
         ):
             logger.warning('CRB prepare feature is supported on RHEL/CentOS-Stream 8, 9 or 10.')
+            return
 
         guest.package_manager.install(Package("dnf-command(config-manager)"))
-
-    @classmethod
-    def _manage_repo(cls, guest: Guest, logger: tmt.log.Logger, action: str) -> None:
-        """Enable or disable the repository"""
-        cls._check_distro(guest, logger)
 
         logger.info(f"{action.capitalize()} CRB repository.")
 

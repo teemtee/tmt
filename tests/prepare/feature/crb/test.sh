@@ -8,7 +8,6 @@ rlJournalStart "CRB Feature Test"
 
         build_container_image "centos/stream9/upstream\:latest"
         build_container_image "ubi/8/upstream\:latest"
-        build_container_image "fedora:latest"
 
         rlRun "pushd data"
     rlPhaseEnd
@@ -42,10 +41,10 @@ rlJournalStart "CRB Feature Test"
 
     # Test Fedora for the warning message
     rlPhaseStartTest "Test warning on fedora:latest"
-        # Run a CRB plan on fedora and verify the warning is shown
+        # Run a CRB plan (just provision, prepare and finish) on fedora and verify the warning is shown
         # We expect the tmt run to succeed (exit code 0) because it's a warning, not an error.
-        rlRun "tmt run --all provision --how container --image fedora:latest plan --name /crb/enabled 2>&1 | tee output.log" 0 "Run plan on fedora and capture output"
-        rlRun "grep 'CRB prepare feature is supported on RHEL/CentOS-Stream 8, 9 or 10.' output.log" 0 "Verify warning message is present"
+        rlRun -s "tmt run provision --how container --image fedora:latest prepare finish plan --name /crb/enabled" 0 "Run plan on fedora and capture output"
+        rlAssertGrep "CRB prepare feature is supported on RHEL/CentOS-Stream 8, 9 or 10." $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
