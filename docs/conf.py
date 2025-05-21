@@ -319,7 +319,7 @@ if github_token:
     )
     print("INFO: Using GITHUB_TOKEN for linkcheck requests to github.com")
 else:
-    print("WARNING: GITHUB_TOKEN not found. linkcheck requests to github will be unauthenticated.")
+    print("INFO: GITHUB_TOKEN not found. linkcheck requests to github will be unauthenticated.")
 
 linkcheck_retries = 3
 linkcheck_ignore = [
