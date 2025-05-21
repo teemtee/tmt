@@ -2170,6 +2170,15 @@ class Common(_CommonBase, metaclass=_CommonMeta):
                     self.workdir_root.chmod(0o1777)
                 except OSError as error:
                     raise FileError(f"Failed to prepare workdir '{self.workdir_root}': {error}")
+            else:
+                try:
+                    if self.workdir_root.stat().st_mode != 17407:
+                        self.workdir_root.chmod(0o1777)
+                except PermissionError:
+                    raise FileError(
+                        f"Failed to change workdir root '{self.workdir_root}' permission to "
+                        "0o1777, you need to change it manually using chmod."
+                    )
 
         if id_ is None:
             # Prepare workdir_root first
