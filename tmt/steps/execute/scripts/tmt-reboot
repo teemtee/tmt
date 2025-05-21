@@ -32,8 +32,8 @@ if [ $efi = True ]; then
 	# the following recipes trying to reserve that server  will boot into
 	# that os instead of performing an installation on users' desire.
 	if [[ $first_boot == "$os_boot_entry" ]]; then
-	       BOOT_LIST=$(efibootmgr | awk '/BootOrder/ { print $2 }' | cut -d, -f2-)
-	       efibootmgr -o "${BOOT_LIST},${BOOTC_BOOT}"
+	    BOOT_LIST=$(efibootmgr | awk '/BootOrder/ { print $2 }' | cut -d, -f2-)
+	    efibootmgr -o "${BOOT_LIST},${BOOTC_BOOT}"
 	fi
         # fall back to /root/EFI_BOOT_ENTRY.TXT if it exists and BootCurrent is not available
         if [[ -z "$os_boot_entry" && -f /root/EFI_BOOT_ENTRY.TXT ]] ; then
