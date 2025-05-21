@@ -1,6 +1,17 @@
-summary: translate hardware by config tests
-description:
-    Verify translate hardware constraints using custom config works well,
-    and override the default translations.
-test: ./hardware.sh
+# These tests are manual only for now as they need a running
+# Beaker instance
 enabled: false
+
+/reconnect:
+    summary: Verify reconnecting to a provisioned guest
+    description:
+        Make sure that it's possible to reconnect to an already
+        provisioned guest using an open tmt run.
+    test: ./reconnect.sh
+
+/hardware:
+    summary: Translate hardware by config tests
+    description:
+        Verify translate hardware constraints using custom config
+        works well, and override the default translations.
+    test: ./hardware.sh

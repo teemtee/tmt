@@ -14,7 +14,7 @@ from typing import Any, Generic, Optional, TypeVar, cast
 import tmt
 import tmt.utils
 from tmt.log import Logger
-from tmt.utils import Path
+from tmt.utils import GeneralError, Path
 
 ModuleT = TypeVar('ModuleT', bound=ModuleType)
 
@@ -305,7 +305,7 @@ def import_module(
 
     return _import_or_raise(
         module=module,
-        exc_class=SystemExit,
+        exc_class=GeneralError,
         exc_message=f"Failed to import the '{module}' module from '{path}'.",
         logger=logger,
     )

@@ -20,6 +20,29 @@ new tmt command would then spawn its own and conflict with the forgotten
 one. tmt no longer leaves the SSH master process running, preventing the
 issue.
 
+An issue in the :ref:`/plugins/provision/beaker` provision plugin
+prevented reconnecting to running guests. This has been fixed so
+now it's possible to fully work with existing tmt runs as well.
+
+The :ref:`import of remote plans</spec/plans/import>` support has been
+extended to allow import of multiple plans. New keys, ``scope`` and
+``importing``, allow users to control which plans to import and how to
+connect them with the importing plans.
+
+Fixed a bug that caused executed tests to remain in the
+``pending`` state when the machine became unresponsive. Tests will
+now correctly transition to the ``error`` state.
+
+Failures from tests and their checks were previously not fully saved
+or reported. Now, a separate ``failures.yaml`` file is created for each
+failed test and check, stored within their respective directories. When
+a failure occurs, the path to this file is included in the result logs.
+Check failures are now also reported to ReportPortal.
+
+New :ref:`/plugins/prepare/feature` prepare plugin ``crb`` has been
+implemented which allows to easily enable or disable the CodeReady
+Builder repository.
+
 
 tmt-1.48.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

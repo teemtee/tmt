@@ -13,6 +13,7 @@ import fmf
 import fmf.utils
 
 import tmt
+import tmt._bootstrap
 import tmt.base
 import tmt.log
 import tmt.plugins
@@ -27,31 +28,8 @@ if TYPE_CHECKING:
     R = TypeVar('R')
 
 
-#: A logger to use before the proper one can be established.
-#:
-#: .. warning::
-#:
-#:    This logger should be used with utmost care for logging while tmt
-#:    is still starting. Once properly configured logger is spawned,
-#:    honoring relevant options, this logger should not be used anymore.
-_BOOTSTRAP_LOGGER = tmt.log.Logger.get_bootstrap_logger()
-
-#: A logger to use for exception logging.
-#:
-#: .. warning::
-#:
-#:    This logger should be used with utmost care for logging exceptions
-#:    only, no other traffic should be allowed. On top of that, the
-#:    exception logging is handled by a dedicated function,
-#:    :py:func:`tmt.utils.show_exception` - if you find yourself in need
-#:    of logging an exception somewhere in the code, and you think about
-#:    using this logger or calling ``show_exception()`` explicitly,
-#:    it is highly likely you are not on the right track.
-EXCEPTION_LOGGER: tmt.log.Logger = _BOOTSTRAP_LOGGER
-
-
 # Explore available plugins (need to detect all supported methods first)
-tmt.plugins.explore(_BOOTSTRAP_LOGGER)
+tmt.plugins.explore(tmt._bootstrap._BOOTSTRAP_LOGGER)
 
 
 class TmtExitCode(enum.IntEnum):
@@ -251,7 +229,8 @@ class HelpFormatter(click.HelpFormatter):
         col_spacing: int = 2,
     ) -> None:
         rows = [
-            (option, tmt.utils.rest.render_rst(help, _BOOTSTRAP_LOGGER)) for option, help in rows
+            (option, tmt.utils.rest.render_rst(help, tmt._bootstrap._BOOTSTRAP_LOGGER))
+            for option, help in rows
         ]
 
         super().write_dl(rows, col_max=col_max, col_spacing=col_spacing)

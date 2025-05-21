@@ -1,0 +1,12 @@
+/test:
+    test: shutdown -h now && sleep 60
+    duration: 5s
+
+    /error:
+    /pending:
+
+/plan:
+    discover:
+        how: fmf
+    execute:
+        how: tmt

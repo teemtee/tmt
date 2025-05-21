@@ -1,0 +1,36 @@
+provision:
+  how: container
+
+execute:
+  how: tmt
+
+/crb:
+  prepare:
+    how: feature
+
+  /enabled:
+    prepare+:
+      crb: enabled
+    execute:
+      script: dnf repolist --enabled | grep -i -E 'crb|codeready'
+
+  /disabled:
+    prepare+:
+      crb: disabled
+    execute:
+      script: |
+        # Verify the repo is not in the enabled list
+        ! dnf repolist --enabled | grep -i -E 'crb|codeready'
+        # Verify it is in the disabled list
+        dnf repolist --disabled | grep -i -E 'crb|codeready'
+
+    environment+:
+      STATE: disabled
+
+  /crb_package:
+    prepare+:
+        crb: enabled
+    execute:
+      script: |
+        dnf install -y sgx-rpm-macros
+        rpm -q sgx-rpm-macros

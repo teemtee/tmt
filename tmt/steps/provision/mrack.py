@@ -1207,6 +1207,16 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     _api: Optional[BeakerAPI] = None
     _api_timestamp: Optional[datetime.datetime] = None
 
+    def __init__(self, *args: Any, **kwargs: Any):
+        """
+        Make sure that the mrack module is available and imported
+        """
+
+        super().__init__(*args, **kwargs)
+
+        assert isinstance(self.parent, tmt.steps.provision.Provision)
+        import_and_load_mrack_deps(self.parent.workdir, self.parent.name, self._logger)
+
     @property
     def api(self) -> BeakerAPI:
         """
@@ -1214,10 +1224,6 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         """
 
         def _construct_api() -> tuple[BeakerAPI, datetime.datetime]:
-            assert self.parent is not None
-
-            import_and_load_mrack_deps(self.parent.workdir, self.parent.name, self._logger)
-
             return BeakerAPI(self), datetime.datetime.now(datetime.timezone.utc)
 
         if self._api is None:
