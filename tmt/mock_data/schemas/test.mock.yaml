@@ -1,0 +1,179 @@
+- summary: Verify some basic output of `tmt about` # From tests/core/about/main.fmf
+  description: |
+    Make sure `tmt about` reports some basic info about tmt: plugins
+    for now, more info in the future.
+  test: ./test.sh # Added 'test' key as it's required by schema
+
+- test: free # From tests/core/adjust/data/tests.fmf (/free)
+  summary: Free memory check
+  duration: 10s
+
+- test: uptime # From tests/core/adjust/data/tests.fmf (/uptime)
+  summary: System uptime
+  adjust:
+    duration: 1m
+    when: arch == ppc64
+
+- test: echo 'adjust duration combine' # From tests/core/adjust/data/tests.fmf (/adjust-duration-combine)
+  summary: Adjust duration combine
+  duration: 1s
+  adjust:
+    - duration+: 1h1m
+
+- test: pidof sh # From tests/core/adjust/data/tests.fmf (/pidof)
+  summary: Check pidof
+  adjust:
+    enabled: false
+    when: distro ~< centos-8
+    because: pidof is available in centos-8 and later
+
+- summary: Example enabled test # From tests/core/enabled/data/main.fmf (/tests/enabled)
+  test: ./test.sh
+  enabled: true
+
+- summary: Example disabled test # From tests/core/enabled/data/main.fmf (/tests/disabled)
+  test: ./test.sh
+  enabled: false
+
+- summary: Test with author, order, tier, and component
+  test: /bin/true
+  author: "John Doe <john.doe@example.com>"
+  order: 70
+  tier: 2
+  component:
+    - core
+    - network
+  duration: 5m
+  environment:
+    DEBUG_LEVEL: verbose
+    FEATURE_FLAG_X: true
+
+- summary: Test with various link types and require
+  test: ./my_complex_test.sh
+  link:
+    - "/stories/complex/interaction" # Was: {relates: ...}
+    - verifies: # This remains a link_relation object
+        name: /spec/api/endpoint/Y
+        url: https://example.com/specs.git
+        path: /api_specs
+    - "/docs/tests/T001" # Was: {documented_by: ...}
+  require:
+    - type: library
+      name: /libs/common_functions
+      url: https://common.git/libs.git
+      ref: v2.1
+    - type: file
+      pattern: "data/input_data_*.json"
+    - "another_rpm_package" # string require
+  tag:
+    - regression
+    - nightly
+  framework: beakerlib
+
+- summary: Test with specific fmf_id for a linked test script
+  test: /usr/local/bin/run_check.py
+  link:
+    test-script: # Using common.link_relation for test-script
+      name: /scripts/utility/run_check
+      url: git@gitlab.com:utils/scripts.git
+      ref: main
+      path: /general
+  manual: true
+  tty: true
+  result: xfail # expect this test to fail
+
+- summary: Test with multiple authors and contact
+  test: ./run_contact_test.sh
+  author:
+    - "Jane Doe <jane.doe@example.com>"
+    - "Peter Smith <peter.smith@example.com>"
+  contact: "Test Maintainers <maintainers@example.com>"
+  enabled: true
+  duration: "1h 30m"
+  environment:
+    API_ENDPOINT: "https://api.production.example.com"
+  tier: 1
+
+- summary: Minimal test with just test script
+  test: /opt/custom/minimal_test.sh
+
+- summary: Test with check, restart, and path
+  test: ./critical_service_check.sh
+  path: /tools/diagnostics  # Absolute path for the test
+  check:
+    - how: "grep"
+      pattern: "SERVICE_STATUS: OK" # This is not a real schema for check.pattern
+      # The schema for check is:
+      # type: object
+      # properties:
+      #   how: {type: string}
+      #   enabled: {type: boolean}
+      #   result: {type: string, enum: [respect, xfail, info]}
+      #   ignore-pattern: {oneOf: [{type: string}, {type: array, items: {type: string}}]}
+      # required: [how]
+      # For this mock, I'll assume 'how' is enough for a simple check.
+    - how: my_custom_check.py
+      result: xfail # if this check fails, it's an xfail
+  restart-on-exit-code: [1, 255]
+  restart-max-count: 3
+  restart-with-reboot: true
+  recommend:
+    - another-package >= 2.0
+    - yet-another-tool
+
+- summary: Test with extra- attributes (custom keys)
+  test: ./custom_key_test.sh
+  extra-custom-id: "TC-12345"
+  extra-test-phase: "integration"
+  extra-performance-metric: "latency_ms < 100"
+  duration: 15s
+  tier: 3
+  tag: custom_keys
+
+- summary: Test with beakerlib framework and complex require
+  framework: beakerlib
+  test: ./beakerlib_test.sh
+  require:
+    - type: library
+      name: /testing/beakerlib/libraries/LibHTTP
+      nick: LibHTTP # Beakerlib specific
+    - type: library
+      name: /testing/beakerlib/libraries/LibNetwork
+      url: https://github.com/beakerlib/libraries.git
+      ref: master
+      path: LibNetwork
+      nick: LibNetwork
+    - require_rpm_package # A string require for an RPM
+  duration: "0.5h" # another duration format
+  component: "Beakerlib Integration"
+  environment:
+    BEAKERLIB_DEBUG: 1
+  id: "f3a2b1c0-d4e5-f6a7-b8c9-d0e1f2a3b4c5" # Example UUID for id
+  description: "A test demonstrating beakerlib specific features and requires."
+  summary: Beakerlib test with multiple library requires and custom ID.
+  order: 150
+  enabled: true
+  tier: 1
+  link:
+    - verifies: /requirements/beakerlib/core
+    - relates: /stories/beakerlib/usage
+  tag: [beakerlib, library, network]
+  result: respect
+  manual: false
+  tty: false
+  path: /beakerlib/tests/advanced
+  recommend:
+    - make
+    - gcc
+  check:
+    - how: tmt-report-result # Assuming this is a custom check script.
+      # 'result: pass' was removed as 'pass' is not a valid value for check[].result.
+      # Valid values are 'respect', 'xfail', 'info'.
+      # If this check itself has a result interpretation, it should be one of those.
+      # Or, if not needed, the key is omitted.
+      # ignore-pattern: "DEBUG: This is just a debug message"
+  restart-on-exit-code: 3
+  restart-max-count: 1
+  restart-with-reboot: false
+  extra-priority: "Critical"
+  extra-reviewed-by: "reviewer@example.com"

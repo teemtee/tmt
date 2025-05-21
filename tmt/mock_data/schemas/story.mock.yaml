@@ -1,0 +1,122 @@
+- story: As a user I want to have an intuitive command line interface. # From stories/cli/main.fmf
+  summary: Intuitive CLI
+  tier: 1
+  priority: must have
+
+- title: Abort test execution # From stories/features/abort.fmf
+  story: |
+    As a tester I want to abort current, and all subsequent,
+    test executions using a shell command during test
+    execution.
+  description: |
+    The `tmt-abort` command can be used to abort the current
+    test execution. This command together with the
+    `rstrnt-abort` and `rhts-abort` aliases provides a
+    backward-compatible way to execute tests written for the
+    `restraint`__ framework. These scripts are installed on the
+    guest and overwrite any existing scripts with the same name.
+
+    __ https://restraint.readthedocs.io/en/latest/commands.html#rstrnt-abort
+  example: |
+    tmt-abort
+  link:
+    - implemented-by: /tmt/steps/execute/internal.py
+    - verified-by: /tests/execute/restraint/tmt-abort
+  priority: should have
+  author: "Release Team <release@example.com>"
+
+- story: | # From stories/docs.fmf (/help)
+    As a command line user I want to quickly check all
+    available options and supported commands.
+  title: CLI Help Availability
+  description: |
+    All available options should be easily discoverable
+    directly from the command line using the `--help`
+    option.
+  example:
+    - tmt --help
+    - tmt run --help
+    - tmt test import --help
+  link:
+    - verified-by: /tests/core/docs
+    - implemented-by: /tmt/cli
+  id: DOCS-HELP-001
+  tier: 1
+
+- story: | # From stories/docs.fmf (/man)
+    As a command line user I want to check the man page to get
+    a basic overview about the tool.
+  title: Man Page Existence
+  description: |
+    There should be a manual page available in the package.
+    Man page should contain brief introduction about the tool
+    and a list of essential commands and options.
+  example:
+    - man tmt
+  link:
+    - verified-by: /tests/core/docs
+    - implemented-by: /README.rst
+  order: 20
+  enabled: true
+
+- story: Basic story with author and tier
+  title: Core Functionality X
+  author: "John Doe <john.doe@example.com>"
+  tier: 1
+  priority: must have
+  example:
+    - "User performs action A"
+    - "System responds with B"
+
+- story: Story with multiple authors, contact, and complex links
+  title: Advanced Feature Y for Power Users
+  author:
+    - "Jane Doe <jane.doe@example.com>"
+    - "Peter Smith <peter.smith@example.com>"
+  contact: "Feature Y Team <feature-y@example.com>"
+  link:
+    - "/stories/core/functionality_x" # Was: {relates: ...}
+    - implemented-by: # This remains a link_relation object
+        name: /features/power_user_module
+        url: https://internal.gitlab.com/project/repo.git
+        path: /modules/power_user
+    - "/tests/integration/power_user/test_suite_y" # Was: {verified-by: ...}
+    - "/docs/features/power_user_y_simple_path" # Was: {documented_by: { fmf_id }}
+  enabled: true
+  order: 50
+  tier: 2
+  priority: should have
+  description: "This feature allows power users to customize their workflow extensively."
+  example:
+    - "User navigates to Advanced Settings"
+    - "User configures option Z to value V"
+
+- story: Story with only essential fields and a simple link
+  title: Minimal Story Z
+  link: /requirements/minimal/R001 # Simple path link
+  priority: could have
+  tier: 3
+
+- story: Story showcasing 'example' as a single string
+  title: Single Example Story
+  example: "Run command `tmt run discover -h` to see help."
+  priority: will not have # Example of 'will not have'
+  tier: null # Example of null tier
+  id: STORY-SINGLE-EXAMPLE-001
+
+- story: Story with a specific fmf_id for identification
+  title: Unique Story by FMF ID
+  id: "unique-story-fmf-id-001" # Changed from FMF object to a simple string
+  priority: must have
+  description: This story is tracked by a very specific FMF ID.
+  order: 100
+
+- story: Disabled story with a custom tag
+  title: Deprecated Feature D
+  enabled: false
+  tag:
+    - deprecated
+    - admin_feature
+  priority: will not have
+  description: "This feature is no longer supported as of version 3.0."
+  author: "Legacy Team <legacy@example.com>"

@@ -1,0 +1,94 @@
+# Example 1: Basic virtual provision from plan.mock.yaml (and adding 'image')
+- how: virtual
+  name: basic-virtual-guest
+  image: fedora-latest
+  user: "tester"
+  memory: 2048 # MB
+  disk: 20 # GB
+  connection: session
+
+# Example 2: From plans/provision/virtual.fmf (adjust section)
+- how: virtual
+  name: from-virtual-fmf-adjust
+  image: rhel-9-latest
+  hardware:
+    virtualization:
+      is-supported: true
+    memory: ">= 8 GB" # String format for size comparison
+  user: root
+  become: true # To run commands as root if user is not root
+
+# Example 3: Specifying architecture and a specific key
+- how: virtual
+  name: arm-guest-with-key
+  image: ubuntu-22.04-arm64
+  arch: aarch64
+  key: ~/.ssh/id_rsa_arm_vm
+  memory: 4096
+  disk: 40
+  connection: system # Use system libvirt connection
+
+# Example 4: Using a role for multihost testing (conceptual)
+- how: virtual
+  name: virtual-server-role
+  image: centos-stream-9
+  role: server
+  user: cloud-user
+  memory: 8192
+  hardware:
+    cpu:
+      cores: 4
+    disk: # Corrected: 'disk' under 'hardware' should be a list of disk objects
+      - size: "100GB"
+
+# Example 5: Minimal virtual provision with just image
+- how: virtual
+  name: minimal-fedora
+  image: fedora-cloud-base
+
+# Example 6: Virtual provision with more detailed hardware requirements
+- how: virtual
+  name: power-guest
+  image: "custom-qcow2-image.qcow2"
+  user: "admin"
+  become: true
+  memory: 16384 # 16 GB
+  disk: 200 # 200 GB
+  arch: x86_64
+  connection: system
+  hardware:
+    cpu:
+      sockets: 1
+      cores-per-socket: 8
+      flag:
+        - "avx2"
+    # Assuming 'network' or 'disk' details from hardware.yaml could be relevant if
+    # testcloud/libvirt driver supported mapping them directly.
+    # For 'virtual' provider, these are usually less detailed than for 'hardware' provider.
+    # Example:
+    # network:
+    #   - type: "bridge" # This is not directly in virtual.yaml but shows how hardware block could be used
+    #     source: "virbr0"
+  key: # multiple keys
+    - /path/to/my/ssh/key1
+    - /path/to/my/ssh/key2
+
+# Example 7: Using default memory/disk (if provider has defaults)
+- how: virtual
+  name: default-spec-guest
+  image: "generic-cloud-image"
+  # memory, disk not specified, relying on tmt or testcloud defaults
+
+# Example 8: Another role example, perhaps for a client machine
+- how: virtual
+  name: virtual-client-role
+  image: fedora-workstation-latest
+  role: client
+  user: testuser
+  memory: 4096
+  disk: 50
+  hardware:
+    compatible: # From hardware.yaml, showing it can be nested
+      distro:
+        - fedora-38
+        - fedora-39

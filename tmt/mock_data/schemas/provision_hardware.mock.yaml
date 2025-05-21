@@ -1,0 +1,152 @@
+# Example 1: Basic hardware block (from previous snippets)
+- memory: ">= 8 GiB"
+  disk:
+    - size: ">= 100 GiB"
+    - model-name: "SSD_VENDOR_X"
+      driver: nvme
+  cpu:
+    sockets: 1
+    cores: 4
+    flag:
+      - "vmx"
+  compatible:
+    distro:
+      - rhel-9
+      - fedora-38
+  hostname: "test-server-01"
+
+# Example 2: Hardware block with 'and' condition (from previous snippets)
+- and:
+    - memory: ">= 16 GiB"
+    - cpu:
+        model-name: "Advanced CPU Model Y"
+        cores-per-socket: 8
+    - or:
+        - disk:
+            - size: ">= 500 GiB"
+              driver: sata
+        - disk:
+            - size: ">= 250 GiB"
+              driver: nvme
+        - system: # System details
+            vendor-name: "Supermicro"
+            model-name: "SYS-123"
+            numa-nodes: 2
+            management-controller:
+              protocol: "ipmi"
+              device-name: "bmc0"
+
+# Example 3: Another hardware block (from previous snippets)
+- memory: "4096 MB" # Direct integer value also valid from schema for memory
+  cpu:
+    family-name: "Intel Core i7"
+    model: 165 # Example model number
+    vendor: 0x8086 # Example vendor ID
+    frequency: "> 3.0 GHz"
+  disk:
+    - size: "256GB"
+      logical-sector-size: 512
+      physical-sector-size: 4096
+  network:
+    - device-name: "eth0"
+      type: "ethernet"
+      # vendor: 0x1af4 # Red Hat, Inc. Virtio network device
+    - device-name: "wlan0"
+      type: "wifi"
+      driver: "iwlwifi"
+  system:
+    model-name: "XYZ-Laptop"
+    vendor-name: "LaptopCorp"
+  virtualization:
+    is-virtualized: false
+    is-supported: true # Supports KVM/VT-x
+    hypervisor: "kvm"
+  iommu:
+    is-supported: true
+  boot:
+    method: "uefi"
+
+# Example 4: Hardware block focusing on devices (GPU, other PCI)
+- device:
+    - device-name: "NVIDIA GPU"
+      vendor-name: "NVIDIA Corporation"
+      # device: 0x1eb8 # Example device ID for a TU104 [GeForce RTX 2080 SUPER]
+      driver: "nvidia"
+    - device-name: "Sound Card"
+      vendor-name: "Intel Corporation"
+      driver: "snd_hda_intel"
+  gpu: # Specific gpu block
+    - device-name: "Primary GPU"
+      vendor-name: "AMD"
+      # device: 0x73bf # Example: Navi 21 [Radeon RX 6800/6800 XT / 6900 XT]
+  memory: "32GB"
+
+# Example 5: Hardware block with 'or' at the top level
+- or:
+    - cpu:
+        flag: ["sev", "sme"] # AMD SEV/SME support
+      memory: ">= 64GB"
+    - system:
+        vendor-name: "Dell Inc."
+        model-name: "PowerEdge R750"
+    - and: # Nested 'and'
+        - compatible:
+            distro: ["rhel-8.6+"]
+        - network:
+            - type: "fibrechannel"
+
+# Example 6: Hardware block with TPM and zcrypt (s390x specific)
+- tpm:
+    version: "2.0"
+  zcrypt:
+    adapter: "CEX7P"
+    mode: "CCA"
+  cpu:
+    # arch: s390x # arch is commented out in schema but conceptually relevant
+    cores: 8
+  memory: "128G"
+
+# Example 7: Minimal hardware block
+- memory: ">= 4GiB"
+
+# Example 8: Hardware block with location and Beaker pool (conceptual for Beaker integration)
+- location:
+    lab-controller: "labctrl01.example.com"
+  # beaker: # beaker block is defined but not directly part of the 'hardware:' block structure
+  #   pool: "x86_64-servers"
+  hostname: "targetmachine.lab.example.org"
+  compatible:
+    distro: ["fedora-latest"]
+  system:
+    vendor-name: "HP"
+    model-name: "ProLiant DL380 Gen10"
+
+# Example 9: Hardware with virtualization and IOMMU details
+- virtualization:
+    is-virtualized: true
+    hypervisor: "xen"
+    is-supported: false # e.g. nested virtualization not supported
+  iommu:
+    is-supported: true
+    model-name: "Intel VT-d" # This is not a real field, more of a comment.
+  cpu:
+    cores: 16
+  memory: "64GB"
+
+# Example 10: Complex nested conditions
+- and:
+  - or:
+    - memory: ">= 128GB"
+    - cpu: {cores: ">= 32"}
+  - and:
+    - compatible:
+        distro: ["sles15-sp4+"]
+    - or:
+      - disk:
+        - driver: "megaraid_sas"
+          size: ">= 1TB"
+      - disk:
+        - driver: "nvme"
+          size: ">= 500GB"
+  - system:
+      vendor-name: "Lenovo"

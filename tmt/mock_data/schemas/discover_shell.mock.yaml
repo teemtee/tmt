@@ -1,0 +1,126 @@
+# Example 1: Basic shell discover from plan.mock.yaml
+- how: shell
+  tests:
+    - name: /example/shell/test1
+      test: ./my-test-script.sh
+      duration: 10m
+      tier: 1
+    - name: /example/shell/test2
+      test: "bash -c 'exit 0'"
+      summary: "A simple shell command test"
+      component: [core]
+      environment: { "VAR1": "value1" }
+
+# Example 2: Shell discover with url and ref (for remote test definitions)
+- how: shell
+  name: remote-script-tests
+  url: https://example.com/remote-tests.git
+  ref: main
+  tests:
+    - name: /remote/test/script_a
+      test: ./scripts/run_A.sh
+      order: 10
+      enabled: true
+    - name: /remote/test/script_b
+      test: ./scripts/run_B.sh
+      order: 20
+      link:
+        - relates: /stories/remote_execution
+
+# Example 3: Shell discover with dist-git-* options (less common for shell but possible)
+- how: shell
+  name: dist-git-based-shell-tests
+  dist-git-source: true
+  dist-git-type: fedora
+  # dist-git-download-only: false # Default
+  # dist-git-install-builddeps: false # Default
+  tests:
+    - name: /distgit/test/check_rpm_content
+      test: ./check_rpm.sh
+      require:
+        - rpmdevtools
+      tier: 3
+
+# Example 4: Shell discover with 'where' and 'when' clauses
+- how: shell
+  name: conditional-shell-tests
+  where: "guest_os == 'fedora'"
+  when: "trigger == 'commit' or context.arch == 'x86_64'"
+  order: 50
+  tests:
+    - name: /conditional/fedora_specific_test
+      test: ./run_fedora_check.sh
+      summary: "This test only runs on Fedora guests during commit triggers or on x86_64."
+      tag: [fedora, conditional]
+
+# Example 5: Shell discover with 'keep-git-metadata'
+- how: shell
+  name: tests-with-git-meta
+  url: https://my.company.com/gitea/user/project-tests.git
+  ref: feature/new-checks
+  keep-git-metadata: true
+  tests:
+    - name: /gitmeta/test/check_commit_info
+      test: ./verify_git_info.sh
+      description: "Test that relies on .git metadata being present."
+      framework: shell # Explicitly shell, though default for shell discover tests
+
+# Example 6: Shell discover with a more complex test definition inside 'tests'
+- how: shell
+  tests:
+    - name: /complex/shell_test_001
+      test: "python3 ./my_test_suite.py --scenario basic"
+      summary: "Run basic scenario of python test suite"
+      author: "Automated Tester <auto@test.com>"
+      duration: "15m"
+      environment:
+        PYTHON_PATH: "/opt/app/lib"
+        SCENARIO_LEVEL: "basic"
+      component: [api, backend]
+      tag: [python, smoke]
+      tier: 1
+      order: 100
+      enabled: true
+      link:
+        - verifies: /requirements/R001_basic_api
+      require:
+        - python3-requests
+        - type: file
+          pattern: "config/basic_*.yaml"
+      result: xfail # This test is expected to fail for now
+      check: # Example of a check definition
+        - how: 간단한 상태 확인 # This is a custom string, not a script path
+          enabled: true
+          result: respect
+        - how: ./custom_output_parser.sh
+          ignore-pattern: "DEBUG: Detailed trace"
+
+# Example 7: Minimal shell discover
+- how: shell
+  tests:
+    - name: /minimal/ping
+      test: "ping -c 1 localhost"
+
+# Example 8: Shell discover defining multiple tests with different properties
+- how: shell
+  name: various-tests
+  order: 5
+  tests:
+    - name: /shell/test/alpha
+      test: ./alpha.sh
+      tier: 1
+      manual: true # Manual test
+      tty: true    # Requires TTY
+    - name: /shell/test/beta
+      test: ./beta.sh
+      tier: 2
+      duration: 1m30s
+      enabled: false # Disabled test
+      extra-custom-field: "BetaValue"
+    - name: /shell/test/gamma
+      test: ./gamma.sh
+      tier: 1
+      path: /usr/local/tests # Test path
+      recommend: # Recommended packages
+        - tool-A
+        - lib-B

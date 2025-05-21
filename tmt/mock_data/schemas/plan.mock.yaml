@@ -1,0 +1,173 @@
+- summary: Basic command line features from basic.fmf
+  description: |
+    Wide set of tests that cover individual steps, commands
+    and features. These tests do not require virtualization,
+    their individual duration should not exceed 5 minutes.
+  discover:
+    how: fmf
+    filter: 'tier: 2 & tag:-provision-only'
+    exclude: '/tests/unit/.*?/extended'
+  execute:
+    how: tmt # Added to make it a valid plan
+
+- provision: # From install/main.fmf
+    how: container
+  enabled: false
+  adjust:
+  - enabled: true
+    when: how == full or trigger == commit
+    tag+: [additional_coverage]
+  environment:
+    SETUPTOOLS_SCM_PRETEND_VERSION: 0.0.1.dev0
+  execute:
+    how: tmt # Added to make it a valid plan
+
+- description: | # From provision/artemis/main.fmf
+    Thanks to no "standard" public Artemis instance being available, Artemis
+    tests must be fed with credentials and setup to match the Artemis instance
+    one wishes to use for testing. To run this plan, perform the following steps:
+
+    $ export TMT_PLUGIN_PROVISION_ARTEMIS_API_URL="..."
+    $ export TMT_PLUGIN_PROVISION_ARTEMIS_API_VERSION="..."
+    $ export TMT_PLUGIN_PROVISION_ARTEMIS_IMAGE="..."
+    $ export TMT_PLUGIN_PROVISION_ARTEMIS_KEYNAME="..."
+
+    $ tmt -vv -c how=artemis run -a provision --how artemis plan --name artemis
+  discover:
+    how: fmf
+    filter: 'tag: provision-artemis'
+  provision:
+    how: artemis
+  enabled: false
+  adjust:
+    when: how == artemis
+    enabled: true
+  execute:
+    how: tmt # Added to make it a valid plan
+
+- summary: Plan using context and environment snippets
+  enabled: true
+  context:
+    distro: fedora-39
+    arch: x86_64
+    trigger: commit
+  environment:
+    KEY1: value1
+    DEBUG: true
+    TIMEOUT: 120
+  discover:
+    how: fmf
+    url: https://example.com/tests.git
+    ref: main
+  execute:
+    how: tmt
+
+- summary: Plan with author, order, and tier
+  author: "John Doe <john.doe@example.com>"
+  order: 70
+  tier: 2
+  link:
+    - relates: /stories/some/story
+    - verifies: /spec/req/001
+      note: "Verifies critical requirement"
+  discover:
+    how: shell
+    tests:
+      - name: /my/test
+        test: ./run.sh
+  execute:
+    how: tmt
+  provision:
+    how: virtual
+
+- summary: Plan with complex link and fmf_id in discover
+  link:
+    - implements: # This is a link_relation object
+        name: /features/new_login_flow
+        url: https://internal.gitlab.com/project/repo.git
+        path: /features
+    - "/docs/plan/P001" # This is a direct path string, also a valid link
+  discover:
+    how: fmf
+    url: https://github.com/user/test-repo.git # Corrected 'repository' to 'url'
+    ref: feature-branch
+    path: /specific_tests
+  execute:
+    how: tmt
+  prepare:
+    - how: shell
+      script: "echo 'Preparing environment'"
+      order: 10
+
+- summary: Plan demonstrating multiple discover steps and adjust
+  author:
+    - "Jane Doe <jane.doe@example.com>"
+    - "Peter Smith <peter.smith@example.com>"
+  enabled: true
+  discover:
+    - how: fmf
+      name: discover-main
+      filter: "tag: smoke"
+      order: 10
+    - how: fmf
+      name: discover-libs
+      url: https://example.com/common-libs.git
+      path: /lib_tests
+      order: 20
+  execute:
+    how: tmt
+  adjust:
+    - enabled: false
+      when: "distro == rhel-8"
+      because: "Feature not supported on RHEL8"
+
+- summary: Minimal plan with just discover and execute
+  discover:
+    how: fmf
+    url: "https://some.repo/tests.git"
+  execute:
+    how: tmt
+
+- summary: Plan showcasing shell discover and prepare steps
+  environment:
+    DEPLOY_TARGET: staging
+  discover:
+    how: shell
+    tests: # discover.shell.tests requires name and test
+      - name: /example/shell/test1
+        test: ./my-test-script.sh
+        duration: 10m
+        tier: 1
+      - name: /example/shell/test2
+        test: "bash -c 'exit 0'"
+  prepare:
+    - how: shell
+      script:
+        - "dnf install -y package1"
+        - "echo 'Setup complete'"
+      order: 5
+    - how: ansible
+      playbook: setup_infra.yaml
+  execute:
+    how: tmt
+  provision:
+    how: container
+    image: fedora:latest
+  report:
+    how: html # 'file' key removed as it's not in the html report schema
+
+- summary: Plan with a specific fmf_id for import
+  plan:
+    import:
+      name: /plans/common/base_setup
+      url: git://server/fmf-root.git
+      path: /plans_subtree
+      ref: stable
+  # Other plan keys like discover, execute would typically be inherited or overridden.
+  # If 'plan: import:' is used, 'execute' at this level is usually not present
+  # or would be part of the imported plan, or this plan would only define discover/prepare etc.
+  # For this mock, making it a pure import plan by removing explicit execute.
+  context:
+    arch: aarch64
+    distro: rhel-9.3
+  tier: 1

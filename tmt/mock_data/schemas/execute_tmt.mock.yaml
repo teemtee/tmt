@@ -1,0 +1,69 @@
+# Example 1: Minimal tmt executor (most common case)
+- how: tmt
+
+# Example 2: tmt executor with exit-first enabled
+- how: tmt
+  name: exit-first-execution
+  exit-first: true
+
+# Example 3: tmt executor with a specific duration for the whole execution phase
+- how: tmt
+  name: timed-execution-phase
+  duration: "2h 30m" # Overall timeout for all tests in this phase
+
+# Example 4: tmt executor with ignore-duration
+- how: tmt
+  name: ignore-test-durations
+  ignore-duration: true
+  script: # Example: Run a custom script before tmt executor runs tests
+    - "echo 'Starting test execution, test durations will be ignored.'"
+
+# Example 5: tmt executor with restraint-compatible mode
+- how: tmt
+  name: restraint-mode
+  restraint-compatible: true
+
+# Example 6: tmt executor with a custom script to be run by the executor
+# (Note: This 'script' is for the tmt executor step itself, not the test script)
+- how: tmt
+  name: custom-executor-script
+  script:
+    - "echo 'Performing pre-test actions by execute step script'"
+    - "/usr/local/bin/custom_setup_for_tmt_executor.sh"
+    - "echo 'Pre-test actions complete'"
+
+# Example 7: tmt executor with 'where' clause (multihost context)
+- how: tmt
+  name: server-side-execution
+  where: server # Runs tests on guests with role 'server'
+
+# Example 8: All boolean options set
+- how: tmt
+  name: full-options-example
+  exit-first: true
+  ignore-duration: true # Note: exit-first and ignore-duration might be contradictory in some senses
+  restraint-compatible: false # Explicitly false
+  duration: "15m" # Overall duration for this specific execution step
+  script: "echo 'Executing with all boolean flags set'"
+  where:
+    - client
+    - workstation
+
+# Example 9: Multiple tmt execution blocks (e.g. if a plan has multiple execute steps with 'tmt')
+# This would typically be in a plan's execute array, each item is one such block.
+# For this mock file, we just list them.
+- how: tmt
+  name: first-batch-execution
+  duration: "1h"
+  script: "echo 'Running first batch of tests'"
+
+- how: tmt
+  name: second-batch-execution
+  exit-first: false # Default
+  duration: "30m"
+  script: "echo 'Running second batch, allowing all to complete'"
+  where: "special_guest_type"
+
+# Example 10: Minimal with a name
+- how: tmt
+  name: standard-execution

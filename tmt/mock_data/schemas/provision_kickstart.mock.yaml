@@ -1,0 +1,93 @@
+# Example 1: Basic kickstart with kernel options and metadata (from previous snippets)
+- kernel-options: "rhgb quiet console=ttyS0,115200"
+  metadata: "my-custom-ks.ks" # Could be a URL or a local path resolver by the provisioner
+
+# Example 2: Kickstart with script and post-install kernel options (from previous snippets)
+- script: |
+    %packages
+    @^minimal-environment
+    wget
+    curl
+    vim-enhanced
+    %end
+
+    %post --log=/root/ks-post.log
+    echo "Post-install script executed at $(date)" > /root/post_install_proof.txt
+    # Example: Add a custom repo
+    cat <<EOF > /etc/yum.repos.d/mycustom.repo
+    [mycustom]
+    name=My Custom Repo
+    baseurl=http://mirror.example.com/mycustomrepo/
+    enabled=1
+    gpgcheck=0
+    EOF
+    dnf update -y
+    %end
+  kernel-options-post: "crashkernel=auto nokaslr"
+  pre-install: |
+    #!/bin/bash
+    echo "Starting pre-install tasks at $(date)" > /tmp/preinstall.log
+    # Example: Partitioning or network setup if needed before %packages
+
+# Example 3: Kickstart with only a script section
+- script: |
+    # Basic server setup
+    network --bootproto=dhcp --device=eth0 --onboot=yes
+    firewall --enabled --service=ssh
+    timezone Europe/Prague --isUtc
+    rootpw --plaintext insecurepassword
+    user --name=tester --groups=wheel --plaintext --password=testpassword
+
+    %packages
+    @^server-product-environment
+    %end
+
+# Example 4: Kickstart with only kernel-options
+- kernel-options: "net.ifnames=0 biosdevname=0 inst.sshd"
+
+# Example 5: Kickstart with only metadata (e.g., for a pre-existing kickstart file)
+- metadata: "http://internal.server/configs/standard-rhel9.ks"
+
+# Example 6: Kickstart with post-install script only
+- post-install: |
+    #!/bin/bash
+    echo "Running post-installation configuration."
+    systemctl enable cockpit.socket
+    systemctl start cockpit.socket
+    # Add a user
+    useradd provisioned_user
+    mkdir -p /home/provisioned_user/.ssh
+    echo "ssh-rsa AAAAB3NzaC1yc2EAAA..." > /home/provisioned_user/.ssh/authorized_keys
+    chown -R provisioned_user:provisioned_user /home/provisioned_user/.ssh
+    chmod 700 /home/provisioned_user/.ssh
+    chmod 600 /home/provisioned_user/.ssh/authorized_keys
+
+# Example 7: Kickstart with pre-install and kernel options
+- pre-install: |
+    #!/bin/bash
+    echo "Performing pre-installation storage configuration..."
+    # (Commands to configure storage, LVM, etc.)
+  kernel-options: "ipv6.disable=1"
+
+# Example 8: All fields used
+- kernel-options: "selinux=0 enforcing=0 console=tty0"
+  kernel-options-post: "nomodeset"
+  metadata: "ks/detailed-setup.cfg"
+  pre-install: |
+    #!/bin/bash
+    echo "Pre-install: $(date)" >> /tmp/ks.log
+    # (Potentially complex pre-install logic)
+  post-install: |
+    #!/bin/bash
+    echo "Post-install: $(date)" >> /tmp/ks.log
+    # (Potentially complex post-install logic)
+  script: |
+    # Main kickstart commands
+    lang en_US.UTF-8
+    keyboard --xlayouts='us'
+    network  --hostname=mockguest.example.com
+    # ... other kickstart commands ...
+    %packages
+    chrony
+    tmux
+    %end
