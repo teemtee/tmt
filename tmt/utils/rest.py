@@ -35,8 +35,13 @@ if TYPE_CHECKING:
 # monkeypatching it around our calls to parser does not work. To avoid
 # issues, ReST renderign is disabled when we know our code runs under
 # the control of Sphinx.
-REST_RENDERING_ALLOWED = 'sphinx-build' not in sys.argv[0]
-
+REST_RENDERING_ALLOWED = not sys.argv or (
+    # Local `make docs` builds
+    'sphinx-build' not in sys.argv[0]
+    and 'sphinx-apidoc' not in sys.argv[0]
+    # Read the docs calls Sphinx this way
+    and 'sphinx/__main__.py' not in sys.argv[0]
+)
 
 #: Special string representing a new-line in the stack of rendered
 #: paragraphs.
