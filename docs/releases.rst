@@ -39,6 +39,10 @@ failed test and check, stored within their respective directories. When
 a failure occurs, the path to this file is included in the result logs.
 Check failures are now also reported to ReportPortal.
 
+New :ref:`/plugins/prepare/feature` prepare plugin ``crb`` has been
+implemented which allows to easily enable or disable the CodeReady
+Builder repository.
+
 
 tmt-1.48.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
