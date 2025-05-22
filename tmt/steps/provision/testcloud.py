@@ -882,7 +882,6 @@ class GuestTestcloud(tmt.GuestSsh):
         self.config.STOP_RETRIES = self.stop_retries
         self.config.STOP_RETRY_WAIT = self.stop_retry_delay
 
-
     def _combine_hw_memory(self) -> None:
         """
         Combine ``hardware`` with ``--memory`` option
