@@ -881,6 +881,19 @@ class GuestTestcloud(tmt.GuestSsh):
 
         self.config.STOP_RETRIES = self.stop_retries
         self.config.STOP_RETRY_WAIT = self.stop_retry_delay
+        tmt.utils.Command(
+            "chcon",
+            "-R",
+            "-u",
+            "system_u",
+            "-t",
+            "virt_content_t",
+            self.testcloud_data_dirpath,
+        ).run(
+            cwd=self.workdir,
+            stream_output=True,
+            logger=self._logger,
+        )
 
     def _combine_hw_memory(self) -> None:
         """
