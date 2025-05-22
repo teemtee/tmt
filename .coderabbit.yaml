@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# https://docs.coderabbit.ai/getting-started/configure-coderabbit/
+# https://github.com/coderabbitai/awesome-coderabbit/blob/main/README.md#configuration-examples
+language: en-US
+tone_instructions: ''  # this is where we can tell it to not compliment the authors as happz doesn't like it :)
+early_access: true
+enable_free_tier: true
+reviews:
+  profile: chill  # less nitpicky
+  request_changes_workflow: false
+  high_level_summary: false
+  high_level_summary_placeholder: '@coderabbitai summary'
+  high_level_summary_in_walkthrough: false
+  auto_title_placeholder: '@coderabbitai'
+  auto_title_instructions: ''
+  review_status: false
+  commit_status: false
+  fail_commit_status: false
+  collapse_walkthrough: true
+  changed_files_summary: true
+  sequence_diagrams: true
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+  suggested_labels: true
+  auto_apply_labels: false
+  suggested_reviewers: true
+  auto_assign_reviewers: false
+  poem: false
+  labeling_instructions: []
+  path_filters: []
+  path_instructions: []
+  abort_on_close: true
+  disable_cache: false
+  auto_review:
+    enabled: false  # Only do reviews when tagged
+    auto_incremental_review: false  # Do not update reviews on each new commit
+    ignore_title_keywords: []
+    labels: []
+    drafts: false
+    base_branches: []
+  finishing_touches:
+    docstrings:
+      enabled: false
+chat:
+  auto_reply: false  # Needs to be tagged to start a chat
+  create_issues: false
+  integrations:
+    jira:
+      usage: auto
+    linear:
+      usage: disabled
+knowledge_base:
+  opt_out: false
+  web_search:
+    enabled: true
+  learnings:
+    scope: auto
+  issues:
+    scope: auto
+  jira:
+    usage: auto
+    project_keys: []
+  linear:
+    usage: disabled
+    team_keys: []
+  pull_requests:
+    scope: auto
+code_generation:
+  docstrings:  # disabled above
+    language: en-US
+    path_instructions: []
