@@ -109,22 +109,22 @@ HINTS: dict[str, Hint] = {
 }
 
 
-def register_hint(id_: str, hint: str) -> None:
+def register_hint(hint_id: str, hint: str) -> None:
     """
     Register a hint for users.
 
-    :param id_: step name for step-specific hints,
+    :param hint_id: step name for step-specific hints,
         ``<step name>/<plugin name>`` for plugin-specific hints,
         or an arbitrary string.
     :param hint: a hint to register.
     """
 
-    if id_ in HINTS:
+    if hint_id in HINTS:
         raise tmt.utils.GeneralError(
-            f"Registering hint '{id_}' collides with an already registered hint."
+            f"Registering hint '{hint_id}' collides with an already registered hint."
         )
 
-    HINTS[id_] = Hint(id_, hint)
+    HINTS[hint_id] = Hint(hint_id, hint)
 
 
 def get_hints(*ids: str, ignore_missing: bool = False) -> list[Hint]:
