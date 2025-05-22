@@ -8,7 +8,7 @@ rlJournalStart
     rlPhaseEnd
     rlPhaseStartTest
         # Timeout large enough to boot the VM
-        rlRun "rlWatchdog \"rlRun 'tmt run -vfi $tmp' 2\" 60"
+        rlRun "rlWatchdog \"rlRun 'tmt run -vfi $tmp' 2\" 120"
         # ^ exitcode has to be 2 (prepare failed)
         rlAssertGrep 'status:.*done' "$tmp/plan/provision/step.yaml"
         rlAssertGrep 'status:.*todo' "$tmp/plan/prepare/step.yaml"

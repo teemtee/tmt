@@ -4,4 +4,4 @@ tag+:
   - provision-bootc
 require:
   - tmt+provision-virtual
-duration: 60m
+duration: 2h
