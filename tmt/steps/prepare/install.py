@@ -157,7 +157,7 @@ class InstallBase(tmt.utils.Common):
         workdir = cast(PrepareInstall, self.parent).step.workdir
         if not workdir:
             raise tmt.utils.GeneralError('workdir should not be empty')
-        self.package_directory = workdir / 'packages'
+        self.package_directory = workdir / self.guest.safe_name / 'packages'
         self.package_directory.mkdir(parents=True)
 
         # Copy local packages into workdir, push to guests
@@ -624,9 +624,16 @@ class InstallBootc(InstallBase):
         ]
 
         self._engine.containerfile_directives.append(f'RUN mkdir -p {self.package_directory}')
-        self._engine.containerfile_directives.append(
-            f'COPY {" ".join(str(file) for file in filelist)} {self.package_directory}'
-        )
+
+        assert self.guest.parent is not None
+        assert hasattr(self.guest.parent, 'workdir')
+
+        workdir = self.guest.parent.workdir
+        assert isinstance(workdir, Path)
+
+        files = " ".join(str(file.relative_to(workdir)) for file in filelist)
+
+        self._engine.containerfile_directives.append(f'COPY {files} {self.package_directory}')
 
         self._engine.install(
             *filelist,
