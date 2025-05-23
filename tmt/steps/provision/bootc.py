@@ -71,13 +71,14 @@ class GuestBootc(GuestTestcloud):
         self._rootless = rootless
 
     def remove(self) -> None:
+        if not self._instance:
+            return
         tmt.utils.Command("podman", "rmi", self.containerimage).run(
             cwd=self.workdir,
             stream_output=True,
             logger=self._logger,
             env=PODMAN_ENV if self._rootless else None,
         )
-
         try:
             tmt.utils.Command("podman", "machine", "rm", "-f", PODMAN_MACHINE_NAME).run(
                 cwd=self.workdir, stream_output=True, logger=self._logger
@@ -252,6 +253,8 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         """
         Build a "derived" container image from the base image with tmt dependencies added
         """
+        if self.is_dry_run:
+            return ''
 
         assert self.workdir is not None  # narrow type
 
@@ -290,6 +293,8 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         """
         Build the "base" or user supplied container image
         """
+        if self.is_dry_run:
+            return ''
 
         image_tag = f'localhost/tmtbase-{self._get_id()}'
         self._logger.debug("Build container image.")
@@ -315,6 +320,8 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         """
 
         self._logger.debug("Build bootc disk image.")
+        if self.is_dry_run:
+            return
 
         tmt.utils.Command(
             "podman",
@@ -343,6 +350,8 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         )
 
     def _init_podman_machine(self) -> None:
+        if self.is_dry_run:
+            return
         try:
             tmt.utils.Command("podman", "machine", "rm", "-f", PODMAN_MACHINE_NAME).run(
                 cwd=self.workdir, stream_output=True, logger=self._logger
@@ -385,7 +394,6 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
 
         data = BootcData.from_plugin(self)
         data.show(verbose=self.verbosity_level, logger=self._logger)
-
         if self._rootless:
             self._init_podman_machine()
 
@@ -429,7 +437,8 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         built_image = image_dir / 'disk.qcow2'
         renamed_image = image_dir / disk_file_name
 
-        built_image.rename(renamed_image)
+        if not self.is_dry_run:
+            built_image.rename(renamed_image)
         data.image = f"file://{renamed_image}"
 
         if data.build_disk_image_only:
