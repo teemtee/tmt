@@ -11,8 +11,16 @@ rlJournalStart
         # in the podman machine mount
         rlRun "mkdir -p /var/tmp/tmt"
         rlRun "run=\$(mktemp -d --tmpdir=/var/tmp/tmt)" 0 "Create run directory"
+        rlRun "dry_run=\$(mktemp -d --tmpdir=/var/tmp/tmt)" 0 "Create dry run directory"
         rlRun "pushd data"
         rlRun "df -h" 0 "Check available disk space"
+    rlPhaseEnd
+    # This test must be ran first, or podman machine and container image will exist.
+    rlPhaseStartTest "Test dry run for bootc works as expected"
+        rlRun -s "tmt -vvv run --dry --scratch -i $dry_run plan --name /plans/containerfile/includes-deps"
+	rlRun "ls $dry_run/plans/containerfile/includes-deps/provision/default-0/ | grep qcow2" "1"
+	rlRun "podman machine ls  | grep podman-machine-tmt" "1"
+	rlRun "podman inspect fedora-bootc:41" "125"
     rlPhaseEnd
 
     rlPhaseStartTest "Image that needs dependencies"
