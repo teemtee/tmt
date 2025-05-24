@@ -2,8 +2,10 @@ import copy
 import functools
 import json
 import os
+import shutil
 import signal as _signal
 import subprocess
+import tempfile
 import threading
 from contextlib import suppress
 from tempfile import NamedTemporaryFile
@@ -28,7 +30,6 @@ from tmt.steps import Action, ActionTask, PhaseQueue, PluginTask, Step
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.provision import Guest
 from tmt.utils import (
-    Command,
     Path,
     ShellScript,
     Stopwatch,
@@ -112,6 +113,16 @@ class Script:
     def __exit__(self, *args: object) -> None:
         pass
 
+    def copy_into(self, filepath: Path) -> Optional[Path]:
+        """
+        Copy the script to the specified filepath.
+
+        :param filepath: Path where the script should be copied
+        :returns: None for regular scripts, a Path for templates to be tracked for cleanup
+        """
+        shutil.copy2(SCRIPTS_SRC_DIR / self.source_filename, filepath)
+        return None
+
 
 @container
 class ScriptCreatingFile(Script):
@@ -152,8 +163,20 @@ class ScriptTemplate(Script):
         return self._rendered_script_path
 
     def __exit__(self, *args: object) -> None:
-        assert self._rendered_script_path
-        os.unlink(self._rendered_script_path)
+        if self._rendered_script_path:
+            with suppress(FileNotFoundError):
+                self._rendered_script_path.unlink()
+
+    def copy_into(self, filepath: Path) -> Optional[Path]:
+        """
+        Copy the rendered template script to the specified filepath.
+
+        :param filepath: Path where the script should be copied
+        :returns: The path to the rendered template for cleanup tracking
+        """
+        assert self._rendered_script_path is not None
+        shutil.copy2(self._rendered_script_path, filepath)
+        return self._rendered_script_path
 
 
 def effective_scripts_dest_dir(default: Path = DEFAULT_SCRIPTS_DEST_DIR) -> Path:
@@ -804,28 +827,116 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
     def prepare_scripts(self, guest: "tmt.steps.provision.Guest") -> None:
         """
-        Prepare additional scripts for testing
+        Prepare additional scripts locally in a staging directory and push them.
+
+        Creates a temporary local directory structure mirroring the intended
+        guest filesystem layout. Scripts and their aliases (as symbolic links)
+        are placed into this structure. The entire structure is then pushed
+        to the guest's root directory in a single operation.
         """
+        staging_root: Optional[Path] = None
 
-        # Make sure scripts directory exists
-        command = Command("mkdir", "-p", f"{guest.scripts_path}")
+        try:
+            # Create a temporary local staging directory
+            staging_root = Path(tempfile.mkdtemp(prefix='tmt-scripts-staging-'))
+            self.debug(f"Created local script staging directory: {staging_root}")
 
-        if not guest.facts.is_superuser:
-            command = Command("sudo") + command
+            try:
+                default_scripts_dest_dir_relative = guest.scripts_path.relative_to('/')
+            except ValueError:
+                # Handle non-absolute paths by treating them as relative to root
+                self.warn(
+                    f"scripts_path '{guest.scripts_path}' is not absolute; "
+                    "treating it as relative to '/'"
+                )
+                default_scripts_dest_dir_relative = Path(str(guest.scripts_path).lstrip('/'))
 
-        guest.execute(command)
+            for script in self.scripts:
+                if not script.enabled(guest):
+                    continue
 
-        # Install all scripts on guest
-        for script in self.scripts:
-            with script as source:
-                for filename in [script.source_filename, *script.aliases]:
-                    if script.enabled(guest):
-                        guest.push(
-                            source=source,
-                            destination=script.destination_path or guest.scripts_path / filename,
-                            options=["-p", "--chmod=755"],
-                            superuser=guest.facts.is_superuser is not True,
+                # Determine the final path relative to the guest root '/'
+                if script.destination_path:
+                    # Custom destination path provided
+                    try:
+                        relative_script_path = script.destination_path.relative_to('/')
+                    except ValueError:
+                        # Handle non-absolute paths by treating them as relative to root
+                        self.warn(
+                            f"destination_path '{script.destination_path}' is not absolute; "
+                            "treating it as relative to '/'"
                         )
+                        relative_script_path = Path(str(script.destination_path).lstrip('/'))
+                else:
+                    # Default destination path
+                    relative_script_path = (
+                        default_scripts_dest_dir_relative / script.source_filename
+                    )
+
+                # Construct the full path within the local staging directory
+                local_script_path = staging_root / relative_script_path
+
+                # Ensure the parent directory exists in the staging area
+                local_script_path.parent.mkdir(parents=True, exist_ok=True)
+
+                # Copy or render the script into the staging area
+                with script:
+                    # Copy the script to the staging area
+                    script.copy_into(local_script_path)
+
+                self.debug(f"Staged script '{script.source_filename}' to '{local_script_path}'")
+
+                # Create aliases as relative symbolic links within the staging area
+                # Aliases always go into the default scripts directory
+                if script.aliases:
+                    alias_dir_local = staging_root / default_scripts_dest_dir_relative
+                    alias_dir_local.mkdir(parents=True, exist_ok=True)
+
+                    # Calculate the relative path from the alias location to the script location
+                    # within the staging area using os.path.relpath, as pathlib's relative_to
+                    # doesn't directly compute paths between arbitrary directories easily.
+                    # Use noqa as os.path is needed here for correct relative path calculation.
+                    target_relative_to_alias_dir = os.path.relpath(  # noqa: TID251
+                        local_script_path, start=alias_dir_local
+                    )
+
+                    for alias in script.aliases:
+                        alias_path_local = alias_dir_local / alias
+                        try:
+                            # Remove existing file or symlink if present
+                            if alias_path_local.exists() or alias_path_local.is_symlink():
+                                alias_path_local.unlink()
+                            # Create relative symlink using pathlib
+                            alias_path_local.symlink_to(target_relative_to_alias_dir)
+                            self.debug(
+                                f"Created alias symlink '{alias_path_local}' -> "
+                                f"'{target_relative_to_alias_dir}'"
+                            )
+                        except OSError as e:
+                            self.warn(f"Failed to create alias symlink '{alias_path_local}': {e}")
+
+            # Push the entire staging directory content to the guest's root
+            # Use options to preserve structure, links, and permissions.
+            # -a implies -rlptgoD (archive mode)
+            self.debug(f"Pushing staged scripts from '{staging_root}' to guest")
+            guest.push(
+                # Directory contents are pushed automatically per standardized behavior
+                source=staging_root,
+                destination=Path('/'),
+                options=[
+                    "-a",  # Archive mode (-rlptgoD), includes preserving permissions
+                    "--links",  # Copy symlinks as symlinks
+                    "--chmod=755",  # Just in case
+                ],
+                superuser=guest.facts.is_superuser is not True,
+            )
+
+        finally:
+            # Clean up the local staging directory
+            if staging_root and staging_root.exists():
+                self.debug(f"Cleaning up local script staging directory: {staging_root}")
+                shutil.rmtree(staging_root)
+            # Note: ScriptTemplate.__exit__ handles cleanup of individual rendered files
 
     def _tmt_report_results_filepath(self, invocation: TestInvocation) -> Path:
         """
