@@ -26,6 +26,7 @@ import tmt.log
 import tmt.options
 import tmt.plugins
 import tmt.plugins.plan_shapers
+import tmt.profiles
 import tmt.steps
 import tmt.templates
 import tmt.utils
@@ -62,6 +63,7 @@ story_flags_filter_options = create_options_decorator(tmt.options.STORY_FLAGS_FI
 remote_plan_options = create_options_decorator(tmt.options.REMOTE_PLAN_OPTIONS)
 lint_options = create_options_decorator(tmt.options.LINT_OPTIONS)
 environment_options = create_options_decorator(tmt.options.ENVIRONMENT_OPTIONS)
+profile_options = create_options_decorator(tmt.options.PROFILE_OPTIONS)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -294,7 +296,14 @@ def main(
 @verbosity_options
 @force_dry_options
 @again_option
-def run(context: Context, id_: Optional[str], workdir_root: Optional[Path], **kwargs: Any) -> None:
+@profile_options
+def run(
+    context: Context,
+    id_: Optional[str],
+    workdir_root: Optional[Path],
+    profile_path: Optional[Path],
+    **kwargs: Any,
+) -> None:
     """
     Run test steps.
     """
@@ -303,14 +312,18 @@ def run(context: Context, id_: Optional[str], workdir_root: Optional[Path], **kw
     logger = context.obj.logger.descend(logger_name='run', extra_shift=0)
     logger.apply_verbosity_options(**kwargs)
 
-    run = tmt.Run(
+    profiles = (
+        [tmt.profiles.Profile.load(profile_path, logger)] if profile_path is not None else []
+    )
+
+    context.obj.run = tmt.Run(
         id_=Path(id_) if id_ is not None else None,
         tree=context.obj.tree,
         cli_invocation=CliInvocation.from_context(context),
         workdir_root=effective_workdir_root(workdir_root),
+        profiles=profiles,
         logger=logger,
     )
-    context.obj.run = run
 
 
 for plugin_class in tmt.plugins.plan_shapers._PLAN_SHAPER_PLUGIN_REGISTRY.iter_plugins():
@@ -886,6 +899,7 @@ _test_export_default = 'yaml'
     metavar='PATH',
     help="Path to a template to use for rendering the export. Used with '--how=template' only.",
 )
+@profile_options
 def tests_export(
     context: Context,
     format: str,
@@ -893,6 +907,7 @@ def tests_export(
     nitrate: bool,
     bugzilla: bool,
     template: Optional[str],
+    profile_path: Optional[Path],
     **kwargs: Any,
 ) -> None:
     """
@@ -931,9 +946,16 @@ def tests_export(
         )
 
     else:
+        tests = context.obj.tree.tests()
+
+        if profile_path is not None:
+            profile = tmt.profiles.Profile.load(profile_path, context.obj.logger)
+
+            profile.apply_to_tests(str(profile_path), tests, context.obj.logger)
+
         echo(
             tmt.Test.export_collection(
-                collection=context.obj.tree.tests(),
+                collection=tests,
                 format=how,
                 template=Path(template) if template else None,
             )
