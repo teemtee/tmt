@@ -1234,6 +1234,8 @@ class GuestTestcloud(tmt.GuestSsh):
                 waiting=waiting,
             )
 
+        self.debug("Soft reboot using the testcloud API.")
+
         if self._instance is None:
             raise tmt.utils.ProvisionError("No instance initialized.")
 
