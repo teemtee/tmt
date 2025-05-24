@@ -320,9 +320,7 @@ def _translate_constraint_by_transformer(
 def _transform_beaker_pool(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
-    beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator, constraint.value
-    )
+    beaker_operator, actual_value, _ = operator_to_beaker_op(constraint.operator, constraint.value)
 
     return MrackHWBinOp('pool', beaker_operator, actual_value)
 
@@ -546,9 +544,7 @@ def _transform_memory(
 def _transform_tpm_version(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
-    beaker_operator, actual_value, negate = operator_to_beaker_op(
-        constraint.operator, constraint.value
-    )
+    beaker_operator, actual_value, _ = operator_to_beaker_op(constraint.operator, constraint.value)
 
     return MrackHWKeyValue('TPM', beaker_operator, actual_value)
 
