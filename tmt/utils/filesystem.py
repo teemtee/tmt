@@ -65,6 +65,7 @@ def copy_tree(
     Copy directory efficiently, trying different strategies.
 
     Attempts strategies in order:
+
     #. ``cp -a --reflink=auto`` (copy-on-write, with ``cp``'s own
        fallback).
 
