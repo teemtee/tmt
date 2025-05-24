@@ -33,7 +33,7 @@ class TestCopyTree(TestCase):
 
         # Create a symlink if the platform supports it
         try:
-            Path.symlink_to(self.source_dir / "file1.txt", self.source_dir / "symlink.txt")
+            (self.source_dir / "symlink.txt").symlink_to(self.source_dir / "file1.txt")
         except (OSError, NotImplementedError):
             self.symlinks_supported = False
         else:
