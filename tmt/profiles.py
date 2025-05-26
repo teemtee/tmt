@@ -45,7 +45,7 @@ class Instruction(MetadataContainer, extra=Extra.allow):
             normalize_callback: tmt.container.NormalizeCallback[T],
         ) -> T:
             """
-            Update a sngle key of the object.
+            Update a single key of the object.
 
             :param key: name of the key to update.
             :param template: template rendering to a new value.
