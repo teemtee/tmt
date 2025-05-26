@@ -39,8 +39,8 @@ description: |
 
        New data **replaces** the original value of the key. If the
        original value needs to be reflected in the new value, it is the
-       responsibility of the template to render correspondingly. The are
-       no "magic" operators for addition or merging provided by the
+       responsibility of the template to render correspondingly. There
+       are no "magic" operators for addition or merging provided by the
        profile syntax, new value fully replaces the old one.
 
        .. code-block:: yaml
@@ -61,7 +61,8 @@ description: |
 
     .. important::
 
-       Since the task of template is to produce valid fmf data, the indentation of its content is crucial
+       Since the task of the template is to produce valid fmf data, the
+       indentation of its content is crucial:
 
        .. code-block:: yaml
 
