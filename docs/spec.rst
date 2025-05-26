@@ -55,4 +55,5 @@ Level 3: Stories
     spec/context
     spec/hardware
     spec/results
+    spec/profiles
     spec/lint
