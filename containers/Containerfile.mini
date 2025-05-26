@@ -1,4 +1,4 @@
-FROM registry.fedoraproject.org/fedora:latest
+FROM quay.io/fedora/fedora:latest
 
 RUN <<EOF
 set -ex

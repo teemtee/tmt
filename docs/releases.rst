@@ -7,48 +7,49 @@
 tmt-1.49.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Output of the :ref:`/plugins/execute/tmt` and
-:ref:`/plugins/report/display` is changing in this release, to provide
-slightly more details, headers and timestamps. ``execute`` now starts
-using ``display`` for its own progress reporting, providing the unified
-formatting and simplified code.
+The :ref:`import of remote plans</spec/plans/import>` support has
+been extended to allow import of multiple plans. New keys,
+``scope`` and ``importing``, allow users to control which plans to
+import and how to connect them with the importing plans.
 
-When the login step was called in a separate command after the guest
-has been provisioned, the connection seemed to be stuck. This has been
-caused by the SSH master process not being terminated together with tmt,
-new tmt command would then spawn its own and conflict with the forgotten
-one. tmt no longer leaves the SSH master process running, preventing the
-issue.
+New :ref:`/plugins/prepare/feature` prepare plugin ``crb`` has
+been implemented which allows to easily enable or disable the
+CodeReady Builder repository on common test environments.
+
+The console log content is now available for guests provisioned by
+the :ref:`/plugins/provision/virtual.testcloud` plugin.
+
+Failures from tests and their checks were previously not fully
+saved or reported. Now, a separate ``failures.yaml`` file is
+created for each failed test and check, stored within their
+respective directories. When a failure occurs, the path to this
+file is included in the result logs. Check failures are now also
+being reported to ReportPortal.
+
+Output of the :ref:`/plugins/execute/tmt` and
+:ref:`/plugins/report/display` is changing in this release, to
+provide slightly more details, headers and timestamps. The
+``execute`` step now starts using ``display`` for its own progress
+reporting, providing the unified formatting and simplified code.
+
+When the login step was called in a separate command after the
+guest has been provisioned, the connection seemed to be stuck.
+This has been caused by the SSH master process not being
+terminated together with tmt, new tmt command would then spawn its
+own and conflict with the forgotten one. tmt no longer leaves the
+SSH master process running, preventing the issue.
 
 An issue in the :ref:`/plugins/provision/beaker` provision plugin
 prevented reconnecting to running guests. This has been fixed so
 now it's possible to fully work with existing tmt runs as well.
 
-The :ref:`import of remote plans</spec/plans/import>` support has been
-extended to allow import of multiple plans. New keys, ``scope`` and
-``importing``, allow users to control which plans to import and how to
-connect them with the importing plans.
-
-Fixed a bug that caused executed tests to remain in the
-``pending`` state when the machine became unresponsive. Tests will
+A bug causing executed tests to remain in the ``pending`` state
+when the machine became unresponsive has been fixed. Tests will
 now correctly transition to the ``error`` state.
-
-Failures from tests and their checks were previously not fully saved
-or reported. Now, a separate ``failures.yaml`` file is created for each
-failed test and check, stored within their respective directories. When
-a failure occurs, the path to this file is included in the result logs.
-Check failures are now also reported to ReportPortal.
-
-New :ref:`/plugins/prepare/feature` prepare plugin ``crb`` has been
-implemented which allows to easily enable or disable the CodeReady
-Builder repository.
 
 
 tmt-1.48.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The console log content is now available for guests provisioned by
-the :ref:`/plugins/provision/virtual.testcloud` plugin.
 
 A new ``tmt about`` command has been introduced,
 initially providing information about the :ref:`tmt plugins <plugins>`.
