@@ -13,9 +13,9 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test whether unserialization works"
-        rlRun "tmt -vv run --id $run --scratch --until prepare"
-        rlRun "tmt -vv run --id $run prepare"
-        rlRun "tmt -vv run --id $run finish"
+        rlRun "TMT_SHOW_TRACEBACK=full tmt -vv run --id $run --scratch --until prepare"
+        rlRun "TMT_SHOW_TRACEBACK=full tmt -vv run --id $run prepare"
+        rlRun "TMT_SHOW_TRACEBACK=full tmt -vv run --id $run finish"
     rlPhaseEnd
 
     rlPhaseStartCleanup
