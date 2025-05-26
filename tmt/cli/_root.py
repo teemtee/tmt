@@ -951,7 +951,9 @@ def tests_export(
         if profile_path is not None:
             profile = tmt.profiles.Profile.load(profile_path, context.obj.logger)
 
-            profile.apply_to_tests(str(profile_path), tests, context.obj.logger)
+            profile.apply_to_tests(
+                tests=tests, profile_name=str(profile_path), logger=context.obj.logger
+            )
 
         echo(
             tmt.Test.export_collection(

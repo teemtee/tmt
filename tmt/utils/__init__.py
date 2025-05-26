@@ -4802,7 +4802,9 @@ def dataclass_normalize_field(
     # Set attribute by adding it to __dict__ directly. Messing with setattr()
     # might cause reuse of mutable values by other instances.
     container.__dict__[keyname] = value
-    container._field_value_sources[keyname] = value_source
+
+    if hasattr(container, '_field_value_sources'):
+        container._field_value_sources[keyname] = value_source
 
     return value
 
@@ -5196,6 +5198,8 @@ def normalize_data_amount(
     raise NormalizationError(key_address, raw_value, 'a quantity or a string')
 
 
+# TODO: once we replace our custom "containers" with pydantic's `MetadataContainer`,
+# this enum and `_field_value_sources` should move there.
 class FieldValueSource(enum.Enum):
     """
     Indicates source of metadata field value.

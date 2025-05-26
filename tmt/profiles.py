@@ -28,6 +28,13 @@ Field value source changed from {{ OLD_VALUE_SOURCE.value | style(fg='red') }} t
 
 class Instruction(MetadataContainer, extra=Extra.allow):
     def apply(self, obj: 'Core', logger: Logger) -> None:
+        """
+        Apply the instruction to a given object.
+
+        :param obj: object to modify - a test, plan, or story.
+        :param logger: used for logging.
+        """
+
         base_logger = logger
 
         def set_key(
@@ -36,8 +43,20 @@ class Instruction(MetadataContainer, extra=Extra.allow):
             current_value_exported: Any,
             current_value_source: FieldValueSource,
             normalize_callback: tmt.container.NormalizeCallback[T],
-            normalize: bool = False,
         ) -> T:
+            """
+            Update a sngle key of the object.
+
+            :param key: name of the key to update.
+            :param template: template rendering to a new value.
+            :param current_value_exported: current value as if exported
+                via :py:meth:`Core._export`. Consists of Python built-in
+                types only, no custom classes.
+            :param current_value_source: origin of the current value.
+            :param normalize_callback: will be called with the rendered
+                ``template`` to produce new value for the key.
+            """
+
             rendered_new_value = render_template(
                 template,
                 VALUE=current_value_exported,
@@ -46,9 +65,7 @@ class Instruction(MetadataContainer, extra=Extra.allow):
 
             raw_new_value = tmt.utils.yaml_to_python(rendered_new_value)
 
-            new_value = (
-                normalize_callback('', raw_new_value, logger) if normalize else raw_new_value
-            )
+            new_value = normalize_callback('', raw_new_value, logger)
 
             setattr(obj, tmt.container.option_to_key(key), new_value)
 
@@ -80,23 +97,16 @@ class Instruction(MetadataContainer, extra=Extra.allow):
             current_value_exported = old_value_exported = export_callback(current_value)
             current_value_source = old_value_source = obj._field_value_sources[key]
 
-            if isinstance(current_value, (float, int, bool, str)):
+            if isinstance(
+                current_value,
+                (float, int, bool, str, list, dict, ShellScript, tmt.utils.Environment),
+            ):
                 current_value = set_key(
                     key,
                     template,
                     current_value_exported,
                     current_value_source,
                     normalize_callback,
-                )
-
-            elif isinstance(current_value, (list, dict, ShellScript, tmt.utils.Environment)):
-                current_value = set_key(
-                    key,
-                    template,
-                    current_value_exported,
-                    current_value_source,
-                    normalize_callback,
-                    normalize=True,
                 )
 
             else:
@@ -123,9 +133,14 @@ class Instruction(MetadataContainer, extra=Extra.allow):
 
 
 class Profile(MetadataContainer):
+    #: Instructions for modifications of tests.
     test_profile: list[Instruction] = metadata_field(default_factory=list[Instruction])
-    plan_profile: list[Instruction] = metadata_field(default_factory=list[Instruction])
-    story_profile: list[Instruction] = metadata_field(default_factory=list[Instruction])
+
+    #: Instructions for modifications of plans.
+    # plan_profile: list[Instruction] = metadata_field(default_factory=list[Instruction])
+
+    #: Instructions for modifications of stories.
+    # story_profile: list[Instruction] = metadata_field(default_factory=list[Instruction])
 
     @classmethod
     def load(cls, path: Path, logger: Logger) -> 'Profile':
@@ -136,19 +151,53 @@ class Profile(MetadataContainer):
             raise tmt.utils.SpecificationError(f"Invalid profile in '{path}'.") from exc
 
     def _apply(
-        self, tests: Iterable['Test'], instructions: Iterable[Instruction], logger: Logger
+        self,
+        objects: Iterable['Core'],
+        instructions: Iterable[Instruction],
+        logger: Logger,
     ) -> None:
-        for test in tests:
-            for instruction in instructions:
-                instruction.apply(test, logger)
+        """
+        Apply profile instructions to a set of objects.
 
-    # TODO: profile name should be known to this class, maybe set "origin"
-    # field when loading from file (can't do it now, the field is not inherited...)
-    def apply_to_tests(self, profile_name: str, tests: Iterable['Test'], logger: Logger) -> None:
-        logger.info(
-            f"Apply tmt profile '{profile_name}'.",
-            color='green',
-            topic=Topic.PROFILE,
-        )
+        :param objects: object to modify.
+        :param instructions: instructions to apply.
+        :param logger: used for logging.
+        """
+
+        for obj in objects:
+            for instruction in instructions:
+                instruction.apply(obj, logger)
+
+    def apply_to_tests(
+        self,
+        *,
+        tests: Iterable['Test'],
+        profile_name: Optional[str] = None,
+        logger: Logger,
+    ) -> None:
+        """
+        Apply profile to given tests.
+
+        :param tests: tests to modify.
+        :param profile_name: if set, record this name in logging.
+        :param logger: used for logging.
+        """
+
+        # TODO: profile name should be known to this class, maybe set
+        # an "origin" field when loading from file (can't do it now, the
+        # field is not inherited and I don't know why...)
+        if profile_name is not None:
+            logger.info(
+                f"Apply tmt profile '{profile_name}'.",
+                color='green',
+                topic=Topic.PROFILE,
+            )
+
+        else:
+            logger.info(
+                "Apply tmt profile.",
+                color='green',
+                topic=Topic.PROFILE,
+            )
 
         self._apply(tests, self.test_profile, logger.descend())

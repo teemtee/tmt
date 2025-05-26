@@ -5,7 +5,7 @@ import pytest
 import tmt.log
 import tmt.utils
 from tmt.container import SerializableContainer, container, field
-from tmt.utils import dataclass_normalize_field
+from tmt.utils import FieldValueSource, dataclass_normalize_field
 
 
 def test_sanity():
@@ -36,20 +36,22 @@ def test_field_normalize_callback(root_logger: tmt.log.Logger) -> None:
     data = DummyContainer()
     assert data.foo == 1
 
-    dataclass_normalize_field(data, ':foo', 'foo', None, root_logger)
+    dataclass_normalize_field(data, ':foo', 'foo', None, FieldValueSource.DEFAULT, root_logger)
     assert data.foo is None
 
-    dataclass_normalize_field(data, ':foo', 'foo', 2, root_logger)
+    dataclass_normalize_field(data, ':foo', 'foo', 2, FieldValueSource.DEFAULT, root_logger)
     assert data.foo == 2
 
-    dataclass_normalize_field(data, ':foo', 'foo', '3', root_logger)
+    dataclass_normalize_field(data, ':foo', 'foo', '3', FieldValueSource.DEFAULT, root_logger)
     assert data.foo == 3
 
     with pytest.raises(
         tmt.utils.SpecificationError,
         match=r"Field ':foo' must be unset or an integer, 'str' found.",
     ):
-        dataclass_normalize_field(data, ':foo', 'foo', 'will crash', root_logger)
+        dataclass_normalize_field(
+            data, ':foo', 'foo', 'will crash', FieldValueSource.DEFAULT, root_logger
+        )
 
     assert data.foo == 3
 

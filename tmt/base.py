@@ -4081,6 +4081,9 @@ class Run(tmt.utils.Common):
 
     tree: Optional[Tree]
 
+    #: Run profiles to apply to tests, plans and stories.
+    profiles: list[tmt.profiles.Profile]
+
     def __init__(
         self,
         *,

@@ -877,7 +877,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # Apply tmt run profile
         if self.step.plan.my_run is not None:
             for profile in self.step.plan.my_run.profiles:
-                profile.apply_to_tests('', self._tests, self._logger)
+                profile.apply_to_tests(tests=self._tests, logger=self._logger)
 
         # Inject newly found tests into parent discover at the right position
         # FIXME

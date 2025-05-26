@@ -493,7 +493,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         # Apply tmt run profile
         if self.step.plan.my_run is not None:
             for profile in self.step.plan.my_run.profiles:
-                profile.apply_to_tests('', self._tests, self._logger)
+                profile.apply_to_tests(tests=self._tests, logger=self._logger)
 
     def tests(
         self, *, phase_name: Optional[str] = None, enabled: Optional[bool] = None
