@@ -12,7 +12,14 @@ from tmt.package_managers import (
     PackageManagerEngine,
     provides_package_manager,
 )
-from tmt.utils import Command, CommandOutput, GeneralError, Path, RunError, ShellScript
+from tmt.utils import (
+    Command,
+    CommandOutput,
+    GeneralError,
+    Path,
+    RunError,
+    ShellScript,
+)
 
 
 class BootcEngine(PackageManagerEngine):
@@ -233,8 +240,13 @@ class Bootc(PackageManager[BootcEngine]):
                 self.debug(f"containerfile content: {containerfile}")
                 # Build the container image
                 self.info("package", "building container image with dependencies", "green")
+
+                assert self.guest.parent is not None
+
                 self.guest.execute(
-                    ShellScript(f'{sudo} podman build -t {image_tag} -f {containerfile_path} .')
+                    ShellScript(
+                        f'{sudo} podman build -t {image_tag} -f {containerfile_path} {self.guest.parent.workdir}'  # noqa: E501
+                    )
                 )
 
                 # Switch to the new image for next boot
