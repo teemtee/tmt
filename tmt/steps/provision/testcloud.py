@@ -888,7 +888,7 @@ class GuestTestcloud(tmt.GuestSsh):
             "system_u",
             "-t",
             "virt_content_t",
-            self.testcloud_data_dirpath,
+            self.workdir_root,
         ).run(
             cwd=self.workdir,
             stream_output=True,
