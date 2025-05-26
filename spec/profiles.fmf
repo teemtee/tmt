@@ -10,7 +10,7 @@ description: |
     profiles to adjust its properties for different scenarios (e.g.,
     different environments, feature flags, or CI runs).
 
-    A profile is stored in a YAML file, and consist of one or more
+    A profile is stored in a YAML file, and consists of one or more
     dictionaries, each mapping test keys to a template that provides new
     content for the corresponding key.
 
