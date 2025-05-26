@@ -22,7 +22,22 @@ human and machine readable way close to the source code. Thanks to
 inheritance and elasticity metadata are organized in the structure
 efficiently, preventing unnecessary duplication.
 
-See the https://tmt.readthedocs.io web for detailed documentation.
+
+| Check the `overview`__ section for `install`__ instructions and
+  a couple of inspirative `examples`__.
+| See the `guide`__ for a more detailed introduction to available
+  features.
+| Find detailed descriptions of the options in the
+  `specification`__ and `plugins`__ section.
+
+__ https://tmt.readthedocs.io/en/stable/overview.html
+__ https://tmt.readthedocs.io/en/stable/overview.html#install
+__ https://tmt.readthedocs.io/en/stable/overview.html#examples
+__ https://tmt.readthedocs.io/en/stable/guide.html
+__ https://tmt.readthedocs.io/en/stable/spec.html
+__ https://tmt.readthedocs.io/en/stable/plugins/index.html
+
+Use the ``tldr tmt`` command to quickly get started.
 
 .. |docs| image:: https://img.shields.io/badge/Read%20the%20Docs-8CA1AF?logo=readthedocs&logoColor=fff
     :target: https://tmt.readthedocs.io/
