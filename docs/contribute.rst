@@ -609,6 +609,9 @@ Each completed pull request review helps you, little by little, to
 get familiar with larger part of the project code and empowers you
 to contribute more easily in the future.
 
+Pull requests ready for review can be easily filtered and found at
+the `review tab`__.
+
 For instructions how to locally try a change on your laptop see
 the :ref:`develop` section. Basically just enable the development
 environment and check out the pull request branch or use the
@@ -644,6 +647,7 @@ Even partial review which happens sooner is beneficial, saves
 time. Every single comment helps to improve and move the project
 forward. No question is a dumb question. Every feedback counts!
 
+__ https://github.com/orgs/teemtee/projects/1/views/6
 __ https://cli.github.com
 
 
