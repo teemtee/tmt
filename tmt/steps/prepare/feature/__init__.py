@@ -332,6 +332,14 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
                 ),
             )
 
+            # Fix possibly misleading info: it was observed on CentOS
+            # Stream 9 where Python & Pydantic set `__module__` to be
+            # `types`, resulting in impossible unserialization.
+            # `make_dataclass()` offers `module` parameter, but only
+            # in newer Python versions.
+            cls._data_class.__module__ = cls.__module__
+            cls._data_class.__name__ = 'PrepareFeatureData'
+
         return cls._data_class
 
     def go(
