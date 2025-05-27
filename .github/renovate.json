@@ -7,6 +7,7 @@
     ":semanticCommitsDisabled"
   ],
   "separateMajorMinor": false,
+  "configMigration": true,
   "packageRules": [
     {
       "description": "Group all GitHub Actions updates into a single PR",
@@ -37,14 +38,14 @@
     {
       "description": "Allow updates for documentation dependencies",
       "matchManagers": ["pep621"],
-      "matchPackagePatterns": [
-        "renku-sphinx-theme",
-        "sphinx",
-        "readthedocs-sphinx-ext",
-        "docutils"
-      ],
       "matchDepTypes": ["optionalDependencies"],
-      "enabled": true
+      "enabled": true,
+      "matchPackageNames": [
+        "/renku-sphinx-theme/",
+        "/sphinx/",
+        "/readthedocs-sphinx-ext/",
+        "/docutils/"
+      ]
     },
     {
       "description": "Allow updates for development dependencies (pyproject.toml [tool.hatch.envs.dev].dependencies)",
