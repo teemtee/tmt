@@ -1,3 +1,5 @@
+---
+
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
@@ -122,7 +124,15 @@ repos:
       - id: yamllint
         files: >
           (?x)^(
-            tmt/(?:schemas|steps/prepare/feature)/.+\.yaml|
+            \.pre-commit-hooks\.yaml|
+            \.hadolint\.yaml|
+            \.packit\.yaml|
+            \.readthedocs\.yaml|
+            \.pre-commit-config\.yaml|
+            tmt/config/themes/.+\.yaml|
+            tmt/steps/prepare/feature/.+\.yaml|
+            tmt/schemas/.+\.yaml|
+            tmt/steps/provision/mrack/.+\.yaml|
             tests/policy/policies/.+/.+\.yaml
           )$
 
@@ -154,18 +164,18 @@ repos:
   - repo: https://github.com/teemtee/tmt.git
     rev: 1.46.0
     hooks:
-    - id: tmt-lint
-      additional_dependencies:
-        - "docutils>=0.16"         # 0.16 is the current one available for RHEL9
-        - "packaging>=20"          # 20 seems to be available with RHEL8
-        - "pint<0.20"
-        - "pydantic>=1.10.14"
-        - "pygments>=2.7.4"        # 2.7.4 is the current one available for RHEL9
-        # Help installation by reducing the set of inspected botocore release.
-        # There is *a lot* of them, and hatch might fetch many of them.
-        - "botocore>=1.25.10"      # 1.25.10 is the current one available for RHEL9
-        - "typing-extensions>=4.9.0; python_version < '3.13'"
-        - "fmf>=1.6.0"
+      - id: tmt-lint
+        additional_dependencies:
+          - "docutils>=0.16"         # 0.16 is the current one available for RHEL9
+          - "packaging>=20"          # 20 seems to be available with RHEL8
+          - "pint<0.20"
+          - "pydantic>=1.10.14"
+          - "pygments>=2.7.4"        # 2.7.4 is the current one available for RHEL9
+          # Help installation by reducing the set of inspected botocore release.
+          # There is *a lot* of them, and hatch might fetch many of them.
+          - "botocore>=1.25.10"      # 1.25.10 is the current one available for RHEL9
+          - "typing-extensions>=4.9.0; python_version < '3.13'"
+          - "fmf>=1.6.0"
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:
@@ -203,8 +213,9 @@ repos:
     rev: v0.10.0.1
     hooks:
       - id: shellcheck
-        # Local shellcheck for developers - keep exclusions in sync with .github/workflows/shellcheck.yml
-        exclude: |
+        # Local shellcheck for developers - keep exclusions in sync with
+        # .github/workflows/shellcheck.yml
+        exclude: >
           (?x)^(
             tests/.*|
             examples/.*|

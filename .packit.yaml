@@ -1,3 +1,5 @@
+---
+
 specfile_path: tmt.spec
 files_to_sync:
   - tmt.spec
@@ -40,8 +42,8 @@ _:
   # Copr jobs under the teemtee project
   - &copr-under-teemtee
     <<: *copr-under-packit
-    list_on_homepage: True
-    preserve_project: True
+    list_on_homepage: true
+    preserve_project: true
     owner: "@teemtee"
 
   # Test jobs base setup
@@ -53,9 +55,11 @@ _:
         - &copr-teemtee-stable
           artifacts:
             - type: repository-file
-              id: https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/repo/fedora-rawhide/group_teemtee-stable-fedora-rawhide.repo
+              id: |
+                https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/repo/fedora-rawhide/group_teemtee-stable-fedora-rawhide.repo
             - type: repository-file
-              id: https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/repo/epel-9/group_teemtee-stable-epel-9.repo
+              id: |
+                https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/repo/epel-9/group_teemtee-stable-epel-9.repo
 
   # Latest fedora & epel targets
   - &latest-targets
@@ -64,7 +68,7 @@ _:
 
   # Internal jobs
   - &internal
-    use_internal_tf: True
+    use_internal_tf: true
     targets:
       - fedora-latest-stable
     tf_extra_params:
@@ -129,7 +133,8 @@ jobs:
   # Extended unit tests
   - <<: *test-base
     <<: *require-full-tests
-    targets: [ fedora-latest-stable ]
+    targets:
+      - fedora-latest-stable
     identifier: extended-unit-tests
     tmt_plan: '/plans/features/extended-unit-tests$'
 
