@@ -12,7 +12,7 @@ rlJournalStart
         rlRun "mkdir -p /var/tmp/tmt"
         rlRun "run=\$(mktemp -d --tmpdir=/var/tmp/tmt)" 0 "Create run directory"
         rlRun "dry_run=\$(mktemp -d --tmpdir=/var/tmp/tmt)" 0 "Create dry run directory"
-        rlRun "dry_run_image='quay.io/fedora/fedora-bootc:41'" 0 "Create dry run directory"
+        rlRun "dry_run_image='quay.io/fedora/fedora-bootc:41'" 0 "Set dry run container image"
         rlRun "pushd data"
         rlRun "df -h" 0 "Check available disk space"
     rlPhaseEnd
