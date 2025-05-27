@@ -12,15 +12,17 @@ rlJournalStart
         rlRun "mkdir -p /var/tmp/tmt"
         rlRun "run=\$(mktemp -d --tmpdir=/var/tmp/tmt)" 0 "Create run directory"
         rlRun "dry_run=\$(mktemp -d --tmpdir=/var/tmp/tmt)" 0 "Create dry run directory"
+        rlRun "dry_run_image='quay.io/fedora/fedora-bootc:41'" 0 "Create dry run directory"
         rlRun "pushd data"
         rlRun "df -h" 0 "Check available disk space"
     rlPhaseEnd
+
     # This test must be ran first, or podman machine and container image will exist.
     rlPhaseStartTest "Test dry run for bootc works as expected"
-        rlRun -s "tmt -vvv run --dry --scratch -i $dry_run plan --name /plans/containerfile/includes-deps"
-	rlRun "ls $dry_run/plans/containerfile/includes-deps/provision/default-0/ | grep qcow2" "1"
-	rlRun "podman machine ls  | grep podman-machine-tmt" "1"
-	rlRun "podman inspect fedora-bootc:41" "125"
+        rlRun -s "tmt -vvv run --dry --scratch -i $dry_run provision -h bootc --container-image $dry_run_image"
+        rlRun "ls $dry_run/plans/containerfile/includes-deps/provision/default-0/ | grep qcow2" "1"
+        rlRun "podman machine ls  | grep podman-machine-tmt" "1"
+        rlRun "podman inspect fedora-bootc:41" "125"
     rlPhaseEnd
 
     rlPhaseStartTest "Image that needs dependencies"
@@ -69,6 +71,7 @@ rlJournalStart
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $run" 0 "Remove run directory"
+        rlRun "rm -r $dry_run" 0 "Remove dry run directory"
         rlRun "podman rmi $IMAGE_INCLUDES_DEPS" 0,1
         rlRun "podman rmi $IMAGE_NEEDS_DEPS" 0,1
     rlPhaseEnd

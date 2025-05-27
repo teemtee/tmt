@@ -79,6 +79,7 @@ class GuestBootc(GuestTestcloud):
             logger=self._logger,
             env=PODMAN_ENV if self._rootless else None,
         )
+
         try:
             tmt.utils.Command("podman", "machine", "rm", "-f", PODMAN_MACHINE_NAME).run(
                 cwd=self.workdir, stream_output=True, logger=self._logger
@@ -253,8 +254,6 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         """
         Build a "derived" container image from the base image with tmt dependencies added
         """
-        if self.is_dry_run:
-            return ''
 
         assert self.workdir is not None  # narrow type
 
@@ -293,8 +292,6 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         """
         Build the "base" or user supplied container image
         """
-        if self.is_dry_run:
-            return ''
 
         image_tag = f'localhost/tmtbase-{self._get_id()}'
         self._logger.debug("Build container image.")
@@ -320,8 +317,6 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         """
 
         self._logger.debug("Build bootc disk image.")
-        if self.is_dry_run:
-            return
 
         tmt.utils.Command(
             "podman",
@@ -350,8 +345,6 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         )
 
     def _init_podman_machine(self) -> None:
-        if self.is_dry_run:
-            return
         try:
             tmt.utils.Command("podman", "machine", "rm", "-f", PODMAN_MACHINE_NAME).run(
                 cwd=self.workdir, stream_output=True, logger=self._logger
@@ -394,24 +387,28 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
 
         data = BootcData.from_plugin(self)
         data.show(verbose=self.verbosity_level, logger=self._logger)
-        if self._rootless:
+
+        if self._rootless and not self.is_dry_run:
             self._init_podman_machine()
 
         # Use provided container image
+        containerimage = ''
         if data.container_image is not None:
-            containerimage = data.container_image
-            if data.add_tmt_dependencies:
-                containerimage = self._build_derived_image(data.container_image)
-            self._build_bootc_disk(containerimage, data.image_builder, data.rootfs)
+            if not self.is_dry_run:
+                containerimage = data.container_image
+                if data.add_tmt_dependencies:
+                    containerimage = self._build_derived_image(data.container_image)
+                self._build_bootc_disk(containerimage, data.image_builder, data.rootfs)
 
         # Build image according to the container file
         elif data.container_file is not None:
-            containerimage = self._build_base_image(
-                data.container_file, data.container_file_workdir
-            )
-            if data.add_tmt_dependencies:
-                containerimage = self._build_derived_image(containerimage)
-            self._build_bootc_disk(containerimage, data.image_builder, data.rootfs)
+            if not self.is_dry_run:
+                containerimage = self._build_base_image(
+                    data.container_file, data.container_file_workdir
+                )
+                if data.add_tmt_dependencies:
+                    containerimage = self._build_derived_image(containerimage)
+                self._build_bootc_disk(containerimage, data.image_builder, data.rootfs)
 
         # Image of file have to provided
         else:
