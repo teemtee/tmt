@@ -34,7 +34,7 @@ description: |
     When a profile is applied:
 
     * the template string is rendered as a
-      :ref:`jinja2 template <custom_templates>` template.
+      :ref:`jinja2 template <custom_templates>`.
     * the rendered output is treated as if it were
       :ref:`test metadata </spec/tests>` from an fmf file. Text is
       parsed and normalized as any other fmf input.
