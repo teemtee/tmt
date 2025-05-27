@@ -25,6 +25,12 @@ description: |
             <test key>: <template>
             ...
 
+    A profile is applied by tmt after metadata are finalized. It is
+    applied on fully materialized tests, i.e. after reading fmf files,
+    ``adjust`` evaluation, and after all command-line options were taken
+    into account. At this point, profiles have access to the most final
+    content of test keys.
+
     When a profile is applied:
 
     * the template string is rendered as a
@@ -39,7 +45,7 @@ description: |
 
        New data **replaces** the original value of the key. If the
        original value needs to be reflected in the new value, it is the
-       responsibility of the template to render correspondingly. There
+       responsibility of the template to include it accordingly. There
        are no "magic" operators for addition or merging provided by the
        profile syntax, new value fully replaces the old one.
 
@@ -79,11 +85,11 @@ description: |
     Within the templates, additional variables are defined:
 
     * ``VALUE``: the original value of the metadata key being modified.
-    * ``VALUE_SOURCE``: source of the original value:
-      * ``fmf`` when the value was set by fmf data
-      * ``cli`` when the value was set via command line
-      * ``default`` when the value is the default value of the key, i.e. no other explicit value was set
-      * ``profile`` when the value was set by previous profile instruction
+    * ``VALUE_SOURCE``: source of the original value
+       * ``fmf`` when the value was set by fmf data
+       * ``cli`` when the value was set via command line
+       * ``default`` when the value is the default value of the key, i.e. no other explicit value was set
+       * ``profile`` when the value was set by previous profile instruction
     * ``TEST``: the entire test object, allowing you to access any of
       its metadata fields for conditional logic (e.g., ``TEST.contact``,
       ``TEST.component``).
@@ -117,7 +123,7 @@ example:
 
     test-profile:
       # Adds a default 'avc' check only if no 'avc' check is already
-      defined. Preserves all original checks.
+      # defined. Preserves all original checks.
       check: |
         {# If no 'avc' check has been defined, inject the default one. #}
         {% if 'avc' not in VALUE | map(attribute='how') %}
