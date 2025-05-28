@@ -53,7 +53,7 @@ EOF
 
 
 class GuestBootc(GuestTestcloud):
-    containerimage: str
+    containerimage: Optional[str]
     _rootless: bool
 
     def __init__(
@@ -63,7 +63,7 @@ class GuestBootc(GuestTestcloud):
         name: Optional[str] = None,
         parent: Optional[tmt.utils.Common] = None,
         logger: tmt.log.Logger,
-        containerimage: str,
+        containerimage: Optional[str],
         rootless: bool,
     ) -> None:
         super().__init__(data=data, logger=logger, parent=parent, name=name)
@@ -73,12 +73,14 @@ class GuestBootc(GuestTestcloud):
     def remove(self) -> None:
         if not self._instance:
             return
-        tmt.utils.Command("podman", "rmi", self.containerimage).run(
-            cwd=self.workdir,
-            stream_output=True,
-            logger=self._logger,
-            env=PODMAN_ENV if self._rootless else None,
-        )
+
+        if self.containerimage:
+            tmt.utils.Command("podman", "rmi", self.containerimage).run(
+                cwd=self.workdir,
+                stream_output=True,
+                logger=self._logger,
+                env=PODMAN_ENV if self._rootless else None,
+            )
 
         try:
             tmt.utils.Command("podman", "machine", "rm", "-f", PODMAN_MACHINE_NAME).run(
@@ -391,30 +393,30 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         if self._rootless and not self.is_dry_run:
             self._init_podman_machine()
 
-        # Use provided container image
-        containerimage = ''
-        if data.container_image is not None:
-            if not self.is_dry_run:
+        # Image of file have to provided
+        if data.container_image is None and data.container_file is None:
+            raise tmt.utils.ProvisionError(
+                "Either 'container-file' or 'container-image' must be specified."
+            )
+
+        containerimage: Optional[str] = None
+
+        if not self.is_dry_run:
+            # Use provided container image
+            if data.container_image is not None:
                 containerimage = data.container_image
                 if data.add_tmt_dependencies:
                     containerimage = self._build_derived_image(data.container_image)
                 self._build_bootc_disk(containerimage, data.image_builder, data.rootfs)
 
-        # Build image according to the container file
-        elif data.container_file is not None:
-            if not self.is_dry_run:
+            # Build image according to the container file
+            elif data.container_file is not None:
                 containerimage = self._build_base_image(
                     data.container_file, data.container_file_workdir
                 )
                 if data.add_tmt_dependencies:
                     containerimage = self._build_derived_image(containerimage)
                 self._build_bootc_disk(containerimage, data.image_builder, data.rootfs)
-
-        # Image of file have to provided
-        else:
-            raise tmt.utils.ProvisionError(
-                "Either 'container-file' or 'container-image' must be specified."
-            )
 
         # Set unique disk file name, each plan will have its own disk file
         disk_file_name = Path(

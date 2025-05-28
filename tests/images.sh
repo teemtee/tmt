@@ -148,7 +148,7 @@ function test_phase_prefix () {
 
 # Building of container images
 function build_container_image () {
-    if [ "$PROVISION_HOW" != "container" ]; then
+    if [ "$PROVISION_HOW" != "container" -a "$PROVISION_HOW" != "bootc" ]; then
         rlLogInfo "Skipping the build of $1 container image because of PROVISION_HOW=$PROVISION_HOW"
         return
     fi
