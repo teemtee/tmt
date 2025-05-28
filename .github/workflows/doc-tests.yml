@@ -16,6 +16,7 @@ jobs:
   doc-test:
     name: Sphinx Documentation Tests
     runs-on: ubuntu-latest
+    if: "!contains(github.event.pull_request.labels.*.name, 'ci | skip')"
 
     steps:
       - uses: actions/checkout@v4
