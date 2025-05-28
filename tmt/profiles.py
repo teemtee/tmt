@@ -5,8 +5,6 @@ from typing import TYPE_CHECKING, Any, Optional, TypeVar
 import tmt.container
 import tmt.utils
 from tmt._compat.pydantic import ValidationError
-
-# from tmt._compat.pydantic import HttpUrl
 from tmt.container import Extra, MetadataContainer, metadata_field
 from tmt.log import Logger, Topic
 from tmt.utils import FieldValueSource, Path, ShellScript
@@ -145,7 +143,7 @@ class Profile(MetadataContainer):
     @classmethod
     def load(cls, path: Path, logger: Logger) -> 'Profile':
         try:
-            return Profile.from_yaml(tmt.utils.yaml_to_dict(path.read_text()))
+            return Profile.from_yaml(path.read_text())
 
         except ValidationError as exc:
             raise tmt.utils.SpecificationError(f"Invalid profile in '{path}'.") from exc

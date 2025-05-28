@@ -43,7 +43,7 @@ test-profile:
   #
   # `VALUE` is the current value of this key: it was normalized by
   # tmt, and exposed to the template as if stored in an fmf file,
-  # as a YAML structure - lisst, mappings, integers, floats, etc.
+  # as a YAML structure - list, mappings, integers, floats, etc.
   # It is not a string (unless the value itself is a string) or
   # internal tmt class: `test` will be a string, `enable` a boolean,
   # `tag` or `contact` a list of strings, `environment` a str/str
