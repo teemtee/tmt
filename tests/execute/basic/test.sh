@@ -68,6 +68,8 @@ rlJournalStart
             0 "Check output.txt log exists in $results"
         rlRun "yq -ery '.[] | select(.name == \"/test/beakerlib/good\") | .log | map({path: .}) | .[] | select(.path | test(\"^data/.+/journal.txt$\"))' $results" \
             0 "Check journal.txt log exists in $results"
+        rlRun "yq -ery '.[] | select(.name == \"/test/beakerlib/good\") | .log | map({path: .}) | .[] | select(.path | test(\"^data/.+/journal.xml$\"))' $results" \
+            0 "Check journal.xml log exists in $results"
     rlPhaseEnd
 
     rlPhaseStartCleanup
