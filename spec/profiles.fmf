@@ -28,8 +28,11 @@ description: |
     A profile is applied by tmt after metadata are finalized. It is
     applied on fully materialized tests, i.e. after reading fmf files,
     ``adjust`` evaluation, and after all command-line options were taken
-    into account. At this point, profiles have access to the most final
-    content of test keys.
+    into account. All values would also be normalized, e.g. ``tag`` or
+    ``contact`` keys would always be lists of strings, and so on. At
+    this point, profiles have access to the most final content of test
+    keys, if not for the profiles, tmt would proceed by starting the
+    first enabled step.
 
     When a profile is applied:
 
