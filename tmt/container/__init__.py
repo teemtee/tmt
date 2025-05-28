@@ -598,6 +598,18 @@ class SerializableContainer(DataContainer):
 
         return cls(**dict(_produce_unserialized()))
 
+    @classmethod
+    def unserialize_class(cls) -> Any:
+        """
+        Provide the actual class to unserialize.
+
+        In some situations, the class recorded in the serialized state
+        cannot be safely unserialized. Such classes may reimplement this
+        method, and return the right class.
+        """
+
+        return cls
+
     # ignore[misc,type-var]: mypy is correct here, method does return a
     # TypeVar, but there is no way to deduce the actual type, because
     # the method is static. That's on purpose, method tries to find the
@@ -648,6 +660,10 @@ class SerializableContainer(DataContainer):
 
         # Stay away from classes that are not derived from this one, to
         # honor promise given by return value annotation.
+        assert issubclass(klass, SerializableContainer)
+
+        klass = klass.unserialize_class()
+
         assert issubclass(klass, SerializableContainer)
 
         # Apparently, the issubclass() check above is not good enough for mypy.

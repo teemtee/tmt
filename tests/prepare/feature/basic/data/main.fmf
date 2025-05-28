@@ -1,0 +1,16 @@
+discover:
+  - how: shell
+    tests:
+      - name: test
+        test: /bin/true
+
+provision:
+  - how: container
+    image: localhost/tmt/container/test/fedora/latest/upstream:latest
+
+prepare:
+  - how: feature
+    epel: enabled
+
+execute:
+    how: tmt
