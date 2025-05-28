@@ -38,7 +38,7 @@ rlJournalStart
         rlAssertGrep "fail S001 unknown key \"exampleee\" is used" $rlRun_LOG
         rlAssertGrep "pass S002 story key is defined" $rlRun_LOG
         # linting test
-        rlAssertGrep "warn C000 key \"summarrry\" not recognized by schema, and does not match \"^extra-\" pattern" $rlRun_LOG
+        rlAssertGrep "warn C000 key \"summarrry\" not recognized by schema /schemas/test, and does not match \"^extra-\" pattern" $rlRun_LOG
         rlAssertGrep "warn C001 summary key is missing" $rlRun_LOG
         rlAssertGrep "fail T001 unknown key \"summarrry\" is used" $rlRun_LOG
         rlAssertGrep "pass T002 test script is defined" $rlRun_LOG
@@ -49,8 +49,8 @@ rlJournalStart
         rlAssertGrep "skip T007 not a manual test" $rlRun_LOG
         rlAssertGrep "skip T008 not a manual test" $rlRun_LOG
         #linting plan
-        rlAssertGrep "warn C000 key \"discovery\" not recognized by schema /schemas/plan" $rlRun_LOG
-        rlAssertGrep "warn C000 key \"prepareahoj\" not recognized by schema /schemas/plan" $rlRun_LOG
+        rlAssertGrep "warn C000 key \"discovery\" not recognized by schema /schemas/plan, and does not match \"^extra-\" pattern" $rlRun_LOG
+        rlAssertGrep "warn C000 key \"prepareahoj\" not recognized by schema /schemas/plan, and does not match \"^extra-\" pattern" $rlRun_LOG
         rlAssertGrep "pass C001 summary key is set and is reasonably long" $rlRun_LOG
         rlAssertGrep "fail P001 unknown key \"discovery\" is used" $rlRun_LOG
         rlAssertGrep "fail P001 unknown key \"prepareahoj\" is used" $rlRun_LOG
