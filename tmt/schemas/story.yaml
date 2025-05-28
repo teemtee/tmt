@@ -79,5 +79,9 @@ properties:
   tier:
     $ref: "/schemas/core#/definitions/tier"
 
+# User-defined metadata
+patternProperties:
+  ^extra-: {}
+
 required:
   - story

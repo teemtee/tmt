@@ -117,11 +117,6 @@ OBSOLETED_TEST_KEYS = [
 
 # Unofficial temporary test keys
 EXTRA_TEST_KEYS = [
-    "extra-nitrate",
-    "extra-hardware",
-    "extra-pepa",
-    "extra-summary",
-    "extra-task",
     "id",
 ]
 
@@ -129,6 +124,9 @@ EXTRA_TEST_KEYS = [
 EXTRA_STORY_KEYS = [
     "id",
 ]
+
+# User-defined custom metadata prefix
+EXTRA_KEYS_PREFIX = 'extra-'
 
 SECTIONS_HEADINGS = {
     'Setup': ['<h1>Setup</h1>'],
@@ -1018,7 +1016,11 @@ class Core(
 
         known_keys.extend(additional_keys)
 
-        return [key for key in self.node.get() if key not in known_keys]
+        return [
+            key
+            for key in self.node.get()
+            if key not in known_keys and not key.startswith(EXTRA_KEYS_PREFIX)
+        ]
 
     def lint_validate(self) -> LinterReturn:
         """
@@ -1066,13 +1068,23 @@ class Core(
                     return
 
                 for bad_property in match.group(1).replace("'", '').replace(' ', '').split(','):
-                    yield (
-                        LinterOutcome.WARN,
-                        (
-                            f'key "{bad_property}" not recognized by schema, '
-                            f'and does not match "{match.group(2)}" pattern'
-                        ),
-                    )
+                    if isinstance(error.schema, dict) and '$id' in error.schema:
+                        yield (
+                            LinterOutcome.WARN,
+                            (
+                                f'key "{bad_property}" not recognized by schema {error.schema["$id"]}, '  # noqa: E501
+                                f'and does not match "{match.group(2)}" pattern'
+                            ),
+                        )
+
+                    else:
+                        yield (
+                            LinterOutcome.WARN,
+                            (
+                                f'key "{bad_property}" not recognized by schema, '
+                                f'and does not match "{match.group(2)}" pattern'
+                            ),
+                        )
 
             # A key value is not recognized. This is often a case with keys whose values are
             # limited by an enum, like `how`. Unfortunately, validator will record every mismatch
