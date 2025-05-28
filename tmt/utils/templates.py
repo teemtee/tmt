@@ -393,12 +393,28 @@ def _template_filter_format_duration(  # type: ignore[reportUnusedFunction,unuse
 def _template_filter_to_yaml(  # type: ignore[reportUnusedFunction,unused-ignore]
     value: Any,
 ) -> str:
+    """
+    Render a given object as a YAML snippet.
+
+    .. code-block:: jinja
+
+        # {"foo": "bar", "baz": false} -> foo: bar\nbaz: false
+        {{ {"foo": "bar", "baz": false} | to_yaml }}
+    """
+
     return dict_to_yaml(value)
 
 
 def _template_filter_prefix(  # type: ignore[reportUnusedFunction,unused-ignore]
     s: str, prefix: str
 ) -> str:
+    """
+    Add prefix to each line of a string.
+
+    # "foo\nbar" -> "baz foo\nbaz bar"
+    {{ "foo\nbar" | prefix("baz") }}
+    """
+
     return textwrap.indent(s, prefix)
 
 

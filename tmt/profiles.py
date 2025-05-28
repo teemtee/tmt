@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 T = TypeVar('T')
 
 
+#: A template showing changes made by an instruction.
 KEY_DIFF_TEMPLATE = """
 {{ OLD_VALUE | to_yaml | prefix('- ') | style(fg='red') | trim }}
 {{ NEW_VALUE | to_yaml | prefix('+ ') | style(fg='green') | trim }}
@@ -25,6 +26,10 @@ Field value source changed from {{ OLD_VALUE_SOURCE.value | style(fg='red') }} t
 
 
 class Instruction(MetadataContainer, extra=Extra.allow):
+    """
+    A single instruction describing changes to test, plan or story keys.
+    """
+
     def apply(self, obj: 'Core', logger: Logger) -> None:
         """
         Apply the instruction to a given object.
@@ -131,6 +136,13 @@ class Instruction(MetadataContainer, extra=Extra.allow):
 
 
 class Profile(MetadataContainer):
+    """
+    A tmt run profile.
+
+    A collection of instructions telling tmt how to modify test keys.
+    See :ref:`/spec/profiles` for more details.
+    """
+
     #: Instructions for modifications of tests.
     test_profile: list[Instruction] = metadata_field(default_factory=list[Instruction])
 
@@ -142,6 +154,10 @@ class Profile(MetadataContainer):
 
     @classmethod
     def load(cls, path: Path, logger: Logger) -> 'Profile':
+        """
+        Load a profile from a given file.
+        """
+
         try:
             return Profile.from_yaml(path.read_text())
 
