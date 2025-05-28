@@ -398,7 +398,7 @@ def _template_filter_to_yaml(  # type: ignore[reportUnusedFunction,unused-ignore
 
     .. code-block:: jinja
 
-        # {"foo": "bar", "baz": false} -> foo: bar\nbaz: false
+        # {"foo": "bar", "baz": false} -> foo: bar\\nbaz: false
         {{ {"foo": "bar", "baz": false} | to_yaml }}
     """
 
@@ -413,8 +413,8 @@ def _template_filter_prefix(  # type: ignore[reportUnusedFunction,unused-ignore]
 
     .. code-block:: jinja
 
-        # "foo\nbar" -> "baz foo\nbaz bar"
-        {{ "foo\nbar" | prefix("baz") }}
+        # "foo\\nbar" -> "baz foo\\nbaz bar"
+        {{ "foo\\nbar" | prefix("baz") }}
     """
 
     return textwrap.indent(s, prefix)
