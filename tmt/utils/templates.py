@@ -411,8 +411,10 @@ def _template_filter_prefix(  # type: ignore[reportUnusedFunction,unused-ignore]
     """
     Add prefix to each line of a string.
 
-    # "foo\nbar" -> "baz foo\nbaz bar"
-    {{ "foo\nbar" | prefix("baz") }}
+    .. code-block:: jinja
+
+        # "foo\nbar" -> "baz foo\nbaz bar"
+        {{ "foo\nbar" | prefix("baz") }}
     """
 
     return textwrap.indent(s, prefix)
