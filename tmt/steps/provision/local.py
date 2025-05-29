@@ -7,7 +7,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container
-from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript
+from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
 from tmt.utils.wait import Waiting
 
 
@@ -99,6 +99,7 @@ class GuestLocal(tmt.Guest):
         log: Optional[tmt.log.LoggingFunction] = None,
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
+        on_process_end: Optional[OnProcessEndCallback] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
@@ -126,6 +127,7 @@ class GuestLocal(tmt.Guest):
             cwd=cwd,
             interactive=interactive,
             on_process_start=on_process_start,
+            on_process_end=on_process_end,
             **kwargs,
         )
 
