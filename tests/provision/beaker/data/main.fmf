@@ -4,7 +4,16 @@
 
     provision:
         how: beaker
+
+/plan/hardware:
+    provision+:
         hardware:
             cpu:
                 model-name: dummy
                 processors: 6
+
+/plan/bootc:
+    provision+:
+        bootc: True
+        base_image_url: quay.io/fedora/fedora-bootc:latest
+        quay_secret: dummysecret
