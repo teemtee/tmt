@@ -1,0 +1,7 @@
+#
+# A Fedora bootc image tailored for tmt test suite
+#
+# tmt/container/test/fedora/latest/bootc:latest
+#
+
+FROM quay.io/fedora/fedora-bootc:latest
