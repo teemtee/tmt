@@ -1,4 +1,4 @@
-story:
+story: |
     As an owner of a CI system or product CI workflow, I would like to
     modify all component plans and tests to include phases and checks
     that are deemed mandatory for the given CI workflow.
