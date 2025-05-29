@@ -8,10 +8,12 @@ rlJournalStart
         rlRun "set -o pipefail"
     rlPhaseEnd
 
-    rlPhaseStartTest "Check hardware custom config"
-        rlRun -s "TMT_CONFIG_DIR='config' tmt run --dry plan --name plan/hardware"
+    rlPhaseStartTest "Check bootc works well"
+        rlRun -s "tmt run --dry plan --name plan/bootc"
 
-        rlAssertGrep '<dummyname op="==" value="dummy"/>' $rlRun_LOG
+        rlAssertGrep 'ostreecontainer --url quay.io/fedora/fedora-bootc:latest' $rlRun_LOG
+        rlAssertGrep 'dummysecret' $rlRun_LOG
+        rlAssertGrep '{"auths": {"quay.io": {"auth": "dummysecret"}}}' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

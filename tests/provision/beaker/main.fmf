@@ -1,6 +1,6 @@
 # These tests are manual only for now as they need a running
 # Beaker instance
-enabled: false
+enabled: true
 
 /reconnect:
     summary: Verify reconnecting to a provisioned guest
