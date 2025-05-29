@@ -13,6 +13,9 @@ set -ex
 # Force using IPv4 for more stable CI
 echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4
 
+# Try to use us mirror, we are getting random stability issues on the main archive
+sed -i 's|http://archive.ubuntu.com/ubuntu|http://us.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+
 # Populate apt cache
 apt-get update
 
