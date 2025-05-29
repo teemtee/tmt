@@ -117,7 +117,11 @@ class Instruction(MetadataContainer, extra=Extra.allow):
                     f"Field '{key}' of type '{type(current_value)}' is not supported by profiles."
                 )
 
-            assert type(old_value) is type(current_value)
+            if type(old_value) is not type(current_value):
+                raise tmt.utils.GeneralError(
+                    f"Type mismatch for field '{key}': expected '{type(old_value)}', "
+                    f"got '{type(current_value)}'."
+                )
 
             current_value_exported = export_callback(current_value)
 
