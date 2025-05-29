@@ -1,4 +1,3 @@
-# from enum import Enum
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Optional, TypeVar
 

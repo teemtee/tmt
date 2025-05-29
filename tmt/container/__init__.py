@@ -954,4 +954,4 @@ class MetadataContainer(BaseModel):
         except ValidationError as error:
             import tmt.utils
 
-            raise tmt.utils.SpecificationError("Invalid metadata.") from error
+            raise tmt.utils.SpecificationError("Invalid metadata in YAML data.") from error
