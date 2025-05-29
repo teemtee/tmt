@@ -15,7 +15,7 @@ examples.
 
 Added ``--dry`` option for the :ref:`/plugins/provision/bootc` plugin.
 
-Added a specification for :ref:`run profiles </spec/profiles>` that will
+Added a specification for :ref:`policies </spec/policies>` that will
 allow CI system and CI workflow maintainers to modify tests and plans to
 include mandatory checks and phases as required by their testing process.
 

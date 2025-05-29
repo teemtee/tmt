@@ -4,19 +4,19 @@ story:
     that are deemed mandatory for the given CI workflow.
 
 description: |
-    tmt run profiles offer a powerful and flexible way to dynamically
+    tmt policies offer a powerful and flexible way to dynamically
     modify test metadata using templates. Instead of maintaining multiple
     similar test versions, you can define a base test and then apply
-    profiles to adjust its properties for different scenarios (e.g.,
+    policy to adjust its properties for different scenarios (e.g.,
     different environments, feature flags, or CI runs).
 
-    A profile is stored in a YAML file, and consists of one or more
-    dictionaries, each mapping test keys to a template that provides new
-    content for the corresponding key.
+    A policy is stored in a YAML file, and consists of one or more
+    rules, each mapping a test key to a template that provides new
+    content for the said key.
 
     .. code-block:: yaml
 
-        test-profile:
+        test-policy:
           - <test key>: <template>
             <test key>: <template>
             ...
@@ -25,16 +25,16 @@ description: |
             <test key>: <template>
             ...
 
-    A profile is applied by tmt after metadata are finalized. It is
+    A policy is applied by tmt after metadata are finalized. It is
     applied on fully materialized tests, i.e. after reading fmf files,
     ``adjust`` evaluation, and after all command-line options were taken
     into account. All values would also be normalized, e.g. ``tag`` or
     ``contact`` keys would always be lists of strings, and so on. At
-    this point, profiles have access to the most final content of test
-    keys, if not for the profiles, tmt would proceed by starting the
+    this point, policies have access to the most final content of test
+    keys, if not for the policies, tmt would proceed by starting the
     first enabled step.
 
-    When a profile is applied:
+    When a policy is applied:
 
     * the template string is rendered as a
       :ref:`jinja2 template <custom_templates>`.
@@ -48,13 +48,14 @@ description: |
 
        New data **replaces** the original value of the key. If the
        original value needs to be reflected in the new value, it is the
-       responsibility of the template to include it accordingly. There
-       are no "magic" operators for addition or merging provided by the
-       profile syntax, new value fully replaces the old one.
+       responsibility of the rule and its template to include it
+       accordingly. There are no "magic" operators for addition or
+       merging provided by the policy syntax, new value fully replaces
+       the old one.
 
        .. code-block:: yaml
 
-          test-profile:
+          test-policy:
             # The following will erase all checks tests may have defined,
             # and every test will gain just a single `dmesg` check instead:
             - check: |
@@ -75,7 +76,7 @@ description: |
 
        .. code-block:: yaml
 
-          test-profile:
+          test-policy:
             - check: |
                 - how: dmesg
 
@@ -92,7 +93,7 @@ description: |
        * ``fmf`` when the value was set by fmf data
        * ``cli`` when the value was set via command line
        * ``default`` when the value is the default value of the key, i.e. no other explicit value was set
-       * ``profile`` when the value was set by previous profile instruction
+       * ``policy`` when the value was set by previous policy instruction
     * ``TEST``: the entire test object, allowing you to access any of
       its metadata fields for conditional logic (e.g., ``TEST.contact``,
       ``TEST.component``).
@@ -103,15 +104,15 @@ example:
     # directly - the template does not need to use any variables or
     # advanced constructs.
 
-    test-profile:
+    test-policy:
       # Sets the test duration to 24 hours for all tests.
       duration: 24h
 
   - |
-    # Conditional modification: use template logic (e.g., if/else) to
+    # Conditional modification: use flow controls (e.g., if/else) to
     # change values based on existing test metadata.
 
-    test-profile:
+    test-policy:
       # Adds a specific command prefix only if the test is owned by
       # 'foo-sst@redhat.com'.
       test: |
@@ -124,7 +125,7 @@ example:
   - |
     # Add items only if they (or similar items) don't already exist:
 
-    test-profile:
+    test-policy:
       # Adds a default 'avc' check only if no 'avc' check is already
       # defined. Preserves all original checks.
       check: |
