@@ -603,6 +603,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # Discover tests
         self.do_the_discovery(path)
 
+        # Apply tmt run profile
+        if self.step.plan.my_run is not None:
+            for profile in self.step.plan.my_run.profiles:
+                profile.apply_to_tests(tests=self._tests, logger=self._logger)
+
     def do_the_discovery(self, path: Optional[Path] = None) -> None:
         """
         Discover the tests

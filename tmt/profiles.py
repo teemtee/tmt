@@ -113,7 +113,9 @@ class Instruction(MetadataContainer, extra=Extra.allow):
                 )
 
             else:
-                logger.fail(f'!!! unhandled type {type(current_value)}')
+                raise tmt.utils.GeneralError(
+                    f"Field '{key}' of type '{type(current_value)}' is not supported by profiles."
+                )
 
             assert type(old_value) is type(current_value)
 

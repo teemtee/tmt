@@ -1,4 +1,4 @@
-test: dummy-command
+test: /bin/true
 
 /basic:
 

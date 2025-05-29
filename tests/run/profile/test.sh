@@ -3,36 +3,75 @@
 
 rlJournalStart
     rlPhaseStartSetup
+        rlRun "run=\$(mktemp -d)" 0 "Create run directory"
+        rlRun "pushd data"
     rlPhaseEnd
 
-    rlPhaseStartTest
-        tmt="tmt --root data -vv test export"
+    rlPhaseStartTest "Export"
+        tmt="tmt -vv test export"
 
-        rlRun -s "$tmt --profile profiles/test/test.yaml /basic 2> /dev/null | yq -cSr '.[] | .test'"
-        rlAssertEquals "foo?" "$(cat $rlRun_LOG)" "scl enable gcc-toolset-15 dummy-command"
+        rlRun -s "$tmt --profile ../profiles/test/test.yaml /basic 2> /dev/null | yq -cSr '.[] | .test'"
+        rlAssertEquals \
+            "Verify that test key is modified" \
+            "$(cat $rlRun_LOG)" \
+            "bash -c 'echo \"Spiked test.\"; /bin/true'"
 
-        rlRun -s "$tmt --profile profiles/test/test.yaml /full 2> /dev/null | yq -cSr '.[] | .test'"
-        rlAssertEquals "foo?" "$(cat $rlRun_LOG)" "scl enable gcc-toolset-15 dummy-command"
+        rlRun -s "$tmt --profile ../profiles/test/test.yaml /full 2> /dev/null | yq -cSr '.[] | .test'"
+        rlAssertEquals \
+            "Verify that test key is modified" \
+            "$(cat $rlRun_LOG)" \
+            "bash -c 'echo \"Spiked test.\"; /bin/true'"
 
-        rlRun -s "$tmt --profile profiles/test/contact.yaml /basic 2> /dev/null | yq -cSr '.[] | .contact'"
-        rlAssertEquals "foo?" "$(cat $rlRun_LOG)" "[\"xyzzy\"]"
+        rlRun -s "$tmt --profile ../profiles/test/contact.yaml /basic 2> /dev/null | yq -cSr '.[] | .contact'"
+        rlAssertEquals \
+            "Verify that contact key is modified" \
+            "$(cat $rlRun_LOG)" \
+            "[\"xyzzy\"]"
 
-        rlRun -s "$tmt --profile profiles/test/contact.yaml /full 2> /dev/null | yq -cSr '.[] | .contact'"
-        rlAssertEquals "foo?" "$(cat $rlRun_LOG)" "[\"foo\",\"baz\"]"
+        rlRun -s "$tmt --profile ../profiles/test/contact.yaml /full 2> /dev/null | yq -cSr '.[] | .contact'"
+        rlAssertEquals \
+            "Verify that contact key is modified" \
+            "$(cat $rlRun_LOG)" \
+            "[\"foo\",\"baz\"]"
 
-        rlRun -s "$tmt --profile profiles/test/environment.yaml /basic 2> /dev/null | yq -cSr '.[] | .environment'"
-        rlAssertEquals "foo?" "$(cat $rlRun_LOG)" "{\"FOO\":\"xyzzy\"}"
+        rlRun -s "$tmt --profile ../profiles/test/environment.yaml /basic 2> /dev/null | yq -cSr '.[] | .environment'"
+        rlAssertEquals \
+            "Verify that environment key is modified" \
+            "$(cat $rlRun_LOG)" \
+            "{\"FOO\":\"xyzzy\"}"
 
-        rlRun -s "$tmt --profile profiles/test/environment.yaml /full 2> /dev/null | yq -cSr '.[] | .environment'"
-        rlAssertEquals "foo?" "$(cat $rlRun_LOG)" "{\"FOO\":\"baz\",\"QUX\":\"QUUX\"}"
+        rlRun -s "$tmt --profile ../profiles/test/environment.yaml /full 2> /dev/null | yq -cSr '.[] | .environment'"
+        rlAssertEquals \
+            "Verify that environment key is modified" \
+            "$(cat $rlRun_LOG)" \
+            "{\"FOO\":\"baz\",\"QUX\":\"QUUX\"}"
 
-        rlRun -s "$tmt --profile profiles/test/check.yaml /basic 2> /dev/null | yq -cSr '.[] | .check | [.[] | {how, result}]'"
-        rlAssertEquals "foo?" "$(cat $rlRun_LOG)" "[{\"how\":\"avc\",\"result\":\"respect\"}]"
+        rlRun -s "$tmt --profile ../profiles/test/check.yaml /basic 2> /dev/null | yq -cSr '.[] | .check | [.[] | {how, result}]'"
+        rlAssertEquals \
+            "Verify that check key is modified" \
+            "$(cat $rlRun_LOG)" \
+            "[{\"how\":\"avc\",\"result\":\"respect\"}]"
 
-        rlRun -s "$tmt --profile profiles/test/check.yaml /full 2> /dev/null | yq -cSr '.[] | .check  | [.[] | {how, result}]'"
-        rlAssertEquals "foo?" "$(cat $rlRun_LOG)" "[{\"how\":\"avc\",\"result\":\"info\"},{\"how\":\"dmesg\",\"result\":\"respect\"}]"
+        rlRun -s "$tmt --profile ../profiles/test/check.yaml /full 2> /dev/null | yq -cSr '.[] | .check  | [.[] | {how, result}]'"
+        rlAssertEquals \
+            "Verify that check key is modified" \
+            "$(cat $rlRun_LOG)" \
+            "[{\"how\":\"avc\",\"result\":\"info\"},{\"how\":\"dmesg\",\"result\":\"respect\"}]"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Run"
+        rlRun -s "tmt --feeling-safe -vv run --id $run --profile ../profiles/test/test.yaml discover provision -h local execute report -h display -vvv plan --default test --name /basic"
+
+        rlAssertGrep "content: Spiked test." $rlRun_LOG
+        rlAssertEquals \
+            "Verify that test has been modified" \
+            "$(yq -cSr '.[] | .test' $run/default/plan/discover/tests.yaml)" \
+            "bash -c 'echo \"Spiked test.\"; /bin/true'"
+
     rlPhaseEnd
 
     rlPhaseStartCleanup
+        rlRun "popd"
+        rlRun "rm -r $run" 0 "Remove run directory"
     rlPhaseEnd
 rlJournalEnd
