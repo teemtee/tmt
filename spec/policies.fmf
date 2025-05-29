@@ -106,7 +106,7 @@ example:
 
     test-policy:
       # Sets the test duration to 24 hours for all tests.
-      duration: 24h
+      - duration: 24h
 
   - |
     # Conditional modification: use flow controls (e.g., if/else) to
@@ -115,12 +115,12 @@ example:
     test-policy:
       # Adds a specific command prefix only if the test is owned by
       # 'foo-sst@redhat.com'.
-      test: |
-        {% if "foo-sst@redhat.com" in TEST.contact %}
-        scl enable gcc-toolset-15 {{ VALUE }}
-        {% else %}
-        {{ VALUE }}
-        {% endif %}
+      - test: |
+          {% if "foo-sst@redhat.com" in TEST.contact %}
+          scl enable gcc-toolset-15 {{ VALUE }}
+          {% else %}
+          {{ VALUE }}
+          {% endif %}
 
   - |
     # Add items only if they (or similar items) don't already exist:
@@ -128,16 +128,16 @@ example:
     test-policy:
       # Adds a default 'avc' check only if no 'avc' check is already
       # defined. Preserves all original checks.
-      check: |
-        {# If no 'avc' check has been defined, inject the default one. #}
-        {% if 'avc' not in VALUE | map(attribute='how') %}
-        - how: avc
-          result: respect
-        {% endif %}
+      - check: |
+          {# If no 'avc' check has been defined, inject the default one. #}
+          {% if 'avc' not in VALUE | map(attribute='how') %}
+          - how: avc
+            result: respect
+          {% endif %}
 
-        {# Make sure to include checks already picked by the test #}
-        {% for item in VALUE %}
-        - {{ item }}
-        {% endfor %}
+          {# Make sure to include checks already picked by the test #}
+          {% for item in VALUE %}
+          - {{ item }}
+          {% endfor %}
 
 link: []
