@@ -10,6 +10,9 @@ FROM docker.io/library/ubuntu:22.04
 RUN <<EOF
 set -ex
 
+# Force using IPv4 for more stable CI
+echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4
+
 # Populate apt cache
 apt-get update
 
