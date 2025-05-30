@@ -531,7 +531,7 @@ POLICY_OPTIONS: list[ClickOptionDecoratorType] = [
         metavar='PATH',
         type=Path(),
         help="""
-             A file with instructions for modification of test metadata keys.
+             A file with policy rules for modification of test metadata keys.
              """,
     )
 ]

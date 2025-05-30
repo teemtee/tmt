@@ -1,7 +1,7 @@
 # Self-explanatory - there is also `plan-policy` and `story-policy`,
 # neither of them implemented yet.
 #
-# Tl;DR
+# TL;DR
 #  * directives below apply to all tests known to tmt
 #  * right now, ^^ means "all tests tmt identifies in an fmf tree
 #    when running tmt test export"
@@ -65,7 +65,7 @@ test-policy:
   - check: |
       {#
         If no check has been defined for this test, inject the default
-        AVC check. Current value would be false-ish, as an empty
+        AVC check.
       #}
       {% if 'avc' not in VALUE | map(attribute='how') %}
       - how: avc
