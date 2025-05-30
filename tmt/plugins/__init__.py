@@ -75,6 +75,7 @@ def _discover_packages() -> list[tuple[str, Path]]:
         ('tmt.export', Path('export')),
         ('tmt.frameworks', Path('frameworks')),
         ('tmt.checks', Path('checks')),
+        ('tmt.checks.internal', Path('checks/internal')),
         ('tmt.package_managers', Path('package_managers')),
         ('tmt.steps.prepare.feature', Path('steps/prepare/feature')),
         ('tmt.plugins.plan_shapers', Path('plugins/plan_shapers')),
