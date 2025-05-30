@@ -23,6 +23,9 @@ Initial implementation for the test-level policies has been added as
 well, aiming at CI workflows that need to enforce AVC checks across the
 whole component portfolio.
 
+The ``results.yaml`` file will now contain the log path for
+``journal.xml``.
+
 
 tmt-1.49.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
