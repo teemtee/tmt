@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Script to list new contributors since the last release
+# This identifies contributors whose first ever commit to the repository
+# occurred after the last release tag.
+
+set -e
+
+# Get the last release tag
+LAST_TAG_REF=$(git describe --tags --abbrev=0 HEAD 2>/dev/null)
+
+if [ -z "$LAST_TAG_REF" ]; then
+    # No tags found, list all contributors
+    echo "No release tags found. Listing all contributors:"
+    git log HEAD --format='%aN' --no-merges | sort -u
+else
+    # Compare contributors before and after the last tag
+    echo "New contributors since release $LAST_TAG_REF:"
+    comm -13 \
+        <(git log --no-merges --format='%aN' "$LAST_TAG_REF" | sort -u) \
+        <(git log --no-merges --format='%aN' HEAD | sort -u)
+fi
