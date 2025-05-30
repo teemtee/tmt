@@ -13,6 +13,8 @@ what YAML allows. These keys are always ignored by ``tmt lint``.
 See the :ref:`/spec/core/extra` key specification for details and
 examples.
 
+Added ``--dry`` option for the :ref:`/plugins/provision/bootc` plugin.
+
 
 tmt-1.49.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

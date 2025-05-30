@@ -53,7 +53,7 @@ EOF
 
 
 class GuestBootc(GuestTestcloud):
-    containerimage: str
+    containerimage: Optional[str]
     _rootless: bool
 
     def __init__(
@@ -63,7 +63,7 @@ class GuestBootc(GuestTestcloud):
         name: Optional[str] = None,
         parent: Optional[tmt.utils.Common] = None,
         logger: tmt.log.Logger,
-        containerimage: str,
+        containerimage: Optional[str],
         rootless: bool,
     ) -> None:
         super().__init__(data=data, logger=logger, parent=parent, name=name)
@@ -71,12 +71,16 @@ class GuestBootc(GuestTestcloud):
         self._rootless = rootless
 
     def remove(self) -> None:
-        tmt.utils.Command("podman", "rmi", self.containerimage).run(
-            cwd=self.workdir,
-            stream_output=True,
-            logger=self._logger,
-            env=PODMAN_ENV if self._rootless else None,
-        )
+        if not self._instance:
+            return
+
+        if self.containerimage:
+            tmt.utils.Command("podman", "rmi", self.containerimage).run(
+                cwd=self.workdir,
+                stream_output=True,
+                logger=self._logger,
+                env=PODMAN_ENV if self._rootless else None,
+            )
 
         try:
             tmt.utils.Command("podman", "machine", "rm", "-f", PODMAN_MACHINE_NAME).run(
@@ -386,30 +390,33 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         data = BootcData.from_plugin(self)
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
-        if self._rootless:
+        if self._rootless and not self.is_dry_run:
             self._init_podman_machine()
 
-        # Use provided container image
-        if data.container_image is not None:
-            containerimage = data.container_image
-            if data.add_tmt_dependencies:
-                containerimage = self._build_derived_image(data.container_image)
-            self._build_bootc_disk(containerimage, data.image_builder, data.rootfs)
-
-        # Build image according to the container file
-        elif data.container_file is not None:
-            containerimage = self._build_base_image(
-                data.container_file, data.container_file_workdir
-            )
-            if data.add_tmt_dependencies:
-                containerimage = self._build_derived_image(containerimage)
-            self._build_bootc_disk(containerimage, data.image_builder, data.rootfs)
-
         # Image of file have to provided
-        else:
+        if data.container_image is None and data.container_file is None:
             raise tmt.utils.ProvisionError(
                 "Either 'container-file' or 'container-image' must be specified."
             )
+
+        containerimage: Optional[str] = None
+
+        if not self.is_dry_run:
+            # Use provided container image
+            if data.container_image is not None:
+                containerimage = data.container_image
+                if data.add_tmt_dependencies:
+                    containerimage = self._build_derived_image(data.container_image)
+                self._build_bootc_disk(containerimage, data.image_builder, data.rootfs)
+
+            # Build image according to the container file
+            elif data.container_file is not None:
+                containerimage = self._build_base_image(
+                    data.container_file, data.container_file_workdir
+                )
+                if data.add_tmt_dependencies:
+                    containerimage = self._build_derived_image(containerimage)
+                self._build_bootc_disk(containerimage, data.image_builder, data.rootfs)
 
         # Set unique disk file name, each plan will have its own disk file
         disk_file_name = Path(
@@ -429,7 +436,8 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         built_image = image_dir / 'disk.qcow2'
         renamed_image = image_dir / disk_file_name
 
-        built_image.rename(renamed_image)
+        if not self.is_dry_run:
+            built_image.rename(renamed_image)
         data.image = f"file://{renamed_image}"
 
         if data.build_disk_image_only:

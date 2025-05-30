@@ -1,5 +1,6 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
+. ../../images.sh || exit 1
 
 IMAGE_NEEDS_DEPS="localhost/tmt-bootc-needs-deps"
 IMAGE_INCLUDES_DEPS="localhost/tmt-bootc-includes-deps"
@@ -11,8 +12,18 @@ rlJournalStart
         # in the podman machine mount
         rlRun "mkdir -p /var/tmp/tmt"
         rlRun "run=\$(mktemp -d --tmpdir=/var/tmp/tmt)" 0 "Create run directory"
+        rlRun "dry_run=\$(mktemp -d --tmpdir=/var/tmp/tmt)" 0 "Create dry run directory"
         rlRun "pushd data"
         rlRun "df -h" 0 "Check available disk space"
+        build_container_image "fedora/latest/bootc\:latest"
+    rlPhaseEnd
+
+    # This test must be ran first, or podman machine and container image will exist.
+    rlPhaseStartTest "Test dry run for bootc works as expected"
+        rlRun -s "tmt -vvv run --dry --scratch -i $dry_run provision -h bootc --container-image $TEST_IMAGE_PREFIX/fedora/latest/bootc:latest"
+        rlRun "ls $dry_run/plans/containerfile/includes-deps/provision/default-0/ | grep qcow2" "1"
+        rlRun "podman machine ls  | grep podman-machine-tmt" "1"
+        rlRun "podman images | grep localhost/tmtmodified" "1"
     rlPhaseEnd
 
     rlPhaseStartTest "Image that needs dependencies"
@@ -61,6 +72,7 @@ rlJournalStart
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $run" 0 "Remove run directory"
+        rlRun "rm -r $dry_run" 0 "Remove dry run directory"
         rlRun "podman rmi $IMAGE_INCLUDES_DEPS" 0,1
         rlRun "podman rmi $IMAGE_NEEDS_DEPS" 0,1
     rlPhaseEnd
