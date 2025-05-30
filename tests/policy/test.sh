@@ -10,48 +10,56 @@ rlJournalStart
     rlPhaseStartTest "Export"
         tmt="tmt -vv test export"
 
+        rlRun "$tmt --policy ../policies/test/test.yaml /basic"
         rlRun -s "$tmt --policy ../policies/test/test.yaml /basic 2> /dev/null | yq -cSr '.[] | .test'"
         rlAssertEquals \
             "Verify that test key is modified" \
             "$(cat $rlRun_LOG)" \
             "bash -c 'echo \"Spiked test.\"; /bin/true'"
 
+        rlRun "$tmt --policy ../policies/test/test.yaml /full"
         rlRun -s "$tmt --policy ../policies/test/test.yaml /full 2> /dev/null | yq -cSr '.[] | .test'"
         rlAssertEquals \
             "Verify that test key is modified" \
             "$(cat $rlRun_LOG)" \
             "bash -c 'echo \"Spiked test.\"; /bin/true'"
 
+        rlRun "$tmt --policy ../policies/test/contact.yaml /basic"
         rlRun -s "$tmt --policy ../policies/test/contact.yaml /basic 2> /dev/null | yq -cSr '.[] | .contact'"
         rlAssertEquals \
             "Verify that contact key is modified" \
             "$(cat $rlRun_LOG)" \
             "[\"xyzzy\"]"
 
+        rlRun "$tmt --policy ../policies/test/contact.yaml /full"
         rlRun -s "$tmt --policy ../policies/test/contact.yaml /full 2> /dev/null | yq -cSr '.[] | .contact'"
         rlAssertEquals \
             "Verify that contact key is modified" \
             "$(cat $rlRun_LOG)" \
             "[\"foo\",\"baz\"]"
 
+        rlRun "$tmt --policy ../policies/test/environment.yaml /basic"
         rlRun -s "$tmt --policy ../policies/test/environment.yaml /basic 2> /dev/null | yq -cSr '.[] | .environment'"
         rlAssertEquals \
             "Verify that environment key is modified" \
             "$(cat $rlRun_LOG)" \
             "{\"FOO\":\"xyzzy\"}"
 
+        rlRun "$tmt --policy ../policies/test/environment.yaml /full"
         rlRun -s "$tmt --policy ../policies/test/environment.yaml /full 2> /dev/null | yq -cSr '.[] | .environment'"
         rlAssertEquals \
             "Verify that environment key is modified" \
             "$(cat $rlRun_LOG)" \
             "{\"FOO\":\"baz\",\"QUX\":\"QUUX\"}"
 
+        rlRun "$tmt --policy ../policies/test/check.yaml /basic"
         rlRun -s "$tmt --policy ../policies/test/check.yaml /basic 2> /dev/null | yq -cSr '.[] | .check | [.[] | {how, result}]'"
         rlAssertEquals \
             "Verify that check key is modified" \
             "$(cat $rlRun_LOG)" \
             "[{\"how\":\"avc\",\"result\":\"respect\"}]"
 
+        rlRun "$tmt --policy ../policies/test/check.yaml /full"
         rlRun -s "$tmt --policy ../policies/test/check.yaml /full 2> /dev/null | yq -cSr '.[] | .check  | [.[] | {how, result}]'"
         rlAssertEquals \
             "Verify that check key is modified" \
