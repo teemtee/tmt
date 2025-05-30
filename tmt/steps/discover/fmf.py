@@ -603,10 +603,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # Discover tests
         self.do_the_discovery(path)
 
-        # Apply tmt run profile
+        # Apply tmt run policy
         if self.step.plan.my_run is not None:
-            for profile in self.step.plan.my_run.profiles:
-                profile.apply_to_tests(tests=self._tests, logger=self._logger)
+            for policy in self.step.plan.my_run.policies:
+                policy.apply_to_tests(tests=self._tests, logger=self._logger)
 
     def do_the_discovery(self, path: Optional[Path] = None) -> None:
         """
@@ -879,10 +879,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         for test in self._tests:
             test.environment['TMT_SOURCE_DIR'] = EnvVarValue(sourcedir)
 
-        # Apply tmt run profile
+        # Apply tmt run policy
         if self.step.plan.my_run is not None:
-            for profile in self.step.plan.my_run.profiles:
-                profile.apply_to_tests(tests=self._tests, logger=self._logger)
+            for policy in self.step.plan.my_run.policies:
+                policy.apply_to_tests(tests=self._tests, logger=self._logger)
 
         # Inject newly found tests into parent discover at the right position
         # FIXME

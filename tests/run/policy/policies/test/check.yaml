@@ -1,11 +1,11 @@
-# Self-explanatory - there is also `plan-profile` and `story-profile`,
+# Self-explanatory - there is also `plan-policy` and `story-policy`,
 # neither of them implemented yet.
 #
 # Tl;DR
 #  * directives below apply to all tests known to tmt
 #  * right now, ^^ means "all tests tmt identifies in an fmf tree
 #    when running tmt test export"
-test-profile:
+test-policy:
   # TL;DR: each key defines new value of the given test metadata
   # key; the value is a template that is rendered, parsed as
   # YAML/fmf, normalized and assigned to the test key.

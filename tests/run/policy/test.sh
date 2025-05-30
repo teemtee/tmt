@@ -10,49 +10,49 @@ rlJournalStart
     rlPhaseStartTest "Export"
         tmt="tmt -vv test export"
 
-        rlRun -s "$tmt --profile ../profiles/test/test.yaml /basic 2> /dev/null | yq -cSr '.[] | .test'"
+        rlRun -s "$tmt --policy ../policies/test/test.yaml /basic 2> /dev/null | yq -cSr '.[] | .test'"
         rlAssertEquals \
             "Verify that test key is modified" \
             "$(cat $rlRun_LOG)" \
             "bash -c 'echo \"Spiked test.\"; /bin/true'"
 
-        rlRun -s "$tmt --profile ../profiles/test/test.yaml /full 2> /dev/null | yq -cSr '.[] | .test'"
+        rlRun -s "$tmt --policy ../policies/test/test.yaml /full 2> /dev/null | yq -cSr '.[] | .test'"
         rlAssertEquals \
             "Verify that test key is modified" \
             "$(cat $rlRun_LOG)" \
             "bash -c 'echo \"Spiked test.\"; /bin/true'"
 
-        rlRun -s "$tmt --profile ../profiles/test/contact.yaml /basic 2> /dev/null | yq -cSr '.[] | .contact'"
+        rlRun -s "$tmt --policy ../policies/test/contact.yaml /basic 2> /dev/null | yq -cSr '.[] | .contact'"
         rlAssertEquals \
             "Verify that contact key is modified" \
             "$(cat $rlRun_LOG)" \
             "[\"xyzzy\"]"
 
-        rlRun -s "$tmt --profile ../profiles/test/contact.yaml /full 2> /dev/null | yq -cSr '.[] | .contact'"
+        rlRun -s "$tmt --policy ../policies/test/contact.yaml /full 2> /dev/null | yq -cSr '.[] | .contact'"
         rlAssertEquals \
             "Verify that contact key is modified" \
             "$(cat $rlRun_LOG)" \
             "[\"foo\",\"baz\"]"
 
-        rlRun -s "$tmt --profile ../profiles/test/environment.yaml /basic 2> /dev/null | yq -cSr '.[] | .environment'"
+        rlRun -s "$tmt --policy ../policies/test/environment.yaml /basic 2> /dev/null | yq -cSr '.[] | .environment'"
         rlAssertEquals \
             "Verify that environment key is modified" \
             "$(cat $rlRun_LOG)" \
             "{\"FOO\":\"xyzzy\"}"
 
-        rlRun -s "$tmt --profile ../profiles/test/environment.yaml /full 2> /dev/null | yq -cSr '.[] | .environment'"
+        rlRun -s "$tmt --policy ../policies/test/environment.yaml /full 2> /dev/null | yq -cSr '.[] | .environment'"
         rlAssertEquals \
             "Verify that environment key is modified" \
             "$(cat $rlRun_LOG)" \
             "{\"FOO\":\"baz\",\"QUX\":\"QUUX\"}"
 
-        rlRun -s "$tmt --profile ../profiles/test/check.yaml /basic 2> /dev/null | yq -cSr '.[] | .check | [.[] | {how, result}]'"
+        rlRun -s "$tmt --policy ../policies/test/check.yaml /basic 2> /dev/null | yq -cSr '.[] | .check | [.[] | {how, result}]'"
         rlAssertEquals \
             "Verify that check key is modified" \
             "$(cat $rlRun_LOG)" \
             "[{\"how\":\"avc\",\"result\":\"respect\"}]"
 
-        rlRun -s "$tmt --profile ../profiles/test/check.yaml /full 2> /dev/null | yq -cSr '.[] | .check  | [.[] | {how, result}]'"
+        rlRun -s "$tmt --policy ../policies/test/check.yaml /full 2> /dev/null | yq -cSr '.[] | .check  | [.[] | {how, result}]'"
         rlAssertEquals \
             "Verify that check key is modified" \
             "$(cat $rlRun_LOG)" \
@@ -60,7 +60,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Run"
-        rlRun -s "tmt --feeling-safe -vv run --id $run --profile ../profiles/test/test.yaml discover provision -h local execute report -h display -vvv plan --default test --name /basic"
+        rlRun -s "tmt --feeling-safe -vv run --id $run --policy ../policies/test/test.yaml discover provision -h local execute report -h display -vvv plan --default test --name /basic"
 
         rlAssertGrep "content: Spiked test." $rlRun_LOG
         rlAssertEquals \

@@ -123,7 +123,7 @@ repos:
         files: >
           (?x)^(
             tmt/(?:schemas|steps/prepare/feature)/.+\.yaml|
-            tests/run/profile/profiles/.+/.+\.yaml
+            tests/run/policy/policies/.+/.+\.yaml
           )$
 
   - repo: https://github.com/ansible-community/ansible-lint.git

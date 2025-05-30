@@ -113,7 +113,7 @@ class Instruction(MetadataContainer, extra=Extra.allow):
 
             else:
                 raise tmt.utils.GeneralError(
-                    f"Field '{key}' of type '{type(current_value)}' is not supported by profiles."
+                    f"Field '{key}' of type '{type(current_value)}' is not supported by a policy."
                 )
 
             if type(old_value) is not type(current_value):
@@ -125,7 +125,7 @@ class Instruction(MetadataContainer, extra=Extra.allow):
             current_value_exported = export_callback(current_value)
 
             if current_value_exported != old_value_exported:
-                current_value_source = obj._field_value_sources[key] = FieldValueSource.PROFILE
+                current_value_source = obj._field_value_sources[key] = FieldValueSource.POLICY
 
                 logger.info(
                     f"Modified '{obj.name}'",
@@ -136,38 +136,38 @@ class Instruction(MetadataContainer, extra=Extra.allow):
                         OLD_VALUE_SOURCE=old_value_source,
                         NEW_VALUE_SOURCE=current_value_source,
                     ),
-                    topic=Topic.PROFILE,
+                    topic=Topic.POLICY,
                 )
 
 
-class Profile(MetadataContainer):
+class Policy(MetadataContainer):
     """
-    A tmt run profile.
+    A tmt run policy.
 
     A collection of instructions telling tmt how to modify test keys.
-    See :ref:`/spec/profiles` for more details.
+    See :ref:`/spec/policy` for more details.
     """
 
     #: Instructions for modifications of tests.
-    test_profile: list[Instruction] = metadata_field(default_factory=list[Instruction])
+    test_policy: list[Instruction] = metadata_field(default_factory=list[Instruction])
 
     #: Instructions for modifications of plans.
-    # plan_profile: list[Instruction] = metadata_field(default_factory=list[Instruction])
+    # plan_policy: list[Instruction] = metadata_field(default_factory=list[Instruction])
 
     #: Instructions for modifications of stories.
-    # story_profile: list[Instruction] = metadata_field(default_factory=list[Instruction])
+    # story_policy: list[Instruction] = metadata_field(default_factory=list[Instruction])
 
     @classmethod
-    def load(cls, path: Path, logger: Logger) -> 'Profile':
+    def load(cls, path: Path, logger: Logger) -> 'Policy':
         """
-        Load a profile from a given file.
+        Load a policy from a given file.
         """
 
         try:
-            return Profile.from_yaml(path.read_text())
+            return Policy.from_yaml(path.read_text())
 
         except ValidationError as exc:
-            raise tmt.utils.SpecificationError(f"Invalid profile in '{path}'.") from exc
+            raise tmt.utils.SpecificationError(f"Invalid policy in '{path}'.") from exc
 
     def _apply(
         self,
@@ -176,7 +176,7 @@ class Profile(MetadataContainer):
         logger: Logger,
     ) -> None:
         """
-        Apply profile instructions to a set of objects.
+        Apply policy instructions to a set of objects.
 
         :param objects: object to modify.
         :param instructions: instructions to apply.
@@ -191,32 +191,32 @@ class Profile(MetadataContainer):
         self,
         *,
         tests: Iterable['Test'],
-        profile_name: Optional[str] = None,
+        policy_name: Optional[str] = None,
         logger: Logger,
     ) -> None:
         """
-        Apply profile to given tests.
+        Apply policy to given tests.
 
         :param tests: tests to modify.
-        :param profile_name: if set, record this name in logging.
+        :param policy_name: if set, record this name in logging.
         :param logger: used for logging.
         """
 
-        # TODO: profile name should be known to this class, maybe set
+        # TODO: policy name should be known to this class, maybe set
         # an "origin" field when loading from file (can't do it now, the
         # field is not inherited and I don't know why...)
-        if profile_name is not None:
+        if policy_name is not None:
             logger.info(
-                f"Apply tmt profile '{profile_name}'.",
+                f"Apply tmt policy '{policy_name}'.",
                 color='green',
-                topic=Topic.PROFILE,
+                topic=Topic.POLICY,
             )
 
         else:
             logger.info(
-                "Apply tmt profile.",
+                "Apply tmt policy.",
                 color='green',
-                topic=Topic.PROFILE,
+                topic=Topic.POLICY,
             )
 
-        self._apply(tests, self.test_profile, logger.descend())
+        self._apply(tests, self.test_policy, logger.descend())

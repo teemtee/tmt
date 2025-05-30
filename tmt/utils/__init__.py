@@ -5214,7 +5214,7 @@ class FieldValueSource(enum.Enum):
     #: The value is the default value defined for the field.
     DEFAULT = 'default'
 
-    PROFILE = 'profile'
+    POLICY = 'policy'
 
 
 class NormalizeKeysMixin(_CommonBase):

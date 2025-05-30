@@ -524,10 +524,10 @@ ENVIRONMENT_OPTIONS: list[ClickOptionDecoratorType] = [
     ),
 ]
 
-PROFILE_OPTIONS: list[ClickOptionDecoratorType] = [
+POLICY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
-        '--profile',
-        'profile_path',
+        '--policy',
+        'policy_path',
         metavar='PATH',
         type=Path(),
         help="""

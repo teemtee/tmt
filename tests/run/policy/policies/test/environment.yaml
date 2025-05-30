@@ -1,4 +1,4 @@
-test-profile:
+test-policy:
   - environment: |
       {% if not VALUE %}
       FOO: xyzzy

@@ -49,7 +49,7 @@ import tmt.lint
 import tmt.log
 import tmt.plugins
 import tmt.plugins.plan_shapers
-import tmt.profiles
+import tmt.policy
 import tmt.result
 import tmt.steps
 import tmt.steps.discover
@@ -4081,8 +4081,8 @@ class Run(tmt.utils.Common):
 
     tree: Optional[Tree]
 
-    #: Run profiles to apply to tests, plans and stories.
-    profiles: list[tmt.profiles.Profile]
+    #: Run policies to apply to tests, plans and stories.
+    policies: list[tmt.policy.Policy]
 
     def __init__(
         self,
@@ -4092,7 +4092,7 @@ class Run(tmt.utils.Common):
         cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
         parent: Optional[tmt.utils.Common] = None,
         workdir_root: Optional[Path] = None,
-        profiles: Optional[list[tmt.profiles.Profile]] = None,
+        policies: Optional[list[tmt.policy.Policy]] = None,
         logger: tmt.log.Logger,
     ) -> None:
         """
@@ -4129,7 +4129,7 @@ class Run(tmt.utils.Common):
         self.remove = self.opt('remove')
         self.unique_id = str(time.time()).split('.')[0]
 
-        self.profiles = profiles or []
+        self.policies = policies or []
 
     @functools.cached_property
     def runner(self) -> 'tmt.steps.provision.local.GuestLocal':
