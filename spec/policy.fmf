@@ -139,4 +139,6 @@ example:
           - {{ item }}
           {% endfor %}
 
-link: []
+link:
+  - implemented-by: /tmt/policy.py
+  - verified-by: /tests/run/policy
