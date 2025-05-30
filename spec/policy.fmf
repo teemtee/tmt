@@ -1,0 +1,142 @@
+story: |
+    As an owner of a CI system or product CI workflow, I would like to
+    modify all component plans and tests to include phases and checks
+    that are deemed mandatory for the given CI workflow.
+
+description: |
+    tmt policies offer a powerful and flexible way to dynamically
+    modify test metadata using templates. Instead of maintaining multiple
+    similar test versions, you can define a base test and then apply
+    policy to adjust its properties for different scenarios (e.g.,
+    different environments, feature flags, or CI runs).
+
+    A policy is stored in a YAML file, and consists of one or more
+    rules, each mapping a test key to a template that provides new
+    content for the said key.
+
+    .. code-block:: yaml
+
+        test-policy:
+          - <test key>: <template>
+            <test key>: <template>
+            ...
+
+          - <test key>: <template>
+            <test key>: <template>
+            ...
+
+    A policy is applied by tmt after metadata are finalized. It is
+    applied on fully materialized tests, i.e. after reading fmf files,
+    ``adjust`` evaluation, and after all command-line options were taken
+    into account. All values would also be normalized, e.g. ``tag`` or
+    ``contact`` keys would always be lists of strings, and so on. At
+    this point, policies have access to the most final content of test
+    keys.
+
+    When a policy is applied:
+
+    * the template string is rendered as a
+      :ref:`jinja2 template <custom_templates>`.
+    * the rendered output is treated as if it were
+      :ref:`test metadata </spec/tests>` from an fmf file. Text is
+      parsed and normalized as any other fmf input.
+    * finally, it replaces the original value of the specified metadata
+      key.
+
+    .. important::
+
+       New data **replaces** the original value of the key. If the
+       original value needs to be reflected in the new value, it is the
+       responsibility of the rule and its template to include it
+       accordingly. There are no "magic" operators for addition or
+       merging provided by the policy syntax, new value fully replaces
+       the old one.
+
+       .. code-block:: yaml
+
+          test-policy:
+            # The following will erase all checks tests may have defined,
+            # and every test will gain just a single `dmesg` check instead:
+            - check: |
+                - how: dmesg
+
+            # Use `VALUE` to propagate the original content:
+            - check: |
+                - how: dmesg
+
+                {% for item in VALUE %}
+                - {{ item }}
+                {% endfor %}
+
+    .. important::
+
+       Since the task of the template is to produce valid fmf data, the
+       indentation of its content is crucial:
+
+       .. code-block:: yaml
+
+          test-policy:
+            - check: |
+                - how: dmesg
+
+                  # The following will not work because `check` is a list
+                  # of checks, and therefore `VALUE` will contain a list
+                  # which, if emitted into template this way, would produce
+                  # invalid fmf (a list nested in a mapping).
+                  {{ VALUE }}
+
+    Within the templates, additional variables are defined:
+
+    * ``VALUE``: the original value of the metadata key being modified.
+    * ``VALUE_SOURCE``: source of the original value: ``fmf`` when the
+      value was set by fmf data, ``cli`` when the value was set via
+      command line, ``default`` when the value is the default value of
+      the key, i.e. no other explicit value was set, and ``policy`` when
+      the value was set by previous policy instruction.
+    * ``TEST``: the entire test object, allowing you to access any of
+      its metadata fields for conditional logic (e.g., ``TEST.contact``,
+      ``TEST.component``).
+
+example:
+  - |
+    # To unconditionally change a key value, provide the new value
+    # directly - the template does not need to use any variables or
+    # advanced constructs.
+
+    test-policy:
+      # Sets the test duration to 24 hours for all tests.
+      - duration: 24h
+
+  - |
+    # Conditional modification: use flow controls (e.g., if/else) to
+    # change values based on existing test metadata.
+
+    test-policy:
+      # Adds a specific command prefix only if the test is owned by
+      # 'foo-sst@redhat.com'.
+      - test: |
+          {% if "foo-sst@redhat.com" in TEST.contact %}
+          scl enable gcc-toolset-15 {{ VALUE }}
+          {% else %}
+          {{ VALUE }}
+          {% endif %}
+
+  - |
+    # Add items only if they (or similar items) don't already exist:
+
+    test-policy:
+      # Adds a default 'avc' check only if no 'avc' check is already
+      # defined. Preserves all original checks.
+      - check: |
+          {# If no 'avc' check has been defined, inject the default one. #}
+          {% if 'avc' not in VALUE | map(attribute='how') %}
+          - how: avc
+            result: respect
+          {% endif %}
+
+          {# Make sure to include checks already picked by the test #}
+          {% for item in VALUE %}
+          - {{ item }}
+          {% endfor %}
+
+link: []
