@@ -13,6 +13,7 @@ import tmt.steps
 import tmt.steps.execute
 import tmt.utils
 import tmt.utils.themes
+from tmt.checks import CheckPlugin
 from tmt.container import container, field
 from tmt.result import Result, ResultOutcome
 from tmt.steps import safe_filename
@@ -567,6 +568,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         ) -> None:
             with invocation.process_lock:
                 invocation.process = process
+
+        # Insert internal checks
+        invocation.test.check += CheckPlugin.internal_checks(logger)
 
         # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
         # to use some reusable decorator.
