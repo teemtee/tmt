@@ -526,7 +526,9 @@ Pull Requests
 When submitting a new pull request which is not completely ready
 for merging but you would like to get an early feedback on the
 concept, use the GitHub feature to mark it as a ``Draft`` rather
-than using the ``WIP`` prefix in the summary.
+than using the ``WIP`` prefix in the summary. You might also want
+to assign the ``ci | skip`` label if there's no point in running
+tests yet.
 
 During the pull request review it is recommended to add new
 commits with your changes on the top of the branch instead of
