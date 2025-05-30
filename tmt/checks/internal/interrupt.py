@@ -13,19 +13,19 @@ CHECK_NAME = 'internal/interrupt'
 
 
 @container
-class InternalInterruptCheck(InternalCheck):
+class InterruptCheck(InternalCheck):
     how: str = CHECK_NAME
 
 
 @provides_check(CHECK_NAME)
-class InternalInterrupt(CheckPlugin[InternalInterruptCheck]):
-    _check_class = InternalInterruptCheck
+class Interrupt(CheckPlugin[InterruptCheck]):
+    _check_class = InterruptCheck
 
     @classmethod
     def before_test(
         cls,
         *,
-        check: 'InternalInterruptCheck',
+        check: 'InterruptCheck',
         invocation: 'TestInvocation',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
@@ -36,7 +36,7 @@ class InternalInterrupt(CheckPlugin[InternalInterruptCheck]):
     def after_test(
         cls,
         *,
-        check: 'InternalInterruptCheck',
+        check: 'InterruptCheck',
         invocation: 'TestInvocation',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,

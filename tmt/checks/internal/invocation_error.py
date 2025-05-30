@@ -9,23 +9,23 @@ from tmt.result import CheckResult, ResultOutcome
 from tmt.steps.execute import TestInvocation
 from tmt.utils import ProcessExitCodes
 
-CHECK_NAME = 'internal/pidfile'
+CHECK_NAME = 'internal/invocation-error'
 
 
 @container
-class InternalPidfileCheck(InternalCheck):
+class InvocationErrorCheck(InternalCheck):
     how: str = CHECK_NAME
 
 
 @provides_check(CHECK_NAME)
-class InternalPidfile(CheckPlugin[InternalPidfileCheck]):
-    _check_class = InternalPidfileCheck
+class InvocationError(CheckPlugin[InvocationErrorCheck]):
+    _check_class = InvocationErrorCheck
 
     @classmethod
     def before_test(
         cls,
         *,
-        check: 'InternalPidfileCheck',
+        check: 'InvocationErrorCheck',
         invocation: 'TestInvocation',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
@@ -36,7 +36,7 @@ class InternalPidfile(CheckPlugin[InternalPidfileCheck]):
     def after_test(
         cls,
         *,
-        check: 'InternalPidfileCheck',
+        check: 'InvocationErrorCheck',
         invocation: 'TestInvocation',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,

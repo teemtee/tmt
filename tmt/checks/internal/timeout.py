@@ -13,19 +13,19 @@ CHECK_NAME = 'internal/timeout'
 
 
 @container
-class InternalTimeoutCheck(InternalCheck):
+class TimeoutCheck(InternalCheck):
     how: str = CHECK_NAME
 
 
 @provides_check(CHECK_NAME)
-class InternalTimeout(CheckPlugin[InternalTimeoutCheck]):
-    _check_class = InternalTimeoutCheck
+class Timeout(CheckPlugin[TimeoutCheck]):
+    _check_class = TimeoutCheck
 
     @classmethod
     def before_test(
         cls,
         *,
-        check: 'InternalTimeoutCheck',
+        check: 'TimeoutCheck',
         invocation: 'TestInvocation',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
@@ -36,7 +36,7 @@ class InternalTimeout(CheckPlugin[InternalTimeoutCheck]):
     def after_test(
         cls,
         *,
-        check: 'InternalTimeoutCheck',
+        check: 'TimeoutCheck',
         invocation: 'TestInvocation',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,

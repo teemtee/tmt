@@ -133,6 +133,17 @@ class Check(
     def plugin(self) -> 'CheckPluginClass':
         return find_plugin(self.how)
 
+    @classmethod
+    def create_internal(cls, logger: tmt.log.Logger) -> Optional['Check']:
+        """
+        Create an internal check instance.
+
+        :param logger: logger to use for logging.
+        :returns: a new instance of the check.
+        """
+
+        return None
+
     # ignore[override]: expected, we need to accept one extra parameter, `logger`.
     @classmethod
     def from_spec(  # type: ignore[override]
@@ -232,14 +243,12 @@ class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
         Create internal check data instances
         """
 
-        from tmt.checks.internal import InternalCheck
-
         checks: list[Check] = []
 
-        for check_plugin in _CHECK_PLUGIN_REGISTRY.iter_plugins():
-            plugin = cast(CheckPlugin[CheckT], check_plugin)
-            if issubclass(plugin._check_class, InternalCheck):
-                checks.append(cast(InternalCheck, plugin._check_class).create_default(logger))
+        for plugin in _CHECK_PLUGIN_REGISTRY.iter_plugins():
+            check = cast(CheckPlugin[CheckT], plugin)._check_class.create_internal(logger)
+            if check:
+                checks.append(check)
 
         return checks
 

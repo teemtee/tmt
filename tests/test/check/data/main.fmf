@@ -139,5 +139,5 @@
         test: "echo Start; tmt-abort; echo End"
     /permission:
         test: /dev/null
-    /pidfile:
+    /invocation-error:
         test: exit 122
