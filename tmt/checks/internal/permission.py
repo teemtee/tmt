@@ -13,19 +13,19 @@ CHECK_NAME = 'internal/permission'
 
 
 @container
-class InternalPermissionCheck(InternalCheck):
+class PermissionCheck(InternalCheck):
     how: str = CHECK_NAME
 
 
 @provides_check(CHECK_NAME)
-class InternalPermission(CheckPlugin[InternalPermissionCheck]):
-    _check_class = InternalPermissionCheck
+class Permission(CheckPlugin[PermissionCheck]):
+    _check_class = PermissionCheck
 
     @classmethod
     def before_test(
         cls,
         *,
-        check: 'InternalPermissionCheck',
+        check: 'PermissionCheck',
         invocation: 'TestInvocation',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
@@ -36,7 +36,7 @@ class InternalPermission(CheckPlugin[InternalPermissionCheck]):
     def after_test(
         cls,
         *,
-        check: 'InternalPermissionCheck',
+        check: 'PermissionCheck',
         invocation: 'TestInvocation',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,

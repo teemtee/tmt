@@ -45,9 +45,9 @@ rlJournalStart
         assert_check_result "Test results have failed permission check" "/internal/permission" "internal/permission" "fail"
     rlPhaseEnd
 
-    rlPhaseStartTest "Test pidfile check with $PROVISION_HOW"
-        rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /internal/pidfile" 2
-        assert_check_result "Test results have failed pidfile check" "/internal/pidfile" "internal/pidfile" "fail"
+    rlPhaseStartTest "Test invocation-error check with $PROVISION_HOW"
+        rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /internal/invocation-error" 2
+        assert_check_result "Test results have failed invocation-error check" "/internal/invocation-error" "internal/invocation-error" "fail"
     rlPhaseEnd
 
     rlPhaseStartCleanup

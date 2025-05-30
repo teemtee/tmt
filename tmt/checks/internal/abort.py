@@ -13,19 +13,19 @@ CHECK_NAME = 'internal/abort'
 
 
 @container
-class InternalAbortCheck(InternalCheck):
+class AbortCheck(InternalCheck):
     how: str = CHECK_NAME
 
 
 @provides_check(CHECK_NAME)
-class InternalAbort(CheckPlugin[InternalAbortCheck]):
-    _check_class = InternalAbortCheck
+class Abort(CheckPlugin[AbortCheck]):
+    _check_class = AbortCheck
 
     @classmethod
     def before_test(
         cls,
         *,
-        check: 'InternalAbortCheck',
+        check: 'AbortCheck',
         invocation: 'TestInvocation',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
@@ -36,7 +36,7 @@ class InternalAbort(CheckPlugin[InternalAbortCheck]):
     def after_test(
         cls,
         *,
-        check: 'InternalAbortCheck',
+        check: 'AbortCheck',
         invocation: 'TestInvocation',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
