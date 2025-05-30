@@ -19,6 +19,8 @@ Added a specification for :ref:`policies </spec/policy>` that allow CI
 system and CI workflow maintainers to modify tests and plans to include
 mandatory checks and phases as required by their testing process.
 
+The ``results.yaml`` file will now contain the log path for
+``journal.xml``.
 
 tmt-1.49.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
