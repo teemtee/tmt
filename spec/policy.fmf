@@ -141,4 +141,4 @@ example:
 
 link:
   - implemented-by: /tmt/policy.py
-  - verified-by: /tests/run/policy
+  - verified-by: /tests/policy
