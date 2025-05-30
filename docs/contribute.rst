@@ -806,3 +806,14 @@ smooth and timely:
   the release, it might make sense to squeeze them in, to make the
   development more fluent, just make sure they do not slow down
   important issues
+
+Communication
+------------------------------------------------------------------
+
+GitHub comments
+    * Preferred for review process and discussion to have all the
+      information at one place
+    * ASYNC nature - I don't have to react now
+Slack
+    * Useful for quick sync
+    * Do not overuse to prevent too many unnecessary interruptions
