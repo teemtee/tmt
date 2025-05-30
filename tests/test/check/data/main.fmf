@@ -128,3 +128,16 @@
 
       ssh-ping: true
       ssh-ping-threshold: 3
+
+/internal:
+    /pass:
+        test: /bin/true
+    /timeout:
+        test: sleep 3s
+        duration: 1s
+    /abort:
+        test: "echo Start; tmt-abort; echo End"
+    /permission:
+        test: /dev/null
+    /pidfile:
+        test: exit 122

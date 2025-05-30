@@ -1,0 +1,47 @@
+from typing import Optional
+
+import tmt.log
+import tmt.utils
+from tmt.checks import CheckPlugin, provides_check
+from tmt.checks.internal import InternalCheck
+from tmt.container import container
+from tmt.result import CheckResult, ResultOutcome
+from tmt.steps.execute import TestInvocation
+from tmt.utils import ProcessExitCodes
+
+CHECK_NAME = 'internal/abort'
+
+
+@container
+class InternalAbortCheck(InternalCheck):
+    how: str = CHECK_NAME
+
+
+@provides_check(CHECK_NAME)
+class InternalAbort(CheckPlugin[InternalAbortCheck]):
+    _check_class = InternalAbortCheck
+
+    @classmethod
+    def before_test(
+        cls,
+        *,
+        check: 'InternalAbortCheck',
+        invocation: 'TestInvocation',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[CheckResult]:
+        return []
+
+    @classmethod
+    def after_test(
+        cls,
+        *,
+        check: 'InternalAbortCheck',
+        invocation: 'TestInvocation',
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[CheckResult]:
+        if invocation.abort_requested and invocation.return_code != ProcessExitCodes.SUCCESS:
+            return [CheckResult(name=CHECK_NAME, result=ResultOutcome.FAIL, note=['Test aborted'])]
+
+        return []

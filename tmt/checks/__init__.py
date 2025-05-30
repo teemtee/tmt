@@ -224,6 +224,26 @@ class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
         )
 
     @classmethod
+    def internal_checks(
+        cls,
+        logger: tmt.log.Logger,
+    ) -> list['Check']:
+        """
+        Create internal check data instances
+        """
+
+        from tmt.checks.internal import InternalCheck
+
+        checks: list[Check] = []
+
+        for check_plugin in _CHECK_PLUGIN_REGISTRY.iter_plugins():
+            plugin = cast(CheckPlugin[CheckT], check_plugin)
+            if issubclass(plugin._check_class, InternalCheck):
+                checks.append(cast(InternalCheck, plugin._check_class).create_default(logger))
+
+        return checks
+
+    @classmethod
     def essential_requires(
         cls,
         guest: 'Guest',
