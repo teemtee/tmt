@@ -31,8 +31,7 @@ description: |
     into account. All values would also be normalized, e.g. ``tag`` or
     ``contact`` keys would always be lists of strings, and so on. At
     this point, policies have access to the most final content of test
-    keys, if not for the policies, tmt would proceed by starting the
-    first enabled step.
+    keys.
 
     When a policy is applied:
 
@@ -89,11 +88,11 @@ description: |
     Within the templates, additional variables are defined:
 
     * ``VALUE``: the original value of the metadata key being modified.
-    * ``VALUE_SOURCE``: source of the original value
-       * ``fmf`` when the value was set by fmf data
-       * ``cli`` when the value was set via command line
-       * ``default`` when the value is the default value of the key, i.e. no other explicit value was set
-       * ``policy`` when the value was set by previous policy instruction
+    * ``VALUE_SOURCE``: source of the original value: ``fmf`` when the
+      value was set by fmf data, ``cli`` when the value was set via
+      command line, ``default`` when the value is the default value of
+      the key, i.e. no other explicit value was set, and ``policy`` when
+      the value was set by previous policy instruction.
     * ``TEST``: the entire test object, allowing you to access any of
       its metadata fields for conditional logic (e.g., ``TEST.contact``,
       ``TEST.component``).
