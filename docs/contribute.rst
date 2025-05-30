@@ -716,9 +716,9 @@ Regular
 
 Follow the steps below to create a new major or minor release:
 
-* Update ``overview.rst`` with new contributors since the last release.
-  To identify contributors whose first ever commit to the repository occurred *after*
-  the last release tag, run:
+* Update ``overview.rst`` with new contributors since the last
+  release. To identify contributors whose first ever commit to
+  the repository occurred *after* the last release tag, run:
 
   .. code-block:: bash
 
