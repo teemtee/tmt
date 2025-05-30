@@ -18,10 +18,10 @@ test: /bin/true
       failure-pattern: ".*"
 
 /value-source:
-  /no-custom-duration:
+  /default-duration:
 
   /custom-duration:
     duration: 5m +5m
 
-  /default-duration:
+  /same-as-default:
     duration: 5m

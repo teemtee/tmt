@@ -70,8 +70,8 @@ rlJournalStart
     rlPhaseStartTest "Test VALUE_SOURCE usage"
         tmt="tmt -vv test export"
 
-        rlRun "$tmt --policy ../policies/test/duration.yaml /value-source/no-custom-duration"
-        rlRun -s "$tmt --policy ../policies/test/duration.yaml /value-source/no-custom-duration 2> /dev/null | yq -cSr '.[] | .duration'"
+        rlRun "$tmt --policy ../policies/test/duration.yaml /value-source/default-duration"
+        rlRun -s "$tmt --policy ../policies/test/duration.yaml /value-source/default-duration 2> /dev/null | yq -cSr '.[] | .duration'"
         rlAssertEquals \
             "Verify that no custom value is recognized" \
             "$(cat $rlRun_LOG)" \
@@ -84,8 +84,8 @@ rlJournalStart
             "$(cat $rlRun_LOG)" \
             "5m +5m +10m +50m"
 
-        rlRun "$tmt --policy ../policies/test/duration.yaml /value-source/default-duration"
-        rlRun -s "$tmt --policy ../policies/test/duration.yaml /value-source/default-duration 2> /dev/null | yq -cSr '.[] | .duration'"
+        rlRun "$tmt --policy ../policies/test/duration.yaml /value-source/same-as-default"
+        rlRun -s "$tmt --policy ../policies/test/duration.yaml /value-source/same-as-default 2> /dev/null | yq -cSr '.[] | .duration'"
         rlAssertEquals \
             "Verify that custom value which is the same as the default is recognized" \
             "$(cat $rlRun_LOG)" \

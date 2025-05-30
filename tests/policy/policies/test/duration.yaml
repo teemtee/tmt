@@ -2,7 +2,7 @@ test-policy:
   - duration: |
       {#
         Adding extra time based on the original value source. This will
-        help us recognized whether the expected branch applied to input
+        help us recognize whether the expected branch applied to input
         values from similarly tailored tests.
       #}
       {% if VALUE_SOURCE == 'fmf' %}
