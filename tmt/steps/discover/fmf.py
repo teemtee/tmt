@@ -1,8 +1,8 @@
 import contextlib
 import glob
-import os
 import re
 import shutil
+from contextlib import suppress
 from typing import Any, Optional, cast
 
 import fmf
@@ -434,7 +434,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 "Cannot manipulate with dist-git without the `--dist-git-merge` option."
             )
 
-        # Raise an exception if --fmf-id used w/o url and git root
+        # Raise an exception if --fmf-id is used w/o url and git root
         # doesn't exist for discovered plan
         if self.opt('fmf_id'):
             self.validate_fmf_id_requirements(url)
@@ -547,22 +547,18 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         Validate environment requirements for the --fmf-id option.
         """
 
-        validation_message = (
-            r"""`tmt run discover --fmf-id` without `url` option """
-            r"""in plan `{plan_name}` can be used only within git repo."""
-        )
         # It covers only one case, when there is:
         # 1) no --url on CLI
         # 2) plan w/o url exists in test run
         if not self.opt('url'):
             try:
-                fmf_tree = fmf.Tree(os.getcwd())
+                fmf_tree = fmf.Tree(Path.cwd())
             except fmf.utils.RootError:
                 raise tmt.utils.DiscoverError(
                     "No metadata found in the current directory. Use 'tmt init' to get started."
                 )
             for attr in fmf_tree.climb():
-                try:
+                with suppress(AttributeError):
                     plan_url = attr.data.get('discover').get('url')
                     plan_name = attr.name
                     assert plan_name is not None
@@ -571,10 +567,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                             self.get_git_root(directory=Path.cwd())
                         except tmt.utils.RunError:
                             raise tmt.utils.DiscoverError(
-                                validation_message.format(plan_name=plan_name)
+                                f"`tmt run discover --fmf-id` without `url` option "
+                                f"in plan `{plan_name}` can be used only within git repo."
                             )
-                except AttributeError:
-                    pass
 
         # All other cases are covered by this condition
         if not url:
@@ -582,7 +577,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 self.get_git_root(directory=Path.cwd())
             except tmt.utils.RunError:
                 raise tmt.utils.DiscoverError(
-                    validation_message.format(plan_name=self.step.plan.name)
+                    f"`tmt run discover --fmf-id` without `url` option "
+                    f"in plan `{self.step.plan.name}` can be used only within git repo."
                 )
 
     def process_distgit_source(self, distgit_dir: Path, sourcedir: Path) -> None:
