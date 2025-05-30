@@ -3,7 +3,7 @@ test-policy:
       {% if not VALUE %}
       FOO: xyzzy
       {% else %}
-          {% for key, value in VALUE | items %}
+          {% for key, value in VALUE.items() %}
               {% if key == 'FOO' %}
       FOO: baz
               {% else %}

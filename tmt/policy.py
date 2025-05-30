@@ -62,7 +62,7 @@ class Instruction(MetadataContainer, extra=Extra.allow):
             rendered_new_value = render_template(
                 template,
                 VALUE=current_value_exported,
-                VALUE_SOURCE=current_value_source,
+                VALUE_SOURCE=current_value_source.value,
             )
 
             raw_new_value = tmt.utils.yaml_to_python(rendered_new_value)

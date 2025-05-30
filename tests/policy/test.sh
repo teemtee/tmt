@@ -7,7 +7,7 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
-    rlPhaseStartTest "Export"
+    rlPhaseStartTest "Sanity"
         tmt="tmt -vv test export"
 
         rlRun "$tmt --policy ../policies/test/test.yaml /basic"
@@ -67,6 +67,31 @@ rlJournalStart
             "[{\"how\":\"avc\",\"result\":\"info\"},{\"how\":\"dmesg\",\"result\":\"respect\"}]"
     rlPhaseEnd
 
+    rlPhaseStartTest "Test VALUE_SOURCE usage"
+        tmt="tmt -vv test export"
+
+        rlRun "$tmt --policy ../policies/test/duration.yaml /value-source/no-custom-duration"
+        rlRun -s "$tmt --policy ../policies/test/duration.yaml /value-source/no-custom-duration 2> /dev/null | yq -cSr '.[] | .duration'"
+        rlAssertEquals \
+            "Verify that no custom value is recognized" \
+            "$(cat $rlRun_LOG)" \
+            "5m +30m +50m"
+
+        rlRun "$tmt --policy ../policies/test/duration.yaml /value-source/custom-duration"
+        rlRun -s "$tmt --policy ../policies/test/duration.yaml /value-source/custom-duration 2> /dev/null | yq -cSr '.[] | .duration'"
+        rlAssertEquals \
+            "Verify that custom value is recognized" \
+            "$(cat $rlRun_LOG)" \
+            "5m +5m +10m +50m"
+
+        rlRun "$tmt --policy ../policies/test/duration.yaml /value-source/default-duration"
+        rlRun -s "$tmt --policy ../policies/test/duration.yaml /value-source/default-duration 2> /dev/null | yq -cSr '.[] | .duration'"
+        rlAssertEquals \
+            "Verify that custom value which is the same as the default is recognized" \
+            "$(cat $rlRun_LOG)" \
+            "5m +10m +50m"
+    rlPhaseEnd
+
     rlPhaseStartTest "Run"
         rlRun -s "tmt --feeling-safe -vv run --id $run --policy ../policies/test/test.yaml discover provision -h local execute report -h display -vvv plan --default test --name /basic"
 
@@ -75,7 +100,11 @@ rlJournalStart
             "Verify that test has been modified" \
             "$(yq -cSr '.[] | .test' $run/default/plan/discover/tests.yaml)" \
             "bash -c 'echo \"Spiked test.\"; /bin/true'"
+    rlPhaseEnd
 
+    rlPhaseStartTest "Invalid keys"
+        rlRun -s "tmt -vv test export --policy ../policies/test/invalid.yaml /basic" 2
+        rlAssertGrep "Could not find field 'script' in class '/basic'." $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
