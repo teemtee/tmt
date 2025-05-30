@@ -524,6 +524,18 @@ ENVIRONMENT_OPTIONS: list[ClickOptionDecoratorType] = [
     ),
 ]
 
+POLICY_OPTIONS: list[ClickOptionDecoratorType] = [
+    option(
+        '--policy',
+        'policy_path',
+        metavar='PATH',
+        type=Path(),
+        help="""
+             A file with policy rules for modification of test metadata keys.
+             """,
+    )
+]
+
 
 def create_options_decorator(options: list[ClickOptionDecoratorType]) -> Callable[[FC], FC]:
     def common_decorator(fn: FC) -> FC:

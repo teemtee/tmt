@@ -1,0 +1,77 @@
+# Self-explanatory - there is also `plan-policy` and `story-policy`,
+# neither of them implemented yet.
+#
+# TL;DR
+#  * directives below apply to all tests known to tmt
+#  * right now, ^^ means "all tests tmt identifies in an fmf tree
+#    when running tmt test export"
+test-policy:
+  # TL;DR: each key defines new value of the given test metadata
+  # key; the value is a template that is rendered, parsed as
+  # YAML/fmf, normalized and assigned to the test key.
+  #
+  # More words:
+  #
+  # Each item of this list is a mapping where *test* metadata keys,
+  # as defined in test metadata specification - you know, keys like
+  # `test` or `path` - are the keys, and their values are *templates*
+  # whose jobs is to render a valid content of the given key, wrapped
+  # as a string.
+  #
+  # Templates are given the current value, and rendered, and then
+  # parsed as any other YAML or fmf construct:
+  #
+  # tag: "[foo, bar]"
+  # tag: |
+  #    - foo
+  #    - bar
+  #
+  # When parsed, both turn into Python list, `["foo", "bar"]`.
+  #
+  # All Jinja2 controls can be used:
+  #
+  # contact: |
+  #   {% for name in ['foo', 'bar'] %}
+  #   - {{ name }}@redhat.com
+  #   {% endfor %}
+  #
+  # will render to:
+  #
+  # "\n- foo@redhat.com\n\n- bar@redhat.com"
+  #
+  # which would be parsed into Python list, `["foo@redhat.com", "bar@redhat.com"]`
+  #
+  # `VALUE` is the current value of this key: it was normalized by
+  # tmt, and exposed to the template as if stored in an fmf file,
+  # as a YAML structure - list, mappings, integers, floats, etc.
+  # It is not a string (unless the value itself is a string) or
+  # internal tmt class: `test` will be a string, `enable` a boolean,
+  # `tag` or `contact` a list of strings, `environment` a str/str
+  # mapping, and `check` a list of mappings. `link` is internally
+  # stored in a class called `Links` - exposed to the template
+  # below as a list of mappings, just as if written in an fmf file.
+  #
+  # The value produced by the template will be normalized by tmt,
+  # in the same way as simplified fmf values would be:
+  #
+  # tag: foo
+  #
+  # would become `tag = ['foo']`
+  #
+  # The final value will *replace* the original value of the test key.
+  # If one wishes to preserve the original value, e.g. by incorporating
+  # it into the new one, it must do it explicitly in the template - see
+  # how existing checks are preserved below.
+  - check: |
+      {#
+        If no check has been defined for this test, inject the default
+        AVC check.
+      #}
+      {% if 'avc' not in VALUE | map(attribute='how') %}
+      - how: avc
+        result: respect
+      {% endif %}
+
+      {% for check in VALUE %}
+      - {{ check }}
+      {% endfor %}

@@ -1,0 +1,14 @@
+test-policy:
+  - environment: |
+      {% if not VALUE %}
+      FOO: xyzzy
+      {% else %}
+          {% for key, value in VALUE.items() %}
+              {% if key == 'FOO' %}
+      FOO: baz
+              {% else %}
+      {{ key }}: |
+        {{ value | indent(2, false) }}
+              {% endif %}
+          {% endfor %}
+      {% endif %}

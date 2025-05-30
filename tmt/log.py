@@ -65,6 +65,7 @@ class Topic(enum.Enum):
     COMMAND_EVENTS = 'command-events'
     ADJUST_DECISIONS = 'adjust-decisions'
     HELP_RENDERING = 'help-rendering'
+    POLICY = 'policy'
 
 
 DEFAULT_TOPICS: set[Topic] = set()
@@ -802,8 +803,12 @@ class Logger:
         value: Optional[LoggableValue] = None,
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
+        topic: Optional[Topic] = None,
     ) -> None:
-        self._log(logging.INFO, LogRecordDetails(key=key, value=value, color=color, shift=shift))
+        self._log(
+            logging.INFO,
+            LogRecordDetails(key=key, value=value, color=color, shift=shift, message_topic=topic),
+        )
 
     def verbose(
         self,

@@ -490,6 +490,11 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             if self.data.dist_git_source:
                 test.environment['TMT_SOURCE_DIR'] = EnvVarValue(sourcedir)
 
+        # Apply tmt run policy
+        if self.step.plan.my_run is not None:
+            for policy in self.step.plan.my_run.policies:
+                policy.apply_to_tests(tests=self._tests, logger=self._logger)
+
     def tests(
         self, *, phase_name: Optional[str] = None, enabled: Optional[bool] = None
     ) -> list[tmt.steps.discover.TestOrigin]:
