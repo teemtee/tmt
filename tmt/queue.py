@@ -1,18 +1,100 @@
 import dataclasses
 import functools
+import itertools
+import queue
 from collections.abc import Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar
 
 from tmt.container import container
 from tmt.log import Logger
 
 if TYPE_CHECKING:
+    import tmt.utils
     from tmt._compat.typing import Self
     from tmt.steps.provision import Guest
 
 
 TaskResultT = TypeVar('TaskResultT')
+TaskT = TypeVar('TaskT', bound='Task')
+T = TypeVar('T', bound='tmt.utils.Common')
+
+
+def execute_units(
+    task: 'Task[TaskResultT]',
+    units: list[T],
+    get_label: Callable[['Task[TaskResultT]', T], str],
+    inject_logger: Callable[['Task[TaskResultT]', T, Logger], None],
+    submit: Callable[['Task[TaskResultT]', T, Logger, ThreadPoolExecutor], Future[TaskResultT]],
+    on_success: Callable[['Task[TaskResultT]', T, Logger, TaskResultT], 'Task[TaskResultT]'],
+    on_error: Callable[['Task[TaskResultT]', T, Logger, Exception], 'Task[TaskResultT]'],
+    on_exit: Callable[['Task[TaskResultT]', T, Logger, SystemExit], 'Task[TaskResultT]'],
+    logger: Logger,
+) -> Iterator['Task[TaskResultT]']:
+    multiple_units = len(units) > 1
+
+    new_loggers = prepare_loggers(logger, [get_label(task, unit) for unit in units])
+    old_loggers: dict[str, Logger] = {}
+
+    with ThreadPoolExecutor(max_workers=len(units)) as executor:
+        futures: dict[Future[TaskResultT], T] = {}
+
+        for unit in units:
+            # Swap guest's logger for the one we prepared, with labels
+            # and stuff.
+            #
+            # We can't do the same for phases - phase is shared among
+            # guests, its `self.$loggingmethod()` calls need to be
+            # fixed to use a logger we pass to it through the executor.
+            #
+            # Possibly, the same thing should happen to guest methods as
+            # well, then the phase would pass the given logger to guest
+            # methods when it calls them, propagating the single logger we
+            # prepared...
+            old_loggers[get_label(task, unit)] = unit._logger
+            new_logger = new_loggers[get_label(task, unit)]
+
+            inject_logger(task, unit, new_logger)
+
+            if multiple_units:
+                new_logger.info('started', color='cyan')
+
+            # Submit each task/guest combination (save the guest & logger
+            # for later)...
+            futures[submit(task, unit, new_logger, executor)] = unit
+
+        # ... and then sit and wait as they get delivered to us as they
+        # finish. Unpack the guest and logger, so we could preserve logging
+        # and prepare the right outcome package.
+        for future in as_completed(futures):
+            unit = futures[future]
+
+            old_logger = old_loggers[get_label(task, unit)]
+            new_logger = new_loggers[get_label(task, unit)]
+
+            if multiple_units:
+                new_logger.info('finished', color='cyan')
+
+            # `Future.result()` will either 1. reraise an exception the
+            # callable raised, if any, or 2. return whatever the callable
+            # returned - which is `None` in our case, therefore we can
+            # ignore the return value.
+            try:
+                result = future.result()
+
+            except SystemExit as exc:
+                yield on_exit(task, unit, new_logger, exc)
+
+            except Exception as exc:
+                yield on_error(task, unit, new_logger, exc)
+
+            else:
+                yield on_success(task, unit, new_logger, result)
+
+            yield task
+
+            # Don't forget to restore the original logger.
+            inject_logger(task, unit, old_logger)
 
 
 @container
@@ -33,6 +115,8 @@ class Task(Generic[TaskResultT]):
         specified after those with default values. Therefore initialize fields
         to their defaults "manually".
     """
+
+    id: Optional[int]
 
     #: A logger to use for logging events related to the outcome.
     logger: Logger
@@ -84,9 +168,6 @@ class Task(Generic[TaskResultT]):
         """
 
         raise NotImplementedError
-
-
-TaskT = TypeVar('TaskT', bound='Task')  # type: ignore[type-arg]
 
 
 def prepare_loggers(logger: Logger, labels: list[str]) -> dict[str, Logger]:
@@ -197,7 +278,7 @@ class MultiGuestTask(Task[TaskResultT]):
     def guest_ids(self) -> list[str]:
         return sorted([guest.multihost_name for guest in self.guests])
 
-    def run_on_guest(self, guest: 'Guest', logger: Logger) -> None:
+    def run_on_guest(self, guest: 'Guest', logger: Logger) -> TaskResultT:
         """
         Perform the task.
 
@@ -210,7 +291,7 @@ class MultiGuestTask(Task[TaskResultT]):
 
         raise NotImplementedError
 
-    def go(self) -> Iterator['Self']:
+    def go(self) -> Iterator['MultiGuestTask[TaskResultT]']:
         """
         Perform the task.
 
@@ -223,99 +304,55 @@ class MultiGuestTask(Task[TaskResultT]):
             yielded.
         """
 
-        multiple_guests = len(self.guests) > 1
-
-        new_loggers = prepare_loggers(self.logger, [guest.multihost_name for guest in self.guests])
-        old_loggers: dict[str, Logger] = {}
-
-        with ThreadPoolExecutor(max_workers=len(self.guests)) as executor:
-            futures: dict[Future[None], Guest] = {}
-
-            for guest in self.guests:
-                # Swap guest's logger for the one we prepared, with labels
-                # and stuff.
-                #
-                # We can't do the same for phases - phase is shared among
-                # guests, its `self.$loggingmethod()` calls need to be
-                # fixed to use a logger we pass to it through the executor.
-                #
-                # Possibly, the same thing should happen to guest methods as
-                # well, then the phase would pass the given logger to guest
-                # methods when it calls them, propagating the single logger we
-                # prepared...
-                old_loggers[guest.multihost_name] = guest._logger
-                new_logger = new_loggers[guest.multihost_name]
-
-                guest.inject_logger(new_logger)
-
-                if multiple_guests:
-                    new_logger.info('started', color='cyan')
-
-                # Submit each task/guest combination (save the guest & logger
-                # for later)...
-                futures[executor.submit(self.run_on_guest, guest, new_logger)] = guest
-
-            # ... and then sit and wait as they get delivered to us as they
-            # finish. Unpack the guest and logger, so we could preserve logging
-            # and prepare the right outcome package.
-            for future in as_completed(futures):
-                guest = futures[future]
-
-                old_logger = old_loggers[guest.multihost_name]
-                new_logger = new_loggers[guest.multihost_name]
-
-                if multiple_guests:
-                    new_logger.info('finished', color='cyan')
-
-                # `Future.result()` will either 1. reraise an exception the
-                # callable raised, if any, or 2. return whatever the callable
-                # returned - which is `None` in our case, therefore we can
-                # ignore the return value.
-                try:
-                    result = future.result()
-
-                except SystemExit as exc:
-                    task = dataclasses.replace(self, result=None, exc=None, requested_exit=exc)
-
-                except Exception as exc:
-                    task = dataclasses.replace(self, result=None, exc=exc, requested_exit=None)
-
-                else:
-                    task = dataclasses.replace(self, result=result, exc=None, requested_exit=None)
-
-                task.guest = guest
-
-                yield task
-
-                # Don't forget to restore the original logger.
-                guest.inject_logger(old_logger)
+        yield from execute_units(
+            self,
+            self.guests,
+            lambda task, guest: guest.multihost_name,
+            lambda task, guest, logger: guest.inject_logger(logger),
+            lambda task, guest, logger, executor: executor.submit(
+                self.run_on_guest, guest, logger
+            ),
+            lambda task, guest, logger, result: dataclasses.replace(
+                self, result=result, exc=None, requested_exit=None, guest=guest
+            ),
+            lambda task, guest, logger, exc: dataclasses.replace(
+                self, result=None, exc=exc, requested_exit=None, guest=guest
+            ),
+            lambda task, guest, logger, exc: dataclasses.replace(
+                self, result=None, exc=None, requested_exit=exc, guest=guest
+            ),
+            self.logger,
+        )
 
 
-class Queue(list[TaskT]):
-    """
-    Queue class for running tasks
-    """
+class Queue(queue.Queue[TaskT]):
+    """Queue class for running tasks"""
+
+    _task_counter: 'itertools.count[int]'
 
     def __init__(self, name: str, logger: Logger) -> None:
         super().__init__()
 
         self.name = name
         self._logger = logger
+        self._task_counter = itertools.count(start=1)
 
     def enqueue_task(self, task: TaskT) -> None:
         """
         Put new task into a queue
         """
 
-        self.append(task)
+        task.id = next(self._task_counter)
+
+        self.put(task)
 
         self._logger.info(
-            f'queued {self.name} task #{len(self)}',
+            f'queued {self.name} task #{task.id}',
             task.name,
             color='cyan',
         )
 
-    def run(self) -> Iterator[TaskT]:
+    def run(self, stop_on_error: bool = True) -> Iterator[TaskT]:
         """
         Start crunching the queued tasks.
 
@@ -323,11 +360,17 @@ class Queue(list[TaskT]):
         combination a :py:class:`Task` instance is yielded.
         """
 
-        for i, task in enumerate(self):
+        while True:
+            try:
+                task = self.get_nowait()
+
+            except queue.Empty:
+                return
+
             self._logger.info('')
 
             self._logger.info(
-                f'{self.name} task #{i + 1}',
+                f'{self.name} task #{task.id}',
                 task.name,
                 color='cyan',
             )
@@ -341,5 +384,5 @@ class Queue(list[TaskT]):
                 yield outcome
 
             # TODO: make this optional
-            if failed_tasks:
+            if failed_tasks and stop_on_error:
                 return
