@@ -19,6 +19,14 @@ class AbortCheck(InternalCheck):
 
 @provides_check(CHECK_NAME)
 class Abort(CheckPlugin[AbortCheck]):
+    """
+    Check for test aborts during execution.
+
+    This check fails when tests are aborted before completion.
+
+    .. versionadded:: 1.50
+    """
+
     _check_class = AbortCheck
 
     @classmethod

@@ -19,6 +19,14 @@ class InterruptCheck(InternalCheck):
 
 @provides_check(CHECK_NAME)
 class Interrupt(CheckPlugin[InterruptCheck]):
+    """
+    Check for signal interruptions during test execution.
+
+    This check fails when tests are interrupted by SIGINT or SIGTERM signals.
+
+    .. versionadded:: 1.50
+    """
+
     _check_class = InterruptCheck
 
     @classmethod

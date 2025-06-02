@@ -19,6 +19,15 @@ class InvocationErrorCheck(InternalCheck):
 
 @provides_check(CHECK_NAME)
 class InvocationError(CheckPlugin[InvocationErrorCheck]):
+    """
+    Check for uncategorized invocation errors during test execution.
+
+    This check fails when tests encounter errors that are not covered
+    by more specific checks.
+
+    .. versionadded:: 1.50
+    """
+
     _check_class = InvocationErrorCheck
 
     @classmethod

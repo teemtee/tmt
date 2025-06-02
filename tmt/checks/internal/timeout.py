@@ -19,6 +19,14 @@ class TimeoutCheck(InternalCheck):
 
 @provides_check(CHECK_NAME)
 class Timeout(CheckPlugin[TimeoutCheck]):
+    """
+    Check for test timeouts during execution.
+
+    This check fails when tests exceed their maximum allowed duration.
+
+    .. versionadded:: 1.50
+    """
+
     _check_class = TimeoutCheck
 
     @classmethod

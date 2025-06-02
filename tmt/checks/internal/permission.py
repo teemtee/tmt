@@ -19,6 +19,14 @@ class PermissionCheck(InternalCheck):
 
 @provides_check(CHECK_NAME)
 class Permission(CheckPlugin[PermissionCheck]):
+    """
+    Check for permission issues during execution.
+
+    This check fails when tests encounter permission-related errors.
+
+    .. versionadded:: 1.50
+    """
+
     _check_class = PermissionCheck
 
     @classmethod
