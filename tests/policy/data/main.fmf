@@ -1,0 +1,27 @@
+test: /bin/true
+
+/basic:
+
+/full:
+  contact:
+    - foo
+    - bar
+
+  environment:
+    FOO: BAR
+    QUX: QUUX
+
+  check:
+    - how: avc
+      result: info
+    - how: dmesg
+      failure-pattern: ".*"
+
+/value-source:
+  /default-duration:
+
+  /custom-duration:
+    duration: 5m +5m
+
+  /same-as-default:
+    duration: 5m

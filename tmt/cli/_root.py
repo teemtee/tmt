@@ -26,6 +26,7 @@ import tmt.log
 import tmt.options
 import tmt.plugins
 import tmt.plugins.plan_shapers
+import tmt.policy
 import tmt.steps
 import tmt.templates
 import tmt.utils
@@ -62,6 +63,7 @@ story_flags_filter_options = create_options_decorator(tmt.options.STORY_FLAGS_FI
 remote_plan_options = create_options_decorator(tmt.options.REMOTE_PLAN_OPTIONS)
 lint_options = create_options_decorator(tmt.options.LINT_OPTIONS)
 environment_options = create_options_decorator(tmt.options.ENVIRONMENT_OPTIONS)
+policy_options = create_options_decorator(tmt.options.POLICY_OPTIONS)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -294,7 +296,14 @@ def main(
 @verbosity_options
 @force_dry_options
 @again_option
-def run(context: Context, id_: Optional[str], workdir_root: Optional[Path], **kwargs: Any) -> None:
+@policy_options
+def run(
+    context: Context,
+    id_: Optional[str],
+    workdir_root: Optional[Path],
+    policy_path: Optional[Path],
+    **kwargs: Any,
+) -> None:
     """
     Run test steps.
     """
@@ -303,14 +312,16 @@ def run(context: Context, id_: Optional[str], workdir_root: Optional[Path], **kw
     logger = context.obj.logger.descend(logger_name='run', extra_shift=0)
     logger.apply_verbosity_options(**kwargs)
 
-    run = tmt.Run(
+    policies = [tmt.policy.Policy.load(policy_path, logger)] if policy_path is not None else []
+
+    context.obj.run = tmt.Run(
         id_=Path(id_) if id_ is not None else None,
         tree=context.obj.tree,
         cli_invocation=CliInvocation.from_context(context),
         workdir_root=effective_workdir_root(workdir_root),
+        policies=policies,
         logger=logger,
     )
-    context.obj.run = run
 
 
 for plugin_class in tmt.plugins.plan_shapers._PLAN_SHAPER_PLUGIN_REGISTRY.iter_plugins():
@@ -886,6 +897,7 @@ _test_export_default = 'yaml'
     metavar='PATH',
     help="Path to a template to use for rendering the export. Used with '--how=template' only.",
 )
+@policy_options
 def tests_export(
     context: Context,
     format: str,
@@ -893,6 +905,7 @@ def tests_export(
     nitrate: bool,
     bugzilla: bool,
     template: Optional[str],
+    policy_path: Optional[Path],
     **kwargs: Any,
 ) -> None:
     """
@@ -931,9 +944,18 @@ def tests_export(
         )
 
     else:
+        tests = context.obj.tree.tests()
+
+        if policy_path is not None:
+            policy = tmt.policy.Policy.load(policy_path, context.obj.logger)
+
+            policy.apply_to_tests(
+                tests=tests, policy_name=str(policy_path), logger=context.obj.logger
+            )
+
         echo(
             tmt.Test.export_collection(
-                collection=context.obj.tree.tests(),
+                collection=tests,
                 format=how,
                 template=Path(template) if template else None,
             )

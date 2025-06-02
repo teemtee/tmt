@@ -19,6 +19,10 @@ Added a specification for :ref:`policies </spec/policy>` that allow CI
 system and CI workflow maintainers to modify tests and plans to include
 mandatory checks and phases as required by their testing process.
 
+Initial implementation for the test-level policies has been added as
+well, aiming at CI workflows that need to enforce AVC checks across the
+whole component portfolio.
+
 
 tmt-1.49.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -1,0 +1,29 @@
+test-policy:
+  - duration: |
+      {#
+        Adding extra time based on the original value source. This will
+        help us recognize whether the expected branch applied to input
+        values from similarly tailored tests.
+      #}
+      {% if VALUE_SOURCE == 'fmf' %}
+      {{ VALUE }} +10m
+
+      {% elif VALUE_SOURCE == 'cli' %}
+      {{ VALUE }} +20m
+
+      {% elif VALUE_SOURCE == 'default' %}
+      {{ VALUE }} +30m
+
+      {% elif VALUE_SOURCE == 'policy' %}
+      {{ VALUE }} +40m
+
+      {% endif %}
+
+  - duration: |
+      {#
+        All values now get yet another extra time because now they are
+        all modified by the policy.
+      #}
+      {% if VALUE_SOURCE == 'policy' %}
+      {{ VALUE }} +50m
+      {% endif %}

@@ -1,0 +1,14 @@
+test-policy:
+  - contact: |
+      {% if not VALUE %}
+      - xyzzy
+
+      {% else %}
+          {% for contact in VALUE %}
+              {% if contact == 'bar' %}
+      - baz
+              {% else %}
+      - {{ contact }}
+              {% endif %}
+          {% endfor %}
+      {% endif %}

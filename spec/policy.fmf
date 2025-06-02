@@ -4,6 +4,12 @@ story: |
     that are deemed mandatory for the given CI workflow.
 
 description: |
+    .. note::
+
+        As of now, the specification focuses and applies to
+        :ref:`test metadata</spec/tests>` only. In the future, we plan
+        to support plans and stories as well.
+
     tmt policies offer a powerful and flexible way to dynamically
     modify test metadata using templates. Instead of maintaining multiple
     similar test versions, you can define a base test and then apply
@@ -97,6 +103,8 @@ description: |
       its metadata fields for conditional logic (e.g., ``TEST.contact``,
       ``TEST.component``).
 
+    .. versionadded:: 1.50
+
 example:
   - |
     # To unconditionally change a key value, provide the new value
@@ -139,4 +147,6 @@ example:
           - {{ item }}
           {% endfor %}
 
-link: []
+link:
+  - implemented-by: /tmt/policy.py
+  - verified-by: /tests/policy
