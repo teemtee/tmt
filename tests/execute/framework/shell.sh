@@ -50,7 +50,7 @@ rlJournalStart
         rlAssertGrep "errr /tests/pidlock" $rlRun_LOG
         rlAssertGrep "pidfile locking" $rlRun_LOG
         rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
-        rlAssertGrep "/tests/pidlock 1 error default-0 pidfile locking" $rlRun_LOG
+        rlAssertGrep "/tests/pidlock 1 error default-0 check 'internal/invocation' failed" $rlRun_LOG
     rlPhaseEnd
 
     testName="/tests/timeout"
@@ -63,7 +63,7 @@ rlJournalStart
         rlAssertGrep "Maximum test time '5m' exceeded." $rlRun_LOG
         rlAssertGrep "Adjust the test 'duration' attribute if necessary." $rlRun_LOG
         rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
-        rlAssertGrep "/tests/timeout 1 error default-0 timeout" $rlRun_LOG
+        rlAssertGrep "/tests/timeout 1 error default-0 check 'internal/timeout' failed" $rlRun_LOG
     rlPhaseEnd
 
     testName="/tests/notfound"

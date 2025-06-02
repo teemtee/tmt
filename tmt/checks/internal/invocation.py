@@ -9,16 +9,16 @@ from tmt.result import CheckResult, ResultOutcome
 from tmt.steps.execute import TestInvocation
 from tmt.utils import ProcessExitCodes
 
-CHECK_NAME = 'internal/invocation-error'
+CHECK_NAME = 'internal/invocation'
 
 
 @container
-class InvocationErrorCheck(InternalCheck):
+class InvocationCheck(InternalCheck):
     how: str = CHECK_NAME
 
 
 @provides_check(CHECK_NAME)
-class InvocationError(CheckPlugin[InvocationErrorCheck]):
+class Invocation(CheckPlugin[InvocationCheck]):
     """
     Check for uncategorized invocation errors during test execution.
 
@@ -28,13 +28,13 @@ class InvocationError(CheckPlugin[InvocationErrorCheck]):
     .. versionadded:: 1.50
     """
 
-    _check_class = InvocationErrorCheck
+    _check_class = InvocationCheck
 
     @classmethod
     def after_test(
         cls,
         *,
-        check: 'InvocationErrorCheck',
+        check: 'InvocationCheck',
         invocation: 'TestInvocation',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,

@@ -24,30 +24,31 @@ rlJournalStart
         rlRun "set -o pipefail"
     rlPhaseEnd
 
+    tmt_command="tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n"
     rlPhaseStartTest "Passing test with $PROVISION_HOW"
-        rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /internal/pass"
+        rlRun "$tmt_command /internal/pass"
         assert_no_check_results "/internal/pass" "Test results have no checks"
     rlPhaseEnd
 
     rlPhaseStartTest "Test timeout check with $PROVISION_HOW"
-        rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /internal/timeout" 2
+        rlRun "$tmt_command /internal/timeout" 2
         assert_check_result "Test results have failed timeout check" "/internal/timeout" "internal/timeout" "fail"
     rlPhaseEnd
 
     rlPhaseStartTest "Test abort & interrupt check with $PROVISION_HOW"
-        rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /internal/abort" 2
+        rlRun "$tmt_command /internal/abort" 2
         assert_check_result "Test results have failed abort check" "/internal/abort" "internal/abort" "fail"
         assert_check_result "Test results have failed interrupt check" "/internal/abort" "internal/interrupt" "fail"
     rlPhaseEnd
 
     rlPhaseStartTest "Test permission check with $PROVISION_HOW"
-        rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /internal/permission" 2
+        rlRun "$tmt_command /internal/permission" 2
         assert_check_result "Test results have failed permission check" "/internal/permission" "internal/permission" "fail"
     rlPhaseEnd
 
-    rlPhaseStartTest "Test invocation-error check with $PROVISION_HOW"
-        rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /internal/invocation-error" 2
-        assert_check_result "Test results have failed invocation-error check" "/internal/invocation-error" "internal/invocation-error" "fail"
+    rlPhaseStartTest "Test invocation check with $PROVISION_HOW"
+        rlRun "$tmt_command /internal/invocation" 2
+        assert_check_result "Test results have failed invocation check" "/internal/invocation" "internal/invocation" "fail"
     rlPhaseEnd
 
     rlPhaseStartCleanup
