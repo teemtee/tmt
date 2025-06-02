@@ -12,13 +12,13 @@ rlJournalStart
     rlPhaseStartTest "No envvar used"
         rlRun -s "tmt run -vv plan -n /no-option" "2"
         rlAssertGrep 'errr /demo/test' $rlRun_LOG '-F'
-        rlAssertGrep 'Note: timeout' $rlRun_LOG '-F'
+        rlAssertGrep "Note: check 'internal/timeout' failed" $rlRun_LOG '-F'
 
         rlRun "tmt run -vv plan -n /via-plan-true" "0"
 
         rlRun "tmt run -vv plan -n /via-plan-false" "2"
         rlAssertGrep 'errr /demo/test' $rlRun_LOG '-F'
-        rlAssertGrep 'Note: timeout' $rlRun_LOG '-F'
+        rlAssertGrep "Note: check 'internal/timeout' failed" $rlRun_LOG '-F'
     rlPhaseEnd
 
     rlPhaseStartTest "With IGNORE_DURATION=1"
