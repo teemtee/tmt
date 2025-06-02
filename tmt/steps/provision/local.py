@@ -1,4 +1,3 @@
-import re
 from typing import Any, Optional, Union
 
 import tmt
@@ -9,7 +8,7 @@ import tmt.steps.provision
 import tmt.utils
 from tmt.container import container
 from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript
-from tmt.utils.hints import check_for_message, print_hints
+from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
 
 
@@ -83,11 +82,11 @@ class GuestLocal(tmt.Guest):
             )
             # fmt: on
         except tmt.utils.RunError as exc:
-            if check_for_message(
-                patterns=[re.compile("ansible-playbook.*not found")],
-                outputs=[exc.stderr, exc.stdout, exc.message],
-            ):
-                print_hints('ansible-not-available', logger=self._logger)
+            hint = get_hint('ansible-not-available', ignore_missing=False)
+
+            if hint.search_cli_patterns(exc.stderr, exc.stdout, exc.message):
+                hint.print(self._logger)
+
             raise exc
 
     def execute(
