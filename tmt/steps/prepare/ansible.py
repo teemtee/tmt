@@ -39,10 +39,13 @@ class PrepareAnsibleData(tmt.steps.prepare.PrepareStepData):
         default_factory=list,
         option=('-p', '--playbook'),
         multiple=True,
-        metavar='PATH|URL',
+        metavar='PATH|URL|NAMESPACE.COLLECTION.PLAYBOOK',
         help="""
-             Path or URL of an ansible playbook to run.
-             The playbook path must be relative to the metadata tree root.
+             Path or URL of an Ansible playbook, or a playbook
+             bundled within a collection, to run on a guest.
+             Playbook ``PATH`` must be relative to the metadata tree
+             root, if the metadata tree exists, or to the current
+             working directory.
              """,
         normalize=tmt.utils.normalize_string_list,
     )
