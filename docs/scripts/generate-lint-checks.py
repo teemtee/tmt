@@ -6,7 +6,7 @@ import textwrap
 from tmt.base import LintableCollection, Plan, Story, Test
 from tmt.lint import Linter
 from tmt.utils import Path
-from tmt.utils.templates import render_template_file
+from tmt.utils.templates import render_template_file_into_file
 
 HELP = textwrap.dedent("""
 Usage: generate-lint-checks.py <TEMPLATE-PATH> <OUTPUT-PATH>
@@ -38,7 +38,7 @@ def main() -> None:
         'COLLECTION_LINTERS': _sort_linters(LintableCollection.get_linter_registry()),
     }
 
-    output_filepath.write_text(render_template_file(template_filepath, **linters))
+    render_template_file_into_file(template_filepath, output_filepath, **linters)
 
 
 if __name__ == '__main__':

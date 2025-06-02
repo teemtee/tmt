@@ -189,7 +189,10 @@ description = "Run scripts with multiple Python versions"
 python = ["3.9", "3.12", "3.13"]
 
 [tool.hatch.envs.docs]
-dependencies = ["tmt[docs]"]
+dependencies = [
+    "tmt[docs]",
+    "sphinx-lint"
+]
 
 [tool.hatch.envs.docs.scripts]
 # Note that in RTD there are a few additional flags (from RTD's default build
@@ -197,6 +200,10 @@ dependencies = ["tmt[docs]"]
 # files below, but it may be providing additional metadata for RTD to index.
 html = "sphinx-build -b html {root}/docs {root}/docs/_build {args}"
 linkcheck = "sphinx-build -b linkcheck {root}/docs {root}/docs/_build {args}"
+sphinx-rest-linter = [
+    "sphinx-build -b dummy {root}/docs {root}/docs/_build {args}",
+    "sphinx-lint --ignore=.hatch_envs"
+]
 man = [
     "cp {root}/docs/header.txt {root}/man.rst",
     "tail -n+8 docs/overview.rst >> {root}/man.rst",

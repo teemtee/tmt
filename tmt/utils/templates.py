@@ -536,3 +536,30 @@ def render_template_file(
 
     except FileNotFoundError as exc:
         raise GeneralError(f"Could not open template '{template_filepath}'.") from exc
+
+
+def render_template_file_into_file(
+    input_filepath: Path,
+    output_filepath: Path,
+    environment: Optional[jinja2.Environment] = None,
+    **variables: Any,
+) -> None:
+    """
+    Render a template from a file, and write the result into a file.
+
+    Combines :py:func:`render_template_file` and
+    :py:meth:`Path.write_text`, but makes sure the file ends with an
+    empty line.
+
+    :param input_filepath: path to the template file.
+    :param output_filepath: path to the file in which the rendering
+        should be saved.
+    :param environment: Jinja2 environment to use.
+    :param variables: variables to pass to the template.
+    """
+
+    output_filepath.write_text(
+        render_template_file(input_filepath, environment=environment, **variables)
+    )
+
+    output_filepath.append_text('\n')

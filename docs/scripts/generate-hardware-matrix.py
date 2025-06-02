@@ -6,7 +6,7 @@ import textwrap
 import tmt.plugins
 import tmt.steps.provision
 from tmt.utils import Path
-from tmt.utils.templates import render_template_file
+from tmt.utils.templates import render_template_file_into_file
 
 HELP = textwrap.dedent("""
 Usage: generate-hardware-matrix.py <TEMPLATE-PATH> <OUTPUT-PATH>
@@ -75,13 +75,12 @@ def main() -> None:
             else:
                 matrix[hw_requirement][implemented_by_method] = (True, None)
 
-    output_filepath.write_text(
-        render_template_file(
-            template_filepath,
-            LOGGER=logger,
-            MATRIX=matrix,
-            NOTES=notes,
-        )
+    render_template_file_into_file(
+        template_filepath,
+        output_filepath,
+        LOGGER=logger,
+        MATRIX=matrix,
+        NOTES=notes,
     )
 
 
