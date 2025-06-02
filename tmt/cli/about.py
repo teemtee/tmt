@@ -112,11 +112,7 @@ def plugins_ls(context: Context, how: str) -> None:
 
 
 @about.group(invoke_without_command=True, cls=CustomGroup)
-@option(
-    '--hint',
-    'hint_ids',
-    multiple=True,
-)
+@option('--hint', 'hint_ids', metavar='ID', multiple=True, help='Hint to display.')
 @pass_context
 def hints(context: Context, hint_ids: Any) -> None:
     """
