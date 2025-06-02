@@ -28,7 +28,7 @@ import functools
 import re
 import textwrap
 from collections.abc import Iterator
-from typing import Literal, Optional, overload
+from typing import Literal, Optional, cast, overload
 
 import tmt.container
 import tmt.log
@@ -111,48 +111,51 @@ class Hint:
 
 HINTS: dict[str, Hint] = {
     _hint_id: Hint(_hint_id, *_hint_info)
-    for _hint_id, _hint_info in {
-        'provision': (
-            """
-            You can use the ``local`` method to execute tests directly on your localhost.
+    for _hint_id, _hint_info in cast(
+        dict[str, tuple[str, list[str]]],
+        {
+            'provision': (
+                """
+                You can use the ``local`` method to execute tests directly on your localhost.
 
-            See ``tmt run provision --help`` for all available ``provision`` options.
-            """,
-            [],
-        ),
-        "report": (
-            """
-            You can use the ``display`` method to show test results on the terminal.
+                See ``tmt run provision --help`` for all available ``provision`` options.
+                """,
+                [],
+            ),
+            "report": (
+                """
+                You can use the ``display`` method to show test results on the terminal.
 
-            See ``tmt run report --help`` for all available report options.
-            """,
-            [],
-        ),
-        'ansible-not-available': (
-            """
-            Make sure ``ansible-playbook`` is installed, it is required for preparing guests using
-            Ansible playbooks.
+                See ``tmt run report --help`` for all available report options.
+                """,
+                [],
+            ),
+            'ansible-not-available': (
+                """
+                Make sure ``ansible-playbook`` is installed, it is required for preparing guests
+                using Ansible playbooks.
 
-            To quickly test ``ansible-playbook`` presence, you can try running
-            ``ansible-playbook --help``.
+                To quickly test ``ansible-playbook`` presence, you can try running
+                ``ansible-playbook --help``.
 
-            * Users who installed tmt from system repositories should install ``ansible-core``
-              package.
-            * Users who installed tmt from PyPI should install ``tmt[ansible]`` extra.
-            """,
-            [r'ansible-playbook.*not found'],
-        ),
-        # TODO: once `minute` plugin provides its own hints, we can drop
-        # this hint and move it to the plugin.
-        'provision/minute': (
-            """
-            Make sure ``tmt-redhat-provision-minute`` package is installed, it is required for
-            guests backed by 1minutetip OpenStack as provided by ``provision/minute`` plugin. The
-            package is available from the internal COPR repository only.
-            """,
-            [],
-        ),
-    }.items()
+                * Users who installed tmt from system repositories should install ``ansible-core``
+                package.
+                * Users who installed tmt from PyPI should install ``tmt[ansible]`` extra.
+                """,
+                [r'ansible-playbook.*not found'],
+            ),
+            # TODO: once `minute` plugin provides its own hints, we can drop
+            # this hint and move it to the plugin.
+            'provision/minute': (
+                """
+                Make sure ``tmt-redhat-provision-minute`` package is installed, it is required for
+                guests backed by 1minutetip OpenStack as provided by ``provision/minute`` plugin.
+                The package is available from the internal COPR repository only.
+                """,
+                [],
+            ),
+        },
+    ).items()
 }
 
 
