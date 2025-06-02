@@ -83,7 +83,7 @@ rlJournalStart
         rlAssertGrep "/dev/null: Permission denied" $rlRun_LOG
         rlAssertGrep "errr /tests/notexec" $rlRun_LOG
         rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
-        rlAssertGrep "/tests/notexec 1 error default-0 null" $rlRun_LOG
+        rlAssertGrep "/tests/notexec 1 error default-0 check 'internal/permission' failed" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
