@@ -249,24 +249,3 @@ def print_hints(*ids: str, ignore_missing: bool = False, logger: tmt.log.Logger)
 
     for hint in hints:
         hint.print(logger)
-
-
-def check_for_message(patterns: list[re.Pattern[str]], outputs: list[Optional[str]]) -> bool:
-    """
-    Check one or more output strings for expected error message
-
-    :param patterns: list of regular expressions to be searched for
-    :param outputs: command output strings to be searched
-
-    :returns: True if any pattern matches any of the provided outputs
-    """
-
-    for output in outputs:
-        if output is None:
-            continue
-
-        for pattern in patterns:
-            if pattern.search(output):
-                return True
-
-    return False
