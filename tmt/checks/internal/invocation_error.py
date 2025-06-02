@@ -31,17 +31,6 @@ class InvocationError(CheckPlugin[InvocationErrorCheck]):
     _check_class = InvocationErrorCheck
 
     @classmethod
-    def before_test(
-        cls,
-        *,
-        check: 'InvocationErrorCheck',
-        invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
-        logger: tmt.log.Logger,
-    ) -> list[CheckResult]:
-        return []
-
-    @classmethod
     def after_test(
         cls,
         *,

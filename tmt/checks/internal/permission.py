@@ -30,17 +30,6 @@ class Permission(CheckPlugin[PermissionCheck]):
     _check_class = PermissionCheck
 
     @classmethod
-    def before_test(
-        cls,
-        *,
-        check: 'PermissionCheck',
-        invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
-        logger: tmt.log.Logger,
-    ) -> list[CheckResult]:
-        return []
-
-    @classmethod
     def after_test(
         cls,
         *,

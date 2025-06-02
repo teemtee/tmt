@@ -30,17 +30,6 @@ class Abort(CheckPlugin[AbortCheck]):
     _check_class = AbortCheck
 
     @classmethod
-    def before_test(
-        cls,
-        *,
-        check: 'AbortCheck',
-        invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
-        logger: tmt.log.Logger,
-    ) -> list[CheckResult]:
-        return []
-
-    @classmethod
     def after_test(
         cls,
         *,

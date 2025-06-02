@@ -30,17 +30,6 @@ class Timeout(CheckPlugin[TimeoutCheck]):
     _check_class = TimeoutCheck
 
     @classmethod
-    def before_test(
-        cls,
-        *,
-        check: 'TimeoutCheck',
-        invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
-        logger: tmt.log.Logger,
-    ) -> list[CheckResult]:
-        return []
-
-    @classmethod
     def after_test(
         cls,
         *,

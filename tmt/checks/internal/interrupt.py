@@ -30,17 +30,6 @@ class Interrupt(CheckPlugin[InterruptCheck]):
     _check_class = InterruptCheck
 
     @classmethod
-    def before_test(
-        cls,
-        *,
-        check: 'InterruptCheck',
-        invocation: 'TestInvocation',
-        environment: Optional[tmt.utils.Environment] = None,
-        logger: tmt.log.Logger,
-    ) -> list[CheckResult]:
-        return []
-
-    @classmethod
     def after_test(
         cls,
         *,
