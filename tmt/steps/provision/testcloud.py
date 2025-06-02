@@ -212,9 +212,9 @@ TPM_VERSION_SUPPORTED_VERSIONS = {
     False: ['2.0', '2'],
 }
 
-#: Default retry attempts and interval
-RETRY_ATTEMPTS = 5
-RETRY_INTERVAL = 5
+#: Image url fetch retry attempts and interval
+IMAGE_URL_FETCH_RETRY_ATTEMPTS = 5
+IMAGE_URL_FETCH_RETRY_INTERVAL = 5
 
 
 def normalize_memory_size(
@@ -799,8 +799,8 @@ class GuestTestcloud(tmt.GuestSsh):
             try:
                 url = tmt.utils.retry(
                     func=testcloud.util.get_image_url,
-                    attempts=RETRY_ATTEMPTS,
-                    interval=RETRY_INTERVAL,
+                    attempts=IMAGE_URL_FETCH_RETRY_ATTEMPTS,
+                    interval=IMAGE_URL_FETCH_RETRY_INTERVAL,
                     label=f"Get image url for '{name}'.",
                     logger=self._logger,
                     distro_str=name,
