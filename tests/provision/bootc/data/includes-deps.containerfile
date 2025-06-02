@@ -1,4 +1,4 @@
-FROM quay.io/fedora/fedora-bootc:42
+FROM quay.io/fedora/fedora-bootc:latest
 
 RUN dnf -y install cloud-init rsync vim && \
     ln -s ../cloud-init.target /usr/lib/systemd/system/default.target.wants && \
