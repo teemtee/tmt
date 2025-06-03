@@ -76,6 +76,13 @@ _:
               tags:
                 BusinessUnit: tmt
 
+  # Core test requires
+  - &require-core-tests
+    require:
+      label:
+        absent:
+          - ci | skip
+
   # Full test requires
   - &require-full-tests
     require:
@@ -84,6 +91,7 @@ _:
           - ci | full test
         absent:
           - status | discuss
+          - ci | skip
 
 
 jobs:
@@ -105,6 +113,7 @@ jobs:
 
   # Test core
   - <<: *test-base
+    <<: *require-core-tests
     targets: *latest-targets
     identifier: core
     tmt_plan: '/plans/features/(core|basic)'
