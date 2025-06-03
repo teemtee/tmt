@@ -653,6 +653,22 @@ __ https://github.com/orgs/teemtee/projects/1/views/6
 __ https://cli.github.com
 
 
+Communication
+------------------------------------------------------------------
+
+When discussing changes proposed in a pull request review we
+encourage you to use the preferred channel to make the overall
+communication more efficient:
+
+GitHub comments
+    * Preferred for review process and discussion to have all the
+      information at one place
+    * Asynchronous nature - contributors don't have to react immediately
+Chat
+    * Useful for quick sync
+    * Do not overuse to prevent too many unnecessary interruptions
+
+
 Merging
 ------------------------------------------------------------------
 
@@ -708,7 +724,7 @@ make clean
 Release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``tmt`` project is released monthly. If there are urgent
+The ``tmt`` project is released biweekly. If there are urgent
 changes which need to be released quickly, a hotfix release may be
 created to address the important problem sooner.
 
