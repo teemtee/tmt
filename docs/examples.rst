@@ -572,9 +572,9 @@ In this example:
 - The ``local-tests`` configuration discovers tests from the current repository as usual.
 - The ``shared-tests`` configuration fetches tests from the ``https://github.com/example/shared-tests.git``
   repository.
-  - The ``ref: main`` line ensures that tests are fetched from the ``main`` branch of the shared repository.
-  - The ``filter: "tag:smoke"`` line demonstrates how you can select specific tests (e.g., those tagged with "smoke")
-    from the shared repository.
+   - The ``ref: main`` line ensures that tests are fetched from the ``main`` branch of the shared repository.
+   - The ``filter: "tag:smoke"`` line demonstrates how you can select specific tests (e.g., those tagged with "smoke")
+     from the shared repository.
 
 All discovered tests, both local and shared, will be available for execution in subsequent steps of your plan.
 You can then select them using their FMF names as usual.
