@@ -663,7 +663,7 @@ communication more efficient:
 GitHub comments
     * Preferred for review process and discussion to have all the
       information at one place
-    * ASYNC nature - I don't have to react now
+    * Asynchronous nature - contributors don't have to react immediately
 Chat
     * Useful for quick sync
     * Do not overuse to prevent too many unnecessary interruptions
