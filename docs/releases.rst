@@ -32,6 +32,10 @@ timeouts or aborts. These internal checks run for every test, and
 the result of each check is included in the ``results.yaml`` file
 only if that specific check fails.
 
+Previously the ``tmt link`` command only supported links with the
+``verifies`` relation, now it is possible to :ref:`link-issues`
+for all available :ref:`/spec/core/link` relations.
+
 
 tmt-1.49.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

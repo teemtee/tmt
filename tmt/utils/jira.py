@@ -116,7 +116,7 @@ class JiraInstance:
 
     def add_link_to_issue(
         self,
-        issue_url: str,
+        link: 'tmt.base.Link',
         tmt_objects: Sequence[TmtObject],
     ) -> None:
         """
@@ -124,7 +124,11 @@ class JiraInstance:
         """
 
         # Prepare a nice title for the link
-        title = "tmt: " + fmf.utils.listed([tmt_object.name for tmt_object in tmt_objects])
+        title = (
+            "tmt: "
+            + fmf.utils.listed([tmt_object.name for tmt_object in tmt_objects])
+            + f" ({link.relation})"
+        )
 
         # Prepare the tmt web service link from all tmt objects
         web_link_parameters: dict[str, str] = {}
@@ -135,9 +139,10 @@ class JiraInstance:
         )
 
         # Add link to the issue
-        issue_id = issue_url.split('/')[-1]
+        assert isinstance(link.target, str)
+        issue_id = link.target.split('/')[-1]
         self.jira.add_simple_link(issue_id, {"url": web_link, "title": title})
-        self.logger.print(f"Add link '{title}' to Jira issue '{issue_url}'.")
+        self.logger.print(f"Add link '{title}' to Jira issue '{link.target}'.")
 
 
 def save_link_to_metadata(
@@ -195,8 +200,7 @@ def link(
     :param logger: a logger instance for logging
     """
 
-    # TODO: Shall we cover all relations instead?
-    for link in links.get("verifies"):
+    for link in links.get():
         # Save the link to test/plan/story metadata on disk
         for tmt_object in tmt_objects:
             save_link_to_metadata(tmt_object, link, logger)
@@ -213,9 +217,9 @@ def link(
         # (e.g. the issue is covered by several individual tests)
         if separate:
             for tmt_object in tmt_objects:
-                jira_instance.add_link_to_issue(link.target, [tmt_object])
+                jira_instance.add_link_to_issue(link, [tmt_object])
 
         # Link all provided tests, plan or stories with a single link
         # (e.g. the issue is covered by a test run under the given plan)
         else:
-            jira_instance.add_link_to_issue(link.target, tmt_objects)
+            jira_instance.add_link_to_issue(link, tmt_objects)
