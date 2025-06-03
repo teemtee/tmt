@@ -462,12 +462,12 @@ can fetch and integrate tests defined within that repository.
     discover:
         # Fetch common tests from a shared repository
         - name: core-tests
-            how: fmf
-            url: https://github.com/my-org/core-tests.git
+        how: fmf
+        url: https://github.com/my-org/core-tests.git
 
         # Discover tests located within this project's own repository
         - name: project-specific
-            how: fmf
+        how: fmf
 
 Plans
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
