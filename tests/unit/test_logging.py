@@ -54,7 +54,7 @@ def _exercise_logger(
         details_logger_labels=labels,
         levelno=logging.INFO,
     )
-    assert tmt.utils.remove_color(captured.out) == f'{prefix}this is printed\n'
+    assert tmt.utils.remove_color(captured.out) == 'this is printed\n'
     assert_log(
         caplog,
         message=f'{prefix}this is a debug message',
