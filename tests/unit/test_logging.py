@@ -54,7 +54,12 @@ def _exercise_logger(
         details_logger_labels=labels,
         levelno=logging.INFO,
     )
-    assert tmt.utils.remove_color(captured.out) == f'{prefix}this is printed\n'
+
+    # Messages printed using print() are not indented but they can
+    # still contain labels.
+    print_prefix = prefix.lstrip()
+    assert tmt.utils.remove_color(captured.out) == f'{print_prefix}this is printed\n'
+
     assert_log(
         caplog,
         message=f'{prefix}this is a debug message',
