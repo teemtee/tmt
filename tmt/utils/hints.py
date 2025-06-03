@@ -25,8 +25,10 @@ on the first line, followed by more details in the rest of the text.
 # raises, providing more info on command-line and in HTML docs.
 
 import functools
+import re
 import textwrap
 from collections.abc import Iterator
+from typing import Literal, Optional, cast, overload
 
 import tmt.container
 import tmt.log
@@ -37,8 +39,16 @@ from tmt.log import Logger
 
 @tmt.container.container
 class Hint:
+    #: Unique hint id
     id: str
+
+    #: Detailed text with hint information
     text: str
+
+    #: Regular expression patterns for searching the command line output
+    cli_output_patterns: list[re.Pattern[str]] = tmt.container.simple_field(
+        default_factory=list[re.Pattern[str]]
+    )
 
     @functools.cached_property
     def summary(self) -> str:
@@ -54,9 +64,16 @@ class Hint:
         # add ref as well.
         return self.summary
 
-    def __init__(self, hint_id: str, text: str) -> None:
+    def __init__(
+        self, hint_id: str, text: str, cli_output_patterns: Optional[list[str]] = None
+    ) -> None:
+        """
+        Initialize hint id, text and search patterns
+        """
+
         self.id = hint_id
         self.text = textwrap.dedent(text).strip()
+        self.cli_output_patterns = [re.compile(pattern) for pattern in (cli_output_patterns or [])]
 
     def _render(self, s: str, logger: Logger) -> str:
         if tmt.utils.rest.REST_RENDERING_ALLOWED:
@@ -73,39 +90,72 @@ class Hint:
     def render(self, logger: Logger) -> str:
         return self._render(self.text, logger)
 
+    def print(self, logger: Logger) -> None:
+        """
+        Print hint to the user
+        """
+
+        logger.info('hint', self.render(logger), color='blue')
+
+    def search_cli_patterns(self, *outputs: Optional[str]) -> bool:
+        """
+        Check provided command line outputs for known error patterns
+        """
+
+        return any(
+            any(pattern.search(output) for pattern in self.cli_output_patterns)
+            for output in outputs
+            if output is not None
+        )
+
 
 HINTS: dict[str, Hint] = {
-    _hint_id: Hint(_hint_id, _hint)
-    for _hint_id, _hint in {
-        'provision': """
-            You can use the ``local`` method to execute tests directly on your localhost.
+    _hint_id: Hint(_hint_id, *_hint_info)
+    for _hint_id, _hint_info in cast(
+        dict[str, tuple[str, list[str]]],
+        {
+            'provision': (
+                """
+                You can use the ``local`` method to execute tests directly on your localhost.
 
-            See ``tmt run provision --help`` for all available ``provision`` options.
-            """,
-        "report": """
-            You can use the ``display`` method to show test results on the terminal.
+                See ``tmt run provision --help`` for all available ``provision`` options.
+                """,
+                [],
+            ),
+            "report": (
+                """
+                You can use the ``display`` method to show test results on the terminal.
 
-            See ``tmt run report --help`` for all available report options.
-            """,
-        'ansible-not-available': """
-            Make sure ``ansible-playbook`` is installed, it is required for preparing guests using
-            Ansible playbooks.
+                See ``tmt run report --help`` for all available report options.
+                """,
+                [],
+            ),
+            'ansible-not-available': (
+                """
+                Make sure ``ansible-playbook`` is installed, it is required for preparing guests
+                using Ansible playbooks.
 
-            To quickly test ``ansible-playbook`` presence, you can try running
-            ``ansible-playbook --help``.
+                To quickly test ``ansible-playbook`` presence, you can try running
+                ``ansible-playbook --help``.
 
-            * Users who installed tmt from system repositories should install ``ansible-core``
-              package.
-            * Users who installed tmt from PyPI should install ``tmt[ansible]`` extra.
-            """,
-        # TODO: once `minute` plugin provides its own hints, we can drop
-        # this hint and move it to the plugin.
-        'provision/minute': """
-            Make sure ``tmt-redhat-provision-minute`` package is installed, it is required for
-            guests backed by 1minutetip OpenStack as provided by ``provision/minute`` plugin. The
-            package is available from the internal COPR repository only.
-            """,
-    }.items()
+                * Users who installed tmt from system repositories should install ``ansible-core``
+                package.
+                * Users who installed tmt from PyPI should install ``tmt[ansible]`` extra.
+                """,
+                [r'ansible-playbook.*not found'],
+            ),
+            # TODO: once `minute` plugin provides its own hints, we can drop
+            # this hint and move it to the plugin.
+            'provision/minute': (
+                """
+                Make sure ``tmt-redhat-provision-minute`` package is installed, it is required for
+                guests backed by 1minutetip OpenStack as provided by ``provision/minute`` plugin.
+                The package is available from the internal COPR repository only.
+                """,
+                [],
+            ),
+        },
+    ).items()
 }
 
 
@@ -163,6 +213,31 @@ def get_hints(*ids: str, ignore_missing: bool = False) -> list[Hint]:
     return list(_render_mandatory_hints())
 
 
+@overload
+def get_hint(id_: str, ignore_missing: Literal[True]) -> Optional[Hint]:
+    pass
+
+
+@overload
+def get_hint(id_: str, ignore_missing: Literal[False]) -> Hint:
+    pass
+
+
+def get_hint(id_: str, ignore_missing: bool = False) -> Optional[Hint]:
+    """
+    Return hint for the provided identifier
+
+    :param id_: Hint identifier.
+    :param ignore_missing: If not set, non-existent hint will raise an
+        exception. Otherwise, non-existent hint will be skipped.
+    :returns: Hint if found, None otherwise.
+    """
+
+    hints = get_hints(id_, ignore_missing=ignore_missing)
+
+    return hints[0] if hints else None
+
+
 def print_hints(*ids: str, ignore_missing: bool = False, logger: tmt.log.Logger) -> None:
     """
     Display given hints by printing them as info-level messages.
@@ -176,4 +251,4 @@ def print_hints(*ids: str, ignore_missing: bool = False, logger: tmt.log.Logger)
     hints = get_hints(*ids, ignore_missing=ignore_missing)
 
     for hint in hints:
-        logger.info('hint', hint.render(logger), color='blue')
+        hint.print(logger)

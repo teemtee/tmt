@@ -8,6 +8,7 @@ import tmt.steps.provision
 import tmt.utils
 from tmt.container import container
 from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript
+from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
 
 
@@ -81,10 +82,11 @@ class GuestLocal(tmt.Guest):
             )
             # fmt: on
         except tmt.utils.RunError as exc:
-            if exc.stderr and 'ansible-playbook: command not found' in exc.stderr:
-                from tmt.utils.hints import print_hints
+            hint = get_hint('ansible-not-available', ignore_missing=False)
 
-                print_hints('ansible-not-available', logger=self._logger)
+            if hint.search_cli_patterns(exc.stderr, exc.stdout, exc.message):
+                hint.print(self._logger)
+
             raise exc
 
     def execute(
