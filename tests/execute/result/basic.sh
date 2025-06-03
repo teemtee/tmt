@@ -94,7 +94,7 @@ rlJournalStart
                     0
         test_result "errr /test/error-timeout \(on default-0\) \[7/12\]" \
                     1 \
-                    "Note: timeout"
+                    "Note: check 'internal/timeout' failed"
         test_result "fail /test/fail \(on default-0\) \[8/12\]" \
                     0
         test_result "pass /test/pass \(on default-0\) \[9/12\]" \

@@ -26,6 +26,12 @@ whole component portfolio.
 The ``results.yaml`` file will now contain the log path for
 ``journal.xml``.
 
+New internal :ref:`checks </plugins/test-checks>` have been added
+to report special events that occur during test execution, such as
+timeouts or aborts. These internal checks run for every test, and
+the result of each check is included in the ``results.yaml`` file
+only if that specific check fails.
+
 
 tmt-1.49.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -29,8 +29,8 @@ rlJournalStart
             "$(yq -r '[sort_by(.name) | .[] | "\(.name):\(.result)"] | join(" ")' ${run}/plan/execute/results.yaml)" \
             "/default-0/abort:error /default-0/do-not-run/1:pending /default-1/do-not-run/2:pending"
         rlAssertEquals "results should record the test aborted" \
-            "$(yq -r '.[] | .note | join(", ")' ${run}/plan/execute/results.yaml)" \
-            "beakerlib: State 'started', aborted"
+            "$(yq -r '.[] | .note | sort | join(", ")' ${run}/plan/execute/results.yaml)" \
+            "aborted, beakerlib: State 'started', check 'internal/abort' failed, check 'internal/interrupt' failed"
     rlPhaseEnd
 
     rlPhaseStartCleanup

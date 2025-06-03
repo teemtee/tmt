@@ -37,7 +37,7 @@ rlJournalStart
             grep -B 1 "/test/$test_name_suffix</td>" $HTML | tee $tmp/$test_name_suffix
             rlAssertGrep 'class="result error">error</td>' $tmp/$test_name_suffix -F
             sed -e "/name\">\/test\/$test_name_suffix/,/\/tr/!d" $HTML | tee $tmp/$test_name_suffix-note
-            rlAssertGrep '<li class="note">timeout</li>' $tmp/$test_name_suffix-note -F
+            rlAssertGrep '<li class="note">check &#39;internal/timeout&#39; failed</li>' $tmp/$test_name_suffix-note -F
 
             test_name_suffix=xfail
             grep -B 1 "/test/$test_name_suffix</td>" $HTML | tee $tmp/$test_name_suffix

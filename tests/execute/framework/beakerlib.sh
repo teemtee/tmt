@@ -8,8 +8,18 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Creating run directory/id"
     rlPhaseEnd
 
+    function assert_result () {
+        name="$1"
+        serial="$2"
+        result="$3"
+        guest="$4"
+        note="$5"
+        file="${run}/plans/execute/results.yaml"
+        actual=$(yq -er ".[] | \"\\(.name) \\(.\"serial-number\") \\(.result) \\(.guest.name) \\(if .note == [] then \"\" else ((.note[] | select(. == \"$note\")) // .note[0]) end)\"" "$file")
+        rlAssertEquals "Check result for $name" "$actual" "$name $serial $result $guest $note"
+    }
+
     tmt_command="tmt run --scratch -a --id ${run} provision --how local execute -vv report -vvv test --name"
-    extract_results_command="yq -er '.[] | \"\\(.name) \\(.\"serial-number\") \\(.result) \\(.guest.name) \\(.note[0])\"'"
 
     testName="/tests/pass"
     rlPhaseStartTest "${testName}"
@@ -21,8 +31,7 @@ rlJournalStart
         # tmt prints the correct result into log
         rlAssertGrep "pass /tests/pass" $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
-        rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
-        rlAssertGrep "/tests/pass 1 pass default-0 null" $rlRun_LOG
+        assert_result "/tests/pass" "1" "pass" "default-0" ""
     rlPhaseEnd
 
     testName="/tests/fail"
@@ -35,8 +44,7 @@ rlJournalStart
         # tmt prints the correct result into log
         rlAssertGrep "fail /tests/fail" $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
-        rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
-        rlAssertGrep "/tests/fail 1 fail default-0 null" $rlRun_LOG
+        assert_result "/tests/fail" "1" "fail" "default-0" ""
     rlPhaseEnd
 
     testName="/tests/warn"
@@ -49,8 +57,7 @@ rlJournalStart
         # tmt prints the correct result into log
         rlAssertGrep "warn /tests/warn" $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
-        rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
-        rlAssertGrep "/tests/warn 1 warn default-0 null" $rlRun_LOG
+        assert_result "/tests/warn" "1" "warn" "default-0" ""
     rlPhaseEnd
 
     testName="/tests/worst"
@@ -67,8 +74,7 @@ rlJournalStart
         # tmt prints the correct result into log
         rlAssertGrep "fail /tests/worst" $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
-        rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
-        rlAssertGrep "/tests/worst 1 fail default-0 null" $rlRun_LOG
+        assert_result "/tests/worst" "1" "fail" "default-0" ""
     rlPhaseEnd
 
     testName="/tests/timeout"
@@ -85,8 +91,7 @@ rlJournalStart
         rlAssertGrep "Maximum test time '5m' exceeded." $rlRun_LOG
         rlAssertGrep "Adjust the test 'duration' attribute if necessary." $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
-        rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
-        rlAssertGrep "/tests/timeout 1 error default-0 timeout" $rlRun_LOG
+        assert_result "/tests/timeout" "1" "error" "default-0" "check 'internal/timeout' failed"
     rlPhaseEnd
 
     testName="/tests/pidlock"
@@ -102,8 +107,7 @@ rlJournalStart
         rlAssertGrep "pidfile locking" $rlRun_LOG
         rlAssertGrep "warn: Test failed to manage its pidfile." $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
-        rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
-        rlAssertGrep "/tests/pidlock 1 error default-0 pidfile locking" $rlRun_LOG
+        assert_result "/tests/pidlock" "1" "error" "default-0" "check 'internal/invocation' failed"
     rlPhaseEnd
 
     testName="/tests/incomplete-fail"
@@ -119,8 +123,7 @@ rlJournalStart
         rlAssertGrep "errr /tests/incomplete-fail" $rlRun_LOG
         rlAssertGrep "beakerlib: State 'incomplete'" $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
-        rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
-        rlAssertGrep "/tests/incomplete-fail 1 error default-0 beakerlib: State 'incomplete'" $rlRun_LOG
+        assert_result "/tests/incomplete-fail" "1" "error" "default-0" "beakerlib: State 'incomplete'"
     rlPhaseEnd
 
     testName="/tests/incomplete-pass"
@@ -136,8 +139,7 @@ rlJournalStart
         rlAssertGrep "errr /tests/incomplete-pass" $rlRun_LOG
         rlAssertGrep "beakerlib: State 'incomplete'" $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
-        rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
-        rlAssertGrep "/tests/incomplete-pass 1 error default-0 beakerlib: State 'incomplete'" $rlRun_LOG
+        assert_result "/tests/incomplete-pass" "1" "error" "default-0" "beakerlib: State 'incomplete'"
     rlPhaseEnd
 
     testName="/tests/notfound"
@@ -152,8 +154,7 @@ rlJournalStart
         rlAssertGrep "beakerlib: TestResults FileError" $rlRun_LOG
         rlAssertGrep "No such file or directory" $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
-        rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
-        rlAssertGrep "/tests/notfound 1 error default-0 beakerlib: TestResults FileError" $rlRun_LOG
+        assert_result "/tests/notfound" "1" "error" "default-0" "beakerlib: TestResults FileError"
     rlPhaseEnd
 
     testName="/tests/notexec"
@@ -168,8 +169,7 @@ rlJournalStart
         rlAssertGrep "beakerlib: TestResults FileError" $rlRun_LOG
         rlAssertGrep "Permission denied" $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
-        rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
-        rlAssertGrep "/tests/notexec 1 error default-0 beakerlib: TestResults FileError" $rlRun_LOG
+        assert_result "/tests/notexec" "1" "error" "default-0" "beakerlib: TestResults FileError"
     rlPhaseEnd
 
     rlPhaseStartCleanup

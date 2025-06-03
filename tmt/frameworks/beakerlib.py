@@ -204,11 +204,7 @@ class Beakerlib(TestFramework):
         # Check if it was killed by timeout (set by tmt executor)
         actual_result = ResultOutcome.ERROR
         if invocation.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
-            note.append('timeout')
             invocation.phase.timeout_hint(invocation)
-
-        elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.return_code):
-            note.append('pidfile locking')
 
         # Test results should be in complete state
         elif state != 'complete':

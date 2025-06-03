@@ -50,7 +50,7 @@ rlJournalStart
         rlAssertGrep "errr /tests/pidlock" $rlRun_LOG
         rlAssertGrep "pidfile locking" $rlRun_LOG
         rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
-        rlAssertGrep "/tests/pidlock 1 error default-0 pidfile locking" $rlRun_LOG
+        rlAssertGrep "/tests/pidlock 1 error default-0 check 'internal/invocation' failed" $rlRun_LOG
     rlPhaseEnd
 
     testName="/tests/timeout"
@@ -63,7 +63,7 @@ rlJournalStart
         rlAssertGrep "Maximum test time '5m' exceeded." $rlRun_LOG
         rlAssertGrep "Adjust the test 'duration' attribute if necessary." $rlRun_LOG
         rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
-        rlAssertGrep "/tests/timeout 1 error default-0 timeout" $rlRun_LOG
+        rlAssertGrep "/tests/timeout 1 error default-0 check 'internal/timeout' failed" $rlRun_LOG
     rlPhaseEnd
 
     testName="/tests/notfound"
@@ -83,7 +83,7 @@ rlJournalStart
         rlAssertGrep "/dev/null: Permission denied" $rlRun_LOG
         rlAssertGrep "errr /tests/notexec" $rlRun_LOG
         rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
-        rlAssertGrep "/tests/notexec 1 error default-0 null" $rlRun_LOG
+        rlAssertGrep "/tests/notexec 1 error default-0 check 'internal/permission' failed" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

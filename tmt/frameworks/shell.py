@@ -144,13 +144,8 @@ class Shell(TestFramework):
             result = {0: ResultOutcome.PASS, 1: ResultOutcome.FAIL}[invocation.return_code]
         except KeyError:
             result = ResultOutcome.ERROR
-            # Add note about the exceeded duration
             if invocation.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
-                note.append('timeout')
                 invocation.phase.timeout_hint(invocation)
-
-            elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.return_code):
-                note.append('pidfile locking')
 
         log_path = invocation.relative_path / tmt.steps.execute.TEST_OUTPUT_FILENAME
         paths = [
