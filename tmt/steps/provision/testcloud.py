@@ -212,6 +212,10 @@ TPM_VERSION_SUPPORTED_VERSIONS = {
     False: ['2.0', '2'],
 }
 
+#: Image url fetch retry attempts and interval
+IMAGE_URL_FETCH_RETRY_ATTEMPTS = 5
+IMAGE_URL_FETCH_RETRY_INTERVAL = 5
+
 
 def normalize_memory_size(
     key_address: str,
@@ -787,14 +791,23 @@ class GuestTestcloud(tmt.GuestSsh):
         if name_as_path.is_absolute() and name_as_path.is_file():
             return f'file://{name}'
 
+        name = name.lower().strip()
         url: Optional[str] = None
         assert testcloud is not None
 
         with GuestTestcloud._testcloud_lock:
             try:
-                url = testcloud.util.get_image_url(name.lower().strip(), self.arch)
+                url = tmt.utils.retry(
+                    func=testcloud.util.get_image_url,
+                    attempts=IMAGE_URL_FETCH_RETRY_ATTEMPTS,
+                    interval=IMAGE_URL_FETCH_RETRY_INTERVAL,
+                    label=f"Get image url for '{name}'.",
+                    logger=self._logger,
+                    distro_str=name,
+                    arch=self.arch,
+                )
             except Exception as error:
-                raise ProvisionError("Could not get image url.") from error
+                raise ProvisionError(f"Could not get image url for '{name}'.") from error
 
         if not url:
             raise ProvisionError(f"Could not map '{name}' to compose.")
