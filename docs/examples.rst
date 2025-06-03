@@ -536,6 +536,49 @@ the :ref:`/spec/plans/discover` step:
         how: fmf
         url: https://src.fedoraproject.org/rpms/tmt/
 
+.. _share-tests-across-repositories:
+
+Share Tests Across Repositories
+------------------------------------------------------------------
+
+It is often beneficial to share tests across different projects or repositories.
+This promotes reusability and reduces duplication of test code. TMT facilitates
+this by allowing you to discover tests from remote Git repositories.
+
+To include tests from another repository, you can add another configuration
+to your ``discover`` step in the plan. This configuration will specify the
+URL of the remote repository and, optionally, a specific revision or branch.
+
+Here's an example of how you might configure your plan to pull tests from an
+external repository:
+
+.. code-block:: yaml
+
+    discover:
+      - name: local-tests
+        how: fmf
+        # Assuming your local tests are in the current repository
+        # and discoverable by fmf.
+      - name: shared-tests
+        how: fmf
+        url: https://github.com/example/shared-tests.git
+        # Optionally, specify a branch, tag, or commit hash
+        ref: main
+        # You can also filter which tests to include from the shared repository
+        filter: "tag:smoke"
+
+In this example:
+
+- The ``local-tests`` configuration discovers tests from the current repository as usual.
+- The ``shared-tests`` configuration fetches tests from the ``https://github.com/example/shared-tests.git``
+  repository.
+  - The ``ref: main`` line ensures that tests are fetched from the ``main`` branch of the shared repository.
+  - The ``filter: "tag:smoke"`` line demonstrates how you can select specific tests (e.g., those tagged with "smoke")
+    from the shared repository.
+
+All discovered tests, both local and shared, will be available for execution in subsequent steps of your plan.
+You can then select them using their FMF names as usual.
+
 
 Extend Steps
 ------------------------------------------------------------------
