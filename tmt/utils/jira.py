@@ -200,13 +200,7 @@ def link(
     :param logger: a logger instance for logging
     """
 
-    # TODO: Shall we cover all relations instead?
-    # The default relation is `relates`, we need to include it to capture
-    # links user provided without relation.
-    link_list: list[tmt.base.Link] = []
-    for relation in tmt.base.Links._relations:
-        link_list += links.get(relation)
-    for link in link_list:
+    for link in links.get():
         # Save the link to test/plan/story metadata on disk
         for tmt_object in tmt_objects:
             save_link_to_metadata(tmt_object, link, logger)
