@@ -325,7 +325,7 @@ class TestInvocation:
     process_lock: threading.Lock = simple_field(default_factory=threading.Lock)
 
     #: If set, there is a callback registered through
-    #: :py:func:`tmt.signals.`add_callback` which would be called when
+    #: :py:func:`tmt.utils.signals.add_callback` which would be called when
     #: tmt gets terminated.
     on_interrupt_callback_token: Optional[int] = None
 
