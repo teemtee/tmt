@@ -45,7 +45,7 @@
     :param url: URL to point at.
 #}
 {% macro _emit_remote_link(link, label, url) %}
-* {{ printable_relation(link) }} `{{ label }} <{{ url }}>`_ {% if link.note %}({{ link.note }}){% endif %}
+* {{ printable_relation(link) }} `{{ label }} <{{ url }}>`_{% if link.note %} ({{ link.note }}){% endif %}
 {% endmacro %}
 
 {#
