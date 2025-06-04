@@ -66,7 +66,7 @@ class Interrupted(tmt.utils.GeneralError):
 OnInterruptCallback = Callable[..., None]
 
 #: Callables to call when tmt is interrupted. The key is a "token",
-#: produced by :ref:`_ON_INTERRUPT_CALLBACK_TOKENS` when registering
+#: produced by :py:data:`_ON_INTERRUPT_CALLBACK_TOKENS` when registering
 #: the callback.
 _ON_INTERRUPT_CALLBACKS: dict[int, tuple[OnInterruptCallback, Any, Any]] = {}
 
