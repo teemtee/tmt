@@ -802,7 +802,7 @@ Link Dupont, Mario Casquero, Martin Klusoň, Pavel Holica,
 Otto Šabart, Ismail Ibrahim Quwarah, Sergei Petrosian, Tom
 Koscielniak, Han Han, Luigi Pellecchia, Siteshwar Vashisht,
 Chris Kyrouac, Xiaofeng Wang, Coiby Xu, Michal Pospíšil, Wayne
-Sun, Evgeni Vakhonin and Mike Stowell.
+Sun, Evgeni Vakhonin, Mike Stowell, Therese Cornell and Mingyu Shi.
 
 
 Copyright
