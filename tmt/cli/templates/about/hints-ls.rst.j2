@@ -1,0 +1,8 @@
+{% for hint_id, hint in HINTS.items() %}
+``{{ hint_id }}``
+
+{{ hint.text }}
+
+----
+
+{% endfor %}
