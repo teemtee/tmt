@@ -78,8 +78,9 @@ class CoredumpCheck(Check):
             guest.execute(
                 ShellScript("mkdir -p /etc/systemd/coredump.conf.d")
                 & ShellScript(
-                    f"echo '{COREDUMP_CONFIG}' > /etc/systemd/coredump.conf.d/50-tmt.conf"
-                )
+                    f"echo '{COREDUMP_CONFIG}' > /etc/systemd/coredump.conf.d/50-tmt.conf",
+                ),
+                silent=True,
             )
             return
         except tmt.utils.RunError:
@@ -93,7 +94,8 @@ class CoredumpCheck(Check):
                     & ShellScript(
                         f"echo '{COREDUMP_CONFIG}' | sudo tee "
                         "/etc/systemd/coredump.conf.d/50-tmt.conf > /dev/null"
-                    )
+                    ),
+                    silent=True,
                 )
                 logger.debug("Configured coredump with sudo")
                 return
@@ -309,7 +311,7 @@ class CoredumpCheck(Check):
                 cmd = f"{sudo_prefix}coredumpctl list --all --no-legend --no-pager"
                 logger.debug("No prior coredumps found, checking all available coredumps")
 
-            output = guest.execute(ShellScript(cmd)).stdout
+            output = guest.execute(ShellScript(cmd), silent=True).stdout
 
             if not output:
                 return []
