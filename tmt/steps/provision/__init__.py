@@ -951,10 +951,10 @@ class GuestData(SerializableContainer):
     role: Optional[str] = field(
         default=None,
         option='--role',
-        metavar='ROLE',
+        metavar='NAME',
         help="""
-             Marks related guests so that common actions can be applied to all
-             such guests at once.
+             Marks guests with the same purpose so that common actions
+             can be applied to all such guests at once.
              """,
     )
 
@@ -962,7 +962,10 @@ class GuestData(SerializableContainer):
         default=False,
         is_flag=True,
         option=('-b', '--become'),
-        help='Whether to run shell scripts in tests, prepare, and finish with sudo.',
+        help="""
+             Whether to run tests and shell scripts in prepare and
+             finish steps with ``sudo``.
+             """,
     )
 
     facts: GuestFacts = field(
@@ -974,7 +977,9 @@ class GuestData(SerializableContainer):
     hardware: Optional[tmt.hardware.Hardware] = field(
         default=cast(Optional[tmt.hardware.Hardware], None),
         option='--hardware',
-        help='Add a hardware requirement.',
+        help="""
+             Hardware requirements the provisioned guest must satisfy.
+             """,
         metavar='KEY=VALUE',
         multiple=True,
         normalize=normalize_hardware,
@@ -2016,27 +2021,38 @@ class GuestSshData(GuestData):
         default=None,
         option=('-P', '--port'),
         metavar='PORT',
-        help='Use specific port to connect to.',
+        help="""
+             Port to use for SSH connections instead of the default
+             one.
+             """,
         normalize=tmt.utils.normalize_optional_int,
     )
     user: Optional[str] = field(
         default=None,
         option=('-u', '--user'),
-        metavar='USERNAME',
-        help='Username to use for all guest operations.',
+        metavar='NAME',
+        help="""
+             Username to use for SSH connections instead of the account
+             name running tmt.
+             """,
     )
-    key: list[str] = field(
+    key: list[Path] = field(
         default_factory=list,
         option=('-k', '--key'),
         metavar='PATH',
-        help='Private key for login into the guest system.',
-        normalize=tmt.utils.normalize_string_list,
+        help="""
+             Private key to use as SSH identity for key-based
+             authentication.
+             """,
+        normalize=tmt.utils.normalize_path_list,
     )
     password: Optional[str] = field(
         default=None,
         option=('-p', '--password'),
         metavar='PASSWORD',
-        help='Password for login into the guest system.',
+        help="""
+             Password to use for password-based authentication.
+             """,
     )
     ssh_option: list[str] = field(
         default_factory=list,
@@ -2044,8 +2060,9 @@ class GuestSshData(GuestData):
         metavar="OPTION",
         multiple=True,
         help="""
-             Specify an additional SSH option. Value is passed to SSH's -o option, see
-             ssh_config(5) for supported options. Can be specified multiple times.
+             Additional SSH option. Value is passed to the ``-o``
+             option of ``ssh``, see ``ssh_config(5)`` for supported
+             options. Can be specified multiple times.
              """,
         normalize=tmt.utils.normalize_string_list,
     )
