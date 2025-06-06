@@ -1,4 +1,4 @@
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 # TID251: this use of `click.style()` is expected, and on purpose.
 from click import style as _style  # noqa: TID251
@@ -6,7 +6,7 @@ from click import style as _style  # noqa: TID251
 import tmt.utils
 from tmt._compat.pydantic import ValidationError
 from tmt._compat.typing import TypeAlias
-from tmt.container import MetadataContainer
+from tmt.container import MetadataContainer, metadata_field
 
 Color: TypeAlias = Union[int, tuple[int, int, int], str, None]
 
@@ -36,10 +36,61 @@ class Style(MetadataContainer):
 _DEFAULT_STYLE = Style()
 
 
-class Theme(MetadataContainer):
+class _Theme(MetadataContainer):
+    def get_style(self, field: str) -> Style:
+        """
+        Return a style when the field name is dynamic.
+
+        A safer, type-annotated variant of ``getattr(theme, field)``.
+        """
+
+        if field not in self.__fields__:
+            raise tmt.utils.GeneralError(
+                f"No such theme field '{self.__class__.__name__.lower()}.{field}'."
+            )
+
+        # attr-defined: `type_` seems to be invisible to mypy. It might
+        # be causes by Pydantic v1/v2 difference.
+        if self.__fields__[field].type_ is not Style:  # type: ignore[attr-defined]
+            raise tmt.utils.GeneralError(
+                f"Theme field '{self.__class__.__name__.lower()}.{field}' is not a style."
+            )
+
+        return cast(Style, getattr(self, field))
+
+
+class LinterOutcome(_Theme):
+    """
+    Styles for outcomes of various linter rules.
+    """
+
+    skip: Style = _DEFAULT_STYLE
+    # We cannot use `pass` as an attribute name.
+    pass_: Style = metadata_field(default=_DEFAULT_STYLE, alias='pass')
+    fail: Style = _DEFAULT_STYLE
+    warn: Style = _DEFAULT_STYLE
+    fixed: Style = _DEFAULT_STYLE
+
+    # Thanks to `pass` being a keyword, we need to map `LinterOutcome.PASS.value`,
+    # which is "pass", to "pass_" than can be used as an object attribute.
+    def get_style(self, field: str) -> Style:
+        return super().get_style('pass_' if field == 'pass' else field)
+
+
+class Linter(_Theme):
+    """
+    Styles for linter output.
+    """
+
+    outcome: LinterOutcome
+
+
+class Theme(_Theme):
     """
     A collection of items tmt uses to colorize various tokens of its CLI.
     """
+
+    linter: Linter
 
     restructuredtext_text: Style = _DEFAULT_STYLE
 
@@ -53,22 +104,6 @@ class Theme(MetadataContainer):
 
     restructuredtext_admonition_note: Style = _DEFAULT_STYLE
     restructuredtext_admonition_warning: Style = _DEFAULT_STYLE
-
-    def to_spec(self) -> dict[str, Any]:
-        return {key.replace('_', '-'): value for key, value in self.dict().items()}
-
-    def to_minimal_spec(self) -> dict[str, Any]:
-        spec: dict[str, Any] = {}
-
-        for theme_key, style in self.to_spec().items():
-            style_spec = {
-                style_key: value for style_key, value in style.items() if value is not None
-            }
-
-            if style_spec:
-                spec[theme_key] = style_spec
-
-        return spec
 
     @classmethod
     def from_spec(cls: type['Theme'], data: Any) -> 'Theme':
