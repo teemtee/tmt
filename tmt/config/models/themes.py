@@ -72,7 +72,7 @@ class LinterOutcome(_Theme):
     fixed: Style = _DEFAULT_STYLE
 
     # Thanks to `pass` being a keyword, we need to map `LinterOutcome.PASS.value`,
-    # which is "pass", to "pass_" than can be used as an object attribute.
+    # which is "pass", to "pass_" that can be used as an object attribute.
     def get_style(self, field: str) -> Style:
         return super().get_style('pass_' if field == 'pass' else field)
 
