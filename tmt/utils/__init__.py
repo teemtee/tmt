@@ -503,6 +503,7 @@ class Environment(dict[str, EnvVarValue]):
         cls,
         variables: Union[str, list[str]],
         logger: tmt.log.Logger,
+        root: Optional[Path] = None,
     ) -> 'Environment':
         """
         Construct environment from a sequence of variables.
@@ -513,7 +514,7 @@ class Environment(dict[str, EnvVarValue]):
         * ``@foo.yaml`` signaling variables to be read from a file.
 
         If a "variable" starts with ``@``, it is treated as a path to
-        a YAML file that contains key/value pairs which are then
+        a YAML or DOTENV file that contains key/value pairs which are then
         transparently loaded and added to the final environment.
 
         :param variables: string or a sequence of strings containing
@@ -526,6 +527,9 @@ class Environment(dict[str, EnvVarValue]):
             * ``'TXT="Some text with spaces in it"'``
             * ``@foo.yaml``
             * ``@../../bar.yaml``
+            * ``@foo.env``
+
+        :param root: root directory to load variable files from.
         """
 
         if not isinstance(variables, (list, tuple)):
@@ -541,12 +545,11 @@ class Environment(dict[str, EnvVarValue]):
                     if not var[1:]:
                         raise GeneralError(f"Invalid variable file specification '{var}'.")
 
-                    filepath = Path(var[1:])
-
-                    environment = cls.from_yaml_file(filepath, logger)
+                    filename = var[1:]
+                    environment = cls.from_file(filename=filename, root=root, logger=logger)
 
                     if not environment:
-                        logger.warning(f"Empty environment file '{filepath}'.")
+                        logger.warning(f"Empty environment file '{filename}'.")
 
                     result.update(environment)
 
@@ -770,7 +773,11 @@ class Environment(dict[str, EnvVarValue]):
         if raw_cli_environment is None:
             pass
         elif isinstance(raw_cli_environment, (list, tuple)):
-            from_cli = Environment.from_sequence(list(raw_cli_environment), logger)
+            from_cli = Environment.from_sequence(
+                variables=list(raw_cli_environment),
+                logger=logger,
+                root=file_root,
+            )
         else:
             raise NormalizationError(
                 'environment', raw_cli_environment, 'unset or a list of key/value pairs'
