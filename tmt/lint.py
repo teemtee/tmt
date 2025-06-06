@@ -78,8 +78,8 @@ from typing import (
 
 import tmt
 import tmt.utils
+from tmt.config import Config
 from tmt.container import container
-from tmt.utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.base
@@ -114,14 +114,6 @@ _OUTCOME_TO_MARK = {
     LinterOutcome.FAIL: 'fail',
     LinterOutcome.WARN: 'warn',
     LinterOutcome.FIXED: 'fix ',
-}
-
-_OUTCOME_TO_COLOR = {
-    LinterOutcome.SKIP: 'blue',
-    LinterOutcome.PASS: 'green',
-    LinterOutcome.FAIL: 'red',
-    LinterOutcome.WARN: 'yellow',
-    LinterOutcome.FIXED: 'green',
 }
 
 
@@ -366,7 +358,7 @@ def filter_allowed_checks(
         yield (linter, actual_outcome, eventual_outcome, message)
 
 
-def format_rulings(rulings: Iterable[LinterRuling]) -> Iterator[str]:
+def format_rulings(rulings: Iterable[LinterRuling], config: Config) -> Iterator[str]:
     """
     Format rulings for printing or logging.
 
@@ -386,18 +378,16 @@ def format_rulings(rulings: Iterable[LinterRuling]) -> Iterator[str]:
 
     for linter, actual_outcome, eventual_outcome, message in rulings:
         assert actual_outcome in _OUTCOME_TO_MARK
-        assert actual_outcome in _OUTCOME_TO_COLOR
 
-        actual_status = style(
-            _OUTCOME_TO_MARK[actual_outcome], fg=_OUTCOME_TO_COLOR[actual_outcome]
+        actual_status = config.theme.linter.outcome.get_style(actual_outcome.value).apply(
+            _OUTCOME_TO_MARK[actual_outcome]
         )
 
         if display_eventual:
             assert eventual_outcome in _OUTCOME_TO_MARK
-            assert eventual_outcome in _OUTCOME_TO_COLOR
 
-            eventual_status = style(
-                _OUTCOME_TO_MARK[eventual_outcome], fg=_OUTCOME_TO_COLOR[eventual_outcome]
+            eventual_status = config.theme.linter.outcome.get_style(eventual_outcome.value).apply(
+                _OUTCOME_TO_MARK[eventual_outcome]
             )
 
             eventual = ' ' * 8 if actual_outcome == eventual_outcome else f' -> {eventual_status}'
