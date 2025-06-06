@@ -1,3 +1,14 @@
+# linter:
+#   outcome:
+#     skip:
+#     pass:
+#     fail:
+#     warn:
+#     fixed:
+
+linter:
+  outcome: {}
+
 # restructuredtext-text:
 
 # restructuredtext-literal:
