@@ -1,5 +1,5 @@
 import copy
-from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, cast
 
 import click
 import fmf
@@ -14,11 +14,11 @@ import tmt.utils
 from tmt.container import container, simple_field
 from tmt.options import option
 from tmt.plugins import PluginRegistry
-from tmt.result import PhaseResult
+from tmt.result import PhaseResult, ResultOutcome
 from tmt.steps import (
     Action,
-    ActionTask,
     PhaseQueue,
+    PluginOutcome,
     PluginTask,
     PullTask,
     PushTask,
@@ -45,7 +45,7 @@ class _RawPrepareStepData(tmt.steps._RawStepData, tmt.steps.RawWhereableStepData
     pass
 
 
-class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, list[PhaseResult]]):
+class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, PluginOutcome]):
     """
     Common parent of prepare plugins
     """
@@ -93,7 +93,7 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, list[PhaseResult]]):
         guest: 'tmt.steps.provision.Guest',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
-    ) -> list[PhaseResult]:
+    ) -> PluginOutcome:
         """
         Prepare the guest (common actions)
         """
@@ -108,7 +108,7 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, list[PhaseResult]]):
         if self.data.where:
             logger.info('where', fmf.utils.listed(self.data.where), 'green')
 
-        return []
+        return PluginOutcome()
 
 
 # Required & recommended packages
@@ -413,7 +413,7 @@ class Prepare(tmt.steps.Step):
             # To separate "push" from "prepare" queue visually
             self.info('')
 
-        queue: PhaseQueue[PrepareStepData, list[PhaseResult]] = PhaseQueue(
+        queue: PhaseQueue[PrepareStepData, PluginOutcome] = PhaseQueue(
             'prepare', self._logger.descend(logger_name=f'{self}.queue')
         )
 
@@ -429,31 +429,64 @@ class Prepare(tmt.steps.Step):
                     ],
                 )
 
-        failed_tasks: list[Union[ActionTask, PluginTask[PrepareStepData, list[PhaseResult]]]] = []
         results: list[PhaseResult] = []
+        exceptions: list[Exception] = []
+
+        def _record_exception(
+            outcome: PluginTask[PrepareStepData, PluginOutcome], exc: Exception
+        ) -> None:
+            outcome.logger.fail(str(exc))
+
+            exceptions.append(exc)
 
         for outcome in queue.run():
             if not isinstance(outcome.phase, PreparePlugin):
                 continue
 
+            # Possible outcomes: plugin crashed, raised an exception,
+            # and that exception has been delivered to the top of the
+            # phase's thread and propagated to us in the task outcome.
+            #
+            # Log the failure, save the exception, and add an error
+            # result to represent the crash. Plugin did not return any
+            # usable results, otherwise it would not have ended with
+            # an exception...
             if outcome.exc:
-                outcome.logger.fail(str(outcome.exc))
+                _record_exception(outcome, outcome.exc)
 
-                failed_tasks.append(outcome)
+                results.append(
+                    PhaseResult(
+                        name=outcome.phase.name,
+                        result=ResultOutcome.ERROR,
+                        note=['Plugin raised an unhandled exception.'],
+                    )
+                )
+
                 continue
 
+            # Or, plugin finished successfully - not necessarily after
+            # achieving its goals successfully. Save results, and if
+            # plugin returned also some exceptions, do the same as above:
+            # log them and save them, but do not emit any special result.
+            # Plugin was alive till the very end, and returned results.
             if outcome.result:
-                results += outcome.result
+                results += outcome.result.results
+
+                if outcome.result.exceptions:
+                    for exc in outcome.result.exceptions:
+                        _record_exception(outcome, exc)
+
+                    continue
 
             self.preparations_applied += 1
 
         self._save_results(results)
 
-        if failed_tasks:
+        if exceptions:
             # TODO: needs a better message...
-            raise tmt.utils.GeneralError(
+            raise tmt.utils.PrepareError(
                 'prepare step failed',
-                causes=[outcome.exc for outcome in failed_tasks if outcome.exc is not None],
+                causes=exceptions,
             )
 
         self.info('')
