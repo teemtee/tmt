@@ -1705,7 +1705,21 @@ class Guest(tmt.utils.Common):
         superuser: bool = False,
     ) -> None:
         """
-        Push files to the guest
+        Push files or directories to the guest.
+
+        When 'source' is a directory, its CONTENTS are pushed to the destination
+        (equivalent to rsync source/ ...). This is always the behavior for
+        consistency across all guest implementations.
+
+        If 'source' is None, the plan workdir contents are pushed.
+        If 'destination' is None, files are pushed to '/' (root directory).
+
+        :param source: Path to a file or directory to push. If a directory,
+                      its contents (not the directory itself) are pushed.
+                      If None, the plan workdir is pushed.
+        :param destination: Path on the guest where to push. If None, defaults to '/'.
+        :param options: List of rsync options to use.
+        :param superuser: When set, run rsync with sudo on the guest.
         """
 
         raise NotImplementedError
@@ -2509,15 +2523,19 @@ class GuestSsh(Guest):
         superuser: bool = False,
     ) -> None:
         """
-        Push files to the guest
+        Push files or directories to the guest using rsync.
 
-        By default the whole plan workdir is synced to the same location
-        on the guest. Use the 'source' and 'destination' to sync custom
-        location and the 'options' parameter to modify default options
-        which are '-Rrz --links --safe-links --delete'.
+        When 'source' is a directory, its CONTENTS are pushed to the destination
+        (equivalent to ``rsync source/ ...``). This is always the behavior for
+        consistency across all guest implementations.
 
-        Set 'superuser' if rsync command has to run as root or passwordless
-        sudo on the Guest (e.g. pushing to r/o destination)
+        The 'destination' path on the guest will generally have a trailing slash
+        appended (unless it's '/') to ensure files are copied *into* it.
+
+        By default (if 'source' is None), the plan workdir contents are pushed.
+
+        Set 'superuser' when rsync command has to run as root or passwordless
+        sudo on the Guest (e.g., pushing to r/o destination).
         """
 
         # Abort if guest is unavailable
@@ -2539,19 +2557,34 @@ class GuestSsh(Guest):
         else:
             self.debug(f"Copy '{source}' to '{destination}' on the guest.")
 
-        def rsync() -> None:
-            """
-            Run the rsync command
-            """
+            # Always sync contents for directories by adding trailing slash
+            source_str = str(source)
+            try:
+                if source.exists() and source.is_dir():
+                    if not source_str.endswith('/'):
+                        source_str += '/'
+                    self.debug(f"Source '{source}' is a directory, syncing contents.")
+                else:
+                    source_str = source_str.rstrip('/')
+                    self.debug(f"Source '{source}' is a file or does not exist, syncing item.")
+            except OSError as e:
+                # If we can't check, use the path as-is
+                self.warn(f"Could not check source path '{source}': {e}. Using path as provided.")
 
-            # In closure, mypy has hard times to reason about the state of used variables.
-            assert options
-            assert source
-            assert destination
+        dest_str = str(destination)
+        # Ensure destination has a trailing slash if it's meant to be a target directory,
+        # unless it's the root directory itself ('/').
+        if dest_str != '/' and not dest_str.endswith('/'):
+            dest_str += '/'
+
+        def rsync() -> None:
+            """Run the rsync command"""  # assert options is not None
 
             cmd = ['rsync']
             if superuser and self.user != 'root':
                 cmd += ['--rsync-path', 'sudo rsync']
+
+            remote_target = f"{self._ssh_guest}:{dest_str}"
 
             self._run_guest_command(
                 Command(
@@ -2559,27 +2592,55 @@ class GuestSsh(Guest):
                     *options,
                     "-e",
                     self._ssh_command.to_element(),
-                    source,
-                    f"{self._ssh_guest}:{destination}",
+                    source_str,
+                    remote_target,
                 ),
                 silent=True,
             )
 
-        # Try to push twice, check for rsync after the first failure
         try:
             rsync()
-        except tmt.utils.RunError:
+            self.debug(
+                f"Successfully pushed '{source_str}' to '{self._ssh_guest}:{dest_str}'", level=2
+            )
+        except tmt.utils.RunError as first_error:
+            self.debug(f"First rsync attempt failed: {first_error}", level=2)
+            # Don't check/retry during dry run
+            if self.is_dry_run:
+                self.warn("First rsync attempt failed during dry run, not retrying.")
+                raise first_error
+
             try:
-                if self._check_rsync() == CheckRsyncOutcome.ALREADY_INSTALLED:
-                    raise
-                rsync()
-            except tmt.utils.RunError:
-                # Provide a reasonable error to the user
+                rsync_check_outcome = self._check_rsync()
+
+                # If rsync was already there, the first error is likely the real issue
+                if rsync_check_outcome == CheckRsyncOutcome.ALREADY_INSTALLED:
+                    self.debug(
+                        "rsync already installed, first error likely connection/permission issue."
+                    )
+                    raise first_error
+
+                # If check passed, retry the command
+                self.debug("rsync check passed or installed, retrying command.")
+                rsync()  # Second attempt
+                self.debug(
+                    f"Pushed '{source_str}' to '{self._ssh_guest}:{dest_str}' on retry.", level=2
+                )
+
+            except tmt.utils.RunError as second_error:
+                # Failure during the check or the second attempt
                 self.fail(
                     f"Failed to push workdir to the guest. This usually means "
                     f"that login as '{self.user}' to the guest does not work."
                 )
+                # Raise the second (more recent) error
+                raise second_error
+            except Exception as check_retry_exception:
+                self.fail(f"Unexpected error during rsync check or retry: {check_retry_exception}")
                 raise
+        except Exception as initial_exception:
+            self.fail(f"Unexpected error during initial rsync attempt: {initial_exception}")
+            raise
 
     def pull(
         self,
