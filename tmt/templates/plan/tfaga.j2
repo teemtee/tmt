@@ -1,0 +1,29 @@
+name: Tests by GitHub Action at Testing Farm
+
+on:
+  issue_comment:
+    types:
+      - created
+jobs:
+  build:
+    name: Tests by GitHub Action on Testing Farm service
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: "refs/pull/${{ github.event.issue.number }}/head"
+
+      # https://github.com/sclorg/testing-farm-as-github-action
+      - name: Schedule tests on Testing Farm by Testing-Farm-as-github-action
+        id: github_action
+        uses: sclorg/testing-farm-as-github-action@main
+        with:
+          api_key: "<Testing Farm API key>"
+          git_url: "<An url to the repository with tmt metadata>"
+          git_ref: "<A tmt tests branch, tag or commit specifying the desired git revision which will be used for tests>"
+          tf_scope: "<Define the scope of Testing Farm. Possible options are 'public' or 'private'>"
+          update_pull_request_status: true
+          create_issue_comment: true
+          pull_request_status_name: "<GitHub pull request status name is also used as the name of the test in the Job Summary and in comments>"
+          compose: "<Compose to run tests on>"
