@@ -91,8 +91,26 @@ description: |
     Inheriting or overriding remote plan config with local plan
     steps might be possible in the future but currently is not
     supported. The imported plan can be modified in only two ways.
-    First way is via environment variables. Variables defined
-    in the plan override any variables defined in the remote plan.
+    First way is via environment and context variables. Imported plan
+    inherits all environment and context variables from the importing
+    plan. This behavior can be changed by setting the ``inherit-context``
+    or ``inherit-environment`` options:
+
+    .. code-block:: yaml
+
+       /some-plan:
+         plan:
+           import:
+             ...
+             inherit-context: false
+             inherit-environment: false
+
+    .. note::
+
+      By default, the imported plan inherits the context and environment
+      variables from the importing plan. If there are any potential
+      conflicts, the importing plan variables take precedence over the
+      imported plan variables.
 
     The imported plan can also be altered using the ``enabled`` key.
     If the local plan is enabled, it will follow the status of the

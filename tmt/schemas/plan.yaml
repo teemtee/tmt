@@ -155,6 +155,12 @@ properties:
               - single-plan-only
               - all-plans
 
+          inherit-context:
+            type: boolean
+
+          inherit-environment:
+            type: boolean
+
         required:
           - url
           - name
