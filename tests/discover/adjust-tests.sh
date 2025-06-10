@@ -11,7 +11,7 @@ rlJournalStart
         rlRun -s "tmt -c trigger=commit run -i $run discover plans --name /fmf/adjust-tests"
         # If we ever change the path...
         tests_yaml="$(find $run -name tests.yaml)"
-        rlAssertExits "$tests_yaml"
+        rlAssertExists "$tests_yaml"
         rlRun -s "yq '.[].require' < $tests_yaml"
         rlAssertGrep "foo" "$rlRun_LOG"
         rlRun -s "yq '.[].duration' < $tests_yaml"

@@ -1,9 +1,8 @@
 import contextlib
 import glob
-import os
 import re
 import shutil
-import subprocess
+from contextlib import suppress
 from typing import Any, Optional, cast
 
 import fmf
@@ -532,47 +531,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 "Cannot manipulate with dist-git without the `--dist-git-merge` option."
             )
 
-        # Raise an exception if --fmf-id uses w/o url and git root
+        # Raise an exception if --fmf-id is used w/o url and git root
         # doesn't exist for discovered plan
         if self.opt('fmf_id'):
-
-            def assert_git_url(plan_name: Optional[str] = None) -> None:
-                try:
-                    subprocess.run(
-                        ['git', 'rev-parse', '--show-toplevel'],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.DEVNULL,
-                        check=True,
-                    )
-                except subprocess.CalledProcessError:
-                    raise tmt.utils.DiscoverError(
-                        f"`tmt run discover --fmf-id` without `url` option in "
-                        f"plan `{plan_name}` can be used only within"
-                        f" git repo."
-                    )
-
-            # It covers only one case, when there is:
-            # 1) no --url on CLI
-            # 2) plan w/o url exists in test run
-            if not self.opt('url'):
-                try:
-                    fmf_tree = fmf.Tree(os.getcwd())
-                except fmf.utils.RootError:
-                    raise tmt.utils.DiscoverError(
-                        "No metadata found in the current directory. "
-                        "Use 'tmt init' to get started."
-                    )
-                for attr in fmf_tree.climb():
-                    try:
-                        plan_url = attr.data.get('discover').get('url')
-                        plan_name = attr.name
-                        if not plan_url:
-                            assert_git_url(plan_name)
-                    except AttributeError:
-                        pass
-            # All other cases are covered by this condition
-            if not url:
-                assert_git_url(self.step.plan.name)
+            self.validate_fmf_id_requirements(url)
 
         self.log_import_plan_details()
 
@@ -668,34 +630,12 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # Dist-git source processing during discover step
         if dist_git_source:
             try:
-                # 'ref' is checked out in self.testdir
-                self.download_distgit_source(
-                    distgit_dir=self.testdir if ref else git_root,
-                    target_dir=sourcedir,
-                    handler_name=self.get('dist-git-type'),
-                )
-                # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
-                # FIXME 'worktree' could be used as sourcedir when 'url' is not set
-                tmt.utils.filesystem.copy_tree(
-                    self.testdir if ref else git_root,
-                    sourcedir,
-                    self._logger,
-                )
-                # patch & rediscover will happen later in the prepare step
-                if not self.get('dist-git-download-only'):
-                    # Check if prepare is enabled, warn user if not
-                    if not self.step.plan.prepare.enabled:
-                        self.warn("Sources will not be extracted, prepare step is not enabled.")
-                    insert_to_prepare_step(
-                        discover_plugin=self,
-                        sourcedir=sourcedir,
-                    )
-                # merge or not, detect later
-                self.step.plan.discover.extract_tests_later = True
-                self.info("Tests will be discovered after dist-git patching in prepare.")
+                distgit_dir = self.testdir if ref else git_root
+                self.process_distgit_source(distgit_dir, sourcedir)
                 return
             except Exception as error:
                 raise tmt.utils.DiscoverError("Failed to process 'dist-git-source'.") from error
+
         # Discover tests
         self.do_the_discovery(path)
 
@@ -703,6 +643,81 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         if self.step.plan.my_run is not None:
             for policy in self.step.plan.my_run.policies:
                 policy.apply_to_tests(tests=self._tests, logger=self._logger)
+        
+    def validate_fmf_id_requirements(self, url: Optional[str] = None) -> None:
+        """
+        Validate environment requirements for the --fmf-id option.
+        """
+
+        # It covers only one case, when there is:
+        # 1) no --url on CLI
+        # 2) plan w/o url exists in test run
+        if not self.opt('url'):
+            try:
+                fmf_tree = fmf.Tree(Path.cwd())
+            except fmf.utils.RootError:
+                raise tmt.utils.DiscoverError(
+                    "No metadata found in the current directory. Use 'tmt init' to get started."
+                )
+            for attr in fmf_tree.climb():
+                with suppress(AttributeError):
+                    plan_url = attr.data.get('discover').get('url')
+                    plan_name = attr.name
+                    assert plan_name is not None
+                    if not plan_url:
+                        try:
+                            self.get_git_root(directory=Path.cwd())
+                        except tmt.utils.RunError:
+                            raise tmt.utils.DiscoverError(
+                                f"`tmt run discover --fmf-id` without `url` option "
+                                f"in plan `{plan_name}` can be used only within git repo."
+                            )
+
+        # All other cases are covered by this condition
+        if not url:
+            try:
+                self.get_git_root(directory=Path.cwd())
+            except tmt.utils.RunError:
+                raise tmt.utils.DiscoverError(
+                    f"`tmt run discover --fmf-id` without `url` option "
+                    f"in plan `{self.step.plan.name}` can be used only within git repo."
+                )
+
+    def process_distgit_source(self, distgit_dir: Path, sourcedir: Path) -> None:
+        """
+        Process dist-git source during the discover step.
+        """
+
+        self.download_distgit_source(
+            distgit_dir=distgit_dir,
+            target_dir=sourcedir,
+            handler_name=self.get('dist-git-type'),
+        )
+
+        # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
+        # FIXME 'worktree' could be used as sourcedir when 'url' is not set
+        tmt.utils.filesystem.copy_tree(
+            distgit_dir,
+            sourcedir,
+            self._logger,
+        )
+
+        # patch & rediscover will happen later in the prepare step
+        if not self.get('dist-git-download-only'):
+            # Check if prepare is enabled, warn user if not
+            if not self.step.plan.prepare.enabled:
+                self.warn("Sources will not be extracted, prepare step is not enabled.")
+
+            insert_to_prepare_step(
+                discover_plugin=self,
+                sourcedir=sourcedir,
+            )
+
+        # merge or not, detect later
+        self.step.plan.discover.extract_tests_later = True
+        self.info("Tests will be discovered after dist-git patching in prepare.")
+
+
 
     def do_the_discovery(self, path: Optional[Path] = None) -> None:
         """
