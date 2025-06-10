@@ -217,7 +217,7 @@ Various utility options.
     Turn on debugging output.
 
 --log-topic NAME
-    Enable logs for a specific topic, useful for debugging particular
+    Enable logging for a specific topic, useful for debugging particular
     areas. For example, to see logs related to policy processing,
     you can use:
 
