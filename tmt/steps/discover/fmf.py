@@ -600,11 +600,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
         # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
         # FIXME 'worktree' could be used as sourcedir when 'url' is not set
-        shutil.copytree(
+        tmt.utils.filesystem.copy_tree(
             distgit_dir,
             sourcedir,
-            symlinks=True,
-            dirs_exist_ok=True,
+            self._logger,
         )
 
         # patch & rediscover will happen later in the prepare step
