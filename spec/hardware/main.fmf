@@ -194,6 +194,52 @@ description: |
     the only one in existence, and guest architecture may allow
     for additional device and vendor ID schemas.
 
+    Priority of variants
+    --------------------
+
+    When the ``hardware`` field can be satisfied by more than way,
+    i.e. allowing multiple correct answers - variants. The actual guest
+    hardware configuration depends on the behavior of the ``provision``
+    plugin used. Consider the following examples:
+
+    .. code-block:: yaml
+
+        hardware:
+          memory: '>= 4 GB'
+
+        hardware:
+          or:
+            - memory: '>= 4 GB'
+            - memory: '< 4 GB'
+
+    The first example is simple: there is only one way a potential guest
+    can satisfy it, i.e. by having at least 4 GB of RAM, and no other
+    hardware configuration would be suitable.
+
+    The second example offers two ways a guest can can satisfy the
+    requirements: by having at least 4 GB of RAM, or having strictly
+    less than 4 GB of RAM. Both answers would be correct. Handling of
+    these variants splits :ref:`/plugins/provision` into two groups:
+
+    * Plugins that construct guests from the requirements:
+      :ref:`/plugins/provision/virtual.testcloud`
+
+      These plugins will take the first variant - ``memory: '>= 4 GB'``
+      - and they will construct the guest to match this subset of rules.
+      Other variants would be ignored.
+    * Plugins that select guests from a preexisting inventory of
+      machines: :ref:`/plugins/provision/beaker`
+
+      These plugins are capable of finding a machine that fits either of
+      the variants, and the guest may have either at least 4 GB or RAM,
+      or strictly less.
+
+    .. note::
+
+        :ref:`/plugins/provision/artemis` is a special case that may
+        support both ways, depending on the actual pool selected for the
+        provisioning.
+
     Notes
     -----
 
