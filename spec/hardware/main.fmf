@@ -197,7 +197,7 @@ description: |
     Priority of variants
     --------------------
 
-    When the ``hardware`` field can be satisfied by more than way,
+    When the ``hardware`` field can be satisfied by more than one way,
     i.e. allowing multiple correct answers - variants. The actual guest
     hardware configuration depends on the behavior of the ``provision``
     plugin used. Consider the following examples:
