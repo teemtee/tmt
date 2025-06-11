@@ -2895,6 +2895,7 @@ def show_exception_as_warning(
         exception.
     :param include_logfiles: if set, exception will be logged into known
         logfiles as well as to standard error output.
+    :param logger: logger to use for logging.
     """
 
     logger.warning(message)
