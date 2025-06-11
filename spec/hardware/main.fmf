@@ -231,7 +231,7 @@ description: |
       machines: :ref:`/plugins/provision/beaker`
 
       These plugins are capable of finding a machine that fits either of
-      the variants, and the guest may have either at least 4 GB or RAM,
+      the variants, and the guest may have either at least 4 GB of RAM,
       or strictly less.
 
     .. note::
