@@ -198,9 +198,9 @@ description: |
     --------------------
 
     When the ``hardware`` field can be satisfied by more than one way,
-    i.e. allowing multiple correct answers - variants. The actual guest
-    hardware configuration depends on the behavior of the ``provision``
-    plugin used. Consider the following examples:
+    i.e. allowing multiple correct answers - variants - then the actual
+    guest hardware configuration depends on the behavior of the
+    ``provision`` plugin used. Consider the following examples:
 
     .. code-block:: yaml
 
