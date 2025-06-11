@@ -216,7 +216,7 @@ description: |
     can satisfy it, i.e. by having at least 4 GB of RAM, and no other
     hardware configuration would be suitable.
 
-    The second example offers two ways a guest can can satisfy the
+    The second example offers two ways a guest can satisfy the
     requirements: by having at least 4 GB of RAM, or having strictly
     less than 4 GB of RAM. Both answers would be correct. Handling of
     these variants splits :ref:`/plugins/provision` into two groups:
