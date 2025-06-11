@@ -54,12 +54,16 @@ _:
       environments:
         - &copr-teemtee-stable
           artifacts:
+            # Testing Farm fails to install the repository when a multiline
+            # string is used. The script looks broken, as if one piece of
+            # the process incorrectly loads it, producing broken repo file
+            # URL.
             - type: repository-file
-              id: |
-                https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/repo/fedora-rawhide/group_teemtee-stable-fedora-rawhide.repo
+              # yamllint disable-line rule:line-length
+              id: https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/repo/fedora-rawhide/group_teemtee-stable-fedora-rawhide.repo
             - type: repository-file
-              id: |
-                https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/repo/epel-9/group_teemtee-stable-epel-9.repo
+              # yamllint disable-line rule:line-length
+              id: https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/repo/epel-9/group_teemtee-stable-epel-9.repo
 
   # Latest fedora & epel targets
   - &latest-targets
