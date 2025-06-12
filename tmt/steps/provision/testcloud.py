@@ -1520,7 +1520,11 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
             text = self.testcloud_symlink_path.read_text(errors="ignore")
 
         except OSError as error:
-            logger.warning(f"Failed to read the console log: {error}")
+            tmt.utils.show_exception_as_warning(
+                exception=error,
+                message='Failed to read the console log.',
+                logger=self.guest._logger,
+            )
 
         self.testcloud_symlink_path.unlink()
         self.cleanup(logger)
