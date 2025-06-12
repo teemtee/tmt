@@ -2136,9 +2136,9 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             if not self.workdir_root.is_dir():
                 try:
                     self.workdir_root.mkdir(exist_ok=True, parents=True)
-                    self.workdir_root.chmod(0o1777)
                 except OSError as error:
                     raise FileError(f"Failed to prepare workdir '{self.workdir_root}': {error}")
+            self.workdir_root.chmod(0o1777)
 
         if id_ is None:
             # Prepare workdir_root first
