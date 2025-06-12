@@ -9,6 +9,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
+from tmt.package_managers import FileSystemPath
 from tmt.steps.provision import GuestCapability
 from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript, retry
 from tmt.utils.hints import get_hint
@@ -233,6 +234,8 @@ class GuestContainer(tmt.Guest):
             Command(
                 'run',
                 *additional_args,
+                '--userns',
+                'keep-id',
                 '--name',
                 self.container,
                 '-v',
@@ -243,6 +246,20 @@ class GuestContainer(tmt.Guest):
                 self.image,
             )
         )
+
+    def setup(self) -> None:
+        super().setup()
+        if not self.facts.is_superuser:
+            self.package_manager.install(FileSystemPath('/usr/bin/setfacl'))
+            self.execute(
+                ShellScript(
+                    f"""
+                    sudo mkdir -p {self.workdir_root};
+                    sudo chmod o+rwX {self.workdir_root};
+                    sudo setfacl -d -m o:rwX {self.workdir_root}
+                    """
+                )
+            )
 
     def reboot(
         self,
