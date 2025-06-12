@@ -1,3 +1,5 @@
+---
+
 test-policy:
   - environment: |
       {% if not VALUE %}

@@ -1,3 +1,5 @@
+---
+
 # mrack provisioning supports also static provisioning
 # this record is needed (mrack >= v0.5.2) to enable it
 static: {}
@@ -109,7 +111,9 @@ beaker:
     timeout: 230 # in minutes
 
     tasks:
-        default: [ {"name": "/distribution/dummy", "role": "STANDALONE"} ]
+        default:
+            - name: /distribution/dummy
+              role: STANDALONE
 
 
 # mrack inventory layout setup
