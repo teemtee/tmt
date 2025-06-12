@@ -57,5 +57,10 @@ properties:
   beaker-job-group:
     type: string
 
+  tasks:
+    type: array
+    items:
+      type: object
+
 required:
   - how
