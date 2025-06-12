@@ -1535,7 +1535,7 @@ class Guest(tmt.utils.Common):
 
         A rather thin wrapper of :py:meth:`run` whose purpose is to be a single
         point through all commands related to a guest must go through. We expect
-        consistent logging from such commands, be it an ``ansible-playbook`
+        consistent logging from such commands, be it an ``ansible-playbook``
         running on the control host or a test script on the guest.
 
         :param command: a command to execute.

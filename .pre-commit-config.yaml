@@ -211,3 +211,20 @@ repos:
             tmt/steps/execute/scripts/.*\.sh\.j2|
             tmt/templates/.*
           )$
+
+  - repo: https://github.com/pycqa/flake8
+    rev: "7.2.0"
+    hooks:
+      - id: flake8
+        additional_dependencies:
+          - flake8-rst-docstrings
+        args:
+          - '--select'
+          - 'RST'
+          # The following are just a subset of what Sphinx defines.
+          # Listing them for flake8-rst-docstrings, in the future we
+          # may need to add more as needed.
+          - '--rst-roles'
+          - 'py:class,py:attr,py:func,py:meth,py:exc,py:mod,py:const,py:data,py:member,ref'
+          - '--rst-directives'
+          - 'versionadded,versionchanged'

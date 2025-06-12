@@ -1693,7 +1693,7 @@ def _parse_block(spec: Spec) -> BaseConstraint:
 
     :param spec: raw constraint block specification.
     :returns: block representation as :py:class:`BaseConstraint` or one of its
-    subclasses.
+        subclasses.
     """
 
     if 'and' in spec:

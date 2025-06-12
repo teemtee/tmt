@@ -571,13 +571,11 @@ class Environment(dict[str, EnvVarValue]):
         ``.env``-like files are supported.
 
         .. code-block:: bash
-           :caption: dotenv file example
 
            A=B
            C=D
 
         .. code-block:: yaml
-           :caption: YAML file example
 
            A: B
            C: D
@@ -656,13 +654,11 @@ class Environment(dict[str, EnvVarValue]):
         Files should be in YAML format (``.yaml`` or ``.yml`` suffixes), or in dotenv format.
 
         .. code-block:: bash
-           :caption: dotenv file example
 
            A=B
            C=D
 
         .. code-block:: yaml
-           :caption: YAML file example
 
            A: B
            C: D
