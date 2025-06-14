@@ -1,3 +1,4 @@
+import shutil
 from typing import Any, Optional, Union
 
 import tmt
@@ -161,14 +162,72 @@ class GuestLocal(tmt.Guest):
 
     def push(
         self,
-        source: Optional[Path] = None,
+        source: Optional[Union[Path, list[Path]]] = None,
         destination: Optional[Path] = None,
         options: Optional[list[str]] = None,
         superuser: bool = False,
     ) -> None:
         """
-        Nothing to be done to push workdir
+        Copy files or directories to the guest, which is localhost in this case.
+
+        When 'source' is a directory, its CONTENTS are copied to the destination
+        (equivalent to rsync source/ ...). This is always the behavior for
+        consistency across all guest implementations.
+
+        If 'source' is None, no action is taken since workdir is already local.
+        If 'destination' is None, defaults to '/' but is not used in local mode.
+
+        :param source: Path to a file or directory to copy. If a directory,
+                      its contents (not the directory itself) are copied.
+        :param destination: Path on the guest where to copy.
+        :param options: Not used in local implementation.
+        :param superuser: Not used in local implementation.
         """
+        if source is None:
+            self.debug("No source specified, skipping local push", level=2)
+            return
+
+        if destination is None:
+            destination = Path('/')
+
+        sources = [source] if not isinstance(source, list) else source
+        self.debug(f"Copying {len(sources)} source(s) to destination '{destination}'")
+
+        # Ensure destination directory exists
+        try:
+            if not destination.exists():
+                destination.mkdir(parents=True, exist_ok=True)
+                self.debug(f"Created destination directory '{destination}'")
+        except OSError as e:
+            raise tmt.utils.ProvisionError(f"Failed to create destination directory: {e}")
+
+        # Process each source path
+        for src in sources:
+            try:
+                self.debug(f"Copying '{src}' to '{destination}'")
+                # Directory handling - copy contents, not the directory itself
+                if src.exists() and src.is_dir():
+                    self.debug(f"Source '{src}' is a directory, copying contents", level=2)
+
+                    # Get all items in the directory
+                    for item in src.iterdir():
+                        dest_path = destination / item.name
+
+                        # Copy with appropriate function based on type
+                        if item.is_dir():
+                            shutil.copytree(item, dest_path, symlinks=True, dirs_exist_ok=True)
+                        else:
+                            shutil.copy2(item, dest_path)
+
+                        self.debug(f"Copied '{item}' to '{dest_path}'", level=2)
+                else:
+                    # File or non-existent path handling
+                    dest_path = destination / src.name
+                    self.debug(f"Source '{src}' is a file, copying directly", level=2)
+                    shutil.copy2(src, dest_path)
+
+            except OSError as e:
+                raise tmt.utils.ProvisionError(f"Failed to copy '{src}' to '{destination}': {e}")
 
     def pull(
         self,
