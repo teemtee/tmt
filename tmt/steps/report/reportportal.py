@@ -652,7 +652,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             # The datetime *strings* are in fact sorted here, but finding the minimum will work,
             # because the datetime in ISO format is designed to be lexicographically sortable.
             launch_start_time = min(
-                [r.start_time or self.datetime for r in self.step.plan.execute.results()]
+                r.start_time or self.datetime for r in self.step.plan.execute.results()
             )
 
         # Create launch, suites (if "--suite_per_plan") and tests;
