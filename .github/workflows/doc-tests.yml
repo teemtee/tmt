@@ -59,3 +59,6 @@ jobs:
         if: steps.rate_limit_check.outputs.skip_linkcheck == 'true'
         run: |
           echo "::warning title=Linkcheck Skipped Due to Rate Limit::The Sphinx documentation link check was skipped because the remaining GitHub API core rate limit (${{ steps.rate_limit_check.outputs.remaining_core }} remaining) was below the threshold (${{ steps.rate_limit_check.outputs.threshold }}). The link check will be performed when the rate limit resets."
+
+      - name: Run Sphinx ReST linter
+        run: hatch run docs:sphinx-rest-linter
