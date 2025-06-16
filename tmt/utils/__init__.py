@@ -53,12 +53,14 @@ import fmf.utils
 import jsonschema
 import requests
 import requests.adapters
+import ruamel.yaml.reader
+import ruamel.yaml.scalarstring
 import urllib3
 import urllib3._collections
 import urllib3.exceptions
 import urllib3.util.retry
 from click import echo, wrap_text
-from ruamel.yaml import YAML, scalarstring
+from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap
 from ruamel.yaml.parser import ParserError
 from ruamel.yaml.representer import Representer
@@ -3030,8 +3032,49 @@ def dict_to_yaml(
 
     yaml.representer.add_representer(Environment, _represent_environment)
 
-    # Convert multiline strings
-    scalarstring.walk_tree(data)
+    # Convert multiline strings, sanitize invalid characters. Based on
+    # `scalarstring.walk_tree()` which does not support any other test
+    # than "is this character in that string?"
+    # Prevents saving non-printable characters a YAML parser might later
+    # reject - see https://github.com/teemtee/tmt/issues/3805
+    def _sanitize_yaml_string(s: str) -> str:
+        pattern = ruamel.yaml.reader.Reader.NON_PRINTABLE
+
+        if '\n' in s:
+            s = ruamel.yaml.scalarstring.preserve_literal(s)
+
+        return ''.join(rf'#{{{ord(c):x}}}' if pattern.match(c) else c for c in s)
+
+    def walk_tree(value: Any) -> Any:
+        from collections.abc import MutableMapping, MutableSequence
+
+        if isinstance(value, MutableMapping):
+            for k, v in value.items():
+                if isinstance(v, str):
+                    value[k] = _sanitize_yaml_string(v)
+
+                else:
+                    value[k] = walk_tree(v)
+
+            return value
+
+        if isinstance(value, MutableSequence):
+            for k, v in enumerate(value):
+                if isinstance(v, str):
+                    value[k] = _sanitize_yaml_string(v)
+
+                else:
+                    value[k] = walk_tree(v)
+
+            return value
+
+        if isinstance(value, str):
+            return _sanitize_yaml_string(value)
+
+        return value
+
+    data = walk_tree(data)
+
     if sort:
         # Sort the data https://stackoverflow.com/a/40227545
         sorted_data = CommentedMap()

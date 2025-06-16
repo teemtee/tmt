@@ -2,6 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+import tmt.utils
 from tmt.checks import CheckEvent
 from tmt.cli import TmtExitCode
 from tmt.result import (
@@ -12,6 +13,7 @@ from tmt.result import (
     ResultOutcome,
     results_to_exit_code,
 )
+from tmt.utils import Common, Path
 
 
 @pytest.mark.parametrize(
@@ -266,3 +268,34 @@ def test_result_interpret_edge_cases() -> None:
     interpreted = result.interpret_result(ResultInterpret.RESPECT, {})
     assert interpreted.result == ResultOutcome.FAIL
     assert not interpreted.note
+
+
+# Weird control characters in failures.yaml
+#
+# https://github.com/teemtee/tmt/issues/3805
+_BAD_STRING = """
+    :: [  \x1b[1;31mFAIL\x1b[0m  ] :: Command './test_progs -a atomics'
+    bpf_testmod.ko is already unloaded."""
+
+_GOOD_STRING = """
+    :: [  #{1b}[1;31mFAIL#{1b}[0m  ] :: Command './test_progs -a atomics'
+    bpf_testmod.ko is already unloaded."""
+
+
+def test_save_failures(tmppath: Path, root_logger) -> None:
+    from tmt.result import save_failures
+    from tmt.steps.execute import TestInvocation
+
+    phase = Common(workdir=tmppath, logger=root_logger)
+    phase.step = MagicMock(workdir=tmppath)
+    invocation = TestInvocation(root_logger, phase, None, None)
+
+    (tmppath / 'data').mkdir()
+
+    save_failures(invocation, Path('data'), ['foo', _BAD_STRING, 'bar'])
+
+    read_yaml = (tmppath / 'data/failures.yaml').read_text()
+
+    assert tmt.utils.yaml_to_python(read_yaml) == ['foo', _GOOD_STRING, 'bar']
+    assert tmt.utils.yaml_to_python(read_yaml, yaml_type='safe') == ['foo', _GOOD_STRING, 'bar']
+    assert tmt.utils.yaml_to_list(read_yaml) == ['foo', _GOOD_STRING, 'bar']
