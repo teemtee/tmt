@@ -162,7 +162,7 @@ def _quit_tmt(logger: tmt.log.Logger, repeated: bool = False) -> NoReturn:
 
                 except Exception as exc:
                     # TODO: switch to https://github.com/teemtee/tmt/pull/3752 once it gets merged
-                    logger.fail(f'On-interrupt allback {fn.__name__} failed: {exc!r}')
+                    logger.fail(f'On-interrupt callback {fn.__name__} failed: {exc!r}')
 
     raise KeyboardInterrupt
 

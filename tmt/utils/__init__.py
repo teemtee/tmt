@@ -2204,6 +2204,13 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         # Do the same for the bootstrap logger - this logger should not
         # be used by regular code, and by now we should have everything
         # up and running, but some exceptions exist.
+        #
+        # Do *not* do the same for the *exception* logger - that one is
+        # owned by `tmt.utils.show_exception()` which takes care of emitting
+        # lines into files as necessary. And while the bootstrap logger is
+        # the go-to logger for async code, like signal handlers, the
+        # exception logger is not to be used from anywhere but exception
+        # logging.
         from tmt._bootstrap import _BOOTSTRAP_LOGGER
 
         _BOOTSTRAP_LOGGER.add_logfile_handler(workdir / tmt.log.LOG_FILENAME)
