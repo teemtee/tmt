@@ -446,28 +446,7 @@ location:
 See the :ref:`/spec/tests/require` attribute specification for
 detailed description of the syntax and available keys.
 
-Share Tests
-------------------------------------------------------------------
 
-Tests can be shared across different repositories, significantly enhancing
-efficiency, reducing data duplication, and improving maintainability in the
-testing workflow.
-
-tmt allows references to external repositories directly within the ``discover``
-step of the plan. By specifying the url of a remote Git repository, tmt
-can fetch and integrate tests defined within that repository.
-
-.. code-block:: yaml
-
-    discover:
-        # Fetch common tests from a shared repository
-        - name: core-tests
-          how: fmf
-          url: https://github.com/my-org/core-tests.git
-
-        # Discover tests located within this project's own repository
-        - name: project-specific
-          how: fmf
 
 Plans
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

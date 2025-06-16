@@ -4,6 +4,15 @@
     Releases
 ======================
 
+
+tmt-1.51.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`organize-data` chapter of the Guide has been extended
+with the :ref:`share-tests` section describing how to efficiently
+maintain test code and share it across repositories.
+
+
 tmt-1.50.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

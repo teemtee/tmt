@@ -310,6 +310,8 @@ provides a flexible way to adjust metadata based on the
 keep it for another time.
 
 
+.. _organize-data:
+
 Organize Data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -815,6 +817,33 @@ manage-api-tokens-for-your-atlassian-account/#Create-an-API-token>`_
 (please note that this can vary if you use custom Jira instance).
 
 .. versionadded:: 1.37
+
+
+.. _share-tests:
+
+Share Tests
+------------------------------------------------------------------
+
+Tests can be shared across different repositories, significantly
+enhancing efficiency, reducing data duplication, and improving
+maintainability in the testing workflow.
+
+tmt allows references to external repositories directly within the
+``discover`` step of the plan. By specifying the URL of a remote
+git repository, tmt can fetch and integrate tests defined within
+that repository.
+
+.. code-block:: yaml
+
+    discover:
+      # Fetch common tests from a shared repository
+      - name: core-tests
+        how: fmf
+        url: https://github.com/my-org/core-tests.git
+
+      # Discover tests located within this project's own repository
+      - name: project-specific
+        how: fmf
 
 
 .. _anchors-aliases:
