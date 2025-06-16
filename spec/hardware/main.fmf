@@ -197,16 +197,18 @@ description: |
     Priority of variants
     --------------------
 
-    When the ``hardware`` field can be satisfied by more than one way,
+    When the ``hardware`` field can be satisfied in more than one way,
     i.e. allowing multiple correct answers - variants - then the actual
     guest hardware configuration depends on the behavior of the
     ``provision`` plugin used. Consider the following examples:
 
     .. code-block:: yaml
 
+        # Single variant
         hardware:
           memory: '>= 4 GB'
 
+        # Multiple variants
         hardware:
           or:
             - memory: '>= 4 GB'
@@ -226,7 +228,7 @@ description: |
 
       These plugins will take the first variant - ``memory: '>= 4 GB'``
       - and they will construct the guest to match this subset of rules.
-      Other variants would be ignored.
+      All other variants are ignored.
     * Plugins that select guests from a preexisting inventory of
       machines: :ref:`/plugins/provision/beaker`
 
@@ -236,9 +238,9 @@ description: |
 
     .. note::
 
-        :ref:`/plugins/provision/artemis` is a special case that may
-        support both ways, depending on the actual pool selected for the
-        provisioning.
+        :ref:`/plugins/provision/artemis` is a special case: it may
+        support both behaviors depending on the selected provisioning
+        pool.
 
     Notes
     -----
