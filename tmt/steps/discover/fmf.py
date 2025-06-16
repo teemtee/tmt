@@ -304,6 +304,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     ``prune`` - copy only immediate directories of executed tests and their required files
 
 
+    Dist Git
+    ^^^^^^^^
+
     For DistGit repo one can download sources and use code from them in
     the tests. Sources are extracted into ``$TMT_SOURCE_DIR`` path,
     patches are applied by default. See options to install build
@@ -320,6 +323,36 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             how: fmf
             dist-git-source: true
 
+    Name Filter
+    ^^^^^^^^^^^
+
+    Use the ``test`` key to limit which tests should be executed by
+    providing regular expression matching the test name:
+
+    .. code-block:: yaml
+
+        discover:
+            how: fmf
+            test: ^/tests/area/.*
+
+    When several regular expressions are provided, tests matching each
+    regular expression are concatenated. In this way it is possible to
+    execute a single test multiple times:
+
+    .. code-block:: yaml
+
+        discover:
+            how: fmf
+            test:
+              - /test/one
+              - /test/two
+              - /special/setup
+              - /test/one
+              - /test/two
+
+    Link Filter
+    ^^^^^^^^^^^
+
     Selecting tests containing specified link is possible using ``link``
     key accepting ``RELATION:TARGET`` format of values. Regular
     expressions are supported for both relation and target part of the
@@ -330,6 +363,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         discover:
             how: fmf
             link: verifies:.*issue/850$
+
+    Modified Tests
+    ^^^^^^^^^^^^^^
 
     It is also possible to limit tests only to those that have changed
     in git since a given revision. This can be particularly useful when
@@ -350,6 +386,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     Note that internally the modified tests are appended to the list
     specified via ``test``, so those tests will also be selected even if
     not modified.
+
+    Adjust Tests
+    ^^^^^^^^^^^^
 
     Use the ``adjust-tests`` key to modify the discovered tests'
     metadata directly from the plan. For example, extend the test
