@@ -344,11 +344,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         discover:
             how: fmf
             test:
-              - /test/one
-              - /test/two
-              - /special/setup
-              - /test/one
-              - /test/two
+              - ^/test/one$
+              - ^/test/two$
+              - ^/special/setup$
+              - ^/test/one$
+              - ^/test/two$
 
     Link Filter
     ^^^^^^^^^^^
