@@ -559,10 +559,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         if not self.opt('url'):
             try:
                 fmf_tree = fmf.Tree(Path.cwd())
-            except fmf.utils.RootError:
+            except fmf.utils.RootError as exc:
                 raise tmt.utils.DiscoverError(
                     "No metadata found in the current directory. Use 'tmt init' to get started."
-                )
+                ) from exc
             for attr in fmf_tree.climb():
                 with suppress(AttributeError):
                     plan_url = attr.data.get('discover').get('url')
@@ -571,21 +571,21 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     if not plan_url:
                         try:
                             self.get_git_root(directory=Path.cwd())
-                        except tmt.utils.RunError:
+                        except tmt.utils.RunError as exc:
                             raise tmt.utils.DiscoverError(
                                 f"`tmt run discover --fmf-id` without `url` option "
                                 f"in plan `{plan_name}` can be used only within git repo."
-                            )
+                            ) from exc
 
         # All other cases are covered by this condition
         if not url:
             try:
                 self.get_git_root(directory=Path.cwd())
-            except tmt.utils.RunError:
+            except tmt.utils.RunError as exc:
                 raise tmt.utils.DiscoverError(
                     f"`tmt run discover --fmf-id` without `url` option "
                     f"in plan `{self.step.plan.name}` can be used only within git repo."
-                )
+                ) from exc
 
     def process_distgit_source(self, distgit_dir: Path, sourcedir: Path) -> None:
         """
