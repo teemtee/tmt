@@ -76,6 +76,8 @@ _ON_INTERRUPT_CALLBACK_TOKENS = itertools.count()
 #: Safeguards access to callback registry.
 _ON_INTERRUPT_CALLBACKS_LOCK = threading.Lock()
 
+_ON_INTERRUPT_CALLBACKS_LOOPS = 3
+
 
 def add_callback(fn: Callable[P, None], *args: P.args, **kwargs: P.kwargs) -> int:
     """
@@ -85,7 +87,7 @@ def add_callback(fn: Callable[P, None], *args: P.args, **kwargs: P.kwargs) -> in
     :param args: position arguments to pass to ``fn``.
     :param kwargs: keyword arguments to pass to ``fn``.
     :returns: unique token to use when unregistering the callback via
-        :func:`remove_callback`.
+        :py:func:`remove_callback`.
     """
 
     with _ON_INTERRUPT_CALLBACKS_LOCK:
@@ -141,13 +143,26 @@ def _quit_tmt(logger: tmt.log.Logger, repeated: bool = False) -> NoReturn:
             ).strip()
         )
 
-        with _ON_INTERRUPT_CALLBACKS_LOCK:
-            while _ON_INTERRUPT_CALLBACKS:
-                _, (fn, args, kwargs) = _ON_INTERRUPT_CALLBACKS.popitem()
+        for _ in range(_ON_INTERRUPT_CALLBACKS_LOOPS):
+            with _ON_INTERRUPT_CALLBACKS_LOCK:
+                if not _ON_INTERRUPT_CALLBACKS:
+                    break
 
-                logger.debug(f'Invoking on-interrupt callback {fn.__name__}(*{args}, **{kwargs})')
+                callbacks = list(_ON_INTERRUPT_CALLBACKS.values())
 
-                fn(*args, **kwargs)
+                _ON_INTERRUPT_CALLBACKS.clear()
+
+            for fn, args, kwargs in callbacks:
+                logger.debug(
+                    f'Invoking on-interrupt callback {tmt.utils.format_call(fn, *args, **kwargs)}'
+                )
+
+                try:
+                    fn(*args, **kwargs)
+
+                except Exception as exc:
+                    # TODO: switch to https://github.com/teemtee/tmt/pull/3752 once it gets merged
+                    logger.fail(f'On-interrupt allback {fn.__name__} failed: {exc!r}')
 
     raise KeyboardInterrupt
 

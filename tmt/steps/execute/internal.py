@@ -578,7 +578,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             timeout = None
 
         elif self.data.ignore_duration:
-            logger.debug("Test duration is not effective due ignore-duration option.")
+            logger.debug("Test duration is not effective due to ignore-duration option.")
             timeout = None
 
         else:

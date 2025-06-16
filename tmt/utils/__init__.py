@@ -66,6 +66,7 @@ from urllib3.response import HTTPResponse
 
 import tmt.log
 from tmt._compat.pathlib import Path
+from tmt._compat.typing import ParamSpec
 from tmt.container import container
 from tmt.log import LoggableValue
 from tmt.utils.themes import style
@@ -1367,7 +1368,12 @@ class Command:
         output = CommandOutput(stdout, stderr)
 
         if on_process_end is not None:
-            on_process_end(self, process, output, logger)
+            try:
+                on_process_end(self, process, output, logger)
+
+            except Exception as exc:
+                # TODO: switch to https://github.com/teemtee/tmt/pull/3752 once it gets merged
+                logger.fail(f'On-process-end callback {on_process_end.__name__} failed: {exc!r}')
 
         # Handle the exit code, return output
         if process.returncode != ProcessExitCodes.SUCCESS:
@@ -2184,6 +2190,8 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             # Create the workdir
             create_directory(path=workdir, name='workdir', quiet=True, logger=self._logger)
 
+        self._workdir = workdir
+
         # TODO: chicken and egg problem: when `Common` is instantiated, the workdir
         # path might be already known, but it's often not created yet. Therefore
         # a logfile handler cannot be attached to the given logger.
@@ -2192,7 +2200,13 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         # to our little logging problem would probably be related to refactoring
         # of workdir creation some day in the future.
         self._logger.add_logfile_handler(workdir / tmt.log.LOG_FILENAME)
-        self._workdir = workdir
+
+        # Do the same for the bootstrap logger - this logger should not
+        # be used by regular code, and by now we should have everything
+        # up and running, but some exceptions exist.
+        from tmt._bootstrap import _BOOTSTRAP_LOGGER
+
+        _BOOTSTRAP_LOGGER.add_logfile_handler(workdir / tmt.log.LOG_FILENAME)
 
     def _workdir_name(self) -> Optional[Path]:
         """
@@ -3773,6 +3787,26 @@ def format(
         return output + ('\n' + indent_string).join(value_as_lines)
 
     return output + formatted_value
+
+
+P = ParamSpec('P')
+
+
+# [happz] I was thinking how to slot this under the umbrela of `format()`
+# and `format_value()`, but it's 3 values rather than one, and extending
+# their API did not look sane enough.
+# On the other hand, we don't log function calls too often, it's a rare
+# occasion, so it's probably fine if it stands alone.
+def format_call(fn: Callable[P, Any], *args: P.args, **kwargs: P.kwargs) -> str:
+    """
+    Format a function call for logging.
+    """
+
+    arguments: list[str] = [repr(arg) for arg in args] + [
+        f'{name}={value}' for name, value in kwargs.items()
+    ]
+
+    return f'{fn.__name__}({", ".join(arguments)})'
 
 
 def create_directory(
