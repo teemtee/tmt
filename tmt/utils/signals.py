@@ -97,7 +97,7 @@ def _quit_tmt(logger: tmt.log.Logger, repeated: bool = False) -> NoReturn:
 
 def _interrupt_handler(signum: int, frame: Optional[FrameType]) -> None:
     """
-    A signal handler for signals that interrupt tmt, ``SIGINT`` and ``SIGTERM`.
+    A signal handler for signals that interrupt tmt, ``SIGINT`` and ``SIGTERM``.
 
     :param signum: delivered signal.
     :param frame: stack frame active when the signal was received.

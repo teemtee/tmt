@@ -414,6 +414,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         ResultOutcome.WARN: "FAILED",
         ResultOutcome.ERROR: "FAILED",
         ResultOutcome.SKIP: "SKIPPED",
+        ResultOutcome.PENDING: "SKIPPED",
     }
 
     def handle_response(self, response: requests.Response) -> None:

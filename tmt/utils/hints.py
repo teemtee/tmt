@@ -159,22 +159,22 @@ HINTS: dict[str, Hint] = {
 }
 
 
-def register_hint(id_: str, hint: str) -> None:
+def register_hint(hint_id: str, hint: str) -> None:
     """
     Register a hint for users.
 
-    :param id_: step name for step-specific hints,
+    :param hint_id: step name for step-specific hints,
         ``<step name>/<plugin name>`` for plugin-specific hints,
         or an arbitrary string.
     :param hint: a hint to register.
     """
 
-    if id_ in HINTS:
+    if hint_id in HINTS:
         raise tmt.utils.GeneralError(
-            f"Registering hint '{id_}' collides with an already registered hint."
+            f"Registering hint '{hint_id}' collides with an already registered hint."
         )
 
-    HINTS[id_] = Hint(id_, hint)
+    HINTS[hint_id] = Hint(hint_id, hint)
 
 
 def get_hints(*ids: str, ignore_missing: bool = False) -> list[Hint]:
@@ -214,26 +214,26 @@ def get_hints(*ids: str, ignore_missing: bool = False) -> list[Hint]:
 
 
 @overload
-def get_hint(id_: str, ignore_missing: Literal[True]) -> Optional[Hint]:
+def get_hint(hint_id: str, ignore_missing: Literal[True]) -> Optional[Hint]:
     pass
 
 
 @overload
-def get_hint(id_: str, ignore_missing: Literal[False]) -> Hint:
+def get_hint(hint_id: str, ignore_missing: Literal[False]) -> Hint:
     pass
 
 
-def get_hint(id_: str, ignore_missing: bool = False) -> Optional[Hint]:
+def get_hint(hint_id: str, ignore_missing: bool = False) -> Optional[Hint]:
     """
     Return hint for the provided identifier
 
-    :param id_: Hint identifier.
+    :param hint_id: Hint identifier.
     :param ignore_missing: If not set, non-existent hint will raise an
         exception. Otherwise, non-existent hint will be skipped.
     :returns: Hint if found, None otherwise.
     """
 
-    hints = get_hints(id_, ignore_missing=ignore_missing)
+    hints = get_hints(hint_id, ignore_missing=ignore_missing)
 
     return hints[0] if hints else None
 
