@@ -1592,7 +1592,7 @@ class GuestLogBeaker(tmt.steps.provision.GuestLog):
         except Exception as error:
             tmt.utils.show_exception_as_warning(
                 exception=error,
-                message=f"Failed to fetch '{self.url}' log",
+                message=f"Failed to fetch '{self.url}' log.",
                 logger=self.guest._logger,
             )
 
