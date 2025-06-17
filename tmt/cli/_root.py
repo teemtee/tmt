@@ -78,7 +78,7 @@ def _load_policies(
     :param policy_name: policy name to look up under the policy root.
         If set, it is preferred over ``policy_path``, and it requires
         ``policy_root`` to be set as well.
-    :param policy_name: path to the policy file.
+    :param policy_path: path to the policy file.
     :param policy_root: if set, policy files must be located under this
         directory.
     """

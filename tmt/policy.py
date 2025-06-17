@@ -163,7 +163,7 @@ class Policy(MetadataContainer):
         Load a policy from a given file.
 
         :param path: a path to the policy file.
-        :param logger: used for logging.
+        :param root: directory under which policy file must reside.
         """
 
         if root is not None:
@@ -190,7 +190,6 @@ class Policy(MetadataContainer):
 
         :param name: suffix-less name of a file under the ``root`` path.
         :param root: directory under which policy file must reside.
-        :param logger: used for logging.
         """
 
         for suffix in ('.yaml', '.yml'):

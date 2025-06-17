@@ -557,7 +557,7 @@ POLICY_OPTIONS: list[ClickOptionDecoratorType] = [
              or ``TMT_POLICY_NAME`` environment variable) are searched
              under this directory only, and policy specified by its
              filepath (``--policy-file`` or ``TMT_POLICY_FILE``) will be
-             be allowed only if the filepath is under this directory.
+             allowed only if the filepath is under this directory.
              """,
     ),
 ]
