@@ -335,6 +335,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             how: fmf
             test: ^/tests/area/.*
 
+    .. code-block:: shell
+
+        tmt run discover --how fmf --verbose --test "^/tests/core.*"
+
     When several regular expressions are provided, tests matching each
     regular expression are concatenated. In this way it is possible to
     execute a single test multiple times:
@@ -349,6 +353,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
               - ^/special/setup$
               - ^/test/one$
               - ^/test/two$
+
+    .. code-block:: shell
+
+        tmt run discover -h fmf -v -t ^/test/one$ -t ^/special/setup$ -t ^/test/two$
 
     Link Filter
     ^^^^^^^^^^^
