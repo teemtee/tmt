@@ -70,7 +70,6 @@ def _load_policies(
     policy_name: Optional[str],
     policy_path: Optional[Path],
     policy_root: Optional[Path],
-    logger: tmt.log.Logger,
 ) -> list[tmt.policy.Policy]:
     """
     A helper for loading policies.
@@ -87,6 +86,11 @@ def _load_policies(
         if policy_root is None:
             raise GeneralError(
                 "Policy can be loaded by its name only when '--policy-root' is specified."
+            )
+
+        if policy_path is not None:
+            raise GeneralError(
+                "Options '--policy-name' and '--policy-file' are mutually exclusive."
             )
 
         return [
@@ -355,7 +359,7 @@ def run(
     logger = context.obj.logger.descend(logger_name='run', extra_shift=0)
     logger.apply_verbosity_options(**kwargs)
 
-    policies = _load_policies(policy_name, policy_path, policy_root, context.obj.logger)
+    policies = _load_policies(policy_name, policy_path, policy_root)
 
     context.obj.run = tmt.Run(
         id_=Path(id_) if id_ is not None else None,
@@ -991,12 +995,10 @@ def tests_export(
     else:
         tests = context.obj.tree.tests()
 
-        policies = _load_policies(policy_name, policy_path, policy_root, context.obj.logger)
+        policies = _load_policies(policy_name, policy_path, policy_root)
 
         for policy in policies:
-            policy.apply_to_tests(
-                tests=tests, policy_name=str(policy_path), logger=context.obj.logger
-            )
+            policy.apply_to_tests(tests=tests, logger=context.obj.logger)
 
         echo(
             tmt.Test.export_collection(

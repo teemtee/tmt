@@ -119,6 +119,7 @@ rlJournalStart
         run_test ../policies ""                         does-not-exist 2 "Policy 'does-not-exist' does not point to a file."
         run_test ""          ""                         test/test      2 "Policy can be loaded by its name only when '--policy-root' is specified."
         run_test ""          test/test.yaml             ""             2 "Policy 'test/test.yaml' not found."
+        run_test ../policies test/test.yaml             test/test      2 "Options '--policy-name' and '--policy-file' are mutually exclusive."
 
         run_test ../policies ""                         test/test      0 "content: Spiked test."
         run_test ../policies test/test.yaml             ""             0 "content: Spiked test."

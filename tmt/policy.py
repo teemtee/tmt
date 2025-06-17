@@ -148,6 +148,9 @@ class Policy(MetadataContainer):
     See :ref:`/spec/policy` for more details.
     """
 
+    # The name will be overwritten by the code loading policies
+    name: str = 'unknown'
+
     #: Instructions for modifications of tests.
     test_policy: list[Instruction] = metadata_field(default_factory=list[Instruction])
 
@@ -175,7 +178,10 @@ class Policy(MetadataContainer):
                 )
 
         try:
-            return Policy.from_yaml(path.read_text())
+            policy = Policy.from_yaml(path.read_text())
+            policy.name = str(path)
+
+            return policy
 
         except FileNotFoundError as exc:
             raise tmt.utils.SpecificationError(f"Policy '{path}' not found.") from exc
@@ -193,12 +199,15 @@ class Policy(MetadataContainer):
         """
 
         for suffix in ('.yaml', '.yml'):
-            path = root / Path(f'{name}{suffix}').unrooted()
+            filepath = Path(f'{name}{suffix}').unrooted()
 
-            if not path.is_file():
+            if not (root / filepath).is_file():
                 continue
 
-            return cls.load_by_filepath(path=path, root=root)
+            policy = cls.load_by_filepath(path=filepath, root=root)
+            policy.name = name
+
+            return policy
 
         raise tmt.utils.SpecificationError(f"Policy '{name}' does not point to a file.")
 
@@ -224,7 +233,6 @@ class Policy(MetadataContainer):
         self,
         *,
         tests: Iterable['Test'],
-        policy_name: Optional[str] = None,
         logger: Logger,
     ) -> None:
         """
@@ -235,21 +243,10 @@ class Policy(MetadataContainer):
         :param logger: used for logging.
         """
 
-        # TODO: policy name should be known to this class, maybe set
-        # an "origin" field when loading from file (can't do it now, the
-        # field is not inherited and I don't know why...)
-        if policy_name is not None:
-            logger.info(
-                f"Apply tmt policy '{policy_name}'.",
-                color='green',
-                topic=Topic.POLICY,
-            )
-
-        else:
-            logger.info(
-                "Apply tmt policy.",
-                color='green',
-                topic=Topic.POLICY,
-            )
+        logger.info(
+            f"Apply tmt policy '{self.name}'.",
+            color='green',
+            topic=Topic.POLICY,
+        )
 
         self._apply(tests, self.test_policy, logger.descend())
