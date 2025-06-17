@@ -18,6 +18,7 @@ import tmt.base
 import tmt.log
 import tmt.steps
 import tmt.utils
+import tmt.utils.signals
 import tmt.utils.wait
 from tmt.checks import CheckEvent
 from tmt.container import container, field, simple_field
@@ -29,6 +30,7 @@ from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.provision import Guest
 from tmt.utils import (
     Command,
+    CommandOutput,
     Path,
     ShellScript,
     Stopwatch,
@@ -322,6 +324,11 @@ class TestInvocation:
     process: Optional[subprocess.Popen[bytes]] = None
     process_lock: threading.Lock = simple_field(default_factory=threading.Lock)
 
+    #: If set, there is a callback registered through
+    #: :py:func:`tmt.utils.signals.add_callback` which would be called when
+    #: tmt gets terminated.
+    on_interrupt_callback_token: Optional[int] = None
+
     results: list[Result] = simple_field(default_factory=list)
     check_results: list[CheckResult] = simple_field(default_factory=list)
 
@@ -601,6 +608,107 @@ class TestInvocation:
         self.hard_reboot_requested = False
 
         return True
+
+    def invoke_test(
+        self,
+        command: ShellScript,
+        *,
+        cwd: Path,
+        env: tmt.utils.Environment,
+        log: tmt.log.LoggingFunction,
+        interactive: bool,
+        timeout: Optional[int],
+    ) -> tmt.utils.CommandOutput:
+        """
+        Start the command which represents the test in this invocation.
+
+        :param cwd: if set, command would be executed in the given directory,
+            otherwise the current working directory is used.
+        :param env: environment variables to combine with the current environment
+            before running the command.
+        :param interactive: if set, the command would be executed in an interactive
+            manner, i.e. with stdout and stdout connected to terminal for live
+            interaction with user.
+        :param timeout: if set, command would be interrupted, if still running,
+            after this many seconds.
+        :param log: a logging function to use for logging of command output. By
+            default, ``logger.debug`` is used.
+        :returns: command output.
+        """
+
+        # Write down process and let tmt kill it if tmt gets interrupted.
+        def _save_process(
+            command: Command, process: subprocess.Popen[bytes], logger: tmt.log.Logger
+        ) -> None:
+            """
+            Record process info in the invocation.
+
+            Called by :py:class:`Command` as the ``on_process_start``
+            callback.
+            """
+
+            with self.process_lock:
+                self.process = process
+
+                self.on_interrupt_callback_token = tmt.utils.signals.add_callback(
+                    self.terminate_process, logger=self.logger
+                )
+
+        def _reset_process(
+            command: Command,
+            process: subprocess.Popen[bytes],
+            output: CommandOutput,
+            logger: tmt.log.Logger,
+        ) -> None:
+            """
+            Reset process info in the invocation.
+
+            Called by :py:class:`Command` as the ``on_process_end``
+            callback.
+            """
+
+            with self.process_lock:
+                self.process = None
+
+                if self.on_interrupt_callback_token is not None:
+                    tmt.utils.signals.remove_callback(self.on_interrupt_callback_token)
+
+        with Stopwatch() as timer:
+            self.start_time = format_timestamp(timer.start_time)
+
+            try:
+                output = self.guest.execute(
+                    command,
+                    cwd=cwd,
+                    env=env,
+                    join=True,
+                    interactive=interactive,
+                    tty=self.test.tty,
+                    log=log,
+                    timeout=timeout,
+                    on_process_start=_save_process,
+                    on_process_end=_reset_process,
+                    test_session=True,
+                    friendly_command=str(self.test.test),
+                )
+
+                self.return_code = tmt.utils.ProcessExitCodes.SUCCESS
+
+            except tmt.utils.RunError as error:
+                output = error.output
+
+                self.return_code = error.returncode
+
+                if self.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
+                    self.logger.debug(f"Test duration '{self.test.duration}' exceeded.")
+
+                elif tmt.utils.ProcessExitCodes.is_pidfile(self.return_code):
+                    self.logger.warning('Test failed to manage its pidfile.')
+
+        self.end_time = format_timestamp(timer.end_time)
+        self.real_duration = format_duration(timer.duration)
+
+        return output
 
     def terminate_process(
         self,

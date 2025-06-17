@@ -1,5 +1,4 @@
 import os
-import subprocess
 import textwrap
 from typing import Any, Optional, cast
 
@@ -12,6 +11,7 @@ import tmt.options
 import tmt.steps
 import tmt.steps.execute
 import tmt.utils
+import tmt.utils.signals
 import tmt.utils.themes
 from tmt.checks import CheckPlugin
 from tmt.container import container, field
@@ -27,14 +27,10 @@ from tmt.steps.execute import (
 from tmt.steps.provision import Guest
 from tmt.steps.report.display import ResultRenderer
 from tmt.utils import (
-    Command,
     Environment,
     EnvVarValue,
     Path,
     ShellScript,
-    Stopwatch,
-    format_duration,
-    format_timestamp,
 )
 from tmt.utils.themes import style
 
@@ -563,12 +559,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 key=key, value=value, color=color, shift=shift, level=level, topic=topic
             )
 
-        def _save_process(
-            command: Command, process: subprocess.Popen[bytes], logger: tmt.log.Logger
-        ) -> None:
-            with invocation.process_lock:
-                invocation.process = process
-
         # Insert internal checks
         invocation.test.check += CheckPlugin.internal_checks(logger)
 
@@ -578,64 +568,37 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             invocation=invocation, environment=environment, logger=logger
         )
 
-        # Execute the test, save the output and return code
-        with Stopwatch() as timer:
-            invocation.start_time = format_timestamp(timer.start_time)
+        # Pick the proper timeout for the test
+        timeout: Optional[int]
 
-            timeout: Optional[int]
+        if self.data.interactive:
+            if test.duration:
+                logger.warning('Ignoring requested duration, not supported in interactive mode.')
 
-            if self.data.interactive:
-                if test.duration:
-                    logger.warning(
-                        'Ignoring requested duration, not supported in interactive mode.'
-                    )
+            timeout = None
 
-                timeout = None
+        elif self.data.ignore_duration:
+            logger.debug("Test duration is not effective due to ignore-duration option.")
+            timeout = None
 
-            elif self.data.ignore_duration:
-                logger.debug("Test duration is not effective due ignore-duration option.")
-                timeout = None
+        else:
+            timeout = tmt.utils.duration_to_seconds(
+                test.duration, tmt.base.DEFAULT_TEST_DURATION_L1
+            )
 
-            else:
-                timeout = tmt.utils.duration_to_seconds(
-                    test.duration, tmt.base.DEFAULT_TEST_DURATION_L1
-                )
-
-            try:
-                output = guest.execute(
-                    remote_command,
-                    cwd=workdir,
-                    env=environment,
-                    join=True,
-                    interactive=self.data.interactive,
-                    tty=test.tty,
-                    log=_test_output_logger,
-                    timeout=timeout,
-                    on_process_start=_save_process,
-                    test_session=True,
-                    friendly_command=str(test.test),
-                )
-                invocation.return_code = 0
-                stdout = output.stdout
-            except tmt.utils.RunError as error:
-                stdout = error.stdout
-
-                invocation.return_code = error.returncode
-                if invocation.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
-                    logger.debug(f"Test duration '{test.duration}' exceeded.")
-
-                elif tmt.utils.ProcessExitCodes.is_pidfile(invocation.return_code):
-                    logger.warning('Test failed to manage its pidfile.')
-
-        with invocation.process_lock:
-            invocation.process = None
-
-        invocation.end_time = format_timestamp(timer.end_time)
-        invocation.real_duration = format_duration(timer.duration)
+        # And invoke the test process.
+        output = invocation.invoke_test(
+            remote_command,
+            cwd=workdir,
+            env=environment,
+            interactive=self.data.interactive,
+            log=_test_output_logger,
+            timeout=timeout,
+        )
 
         # Save the captured output. Do not let the follow-up pulls
         # overwrite it.
-        self.write(invocation.path / TEST_OUTPUT_FILENAME, stdout or '', mode='a', level=3)
+        self.write(invocation.path / TEST_OUTPUT_FILENAME, output.stdout or '', mode='a', level=3)
 
         def pull_from_guest() -> None:
             if not invocation.is_guest_healthy:

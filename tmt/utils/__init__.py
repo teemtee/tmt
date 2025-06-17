@@ -66,6 +66,7 @@ from urllib3.response import HTTPResponse
 
 import tmt.log
 from tmt._compat.pathlib import Path
+from tmt._compat.typing import ParamSpec
 from tmt.container import container
 from tmt.log import LoggableValue
 from tmt.utils.themes import style
@@ -1009,6 +1010,13 @@ OnProcessStartCallback = Callable[
     None,
 ]
 
+#: Type of a callable to be called by :py:meth:`Command.run` after the
+#: child process finishes.
+OnProcessEndCallback = Callable[
+    ['Command', subprocess.Popen[bytes], 'CommandOutput', tmt.log.Logger],
+    None,
+]
+
 
 @container(frozen=True)
 class CommandOutput:
@@ -1141,6 +1149,7 @@ class Command:
         interactive: bool = False,
         timeout: Optional[int] = None,
         on_process_start: Optional[OnProcessStartCallback] = None,
+        on_process_end: Optional[OnProcessEndCallback] = None,
         # Logging
         message: Optional[str] = None,
         friendly_command: Optional[str] = None,
@@ -1168,6 +1177,8 @@ class Command:
             after this many seconds.
         :param on_process_start: if set, this callable would be called after the
             command process started.
+        :param on_process_end: if set, this callable would be called after the
+            command process finishes.
         :param message: if set, it would be logged for more friendly logging.
         :param friendly_command: if set, it would be logged instead of the
             command itself, to improve visibility of the command in logging output.
@@ -1354,6 +1365,16 @@ class Command:
             level=3,
         )
 
+        output = CommandOutput(stdout, stderr)
+
+        if on_process_end is not None:
+            try:
+                on_process_end(self, process, output, logger)
+
+            except Exception as exc:
+                # TODO: switch to https://github.com/teemtee/tmt/pull/3752 once it gets merged
+                logger.fail(f'On-process-end callback {on_process_end.__name__} failed: {exc!r}')
+
         # Handle the exit code, return output
         if process.returncode != ProcessExitCodes.SUCCESS:
             if not stream_output:
@@ -1374,7 +1395,7 @@ class Command:
                 caller=caller,
             )
 
-        return CommandOutput(stdout, stderr)
+        return output
 
 
 _SANITIZE_NAME_PATTERN: Pattern[str] = re.compile(r'[^\w/-]+')
@@ -2031,6 +2052,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         log: Optional[tmt.log.LoggingFunction] = None,
         timeout: Optional[int] = None,
         on_process_start: Optional[OnProcessStartCallback] = None,
+        on_process_end: Optional[OnProcessEndCallback] = None,
     ) -> CommandOutput:
         """
         Run command, give message, handle errors
@@ -2061,6 +2083,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             env=env,
             interactive=interactive,
             on_process_start=on_process_start,
+            on_process_end=on_process_end,
             join=join,
             log=log,
             timeout=timeout,
@@ -2167,6 +2190,8 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             # Create the workdir
             create_directory(path=workdir, name='workdir', quiet=True, logger=self._logger)
 
+        self._workdir = workdir
+
         # TODO: chicken and egg problem: when `Common` is instantiated, the workdir
         # path might be already known, but it's often not created yet. Therefore
         # a logfile handler cannot be attached to the given logger.
@@ -2175,7 +2200,20 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         # to our little logging problem would probably be related to refactoring
         # of workdir creation some day in the future.
         self._logger.add_logfile_handler(workdir / tmt.log.LOG_FILENAME)
-        self._workdir = workdir
+
+        # Do the same for the bootstrap logger - this logger should not
+        # be used by regular code, and by now we should have everything
+        # up and running, but some exceptions exist.
+        #
+        # Do *not* do the same for the *exception* logger - that one is
+        # owned by `tmt.utils.show_exception()` which takes care of emitting
+        # lines into files as necessary. And while the bootstrap logger is
+        # the go-to logger for async code, like signal handlers, the
+        # exception logger is not to be used from anywhere but exception
+        # logging.
+        from tmt._bootstrap import _BOOTSTRAP_LOGGER
+
+        _BOOTSTRAP_LOGGER.add_logfile_handler(workdir / tmt.log.LOG_FILENAME)
 
     def _workdir_name(self) -> Optional[Path]:
         """
@@ -3756,6 +3794,26 @@ def format(
         return output + ('\n' + indent_string).join(value_as_lines)
 
     return output + formatted_value
+
+
+P = ParamSpec('P')
+
+
+# [happz] I was thinking how to slot this under the umbrela of `format()`
+# and `format_value()`, but it's 3 values rather than one, and extending
+# their API did not look sane enough.
+# On the other hand, we don't log function calls too often, it's a rare
+# occasion, so it's probably fine if it stands alone.
+def format_call(fn: Callable[P, Any], *args: P.args, **kwargs: P.kwargs) -> str:
+    """
+    Format a function call for logging.
+    """
+
+    arguments: list[str] = [repr(arg) for arg in args] + [
+        f'{name}={value}' for name, value in kwargs.items()
+    ]
+
+    return f'{fn.__name__}({", ".join(arguments)})'
 
 
 def create_directory(
