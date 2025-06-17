@@ -1175,10 +1175,10 @@ class Command:
             interaction with user.
         :param timeout: if set, command would be interrupted, if still running,
             after this many seconds.
-        :param on_process_end: if set, this callable would be called after the
-            command process finishes.
         :param on_process_start: if set, this callable would be called after the
             command process started.
+        :param on_process_end: if set, this callable would be called after the
+            command process finishes.
         :param message: if set, it would be logged for more friendly logging.
         :param friendly_command: if set, it would be logged instead of the
             command itself, to improve visibility of the command in logging output.

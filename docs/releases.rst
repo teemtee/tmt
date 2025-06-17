@@ -12,6 +12,9 @@ The :ref:`organize-data` chapter of the Guide has been extended
 with the :ref:`share-tests` section describing how to efficiently
 maintain test code and share it across repositories.
 
+When interrupted, tmt is now able to interrupt the current test as well,
+it will no longer wait for it to complete.
+
 
 tmt-1.50.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
