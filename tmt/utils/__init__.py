@@ -1374,8 +1374,11 @@ class Command:
                 on_process_end(self, process, output, logger)
 
             except Exception as exc:
-                # TODO: switch to https://github.com/teemtee/tmt/pull/3752 once it gets merged
-                logger.fail(f'On-process-end callback {on_process_end.__name__} failed: {exc!r}')
+                tmt.utils.show_exception_as_warning(
+                    exception=exc,
+                    message=f'On-process-end callback {on_process_end.__name__} failed.',
+                    logger=logger,
+                )
 
         # Handle the exit code, return output
         if process.returncode != ProcessExitCodes.SUCCESS:
