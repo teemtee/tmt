@@ -18,6 +18,10 @@ rules:
   braces:
     max-spaces-inside: 1
 
+  indentation:
+    spaces: 2
+    indent-sequences: true
+
   line-length:
     max: 100
 
