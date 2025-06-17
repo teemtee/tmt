@@ -99,6 +99,10 @@ description: |
     .. code-block:: yaml
 
        /some-plan:
+         context:
+           ...
+         environment:
+           ...
          plan:
            import:
              ...
@@ -108,9 +112,12 @@ description: |
     .. note::
 
       By default, the imported plan inherits the context and environment
-      variables from the importing plan. If there are any potential
-      conflicts, the importing plan variables take precedence over the
-      imported plan variables.
+      variables from the importing plan. This behavior is controlled by
+      the ``inherit-context`` and ``inherit-environment`` options, which
+      are set to ``true`` by default. In case of variable conflicts,
+      values from the importing plan take precedence over those in the
+      imported plan. Command line variables are always inherited,
+      regardless of the options, and have the highest priority.
 
     The imported plan can also be altered using the ``enabled`` key.
     If the local plan is enabled, it will follow the status of the

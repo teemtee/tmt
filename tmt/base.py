@@ -2193,18 +2193,23 @@ class Plan(
             combined.update(self._importing_environment)
             # Command line variables take precedence
             combined.update(self.my_run.environment)
-            # Include path to the plan data directory
-            combined["TMT_PLAN_DATA"] = EnvVarValue(self.data_directory)
-            # Include path to the plan environment file
-            combined["TMT_PLAN_ENVIRONMENT_FILE"] = EnvVarValue(self.plan_environment_file)
-            # And tree path if possible
-            if self.worktree:
-                combined["TMT_TREE"] = EnvVarValue(self.worktree)
-            # And tmt version
-            combined["TMT_VERSION"] = EnvVarValue(tmt.__version__)
+            self._add_step_variables(combined)
             return combined
 
         return Environment({**environment_from_spec, **self._importing_environment})
+
+    def _add_step_variables(self, environment: Environment) -> None:
+        """Add step variables to the environment"""
+
+        # Include path to the plan data directory
+        environment["TMT_PLAN_DATA"] = EnvVarValue(self.data_directory)
+        # Include path to the plan environment file
+        environment["TMT_PLAN_ENVIRONMENT_FILE"] = EnvVarValue(self.plan_environment_file)
+        # And tree path if possible
+        if self.worktree:
+            environment["TMT_TREE"] = EnvVarValue(self.worktree)
+        # And tmt version
+        environment["TMT_VERSION"] = EnvVarValue(tmt.__version__)
 
     def _source_plan_environment_file(self) -> None:
         """
@@ -3052,13 +3057,20 @@ class Plan(
             fmf_context = FmfContext.from_spec(
                 node.name, node.data.get('context', {}), self._logger
             )
-            environment = Environment.from_dict(node.data.get('environment', {}))
 
             if reference.inherit_context:
                 fmf_context.update(self._fmf_context)
+            else:
+                fmf_context.update(self._cli_fmf_context)
+
+            environment = Environment.from_dict(node.data.get('environment', {}))
 
             if reference.inherit_environment:
                 environment.update(self.environment)
+            else:
+                if self.my_run:
+                    environment.update(self.my_run.environment)
+                self._add_step_variables(environment)
 
             # Adjust the imported tree, to let any `adjust` rules defined in it take
             # action.
