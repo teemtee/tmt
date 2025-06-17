@@ -94,7 +94,9 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
             List of test names or regular expressions used to
             select tests by name. Duplicate test names are allowed
             to enable repetitive test execution, preserving the
-            listed test order.
+            listed test order. The search mode is used for pattern
+            matching. See the :ref:`regular-expressions` section for
+            details.
             """,
         normalize=tmt.utils.normalize_string_list,
     )
@@ -356,7 +358,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     .. code-block:: shell
 
-        tmt run discover -h fmf -v -t ^/test/one$ -t ^/special/setup$ -t ^/test/two$
+        tmt run discover -h fmf -v -t '^/test/one$' -t '^/special/setup$' -t '^/test/two$'
+
+    The ``test`` key uses search mode for matching patterns. See the
+    :ref:`regular-expressions` section for detailed information about
+    how exactly the regular expressions are handled.
 
     Link Filter
     ^^^^^^^^^^^
