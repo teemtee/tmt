@@ -158,16 +158,50 @@ class Policy(MetadataContainer):
     # story_policy: list[Instruction] = metadata_field(default_factory=list[Instruction])
 
     @classmethod
-    def load(cls, path: Path, logger: Logger) -> 'Policy':
+    def load_by_filepath(cls, *, path: Path, root: Optional[Path] = None) -> 'Policy':
         """
         Load a policy from a given file.
+
+        :param path: a path to the policy file.
+        :param logger: used for logging.
         """
+
+        if root is not None:
+            path = root / path.unrooted()
+
+            if not path.is_relative_to(root):
+                raise tmt.utils.SpecificationError(
+                    f"Policy '{path}' does not reside under policy root '{root}'."
+                )
 
         try:
             return Policy.from_yaml(path.read_text())
 
+        except FileNotFoundError as exc:
+            raise tmt.utils.SpecificationError(f"Policy '{path}' not found.") from exc
+
         except ValidationError as exc:
             raise tmt.utils.SpecificationError(f"Invalid policy in '{path}'.") from exc
+
+    @classmethod
+    def load_by_name(cls, *, name: str, root: Path) -> 'Policy':
+        """
+        Load a policy from a given directory.
+
+        :param name: suffix-less name of a file under the ``root`` path.
+        :param root: directory under which policy file must reside.
+        :param logger: used for logging.
+        """
+
+        for suffix in ('.yaml', '.yml'):
+            path = root / Path(f'{name}{suffix}').unrooted()
+
+            if not path.is_file():
+                continue
+
+            return cls.load_by_filepath(path=path, root=root)
+
+        raise tmt.utils.SpecificationError(f"Policy '{name}' does not point to a file.")
 
     def _apply(
         self,

@@ -525,14 +525,41 @@ ENVIRONMENT_OPTIONS: list[ClickOptionDecoratorType] = [
 
 POLICY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
-        '--policy',
+        '--policy-file',
         'policy_path',
         metavar='PATH',
         type=Path(),
+        envvar='TMT_POLICY_FILE',
+        help='Location of a file with policy rules for modification of test metadata keys.',
+    ),
+    option(
+        '--policy-name',
+        'policy_name',
+        metavar='NAME',
+        envvar='TMT_POLICY_NAME',
         help="""
-             A file with policy rules for modification of test metadata keys.
+             Name of the file with policy rules for modification of test metadata
+             keys. The name would be extended with ``.yaml`` or ``.yml``
+             suffixes, and tmt will try to locate it under the policy root
+             directory which is specified by ``--policy-root`` command-line
+             option or ``TMT_POLICY_ROOT`` environment variable.
              """,
-    )
+    ),
+    option(
+        '--policy-root',
+        metavar='PATH',
+        type=Path(),
+        envvar='TMT_POLICY_ROOT',
+        help="""
+
+             If set, policy files must be located under this directory.
+             Policy specified by its name (via ``--policy-name`` option
+             or ``TMT_POLICY_NAME`` environment variable) are searched
+             under this directory only, and policy specified by its
+             filepath (``--policy-file`` or ``TMT_POLICY_FILE``) will be
+             be allowed only if the filepath is under this directory.
+             """,
+    ),
 ]
 
 

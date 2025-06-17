@@ -33,7 +33,7 @@ import tmt.utils
 import tmt.utils.jira
 from tmt.cli import CliInvocation, Context, ContextObject, CustomGroup, pass_context
 from tmt.options import Deprecated, create_options_decorator, option
-from tmt.utils import Command, Path, effective_workdir_root
+from tmt.utils import Command, GeneralError, Path, effective_workdir_root
 from tmt.utils.themes import style
 
 if TYPE_CHECKING:
@@ -64,6 +64,47 @@ remote_plan_options = create_options_decorator(tmt.options.REMOTE_PLAN_OPTIONS)
 lint_options = create_options_decorator(tmt.options.LINT_OPTIONS)
 environment_options = create_options_decorator(tmt.options.ENVIRONMENT_OPTIONS)
 policy_options = create_options_decorator(tmt.options.POLICY_OPTIONS)
+
+
+def _load_policies(
+    policy_name: Optional[str],
+    policy_path: Optional[Path],
+    policy_root: Optional[Path],
+    logger: tmt.log.Logger,
+) -> list[tmt.policy.Policy]:
+    """
+    A helper for loading policies.
+
+    :param policy_name: policy name to look up under the policy root.
+        If set, it is preferred over ``policy_path``, and it requires
+        ``policy_root`` to be set as well.
+    :param policy_name: path to the policy file.
+    :param policy_root: if set, policy files must be located under this
+        directory.
+    """
+
+    if policy_name is not None:
+        if policy_root is None:
+            raise GeneralError(
+                "Policy can be loaded by its name only when '--policy-root' is specified."
+            )
+
+        return [
+            tmt.policy.Policy.load_by_name(
+                name=policy_name,
+                root=policy_root,
+            )
+        ]
+
+    if policy_path is not None:
+        return [
+            tmt.policy.Policy.load_by_filepath(
+                path=policy_path,
+                root=policy_root,
+            )
+        ]
+
+    return []
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -302,6 +343,8 @@ def run(
     id_: Optional[str],
     workdir_root: Optional[Path],
     policy_path: Optional[Path],
+    policy_name: Optional[str],
+    policy_root: Optional[Path],
     **kwargs: Any,
 ) -> None:
     """
@@ -312,7 +355,7 @@ def run(
     logger = context.obj.logger.descend(logger_name='run', extra_shift=0)
     logger.apply_verbosity_options(**kwargs)
 
-    policies = [tmt.policy.Policy.load(policy_path, logger)] if policy_path is not None else []
+    policies = _load_policies(policy_name, policy_path, policy_root, context.obj.logger)
 
     context.obj.run = tmt.Run(
         id_=Path(id_) if id_ is not None else None,
@@ -906,6 +949,8 @@ def tests_export(
     bugzilla: bool,
     template: Optional[str],
     policy_path: Optional[Path],
+    policy_name: Optional[str],
+    policy_root: Optional[Path],
     **kwargs: Any,
 ) -> None:
     """
@@ -946,9 +991,9 @@ def tests_export(
     else:
         tests = context.obj.tree.tests()
 
-        if policy_path is not None:
-            policy = tmt.policy.Policy.load(policy_path, context.obj.logger)
+        policies = _load_policies(policy_name, policy_path, policy_root, context.obj.logger)
 
+        for policy in policies:
             policy.apply_to_tests(
                 tests=tests, policy_name=str(policy_path), logger=context.obj.logger
             )

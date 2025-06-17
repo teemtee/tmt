@@ -15,6 +15,10 @@ maintain test code and share it across repositories.
 When interrupted, tmt is now able to interrupt the current test as well,
 it will no longer wait for it to complete.
 
+:ref:`Policies </spec/policy>` can now be specified by either a file
+path, or by name, and policy root directory can be defined to limit the
+scope of where tmt would look for policy files.
+
 
 tmt-1.50.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

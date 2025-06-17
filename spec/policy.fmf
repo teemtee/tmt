@@ -103,6 +103,35 @@ description: |
       its metadata fields for conditional logic (e.g., ``TEST.contact``,
       ``TEST.component``).
 
+    Policy can be passed to tmt in two ways:
+
+    * as a file path, via ``--policy-file`` option or ``TMT_POLICY_FILE``
+      environment variable,
+    * as a policy "name", via ``--policy-name`` option or
+      ``TMT_POLICY_NAME`` environment variable. Policy name is
+      translated into a file path, and the file path is expected to
+      exist under a policy root:
+
+      .. code-block:: shell
+
+         --policy-name foo     => <policy root>/foo.yaml or <policy root>/foo.yml
+         --policy-name foo/bar => <policy root>/foo/bar.yaml or <policy root>/foo/bar.yml
+
+      tmt will load the first file it finds.
+
+    .. important::
+
+       Be aware that a policy root, specified via ``--policy-root``
+       option or ``TMT_POLICY_ROOT`` environment variable, affects how
+       policies are located. When set:
+
+       * policies specified by their file path must be located under the
+         policy root directory,
+       * policies specified by their name must be also located under the
+         policy root directory, and defining the policy root is even
+         mandatory as it serves as the base directory for locating such
+         policies.
+
     .. versionadded:: 1.50
 
 example:

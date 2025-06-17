@@ -514,6 +514,31 @@ TMT_REPORT_ARTIFACTS_URL
 
     .. versionadded:: 1.32
 
+TMT_POLICY_FILE
+    Location of a file with policy rules for modification of test
+    metadata keys.
+
+    .. versionadded:: 1.51
+
+TMT_POLICY_NAME
+    Name of the file with policy rules for modification of test metadata
+    keys. The name would be extended with ``.yaml`` or ``.yml``
+    suffixes, and tmt will try to locate it under the policy root
+    directory which is specified by ``--policy-root`` command-line
+    option or ``TMT_POLICY_ROOT`` environment variable.
+
+    .. versionadded:: 1.51
+
+TMT_POLICY_ROOT
+    If set, policy files must be located under this directory. Policy
+    specified by its name (via ``--policy-name`` option or
+    ``TMT_POLICY_NAME`` environment variable) are searched under this
+    directory only, and policy specified by its filepath
+    (``--policy-file`` or ``TMT_POLICY_FILE``) will be be allowed only
+    if the filepath is under this directory.
+
+    .. versionadded:: 1.51
+
 .. _step-variables:
 
 Step Variables

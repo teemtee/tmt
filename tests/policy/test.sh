@@ -8,102 +8,125 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Sanity"
-        tmt="tmt -vv test export"
+        function run_test () {
+            local policy="$1"
+            local plan="$2"
+            local filter="$3"
+            local expected="$4"
 
-        rlRun "$tmt --policy ../policies/test/test.yaml /basic"
-        rlRun -s "$tmt --policy ../policies/test/test.yaml /basic 2> /dev/null | yq -cSr '.[] | .test'"
-        rlAssertEquals \
-            "Verify that test key is modified" \
-            "$(cat $rlRun_LOG)" \
-            "bash -c 'echo \"Spiked test.\"; /bin/true'"
+            rlRun    "tmt -vv test export --policy-file ../policies/test/$1 $plan"
+            rlRun -s "tmt -vv test export --policy-file ../policies/test/$1 $plan 2> /dev/null | yq -cSr '.[] | $filter'"
 
-        rlRun "$tmt --policy ../policies/test/test.yaml /full"
-        rlRun -s "$tmt --policy ../policies/test/test.yaml /full 2> /dev/null | yq -cSr '.[] | .test'"
-        rlAssertEquals \
-            "Verify that test key is modified" \
-            "$(cat $rlRun_LOG)" \
-            "bash -c 'echo \"Spiked test.\"; /bin/true'"
+            rlAssertEquals \
+                "Verify that $(echo "$filter" | cut -d' ' -f1) key is modified" \
+                "$(cat $rlRun_LOG)" \
+                "$expected"
+        }
 
-        rlRun "$tmt --policy ../policies/test/contact.yaml /basic"
-        rlRun -s "$tmt --policy ../policies/test/contact.yaml /basic 2> /dev/null | yq -cSr '.[] | .contact'"
-        rlAssertEquals \
-            "Verify that contact key is modified" \
-            "$(cat $rlRun_LOG)" \
-            "[\"xyzzy\"]"
+        run_test test.yaml /basic .test "bash -c 'echo \"Spiked test.\"; /bin/true'"
+        run_test test.yaml /full  .test "bash -c 'echo \"Spiked test.\"; /bin/true'"
 
-        rlRun "$tmt --policy ../policies/test/contact.yaml /full"
-        rlRun -s "$tmt --policy ../policies/test/contact.yaml /full 2> /dev/null | yq -cSr '.[] | .contact'"
-        rlAssertEquals \
-            "Verify that contact key is modified" \
-            "$(cat $rlRun_LOG)" \
-            "[\"foo\",\"baz\"]"
+        run_test contact.yaml /basic .contact "[\"xyzzy\"]"
+        run_test contact.yaml /full  .contact "[\"foo\",\"baz\"]"
 
-        rlRun "$tmt --policy ../policies/test/environment.yaml /basic"
-        rlRun -s "$tmt --policy ../policies/test/environment.yaml /basic 2> /dev/null | yq -cSr '.[] | .environment'"
-        rlAssertEquals \
-            "Verify that environment key is modified" \
-            "$(cat $rlRun_LOG)" \
-            "{\"FOO\":\"xyzzy\"}"
+        run_test environment.yaml /basic .environment "{\"FOO\":\"xyzzy\"}"
+        run_test environment.yaml /full  .environment "{\"FOO\":\"baz\",\"QUX\":\"QUUX\"}"
 
-        rlRun "$tmt --policy ../policies/test/environment.yaml /full"
-        rlRun -s "$tmt --policy ../policies/test/environment.yaml /full 2> /dev/null | yq -cSr '.[] | .environment'"
-        rlAssertEquals \
-            "Verify that environment key is modified" \
-            "$(cat $rlRun_LOG)" \
-            "{\"FOO\":\"baz\",\"QUX\":\"QUUX\"}"
-
-        rlRun "$tmt --policy ../policies/test/check.yaml /basic"
-        rlRun -s "$tmt --policy ../policies/test/check.yaml /basic 2> /dev/null | yq -cSr '.[] | .check | [.[] | {how, result}]'"
-        rlAssertEquals \
-            "Verify that check key is modified" \
-            "$(cat $rlRun_LOG)" \
-            "[{\"how\":\"avc\",\"result\":\"respect\"}]"
-
-        rlRun "$tmt --policy ../policies/test/check.yaml /full"
-        rlRun -s "$tmt --policy ../policies/test/check.yaml /full 2> /dev/null | yq -cSr '.[] | .check  | [.[] | {how, result}]'"
-        rlAssertEquals \
-            "Verify that check key is modified" \
-            "$(cat $rlRun_LOG)" \
-            "[{\"how\":\"avc\",\"result\":\"info\"},{\"how\":\"dmesg\",\"result\":\"respect\"}]"
+        run_test check.yaml /basic '.check | [.[] | {how, result}]' "[{\"how\":\"avc\",\"result\":\"respect\"}]"
+        run_test check.yaml /full  '.check | [.[] | {how, result}]' "[{\"how\":\"avc\",\"result\":\"info\"},{\"how\":\"dmesg\",\"result\":\"respect\"}]"
     rlPhaseEnd
 
     rlPhaseStartTest "Test VALUE_SOURCE usage"
-        tmt="tmt -vv test export"
+        function run_test () {
+            local message="$1"
+            local plan="$2"
+            local expected="$3"
 
-        rlRun "$tmt --policy ../policies/test/duration.yaml /value-source/default-duration"
-        rlRun -s "$tmt --policy ../policies/test/duration.yaml /value-source/default-duration 2> /dev/null | yq -cSr '.[] | .duration'"
-        rlAssertEquals \
-            "Verify that no custom value is recognized" \
-            "$(cat $rlRun_LOG)" \
-            "5m +30m +50m"
+            rlRun    "tmt -vv test export --policy-file ../policies/test/duration.yaml $plan"
+            rlRun -s "tmt -vv test export --policy-file ../policies/test/duration.yaml $plan 2> /dev/null | yq -cSr '.[] | .duration'"
 
-        rlRun "$tmt --policy ../policies/test/duration.yaml /value-source/custom-duration"
-        rlRun -s "$tmt --policy ../policies/test/duration.yaml /value-source/custom-duration 2> /dev/null | yq -cSr '.[] | .duration'"
-        rlAssertEquals \
-            "Verify that custom value is recognized" \
-            "$(cat $rlRun_LOG)" \
-            "5m +5m +10m +50m"
+            rlAssertEquals \
+                "$message" \
+                "$(cat $rlRun_LOG)" \
+                "$expected"
+        }
 
-        rlRun "$tmt --policy ../policies/test/duration.yaml /value-source/same-as-default"
-        rlRun -s "$tmt --policy ../policies/test/duration.yaml /value-source/same-as-default 2> /dev/null | yq -cSr '.[] | .duration'"
-        rlAssertEquals \
-            "Verify that custom value which is the same as the default is recognized" \
-            "$(cat $rlRun_LOG)" \
-            "5m +10m +50m"
+        run_test "Verify that no custom value is recognized"                               /value-source/default-duration "5m +30m +50m"
+        run_test "Verify that custom value is recognized"                                  /value-source/custom-duration  "5m +5m +10m +50m"
+        run_test "Verify that custom value which is the same as the default is recognized" /value-source/same-as-default  "5m +10m +50m"
     rlPhaseEnd
 
-    rlPhaseStartTest "Run"
-        rlRun -s "tmt --feeling-safe -vv run --id $run --policy ../policies/test/test.yaml discover provision -h local execute report -h display -vvv plan --default test --name /basic"
+    rlPhaseStartTest "Test whether tmt run accepts a policy"
+        function run_test () {
+            local option="$1"
+            local envvar="$2"
 
-        rlAssertGrep "content: Spiked test." $rlRun_LOG
-        rlAssertEquals \
-            "Verify that test has been modified" \
-            "$(yq -cSr '.[] | .test' $run/default/plan/discover/tests.yaml)" \
-            "bash -c 'echo \"Spiked test.\"; /bin/true'"
+            rlRun -s "$envvar tmt --feeling-safe -vv run --id $run --scratch $option discover provision -h local execute report -h display -vvv plan --default test --name /basic"
+
+            rlAssertGrep "content: Spiked test." $rlRun_LOG
+            rlAssertEquals \
+                "Verify that test has been modified" \
+                "$(yq -cSr '.[] | .test' $run/default/plan/discover/tests.yaml)" \
+                "bash -c 'echo \"Spiked test.\"; /bin/true'"
+        }
+
+        # Test command-line option...
+        run_test "--policy-file ../policies/test/test.yaml" ""
+
+        # ... and test also the envvar.
+        run_test ""                                         "TMT_POLICY_FILE=../policies/test/test.yaml"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Policy root"
+        function run_test () {
+            local expected_code="$4"
+            local expected_error="$5"
+
+            if [ -n "$1" ]; then
+                policy_root_option="--policy-root $1"
+                policy_root_envvar="TMT_POLICY_ROOT=$1"
+            else
+                policy_root_option=""
+                policy_root_envvar=""
+            fi
+
+            if [ -n "$2" ]; then
+                policy_file_option="--policy-file $2"
+                policy_file_envvar="TMT_POLICY_FILE=$2"
+            else
+                policy_file_option=""
+                policy_file_envvar=""
+            fi
+
+            if [ -n "$3" ]; then
+                policy_name_option="--policy-name $3"
+                policy_name_envvar="TMT_POLICY_NAME=$3"
+            else
+                policy_name_option=""
+                policy_name_envvar=""
+            fi
+
+            rlRun -s "tmt --feeling-safe -vv run --id $run --scratch $policy_root_option $policy_file_option $policy_name_option discover provision -h local execute report -h display -vvv plan --default test --name /basic" "$expected_code"
+            rlAssertGrep "$expected_error" $rlRun_LOG
+
+            rlRun -s "$policy_root_envvar $policy_file_envvar $policy_name_envvar tmt --feeling-safe -vv run --id $run --scratch discover provision -h local execute report -h display -vvv plan --default test --name /basic" "$expected_code"
+            rlAssertGrep "$expected_error" $rlRun_LOG
+        }
+
+        run_test /tmp        ../policies/test/test.yaml ""             2 "Policy '/tmp/../policies/test/test.yaml' does not reside under policy root '/tmp'."
+        run_test /tmp        test.yaml                  ""             2 "Policy '/tmp/test.yaml' not found."
+        run_test /tmp        ""                         test/test      2 "Policy 'test/test' does not point to a file."
+        run_test ../policies ""                         does-not-exist 2 "Policy 'does-not-exist' does not point to a file."
+        run_test ""          ""                         test/test      2 "Policy can be loaded by its name only when '--policy-root' is specified."
+        run_test ""          test/test.yaml             ""             2 "Policy 'test/test.yaml' not found."
+
+        run_test ../policies ""                         test/test      0 "content: Spiked test."
+        run_test ../policies test/test.yaml             ""             0 "content: Spiked test."
+        run_test ""          ../policies/test/test.yaml ""             0 "content: Spiked test."
     rlPhaseEnd
 
     rlPhaseStartTest "Invalid keys"
-        rlRun -s "tmt -vv test export --policy ../policies/test/invalid.yaml /basic" 2
+        rlRun -s "tmt -vv test export --policy-file ../policies/test/invalid.yaml /basic" 2
         rlAssertGrep "Could not find field 'script' in class '/basic'." $rlRun_LOG
     rlPhaseEnd
 
