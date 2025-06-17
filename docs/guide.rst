@@ -869,7 +869,7 @@ tests, plans, or stories depending on the current :ref:`/spec/context`.
 
 This feature helps creating adaptable and reusable metadata, reducing
 the need for multiple versions of similar configurations. Rules can be
-defined for conditionally change attributes like ``enabled``,
+defined to conditionally change attributes like ``enabled``,
 ``environment``, ``require`` or even the test script itself.
 
 .. code-block:: yaml
