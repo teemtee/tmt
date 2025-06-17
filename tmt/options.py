@@ -54,7 +54,7 @@ class Deprecated:
 class Path(click.ParamType):
     name = 'path'
 
-    def convert(
+    def convert(  # noqa: RET503
         self,
         value: Any,
         param: Optional[click.Parameter],
@@ -100,8 +100,7 @@ class Path(click.ParamType):
                 ctx=ctx,
             )
 
-        # RET503: ruff does not recognize NoReturn annotation of `self.fail`.
-        self.fail(  # noqa: RET503
+        self.fail(
             f"Field '{param.name}' must be a path-like string, '{type(value).__name__}' found.",
             param=param,
             ctx=ctx,
