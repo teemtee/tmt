@@ -17,6 +17,7 @@ import re
 import shlex
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import tempfile
@@ -178,6 +179,18 @@ INDENT = 4
 # Default name for step plugins
 DEFAULT_NAME = 'default'
 
+WORKDIR_ROOT_MODE = (
+    stat.S_ISVTX
+    | stat.S_IRUSR
+    | stat.S_IWUSR
+    | stat.S_IXUSR
+    | stat.S_IRGRP
+    | stat.S_IWGRP
+    | stat.S_IXGRP
+    | stat.S_IROTH
+    | stat.S_IWOTH
+    | stat.S_IXOTH
+)
 
 # Special process return codes
 
@@ -2172,8 +2185,8 @@ class Common(_CommonBase, metaclass=_CommonMeta):
                     raise FileError(f"Failed to prepare workdir '{self.workdir_root}': {error}")
             else:
                 try:
-                    if self.workdir_root.stat().st_mode != 17407:
-                        self.workdir_root.chmod(0o1777)
+                    if stat.S_IMODE(self.workdir_root.stat().st_mode) != WORKDIR_ROOT_MODE:
+                        self.workdir_root.chmod(WORKDIR_ROOT_MODE)
                 except PermissionError:
                     raise FileError(
                         f"Failed to change workdir root '{self.workdir_root}' permission to "

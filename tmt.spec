@@ -79,6 +79,7 @@ Requires:       tmt == %{version}-%{release}
 Requires:       python3-testcloud >= 0.11.7
 Requires:       libvirt-daemon-config-network
 Requires:       openssh-clients
+Requires:       coreutils
 # Recommend qemu system emulators for supported arches
 Recommends:     qemu-kvm-core
 %if 0%{?fedora}
