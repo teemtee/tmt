@@ -526,7 +526,6 @@ ENVIRONMENT_OPTIONS: list[ClickOptionDecoratorType] = [
 POLICY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '--policy-file',
-        'policy_path',
         metavar='PATH',
         type=Path(),
         envvar='TMT_POLICY_FILE',
@@ -540,7 +539,6 @@ POLICY_OPTIONS: list[ClickOptionDecoratorType] = [
     ),
     option(
         '--policy-name',
-        'policy_name',
         metavar='NAME',
         envvar='TMT_POLICY_NAME',
         help="""

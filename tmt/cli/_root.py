@@ -346,7 +346,7 @@ def run(
     context: Context,
     id_: Optional[str],
     workdir_root: Optional[Path],
-    policy_path: Optional[Path],
+    policy_file: Optional[Path],
     policy_name: Optional[str],
     policy_root: Optional[Path],
     **kwargs: Any,
@@ -359,7 +359,7 @@ def run(
     logger = context.obj.logger.descend(logger_name='run', extra_shift=0)
     logger.apply_verbosity_options(**kwargs)
 
-    policies = _load_policies(policy_name, policy_path, policy_root)
+    policies = _load_policies(policy_name, policy_file, policy_root)
 
     context.obj.run = tmt.Run(
         id_=Path(id_) if id_ is not None else None,
@@ -952,7 +952,7 @@ def tests_export(
     nitrate: bool,
     bugzilla: bool,
     template: Optional[str],
-    policy_path: Optional[Path],
+    policy_file: Optional[Path],
     policy_name: Optional[str],
     policy_root: Optional[Path],
     **kwargs: Any,
@@ -995,7 +995,7 @@ def tests_export(
     else:
         tests = context.obj.tree.tests()
 
-        policies = _load_policies(policy_name, policy_path, policy_root)
+        policies = _load_policies(policy_name, policy_file, policy_root)
 
         for policy in policies:
             policy.apply_to_tests(tests=tests, logger=context.obj.logger)
