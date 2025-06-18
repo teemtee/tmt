@@ -36,15 +36,16 @@ couple of recommendations to keep on mind when writing code:
 
      self.warn(f"File '{path}' not found.")
 
-* For multiline shell script, use multiline strings:
+* For multiline shell script, use multiline strings - :py:class:`ShellScript`
+  will perform dedenting correctly:
 
   .. code-block:: python
 
       ShellScript(
           f"""
-          mkdir -p {workdir_root};
-          setfacl -d -m o:rX {workdir_root}
-          """
+           mkdir -p {workdir_root};
+           setfacl -d -m o:rX {workdir_root}
+           """
       )
 
   However, for strings that are too long for a single line and are
