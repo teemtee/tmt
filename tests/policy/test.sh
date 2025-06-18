@@ -79,28 +79,31 @@ rlJournalStart
 
     rlPhaseStartTest "Policy root"
         function run_test () {
+            local policy_root="$1"
+            local policy_file="$2"
+            local policy_name="$3"
             local expected_code="$4"
             local expected_error="$5"
 
             if [ -n "$1" ]; then
-                policy_root_option="--policy-root $1"
-                policy_root_envvar="TMT_POLICY_ROOT=$1"
+                policy_root_option="--policy-root $policy_root"
+                policy_root_envvar="TMT_POLICY_ROOT=$policy_root"
             else
                 policy_root_option=""
                 policy_root_envvar=""
             fi
 
             if [ -n "$2" ]; then
-                policy_file_option="--policy-file $2"
-                policy_file_envvar="TMT_POLICY_FILE=$2"
+                policy_file_option="--policy-file $policy_file"
+                policy_file_envvar="TMT_POLICY_FILE=$policy_file"
             else
                 policy_file_option=""
                 policy_file_envvar=""
             fi
 
             if [ -n "$3" ]; then
-                policy_name_option="--policy-name $3"
-                policy_name_envvar="TMT_POLICY_NAME=$3"
+                policy_name_option="--policy-name $policy_name"
+                policy_name_envvar="TMT_POLICY_NAME=$policy_name"
             else
                 policy_name_option=""
                 policy_name_envvar=""

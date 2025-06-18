@@ -114,20 +114,22 @@ description: |
 
       .. code-block:: shell
 
-         --policy-name foo     => <policy root>/foo.yaml or <policy root>/foo.yml
-         --policy-name foo/bar => <policy root>/foo/bar.yaml or <policy root>/foo/bar.yml
-
-      tmt will load the first file it finds.
+         --policy-name foo     => <policy root>/foo.yaml
+         --policy-name foo/bar => <policy root>/foo/bar.yaml
 
     .. important::
 
        Be aware that a policy root, specified via ``--policy-root``
        option or ``TMT_POLICY_ROOT`` environment variable, affects how
-       policies are located. When set:
+       policies are located.
 
-       * policies specified by their file path must be located under the
-         policy root directory,
-       * policies specified by their name must be also located under the
+       * Policies specified by their file path can be given either as
+         absolute paths, or relative paths. Relative paths are
+         interpreted either against the current working directory, or
+         against the policy root if it is specified. In both cases, if
+         policy root is specified, the final policy file path must be
+         located under the policy root directory.
+       * Policies specified by their name must be also located under the
          policy root directory, and defining the policy root is even
          mandatory as it serves as the base directory for locating such
          policies.
