@@ -3067,9 +3067,8 @@ class Plan(
 
             if reference.inherit_environment:
                 environment.update(self.environment)
-            else:
-                if self.my_run:
-                    environment.update(self.my_run.environment)
+            elif self.my_run:
+                environment.update(self.my_run.environment)
                 self._add_step_variables(environment)
 
             # Adjust the imported tree, to let any `adjust` rules defined in it take
