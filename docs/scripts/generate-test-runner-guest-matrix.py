@@ -9,7 +9,7 @@ from typing import Any
 import tmt.plugins
 import tmt.steps.provision
 from tmt.utils import GeneralError, Path, yaml_to_dict
-from tmt.utils.templates import render_template_file
+from tmt.utils.templates import render_template_file_into_file
 
 HELP = textwrap.dedent("""
 Usage: generate-runner-guest-matrix.py <TEMPLATE-PATH> <FOO> <OUTPUT-PATH>
@@ -91,13 +91,12 @@ def main() -> None:
                 else:
                     matrix[runner].append(('supported', None))
 
-    output_filepath.write_text(
-        render_template_file(
-            template_filepath,
-            LOGGER=logger,
-            MATRIX=matrix,
-            NOTES=notes.values(),
-        ),
+    render_template_file_into_file(
+        template_filepath,
+        output_filepath,
+        LOGGER=logger,
+        MATRIX=matrix,
+        NOTES=notes.values(),
     )
 
 

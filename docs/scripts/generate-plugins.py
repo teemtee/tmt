@@ -22,7 +22,7 @@ import tmt.utils
 import tmt.utils.hints
 from tmt.container import ContainerClass
 from tmt.utils import Path
-from tmt.utils.templates import render_template_file
+from tmt.utils.templates import render_template_file_into_file
 
 REVIEWED_PLUGINS: tuple[str, ...] = (
     'prepare/ansible',
@@ -237,21 +237,20 @@ def main() -> None:
         raise tmt.utils.GeneralError(f"Unhandled step name '{step_name}'.")
 
     # ... and render the template.
-    output_filepath.write_text(
-        render_template_file(
-            template_filepath,
-            LOGGER=logger,
-            STEP=step_name,
-            PLUGINS=plugin_generator,
-            REVIEWED_PLUGINS=REVIEWED_PLUGINS,
-            HINTS=tmt.utils.hints.HINTS,
-            is_enum=is_enum,
-            container_fields=tmt.container.container_fields,
-            container_field=tmt.container.container_field,
-            container_ignored_fields=container_ignored_fields,
-            container_inherited_fields=container_inherited_fields,
-            container_intrinsic_fields=container_intrinsic_fields,
-        )
+    render_template_file_into_file(
+        template_filepath,
+        output_filepath,
+        LOGGER=logger,
+        STEP=step_name,
+        PLUGINS=plugin_generator,
+        REVIEWED_PLUGINS=REVIEWED_PLUGINS,
+        HINTS=tmt.utils.hints.HINTS,
+        is_enum=is_enum,
+        container_fields=tmt.container.container_fields,
+        container_field=tmt.container.container_field,
+        container_ignored_fields=container_ignored_fields,
+        container_inherited_fields=container_inherited_fields,
+        container_intrinsic_fields=container_intrinsic_fields,
     )
 
 
