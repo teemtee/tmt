@@ -161,8 +161,11 @@ def _quit_tmt(logger: tmt.log.Logger, repeated: bool = False) -> NoReturn:
                     fn(*args, **kwargs)
 
                 except Exception as exc:
-                    # TODO: switch to https://github.com/teemtee/tmt/pull/3752 once it gets merged
-                    logger.fail(f'On-interrupt callback {fn.__name__} failed: {exc!r}')
+                    tmt.utils.show_exception_as_warning(
+                        exception=exc,
+                        message=f'On-interrupt callback {fn.__name__} failed.',
+                        logger=logger,
+                    )
 
     raise KeyboardInterrupt
 

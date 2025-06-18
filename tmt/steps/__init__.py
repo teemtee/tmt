@@ -195,7 +195,11 @@ def prune_directory(path: Path, preserved_members: set[str], logger: tmt.log.Log
                 shutil.rmtree(member)
 
         except OSError as error:
-            logger.warning(f"Unable to remove '{member}': {error}")
+            tmt.utils.show_exception_as_warning(
+                exception=error,
+                message=f"Unable to remove '{member}'.",
+                logger=logger,
+            )
 
     return actual_preserved_members
 
@@ -1970,7 +1974,11 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
             try:
                 shutil.rmtree(self.workdir)
             except OSError as error:
-                logger.warning(f"Unable to remove '{self.workdir}': {error}")
+                tmt.utils.show_exception_as_warning(
+                    exception=error,
+                    message=f"Unable to remove '{self.workdir}'.",
+                    logger=logger,
+                )
 
 
 class GuestlessPlugin(BasePlugin[StepDataT, PluginReturnValueT]):
