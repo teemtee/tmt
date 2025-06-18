@@ -534,7 +534,7 @@ TMT_POLICY_ROOT
     specified by its name (via ``--policy-name`` option or
     ``TMT_POLICY_NAME`` environment variable) are searched under this
     directory only, and policy specified by its filepath
-    (``--policy-file`` or ``TMT_POLICY_FILE``) will be be allowed only
+    (``--policy-file`` or ``TMT_POLICY_FILE``) will be allowed only
     if the filepath is under this directory.
 
     .. versionadded:: 1.51
