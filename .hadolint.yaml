@@ -1,8 +1,11 @@
+---
+
 # See https://github.com/hadolint/hadolint?tab=readme-ov-file#configure
 failure-threshold: style
 format: tty
 ignored:
-  # Using latest is prone to errors if the image will ever update. Pin the version explicitly to a release tag.
+  # Using latest is prone to errors if the image will ever update. Pin
+  # the version explicitly to a release tag.
   - DL3007
   # Pin versions in apk add
   - DL3018

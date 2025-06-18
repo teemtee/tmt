@@ -1,37 +1,39 @@
--   id: tmt-lint
-    name: tmt lint
-    # Use a simple wrapper instead of simply `tmt lint` in order to reorder
-    # some arguments that need to be passed to `tmt`
-    entry: python -m tmt._pre_commit --pre-check lint --failed-only --source
-    files: '(?:.*\.fmf|.*/\.fmf/version)$'
-    verbose: false
-    pass_filenames: true
-    language: python
-    language_version: python3
+---
 
--   id: tmt-tests-lint
-    name: tmt tests lint
-    entry: python -m tmt._pre_commit --pre-check tests lint --failed-only --source
-    files: '(?:.*\.fmf|.*/\.fmf/version)$'
-    verbose: false
-    pass_filenames: true
-    language: python
-    language_version: python3
+- id: tmt-lint
+  name: tmt lint
+  # Use a simple wrapper instead of simply `tmt lint` in order to reorder
+  # some arguments that need to be passed to `tmt`
+  entry: python -m tmt._pre_commit --pre-check lint --failed-only --source
+  files: '(?:.*\.fmf|.*/\.fmf/version)$'
+  verbose: false
+  pass_filenames: true
+  language: python
+  language_version: python3
 
--   id: tmt-plans-lint
-    name: tmt plans lint
-    entry: python -m tmt._pre_commit --pre-check plans lint --failed-only --source
-    files: '(?:.*\.fmf|.*/\.fmf/version)$'
-    verbose: false
-    pass_filenames: true
-    language: python
-    language_version: python3
+- id: tmt-tests-lint
+  name: tmt tests lint
+  entry: python -m tmt._pre_commit --pre-check tests lint --failed-only --source
+  files: '(?:.*\.fmf|.*/\.fmf/version)$'
+  verbose: false
+  pass_filenames: true
+  language: python
+  language_version: python3
 
--   id: tmt-stories-lint
-    name: tmt stories lint
-    entry: python -m tmt._pre_commit --pre-check stories lint --failed-only --source
-    files: '(?:.*\.fmf|.*/\.fmf/version)$'
-    verbose: false
-    pass_filenames: true
-    language: python
-    language_version: python3
+- id: tmt-plans-lint
+  name: tmt plans lint
+  entry: python -m tmt._pre_commit --pre-check plans lint --failed-only --source
+  files: '(?:.*\.fmf|.*/\.fmf/version)$'
+  verbose: false
+  pass_filenames: true
+  language: python
+  language_version: python3
+
+- id: tmt-stories-lint
+  name: tmt stories lint
+  entry: python -m tmt._pre_commit --pre-check stories lint --failed-only --source
+  files: '(?:.*\.fmf|.*/\.fmf/version)$'
+  verbose: false
+  pass_filenames: true
+  language: python
+  language_version: python3
