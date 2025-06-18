@@ -88,26 +88,24 @@ description: |
     usage details and examples.
 
     Plan steps must not be defined in the remote plan reference.
-    Inheriting or overriding remote plan config with local plan
-    steps might be possible in the future but currently is not
-    supported. The imported plan can be modified in only two ways.
-    First way is via environment and context variables. Imported plan
-    inherits all environment and context variables from the importing
-    plan. This behavior can be changed by setting the ``inherit-context``
+    The imported plan can be modified in only two ways. First way
+    is via environment and context variables. Imported plan inherits
+    all environment and context variables from the importing plan.
+    This behavior can be changed by setting the ``inherit-context``
     or ``inherit-environment`` options:
 
     .. code-block:: yaml
 
        /some-plan:
-         context:
-           ...
-         environment:
-           ...
-         plan:
-           import:
-             ...
-             inherit-context: false
-             inherit-environment: false
+           context:
+               ...
+           environment:
+               ...
+           plan:
+               import:
+                   ...
+                   inherit-context: false
+                   inherit-environment: false
 
     .. note::
 
@@ -118,6 +116,8 @@ description: |
       values from the importing plan take precedence over those in the
       imported plan. Command line variables are always inherited,
       regardless of the options, and have the highest priority.
+
+      .. versionadded:: 1.51
 
     The imported plan can also be altered using the ``enabled`` key.
     If the local plan is enabled, it will follow the status of the
