@@ -520,18 +520,22 @@ TMT_POLICY_FILE
     relative path is interpreted either against the current working
     directory, or against the policy root directory if it was specified.
 
-    See :ref:`/spec/policy` for more details on policies.
+    See `tmt policy specification`__ for more details on policies.
 
     .. versionadded:: 1.51
+
+__ https://tmt.readthedocs.io/en/stable/spec/policy.html
 
 TMT_POLICY_NAME
     Name of the file with policy rules for modification of test metadata
     keys. The name would be extended with ``.yaml`` suffix, and tmt will
     try to locate it under the policy root directory.
 
-    See :ref:`/spec/policy` for more details on policies.
+    See `tmt policy specification`__ for more details on policies.
 
     .. versionadded:: 1.51
+
+__ https://tmt.readthedocs.io/en/stable/spec/policy.html
 
 TMT_POLICY_ROOT
     If set, policy files must be located under this directory. Policy
@@ -539,9 +543,11 @@ TMT_POLICY_ROOT
     policy specified by its filepath will be allowed only if the
     filepath is under this directory.
 
-    See :ref:`/spec/policy` for more details on policies.
+    See `tmt policy specification`__ for more details on policies.
 
     .. versionadded:: 1.51
+
+__ https://tmt.readthedocs.io/en/stable/spec/policy.html
 
 .. _step-variables:
 
