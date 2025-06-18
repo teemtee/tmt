@@ -91,7 +91,7 @@ def _lint_class(
 
         lintable.ls()
 
-        echo('\n'.join(tmt.lint.format_rulings(allowed_rulings)))
+        echo('\n'.join(tmt.lint.format_rulings(allowed_rulings, context.obj.config)))
 
         if not valid:
             exit_code = 1
@@ -136,7 +136,7 @@ def _lint_collection(
 
     lintable.print_header()
 
-    echo('\n'.join(tmt.lint.format_rulings(allowed_rulings)))
+    echo('\n'.join(tmt.lint.format_rulings(allowed_rulings, context.obj.config)))
 
     if not valid:
         exit_code = 1
