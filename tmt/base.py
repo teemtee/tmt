@@ -1870,6 +1870,8 @@ def expand_node_data(data: T, fmf_context: FmfContext) -> T:
 class _RemotePlanReference(_RawFmfId):
     importing: Optional[str]
     scope: Optional[str]
+    inherit_context: Optional[bool]
+    inherit_environment: Optional[bool]
 
 
 class RemotePlanReferenceImporting(enum.Enum):
@@ -1903,10 +1905,18 @@ class RemotePlanReference(
     # Repeat the SpecBasedContainer, with more fitting in/out spec type.
     SpecBasedContainer[_RemotePlanReference, _RemotePlanReference],
 ):
-    VALID_KEYS: ClassVar[list[str]] = [*FmfId.VALID_KEYS, 'importing', 'scope']
+    VALID_KEYS: ClassVar[list[str]] = [
+        *FmfId.VALID_KEYS,
+        'importing',
+        'scope',
+        'inherit-context',
+        'inherit-environment',
+    ]
 
     importing: RemotePlanReferenceImporting = RemotePlanReferenceImporting.REPLACE
     scope: RemotePlanReferenceImportScope = RemotePlanReferenceImportScope.FIRST_PLAN_ONLY
+    inherit_context: bool = True
+    inherit_environment: bool = True
 
     @functools.cached_property
     def name_pattern(self) -> Pattern[str]:
@@ -1989,6 +1999,8 @@ class RemotePlanReference(
         reference.scope = RemotePlanReferenceImportScope.from_spec(
             str(raw.get('scope', RemotePlanReferenceImportScope.FIRST_PLAN_ONLY.value))
         )
+        reference.inherit_context = bool(raw.get('inherit-context', True))
+        reference.inherit_environment = bool(raw.get('inherit-environment', True))
 
         return reference
 
@@ -2038,6 +2050,9 @@ class Plan(
         default_factory=list, internal=True
     )
 
+    _importing_fmf_context: FmfContext = field(default_factory=FmfContext, internal=True)
+    _importing_environment: Environment = field(default_factory=Environment, internal=True)
+
     _extra_l2_keys = [
         'context',
         'environment',
@@ -2053,6 +2068,8 @@ class Plan(
         run: Optional['Run'] = None,
         skip_validation: bool = False,
         raise_on_validation_error: bool = False,
+        importing_fmf_context: Optional[FmfContext] = None,
+        importing_environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
         **kwargs: Any,
     ) -> None:
@@ -2077,6 +2094,8 @@ class Plan(
         self._imported_plan_references = []
         self._imported_plans = []
         self._derived_plans = []
+        self._importing_fmf_context = importing_fmf_context or FmfContext()
+        self._importing_environment = importing_environment or Environment()
 
         # Check for possible remote plan reference first
         reference = self.node.get(['plan', 'import'])
@@ -2168,29 +2187,29 @@ class Plan(
             logger=self._logger,
         )
 
-        # If this is an imported plan, update it with local environment stored in the original plan
-        environment_from_original_plan = (
-            self._original_plan.environment if self._original_plan else Environment()
-        )
-
         if self.my_run:
             combined = self._plan_environment.copy()
             combined.update(environment_from_spec)
-            combined.update(environment_from_original_plan)
+            combined.update(self._importing_environment)
             # Command line variables take precedence
             combined.update(self.my_run.environment)
-            # Include path to the plan data directory
-            combined["TMT_PLAN_DATA"] = EnvVarValue(self.data_directory)
-            # Include path to the plan environment file
-            combined["TMT_PLAN_ENVIRONMENT_FILE"] = EnvVarValue(self.plan_environment_file)
-            # And tree path if possible
-            if self.worktree:
-                combined["TMT_TREE"] = EnvVarValue(self.worktree)
-            # And tmt version
-            combined["TMT_VERSION"] = EnvVarValue(tmt.__version__)
+            self._add_step_variables(combined)
             return combined
 
-        return Environment({**environment_from_spec, **environment_from_original_plan})
+        return Environment({**environment_from_spec, **self._importing_environment})
+
+    def _add_step_variables(self, environment: Environment) -> None:
+        """Add step variables to the environment"""
+
+        # Include path to the plan data directory
+        environment["TMT_PLAN_DATA"] = EnvVarValue(self.data_directory)
+        # Include path to the plan environment file
+        environment["TMT_PLAN_ENVIRONMENT_FILE"] = EnvVarValue(self.plan_environment_file)
+        # And tree path if possible
+        if self.worktree:
+            environment["TMT_TREE"] = EnvVarValue(self.worktree)
+        # And tmt version
+        environment["TMT_VERSION"] = EnvVarValue(tmt.__version__)
 
     def _source_plan_environment_file(self) -> None:
         """
@@ -2294,12 +2313,13 @@ class Plan(
     @property
     def _fmf_context(self) -> tmt.utils.FmfContext:
         """
-        Return combined context from plan data and command line
+        Return combined context from plan data, command line and original plan
         """
 
         combined = FmfContext()
 
         combined.update(self.context)
+        combined.update(self._importing_fmf_context)
         combined.update(self._cli_fmf_context)
 
         return combined
@@ -3034,9 +3054,26 @@ class Plan(
 
             self.debug(f"Turning node '{node.name}' into a plan.", level=3)
 
+            fmf_context = FmfContext.from_spec(
+                node.name, node.data.get('context', {}), self._logger
+            )
+
+            if reference.inherit_context:
+                fmf_context.update(self._fmf_context)
+            else:
+                fmf_context.update(self._cli_fmf_context)
+
+            environment = Environment.from_dict(node.data.get('environment', {}))
+
+            if reference.inherit_environment:
+                environment.update(self.environment)
+            elif self.my_run:
+                environment.update(self.my_run.environment)
+                self._add_step_variables(environment)
+
             # Adjust the imported tree, to let any `adjust` rules defined in it take
             # action.
-            node.adjust(fmf.context.Context(**self._fmf_context), case_sensitive=False)
+            node.adjust(fmf.context.Context(**fmf_context), case_sensitive=False)
 
             # If the local plan is disabled, disable the imported plan as well
             if not self.enabled:
@@ -3049,10 +3086,16 @@ class Plan(
             else:
                 node.name = f'{self.name}{node.name}'
 
-            with self.environment.as_environ():
-                expand_node_data(node.data, self._fmf_context)
+            with environment.as_environ():
+                expand_node_data(node.data, fmf_context)
 
-            return Plan(node=node, run=self.my_run, logger=self._logger.clone())
+            return Plan(
+                node=node,
+                run=self.my_run,
+                importing_fmf_context=self._fmf_context if reference.inherit_context else None,
+                importing_environment=self.environment if reference.inherit_environment else None,
+                logger=self._logger.clone(),
+            )
 
         def _generate_plans(nodes: Iterable[fmf.Tree]) -> list[Plan]:
             """
@@ -5214,7 +5257,14 @@ def resolve_dynamic_ref(
         decision_callback=create_adjust_callback(logger),
     )
     # Also temporarily build a plan so that env and context variables are expanded
-    Plan(logger=logger, node=reference_tree, run=plan.my_run, skip_validation=True)
+    Plan(
+        logger=logger,
+        node=reference_tree,
+        run=plan.my_run,
+        importing_fmf_context=plan._fmf_context,
+        importing_environment=plan.environment,
+        skip_validation=True,
+    )
     ref = reference_tree.get("ref")
     logger.debug(f"Dynamic 'ref' resolved as '{ref}'.")
     return ref

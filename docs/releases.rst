@@ -19,6 +19,12 @@ it will no longer wait for it to complete.
 path, or by name, and policy root directory can be defined to limit the
 scope of where tmt would look for policy files.
 
+While :ref:`importing a remote plan</spec/plans/import>`, users can now
+configure if the context and environment variables from the importing
+plan should be propagated to the imported plan. This behavior can be
+controlled by the new ``inherit-context`` and ``inherit-environment``
+options. These options are enabled by default.
+
 
 tmt-1.50.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
