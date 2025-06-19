@@ -1,0 +1,32 @@
+context:
+    provision_how: parent_value
+environment:
+    PROVISION_HOW: parent_value
+plan:
+    import:
+        url: https://github.com/teemtee/tmt
+        name: /plans/provision/local
+
+/no-inheritance:
+    summary: Imported plan inherits nothing (except command line)
+    plan+:
+        import+:
+            inherit-context: false
+            inherit-environment: false
+
+/inherit-context:
+    summary: Imported plan inherits context
+    plan+:
+        import+:
+            inherit-context: true
+            inherit-environment: false
+
+/inherit-environment:
+    summary: Imported plan inherits environment
+    plan+:
+        import+:
+            inherit-context: false
+            inherit-environment: true
+
+/inherit-all:
+    summary: Imported plan inherits context and environment

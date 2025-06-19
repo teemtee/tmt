@@ -14,3 +14,7 @@
 /local-and-remote:
   summary: Make sure a plan defining execute and import gets reported
   test: ./local-and-remote.sh
+
+/inheritance:
+  summary: Make sure context and environment inheritance works
+  test: ./inheritance.sh
