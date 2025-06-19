@@ -148,6 +148,9 @@ class Policy(MetadataContainer):
     See :ref:`/spec/policy` for more details.
     """
 
+    # The name will be overwritten by the code loading policies
+    name: str = 'unknown'
+
     #: Instructions for modifications of tests.
     test_policy: list[Instruction] = metadata_field(default_factory=list[Instruction])
 
@@ -158,16 +161,55 @@ class Policy(MetadataContainer):
     # story_policy: list[Instruction] = metadata_field(default_factory=list[Instruction])
 
     @classmethod
-    def load(cls, path: Path, logger: Logger) -> 'Policy':
+    def load_by_filepath(cls, *, path: Path, root: Optional[Path] = None) -> 'Policy':
         """
         Load a policy from a given file.
+
+        :param path: a path to the policy file.
+        :param root: directory under which policy file must reside.
         """
 
+        if root is not None:
+            path = root / path.unrooted()
+
+            if not path.is_relative_to(root):
+                raise tmt.utils.SpecificationError(
+                    f"Policy '{path}' does not reside under policy root '{root}'."
+                )
+
         try:
-            return Policy.from_yaml(path.read_text())
+            policy = Policy.from_yaml(path.read_text())
+            policy.name = str(path)
+
+            return policy
+
+        except FileNotFoundError as exc:
+            raise tmt.utils.SpecificationError(f"Policy '{path}' not found.") from exc
 
         except ValidationError as exc:
             raise tmt.utils.SpecificationError(f"Invalid policy in '{path}'.") from exc
+
+    @classmethod
+    def load_by_name(cls, *, name: str, root: Path) -> 'Policy':
+        """
+        Load a policy from a given directory.
+
+        :param name: suffix-less name of a file under the ``root`` path.
+        :param root: directory under which policy file must reside.
+        """
+
+        for suffix in ('.yaml', '.yml'):
+            filepath = Path(f'{name}{suffix}').unrooted()
+
+            if not (root / filepath).is_file():
+                continue
+
+            policy = cls.load_by_filepath(path=filepath, root=root)
+            policy.name = name
+
+            return policy
+
+        raise tmt.utils.SpecificationError(f"Policy '{name}' does not point to a file.")
 
     def _apply(
         self,
@@ -191,7 +233,6 @@ class Policy(MetadataContainer):
         self,
         *,
         tests: Iterable['Test'],
-        policy_name: Optional[str] = None,
         logger: Logger,
     ) -> None:
         """
@@ -202,21 +243,10 @@ class Policy(MetadataContainer):
         :param logger: used for logging.
         """
 
-        # TODO: policy name should be known to this class, maybe set
-        # an "origin" field when loading from file (can't do it now, the
-        # field is not inherited and I don't know why...)
-        if policy_name is not None:
-            logger.info(
-                f"Apply tmt policy '{policy_name}'.",
-                color='green',
-                topic=Topic.POLICY,
-            )
-
-        else:
-            logger.info(
-                "Apply tmt policy.",
-                color='green',
-                topic=Topic.POLICY,
-            )
+        logger.info(
+            f"Apply tmt policy '{self.name}'.",
+            color='green',
+            topic=Topic.POLICY,
+        )
 
         self._apply(tests, self.test_policy, logger.descend())

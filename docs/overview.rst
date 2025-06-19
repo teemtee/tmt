@@ -514,6 +514,41 @@ TMT_REPORT_ARTIFACTS_URL
 
     .. versionadded:: 1.32
 
+TMT_POLICY_FILE
+    Location of a file with policy rules for modification of test
+    metadata keys. Both absolute and relative paths are accepted; a
+    relative path is interpreted either against the current working
+    directory, or against the policy root directory if it was specified.
+
+    See `tmt policy specification`__ for more details on policies.
+
+    .. versionadded:: 1.51
+
+__ https://tmt.readthedocs.io/en/stable/spec/policy.html
+
+TMT_POLICY_NAME
+    Name of the file with policy rules for modification of test metadata
+    keys. The name would be extended with ``.yaml`` suffix, and tmt will
+    try to locate it under the policy root directory.
+
+    See `tmt policy specification`__ for more details on policies.
+
+    .. versionadded:: 1.51
+
+__ https://tmt.readthedocs.io/en/stable/spec/policy.html
+
+TMT_POLICY_ROOT
+    If set, policy files must be located under this directory. Policy
+    specified by its name is searched under this directory only, and
+    policy specified by its filepath will be allowed only if the
+    filepath is under this directory.
+
+    See `tmt policy specification`__ for more details on policies.
+
+    .. versionadded:: 1.51
+
+__ https://tmt.readthedocs.io/en/stable/spec/policy.html
+
 .. _step-variables:
 
 Step Variables
