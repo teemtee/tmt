@@ -4,6 +4,12 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
+
+        # To allow running the test outside of tmt.
+        rlRun "TMT_TEST_PIDFILE_ROOT=/var/tmp/tmt/pid"
+        rlRun "TMT_TEST_PIDFILE=$TMT_TEST_PIDFILE_ROOT/tmt-test.pid"
+        rlRun "TMT_TEST_PIDFILE_LOCK=$TMT_TEST_PIDFILE.lock"
+
         rlRun "run=\$(mktemp -d -p /var/tmp)" 0 "Create run directory"
         rlRun "set -o pipefail"
         rlRun "pushd out-of-session"
@@ -39,7 +45,7 @@ rlJournalStart
         # and use it to issue a `tmt-reboot` from outside the direct process tree of the test.
         set -x
 
-        tmt_reboot_command="export TMT_TEST_PIDFILE=/var/tmp/tmt-test.pid; export TMT_TEST_PIDFILE_LOCK=/var/tmp/tmt-test.pid.lock; export TMT_DEBUG=1; tmt-reboot"
+        tmt_reboot_command="export TMT_TEST_PIDFILE=$TMT_TEST_PIDFILE; export TMT_TEST_PIDFILE_LOCK=$TMT_TEST_PIDFILE_LOCK; export TMT_DEBUG=1; tmt-reboot"
 
         if [ "$PROVISION_HOW" = "container" ]; then
             podman_exec="$(sed -nr 's/\s*Run command: (podman exec .*) \/bin\/bash.*cd.*/\1/p' tmt.output | head -1)"

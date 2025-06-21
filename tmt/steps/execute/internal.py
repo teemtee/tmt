@@ -34,11 +34,13 @@ from tmt.utils import (
 )
 from tmt.utils.themes import style
 
+# Note: if modified, pidfile root, filename, and lock filename must be
+# also changed in `tmt-reboot` and `tmt-reboot-core` scripts.
 TEST_PIDFILE_FILENAME = 'tmt-test.pid'
 TEST_PIDFILE_LOCK_FILENAME = f'{TEST_PIDFILE_FILENAME}.lock'
 
 #: The default directory for storing test pid file.
-TEST_PIDFILE_ROOT = Path('/var/tmp')  # noqa: S108 insecure usage of temporary dir
+TEST_PIDFILE_ROOT = Path('/var/tmp/tmt/pid')  # noqa: S108 insecure usage of temporary dir
 
 
 def effective_pidfile_root() -> Path:
@@ -415,6 +417,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         assert isinstance(self.parent, tmt.steps.execute.Execute)
         assert self.parent.plan.my_run is not None
 
+        environment['TMT_TEST_PIDFILE_ROOT'] = EnvVarValue(effective_pidfile_root())
         environment['TMT_TEST_PIDFILE'] = EnvVarValue(
             effective_pidfile_root() / TEST_PIDFILE_FILENAME
         )
