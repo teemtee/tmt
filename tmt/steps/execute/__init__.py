@@ -21,6 +21,7 @@ import tmt.steps.scripts
 import tmt.utils
 import tmt.utils.signals
 import tmt.utils.wait
+from tmt._compat.pydantic import model_rebuild
 from tmt.checks import Check, CheckEvent, CheckPlugin
 from tmt.container import container, field, simple_field
 from tmt.options import option
@@ -47,6 +48,13 @@ if TYPE_CHECKING:
     import tmt.result
     import tmt.steps.discover
     import tmt.steps.provision
+
+# TODO: steps import queue, queue defines tasks that depend on guest
+# class, and guest class is defined in one of the steps. This forces
+# queue to use forward references in annotations, and Pydantic needs our
+# help to resolve them. This could be resolved by changing locations of
+# classes involved, but that will be a big patch.
+model_rebuild(PluginTask, globals())
 
 # Test data and checks directory names
 TEST_DATA = 'data'
