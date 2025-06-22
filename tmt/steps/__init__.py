@@ -2574,19 +2574,12 @@ class Topology(SerializableContainer):
         return environment
 
 
-@container
 class ActionTask(tmt.queue.GuestlessTask[None]):
     """
     A task to run an action
     """
 
     phase: Action
-
-    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
-    def __init__(self, logger: tmt.log.Logger, phase: Action, **kwargs: Any) -> None:
-        super().__init__(logger, **kwargs)
-
-        self.phase = phase
 
     @property
     def name(self) -> str:
@@ -2596,7 +2589,6 @@ class ActionTask(tmt.queue.GuestlessTask[None]):
         self.phase.go()
 
 
-@container
 class PluginTask(
     tmt.queue.MultiGuestTask[PluginReturnValueT],
     Generic[StepDataT, PluginReturnValueT],
@@ -2606,18 +2598,6 @@ class PluginTask(
     """
 
     phase: Plugin[StepDataT, PluginReturnValueT]
-
-    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
-    def __init__(
-        self,
-        logger: tmt.log.Logger,
-        guests: list['Guest'],
-        phase: Plugin[StepDataT, PluginReturnValueT],
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(logger, guests, **kwargs)
-
-        self.phase = phase
 
     @property
     def phase_name(self) -> str:
@@ -2640,8 +2620,8 @@ class PluginTask(
     def name(self) -> str:
         return f'{self.phase_name} on {fmf.utils.listed(self.guest_ids)}'
 
-    def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
-        self.phase.go(guest=guest, logger=logger)
+    def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> PluginReturnValueT:
+        return self.phase.go(guest=guest, logger=logger)
 
 
 class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginReturnValueT]]]):
@@ -2663,15 +2643,10 @@ class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginR
         self.enqueue_task(PluginTask(logger=phase._logger, guests=guests, phase=phase))
 
 
-@container
 class PushTask(tmt.queue.MultiGuestTask[None]):
     """
     Task performing a workdir push to a guest
     """
-
-    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
-    def __init__(self, logger: tmt.log.Logger, guests: list['Guest'], **kwargs: Any) -> None:
-        super().__init__(logger, guests, **kwargs)
 
     @property
     def name(self) -> str:
@@ -2681,25 +2656,12 @@ class PushTask(tmt.queue.MultiGuestTask[None]):
         guest.push()
 
 
-@container
 class PullTask(tmt.queue.MultiGuestTask[None]):
     """
     Task performing a workdir pull from a guest
     """
 
     source: Optional[Path]
-
-    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
-    def __init__(
-        self,
-        logger: tmt.log.Logger,
-        guests: list['Guest'],
-        source: Optional[Path] = None,
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(logger, guests, **kwargs)
-
-        self.source = source
 
     @property
     def name(self) -> str:
