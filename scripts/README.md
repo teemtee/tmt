@@ -5,5 +5,7 @@ with the exception that `scripts' dirname is plural.
 
 ### `scripts/bootstrap`
 
-[`scripts/bootstrap`][bootstrap] installs minimal dependencies necessary to
+
+[`scripts/bootstrap`](./bootstrap) installs minimal dependencies necessary to
 work with the project.
+
