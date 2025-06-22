@@ -13,7 +13,6 @@ import string
 import subprocess
 import threading
 from collections.abc import Iterable, Iterator, Sequence
-from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from shlex import quote
 from typing import (
     TYPE_CHECKING,
@@ -3087,7 +3086,6 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
                 echo(tmt.utils.format('hardware', tmt.utils.dict_to_yaml(hardware.to_spec())))
 
 
-@container
 class ProvisionTask(tmt.queue.GuestlessTask[None]):
     """
     A task to run provisioning of multiple guests
@@ -3101,82 +3099,36 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
     #: points to the phase that has been provisioned by the task.
     phase: Optional[ProvisionPlugin[ProvisionStepData]] = None
 
+    def __init__(
+        self, phases: list[ProvisionPlugin[ProvisionStepData]], logger: tmt.log.Logger
+    ) -> None:
+        super().__init__(logger)
+
+        self.phases = phases
+
     @property
     def name(self) -> str:
         return cast(str, fmf.utils.listed([phase.name for phase in self.phases]))
 
     def go(self) -> Iterator['ProvisionTask']:
-        multiple_guests = len(self.phases) > 1
+        def _on_complete(task: 'Self', phase: ProvisionPlugin[ProvisionStepData]) -> 'Self':
+            task.phases = []
+            task.phase = phase
 
-        new_loggers = tmt.queue.prepare_loggers(self.logger, [phase.name for phase in self.phases])
-        old_loggers: dict[str, Logger] = {}
+            return task
 
-        with ThreadPoolExecutor(max_workers=len(self.phases)) as executor:
-            futures: dict[Future[None], ProvisionPlugin[ProvisionStepData]] = {}
-
-            for phase in self.phases:
-                old_loggers[phase.name] = phase._logger
-                new_logger = new_loggers[phase.name]
-
-                phase.inject_logger(new_logger)
-
-                if multiple_guests:
-                    new_logger.info('started', color='cyan')
-
-                # Submit each phase as a distinct job for executor pool...
-                futures[executor.submit(phase.go)] = phase
-
-            # ... and then sit and wait as they get delivered to us as they
-            # finish.
-            for future in as_completed(futures):
-                phase = futures[future]
-
-                old_logger = old_loggers[phase.name]
-                new_logger = new_loggers[phase.name]
-
-                if multiple_guests:
-                    new_logger.info('finished', color='cyan')
-
-                # `Future.result()` will either 1. reraise an exception the
-                # callable raised, if any, or 2. return whatever the callable
-                # returned - which is `None` in our case, therefore we can
-                # ignore the return value.
-                try:
-                    future.result()
-
-                except SystemExit as exc:
-                    yield ProvisionTask(
-                        logger=new_logger,
-                        result=None,
-                        guest=phase.guest,
-                        exc=None,
-                        requested_exit=exc,
-                        phases=[],
-                    )
-
-                except Exception as exc:
-                    yield ProvisionTask(
-                        logger=new_logger,
-                        result=None,
-                        guest=phase.guest,
-                        exc=exc,
-                        requested_exit=None,
-                        phases=[],
-                    )
-
-                else:
-                    yield ProvisionTask(
-                        logger=new_logger,
-                        result=None,
-                        guest=phase.guest,
-                        exc=None,
-                        requested_exit=None,
-                        phases=[],
-                        phase=phase,
-                    )
-
-                # Don't forget to restore the original logger.
-                phase.inject_logger(old_logger)
+        yield from self._invoke_in_pool(
+            # Run across all phases known to this task.
+            units=self.phases,
+            # Unit ID here is phases's name
+            get_label=lambda task, phase: phase.name,
+            extract_logger=lambda task, phase: phase._logger,
+            inject_logger=lambda task, phase, logger: phase.inject_logger(logger),
+            # Submit work for the executor pool.
+            submit=lambda task, phase, logger, executor: executor.submit(phase.go),
+            on_complete=_on_complete,
+            logger=self.logger,
+        )
 
 
 class ProvisionQueue(tmt.queue.Queue[ProvisionTask]):
@@ -3185,16 +3137,7 @@ class ProvisionQueue(tmt.queue.Queue[ProvisionTask]):
     """
 
     def enqueue(self, *, phases: list[ProvisionPlugin[ProvisionStepData]], logger: Logger) -> None:
-        self.enqueue_task(
-            ProvisionTask(
-                logger=logger,
-                result=None,
-                guest=None,
-                exc=None,
-                requested_exit=None,
-                phases=phases,
-            )
-        )
+        self.enqueue_task(ProvisionTask(phases, logger))
 
 
 class Provision(tmt.steps.Step):
@@ -3411,10 +3354,12 @@ class Provision(tmt.steps.Step):
 
                     failed_tasks.append(outcome)
 
-                if outcome.guest:
-                    outcome.guest.show()
+                if outcome.phase and outcome.phase.guest:
+                    guest = outcome.phase.guest
 
-                    self.guests.append(outcome.guest)
+                    guest.show()
+
+                    self.guests.append(guest)
 
             return all_tasks, failed_tasks
 
