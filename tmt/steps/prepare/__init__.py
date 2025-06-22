@@ -32,6 +32,15 @@ if TYPE_CHECKING:
     import tmt.cli
     from tmt.base import Plan
 
+# TODO: steps import queue, queue defines tasks that depend on guest
+# class, and guest class is defined in one of the steps. This forces
+# queue to use forward references in annotations, and Pydantic needs our
+# help to resolve them. This could be resolved by changing locations of
+# classes involved, but that will be a big patch.
+PluginTask.update_forward_refs(**globals())
+PullTask.update_forward_refs(**globals())
+PushTask.update_forward_refs(**globals())
+
 
 @container
 class PrepareStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
