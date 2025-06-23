@@ -1,9 +1,18 @@
+import re
 from typing import Any, Optional
 
 import tmt.log
 from tmt.container import container, field
 from tmt.steps.prepare.feature import PrepareFeatureData, ToggleableFeature, provides_feature
 from tmt.steps.provision import Guest
+
+SUPPORTED_DISTRO_PATTERNS = tuple(
+    re.compile(pattern)
+    for pattern in (
+        r'Red Hat Enterprise Linux ([8-9]|[1-9][0-9]+)',
+        r'CentOS Stream ([8-9]|[1-9][0-9]+)',
+    )
+)
 
 
 @container
@@ -49,6 +58,12 @@ class Epel(ToggleableFeature):
 
     @classmethod
     def enable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
+        if not (
+            guest.facts.distro
+            and any(pattern.match(guest.facts.distro) for pattern in SUPPORTED_DISTRO_PATTERNS)
+        ):
+            logger.warning('EPEL prepare feature is supported on RHEL/CentOS-Stream 8+.')
+            return
         cls._run_playbook('enable', "epel-enable.yaml", guest, logger)
 
     @classmethod

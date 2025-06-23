@@ -2,7 +2,7 @@
 # Try epel
 
 set timeout 180
-spawn tmt try fedora@container --epel -p /plans/basic
+spawn tmt try centos@container --epel -p /plans/basic
 expect "What do we do next?"
 send -- "q\r"
 expect eof
