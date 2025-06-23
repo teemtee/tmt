@@ -434,7 +434,7 @@ TMT_GIT_CREDENTIALS_URL_<suffix>, TMT_GIT_CREDENTIALS_VALUE_<suffix>
     repositories. Suffix identifies the pair and determines the order in which URL regexp is tried.
 
     The ``TMT_GIT_CREDENTIALS_URL_<suffix>`` contains regexp to search against
-    url to clone. For first successful search the contentq of the ``TMT_GIT_CREDENTIALS_VALUE_<suffix>``
+    url to clone. For first successful search, the content of the ``TMT_GIT_CREDENTIALS_VALUE_<suffix>``
     variable is used as the credential value. When it is set to an empty string, unmodified url is used.
 
     Example usage:
