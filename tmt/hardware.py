@@ -1789,9 +1789,7 @@ class Hardware(SpecBasedContainer[Spec, Spec]):
                 if name in names or f'{name}.{child_name}' in names or check(constraint):
                     continue
 
-                logger.warning(
-                    f"Hardware requirement '{constraint.printable_name}' is not supported."
-                )
+                logger.warning(f"Hardware requirement '{constraint}' is not supported.")
 
     def format_variants(self) -> Iterator[str]:
         """

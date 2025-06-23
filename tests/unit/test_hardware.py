@@ -1,6 +1,8 @@
+import logging
 import textwrap
 from typing import Any
 
+import _pytest.logging
 import pytest
 
 import tmt.hardware
@@ -8,6 +10,9 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.hardware import Hardware
+from tmt.log import Logger
+
+from . import MATCH, assert_log
 
 
 def parse_hw(text: str) -> Hardware:
@@ -359,3 +364,30 @@ def test_parse_or_constraint() -> None:
 
     hw = parse_hw(OR_HARDWARE_REQUIREMENTS)
     assert tmt.utils.dict_to_yaml(hw.constraint.to_spec()) == textwrap.dedent(hw_spec_out).lstrip()
+
+
+def test_report_support(
+    root_logger: Logger,
+    caplog: _pytest.logging.LogCaptureFixture,
+) -> None:
+    # Spec to test against
+    hw_spec = """
+     or:
+       - memory: '>= 4 GB'
+       - memory: '!= 4 GB'
+    """
+    hw = parse_hw(hw_spec)
+
+    # For testing purposes we are saying ">=" is the only valid operator.
+    def _test_check(constraint: tmt.hardware.Constraint) -> bool:
+        if constraint.operator == tmt.hardware.Operator.GTE:
+            return True
+        return False
+
+    # "!=" should trigger a warning in def report_support
+    hw.report_support(names=[], check=_test_check, logger=root_logger)
+    assert_log(
+        caplog,
+        message=MATCH(r"warn: Hardware requirement 'memory: != 4 GB' is not supported."),
+        levelno=logging.WARNING,
+    )
