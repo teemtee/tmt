@@ -408,7 +408,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
         )
 
         # Add deployment mode if provided as a context variable
-        deployment_mode = self.step.plan._fmf_context.get('deployment-mode', [])
+        deployment_mode = self.step.plan.fmf_context.get('deployment-mode', [])
         if deployment_mode:
             testsuites_properties.update({'polarion-custom-deploymentMode': deployment_mode[0]})
 
