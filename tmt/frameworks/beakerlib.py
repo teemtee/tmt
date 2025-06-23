@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 import tmt.log
 import tmt.result
 import tmt.steps.execute
+import tmt.steps.scripts
 import tmt.utils
 from tmt.frameworks import TestFramework, provides_framework
 from tmt.result import ResultOutcome, save_failures
@@ -85,8 +86,8 @@ class Beakerlib(TestFramework):
         # will *accept* the third positional argument as a `logfile`.
         # - https://github.com/teemtee/tmt/blob/e7cf41d1fe5a4dcbb3270758586f41313e9462ec/tmt/steps/execute/scripts/tmt-report-result#L101
         if BEAKERLIB_REPORT_RESULT_COMMAND not in [
-            tmt.steps.execute.TMT_REPORT_RESULT_SCRIPT.source_filename,
-            *tmt.steps.execute.TMT_REPORT_RESULT_SCRIPT.aliases,
+            tmt.steps.scripts.TMT_REPORT_RESULT_SCRIPT.source_filename,
+            *tmt.steps.scripts.TMT_REPORT_RESULT_SCRIPT.aliases,
         ]:
             raise GeneralError(
                 "Beakerlib framework requires the "
@@ -99,7 +100,7 @@ class Beakerlib(TestFramework):
                 'BEAKERLIB_DIR': EnvVarValue(invocation.path),
                 'BEAKERLIB_COMMAND_SUBMIT_LOG': EnvVarValue(
                     invocation.guest.scripts_path
-                    / tmt.steps.execute.TMT_FILE_SUBMIT_SCRIPT.source_filename
+                    / tmt.steps.scripts.TMT_FILE_SUBMIT_SCRIPT.source_filename
                 ),
                 # The command in this variable gets called with every
                 # `rlPhaseEnd` call in beakerlib.
