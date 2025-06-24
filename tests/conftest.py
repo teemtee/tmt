@@ -2,22 +2,38 @@ import os
 import pathlib
 import shutil
 from collections.abc import Iterator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import _pytest.logging
 import _pytest.tmpdir
 import py.path
 import pytest
-from pytest_container.container import ContainerData
 
+from tests import CliRunner, RunTmt
 from tmt.log import Logger
 from tmt.steps.provision.podman import GuestContainer, PodmanGuestData
 from tmt.utils import Path
 
+if TYPE_CHECKING:
+    from pytest_container.container import ContainerData
+
 
 @pytest.fixture(name='root_logger')
 def fixture_root_logger(caplog: _pytest.logging.LogCaptureFixture) -> Logger:
+    """
+    A logger to use for logging and/or spawning logger hierarchy.
+    """
+
     return Logger.create(verbose=0, debug=0, quiet=False, apply_colors_logging=False)
+
+
+@pytest.fixture(name='run_tmt')
+def fixture_run_tmt() -> RunTmt:
+    """
+    Invoke a ``tmt`` command with given options.
+    """
+
+    return CliRunner().invoke
 
 
 # Temporary directories and paths
@@ -134,7 +150,7 @@ def target_dir(tmppath_factory: TempPathFactory) -> Path:
 
 
 @pytest.fixture(name='guest')
-def fixture_guest(container: ContainerData, root_logger: Logger) -> GuestContainer:
+def fixture_guest(container: 'ContainerData', root_logger: Logger) -> GuestContainer:
     guest_data = PodmanGuestData(image=container.image_url_or_id, container=container.container_id)
 
     guest = GuestContainer(logger=root_logger, data=guest_data, name='dummy-container')
@@ -146,7 +162,7 @@ def fixture_guest(container: ContainerData, root_logger: Logger) -> GuestContain
 
 @pytest.fixture(name='guest_per_test')
 def fixture_guest_per_test(
-    container_per_test: ContainerData, root_logger: Logger
+    container_per_test: 'ContainerData', root_logger: Logger
 ) -> GuestContainer:
     guest_data = PodmanGuestData(
         image=container_per_test.image_url_or_id, container=container_per_test.container_id
