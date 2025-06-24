@@ -2363,16 +2363,24 @@ class GuestSsh(Guest):
         if extra_args:
             ansible_command += self._ansible_extra_args(extra_args)
 
+        # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
+        parent = cast(Provision, self.parent)
+
+        provision_step = self.parent.plan.provision
+        inventory_path = (
+            provision_step.workdir / 'inventory.yaml' if provision_step.workdir else None
+        )
+
+        self.debug(f"Using Ansible inventory file '{inventory_path}'", level=3)
         ansible_command += Command(
             '--ssh-common-args',
             self._ssh_options.to_element(),
             '-i',
-            f'{self._ssh_guest},',
+            inventory_path,
+            '--limit',
+            self.name,
             playbook,
         )
-
-        # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
-        parent = cast(Provision, self.parent)
 
         try:
             return self._run_guest_command(
@@ -2861,6 +2869,11 @@ class ProvisionStepData(tmt.steps.StepData):
         else None,
     )
 
+    ansible: Optional[dict[str, Any]] = field(
+        default=None,
+        help='Ansible configuration for inventory generation.',
+    )
+
 
 ProvisionStepDataT = TypeVar('ProvisionStepDataT', bound=ProvisionStepData)
 
@@ -3193,6 +3206,7 @@ class Provision(tmt.steps.Step):
 
         self.guests = []
         self._guest_data: dict[str, GuestData] = {}
+        self._ansible_inventory = AnsibleInventory(self.plan)
 
     @property
     def _preserved_workdir_members(self) -> set[str]:
@@ -3200,7 +3214,7 @@ class Provision(tmt.steps.Step):
         A set of members of the step workdir that should not be removed.
         """
 
-        return {*super()._preserved_workdir_members, 'guests.yaml'}
+        return {*super()._preserved_workdir_members, 'guests.yaml', 'inventory.yaml'}
 
     @property
     def is_multihost(self) -> bool:
@@ -3235,6 +3249,19 @@ class Provision(tmt.steps.Step):
         except tmt.utils.FileError:
             self.debug('Provisioned guests not found.', level=2)
 
+    def _generate_ansible_inventory(self) -> None:
+        """Generate Ansible inventory from provisioned guests."""
+        try:
+            # Get layout from ansible.inventory.layout if it exists
+            layout = self.plan.node.get('ansible', {}).get('inventory', {}).get('layout')
+
+            inventory = self._ansible_inventory.generate(self.guests, layout)
+            inventory_path = Path('inventory.yaml')
+            self.write(inventory_path, tmt.utils.dict_to_yaml(inventory))
+            self.info('ansible', f'Inventory saved to {inventory_path}')
+        except tmt.utils.FileError:
+            self.debug('Failed to save Ansible inventory.')
+
     def save(self) -> None:
         """
         Save guest data to the workdir
@@ -3249,6 +3276,8 @@ class Provision(tmt.steps.Step):
             self.write(Path('guests.yaml'), tmt.utils.dict_to_yaml(raw_guest_data))
         except tmt.utils.FileError:
             self.debug('Failed to save provisioned guests.')
+
+        self._generate_ansible_inventory()
 
     def wake(self) -> None:
         """
@@ -3482,3 +3511,183 @@ class Provision(tmt.steps.Step):
         self.summary()
         self.status('done')
         self.save()
+
+
+class AnsibleInventory:
+    """
+    Generate Ansible inventory files from provisioned guests.
+
+    Creates Ansible inventory file that can be used with playbooks
+    to manage provisioned guests. Supports custom layouts and automatically
+    configures host variables based on guest properties.
+    """
+
+    def __init__(self, plan: 'tmt.Plan') -> None:
+        """
+        Initialize the Ansible inventory handler.
+
+        :param plan: the plan containing provisioned guests and configuration.
+        """
+        self._logger = plan._logger
+        self._plan = plan
+
+    def _load_layout(self, layout_path: Optional[str] = None) -> dict[str, Any]:
+        """
+        Load inventory layout from file or use default.
+
+        :param layout_path: path to a custom layout file, relative to the FMF file.
+        # TODO check layout path logic
+        :returns: dictionary representing the inventory layout structure.
+        """
+        if layout_path:
+            try:
+                # Resolve path relative to the directory containing the FMF file
+                if self._plan.node.sources:
+                    # Use the directory of the first source (where the FMF file is)
+                    fmf_dir = Path(self._plan.node.sources[0]).parent
+                    resolved_path = fmf_dir / layout_path
+                else:
+                    # Fallback to current working directory if no sources
+                    resolved_path = Path(layout_path)
+                return tmt.utils.yaml_to_dict(resolved_path)
+            except tmt.utils.GeneralError as exc:
+                self._logger.warning(f"Failed to load inventory layout: {exc}")
+                return self._default_layout()
+        return self._default_layout()
+
+    def _default_layout(self) -> dict[str, Any]:
+        """
+        Create default inventory layout.
+
+        :returns: basic inventory structure with 'all' and 'ungrouped' groups.
+        """
+        return {'all': {'children': {'ungrouped': {}}}}
+
+    def _get_guest_ansible_config(self, guest: Guest) -> Optional[dict[str, Any]]:
+        """
+        Get ansible configuration for a specific guest from provision step data.
+
+        :param guest: the guest to get configuration for.
+        :returns: ansible configuration dictionary if found, ``None`` otherwise.
+        """
+        # Find the provision step data for this guest
+        provision_step = self._plan.provision
+        for phase in provision_step.phases(classes=ProvisionPlugin):
+            if phase.guest and phase.guest.name == guest.name:
+                return getattr(phase.data, 'ansible', None)
+        return None
+
+    def _get_host_vars(self, guest: Guest) -> dict[str, Any]:
+        """
+        Get host variables for a guest.
+
+        :param guest: the guest to get variables for.
+        :returns: dictionary of Ansible host variables.
+        """
+        vars_dict: dict[str, Any] = {  # TODO check vars
+            'ansible_host': guest.primary_address,
+            'ansible_user': getattr(guest, 'user', None),
+            'ansible_port': getattr(guest, 'port', None),
+        }
+
+        # Add any custom variables from provision step data's ansible.vars
+        ansible_config = self._get_guest_ansible_config(guest)
+        if ansible_config and 'vars' in ansible_config:
+            vars_dict.update(ansible_config['vars'])
+
+        return vars_dict
+
+    def _get_host_groups(self, guest: Guest) -> list[str]:
+        """
+        Get list of groups for a host.
+
+        :param guest: the guest to get groups for.
+        :returns: list of group names the host belongs to.
+        """
+        groups = ['all']  # All hosts are in 'all' group
+
+        # Try to get ansible group from ansible.group key in provision guest data
+        ansible_config = self._get_guest_ansible_config(guest)
+        if ansible_config and 'group' in ansible_config:
+            groups.append(ansible_config['group'])
+            return groups
+
+        # Otherwise use role as group
+        if getattr(guest, 'role', None):
+            groups.append(guest.role)
+        else:
+            groups.append('ungrouped')
+
+        return groups
+
+    def _add_host_to_all(self, inventory: dict[str, Any], guest: Guest) -> None:
+        """
+        Add host with its variables to the 'all' group.
+
+        :param inventory: the inventory dictionary to modify.
+        :param guest: the guest to add to the inventory.
+        """
+        host_vars = self._get_host_vars(guest)
+        if 'hosts' not in inventory['all']:
+            inventory['all']['hosts'] = {}
+        inventory['all']['hosts'][guest.name] = host_vars
+
+    def _find_group(self, current: dict[str, Any], target: str) -> Optional[dict[str, Any]]:
+        """
+        Find a group at any level in the hierarchy.
+
+        :param current: the current level of the inventory hierarchy.
+        :param target: the name of the group to find.
+        :returns: the group dictionary if found, ``None`` otherwise.
+        """
+        if target in current:
+            return current[target]
+        for value in current.values():
+            if isinstance(value, dict) and 'children' in value:
+                found = self._find_group(value['children'], target)
+                if found is not None:
+                    return found
+        return None
+
+    def _add_host_to_group(self, inventory: dict[str, Any], guest: Guest, group: str) -> None:
+        """
+        Add host to a specific group without variables.
+
+        :param inventory: the inventory dictionary to modify.
+        :param guest: the guest to add to the group.
+        :param group: the name of the group to add the host to.
+        """
+        if group == 'all':
+            return
+
+        target_group = self._find_group(inventory['all']['children'], group)
+        if target_group is None:
+            # Group not found, create it at the root level
+            if group not in inventory['all']['children']:
+                inventory['all']['children'][group] = {'hosts': {}}
+            target_group = inventory['all']['children'][group]
+
+        if 'hosts' not in target_group:
+            target_group['hosts'] = {}
+        target_group['hosts'][guest.name] = {}
+
+    def generate(self, guests: list[Guest], layout_path: Optional[str] = None) -> dict[str, Any]:
+        """
+        Generate Ansible inventory from guests and layout.
+
+        :param guests: list of provisioned guests to include in the inventory.
+        :param layout_path: optional path to a custom layout template.
+        :returns: complete Ansible inventory dictionary.
+        """
+        inventory = self._load_layout(layout_path)
+
+        for guest in guests:
+            # Add host to 'all' group with its variables
+            self._add_host_to_all(inventory, guest)
+
+            # Add host to its groups (without variables)
+            groups = self._get_host_groups(guest)
+            for group in groups:
+                self._add_host_to_group(inventory, guest, group)
+
+        return inventory
