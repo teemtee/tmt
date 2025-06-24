@@ -371,12 +371,11 @@ def test_report_support(
     caplog: _pytest.logging.LogCaptureFixture,
 ) -> None:
     # Spec to test against
-    hw_spec = """
+    hw = parse_hw("""
      or:
        - memory: '>= 4 GB'
        - memory: '!= 4 GB'
-    """
-    hw = parse_hw(hw_spec)
+    """)
 
     # For testing purposes we are saying ">=" is the only valid operator.
     def _test_check(constraint: tmt.hardware.Constraint) -> bool:
