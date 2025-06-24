@@ -33,6 +33,7 @@ import fmf.utils
 from click import echo
 
 import tmt
+import tmt.ansible
 import tmt.hardware
 import tmt.log
 import tmt.package_managers
@@ -53,6 +54,15 @@ from tmt.package_managers import (
 )
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue
+from tmt.ansible import (
+    AnsibleInventory,
+    GuestAnsible,
+    PlanAnsible,
+    PlanAnsibleInventory,
+    normalize_guest_ansible,
+    normalize_plan_ansible,
+    normalize_plan_ansible_inventory,
+)
 from tmt.utils import (
     Command,
     GeneralError,
@@ -466,6 +476,9 @@ class GuestCapability(enum.Enum):
     SYSLOG_ACTION_READ_ALL = 'syslog-action-read-all'
     #: Read and clear all messages remaining in the ring buffer.
     SYSLOG_ACTION_READ_CLEAR = 'syslog-action-read-clear'
+
+
+
 
 
 @container
@@ -1088,8 +1101,8 @@ class GuestData(SerializableContainer):
 
     facts: GuestFacts = field(
         default_factory=GuestFacts,
-        serialize=lambda facts: facts.to_serialized(),
-        unserialize=lambda serialized: GuestFacts.from_serialized(serialized),
+        serialize=lambda facts: facts.to_serialized() if facts else None,
+        unserialize=lambda serialized: GuestFacts.from_serialized(serialized) if serialized else GuestFacts(),
     )
 
     environment: tmt.utils.Environment = field(
@@ -1120,6 +1133,14 @@ class GuestData(SerializableContainer):
         unserialize=lambda serialized: tmt.hardware.Hardware.from_spec(serialized)
         if serialized is not None
         else None,
+    )
+
+    guest_ansible: GuestAnsible = field(
+        default_factory=GuestAnsible,
+        normalize=normalize_guest_ansible,
+        serialize=lambda ansible: ansible.to_serialized() if ansible else None,
+        unserialize=lambda serialized: GuestAnsible.from_serialized(serialized) if serialized else GuestAnsible(),
+        help='Ansible configuration for individual guest inventory generation.',
     )
 
     # TODO: find out whether this could live in DataContainer. It probably could,
@@ -1297,6 +1318,8 @@ class Guest(tmt.utils.Common):
     hardware: Optional[tmt.hardware.Hardware]
 
     environment: tmt.utils.Environment
+
+    guest_ansible: GuestAnsible
 
     # Flag to indicate localhost guest, requires special handling
     localhost = False
@@ -1547,6 +1570,33 @@ class Guest(tmt.utils.Common):
 
         else:
             self.__dict__['facts'] = GuestFacts.from_serialized(facts)
+
+    @functools.cached_property
+    def ansible_host_vars(self) -> dict[str, Any]:
+        """
+        Get host variables for Ansible inventory.
+        """
+        return {
+            'ansible_host': self.primary_address,
+            **self.guest_ansible.vars
+        }
+
+    @functools.cached_property
+    def ansible_host_groups(self) -> list[str]:
+        """
+        Get guest list of groups for Ansible inventory.
+        """
+        groups = ['all']  # All hosts are in 'all' group
+
+        # Try to get ansible group from guest_ansible.group key in provision guest data
+        if self.guest_ansible.group:
+            groups.append(self.guest_ansible.group)
+        elif self.role:  # Otherwise use role as group
+            groups.append(self.role)
+        else:
+            groups.append('ungrouped')
+
+        return groups
 
     def show(self, show_multihost_name: bool = True) -> None:
         """
@@ -2545,8 +2595,29 @@ class GuestSsh(Guest):
 
         playbook = self._sanitize_ansible_playbook_path(playbook, playbook_root)
 
+        ansible_command = Command('ansible-playbook', *self._ansible_verbosity())
+
+        if extra_args:
+            ansible_command += self._ansible_extra_args(extra_args)
+
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
+
+        provision_step = self.parent.plan.provision
+        inventory_path = (
+            provision_step.workdir / 'inventory.yaml' if provision_step.workdir else None
+        )
+
+        self.debug(f"Using Ansible inventory file '{inventory_path}'", level=3)
+        ansible_command += Command(
+            '--ssh-common-args',
+            self._ssh_options.to_element(),
+            '-i',
+            inventory_path,
+            '--limit',
+            self.name,
+            playbook,
+        )
 
         try:
             return self._run_guest_command(
@@ -2582,6 +2653,26 @@ class GuestSsh(Guest):
 
         # Enough for now, ssh connection can be created later
         return self.primary_address is not None
+
+    @functools.cached_property
+    def ansible_host_vars(self) -> dict[str, Any]:
+        """
+        Get host variables for Ansible inventory with SSH-specific variables.
+        """
+        host_vars = {
+            **super().ansible_host_vars,
+            'ansible_connection': 'ssh',
+            'ansible_user': self.user,
+            'ansible_port': self.port
+        }
+
+        plan_ansible = self.parent.plan.ansible
+
+        # Plan-level python interpreter
+        if plan_ansible.inventory and plan_ansible.inventory.python_interpreter is not None:
+            host_vars['ansible_python_interpreter'] = plan_ansible.inventory.python_interpreter
+
+        return host_vars
 
     def setup(self) -> None:
         super().setup()
@@ -3051,6 +3142,14 @@ class ProvisionStepData(tmt.steps.StepData):
         else None,
     )
 
+    ansible: PlanAnsible = field(
+        default_factory=PlanAnsible,
+        normalize=normalize_plan_ansible,
+        serialize=lambda ansible: ansible.to_serialized() if ansible else None,
+        unserialize=lambda serialized: PlanAnsible.from_serialized(serialized) if serialized else PlanAnsible(),
+        help='Ansible configuration for inventory generation.',
+    )
+
 
 ProvisionStepDataT = TypeVar('ProvisionStepDataT', bound=ProvisionStepData)
 
@@ -3327,6 +3426,7 @@ class Provision(tmt.steps.Step):
 
         self.guests = []
         self._guest_data: dict[str, GuestData] = {}
+        self._ansible_inventory = AnsibleInventory(self.plan)
 
     @property
     def _preserved_workdir_members(self) -> set[str]:
@@ -3334,7 +3434,7 @@ class Provision(tmt.steps.Step):
         A set of members of the step workdir that should not be removed.
         """
 
-        return {*super()._preserved_workdir_members, 'guests.yaml'}
+        return {*super()._preserved_workdir_members, 'guests.yaml', 'inventory.yaml'}
 
     @property
     def is_multihost(self) -> bool:
@@ -3369,6 +3469,19 @@ class Provision(tmt.steps.Step):
         except tmt.utils.FileError:
             self.debug('Provisioned guests not found.', level=2)
 
+    def _generate_ansible_inventory(self) -> None:
+        """Generate Ansible inventory from provisioned guests."""
+        try:
+            # Get layout from plan-level ansible configuration
+            layout = self.plan.ansible.inventory.layout if self.plan.ansible.inventory else None
+
+            inventory = self._ansible_inventory.generate(self.guests, layout)
+            inventory_path = Path('inventory.yaml')
+            self.write(inventory_path, tmt.utils.dict_to_yaml(inventory))
+            self.info('ansible', f'Inventory saved to {inventory_path}')
+        except tmt.utils.FileError:
+            self.debug('Failed to save Ansible inventory.')
+
     def save(self) -> None:
         """
         Save guest data to the workdir
@@ -3383,6 +3496,8 @@ class Provision(tmt.steps.Step):
             self.write(Path('guests.yaml'), tmt.utils.dict_to_yaml(raw_guest_data))
         except tmt.utils.FileError:
             self.debug('Failed to save provisioned guests.')
+
+        self._generate_ansible_inventory()
 
     def wake(self) -> None:
         """
@@ -3621,3 +3736,6 @@ class Provision(tmt.steps.Step):
         self.summary()
         self.status('done')
         self.save()
+
+
+
