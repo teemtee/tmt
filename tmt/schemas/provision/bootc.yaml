@@ -31,6 +31,9 @@ properties:
   become:
     type: boolean
 
+  ansible:
+    $ref: "/schemas/common#/definitions/provision_ansible"
+
   key:
     $ref: "/schemas/common#/definitions/one_or_more_strings"
 

@@ -75,6 +75,9 @@ properties:
 
   bootc-check-system-url:
     type: string
+    
+  ansible:
+    $ref: "/schemas/common#/definitions/provision_ansible"
 
 required:
   - how
