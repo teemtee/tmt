@@ -816,6 +816,15 @@ user. How to obtain this token is described `here
 manage-api-tokens-for-your-atlassian-account/#Create-an-API-token>`_
 (please note that this can vary if you use custom Jira instance).
 
+Once the link is attached to the respective Jira, clicking on it
+will take you to the tmt web service with test or plan details.
+Here's an example `test`__ and `plan`__. It is also possible to
+reference both `test and plan`__ in a single link.
+
+__ https://tmt.testing-farm.io/?test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&test-name=%2Ftests%2Fcore%2Fescaping&test-ref=main
+__ https://tmt.testing-farm.io/?plan-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&plan-name=%2Fplans%2Ffeatures%2Fcore&plan-ref=main
+__ https://tmt.testing-farm.io/?test-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&test-name=%2Ftests%2Fcore%2Flink&test-ref=main&plan-url=https%3A%2F%2Fgithub.com%2Fteemtee%2Ftmt.git&plan-name=%2Fplans%2Ffeatures%2Fcore&plan-ref=main
+
 .. versionadded:: 1.37
 
 
