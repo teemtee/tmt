@@ -9,7 +9,7 @@ from tmt.container import PYDANTIC_V1, ConfigDict, MetadataContainer, metadata_f
 from tmt.log import Logger, Topic
 from tmt.utils import FieldValueSource, Path, ShellScript
 from tmt.utils.environment import Environment
-from tmt.utils.templates import render_template
+from tmt.utils.templates import render_diff, render_template
 
 if TYPE_CHECKING:
     from tmt.base.core import Core, Test
@@ -20,8 +20,7 @@ T = TypeVar('T')
 
 #: A template showing changes made by an instruction.
 KEY_DIFF_TEMPLATE = """
-{{ OLD_VALUE | to_yaml | prefix('- ') | style(fg='red') | trim }}
-{{ NEW_VALUE | to_yaml | prefix('+ ') | style(fg='green') | trim }}
+{{ DIFF | join('\n') }}
 
 Field value source changed from {{ OLD_VALUE_SOURCE.value | style(fg='red') }} to {{ NEW_VALUE_SOURCE.value | style(fg='green') }}
 """  # noqa: E501
