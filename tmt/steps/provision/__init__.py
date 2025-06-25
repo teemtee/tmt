@@ -2633,20 +2633,20 @@ class GuestSsh(Guest):
         extend_options: Optional[list[str]] = None,
     ) -> None:
         """
-        Push files from the guest.
+        Pull files from the guest.
 
         By default the whole plan workdir is synced from the same
         location on the guest. Use the ``source`` and ``destination`` to
         sync custom locations.
 
-        :param source: if set, this path will be udownloaded from the
+        :param source: if set, this path will be downloaded from the
             guest. If not set, plan workdir is downloaded.
         :param destination: if set, content will be downloaded to this
             path. If not set, root (``/``) is used.
         :param options: custom ``rsync`` options to use instead of
-            :py:data:`DEFAULT_RSYNC_PUSH_OPTIONS`.
+            :py:data:`DEFAULT_RSYNC_PULL_OPTIONS`.
         :param extend_options: custom ``rsync`` options to use in
-            addition to :py:data:`DEFAULT_RSYNC_PUSH_OPTIONS`.
+            addition to :py:data:`DEFAULT_RSYNC_PULL_OPTIONS`.
         """
 
         # Abort if guest is unavailable
