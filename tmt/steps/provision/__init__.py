@@ -390,6 +390,7 @@ class GuestFacts(SerializableContainer):
 
     has_selinux: Optional[bool] = None
     has_systemd: Optional[bool] = None
+    has_rsync: Optional[bool] = None
     is_superuser: Optional[bool] = None
     is_ostree: Optional[bool] = None
     is_toolbox: Optional[bool] = None
@@ -669,6 +670,19 @@ class GuestFacts(SerializableContainer):
         except tmt.utils.RunError:
             return False
 
+    def _query_has_rsync(self, guest: 'Guest') -> Optional[bool]:
+        """
+        Detect whether ``rsync`` is available.
+        """
+
+        try:
+            guest.execute(Command('rsync', '--version'))
+
+            return True
+
+        except tmt.utils.RunError:
+            return False
+
     def _query_is_superuser(self, guest: 'Guest') -> Optional[bool]:
         output = self._execute(guest, Command('whoami'))
 
@@ -765,6 +779,7 @@ class GuestFacts(SerializableContainer):
         self.bootc_builder = self._query_bootc_builder(guest)
         self.has_selinux = self._query_has_selinux(guest)
         self.has_systemd = self._query_has_systemd(guest)
+        self.has_rsync = self._query_has_rsync(guest)
         self.is_superuser = self._query_is_superuser(guest)
         self.is_ostree = self._query_is_ostree(guest)
         self.is_toolbox = self._query_is_toolbox(guest)
@@ -797,6 +812,7 @@ class GuestFacts(SerializableContainer):
         )
         yield 'has_selinux', 'selinux', 'yes' if self.has_selinux else 'no'
         yield 'has_systemd', 'systemd', 'yes' if self.has_systemd else 'no'
+        yield 'has_rsync', 'rsync', 'yes' if self.has_rsync else 'no'
         yield 'is_superuser', 'is superuser', 'yes' if self.is_superuser else 'no'
         yield 'is_container', 'is_container', 'yes' if self.is_container else 'no'
 
@@ -1859,26 +1875,6 @@ class Guest(tmt.utils.Common):
 
         self.debug(f"Doing nothing to remove guest '{self.primary_address}'.")
 
-    def _check_rsync(self) -> CheckRsyncOutcome:
-        """
-        Make sure that rsync is installed on the guest
-
-        On read-only distros install it under the '/root/pkg' directory.
-        Returns 'already installed' when rsync is already present.
-        """
-
-        # Check for rsync (nothing to do if already installed)
-        self.debug("Ensure that rsync is installed on the guest.")
-        try:
-            self.execute(Command('rsync', '--version'))
-            return CheckRsyncOutcome.ALREADY_INSTALLED
-        except tmt.utils.RunError:
-            pass
-
-        self.package_manager.install(Package('rsync'))
-
-        return CheckRsyncOutcome.INSTALLED
-
     @classmethod
     def essential_requires(cls) -> list['tmt.base.Dependency']:
         """
@@ -2548,6 +2544,18 @@ class GuestSsh(Guest):
 
         return output
 
+    def _assert_rsync(self) -> None:
+        """
+        Make sure ``rsync`` is installed on the guest.
+        """
+
+        if self.facts.has_rsync:
+            return
+
+        self.package_manager.install(Package('rsync'))
+
+        self.facts.sync(self)
+
     def push(
         self,
         source: Optional[Path] = None,
@@ -2556,20 +2564,28 @@ class GuestSsh(Guest):
         superuser: bool = False,
     ) -> None:
         """
-        Push files to the guest
+        Push files to the guest.
 
         By default the whole plan workdir is synced to the same location
-        on the guest. Use the 'source' and 'destination' to sync custom
-        location and the 'options' parameter to modify default options
-        which are '-Rrz --links --safe-links --delete'.
+        on the guest. Use the ``source`` and ``destination`` to sync
+        custom locations.
 
-        Set 'superuser' if rsync command has to run as root or passwordless
-        sudo on the Guest (e.g. pushing to r/o destination)
+        :param source: if set, this path will be uploaded to the guest.
+            If not set, plan workdir is uploaded.
+        :param destination: if set, content will be uploaded to this
+            path. If not set, root (``/``) is used.
+        :param options: custom ``rsync`` options to use instead of
+            :py:data:`DEFAULT_RSYNC_PUSH_OPTIONS`.
+        :param superuser: if set, use ``sudo`` if :py:attr:`user` is not
+            privileged. It is necessary for pushing to locations that
+            only privileged users are allowed to modify.
         """
 
         # Abort if guest is unavailable
         if self.primary_address is None and not self.is_dry_run:
             raise tmt.utils.GeneralError('The guest is not available.')
+
+        self._assert_rsync()
 
         # Prepare options and the push command
         options = options or DEFAULT_RSYNC_PUSH_OPTIONS
@@ -2586,47 +2602,28 @@ class GuestSsh(Guest):
         else:
             self.debug(f"Copy '{source}' to '{destination}' on the guest.")
 
-        def rsync() -> None:
-            """
-            Run the rsync command
-            """
+        cmd = Command('rsync')
 
-            # In closure, mypy has hard times to reason about the state of used variables.
-            assert options
-            assert source
-            assert destination
+        if superuser and self.user != 'root':
+            cmd += ['--rsync-path', 'sudo rsync']
 
-            cmd = ['rsync']
-            if superuser and self.user != 'root':
-                cmd += ['--rsync-path', 'sudo rsync']
+        cmd += [
+            *options,
+            "-e",
+            self._ssh_command.to_element(),
+            source,
+            f"{self._ssh_guest}:{destination}",
+        ]
 
-            self._run_guest_command(
-                Command(
-                    *cmd,
-                    *options,
-                    "-e",
-                    self._ssh_command.to_element(),
-                    source,
-                    f"{self._ssh_guest}:{destination}",
-                ),
-                silent=True,
-            )
-
-        # Try to push twice, check for rsync after the first failure
         try:
-            rsync()
-        except tmt.utils.RunError:
-            try:
-                if self._check_rsync() == CheckRsyncOutcome.ALREADY_INSTALLED:
-                    raise
-                rsync()
-            except tmt.utils.RunError:
-                # Provide a reasonable error to the user
-                self.fail(
-                    f"Failed to push workdir to the guest. This usually means "
-                    f"that login as '{self.user}' to the guest does not work."
-                )
-                raise
+            self._run_guest_command(cmd, silent=True)
+
+        except tmt.utils.RunError as exc:
+            # Provide a reasonable error to the user
+            raise tmt.utils.GeneralError(
+                f"Failed to push workdir to the guest. This usually means "
+                f"that login as '{self.user}' to the guest does not work."
+            ) from exc
 
     def pull(
         self,
@@ -2636,18 +2633,27 @@ class GuestSsh(Guest):
         extend_options: Optional[list[str]] = None,
     ) -> None:
         """
-        Pull files from the guest
+        Push files from the guest.
 
         By default the whole plan workdir is synced from the same
-        location on the guest. Use the 'source' and 'destination' to
-        sync custom location, the 'options' parameter to modify
-        default options :py:data:`DEFAULT_RSYNC_PULL_OPTIONS`
-        and 'extend_options' to extend them (e.g. by exclude).
+        location on the guest. Use the ``source`` and ``destination`` to
+        sync custom locations.
+
+        :param source: if set, this path will be udownloaded from the
+            guest. If not set, plan workdir is downloaded.
+        :param destination: if set, content will be downloaded to this
+            path. If not set, root (``/``) is used.
+        :param options: custom ``rsync`` options to use instead of
+            :py:data:`DEFAULT_RSYNC_PUSH_OPTIONS`.
+        :param extend_options: custom ``rsync`` options to use in
+            addition to :py:data:`DEFAULT_RSYNC_PUSH_OPTIONS`.
         """
 
         # Abort if guest is unavailable
         if self.primary_address is None and not self.is_dry_run:
             raise tmt.utils.GeneralError('The guest is not available.')
+
+        self._assert_rsync()
 
         # Prepare options and the pull command
         options = options or DEFAULT_RSYNC_PULL_OPTIONS
@@ -2666,16 +2672,7 @@ class GuestSsh(Guest):
         else:
             self.debug(f"Copy '{source}' from the guest to '{destination}'.")
 
-        def rsync() -> None:
-            """
-            Run the rsync command
-            """
-
-            # In closure, mypy has hard times to reason about the state of used variables.
-            assert options
-            assert source
-            assert destination
-
+        try:
             self._run_guest_command(
                 Command(
                     "rsync",
@@ -2688,22 +2685,13 @@ class GuestSsh(Guest):
                 silent=True,
             )
 
-        # Try to pull twice, check for rsync after the first failure
-        try:
-            rsync()
-        except tmt.utils.RunError:
-            try:
-                if self._check_rsync() == CheckRsyncOutcome.ALREADY_INSTALLED:
-                    raise
-                rsync()
-            except tmt.utils.RunError:
-                # Provide a reasonable error to the user
-                self.fail(
-                    f"Failed to pull workdir from the guest. "
-                    f"This usually means that login as '{self.user}' "
-                    f"to the guest does not work."
-                )
-                raise
+        except tmt.utils.RunError as exc:
+            # Provide a reasonable error to the user
+            raise tmt.utils.GeneralError(
+                f"Failed to pull workdir from the guest. "
+                f"This usually means that login as '{self.user}' "
+                f"to the guest does not work."
+            ) from exc
 
     def suspend(self) -> None:
         """

@@ -27,7 +27,7 @@ import unicodedata
 import urllib.parse
 import warnings
 from collections import Counter
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Sequence
 from math import ceil
 from re import Pattern
 from threading import RLock, Thread
@@ -1110,7 +1110,9 @@ class Command:
     def __str__(self) -> str:
         return self.to_element()
 
-    def __add__(self, other: Union['Command', RawCommand, list[str]]) -> 'Command':
+    def __add__(
+        self, other: Union['Command', RawCommand, Sequence[RawCommandElement]]
+    ) -> 'Command':
         if isinstance(other, Command):
             return Command(*self._command, *other._command)
 
