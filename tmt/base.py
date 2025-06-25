@@ -62,6 +62,7 @@ import tmt.templates
 import tmt.utils
 import tmt.utils.git
 import tmt.utils.jira
+import tmt.utils.templates
 from tmt._compat.typing import Self
 from tmt.checks import Check
 from tmt.container import (
@@ -390,6 +391,14 @@ _RawAdjustRule = TypedDict(
 )
 
 
+#: A template showing changes made by an ``adjust`` rule.
+NODE_ADJUST_DIFF_TEMPLATE = """
+{{ RULE | trim }}
+
+{{ DIFF | join('\n') }}
+"""
+
+
 def create_adjust_callback(logger: tmt.log.Logger) -> fmf.base.AdjustCallback:
     """
     Create a custom callback for fmf's adjust.
@@ -399,10 +408,15 @@ def create_adjust_callback(logger: tmt.log.Logger) -> fmf.base.AdjustCallback:
     a callback closure with the given logger.
     """
 
-    def callback(node: fmf.Tree, rule: _RawAdjustRule, applied: Optional[bool]) -> None:
+    def callback(
+        node: fmf.Tree,
+        rule: _RawAdjustRule,
+        applied: Optional[bool],
+        before: Optional[fmf.Tree] = None,
+    ) -> None:
         if applied is None:
             logger.verbose(
-                f"Adjust rule skipped on '{node.name}'",
+                f"fmf node '{node.name}' skipped by adjust rule, condition undecided",
                 tmt.utils.format_value(rule, key_color='cyan'),
                 color='blue',
                 level=3,
@@ -411,7 +425,7 @@ def create_adjust_callback(logger: tmt.log.Logger) -> fmf.base.AdjustCallback:
 
         elif applied is False:
             logger.verbose(
-                f"Adjust rule not applied to '{node.name}'",
+                f"fmf node '{node.name}' not modified by adjust rule",
                 tmt.utils.format_value(rule, key_color='cyan'),
                 color='red',
                 level=3,
@@ -419,9 +433,16 @@ def create_adjust_callback(logger: tmt.log.Logger) -> fmf.base.AdjustCallback:
             )
 
         else:
+            assert before is not None
+
             logger.verbose(
-                f"Adjust rule applied to '{node.name}'",
-                tmt.utils.format_value(rule, key_color='cyan'),
+                f"fmf node '{node.name}' modified by adjust rule",
+                tmt.utils.templates.render_diff(
+                    NODE_ADJUST_DIFF_TEMPLATE,
+                    before.data,
+                    node.data,
+                    RULE=tmt.utils.format_value(rule, key_color='cyan'),
+                ),
                 color='green',
                 level=3,
                 topic=tmt.log.Topic.ADJUST_DECISIONS,
