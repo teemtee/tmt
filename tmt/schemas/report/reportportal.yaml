@@ -83,6 +83,9 @@ properties:
   link-template:
     type: string
 
+  log:
+    $ref: "/schemas/common#/definitions/array_of_strings"
+
   when:
     $ref: "/schemas/common#/definitions/when"
 
