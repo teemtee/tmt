@@ -4,6 +4,15 @@
     Releases
 ======================
 
+tmt-1.52.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`/plugins/report/reportportal` report plugin now supports
+a new ``log`` option. This option allows users to select which logs
+should be uploaded by specifying their names. Check result logs are
+also affected by this option but are uploaded only if the check fails
+or if an error occurs during execution.
+
 
 tmt-1.51.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
