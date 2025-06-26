@@ -434,15 +434,31 @@ TMT_GIT_CREDENTIALS_URL_<suffix>, TMT_GIT_CREDENTIALS_VALUE_<suffix>
     repositories. Suffix identifies the pair and determines the order in which URL regexp is tried.
 
     The ``TMT_GIT_CREDENTIALS_URL_<suffix>`` contains regexp to search against
-    url to clone. For first successful search the content of the ``TMT_GIT_CREDENTIALS_VALUE_<suffix>``
+    url to clone. For first successful search, the content of the ``TMT_GIT_CREDENTIALS_VALUE_<suffix>``
     variable is used as the credential value. When it is set to an empty string, unmodified url is used.
 
     Example usage:
 
-    `GitLab`__ credentials need to contain nonempty username followed by colon and token value::
+    For `GitLab` repositories, credentials have three options:
+
+    **Personal Access Tokens** (docs__):
+    Good for user-specific permissions or service accounts. For read-only access, use read_repository scope::
+
+        TMT_GIT_CREDENTIALS_VALUE_lab='your_gitlab_username:your_pat'
+
+    **Deploy Tokens** (docs__):
+    Best for automated read-only access. Project-specific, not user-tied, strict read-only repository access::
+
+        TMT_GIT_CREDENTIALS_VALUE_lab='gitlab+deploy-token-123:abcxyz123'
+
+    **OAuth2 Tokens** (docs__):
+    Secure short-lived tokens with read_repository scope::
+
+        TMT_GIT_CREDENTIALS_VALUE_lab='oauth2:your_oauth2_token'
+
+    Example URL configuration::
 
         TMT_GIT_CREDENTIALS_URL_lab='gitlab.com/mysecretproject'
-        TMT_GIT_CREDENTIALS_VALUE_lab='foo:secrettoken'
 
     `GitHub`__ credentials contain just the token value::
 
@@ -451,8 +467,10 @@ TMT_GIT_CREDENTIALS_URL_<suffix>, TMT_GIT_CREDENTIALS_VALUE_<suffix>
 
     .. versionadded:: 1.26
 
-__ https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#clone-repository-using-personal-access-token
-__ https://github.blog/2012-09-21-easier-builds-and-deployments-using-git-over-https-and-oauth/
+__ https://docs.gitlab.com/user/profile/personal_access_tokens/
+__ https://docs.gitlab.com/user/project/deploy_tokens/
+__ https://docs.gitlab.com/api/oauth2/
+__ https://docs.github.com/en/authentication/connecting-to-github-with-ssh/managing-deploy-keys
 
 TMT_GIT_CLONE_ATTEMPTS
     The maximum number of retries to clone a git repository if it
