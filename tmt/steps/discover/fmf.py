@@ -433,9 +433,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     # Options which require .git to be present for their functionality
     _REQUIRES_GIT = (
         "ref",
-        "modified-url",
-        "modified-only",
-        "fmf-id",
+        "modified_url",
+        "modified_only",
+        "fmf_id",
+        "sync_repo",
     )
 
     @property
@@ -555,7 +556,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 fmf_root: Optional[Path] = path
             else:
                 fmf_root = Path(self.step.plan.node.root)
-            requires_git = self.data.sync_repo or any(self.get(opt) for opt in self._REQUIRES_GIT)
+            requires_git = any(getattr(self.data, key) for key in self._REQUIRES_GIT)
             # Path for distgit sources cannot be checked until the
             # they are extracted
             if path and not path.is_dir() and not dist_git_source:
