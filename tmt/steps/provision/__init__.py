@@ -12,7 +12,7 @@ import signal as _signal
 import string
 import subprocess
 import threading
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from shlex import quote
 from typing import (
@@ -41,6 +41,7 @@ import tmt.plugins
 import tmt.queue
 import tmt.steps
 import tmt.steps.provision
+import tmt.steps.scripts
 import tmt.utils
 import tmt.utils.wait
 from tmt._compat.typing import Self
@@ -1263,13 +1264,11 @@ class Guest(tmt.utils.Common):
         Absolute path to tmt scripts directory
         """
 
-        import tmt.steps.execute
-
         # For rpm-ostree based distributions use a different default destination directory
-        return tmt.steps.execute.effective_scripts_dest_dir(
-            default=tmt.steps.execute.DEFAULT_SCRIPTS_DEST_DIR_OSTREE
+        return tmt.steps.scripts.effective_scripts_dest_dir(
+            default=tmt.steps.scripts.DEFAULT_SCRIPTS_DEST_DIR_OSTREE
             if self.facts.is_ostree
-            else tmt.steps.execute.DEFAULT_SCRIPTS_DEST_DIR
+            else tmt.steps.scripts.DEFAULT_SCRIPTS_DEST_DIR
         )
 
     @classmethod
@@ -1340,12 +1339,41 @@ class Guest(tmt.utils.Common):
 
         self.debug(f"Doing nothing to start guest '{self.primary_address}'.")
 
+    def install_scripts(self, scripts: Sequence[tmt.steps.scripts.Script]) -> None:
+        """
+        Install scripts required by tmt.
+        """
+
+        # Make sure scripts directory exists
+        command = Command("mkdir", "-p", f"{self.scripts_path}")
+
+        if not self.facts.is_superuser:
+            command = Command("sudo") + command
+
+        self.execute(command)
+
+        # Install all scripts on guest
+        for script in scripts:
+            if not script.enabled(self):
+                continue
+
+            with script as source:
+                for filename in [script.source_filename, *script.aliases]:
+                    self.push(
+                        source=source,
+                        destination=script.destination_path or self.scripts_path / filename,
+                        options=["-p", "--chmod=755"],
+                        superuser=self.facts.is_superuser is not True,
+                    )
+
     def setup(self) -> None:
         """
         Setup the guest
 
         Setup the guest after it has been started. It is called after :py:meth:`Guest.start`.
         """
+
+        self.install_scripts(tmt.steps.scripts.SCRIPTS)
 
     # A couple of requiremens for this field:
     #
@@ -2401,6 +2429,8 @@ class GuestSsh(Guest):
         return self.primary_address is not None
 
     def setup(self) -> None:
+        super().setup()
+
         if self.is_dry_run:
             return
         if not self.facts.is_superuser and self.become:

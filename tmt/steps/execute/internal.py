@@ -10,6 +10,7 @@ import tmt.log
 import tmt.options
 import tmt.steps
 import tmt.steps.execute
+import tmt.steps.scripts
 import tmt.utils
 import tmt.utils.signals
 import tmt.utils.themes
@@ -18,9 +19,7 @@ from tmt.container import container, field
 from tmt.result import Result, ResultOutcome
 from tmt.steps import safe_filename
 from tmt.steps.execute import (
-    SCRIPTS,
     TEST_OUTPUT_FILENAME,
-    TMT_REBOOT_SCRIPT,
     AbortExecute,
     TestInvocation,
 )
@@ -394,7 +393,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
         self._previous_progress_message = ""
-        self.scripts = SCRIPTS
 
     def _test_environment(
         self,
@@ -431,7 +429,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             invocation.path / tmt.steps.execute.TEST_METADATA_FILENAME
         )
         environment["TMT_REBOOT_REQUEST"] = EnvVarValue(
-            invocation.test_data_path / TMT_REBOOT_SCRIPT.created_file
+            invocation.test_data_path / tmt.steps.scripts.TMT_REBOOT_SCRIPT.created_file
         )
 
         # Set the restraint-compatible mode if enabled
@@ -440,7 +438,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         )
 
         # Set all supported reboot variables
-        for reboot_variable in TMT_REBOOT_SCRIPT.related_variables:
+        for reboot_variable in tmt.steps.scripts.TMT_REBOOT_SCRIPT.related_variables:
             environment[reboot_variable] = EnvVarValue(str(invocation._reboot_count))
         environment['TMT_TEST_RESTART_COUNT'] = EnvVarValue(str(invocation._restart_count))
 
@@ -686,12 +684,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         assert self.workdir is not None  # narrow type
 
-        # Prepare tests and helper scripts, check options
+        # Prepare tests, check options
         test_invocations = self.prepare_tests(guest, logger)
-
-        # Prepare scripts, except localhost guest
-        if not guest.localhost:
-            self.prepare_scripts(guest)
 
         # Push workdir to guest and execute tests
         guest.push()

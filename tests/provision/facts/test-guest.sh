@@ -41,13 +41,17 @@ rlJournalStart
             fi
 
         elif [ "$PROVISION_HOW" = "container" ]; then
-            build_container_image "fedora/41/upstream\:latest"
+            build_container_image "fedora/latest/upstream\:latest"
+            build_container_image "fedora/latest/unprivileged\:latest"
 
-            provision_options="--image localhost/tmt/container/test/fedora/41/upstream:latest"
-            bfu_provision_options="$provision_options --user=nobody"
+            provision_options="--image localhost/tmt/container/test/fedora/latest/upstream:latest"
+
+            # Remember: tmt needs either superuser, or working sudo. Anything else is out of the
+            # scope, therefore, for the BFU test, use the "unprivileged" image and the right user.
+            bfu_provision_options="--image localhost/tmt/container/test/fedora/latest/unprivileged:latest --user=fedora"
 
             arch="$(arch)"
-            distro="Fedora Linux 41 (Container Image)"
+            distro="Fedora Linux [[:digit:]][[:digit:]] (Container Image)"
             kernel="$(uname -r)"
             package_manager="dnf"
 
@@ -83,7 +87,7 @@ rlJournalStart
         rlAssertGrep "selinux: $selinux" $rlRun_LOG
         rlAssertGrep "is superuser: $is_superuser" $rlRun_LOG
 
-        # If provisioning method allows a less privileged user, check that one as well
+        # If provisioning method allows a less privileged user, check that one as well.
         if [ "$bfu_provision_options" != "" ]; then
             rlRun -s "tmt run -i $run --scratch -vv provision -h "$PROVISION_HOW" $bfu_provision_options plan -n /plans/features/core"
 

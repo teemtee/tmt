@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Any, Optional, Union
 
 import tmt
@@ -5,6 +6,7 @@ import tmt.base
 import tmt.log
 import tmt.steps
 import tmt.steps.provision
+import tmt.steps.scripts
 import tmt.utils
 from tmt.container import container
 from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
@@ -132,6 +134,9 @@ class GuestLocal(tmt.Guest):
             on_process_end=on_process_end,
             **kwargs,
         )
+
+    def install_scripts(self, scripts: Sequence[tmt.steps.scripts.Script]) -> None:
+        self.debug("No installation of tmt scripts is needed on localhost.")
 
     def start(self) -> None:
         """
