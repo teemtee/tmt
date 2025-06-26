@@ -1,0 +1,45 @@
+summary: Define Ansible general settings for the run
+
+story:
+    As a user, I want to configure Ansible related settings for the test run,
+    for example, the ability to define the structure of the generated inventory
+    using a customizable layout template.
+
+description: |
+    When running tests, a static inventory file is generated from
+    provision metadata. The ``ansible.inventory.layout`` key allows
+    users to specify a YAML file defining the desired inventory group
+    hierarchy and layout.
+
+    This layout will be used to organize provisioned guests under
+    Ansible groups accordingly. If no layout is provided, a simple
+    default grouping basic layout is used.
+
+example:
+  - |
+    ansible:
+      inventory:
+        layout: path/to/the/layout.yaml
+
+    provision:
+      - name: test-master
+        role: master
+      - name: test-runner
+        role: runner
+      - name: test-client
+        role: client
+
+    execute:
+      how: tmt
+
+  - |
+    # path/to/the/layout.yaml
+    inventory_layout:
+      all:
+        children:
+          server:
+            children:
+              master: {}
+              replica: {}
+          client: {}
+          runner: {}
