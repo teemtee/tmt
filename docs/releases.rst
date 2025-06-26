@@ -5,6 +5,15 @@
 ======================
 
 
+tmt-1.52.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A public instance of the tmt web service has been deployed to
+https://tmt.testing-farm.io/ and can be used together with the
+``tmt link`` command to :ref:`link-issues` with related tests and
+plans.
+
+
 tmt-1.51.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
