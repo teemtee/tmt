@@ -1,6 +1,7 @@
 import datetime
 import os
 import re
+from re import Pattern
 from typing import TYPE_CHECKING, Any, Optional, Union, overload
 
 import requests
@@ -30,11 +31,14 @@ JSON: 'TypeAlias' = Any
 DEFAULT_LOG_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('1 MB')
 DEFAULT_TRACEBACK_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('50 kB')
 
-DEFAULT_LOG_NAMES: list[str] = [
-    r'avc\.txt',
-    r'dmesg-.*\.txt',
-    r'output\.txt',
-    r'tmt-watchdog\.txt',
+DEFAULT_LOG_PATTERNS: list[Pattern[str]] = [
+    re.compile(pattern)
+    for pattern in [
+        r'avc\.txt',
+        r'dmesg-.*\.txt',
+        r'output\.txt',
+        r'tmt-watchdog\.txt',
+    ]
 ]
 
 
@@ -62,11 +66,13 @@ def _str_env_to_default(option: str, default: Optional[str]) -> Optional[str]:
     return str(os.getenv(env_var))
 
 
-def _list_env_to_default(option: str, default: list[str]) -> list[str]:
+def _pattern_list_env_to_default(option: str, default: list[Pattern[str]]) -> list[Pattern[str]]:
     env_var = 'TMT_PLUGIN_REPORT_REPORTPORTAL_' + option.upper()
     if env_var not in os.environ or os.getenv(env_var) is None:
         return default
-    return [item.strip() for item in str(os.getenv(env_var)).split(',') if item.strip()]
+    return [
+        re.compile(item.strip()) for item in str(os.getenv(env_var)).split(',') if item.strip()
+    ]
 
 
 def _size_env_to_default(option: str, default: 'Size') -> 'Size':
@@ -301,14 +307,21 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
              """,
     )
 
-    log: list[str] = field(
-        metavar="NAMES",
-        option="--log",
-        default_factory=lambda: _list_env_to_default('log', DEFAULT_LOG_NAMES),
+    upload_log_pattern: list[Pattern[str]] = field(
+        metavar="PATTERN",
+        option="--upload-log-pattern",
+        multiple=True,
+        default_factory=lambda: _pattern_list_env_to_default(
+            'upload_log_pattern', DEFAULT_LOG_PATTERNS[:]
+        ),
+        normalize=tmt.utils.normalize_pattern_list,
+        serialize=lambda patterns: [pattern.pattern for pattern in patterns],
+        unserialize=lambda serialized: [re.compile(pattern) for pattern in serialized],
         help="""
-             List of result log names or regular expressions that should be uploaded
-             to ReportPortal. Check result logs will be uploaded only if the check failed or
-             if an error occurred during the execution.
+             List of regular expressions to look for in result log names. If any of the
+             patterns is found in a log file name, the log will be uploaded to ReportPortal.
+             Check result logs will be uploaded only if the check failed or if an error
+             occurred during the execution.
              """,
     )
 
@@ -647,7 +660,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
         # Upload result logs
         for log_path in result.log:
-            if any(re.search(name, log_path.name) for name in self.data.log):
+            if any(pattern.search(log_path.name) for pattern in self.data.upload_log_pattern):
                 upload_log(log_path)
 
         # Upload check result logs if the check failed
@@ -655,7 +668,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             if check.result not in (ResultOutcome.FAIL, ResultOutcome.ERROR):
                 continue
             for log_path in check.log:
-                if any(re.search(name, log_path.name) for name in self.data.log):
+                if any(pattern.search(log_path.name) for pattern in self.data.upload_log_pattern):
                     upload_log(log_path, is_traceback=True)
 
         # Upload failure logs

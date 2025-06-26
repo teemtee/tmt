@@ -83,7 +83,7 @@ properties:
   link-template:
     type: string
 
-  log:
+  upload-log-pattern:
     $ref: "/schemas/common#/definitions/array_of_strings"
 
   when:
