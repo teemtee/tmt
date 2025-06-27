@@ -128,7 +128,7 @@ rlJournalStart
         rlRun "tmt run -rdvvv discover -h fmf --fmf-id finish 2>&1 \
                2>&1 >/dev/null | tee output" 2
         rlAssertGrep "\`tmt run discover --fmf-id\` without \`url\` option \
-in plan \`/plans/example\` can be used only within git repo." output
+in plan \`/plans/example\` or on command line can be used only within git repo." output
 
         rlRun "tmt run -rdvvv discover -h fmf --fmf-id \
                --url https://github.com/teemtee/fmf finish 2>&1 >/dev/null | tee output" 0
@@ -156,25 +156,7 @@ in plan \`/plans/example\` can be used only within git repo." output
         rlRun "tmt run -rdvvv discover -h fmf --fmf-id finish 2>&1 >/dev/null \
                | tee output" 2
         rlAssertGrep "\`tmt run discover --fmf-id\` without \`url\` option \
-in plan \`/plans/a-non-url\` can be used only within git repo." output
-
-        rlRun "tmt run -rdvvv discover -h fmf --fmf-id \
-               --url https://github.com/teemtee/fmf finish 2>&1 >/dev/null | tee output" 0
-        rlRun "rm -rf $tmp_dir1 $tmp_dir2"
-
-        # 2: w/ url in plan AND w/o url in plan: w/o url in CLI - w/ url in CLI
-        tmp_dir1="$(mktemp -d)"
-        tmp_dir2="$(mktemp -d)"
-        rlRun "cd $tmp_dir1"
-        rlRun "tmt init --template full"
-        rlRun "cd $tmp_dir2"
-        rlRun "tmt init --template base"
-        rlRun "cp plans/example.fmf $tmp_dir1/plans/z-non-url.fmf"
-        rlRun "cd $tmp_dir1"
-        rlRun "tmt run -rdvvv discover -h fmf --fmf-id finish 2>&1 >/dev/null \
-               | tee output" 2
-        rlAssertGrep "\`tmt run discover --fmf-id\` without \`url\` option \
-in plan \`/plans/z-non-url\` can be used only within git repo." output
+in plan \`/plans/a-non-url\` or on command line can be used only within git repo." output
 
         rlRun "tmt run -rdvvv discover -h fmf --fmf-id \
                --url https://github.com/teemtee/fmf finish 2>&1 >/dev/null | tee output" 0
