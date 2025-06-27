@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ -z "$TMT_TEST_PIDFILE" ]; then
+    echo "tmt-reboot can be used only in the context of a running test."
+    exit 1
+fi
+
 # Two-level reboot: `tmt-reboot` extracts command line arguments, and
 # calls `tmt-reboot-core` *while holding the tmt test pidfile lock!*
 # That should assure the pidfile would exist and contain valid info.

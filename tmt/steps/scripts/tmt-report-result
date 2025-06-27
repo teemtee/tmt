@@ -1,4 +1,10 @@
 #!/bin/bash
+
+if [ -z "$TMT_TEST_PIDFILE" ]; then
+    echo "tmt-report-result can be used only in the context of a running test."
+    exit 1
+fi
+
 set -o errexit -o pipefail -o noclobber -o nounset
 
 REPORT_RESULT_OUTPUTFILE="$TMT_TEST_DATA/tmt-report-results.yaml"
