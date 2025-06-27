@@ -2068,7 +2068,7 @@ class Plan(
         skip_validation: bool = False,
         raise_on_validation_error: bool = False,
         importing_fmf_context: Optional[FmfContext] = None,
-        importing_environment: Optional[Environment] = None,
+        inherited_environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
         **kwargs: Any,
     ) -> None:
@@ -2094,7 +2094,7 @@ class Plan(
         self._imported_plans = []
         self._derived_plans = []
         self._importing_fmf_context = importing_fmf_context or FmfContext()
-        self._environment_from_importing = importing_environment or Environment()
+        self._environment_from_importing = inherited_environment or Environment()
 
         # Check for possible remote plan reference first
         reference = self.node.get(['plan', 'import'])
@@ -3159,7 +3159,7 @@ class Plan(
                 node=node,
                 run=self.my_run,
                 importing_fmf_context=inherited_fmf_context,
-                importing_environment=inherited_environment,
+                inherited_environment=inherited_environment,
                 logger=self._logger.clone(),
             )
 
@@ -5365,7 +5365,7 @@ def resolve_dynamic_ref(
         node=reference_tree,
         run=plan.my_run,
         importing_fmf_context=plan._fmf_context,
-        importing_environment=plan.environment,
+        inherited_environment=plan.environment,
         skip_validation=True,
     )
     ref = reference_tree.get("ref")
