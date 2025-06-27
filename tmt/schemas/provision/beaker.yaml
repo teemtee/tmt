@@ -60,13 +60,13 @@ properties:
   beaker-job-group:
     type: string
 
-  quay_secret:
+  bootc_secret:
     type: string
 
-  quay_user:
+  bootc_user:
     type: string
 
-  quay_password:
+  bootc_password:
     type: string
 
   base_image_url:
