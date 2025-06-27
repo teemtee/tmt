@@ -1054,30 +1054,30 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              """,
     )
 
-    quay_secret: Optional[str] = field(
+    bootc_secret: Optional[str] = field(
         default=None,
-        option=('--quay-secret'),
-        metavar='QUAY_SECRET',
+        option=('--bootc-secret'),
+        metavar='BOOTC_SECRET',
         help="""
-             Specify quay secret.
+             Specify bootc secret.
              """,
     )
 
-    quay_user: Optional[str] = field(
+    bootc_user: Optional[str] = field(
         default=None,
-        option=('--quay-user'),
-        metavar='QUAY_USER',
+        option=('--bootc-user'),
+        metavar='BOOTC_USER',
         help="""
-             Specify quay user.
+             Specify bootc user.
              """,
     )
 
-    quay_password: Optional[str] = field(
+    bootc_password: Optional[str] = field(
         default=None,
-        option=('--quay-password'),
-        metavar='QUAY_PASSWORD',
+        option=('--bootc-password'),
+        metavar='BOOTC_PASSWORD',
         help="""
-             Specify quay password.
+             Specify bootc password.
              """,
     )
 
@@ -1442,8 +1442,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         image_url = ''
         if self.data.bootc:
             auth_dict = json.dumps(
-                {"auths": {"quay.io": {"auth": self.data.quay_secret}}}
-                if self.data.quay_secret
+                {"auths": {"quay.io": {"auth": self.data.bootc_secret}}}
+                if self.data.bootc_secret
                 else {}
             )
             if self.data.customize_image:
@@ -1834,14 +1834,14 @@ EORUN
                 image_tag = get_quay_repo_tag(self._logger)
                 assert image_tag
                 self.data.image_tag = image_tag.strip()
-            if self.data.quay_user and self.data.quay_password and self.data.quay_secret:
+            if self.data.bootc_user and self.data.bootc_password and self.data.bootc_secret:
                 if self.data.container_file:
                     base_image = self._build_base_image(self.data.container_file)
                 else:
                     base_image = self.data.base_image_url
                 containerimage = self._build_derived_image(base_image)
                 tmt.utils.ShellScript(
-                    f"podman login -u {self.data.quay_user} -p {self.data.quay_password} quay.io"
+                    f"podman login -u {self.data.bootc_user} -p {self.data.bootc_password} quay.io"
                 ).to_shell_command().run(cwd=self.workdir, logger=self._logger)
                 tmt.utils.ShellScript(
                     "podman push --tls-verify=false --quiet "
@@ -1849,7 +1849,7 @@ EORUN
                 ).to_shell_command().run(cwd=self.workdir, logger=self._logger)
             else:
                 raise tmt.utils.ProvisionError(
-                    "'quay_user', 'quay_password' and 'quay_secret' must be specified."
+                    "'bootc_user', 'bootc_password' and 'bootc_secret' must be specified."
                 )
 
         data = BeakerGuestData.from_plugin(self)
