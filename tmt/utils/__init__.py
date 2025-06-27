@@ -1737,7 +1737,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         return invocation.options
 
     @property
-    def _cli_fmf_context(self) -> FmfContext:
+    def _fmf_context_from_cli(self) -> FmfContext:
         """
         An fmf context attached to the CLI invocation.
 
@@ -1752,7 +1752,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         return self._cli_context_object.fmf_context
 
     @property
-    def _fmf_context(self) -> FmfContext:
+    def fmf_context(self) -> FmfContext:
         """
         An fmf context set for this object.
         """
@@ -1760,7 +1760,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         # By default, the only fmf context available is one provided via CLI.
         # But some derived classes can and will override this, because fmf
         # context can exist in fmf nodes, too.
-        return self._cli_fmf_context
+        return self._fmf_context_from_cli
 
     @overload
     @classmethod

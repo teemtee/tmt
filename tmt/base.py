@@ -2050,8 +2050,6 @@ class Plan(
         default_factory=list, internal=True
     )
 
-    _importing_fmf_context: FmfContext = field(default_factory=FmfContext, internal=True)
-
     _extra_l2_keys = [
         'context',
         'environment',
@@ -2067,7 +2065,7 @@ class Plan(
         run: Optional['Run'] = None,
         skip_validation: bool = False,
         raise_on_validation_error: bool = False,
-        importing_fmf_context: Optional[FmfContext] = None,
+        inherited_fmf_context: Optional[FmfContext] = None,
         inherited_environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
         **kwargs: Any,
@@ -2093,7 +2091,7 @@ class Plan(
         self._imported_plan_references = []
         self._imported_plans = []
         self._derived_plans = []
-        self._importing_fmf_context = importing_fmf_context or FmfContext()
+        self._fmf_context_from_importing = inherited_fmf_context or FmfContext()
         self._environment_from_importing = inherited_environment or Environment()
 
         # Check for possible remote plan reference first
@@ -2115,7 +2113,7 @@ class Plan(
 
         # Expand all environment and context variables in the node
         with self.environment.as_environ():
-            expand_node_data(node.data, self._fmf_context)
+            expand_node_data(node.data, self.fmf_context)
 
         # Initialize test steps
         self.discover = tmt.steps.discover.Discover(
@@ -2299,6 +2297,63 @@ class Plan(
             }
         )
 
+    #
+    # Plan fmf context and its components
+    #
+
+    #: Fmf context inherited from the importing plan. If the plan was
+    #: not imported, the set will be empty.
+    _fmf_context_from_importing: FmfContext = field(default_factory=FmfContext, internal=True)
+
+    @property
+    def fmf_context(self) -> tmt.utils.FmfContext:
+        """
+        Fmf context of the plan.
+
+        Contains all context dimensions collected from multiple sources
+        (in the following order):
+
+        * plan's ``context`` key,
+        * importing plan's context,
+        * ``--context`` option.
+        """
+
+        return FmfContext(
+            {**self.context, **self._fmf_context_from_importing, **self._fmf_context_from_cli}
+        )
+
+    @property
+    def _inheritable_fmf_context(self) -> FmfContext:
+        """
+        A subset of plan fmf context imported plans can inherit.
+
+        Contains context dimensions collected from the following sources
+        (in the order):
+
+        * plan's ``context`` key,
+        * importing plan's context.
+        """
+
+        return FmfContext(
+            {
+                **self.context,
+                **self._fmf_context_from_importing,
+            }
+        )
+
+    @property
+    def _noninheritable_fmf_context(self) -> FmfContext:
+        """
+        A subset of plan fmf context imported plans cannot inherit.
+
+        Contains context dimensions collected from the following sources
+        (in the order):
+
+        * ``--context`` option.
+        """
+
+        return self._fmf_context_from_cli
+
     def _initialize_worktree(self) -> None:
         """
         Prepare the worktree, a copy of the metadata tree root
@@ -2381,20 +2436,6 @@ class Plan(
         self.debug(f"Create the environment file '{plan_environment_file_path}'.", level=2)
 
         return plan_environment_file_path
-
-    @property
-    def _fmf_context(self) -> tmt.utils.FmfContext:
-        """
-        Return combined context from plan data, command line and original plan
-        """
-
-        combined = FmfContext()
-
-        combined.update(self.context)
-        combined.update(self._importing_fmf_context)
-        combined.update(self._cli_fmf_context)
-
-        return combined
 
     @staticmethod
     def edit_template(raw_content: str) -> str:
@@ -2586,11 +2627,11 @@ class Plan(
         # Environment and context
         if self.environment:
             echo(tmt.utils.format('environment', self.environment, key_color='blue'))
-        if self._fmf_context:
+        if self.fmf_context:
             echo(
                 tmt.utils.format(
                     'context',
-                    self._fmf_context,
+                    self.fmf_context,
                     key_color='blue',
                     list_format=tmt.utils.ListFormat.SHORT,
                 )
@@ -2908,7 +2949,7 @@ class Plan(
         self.debug('info', color='cyan', shift=0, level=3)
         # TODO: something better than str()?
         self.debug('environment', self.environment, 'magenta', level=3)
-        self.debug('context', self._fmf_context, 'magenta', level=3)
+        self.debug('context', self.fmf_context, 'magenta', level=3)
 
         # Wake up all steps
         self.wake()
@@ -3124,21 +3165,31 @@ class Plan(
             self.debug(f"Turning node '{node.name}' into a plan.", level=3)
 
             # Prepare fmf context and environment the imported node would inherit.
-            inherited_fmf_context = self._fmf_context if reference.inherit_context else None
+            inherited_fmf_context = (
+                self._inheritable_fmf_context if reference.inherit_context else None
+            )
             inherited_environment = (
                 self._inheritable_environment if reference.inherit_environment else None
             )
 
             # Construct ephemeral fmf context and environment we use to
             # adjust and expand the imported node.
-            alteration_fmf_context = FmfContext.from_spec(
+            imported_fmf_context = FmfContext.from_spec(
                 node.name, node.data.get('context', {}), self._logger
             )
 
             if reference.inherit_context:
-                alteration_fmf_context.update(self._fmf_context)
+                alteration_fmf_context = FmfContext(
+                    {
+                        **imported_fmf_context,
+                        **self._inheritable_fmf_context,
+                        **self._noninheritable_fmf_context,
+                    }
+                )
             else:
-                alteration_fmf_context.update(self._cli_fmf_context)
+                alteration_fmf_context = FmfContext(
+                    {**imported_fmf_context, **self._noninheritable_fmf_context}
+                )
 
             # Adjust the imported tree, to let any `adjust` rules defined in it take
             # action.
@@ -3158,7 +3209,7 @@ class Plan(
             return Plan(
                 node=node,
                 run=self.my_run,
-                importing_fmf_context=inherited_fmf_context,
+                inherited_fmf_context=inherited_fmf_context,
                 inherited_environment=inherited_environment,
                 logger=self._logger.clone(),
             )
@@ -3698,11 +3749,11 @@ class Tree(tmt.utils.Common):
         )
 
     @property
-    def _fmf_context(self) -> FmfContext:
+    def fmf_context(self) -> FmfContext:
         """
         Use custom fmf context if provided, default otherwise
         """
-        return self._custom_fmf_context or super()._fmf_context
+        return self._custom_fmf_context or super().fmf_context
 
     def _filters_conditions(
         self,
@@ -3787,7 +3838,7 @@ class Tree(tmt.utils.Common):
                 raise tmt.utils.GeneralError(f"Invalid yaml syntax: {error}")
             # Adjust metadata for current fmf context
             self._tree.adjust(
-                fmf.context.Context(**self._fmf_context),
+                fmf.context.Context(**self.fmf_context),
                 case_sensitive=False,
                 decision_callback=create_adjust_callback(self._logger),
                 additional_rules=self._additional_rules,
@@ -5318,7 +5369,7 @@ def resolve_dynamic_ref(
     if not plan:
         raise tmt.utils.FileError("Cannot get plan fmf context to evaluate dynamic ref.")
     reference_tree.adjust(
-        fmf.context.Context(**plan._fmf_context),
+        fmf.context.Context(**plan.fmf_context),
         case_sensitive=False,
         decision_callback=create_adjust_callback(logger),
     )
@@ -5327,7 +5378,7 @@ def resolve_dynamic_ref(
         logger=logger,
         node=reference_tree,
         run=plan.my_run,
-        importing_fmf_context=plan._fmf_context,
+        inherited_fmf_context=plan.fmf_context,
         inherited_environment=plan.environment,
         skip_validation=True,
     )
