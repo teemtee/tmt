@@ -11,7 +11,7 @@ rlJournalStart
     rlPhaseStartTest "Check bootc works well"
         rlRun -s "tmt run --dry plan --name plan/bootc"
 
-        rlAssertGrep 'ostreecontainer --url quay.io/fedora/fedora-bootc:latest' $rlRun_LOG
+        rlAssertGrep 'ostreecontainer --url quay.io/fedora/custom-bootc:latest' $rlRun_LOG
         rlAssertGrep 'dummysecret' $rlRun_LOG
         rlAssertGrep '{"auths": {"quay.io": {"auth": "dummysecret"}}}' $rlRun_LOG
     rlPhaseEnd
