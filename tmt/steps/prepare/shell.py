@@ -9,7 +9,6 @@ import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
 from tmt.container import container, field
-from tmt.result import PhaseResult
 from tmt.steps import safe_filename
 from tmt.steps.provision import Guest
 from tmt.utils import ShellScript
@@ -66,12 +65,12 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         guest: 'Guest',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
-    ) -> list[PhaseResult]:
+    ) -> tmt.steps.PluginOutcome:
         """
         Prepare the guests
         """
 
-        results = super().go(guest=guest, environment=environment, logger=logger)
+        outcome = super().go(guest=guest, environment=environment, logger=logger)
 
         environment = environment or tmt.utils.Environment()
 
@@ -121,4 +120,4 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 command = tmt.utils.ShellScript(f'{prepare_wrapper_path}')
             guest.execute(command=command, cwd=workdir, env=environment)
 
-        return results
+        return outcome
