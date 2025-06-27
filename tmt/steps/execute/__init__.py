@@ -64,6 +64,9 @@ TEST_METADATA_FILENAME = 'metadata.yaml'
 # File containing test failures
 TEST_FAILURES_FILENAME = 'failures.yaml'
 
+# File containing paths of submitted files
+SUBMITTED_FILES_FILENAME = "submitted-files.log"
+
 #: Scripts source directory
 SCRIPTS_SRC_DIR = tmt.utils.resource_files('steps/execute/scripts')
 
@@ -404,6 +407,14 @@ class TestInvocation:
         return self.path / CHECK_DATA
 
     @functools.cached_property
+    def submission_log_path(self) -> Path:
+        """
+        A path to log containing submitted files paths
+        """
+
+        return self.test_data_path / SUBMITTED_FILES_FILENAME
+
+    @functools.cached_property
     def reboot_request_path(self) -> Path:
         """
         A path to the reboot request file
@@ -474,6 +485,22 @@ class TestInvocation:
             return False
 
         return True
+
+    @property
+    def submitted_files(self) -> list[Path]:
+        """
+        Paths of all files submitted during test
+        """
+
+        submitted_files = []
+
+        if self.submission_log_path.exists():
+            for line in self.submission_log_path.read_text().splitlines():
+                file_path = Path(line)
+                relative_path = self.relative_test_data_path / file_path.name
+                submitted_files.append(relative_path)
+
+        return submitted_files
 
     def handle_restart(self) -> bool:
         """
@@ -1184,23 +1211,6 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         # Propagate loaded `results` to test framework, which will handle these results accordingly
         # (e.g. saves them as a tmt subresults).
         return invocation.test.test_framework.extract_results(invocation, results, logger)
-
-    def collect_submitted_files(self, invocation: TestInvocation) -> list[Path]:
-        """
-        Collect paths of all files submitted during test
-        """
-
-        submitted_files = []
-        test_data_dir = invocation.test_data_path
-        submission_log = test_data_dir / "submitted-files.log"
-
-        if submission_log.exists():
-            for line in submission_log.read_text().splitlines():
-                file_path = Path(line)
-                relative_path = invocation.relative_test_data_path / file_path.name
-                submitted_files.append(relative_path)
-
-        return submitted_files
 
     def timeout_hint(self, invocation: TestInvocation) -> None:
         """

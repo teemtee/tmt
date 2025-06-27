@@ -649,8 +649,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # cover, so let's make sure every single result can lead to check results
         # related to its lifetime.
 
-        submitted_files = self.collect_submitted_files(invocation)
-
+        submitted_files = invocation.submitted_files
         for result in invocation.results:
             if result.name == invocation.test.name:
                 result.log.extend(submitted_files)

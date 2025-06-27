@@ -34,8 +34,7 @@ echo "File '$FILENAME' stored to '$TMT_TEST_DATA'."
 
 # Silent skip for journal.xml so it doesn't get saved
 # into submitted-files.log and displayed twice at report
-basename_file=$(basename "$FILENAME")
-if [[ "$basename_file" == "journal.xml" ]]; then
+if [[ "$(basename "$FILENAME")" == "journal.xml" ]]; then
     exit 0
 fi
 
