@@ -865,6 +865,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
             """
 
             req: dict[str, Any] = super().create_host_requirement(host.to_mrack())
+
             if host.hardware and host.hardware.constraint:
                 req.update(self._translate_tmt_hw(host.hardware))
 
@@ -908,6 +909,16 @@ EOF
 """
                 ]
                 req['ks_append'].extend(ks_list)
+                req['tasks'] = [
+                    {
+                        "name": "/distribution/check-system",
+                        "role": "None",
+                        "fetch_url": "https://gitlab.com/fedora/bootc/tests/bootc-beaker-test/-/archive/1.8/bootc-beaker-test-1.8.tar.gz#check-system",
+                        "params": [
+                            "BOOTC_IMAGE_URL={{ host.image_url }}",
+                        ],
+                    },
+                ]
 
             logger.debug('mrack request', req, level=4)
 
@@ -969,6 +980,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              """,
         normalize=tmt.utils.normalize_int,
     )
+
     provision_tick: int = field(
         default=DEFAULT_PROVISION_TICK,
         option='--provision-tick',
@@ -979,6 +991,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              """,
         normalize=tmt.utils.normalize_int,
     )
+
     api_session_refresh_tick: int = field(
         default=DEFAULT_API_SESSION_REFRESH,
         option='--api-session-refresh-tick',
@@ -1056,12 +1069,12 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
     )
 
     base_image_url: str = field(
-        default="quay.io/fedora/fedora-bootc:41",
-        option=('--tier1-image-url'),
-        metavar='TIER1_IMAGE_URL',
+        default="quay.io/fedora/fedora-bootc:latest",
+        option=('--base-image-url'),
+        metavar='BASE_IMAGE_URL',
         help="""
-             Select container image to be used to build a bootc disk.
-             This takes priority over Containerfile.
+             Select container image to be used to build the derived bootc image.
+             Cannot be used with container-file.
              """,
     )
 
@@ -1089,7 +1102,18 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         option=('--customize-image'),
         help="""
              Customize container image or not, if not set,
-             base_image_url will be used to perform the installation.
+             image_url need to be set to perform the installation.
+             This takes priority over image_url.
+             """,
+    )
+
+    image_url: Optional[str] = field(
+        default=None,
+        option=('--image-url'),
+        metavar='IMAGE_URL',
+        help="""
+             Select container image to be used to perform the installation.
+             Cannot be used with customize_image.
              """,
     )
 
@@ -1098,7 +1122,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         is_flag=True,
         option=('--bootc'),
         help="""
-             bootc installation or not, if set, base_image_url need to be set.
+             bootc installation or not.
              """,
     )
 
@@ -1110,7 +1134,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              Select container file to be used to build a container image
              that is then used by bootc image builder to create a disk image.
 
-             Cannot be used with container-image.
+             This takes priority over Containerfile.
              """,
     )
 
@@ -1412,7 +1436,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                     f"{self.data.base_repo}/{self.data.test_image_name}:{self.data.image_tag}"
                 )
             else:
-                image_url = self.data.base_image_url
+                assert self.data.image_url
+                image_url = self.data.image_url
 
         data = CreateJobParameters(
             tmt_name=tmt_name,
@@ -1719,7 +1744,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
         )
         return image_tag
 
-    def _build_derived_image(self) -> str:
+    def _build_derived_image(self, containerimage: str) -> str:
         """
         Build the container image
         """
@@ -1729,7 +1754,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
             "ppc64le": "linux/ppc64le",
             "s390x": "linux/s390x",
         }
-        distro_name = self.containerimage.split(':')[1]
+        distro_name = containerimage.split(':')[1]
         if distro_name == '43':
             distro_name = 'Rawhide'
         harness_template = '''
@@ -1753,7 +1778,7 @@ rm -rf /var/cache /var/lib/dnf
 EORUN
         '''
         containerfile_parsed = render_template(
-            containerfile_template, base_image_url=self.containerimage
+            containerfile_template, base_image_url=containerimage
         )
         assert self.workdir
         (self.workdir / 'beaker-harness.repo').write_text(harness_parsed)
@@ -1766,7 +1791,7 @@ EORUN
             "--platform",
             platform_dict[f'{self.data.arch}'],
             "--from",
-            self.containerimage,
+            containerimage,
             "-f",
             f"{self.workdir}/containerfile",
             "-t",
@@ -1793,10 +1818,10 @@ EORUN
                 self.data.image_tag = image_tag.strip()
             if self.data.quay_user and self.data.quay_password and self.data.quay_secret:
                 if self.data.container_file:
-                    self.containerimage = self._build_base_image(self.data.container_file)
+                    base_image = self._build_base_image(self.data.container_file)
                 else:
-                    self.containerimage = self.data.base_image_url
-                containerimage = self._build_derived_image()
+                    base_image = self.data.base_image_url
+                containerimage = self._build_derived_image(base_image)
                 tmt.utils.ShellScript(
                     f"podman login -u {self.data.quay_user} -p {self.data.quay_password} quay.io"
                 ).to_shell_command().run(cwd=self.workdir, logger=self._logger)

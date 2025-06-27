@@ -69,6 +69,9 @@ properties:
   base_image_url:
     type: string
 
+  image_url:
+    type: string
+
   test_image_name:
     type: string
 
