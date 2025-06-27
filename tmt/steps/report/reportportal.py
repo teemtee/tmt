@@ -73,7 +73,7 @@ def _pattern_list_env_to_default(option: str, default: list[Pattern[str]]) -> li
     return tmt.utils.normalize_pattern_list(
         option,
         [item.strip() for item in str(os.getenv(env_var)).split(',') if item.strip()],
-        tmt.log.Logger.create(),
+        tmt.log.Logger.get_bootstrap_logger(),
     )
 
 
