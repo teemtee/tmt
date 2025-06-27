@@ -476,6 +476,7 @@ class Discover(tmt.steps.Step):
                         exported.pop('ref')
 
                     export_fmf_ids.append(tmt.utils.dict_to_yaml(exported, start=True))
+
                 click.echo(''.join(export_fmf_ids), nl=False)
             return
 
