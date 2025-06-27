@@ -31,3 +31,13 @@ fi
 [ -d "$TMT_TEST_DATA" ] || mkdir -p "$TMT_TEST_DATA"
 cp -f "$FILENAME" "$TMT_TEST_DATA"
 echo "File '$FILENAME' stored to '$TMT_TEST_DATA'."
+
+# Silent skip for journal.xml so it doesn't get saved
+# into submitted-files.log and displayed twice at report
+basename_file=$(basename "$FILENAME")
+if [[ "$basename_file" == "journal.xml" ]]; then
+    exit 0
+fi
+
+# Collecting paths of submitted files into a single log
+echo "$FILENAME" >> "$TMT_TEST_DATA/submitted-files.log"

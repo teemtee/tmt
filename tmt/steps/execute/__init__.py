@@ -1185,6 +1185,23 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         # (e.g. saves them as a tmt subresults).
         return invocation.test.test_framework.extract_results(invocation, results, logger)
 
+    def collect_submitted_files(self, invocation: TestInvocation) -> list[Path]:
+        """
+        Collect paths of all files submitted during test
+        """
+
+        submitted_files = []
+        test_data_dir = invocation.test_data_path
+        submission_log = test_data_dir / "submitted-files.log"
+
+        if submission_log.exists():
+            for line in submission_log.read_text().splitlines():
+                file_path = Path(line)
+                relative_path = invocation.relative_test_data_path / file_path.name
+                submitted_files.append(relative_path)
+
+        return submitted_files
+
     def timeout_hint(self, invocation: TestInvocation) -> None:
         """
         Append a duration increase hint to the test output
