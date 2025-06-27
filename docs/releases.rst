@@ -8,11 +8,11 @@ tmt-1.52.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :ref:`/plugins/report/reportportal` report plugin now supports
-a new ``upload-log-pattern`` option. This option allows users to select
-which logs should be uploaded by specifying the pattern to search for
-in the log file names. Check result logs are also affected by this
-option but are uploaded only if the check fails or if an error occurs
-during execution.
+a new ``upload-log-pattern`` key. This key allows users to select
+which logs should be uploaded by specifying the pattern to search
+for in the log file names. Check result logs are also affected by
+this key but are uploaded only if the check fails or if an error
+occurs during execution.
 
 
 tmt-1.52.0

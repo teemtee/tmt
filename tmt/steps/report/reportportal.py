@@ -70,9 +70,11 @@ def _pattern_list_env_to_default(option: str, default: list[Pattern[str]]) -> li
     env_var = 'TMT_PLUGIN_REPORT_REPORTPORTAL_' + option.upper()
     if env_var not in os.environ or os.getenv(env_var) is None:
         return default
-    return [
-        re.compile(item.strip()) for item in str(os.getenv(env_var)).split(',') if item.strip()
-    ]
+    return tmt.utils.normalize_pattern_list(
+        option,
+        [item.strip() for item in str(os.getenv(env_var)).split(',') if item.strip()],
+        tmt.log.Logger.create(),
+    )
 
 
 def _size_env_to_default(option: str, default: 'Size') -> 'Size':
@@ -321,7 +323,8 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
              List of regular expressions to look for in result log names. If any of the
              patterns is found in a log file name, the log will be uploaded to ReportPortal.
              Check result logs will be uploaded only if the check failed or if an error
-             occurred during the execution.
+             occurred during the execution. The search mode is used for pattern matching.
+             See the :ref:`regular-expressions` section for details.
              """,
     )
 
