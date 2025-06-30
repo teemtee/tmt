@@ -4,8 +4,8 @@
 # Check the expected output
 function check() {
     # Space-separated test names on a single line
-    tests=$(grep '^  */tests/' $rlRun_LOG | sed 's/^ *//' | tr '\n' ' ' | sed 's/ $//')
-    rlAssertEquals "Check expect tests" "$tests" "$1"
+    tests=$(grep '^  */tests/' "$rlRun_LOG" | sed 's/^ *//' | tr '\n' ' ' | sed 's/ $//')
+    rlAssertEquals "Check expected tests" "$tests" "$1"
 }
 
 
