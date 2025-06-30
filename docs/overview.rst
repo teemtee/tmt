@@ -216,6 +216,15 @@ Various utility options.
 --debug
     Turn on debugging output.
 
+--log-topic NAME
+    Enable logging for a specific topic, useful for debugging particular
+    areas. For example, to see logs related to policy processing,
+    you can use:
+
+    .. code-block:: bash
+
+        tmt --log-topic policy test export --policy ../policies/test/environment.yaml
+
 Check help message of individual commands for the full list of
 available options.
 
