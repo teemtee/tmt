@@ -135,7 +135,7 @@ class Beakerlib(TestFramework):
         note: list[str] = []
         log: list[Path] = [
             invocation.relative_path / filename
-            for filename in [tmt.steps.execute.TEST_OUTPUT_FILENAME, 'journal.txt', 'journal.xml']
+            for filename in [tmt.steps.execute.TEST_OUTPUT_FILENAME, 'journal.txt']
             if (invocation.path / filename).is_file()
         ]
 
