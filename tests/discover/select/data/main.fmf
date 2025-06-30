@@ -1,0 +1,46 @@
+/plans:
+    discover:
+        how: fmf
+    execute:
+        how: tmt
+
+    /all:
+        summary: Select all available tests
+
+    /test:
+        summary: test key overrides order, allows duplicates
+        discover+:
+            test:
+              - /tests/three
+              - /tests/one
+              - /tests/three
+
+    /include:
+        summary: include key preserves order, ignores duplicates
+        discover+:
+            include:
+              - /tests/three
+              - /tests/one
+              - /tests/three
+
+    /exclude:
+        summary: exclude key just skips listed tests
+        discover+:
+            exclude:
+              - /tests/one
+              - /tests/three
+
+/tests:
+    test: /bin/true
+
+    /one:
+        order: 1
+
+    /two:
+        order: 2
+
+    /three:
+        order: 3
+
+    /four:
+        order: 4
