@@ -628,9 +628,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         Upload all result log files into the ReportPortal instance
         """
 
-        def upload_log(log_path: Path, is_traceback: bool = False) -> None:
+        def upload_log(log_path: Path, is_yaml: bool = False, is_traceback: bool = False) -> None:
             try:
-                if log_path.suffix in ('.yaml', '.yml'):
+                if is_yaml:
                     logs = tmt.utils.yaml_to_list(self.step.plan.execute.read(log_path))
                 else:
                     logs = [self.step.plan.execute.read(log_path)]
@@ -677,7 +677,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         # Upload failure logs
         if write_out_failures:
             for failure_log in result.failure_logs:
-                upload_log(failure_log, is_traceback=True)
+                upload_log(failure_log, is_yaml=True, is_traceback=True)
 
     def execute_rp_import(self) -> None:
         """
