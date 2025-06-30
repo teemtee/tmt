@@ -24,6 +24,11 @@ class Permission(CheckPlugin[PermissionCheck]):
 
     This check fails when tests encounter permission-related errors.
 
+    .. note::
+
+        This is an :ref:`internal check </plugins/test-checks/internal>`,
+        and it cannot be enabled or disabled by test metadata.
+
     .. versionadded:: 1.50
     """
 
