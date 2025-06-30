@@ -1,4 +1,10 @@
 #!/bin/bash
+
+if [ -z "$TMT_TEST_PIDFILE" ]; then
+    echo "tmt-file-submit can be used only in the context of a running test."
+    exit 1
+fi
+
 set -o errexit -o pipefail -o noclobber -o nounset
 
 die() { echo "$*" >&2; exit 2; }  # complain to STDERR and exit with error

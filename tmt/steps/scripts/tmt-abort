@@ -1,4 +1,10 @@
 #!/bin/bash
+
+if [ -z "$TMT_TEST_PIDFILE" ]; then
+    echo "tmt-abort can be used only in the context of a running test."
+    exit 1
+fi
+
 # Create the abort file.
 touch "$TMT_TEST_DATA/abort"
 # Kill PPID to exit test execution.
