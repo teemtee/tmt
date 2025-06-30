@@ -552,7 +552,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             if path is not None:
                 fmf_root: Optional[Path] = path
             else:
-                fmf_root = Path(self.step.plan.node.root) if self.step.plan.node.root else None
+                fmf_root = Path(self.step.plan.fmf_root) if self.step.plan.fmf_root else None
             requires_git = self.opt('sync-repo') or any(
                 self.get(opt) for opt in self._REQUIRES_GIT
             )
