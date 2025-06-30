@@ -37,3 +37,6 @@ fi
 [ -d "$TMT_TEST_DATA" ] || mkdir -p "$TMT_TEST_DATA"
 cp -f "$FILENAME" "$TMT_TEST_DATA"
 echo "File '$FILENAME' stored to '$TMT_TEST_DATA'."
+
+# Collecting paths of submitted files into a single log
+echo "$FILENAME" >> "$TMT_TEST_DATA/submitted-files.log"
