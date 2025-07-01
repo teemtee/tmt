@@ -439,29 +439,60 @@ TMT_OUTPUT_WIDTH
     to 79 characters. Set this variable to an integer to change the limit.
 
 TMT_GIT_CREDENTIALS_URL_<suffix>, TMT_GIT_CREDENTIALS_VALUE_<suffix>
-    Variable pairs used to provide credentials to clone git
-    repositories. Suffix identifies the pair and determines the order in which URL regexp is tried.
+    Variable pairs used to provide credentials to clone git repositories. This
+    is needed when working with private repositories. The suffix identifies
+    the pair and determines the order in which URL regexp is tried.
 
     The ``TMT_GIT_CREDENTIALS_URL_<suffix>`` contains regexp to search against
-    url to clone. For first successful search the content of the ``TMT_GIT_CREDENTIALS_VALUE_<suffix>``
-    variable is used as the credential value. When it is set to an empty string, unmodified url is used.
+    url to clone. For first successful search the content of the
+    ``TMT_GIT_CREDENTIALS_VALUE_<suffix>`` variable is used as the credential
+    value. When it is set to an empty string, unmodified url is used.
 
-    Example usage:
+    For ``GitLab`` private repositories, you have three options for specifying
+    the credentials:
 
-    `GitLab`__ credentials need to contain nonempty username followed by colon and token value::
+    * `Personal Access Tokens`__:
 
-        TMT_GIT_CREDENTIALS_URL_lab='gitlab.com/mysecretproject'
-        TMT_GIT_CREDENTIALS_VALUE_lab='foo:secrettoken'
+        Good for user-specific permissions or service accounts. For read-only
+        access, use the ``read_repository`` scope::
 
-    `GitHub`__ credentials contain just the token value::
+            TMT_GIT_CREDENTIALS_URL_lab='gitlab.com/mysecretproject'
+            TMT_GIT_CREDENTIALS_VALUE_lab='your_gitlab_username:your_pat'
 
-        TMT_GIT_CREDENTIALS_URL_hub='github.com/teemtee'
-        TMT_GIT_CREDENTIALS_VALUE_hub='secrettoken'
+    * `Deploy Tokens`__:
+
+        Best for automated read-only access. Project-specific, not tied to
+        a user, and provides strict read-only repository access::
+
+            TMT_GIT_CREDENTIALS_URL_lab='gitlab.com/mysecretproject'
+            TMT_GIT_CREDENTIALS_VALUE_lab='gitlab+deploy-token-123:abcxyz123'
+
+    * `OAuth2 Tokens`__:
+
+        Secure short-lived tokens with the ``read_repository`` scope::
+
+            TMT_GIT_CREDENTIALS_URL_lab='gitlab.com/mysecretproject'
+            TMT_GIT_CREDENTIALS_VALUE_lab='oauth2:your_oauth2_token'
+
+    For `GitHub` private repositories, you have only a single method
+    for specifying the cloning credentials:
+
+    * `OAuth Tokens`__:
+
+        You need to create a `personal access token`__ and specify it without
+        your username. Both ``classic`` and ``fine-grained`` personal
+        access tokens can be used::
+
+            TMT_GIT_CREDENTIALS_URL_hub='github.com/teemtee'
+            TMT_GIT_CREDENTIALS_VALUE_hub='personaltoken'
 
     .. versionadded:: 1.26
 
-__ https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#clone-repository-using-personal-access-token
-__ https://github.blog/2012-09-21-easier-builds-and-deployments-using-git-over-https-and-oauth/
+__ https://docs.gitlab.com/user/profile/personal_access_tokens/
+__ https://docs.gitlab.com/user/project/deploy_tokens/
+__ https://docs.gitlab.com/api/oauth2/
+__ https://docs.github.com/en/authentication/connecting-to-github-with-ssh/managing-deploy-keys#https-cloning-with-oauth-tokens
+__ https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
 
 TMT_GIT_CLONE_ATTEMPTS
     The maximum number of retries to clone a git repository if it
