@@ -70,12 +70,12 @@ rlJournalStart
             done
         rlPhaseEnd
 
-        rlPhaseStartTest "Empty environment file ($execute)"
+        rlPhaseStartTest "Empty YAML environment file ($execute)"
             rlRun -s "tmt run -r -e @empty.yaml"
             rlAssertGrep "warn: Empty environment file" $rlRun_LOG
         rlPhaseEnd
 
-        rlPhaseStartTest "Empty environment file ($execute)"
+        rlPhaseStartTest "Empty DOTENV environment file ($execute)"
             rlRun -s "tmt run -r -e @empty.env"
             rlAssertGrep "warn: Empty environment file" $rlRun_LOG
         rlPhaseEnd
