@@ -421,6 +421,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         )
         environment["TMT_TEST_NAME"] = EnvVarValue(invocation.test.name)
         environment["TMT_TEST_DATA"] = EnvVarValue(invocation.test_data_path)
+        environment["TMT_TEST_SUBMITTED_FILES"] = EnvVarValue(invocation.submission_log_path)
         environment['TMT_TEST_SERIAL_NUMBER'] = EnvVarValue(str(invocation.test.serial_number))
         environment['TMT_TEST_ITERATION_ID'] = EnvVarValue(
             f"{self.parent.plan.my_run.unique_id}-{invocation.test.serial_number}"
