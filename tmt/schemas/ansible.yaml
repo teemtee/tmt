@@ -20,6 +20,6 @@ properties:
       layout:
         type: string
         description: Path to a YAML file defining the inventory group hierarchy and layout
-
-required:
-  - inventory
+      python_interpreter:
+        type: string
+        description: Python interpreter path on the target hosts.
