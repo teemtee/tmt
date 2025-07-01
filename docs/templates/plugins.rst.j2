@@ -60,8 +60,7 @@
             {% if not actual_default %}
     Default: *not set*
             {% else %}
-    Default: {% for default_item in actual_default %}``{{ default_item.pattern | default(default_item) }}``{% if not loop.last %}, {% endif %}{% endfor %}
-
+    Default: {% for default_item in actual_default %}``{{ default_item.pattern | default(default_item) }}``{% if not loop.last %}, {% endif %}{% endfor +%}
             {% endif %}
         {% elif is_enum(actual_default) %}
     Default: ``{{ actual_default.value }}``
