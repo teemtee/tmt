@@ -34,8 +34,8 @@ tmt-1.52.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Files submitted during a test via
-:ref:`tmt-file-submit</stories/features/report-log>` or beakerlib's
-rlFileSubmit are now a part of main test result as logs.
+:ref:`tmt-file-submit</stories/features/report-log>` or Beakerlib's
+``rlFileSubmit`` are now a part of main test result as logs.
 
 
 tmt-1.51.0
