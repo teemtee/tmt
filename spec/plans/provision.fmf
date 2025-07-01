@@ -75,3 +75,39 @@ link:
       - implemented-by: /tmt/steps/__init__.py
       - implemented-by: /tmt/queue.py
       - verified-by: /tests/multihost
+
+/ansible:
+    summary: Per-guest Ansible customization
+
+    story:
+        As a user I want to assign an Ansible group and host variables
+        for a provisioned guest to be reflected in the generated inventory.
+
+    description: |
+        Each provisioned guest may define an optional ``ansible`` key
+        to define its corresponding Ansible inventory section.
+
+        - ``group``: Assigns the guest to an Ansible specific group. If omitted,
+          the ``role`` key would serve as the Ansible group name.
+          If ``role`` is not set either, the host will be placed in the
+          'ungrouped' group.
+
+        - ``vars``: Defines host-specific Ansible variables to include
+          under that host in the inventory.
+
+    example: |
+        provision:
+          - name: master
+            role: server
+            ansible:
+              group: server
+              vars:
+                var1: value1
+                var2: value2
+
+          - name: client
+            role: client
+            ansible:
+              vars:
+                ansible_user: fedora
+                ansible_port: 2222
