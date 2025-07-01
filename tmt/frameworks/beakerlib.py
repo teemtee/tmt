@@ -133,6 +133,9 @@ class Beakerlib(TestFramework):
 
         # Initialize data, prepare log paths
         note: list[str] = []
+
+        # Beakerlib automatically submits 'journal.xml' and it gets collected as a log, so
+        # it is omitted here to avoid logging it twice.
         log: list[Path] = [
             invocation.relative_path / filename
             for filename in [tmt.steps.execute.TEST_OUTPUT_FILENAME, 'journal.txt']

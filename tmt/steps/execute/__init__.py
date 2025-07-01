@@ -215,7 +215,7 @@ class TestInvocation:
         A path to log containing submitted files paths
         """
 
-        return self.test_data_path / SUBMITTED_FILES_FILENAME
+        return self.path / SUBMITTED_FILES_FILENAME
 
     @functools.cached_property
     def reboot_request_path(self) -> Path:
@@ -295,15 +295,13 @@ class TestInvocation:
         Paths of all files submitted during test
         """
 
-        submitted_files = []
+        if not self.submission_log_path.exists():
+            return []
 
-        if self.submission_log_path.exists():
-            for line in self.submission_log_path.read_text().splitlines():
-                file_path = Path(line)
-                relative_path = self.relative_test_data_path / file_path.name
-                submitted_files.append(relative_path)
-
-        return submitted_files
+        return [
+            self.relative_test_data_path / line
+            for line in self.submission_log_path.read_text().splitlines()
+        ]
 
     def handle_restart(self) -> bool:
         """

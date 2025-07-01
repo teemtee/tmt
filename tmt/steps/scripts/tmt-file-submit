@@ -39,4 +39,4 @@ cp -f "$FILENAME" "$TMT_TEST_DATA"
 echo "File '$FILENAME' stored to '$TMT_TEST_DATA'."
 
 # Collecting paths of submitted files into a single log
-echo "$FILENAME" >> "$TMT_TEST_DATA/submitted-files.log"
+basename "$FILENAME" >> "$TMT_TEST_SUBMITTED_FILES"
