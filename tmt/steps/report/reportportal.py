@@ -648,8 +648,9 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             )
 
             for log in logs:
-                # Add file name to the log
-                log = f'### `{log_path.name}`\n{log}'
+                # Add file name to the log if it is not a traceback
+                if not is_traceback:
+                    log = f'### `{log_path.name}`\n{log}'
                 # Upload log
                 self.rp_api_post(
                     session=session,
