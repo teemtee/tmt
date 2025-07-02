@@ -12,6 +12,7 @@ rlJournalStart
     submission_log_path="$tmp/default/plan/execute/data/guest/default-0/default-1/submitted-files.log"
     tmt_test_data="default/plan/execute/data/guest/default-0/default-1/data"
     tmt_results_yaml_file="$tmp/default/plan/execute/results.yaml"
+    guest_data_path="${tmt_test_data#default/plan/execute/}"
 
     rlPhaseStartTest
         rlRun -s "tmt run -vvfi $tmp -a provision -h container"
@@ -38,7 +39,11 @@ rlJournalStart
         rlAssertGrep "this_file.txt" "$submission_log_path"
         rlAssertGrep "tmp-bundle_name-$tmt_test_serial_number.tar.gz" "$submission_log_path"
 
-	# Show the submitted files in increased verbosity
+        # Check for relative paths in results.yaml
+        rlAssertGrep "$guest_data_path/this_file.txt" "$tmt_results_yaml_file"
+        rlAssertGrep "$guest_data_path/tmp-bundle_name-$tmt_test_serial_number.tar.gz" "$tmt_results_yaml_file"
+
+        # Show the submitted files in increased verbosity
 	rlAssertGrep "$FILE_PATH" $rlRun_LOG
 	rlAssertGrep "$BUNDLE_PATH" $rlRun_LOG
     rlPhaseEnd
