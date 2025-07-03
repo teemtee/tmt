@@ -17,9 +17,9 @@ import tmt.utils.themes
 from tmt.container import container, field
 from tmt.result import Result, ResultOutcome
 from tmt.steps import safe_filename
+from tmt.steps.abort import AbortStep
 from tmt.steps.execute import (
     TEST_OUTPUT_FILENAME,
-    AbortExecute,
     TestInvocation,
 )
 from tmt.steps.provision import Guest
@@ -716,7 +716,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # bigger gun. Once we get back to refactoring the plugin, this
         # would turn into a better way of transporting "plugin outcome"
         # back to the step.
-        abort_execute_exception: Optional[AbortExecute] = None
+        abort_execute_exception: Optional[AbortStep] = None
         interrupt_exception: Optional[tmt.utils.signals.Interrupted] = None
 
         with UpdatableMessage(self) as progress_bar:
@@ -768,22 +768,20 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                             result.result = ResultOutcome.ERROR
 
                 # Handle abort signs
-                if invocation.abort_requested or (
+                if invocation.abort.requested or (
                     self.data.exit_first
                     and any(
                         result.result in (ResultOutcome.FAIL, ResultOutcome.ERROR)
                         for result in invocation.results
                     )
                 ):
-                    if invocation.abort_requested:
+                    if invocation.abort.requested:
                         abort_message = f'Test {test.name} aborted, stopping execution.'
 
                     else:
                         abort_message = f'Test {test.name} failed, stopping execution.'
 
-                    abort_execute_exception = AbortExecute(abort_message)
-
-                    invocation.exceptions.append(abort_execute_exception)
+                    abort_execute_exception = AbortStep(abort_message)
 
                 # Handle interrupt
                 if tmt.utils.signals.INTERRUPT_PENDING.is_set():
