@@ -730,6 +730,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                             result.result = ResultOutcome.ERROR
                             result.note.append('reboot timeout')
 
+                    except tmt.utils.ReconnectTimeoutError:
+                        for result in invocation.results:
+                            result.result = ResultOutcome.ERROR
+                            result.note.append('reconnect timeout')
+
                     else:
                         for result in invocation.results:
                             result.result = ResultOutcome.ERROR
