@@ -808,8 +808,6 @@ smooth and timely:
 
 * continually watch `the issues & pull requests`__ and gently push
   them forward if any of them seems to get stuck
-
-  __ https://github.com/orgs/teemtee/projects/1/views/7
 * bring attention especially to those with the high priority, the
   ``must`` issues and pull requests should be finished
   ideally one week before the release deadline
@@ -825,4 +823,5 @@ smooth and timely:
   development more fluent, just make sure they do not slow down
   important issues
 
-  __ https://github.com/orgs/teemtee/projects/1/views/14
+__ https://github.com/orgs/teemtee/projects/1/views/3
+__ https://github.com/orgs/teemtee/projects/1/views/14
