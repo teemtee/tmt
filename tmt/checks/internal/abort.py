@@ -6,7 +6,8 @@ from tmt.checks import CheckPlugin, provides_check
 from tmt.checks.internal import InternalCheck
 from tmt.container import container
 from tmt.result import CheckResult, ResultOutcome
-from tmt.steps.execute import AbortExecute, TestInvocation
+from tmt.steps.abort import AbortStep
+from tmt.steps.execute import TestInvocation
 from tmt.utils import ProcessExitCodes
 
 CHECK_NAME = 'internal/abort'
@@ -44,8 +45,8 @@ class Abort(CheckPlugin[AbortCheck]):
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if (
-            invocation.abort_requested and invocation.return_code != ProcessExitCodes.SUCCESS
-        ) or any(isinstance(exc, AbortExecute) for exc in invocation.exceptions):
+            invocation.abort.requested and invocation.return_code != ProcessExitCodes.SUCCESS
+        ) or any(isinstance(exc, AbortStep) for exc in invocation.exceptions):
             return [CheckResult(name=CHECK_NAME, result=ResultOutcome.FAIL, note=['Test aborted'])]
 
         return []
