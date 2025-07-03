@@ -151,6 +151,16 @@ class TestInvocation:
     _reboot_count: int = 0
 
     @functools.cached_property
+    def step_workdir(self) -> Path:
+        """
+        Absolute path to which relative paths are relative to.
+        """
+
+        assert self.phase.step.workdir is not None  # narrow type
+
+        return self.phase.step.workdir
+
+    @functools.cached_property
     def path(self) -> Path:
         """
         Absolute path to invocation directory
@@ -181,9 +191,7 @@ class TestInvocation:
         Invocation directory path relative to step workdir
         """
 
-        assert self.phase.step.workdir is not None  # narrow type
-
-        return self.path.relative_to(self.phase.step.workdir)
+        return self.path.relative_to(self.step_workdir)
 
     @functools.cached_property
     def test_data_path(self) -> Path:
@@ -298,8 +306,18 @@ class TestInvocation:
         if not self.submission_log_path.exists():
             return []
 
+        # * `self.test_data_path / line` -> absolute log path (`line`
+        #   shall be relative to test data)
+        # * .resolve() -> absolute log path without any `../`,
+        # * .relative_to(...) -> *relative* log path, relative to the
+        #    step workdir, as expected from log paths attached to results
+        #
+        # Note `step_workdir.resolve()`: `resolve()` resolves symlinks
+        # as well, and `relative_to()` might consider `step_workdir`
+        # a different tree if it contains symlinks. Compare resolved
+        # paths then.
         return [
-            self.relative_test_data_path / line
+            (self.test_data_path / line).resolve().relative_to(self.step_workdir.resolve())
             for line in self.submission_log_path.read_text().splitlines()
         ]
 

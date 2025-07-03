@@ -420,6 +420,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             effective_pidfile_root() / TEST_PIDFILE_LOCK_FILENAME
         )
         environment["TMT_TEST_NAME"] = EnvVarValue(invocation.test.name)
+        environment["TMT_TEST_INVOCATION_PATH"] = EnvVarValue(invocation.path)
         environment["TMT_TEST_DATA"] = EnvVarValue(invocation.test_data_path)
         environment["TMT_TEST_SUBMITTED_FILES"] = EnvVarValue(invocation.submission_log_path)
         environment['TMT_TEST_SERIAL_NUMBER'] = EnvVarValue(str(invocation.test.serial_number))
