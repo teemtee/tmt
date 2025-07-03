@@ -37,8 +37,8 @@ fi
 
 # Some files are already present in test invocation path, no need to
 # copy them into test data directory as well
-if [ -e $TMT_TEST_INVOCATION_PATH/$(basename "$FILENAME") ]; then
-    echo "File '$FILENAME' already stored '$TMT_TEST_INVOCATION_PATH'.";
+if [ -e "$TMT_TEST_INVOCATION_PATH/$(basename "$FILENAME")" ]; then
+    echo "File '$FILENAME' already stored in '$TMT_TEST_INVOCATION_PATH'.";
     realpath -s --relative-to="$TMT_TEST_DATA" "$FILENAME" >> "$TMT_TEST_SUBMITTED_FILES"
 else
     [ -d "$TMT_TEST_DATA" ] || mkdir -p "$TMT_TEST_DATA"
