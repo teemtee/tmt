@@ -1,0 +1,7 @@
+summary: Test discover select functionality with test, include and exclude keys
+description: |
+    Verify that the test, include and exclude keys work correctly together
+    and that order is preserved by include but can be customized with test.
+test: ./test.sh
+duration: 3m
+tag: [tier2]

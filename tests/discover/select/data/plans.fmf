@@ -1,0 +1,60 @@
+# Test plans to demonstrate test selection functionality
+
+/natural-order:
+    summary: All tests in natural order (by order field)
+    discover:
+        how: fmf
+    execute:
+        how: tmt
+
+/test-key-custom:
+    summary: Custom order using test key
+    discover:
+        how: fmf
+        test:
+            - test_m
+            - test_z
+            - test_b
+    execute:
+        how: tmt
+
+/include-preserves-order:
+    summary: Include key preserves original order
+    discover:
+        how: fmf
+        include:
+            - test_m
+            - test_z
+            - test_b
+    execute:
+        how: tmt
+
+/exclude-functionality:
+    summary: Exclude key removes specific tests
+    discover:
+        how: fmf
+        exclude: test_skip
+    execute:
+        how: tmt
+
+/include-with-exclude:
+    summary: Include and exclude together
+    discover:
+        how: fmf
+        include:
+            - test_[azm]
+            - test_b
+        exclude: test_skip
+    execute:
+        how: tmt
+
+/test-key-repeat:
+    summary: Test key allows repetition
+    discover:
+        how: fmf
+        test:
+            - test_z
+            - test_a
+            - test_z
+    execute:
+        how: tmt

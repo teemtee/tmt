@@ -1,0 +1,19 @@
+/test_z:
+    test: echo "Test Z executed"
+    order: 10
+
+/test_a:
+    test: echo "Test A executed"
+    order: 20
+
+/test_m:
+    test: echo "Test M executed"
+    order: 30
+
+/test_b:
+    test: echo "Test B executed"
+    order: 40
+
+/test_skip:
+    test: echo "This test should be skipped"
+    order: 50

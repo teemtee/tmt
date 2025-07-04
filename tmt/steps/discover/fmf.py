@@ -136,6 +136,15 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         normalize=tmt.utils.normalize_string_list,
     )
 
+    include: list[str] = field(
+        default_factory=list,
+        option=('-i', '--include'),
+        metavar='REGEXP',
+        multiple=True,
+        help="Include tests matching given regular expression, preserving original order.",
+        normalize=tmt.utils.normalize_string_list,
+    )
+
     # Modified only
     modified_only: bool = field(
         default=False,
@@ -303,6 +312,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     ``exclude`` - exclude tests which match a regular expression
 
+    ``include`` - include tests which match a regular expression, preserving original order
+
     ``prune`` - copy only immediate directories of executed tests and their required files
 
 
@@ -363,6 +374,40 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     The ``test`` key uses search mode for matching patterns. See the
     :ref:`regular-expressions` section for detailed information about
     how exactly the regular expressions are handled.
+
+    Include Filter
+    ^^^^^^^^^^^^^^
+
+    Use the ``include`` key to limit which tests should be executed by
+    providing regular expressions matching the test name. Unlike the
+    ``test`` key, the ``include`` filter preserves the original test
+    order and works as a post-discovery filter:
+
+    .. code-block:: yaml
+
+        discover:
+            how: fmf
+            include: ^/tests/basic/.*
+
+    .. code-block:: shell
+
+        tmt run discover --how fmf --verbose --include "^/tests/core.*"
+
+    When several regular expressions are provided, tests matching any
+    of the regular expressions are included:
+
+    .. code-block:: yaml
+
+        discover:
+            how: fmf
+            include:
+              - ^/tests/basic/.*
+              - ^/tests/advanced/.*
+
+    The ``include`` key can be used together with the ``exclude`` key.
+    In this case, tests are first filtered by the ``include`` patterns,
+    and then the ``exclude`` patterns are applied to remove tests from
+    the included set.
 
     Link Filter
     ^^^^^^^^^^^
@@ -702,6 +747,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             self.info('link', str(link_needle), 'green')
 
         excludes = list(tmt.base.Test._opt('exclude') or self.get('exclude', []))
+        includes = list(tmt.base.Test._opt('include') or self.get('include', []))
 
         # Filter only modified tests if requested
         modified_only = self.get('modified-only')
@@ -771,6 +817,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             unique=False,
             links=link_needles,
             excludes=excludes,
+            includes=includes,
         )
 
         if prune:

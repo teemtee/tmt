@@ -190,6 +190,11 @@ execute:
             how: fmf
             exclude: /tests/discover1
 
+    /include:
+        discover:
+            how: fmf
+            include: /tests/discover2
+
     /dynamic-ref:
         /no-context:
             discover:

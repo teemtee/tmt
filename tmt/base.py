@@ -3645,6 +3645,7 @@ class Tree(tmt.utils.Common):
         conditions: list[str],
         links: list['LinkNeedle'],
         excludes: list[str],
+        includes: Optional[list[str]] = None,
     ) -> list[CoreT]:
         """
         Apply filters and conditions, return pruned nodes
@@ -3691,6 +3692,9 @@ class Tree(tmt.utils.Common):
                 continue
             # Exclude
             if any(node for expr in excludes if re.search(expr, node.name)):
+                continue
+            # Include
+            if includes and not any(node for expr in includes if re.search(expr, node.name)):
                 continue
             result.append(node)
         return result
@@ -3752,6 +3756,7 @@ class Tree(tmt.utils.Common):
         unique: bool = True,
         links: Optional[list['LinkNeedle']] = None,
         excludes: Optional[list[str]] = None,
+        includes: Optional[list[str]] = None,
         apply_command_line: bool = True,
         sort: bool = True,
     ) -> list[Test]:
@@ -3769,6 +3774,7 @@ class Tree(tmt.utils.Common):
             LinkNeedle.from_spec(value) for value in cast(list[str], Test._opt('links', []))
         ]
         excludes = excludes or []
+        includes = includes or []
         # Used in: tmt run test --name NAME, tmt test ls NAME...
         cmd_line_names: list[str] = []
 
@@ -3776,6 +3782,7 @@ class Tree(tmt.utils.Common):
             filters += list(Test._opt('filters', []))
             conditions += list(Test._opt('conditions', []))
             excludes += list(Test._opt('exclude', []))
+            includes += list(Test._opt('include', []))
             cmd_line_names = list(Test._opt('names', []))
 
         # Sanitize test names to make sure no name includes control character
@@ -3837,7 +3844,7 @@ class Tree(tmt.utils.Common):
             tests = sorted(selected_tests, key=lambda test: test.order)
 
         # Apply filters & conditions
-        return self._filters_conditions(tests, filters, conditions, links, excludes)
+        return self._filters_conditions(tests, filters, conditions, links, excludes, includes)
 
     def plans(
         self,
@@ -3849,6 +3856,7 @@ class Tree(tmt.utils.Common):
         run: Optional['Run'] = None,
         links: Optional[list['LinkNeedle']] = None,
         excludes: Optional[list[str]] = None,
+        includes: Optional[list[str]] = None,
         apply_command_line: bool = True,
     ) -> list[Plan]:
         """
@@ -3866,12 +3874,14 @@ class Tree(tmt.utils.Common):
             LinkNeedle.from_spec(value) for value in cast(list[str], Plan._opt('links', []))
         ]
         excludes = excludes or []
+        includes = includes or []
 
         if apply_command_line:
             names += list(Plan._opt('names', []))
             filters += list(Plan._opt('filters', []))
             conditions += list(Plan._opt('conditions', []))
             excludes += list(Plan._opt('exclude', []))
+            includes += list(Plan._opt('include', []))
 
         # Sanitize plan names to make sure no name includes control character
         names = self.sanitize_cli_names(names)
@@ -3920,7 +3930,12 @@ class Tree(tmt.utils.Common):
             plans = functools.reduce(operator.iadd, (plan.resolve_imports() for plan in plans), [])
 
         return self._filters_conditions(
-            sorted(plans, key=lambda plan: plan.order), filters, conditions, links, excludes
+            sorted(plans, key=lambda plan: plan.order),
+            filters,
+            conditions,
+            links,
+            excludes,
+            includes,
         )
 
     def stories(
@@ -3933,6 +3948,7 @@ class Tree(tmt.utils.Common):
         whole: bool = False,
         links: Optional[list['LinkNeedle']] = None,
         excludes: Optional[list[str]] = None,
+        includes: Optional[list[str]] = None,
         apply_command_line: Optional[bool] = True,
     ) -> list[Story]:
         """
@@ -3949,12 +3965,14 @@ class Tree(tmt.utils.Common):
             LinkNeedle.from_spec(value) for value in cast(list[str], Story._opt('links', []))
         ]
         excludes = excludes or []
+        includes = includes or []
 
         if apply_command_line:
             names += list(Story._opt('names', []))
             filters += list(Story._opt('filters', []))
             conditions += list(Story._opt('conditions', []))
             excludes += list(Story._opt('exclude', []))
+            includes += list(Story._opt('include', []))
 
         # Sanitize story names to make sure no name includes control character
         names = self.sanitize_cli_names(names)
@@ -3978,7 +3996,12 @@ class Tree(tmt.utils.Common):
             for story in self.tree.prune(keys=keys, names=names, whole=whole, sources=sources)
         ]
         return self._filters_conditions(
-            sorted(stories, key=lambda story: story.order), filters, conditions, links, excludes
+            sorted(stories, key=lambda story: story.order),
+            filters,
+            conditions,
+            links,
+            excludes,
+            includes,
         )
 
     @staticmethod
