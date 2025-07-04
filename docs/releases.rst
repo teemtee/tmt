@@ -18,6 +18,11 @@ tmt-1.51.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :ref:`organize-data` chapter of the Guide has been extended
+with the :ref:`/spec/core/adjust` sectiom describing how to
+conditionally modify various attributes of tests, plans,
+or stories based on the current :ref:`/spec/context`.
+
+The :ref:`organize-data` chapter of the Guide has been extended
 with the :ref:`share-tests` section describing how to efficiently
 maintain test code and share it across repositories.
 
