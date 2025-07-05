@@ -3644,15 +3644,18 @@ class Tree(tmt.utils.Common):
         filters: list[str],
         conditions: list[str],
         links: list['LinkNeedle'],
+        includes: list[str],
         excludes: list[str],
     ) -> list[CoreT]:
         """
         Apply filters and conditions, return pruned nodes
         """
+
         result = []
         for node in nodes:
             filter_vars = copy.deepcopy(node._metadata)
             cond_vars = node._metadata
+
             # Add a lowercase version of bool variables for filtering
             bool_vars = {
                 key: [value, str(value).lower()]
@@ -3660,6 +3663,7 @@ class Tree(tmt.utils.Common):
                 if isinstance(value, bool)
             }
             filter_vars.update(bool_vars)
+
             # Conditions
             try:
                 if not all(
@@ -3671,6 +3675,7 @@ class Tree(tmt.utils.Common):
                 continue
             except Exception as error:
                 raise tmt.utils.GeneralError(f"Invalid --condition raised exception: {error}")
+
             # Filters
             try:
                 if not all(
@@ -3680,6 +3685,7 @@ class Tree(tmt.utils.Common):
             except fmf.utils.FilterError:
                 # Handle missing attributes as if filter failed
                 continue
+
             # Links
             try:
                 # Links are in OR relation
@@ -3689,10 +3695,17 @@ class Tree(tmt.utils.Common):
                 # Handle broken link as not matching
                 self.debug(f'Invalid link ignored, exception was {exc}')
                 continue
+
             # Exclude
-            if any(node for expr in excludes if re.search(expr, node.name)):
+            if any(re.search(pattern, node.name) for pattern in excludes):
                 continue
+
+            # Include
+            if includes and not any(re.search(pattern, node.name) for pattern in includes):
+                continue
+
             result.append(node)
+
         return result
 
     def sanitize_cli_names(self, names: list[str]) -> list[str]:
@@ -3751,6 +3764,7 @@ class Tree(tmt.utils.Common):
         conditions: Optional[list[str]] = None,
         unique: bool = True,
         links: Optional[list['LinkNeedle']] = None,
+        includes: Optional[list[str]] = None,
         excludes: Optional[list[str]] = None,
         apply_command_line: bool = True,
         sort: bool = True,
@@ -3768,6 +3782,7 @@ class Tree(tmt.utils.Common):
         links = (links or []) + [
             LinkNeedle.from_spec(value) for value in cast(list[str], Test._opt('links', []))
         ]
+        includes = includes or []
         excludes = excludes or []
         # Used in: tmt run test --name NAME, tmt test ls NAME...
         cmd_line_names: list[str] = []
@@ -3775,6 +3790,7 @@ class Tree(tmt.utils.Common):
         if apply_command_line:
             filters += list(Test._opt('filters', []))
             conditions += list(Test._opt('conditions', []))
+            includes += list(Test._opt('include', []))
             excludes += list(Test._opt('exclude', []))
             cmd_line_names = list(Test._opt('names', []))
 
@@ -3799,16 +3815,19 @@ class Tree(tmt.utils.Common):
         if Test._opt('disabled'):
             filters.append('enabled:false')
 
+        # As the first step, let's build the list of test objects based
+        # on keys and names/sources
+
+        # Pick tests based on the source files names
         if Test._opt('source'):
             tests = [
                 Test(node=test, logger=self._logger.descend())
                 for test in self.tree.prune(keys=keys, sources=cmd_line_names, sort=sort)
             ]
 
+        # If duplicate test names are allowed, match test name/regexp
+        # one-by-one and preserve the order of tests within a plan.
         elif not unique and names:
-            # First let's build the list of test objects based on keys & names.
-            # If duplicate test names are allowed, match test name/regexp
-            # one-by-one and preserve the order of tests within a plan.
             tests = []
             for name in names:
                 selected_tests = [
@@ -3822,6 +3841,7 @@ class Tree(tmt.utils.Common):
                     for test in name_filter(self.tree.prune(keys=keys, names=[name], sort=sort))
                 ]
                 tests.extend(sorted(selected_tests, key=lambda test: test.order))
+
         # Otherwise just perform a regular key/name filtering
         else:
             selected_tests = [
@@ -3837,7 +3857,14 @@ class Tree(tmt.utils.Common):
             tests = sorted(selected_tests, key=lambda test: test.order)
 
         # Apply filters & conditions
-        return self._filters_conditions(tests, filters, conditions, links, excludes)
+        return self._filters_conditions(
+            nodes=tests,
+            filters=filters,
+            conditions=conditions,
+            links=links,
+            includes=includes,
+            excludes=excludes,
+        )
 
     def plans(
         self,
@@ -3920,7 +3947,12 @@ class Tree(tmt.utils.Common):
             plans = functools.reduce(operator.iadd, (plan.resolve_imports() for plan in plans), [])
 
         return self._filters_conditions(
-            sorted(plans, key=lambda plan: plan.order), filters, conditions, links, excludes
+            nodes=sorted(plans, key=lambda plan: plan.order),
+            filters=filters,
+            conditions=conditions,
+            links=links,
+            includes=[],
+            excludes=excludes,
         )
 
     def stories(
@@ -3978,7 +4010,12 @@ class Tree(tmt.utils.Common):
             for story in self.tree.prune(keys=keys, names=names, whole=whole, sources=sources)
         ]
         return self._filters_conditions(
-            sorted(stories, key=lambda story: story.order), filters, conditions, links, excludes
+            nodes=sorted(stories, key=lambda story: story.order),
+            filters=filters,
+            conditions=conditions,
+            links=links,
+            includes=[],
+            excludes=excludes,
         )
 
     @staticmethod

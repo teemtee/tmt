@@ -127,12 +127,31 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
             """,
         normalize=tmt.utils.normalize_string_list,
     )
+
+    include: list[str] = field(
+        default_factory=list,
+        option=('-i', '--include'),
+        metavar='REGEXP',
+        multiple=True,
+        help="""
+            Include only tests matching given regular expression.
+            Respect the :ref:`/spec/core/order` defined in test.
+            The search mode is used for pattern matching. See the
+            :ref:`regular-expressions` section for details.
+            """,
+        normalize=tmt.utils.normalize_string_list,
+    )
+
     exclude: list[str] = field(
         default_factory=list,
         option=('-x', '--exclude'),
         metavar='REGEXP',
         multiple=True,
-        help="Exclude tests matching given regular expression.",
+        help="""
+            Exclude tests matching given regular expression.
+            The search mode is used for pattern matching. See the
+            :ref:`regular-expressions` section for details.
+            """,
         normalize=tmt.utils.normalize_string_list,
     )
 
@@ -293,18 +312,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     If no ``ref`` is provided, the default branch from the origin is used.
 
-    The following keys are used to limit the test discovery:
-
-    ``test`` - list of test names or regular expressions used to select tests
-
-    ``link`` - select tests using the link keys
-
-    ``filter`` - apply advanced filter based on test metadata attributes
-
-    ``exclude`` - exclude tests which match a regular expression
-
-    ``prune`` - copy only immediate directories of executed tests and their required files
-
 
     Dist Git
     ^^^^^^^^
@@ -360,9 +367,24 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
         tmt run discover -h fmf -v -t '^/test/one$' -t '^/special/setup$' -t '^/test/two$'
 
-    The ``test`` key uses search mode for matching patterns. See the
-    :ref:`regular-expressions` section for detailed information about
-    how exactly the regular expressions are handled.
+    The ``include`` key also allows to select tests by name, with two
+    important distinctions from the ``test`` key:
+
+    * The original test :ref:`/spec/core/order` is preserved so it does
+      not matter in which order tests are listed under the ``include``
+      key.
+
+    * Test duplication is not allowed, so even if a test name is
+      repeated several times, test will be executed only once.
+
+    Finally, the ``exclude`` key can be used to specify regular
+    expressions matching tests which should be skipped during the
+    discovery.
+
+    The ``test``, ``include`` and ``exclude`` keys use search mode for
+    matching patterns. See the :ref:`regular-expressions` section for
+    detailed information about how exactly the regular expressions are
+    handled.
 
     Link Filter
     ^^^^^^^^^^^
@@ -377,6 +399,27 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         discover:
             how: fmf
             link: verifies:.*issue/850$
+
+    Advanced Filter
+    ^^^^^^^^^^^^^^^
+
+    The ``filter`` key can be used to apply an advanced filter based on
+    test metadata attributes. These can be especially useful when tests
+    are grouped by the :ref:`/spec/core/tag` or :ref:`/spec/core/tier`
+    keys:
+
+    .. code-block:: yaml
+
+        discover:
+            how: fmf
+            filter: tier:3 & tag:provision
+
+    .. code-block:: shell
+
+        tmt run discover --how fmf --filter "tier:3 & tag:provision"
+
+    See the ``pydoc fmf.filter`` documentation for more details about
+    the supported syntax and available operators.
 
     Modified Tests
     ^^^^^^^^^^^^^^
@@ -701,7 +744,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         for link_needle in link_needles:
             self.info('link', str(link_needle), 'green')
 
-        excludes = list(tmt.base.Test._opt('exclude') or self.get('exclude', []))
+        excludes = list(tmt.base.Test._opt('exclude') or self.data.exclude)
+        includes = list(tmt.base.Test._opt('include') or self.data.include)
 
         # Filter only modified tests if requested
         modified_only = self.get('modified-only')
@@ -770,6 +814,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             conditions=["manual is False"],
             unique=False,
             links=link_needles,
+            includes=includes,
             excludes=excludes,
         )
 

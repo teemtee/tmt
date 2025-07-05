@@ -12,6 +12,17 @@ Files submitted during a test via
 :ref:`tmt-file-submit</stories/features/report-log>` or BeakerLib's
 ``rlFileSubmit`` are now a part of main test result as logs.
 
+The new key ``include`` can now be used for selecting tests in the
+:ref:`/plugins/discover/fmf` discover plugin. It allows to provide
+a list of regular expressions matching test names similar to the
+``test`` key but preserves the original :ref:`/spec/core/order` of
+the test and prevents duplicate execution of a single test.
+
+A public instance of the tmt web service has been deployed to
+https://tmt.testing-farm.io/ and can be used together with the
+``tmt link`` command to :ref:`link-issues` with related tests and
+plans.
+
 
 tmt-1.51.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

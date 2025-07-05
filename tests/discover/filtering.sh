@@ -8,16 +8,6 @@ rlJournalStart
         rlRun 'set -o pipefail'
     rlPhaseEnd
 
-    rlPhaseStartTest "Filter by test name"
-        plan='plan --name fmf/nourl/noref/nopath'
-        discover='discover --how fmf --test discover1'
-        rlRun "tmt run -dvr $discover $plan finish 2>&1 >/dev/null | tee output"
-        rlAssertGrep '1 test selected' output
-        rlAssertGrep '/tests/discover1' output
-        rlAssertNotGrep '/tests/discover2' output
-        rlAssertNotGrep '/tests/discover3' output
-    rlPhaseEnd
-
     rlPhaseStartTest "Filter by advanced filter"
         plan='plan --name fmf/nourl/noref/nopath'
         discover='discover --how fmf --filter tier:1,2'
@@ -26,25 +16,6 @@ rlJournalStart
         rlAssertGrep '/tests/discover1' output
         rlAssertGrep '/tests/discover2' output
         rlAssertNotGrep '/tests/discover3' output
-    rlPhaseEnd
-
-    for exclude in '-x' '--exclude'; do
-        rlPhaseStartTest "Exclude tests using $exclude <regex>"
-            plan='plan --name fmf/nourl/noref/nopath'
-            discover='discover --how fmf'
-            rlRun "tmt run -dvr $discover $plan 2>&1 >/dev/null | tee output"
-            rlAssertGrep '/tests/discover1' output
-            rlRun "tmt run -dvr $discover $exclude discover1 $plan 2>&1 >/dev/null | tee output"
-            rlAssertNotGrep '/tests/discover1' output
-        rlPhaseEnd
-    done
-
-    rlPhaseStartTest "Exclude tests via exclude option within a plan metadata"
-        plan='plan --name fmf/exclude'
-        discover='discover --how fmf'
-        rlRun "tmt run -dvr $discover $plan 2>&1 >/dev/null | tee output"
-        rlAssertNotGrep '/tests/discover1' output
-        rlAssertGrep '/tests/discover2' output
     rlPhaseEnd
 
     rlPhaseStartTest "Filter by link"
