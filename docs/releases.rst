@@ -19,6 +19,11 @@ https://tmt.testing-farm.io/ and can be used together with the
 ``tmt link`` command to :ref:`link-issues` with related tests and
 plans.
 
+The :ref:`organize-data` chapter of the Guide has been extended
+with the :ref:`/spec/core/adjust` section describing how to
+conditionally modify various attributes of tests, plans,
+or stories based on the current :ref:`/spec/context`.
+
 
 tmt-1.51.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
