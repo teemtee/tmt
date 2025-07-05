@@ -8,6 +8,10 @@
 tmt-1.52.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Files submitted during a test via
+:ref:`tmt-file-submit</stories/features/report-log>` or BeakerLib's
+``rlFileSubmit`` are now a part of main test result as logs.
+
 The new key ``include`` can now be used for selecting tests in the
 :ref:`/plugins/discover/fmf` discover plugin. It allows to provide
 a list of regular expressions matching test names similar to the
