@@ -476,9 +476,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     # Options which require .git to be present for their functionality
     _REQUIRES_GIT = (
         "ref",
-        "modified-url",
-        "modified-only",
-        "fmf-id",
+        "modified_url",
+        "modified_only",
+        "fmf_id",
+        "sync_repo",
     )
 
     @property
@@ -487,7 +488,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         Enable standalone mode when listing fmf ids
         """
 
-        if self.opt('fmf_id'):
+        if self.data.fmf_id:
             return True
         return super().is_in_standalone_mode
 
@@ -534,7 +535,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
         # Raise an exception if --fmf-id uses w/o url and git root
         # doesn't exist for discovered plan
-        if self.opt('fmf_id'):
+        if self.data.fmf_id:
 
             def assert_git_url(plan_name: Optional[str] = None) -> None:
                 try:
@@ -554,7 +555,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             # It covers only one case, when there is:
             # 1) no --url on CLI
             # 2) plan w/o url exists in test run
-            if not self.opt('url'):
+            if not self.data.url:
                 try:
                     fmf_tree = fmf.Tree(os.getcwd())
                 except fmf.utils.RootError:
@@ -591,15 +592,14 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 logger=self._logger,
             )
             git_root = self.testdir
+
         # Copy git repository root to workdir
         else:
             if path is not None:
                 fmf_root: Optional[Path] = path
             else:
                 fmf_root = Path(self.step.plan.node.root)
-            requires_git = self.opt('sync-repo') or any(
-                self.get(opt) for opt in self._REQUIRES_GIT
-            )
+            requires_git = any(getattr(self.data, key) for key in self._REQUIRES_GIT)
             # Path for distgit sources cannot be checked until the
             # they are extracted
             if path and not path.is_dir() and not dist_git_source:
