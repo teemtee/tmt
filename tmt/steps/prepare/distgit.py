@@ -8,7 +8,6 @@ import tmt.steps.prepare
 import tmt.utils
 from tmt.container import container, field
 from tmt.package_managers import Package
-from tmt.result import PhaseResult
 from tmt.steps.prepare import PreparePlugin
 from tmt.steps.prepare.install import PrepareInstallData
 from tmt.steps.provision import Guest
@@ -188,12 +187,12 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
         guest: 'Guest',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
-    ) -> list[PhaseResult]:
+    ) -> tmt.steps.PluginOutcome:
         """
         Prepare the guests for building rpm sources
         """
 
-        results = super().go(guest=guest, environment=environment, logger=logger)
+        outcome = super().go(guest=guest, environment=environment, logger=logger)
 
         environment = environment or tmt.utils.Environment()
 
@@ -279,8 +278,8 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
             spec_name,
             *dir_defines,
         )
-        outcome = guest.execute(command=cmd, cwd=source_dir).stdout or ''
-        match = re.search(r'tmt-get-builddir=(.+)', outcome)
+        output = guest.execute(command=cmd, cwd=source_dir).stdout or ''
+        match = re.search(r'tmt-get-builddir=(.+)', output)
         builddir = Path(match.group(1)) if match else None
 
         # But if the %build is missing in spec (e.g. in our test) the previous output was empty
@@ -345,4 +344,4 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
                 if collected_recommends and self.future_recommends:
                     self.future_recommends.data.package = uniq(collected_recommends)
 
-        return results
+        return outcome
