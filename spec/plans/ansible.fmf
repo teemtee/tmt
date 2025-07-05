@@ -1,0 +1,44 @@
+summary: Define general Ansible settings for a plan
+
+story:
+    As a user, I want to configure Ansible-related settings for the plan,
+    for example, the ability to define the structure of the Ansible inventory
+    using a customizable layout template.
+
+description: |
+    When running tests, a static inventory file is generated from
+    provided metadata. The ``ansible.inventory.layout`` key allows
+    users to specify a YAML template file defining the desired inventory group
+    hierarchy and layout.
+
+    This layout will be used to organize provisioned guests under
+    Ansible groups accordingly. If no layout is provided, a simple
+    default grouping basic layout is used.
+
+example:
+  - |
+    # sample_plan.fmf
+    ansible:
+      inventory:
+        layout: path/to/the/layout.yaml
+
+    provision:
+      - name: test-master
+        role: master
+      - name: test-runner
+        role: runner
+      - name: test-client
+        role: client
+
+    execute:
+      how: tmt
+
+    # path/to/the/layout.yaml
+    all:
+      children:
+        server:
+          children:
+            master: {}
+            replica: {}
+        client: {}
+        runner: {}
