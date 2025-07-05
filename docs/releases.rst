@@ -8,6 +8,12 @@
 tmt-1.52.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The new key ``include`` can now be used for selecting tests in the
+:ref:`/plugins/discover/fmf` discover plugin. It allows to provide
+a list of regular expressions matching test names similar to the
+``test`` key but preserves the original :ref:`/spec/core/order` of
+the test and prevents duplicate execution of a single test.
+
 A public instance of the tmt web service has been deployed to
 https://tmt.testing-farm.io/ and can be used together with the
 ``tmt link`` command to :ref:`link-issues` with related tests and
