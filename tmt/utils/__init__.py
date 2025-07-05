@@ -2568,6 +2568,12 @@ class RebootTimeoutError(ExecuteError):
     """
 
 
+class ReconnectTimeoutError(ExecuteError):
+    """
+    Failed to reconnect to the guest due to a timeout.
+    """
+
+
 class ReportError(GeneralError):
     """
     Report step error

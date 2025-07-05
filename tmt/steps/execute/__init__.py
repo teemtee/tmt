@@ -327,7 +327,7 @@ class TestInvocation:
             # test, but the guest may be still booting. Make sure it's
             # alive.
             if not self.guest.reconnect():
-                return False
+                raise tmt.utils.ReconnectTimeoutError("Reconnect timed out.")
 
         self.logger.debug(
             f"Test restart during test '{self.test}'"
