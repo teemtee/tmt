@@ -1,7 +1,8 @@
 import datetime
 import os
 import re
-from typing import TYPE_CHECKING, Any, Optional, overload
+from re import Pattern
+from typing import TYPE_CHECKING, Any, Optional, Union, overload
 
 import requests
 import urllib3
@@ -11,6 +12,7 @@ import tmt.log
 import tmt.steps.report
 import tmt.utils
 import tmt.utils.templates
+from tmt._compat.pathlib import Path
 from tmt.container import container, field
 from tmt.result import ResultOutcome
 from tmt.utils import (
@@ -28,6 +30,16 @@ if TYPE_CHECKING:
 JSON: 'TypeAlias' = Any
 DEFAULT_LOG_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('1 MB')
 DEFAULT_TRACEBACK_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('50 kB')
+
+DEFAULT_LOG_PATTERNS: list[Pattern[str]] = [
+    re.compile(pattern)
+    for pattern in [
+        r'avc\.txt',
+        r'dmesg-.*\.txt',
+        r'output\.txt',
+        r'tmt-watchdog\.txt',
+    ]
+]
 
 
 def _flag_env_to_default(option: str, default: bool) -> bool:
@@ -52,6 +64,17 @@ def _str_env_to_default(option: str, default: Optional[str]) -> Optional[str]:
     if env_var not in os.environ or os.getenv(env_var) is None:
         return default
     return str(os.getenv(env_var))
+
+
+def _pattern_list_env_to_default(option: str, default: list[Pattern[str]]) -> list[Pattern[str]]:
+    env_var = 'TMT_PLUGIN_REPORT_REPORTPORTAL_' + option.upper()
+    if env_var not in os.environ or os.getenv(env_var) is None:
+        return default
+    return tmt.utils.normalize_pattern_list(
+        option,
+        [item.strip() for item in str(os.getenv(env_var)).split(',') if item.strip()],
+        tmt.log.Logger.get_bootstrap_logger(),
+    )
 
 
 def _size_env_to_default(option: str, default: 'Size') -> 'Size':
@@ -283,6 +306,25 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
              Jinja template that will be rendered for each test result and appended to the end
              of its description. The following variables are passed to the template:
              ``PLAN_NAME``, ``RESULT``.
+             """,
+    )
+
+    upload_log_pattern: list[Pattern[str]] = field(
+        metavar="PATTERN",
+        option="--upload-log-pattern",
+        multiple=True,
+        default_factory=lambda: _pattern_list_env_to_default(
+            'upload_log_pattern', DEFAULT_LOG_PATTERNS[:]
+        ),
+        normalize=tmt.utils.normalize_pattern_list,
+        serialize=lambda patterns: [pattern.pattern for pattern in patterns],
+        unserialize=lambda serialized: [re.compile(pattern) for pattern in serialized],
+        help="""
+             List of regular expressions to look for in result log names. If any of the
+             patterns is found in a log file name, the log will be uploaded to ReportPortal.
+             Check result logs will be uploaded only if the check failed or if an error
+             occurred during the execution. The search mode is used for pattern matching.
+             See the :ref:`regular-expressions` section for details.
              """,
     )
 
@@ -575,7 +617,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
     def upload_result_logs(
         self,
-        result: tmt.result.BaseResult,
+        result: Union[tmt.result.Result, tmt.result.SubResult],
         session: requests.Session,
         item_uuid: str,
         launch_uuid: str,
@@ -586,53 +628,59 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         Upload all result log files into the ReportPortal instance
         """
 
-        for log_path in result.log:
-            if log_path.name == tmt.steps.execute.TEST_FAILURES_FILENAME:
-                continue
+        def upload_log(log_path: Path, is_yaml: bool = False, is_traceback: bool = False) -> None:
             try:
-                log = self.step.plan.execute.read(log_path)
-            except tmt.utils.FileError:
-                continue
+                if is_yaml:
+                    logs = tmt.utils.yaml_to_list(self.step.plan.execute.read(log_path))
+                else:
+                    logs = [self.step.plan.execute.read(log_path)]
+            except (tmt.utils.FileError, tmt.utils.GeneralError) as error:
+                tmt.utils.show_exception_as_warning(
+                    exception=error,
+                    message=f"Failed to read log file '{log_path}' for ReportPortal upload.",
+                    logger=self._logger,
+                )
+                return
 
-            message = _filter_log(log, settings=LogFilterSettings(size=self.data.log_size_limit))
-
-            # Upload log
-            self.rp_api_post(
-                session=session,
-                path="log/entry",
-                json={
-                    "message": message,
-                    "itemUuid": item_uuid,
-                    "launchUuid": launch_uuid,
-                    "level": "INFO",
-                    "time": timestamp,
-                },
+            filter_settings = LogFilterSettings(
+                size=self.data.traceback_size_limit if is_traceback else self.data.log_size_limit,
+                is_traceback=is_traceback,
             )
 
-        # Optionally write out failures
+            for log in logs:
+                # Add file name to the log if it is not a traceback
+                if not is_traceback:
+                    log = f'### `{log_path.name}`\n{log}'
+                # Upload log
+                self.rp_api_post(
+                    session=session,
+                    path="log/entry",
+                    json={
+                        "message": _filter_log(log, filter_settings),
+                        "itemUuid": item_uuid,
+                        "launchUuid": launch_uuid,
+                        "level": "ERROR" if is_traceback else "INFO",
+                        "time": timestamp,
+                    },
+                )
+
+        # Upload result logs
+        for log_path in result.log:
+            if any(pattern.search(log_path.name) for pattern in self.data.upload_log_pattern):
+                upload_log(log_path)
+
+        # Upload check result logs if the check failed
+        for check in result.check:
+            if check.result not in (ResultOutcome.FAIL, ResultOutcome.ERROR):
+                continue
+            for log_path in check.log:
+                if any(pattern.search(log_path.name) for pattern in self.data.upload_log_pattern):
+                    upload_log(log_path, is_traceback=True)
+
+        # Upload failure logs
         if write_out_failures:
             for failure_log in result.failure_logs:
-                failures = tmt.utils.yaml_to_list(self.step.plan.execute.read(failure_log))
-                for failure in failures:
-                    message = _filter_log(
-                        failure,
-                        settings=LogFilterSettings(
-                            size=self.data.traceback_size_limit,
-                            is_traceback=True,
-                        ),
-                    )
-
-                    self.rp_api_post(
-                        session=session,
-                        path="log/entry",
-                        json={
-                            "message": message,
-                            "itemUuid": item_uuid,
-                            "launchUuid": launch_uuid,
-                            "level": "ERROR",
-                            "time": timestamp,
-                        },
-                    )
+                upload_log(failure_log, is_yaml=True, is_traceback=True)
 
     def execute_rp_import(self) -> None:
         """

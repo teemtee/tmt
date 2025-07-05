@@ -83,6 +83,9 @@ properties:
   link-template:
     type: string
 
+  upload-log-pattern:
+    $ref: "/schemas/common#/definitions/one_or_more_strings"
+
   when:
     $ref: "/schemas/common#/definitions/when"
 
