@@ -38,7 +38,7 @@ class Abort(CheckPlugin[AbortCheck]):
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
-        if invocation.abort_requested and invocation.return_code != ProcessExitCodes.SUCCESS:
+        if invocation.abort.requested and invocation.return_code != ProcessExitCodes.SUCCESS:
             return [CheckResult(name=CHECK_NAME, result=ResultOutcome.FAIL, note=['Test aborted'])]
 
         return []
