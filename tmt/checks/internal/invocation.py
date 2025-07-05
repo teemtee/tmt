@@ -25,6 +25,11 @@ class Invocation(CheckPlugin[InvocationCheck]):
     This check fails when tests encounter errors that are not covered
     by more specific checks.
 
+    .. note::
+
+        This is an :ref:`internal check </plugins/test-checks/internal>`,
+        and it cannot be enabled or disabled by test metadata.
+
     .. versionadded:: 1.50
     """
 
