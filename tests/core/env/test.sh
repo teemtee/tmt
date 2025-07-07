@@ -56,8 +56,27 @@ rlJournalStart
             done
         rlPhaseEnd
 
-        rlPhaseStartTest "Empty environment file ($execute)"
+        # Use the same setup as the test above, but instead of defining
+        # variables on the command line read them from a DOTENV file
+        rlPhaseStartTest "Variable in DOTENV file ($execute)"
+            for plan in yes no; do
+                for test in yes no; do
+                    rlRun -s "tmt run -avvvr -e @vars.env \
+                        execute --how $execute \
+                        plan --name $plan \
+                        test --name $test"
+                    rlAssertGrep '>>>O0<<<' $rlRun_LOG
+                done
+            done
+        rlPhaseEnd
+
+        rlPhaseStartTest "Empty YAML environment file ($execute)"
             rlRun -s "tmt run -r -e @empty.yaml"
+            rlAssertGrep "warn: Empty environment file" $rlRun_LOG
+        rlPhaseEnd
+
+        rlPhaseStartTest "Empty DOTENV environment file ($execute)"
+            rlRun -s "tmt run -r -e @empty.env"
             rlAssertGrep "warn: Empty environment file" $rlRun_LOG
         rlPhaseEnd
     done

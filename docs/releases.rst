@@ -29,6 +29,11 @@ https://tmt.testing-farm.io/ and can be used together with the
 ``tmt link`` command to :ref:`link-issues` with related tests and
 plans.
 
+The ``--environment`` option now properly supports dotenv files as
+documented. Previously, while the help text indicated that both YAML
+and dotenv formats were supported, only YAML files worked correctly.
+Now dotenv files can be used with the ``@filename.env`` syntax.
+
 
 tmt-1.52.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
