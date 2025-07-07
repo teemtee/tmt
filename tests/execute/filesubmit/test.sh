@@ -9,11 +9,13 @@ rlJournalStart
     rlPhaseEnd
 
     # would be set by TMT_TEST_DATA
+    submission_log_path="$tmp/default/plan/execute/data/guest/default-0/default-1/submitted-files.log"
     tmt_test_data="default/plan/execute/data/guest/default-0/default-1/data"
     tmt_results_yaml_file="$tmp/default/plan/execute/results.yaml"
+    guest_data_path="${tmt_test_data#default/plan/execute/}"
 
     rlPhaseStartTest
-        rlRun "tmt run -vfi $tmp -a provision -h container"
+        rlRun -s "tmt run -vvfi $tmp -a provision -h container"
         FILE_PATH=$tmp/$tmt_test_data/this_file.txt
 
         # The `TESTID` is set to same value as `TMT_TEST_SERIAL_NUMBER`. Get
@@ -32,8 +34,18 @@ rlJournalStart
         rlRun "tar tzf $BUNDLE_PATH | grep /this_file.txt" \
             0 "Bundle contains an expected file"
 
-        # FIXME - Present this information somehow to the user
-        # (that they have some files...)
+        # Paths of submitted files were logged
+        rlAssertExists "$submission_log_path"
+        rlAssertGrep "this_file.txt" "$submission_log_path"
+        rlAssertGrep "tmp-bundle_name-$tmt_test_serial_number.tar.gz" "$submission_log_path"
+
+        # Check for relative paths in results.yaml
+        rlAssertGrep "$guest_data_path/this_file.txt" "$tmt_results_yaml_file"
+        rlAssertGrep "$guest_data_path/tmp-bundle_name-$tmt_test_serial_number.tar.gz" "$tmt_results_yaml_file"
+
+        # Show the submitted files in increased verbosity
+	rlAssertGrep "$FILE_PATH" $rlRun_LOG
+	rlAssertGrep "$BUNDLE_PATH" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
