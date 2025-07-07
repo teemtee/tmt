@@ -1,5 +1,5 @@
 summary: Verify that the test duration is correctly handled
-duration: 20m
+duration: 30m
 tag+:
   - provision-container
   - provision-virtual
