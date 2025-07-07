@@ -34,9 +34,9 @@ for in the log file names. Check result logs are also affected by
 this key but are uploaded only if the check fails or if an error
 occurs during execution.
 
-Security improvements have been made to prevent tmt scripts
-(``tmt-reboot``, ``tmt-abort``, ``tmt-file-submit``, ``tmt-report-result``)
-from being executed outside of their intended test execution context.
+Improvements have been made to prevent tmt scripts (``tmt-reboot``,
+``tmt-abort``, ``tmt-file-submit``, ``tmt-report-result``) from being
+executed outside of their intended test execution context.
 
 The application of :ref:`policies </spec/policy>` is now more visible
 in the log output. When a policy is applied, tmt will report this
@@ -47,9 +47,12 @@ The :ref:`/plugins/prepare/feature` plugin for EPEL now provides
 better error handling and warnings when attempting to enable EPEL
 repositories on unsupported distributions.
 
-Documentation has been improved for cloning private repositories
-from GitLab, providing clearer instructions for using personal
-access tokens and proper username configuration.
+Documentation of `TMT_GIT_CREDENTIALS_*`__ variables has been
+improved for cloning private repositories from GitLab, providing
+clearer instructions for using personal access tokens and proper
+username configuration.
+
+__ https://tmt.readthedocs.io/en/latest/overview.html#command-variables
 
 
 tmt-1.51.0
