@@ -47,12 +47,10 @@ The :ref:`/plugins/prepare/feature` plugin for EPEL now provides
 better error handling and warnings when attempting to enable EPEL
 repositories on unsupported distributions.
 
-Documentation of `TMT_GIT_CREDENTIALS_*`__ variables has been
-improved for cloning private repositories from GitLab, providing
-clearer instructions for using personal access tokens and proper
+Documentation of :ref:`TMT_GIT_CREDENTIALS_* <command-variables>`
+variables has been improved for cloning private repositories from GitLab,
+providing clearer instructions for using personal access tokens and proper
 username configuration.
-
-__ https://tmt.readthedocs.io/en/latest/overview.html#command-variables
 
 
 tmt-1.51.0
