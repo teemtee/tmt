@@ -464,7 +464,10 @@ class Discover(tmt.steps.Step):
                     fmf_id = test_origin.test.fmf_id
 
                     if not fmf_id.url:
-                        continue
+                        raise tmt.utils.DiscoverError(
+                            f"`tmt run discover --fmf-id` without `url` option "
+                            f"in plan `{self.plan}` can be used only within git repo."
+                        )
 
                     exported = test_origin.test.fmf_id.to_minimal_spec()
 
