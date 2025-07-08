@@ -87,6 +87,9 @@
         #results td.error {
             background: #b4d;
         }
+        #results td.skip {
+            background: #808080;
+        }
 
         #results td.log {
             word-spacing: 1ex;
@@ -142,6 +145,7 @@
             "info": true,
             "warn": true,
             "error": true,
+            "skip": true,
             "name": "",
             "note": "",
         };
@@ -239,6 +243,7 @@ Context:
         <td><label><input type="checkbox" id="filter_info" onclick="filter_checkbox(this);" checked>info</label></td>
         <td><label><input type="checkbox" id="filter_warn" onclick="filter_checkbox(this);" checked>warn</label></td>
         <td><label><input type="checkbox" id="filter_error" onclick="filter_checkbox(this);" checked>error</label></td>
+        <td><label><input type="checkbox" id="filter_skip" onclick="filter_checkbox(this);" checked>skip</label></td>
         <td><input type="search" placeholder="Filter test names" onchange="filter_name(this);"/></td>
         <td><input type="search" placeholder="Filter note" onchange="filter_note(this);"/></td>
     </tr>
