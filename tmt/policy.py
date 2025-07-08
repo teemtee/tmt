@@ -244,9 +244,8 @@ class Policy(MetadataContainer):
         """
 
         logger.info(
-            f"Apply tmt policy '{self.name}'.",
+            f"Apply tmt policy '{self.name}' to tests.",
             color='green',
-            topic=Topic.POLICY,
         )
 
         self._apply(tests, self.test_policy, logger.descend())

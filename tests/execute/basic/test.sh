@@ -14,11 +14,15 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
         rlRun "pushd data"
         rlRun "set -o pipefail"
+        rlRun "PROVISION_HOW=${PROVISION_HOW:-local}"
     rlPhaseEnd
 
+    # TODO Let's move the verbosity/debug level smoke test into a
+    # separate test. Here it does not make much sense and slows down
+    # execution of the essential part of this test scenario.
     for verbosity in '' '-dv' '-ddvv' '-dddvvv'; do
         rlPhaseStartTest "Run $verbosity"
-            rlRun "tmt run $verbosity --scratch --id $run" 2 "Run all plans"
+            rlRun "tmt run $verbosity --scratch --id $run --all provision --how $PROVISION_HOW" 2 "Run all plans"
         rlPhaseEnd
     done
 
