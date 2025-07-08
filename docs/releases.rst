@@ -52,6 +52,11 @@ variables has been improved for cloning private repositories from GitLab,
 providing clearer instructions for using personal access tokens and proper
 username configuration.
 
+The :ref:`organize-data` chapter of the Guide has been extended
+with the :ref:`/spec/core/adjust` section describing how to
+conditionally modify various attributes of tests, plans,
+or stories based on the current :ref:`/spec/context`.
+
 
 tmt-1.51.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
