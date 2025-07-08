@@ -14,7 +14,9 @@ rlJournalStart
             local filter="$3"
             local expected="$4"
 
-            rlRun    "tmt -vv test export --policy-file ../policies/test/$1 $plan"
+            rlRun -s "tmt -vv test export --policy-file ../policies/test/$1 $plan"
+            rlAssertGrep "Apply tmt policy '../policies/test/$1' to tests." $rlRun_LOG
+
             rlRun -s "tmt -vv test export --policy-file ../policies/test/$1 $plan 2> /dev/null | yq -cSr '.[] | $filter'"
 
             rlAssertEquals \
