@@ -2577,6 +2577,12 @@ class ReconnectTimeoutError(ExecuteError):
     """
 
 
+class RestartMaxAttemptsError(ExecuteError):
+    """
+    Test restart failed due to maximum attempts reached.
+    """
+
+
 class ReportError(GeneralError):
     """
     Report step error

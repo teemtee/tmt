@@ -17,7 +17,7 @@ function assert_no_check_results () {
 
 rlJournalStart
     rlPhaseStartSetup
-        rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
+        rlRun "PROVISION_HOW=${PROVISION_HOW:-virtual}"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
         rlRun "results=$run/plan/execute/results.yaml"
         rlRun "pushd data"
@@ -46,9 +46,22 @@ rlJournalStart
         assert_check_result "Test results have failed permission check" "/internal/permission" "internal/permission" "fail"
     rlPhaseEnd
 
-    rlPhaseStartTest "Test invocation check with $PROVISION_HOW"
-        rlRun "$tmt_command /internal/invocation" 2
-        assert_check_result "Test results have failed invocation check" "/internal/invocation" "internal/invocation" "fail"
+    rlPhaseStartTest "Test invocation pidfile check with $PROVISION_HOW"
+        rlRun "$tmt_command /internal/invocation/pidfile" 2
+        assert_check_result "Test results have failed invocation pidfile check" "/internal/invocation/pidfile" "internal/invocation" "fail"
+        rlAssertGrep "Test failed due to pidfile locking" "$results"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Test invocation restart check with $PROVISION_HOW"
+        rlRun "$tmt_command /internal/invocation/restart" 2
+        assert_check_result "Test results have failed invocation restart check" "/internal/invocation/restart" "internal/invocation" "fail"
+        rlAssertGrep "Test reached maximum restart attempts" "$results"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Test guest reboot check with $PROVISION_HOW"
+        rlRun "$tmt_command /internal/guest/reboot" 2
+        assert_check_result "Test results have failed guest reboot check" "/internal/guest/reboot" "internal/guest" "fail"
+        rlAssertGrep "Test failed due to guest reboot timeout" "$results"
     rlPhaseEnd
 
     rlPhaseStartCleanup

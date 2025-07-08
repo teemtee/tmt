@@ -20,7 +20,7 @@ import tmt.steps.scripts
 import tmt.utils
 import tmt.utils.signals
 import tmt.utils.wait
-from tmt.checks import CheckEvent
+from tmt.checks import CheckEvent, CheckPlugin
 from tmt.container import container, field, simple_field
 from tmt.options import option
 from tmt.plugins import PluginRegistry
@@ -144,6 +144,7 @@ class TestInvocation:
     start_time: Optional[str] = None
     end_time: Optional[str] = None
     real_duration: Optional[str] = None
+    exception: Optional[Exception] = None
 
     #: Number of times the test has been restarted.
     _restart_count: int = 0
@@ -352,7 +353,7 @@ class TestInvocation:
                 f" and test restart count {self._restart_count}."
             )
 
-            return False
+            raise tmt.utils.RestartMaxAttemptsError("Maximum test restart attempts exceeded.")
 
         if self.test.restart_with_reboot:
             self.hard_reboot_requested = True
@@ -1031,12 +1032,15 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         *,
         event: CheckEvent,
         invocation: TestInvocation,
+        internal: bool = False,
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         results: list[CheckResult] = []
 
-        for check in invocation.test.check:
+        checks = CheckPlugin.internal_checks(logger) if internal else invocation.test.check
+
+        for check in checks:
             with Stopwatch() as timer:
                 check_results = check.go(
                     event=event, invocation=invocation, environment=environment, logger=logger
@@ -1077,6 +1081,21 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         return self._run_checks_for_test(
             event=CheckEvent.AFTER_TEST,
             invocation=invocation,
+            environment=environment,
+            logger=logger,
+        )
+
+    def run_internal_checks(
+        self,
+        *,
+        invocation: TestInvocation,
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[CheckResult]:
+        return self._run_checks_for_test(
+            event=CheckEvent.AFTER_TEST,
+            invocation=invocation,
+            internal=True,
             environment=environment,
             logger=logger,
         )
