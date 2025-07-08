@@ -1,5 +1,5 @@
 import copy
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 import click
 import fmf
@@ -9,12 +9,12 @@ import tmt.steps
 from tmt.container import container
 from tmt.options import option
 from tmt.plugins import PluginRegistry
-from tmt.result import PhaseResult
+from tmt.result import PhaseResult, ResultOutcome
 from tmt.steps import (
     Action,
-    ActionTask,
     Method,
     PhaseQueue,
+    PluginOutcome,
     PluginTask,
     PullTask,
     sync_with_guests,
@@ -33,7 +33,7 @@ class FinishStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
 FinishStepDataT = TypeVar('FinishStepDataT', bound=FinishStepData)
 
 
-class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, list[PhaseResult]]):
+class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, PluginOutcome]):
     """
     Common parent of finish plugins
     """
@@ -76,10 +76,10 @@ class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, list[PhaseResult]]):
         guest: 'Guest',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
-    ) -> list[PhaseResult]:
+    ) -> PluginOutcome:
         self.go_prolog(logger)
 
-        return []
+        return PluginOutcome()
 
 
 class Finish(tmt.steps.Step):
@@ -172,7 +172,7 @@ class Finish(tmt.steps.Step):
 
                 guest_copies.append(guest_copy)
 
-            queue: PhaseQueue[FinishStepData, list[PhaseResult]] = PhaseQueue(
+            queue: PhaseQueue[FinishStepData, PluginOutcome] = PhaseQueue(
                 'finish', self._logger.descend(logger_name=f'{self}.queue')
             )
 
@@ -186,30 +186,61 @@ class Finish(tmt.steps.Step):
                         guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)],
                     )
 
-            failed_tasks: list[
-                Union[ActionTask, PluginTask[FinishStepData, list[PhaseResult]]]
-            ] = []
             results: list[PhaseResult] = []
+            exceptions: list[Exception] = []
+
+            def _record_exception(
+                outcome: PluginTask[FinishStepData, PluginOutcome], exc: Exception
+            ) -> None:
+                outcome.logger.fail(str(exc))
+
+                exceptions.append(exc)
 
             for outcome in queue.run():
                 if not isinstance(outcome.phase, FinishPlugin):
                     continue
 
+                # Possible outcomes: plugin crashed, raised an exception,
+                # and that exception has been delivered to the top of the
+                # phase's thread and propagated to us in the task outcome.
+                #
+                # Log the failure, save the exception, and add an error
+                # result to represent the crash. Plugin did not return any
+                # usable results, otherwise it would not have ended with
+                # an exception...
                 if outcome.exc:
-                    outcome.logger.fail(str(outcome.exc))
+                    _record_exception(outcome, outcome.exc)
 
-                    failed_tasks.append(outcome)
+                    results.append(
+                        PhaseResult(
+                            name=outcome.phase.name,
+                            result=ResultOutcome.ERROR,
+                            note=['Plugin raised an unhandled exception.'],
+                        )
+                    )
+
                     continue
 
+                # Or, plugin finished successfully - not necessarily after
+                # achieving its goals successfully. Save results, and if
+                # plugin returned also some exceptions, do the same as above:
+                # log them and save them, but do not emit any special result.
+                # Plugin was alive till the very end, and returned results.
                 if outcome.result:
-                    results += outcome.result
+                    results += outcome.result.results
+
+                    if outcome.result.exceptions:
+                        for exc in outcome.result.exceptions:
+                            _record_exception(outcome, exc)
+
+                        continue
 
             self._save_results(results)
 
-            if failed_tasks:
+            if exceptions:
                 raise tmt.utils.GeneralError(
                     'finish step failed',
-                    causes=[outcome.exc for outcome in failed_tasks if outcome.exc is not None],
+                    causes=exceptions,
                 )
 
             # To separate "finish" from "pull" queue visually

@@ -47,6 +47,7 @@ from tmt.container import (
     field,
     key_to_option,
     option_to_key,
+    simple_field,
 )
 from tmt.options import option
 from tmt.utils import (
@@ -66,7 +67,7 @@ if TYPE_CHECKING:
     import tmt.steps.discover
     import tmt.steps.execute
     from tmt.base import Plan
-    from tmt.result import BaseResult
+    from tmt.result import BaseResult, PhaseResult
     from tmt.steps.provision import Guest
 
 
@@ -1425,6 +1426,12 @@ def provides_method(
     return _method
 
 
+@container
+class PluginOutcome:
+    results: list['PhaseResult'] = simple_field(default_factory=list['PhaseResult'])
+    exceptions: list[Exception] = simple_field(default_factory=list[Exception])
+
+
 class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
     """
     Common parent of all step plugins
@@ -2640,8 +2647,8 @@ class PluginTask(
     def name(self) -> str:
         return f'{self.phase_name} on {fmf.utils.listed(self.guest_ids)}'
 
-    def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
-        self.phase.go(guest=guest, logger=logger)
+    def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> PluginReturnValueT:
+        return self.phase.go(guest=guest, logger=logger)
 
 
 class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginReturnValueT]]]):
