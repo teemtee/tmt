@@ -24,6 +24,11 @@ class Interrupt(CheckPlugin[InterruptCheck]):
 
     This check fails when tests are interrupted by SIGINT or SIGTERM signals.
 
+    .. note::
+
+        This is an :ref:`internal check </plugins/test-checks/internal>`,
+        and it cannot be enabled or disabled by test metadata.
+
     .. versionadded:: 1.50
     """
 
