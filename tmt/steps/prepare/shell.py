@@ -29,6 +29,23 @@ class PrepareShellData(tmt.steps.prepare.PrepareStepData):
         unserialize=lambda serialized: [ShellScript(script) for script in serialized],
     )
 
+    url: Optional[str] = field(
+        default=None,
+        option='--url',
+        metavar='REPOSITORY',
+        help='Git repository URL for fetching shell scripts.',
+    )
+
+    ref: Optional[str] = field(
+        default=None,
+        option='--ref',
+        metavar='REVISION',
+        help="""
+            Branch, tag or commit specifying the desired git
+            revision.
+            """,
+    )
+
     # ignore[override] & cast: two base classes define to_spec(), with conflicting
     # formal types.
     def to_spec(self) -> dict[str, Any]:  # type: ignore[override]
