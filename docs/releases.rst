@@ -4,6 +4,12 @@
     Releases
 ======================
 
+tmt-1.53.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`/plugins/report/html` report plugin now supports the
+``skip`` result status.
+
 tmt-1.52.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
