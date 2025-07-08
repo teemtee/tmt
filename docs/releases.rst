@@ -7,17 +7,6 @@
 tmt-1.52.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :ref:`/plugins/report/reportportal` report plugin now supports
-a new ``upload-log-pattern`` key. This key allows users to select
-which logs should be uploaded by specifying the pattern to search
-for in the log file names. Check result logs are also affected by
-this key but are uploaded only if the check fails or if an error
-occurs during execution.
-
-
-tmt-1.52.0
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 The new key ``include`` can now be used for selecting tests in the
 :ref:`/plugins/discover/fmf` discover plugin. It allows to provide
 a list of regular expressions matching test names similar to the
@@ -29,18 +18,39 @@ https://tmt.testing-farm.io/ and can be used together with the
 ``tmt link`` command to :ref:`link-issues` with related tests and
 plans.
 
+Files submitted during a test via
+:ref:`tmt-file-submit</stories/features/report-log>` or BeakerLib's
+``rlFileSubmit`` are now a part of main test result as logs.
+
 The ``--environment`` option now properly supports dotenv files as
 documented. Previously, while the help text indicated that both YAML
 and dotenv formats were supported, only YAML files worked correctly.
 Now dotenv files can be used with the ``@filename.env`` syntax.
 
+The :ref:`/plugins/report/reportportal` report plugin now supports
+a new ``upload-log-pattern`` key. This key allows users to select
+which logs should be uploaded by specifying the pattern to search
+for in the log file names. Check result logs are also affected by
+this key but are uploaded only if the check fails or if an error
+occurs during execution.
 
-tmt-1.52.0
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Improvements have been made to prevent tmt scripts (``tmt-reboot``,
+``tmt-abort``, ``tmt-file-submit``, ``tmt-report-result``) from being
+executed outside of their intended test execution context.
 
-Files submitted during a test via
-:ref:`tmt-file-submit</stories/features/report-log>` or BeakerLib's
-``rlFileSubmit`` are now a part of main test result as logs.
+The application of :ref:`policies </spec/policy>` is now more visible
+in the log output. When a policy is applied, tmt will report this
+even without the policy log topic enabled, making it easier to
+understand when policies are affecting test execution.
+
+The :ref:`/plugins/prepare/feature` plugin for EPEL now provides
+better error handling and warnings when attempting to enable EPEL
+repositories on unsupported distributions.
+
+Documentation of :ref:`TMT_GIT_CREDENTIALS_* <command-variables>`
+variables has been improved for cloning private repositories from GitLab,
+providing clearer instructions for using personal access tokens and proper
+username configuration.
 
 
 tmt-1.51.0
