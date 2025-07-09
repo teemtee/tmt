@@ -551,9 +551,10 @@ By default only a core set of tests is executed against a newly
 created pull request and its updates to verify basic sanity of the
 change. Once the pull request content is ready for a thorough
 testing add the ``ci | full test`` label and make sure that the
-``discuss`` label is not present. All future changes of the pull
-request will be tested with the full test coverage. For changes
-related to documentation only the full test suite is not required.
+``status | discuss`` label is not present. All future changes of
+the pull request will be tested with the full test coverage. For
+changes related to documentation only the full test suite is not
+required.
 
 During the pull request review it is recommended to add new
 commits with your changes on the top of the branch instead of
