@@ -529,7 +529,7 @@ that the pull request title & description are populated with
 reasonable information. This helps reviewers to better and faster
 understand your intentions. Keep the pull request description
 up-to-date, especially after significant changes have been made to
-the implementation, as it's content will be used for the final
+the implementation, as its content will be used for the final
 commit merged into the ``main`` branch.
 
 If the pull request addresses an existing issue, mention it using
