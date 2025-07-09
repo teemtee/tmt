@@ -523,29 +523,14 @@ __ https://github.com/tldr-pages/tldr/blob/main/CONTRIBUTING.md
 Pull Requests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When submitting a new pull request which is not completely ready
-for merging but you would like to get an early feedback on the
-concept, use the GitHub feature to mark it as a ``Draft`` rather
-than using the ``WIP`` prefix in the summary. You might also want
-to assign the ``ci | skip`` label if there's no point in running
-tests yet.
-
-During the pull request review it is recommended to add new
-commits with your changes on the top of the branch instead of
-amending the original commit and doing a force push. This will
-make it easier for the reviewers to see what has recently changed.
-
-It's good to keep the pull request up-to-date with the ``main``
-branch. Rebase regularly or use ``/packit build`` command in the
-pull request comment if there were significant changes on the
-default branch otherwise newly added tests might cause unexpected
-and irrelevant failures in your test jobs.
-
-Once the pull request has been successfully reviewed and all tests
-passed, please rebase on the latest ``main`` branch content and
-squash the changes into a single commit. Use multiple commits to
-group relevant code changes if the pull request is too large for a
-single commit.
+When committing changes, provide a concise summary in the commit's
+first line and any essential details in the commit description so
+that the pull request title & description are populated with
+reasonable information. This helps reviewers to better and faster
+understand your intentions. Keep the pull request description
+up-to-date, especially after significant changes have been made to
+the implementation, as it's content will be used for the final
+commit merged into the ``main`` branch.
 
 If the pull request addresses an existing issue, mention it using
 one of the automatically `parsed formats`__ so that it is linked
@@ -555,13 +540,37 @@ to it, for example:
 
     Fix #1234.
 
+When submitting a new pull request which is not completely ready
+for merging but you would like to get an early feedback on the
+concept, use the GitHub feature to mark it as a ``Draft`` rather
+than using the ``WIP`` prefix in the summary. You might also want
+to assign the ``ci | skip`` label if there's no point in running
+any tests yet.
+
 By default only a core set of tests is executed against a newly
 created pull request and its updates to verify basic sanity of the
 change. Once the pull request content is ready for a thorough
-testing add the ``full test`` label and make sure that the
+testing add the ``ci | full test`` label and make sure that the
 ``discuss`` label is not present. All future changes of the pull
 request will be tested with the full test coverage. For changes
 related to documentation only the full test suite is not required.
+
+During the pull request review it is recommended to add new
+commits with your changes on the top of the branch instead of
+amending the original commit and doing a force push. This will
+make it easier for the reviewers to see what has recently changed
+and how exactly you have addressed the review comments.
+
+It's good to keep the pull request up-to-date with the ``main``
+branch. Rebase regularly or use ``/packit build`` command in the
+pull request comment if there were significant changes on the
+default branch otherwise newly added tests might cause unexpected
+and irrelevant failures in your test jobs.
+
+Once the pull request has been successfully reviewed and all tests
+passed, please rebase on the latest ``main`` branch content. Check
+that the pull request description is up-to-date as it will be used
+for the final squash commit when merging the changes.
 
 __ https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests#linking-a-pull-request-to-an-issue
 
@@ -679,13 +688,17 @@ Before merging it's good to check the following:
 
 * New test coverage added if appropriate, all tests passed
 * Documentation has been added or updated where appropriate
-* Commit messages are sane, commits are reasonably squashed
-* At least one positive review provided by the maintainers
-* Merge commits are not used, rebase on the ``main`` instead
+* At least two positive reviews provided by the maintainers
+
+Merge commits are not used, rebase on the ``main`` instead and
+squash the commits before merging. The commit message is generated
+from the pull request description which should be up-to-date. Just
+make sure the content is sane and remove the checklist from it.
 
 Pull requests which should not or cannot be merged are marked with
-the ``blocked`` label. For complex topics which need more eyes to
-review and discuss before merging use the ``discuss`` label.
+the ``status | blocked`` label. For complex topics which need more
+eyes to review and discuss before merging use the ``status |
+discuss`` label.
 
 
 Makefile
