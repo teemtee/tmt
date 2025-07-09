@@ -65,6 +65,12 @@
           changed_when: output.rc == 0
           when: ansible_architecture == "s390x"
 
+    - name: Enable FIPS Policy
+      ansible.builtin.command: update-crypto-policies --set FIPS
+      register: output
+      changed_when: "'is not sufficient for' in output.stderr"
+      when: ansible_distribution_major_version | int == 10
+
     - name: Enable FIPS mode
       ansible.builtin.command: fips-mode-setup --enable
       environment:
@@ -90,8 +96,6 @@
       changed_when: false
       when: ansible_distribution_major_version | int < 10
 
-    # On RHEL-10, FIPS policy is set by "auto-policy" feature without touching
-    # /etc/crypto-policies/state/current and hence we cannot inspect that file.
     - name: Check that FIPS policy is enabled
       ansible.builtin.shell: test "$(update-crypto-policies --show)" == "FIPS"
       changed_when: false
