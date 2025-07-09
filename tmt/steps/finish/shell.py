@@ -28,6 +28,23 @@ class FinishShellData(tmt.steps.finish.FinishStepData):
         unserialize=lambda serialized: [ShellScript(script) for script in serialized],
     )
 
+    url: Optional[str] = field(
+        default=None,
+        option='--url',
+        metavar='REPOSITORY',
+        help='Git repository URL for fetching shell scripts.',
+    )
+
+    ref: Optional[str] = field(
+        default=None,
+        option='--ref',
+        metavar='REVISION',
+        help="""
+            Branch, tag or commit specifying the desired git
+            revision.
+            """,
+    )
+
     # TODO: well, our brave new field() machinery should be able to deal with all of this...
     # ignore[override] & cast: two base classes define to_spec(), with conflicting
     # formal types.
