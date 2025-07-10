@@ -1,9 +1,7 @@
 import contextlib
 import glob
-import os
 import re
 import shutil
-import subprocess
 from typing import Any, Optional, cast
 
 import fmf
@@ -127,12 +125,31 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
             """,
         normalize=tmt.utils.normalize_string_list,
     )
+
+    include: list[str] = field(
+        default_factory=list,
+        option=('-i', '--include'),
+        metavar='REGEXP',
+        multiple=True,
+        help="""
+            Include only tests matching given regular expression.
+            Respect the :ref:`/spec/core/order` defined in test.
+            The search mode is used for pattern matching. See the
+            :ref:`regular-expressions` section for details.
+            """,
+        normalize=tmt.utils.normalize_string_list,
+    )
+
     exclude: list[str] = field(
         default_factory=list,
         option=('-x', '--exclude'),
         metavar='REGEXP',
         multiple=True,
-        help="Exclude tests matching given regular expression.",
+        help="""
+            Exclude tests matching given regular expression.
+            The search mode is used for pattern matching. See the
+            :ref:`regular-expressions` section for details.
+            """,
         normalize=tmt.utils.normalize_string_list,
     )
 
@@ -293,18 +310,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     If no ``ref`` is provided, the default branch from the origin is used.
 
-    The following keys are used to limit the test discovery:
-
-    ``test`` - list of test names or regular expressions used to select tests
-
-    ``link`` - select tests using the link keys
-
-    ``filter`` - apply advanced filter based on test metadata attributes
-
-    ``exclude`` - exclude tests which match a regular expression
-
-    ``prune`` - copy only immediate directories of executed tests and their required files
-
 
     Dist Git
     ^^^^^^^^
@@ -360,9 +365,24 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
         tmt run discover -h fmf -v -t '^/test/one$' -t '^/special/setup$' -t '^/test/two$'
 
-    The ``test`` key uses search mode for matching patterns. See the
-    :ref:`regular-expressions` section for detailed information about
-    how exactly the regular expressions are handled.
+    The ``include`` key also allows to select tests by name, with two
+    important distinctions from the ``test`` key:
+
+    * The original test :ref:`/spec/core/order` is preserved so it does
+      not matter in which order tests are listed under the ``include``
+      key.
+
+    * Test duplication is not allowed, so even if a test name is
+      repeated several times, test will be executed only once.
+
+    Finally, the ``exclude`` key can be used to specify regular
+    expressions matching tests which should be skipped during the
+    discovery.
+
+    The ``test``, ``include`` and ``exclude`` keys use search mode for
+    matching patterns. See the :ref:`regular-expressions` section for
+    detailed information about how exactly the regular expressions are
+    handled.
 
     Link Filter
     ^^^^^^^^^^^
@@ -377,6 +397,27 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         discover:
             how: fmf
             link: verifies:.*issue/850$
+
+    Advanced Filter
+    ^^^^^^^^^^^^^^^
+
+    The ``filter`` key can be used to apply an advanced filter based on
+    test metadata attributes. These can be especially useful when tests
+    are grouped by the :ref:`/spec/core/tag` or :ref:`/spec/core/tier`
+    keys:
+
+    .. code-block:: yaml
+
+        discover:
+            how: fmf
+            filter: tier:3 & tag:provision
+
+    .. code-block:: shell
+
+        tmt run discover --how fmf --filter "tier:3 & tag:provision"
+
+    See the ``pydoc fmf.filter`` documentation for more details about
+    the supported syntax and available operators.
 
     Modified Tests
     ^^^^^^^^^^^^^^
@@ -489,48 +530,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 "Cannot manipulate with dist-git without the `--dist-git-merge` option."
             )
 
-        # Raise an exception if --fmf-id uses w/o url and git root
-        # doesn't exist for discovered plan
-        if self.opt('fmf_id'):
-
-            def assert_git_url(plan_name: Optional[str] = None) -> None:
-                try:
-                    subprocess.run(
-                        ['git', 'rev-parse', '--show-toplevel'],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.DEVNULL,
-                        check=True,
-                    )
-                except subprocess.CalledProcessError:
-                    raise tmt.utils.DiscoverError(
-                        f"`tmt run discover --fmf-id` without `url` option in "
-                        f"plan `{plan_name}` can be used only within"
-                        f" git repo."
-                    )
-
-            # It covers only one case, when there is:
-            # 1) no --url on CLI
-            # 2) plan w/o url exists in test run
-            if not self.opt('url'):
-                try:
-                    fmf_tree = fmf.Tree(os.getcwd())
-                except fmf.utils.RootError:
-                    raise tmt.utils.DiscoverError(
-                        "No metadata found in the current directory. "
-                        "Use 'tmt init' to get started."
-                    )
-                for attr in fmf_tree.climb():
-                    try:
-                        plan_url = attr.data.get('discover').get('url')
-                        plan_name = attr.name
-                        if not plan_url:
-                            assert_git_url(plan_name)
-                    except AttributeError:
-                        pass
-            # All other cases are covered by this condition
-            if not url:
-                assert_git_url(self.step.plan.name)
-
         self.log_import_plan_details()
 
         # Clone provided git repository (if url given) with disabled
@@ -553,7 +552,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             if path is not None:
                 fmf_root: Optional[Path] = path
             else:
-                fmf_root = Path(self.step.plan.node.root)
+                fmf_root = Path(self.step.plan.fmf_root) if self.step.plan.fmf_root else None
             requires_git = self.opt('sync-repo') or any(
                 self.get(opt) for opt in self._REQUIRES_GIT
             )
@@ -625,34 +624,12 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # Dist-git source processing during discover step
         if dist_git_source:
             try:
-                # 'ref' is checked out in self.testdir
-                self.download_distgit_source(
-                    distgit_dir=self.testdir if ref else git_root,
-                    target_dir=sourcedir,
-                    handler_name=self.get('dist-git-type'),
-                )
-                # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
-                # FIXME 'worktree' could be used as sourcedir when 'url' is not set
-                tmt.utils.filesystem.copy_tree(
-                    self.testdir if ref else git_root,
-                    sourcedir,
-                    self._logger,
-                )
-                # patch & rediscover will happen later in the prepare step
-                if not self.get('dist-git-download-only'):
-                    # Check if prepare is enabled, warn user if not
-                    if not self.step.plan.prepare.enabled:
-                        self.warn("Sources will not be extracted, prepare step is not enabled.")
-                    insert_to_prepare_step(
-                        discover_plugin=self,
-                        sourcedir=sourcedir,
-                    )
-                # merge or not, detect later
-                self.step.plan.discover.extract_tests_later = True
-                self.info("Tests will be discovered after dist-git patching in prepare.")
+                distgit_dir = self.testdir if ref else git_root
+                self.process_distgit_source(distgit_dir, sourcedir)
                 return
             except Exception as error:
                 raise tmt.utils.DiscoverError("Failed to process 'dist-git-source'.") from error
+
         # Discover tests
         self.do_the_discovery(path)
 
@@ -660,6 +637,40 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         if self.step.plan.my_run is not None:
             for policy in self.step.plan.my_run.policies:
                 policy.apply_to_tests(tests=self._tests, logger=self._logger)
+
+    def process_distgit_source(self, distgit_dir: Path, sourcedir: Path) -> None:
+        """
+        Process dist-git source during the discover step.
+        """
+
+        self.download_distgit_source(
+            distgit_dir=distgit_dir,
+            target_dir=sourcedir,
+            handler_name=self.get('dist-git-type'),
+        )
+
+        # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
+        # FIXME 'worktree' could be used as sourcedir when 'url' is not set
+        tmt.utils.filesystem.copy_tree(
+            distgit_dir,
+            sourcedir,
+            self._logger,
+        )
+
+        # patch & rediscover will happen later in the prepare step
+        if not self.get('dist-git-download-only'):
+            # Check if prepare is enabled, warn user if not
+            if not self.step.plan.prepare.enabled:
+                self.warn("Sources will not be extracted, prepare step is not enabled.")
+
+            insert_to_prepare_step(
+                discover_plugin=self,
+                sourcedir=sourcedir,
+            )
+
+        # merge or not, detect later
+        self.step.plan.discover.extract_tests_later = True
+        self.info("Tests will be discovered after dist-git patching in prepare.")
 
     def do_the_discovery(self, path: Optional[Path] = None) -> None:
         """
@@ -701,7 +712,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         for link_needle in link_needles:
             self.info('link', str(link_needle), 'green')
 
-        excludes = list(tmt.base.Test._opt('exclude') or self.get('exclude', []))
+        excludes = list(tmt.base.Test._opt('exclude') or self.data.exclude)
+        includes = list(tmt.base.Test._opt('include') or self.data.include)
 
         # Filter only modified tests if requested
         modified_only = self.get('modified-only')
@@ -770,6 +782,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             conditions=["manual is False"],
             unique=False,
             links=link_needles,
+            includes=includes,
             excludes=excludes,
         )
 

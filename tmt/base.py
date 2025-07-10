@@ -2051,7 +2051,6 @@ class Plan(
     )
 
     _importing_fmf_context: FmfContext = field(default_factory=FmfContext, internal=True)
-    _importing_environment: Environment = field(default_factory=Environment, internal=True)
 
     _extra_l2_keys = [
         'context',
@@ -2069,7 +2068,7 @@ class Plan(
         skip_validation: bool = False,
         raise_on_validation_error: bool = False,
         importing_fmf_context: Optional[FmfContext] = None,
-        importing_environment: Optional[Environment] = None,
+        inherited_environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
         **kwargs: Any,
     ) -> None:
@@ -2095,7 +2094,7 @@ class Plan(
         self._imported_plans = []
         self._derived_plans = []
         self._importing_fmf_context = importing_fmf_context or FmfContext()
-        self._importing_environment = importing_environment or Environment()
+        self._environment_from_importing = inherited_environment or Environment()
 
         # Check for possible remote plan reference first
         reference = self.node.get(['plan', 'import'])
@@ -2113,8 +2112,6 @@ class Plan(
                 self._initialize_worktree()
 
             self._initialize_data_directory()
-
-        self._plan_environment = Environment()
 
         # Expand all environment and context variables in the node
         with self.environment.as_environ():
@@ -2170,16 +2167,56 @@ class Plan(
 
         return next(self._test_serial_number_generator)
 
+    #
+    # Plan environment and its components
+    #
+
+    #: Environment variables inherited from the importing plan. If the
+    #: plan was not imported, the set will be empty.
+    _environment_from_importing: Environment = field(default_factory=Environment, internal=True)
+
     @property
-    def environment(self) -> Environment:
+    def _environment_from_intrinsics(self) -> Environment:
         """
-        Return combined environment from plan data, command line and original plan
+        Environment variables derived from the plan properties.
         """
 
-        # Store 'environment' and 'environment-file' keys content
-        environment_from_spec = Environment.from_inputs(
+        environment = Environment(
+            {
+                'TMT_VERSION': EnvVarValue(tmt.__version__),
+            }
+        )
+
+        if self.worktree:
+            environment['TMT_TREE'] = EnvVarValue(self.worktree)
+
+        if self.my_run:
+            environment['TMT_PLAN_DATA'] = EnvVarValue(self.data_directory)
+            environment['TMT_PLAN_ENVIRONMENT_FILE'] = EnvVarValue(self.plan_environment_file)
+
+        return environment
+
+    @property
+    def _environment_from_fmf(self) -> Environment:
+        """
+        Environment variables from ``environment`` and ``environment-file`` keys.
+        """
+
+        return Environment.from_inputs(
             raw_fmf_environment_files=self.node.get("environment-file") or [],
             raw_fmf_environment=self.node.get('environment', {}),
+            file_root=Path(self.node.root) if self.node.root else None,
+            key_address=self.node.name,
+            logger=self._logger,
+        )
+
+    @property
+    def _environment_from_cli(self) -> Environment:
+        """
+        Environment variables from ``--environment`` and ``--environment-file`` options.
+        """
+
+        return Environment.from_inputs(
             raw_cli_environment_files=self.opt('environment-file') or [],
             raw_cli_environment=self.opt('environment'),
             file_root=Path(self.node.root) if self.node.root else None,
@@ -2187,45 +2224,80 @@ class Plan(
             logger=self._logger,
         )
 
-        if self.my_run:
-            combined = self._plan_environment.copy()
-            combined.update(environment_from_spec)
-            combined.update(self._importing_environment)
-            # Command line variables take precedence
-            combined.update(self.my_run.environment)
-            self._add_step_variables(combined)
-            return combined
-
-        return Environment({**environment_from_spec, **self._importing_environment})
-
-    def _add_step_variables(self, environment: Environment) -> None:
-        """Add step variables to the environment"""
-
-        # Include path to the plan data directory
-        environment["TMT_PLAN_DATA"] = EnvVarValue(self.data_directory)
-        # Include path to the plan environment file
-        environment["TMT_PLAN_ENVIRONMENT_FILE"] = EnvVarValue(self.plan_environment_file)
-        # And tree path if possible
-        if self.worktree:
-            environment["TMT_TREE"] = EnvVarValue(self.worktree)
-        # And tmt version
-        environment["TMT_VERSION"] = EnvVarValue(tmt.__version__)
-
-    def _source_plan_environment_file(self) -> None:
+    @property
+    def _environment_from_plan_environment_file(self) -> Environment:
         """
-        Add variables from the plan environment file to the environment
+        Environment sourced from the :ref:`plan environment file <step-variables>`.
         """
+
         if (
             self.my_run
             and self.plan_environment_file.exists()
             and self.plan_environment_file.stat().st_size > 0
         ):
-            # Use __wrapped__ to force the reload of the file
-            self._plan_environment = tmt.utils.Environment.from_file(
+            return tmt.utils.Environment.from_file(
                 filename=self.plan_environment_file.name,
                 root=self.plan_environment_file.parent,
                 logger=self._logger,
             )
+
+        return Environment()
+
+    @property
+    def environment(self) -> Environment:
+        """
+        Environment variables of the plan.
+
+        Contains all environment variables collected from multiple
+        sources (in the following order):
+
+        * :ref:`plan environment file <step-variables>`,
+        * plan's ``environment`` and ``environment-file`` keys,
+        * importing plan's environment,
+        * ``--environment`` and ``--environment-file`` options,
+        * run's environment,
+        * plan's properties.
+        """
+
+        if self.my_run:
+            return Environment(
+                {
+                    **self._environment_from_plan_environment_file,
+                    **self._environment_from_fmf,
+                    **self._environment_from_importing,
+                    **self._environment_from_cli,
+                    **self.my_run.environment,
+                    **self._environment_from_intrinsics,
+                }
+            )
+
+        return Environment(
+            {
+                **self._environment_from_fmf,
+                **self._environment_from_importing,
+                **self._environment_from_cli,
+                **self._environment_from_intrinsics,
+            }
+        )
+
+    @property
+    def _inheritable_environment(self) -> Environment:
+        """
+        A subset of plan environment variables imported plans can inherit.
+
+        Contains environment variables collected from the following
+        sources (in the order):
+
+        * plan's ``environment`` and ``environment-file`` keys,
+        * importing plan's environment,
+        """
+
+        return Environment(
+            {
+                **self._environment_from_fmf,
+                **self._environment_from_importing,
+            }
+        )
 
     def _initialize_worktree(self) -> None:
         """
@@ -2896,9 +2968,6 @@ class Plan(
                         )
                         self.execute.save()
 
-                # Source the plan environment file after prepare and execute step
-                if isinstance(step, (tmt.steps.prepare.Prepare, tmt.steps.execute.Execute)):
-                    self._source_plan_environment_file()
         # Make sure we run 'report' and 'finish' steps always if enabled
         finally:
             for step in self.steps(skip=['finish', 'report']):
@@ -3054,26 +3123,26 @@ class Plan(
 
             self.debug(f"Turning node '{node.name}' into a plan.", level=3)
 
-            fmf_context = FmfContext.from_spec(
+            # Prepare fmf context and environment the imported node would inherit.
+            inherited_fmf_context = self._fmf_context if reference.inherit_context else None
+            inherited_environment = (
+                self._inheritable_environment if reference.inherit_environment else None
+            )
+
+            # Construct ephemeral fmf context and environment we use to
+            # adjust and expand the imported node.
+            alteration_fmf_context = FmfContext.from_spec(
                 node.name, node.data.get('context', {}), self._logger
             )
 
             if reference.inherit_context:
-                fmf_context.update(self._fmf_context)
+                alteration_fmf_context.update(self._fmf_context)
             else:
-                fmf_context.update(self._cli_fmf_context)
-
-            environment = Environment.from_dict(node.data.get('environment', {}))
-
-            if reference.inherit_environment:
-                environment.update(self.environment)
-            elif self.my_run:
-                environment.update(self.my_run.environment)
-                self._add_step_variables(environment)
+                alteration_fmf_context.update(self._cli_fmf_context)
 
             # Adjust the imported tree, to let any `adjust` rules defined in it take
             # action.
-            node.adjust(fmf.context.Context(**fmf_context), case_sensitive=False)
+            node.adjust(fmf.context.Context(**alteration_fmf_context), case_sensitive=False)
 
             # If the local plan is disabled, disable the imported plan as well
             if not self.enabled:
@@ -3086,14 +3155,11 @@ class Plan(
             else:
                 node.name = f'{self.name}{node.name}'
 
-            with environment.as_environ():
-                expand_node_data(node.data, fmf_context)
-
             return Plan(
                 node=node,
                 run=self.my_run,
-                importing_fmf_context=self._fmf_context if reference.inherit_context else None,
-                importing_environment=self.environment if reference.inherit_environment else None,
+                importing_fmf_context=inherited_fmf_context,
+                inherited_environment=inherited_environment,
                 logger=self._logger.clone(),
             )
 
@@ -3644,15 +3710,18 @@ class Tree(tmt.utils.Common):
         filters: list[str],
         conditions: list[str],
         links: list['LinkNeedle'],
+        includes: list[str],
         excludes: list[str],
     ) -> list[CoreT]:
         """
         Apply filters and conditions, return pruned nodes
         """
+
         result = []
         for node in nodes:
             filter_vars = copy.deepcopy(node._metadata)
             cond_vars = node._metadata
+
             # Add a lowercase version of bool variables for filtering
             bool_vars = {
                 key: [value, str(value).lower()]
@@ -3660,6 +3729,7 @@ class Tree(tmt.utils.Common):
                 if isinstance(value, bool)
             }
             filter_vars.update(bool_vars)
+
             # Conditions
             try:
                 if not all(
@@ -3671,6 +3741,7 @@ class Tree(tmt.utils.Common):
                 continue
             except Exception as error:
                 raise tmt.utils.GeneralError(f"Invalid --condition raised exception: {error}")
+
             # Filters
             try:
                 if not all(
@@ -3680,6 +3751,7 @@ class Tree(tmt.utils.Common):
             except fmf.utils.FilterError:
                 # Handle missing attributes as if filter failed
                 continue
+
             # Links
             try:
                 # Links are in OR relation
@@ -3689,10 +3761,17 @@ class Tree(tmt.utils.Common):
                 # Handle broken link as not matching
                 self.debug(f'Invalid link ignored, exception was {exc}')
                 continue
+
             # Exclude
-            if any(node for expr in excludes if re.search(expr, node.name)):
+            if any(re.search(pattern, node.name) for pattern in excludes):
                 continue
+
+            # Include
+            if includes and not any(re.search(pattern, node.name) for pattern in includes):
+                continue
+
             result.append(node)
+
         return result
 
     def sanitize_cli_names(self, names: list[str]) -> list[str]:
@@ -3751,6 +3830,7 @@ class Tree(tmt.utils.Common):
         conditions: Optional[list[str]] = None,
         unique: bool = True,
         links: Optional[list['LinkNeedle']] = None,
+        includes: Optional[list[str]] = None,
         excludes: Optional[list[str]] = None,
         apply_command_line: bool = True,
         sort: bool = True,
@@ -3768,6 +3848,7 @@ class Tree(tmt.utils.Common):
         links = (links or []) + [
             LinkNeedle.from_spec(value) for value in cast(list[str], Test._opt('links', []))
         ]
+        includes = includes or []
         excludes = excludes or []
         # Used in: tmt run test --name NAME, tmt test ls NAME...
         cmd_line_names: list[str] = []
@@ -3775,6 +3856,7 @@ class Tree(tmt.utils.Common):
         if apply_command_line:
             filters += list(Test._opt('filters', []))
             conditions += list(Test._opt('conditions', []))
+            includes += list(Test._opt('include', []))
             excludes += list(Test._opt('exclude', []))
             cmd_line_names = list(Test._opt('names', []))
 
@@ -3799,16 +3881,19 @@ class Tree(tmt.utils.Common):
         if Test._opt('disabled'):
             filters.append('enabled:false')
 
+        # As the first step, let's build the list of test objects based
+        # on keys and names/sources
+
+        # Pick tests based on the source files names
         if Test._opt('source'):
             tests = [
                 Test(node=test, logger=self._logger.descend())
                 for test in self.tree.prune(keys=keys, sources=cmd_line_names, sort=sort)
             ]
 
+        # If duplicate test names are allowed, match test name/regexp
+        # one-by-one and preserve the order of tests within a plan.
         elif not unique and names:
-            # First let's build the list of test objects based on keys & names.
-            # If duplicate test names are allowed, match test name/regexp
-            # one-by-one and preserve the order of tests within a plan.
             tests = []
             for name in names:
                 selected_tests = [
@@ -3822,6 +3907,7 @@ class Tree(tmt.utils.Common):
                     for test in name_filter(self.tree.prune(keys=keys, names=[name], sort=sort))
                 ]
                 tests.extend(sorted(selected_tests, key=lambda test: test.order))
+
         # Otherwise just perform a regular key/name filtering
         else:
             selected_tests = [
@@ -3837,7 +3923,14 @@ class Tree(tmt.utils.Common):
             tests = sorted(selected_tests, key=lambda test: test.order)
 
         # Apply filters & conditions
-        return self._filters_conditions(tests, filters, conditions, links, excludes)
+        return self._filters_conditions(
+            nodes=tests,
+            filters=filters,
+            conditions=conditions,
+            links=links,
+            includes=includes,
+            excludes=excludes,
+        )
 
     def plans(
         self,
@@ -3920,7 +4013,12 @@ class Tree(tmt.utils.Common):
             plans = functools.reduce(operator.iadd, (plan.resolve_imports() for plan in plans), [])
 
         return self._filters_conditions(
-            sorted(plans, key=lambda plan: plan.order), filters, conditions, links, excludes
+            nodes=sorted(plans, key=lambda plan: plan.order),
+            filters=filters,
+            conditions=conditions,
+            links=links,
+            includes=[],
+            excludes=excludes,
         )
 
     def stories(
@@ -3978,7 +4076,12 @@ class Tree(tmt.utils.Common):
             for story in self.tree.prune(keys=keys, names=names, whole=whole, sources=sources)
         ]
         return self._filters_conditions(
-            sorted(stories, key=lambda story: story.order), filters, conditions, links, excludes
+            nodes=sorted(stories, key=lambda story: story.order),
+            filters=filters,
+            conditions=conditions,
+            links=links,
+            includes=[],
+            excludes=excludes,
         )
 
     @staticmethod
@@ -5262,7 +5365,7 @@ def resolve_dynamic_ref(
         node=reference_tree,
         run=plan.my_run,
         importing_fmf_context=plan._fmf_context,
-        importing_environment=plan.environment,
+        inherited_environment=plan.environment,
         skip_validation=True,
     )
     ref = reference_tree.get("ref")

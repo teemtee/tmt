@@ -1,0 +1,5 @@
+summary: Selecting keys using `test`, `include` and `exclude`
+description: |
+    Verify that selecting tests in the fmf discover plugin using
+    `test`, `include` and `exclude` works as expected and
+    correctly handles test order and duplication.

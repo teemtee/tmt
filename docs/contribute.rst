@@ -806,10 +806,10 @@ the ``main`` branch by the proposed deadline. Here's a couple of
 recommendations which could help you to make the release process
 smooth and timely:
 
-* continually watch the issues & pull requests and gently push
+* continually watch `the issues & pull requests`__ and gently push
   them forward if any of them seems to get stuck
 * bring attention especially to those with the high priority, the
-  ``priority | must`` issues and pull requests should be finished
+  ``must`` issues and pull requests should be finished
   ideally one week before the release deadline
 * regularly check the pull request progress and highlight those
   which are waiting for feedback on the review sessions
@@ -818,7 +818,10 @@ smooth and timely:
 * do not hesitate to contact assignees directly, e.g. on the chat,
   if there is no update for a longer time, consider also
   reassigning the issue to another contributor if necessary
-* if there are pull requests ready for merging but not included in
-  the release, it might make sense to squeeze them in, to make the
+* if there are pull requests `ready for merging but not included in
+  the release`__, it might make sense to squeeze them in, to make the
   development more fluent, just make sure they do not slow down
   important issues
+
+__ https://github.com/orgs/teemtee/projects/1/views/3
+__ https://github.com/orgs/teemtee/projects/1/views/14
