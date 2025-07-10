@@ -28,6 +28,23 @@ class FinishShellData(tmt.steps.finish.FinishStepData):
         unserialize=lambda serialized: [ShellScript(script) for script in serialized],
     )
 
+    url: Optional[str] = field(
+        default=None,
+        option='--url',
+        metavar='REPOSITORY',
+        help='Git repository URL for fetching shell scripts.',
+    )
+
+    ref: Optional[str] = field(
+        default=None,
+        option='--ref',
+        metavar='REVISION',
+        help="""
+            Branch, tag or commit specifying the desired git
+            revision.
+            """,
+    )
+
     # TODO: well, our brave new field() machinery should be able to deal with all of this...
     # ignore[override] & cast: two base classes define to_spec(), with conflicting
     # formal types.
@@ -57,6 +74,21 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
             script:
               - upload-logs.sh || true
               - rm -rf /tmp/temporary-files
+
+    Scripts can also be fetched from a remote git repository.
+    Specify the ``url`` for the repository and optionally ``ref``
+    to checkout a specific branch, tag or commit.
+    The ``script`` paths will then be treated as relative to the
+    repository root.
+
+    .. code-block:: yaml
+
+        finish:
+            how: shell
+            url: https://github.com/teemtee/tmt.git
+            ref: my_branch
+            script:
+              - tmt/steps/finish/script.sh
 
     Use the :ref:`/spec/core/order` attribute to select in which order
     finishing tasks should happen if there are multiple configs. Default
