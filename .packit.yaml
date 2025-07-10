@@ -24,7 +24,7 @@ actions: &base-actions
     - hatch version
 
 targets: &all-targets
-  - fedora-stable
+  - fedora-all
   - epel-9
 
 # Uncomment below line if OpenScanHub scans are failing
