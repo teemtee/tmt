@@ -855,6 +855,92 @@ that repository.
         how: fmf
 
 
+.. _environment-matrix:
+
+Environment Matrix
+------------------------------------------------------------------
+
+Test environment:
+
+.. code-block:: yaml
+
+    /plan:
+        discover:
+            how: fmf
+        execute:
+            how: tmt
+
+    /test:
+        /one:
+            test: echo first test on level $LEVEL
+
+            /level-7:
+                environment:
+                    LEVEL: 7
+            /level-8:
+                environment:
+                    LEVEL: 8
+
+        /two:
+            test: echo second test on level $LEVEL
+            /level-7:
+                environment:
+                    LEVEL: 7
+            /level-8:
+                environment:
+                    LEVEL: 8
+
+Plan environment:
+
+.. code-block:: yaml
+
+    /plan:
+        discover:
+            how: fmf
+        provision:
+            how: local
+        execute:
+            how: tmt
+
+        /level-7:
+            environment:
+                LEVEL: 7
+        /level-8:
+            environment:
+                LEVEL: 8
+
+    /test:
+        /one:
+            test: echo first test on level $LEVEL
+        /two:
+            test: echo second test on level $LEVEL
+
+Adjust Tests:
+
+.. code-block:: yaml
+
+    /plan:
+        discover:
+          - how: fmf
+            adjust-tests:
+                environment+:
+                    LEVEL: 7
+          - how: fmf
+            adjust-tests:
+                environment+:
+                    LEVEL: 8
+        provision:
+            how: local
+        execute:
+            how: tmt
+
+    /test:
+        /one:
+            test: echo first test on level $LEVEL
+        /two:
+            test: echo second test on level $LEVEL
+
+
 .. _anchors-aliases:
 
 Anchors and Aliases
