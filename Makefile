@@ -31,7 +31,7 @@ smoke: tmp  ## Run the smoke-level part of the test suite
 	hatch run test:smoke
 
 coverage: tmp nitrateconf  ## Run the test suite with coverage enabled
-	hatch run test:coverage
+	hatch run test:cov
 
 nitrateconf:
 	test -e ~/.nitrate || echo -en '[nitrate]\nurl = https://nitrate.server/xmlrpc/\n' | tee ~/.nitrate
