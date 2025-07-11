@@ -424,6 +424,12 @@ definitions:
       name:
         type: string
 
+      url:
+        type: string
+
+      ref:
+        type: string
+
       order:
         $ref: "/schemas/core#/definitions/order"
 
