@@ -8,6 +8,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
+import tmt.utils.git
 from tmt.container import container, field
 from tmt.steps import safe_filename
 from tmt.steps.provision import Guest
@@ -72,6 +73,21 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
               - sudo dnf install -y 'dnf-command(copr)'
               - sudo dnf copr enable -y psss/tmt
               - sudo dnf install -y tmt
+
+    Scripts can also be fetched from a remote git repository.
+    Specify the ``url`` for the repository and optionally ``ref``
+    to checkout a specific branch, tag or commit.
+    The ``script`` paths will then be treated as relative to the
+    repository root.
+
+    .. code-block:: yaml
+
+        prepare:
+            how: shell
+            url: https://github.com/teemtee/tmt.git
+            ref: main
+            script:
+              - tmt/steps/prepare/test.sh
     """
 
     _data_class = PrepareShellData
@@ -91,12 +107,30 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
         environment = environment or tmt.utils.Environment()
 
+        scripts = self.data.script
         # Give a short summary
-        overview = fmf.utils.listed(self.data.script, 'script')
+        overview = fmf.utils.listed(scripts, 'script')
+        if self.data.url:
+            overview += f" from '{self.data.url}'"
+            if self.data.ref:
+                overview += f" at '{self.data.ref}'"
         logger.info('overview', f'{overview} found', 'green')
 
         workdir = self.step.plan.worktree
         assert workdir is not None  # narrow type
+
+        if self.data.url:
+            repo_path = workdir / str(self.data.url.split('/')[-1])
+            if not self.is_dry_run:
+                tmt.utils.git.git_clone(
+                    url=self.data.url,
+                    destination=repo_path,
+                    shallow=False,
+                    env=environment,
+                    logger=self._logger,
+                )
+
+            scripts = [ShellScript(str(repo_path.joinpath(str(script)))) for script in scripts]
 
         if not self.is_dry_run:
             topology = tmt.steps.Topology(self.step.plan.provision.ready_guests)
@@ -119,7 +153,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         logger.debug('prepare wrapper', prepare_wrapper_path, level=3)
 
         # Execute each script on the guest (with default shell options)
-        for script in self.data.script:
+        for script in scripts:
             logger.verbose('script', script, 'green')
             script_with_options = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}')
             self.write(prepare_wrapper_path, str(script_with_options), 'w')
