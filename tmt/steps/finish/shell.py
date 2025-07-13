@@ -57,6 +57,21 @@ class FinishShell(tmt.steps.finish.FinishPlugin[FinishShellData]):
               - upload-logs.sh || true
               - rm -rf /tmp/temporary-files
 
+    Scripts can also be fetched from a remote git repository.
+    Specify the ``url`` for the repository and optionally ``ref``
+    to checkout a specific branch, tag or commit.
+    The ``script`` paths will then be treated as relative to the
+    repository root.
+
+    .. code-block:: yaml
+
+        finish:
+            how: shell
+            url: https://github.com/teemtee/tmt.git
+            ref: my_branch
+            script:
+              - tmt/steps/finish/script.sh
+
     Use the :ref:`/spec/core/order` attribute to select in which order
     finishing tasks should happen if there are multiple configs. Default
     order is ``50``.
