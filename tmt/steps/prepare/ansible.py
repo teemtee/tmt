@@ -175,7 +175,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
         return {
             *super()._preserved_workdir_members,
             # Include directories storing individual playbook logs.
-            *{str(i) for i in range(len(self.data.playbook))},
+            *{f'playbook-{i}' for i in range(len(self.data.playbook))},
         }
 
     def go(
