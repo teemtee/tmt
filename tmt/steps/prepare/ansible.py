@@ -277,16 +277,25 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                     tmt.result.PhaseResult(
                         name=playbook_name,
                         result=ResultOutcome.FAIL,
+                        note=tmt.utils.render_exception_as_notes(exc),
                         log=[playbook_log_filepath.relative_to(self.step.workdir)],
                     )
                 )
 
+                outcome.exceptions.append(exc)
+
                 return outcome
 
-            except Exception:
+            except Exception as exc:
                 outcome.results.append(
-                    tmt.result.PhaseResult(name=playbook_name, result=ResultOutcome.ERROR)
+                    tmt.result.PhaseResult(
+                        name=playbook_name,
+                        result=ResultOutcome.ERROR,
+                        note=tmt.utils.render_exception_as_notes(exc),
+                    )
                 )
+
+                outcome.exceptions.append(exc)
 
                 return outcome
 
