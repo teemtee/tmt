@@ -201,7 +201,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             playbook_name = f'{self.name} / {_playbook}'
             lowercased_playbook = _playbook.lower()
 
-            playbook_record_dirpath = self.workdir / str(playbook_index) / guest.safe_name
+            playbook_record_dirpath = self.workdir / f'playbook-{playbook_index}' / guest.safe_name
             playbook_log_filepath = playbook_record_dirpath / 'output.txt'
 
             def normalize_remote_playbook(raw_playbook: str) -> tuple[Path, AnsibleApplicable]:
