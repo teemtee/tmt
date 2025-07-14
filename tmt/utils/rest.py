@@ -211,7 +211,7 @@ class RestVisitor(docutils.nodes.NodeVisitor):
     def visit_paragraph(self, node: docutils.nodes.paragraph) -> None:
         self.log_visit(node)
 
-        if isinstance(node.parent, docutils.nodes.list_item):
+        if isinstance(node.parent, (docutils.nodes.list_item, docutils.nodes.definition)):
             if self._text_prefix:
                 self._emit(self._text_prefix)
                 self._text_prefix = None
@@ -313,20 +313,32 @@ class RestVisitor(docutils.nodes.NodeVisitor):
     visit_target = _noop_visit
     depart_target = _noop_departure
 
-    visit_block_quote = _noop_visit
-    depart_block_quote = _noop_departure
-
     visit_definition_list = _noop_visit
     depart_definition_list = _noop_departure
 
     visit_definition_list_item = _noop_visit
     depart_definition_list_item = _noop_departure
 
-    visit_term = _noop_visit
+    def visit_term(self, node: docutils.nodes.term) -> None:
+        self.log_visit(node)
+
+        self._emit(self._style_stack[-1].apply(node.astext()))
+        self._emit('    ')
+
+        raise docutils.nodes.SkipChildren
+
     depart_term = _noop_departure
 
-    visit_definition = _noop_visit
-    depart_definition = _noop_departure
+    def visit_definition(self, node: docutils.nodes.definition) -> None:
+        self.log_visit(node)
+
+        self._text_prefix = self._style_stack[-1].apply('  ')
+        self._indent += 2
+
+    def depart_definition(self, node: docutils.nodes.definition) -> None:
+        self.log_departure(node)
+
+        self._indent -= 2
 
     def _visit_admonition(self, node: docutils.nodes.Admonition, header: str) -> None:
         self.log_visit(node)
