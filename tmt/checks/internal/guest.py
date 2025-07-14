@@ -17,7 +17,7 @@ class GuestCheck(InternalCheck):
 
 
 @provides_check(CHECK_NAME)
-class Guest(CheckPlugin[GuestCheck]):
+class GuestFailures(CheckPlugin[GuestCheck]):
     """
     Check for guest errors during test execution.
 
