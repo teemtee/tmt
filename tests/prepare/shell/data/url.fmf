@@ -1,0 +1,10 @@
+provision:
+    how: container
+prepare:
+    how: shell
+    url: https://github.com/teemtee/tmt.git
+    ref: main
+    script: tests/prepare/shell/remote/test.sh
+execute:
+    how: tmt
+    script: tmt --help
