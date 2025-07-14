@@ -4,6 +4,14 @@
     Releases
 ======================
 
+tmt-1.53.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+New internal :ref:`checks </plugins/test-checks>` have been added
+to report reconnect timeouts, reboot timeouts, and when tests
+exceed their maximum restart count during execution.
+
+
 tmt-1.52.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
