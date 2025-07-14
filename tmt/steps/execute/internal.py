@@ -725,17 +725,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                         if invocation.handle_restart():
                             continue
 
-                    except tmt.utils.RebootTimeoutError as error:
-                        invocation.exception = error
-                        for result in invocation.results:
-                            result.result = ResultOutcome.ERROR
-
-                    except tmt.utils.ReconnectTimeoutError as error:
-                        invocation.exception = error
-                        for result in invocation.results:
-                            result.result = ResultOutcome.ERROR
-
-                    except tmt.utils.RestartMaxAttemptsError as error:
+                    except (
+                        tmt.utils.RebootTimeoutError,
+                        tmt.utils.ReconnectTimeoutError,
+                        tmt.utils.RestartMaxAttemptsError,
+                    ) as error:
                         invocation.exception = error
                         for result in invocation.results:
                             result.result = ResultOutcome.ERROR
