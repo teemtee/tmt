@@ -341,11 +341,6 @@ class RebootModeNotSupportedError(ProvisionError):
         super().__init__(message, *args, **kwargs)
 
 
-class CheckRsyncOutcome(enum.Enum):
-    ALREADY_INSTALLED = 'already-installed'
-    INSTALLED = 'installed'
-
-
 T = TypeVar('T')
 
 
