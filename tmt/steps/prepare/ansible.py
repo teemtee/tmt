@@ -198,12 +198,11 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
         for playbook_index, _playbook in enumerate(self.data.playbook):
             logger.info('playbook', _playbook, 'green')
 
-            playbook_record_dirpath = self.workdir / str(playbook_index) / guest.safe_name
-            playbook_record_dirpath.mkdir(parents=True, exist_ok=True)
-
-            playbook_log_filepath = playbook_record_dirpath / 'output.txt'
-
+            playbook_name = f'{self.name} / {_playbook}'
             lowercased_playbook = _playbook.lower()
+
+            playbook_record_dirpath = self.workdir / str(playbook_index) / guest.safe_name
+            playbook_log_filepath = playbook_record_dirpath / 'output.txt'
 
             def normalize_remote_playbook(raw_playbook: str) -> tuple[Path, AnsibleApplicable]:
                 assert self.step.workdir is not None  # narrow type
@@ -245,19 +244,21 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             def normalize_collection_playbook(raw_playbook: str) -> tuple[Path, AnsibleApplicable]:
                 return self.step.plan.anchor_path, AnsibleCollectionPlaybook(raw_playbook)
 
-            if lowercased_playbook.startswith(('http://', 'https://')):
-                playbook_root, playbook = normalize_remote_playbook(lowercased_playbook)
-
-            elif lowercased_playbook.startswith('file://'):
-                playbook_root, playbook = normalize_local_playbook(lowercased_playbook)
-
-            elif ANSIBLE_COLLECTION_PLAYBOOK_PATTERN.match(lowercased_playbook):
-                playbook_root, playbook = normalize_collection_playbook(lowercased_playbook)
-
-            else:
-                playbook_root, playbook = normalize_local_playbook(lowercased_playbook)
-
             try:
+                playbook_record_dirpath.mkdir(parents=True, exist_ok=True)
+
+                if lowercased_playbook.startswith(('http://', 'https://')):
+                    playbook_root, playbook = normalize_remote_playbook(lowercased_playbook)
+
+                elif lowercased_playbook.startswith('file://'):
+                    playbook_root, playbook = normalize_local_playbook(lowercased_playbook)
+
+                elif ANSIBLE_COLLECTION_PLAYBOOK_PATTERN.match(lowercased_playbook):
+                    playbook_root, playbook = normalize_collection_playbook(lowercased_playbook)
+
+                else:
+                    playbook_root, playbook = normalize_local_playbook(lowercased_playbook)
+
                 output = guest.ansible(
                     playbook,
                     playbook_root=playbook_root,
@@ -268,13 +269,13 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                 self.write(
                     playbook_log_filepath,
                     '\n'.join(
-                        tmt.utils.render_command_report(label=str(playbook), output=exc.output)
+                        tmt.utils.render_command_report(label=playbook_name, output=exc.output)
                     ),
                 )
 
                 outcome.results.append(
                     tmt.result.PhaseResult(
-                        name=f'{self.name} / {playbook}',
+                        name=playbook_name,
                         result=ResultOutcome.FAIL,
                         log=[playbook_log_filepath.relative_to(self.step.workdir)],
                     )
@@ -284,9 +285,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
             except Exception:
                 outcome.results.append(
-                    tmt.result.PhaseResult(
-                        name=f'{self.name} / {playbook}', result=ResultOutcome.ERROR
-                    )
+                    tmt.result.PhaseResult(name=playbook_name, result=ResultOutcome.ERROR)
                 )
 
                 return outcome
@@ -294,12 +293,12 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             else:
                 self.write(
                     playbook_log_filepath,
-                    '\n'.join(tmt.utils.render_command_report(label=str(playbook), output=output)),
+                    '\n'.join(tmt.utils.render_command_report(label=playbook_name, output=output)),
                 )
 
                 outcome.results.append(
                     tmt.result.PhaseResult(
-                        name=f'{self.name} / {playbook}',
+                        name=playbook_name,
                         result=ResultOutcome.PASS,
                         log=[playbook_log_filepath.relative_to(self.step.workdir)],
                     )
