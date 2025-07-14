@@ -503,7 +503,6 @@ class Environment(dict[str, EnvVarValue]):
         cls,
         variables: Union[str, list[str]],
         logger: tmt.log.Logger,
-        root: Optional[Path] = None,
     ) -> 'Environment':
         """
         Construct environment from a sequence of variables.
@@ -528,8 +527,6 @@ class Environment(dict[str, EnvVarValue]):
             * ``@foo.yaml``
             * ``@../../bar.yaml``
             * ``@foo.env``
-
-        :param root: root directory to load variable files from.
         """
 
         if not isinstance(variables, (list, tuple)):
@@ -546,7 +543,7 @@ class Environment(dict[str, EnvVarValue]):
                         raise GeneralError(f"Invalid variable file specification '{var}'.")
 
                     filename = var[1:]
-                    environment = cls.from_file(filename=filename, root=root, logger=logger)
+                    environment = cls.from_file(filename=filename, logger=logger)
 
                     if not environment:
                         logger.warning(f"Empty environment file '{filename}'.")
@@ -776,7 +773,6 @@ class Environment(dict[str, EnvVarValue]):
             from_cli = Environment.from_sequence(
                 variables=list(raw_cli_environment),
                 logger=logger,
-                root=file_root,
             )
         else:
             raise NormalizationError(

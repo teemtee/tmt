@@ -6,6 +6,8 @@ rlJournalStart
     rlPhaseStartSetup
         rlRun 'pushd data'
         rlRun 'set -o pipefail'
+
+        rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
     rlPhaseEnd
 
     rlPhaseStartTest "Check the TMT_DEBUG variable"
@@ -79,9 +81,29 @@ rlJournalStart
             rlRun -s "tmt run -r -e @empty.env"
             rlAssertGrep "warn: Empty environment file" $rlRun_LOG
         rlPhaseEnd
+
+        rlPhaseStartTest "Variable file outside of fmf root ($execute)"
+            rlRun "cp vars.yaml $tmp/out-of-tree-vars.yaml"
+            rlRun "fmf_root=$PWD"
+
+            rlRun "pushd $tmp"
+
+            for plan in yes no; do
+                for test in yes no; do
+                    rlRun -s "tmt --root $fmf_root run -avvvr -e @out-of-tree-vars.yaml \
+                        execute --how $execute \
+                        plan --name $plan \
+                        test --name $test"
+                    rlAssertGrep '>>>O0<<<' $rlRun_LOG
+                done
+            done
+
+            rlRun "popd"
+        rlPhaseEnd
     done
 
     rlPhaseStartCleanup
+        rlRun "rm -r $tmp" 0 "Remove tmp directory"
         rlRun 'rm -f output' 0 'Removing tmp file'
         rlRun 'popd'
     rlPhaseEnd
