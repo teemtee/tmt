@@ -1428,7 +1428,14 @@ def provides_method(
 
 @container
 class PluginOutcome:
+    """
+    Bundles together results produced by a plugin, and possible error.
+    """
+
+    #: Results produced by the plugin invocation.
     results: list['PhaseResult'] = simple_field(default_factory=list['PhaseResult'])
+
+    #: Exceptions the plugin would like to raise and report.
     exceptions: list[Exception] = simple_field(default_factory=list[Exception])
 
 

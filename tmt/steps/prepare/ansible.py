@@ -172,7 +172,11 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
     @property
     def _preserved_workdir_members(self) -> set[str]:
-        return {str(i) for i in range(len(self.data.playbook))}
+        return {
+            *super()._preserved_workdir_members,
+            # Include directories storing individual playbook logs.
+            *{str(i) for i in range(len(self.data.playbook))},
+        }
 
     def go(
         self,
