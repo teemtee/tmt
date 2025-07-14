@@ -5,9 +5,7 @@ from tmt.steps.prepare.shell import PrepareShell
 
 
 @tmt.steps.provides_method('shell')
-class FinishShell(
-    tmt.steps.finish.FinishPlugin[tmt.steps.finish.FinishStepData], PrepareShell
-):
+class FinishShell(tmt.steps.finish.FinishPlugin[tmt.steps.finish.FinishStepData], PrepareShell):
     """
     Perform finishing tasks using shell (bash) scripts.
 
