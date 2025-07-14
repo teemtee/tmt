@@ -678,11 +678,11 @@ class GuestFacts(SerializableContainer):
         # https://github.com/vrothberg/chkconfig/commit/538dc7edf0da387169d83599fe0774ea080b4a37#diff-562b9b19cb1cd12a7343ce5c739745ebc8f363a195276ca58e926f22927238a5R1334
         output = self._execute(
             guest,
-            Command(
-                tmt.utils.DEFAULT_SHELL,
-                '-c',
-                'if [ -e /run/ostree-booted ] || [ -L /ostree ]; then echo yes; else echo no; fi',
-            ),
+            ShellScript(
+                """
+                ( [ -e /run/ostree-booted ] || [ -L /ostree ] ) && echo yes || echo no
+                """
+            ).to_shell_command(),
         )
 
         if output is None or output.stdout is None:
@@ -694,11 +694,7 @@ class GuestFacts(SerializableContainer):
         # https://www.reddit.com/r/Fedora/comments/g6flgd/toolbox_specific_environment_variables/
         output = self._execute(
             guest,
-            Command(
-                tmt.utils.DEFAULT_SHELL,
-                '-c',
-                'if [ -e /run/.toolboxenv ]; then echo yes; else echo no; fi',
-            ),
+            ShellScript('[ -e /run/.toolboxenv ] && echo yes || echo no').to_shell_command(),
         )
 
         if output is None or output.stdout is None:
@@ -709,11 +705,7 @@ class GuestFacts(SerializableContainer):
     def _query_toolbox_container_name(self, guest: 'Guest') -> Optional[str]:
         output = self._execute(
             guest,
-            Command(
-                tmt.utils.DEFAULT_SHELL,
-                '-c',
-                'if [ -e /run/.containerenv ]; then echo yes; else echo no; fi',
-            ),
+            ShellScript('[ -e /run/.containerenv ] && echo yes || echo no').to_shell_command(),
         )
 
         if output is None or output.stdout is None:
@@ -740,7 +732,7 @@ class GuestFacts(SerializableContainer):
         In containers running systemd pid 1 has environment variable ``container`` set
         (e.g. container=podman). See https://systemd.io/CONTAINER_INTERFACE/ for more details.
         """
-        output = self._execute(guest, Command('eval', 'echo', '-n', '$container'))
+        output = self._execute(guest, ShellScript('echo -n "$container"').to_shell_command())
 
         if output is None or output.stdout is None:
             return None
