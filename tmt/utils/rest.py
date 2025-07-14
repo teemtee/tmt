@@ -314,7 +314,19 @@ class RestVisitor(docutils.nodes.NodeVisitor):
     depart_target = _noop_departure
 
     visit_block_quote = _noop_visit
-    depart_block_quote = _noop_visit
+    depart_block_quote = _noop_departure
+
+    visit_definition_list = _noop_visit
+    depart_definition_list = _noop_departure
+
+    visit_definition_list_item = _noop_visit
+    depart_definition_list_item = _noop_departure
+
+    visit_term = _noop_visit
+    depart_term = _noop_departure
+
+    visit_definition = _noop_visit
+    depart_definition = _noop_departure
 
     def _visit_admonition(self, node: docutils.nodes.Admonition, header: str) -> None:
         self.log_visit(node)
