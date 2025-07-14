@@ -40,4 +40,5 @@ tier: 2
 /internal:
     test: ./test-internal.sh
     tag+:
+      - provision-only
       - provision-virtual

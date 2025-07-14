@@ -5,6 +5,7 @@ import os
 import signal as _signal
 import subprocess
 import threading
+from collections.abc import Sequence
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
@@ -20,7 +21,7 @@ import tmt.steps.scripts
 import tmt.utils
 import tmt.utils.signals
 import tmt.utils.wait
-from tmt.checks import CheckEvent, CheckPlugin
+from tmt.checks import Check, CheckEvent, CheckPlugin
 from tmt.container import container, field, simple_field
 from tmt.options import option
 from tmt.plugins import PluginRegistry
@@ -1032,13 +1033,11 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         *,
         event: CheckEvent,
         invocation: TestInvocation,
-        internal: bool = False,
+        checks: Sequence[Check],
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         results: list[CheckResult] = []
-
-        checks = CheckPlugin.internal_checks(logger) if internal else invocation.test.check
 
         for check in checks:
             with Stopwatch() as timer:
@@ -1067,6 +1066,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         return self._run_checks_for_test(
             event=CheckEvent.BEFORE_TEST,
             invocation=invocation,
+            checks=invocation.test.check,
             environment=environment,
             logger=logger,
         )
@@ -1081,6 +1081,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         return self._run_checks_for_test(
             event=CheckEvent.AFTER_TEST,
             invocation=invocation,
+            checks=invocation.test.check,
             environment=environment,
             logger=logger,
         )
@@ -1095,7 +1096,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         return self._run_checks_for_test(
             event=CheckEvent.AFTER_TEST,
             invocation=invocation,
-            internal=True,
+            checks=CheckPlugin.internal_checks(logger),
             environment=environment,
             logger=logger,
         )
