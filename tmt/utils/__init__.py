@@ -2898,6 +2898,34 @@ def _render_exception_into_files(exception: BaseException, logger: tmt.log.Logge
                 logger.print(line, file=stream)
 
 
+def render_exception_as_notes(exception: BaseException) -> list[str]:
+    """
+    Render an exception as a list of :py:class:`Result` notes.
+
+    Each exception message is recorded, and prefixed with an index
+    corresponding to its position among causes of the error state.
+
+    :param exception: exception to render.
+    """
+
+    def _render_exception(exc: BaseException, index: str) -> Iterator[str]:
+        causes: list[BaseException] = []
+
+        if isinstance(exc, GeneralError) and exc.causes:
+            causes += exc.causes
+
+        if exc.__cause__:
+            causes += [exc.__cause__]
+
+        yield f'Exception #{index}: {exc}'
+
+        if causes:
+            for cause_index, cause_exc in enumerate(causes, 1):
+                yield from _render_exception(cause_exc, f'{index}.{cause_index}')
+
+    return list(_render_exception(exception, '1'))
+
+
 def show_exception(
     exception: BaseException,
     traceback_verbosity: Optional[TracebackVerbosity] = None,

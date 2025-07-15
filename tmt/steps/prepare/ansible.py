@@ -6,12 +6,13 @@ import requests
 import tmt
 import tmt.base
 import tmt.log
+import tmt.result
 import tmt.steps
 import tmt.steps.prepare
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
-from tmt.result import PhaseResult
+from tmt.result import ResultOutcome
 from tmt.steps.provision import (
     ANSIBLE_COLLECTION_PLAYBOOK_PATTERN,
     AnsibleApplicable,
@@ -23,6 +24,7 @@ from tmt.utils import (
     ENVFILE_RETRY_SESSION_RETRIES,
     Path,
     PrepareError,
+    RunError,
     normalize_string_list,
     retry_session,
 )
@@ -168,24 +170,39 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
     _data_class = PrepareAnsibleData
 
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
+        return {
+            *super()._preserved_workdir_members,
+            # Include directories storing individual playbook logs.
+            *{f'playbook-{i}' for i in range(len(self.data.playbook))},
+        }
+
     def go(
         self,
         *,
         guest: 'Guest',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
-    ) -> list[PhaseResult]:
+    ) -> tmt.steps.PluginOutcome:
         """
         Prepare the guests
         """
 
-        results = super().go(guest=guest, environment=environment, logger=logger)
+        assert self.step.workdir is not None
+        assert self.workdir is not None
+
+        outcome = super().go(guest=guest, environment=environment, logger=logger)
 
         # Apply each playbook on the guest
-        for _playbook in self.data.playbook:
+        for playbook_index, _playbook in enumerate(self.data.playbook):
             logger.info('playbook', _playbook, 'green')
 
+            playbook_name = f'{self.name} / {_playbook}'
             lowercased_playbook = _playbook.lower()
+
+            playbook_record_dirpath = self.workdir / f'playbook-{playbook_index}' / guest.safe_name
+            playbook_log_filepath = playbook_record_dirpath / 'output.txt'
 
             def normalize_remote_playbook(raw_playbook: str) -> tuple[Path, AnsibleApplicable]:
                 assert self.step.workdir is not None  # narrow type
@@ -227,25 +244,76 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             def normalize_collection_playbook(raw_playbook: str) -> tuple[Path, AnsibleApplicable]:
                 return self.step.plan.anchor_path, AnsibleCollectionPlaybook(raw_playbook)
 
-            if lowercased_playbook.startswith(('http://', 'https://')):
-                playbook_root, playbook = normalize_remote_playbook(lowercased_playbook)
+            try:
+                playbook_record_dirpath.mkdir(parents=True, exist_ok=True)
 
-            elif lowercased_playbook.startswith('file://'):
-                playbook_root, playbook = normalize_local_playbook(lowercased_playbook)
+                if lowercased_playbook.startswith(('http://', 'https://')):
+                    playbook_root, playbook = normalize_remote_playbook(lowercased_playbook)
 
-            elif ANSIBLE_COLLECTION_PLAYBOOK_PATTERN.match(lowercased_playbook):
-                playbook_root, playbook = normalize_collection_playbook(lowercased_playbook)
+                elif lowercased_playbook.startswith('file://'):
+                    playbook_root, playbook = normalize_local_playbook(lowercased_playbook)
+
+                elif ANSIBLE_COLLECTION_PLAYBOOK_PATTERN.match(lowercased_playbook):
+                    playbook_root, playbook = normalize_collection_playbook(lowercased_playbook)
+
+                else:
+                    playbook_root, playbook = normalize_local_playbook(lowercased_playbook)
+
+                output = guest.ansible(
+                    playbook,
+                    playbook_root=playbook_root,
+                    extra_args=self.data.extra_args,
+                )
+
+            except RunError as exc:
+                self.write(
+                    playbook_log_filepath,
+                    '\n'.join(
+                        tmt.utils.render_command_report(label=playbook_name, output=exc.output)
+                    ),
+                )
+
+                outcome.results.append(
+                    tmt.result.PhaseResult(
+                        name=playbook_name,
+                        result=ResultOutcome.FAIL,
+                        note=tmt.utils.render_exception_as_notes(exc),
+                        log=[playbook_log_filepath.relative_to(self.step.workdir)],
+                    )
+                )
+
+                outcome.exceptions.append(exc)
+
+                return outcome
+
+            except Exception as exc:
+                outcome.results.append(
+                    tmt.result.PhaseResult(
+                        name=playbook_name,
+                        result=ResultOutcome.ERROR,
+                        note=tmt.utils.render_exception_as_notes(exc),
+                    )
+                )
+
+                outcome.exceptions.append(exc)
+
+                return outcome
 
             else:
-                playbook_root, playbook = normalize_local_playbook(lowercased_playbook)
+                self.write(
+                    playbook_log_filepath,
+                    '\n'.join(tmt.utils.render_command_report(label=playbook_name, output=output)),
+                )
 
-            guest.ansible(
-                playbook,
-                playbook_root=playbook_root,
-                extra_args=self.data.extra_args,
-            )
+                outcome.results.append(
+                    tmt.result.PhaseResult(
+                        name=playbook_name,
+                        result=ResultOutcome.PASS,
+                        log=[playbook_log_filepath.relative_to(self.step.workdir)],
+                    )
+                )
 
-        return results
+        return outcome
 
     def essential_requires(self) -> list[tmt.base.Dependency]:
         """
