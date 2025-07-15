@@ -332,7 +332,7 @@ class RestVisitor(docutils.nodes.NodeVisitor):
     def visit_definition(self, node: docutils.nodes.definition) -> None:
         self.log_visit(node)
 
-        self._text_prefix = self._style_stack[-1].apply('  ')
+        self._text_prefix = self._style_stack[-1].apply('    ')
         self._indent += 2
 
     def depart_definition(self, node: docutils.nodes.definition) -> None:
