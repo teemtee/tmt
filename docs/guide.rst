@@ -855,6 +855,36 @@ that repository.
         how: fmf
 
 
+.. _adjust-metadata:
+
+Adjust Metadata
+------------------------------------------------------------------
+
+
+Sometimes metadata needs to be adjusted based on the context.
+For example, the user might want to enable a test only for a
+specific architecture or skip a plan when running in a container.
+The core attribute :ref:`/spec/core/adjust` provides a flexible
+way to achieve this. It allows to modify various attributes of
+the tests, plans, or stories depending on the current
+:ref:`/spec/context`.
+
+This feature helps with creating adaptable and reusable metadata,
+reducing the need for multiple versions of similar configurations.
+Rules can be defined to conditionally change attributes
+like ``enabled``, ``environment``, ``require`` or even the
+test script itself.
+
+.. code-block:: yaml
+
+    # Disable a test for older distros
+    enabled: true
+    adjust:
+        enabled: false
+        when: distro < fedora-33
+        because: the feature was added in Fedora 33
+
+
 .. _anchors-aliases:
 
 Anchors and Aliases
