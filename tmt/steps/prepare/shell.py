@@ -120,7 +120,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         assert workdir is not None  # narrow type
 
         if self.data.url:
-            repo_path = workdir / str(self.data.url)
+            repo_path = workdir / "repository"
             if not self.is_dry_run:
                 tmt.utils.git.git_clone(
                     url=self.data.url,
