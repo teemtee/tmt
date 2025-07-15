@@ -333,12 +333,12 @@ class RestVisitor(docutils.nodes.NodeVisitor):
         self.log_visit(node)
 
         self._text_prefix = self._style_stack[-1].apply('    ')
-        self._indent += 2
+        self._indent += 4
 
     def depart_definition(self, node: docutils.nodes.definition) -> None:
         self.log_departure(node)
 
-        self._indent -= 2
+        self._indent -= 4
 
     def _visit_admonition(self, node: docutils.nodes.Admonition, header: str) -> None:
         self.log_visit(node)
