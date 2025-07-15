@@ -19,6 +19,14 @@ rlJournalStart
         rlAssertEquals "Check result for $name" "$actual" "$name $serial $result $guest $note"
     }
 
+    function assert_check_result () {
+        comment="$1"
+        test="$2"
+        check="$3"
+        result="$4"
+        rlAssertEquals "$comment" "$result" "$(yq -r ".[] | select(.name == \"$test\") | .check | .[] | select(.name == \"$check\") | .result" $results)"
+    }
+
     tmt_command="tmt run --scratch -a --id ${run} provision --how local execute -vv report -vvv test --name"
 
     testName="/tests/pass"
@@ -91,7 +99,8 @@ rlJournalStart
         rlAssertGrep "Maximum test time '5m' exceeded." $rlRun_LOG
         rlAssertGrep "Adjust the test 'duration' attribute if necessary." $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
-        assert_result "/tests/timeout" "1" "error" "default-0" "check 'internal/timeout' failed"
+        assert_result "/tests/timeout" "1" "error" "default-0" ""
+        assert_check_result "Test results have failed timeout check" "/tests/timeout" "internal/timeout" "fail"
     rlPhaseEnd
 
     testName="/tests/pidlock"
@@ -107,7 +116,8 @@ rlJournalStart
         rlAssertGrep "pidfile locking" $rlRun_LOG
         rlAssertGrep "warn: Test failed to manage its pidfile." $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
-        assert_result "/tests/pidlock" "1" "error" "default-0" "check 'internal/invocation' failed"
+        assert_result "/tests/pidlock" "1" "error" "default-0" ""
+        assert_check_result "Test results have failed invocation pidfile check" "/tests/pidlock" "internal/invocation" "fail"
     rlPhaseEnd
 
     testName="/tests/incomplete-fail"
