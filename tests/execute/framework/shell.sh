@@ -6,6 +6,7 @@ rlJournalStart
         rlRun "pushd shell"
         rlRun "set -o pipefail"
         rlRun "run=\$(mktemp -d)" 0 "Creating run directory/id"
+        rlRun "results=$run/plans/execute/results.yaml"
     rlPhaseEnd
 
     function assert_check_result () {
@@ -59,7 +60,7 @@ rlJournalStart
         rlAssertGrep "pidfile locking" $rlRun_LOG
         rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
         rlAssertGrep "/tests/pidlock 1 error default-0" $rlRun_LOG
-        assert_check_result "Test results have failed invocation pidfile check" "/tests/pidlock" "internal/invocation" "fail"
+        assert_check_result "Test results have failed invocation pidfile check" "$testName" "internal/invocation" "fail"
     rlPhaseEnd
 
     testName="/tests/timeout"
@@ -73,7 +74,7 @@ rlJournalStart
         rlAssertGrep "Adjust the test 'duration' attribute if necessary." $rlRun_LOG
         rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
         rlAssertGrep "/tests/timeout 1 error default-0" $rlRun_LOG
-        assert_check_result "Test results have failed timeout check" "/tests/timeout" "internal/timeout" "fail"
+        assert_check_result "Test results have failed timeout check" "$testName" "internal/timeout" "fail"
     rlPhaseEnd
 
     testName="/tests/notfound"
@@ -94,7 +95,7 @@ rlJournalStart
         rlAssertGrep "errr /tests/notexec" $rlRun_LOG
         rlRun -s "${extract_results_command} ${run}/plans/execute/results.yaml"
         rlAssertGrep "/tests/notexec 1 error default-0" $rlRun_LOG
-        assert_check_result "Test results have failed permission check" "/tests/notexec" "internal/permission" "fail"
+        assert_check_result "Test results have failed permission check" "$testName" "internal/permission" "fail"
     rlPhaseEnd
 
     rlPhaseStartCleanup

@@ -6,6 +6,7 @@ rlJournalStart
         rlRun "pushd beakerlib"
         rlRun "set -o pipefail"
         rlRun "run=\$(mktemp -d)" 0 "Creating run directory/id"
+        rlRun "results=$run/plans/execute/results.yaml"
     rlPhaseEnd
 
     function assert_result () {
@@ -14,8 +15,7 @@ rlJournalStart
         result="$3"
         guest="$4"
         note="$5"
-        file="${run}/plans/execute/results.yaml"
-        actual=$(yq -er ".[] | \"\\(.name) \\(.\"serial-number\") \\(.result) \\(.guest.name) \\(if .note == [] then \"\" else ((.note[] | select(. == \"$note\")) // .note[0]) end)\"" "$file")
+        actual=$(yq -er ".[] | \"\\(.name) \\(.\"serial-number\") \\(.result) \\(.guest.name) \\(if .note == [] then \"\" else ((.note[] | select(. == \"$note\")) // \"\") end)\"" "$results")
         rlAssertEquals "Check result for $name" "$actual" "$name $serial $result $guest $note"
     }
 
@@ -100,7 +100,7 @@ rlJournalStart
         rlAssertGrep "Adjust the test 'duration' attribute if necessary." $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
         assert_result "/tests/timeout" "1" "error" "default-0" ""
-        assert_check_result "Test results have failed timeout check" "/tests/timeout" "internal/timeout" "fail"
+        assert_check_result "Test results have failed timeout check" "$testName" "internal/timeout" "fail"
     rlPhaseEnd
 
     testName="/tests/pidlock"
@@ -117,7 +117,7 @@ rlJournalStart
         rlAssertGrep "warn: Test failed to manage its pidfile." $rlRun_LOG
         # tmt saves the correct results, including note, into results yaml
         assert_result "/tests/pidlock" "1" "error" "default-0" ""
-        assert_check_result "Test results have failed invocation pidfile check" "/tests/pidlock" "internal/invocation" "fail"
+        assert_check_result "Test results have failed invocation pidfile check" "$testName" "internal/invocation" "fail"
     rlPhaseEnd
 
     testName="/tests/incomplete-fail"
