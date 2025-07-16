@@ -5,6 +5,7 @@ import os
 import signal as _signal
 import subprocess
 import threading
+from collections.abc import Sequence
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
@@ -20,7 +21,7 @@ import tmt.steps.scripts
 import tmt.utils
 import tmt.utils.signals
 import tmt.utils.wait
-from tmt.checks import CheckEvent
+from tmt.checks import Check, CheckEvent, CheckPlugin
 from tmt.container import container, field, simple_field
 from tmt.options import option
 from tmt.plugins import PluginRegistry
@@ -144,6 +145,7 @@ class TestInvocation:
     start_time: Optional[str] = None
     end_time: Optional[str] = None
     real_duration: Optional[str] = None
+    exception: Optional[Exception] = None
 
     #: Number of times the test has been restarted.
     _restart_count: int = 0
@@ -352,7 +354,7 @@ class TestInvocation:
                 f" and test restart count {self._restart_count}."
             )
 
-            return False
+            raise tmt.utils.RestartMaxAttemptsError("Maximum test restart attempts exceeded.")
 
         if self.test.restart_with_reboot:
             self.hard_reboot_requested = True
@@ -370,7 +372,7 @@ class TestInvocation:
             # test, but the guest may be still booting. Make sure it's
             # alive.
             if not self.guest.reconnect():
-                return False
+                raise tmt.utils.ReconnectTimeoutError("Reconnect timed out.")
 
         self.logger.debug(
             f"Test restart during test '{self.test}'"
@@ -1031,12 +1033,13 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         *,
         event: CheckEvent,
         invocation: TestInvocation,
+        checks: Sequence[Check],
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         results: list[CheckResult] = []
 
-        for check in invocation.test.check:
+        for check in checks:
             with Stopwatch() as timer:
                 check_results = check.go(
                     event=event, invocation=invocation, environment=environment, logger=logger
@@ -1063,6 +1066,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         return self._run_checks_for_test(
             event=CheckEvent.BEFORE_TEST,
             invocation=invocation,
+            checks=invocation.test.check,
             environment=environment,
             logger=logger,
         )
@@ -1077,6 +1081,22 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         return self._run_checks_for_test(
             event=CheckEvent.AFTER_TEST,
             invocation=invocation,
+            checks=invocation.test.check,
+            environment=environment,
+            logger=logger,
+        )
+
+    def run_internal_checks(
+        self,
+        *,
+        invocation: TestInvocation,
+        environment: Optional[tmt.utils.Environment] = None,
+        logger: tmt.log.Logger,
+    ) -> list[CheckResult]:
+        return self._run_checks_for_test(
+            event=CheckEvent.AFTER_TEST,
+            invocation=invocation,
+            checks=CheckPlugin.internal_checks(logger),
             environment=environment,
             logger=logger,
         )

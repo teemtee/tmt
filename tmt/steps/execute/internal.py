@@ -14,7 +14,6 @@ import tmt.steps.scripts
 import tmt.utils
 import tmt.utils.signals
 import tmt.utils.themes
-from tmt.checks import CheckPlugin
 from tmt.container import container, field
 from tmt.result import Result, ResultOutcome
 from tmt.steps import safe_filename
@@ -559,9 +558,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 key=key, value=value, color=color, shift=shift, level=level, topic=topic
             )
 
-        # Insert internal checks
-        invocation.test.check += CheckPlugin.internal_checks(logger)
-
         # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
         # to use some reusable decorator.
         invocation.check_results = self.run_checks_before_test(
@@ -729,18 +725,14 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                         if invocation.handle_restart():
                             continue
 
-                    except tmt.utils.RebootTimeoutError:
+                    except (
+                        tmt.utils.RebootTimeoutError,
+                        tmt.utils.ReconnectTimeoutError,
+                        tmt.utils.RestartMaxAttemptsError,
+                    ) as error:
+                        invocation.exception = error
                         for result in invocation.results:
                             result.result = ResultOutcome.ERROR
-                            result.note.append('reboot timeout')
-
-                    else:
-                        for result in invocation.results:
-                            result.result = ResultOutcome.ERROR
-                            result.note.append(
-                                'crashed too many times, '
-                                'you may want to set restart-max-count larger'
-                            )
 
                 # Handle reboot
                 if invocation.reboot_requested:
@@ -749,15 +741,19 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     try:
                         if invocation.handle_reboot():
                             continue
-                    except tmt.utils.RebootTimeoutError:
+                    except tmt.utils.RebootTimeoutError as error:
+                        invocation.exception = error
                         for result in invocation.results:
                             result.result = ResultOutcome.ERROR
-                            result.note.append('reboot timeout')
 
-                if invocation.abort_requested:
-                    for result in invocation.results:
-                        # In case of aborted all results in list will be aborted
-                        result.note.append('aborted')
+                # Execute internal checks
+                invocation.check_results += self.run_internal_checks(
+                    invocation=invocation,
+                    environment=self._test_environment(
+                        invocation=invocation, extra_environment=extra_environment, logger=logger
+                    ),
+                    logger=logger,
+                )
 
                 self._results.extend(invocation.results)
                 self.step.plan.execute.update_results(self.results())

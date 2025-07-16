@@ -20,7 +20,7 @@ rlJournalStart
         rlRun -s "tmt run --id $run report -v" 2
         rlAssertGrep "pass /tests/one" $rlRun_LOG
         rlAssertGrep "errr /tests/two" $rlRun_LOG
-        rlAssertGrep "Note: reboot timeout" $rlRun_LOG
+        rlAssertGrep "Note: Test failed due to guest reboot timeout." $rlRun_LOG
         rlAssertGrep "summary: 1 test passed and 1 error" $rlRun_LOG
     rlPhaseEnd
 

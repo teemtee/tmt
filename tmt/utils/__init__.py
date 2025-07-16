@@ -2571,6 +2571,18 @@ class RebootTimeoutError(ExecuteError):
     """
 
 
+class ReconnectTimeoutError(ExecuteError):
+    """
+    Failed to reconnect to the guest due to a timeout.
+    """
+
+
+class RestartMaxAttemptsError(ExecuteError):
+    """
+    Test restart failed due to maximum attempts reached.
+    """
+
+
 class ReportError(GeneralError):
     """
     Report step error
