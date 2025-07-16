@@ -860,7 +860,6 @@ that repository.
 Adjust Metadata
 ------------------------------------------------------------------
 
-
 Sometimes metadata needs to be adjusted based on the context.
 For example, the user might want to enable a test only for a
 specific architecture or skip a plan when running in a container.

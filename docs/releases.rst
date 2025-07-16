@@ -15,7 +15,7 @@ The :ref:`/plugins/report/html` report plugin now supports the
 ``skip`` result status.
 
 The :ref:`organize-data` chapter of the Guide has been extended
-with the :ref:`/spec/core/adjust` section describing how to
+with the :ref:`adjust-metadata` section describing how to
 conditionally modify various attributes of tests, plans,
 or stories based on the current :ref:`/spec/context`.
 
