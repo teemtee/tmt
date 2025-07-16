@@ -92,6 +92,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
     """
 
     _data_class = PrepareShellData
+    _url_clone_lock = threading.Lock()
 
     def go(
         self,
@@ -122,9 +123,8 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
         if self.data.url:
             repo_path = workdir / "repository"
-            _url_clone_lock = threading.Lock()
             if not self.is_dry_run:
-                with _url_clone_lock:
+                with self._url_clone_lock:
                     if not repo_path.exists():
                         repo_path.parent.mkdir(parents=True, exist_ok=True)
                         tmt.utils.git.git_clone(
