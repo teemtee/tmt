@@ -1,0 +1,87 @@
+story: |
+    As a user, I want tmt to generate a recipe file that can be reused to reproduce
+    a run with the exact same configuration, without requiring additional input.
+
+description: |
+    A recipe is a YAML file that captures a complete, static snapshot of a tmt
+    run after all dynamic evaluation has been resolved. It includes preprocessed
+    information about plans, tests, results, and run configuration. All environment
+    variables are evaluated, and git references are replaced with fixed commit hashes.
+
+    .. code-block:: yaml
+
+        # Run  configuration
+        run:
+            root: "/path/to/fmf/root"
+            remove: false
+
+        # Plan definitions with all steps
+        plans:
+            /plan/name:
+                discover:
+                    # Step data
+                    data:
+                      - name: default-0
+                        how: fmf
+                        order: 50
+                        ...
+                    # Discovered tests
+                    tests:
+                      - name: /test/name
+                        summary: Test summary
+                        ...
+
+                provision:
+                    data:
+                      - name: default-0
+                        how: local
+                        order: 50
+                        hardware:
+                            memory: 8 GiB
+                            ...
+                        ...
+
+                prepare:
+                    data:
+                      - name: default-0
+                        how: ansible
+                        order: 50
+                        # Playbooks are included directly in the recipe
+                        playbook:
+                          - name: Example playbook
+                            hosts: all
+                            tasks:
+                              - name: Example task
+                                ...
+                        ...
+
+                execute:
+                    data:
+                      - name: default-0
+                        how: tmt
+                        order: 50
+                        ...
+                    # Test results
+                    results:
+                      - name: /test/name
+                        result: pass
+                        ...
+
+                report:
+                    data:
+                      - name: default-0
+                        how: display
+                        order: 50
+                        ...
+
+                finish:
+                    data:
+                      - name: default-0
+                        how: shell
+                        order: 50
+                        ...
+
+example:
+  - |
+    # Reproduce a run using a recipe file
+    tmt run --recipe /path/to/recipe.yaml
