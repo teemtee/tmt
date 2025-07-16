@@ -3,6 +3,7 @@ from typing import Any, Optional, cast
 import fmf
 import fmf.utils
 
+import threading
 import tmt
 import tmt.log
 import tmt.steps
@@ -121,14 +122,18 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
         if self.data.url:
             repo_path = workdir / "repository"
+            _url_clone_lock = threading.Lock()
             if not self.is_dry_run:
-                tmt.utils.git.git_clone(
-                    url=self.data.url,
-                    destination=repo_path,
-                    shallow=False,
-                    env=environment,
-                    logger=self._logger,
-                )
+                with _url_clone_lock:
+                    if not repo_path.exists():
+                        repo_path.parent.mkdir(parents=True, exist_ok=True)
+                        tmt.utils.git.git_clone(
+                            url=self.data.url,
+                            destination=repo_path,
+                            shallow=False,
+                            env=environment,
+                            logger=self._logger,
+                        )
 
             scripts = [ShellScript(str(repo_path.joinpath(str(script)))) for script in scripts]
 
