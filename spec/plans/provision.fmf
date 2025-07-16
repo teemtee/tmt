@@ -87,29 +87,31 @@ link:
         Each provisioned guest may define an optional ``ansible`` key
         to define its corresponding Ansible inventory section.
 
-        group:
+        group
             Assigns the guest to an Ansible specific group. If omitted,
-            the :ref:`role </plugins/provision/common-keys>` key would serve as the
-            Ansible group name. If ``role`` is not set either, the host will be placed
-            in the `ungrouped` group.
+            the :ref:`role </plugins/provision/common-keys>` key would
+            serve as the Ansible group name. If ``role`` is not set
+            either, the host will be placed in the `ungrouped` group.
 
-        vars:
-            Defines host-specific Ansible variables to include under that
-            host in the inventory.
+        vars
+            Defines host-specific Ansible variables to include under
+            that host in the inventory.
 
     example: |
         provision:
-            - name: master
-              role: master
-              ansible:
-                  group: server  # If both role and ansible.group are set, ansible.group takes precedence
-                  vars:
-                      var1: value1
-                      var2: value2
+            # If both role and ansible.group are set,
+            # ansible.group takes precedence
+          - name: master
+            role: master
+            ansible:
+                group: server
+                vars:
+                    var1: value1
+                    var2: value2
 
           - name: client
             role: client
             ansible:
-              vars:
-                ansible_user: fedora
-                ansible_port: 2222
+                vars:
+                    ansible_user: fedora
+                    ansible_port: 2222

@@ -38,6 +38,7 @@ example:
     execute:
         how: tmt
 
+  - |
     # path/to/the/layout.yaml (input inventory layout, relative to fmf file)
     all:
         children:
@@ -50,42 +51,43 @@ example:
                     client: {}
                     runner: {}
 
+  - |
     # path/to/run/artifacts/provision/inventory.yaml (output inventory file)
     all:
-      children:
-          linux:
-              children:
-                  server:
-                      children:
-                          master:
-                              hosts:
-                                  test-master: {}
-                          replica: {}
-                  runner:
-                      hosts:
-                          test-runner: {}
-                  client:
-                      hosts:
-                          test-client: {}
-          ungrouped:
-              hosts:
-                  sidecar-vm: {}
-      hosts:
-          test-master:
-              ansible_host: 127.0.0.1
-              ansible_user: root
-              ansible_port: 10028
-              var1: value1
-              var2: value2
-          test-client:
-              ansible_host: 127.0.0.1
-              ansible_user: root
-              ansible_port: 10031
-          test-runner:
-              ansible_host: 127.0.0.1
-              ansible_user: root
-              ansible_port: 10033
-          sidecar-vm:
-              ansible_host: 127.0.0.1
-              ansible_user: root
-              ansible_port: 10034
+        children:
+            linux:
+                children:
+                    server:
+                        children:
+                            master:
+                                hosts:
+                                    test-master: {}
+                            replica: {}
+                    runner:
+                        hosts:
+                            test-runner: {}
+                    client:
+                        hosts:
+                            test-client: {}
+            ungrouped:
+                hosts:
+                    sidecar-vm: {}
+        hosts:
+            test-master:
+                ansible_host: 127.0.0.1
+                ansible_user: root
+                ansible_port: 10028
+                var1: value1
+                var2: value2
+            test-client:
+                ansible_host: 127.0.0.1
+                ansible_user: root
+                ansible_port: 10031
+            test-runner:
+                ansible_host: 127.0.0.1
+                ansible_user: root
+                ansible_port: 10033
+            sidecar-vm:
+                ansible_host: 127.0.0.1
+                ansible_user: root
+                ansible_port: 10034
