@@ -1,9 +1,9 @@
+import threading
 from typing import Any, Optional, cast
 
 import fmf
 import fmf.utils
 
-import threading
 import tmt
 import tmt.log
 import tmt.steps
