@@ -11,6 +11,9 @@ New internal :ref:`checks </plugins/test-checks>` have been added
 to report reconnect timeouts, reboot timeouts, and when tests
 exceed their maximum restart count during execution.
 
+The :ref:`/plugins/report/html` report plugin now supports the
+``skip`` result status.
+
 
 tmt-1.52.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
