@@ -6,6 +6,11 @@ import subprocess
 from pathlib import Path
 from typing import Any, Optional, Union
 
+import mockbuild
+import mockbuild.config
+import mockbuild.plugins
+import mockbuild.plugins.pm_request
+
 import tmt
 import tmt.base
 import tmt.log
@@ -23,13 +28,13 @@ class MockGuestData(tmt.steps.provision.GuestData):
         default=None,
         option=('-r', '--config'),
         metavar='CONFIG',
-        help='TODO.',
+        help='Mock chroot configuration file.',
     )
     rootdir: Optional[str] = field(
         default=None,
         option=('--rootdir'),
         metavar='ROOTDIR',
-        help='TODO.',
+        help='The path for where the chroot should be built.',
     )
 
 
@@ -39,12 +44,12 @@ class ProvisionMockData(MockGuestData, tmt.steps.provision.ProvisionStepData):
 
 
 class MockShell:
-    def __init__(self, parent: 'GuestMock', config, rootdir=None):
+    def __init__(self, parent: 'GuestMock', config: Optional[str], rootdir: Optional[str] = None):
         self.parent = parent
         self.config = config
         self.rootdir = rootdir
-        self.mock_shell = None
-        self.epoll = None
+        self.mock_shell: Optional[subprocess.Popen] = None
+        self.epoll: Optional[select.epoll] = None
 
         self.command_prefix = Command('mock')
         if self.config is not None:
@@ -52,25 +57,18 @@ class MockShell:
         if self.rootdir is not None:
             self.command_prefix += ['--rootdir', self.rootdir]
 
-        self.root_path = Path(
+        root_path = (
             (self.command_prefix + ['--print-root-path'])
             .run(cwd=None, logger=self.parent._logger)
-            .stdout.rstrip()
+            .stdout
         )
-
-    def install(self, *installables, options: tmt.package_managers.Options = {}):
-        if len(installables) == 0:
-            return
-        self.exit_shell()
-        # TODO use options
-        (self.command_prefix + ["--install"] + installables).run(
-            cwd=None, logger=self.parent._logger
-        )
+        assert root_path is not None
+        self.root_path = Path(root_path.rstrip())
 
     def __del__(self):
         self.exit_shell()
 
-    def exit_shell(self):
+    def exit_shell(self) -> None:
         if self.mock_shell is not None:
             self.parent.verbose("Exiting mock shell")
 
@@ -83,8 +81,11 @@ class MockShell:
 
     def enter_shell(self):
         command = self.command_prefix.to_popen()
+        command.append("--enable-network")
+        command.append("--enable-plugin")
+        command.append("tmt")
         command.append(
-            f"--plugin-option=bind_mount:dirs=[('{self.parent.workdir_root}', '{self.parent.workdir_root}')]"
+            f"--plugin-option=tmt:workdir_root='{shlex.quote(str(self.parent.workdir_root))}'"
         )
         command.append("-q")
         command.append("--shell")
@@ -118,9 +119,43 @@ class MockShell:
                     self.mock_shell.stdout.read()
                     # shell is ready
                     break
+
         # clear stderr
-        self.mock_shell.stderr.read()
+        if self.mock_shell.poll() is None:
+            for fileno, _ in self.epoll.poll(0):
+                if fileno == self.mock_shell_stderr_fd:
+                    self.mock_shell.stderr.read()
+                    break
+
         self.parent.verbose("Mock shell is ready")
+
+        """
+        NOTE Here we would like to add code which unmounts the overlayfs
+        after the prepare phase is done. Nevertheless testing should work even
+        with the bootstrap chroot mounted.
+
+        plan = self.parent.parent.parent
+
+        prepare_data_class = cast(  # type: ignore[redundant-cast]
+            type[tmt.steps.prepare.shell.PrepareShellData],
+            tmt.steps.prepare.shell.PrepareShell.get_data_class(),
+        )
+
+        data = prepare_data_class(
+            name="tmt-unmount-mock-bootstrap-overlay",
+            how='shell',
+            script=[
+                TODO
+            ],
+        )
+
+        phase: PreparePlugin[Any] = cast(
+            PreparePlugin[Any],
+            PreparePlugin.delegate(plan.prepare, data=data),
+        )
+
+        plan.prepare._phases.append(phase)
+        """
 
         return self
 
@@ -139,7 +174,7 @@ class MockShell:
             self.enter_shell()
         shell_command = ""
         if cwd is not None:
-            shell_command += "(cd " + str(cwd) + " && "
+            shell_command += "(cd " + shlex.quote(str(cwd)) + " && "
         if env is not None:
             for key, value in env.items():
                 shell_command += f"{key}={shlex.quote(value)} "
@@ -155,6 +190,8 @@ class MockShell:
         self.mock_shell.stdin.write(shell_command)
         self.mock_shell.stdin.flush()
 
+        # TODO Instead of reading stdout and stderr when the process finishes,
+        # we can open sockets or pipes and use epoll to provide real-time output.
         while self.mock_shell.poll() is None:
             events = self.epoll.poll()
             for fileno, _ in events:
@@ -178,6 +215,14 @@ class MockShell:
                         )
                     return (stdout, stderr)
 
+        raise tmt.utils.RunError(
+            f"Invalid state when executing command '{friendly_command or shell_command}'.",
+            command,
+            127,
+            stdout="",
+            stderr="",
+        )
+
 
 class GuestMock(tmt.Guest):
     """
@@ -186,14 +231,13 @@ class GuestMock(tmt.Guest):
 
     _data_class = MockGuestData
     mock_shell: MockShell
+    mock_config: dict
 
     @property
     def is_ready(self) -> bool:
         """
-        NOTE ???
         Mock is always ready
         """
-
         return True
 
     def _run_ansible(
@@ -300,6 +344,7 @@ class GuestMock(tmt.Guest):
     def load(self, data: tmt.steps.provision.GuestData) -> None:
         super().load(data)
         self.mock_shell = MockShell(parent=self, config=self.config, rootdir=self.rootdir)
+        self.mock_config = data.mock_config
 
     def save(self) -> tmt.steps.provision.GuestData:
         # inherit
@@ -310,9 +355,13 @@ class GuestMock(tmt.Guest):
         return super().wake()
 
     def setup(self) -> None:
-        # NOTE call --init?
-        # but a valid use case is reusing existing mock envs
-        return super().setup()
+        super().setup()
+        # If we are not using bootstrap, then we need to install the package manager.
+        # Otherwise we use overlayfs and the package manager from bootstrap chroot.
+        if self.mock_config['use_bootstrap'] is not True:
+            (
+                self.mock_shell.command_prefix + ['--install', self.mock_config['package_manager']]
+            ).run(cwd=None, logger=self.parent._logger)
 
 
 @tmt.steps.provides_method('mock')
@@ -334,19 +383,27 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
         Provision the container
         """
 
-        # If this provisioning is selected, then we force the use of `mock` package manager.
-        # NOTE use a global variable instead?
-        tmt.package_managers.mock.Mock.probe_command = tmt.utils.Command('true')
-
         super().go(logger=logger)
 
         # Create a GuestMock instance
-        data = ProvisionMockData.from_plugin(self)
+        data = MockGuestData.from_plugin(self)
 
-        # TODO is this needed? and where to place it? the data is not yet initialized
-        data.primary_address = (self._data_class.config or '<default>') + (
-            '@' + self._data_class.rootdir if self._data_class.rootdir is not None else ''
+        # NOTE this may be unnecessary, tmt package manager detection should work fine
+        # but mock already knows what the package manager is...
+        mock_config = mockbuild.config.simple_load_config(data.config)
+        package_manager = "mock-" + mock_config['package_manager']
+
+        # If this provisioning is selected, then we force the use of `mock-` package manager.
+        # NOTE use a global variable instead?
+        tmt.package_managers.find_package_manager(
+            package_manager
+        ).probe_command = tmt.utils.Command('true')
+
+        # NOTE any better ideas?
+        data.primary_address = (data.config or '<default>') + (
+            '@' + data.rootdir if data.rootdir is not None else ''
         )
+        data.mock_config = mock_config
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
