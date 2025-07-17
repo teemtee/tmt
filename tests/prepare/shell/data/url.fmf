@@ -1,5 +1,3 @@
-environment:
-    TMT_PREPARE_SHELL_URL_REPOSITORY: /var/tmp/prepare_url
 provision:
     how: container
 prepare:

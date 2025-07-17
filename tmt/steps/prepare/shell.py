@@ -13,7 +13,7 @@ import tmt.utils.git
 from tmt.container import container, field
 from tmt.steps import safe_filename
 from tmt.steps.provision import Guest
-from tmt.utils import Path, ShellScript
+from tmt.utils import EnvVarValue, ShellScript
 
 PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
 env_var = 'TMT_PREPARE_SHELL_URL_REPOSITORY'
@@ -113,22 +113,18 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         scripts = self.data.script
         # Give a short summary
         overview = fmf.utils.listed(scripts, 'script')
-        if self.data.url:
-            overview += f" from '{self.data.url}'"
-            if self.data.ref:
-                overview += f" at '{self.data.ref}'"
         logger.info('overview', f'{overview} found', 'green')
 
         workdir = self.step.plan.worktree
         assert workdir is not None  # narrow type
 
-        if env_var in self.step.plan.environment:
-            repo_path = Path(self.step.plan.environment[env_var])
+        if self.data.url:
+            repo_path = workdir / "repository"
+            self.step.plan.environment[env_var] = EnvVarValue(repo_path.resolve())
             if not self.is_dry_run:
                 with self._url_clone_lock:
                     if not repo_path.exists():
                         repo_path.parent.mkdir(parents=True, exist_ok=True)
-                        assert self.data.url is not None
                         tmt.utils.git.git_clone(
                             url=self.data.url,
                             destination=repo_path,
