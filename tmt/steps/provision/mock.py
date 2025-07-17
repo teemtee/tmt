@@ -21,7 +21,7 @@ from tmt.utils.wait import Waiting
 class MockGuestData(tmt.steps.provision.GuestData):
     config: Optional[str] = field(
         default=None,
-        option=('-r', '--root'),
+        option=('-r', '--config'),
         metavar='CONFIG',
         help='TODO.',
     )
