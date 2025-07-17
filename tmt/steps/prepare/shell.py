@@ -1,5 +1,3 @@
-
-import os
 import threading
 from typing import Any, Optional, cast
 
