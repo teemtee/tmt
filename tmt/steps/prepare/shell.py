@@ -1,3 +1,5 @@
+
+import os
 import threading
 from typing import Any, Optional, cast
 
@@ -13,9 +15,10 @@ import tmt.utils.git
 from tmt.container import container, field
 from tmt.steps import safe_filename
 from tmt.steps.provision import Guest
-from tmt.utils import ShellScript
+from tmt.utils import Path, ShellScript
 
 PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
+env_var = 'TMT_PREPARE_SHELL_URL_REPOSITORY'
 
 
 @container
@@ -121,8 +124,8 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         workdir = self.step.plan.worktree
         assert workdir is not None  # narrow type
 
-        if self.data.url:
-            repo_path = workdir / "repository"
+        if env_var in self.step.plan.environment:
+            repo_path = Path(self.step.plan.environment[env_var])
             if not self.is_dry_run:
                 with self._url_clone_lock:
                     if not repo_path.exists():
@@ -135,7 +138,11 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                             logger=self._logger,
                         )
 
-            scripts = [ShellScript(str(repo_path.joinpath(str(script)))) for script in scripts]
+                        guest.push(
+                            source=repo_path,
+                            destination=repo_path,
+                            options=["-s", "-p", "--chmod=755"],
+                        )
 
         if not self.is_dry_run:
             topology = tmt.steps.Topology(self.step.plan.provision.ready_guests)
