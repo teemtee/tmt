@@ -98,20 +98,44 @@ link:
             that host in the inventory.
 
     example: |
+        # Plan file
         provision:
             # If both role and ansible.group are set,
             # ansible.group takes precedence
-          - name: master
+          - name: master-guest
             role: master
             ansible:
                 group: server
                 vars:
                     var1: value1
                     var2: value2
-
-          - name: client
+          - name: client-guest
             role: client
             ansible:
                 vars:
                     ansible_user: fedora
                     ansible_port: 2222
+            # Orphan guest without role or ansible.group,
+            # will be placed in 'ungrouped'
+          - name: orphan-guest
+
+        # Generated inventory file
+        all:
+            children:
+                server:
+                    hosts:
+                        master-guest: {}
+                client:
+                    hosts:
+                        client-guest: {}
+                ungrouped:
+                    hosts:
+                        orphan-guest: {}
+            hosts:
+                master-guest:
+                    var1: value1
+                    var2: value2
+                client-guest:
+                    ansible_user: fedora
+                    ansible_port: 2222
+                orphan-guest: {}

@@ -24,13 +24,9 @@ example:
 
     provision:
         - name: test-master
-          ansible:
-              group: master
-              vars:
-                  var1: value1
-                  var2: value2
+          role: master  # Ansible group can be specified with role key.
         - name: test-runner
-          role: runner  # Ansible group can be also specified with role key.
+          role: runner
         - name: test-client
           role: client
         - name: sidecar-vm  # if no group is specified, the guest is added to 'ungrouped'
@@ -77,8 +73,6 @@ example:
                 ansible_host: 127.0.0.1
                 ansible_user: root
                 ansible_port: 10028
-                var1: value1
-                var2: value2
             test-client:
                 ansible_host: 127.0.0.1
                 ansible_user: root
