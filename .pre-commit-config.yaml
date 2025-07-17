@@ -21,6 +21,7 @@ repos:
     rev: "v1.15.0"
     hooks:
       - id: mypy
+        language: python # Required for Renovate additional_dependencies
         language_version: "3.9"
         # TODO: find out how to amend mypy, pyright, pre-commit and package requirements.
         # Apparently, there is no easy way to avoid some level of duplication of
@@ -69,6 +70,7 @@ repos:
     rev: v1.1.399
     hooks:
       - id: pyright
+        language: python # Required for Renovate additional_dependencies
         language_version: "3.9"
         # TODO: find out how to amend mypy, pyright, pre-commit and package requirements.
         # Apparently, there is no easy way to avoid some level of duplication of
@@ -140,6 +142,7 @@ repos:
     rev: v25.2.1
     hooks:
       - id: ansible-lint
+        language: python # Required for Renovate additional_dependencies
         args:
           - ansible/
           - examples/ansible/
@@ -157,38 +160,40 @@ repos:
     hooks:
       - id: ruff
         args:
-          - '--fix'
-          - '--show-fixes'
+          - "--fix"
+          - "--show-fixes"
       - id: ruff-format
 
   - repo: https://github.com/teemtee/tmt.git
     rev: 1.46.0
     hooks:
       - id: tmt-lint
+        language: python # Required for Renovate additional_dependencies
         additional_dependencies:
-          - "docutils>=0.16"         # 0.16 is the current one available for RHEL9
-          - "packaging>=20"          # 20 seems to be available with RHEL8
+          - "docutils>=0.16" # 0.16 is the current one available for RHEL9
+          - "packaging>=20" # 20 seems to be available with RHEL8
           - "pint<0.20"
           - "pydantic>=1.10.14"
-          - "pygments>=2.7.4"        # 2.7.4 is the current one available for RHEL9
+          - "pygments>=2.7.4" # 2.7.4 is the current one available for RHEL9
           # Help installation by reducing the set of inspected botocore release.
           # There is *a lot* of them, and hatch might fetch many of them.
-          - "botocore>=1.25.10"      # 1.25.10 is the current one available for RHEL9
+          - "botocore>=1.25.10" # 1.25.10 is the current one available for RHEL9
           - "typing-extensions>=4.9.0; python_version < '3.13'"
           - "fmf>=1.6.0"
+
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:
       - id: codespell
         additional_dependencies:
-          - tomli  # Required for python < 3.11
+          - tomli # Required for python < 3.11
 
   - repo: https://github.com/djlint/djLint
     rev: v1.36.4
     hooks:
       - id: djlint
         files: "\\.j2"
-        types_or: ['jinja']
+        types_or: ["jinja"]
 
   - repo: https://github.com/aristanetworks/j2lint.git
     rev: v1.2.0
@@ -205,7 +210,6 @@ repos:
   - repo: https://github.com/AleksaC/hadolint-py
     rev: v2.12.1b3
     hooks:
-
       - id: hadolint
         files: ^containers/.*
 
