@@ -1,10 +1,12 @@
+environment:
+    TMT_PREPARE_SHELL_URL_REPOSITORY: /var/tmp/prepare_url
 provision:
     how: container
 prepare:
     how: shell
     url: https://github.com/teemtee/tmt.git
     ref: main
-    script: tests/prepare/shell/remote/test.sh
+    script: cd $TMT_PREPARE_SHELL_URL_REPOSITORY && echo "Hello world"
 execute:
     how: tmt
     script: tmt --help
