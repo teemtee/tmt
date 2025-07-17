@@ -759,28 +759,36 @@ class GuestFacts(SerializableContainer):
             GuestCapability.SYSLOG_ACTION_READ_CLEAR: True,
         }
 
-    def sync(self, guest: 'Guest') -> None:
+    def sync(self, guest: 'Guest', *facts: str) -> None:
         """
         Update stored facts to reflect the given guest
         """
 
-        self.os_release_content = self._fetch_keyval_file(guest, Path('/etc/os-release'))
-        self.lsb_release_content = self._fetch_keyval_file(guest, Path('/etc/lsb-release'))
+        if facts:
+            for fact in facts:
+                if not hasattr(self, fact):
+                    raise GeneralError(f"Cannot sync unknown guest fact '{fact}'.")
 
-        self.arch = self._query_arch(guest)
-        self.distro = self._query_distro(guest)
-        self.kernel_release = self._query_kernel_release(guest)
-        self.package_manager = self._query_package_manager(guest)
-        self.bootc_builder = self._query_bootc_builder(guest)
-        self.has_selinux = self._query_has_selinux(guest)
-        self.has_systemd = self._query_has_systemd(guest)
-        self.has_rsync = self._query_has_rsync(guest)
-        self.is_superuser = self._query_is_superuser(guest)
-        self.is_ostree = self._query_is_ostree(guest)
-        self.is_toolbox = self._query_is_toolbox(guest)
-        self.toolbox_container_name = self._query_toolbox_container_name(guest)
-        self.is_container = self._query_is_container(guest)
-        self.capabilities = self._query_capabilities(guest)
+                setattr(self, fact, getattr(self, f'_query_{fact}')(guest))
+
+        else:
+            self.os_release_content = self._fetch_keyval_file(guest, Path('/etc/os-release'))
+            self.lsb_release_content = self._fetch_keyval_file(guest, Path('/etc/lsb-release'))
+
+            self.arch = self._query_arch(guest)
+            self.distro = self._query_distro(guest)
+            self.kernel_release = self._query_kernel_release(guest)
+            self.package_manager = self._query_package_manager(guest)
+            self.bootc_builder = self._query_bootc_builder(guest)
+            self.has_selinux = self._query_has_selinux(guest)
+            self.has_systemd = self._query_has_systemd(guest)
+            self.has_rsync = self._query_has_rsync(guest)
+            self.is_superuser = self._query_is_superuser(guest)
+            self.is_ostree = self._query_is_ostree(guest)
+            self.is_toolbox = self._query_is_toolbox(guest)
+            self.toolbox_container_name = self._query_toolbox_container_name(guest)
+            self.is_container = self._query_is_container(guest)
+            self.capabilities = self._query_capabilities(guest)
 
         self.in_sync = True
 
@@ -2547,9 +2555,11 @@ class GuestSsh(Guest):
         if self.facts.has_rsync:
             return
 
+        self.debug('rsync has not been confirmed on the guest, try installing it')
+
         self.package_manager.install(Package('rsync'))
 
-        self.facts.sync(self)
+        self.facts.sync(self, 'has_rsync')
 
     def push(
         self,
