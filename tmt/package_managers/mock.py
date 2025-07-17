@@ -1,61 +1,43 @@
-from typing import Optional
-
+import tmt.package_managers.dnf
 from tmt.package_managers import (
-    Installable,
-    Options,
     PackageManager,
-    PackageManagerEngine,
     provides_package_manager,
 )
 from tmt.utils import (
     Command,
-    CommandOutput,
 )
 
 
-class MockEngine(PackageManagerEngine):
-    def prepare_command(self) -> tuple[Command, Command]:
-        # NOTE package installation is handled completely outside of the guest
-        return (None, None)
+class MockYumEngine(tmt.package_managers.dnf.YumEngine):
+    pass
 
 
-@provides_package_manager('mock')
-class Mock(PackageManager[MockEngine]):
-    NAME = 'mock'
+class MockDnfEngine(tmt.package_managers.dnf.DnfEngine):
+    pass
 
-    _engine_class = MockEngine
 
+class MockDnf5Engine(tmt.package_managers.dnf.Dnf5Engine):
+    pass
+
+
+class BaseMock:
     probe_command = Command("false")
-
-    # needs to be larger than priorities of `yum`, `dnf`, `dnf5` and `rpm-ostree`.
     probe_priority = 130
 
-    def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
-        # NOTE possible via execute `rpm -q --whatprovides`?
-        raise NotImplementedError
 
-    def install(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-        self.guest.mock_shell.install(*list(map(str, installables)), options=options)
+@provides_package_manager('mock-yum')
+class MockYum(BaseMock, PackageManager[MockYumEngine]):
+    NAME = 'mock-yum'
+    _engine_class = MockYumEngine
 
-    def reinstall(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-        # NOTE is this even possible in mock?
-        raise NotImplementedError
 
-    def install_debuginfo(
-        self,
-        *installables: Installable,
-        options: Optional[Options] = None,
-    ) -> CommandOutput:
-        raise NotImplementedError
+@provides_package_manager('mock-dnf')
+class MockDnf(BaseMock, PackageManager[MockDnfEngine]):
+    NAME = 'mock-dnf'
+    _engine_class = MockDnfEngine
 
-    def refresh_metadata(self) -> CommandOutput:
-        # noop
-        return CommandOutput(stdout="", stderr="")
+
+@provides_package_manager('mock-dnf5')
+class MockDnf5(BaseMock, PackageManager[MockDnf5Engine]):
+    NAME = 'mock-dnf5'
+    _engine_class = MockDnf5Engine

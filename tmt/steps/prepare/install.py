@@ -672,11 +672,6 @@ class InstallBootc(InstallBase):
 
 
 class InstallMock(InstallBase):
-    def prepare_install_local(self) -> None:
-        # NOTE no need to copy installables into the chroot - mock can install
-        # files from the host environment.
-        pass
-
     def install_from_repository(self) -> None:
         self.guest.package_manager.install(
             *self.list_installables("package", *self.packages),
@@ -687,14 +682,32 @@ class InstallMock(InstallBase):
         )
 
     def install_local(self) -> None:
+        # Use both dnf install/reinstall to get all packages refreshed
+        # FIXME Simplify this once BZ#1831022 is fixed/implemented.
+        filelist = [
+            PackagePath(self.package_directory / filename.name) for filename in self.local_packages
+        ]
+
         self.guest.package_manager.install(
-            *self.local_packages,
+            *filelist,
             options=Options(
                 excluded_packages=self.exclude,
                 skip_missing=self.skip_missing,
                 check_first=False,
             ),
         )
+
+        self.guest.package_manager.reinstall(
+            *filelist,
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing,
+                check_first=False,
+            ),
+        )
+
+        summary = fmf.utils.listed([str(path) for path in self.local_packages], 'local package')
+        self.info('total', f"{summary} installed", 'green')
 
     def install_from_url(self) -> None:
         self.guest.package_manager.install(
@@ -944,7 +957,9 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
                 guest=guest,
             )
 
-        elif guest.facts.package_manager == 'mock':
+        elif guest.facts.package_manager is not None and guest.facts.package_manager.startswith(
+            'mock-'
+        ):
             installer = InstallMock(
                 logger=logger,
                 parent=self,
