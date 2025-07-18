@@ -59,6 +59,8 @@ couple of recommendations to keep on mind when writing code:
           " Containers can only be stopped and started again (hard reboot)."
       )
 
+  See the "maximum line length" point above for the actual limit.
+
 __ https://github.com/teemtee/tmt/issues
 __ https://github.com/teemtee/tmt/issues?q=label%3A%22known+issue%22
 __ https://www.python.org/dev/peps/pep-0008/
