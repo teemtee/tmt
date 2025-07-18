@@ -21,7 +21,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Remote Script"
-        rlRun "tmt run -rv plan -n url" 0 "Prepare using a remote script"
+        rlRun "tmt -vvv run provision prepare finish plan -n url" 0 "Prepare using a remote script"
     rlPhaseEnd
 
     rlPhaseStartCleanup

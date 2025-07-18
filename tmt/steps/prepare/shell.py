@@ -110,9 +110,8 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
         environment = environment or tmt.utils.Environment()
 
-        scripts = self.data.script
         # Give a short summary
-        overview = fmf.utils.listed(scripts, 'script')
+        overview = fmf.utils.listed(self.data.script, 'script')
         logger.info('overview', f'{overview} found', 'green')
 
         workdir = self.step.plan.worktree
@@ -120,7 +119,9 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
         if self.data.url:
             repo_path = workdir / "repository"
-            self.step.plan.environment[env_var] = EnvVarValue(repo_path.resolve())
+
+            environment[env_var] = EnvVarValue(repo_path.resolve())
+
             if not self.is_dry_run:
                 with self._url_clone_lock:
                     if not repo_path.exists():
@@ -160,7 +161,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         logger.debug('prepare wrapper', prepare_wrapper_path, level=3)
 
         # Execute each script on the guest (with default shell options)
-        for script in scripts:
+        for script in self.data.script:
             logger.verbose('script', script, 'green')
             script_with_options = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}')
             self.write(prepare_wrapper_path, str(script_with_options), 'w')
