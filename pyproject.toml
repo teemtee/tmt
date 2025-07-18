@@ -26,7 +26,6 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Utilities",
     "Topic :: Software Development :: Testing",
@@ -186,7 +185,7 @@ template = "dev"
 description = "Run scripts with multiple Python versions"
 
 [[tool.hatch.envs.test.matrix]]
-python = ["3.9", "3.12", "3.13"]
+python = ["3.9", "3.13"]
 
 [tool.hatch.envs.docs]
 dependencies = [
