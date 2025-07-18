@@ -8,8 +8,6 @@ from tmt.container import container, field
 from tmt.utils import Command, ShellScript
 from tmt.utils.wait import Waiting
 
-DEFAULT_USER = "root"
-
 
 @container
 class ConnectGuestData(tmt.steps.provision.GuestSshData):
@@ -24,13 +22,6 @@ class ConnectGuestData(tmt.steps.provision.GuestSshData):
         option=('-g', '--guest'),
         metavar='HOSTNAME|IP',
         help='A preexisting machine to connect to.',
-    )
-
-    user: str = field(
-        default=DEFAULT_USER,
-        option=('-u', '--user'),
-        metavar='NAME',
-        help='A username to use for all guest operations.',
     )
 
     soft_reboot: Optional[ShellScript] = field(

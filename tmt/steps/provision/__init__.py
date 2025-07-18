@@ -178,6 +178,9 @@ SSH_MASTER_SOCKET_MIN_HASH_LENGTH = 4
 #: filename.
 SSH_MASTER_SOCKET_MAX_HASH_LENGTH = 64
 
+#: Default username to use in SSH connections.
+DEFAULT_USER = 'root'
+
 
 @overload
 def _socket_path_trivial(
@@ -2027,14 +2030,11 @@ class GuestSshData(GuestData):
              """,
         normalize=tmt.utils.normalize_optional_int,
     )
-    user: Optional[str] = field(
-        default=None,
+    user: str = field(
+        default=DEFAULT_USER,
         option=('-u', '--user'),
         metavar='NAME',
-        help="""
-             Username to use for SSH connections instead of the account
-             name running tmt.
-             """,
+        help='A username to use for all guest operations.',
     )
     key: list[Path] = field(
         default_factory=list,

@@ -80,7 +80,6 @@ SUPPORTED_LOG_TYPES = [
 DEFAULT_API_VERSION = SUPPORTED_API_VERSIONS[0]
 
 DEFAULT_API_URL = 'http://127.0.0.1:8001'
-DEFAULT_USER = 'root'
 DEFAULT_ARCH = 'x86_64'
 DEFAULT_PRIORITY_GROUP = 'default-priority'
 DEFAULT_KEYNAME = 'default'
@@ -104,13 +103,6 @@ def _normalize_log_type(key_address: str, raw_value: Any, logger: tmt.log.Logger
 
 @container
 class ArtemisGuestData(tmt.steps.provision.GuestSshData):
-    user: str = field(
-        default=DEFAULT_USER,
-        option=('-u', '--user'),
-        metavar='USERNAME',
-        help='Username to use for all guest operations.',
-    )
-
     # API
     api_url: str = field(
         default=DEFAULT_API_URL,
