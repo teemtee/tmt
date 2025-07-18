@@ -13,7 +13,7 @@ import tmt.utils.git
 from tmt.container import container, field
 from tmt.steps import safe_filename
 from tmt.steps.provision import Guest
-from tmt.utils import EnvVarValue, ShellScript
+from tmt.utils import Command, EnvVarValue, ShellScript
 
 PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
 env_var = 'TMT_PREPARE_SHELL_URL_REPOSITORY'
@@ -133,6 +133,12 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                             env=environment,
                             logger=self._logger,
                         )
+
+                        if self.data.ref:
+                            self.info('ref', self.data.ref, 'green')
+                            self.run(
+                                Command('git', 'checkout', '-f', self.data.ref), cwd=repo_path
+                            )
 
                         guest.push(
                             source=repo_path,
