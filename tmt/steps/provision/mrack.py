@@ -47,7 +47,6 @@ TmtBeakerTransformer: Any
 
 _MRACK_IMPORTED: bool = False
 
-DEFAULT_USER = 'root'
 DEFAULT_ARCH = 'x86_64'
 DEFAULT_IMAGE = 'fedora'
 DEFAULT_PROVISION_TIMEOUT = 3600  # 1 hour timeout at least
@@ -914,14 +913,6 @@ def async_run(func: Any) -> Any:
 
 @container
 class BeakerGuestData(tmt.steps.provision.GuestSshData):
-    # Override parent class with our defaults
-    user: str = field(
-        default=DEFAULT_USER,
-        option=('-u', '--user'),
-        metavar='USERNAME',
-        help='Username to use for all guest operations.',
-    )
-
     # Guest request properties
     whiteboard: Optional[str] = field(
         default=None,

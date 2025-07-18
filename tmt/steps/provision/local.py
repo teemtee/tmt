@@ -191,34 +191,49 @@ class GuestLocal(tmt.Guest):
 
 @tmt.steps.provides_method('local')
 class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
+    #
+    # This plugin docstring has been reviewed and updated to follow
+    # our documentation best practices. When changing it, please make
+    # sure new changes are following them as well.
+    #
+    # https://tmt.readthedocs.io/en/stable/contribute.html#docs
+    #
     """
-    Use local host for test execution.
+    Use the localhost for the test execution.
 
-    Do not provision any system. Tests will be executed
-    directly on the localhost. Note that for some actions like
-    installing additional packages you need root permission or
-    enabled sudo.
+    Do not provision any system, tests will be executed directly on the
+    localhost.
 
     .. warning::
 
-        In general, it is not recommended to run tests on your local machine
-        as there might be security risks. Run only those tests which you
-        know are safe so that you don't destroy your laptop ;-)
+        In general, it is not recommended to run tests on your local
+        machine as there might be security risks. Run only those tests
+        which you know are safe so that you don't destroy your
+        workstation ;-)
 
         From tmt version 1.38, the ``--feeling-safe`` option or
         the ``TMT_FEELING_SAFE=1`` environment variable is
-        required in order to use the local provision plugin.
+        required in order to use the ``local`` provision plugin.
 
-    Example config:
+    Using the plugin:
 
     .. code-block:: yaml
 
         provision:
             how: local
 
-    Note that ``tmt run`` is expected to be executed under a regular user.
-    If there are admin rights required (for example in the prepare step)
-    you might be asked for a ``sudo`` password.
+    .. code-block:: shell
+
+        provision --how local
+
+    .. note::
+
+        ``tmt run`` is expected to be executed under a non-privileged
+        user account. For some actions on the localhost, e.g.
+        installation of test requirements, ``local`` will require
+        elevated privileges, either by running under ``root``
+        account, or by using ``sudo`` to run the sensitive commands. You
+        may be asked for a password in such cases.
 
     .. note::
 

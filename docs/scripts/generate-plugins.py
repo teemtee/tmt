@@ -26,6 +26,8 @@ from tmt.utils.templates import render_template_file_into_file
 
 REVIEWED_PLUGINS: tuple[str, ...] = (
     'prepare/ansible',
+    'provision/connect',
+    'provision/local',
     'test-checks/avc',
     'test-checks/dmesg',
     'test-checks/watchdog',
