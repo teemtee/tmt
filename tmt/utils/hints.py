@@ -273,3 +273,14 @@ def print_hints(*ids: str, ignore_missing: bool = False, logger: tmt.log.Logger)
 
     for hint in hints:
         hint.print(logger)
+
+
+def hints_as_notes(*ids: str) -> list[str]:
+    """
+    Format hints as a list of :py:class:`Result` notes.
+
+    :py:attr:`Hint.summary_ref` of each hint is added as a distinct
+    note.
+    """
+
+    return [hint.summary_ref for hint in get_hints(*ids)]

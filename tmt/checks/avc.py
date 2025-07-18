@@ -19,7 +19,7 @@ from tmt.utils import (
     format_timestamp,
     render_command_report,
 )
-from tmt.utils.hints import get_hints
+from tmt.utils.hints import hints_as_notes
 
 if TYPE_CHECKING:
     import tmt.base
@@ -461,12 +461,9 @@ class AvcDenials(CheckPlugin[AvcCheck]):
                 CheckResult(
                     name='avc',
                     result=ResultOutcome.SKIP,
-                    note=[
-                        hint.summary_ref
-                        for hint in get_hints(
-                            'test-checks/avc/detection-skipped', 'selinux-not-available'
-                        )
-                    ],
+                    note=hints_as_notes(
+                        'test-checks/avc/detection-skipped', 'selinux-not-available'
+                    ),
                 )
             ]
 
@@ -475,7 +472,7 @@ class AvcDenials(CheckPlugin[AvcCheck]):
                 CheckResult(
                     name='avc',
                     result=ResultOutcome.SKIP,
-                    note=[hint.summary_ref for hint in get_hints('guest-not-healthy')],
+                    note=hints_as_notes('guest-not-healthy'),
                 )
             ]
 

@@ -16,7 +16,7 @@ from tmt.utils import (
     format_timestamp,
     render_command_report,
 )
-from tmt.utils.hints import get_hints
+from tmt.utils.hints import hints_as_notes
 
 if TYPE_CHECKING:
     import tmt.base
@@ -217,10 +217,7 @@ class Dmesg(CheckPlugin[DmesgCheck]):
                 CheckResult(
                     name='dmesg',
                     result=ResultOutcome.SKIP,
-                    note=[
-                        hint.summary_ref
-                        for hint in get_hints('test-checks/dmesg/fetching-skipped')
-                    ],
+                    note=hints_as_notes('test-checks/dmesg/fetching-skipped'),
                 )
             ]
 
@@ -241,10 +238,7 @@ class Dmesg(CheckPlugin[DmesgCheck]):
                 CheckResult(
                     name='dmesg',
                     result=ResultOutcome.SKIP,
-                    note=[
-                        hint.summary_ref
-                        for hint in get_hints('test-checks/dmesg/fetching-skipped')
-                    ],
+                    note=hints_as_notes('test-checks/dmesg/fetching-skipped'),
                 )
             ]
 
@@ -253,7 +247,7 @@ class Dmesg(CheckPlugin[DmesgCheck]):
                 CheckResult(
                     name='dmesg',
                     result=ResultOutcome.SKIP,
-                    note=[hint.summary_ref for hint in get_hints('guest-not-healthy')],
+                    note=hints_as_notes('guest-not-healthy'),
                 )
             ]
 
