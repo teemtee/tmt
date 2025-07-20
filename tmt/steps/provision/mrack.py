@@ -278,7 +278,7 @@ def transforms(fn: ConstraintTransformer[ConstraintT]) -> ConstraintTransformer[
     transforms: decorator strips away the initial ``_transform_``
     prefix, and replaces the first underscore, ``_`` with a dot, ``.``:
 
-    ..code-block::
+    .. code-block::
 
         _transform_beaker_pool => beaker.pool
         _transform_disk_physical_sector_size => disk.physical_sector_size
