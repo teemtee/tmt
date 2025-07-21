@@ -25,6 +25,34 @@
           - how: dmesg
             result: respect
 
+/journal-dmesg:
+    test: /bin/true
+    check: journal-dmesg
+
+    /harmless:
+        test: bash -c 'sleep 5'
+
+    /harmless2:
+
+    /segfault:
+        test: echo Some segfault happened > /dev/kmsg
+
+    /custom-patterns:
+        test: echo Custom detected:test > /dev/kmsg
+        check:
+          - how: journal-dmesg
+            failure-pattern:
+              - 'Custom detected'
+
+    /multiple-reports:
+        check:
+          - how: journal-dmesg
+            result: respect
+          - how: journal-dmesg
+            result: respect
+          - how: journal-dmesg
+            result: respect
+
 /avc:
   /checkpoint:
     check:
