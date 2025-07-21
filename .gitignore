@@ -63,9 +63,6 @@ ENV/
 env.bak/
 venv.bak/
 
-# Jetbrains
-.idea/
-
 # Vim
 
 # Swap
@@ -89,5 +86,8 @@ tags
 # Persistent undo
 [._]*.un~
 
-# Visual Studio Code
+# Editors & IDEs
 .vscode
+.zed/
+.cursor/
+.idea
