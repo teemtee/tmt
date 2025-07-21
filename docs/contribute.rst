@@ -36,7 +36,7 @@ couple of recommendations to keep on mind when writing code:
 
      self.warn(f"File '{path}' not found.")
 
-* For multiline shell script, use multiline strings - :py:class:`ShellScript`
+* For multiline shell scripts, use multiline strings - :py:class:`ShellScript`
   will perform dedenting correctly:
 
   .. code-block:: python
