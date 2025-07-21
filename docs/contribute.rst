@@ -29,13 +29,37 @@ couple of recommendations to keep on mind when writing code:
 * When using hanging indent, the first line should be empty.
 * The closing brace/bracket/parenthesis on multiline constructs
   is under the first non-whitespace character of the last line.
+* When generating user messages use the whole sentence with the
+  first word capitalized and enclose any names in single quotes:
 
-When generating user messages use the whole sentence with the
-first word capitalized and enclose any names in single quotes:
+  .. code-block:: python
 
-.. code-block:: python
+     self.warn(f"File '{path}' not found.")
 
-    self.warn(f"File '{path}' not found.")
+* For multiline shell scripts, use multiline strings - :py:class:`ShellScript`
+  will perform dedenting correctly:
+
+  .. code-block:: python
+
+      ShellScript(
+          f"""
+           mkdir -p {workdir_root};
+           setfacl -d -m o:rX {workdir_root}
+           """
+      )
+
+  However, for strings that are too long for a single line and are
+  expected to render as a single line, literal concatenation is
+  preferred:
+
+  .. code-block:: python
+
+      raise tmt.steps.provision.RebootModeNotSupportedError(
+          f"Guest '{self.multihost_name}' does not support soft reboot."
+          " Containers can only be stopped and started again (hard reboot)."
+      )
+
+  See the "maximum line length" point above for the actual limit.
 
 __ https://github.com/teemtee/tmt/issues
 __ https://github.com/teemtee/tmt/issues?q=label%3A%22known+issue%22
