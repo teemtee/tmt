@@ -51,7 +51,6 @@ from tmt.options import option
 from tmt.package_managers import (
     FileSystemPath,
     Package,
-    PackageManagerClass,
 )
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue
@@ -585,7 +584,7 @@ class GuestFacts(SerializableContainer):
     def _discover_package_manager(
         self,
         guest: 'Guest',
-        plugin_classes: Iterable[Any],
+        plugin_classes: Iterable[tmt.package_managers.PackageManagerClass[Any]],
         *,
         debug_label: str,
     ) -> Optional['tmt.package_managers.GuestPackageManager']:
@@ -593,7 +592,7 @@ class GuestFacts(SerializableContainer):
         # break after the first one is detected.
 
         discovered_package_managers: list[
-            PackageManagerClass[tmt.package_managers.PackageManagerEngine]
+            tmt.package_managers.PackageManagerClass[tmt.package_managers.PackageManagerEngine]
         ] = sorted(plugin_classes, key=lambda pm: pm.probe_priority, reverse=True)
 
         for package_manager_class in discovered_package_managers:
@@ -612,12 +611,12 @@ class GuestFacts(SerializableContainer):
     ) -> Optional['tmt.package_managers.GuestPackageManager']:
         return self._discover_package_manager(
             guest,
-            plugin_classes=[
+            plugin_classes=(
                 package_manager_class
                 for _, package_manager_class in (
                     tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items()
                 )
-            ],
+            ),
             debug_label='package manager',
         )
 
@@ -626,9 +625,7 @@ class GuestFacts(SerializableContainer):
     ) -> Optional['tmt.package_managers.GuestPackageManager']:
         return self._discover_package_manager(
             guest,
-            plugin_classes=list(
-                tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.iter_plugins()
-            ),
+            plugin_classes=(tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.iter_plugins()),
             debug_label='bootc builder',
         )
 
