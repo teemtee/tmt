@@ -9,6 +9,14 @@ tier: 2
       - provision-local
       - provision-virtual
 
+/journal-dmesg:
+    test: ./test-journal-dmesg.sh
+    tag+:
+      - provision-only
+      - provision-container
+      - provision-local
+      - provision-virtual
+
 /avc:
     test: ./test-avc.sh
     tag+:
