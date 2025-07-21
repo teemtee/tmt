@@ -584,7 +584,9 @@ class GuestFacts(SerializableContainer):
     def _discover_package_manager(
         self,
         guest: 'Guest',
-        plugin_classes: Iterable[tmt.package_managers.PackageManagerClass[Any]],
+        plugin_classes: Iterable[
+            type[tmt.package_managers.PackageManager[tmt.package_managers.PackageManagerEngine]]
+        ],
         *,
         debug_label: str,
     ) -> Optional['tmt.package_managers.GuestPackageManager']:
