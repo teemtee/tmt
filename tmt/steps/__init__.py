@@ -99,7 +99,7 @@ PHASE_ORDER_PREPARE_INSTALL_REQUIRES = 70
 PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS = 75
 
 # Supported steps and actions
-STEPS: list[str] = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish']
+STEPS: list[str] = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish', 'cleanup']
 ACTIONS: list[str] = ['login', 'reboot']
 DEFAULT_LOGIN_COMMAND = 'bash'
 
