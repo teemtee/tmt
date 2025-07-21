@@ -8,8 +8,6 @@ from tmt.container import container, field
 from tmt.utils import Command, ShellScript
 from tmt.utils.wait import Waiting
 
-DEFAULT_USER = "root"
-
 
 @container
 class ConnectGuestData(tmt.steps.provision.GuestSshData):
@@ -22,15 +20,8 @@ class ConnectGuestData(tmt.steps.provision.GuestSshData):
     guest: Optional[str] = field(
         default=None,
         option=('-g', '--guest'),
-        metavar='GUEST',
-        help='Select remote host to connect to (hostname or ip).',
-    )
-
-    user: str = field(
-        default=DEFAULT_USER,
-        option=('-u', '--user'),
-        metavar='USERNAME',
-        help='Username to use for all guest operations.',
+        metavar='HOSTNAME|IP',
+        help='A preexisting machine to connect to.',
     )
 
     soft_reboot: Optional[ShellScript] = field(
@@ -172,11 +163,21 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
 
 @tmt.steps.provides_method('connect')
 class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]):
+    #
+    # This plugin docstring has been reviewed and updated to follow
+    # our documentation best practices. When changing it, please make
+    # sure new changes are following them as well.
+    #
+    # https://tmt.readthedocs.io/en/stable/contribute.html#docs
+    #
     """
     Connect to a provisioned guest using SSH.
 
-    Do not provision a new system. Instead, use provided
-    authentication data to connect to a running machine.
+    Do not provision any system, tests will be executed directly on the
+    machine that has been already provisioned. Use provided
+    authentication information to connect to it over SSH.
+
+
 
     Private key authentication (using ``sudo`` to run scripts):
 
@@ -208,11 +209,13 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
             how: connect
             guest: host.example.org
 
-    To trigger a hard reboot of a guest, ``hard-reboot`` must be set to
+
+
+    To support hard reboot of a guest, ``hard-reboot`` must be set to
     an executable command or script. Without this key set, hard reboot
     will remain unsupported and result in an error. In comparison,
-    ``soft-reboot`` is optional, it will be preferred over the default
-    soft reboot command, ``reboot``:
+    ``soft-reboot`` is optional, but if set, the given command will be
+    preferred over the default soft reboot command, ``reboot``:
 
     .. code-block:: yaml
 
@@ -220,6 +223,12 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
           how: connect
           hard-reboot: virsh reboot my-example-vm
           soft-reboot: ssh root@my-example-vm 'shutdown -r now'
+
+    .. code-block:: shell
+
+        provision --how connect \\
+                  --hard-reboot="virsh reboot my-example-vm" \\
+                  --soft-reboot="ssh root@my-example-vm 'shutdown -r now'"
 
     .. warning::
 
