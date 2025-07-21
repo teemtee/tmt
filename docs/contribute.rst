@@ -691,10 +691,11 @@ Before merging it's good to check the following:
 * Documentation has been added or updated where appropriate
 * At least two positive reviews provided by the maintainers
 
-Merge commits are not used, rebase on the ``main`` instead and
-squash the commits before merging. The commit message is generated
-from the pull request description which should be up-to-date. Just
-make sure the content is sane and remove the checklist from it.
+Merge commits are not used, rebase on the latest ``main`` instead.
+Use the GitHub's ``Squash & Merge`` button which will generate the
+commit message from the pull request description. Just make sure
+it is sane, the content is up-to-date, and remove the checklist
+from it before merging.
 
 Pull requests which should not or cannot be merged are marked with
 the ``status | blocked`` label. For complex topics which need more
