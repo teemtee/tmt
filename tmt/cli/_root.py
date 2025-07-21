@@ -37,6 +37,7 @@ from tmt.utils import Command, GeneralError, Path, effective_workdir_root
 from tmt.utils.themes import style
 
 if TYPE_CHECKING:
+    import tmt.steps.cleanup
     import tmt.steps.discover
     import tmt.steps.execute
     import tmt.steps.finish
@@ -382,6 +383,7 @@ run.add_command(tmt.steps.prepare.PreparePlugin.command())
 run.add_command(tmt.steps.execute.ExecutePlugin.command())
 run.add_command(tmt.steps.report.ReportPlugin.command())
 run.add_command(tmt.steps.finish.FinishPlugin.command())
+run.add_command(tmt.steps.cleanup.CleanupPlugin.command())
 run.add_command(tmt.steps.Login.command())
 run.add_command(tmt.steps.Reboot.command())
 
