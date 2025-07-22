@@ -14,6 +14,15 @@ exceed their maximum restart count during execution.
 The :ref:`/plugins/report/html` report plugin now supports the
 ``skip`` result status.
 
+The :ref:`organize-data` chapter of the Guide has been extended
+with the :ref:`adjust-metadata` section describing how to
+conditionally modify various attributes of tests, plans,
+or stories based on the current :ref:`/spec/context`.
+
+A regression in the ``tmt run --environment @file.yaml`` option
+handling has been fixed so that environment files can be again
+loaded from outside of the fmf root directory.
+
 
 tmt-1.52.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

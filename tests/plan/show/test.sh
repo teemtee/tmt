@@ -4,7 +4,7 @@
 function dump_fmf_id_block
 {
     typeset output=${1?"*** output file"}
-    typeset lineno=$(cat -n $output | egrep 'fmf-id' | awk '{print $1}')
+    typeset lineno=$(cat -n $output | grep -E 'fmf-id' | awk '{print $1}')
     sed -n "$lineno,$"p $output
 }
 

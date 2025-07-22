@@ -2,7 +2,7 @@
 
 echo "In a test!"
 
-for envvar in $(compgen -A variable | egrep 'TMT' | sort); do
+for envvar in $(compgen -A variable | grep -E 'TMT' | sort); do
     echo "$envvar=${!envvar}"
 done
 
