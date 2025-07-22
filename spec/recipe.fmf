@@ -8,16 +8,29 @@ description: |
     information about plans, tests, results, and run configuration. All environment
     variables are evaluated, and git references are replaced with fixed commit hashes.
 
+    Generated recipe can be edited, manually or by using a script, which allows users
+    to select only a subset of discovered tests to be reexecuted.
+
     .. code-block:: yaml
 
-        # Run  configuration
+        # Git repo configuration
+        git:
+            url: https://github.com/teemtee/tmt
+            path: /tests/nested
+            ref: c89c4b5
+
+        # Run configuration
         run:
             root: "/path/to/fmf/root"
             remove: false
+            environment: ...
+            context: ...
 
         # Plan definitions with all steps
         plans:
             /plan/name:
+                environment: ...
+                context: ...
                 discover:
                     # Step data
                     data:
@@ -29,6 +42,8 @@ description: |
                     tests:
                       - name: /test/name
                         summary: Test summary
+                        # Repositories must be fetched again so
+                        # that the test code is actually available.
                         ...
 
                 provision:
@@ -63,6 +78,10 @@ description: |
                         ...
                     # Test results
                     results:
+                      # When submitting a new run based on a recipe, the ``results`` key
+                      # is ignored. New results will be generated from the actual test
+                      # execution. Users can use the results listed here to filter
+                      # or select tests which should be reexecuted.
                       - name: /test/name
                         result: pass
                         ...
