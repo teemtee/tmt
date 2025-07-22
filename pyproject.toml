@@ -183,10 +183,7 @@ dev-mode = false
 
 [tool.hatch.envs.test]
 template = "dev"
-description = "Run scripts with multiple Python versions"
-
-[[tool.hatch.envs.test.matrix]]
-python = ["3.9", "3.13"]
+description = "Run scripts with system python"
 
 [tool.hatch.envs.docs]
 dependencies = [
