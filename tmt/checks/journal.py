@@ -26,10 +26,10 @@ if TYPE_CHECKING:
     from tmt.steps.provision import Guest
 
 #: The filename of the final check report file.
-TEST_POST_JOURNAL_DMESG_FILENAME = 'journal-dmesg.txt'
+TEST_POST_JOURNAL_FILENAME = 'journal.txt'
 
 #: The filename of the "mark" file ``journalctl`` on the guest.
-JOURNALCTL_MARK_FILENAME = 'journal-mark.txt'
+JOURNALCTL_CURSOR_FILENAME = 'journal-cursor.txt'
 
 DEFAULT_FAILURE_PATTERNS = [
     re.compile(pattern)
@@ -44,7 +44,7 @@ SETUP_SCRIPT = jinja2.Template(
 set -x
 export LC_ALL=C
 
-echo "export JOURNALCTL_SINCE=\\"$( date "+%Y-%m-%dT%H:%M:%S.%6N%:z")\\"" > {{ MARK_FILEPATH }}
+journalctl -n 0 --show-cursor > {{ MARK_FILEPATH }}
 cat {{ MARK_FILEPATH }}
 """)
 )
@@ -55,8 +55,7 @@ TEST_SCRIPT = jinja2.Template(
 set -x
 export LC_ALL=C
 
-source {{ MARK_FILEPATH }}
-journalctl _TRANSPORT=kernel -S $JOURNALCTL_SINCE
+journalctl --after-cursor-file={{ MARK_FILEPATH }} {{ OPTIONS }}
 """
     )
 )
@@ -82,7 +81,7 @@ def _save_report(
     :returns: path to the report file.
     """
 
-    report_filepath = invocation.check_files_path / TEST_POST_JOURNAL_DMESG_FILENAME
+    report_filepath = invocation.check_files_path / TEST_POST_JOURNAL_FILENAME
 
     full_report = [''] if append else []
 
@@ -154,12 +153,12 @@ def _report_failure(label: str, exc: tmt.utils.RunError) -> list[str]:
 
 
 @container
-class JournalDmesgCheck(Check):
+class JournalCheck(Check):
     failure_pattern: list[Pattern[str]] = field(
         default_factory=lambda: DEFAULT_FAILURE_PATTERNS[:],
         help="""
              List of regular expressions to look for in ``journal``
-             log. If any of patterns is found, ``journal-dmesg`` check will
+             log. If any of patterns is found, ``journal`` check will
              report ``fail`` result.
              """,
         metavar='PATTERN',
@@ -168,6 +167,29 @@ class JournalDmesgCheck(Check):
         serialize=lambda patterns: [pattern.pattern for pattern in patterns],
         unserialize=lambda serialized: [re.compile(pattern) for pattern in serialized],
     )
+    ignore_pattern: list[Pattern[str]] = field(
+        default_factory=list,
+        help="""
+             Optional list of regular expressions to ignore in journal log.
+             If a log entry matches any of these patterns, it will be ignored
+             and not cause a failure.
+             """,
+        metavar='PATTERN',
+        normalize=tmt.utils.normalize_pattern_list,
+        exporter=lambda patterns: [pattern.pattern for pattern in patterns],
+        serialize=lambda patterns: [pattern.pattern for pattern in patterns],
+        unserialize=lambda serialized: [re.compile(pattern) for pattern in serialized],
+    )
+    dmesg: bool = field(
+        default=False, help='Shorthand for ``--dmesg``, check only kernel messages.'
+    )
+    unit: Optional[str] = field(default=None, help='Check logs for a specific systemd unit.')
+    identifier: Optional[str] = field(
+        default=None, help='Check logs for a specific syslog identifier.'
+    )
+    priority: Optional[str] = field(
+        default=None, help='Filter by priority (e.g. ``err``, ``warning``).'
+    )
 
     # TODO: fix `to_spec` of `Check` to support nested serializables
     def to_spec(self) -> _RawCheck:
@@ -175,6 +197,9 @@ class JournalDmesgCheck(Check):
 
         spec['failure-pattern'] = [  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
             pattern.pattern for pattern in self.failure_pattern
+        ]
+        spec['ignore-pattern'] = [  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
+            pattern.pattern for pattern in self.ignore_pattern
         ]
 
         return spec
@@ -187,12 +212,13 @@ class JournalDmesgCheck(Check):
             line
             for line in text.splitlines()
             if any(pattern.search(line) for pattern in self.failure_pattern)
+            and not any(pattern.search(line) for pattern in self.ignore_pattern)
         ]
 
-    def _get_mark_file(self, invocation: 'TestInvocation') -> Path:
-        return invocation.check_files_path / JOURNALCTL_MARK_FILENAME
+    def _get_cursor_file(self, invocation: 'TestInvocation') -> Path:
+        return invocation.check_files_path / JOURNALCTL_CURSOR_FILENAME
 
-    def _create_journalctl_mark(
+    def _create_journalctl_cursor(
         self, invocation: 'TestInvocation', logger: tmt.log.Logger
     ) -> None:
         """
@@ -202,10 +228,12 @@ class JournalDmesgCheck(Check):
         report: list[str] = []
 
         script = ShellScript(
-            SETUP_SCRIPT.render(MARK_FILEPATH=self._get_mark_file(invocation)).strip()
+            SETUP_SCRIPT.render(MARK_FILEPATH=self._get_cursor_file(invocation)).strip()
         )
 
-        output, exc = _run_script(invocation=invocation, script=script, logger=logger)
+        output, exc = _run_script(
+            invocation=invocation, script=script, needs_sudo=True, logger=logger
+        )
 
         if exc is None:
             assert output is not None
@@ -215,7 +243,7 @@ class JournalDmesgCheck(Check):
 
         _save_report(invocation, report, report_timestamp)
 
-    def _save_journal_dmesg(
+    def _save_journal(
         self, invocation: 'TestInvocation', logger: tmt.log.Logger
     ) -> tuple[ResultOutcome, list[Path]]:
         assert invocation.phase.step.workdir is not None  # narrow type
@@ -224,8 +252,20 @@ class JournalDmesgCheck(Check):
         report_timestamp = datetime.datetime.now(datetime.timezone.utc)
         report: list[str] = []
 
+        options: list[str] = []
+        if self.dmesg:
+            options.append('--dmesg')
+        if self.unit:
+            options.append(f'--unit={self.unit}')
+        if self.identifier:
+            options.append(f'--identifier={self.identifier}')
+        if self.priority:
+            options.append(f'--priority={self.priority}')
+
         script = ShellScript(
-            TEST_SCRIPT.render(MARK_FILEPATH=self._get_mark_file(invocation)).strip()
+            TEST_SCRIPT.render(
+                MARK_FILEPATH=self._get_cursor_file(invocation), OPTIONS=' '.join(options)
+            ).strip()
         )
         output, exc = _run_script(
             invocation=invocation, script=script, needs_sudo=True, logger=logger
@@ -233,10 +273,10 @@ class JournalDmesgCheck(Check):
 
         if exc is None:
             assert output is not None
-            report += _report_success('journalctl dmesg', output)
+            report += _report_success('journalctl', output)
             outcome = ResultOutcome.PASS
         else:
-            report += _report_failure('journalctl dmesg', exc)
+            report += _report_failure('journalctl', exc)
             output = exc.output
             outcome = ResultOutcome.ERROR
 
@@ -253,8 +293,8 @@ class JournalDmesgCheck(Check):
         return outcome, log_paths
 
 
-@provides_check('journal-dmesg')
-class JournalDmesg(CheckPlugin[JournalDmesgCheck]):
+@provides_check('journal')
+class Journal(CheckPlugin[JournalCheck]):
     #
     # This plugin docstring has been reviewed and updated to follow
     # our documentation best practices. When changing it, please make
@@ -263,33 +303,53 @@ class JournalDmesg(CheckPlugin[JournalDmesgCheck]):
     # https://tmt.readthedocs.io/en/stable/contribute.html#docs
     #
     """
-    Check kernel messages in journal log recorded during the test.
+    Check messages in journal log recorded during the test.
+
+    This check uses ``journalctl`` to capture log messages created
+    during the test execution. It uses cursors to precisely pinpoint
+    the start and end of the logging period.
+
+    Example usage:
 
     .. code-block:: yaml
 
         check:
-          - how: journal-dmesg
+          - how: journal
+            # Check only kernel messages
+            dmesg: true
+
+    .. code-block:: yaml
+
+        check:
+          - how: journal
+            # Check messages from a specific systemd unit
+            unit: httpd.service
+            # Filter by priority
+            priority: err
 
     Check will identify patterns that signal kernel crashes and
-    core dumps, and when detected, it will report as failed result.
-    It is possible to define custom patterns:
+    core dumps, and when detected, it will report a failed result.
+    It is possible to define custom patterns for failures and
+    messages to ignore:
 
     .. code-block:: yaml
 
         check:
-          - how: journal-dmesg
+          - how: journal
             failure-pattern:
               # These are default patterns
-              - 'Call Trace:
+              - 'Call Trace:'
               - '\\ssegfault\\s'
 
               # More patterns to look for
               - '\\[Firmware Bug\\]'
+            ignore-pattern:
+              - 'a known harmless error message'
 
-    .. versionadded:: 1.28
+    .. versionadded:: 1.54.0
     """
 
-    _check_class = JournalDmesgCheck
+    _check_class = JournalCheck
 
     @classmethod
     def essential_requires(
@@ -310,13 +370,13 @@ class JournalDmesg(CheckPlugin[JournalDmesgCheck]):
     def before_test(
         cls,
         *,
-        check: 'JournalDmesgCheck',
+        check: 'JournalCheck',
         invocation: 'TestInvocation',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if invocation.guest.facts.has_systemd:
-            check._create_journalctl_mark(invocation, logger)
+            check._create_journalctl_cursor(invocation, logger)
 
         return []
 
@@ -324,16 +384,16 @@ class JournalDmesg(CheckPlugin[JournalDmesgCheck]):
     def after_test(
         cls,
         *,
-        check: 'JournalDmesgCheck',
+        check: 'JournalCheck',
         invocation: 'TestInvocation',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if not invocation.guest.facts.has_systemd:
-            return [CheckResult(name='journal-dmesg', result=ResultOutcome.SKIP)]
+            return [CheckResult(name='journal', result=ResultOutcome.SKIP)]
 
         if not invocation.is_guest_healthy:
-            return [CheckResult(name='journal-dmesg', result=ResultOutcome.SKIP)]
+            return [CheckResult(name='journal', result=ResultOutcome.SKIP)]
 
-        outcome, paths = check._save_journal_dmesg(invocation, logger)
-        return [CheckResult(name='journal-dmesg', result=outcome, log=paths)]
+        outcome, paths = check._save_journal(invocation, logger)
+        return [CheckResult(name='journal', result=outcome, log=paths)]
