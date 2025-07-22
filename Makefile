@@ -200,10 +200,10 @@ $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine/u
 # CentOS 7 is not available for aarch64 architecture, so we skip it.
 ifneq ($(UNAME_M),aarch64)
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7\:latest:
-    $(call build-test-container-image,$@,centos/7/Containerfile)
+	$(call build-test-container-image,$@,centos/7/Containerfile)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7/upstream\:latest:
-    $(call build-test-container-image,$@,centos/7/Containerfile.upstream)
+	$(call build-test-container-image,$@,centos/7/Containerfile.upstream)
 endif
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/stream10\:latest:
