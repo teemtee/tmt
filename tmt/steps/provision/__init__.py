@@ -774,7 +774,14 @@ class GuestFacts(SerializableContainer):
                 if not hasattr(self, fact):
                     raise GeneralError(f"Cannot sync unknown guest fact '{fact}'.")
 
-                setattr(self, fact, getattr(self, f'_query_{fact}')(guest))
+                method_name = f'_query_{fact}'
+
+                if not hasattr(self, method_name):
+                    raise GeneralError(
+                        f"Cannot sync guest fact '{fact}', query method '{method_name} not found."
+                    )
+
+                setattr(self, fact, getattr(self, method_name)(guest))
 
         else:
             self.os_release_content = self._fetch_keyval_file(guest, Path('/etc/os-release'))
@@ -1470,14 +1477,20 @@ class Guest(tmt.utils.Common):
         return ['-' + (self.debug_level - 2) * 'v']
 
     @staticmethod
-    def _ansible_extra_args(extra_args: Optional[str]) -> list[str]:
+    def _ansible_extra_args(extra_args: Optional[str]) -> tmt.utils.RawCommand:
         """
-        Prepare extra arguments for ansible-playbook
+        Prepare extra arguments for ``ansible-playbook`` command.
+
+        :param extra_args: optional ``ansible-playbook`` arguments,
+            packed in a single string as provided by user.
+        :returns: empty list if ``extra_args`` is not set or it's empty.
+            Otherwise, a list of arguments produced by
+            :py:func:`shlex.split` applied on ``extra_args``.
         """
 
         if extra_args is None:
             return []
-        return shlex.split(str(extra_args))
+        return cast(tmt.utils.RawCommand, shlex.split(str(extra_args)))
 
     def _ansible_summary(self, output: Optional[str]) -> None:
         """
@@ -2401,25 +2414,21 @@ class GuestSsh(Guest):
 
         playbook = self._sanitize_ansible_playbook_path(playbook, playbook_root)
 
-        ansible_command = Command('ansible-playbook', *self._ansible_verbosity())
-
-        if extra_args:
-            ansible_command += self._ansible_extra_args(extra_args)
-
-        ansible_command += Command(
-            '--ssh-common-args',
-            self._ssh_options.to_element(),
-            '-i',
-            f'{self._ssh_guest},',
-            playbook,
-        )
-
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
 
         try:
             return self._run_guest_command(
-                ansible_command,
+                Command(
+                    'ansible-playbook',
+                    *self._ansible_verbosity(),
+                    *self._ansible_extra_args(extra_args),
+                    '--ssh-common-args',
+                    self._ssh_options.to_element(),
+                    '-i',
+                    f'{self._ssh_guest},',
+                    playbook,
+                ),
                 friendly_command=friendly_command,
                 silent=silent,
                 cwd=parent.plan.worktree,
