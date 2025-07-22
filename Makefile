@@ -136,6 +136,16 @@ TMT_TEST_CONTAINER_IMAGES := $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine:late
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/debian/12.7/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/latest/bootc:latest
 
+UNAME_M := $(shell uname -m)  # Get the machine architecture
+
+# CentOS 7 is not available for aarch64 architecture, so we filter it.
+ifeq ($(UNAME_M),aarch64)
+TMT_TEST_CONTAINER_IMAGES := $(filter-out \
+  $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7:latest \
+  $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7/upstream:latest, \
+  $(TMT_TEST_CONTAINER_IMAGES))
+endif
+
 # The list of targets building individual tmt test images.
 TMT_TEST_IMAGES_TARGETS := $(foreach image,$(TMT_TEST_CONTAINER_IMAGES),images/test/$(subst :,\:,$(image)))
 
@@ -187,11 +197,14 @@ $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine\:
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine/upstream\:latest:
 	$(call build-test-container-image,$@,alpine/Containerfile.upstream)
 
+# CentOS 7 is not available for aarch64 architecture, so we skip it.
+ifneq ($(UNAME_M),aarch64)
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7\:latest:
-	$(call build-test-container-image,$@,centos/7/Containerfile)
+    $(call build-test-container-image,$@,centos/7/Containerfile)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/7/upstream\:latest:
-	$(call build-test-container-image,$@,centos/7/Containerfile.upstream)
+    $(call build-test-container-image,$@,centos/7/Containerfile.upstream)
+endif
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/centos/stream10\:latest:
 	$(call build-test-container-image,$@,centos/stream10/Containerfile)
