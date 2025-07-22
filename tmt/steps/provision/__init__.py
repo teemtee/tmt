@@ -778,7 +778,7 @@ class GuestFacts(SerializableContainer):
 
                 if not hasattr(self, method_name):
                     raise GeneralError(
-                        f"Cannot sync guest fact '{fact}', query method '{method_name} not found."
+                        f"Cannot sync guest fact '{fact}', query method '{method_name}' not found."
                     )
 
                 setattr(self, fact, getattr(self, method_name)(guest))
