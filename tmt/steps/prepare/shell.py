@@ -140,11 +140,11 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                                 Command('git', 'checkout', '-f', self.data.ref), cwd=repo_path
                             )
 
-                        guest.push(
-                            source=repo_path,
-                            destination=repo_path,
-                            options=["-s", "-p", "--chmod=755"],
-                        )
+                guest.push(
+                    source=repo_path,
+                    destination=repo_path,
+                    options=["-s", "-p", "--chmod=755"],
+                )
 
         if not self.is_dry_run:
             topology = tmt.steps.Topology(self.step.plan.provision.ready_guests)
