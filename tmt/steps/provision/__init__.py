@@ -593,11 +593,9 @@ class GuestFacts(SerializableContainer):
         # Sort available package managers by priority and probe them one by one,
         # break after the first one is detected.
 
-        discovered_package_managers: list[
-            tmt.package_managers.PackageManagerClass[tmt.package_managers.PackageManagerEngine]
-        ] = sorted(plugin_classes, key=lambda pm: pm.probe_priority, reverse=True)
-
-        for package_manager_class in discovered_package_managers:
+        for package_manager_class in sorted(
+            plugin_classes, key=lambda pm: pm.probe_priority, reverse=True
+        ):
             if self._execute(guest, package_manager_class.probe_command):
                 guest.debug(
                     f'Discovered {debug_label}',
@@ -627,7 +625,11 @@ class GuestFacts(SerializableContainer):
     ) -> Optional['tmt.package_managers.GuestPackageManager']:
         return self._discover_package_manager(
             guest,
-            plugin_classes=(tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.iter_plugins()),
+            plugin_classes=(
+                pm
+                for pm in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.iter_plugins()
+                if pm.bootc_builder
+            ),
             debug_label='bootc builder',
         )
 
