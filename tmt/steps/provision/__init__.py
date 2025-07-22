@@ -761,7 +761,12 @@ class GuestFacts(SerializableContainer):
 
     def sync(self, guest: 'Guest', *facts: str) -> None:
         """
-        Update stored facts to reflect the given guest
+        Update stored facts to reflect the given guest.
+
+        :param guest: guest whose facts this container should represent.
+        :param facts: if specified, only the listed facts - names of
+            attributes of this container, like ``arch`` or
+            ``is_container`` - will be synced.
         """
 
         if facts:
