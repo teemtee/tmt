@@ -26,7 +26,7 @@ A new :ref:`/plugins/test-checks/journal` check has been added to
 monitor the system journal for messages recorded during test
 execution using the ``journalctl``. It can be configured to check
 for specific units, priorities, syslog identifiers or kernel
-messages messages that could otherwise be missed by the
+messages that could otherwise be missed by the
 :ref:`/plugins/test-checks/dmesg` check, if the ring buffer was
 cleared at some point. The familiar ``failure-pattern`` and
 ``ignore-pattern`` filters can be used to modify the behaviour
