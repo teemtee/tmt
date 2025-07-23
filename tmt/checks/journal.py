@@ -44,7 +44,7 @@ SETUP_SCRIPT = jinja2.Template(
 set -x
 export LC_ALL=C
 
-journalctl -n 0 --show-cursor > {{ MARK_FILEPATH }}
+journalctl -n 0 --show-cursor --cursor-file={{ MARK_FILEPATH }}
 cat {{ MARK_FILEPATH }}
 """)
 )
@@ -55,7 +55,7 @@ TEST_SCRIPT = jinja2.Template(
 set -x
 export LC_ALL=C
 
-journalctl --after-cursor-file={{ MARK_FILEPATH }} {{ OPTIONS }}
+journalctl --cursor-file={{ MARK_FILEPATH }} {{ OPTIONS }}
 """
     )
 )
