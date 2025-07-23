@@ -11,12 +11,7 @@ from tmt.steps.provision import Guest
 
 @container
 class CleanupInternalData(tmt.steps.cleanup.CleanupStepData):
-    guest: bool = field(
-        default=True,
-        option=('--guest/--no-guest'),
-        is_flag=True,
-        help="Whether guests should be stopped and removed during the cleanup.",
-    )
+    pass
 
 
 @tmt.steps.provides_method('tmt')
@@ -53,13 +48,8 @@ class CleanupInternal(tmt.steps.cleanup.CleanupPlugin[CleanupInternalData]):
             guest.fetch_logs(logger=self._logger)
 
         # Stop the guest and remove it
-        if self.data.guest:
-            logger.debug(f"Stop and remove guest '{guest.name}'.")
-            guest.stop()
-            guest.remove()
-
-        # Keep guest if requested by the user
-        else:
-            logger.verbose(f"Keeping guest '{guest.name}' running as requested.")
+        logger.debug(f"Stop and remove guest '{guest.name}'.")
+        guest.stop()
+        guest.remove()
 
         return outcome

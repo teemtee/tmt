@@ -28,12 +28,7 @@ if TYPE_CHECKING:
 
 @container
 class CleanupStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
-    workdir: bool = field(
-        default=True,
-        option=('--workdir/--no-workdir'),
-        is_flag=True,
-        help="Whether workdir should be pruned during the cleanup.",
-    )
+    pass
 
 
 CleanupStepDataT = TypeVar('CleanupStepDataT', bound=CleanupStepData)
@@ -157,9 +152,6 @@ class Cleanup(tmt.steps.Step):
 
         super().go(force=force)
 
-        # By default we prune the workdir
-        prune_workdir = True
-
         # Nothing more to do if already done
         if self.status() == 'done':
             self.info('status', 'done', 'green', shift=1)
@@ -197,10 +189,6 @@ class Cleanup(tmt.steps.Step):
                 queue.enqueue_action(phase=phase)
 
             elif phase.enabled_by_when:
-                # Disable workdir pruning if requested
-                if not phase.data.workdir:
-                    prune_workdir = False
-
                 queue.enqueue_plugin(
                     phase=phase,  # type: ignore[arg-type]
                     guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)],
@@ -260,7 +248,7 @@ class Cleanup(tmt.steps.Step):
         assert self.plan.my_run is not None
         if self.is_dry_run:
             self.debug("Nothing to prune in dry mode.", level=3)
-        elif self.plan.my_run.opt('keep') or not prune_workdir:
+        elif self.plan.my_run.opt('keep'):
             self.verbose("Skipping workdir prune as requested.", level=2)
         else:
             self.plan.prune()
