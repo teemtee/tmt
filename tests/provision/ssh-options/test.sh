@@ -22,7 +22,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test global SSH options occur first in ssh parameters $PROVISION_HOW"
-      rlRun "TMT_SSH_SERVER_ALIVE_INTERVAL=7 TMT_SSH_SERVER_ALIVE_COUNT_MAX=9 tmt  run --scratch -vvi $run -a provision -h $PROVISION_HOW"
+      rlRun "TMT_SSH_SERVER_ALIVE_INTERVAL=7 TMT_SSH_SERVER_ALIVE_COUNT_MAX=9 tmt run --scratch -vvi $run -a provision -h $PROVISION_HOW"
       # check that default and custom_ssh_options are present
       rlAssertGrep "Run command: ssh .*-oServerAliveInterval=7" "$run/log.txt"
       rlAssertGrep "Run command: ssh .*-oServerAliveInterval=5" "$run/log.txt"
