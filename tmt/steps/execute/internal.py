@@ -582,6 +582,15 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 test.duration, tmt.base.DEFAULT_TEST_DURATION_L1
             )
 
+        if logger.verbosity_level >= 1:
+            logger.verbose(
+                'duration limit',
+                f"{timeout}{' seconds' if timeout is not None else ''}",
+                color="yellow",
+                shift=2,
+                level=1,
+            )
+
         # And invoke the test process.
         output = invocation.invoke_test(
             remote_command,
