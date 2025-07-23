@@ -4,6 +4,17 @@
     Releases
 ======================
 
+tmt-1.54.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A new :ref:`/spec/plans/cleanup` step has been introduced which
+takes care of removing guests and prunning of the workdir. This
+was previously handled by the :ref:`/spec/plans/finish` step and
+has been extracted into a dedicated step in order to allow running
+finishing tasks without necessarily stopping all guests as well.
+This will allow future extensions of the :ref:`/plugins/finish`.
+
+
 tmt-1.53.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

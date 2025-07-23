@@ -5,7 +5,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.cleanup
 import tmt.utils
-from tmt.container import container, field
+from tmt.container import container
 from tmt.steps.provision import Guest
 
 
@@ -17,9 +17,7 @@ class CleanupInternalData(tmt.steps.cleanup.CleanupStepData):
 @tmt.steps.provides_method('tmt')
 class CleanupInternal(tmt.steps.cleanup.CleanupPlugin[CleanupInternalData]):
     """
-    Clean up guests, prune the workdir
-
-    TODO The internal cleanup plugin...
+    Stop and remove all provisioned guests
     """
 
     _data_class = CleanupInternalData
