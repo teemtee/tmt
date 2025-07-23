@@ -273,10 +273,10 @@ class JournalCheck(Check):
 
         if exc is None:
             assert output is not None
-            report += _report_success('journalctl', output)
+            report += _report_success('journal log', output)
             outcome = ResultOutcome.PASS
         else:
-            report += _report_failure('journalctl', exc)
+            report += _report_failure('journal log', exc)
             output = exc.output
             outcome = ResultOutcome.ERROR
 

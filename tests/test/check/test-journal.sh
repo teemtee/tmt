@@ -83,7 +83,7 @@ rlJournalStart
 
             rlLogInfo "$(cat $journal_log)"
             rlAssertEquals "There should be 3 reports after the test" \
-                           "$(grep 'journalctl' $journal_log | wc -l)" "3"
+                           "$(grep 'journal log' $journal_log | wc -l)" "3"
         rlPhaseEnd
 
         rlPhaseStartTest "Test journal check with unit"
