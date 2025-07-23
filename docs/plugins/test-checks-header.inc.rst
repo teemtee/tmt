@@ -1,6 +1,6 @@
 .. _/plugins/test-checks/internal:
 
-Internal checks
+Internal Checks
 ---------------
 
 Some checks are internal-only, perform mandatory actions, and cannot be
