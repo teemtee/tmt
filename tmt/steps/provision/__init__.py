@@ -156,7 +156,8 @@ DEFAULT_SSH_OPTIONS: tmt.utils.RawCommand = [
 #: This is the base set of SSH options tmt would use for all SSH
 #: connections. It is a combination of the default SSH options and those
 #: provided by environment variables.
-BASE_SSH_OPTIONS: tmt.utils.RawCommand = DEFAULT_SSH_OPTIONS + configure_ssh_options()
+#: Note on precedence of SSH options: https://github.com/teemtee/tmt/issues/3872#issuecomment-3101540471
+BASE_SSH_OPTIONS: tmt.utils.RawCommand = configure_ssh_options() + DEFAULT_SSH_OPTIONS
 
 #: SSH master socket path is limited to this many characters.
 #:
