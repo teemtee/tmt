@@ -233,5 +233,5 @@ CONTAINER_ALPINE = Container(url='containers-storage:localhost/tmt/container/tes
 TEST_CONTAINERS: dict[str, Container] = {
     _container_attribute: _container
     for _container_attribute, _container in locals().items()
-    if _container_attribute.startswith('CONTAINER_')
+    if _container_attribute.startswith('CONTAINER_') and _container
 }
