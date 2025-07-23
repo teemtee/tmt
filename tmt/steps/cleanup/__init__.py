@@ -1,5 +1,5 @@
 import copy
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 import click
 import fmf
@@ -9,7 +9,7 @@ import tmt
 import tmt.log
 import tmt.steps
 import tmt.utils
-from tmt.container import container, field
+from tmt.container import container
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult, ResultOutcome
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 @container
-class CleanupStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
+class CleanupStepData(tmt.steps.StepData):
     pass
 
 
@@ -184,13 +184,18 @@ class Cleanup(tmt.steps.Step):
             'cleanup', self._logger.descend(logger_name=f'{self}.queue')
         )
 
-        for phase in self.phases(classes=(Action, CleanupPlugin)):
+        # Type hint for the union of Action and CleanupPlugin
+        all_phases: list[Union[Action, CleanupPlugin[CleanupStepData]]] = self.phases(
+            classes=(Action, CleanupPlugin)
+        )
+
+        for phase in all_phases:
             if isinstance(phase, Action):
                 queue.enqueue_action(phase=phase)
 
             elif phase.enabled_by_when:
                 queue.enqueue_plugin(
-                    phase=phase,  # type: ignore[arg-type]
+                    phase=phase,
                     guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)],
                 )
 
@@ -208,6 +213,10 @@ class Cleanup(tmt.steps.Step):
         for outcome in queue.run():
             if not isinstance(outcome.phase, CleanupPlugin):
                 continue
+
+            # At this point, outcome must be a PluginTask since
+            # ActionTask would have Action phase
+            assert isinstance(outcome, PluginTask)
 
             # Possible outcomes: plugin crashed, raised an exception,
             # and that exception has been delivered to the top of the
