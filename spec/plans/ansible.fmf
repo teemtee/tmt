@@ -35,7 +35,7 @@ example:
         how: tmt
 
   - |
-    # path/to/the/layout.yaml (input inventory layout, relative to fmf file)
+    # path/to/the/layout.yaml (input inventory layout, relative to fmf root)
     all:
         children:
             linux:
@@ -48,7 +48,7 @@ example:
                     runner: {}
 
   - |
-    # path/to/run/artifacts/provision/inventory.yaml (output inventory file)
+    # Output inventory file
     all:
         children:
             linux:
