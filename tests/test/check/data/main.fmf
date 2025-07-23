@@ -58,7 +58,7 @@
             result: respect
 
     /unit-test:
-        test: systemd-run --unit=test-fail.service /bin/sh -c 'echo fail; exit 1'
+        test: systemd-run --unit=test-fail.service /bin/sh -c 'logger -p user.err "fail"; exit 1'
         check:
           - how: journal
             unit: test-fail.service
