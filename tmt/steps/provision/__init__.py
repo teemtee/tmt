@@ -2571,7 +2571,16 @@ class GuestSsh(Guest):
 
         self.debug('rsync has not been confirmed on the guest, try installing it')
 
-        self.package_manager.install(Package('rsync'))
+        try:
+            self.package_manager.install(Package('rsync'))
+
+        except Exception as exc:
+            raise tmt.utils.GeneralError(
+                f"Failed to verify rsync presence on the guest."
+                f" This often means there is a problem with its package manager,"
+                f" or logging in as '{self.user}' does not work, or the network"
+                f" connection itself."
+            ) from exc
 
         self.facts.sync(self, 'has_rsync')
 
