@@ -1,22 +1,17 @@
 FROM quay.io/fedora/fedora:latest
 
-RUN <<EOF
-set -ex
-
-# Adjust system defaults
-sed -i '/tsflags=nodocs/d' /etc/dnf/dnf.conf
-echo "Set disable_coredump false" >> /etc/sudo.conf
-
-# Install necessary packages
-dnf install -y dnf-plugins-core
-dnf copr enable -y @teemtee/stable
-dnf install -y tmt+all beakerlib
-dnf autoremove -y
-dnf clean all
-
-# Prepare a directory for experimenting
-mkdir /tmt
-EOF
+RUN set -ex && \
+    # Adjust system defaults
+    sed -i '/tsflags=nodocs/d' /etc/dnf/dnf.conf && \
+    echo "Set disable_coredump false" >> /etc/sudo.conf && \
+    # Install necessary packages
+    dnf install -y dnf-plugins-core && \
+    dnf copr enable -y @teemtee/stable && \
+    dnf install -y tmt+all beakerlib && \
+    dnf autoremove -y && \
+    dnf clean all && \
+    # Prepare a directory for experimenting
+    mkdir /tmt
 
 # Prepare files for experimenting
 COPY .fmf /tmt/.fmf
