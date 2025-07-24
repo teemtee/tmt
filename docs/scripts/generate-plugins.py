@@ -31,6 +31,12 @@ REVIEWED_PLUGINS: tuple[str, ...] = (
     'test-checks/avc',
     'test-checks/dmesg',
     'test-checks/watchdog',
+    'test-checks/internal/abort',
+    'test-checks/internal/guest',
+    'test-checks/internal/interrupt',
+    'test-checks/internal/invocation',
+    'test-checks/internal/permission',
+    'test-checks/internal/timeout',
 )
 
 
