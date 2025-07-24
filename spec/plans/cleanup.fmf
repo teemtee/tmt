@@ -14,3 +14,5 @@ example: |
 
 link:
     - implemented-by: /tmt/steps/cleanup
+    - verified-by: /tests/cleanup/guest
+    - verified-by: /tests/cleanup/prune
