@@ -11,48 +11,48 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "No login"
-        rlRun "$tmt 2>&1 >/dev/null | tee output"
-        rlAssertNotGrep "interactive" "output"
+        rlRun -s "$tmt"
+        rlAssertNotGrep "interactive" "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartTest "Last step"
-        rlRun "$tmt login -c true 2>&1 >/dev/null | tee output"
-        rlAssertGrep "interactive" "output"
-        rlRun "grep '^    finish$' -A4 output | grep -i interactive"
+        rlRun -s "$tmt login -c true"
+        rlAssertGrep "interactive" "$rlRun_LOG"
+        rlRun "grep '^    cleanup$' -A9 '$rlRun_LOG' | grep -i interactive"
     rlPhaseEnd
 
     for step in discover provision prepare execute report finish; do
         rlPhaseStartTest "Selected step ($step)"
-            rlRun "$tmt login -c true -s $step 2>&1 >/dev/null | tee output"
-            rlAssertGrep "interactive" "output"
+            rlRun -s "$tmt login -c true -s $step"
+            rlAssertGrep "interactive" "$rlRun_LOG"
 
             if [ "$step" = "provision" ]; then
-                rlRun "grep '^    $step$' -A13 output | grep -i interactive"
+                rlRun "grep '^    $step$' -A13 '$rlRun_LOG' | grep -i interactive"
             elif [ "$step" = "prepare" ]; then
-                rlRun "grep '^    $step$' -A17 output | grep -i interactive"
+                rlRun "grep '^    $step$' -A17 '$rlRun_LOG' | grep -i interactive"
             elif [ "$step" = "execute" ]; then
-                rlRun "grep '^    $step$' -A9 output | grep -i interactive"
+                rlRun "grep '^    $step$' -A9 '$rlRun_LOG' | grep -i interactive"
             else
-                rlRun "grep '^    $step$' -A5 output | grep -i interactive"
+                rlRun "grep '^    $step$' -A5 '$rlRun_LOG' | grep -i interactive"
             fi
         rlPhaseEnd
     done
 
     rlPhaseStartTest "Failed command"
-        rlRun "$tmt login -c false 2>&1 >/dev/null | tee output"
-        rlAssertGrep "interactive" "output"
+        rlRun -s "$tmt login -c false"
+        rlAssertGrep "interactive" "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartTest "Last run"
         rlRun "tmt run -a provision -h local"
-        rlRun "tmt run -rl login -c true 2>&1 >/dev/null | tee output"
-        rlAssertGrep "interactive" "output"
+        rlRun -s "tmt run -rl login -c true"
+        rlAssertGrep "interactive" "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartTest "Last run failed"
         rlRun "tmt run provision -h local prepare --how shell --script false" 2
-        rlRun "tmt run -rl login -c true 2>&1 >/dev/null | tee output" 2
-        rlAssertGrep "interactive" "output"
+        rlRun -s "tmt run -rl login -c true" 2
+        rlAssertGrep "interactive" "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartCleanup
