@@ -553,6 +553,8 @@ class GuestContainer(tmt.Guest):
                     # error string:
                     # https://github.com/containers/podman/blob/main/libpod/define/errors.go#L180
                     self.debug(f"Network '{self.network}' is being used, not removing.", level=3)
+                elif err.stderr and 'network not found' in err.stderr:
+                    self.debug(f"Network '{self.network}' has been already removed.", level=3)
                 else:
                     raise err
 

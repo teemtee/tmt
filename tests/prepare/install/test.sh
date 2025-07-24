@@ -125,7 +125,7 @@ rlJournalStart
                 rlFail "Cannot infer distro for image $image"
             fi
 
-            tmt="tmt -vvv -c distro=$distro run --id $run --scratch finish discover provision --how $PROVISION_HOW --image $image prepare"
+            tmt="tmt -vvv -c distro=$distro run --id $run --scratch cleanup discover provision --how $PROVISION_HOW --image $image prepare"
         rlPhaseEnd
 
         # TODO: find out whether all those exceptions can be simplified and parametrized...

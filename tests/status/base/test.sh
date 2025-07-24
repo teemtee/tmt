@@ -27,8 +27,8 @@ rlJournalStart
 
     rlPhaseStartTest "Very verbose"
         rlRun "tmt status -vv | tee output"
-        rlAssertGrep "(done\s+){4}todo\s+done\s+$runid\s+/plan1" "output" -E
-        rlAssertGrep "(done\s+){4}todo\s+done\s+$runid\s+/plan2" "output" -E
+        rlAssertGrep "(done\s+){4}todo\s+(done\s+){2}$runid\s+/plan1" "output" -E
+        rlAssertGrep "(done\s+){4}todo\s+(done\s+){2}$runid\s+/plan2" "output" -E
     rlPhaseEnd
 
     rlPhaseStartTest "Specify ID"
