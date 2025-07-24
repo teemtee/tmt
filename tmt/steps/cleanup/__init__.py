@@ -1,5 +1,5 @@
 import copy
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 import click
 import fmf
@@ -14,7 +14,6 @@ from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult, ResultOutcome
 from tmt.steps import (
-    Action,
     Method,
     PhaseQueue,
     PluginOutcome,
@@ -184,16 +183,12 @@ class Cleanup(tmt.steps.Step):
             'cleanup', self._logger.descend(logger_name=f'{self}.queue')
         )
 
-        # Type hint for the union of Action and CleanupPlugin
-        all_phases: list[Union[Action, CleanupPlugin[CleanupStepData]]] = self.phases(
-            classes=(Action, CleanupPlugin)
-        )
+        # Pick only the CleanupPlugin phases, Action phases are not
+        # expected in the cleanup step
+        phases: list[CleanupPlugin[CleanupStepData]] = self.phases(classes=(CleanupPlugin,))
 
-        for phase in all_phases:
-            if isinstance(phase, Action):
-                queue.enqueue_action(phase=phase)
-
-            elif phase.enabled_by_when:
+        for phase in phases:
+            if phase.enabled_by_when:
                 queue.enqueue_plugin(
                     phase=phase,
                     guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)],
