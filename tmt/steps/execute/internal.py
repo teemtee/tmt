@@ -583,11 +583,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             )
 
         if logger.verbosity_level >= 1:
+            shift = 1 if self.verbosity_level < 2 else 2
             logger.verbose(
                 'duration limit',
                 f"{timeout}{' seconds' if timeout is not None else ''}",
                 color="yellow",
-                shift=2,
+                shift=shift,
                 level=1,
             )
 
