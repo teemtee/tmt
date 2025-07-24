@@ -66,7 +66,7 @@ srpm: tarball ver2spec  ## Build SRPM
 	rpmbuild --define '_topdir $(TMP)' -bs tmt.spec
 
 _deps:  # Minimal dependencies (common for 'deps' and 'develop' targets)
-	sudo dnf install -y hatch python3-devel python3-hatch-vcs rpm-build
+	sudo dnf install -y hatch python3-devel python3-hatch-vcs rpm-build clang beakerlib
 
 build-deps: _deps tarball ver2spec  ## Install build dependencies
 	rpmbuild --define '_topdir $(TMP)' -br tmt.spec || sudo dnf builddep -y $(TMP)/SRPMS/tmt-*buildreqs.nosrc.rpm
