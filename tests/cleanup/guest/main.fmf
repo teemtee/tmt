@@ -1,0 +1,8 @@
+summary: Verify that guests are correctly cleaned up
+description: |
+    Provision two containers, run all steps until the cleanup,
+    check that containers are running, do the cleanup and verify
+    that both containers have been stopped and removed.
+
+    Two containers are used to verify that the podman network
+    removal collision is correctly handled.
