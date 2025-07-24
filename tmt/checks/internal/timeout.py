@@ -24,6 +24,11 @@ class Timeout(CheckPlugin[TimeoutCheck]):
 
     This check fails when tests exceed their maximum allowed duration.
 
+    .. note::
+
+        This is an :ref:`internal check </plugins/test-checks/internal>`,
+        and it cannot be enabled or disabled by test metadata.
+
     .. versionadded:: 1.50
     """
 

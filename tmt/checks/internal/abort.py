@@ -24,6 +24,11 @@ class Abort(CheckPlugin[AbortCheck]):
 
     This check fails when tests are aborted before completion.
 
+    .. note::
+
+        This is an :ref:`internal check </plugins/test-checks/internal>`,
+        and it cannot be enabled or disabled by test metadata.
+
     .. versionadded:: 1.50
     """
 

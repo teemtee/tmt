@@ -24,6 +24,11 @@ class GuestFailures(CheckPlugin[GuestCheck]):
     This check fails when guest related errors occur during test execution,
     such as reboot or reconnect timeouts.
 
+    .. note::
+
+        This is an :ref:`internal check </plugins/test-checks/internal>`,
+        and it cannot be enabled or disabled by test metadata.
+
     .. versionadded:: 1.53
     """
 
