@@ -183,7 +183,7 @@ dev-mode = false
 
 [tool.hatch.envs.test]
 template = "dev"
-description = "Run scripts with system python"
+description = "Test environment"
 
 [tool.hatch.envs.docs]
 dependencies = [
