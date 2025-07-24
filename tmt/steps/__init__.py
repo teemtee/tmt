@@ -2071,8 +2071,9 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
                 steps: list[Step] = [s for s in step.plan.steps() if s.status() == 'done']
                 login_during = steps[-1] if steps else None
             # Default to the last enabled step if no completed step found
+            # (skip the cleanup step as no actions are expected there)
             if login_during is None:
-                login_during = list(step.plan.steps())[-1]
+                login_during = list(step.plan.steps(skip=["cleanup"]))[-1]
             # Only login if the error occurred after provision
             if login_during != step.plan.discover:
                 phases[login_during.name] = [PHASE_END]
@@ -2336,6 +2337,11 @@ class Login(Action):
         """
         Run the interactive command
         """
+
+        # Nothing to do if there are no guests ready for login
+        if not self.parent.plan.provision.ready_guests:
+            self.info('login', 'No guests ready for login', color='yellow')
+            return
 
         scripts = [
             tmt.utils.ShellScript(script)
