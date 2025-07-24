@@ -7,7 +7,7 @@
 tmt-1.54.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :ref:`/plugins/prepare/shell` plugin now supports ``url`` and
+The prepare :ref:`/plugins/prepare/shell` plugin now supports ``url`` and
 ``ref`` options, so preparation scripts can be fetched directly from
 remote git repositories.
 
