@@ -46,7 +46,7 @@ class CleanupPlugin(tmt.steps.Plugin[CleanupStepDataT, PluginOutcome]):
     _supported_methods: PluginRegistry[Method] = PluginRegistry('step.cleanup')
 
     # Internal cleanup plugin is the default implementation
-    how = 'display'
+    how = 'tmt'
 
     @classmethod
     def base_command(
@@ -168,8 +168,8 @@ class Cleanup(tmt.steps.Step):
 
         for guest in self.plan.provision.guests:
             # Create a guest copy and change its parent so that the
-            # operations inside finish plugins on the guest use the
-            # finish step config rather than provision step config.
+            # operations inside cleanup plugins on the guest use the
+            # cleanup step config rather than provision step config.
             guest_copy = copy.copy(guest)
             guest_copy.inject_logger(
                 guest._logger.clone().apply_verbosity_options(**self._cli_options)
