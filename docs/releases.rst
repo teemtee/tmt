@@ -20,7 +20,7 @@ test names that must be discovered and executed during the run.
 
 The :ref:`/plugins/prepare/shell` plugin now supports ``url`` and
 ``ref`` options, so preparation scripts can be fetched directly
-from remote ``Git`` repositories.
+from remote git repositories.
 
 
 tmt-1.53.0

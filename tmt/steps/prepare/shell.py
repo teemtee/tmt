@@ -16,7 +16,7 @@ from tmt.steps.provision import Guest
 from tmt.utils import Command, EnvVarValue, ShellScript
 
 PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
-env_var = 'TMT_PREPARE_SHELL_URL_REPOSITORY'
+ENV_VAR = 'TMT_PREPARE_SHELL_URL_REPOSITORY'
 
 
 @container
@@ -36,7 +36,12 @@ class PrepareShellData(tmt.steps.prepare.PrepareStepData):
         default=None,
         option='--url',
         metavar='REPOSITORY',
-        help='Git repository URL for fetching shell scripts.',
+        help="""
+            URL of a repository to clone. It will be pushed to guests before
+            running any scripts,
+            and environment variable ``TMT_PREPARE_SHELL_URL_REPOSITORY`` will
+            hold its path on the guest.
+            """,
     )
 
     ref: Optional[str] = field(
@@ -44,8 +49,8 @@ class PrepareShellData(tmt.steps.prepare.PrepareStepData):
         option='--ref',
         metavar='REVISION',
         help="""
-            Branch, tag or commit specifying the desired git
-            revision.
+            Branch, tag or commit to checkout in the git repository
+            cloned when ``url`` is specified.
             """,
     )
 
@@ -79,8 +84,8 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
     Scripts can also be fetched from a remote git repository.
     Specify the ``url`` for the repository and optionally ``ref``
     to checkout a specific branch, tag or commit.
-    The ``script`` paths will then be treated as relative to the
-    repository root.
+    ``TMT_PREPARE_SHELL_URL_REPOSITORY`` will hold the value of the
+    repository path.
 
     .. code-block:: yaml
 
@@ -88,8 +93,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             how: shell
             url: https://github.com/teemtee/tmt.git
             ref: main
-            script:
-              - tmt/steps/prepare/test.sh
+            script: cd $TMT_PREPARE_SHELL_URL_REPOSITORY && make docs
     """
 
     _data_class = PrepareShellData
@@ -120,7 +124,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         if self.data.url:
             repo_path = workdir / "repository"
 
-            environment[env_var] = EnvVarValue(repo_path.resolve())
+            environment[ENV_VAR] = EnvVarValue(repo_path.resolve())
 
             if not self.is_dry_run:
                 with self._url_clone_lock:
