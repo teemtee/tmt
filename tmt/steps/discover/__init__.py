@@ -250,7 +250,7 @@ class Discover(tmt.steps.Step):
         self._failed_tests: dict[str, list[tmt.Test]] = {}
 
         # Collection of required tests
-        self.required_tests: dict[str, list[str]] = {}
+        self._required_test_names: dict[str, list[str]] = {}
 
         # Test will be (re)discovered in other phases/steps
         self.extract_tests_later: bool = False
@@ -262,6 +262,17 @@ class Discover(tmt.steps.Step):
         """
 
         return {*super()._preserved_workdir_members, 'tests.yaml'}
+
+    @property
+    def required_tests(self) -> list[TestOrigin]:
+        tests = []
+        for phase_name, required_test_names in self._required_test_names.items():
+            tests += [
+                test_origin
+                for test_origin in self.tests(phase_name=phase_name)
+                if test_origin.test.name in required_test_names
+            ]
+        return tests
 
     def load(self) -> None:
         """
@@ -455,7 +466,7 @@ class Discover(tmt.steps.Step):
                 # Prefix test name only if multiple plugins configured
                 prefix = f'/{phase.name}' if len(self.phases()) > 1 else ''
 
-                self.required_tests[phase.name] = [
+                self._required_test_names[phase.name] = [
                     f"{prefix}{test_name}"
                     for test_name in cast(DiscoverStepData, phase.data).required_tests
                 ]
@@ -525,8 +536,8 @@ class Discover(tmt.steps.Step):
                             self._failed_tests[test_phase].append(test)
 
         # Assert that all required tests were discovered
-        for phase_name, required_tests in self.required_tests.items():
-            for required_test in required_tests:
+        for phase_name, required_test_names in self._required_test_names.items():
+            for required_test in required_test_names:
                 if not any(required_test == test.name for test in self._tests.get(phase_name, [])):
                     raise tmt.utils.DiscoverError(
                         f"Required test '{required_test}' not discovered in phase '{phase_name}'."
