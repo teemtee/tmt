@@ -158,7 +158,7 @@ DEFAULT_SSH_OPTIONS: tmt.utils.RawCommand = [
 #: provided by environment variables.
 #: SSH options are processed in order. Options provided via environment
 #: variables take precedence over default values. For options that set
-#: a specific value (e.g., ServerAliveInterval), the first occurrence
+#: a specific value (e.g., ``ServerAliveInterval``), the first occurrence
 #: takes precedence. For simple on/off flags (e.g., -v/-q), the last one wins.
 #: Identity files (-i) are all considered in order.
 BASE_SSH_OPTIONS: tmt.utils.RawCommand = configure_ssh_options() + DEFAULT_SSH_OPTIONS
