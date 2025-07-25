@@ -55,6 +55,9 @@ properties:
   role:
     $ref: "/schemas/common#/definitions/role"
 
+  ansible:
+    $ref: "/schemas/common#/definitions/provision_ansible"
+
   stop-retries:
     type: number
 
