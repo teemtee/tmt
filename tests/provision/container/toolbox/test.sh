@@ -15,11 +15,6 @@ rlJournalStart
         rlRun "useradd $toolbox_user"
         rlRun "toolbox_user_id=$(id -u $toolbox_user)"
 
-        # Configure subordinate UID and GID ranges for the toolbox user.
-        # This is required for unprivileged container operations in Fedora 42+.
-        rlRun "usermod --add-subuids 200000-265535 $toolbox_user"
-        rlRun "usermod --add-subgids 200000-265535 $toolbox_user"
-
         # Make sure systemd user session runs for the new user. The user session
         # hosts a dbus session, which is required for toolbox.
         rlRun "loginctl enable-linger $toolbox_user"
@@ -27,6 +22,16 @@ rlJournalStart
         # Add required environment variables for toolbox to the user's environment.
         rlRun "echo export XDG_RUNTIME_DIR=/run/user/$toolbox_user_id >> /home/$toolbox_user/.bashrc"
         rlRun "echo export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$toolbox_user_id/bus >> /home/$toolbox_user/.bashrc"
+
+        # Ensure subuid/subgid ranges are available and force a session reload
+        # This addresses Fedora 42+ issue where new users might not have immediate
+        # access to subordinate ID ranges in the current session context
+        rlRun "getent subuid $toolbox_user" 0 "Verify subuid range is available"
+        rlRun "getent subgid $toolbox_user" 0 "Verify subgid range is available"
+
+        # Force reload the user's systemd session to pick up subuid/subgid changes
+        rlRun "loginctl kill-user $toolbox_user || true"
+        rlRun "sleep 2"
 
         rlRun "sudo -iu $toolbox_user toolbox create -y $toolbox_container_name"
     rlPhaseEnd
