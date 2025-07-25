@@ -18,7 +18,7 @@ rlJournalStart
         # This prevents a race condition where `toolbox create` runs before
         # the user's subuids are available.
         rlLog "Waiting for subuid/subgid allocation for user '$toolbox_user'..."
-        rlWaitForCmd "getent subuid '$toolbox_user'" 15 1
+        rlWaitForCmd "grep -q '^${toolbox_user}:' /etc/subuid" 15 1
 
         rlRun "toolbox_user_id=\$(id -u $toolbox_user)"
 
