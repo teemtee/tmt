@@ -1,0 +1,4 @@
+summary: Check that per-guest environment is exposed to tests
+tag+:
+  - provision-only
+  - provision-container
