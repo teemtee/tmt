@@ -20,6 +20,10 @@ rlJournalStart
             prepare -h shell -s 'touch /tmp/first' -s 'touch /tmp/second'"
     rlPhaseEnd
 
+    rlPhaseStartTest "Remote Script"
+        rlRun "tmt -vvv run provision prepare finish plan -n url" 0 "Prepare using a remote script"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
     rlPhaseEnd
