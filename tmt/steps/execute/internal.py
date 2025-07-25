@@ -601,6 +601,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # overwrite it.
         self.write(invocation.path / TEST_OUTPUT_FILENAME, output.stdout or '', mode='a', level=3)
 
+        # Reset `has-rsync` fact: tmt is expected to install rsync if it
+        # is missing after a test. To achieve that, pretend we don't
+        # know whether rsync is installed, and let any attempt to use
+        # rsync answer and react before calling the command.
+        guest.facts.has_rsync = None
+
         def pull_from_guest() -> None:
             if not invocation.is_guest_healthy:
                 return
@@ -622,10 +628,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             # Handle failing to pull test artifacts after guest becoming
             # unresponsive. If not handled test would stay in 'pending' state.
             # See issue https://github.com/teemtee/tmt/issues/3647.
-            except tmt.utils.RunError:
-                # TODO: We rely here on the traceback to print a reasonable
-                # failure message, should be improved later.
-                pass
+            except Exception as exc:
+                invocation.exception = exc
 
         # Fetch #1: we need logs and everything the test produced so we could
         # collect its results.

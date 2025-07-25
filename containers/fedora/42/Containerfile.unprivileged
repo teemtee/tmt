@@ -1,10 +1,10 @@
 #
-# A Fedora 40 image tailored for tmt test suite, with unprivileged account & password-less sudo
+# A Fedora 42 image tailored for tmt test suite, with unprivileged account & password-less sudo
 #
-# tmt/tests/fedora/40/unprivileged:latest
+# tmt/tests/fedora/42/unprivileged:latest
 #
 
-FROM quay.io/fedora/fedora:40
+FROM quay.io/fedora/fedora:42
 
 # hadolint ignore=DL3040
 RUN <<EOF
