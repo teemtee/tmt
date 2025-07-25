@@ -1379,6 +1379,8 @@ class Execute(tmt.steps.Step):
                 causes=[outcome.exc for outcome in failed_tasks if outcome.exc is not None],
             )
 
+        self._assert_required_tests_executed()
+
     def results(self) -> list["tmt.result.Result"]:
         """
         Results from executed tests
@@ -1417,44 +1419,41 @@ class Execute(tmt.steps.Step):
             if test_origin.test.serial_number not in referenced_serial_numbers
         ]
 
-    def assert_required_tests_executed(
-        self, phase_name: str, result_prefix: Optional[str] = None
-    ) -> None:
+    def _assert_required_tests_executed(self) -> None:
         """
-        Assert that all required tests for the given discover phase
-        were executed.
-        :param phase_name: name of the discover phase to check.
-        :param result_prefix: prefix to be used for test names while
-        checking the original results
+        Assert all required tests were executed.
         """
 
-        results = {
-            (result.name, result.serial_number, result.guest.name): result
-            for result in self._results
-        }
-        required_test_names = self.plan.discover.required_tests.get(phase_name, [])
-        prefix = f'/{result_prefix.strip("/")}' if result_prefix else ''
-
-        expected_results = []
-        for test_origin in self.plan.discover.tests(phase_name=phase_name, enabled=True):
-            test = test_origin.test
-            if test.name not in required_test_names:
+        results = set()
+        expected_results = {}
+        for result, test_origin in self.results_for_tests(self.plan.discover.required_tests):
+            if test_origin is None:
                 continue
-            expected_results += [
-                (f'{prefix}{test.name}', test.serial_number, guest.name)
-                for guest in self.plan.provision.ready_guests
-                if test.enabled_on_guest(guest)
-            ]
+            test = test_origin.test
 
-        for expected_result in expected_results:
-            result = results.get(expected_result)
-            if not result:
-                raise tmt.utils.ExecuteError(
-                    f"Required test '{expected_result[0]}' was not executed."
-                )
+            # In multihost scenarios, tests can have multiple results with
+            # the same serial number, so we need to check if there is a result
+            # for each guest that the test is enabled on.
+            expected_results.update(
+                {
+                    (test.serial_number, guest.name): test.name
+                    for guest in self.plan.provision.ready_guests
+                    if test.enabled_on_guest(guest)
+                }
+            )
+
+            if result is None:
+                raise tmt.utils.ExecuteError(f"Required test '{test.name}' was not executed.")
             if result.result == ResultOutcome.PENDING:
-                raise tmt.utils.ExecuteError(
-                    f"Required test '{expected_result[0]}' is still pending."
-                )
+                raise tmt.utils.ExecuteError(f"Required test '{result.name}' is still pending.")
             if result.result == ResultOutcome.SKIP:
-                raise tmt.utils.ExecuteError(f"Required test '{expected_result[0]}' was skipped.")
+                raise tmt.utils.ExecuteError(f"Required test '{result.name}' was skipped.")
+
+            results.update({(result.serial_number, result.guest.name)})
+
+        for expected_result, test_name in expected_results.items():
+            if expected_result not in results:
+                raise tmt.utils.ExecuteError(
+                    f"Required test '{test_name}' was not executed"
+                    f" on guest '{expected_result[1]}'."
+                )
