@@ -90,6 +90,19 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         ],
     )
 
+    required_tests: list[str] = field(
+        default_factory=list,
+        option=('--required-tests'),
+        metavar='NAMES',
+        multiple=True,
+        help="""
+            A list of test names that must be discovered during the run. If any of the
+            specified tests are not discovered, an exception is raised. If an execute
+            step is present, these tests must also be executed.
+            """,
+        normalize=tmt.utils.normalize_string_list,
+    )
+
 
 DiscoverStepDataT = TypeVar('DiscoverStepDataT', bound=DiscoverStepData)
 
@@ -235,6 +248,9 @@ class Discover(tmt.steps.Step):
         # Collection of discovered tests
         self._tests: dict[str, list[tmt.Test]] = {}
         self._failed_tests: dict[str, list[tmt.Test]] = {}
+
+        # Collection of required tests
+        self.required_tests: dict[str, list[str]] = {}
 
         # Test will be (re)discovered in other phases/steps
         self.extract_tests_later: bool = False
@@ -438,6 +454,12 @@ class Discover(tmt.steps.Step):
 
                 # Prefix test name only if multiple plugins configured
                 prefix = f'/{phase.name}' if len(self.phases()) > 1 else ''
+
+                self.required_tests[phase.name] = [
+                    f"{prefix}{test_name}"
+                    for test_name in cast(DiscoverStepData, phase.data).required_tests
+                ]
+
                 # Check discovered tests, modify test name/path
                 for test_origin in phase.tests(enabled=True):
                     test = test_origin.test
@@ -501,6 +523,14 @@ class Discover(tmt.steps.Step):
                     for result in failed_results:
                         if test.name == result.name and test.serial_number == result.serial_number:
                             self._failed_tests[test_phase].append(test)
+
+        # Assert that all required tests were discovered
+        for phase_name, required_tests in self.required_tests.items():
+            for required_test in required_tests:
+                if not any(required_test == test.name for test in self._tests.get(phase_name, [])):
+                    raise tmt.utils.DiscoverError(
+                        f"Required test '{required_test}' not discovered in phase '{phase_name}'."
+                    )
 
         # Give a summary, update status and save
         self.summary()

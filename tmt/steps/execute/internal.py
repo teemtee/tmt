@@ -674,6 +674,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             return
 
         self._run_tests(guest=guest, extra_environment=environment, logger=logger)
+        self.step.plan.execute.assert_required_tests_executed(
+            self.discover_phase or self.discover.name
+        )
 
     def _run_tests(
         self,

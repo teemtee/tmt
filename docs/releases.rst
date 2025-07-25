@@ -14,6 +14,10 @@ has been extracted into a dedicated step in order to allow running
 finishing tasks without necessarily stopping all guests as well.
 This will allow future extensions of the :ref:`/plugins/finish`.
 
+The :ref:`discover </plugins/discover>` plugins now support a new
+``required-tests`` key. This key allows users to specify a list of
+test names that must be discovered and executed during the run.
+
 
 tmt-1.53.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
