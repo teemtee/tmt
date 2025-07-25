@@ -156,7 +156,12 @@ DEFAULT_SSH_OPTIONS: tmt.utils.RawCommand = [
 #: This is the base set of SSH options tmt would use for all SSH
 #: connections. It is a combination of the default SSH options and those
 #: provided by environment variables.
-BASE_SSH_OPTIONS: tmt.utils.RawCommand = DEFAULT_SSH_OPTIONS + configure_ssh_options()
+#: SSH options are processed in order. Options provided via environment
+#: variables take precedence over default values. For options that set
+#: a specific value (e.g., ``ServerAliveInterval``), the first occurrence
+#: takes precedence. For simple on/off flags (e.g., ``-v``/``-q``), the last one wins.
+#: Identity files (``-i``) are all considered in order.
+BASE_SSH_OPTIONS: tmt.utils.RawCommand = configure_ssh_options() + DEFAULT_SSH_OPTIONS
 
 #: SSH master socket path is limited to this many characters.
 #:
