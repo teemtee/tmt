@@ -1379,6 +1379,8 @@ class Execute(tmt.steps.Step):
                 causes=[outcome.exc for outcome in failed_tasks if outcome.exc is not None],
             )
 
+        self._assert_required_tests_executed()
+
     def results(self) -> list["tmt.result.Result"]:
         """
         Results from executed tests
@@ -1416,3 +1418,42 @@ class Execute(tmt.steps.Step):
             for test_origin in tests
             if test_origin.test.serial_number not in referenced_serial_numbers
         ]
+
+    def _assert_required_tests_executed(self) -> None:
+        """
+        Assert all required tests were executed.
+        """
+
+        results = set()
+        expected_results = {}
+        for result, test_origin in self.results_for_tests(self.plan.discover.required_tests):
+            if test_origin is None:
+                continue
+            test = test_origin.test
+
+            # In multihost scenarios, tests can have multiple results with
+            # the same serial number, so we need to check if there is a result
+            # for each guest that the test is enabled on.
+            expected_results.update(
+                {
+                    (test.serial_number, guest.name): test.name
+                    for guest in self.plan.provision.ready_guests
+                    if test.enabled_on_guest(guest)
+                }
+            )
+
+            if result is None:
+                raise tmt.utils.ExecuteError(f"Required test '{test.name}' was not executed.")
+            if result.result == ResultOutcome.PENDING:
+                raise tmt.utils.ExecuteError(f"Required test '{result.name}' is still pending.")
+            if result.result == ResultOutcome.SKIP:
+                raise tmt.utils.ExecuteError(f"Required test '{result.name}' was skipped.")
+
+            results.update({(result.serial_number, result.guest.name)})
+
+        for expected_result, test_name in expected_results.items():
+            if expected_result not in results:
+                raise tmt.utils.ExecuteError(
+                    f"Required test '{test_name}' was not executed"
+                    f" on guest '{expected_result[1]}'."
+                )
