@@ -1,10 +1,10 @@
 #
-# A Fedora 40 image tailored for tmt test suite
+# A Fedora 42 image tailored for tmt test suite
 #
-# tmt/tests/fedora/40/upstream:latest
+# tmt/tests/fedora/42/upstream:latest
 #
 
-FROM quay.io/fedora/fedora:40
+FROM quay.io/fedora/fedora:42
 
 RUN <<EOF
 set -ex
