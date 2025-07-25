@@ -15,6 +15,11 @@ rlJournalStart
         rlRun "useradd $toolbox_user"
         rlRun "toolbox_user_id=$(id -u $toolbox_user)"
 
+        # Configure subordinate UID and GID ranges for the toolbox user.
+        # This is required for unprivileged container operations in Fedora 42+.
+        rlRun "usermod --add-subuids 200000-265535 $toolbox_user"
+        rlRun "usermod --add-subgids 200000-265535 $toolbox_user"
+
         # Make sure systemd user session runs for the new user. The user session
         # hosts a dbus session, which is required for toolbox.
         rlRun "loginctl enable-linger $toolbox_user"
