@@ -1416,3 +1416,45 @@ class Execute(tmt.steps.Step):
             for test_origin in tests
             if test_origin.test.serial_number not in referenced_serial_numbers
         ]
+
+    def assert_required_tests_executed(
+        self, phase_name: str, result_prefix: Optional[str] = None
+    ) -> None:
+        """
+        Assert that all required tests for the given discover phase
+        were executed.
+        :param phase_name: name of the discover phase to check.
+        :param result_prefix: prefix to be used for test names while
+        checking the original results
+        """
+
+        results = {
+            (result.name, result.serial_number, result.guest.name): result
+            for result in self._results
+        }
+        required_test_names = self.plan.discover.required_tests.get(phase_name, [])
+        prefix = f'/{result_prefix.strip("/")}' if result_prefix else ''
+
+        expected_results = []
+        for test_origin in self.plan.discover.tests(phase_name=phase_name, enabled=True):
+            test = test_origin.test
+            if test.name not in required_test_names:
+                continue
+            expected_results += [
+                (f'{prefix}{test.name}', test.serial_number, guest.name)
+                for guest in self.plan.provision.ready_guests
+                if test.enabled_on_guest(guest)
+            ]
+
+        for expected_result in expected_results:
+            result = results.get(expected_result)
+            if not result:
+                raise tmt.utils.ExecuteError(
+                    f"Required test '{expected_result[0]}' was not executed."
+                )
+            if result.result == ResultOutcome.PENDING:
+                raise tmt.utils.ExecuteError(
+                    f"Required test '{expected_result[0]}' is still pending."
+                )
+            if result.result == ResultOutcome.SKIP:
+                raise tmt.utils.ExecuteError(f"Required test '{expected_result[0]}' was skipped.")

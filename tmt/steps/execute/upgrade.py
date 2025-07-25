@@ -248,12 +248,17 @@ class ExecuteUpgrade(ExecuteInternal):
             self._results = []
             return
 
+        discover_phase = self.discover_phase or self.discover.name
         self.verbose('upgrade', 'run tests on the old system', color='blue', shift=1)
         self._run_test_phase(guest, BEFORE_UPGRADE_PREFIX, logger)
+        self.step.plan.execute.assert_required_tests_executed(
+            discover_phase, BEFORE_UPGRADE_PREFIX
+        )
         self.verbose('upgrade', 'perform the system upgrade', color='blue', shift=1)
         self._perform_upgrade(guest, logger)
         self.verbose('upgrade', 'run tests on the new system', color='blue', shift=1)
         self._run_test_phase(guest, AFTER_UPGRADE_PREFIX, logger)
+        self.step.plan.execute.assert_required_tests_executed(discover_phase, AFTER_UPGRADE_PREFIX)
 
     def _get_plan(self, upgrades_repo: Path) -> tmt.base.Plan:
         """

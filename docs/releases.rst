@@ -4,6 +4,14 @@
     Releases
 ======================
 
+tmt-1.54.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`discover </plugins/discover>` plugins now support a new
+``required-tests`` key. This key allows users to specify a list of
+test names that must be discovered and executed during the run.
+
+
 tmt-1.53.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
