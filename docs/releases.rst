@@ -4,6 +4,15 @@
     Releases
 ======================
 
+tmt-1.54.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`provision </plugins/provision>` plugins now support
+setting an environment key. This allows users to define
+environment variables that are injected directly into the
+test environment for each guest during the provision phase.
+
+
 tmt-1.53.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

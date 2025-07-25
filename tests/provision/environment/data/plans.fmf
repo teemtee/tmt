@@ -1,0 +1,17 @@
+provision:
+  - how: container
+    name: default-0
+    environment:
+      SOME_ENVVAR_FROM_GUEST_ENVIRONMENT: foo
+
+  - how: container
+    name: default-1
+    environment:
+      SOME_ENVVAR_FROM_GUEST_ENVIRONMENT: bar
+
+execute:
+    how: tmt
+    script: |
+      . "$TMT_TOPOLOGY_BASH"
+
+      echo ${TMT_GUEST[name]}:$SOME_ENVVAR_FROM_GUEST_ENVIRONMENT

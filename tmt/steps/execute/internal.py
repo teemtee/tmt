@@ -407,7 +407,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         extra_environment = extra_environment or Environment()
 
         environment = extra_environment.copy()
-        environment.update(invocation.test.environment)
+        environment.update(
+            {
+                **invocation.guest.environment,
+                **invocation.test.environment,
+            }
+        )
         assert self.parent is not None
         assert isinstance(self.parent, tmt.steps.execute.Execute)
         assert self.parent.plan.my_run is not None

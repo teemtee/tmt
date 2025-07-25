@@ -25,5 +25,8 @@ properties:
   role:
     $ref: "/schemas/common#/definitions/role"
 
+  environment:
+    $ref: "/schemas/common#/definitions/environment"
+
 required:
   - how
