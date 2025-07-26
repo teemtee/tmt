@@ -7,7 +7,7 @@ from tmt._compat.pydantic import ValidationError
 from tmt.container import Extra, MetadataContainer, metadata_field
 from tmt.log import Logger, Topic
 from tmt.utils import FieldValueSource, Path, ShellScript
-from tmt.utils.templates import render_template
+from tmt.utils.templates import render_diff, render_template
 
 if TYPE_CHECKING:
     from tmt.base import Core, Test
@@ -17,8 +17,7 @@ T = TypeVar('T')
 
 #: A template showing changes made by an instruction.
 KEY_DIFF_TEMPLATE = """
-{{ OLD_VALUE | to_yaml | prefix('- ') | style(fg='red') | trim }}
-{{ NEW_VALUE | to_yaml | prefix('+ ') | style(fg='green') | trim }}
+{{ DIFF | join('\n') }}
 
 Field value source changed from {{ OLD_VALUE_SOURCE.value | style(fg='red') }} to {{ NEW_VALUE_SOURCE.value | style(fg='green') }}
 """  # noqa: E501
@@ -128,11 +127,11 @@ class Instruction(MetadataContainer, extra=Extra.allow):
                 current_value_source = obj._field_value_sources[key] = FieldValueSource.POLICY
 
                 logger.info(
-                    f"Modified '{obj.name}'",
-                    render_template(
+                    f"fmf node '{obj.name}' modified by policy",
+                    render_diff(
                         KEY_DIFF_TEMPLATE,
-                        OLD_VALUE={key: old_value_exported},
-                        NEW_VALUE={key: current_value_exported},
+                        {key: old_value_exported},
+                        {key: current_value_exported},
                         OLD_VALUE_SOURCE=old_value_source,
                         NEW_VALUE_SOURCE=current_value_source,
                     ),
