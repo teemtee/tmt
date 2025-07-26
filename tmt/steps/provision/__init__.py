@@ -1023,6 +1023,13 @@ class GuestData(SerializableContainer):
         else None,
     )
 
+    fetch_logs: bool = field(
+        default=False,
+        is_flag=True,
+        option=('--fetch-logs'),
+        help='If specify, guest logs will be fetched.',
+    )
+
     # TODO: find out whether this could live in DataContainer. It probably could,
     # but there are containers not backed by options... Maybe a mixin then?
     @classmethod
@@ -1221,6 +1228,7 @@ class Guest(tmt.utils.Common):
         self.guest_logs: list[GuestLog] = []
 
         super().__init__(logger=logger, parent=parent, name=name)
+        self.data = data
         self.load(data)
 
     def _random_name(self, prefix: str = '', length: int = 16) -> str:
