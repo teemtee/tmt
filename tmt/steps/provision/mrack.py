@@ -1,14 +1,14 @@
 import asyncio
 import dataclasses
 import datetime
+import functools
 import importlib.metadata
 import logging
 import os
 import re
-from collections.abc import Mapping
 from contextlib import suppress
 from functools import wraps
-from typing import Any, Callable, Optional, TypedDict, Union, cast
+from typing import Any, Callable, Optional, TypedDict, TypeVar, Union, cast
 
 import packaging.version
 
@@ -253,6 +253,50 @@ class MrackHWNotGroup(MrackHWGroup):
     name: str = 'not'
 
 
+#
+# Constraint transformations
+#
+
+#: A type var representing actual constraint type in transformers and
+#: their type annotations.
+ConstraintT = TypeVar('ConstraintT', bound=tmt.hardware.Constraint)
+
+
+#: A type of constraint transformers.
+ConstraintTransformer = Callable[[ConstraintT, tmt.log.Logger], BeakerizedConstraint]
+
+
+#: A mapping between constraint names and corresponding transformers.
+_CONSTRAINT_TRANSFORMERS: dict[str, ConstraintTransformer[Any]] = {}
+
+
+def transforms(fn: ConstraintTransformer[ConstraintT]) -> ConstraintTransformer[ConstraintT]:
+    """
+    A decorator marking a function as a constraint transformer.
+
+    Function name is expected to provide the constraint name it
+    transforms: decorator strips away the initial ``_transform_``
+    prefix, and replaces the first underscore, ``_`` with a dot, ``.``:
+
+    .. code-block::
+
+        _transform_beaker_pool => beaker.pool
+        _transform_disk_physical_sector_size => disk.physical_sector_size
+
+    :param fn: function to decorate.
+    """
+
+    global _CONSTRAINT_TRANSFORMERS
+
+    _CONSTRAINT_TRANSFORMERS[fn.__name__.replace('_transform_', '').replace('_', '.', 1)] = fn
+
+    @functools.wraps(fn)
+    def _transforms(constraint: ConstraintT, logger: tmt.log.Logger) -> BeakerizedConstraint:
+        return fn(constraint, logger)
+
+    return _transforms
+
+
 def _transform_unsupported(constraint: tmt.hardware.Constraint) -> dict[str, Any]:
     # We have to return something, return an {}- no harm done, composable with other elements.
 
@@ -316,6 +360,7 @@ def _translate_constraint_by_transformer(
     return transformer(constraint, logger)
 
 
+@transforms
 def _transform_beaker_pool(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -324,6 +369,7 @@ def _transform_beaker_pool(
     return MrackHWBinOp('pool', beaker_operator, actual_value)
 
 
+@transforms
 def _transform_cpu_family(
     constraint: tmt.hardware.IntegerConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -334,6 +380,7 @@ def _transform_cpu_family(
     return MrackHWGroup('cpu', children=[MrackHWBinOp('family', beaker_operator, actual_value)])
 
 
+@transforms
 def _transform_cpu_flag(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -347,6 +394,7 @@ def _transform_cpu_flag(
     return MrackHWGroup('cpu', children=[MrackHWBinOp('flag', beaker_operator, actual_value)])
 
 
+@transforms
 def _transform_cpu_model(
     constraint: tmt.hardware.IntegerConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -357,6 +405,7 @@ def _transform_cpu_model(
     return MrackHWGroup('cpu', children=[MrackHWBinOp('model', beaker_operator, actual_value)])
 
 
+@transforms
 def _transform_cpu_processors(
     constraint: tmt.hardware.IntegerConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -369,6 +418,7 @@ def _transform_cpu_processors(
     )
 
 
+@transforms
 def _transform_cpu_cores(
     constraint: tmt.hardware.IntegerConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -379,6 +429,7 @@ def _transform_cpu_cores(
     return MrackHWGroup('cpu', children=[MrackHWBinOp('cores', beaker_operator, actual_value)])
 
 
+@transforms
 def _transform_cpu_model_name(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -400,6 +451,7 @@ def _transform_cpu_model_name(
     )
 
 
+@transforms
 def _transform_cpu_frequency(
     constraint: tmt.hardware.NumberConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -410,6 +462,7 @@ def _transform_cpu_frequency(
     return MrackHWGroup('cpu', children=[MrackHWBinOp('speed', beaker_operator, actual_value)])
 
 
+@transforms
 def _transform_cpu_stepping(
     constraint: tmt.hardware.IntegerConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -420,6 +473,7 @@ def _transform_cpu_stepping(
     return MrackHWGroup('cpu', children=[MrackHWBinOp('stepping', beaker_operator, actual_value)])
 
 
+@transforms
 def _transform_cpu_vendor_name(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -439,6 +493,7 @@ def _transform_cpu_vendor_name(
     return MrackHWGroup('cpu', children=[MrackHWBinOp('vendor', beaker_operator, actual_value)])
 
 
+@transforms
 def _transform_cpu_hyper_threading(
     constraint: tmt.hardware.FlagConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -449,6 +504,7 @@ def _transform_cpu_hyper_threading(
     return MrackHWGroup('cpu', children=[MrackHWBinOp('hyper', beaker_operator, actual_value)])
 
 
+@transforms
 def _transform_disk_driver(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -464,6 +520,7 @@ def _transform_disk_driver(
     return MrackHWKeyValue('BOOTDISK', beaker_operator, actual_value)
 
 
+@transforms
 def _transform_disk_size(
     constraint: tmt.hardware.SizeConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -474,6 +531,7 @@ def _transform_disk_size(
     return MrackHWGroup('disk', children=[MrackHWBinOp('size', beaker_operator, actual_value)])
 
 
+@transforms
 def _transform_disk_model_name(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -493,6 +551,7 @@ def _transform_disk_model_name(
     return MrackHWGroup('disk', children=[MrackHWBinOp('model', beaker_operator, actual_value)])
 
 
+@transforms
 def _transform_disk_physical_sector_size(
     constraint: tmt.hardware.SizeConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -505,6 +564,7 @@ def _transform_disk_physical_sector_size(
     )
 
 
+@transforms
 def _transform_disk_logical_sector_size(
     constraint: tmt.hardware.SizeConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -517,6 +577,7 @@ def _transform_disk_logical_sector_size(
     )
 
 
+@transforms
 def _transform_hostname(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -530,6 +591,7 @@ def _transform_hostname(
     return MrackHWBinOp('hostname', beaker_operator, actual_value)
 
 
+@transforms
 def _transform_memory(
     constraint: tmt.hardware.SizeConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -540,6 +602,7 @@ def _transform_memory(
     return MrackHWGroup('system', children=[MrackHWBinOp('memory', beaker_operator, actual_value)])
 
 
+@transforms
 def _transform_tpm_version(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -548,6 +611,7 @@ def _transform_tpm_version(
     return MrackHWKeyValue('TPM', beaker_operator, actual_value)
 
 
+@transforms
 def _transform_virtualization_is_virtualized(
     constraint: tmt.hardware.FlagConstraint, logger: tmt.log.Logger
 ) -> BeakerizedConstraint:
@@ -566,6 +630,7 @@ def _transform_virtualization_is_virtualized(
     return _transform_unsupported(constraint)
 
 
+@transforms
 def _transform_virtualization_hypervisor(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -587,6 +652,7 @@ def _transform_virtualization_hypervisor(
     )
 
 
+@transforms
 def _transform_zcrypt_adapter(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -609,6 +675,7 @@ def _transform_zcrypt_adapter(
     )
 
 
+@transforms
 def _transform_zcrypt_mode(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -631,6 +698,7 @@ def _transform_zcrypt_mode(
     )
 
 
+@transforms
 def _transform_iommu_is_supported(
     constraint: tmt.hardware.FlagConstraint, logger: tmt.log.Logger
 ) -> BeakerizedConstraint:
@@ -645,6 +713,7 @@ def _transform_iommu_is_supported(
     return _transform_unsupported(constraint)
 
 
+@transforms
 def _transform_location_lab_controller(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -664,6 +733,7 @@ def _transform_location_lab_controller(
     return MrackHWBinOp('labcontroller', beaker_operator, actual_value)
 
 
+@transforms
 def _transform_system_numa_nodes(
     constraint: tmt.hardware.IntegerConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -676,6 +746,7 @@ def _transform_system_numa_nodes(
     )
 
 
+@transforms
 def _transform_system_model_name(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -695,6 +766,7 @@ def _transform_system_model_name(
     return MrackHWGroup('system', children=[MrackHWBinOp('model', beaker_operator, actual_value)])
 
 
+@transforms
 def _transform_system_vendor_name(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -712,40 +784,6 @@ def _transform_system_vendor_name(
         )
 
     return MrackHWGroup('system', children=[MrackHWBinOp('vendor', beaker_operator, actual_value)])
-
-
-ConstraintTransformer = Callable[[tmt.hardware.Constraint, tmt.log.Logger], MrackBaseHWElement]
-
-_CONSTRAINT_TRANSFORMERS: Mapping[str, ConstraintTransformer] = {
-    'beaker.pool': _transform_beaker_pool,  # type: ignore[dict-item]
-    'cpu.cores': _transform_cpu_cores,  # type: ignore[dict-item]
-    'cpu.family': _transform_cpu_family,  # type: ignore[dict-item]
-    'cpu.flag': _transform_cpu_flag,  # type: ignore[dict-item]
-    'cpu.frequency': _transform_cpu_frequency,  # type: ignore[dict-item]
-    'cpu.hyper_threading': _transform_cpu_hyper_threading,  # type: ignore[dict-item]
-    'cpu.model': _transform_cpu_model,  # type: ignore[dict-item]
-    'cpu.model_name': _transform_cpu_model_name,  # type: ignore[dict-item]
-    'cpu.processors': _transform_cpu_processors,  # type: ignore[dict-item]
-    'cpu.stepping': _transform_cpu_stepping,  # type: ignore[dict-item]
-    'cpu.vendor_name': _transform_cpu_vendor_name,  # type: ignore[dict-item]
-    'disk.driver': _transform_disk_driver,  # type: ignore[dict-item]
-    'disk.model_name': _transform_disk_model_name,  # type: ignore[dict-item]
-    'disk.size': _transform_disk_size,  # type: ignore[dict-item]
-    'disk.physical_sector_size': _transform_disk_physical_sector_size,  # type: ignore[dict-item]
-    'disk.logical_sector_size': _transform_disk_logical_sector_size,  # type: ignore[dict-item]
-    'hostname': _transform_hostname,  # type: ignore[dict-item]
-    'location.lab_controller': _transform_location_lab_controller,  # type: ignore[dict-item]
-    'memory': _transform_memory,  # type: ignore[dict-item]
-    'tpm.version': _transform_tpm_version,  # type: ignore[dict-item]
-    'virtualization.is_virtualized': _transform_virtualization_is_virtualized,  # type: ignore[dict-item]
-    'virtualization.hypervisor': _transform_virtualization_hypervisor,  # type: ignore[dict-item]
-    'zcrypt.adapter': _transform_zcrypt_adapter,  # type: ignore[dict-item]
-    'zcrypt.mode': _transform_zcrypt_mode,  # type: ignore[dict-item]
-    'system.numa_nodes': _transform_system_numa_nodes,  # type: ignore[dict-item]
-    'system.model_name': _transform_system_model_name,  # type: ignore[dict-item]
-    'system.vendor_name': _transform_system_vendor_name,  # type: ignore[dict-item]
-    'iommu.is_supported': _transform_iommu_is_supported,  # type: ignore[dict-item]
-}
 
 
 def constraint_to_beaker_filter(
