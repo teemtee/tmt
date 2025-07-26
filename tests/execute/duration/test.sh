@@ -28,10 +28,12 @@ rlJournalStart
                         rlRun -s "tmt $context --log-topic=command-events run --scratch -vfi $tmp -a provision -h $PROVISION_HOW execute -h $execute_method $interactive test --name long" 2
 
                         rlAssertNotGrep "warn: Ignoring requested duration, not supported in interactive mode." $rlRun_LOG
+                        rlAssertGrep "duration limit: 5 seconds" $tmp/log.txt
                     else
                         rlRun -s "tmt $context --log-topic=command-events run --scratch -vfi $tmp -a provision -h $PROVISION_HOW execute -h $execute_method $interactive test --name long" 0
 
                         rlAssertGrep "warn: Ignoring requested duration, not supported in interactive mode." $rlRun_LOG
+                        rlAssertGrep "duration limit: None" $tmp/log.txt
                     fi
 
                     rlAssertNotGrep "00:02:.. errr /test/long/beakerlib (timeout)" $rlRun_LOG
@@ -68,6 +70,26 @@ rlJournalStart
             done
         done
     done
+
+    rlPhaseStartTest "Test duration+ and adjust-tests modifications"
+        rlRun -s "tmt -v run --scratch -i $tmp test --name duration-modified" 0 "Base duration limit, unmodified"
+        rlAssertGrep "duration limit: 2 seconds" $tmp/log.txt
+
+        rlRun -s "tmt -v --context slow-arch=yes run --scratch -i $tmp test --name duration-modified" 0 "Base duration limit, modified by adjust slow-arch"
+        # base duration: 2s, *2.5 from test adjust slow-arch, results in 5 sec limit
+        rlAssertGrep "duration limit: 5 seconds" $tmp/log.txt
+
+        rlRun -s "tmt -v run --scratch -i $tmp plan --name adjust-tests" 0 "Base duration limit, modified by discover adjust-tests"
+        # base duration: 2s, *2 from plan discover adjust-tests, results in 4 sec limit
+        rlAssertGrep "duration limit: 4 seconds" $tmp/log.txt
+
+        rlRun -s "tmt -v --context slow-arch=yes run --scratch -i $tmp plan --name adjust-tests" 0 "Base duration limit, modified by adjust slow-arch and discover adjust-tests"
+        # base duration: 2s, *2.5 from test adjust slow-arch, *2 from plan discover adjust-tests, results in 10 sec limit
+        rlAssertGrep "duration limit: 10 seconds" $tmp/log.txt
+
+        rlRun -s "tmt -v --context slow-arch=yes run --scratch -i $tmp --all execute --ignore-duration plan --name adjust-tests" 0 "Verify --ignore-duration"
+        rlAssertGrep "duration limit: None" $tmp/log.txt
+    rlPhaseEnd
 
     rlPhaseStartCleanup
         rlRun "popd"
