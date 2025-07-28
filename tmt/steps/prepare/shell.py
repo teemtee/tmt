@@ -16,7 +16,6 @@ from tmt.steps.provision import Guest
 from tmt.utils import Command, EnvVarValue, ShellScript
 
 PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
-ENV_VAR = 'TMT_PREPARE_SHELL_URL_REPOSITORY'
 
 
 @container
@@ -98,6 +97,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
     _data_class = PrepareShellData
     _url_clone_lock = threading.Lock()
+    _cloned_repo_path_envvar_name = 'TMT_PREPARE_SHELL_URL_REPOSITORY'
 
     def go(
         self,
@@ -124,7 +124,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         if self.data.url:
             repo_path = workdir / "repository"
 
-            environment[ENV_VAR] = EnvVarValue(repo_path.resolve())
+            environment[self._cloned_repo_path_envvar_name] = EnvVarValue(repo_path.resolve())
 
             if not self.is_dry_run:
                 with self._url_clone_lock:
