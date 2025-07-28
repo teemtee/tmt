@@ -629,6 +629,10 @@ TMT_PLAN_ENVIRONMENT_FILE
 TMT_VERSION
     The version of tmt.
 
+TMT_PREPARE_SHELL_URL_REPOSITORY
+    The value of the repository path in prepare shell step when ``url``
+    option is used.
+
 .. _test-variables:
 
 Test Variables
