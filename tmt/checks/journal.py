@@ -44,7 +44,7 @@ SETUP_SCRIPT = jinja2.Template(
 set -x
 export LC_ALL=C
 
-journalctl -n 0 --show-cursor --cursor-file={{ MARK_FILEPATH }}
+[ -f "{{ MARK_FILEPATH }}" ] || journalctl -n 0 --show-cursor --cursor-file={{ MARK_FILEPATH }}
 cat {{ MARK_FILEPATH }}
 """)
 )
@@ -55,7 +55,7 @@ TEST_SCRIPT = jinja2.Template(
 set -x
 export LC_ALL=C
 
-journalctl --cursor-file={{ MARK_FILEPATH }} {{ OPTIONS }}
+journalctl --cursor-file={{ MARK_FILEPATH }} {{ OPTIONS }} --boot=all
 """
     )
 )
@@ -180,9 +180,7 @@ class JournalCheck(Check):
         serialize=lambda patterns: [pattern.pattern for pattern in patterns],
         unserialize=lambda serialized: [re.compile(pattern) for pattern in serialized],
     )
-    dmesg: bool = field(
-        default=False, help='Shorthand for ``--dmesg``, check only kernel messages.'
-    )
+    dmesg: bool = field(default=False, help='Check only kernel messages.')
     unit: Optional[str] = field(default=None, help='Check logs for a specific systemd unit.')
     identifier: Optional[str] = field(
         default=None, help='Check logs for a specific syslog identifier.'
@@ -241,7 +239,7 @@ class JournalCheck(Check):
         else:
             report += _report_failure('mark', exc)
 
-        _save_report(invocation, report, report_timestamp)
+        _save_report(invocation, report, report_timestamp, True)
 
     def _save_journal(
         self, invocation: 'TestInvocation', logger: tmt.log.Logger
