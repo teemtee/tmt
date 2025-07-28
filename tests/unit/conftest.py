@@ -2,7 +2,7 @@ import os
 import pathlib
 import shutil
 from collections.abc import Generator
-from typing import Any
+from typing import Any, Callable
 
 import _pytest.logging
 import _pytest.tmpdir
@@ -69,10 +69,6 @@ try:
 except ImportError:
     # ... and if the import fails, we're wrapping `py.path.local` from `tmpdir` family.
 
-    # ignore[name-defined]: when inspected with our daily Python 3.9 or something,
-    # the pytest is probably way newer than the one in RHEL8, and therefore the
-    # name indeed would not exist. But this whole branch applies only with the old
-    # pytest, therefore things are safe.
     @pytest.fixture(scope='session')
     def tmppath_factory(
         tmpdir_factory: '_pytest.tmpdir.TempdirFactory',  # type: ignore[name-defined]
@@ -82,6 +78,57 @@ except ImportError:
     @pytest.fixture
     def tmppath(tmpdir: py.path.local) -> Path:
         return Path(str(tmpdir))
+
+
+@pytest.fixture
+def test_path() -> Path:
+    """Returns the path to the directory containing the tests."""
+    return Path(__file__).parent
+
+
+@pytest.fixture
+def make_path_fixture() -> Callable[[Path, Path, str], Generator[Path, None, None]]:
+    """
+    Provides a reusable helper function to create fixtures that populate a temporary directory.
+
+    The returned function creates a temporary directory, populates it with test
+    data from a given subdirectory, and changes the current working directory to it.
+    The original working directory is restored after the test.
+    """
+
+    def _helper(tmppath: Path, test_path: Path, name: str) -> Generator[Path, None, None]:
+        path = tmppath / name
+        shutil.copytree(test_path / name, path)
+
+        original_directory = Path.cwd()
+        os.chdir(path)
+
+        try:
+            yield path
+        finally:
+            os.chdir(original_directory)
+
+    return _helper
+
+
+@pytest.fixture
+def defined_path(
+    tmppath: Path,
+    test_path: Path,
+    make_path_fixture: Callable[[Path, Path, str], Generator[Path, None, None]],
+) -> Generator[Path, None, None]:
+    """Fixture for tests requiring the 'defined' test data."""
+    yield from make_path_fixture(tmppath, test_path, "defined")
+
+
+@pytest.fixture
+def empty_path(
+    tmppath: Path,
+    test_path: Path,
+    make_path_fixture: Callable[[Path, Path, str], Generator[Path, None, None]],
+) -> Generator[Path, None, None]:
+    """Fixture for tests requiring the 'empty' test data."""
+    yield from make_path_fixture(tmppath, test_path, "empty")
 
 
 @pytest.fixture(scope='module')
@@ -146,35 +193,3 @@ def fixture_guest_per_test(
     guest.start()
 
     return guest
-
-
-def _make_path_fixture(tmppath: Path, test_path: Path, name: str) -> Generator[Path, None, None]:
-    """
-    A helper function to create fixtures that populate a temporary directory.
-
-    Creates a temporary directory, populates it with test data from a given
-    subdirectory, and changes the current working directory to it. The original
-    working directory is restored after the test.
-    """
-    path = tmppath / name
-    shutil.copytree(test_path / name, path)
-
-    original_directory = Path.cwd()
-    os.chdir(path)
-
-    try:
-        yield path
-    finally:
-        os.chdir(original_directory)
-
-
-@pytest.fixture
-def defined_path(tmppath: Path, test_path: Path) -> Generator[Path, None, None]:
-    """Fixture for tests requiring the 'defined' test data"""
-    yield from _make_path_fixture(tmppath, test_path, "defined")
-
-
-@pytest.fixture
-def empty_path(tmppath: Path, test_path: Path) -> Generator[Path, None, None]:
-    """Fixture for tests requiring the 'empty' test data"""
-    yield from _make_path_fixture(tmppath, test_path, "empty")

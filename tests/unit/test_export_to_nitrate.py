@@ -1,29 +1,30 @@
-import os
-import shutil
-import tempfile
-from unittest import TestCase
+from collections.abc import Generator
+
+import pytest
 
 from tmt.export.nitrate import convert_manual_to_nitrate
 from tmt.utils import Path
 
+# The root directory of the tests, used to locate test data
 TEST_DIR = Path(__file__).parent
 
 
-class NitrateExportAutomated(TestCase):
-    def setUp(self):
-        self.tmp_dir = Path(tempfile.mkdtemp(prefix=str(TEST_DIR)))
-        shutil.copytree(TEST_DIR, self.tmp_dir, dirs_exist_ok=True)
-        self.cwd = os.getcwd()
-        self.dir_name = 'manual_test'
+@pytest.fixture(name="manual_test_path")
+def fixture_manual_test_path(
+    tmppath: Path, make_path_fixture: callable
+) -> Generator[Path, None, None]:
+    """Provides a temporary directory populated with 'manual_test' data."""
+    # We are calling the make_path_fixture from conftest here.
+    yield from make_path_fixture(tmppath, TEST_DIR, "manual_test")
 
-    def test_export_to_nitrate_step(self):
-        os.chdir(self.tmp_dir / self.dir_name)
-        files = os.listdir()
-        file_name = 'test.md'
-        assert file_name in files
 
-        step = convert_manual_to_nitrate(Path(file_name))[0]
-        html_generated = """<b>Test</b>\
+def test_export_to_nitrate_step(manual_test_path: Path):
+    """Verify that the 'step' content is correctly converted to HTML."""
+    file_name = 'test.md'
+    assert Path(file_name).is_file()
+
+    step = convert_manual_to_nitrate(Path(file_name))[0]
+    html_generated = """<b>Test</b>\
 <p>Step 1.</p><p>Verify tmt shows help page
 <code>bash
 tmt --help</code></p>
@@ -38,16 +39,16 @@ tmt init</code></p>
 <b>Test two</b><p>Step 6.</p><p>description for step 2-1</p>
 <p>Step 7.</p><p>description for step 2-2</p>
 """
-        assert step == html_generated
+    assert step == html_generated
 
-    def test_export_to_nitrate_expect(self):
-        os.chdir(self.tmp_dir / self.dir_name)
-        files = os.listdir()
-        file_name = 'test.md'
-        assert file_name in files
 
-        expect = convert_manual_to_nitrate(Path(file_name))[1]
-        html_generated = """<b>Test</b>\
+def test_export_to_nitrate_expect(manual_test_path: Path):
+    """Verify that the 'expect' content is correctly converted to HTML."""
+    file_name = 'test.md'
+    assert Path(file_name).is_file()
+
+    expect = convert_manual_to_nitrate(Path(file_name))[1]
+    html_generated = """<b>Test</b>\
 <p>Step 1.</p><p>Text similar to the one below is displayed
 ```
 Usage: tmt [OPTIONS] COMMAND [ARGS]...</p>
@@ -71,41 +72,37 @@ base or full.</code></li>
 <b>Test two</b><p>Step 6.</p><p>description for result 2-1</p>
 <p>Step 7.</p><p>description for Expected Result 2-2</p>
 """
-        assert expect == html_generated
+    assert expect == html_generated
 
-    def test_export_to_nitrate_empty_file(self):
-        os.chdir(self.tmp_dir / self.dir_name)
-        files = os.listdir()
-        file_name = 'test_empty.md'
-        assert file_name in files
-        html = convert_manual_to_nitrate(Path(file_name))
-        html_generated = ('', '', '', '')
-        assert html == html_generated
 
-    def test_export_to_nitrate_setup_doesnt_exist(self):
-        os.chdir(self.tmp_dir / self.dir_name)
-        files = os.listdir()
-        file_name = 'test.md'
-        assert file_name in files
-        cleanup = convert_manual_to_nitrate(Path(file_name))[2]
-        html_generated = ''
-        assert cleanup == html_generated
+def test_export_to_nitrate_empty_file(manual_test_path: Path):
+    """Check that an empty file results in empty HTML output."""
+    file_name = 'test_empty.md'
+    assert Path(file_name).is_file()
 
-    def test_export_to_nitrate_cleanup_latest_heading(self):
-        os.chdir(self.tmp_dir / self.dir_name)
-        files = os.listdir()
-        file_name = 'test.md'
-        assert file_name in files
+    html = convert_manual_to_nitrate(Path(file_name))
+    html_generated = ('', '', '', '')
+    assert html == html_generated
 
-        cleanup = convert_manual_to_nitrate(Path(file_name))[3]
-        html_generated = """<p>Optionally remove temporary directory created \
+
+def test_export_to_nitrate_setup_doesnt_exist(manual_test_path: Path):
+    """Verify that 'setup' is empty when not present in the source."""
+    file_name = 'test.md'
+    assert Path(file_name).is_file()
+
+    setup = convert_manual_to_nitrate(Path(file_name))[2]
+    assert setup == ''
+
+
+def test_export_to_nitrate_cleanup_latest_heading(manual_test_path: Path):
+    """Ensure 'cleanup' content under the last heading is converted."""
+    file_name = 'test.md'
+    assert Path(file_name).is_file()
+
+    cleanup = convert_manual_to_nitrate(Path(file_name))[3]
+    html_generated = """<p>Optionally remove temporary directory created \
 in the first step
 2 line of cleanup
 3 line of cleanup</p>
 """
-        assert cleanup == html_generated
-
-    def tearDown(self):
-        shutil.rmtree(self.tmp_dir)
-        os.chdir(self.cwd)
-        super().tearDown()
+    assert cleanup == html_generated
