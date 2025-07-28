@@ -1,12 +1,11 @@
 import os
 import pathlib
 import shutil
-from collections.abc import Generator
+from collections.abc import Iterator
 from typing import Any, Callable
 
 import _pytest.logging
 import _pytest.tmpdir
-import fmf
 import py.path
 import pytest
 from pytest_container.container import ContainerData
@@ -14,6 +13,8 @@ from pytest_container.container import ContainerData
 from tmt.log import Logger
 from tmt.steps.provision.podman import GuestContainer, PodmanGuestData
 from tmt.utils import Path
+
+PathFixture = Callable[[Path, Path, str], Iterator[Path]]
 
 
 @pytest.fixture(name='root_logger')
@@ -69,6 +70,10 @@ try:
 except ImportError:
     # ... and if the import fails, we're wrapping `py.path.local` from `tmpdir` family.
 
+    # ignore[name-defined]: when inspected with our daily Python 3.9 or something,
+    # the pytest is probably way newer than the one in RHEL8, and therefore the
+    # name indeed would not exist. But this whole branch applies only with the old
+    # pytest, therefore things are safe.
     @pytest.fixture(scope='session')
     def tmppath_factory(
         tmpdir_factory: '_pytest.tmpdir.TempdirFactory',  # type: ignore[name-defined]
@@ -87,7 +92,7 @@ def test_path() -> Path:
 
 
 @pytest.fixture
-def make_path_fixture() -> Callable[[Path, Path, str], Generator[Path, None, None]]:
+def make_path_fixture() -> PathFixture:
     """
     Provides a reusable helper function to create fixtures that populate a temporary directory.
 
@@ -96,7 +101,7 @@ def make_path_fixture() -> Callable[[Path, Path, str], Generator[Path, None, Non
     The original working directory is restored after the test.
     """
 
-    def _helper(tmppath: Path, test_path: Path, name: str) -> Generator[Path, None, None]:
+    def _helper(tmppath: Path, test_path: Path, name: str) -> Iterator[Path]:
         path = tmppath / name
         shutil.copytree(test_path / name, path)
 
@@ -109,26 +114,6 @@ def make_path_fixture() -> Callable[[Path, Path, str], Generator[Path, None, Non
             os.chdir(original_directory)
 
     return _helper
-
-
-@pytest.fixture
-def defined_path(
-    tmppath: Path,
-    test_path: Path,
-    make_path_fixture: Callable[[Path, Path, str], Generator[Path, None, None]],
-) -> Generator[Path, None, None]:
-    """Fixture for tests requiring the 'defined' test data."""
-    yield from make_path_fixture(tmppath, test_path, "defined")
-
-
-@pytest.fixture
-def empty_path(
-    tmppath: Path,
-    test_path: Path,
-    make_path_fixture: Callable[[Path, Path, str], Generator[Path, None, None]],
-) -> Generator[Path, None, None]:
-    """Fixture for tests requiring the 'empty' test data."""
-    yield from make_path_fixture(tmppath, test_path, "empty")
 
 
 @pytest.fixture(scope='module')
@@ -155,18 +140,6 @@ def target_dir(tmppath_factory: TempPathFactory) -> Path:
     """
 
     return tmppath_factory.mktemp('target')
-
-
-# Present two trees we have for identifier unit tests as fixtures, to make them
-# usable in other tests as well.
-@pytest.fixture(name='id_tree_defined')
-def fixture_id_tree_defined() -> fmf.Tree:
-    return fmf.Tree(Path(__file__).parent / 'id' / 'defined')
-
-
-@pytest.fixture(name='id_tree_empty')
-def fixture_id_tree_empty() -> fmf.Tree:
-    return fmf.Tree(Path(__file__).parent / 'id' / 'empty')
 
 
 @pytest.fixture(name='guest')

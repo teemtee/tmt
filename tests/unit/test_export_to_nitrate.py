@@ -1,4 +1,4 @@
-from collections.abc import Generator
+from collections.abc import Iterator
 
 import pytest
 
@@ -10,9 +10,7 @@ TEST_DIR = Path(__file__).parent
 
 
 @pytest.fixture(name="manual_test_path")
-def fixture_manual_test_path(
-    tmppath: Path, make_path_fixture: callable
-) -> Generator[Path, None, None]:
+def fixture_manual_test_path(tmppath: Path, make_path_fixture: callable) -> Iterator[Path]:
     """Provides a temporary directory populated with 'manual_test' data."""
     # We are calling the make_path_fixture from conftest here.
     yield from make_path_fixture(tmppath, TEST_DIR, "manual_test")
