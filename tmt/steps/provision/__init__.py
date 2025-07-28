@@ -1205,13 +1205,7 @@ class Guest(tmt.utils.Common):
 
     hardware: Optional[tmt.hardware.Hardware]
 
-    environment: tmt.utils.Environment = field(
-        default_factory=tmt.utils.Environment,
-        normalize=tmt.utils.Environment.normalize,
-        serialize=lambda environment: environment.to_fmf_spec(),
-        unserialize=lambda serialized: tmt.utils.Environment.from_fmf_spec(serialized),
-        exporter=lambda environment: environment.to_fmf_spec(),
-    )
+    environment: tmt.utils.Environment
 
     # Flag to indicate localhost guest, requires special handling
     localhost = False
