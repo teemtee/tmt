@@ -58,7 +58,7 @@
             result: respect
 
     /unit-test:
-        test: systemd-run --unit=test-fail.service /bin/sh -c 'logger -p user.err "fail"; exit 1'
+        test: systemd-run --unit=test-fail.service /bin/sh -c 'logger -p user.err "fail"; sleep 5; exit 1'
         check:
           - how: journal
             unit: test-fail.service
@@ -75,6 +75,12 @@
               - 'error'
             ignore-pattern:
               - 'harmless error'
+
+    /reboot-test:
+        test: "if [ $TMT_REBOOT_COUNT -eq 0 ]; then tmt-reboot; fi; true"
+        check:
+          - how: journal
+            dmesg: true
 
 /avc:
   /checkpoint:

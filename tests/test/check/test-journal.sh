@@ -14,7 +14,7 @@ function assert_check_result () {
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
-        rlRun "run=\$(mktemp -d)" 0 "Create run directory"
+        rlRun "run=\$(mktemp -d -p /var/tmp)" 0 "Create run directory"
 
         rlRun "results=$run/plan/execute/results.yaml"
         rlRun "harmless=$run/plan/execute/data/guest/default-0/journal/harmless-1"
@@ -23,6 +23,7 @@ rlJournalStart
         rlRun "multiple_reports=$run/plan/execute/data/guest/default-0/journal/multiple-reports-1"
         rlRun "unit_test=$run/plan/execute/data/guest/default-0/journal/unit-test-1"
         rlRun "ignore_test=$run/plan/execute/data/guest/default-0/journal/ignore-test-1"
+        rlRun "reboot_test=$run/plan/execute/data/guest/default-0/journal/reboot-test-1"
 
         rlRun "pushd data"
         rlRun "set -o pipefail"
@@ -81,6 +82,7 @@ rlJournalStart
             rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /journal/multiple-reports"
             rlRun "cat $results"
 
+            rlAssertExists "$journal_log"
             rlLogInfo "$(cat $journal_log)"
             rlAssertEquals "There should be 3 reports after the test" \
                            "$(grep 'journal log' $journal_log | wc -l)" "3"
@@ -88,20 +90,41 @@ rlJournalStart
 
         rlPhaseStartTest "Test journal check with unit"
             rlRun "journal_log=$unit_test/checks/journal.txt"
+
             rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /journal/unit-test" "1"
             rlRun "cat $results"
+
             assert_check_result "journal as an after-test should fail" "fail" "after-test" "unit-test"
+
             rlAssertExists "$journal_log"
             rlLogInfo "$(cat $journal_log)"
         rlPhaseEnd
 
         rlPhaseStartTest "Test journal check with ignore-pattern"
             rlRun "journal_log=$ignore_test/checks/journal.txt"
+
             rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /journal/ignore-test"
             rlRun "cat $results"
+
             assert_check_result "journal as an after-test should pass" "pass" "after-test" "ignore-test"
+
             rlAssertExists "$journal_log"
             rlLogInfo "$(cat $journal_log)"
+        rlPhaseEnd
+
+        rlPhaseStartTest "Test journal check with tmt-reboot"
+            rlRun "journal_log=$reboot_test/checks/journal.txt"
+
+            rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /journal/reboot-test"
+            rlRun "cat $results"
+
+            assert_check_result "journal as an after-test should pass" "pass" "after-test" "reboot-test"
+
+            rlAssertExists "$journal_log"
+            rlLogInfo "$(cat $journal_log)"
+            rlAssertEquals "There should be 2 reports after the test" \
+                "$(grep 'journal log' $journal_log | wc -l)" "2"
+            rlAssertGrep "Linux version" $journal_log
         rlPhaseEnd
     fi
 
