@@ -1,9 +1,12 @@
+from collections.abc import Iterator
+
 import fmf
 import pytest
 
 import tmt
 import tmt.cli._root
 from tests import CliRunner
+from tests.unit.conftest import PathFixture
 from tmt.identifier import ID_KEY, add_uuid_if_not_defined
 from tmt.utils import Path
 
@@ -15,6 +18,26 @@ runner = CliRunner()
 def fixture_test_path() -> Path:
     """Provides the path to the test data for 'id' tests"""
     return Path(__file__).parent / "id"
+
+
+@pytest.fixture
+def defined_path(
+    tmppath: Path,
+    test_path: Path,
+    make_path_fixture: PathFixture,
+) -> Iterator[Path]:
+    """Fixture for tests requiring the 'defined' test data."""
+    yield from make_path_fixture(tmppath, test_path, "defined")
+
+
+@pytest.fixture
+def empty_path(
+    tmppath: Path,
+    test_path: Path,
+    make_path_fixture: PathFixture,
+) -> Iterator[Path]:
+    """Fixture for tests requiring the 'empty' test data."""
+    yield from make_path_fixture(tmppath, test_path, "empty")
 
 
 def test_base(empty_path: Path, root_logger: tmt.log.Logger):
