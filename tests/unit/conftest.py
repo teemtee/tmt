@@ -1,4 +1,7 @@
+import os
 import pathlib
+import shutil
+from collections.abc import Generator
 from typing import Any
 
 import _pytest.logging
@@ -143,3 +146,35 @@ def fixture_guest_per_test(
     guest.start()
 
     return guest
+
+
+def _make_path_fixture(tmppath: Path, test_path: Path, name: str) -> Generator[Path, None, None]:
+    """
+    A helper function to create fixtures that populate a temporary directory.
+
+    Creates a temporary directory, populates it with test data from a given
+    subdirectory, and changes the current working directory to it. The original
+    working directory is restored after the test.
+    """
+    path = tmppath / name
+    shutil.copytree(test_path / name, path)
+
+    original_directory = Path.cwd()
+    os.chdir(path)
+
+    try:
+        yield path
+    finally:
+        os.chdir(original_directory)
+
+
+@pytest.fixture
+def defined_path(tmppath: Path, test_path: Path) -> Generator[Path, None, None]:
+    """Fixture for tests requiring the 'defined' test data"""
+    yield from _make_path_fixture(tmppath, test_path, "defined")
+
+
+@pytest.fixture
+def empty_path(tmppath: Path, test_path: Path) -> Generator[Path, None, None]:
+    """Fixture for tests requiring the 'empty' test data"""
+    yield from _make_path_fixture(tmppath, test_path, "empty")
