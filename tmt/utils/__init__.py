@@ -1110,7 +1110,7 @@ class Command:
     def __str__(self) -> str:
         return self.to_element()
 
-    def __add__(self, other: Union['Command', RawCommand, list[str]]) -> 'Command':
+    def __add__(self, other: Union['Command', RawCommand]) -> 'Command':
         if isinstance(other, Command):
             return Command(*self._command, *other._command)
 
