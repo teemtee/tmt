@@ -1,0 +1,18 @@
+summary: Cleanup tasks
+
+description: |
+    Final cleanup actions to be performed after the test execution
+    has been completed. Includes stopping and removing guests and
+    workdir pruning. For more information about available options
+    see the :ref:`/plugins/cleanup` section.
+
+    .. versionadded:: 1.54
+
+example: |
+    cleanup:
+        how: tmt
+
+link:
+    - implemented-by: /tmt/steps/cleanup
+    - verified-by: /tests/cleanup/guest
+    - verified-by: /tests/cleanup/prune

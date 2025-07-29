@@ -31,7 +31,7 @@ rlJournalStart
         rlAssertExists $run
         rlRun "tmt run --last report"
         rlAssertExists $run
-        rlRun "tmt run --last finish"
+        rlRun "tmt run --last cleanup"
         rlAssertNotExists $run
     rlPhaseEnd
 

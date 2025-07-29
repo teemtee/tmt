@@ -52,6 +52,7 @@ import tmt.plugins.plan_shapers
 import tmt.policy
 import tmt.result
 import tmt.steps
+import tmt.steps.cleanup
 import tmt.steps.discover
 import tmt.steps.execute
 import tmt.steps.finish
@@ -2148,6 +2149,11 @@ class Plan(
             plan=self,
             data=self.node.get('finish'),
         )
+        self.cleanup = tmt.steps.cleanup.Cleanup(
+            logger=logger.descend(logger_name='cleanup'),
+            plan=self,
+            data=self.node.get('cleanup'),
+        )
 
         self._update_metadata()
 
@@ -2941,11 +2947,11 @@ class Plan(
             self._cli_context_object.steps = standalone
             self.debug(f"Running the '{next(iter(standalone))}' step as standalone.")
 
-        # Run enabled steps except 'finish'
+        # Run enabled steps except 'cleanup'
         self.debug('go', color='cyan', shift=0, level=2)
         abort = False
         try:
-            for step in self.steps(skip=['finish']):
+            for step in self.steps(skip=['cleanup']):
                 step.go()
 
                 if isinstance(step, tmt.steps.discover.Discover):
@@ -2968,16 +2974,16 @@ class Plan(
                         )
                         self.execute.save()
 
-        # Make sure we run 'report' and 'finish' steps always if enabled
+        # Make sure we run 'report' and 'cleanup' steps always if enabled
         finally:
-            for step in self.steps(skip=['finish', 'report']):
+            for step in self.steps(skip=['cleanup', 'report']):
                 step.suspend()
 
             if not abort:
                 if self.report.enabled and self.report.status() != "done":
                     self.report.go()
-                if self.finish.enabled:
-                    self.finish.go()
+                if self.cleanup.enabled:
+                    self.cleanup.go()
 
     def _export(
         self, *, keys: Optional[list[str]] = None, include_internal: bool = False
@@ -4505,7 +4511,7 @@ class Run(tmt.utils.Common):
             self.info('total', Result.summary(results), color='cyan')
 
         # Remove the workdir if enabled
-        if self.remove and self.plans[0].finish.enabled:
+        if self.remove and self.plans[0].cleanup.enabled:
             self._workdir_cleanup(self.workdir)
 
         # Skip handling of the exit codes in dry mode and
@@ -4516,6 +4522,7 @@ class Run(tmt.utils.Common):
         # Return 0 if test execution has been intentionally skipped
         if tmt.steps.execute.Execute._opt("dry"):
             raise SystemExit(0)
+
         # Return appropriate exit code based on the total stats
         raise SystemExit(tmt.result.results_to_exit_code(results, bool(execute.enabled)))
 
@@ -4602,13 +4609,15 @@ class Run(tmt.utils.Common):
         if self.opt('follow'):
             self.follow()
 
-        # Propagate dry mode from provision to prepare, execute and finish
-        # (basically nothing can be done if there is no guest provisioned)
+        # Propagate dry mode from provision to prepare, execute, finish
+        # and cleanup (basically nothing can be done in any of these if
+        # there is no guest provisioned)
         if tmt.steps.provision.Provision._opt("dry"):
             for _klass in (
                 tmt.steps.prepare.Prepare,
                 tmt.steps.execute.Execute,
                 tmt.steps.finish.Finish,
+                tmt.steps.cleanup.Cleanup,
             ):
                 klass = cast(type[tmt.steps.Step], _klass)
 
@@ -4645,7 +4654,7 @@ class Run(tmt.utils.Common):
             elif before:
                 last = tmt.steps.STEPS.index(before) - 1
             else:
-                last = tmt.steps.STEPS.index('finish')
+                last = tmt.steps.STEPS.index('cleanup')
             # Enable all steps between the first and last
             for index in range(first, last + 1):
                 step = tmt.steps.STEPS[index]
@@ -4713,7 +4722,7 @@ class Status(tmt.utils.Common):
         Check if the given plan matches filters from the command line
         """
         if self.opt('abandoned'):
-            return plan.provision.status() == 'done' and plan.finish.status() == 'todo'
+            return plan.provision.status() == 'done' and plan.cleanup.status() == 'todo'
         if self.opt('active'):
             return any(step.status() == 'todo' for step in plan.steps())
         if self.opt('finished'):
@@ -4917,10 +4926,10 @@ class Clean(tmt.utils.Common):
         if not loaded:
             self.warn(f"Failed to load run '{run.workdir}': {error}")
             return False
-        # Clean guests if provision is done but finish is not done
+        # Clean guests if provision is done but cleanup is not done
         successful = True
         for plan in run.plans:
-            if plan.provision.status() == 'done' and plan.finish.status() != 'done':
+            if plan.provision.status() == 'done' and plan.cleanup.status() != 'done':
                 # Wake up provision to load the active guests
                 plan.provision.wake()
                 if not self._matches_how(plan):
@@ -4940,7 +4949,7 @@ class Clean(tmt.utils.Common):
                     quiet = self.cli_invocation.options['quiet']
                     self.cli_invocation.options['quiet'] = True
                     try:
-                        plan.finish.go()
+                        plan.cleanup.go()
                     except tmt.utils.GeneralError as error:
                         self.warn(
                             f"Could not stop guest in run '{run.workdir}': {error}.", shift=1
