@@ -14,7 +14,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Login enabled after tests and after steps"
-        rlRun -s "tmt run -a plan -n /fmf-tests login -t -c true -s discover -s prepare" 1
+        rlRun -s "tmt run -a plan -n /fmf-tests login -t -c true -s provision -s prepare" 1
         rlAssertEquals "There should 6 occurrences of login" $(grep "Starting interactive" $rlRun_LOG | wc -l) "6"
         rlAssertNotGrep "Skipping interactive" $rlRun_LOG
         rlAssertGrep "Starting interactive" $rlRun_LOG
