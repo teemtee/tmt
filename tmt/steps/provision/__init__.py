@@ -676,7 +676,7 @@ class GuestFacts(SerializableContainer):
         """
 
         try:
-            guest.execute(Command('rsync', '--version'))
+            guest.execute(Command('rsync', '--version'), silent=True)
 
             return True
 
@@ -1386,7 +1386,7 @@ class Guest(tmt.utils.Common):
         if not self.facts.is_superuser:
             command = Command("sudo") + command
 
-        self.execute(command)
+        self.execute(command, silent=True)
 
         # Install all scripts on guest
         for script in scripts:
