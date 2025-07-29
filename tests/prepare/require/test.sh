@@ -8,13 +8,13 @@ rlJournalStart
     rlPhaseStartSetup
 
         build_container_image "centos/7/upstream\:latest"
-        build_container_image "fedora/40:\latest"
+        build_container_image "fedora/latest:\latest"
 
         rlRun "pushd data"
         rlRun "set -o pipefail"
     rlPhaseEnd
 
-    for image in $TEST_IMAGE_PREFIX/fedora/40:latest \
+    for image in $TEST_IMAGE_PREFIX/fedora/latest:latest \
                  $TEST_IMAGE_PREFIX/centos/7/upstream:latest; do
         # Prepare the tmt command and expected error message
         tmt="tmt run -avr provision -h $PROVISION_HOW -i $image"

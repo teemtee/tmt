@@ -36,8 +36,8 @@ rlJournalStart
             test_name_suffix=timeout
             grep -B 1 "/test/$test_name_suffix</td>" $HTML | tee $tmp/$test_name_suffix
             rlAssertGrep 'class="result error">error</td>' $tmp/$test_name_suffix -F
-            sed -e "/name\">\/test\/$test_name_suffix/,/\/tr/!d" $HTML | tee $tmp/$test_name_suffix-note
-            rlAssertGrep '<li class="note">check &#39;internal/timeout&#39; failed</li>' $tmp/$test_name_suffix-note -F
+            sed -e "/<tr class=\"check\"/,/<\/tr>/p" "$HTML" | tee $tmp/$test_name_suffix-check
+            rlAssertGrep '<td class="name">internal/timeout (after-test)</td>' $tmp/$test_name_suffix-check -F
 
             test_name_suffix=xfail
             grep -B 1 "/test/$test_name_suffix</td>" $HTML | tee $tmp/$test_name_suffix
@@ -109,6 +109,32 @@ rlJournalStart
         # Global result checks
         rlAssertGrep 'checks&nbsp;\[[+]\]</button>' "$tmp/plan/report/default-0/index.html"
         rlAssertGrep '<td class="name">avc (before-test)</td>' "$tmp/plan/report/default-0/index.html"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Verify skip status is in html"
+        # return code 4 = Tests were executed, and all reported the skip result
+        rlRun -s "tmt --context use_container=yes run --all -v --scratch --id $tmp provision --how container test --name skip report --how html" 4
+        rlAssertGrep "summary: 0 tests executed, 1 test skipped" $rlRun_LOG -F
+
+        # Path of the generated file should be shown and the page should exist
+        HTML=$tmp/plan/report/default-0/index.html
+        rlAssertExists "$HTML" || rlDie "Report file '$HTML' not found, nothing to check."
+        rlAssertGrep "<html>" "$HTML" || rlDie "HTML file appears to be malformed."
+
+        test_name_suffix=skip
+        # make sure results td exists
+        rlAssertGrep "#results td.skip" "$HTML"
+        # make sure filter check box exists
+        rlAssertGrep "<td><label><input type=\"checkbox\" id=\"filter_skip\" onclick=\"filter_checkbox(this);\" checked>skip</label></td>" "$HTML" -F
+
+        # check the main test
+        grep -B 1 "/test/$test_name_suffix</td>" $HTML | tee $tmp/$test_name_suffix
+        rlAssertGrep 'class="result skip">skip</td>' $tmp/$test_name_suffix -F
+
+        # check the subresult
+        test_name_suffix=skip-this-test
+        grep -B 1 "/$test_name_suffix</td>" $HTML | tee $tmp/$test_name_suffix
+        rlAssertGrep 'class="result skip">skip</td>' $tmp/$test_name_suffix -F
     rlPhaseEnd
 
     rlPhaseStartCleanup

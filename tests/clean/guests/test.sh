@@ -9,66 +9,66 @@ rlJournalStart
         rlRun "set -o pipefail"
         rlRun "tmt init"
         rlRun "tmt plan create -t mini plan1"
-        rlRun "tmt run --until provision provision -h container 2>&1 >/dev/null | tee run-output"
-        rlRun "runid=\$(head -n 1 run-output)" 0 "Get the run ID"
+        rlRun -s "tmt run --until provision provision -h container"
+        rlRun "runid=\$(head -n 1 '$rlRun_LOG')" 0 "Get the run ID"
     rlPhaseEnd
 
     rlPhaseStartTest "Dry mode"
-        rlRun "tmt status -vv | tee output"
-        rlAssertGrep "(done\s+){2}(todo\s+){4}$runid\s+/plan1" "output" -E
-        rlRun "tmt clean guests --dry -v 2>&1 >/dev/null | tee output"
-        rlAssertGrep "Would stop guests in run '$runid'" "output"
-        rlRun "tmt status -vv | tee output"
-        rlAssertGrep "(done\s+){2}(todo\s+){4}$runid\s+/plan1" "output" -E
+        rlRun -s "tmt status -vv"
+        rlAssertGrep "(done\s+){2}(todo\s+){5}$runid\s+/plan1" "$rlRun_LOG" -E
+        rlRun -s "tmt clean guests --dry -v"
+        rlAssertGrep "Would stop guests in run '$runid'" "$rlRun_LOG"
+        rlRun -s "tmt status -vv"
+        rlAssertGrep "(done\s+){2}(todo\s+){5}$runid\s+/plan1" "$rlRun_LOG" -E
     rlPhaseEnd
 
     rlPhaseStartTest "Specify ID"
-        rlRun "tmt clean guests --dry -v -l 2>&1 >/dev/null | tee output"
-        rlAssertGrep "Would stop guests in run '$runid'" "output"
+        rlRun -s "tmt clean guests --dry -v -l"
+        rlAssertGrep "Would stop guests in run '$runid'" "$rlRun_LOG"
 
-        rlRun "tmt clean guests --dry -v -i $runid 2>&1 >/dev/null | tee output"
-        rlAssertGrep "Would stop guests in run '$runid'" "output"
+        rlRun -s "tmt clean guests --dry -v -i $runid"
+        rlAssertGrep "Would stop guests in run '$runid'" "$rlRun_LOG"
 
-        rlRun "tmt status -vv | tee output"
-        rlAssertGrep "(done\s+){2}(todo\s+){4}$runid\s+/plan1" "output" -E
+        rlRun -s "tmt status -vv"
+        rlAssertGrep "(done\s+){2}(todo\s+){5}$runid\s+/plan1" "$rlRun_LOG" -E
     rlPhaseEnd
 
     rlPhaseStartTest "Filter by how"
-        rlRun "tmt clean guests --dry -v --how container 2>&1 >/dev/null | tee output"
-        rlAssertGrep "Would stop guests in run '$runid'" "output"
+        rlRun -s "tmt clean guests --dry -v --how container"
+        rlAssertGrep "Would stop guests in run '$runid'" "$rlRun_LOG"
 
-        rlRun "tmt clean guests --dry -v --how virtual 2>&1 >/dev/null | tee output"
-        rlAssertNotGrep "Would stop guests in run '$runid'" "output"
+        rlRun -s "tmt clean guests --dry -v --how virtual"
+        rlAssertNotGrep "Would stop guests in run '$runid'" "$rlRun_LOG"
 
-        rlRun "tmt status -vv | tee output"
-        rlAssertGrep "(done\s+){2}(todo\s+){4}$runid\s+/plan1" "output" -E
+        rlRun -s "tmt status -vv"
+        rlAssertGrep "(done\s+){2}(todo\s+){5}$runid\s+/plan1" "$rlRun_LOG" -E
     rlPhaseEnd
 
     rlPhaseStartTest "Stop the guest"
-        rlRun "tmt clean guests -v -i $runid 2>&1 >/dev/null | tee output"
-        rlAssertGrep "Stopping guests in run '$runid'" "output"
-        rlRun "tmt status -vv | tee output"
-        rlAssertGrep "(done\s+){2}(todo\s+){3}done\s+$runid\s+/plan1" "output" -E
+        rlRun -s "tmt clean guests -v -i $runid"
+        rlAssertGrep "Stopping guests in run '$runid'" "$rlRun_LOG"
+        rlRun -s "tmt status -vv"
+        rlAssertGrep "(done\s+){2}(todo\s+){4}done\s+$runid\s+/plan1" "$rlRun_LOG" -E
     rlPhaseEnd
 
     rlPhaseStartTest "Different root"
         rlRun "tmprun=\$(mktemp -d)" 0 "Create a temporary directory for runs"
-        rlRun "tmt run -i $tmprun/run1 --until provision provision -h local 2>&1 >/dev/null | tee run-output"
-        rlRun "tmt run -i $tmprun/run2 --until provision provision -h local 2>&1 >/dev/null | tee run-output"
+        rlRun -s "tmt run -i $tmprun/run1 --until provision provision -h local"
+        rlRun -s "tmt run -i $tmprun/run2 --until provision provision -h local"
         rlRun "tmt clean guests --workdir-root $tmprun"
-        rlRun "tmt status --workdir-root $tmprun -vv | tee output"
-        rlAssertGrep "(done\s+){2}(todo\s+){3}done\s+$tmprun/run1" "output" -E
-        rlAssertGrep "(done\s+){2}(todo\s+){3}done\s+$tmprun/run2" "output" -E
+        rlRun -s "tmt status --workdir-root $tmprun -vv"
+        rlAssertGrep "(done\s+){2}(todo\s+){4}done\s+$tmprun/run1" "$rlRun_LOG" -E
+        rlAssertGrep "(done\s+){2}(todo\s+){4}done\s+$tmprun/run2" "$rlRun_LOG" -E
     rlPhaseEnd
 
     rlPhaseStartTest "Test keep"
         rlRun "tmpkeep=\$(mktemp -d)" 0 "Create a temporary directory for keep test"
-        rlRun "tmt run -i $tmpkeep/run1 --until provision provision -h local 2>&1 >/dev/null | tee run-output"
-        rlRun "tmt run -i $tmpkeep/run2 --until provision provision -h local 2>&1 >/dev/null | tee run-output"
+        rlRun -s "tmt run -i $tmpkeep/run1 --until provision provision -h local"
+        rlRun -s "tmt run -i $tmpkeep/run2 --until provision provision -h local"
         rlRun "tmt clean guests --workdir-root $tmpkeep --keep 1"
-        rlRun "tmt status --workdir-root $tmpkeep -vv | tee output"
-        rlAssertGrep "(done\s+){2}(todo\s+){3}done\s+$tmpkeep/run1" "output" -E
-        rlAssertGrep "(done\s+){2}(todo\s+){4}$tmpkeep/run2" "output" -E
+        rlRun -s "tmt status --workdir-root $tmpkeep -vv"
+        rlAssertGrep "(done\s+){2}(todo\s+){4}done\s+$tmpkeep/run1" "$rlRun_LOG" -E
+        rlAssertGrep "(done\s+){2}(todo\s+){5}$tmpkeep/run2" "$rlRun_LOG" -E
     rlPhaseEnd
 
     rlPhaseStartCleanup

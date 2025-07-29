@@ -27,6 +27,14 @@
     /subresults:
         summary: Fake the subresults data and print them into final report
         test: 'true'
+    /skip:
+        enabled: false
+        summary: Skip test, use tmt-report-result
+        test: tmt-report-result skip-this-test SKIP
+        adjust:
+        - when: use_container == yes
+          enabled: true
+          because: tmt-report-result does not work with local provisioning
 
 # Special plan to introduce more than one guest, for verification of --display-guest.
 # Disabled by default, but enabled in the corresponding test by a magic of context.

@@ -14,7 +14,6 @@ import tmt.steps.scripts
 import tmt.utils
 import tmt.utils.signals
 import tmt.utils.themes
-from tmt.checks import CheckPlugin
 from tmt.container import container, field
 from tmt.result import Result, ResultOutcome
 from tmt.steps import safe_filename
@@ -559,9 +558,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 key=key, value=value, color=color, shift=shift, level=level, topic=topic
             )
 
-        # Insert internal checks
-        invocation.test.check += CheckPlugin.internal_checks(logger)
-
         # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
         # to use some reusable decorator.
         invocation.check_results = self.run_checks_before_test(
@@ -600,6 +596,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # overwrite it.
         self.write(invocation.path / TEST_OUTPUT_FILENAME, output.stdout or '', mode='a', level=3)
 
+        # Reset `has-rsync` fact: tmt is expected to install rsync if it
+        # is missing after a test. To achieve that, pretend we don't
+        # know whether rsync is installed, and let any attempt to use
+        # rsync answer and react before calling the command.
+        guest.facts.has_rsync = None
+
         def pull_from_guest() -> None:
             if not invocation.is_guest_healthy:
                 return
@@ -621,10 +623,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             # Handle failing to pull test artifacts after guest becoming
             # unresponsive. If not handled test would stay in 'pending' state.
             # See issue https://github.com/teemtee/tmt/issues/3647.
-            except tmt.utils.RunError:
-                # TODO: We rely here on the traceback to print a reasonable
-                # failure message, should be improved later.
-                pass
+            except Exception as exc:
+                invocation.exception = exc
 
         # Fetch #1: we need logs and everything the test produced so we could
         # collect its results.
@@ -729,18 +729,14 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                         if invocation.handle_restart():
                             continue
 
-                    except tmt.utils.RebootTimeoutError:
+                    except (
+                        tmt.utils.RebootTimeoutError,
+                        tmt.utils.ReconnectTimeoutError,
+                        tmt.utils.RestartMaxAttemptsError,
+                    ) as error:
+                        invocation.exception = error
                         for result in invocation.results:
                             result.result = ResultOutcome.ERROR
-                            result.note.append('reboot timeout')
-
-                    else:
-                        for result in invocation.results:
-                            result.result = ResultOutcome.ERROR
-                            result.note.append(
-                                'crashed too many times, '
-                                'you may want to set restart-max-count larger'
-                            )
 
                 # Handle reboot
                 if invocation.reboot_requested:
@@ -749,15 +745,19 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     try:
                         if invocation.handle_reboot():
                             continue
-                    except tmt.utils.RebootTimeoutError:
+                    except tmt.utils.RebootTimeoutError as error:
+                        invocation.exception = error
                         for result in invocation.results:
                             result.result = ResultOutcome.ERROR
-                            result.note.append('reboot timeout')
 
-                if invocation.abort_requested:
-                    for result in invocation.results:
-                        # In case of aborted all results in list will be aborted
-                        result.note.append('aborted')
+                # Execute internal checks
+                invocation.check_results += self.run_internal_checks(
+                    invocation=invocation,
+                    environment=self._test_environment(
+                        invocation=invocation, extra_environment=extra_environment, logger=logger
+                    ),
+                    logger=logger,
+                )
 
                 self._results.extend(invocation.results)
                 self.step.plan.execute.update_results(self.results())

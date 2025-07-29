@@ -47,6 +47,7 @@ from tmt.container import (
     field,
     key_to_option,
     option_to_key,
+    simple_field,
 )
 from tmt.options import option
 from tmt.utils import (
@@ -66,7 +67,7 @@ if TYPE_CHECKING:
     import tmt.steps.discover
     import tmt.steps.execute
     from tmt.base import Plan
-    from tmt.result import BaseResult
+    from tmt.result import BaseResult, PhaseResult
     from tmt.steps.provision import Guest
 
 
@@ -98,7 +99,7 @@ PHASE_ORDER_PREPARE_INSTALL_REQUIRES = 70
 PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS = 75
 
 # Supported steps and actions
-STEPS: list[str] = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish']
+STEPS: list[str] = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish', 'cleanup']
 ACTIONS: list[str] = ['login', 'reboot']
 DEFAULT_LOGIN_COMMAND = 'bash'
 
@@ -1425,6 +1426,19 @@ def provides_method(
     return _method
 
 
+@container
+class PluginOutcome:
+    """
+    Bundles together results produced by a plugin, and possible error.
+    """
+
+    #: Results produced by the plugin invocation.
+    results: list['PhaseResult'] = simple_field(default_factory=list['PhaseResult'])
+
+    #: Exceptions the plugin would like to raise and report.
+    exceptions: list[Exception] = simple_field(default_factory=list[Exception])
+
+
 class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
     """
     Common parent of all step plugins
@@ -2057,8 +2071,9 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
                 steps: list[Step] = [s for s in step.plan.steps() if s.status() == 'done']
                 login_during = steps[-1] if steps else None
             # Default to the last enabled step if no completed step found
+            # (skip the cleanup step as no actions are expected there)
             if login_during is None:
-                login_during = list(step.plan.steps())[-1]
+                login_during = list(step.plan.steps(skip=["cleanup"]))[-1]
             # Only login if the error occurred after provision
             if login_during != step.plan.discover:
                 phases[login_during.name] = [PHASE_END]
@@ -2322,6 +2337,11 @@ class Login(Action):
         """
         Run the interactive command
         """
+
+        # Nothing to do if there are no guests ready for login
+        if not self.parent.plan.provision.ready_guests:
+            self.info('login', 'No guests ready for login', color='yellow')
+            return
 
         scripts = [
             tmt.utils.ShellScript(script)
@@ -2640,8 +2660,8 @@ class PluginTask(
     def name(self) -> str:
         return f'{self.phase_name} on {fmf.utils.listed(self.guest_ids)}'
 
-    def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
-        self.phase.go(guest=guest, logger=logger)
+    def run_on_guest(self, guest: 'Guest', logger: tmt.log.Logger) -> PluginReturnValueT:
+        return self.phase.go(guest=guest, logger=logger)
 
 
 class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginReturnValueT]]]):

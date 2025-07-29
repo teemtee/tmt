@@ -64,13 +64,13 @@ rlJournalStart
                 rlRun "distro=fedora-rawhide"
                 rlRun "package_manager=dnf5"
 
+            elif is_fedora_42 "$image"; then
+                rlRun "distro=fedora-42"
+                rlRun "package_manager=dnf5"
+
             elif is_fedora_41 "$image"; then
                 rlRun "distro=fedora-41"
                 rlRun "package_manager=dnf5"
-
-            elif is_fedora_40 "$image"; then
-                rlRun "distro=fedora-40"
-                rlRun "package_manager=dnf"
 
             elif is_centos_stream_9 "$image"; then
                 rlRun "distro=centos-stream-9"
@@ -125,7 +125,7 @@ rlJournalStart
                 rlFail "Cannot infer distro for image $image"
             fi
 
-            tmt="tmt -vvv -c distro=$distro run --id $run --scratch finish discover provision --how $PROVISION_HOW --image $image prepare"
+            tmt="tmt -vvv -c distro=$distro run --id $run --scratch cleanup discover provision --how $PROVISION_HOW --image $image prepare"
         rlPhaseEnd
 
         # TODO: find out whether all those exceptions can be simplified and parametrized...
@@ -244,11 +244,11 @@ rlJournalStart
             elif is_fedora_rawhide "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_fedora_41 "$image"; then
+            elif is_fedora_42 "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_fedora_40 "$image"; then
-                rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
+            elif is_fedora_41 "$image"; then
+                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ubuntu "$image" || is_debian "$image"; then
                 rlAssertGrep "err: E: Unable to locate package tree-but-spelled-wrong" $rlRun_LOG
@@ -282,11 +282,11 @@ rlJournalStart
             elif is_fedora_rawhide "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_fedora_41 "$image"; then
+            elif is_fedora_42 "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_fedora_40 "$image"; then
-                rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
+            elif is_fedora_41 "$image"; then
+                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ubuntu "$image" || is_debian "$image"; then
                 rlAssertGrep "err: E: Unable to locate package tree-but-spelled-wrong" $rlRun_LOG

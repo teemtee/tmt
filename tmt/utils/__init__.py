@@ -503,7 +503,6 @@ class Environment(dict[str, EnvVarValue]):
         cls,
         variables: Union[str, list[str]],
         logger: tmt.log.Logger,
-        root: Optional[Path] = None,
     ) -> 'Environment':
         """
         Construct environment from a sequence of variables.
@@ -528,8 +527,6 @@ class Environment(dict[str, EnvVarValue]):
             * ``@foo.yaml``
             * ``@../../bar.yaml``
             * ``@foo.env``
-
-        :param root: root directory to load variable files from.
         """
 
         if not isinstance(variables, (list, tuple)):
@@ -546,7 +543,7 @@ class Environment(dict[str, EnvVarValue]):
                         raise GeneralError(f"Invalid variable file specification '{var}'.")
 
                     filename = var[1:]
-                    environment = cls.from_file(filename=filename, root=root, logger=logger)
+                    environment = cls.from_file(filename=filename, logger=logger)
 
                     if not environment:
                         logger.warning(f"Empty environment file '{filename}'.")
@@ -776,7 +773,6 @@ class Environment(dict[str, EnvVarValue]):
             from_cli = Environment.from_sequence(
                 variables=list(raw_cli_environment),
                 logger=logger,
-                root=file_root,
             )
         else:
             raise NormalizationError(
@@ -1114,7 +1110,7 @@ class Command:
     def __str__(self) -> str:
         return self.to_element()
 
-    def __add__(self, other: Union['Command', RawCommand, list[str]]) -> 'Command':
+    def __add__(self, other: Union['Command', RawCommand]) -> 'Command':
         if isinstance(other, Command):
             return Command(*self._command, *other._command)
 
@@ -2575,6 +2571,18 @@ class RebootTimeoutError(ExecuteError):
     """
 
 
+class ReconnectTimeoutError(ExecuteError):
+    """
+    Failed to reconnect to the guest due to a timeout.
+    """
+
+
+class RestartMaxAttemptsError(ExecuteError):
+    """
+    Test restart failed due to maximum attempts reached.
+    """
+
+
 class ReportError(GeneralError):
     """
     Report step error
@@ -2900,6 +2908,34 @@ def _render_exception_into_files(exception: BaseException, logger: tmt.log.Logge
         for line in _render_base_exception(exception, TracebackVerbosity.LOCALS):
             for stream in logfile_streams:
                 logger.print(line, file=stream)
+
+
+def render_exception_as_notes(exception: BaseException) -> list[str]:
+    """
+    Render an exception as a list of :py:class:`Result` notes.
+
+    Each exception message is recorded, and prefixed with an index
+    corresponding to its position among causes of the error state.
+
+    :param exception: exception to render.
+    """
+
+    def _render_exception(exc: BaseException, index: str) -> Iterator[str]:
+        causes: list[BaseException] = []
+
+        if isinstance(exc, GeneralError) and exc.causes:
+            causes += exc.causes
+
+        if exc.__cause__:
+            causes += [exc.__cause__]
+
+        yield f'Exception #{index}: {exc}'
+
+        if causes:
+            for cause_index, cause_exc in enumerate(causes, 1):
+                yield from _render_exception(cause_exc, f'{index}.{cause_index}')
+
+    return list(_render_exception(exception, '1'))
 
 
 def show_exception(

@@ -174,7 +174,6 @@ NON_KVM_TIMEOUT_COEF = 10  # times
 # SSH key type, set None for ssh-keygen default one
 SSH_KEYGEN_TYPE = "ecdsa"
 
-DEFAULT_USER = 'root'
 DEFAULT_CPU_COUNT = 2
 DEFAULT_MEMORY: 'Size' = tmt.hardware.UNITS('2048 MB')
 DEFAULT_DISK: 'Size' = tmt.hardware.UNITS('40 GB')
@@ -323,14 +322,6 @@ def _report_hw_requirement_support(constraint: tmt.hardware.Constraint) -> bool:
 
 @container
 class TestcloudGuestData(tmt.steps.provision.GuestSshData):
-    # Override parent class with our defaults
-    user: str = field(
-        default=DEFAULT_USER,
-        option=('-u', '--user'),
-        metavar='USERNAME',
-        help='Username to use for all guest operations.',
-    )
-
     image: str = field(
         default=DEFAULT_IMAGE,
         option=('-i', '--image'),

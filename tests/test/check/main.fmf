@@ -41,4 +41,4 @@ tier: 2
     test: ./test-internal.sh
     tag+:
       - provision-only
-      - provision-container
+      - provision-virtual

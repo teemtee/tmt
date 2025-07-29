@@ -25,6 +25,11 @@ class Invocation(CheckPlugin[InvocationCheck]):
     This check fails when tests encounter errors that are not covered
     by more specific checks.
 
+    .. note::
+
+        This is an :ref:`internal check </plugins/test-checks/internal>`,
+        and it cannot be enabled or disabled by test metadata.
+
     .. versionadded:: 1.50
     """
 
@@ -45,6 +50,19 @@ class Invocation(CheckPlugin[InvocationCheck]):
                     name=CHECK_NAME,
                     result=ResultOutcome.FAIL,
                     note=['Test failed due to pidfile locking'],
+                )
+            ]
+
+        if isinstance(invocation.exception, tmt.utils.RestartMaxAttemptsError):
+            return [
+                CheckResult(
+                    name=CHECK_NAME,
+                    result=ResultOutcome.FAIL,
+                    note=[
+                        'Test reached maximum restart attempts '
+                        f'({invocation.test.restart_max_count}). '
+                        'You may want to set restart-max-count larger.'
+                    ],
                 )
             ]
 

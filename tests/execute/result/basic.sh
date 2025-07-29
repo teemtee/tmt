@@ -94,7 +94,7 @@ rlJournalStart
                     0
         test_result "errr /test/error-timeout \(on default-0\) \[7/12\]" \
                     1 \
-                    "Note: check 'internal/timeout' failed"
+                    "fail internal/timeout"
         test_result "fail /test/fail \(on default-0\) \[8/12\]" \
                     0
         test_result "pass /test/pass \(on default-0\) \[9/12\]" \
@@ -125,7 +125,7 @@ rlJournalStart
         rlRun -s "tmt run --id \${run} --scratch --until execute tests -n /abort provision --how container execute -v 2>&1 >/dev/null" "2"
 
         rlAssertGrep "00:00:00 errr /test/abort (on default-0) \[1/1\]" $rlRun_LOG
-        rlAssertGrep "Note: aborted" $rlRun_LOG
+        rlAssertGrep "fail internal/abort" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Verify fmf context lands in results"

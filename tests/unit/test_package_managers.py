@@ -44,8 +44,8 @@ from . import (  # noqa: E402
     CONTAINER_CENTOS_STREAM_9,
     CONTAINER_CENTOS_STREAM_10,
     CONTAINER_DEBIAN_127,
-    CONTAINER_FEDORA_40,
     CONTAINER_FEDORA_41,
+    CONTAINER_FEDORA_42,
     CONTAINER_FEDORA_COREOS,
     CONTAINER_FEDORA_COREOS_OSTREE,
     CONTAINER_FEDORA_RAWHIDE,
@@ -76,6 +76,7 @@ def has_legacy_dnf(container: ContainerData) -> bool:
 
     return container.image_url_or_id not in (
         CONTAINER_FEDORA_RAWHIDE.url,
+        CONTAINER_FEDORA_42.url,
         CONTAINER_FEDORA_41.url,
         CONTAINER_FEDORA_COREOS.url,
         CONTAINER_FEDORA_COREOS_OSTREE.url,
@@ -89,6 +90,7 @@ def has_dnf5_preinstalled(container: ContainerData) -> bool:
 
     return container.image_url_or_id in (
         CONTAINER_FEDORA_RAWHIDE.url,
+        CONTAINER_FEDORA_42.url,
         CONTAINER_FEDORA_41.url,
         CONTAINER_FEDORA_COREOS.url,
         CONTAINER_FEDORA_COREOS_OSTREE.url,
@@ -123,9 +125,7 @@ CONTAINER_BASE_MATRIX = [
     # Fedora
     (CONTAINER_FEDORA_RAWHIDE, PACKAGE_MANAGER_DNF5),
     (CONTAINER_FEDORA_41, PACKAGE_MANAGER_DNF5),
-    (CONTAINER_FEDORA_40, PACKAGE_MANAGER_DNF5),
-    (CONTAINER_FEDORA_40, PACKAGE_MANAGER_DNF),
-    (CONTAINER_FEDORA_40, PACKAGE_MANAGER_YUM),
+    (CONTAINER_FEDORA_42, PACKAGE_MANAGER_DNF5),
     # CentOS Stream
     (CONTAINER_CENTOS_STREAM_10, PACKAGE_MANAGER_DNF),
     (CONTAINER_CENTOS_STREAM_9, PACKAGE_MANAGER_DNF),
@@ -161,15 +161,6 @@ for container, package_manager_class in CONTAINER_BASE_MATRIX:
     CONTAINER_DISCOVERY_MATRIX[container.url] = (container, package_manager_class)
 
 
-def is_dnf5_preinstalled(container: ContainerData) -> bool:
-    return container.image_url_or_id in (
-        CONTAINER_FEDORA_RAWHIDE.url,
-        CONTAINER_FEDORA_41.url,
-        CONTAINER_FEDORA_COREOS.url,
-        CONTAINER_FEDORA_COREOS_OSTREE.url,
-    )
-
-
 def create_package_manager(
     container: ContainerData,
     guest: GuestContainer,
@@ -188,7 +179,7 @@ def create_package_manager(
 
     if package_manager_class is tmt.package_managers.dnf.Dnf5:
         # Note that our custom images contain `dnf5` already
-        if is_dnf5_preinstalled(container):
+        if has_dnf5_preinstalled(container):
             pass
 
         else:
@@ -1121,7 +1112,7 @@ def _generate_test_check_presence() -> Iterator[
                     r'\s+out:\s+util-linux-',
                 )
 
-            elif 'centos/stream9' in container.url or 'fedora/40' in container.url:
+            elif 'centos/stream9' in container.url:
                 yield (
                     container,
                     package_manager_class,
@@ -1206,7 +1197,7 @@ def _generate_test_check_presence() -> Iterator[
                     r'\s+out:\s+util-linux-',
                 )
 
-            elif 'centos/stream9' in container.url or 'fedora/40' in container.url:
+            elif 'centos/stream9' in container.url:
                 yield (
                     container,
                     package_manager_class,

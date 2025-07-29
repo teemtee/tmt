@@ -10,7 +10,7 @@ import re
 import sys
 import textwrap
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 import docutils.frontend
 import docutils.nodes
@@ -211,7 +211,7 @@ class RestVisitor(docutils.nodes.NodeVisitor):
     def visit_paragraph(self, node: docutils.nodes.paragraph) -> None:
         self.log_visit(node)
 
-        if isinstance(node.parent, docutils.nodes.list_item):
+        if isinstance(node.parent, (docutils.nodes.list_item, docutils.nodes.definition)):
             if self._text_prefix:
                 self._emit(self._text_prefix)
                 self._text_prefix = None
@@ -310,6 +310,36 @@ class RestVisitor(docutils.nodes.NodeVisitor):
     visit_reference = _noop_visit
     depart_reference = _noop_departure
 
+    visit_target = _noop_visit
+    depart_target = _noop_departure
+
+    visit_definition_list = _noop_visit
+    depart_definition_list = _noop_departure
+
+    visit_definition_list_item = _noop_visit
+    depart_definition_list_item = _noop_departure
+
+    def visit_term(self, node: docutils.nodes.term) -> None:
+        self.log_visit(node)
+
+        self._emit(self._style_stack[-1].apply(node.astext()))
+        self._emit('    ')
+
+        raise docutils.nodes.SkipChildren
+
+    depart_term = _noop_departure
+
+    def visit_definition(self, node: docutils.nodes.definition) -> None:
+        self.log_visit(node)
+
+        self._text_prefix = self._style_stack[-1].apply('    ')
+        self._indent += 4
+
+    def depart_definition(self, node: docutils.nodes.definition) -> None:
+        self.log_departure(node)
+
+        self._indent -= 4
+
     def _visit_admonition(self, node: docutils.nodes.Admonition, header: str) -> None:
         self.log_visit(node)
 
@@ -399,7 +429,10 @@ def parse_rst(text: str) -> docutils.nodes.document:
 
     parser = docutils.parsers.rst.Parser()
     components = (docutils.parsers.rst.Parser,)
-    settings = docutils.frontend.OptionParser(components=components).get_default_values()
+    settings = cast(
+        docutils.frontend.Values,
+        docutils.frontend.OptionParser(components=components).get_default_values(),  # type: ignore[no-untyped-call]
+    )
     document = docutils.utils.new_document('<rst-doc>', settings=settings)
 
     parser.parse(text, document)
