@@ -58,6 +58,7 @@ example:
                             master:
                                 hosts:
                                     test-master: {}
+                            # An empty group is created if no matching guests are found
                             replica: {}
                     runner:
                         hosts:
