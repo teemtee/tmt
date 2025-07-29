@@ -96,9 +96,9 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         metavar='NAMES',
         multiple=True,
         help="""
-            A list of test names that must be discovered during the run. If any of the
-            specified tests are not discovered, an exception is raised. If an execute
-            step is present, these tests must also be executed.
+            A list of test names that must be discovered during the run. If an execute
+            step is present, these tests must also be executed. If any of the
+            specified tests are not discovered or executed, an exception is raised.
             """,
         normalize=tmt.utils.normalize_string_list,
     )
@@ -249,7 +249,7 @@ class Discover(tmt.steps.Step):
         self._tests: dict[str, list[tmt.Test]] = {}
         self._failed_tests: dict[str, list[tmt.Test]] = {}
 
-        # Collection of required tests
+        # Collection of required tests per discover step phase
         self._required_test_names: dict[str, list[str]] = {}
 
         # Test will be (re)discovered in other phases/steps
