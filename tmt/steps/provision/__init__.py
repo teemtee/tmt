@@ -676,7 +676,7 @@ class GuestFacts(SerializableContainer):
         """
 
         try:
-            guest.execute(Command('rsync', '--version'))
+            guest.execute(Command('rsync', '--version'), silent=True)
 
             return True
 
