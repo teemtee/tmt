@@ -22,9 +22,10 @@
       "enabled": false
     },
     {
-      "description": "Group all container image updates into a single PR",
+      "description": "Disabled because it breaks folder structure, and need to be more selective.",
       "groupName": "Container Images",
-      "matchDatasources": ["docker"]
+      "matchDatasources": ["docker"],
+      "enabled": false
     },
     {
       "description": "Group Pre-commit dependencies together",
@@ -55,18 +56,6 @@
       "matchManagers": ["pep621"],
       "matchDepTypes": ["tool.hatch.envs.dev"],
       "enabled": true
-    },
-    {
-      "description": "Disable ALL updates for CentOS base images, as we are using major version tags",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["quay.io/centos/centos"],
-      "enabled": false
-    },
-    {
-      "description": "Disable ALL updates for Fedora base images",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["quay.io/fedora/fedora"],
-      "enabled": false
     }
   ]
 }
