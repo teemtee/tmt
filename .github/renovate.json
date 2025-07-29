@@ -15,30 +15,32 @@
       "matchManagers": ["github-actions"]
     },
     {
+      "description": "Python upgrade is a false-positive. We have to pull in both 3.x and 3.9 for pre-commit.",
+      "matchManagers": ["github-actions"],
+      "matchDepNames": ["python"],
+      "matchFileNames": ["pre-commit.yml"],
+      "enabled": false
+    },
+    {
       "description": "Group all container image updates into a single PR",
       "groupName": "Container Images",
       "matchDatasources": ["docker"]
     },
     {
-      "description": "Group Python and Pre-commit dependencies together",
-      "groupName": "Python & Pre-commit Dependencies",
-      "matchManagers": ["pep621", "pre-commit"]
+      "description": "Group Pre-commit dependencies together",
+      "groupName": "Pre-commit Dependencies",
+      "matchManagers": ["pre-commit"]
     },
     {
-      "description": "Disable updates for main runtime Python dependencies (pyproject.toml [project].dependencies)",
+      "description": "Disable all python dependencies. Specific matchers will be used.",
       "matchManagers": ["pep621"],
-      "matchDepTypes": ["dependencies"],
       "enabled": false
     },
     {
-      "description": "Disable updates for Python interpreter as we use lowest available on supported distros",
-      "matchPackageNames": ["python"],
-      "enabled": false
-    },
-    {
-      "description": "Allow updates for documentation dependencies",
+      "description": "Group documentation dependencies together",
+      "groupName": "Documentation Dependencies",
       "matchManagers": ["pep621"],
-      "matchDepTypes": ["optionalDependencies"],
+      "matchDepTypes": ["project.optional-dependencies"],
       "enabled": true,
       "matchPackageNames": [
         "/renku-sphinx-theme/",
@@ -48,9 +50,10 @@
       ]
     },
     {
-      "description": "Allow updates for development dependencies (pyproject.toml [tool.hatch.envs.dev].dependencies)",
+      "description": "Group hatch dev dependencies together",
+      "groupName": "hatch dev Dependencies",
       "matchManagers": ["pep621"],
-      "matchDepTypes": ["devDependencies"],
+      "matchDepTypes": ["tool.hatch.envs.dev"],
       "enabled": true
     },
     {
