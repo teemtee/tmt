@@ -18,9 +18,9 @@ The :ref:`discover </plugins/discover>` plugins now support a new
 ``require-test`` key. This key allows users to specify a list of
 test names that must be discovered and executed during the run.
 
-The :ref:`/plugins/prepare/shell` plugin now supports ``url`` and
-``ref`` options, so preparation scripts can be fetched directly
-from remote git repositories.
+The prepare :ref:`/plugins/prepare/shell` plugin now supports
+``url`` and ``ref`` options, so preparation scripts can be fetched
+directly from remote git repositories.
 
 
 tmt-1.53.0
