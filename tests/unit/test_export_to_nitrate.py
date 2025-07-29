@@ -2,6 +2,7 @@ from collections.abc import Iterator
 
 import pytest
 
+from tests.unit.conftest import create_path_helper
 from tmt.export.nitrate import convert_manual_to_nitrate
 from tmt.utils import Path
 
@@ -10,10 +11,9 @@ TEST_DIR = Path(__file__).parent
 
 
 @pytest.fixture(name="manual_test_path")
-def fixture_manual_test_path(tmppath: Path, make_path_fixture: callable) -> Iterator[Path]:
+def fixture_manual_test_path(tmppath: Path) -> Iterator[Path]:
     """Provides a temporary directory populated with 'manual_test' data."""
-    # We are calling the make_path_fixture from conftest here.
-    yield from make_path_fixture(tmppath, TEST_DIR, "manual_test")
+    yield from create_path_helper(tmppath, TEST_DIR, "manual_test")
 
 
 def test_export_to_nitrate_step(manual_test_path: Path):

@@ -2,7 +2,7 @@ import os
 import pathlib
 import shutil
 from collections.abc import Iterator
-from typing import Any, Callable
+from typing import Any
 
 import _pytest.logging
 import _pytest.tmpdir
@@ -13,8 +13,6 @@ from pytest_container.container import ContainerData
 from tmt.log import Logger
 from tmt.steps.provision.podman import GuestContainer, PodmanGuestData
 from tmt.utils import Path
-
-PathFixture = Callable[[Path, Path, str], Iterator[Path]]
 
 
 @pytest.fixture(name='root_logger')
@@ -91,29 +89,22 @@ def test_path() -> Path:
     return Path(__file__).parent
 
 
-@pytest.fixture
-def make_path_fixture() -> PathFixture:
+def create_path_helper(tmppath: Path, test_path: Path, name: str) -> Iterator[Path]:
     """
-    Provides a reusable helper function to create fixtures that populate a temporary directory.
-
     The returned function creates a temporary directory, populates it with test
     data from a given subdirectory, and changes the current working directory to it.
-    The original working directory is restored after the test.
+    the original working directory is restored after the test.
     """
+    path = tmppath / name
+    shutil.copytree(test_path / name, path)
 
-    def _helper(tmppath: Path, test_path: Path, name: str) -> Iterator[Path]:
-        path = tmppath / name
-        shutil.copytree(test_path / name, path)
+    original_directory = Path.cwd()
+    os.chdir(path)
 
-        original_directory = Path.cwd()
-        os.chdir(path)
-
-        try:
-            yield path
-        finally:
-            os.chdir(original_directory)
-
-    return _helper
+    try:
+        yield path
+    finally:
+        os.chdir(original_directory)
 
 
 @pytest.fixture(scope='module')
