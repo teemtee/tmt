@@ -90,6 +90,19 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         ],
     )
 
+    require_test: list[str] = field(
+        default_factory=list,
+        option=('--require-test'),
+        metavar='NAMES',
+        multiple=True,
+        help="""
+            A list of test names that must be discovered during the run. If an execute
+            step is present, these tests must also be executed. If any of the
+            specified tests are not discovered or executed, an exception is raised.
+            """,
+        normalize=tmt.utils.normalize_string_list,
+    )
+
 
 DiscoverStepDataT = TypeVar('DiscoverStepDataT', bound=DiscoverStepData)
 
@@ -236,6 +249,9 @@ class Discover(tmt.steps.Step):
         self._tests: dict[str, list[tmt.Test]] = {}
         self._failed_tests: dict[str, list[tmt.Test]] = {}
 
+        # Collection of required tests per discover step phase
+        self._required_test_names: dict[str, list[str]] = {}
+
         # Test will be (re)discovered in other phases/steps
         self.extract_tests_later: bool = False
 
@@ -246,6 +262,21 @@ class Discover(tmt.steps.Step):
         """
 
         return {*super()._preserved_workdir_members, 'tests.yaml'}
+
+    @property
+    def required_tests(self) -> list[TestOrigin]:
+        """
+        The list of required tests gathered from all phases
+        """
+
+        tests = []
+        for phase_name, required_test_names in self._required_test_names.items():
+            tests += [
+                test_origin
+                for test_origin in self.tests(phase_name=phase_name)
+                if test_origin.test.name in required_test_names
+            ]
+        return tests
 
     def load(self) -> None:
         """
@@ -438,6 +469,12 @@ class Discover(tmt.steps.Step):
 
                 # Prefix test name only if multiple plugins configured
                 prefix = f'/{phase.name}' if len(self.phases()) > 1 else ''
+
+                self._required_test_names[phase.name] = [
+                    f"{prefix}{test_name}"
+                    for test_name in cast(DiscoverStepData, phase.data).require_test
+                ]
+
                 # Check discovered tests, modify test name/path
                 for test_origin in phase.tests(enabled=True):
                     test = test_origin.test
@@ -501,6 +538,14 @@ class Discover(tmt.steps.Step):
                     for result in failed_results:
                         if test.name == result.name and test.serial_number == result.serial_number:
                             self._failed_tests[test_phase].append(test)
+
+        # Assert that all required tests were discovered
+        for phase_name, required_test_names in self._required_test_names.items():
+            for required_test in required_test_names:
+                if not any(required_test == test.name for test in self._tests.get(phase_name, [])):
+                    raise tmt.utils.DiscoverError(
+                        f"Required test '{required_test}' not discovered in phase '{phase_name}'."
+                    )
 
         # Give a summary, update status and save
         self.summary()

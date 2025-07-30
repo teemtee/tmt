@@ -1,0 +1,42 @@
+execute:
+    how: tmt
+
+/good:
+    discover:
+      - name: first
+        how: fmf
+        test:
+          - /tests/pass
+          - /tests/fail
+        require-test:
+          - /tests/pass
+          - /tests/fail
+      - name: second
+        how: shell
+        tests:
+          - name: /tests/shell-pass
+            test: /bin/true
+          - name: /tests/shell-fail
+            test: /bin/false
+        require-test:
+          - /tests/shell-pass
+          - /tests/shell-fail
+
+/bad:
+    /fmf:
+        discover:
+            how: fmf
+            test:
+              - /tests/pass
+            require-test:
+              - /tests/pass
+              - /tests/fail
+    /shell:
+        discover:
+            how: shell
+            tests:
+              - name: /tests/shell-pass
+                test: /bin/true
+            require-test:
+              - /tests/shell-pass
+              - /tests/shell-fail
