@@ -8,7 +8,7 @@ execute:
         test:
           - /tests/pass
           - /tests/fail
-        required-tests:
+        require-test:
           - /tests/pass
           - /tests/fail
       - name: second
@@ -18,7 +18,7 @@ execute:
             test: /bin/true
           - name: /tests/shell-fail
             test: /bin/false
-        required-tests:
+        require-test:
           - /tests/shell-pass
           - /tests/shell-fail
 
@@ -28,7 +28,7 @@ execute:
             how: fmf
             test:
               - /tests/pass
-            required-tests:
+            require-test:
               - /tests/pass
               - /tests/fail
     /shell:
@@ -37,6 +37,6 @@ execute:
             tests:
               - name: /tests/shell-pass
                 test: /bin/true
-            required-tests:
+            require-test:
               - /tests/shell-pass
               - /tests/shell-fail

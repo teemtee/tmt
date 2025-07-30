@@ -12,7 +12,7 @@ execute:
           - /tests/fail
           - /tests/skip
           - /tests/pass
-        required-tests:
+        require-test:
           - /tests/pass
           - /tests/fail
       - name: second
@@ -24,7 +24,7 @@ execute:
             test: /bin/false
           - name: /tests/shell-skip
             test: tmt-report-result skipped-test SKIP
-        required-tests:
+        require-test:
           - /tests/shell-pass
           - /tests/shell-fail
 
@@ -35,7 +35,7 @@ execute:
         test:
           - /tests/pass
           - /tests/pass
-        required-tests:
+        require-test:
           - /tests/pass
 
       - name: second
@@ -44,6 +44,6 @@ execute:
           - /tests/pass
           - /tests/skip
           - /tests/skip
-        required-tests:
+        require-test:
           - /tests/pass
           - /tests/skip

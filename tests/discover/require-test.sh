@@ -5,7 +5,7 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "workdir=\$(mktemp -d)" 0 "Create tmp directory"
-        rlRun 'pushd required-tests'
+        rlRun 'pushd require-test'
     rlPhaseEnd
 
     rlPhaseStartTest "All tests are required and should be discovered"

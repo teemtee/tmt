@@ -90,9 +90,9 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         ],
     )
 
-    required_tests: list[str] = field(
+    require_test: list[str] = field(
         default_factory=list,
-        option=('--required-tests'),
+        option=('--require-test'),
         metavar='NAMES',
         multiple=True,
         help="""
@@ -265,6 +265,10 @@ class Discover(tmt.steps.Step):
 
     @property
     def required_tests(self) -> list[TestOrigin]:
+        """
+        The list of required tests gathered from all phases
+        """
+
         tests = []
         for phase_name, required_test_names in self._required_test_names.items():
             tests += [
@@ -468,7 +472,7 @@ class Discover(tmt.steps.Step):
 
                 self._required_test_names[phase.name] = [
                     f"{prefix}{test_name}"
-                    for test_name in cast(DiscoverStepData, phase.data).required_tests
+                    for test_name in cast(DiscoverStepData, phase.data).require_test
                 ]
 
                 # Check discovered tests, modify test name/path

@@ -77,6 +77,6 @@ tier: 3
     summary: Change test metadata within discover phase
     test: ./adjust-tests.sh
 
-/required-tests:
+/require-test:
     summary: All required tests are discovered
-    test: ./required-tests.sh
+    test: ./require-test.sh
