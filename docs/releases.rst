@@ -7,21 +7,6 @@
 tmt-1.54.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A new :ref:`/spec/plans/cleanup` step has been introduced which
-takes care of removing guests and pruning of the workdir. This
-was previously handled by the :ref:`/spec/plans/finish` step and
-has been extracted into a dedicated step in order to allow running
-finishing tasks without necessarily stopping all guests as well.
-This will allow future extensions of the :ref:`/plugins/finish`.
-
-The :ref:`discover </plugins/discover>` plugins now support a new
-``require-test`` key. This key allows users to specify a list of
-test names that must be discovered and executed during the run.
-
-The prepare :ref:`/plugins/prepare/shell` plugin now supports
-``url`` and ``ref`` options, so preparation scripts can be fetched
-directly from remote git repositories.
-
 A new :ref:`/plugins/test-checks/journal` check has been added to
 monitor the system journal for messages recorded during test
 execution using the ``journalctl``. It can be configured to check
@@ -31,6 +16,34 @@ messages that could otherwise be missed by the
 cleared at some point. The familiar ``failure-pattern`` and
 ``ignore-pattern`` filters can be used to modify the behaviour
 of the check.
+
+The :ref:`discover </plugins/discover>` plugins now support a new
+``require-test`` key. This key allows users to specify a list of
+test names that must be discovered and executed during the run.
+
+The prepare :ref:`/plugins/prepare/shell` plugin now supports
+``url`` and ``ref`` options, so preparation scripts can be fetched
+directly from remote git repositories.
+
+A new :ref:`/spec/plans/cleanup` step has been introduced which
+takes care of removing guests and pruning of the workdir. This
+was previously handled by the :ref:`/spec/plans/finish` step and
+has been extracted into a dedicated step in order to allow running
+finishing tasks without necessarily stopping all guests as well.
+This will allow future extensions of the :ref:`/plugins/finish`.
+
+Specification for the new ansible inventory feature has been
+outlined. It defines the plan :ref:`/spec/plans/ansible` key which
+can be used to define a custom inventory layout and the provision
+:ref:`/spec/plans/provision/ansible` key for defining ansible
+groups and variables for individual guests.
+
+Robustness of the FIPS mode implementation was enhanced by moving
+from a reliance on the systemd/dracut-configured auto-policy to an
+explicit configuration of the FIPS crypto-policy.
+
+Custom ``ssh`` options are now provided to the command in the
+correct order so that they have the desired effect.
 
 
 tmt-1.53.0

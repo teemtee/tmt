@@ -881,7 +881,8 @@ Link Dupont, Mario Casquero, Martin Klusoň, Pavel Holica,
 Otto Šabart, Ismail Ibrahim Quwarah, Sergei Petrosian, Tom
 Koscielniak, Han Han, Luigi Pellecchia, Siteshwar Vashisht,
 Chris Kyrouac, Xiaofeng Wang, Coiby Xu, Michal Pospíšil, Wayne
-Sun, Evgeni Vakhonin, Mike Stowell, Therese Cornell and Mingyu Shi.
+Sun, Evgeni Vakhonin, Mike Stowell, Therese Cornell, Mingyu Shi,
+Conor Tull, Athrey Vinay, David Pascual and Vaibhav D. Aren.
 
 
 Copyright
