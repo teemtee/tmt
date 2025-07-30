@@ -18,6 +18,11 @@ The :ref:`discover </plugins/discover>` plugins now support a new
 ``require-test`` key. This key allows users to specify a list of
 test names that must be discovered and executed during the run.
 
+As the first step towards implementing support for executing a
+subset of tests based on reported results, the first draft of the
+:ref:`/spec/recipe` specification was created to gather initial
+feedback on the proposed approach.
+
 
 tmt-1.53.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
