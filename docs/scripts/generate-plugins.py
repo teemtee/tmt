@@ -11,6 +11,7 @@ import tmt.container
 import tmt.log
 import tmt.plugins
 import tmt.steps
+import tmt.steps.cleanup
 import tmt.steps.discover
 import tmt.steps.execute
 import tmt.steps.finish
@@ -203,7 +204,12 @@ def main() -> None:
     # ... explore available plugins...
     tmt.plugins.explore(logger)
 
-    if step_name == 'discover':
+    if step_name == 'cleanup':
+        plugin_generator = _create_step_plugin_iterator(
+            tmt.steps.cleanup.CleanupPlugin._supported_methods
+        )
+
+    elif step_name == 'discover':
         plugin_generator = _create_step_plugin_iterator(
             tmt.steps.discover.DiscoverPlugin._supported_methods
         )

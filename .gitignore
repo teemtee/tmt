@@ -3,6 +3,7 @@
 /tmp/
 docs/code/autodocs/*.rst
 docs/code/template-extensions.rst
+docs/plugins/cleanup.rst
 docs/plugins/discover.rst
 docs/plugins/execute.rst
 docs/plugins/finish.rst

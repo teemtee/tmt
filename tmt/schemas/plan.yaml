@@ -68,6 +68,13 @@ properties:
   # for details.
   finish: true
 
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#cleanup
+  #
+  # NOTE: the `cleanup` schema will be extended dynamically to support all
+  # cleanup plugins known to tmt in runtime. See tmt.utils.load_schema_store
+  # for details.
+  cleanup: true
+
   # https://tmt.readthedocs.io/en/stable/spec/core.html#id
   id:
     $ref: "/schemas/core#/definitions/id"
