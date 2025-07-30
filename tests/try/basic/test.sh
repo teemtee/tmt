@@ -39,6 +39,8 @@ rlJournalStart
         rlAssertGrep "Let's try.*/plans/basic" $rlRun_LOG
         rlAssertGrep "cmd: rpm -q --whatprovides tree || dnf.* install -y  tree" $rlRun_LOG
         rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
+        rlAssertGrep "container: stopped" $rlRun_LOG
+        rlAssertGrep "container: removed" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Verbose Output"
