@@ -7,10 +7,19 @@
 tmt-1.54.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :ref:`provision </plugins/provision>` plugins now support
-setting an environment key. This allows users to define
-environment variables that are injected directly into the
-test environment for each guest during the provision phase.
+A new :ref:`/spec/plans/cleanup` step has been introduced which
+takes care of removing guests and pruning of the workdir. This
+was previously handled by the :ref:`/spec/plans/finish` step and
+has been extracted into a dedicated step in order to allow running
+finishing tasks without necessarily stopping all guests as well.
+This will allow future extensions of the :ref:`/plugins/finish`.
+
+The :ref:`discover </plugins/discover>` plugins now support a new
+``require-test`` key. This key allows users to specify a list of
+test names that must be discovered and executed during the run.
+
+The provision plugins now support setting an ``environment`` key.
+See the :ref:`common provision keys </plugins/provision/common-keys>` section for details.
 
 
 tmt-1.53.0

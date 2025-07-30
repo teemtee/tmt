@@ -53,3 +53,14 @@ default to relevant commands:
 Additional SSH options can be specified either via ``ssh-option`` key
 of respective plugins, or by setting ``TMT_SSH_*`` environment
 variables; see :ref:`command-variables` for details.
+
+.. _/plugins/provision/common-keys:
+
+Keys supported by all provision plugins
+---------------------------------------
+
+The following keys are supported by all provision plugins:
+
+* ``environment`` — Setting the environment key allows users to define
+  environment variables that are injected directly into the test environment
+  for each guest during the provision phase.
