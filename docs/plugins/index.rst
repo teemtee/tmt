@@ -22,4 +22,5 @@ Here you will find documentation for plugins shipped with tmt.
     Execute <execute>
     Finish <finish>
     Report <report>
+    Cleanup <cleanup>
     Test Checks <test-checks>

@@ -24,7 +24,7 @@ PLUGINS_TEMPLATE = $(TEMPLATESDIR)/plugins.rst.j2
 GENERATED_DIRECTORIES = spec stories
 
 # A list of tmt step names
-STEPS = discover provision prepare execute finish report
+STEPS = discover provision prepare execute finish report cleanup
 
 # A list of `plugins/*.rst` files to generate
 PLUGIN_TARGETS = $(addsuffix .rst,$(addprefix plugins/,$(STEPS))) plugins/prepare-feature.rst plugins/test-checks.rst
@@ -83,6 +83,9 @@ code/template-extensions.rst: $(SCRIPTSDIR)/generate-template-extensions.py \
                               $(TEMPLATESDIR)/template-extensions.rst.j2 \
                               $(TMTDIR)/utils/templates.py
 	$(SCRIPTSDIR)/generate-template-extensions.py $(TEMPLATESDIR)/template-extensions.rst.j2 $@
+
+plugins/cleanup.rst: $(call plugins-dependencies)
+	$(call build-plugins)
 
 plugins/discover.rst: $(call plugins-dependencies)
 	$(call build-plugins)

@@ -1,0 +1,4 @@
+summary: Check that the test output is correctly shown
+description:
+    In verbose mode the whole test output should be visible.
+    It should not contain irrelevant messages.

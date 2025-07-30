@@ -1,0 +1,88 @@
+summary: Define general Ansible settings for a plan
+
+story: |
+    As a user, I want to configure Ansible-related settings for the plan,
+    for example, the ability to define the structure of the Ansible inventory
+    using a customizable layout template.
+
+description: |
+    When running tests, a static inventory file is generated from
+    provided metadata. The ``ansible.inventory.layout`` key allows
+    users to specify a YAML template file defining the desired inventory group
+    hierarchy and layout.
+
+    This layout will be used to organize provisioned guests under
+    Ansible groups accordingly. If no layout is provided, a simple
+    default basic layout is used.
+
+example:
+  - |
+    # sample-plan.fmf (input fmf file)
+    ansible:
+        inventory:
+            layout: path/to/the/layout.yaml
+
+    provision:
+        - name: test-master
+          role: master  # Ansible group can be specified with role key.
+        - name: test-runner
+          role: runner
+        - name: test-client
+          role: client
+        - name: sidecar-vm  # if no group is specified, the guest is added to 'ungrouped'
+
+    execute:
+        how: tmt
+
+  - |
+    # path/to/the/layout.yaml (input inventory layout, relative to fmf root)
+    all:
+        children:
+            linux:
+                children:
+                    server:
+                        children:
+                            master: {}
+                            replica: {}
+                    client: {}
+                    runner: {}
+
+  - |
+    # Output inventory file
+    all:
+        children:
+            linux:
+                children:
+                    server:
+                        children:
+                            master:
+                                hosts:
+                                    test-master: {}
+                            # An empty group is created if no matching guests are found
+                            replica: {}
+                    runner:
+                        hosts:
+                            test-runner: {}
+                    client:
+                        hosts:
+                            test-client: {}
+            ungrouped:
+                hosts:
+                    sidecar-vm: {}
+        hosts:
+            test-master:
+                ansible_host: 127.0.0.1
+                ansible_user: root
+                ansible_port: 10028
+            test-client:
+                ansible_host: 127.0.0.1
+                ansible_user: root
+                ansible_port: 10031
+            test-runner:
+                ansible_host: 127.0.0.1
+                ansible_user: root
+                ansible_port: 10033
+            sidecar-vm:
+                ansible_host: 127.0.0.1
+                ansible_user: root
+                ansible_port: 10034

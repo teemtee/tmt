@@ -1,0 +1,7 @@
+provision:
+  - name: one
+    how: container
+  - name: two
+    how: container
+execute:
+    script: /bin/true
