@@ -21,7 +21,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Remote Script"
-        rlRun -s "tmt -vvv run provision prepare finish plan -n url" 0 "Prepare using a remote script"
+        rlRun -s "tmt -vvv run provision prepare cleanup plan -n url" 0 "Prepare using a remote script"
         rlAssertGrep "Hello world" "$rlRun_LOG"
     rlPhaseEnd
 

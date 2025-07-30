@@ -2,9 +2,9 @@ provision:
     how: container
 prepare:
     how: shell
-    url: https://github.com/teemtee/tmt.git
+    url: https://github.com/teemtee/tests
     ref: main
-    script: cd $TMT_PREPARE_SHELL_URL_REPOSITORY && echo "Hello world"
+    script: cd $TMT_PREPARE_SHELL_URL_REPOSITORY/scripts && ./hello.sh
 execute:
     how: tmt
     script: tmt --help
