@@ -104,3 +104,6 @@ example:
   - |
     # Reproduce a run using a recipe file
     tmt run --recipe /path/to/recipe.yaml
+
+link:
+  - relates: https://github.com/teemtee/tmt/issues/2332
