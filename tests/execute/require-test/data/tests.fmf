@@ -1,0 +1,8 @@
+/pass:
+    test: /bin/true
+
+/fail:
+    test: /bin/false
+
+/skip:
+    test: tmt-report-result skipped-test SKIP

@@ -1,0 +1,49 @@
+provision:
+    how: container
+execute:
+    how: tmt
+
+/good:
+    discover:
+      - name: first
+        how: fmf
+        test:
+          - /tests/pass
+          - /tests/fail
+          - /tests/skip
+          - /tests/pass
+        require-test:
+          - /tests/pass
+          - /tests/fail
+      - name: second
+        how: shell
+        tests:
+          - name: /tests/shell-pass
+            test: /bin/true
+          - name: /tests/shell-fail
+            test: /bin/false
+          - name: /tests/shell-skip
+            test: tmt-report-result skipped-test SKIP
+        require-test:
+          - /tests/shell-pass
+          - /tests/shell-fail
+
+/skipped:
+    discover:
+      - name: first
+        how: fmf
+        test:
+          - /tests/pass
+          - /tests/pass
+        require-test:
+          - /tests/pass
+
+      - name: second
+        how: fmf
+        test:
+          - /tests/pass
+          - /tests/skip
+          - /tests/skip
+        require-test:
+          - /tests/pass
+          - /tests/skip
