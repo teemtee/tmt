@@ -19,7 +19,8 @@ The :ref:`discover </plugins/discover>` plugins now support a new
 test names that must be discovered and executed during the run.
 
 The provision plugins now support setting an ``environment`` key.
-See the :ref:`common provision keys </plugins/provision/common-keys>` section for details.
+See the :ref:`common provision keys </plugins/provision/common-keys>`
+section for details.
 
 
 tmt-1.53.0
