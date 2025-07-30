@@ -56,8 +56,8 @@ example:
     # Using `how` key to pick the check.
     check:
       - avc
-      - kernel-panic
-      - how: test-inspector
+      - watchdog
+      - how: dmesg
         enabled: false
 
   - |
