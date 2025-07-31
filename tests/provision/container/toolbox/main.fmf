@@ -5,8 +5,7 @@ description:
     `flatpak-spawn --host`. This is a common setup used in Fedora
     Silverblue.
 
-require:
-    - toolbox
+duration: 30m
 tag+:
   - provision-only
   - provision-container
@@ -21,4 +20,4 @@ adjust+:
         result: xfail
     when: distro >= fedora-41
     because: |
-      We are not interested in AVCs for this test due to complicated setup.
+        We are not interested in AVCs for this test due to complicated setup.
