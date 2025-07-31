@@ -58,11 +58,11 @@
             result: respect
 
     /unit-test:
-        test: systemd-run --unit=test-fail.service /bin/sh -c 'logger -p user.err "fail"; sleep 5; exit 1'
+        test: systemd-run --unit=test-fail.service /bin/sh -c 'echo fail; exit 1'; sleep 5
         check:
           - how: journal
             unit: test-fail.service
-            priority: err
+            priority: warning
             failure-pattern:
               - 'fail'
 
