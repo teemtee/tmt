@@ -21,6 +21,7 @@ test.framework: beakerlib shell"
 rlJournalStart
     rlPhaseStartSetup
         rlRun "set -o pipefail"
+        rlRun "export LANG=C"
         rlRun "tmpdir=$(mktemp -d)"
 
         rlRun "echo \"$EXPECTED_PLUGIN_LIST\" > $tmpdir/expected-plugin-list.txt"
