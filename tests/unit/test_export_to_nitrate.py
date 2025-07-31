@@ -6,14 +6,11 @@ from tests.unit.conftest import create_path_helper
 from tmt.export.nitrate import convert_manual_to_nitrate
 from tmt.utils import Path
 
-# The root directory of the tests, used to locate test data
-TEST_DIR = Path(__file__).parent
-
 
 @pytest.fixture(name="manual_test_path")
-def fixture_manual_test_path(tmppath: Path) -> Iterator[Path]:
+def fixture_manual_test_path(tmppath: Path, test_path: Path) -> Iterator[Path]:
     """Provides a temporary directory populated with 'manual_test' data."""
-    yield from create_path_helper(tmppath, TEST_DIR, "manual_test")
+    yield from create_path_helper(tmppath, test_path, "manual_test")
 
 
 def test_export_to_nitrate_step(manual_test_path: Path):

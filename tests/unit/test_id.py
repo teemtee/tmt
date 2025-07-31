@@ -15,9 +15,9 @@ runner = CliRunner()
 
 
 @pytest.fixture(name='test_path')
-def fixture_test_path() -> Path:
+def fixture_test_path(test_path) -> Path:
     """Provides the path to the test data for 'id' tests"""
-    return Path(__file__).parent / "id"
+    return test_path / "id"
 
 
 @pytest.fixture
