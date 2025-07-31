@@ -27,7 +27,7 @@ class FinishShell(tmt.steps.finish.FinishPlugin[tmt.steps.finish.FinishStepData]
     Scripts can also be fetched from a remote git repository.
     Specify the ``url`` for the repository and optionally ``ref``
     to checkout a specific branch, tag or commit.
-    ``TMT_PREPARE_SHELL_URL_REPOSITORY`` will hold the value of the
+    ``TMT_FINISH_SHELL_URL_REPOSITORY`` will hold the value of the
     repository path.
 
     .. code-block:: yaml
@@ -36,12 +36,14 @@ class FinishShell(tmt.steps.finish.FinishPlugin[tmt.steps.finish.FinishStepData]
             how: shell
             url: https://github.com/teemtee/tmt.git
             ref: main
-            script: cd $TMT_PREPARE_SHELL_URL_REPOSITORY && make docs
+            script: cd $TMT_FINISH_SHELL_URL_REPOSITORY && make docs
 
     Use the :ref:`/spec/core/order` attribute to select in which order
     finishing tasks should happen if there are multiple configs. Default
     order is ``50``.
     """
+
+    _cloned_repo_path_envvar_name = "TMT_FINISH_SHELL_URL_REPOSITORY"
 
     # We are reusing "prepare" step for "finish",
     # and they both have different expectations
