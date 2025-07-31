@@ -112,7 +112,7 @@ class Config:
             return None
 
         try:
-            return model.parse_obj(subtree.data)
+            return model.model_validate(subtree.data)
 
         except ValidationError as error:
             raise tmt.utils.SpecificationError(
