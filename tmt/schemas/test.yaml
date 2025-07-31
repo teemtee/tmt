@@ -170,5 +170,19 @@ definitions:
           - type: array
             items:
               type: string
+      failure-pattern:
+        oneOf:
+          - type: string
+          - type: array
+            items:
+              type: string
+      dmesg:
+        type: boolean
+      unit:
+        type: string
+      identifier:
+        type: string
+      priority:
+        type: string
     required:
       - how
