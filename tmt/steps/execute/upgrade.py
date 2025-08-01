@@ -42,6 +42,18 @@ class ExecuteUpgradeData(ExecuteInternalData):
         metavar='PLAN_NAME',
         help='Upgrade path corresponding to a plan name in the repository with upgrade tasks.',
     )
+    skip_tests_before: bool = field(
+        default=False,
+        is_flag=True,
+        option='--skip-tests-before',
+        help='If set, discovered tests would not run *before* the upgrade.',
+    )
+    skip_tests_after: bool = field(
+        default=False,
+        is_flag=True,
+        option='--skip-tests-after',
+        help='If set, discovered tests would not run *after* the upgrade.',
+    )
 
     # "Inherit" from tmt.steps.discover.fmf.DiscoverFmfStepData
     ref: Optional[str] = field(
@@ -248,12 +260,22 @@ class ExecuteUpgrade(ExecuteInternal):
             self._results = []
             return
 
-        self.verbose('upgrade', 'run tests on the old system', color='blue', shift=1)
-        self._run_test_phase(guest, BEFORE_UPGRADE_PREFIX, logger)
+        if self.data.skip_tests_before:
+            self.verbose('upgrade', 'skipping tests on the old system', color='blue', shift=1)
+
+        else:
+            self.verbose('upgrade', 'run tests on the old system', color='blue', shift=1)
+            self._run_test_phase(guest, BEFORE_UPGRADE_PREFIX, logger)
+
         self.verbose('upgrade', 'perform the system upgrade', color='blue', shift=1)
         self._perform_upgrade(guest, logger)
-        self.verbose('upgrade', 'run tests on the new system', color='blue', shift=1)
-        self._run_test_phase(guest, AFTER_UPGRADE_PREFIX, logger)
+
+        if self.data.skip_tests_after:
+            self.verbose('upgrade', 'skipping tests on the new system', color='blue', shift=1)
+
+        else:
+            self.verbose('upgrade', 'run tests on the new system', color='blue', shift=1)
+            self._run_test_phase(guest, AFTER_UPGRADE_PREFIX, logger)
 
     def _get_plan(self, upgrades_repo: Path) -> tmt.base.Plan:
         """
