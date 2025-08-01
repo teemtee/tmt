@@ -45,6 +45,10 @@ explicit configuration of the FIPS crypto-policy.
 Custom ``ssh`` options are now provided to the command in the
 correct order so that they have the desired effect.
 
+The provision plugins now support setting an ``environment`` key.
+See the :ref:`common provision keys </plugins/provision/common-keys>`
+section for details.
+
 
 tmt-1.53.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

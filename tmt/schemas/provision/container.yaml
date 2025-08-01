@@ -31,6 +31,9 @@ properties:
   role:
     $ref: "/schemas/common#/definitions/role"
 
+  environment:
+    $ref: "/schemas/common#/definitions/environment"
+
   user:
     type: string
 
