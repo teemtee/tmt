@@ -16,3 +16,13 @@ execute:
     summary: Basic upgrade test with upgrade path
     execute+:
         upgrade-path: $@{upgrade-path}
+/skip-tests:
+    /before:
+        execute+:
+            upgrade-path: $@{upgrade-path}
+            skip-tests-before: true
+
+    /after:
+        execute+:
+            upgrade-path: $@{upgrade-path}
+            skip-tests-after: true
