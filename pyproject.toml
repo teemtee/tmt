@@ -183,10 +183,7 @@ dev-mode = false
 
 [tool.hatch.envs.test]
 template = "dev"
-description = "Run scripts with multiple Python versions"
-
-[[tool.hatch.envs.test.matrix]]
-python = ["3.9", "3.12", "3.13"]
+description = "Test environment"
 
 [tool.hatch.envs.docs]
 dependencies = [
@@ -248,11 +245,6 @@ module = [
     "mrack.*",
     ]
 ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-# Workaround for https://github.com/python/mypy/issues/12664
-module = "ruamel.*"
-cache_dir = "/dev/null"
 
 [tool.pyright]
 include = [

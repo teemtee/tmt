@@ -11,13 +11,13 @@ rlJournalStart
 
     opt="--scratch -i $run"
     rlPhaseStartTest "Wrong provision"
-        rlRun -s "tmt run $opt plan -n wrong provision finish" \
+        rlRun -s "tmt run $opt plan -n wrong provision cleanup" \
             2 "Names not unique"
         rlAssertGrep "Duplicate phase name 'client' in step 'provision'" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Correct provision without roles"
-        rlRun -s "tmt run $opt plan -n noroles provision finish" 0
+        rlRun -s "tmt run $opt plan -n noroles provision cleanup" 0
         rlAssertGrep "2 guests provisioned" $rlRun_LOG
         # how: container should be there twice
         rlRun "grep 'how: container' $rlRun_LOG | wc -l > lines"
@@ -37,7 +37,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Correct provision with roles"
-        rlRun -s "tmt run $opt plan -n /roles provision finish" 0
+        rlRun -s "tmt run $opt plan -n /roles provision cleanup" 0
         rlAssertGrep "4 guests provisioned" $rlRun_LOG
         # how: container should be there 4 times
         rlRun "grep 'how: container' $rlRun_LOG | wc -l > lines"

@@ -84,15 +84,11 @@ class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, PluginOutcome]):
 
 class Finish(tmt.steps.Step):
     """
-    Perform the finishing tasks and clean up provisioned guests.
+    Perform the finishing tasks
 
     Additional actions to be performed after the test execution has been
     completed. Counterpart of the ``prepare`` step useful for various
-    cleanup actions. Also takes care of stopping and removing guests.
-
-    Note that the ``finish`` step is also run when any of the previous
-    steps failed (for example when the environment preparation was not
-    successful) so that provisioned systems are not kept running.
+    cleanup or log-gathering actions.
     """
 
     _plugin_base_class = FinishPlugin
@@ -262,17 +258,6 @@ class Finish(tmt.steps.Step):
                 self.info('')
 
             self.summary()
-
-        # Stop and remove provisioned guests, even the partially provisioned ones.
-        for guest in self.plan.provision.guests:
-            guest.fetch_logs(logger=self._logger)
-            guest.stop()
-            guest.remove()
-
-        # Prune all irrelevant files and dirs
-        assert self.plan.my_run is not None
-        if not (self.plan.my_run.opt('keep') or self.is_dry_run):
-            self.plan.prune()
 
         # Update status and save
         self.status('done')

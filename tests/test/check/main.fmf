@@ -9,6 +9,14 @@ tier: 2
       - provision-local
       - provision-virtual
 
+/journal:
+    test: ./test-journal.sh
+    tag+:
+      - provision-only
+      - provision-container
+      - provision-local
+      - provision-virtual
+
 /avc:
     test: ./test-avc.sh
     tag+:

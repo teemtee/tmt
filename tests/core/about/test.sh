@@ -14,7 +14,7 @@ step.finish: ansible shell
 step.prepare: ansible feature install shell
 step.provision: artemis beaker bootc connect container local virtual.testcloud
 step.report: display html junit polarion reportportal
-test.check: avc coredump dmesg internal/abort internal/guest internal/interrupt internal/invocation internal/permission internal/timeout watchdog
+test.check: avc coredump dmesg internal/abort internal/guest internal/interrupt internal/invocation internal/permission internal/timeout journal watchdog
 test.framework: beakerlib shell"
 
 

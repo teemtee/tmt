@@ -1,3 +1,4 @@
+import threading
 from typing import Any, Optional, cast
 
 import fmf
@@ -8,10 +9,11 @@ import tmt.log
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
+import tmt.utils.git
 from tmt.container import container, field
 from tmt.steps import safe_filename
 from tmt.steps.provision import Guest
-from tmt.utils import ShellScript
+from tmt.utils import Command, EnvVarValue, ShellScript
 
 PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
 
@@ -27,6 +29,28 @@ class PrepareShellData(tmt.steps.prepare.PrepareStepData):
         normalize=tmt.utils.normalize_shell_script_list,
         serialize=lambda scripts: [str(script) for script in scripts],
         unserialize=lambda serialized: [ShellScript(script) for script in serialized],
+    )
+
+    url: Optional[str] = field(
+        default=None,
+        option='--url',
+        metavar='REPOSITORY',
+        help="""
+            URL of a repository to clone. It will be pushed to guests before
+            running any scripts,
+            and environment variable ``TMT_PREPARE_SHELL_URL_REPOSITORY`` will
+            hold its path on the guest.
+            """,
+    )
+
+    ref: Optional[str] = field(
+        default=None,
+        option='--ref',
+        metavar='REVISION',
+        help="""
+            Branch, tag or commit to checkout in the git repository
+            cloned when ``url`` is specified.
+            """,
     )
 
     # ignore[override] & cast: two base classes define to_spec(), with conflicting
@@ -55,9 +79,25 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
               - sudo dnf install -y 'dnf-command(copr)'
               - sudo dnf copr enable -y psss/tmt
               - sudo dnf install -y tmt
+
+    Scripts can also be fetched from a remote git repository.
+    Specify the ``url`` for the repository and optionally ``ref``
+    to checkout a specific branch, tag or commit.
+    ``TMT_PREPARE_SHELL_URL_REPOSITORY`` will hold the value of the
+    repository path.
+
+    .. code-block:: yaml
+
+        prepare:
+            how: shell
+            url: https://github.com/teemtee/tmt.git
+            ref: main
+            script: cd $TMT_PREPARE_SHELL_URL_REPOSITORY && make docs
     """
 
     _data_class = PrepareShellData
+    _url_clone_lock = threading.Lock()
+    _cloned_repo_path_envvar_name = 'TMT_PREPARE_SHELL_URL_REPOSITORY'
 
     def go(
         self,
@@ -80,6 +120,35 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
         workdir = self.step.plan.worktree
         assert workdir is not None  # narrow type
+
+        if self.data.url:
+            repo_path = workdir / "repository"
+
+            environment[self._cloned_repo_path_envvar_name] = EnvVarValue(repo_path.resolve())
+
+            if not self.is_dry_run:
+                with self._url_clone_lock:
+                    if not repo_path.exists():
+                        repo_path.parent.mkdir(parents=True, exist_ok=True)
+                        tmt.utils.git.git_clone(
+                            url=self.data.url,
+                            destination=repo_path,
+                            shallow=False,
+                            env=environment,
+                            logger=self._logger,
+                        )
+
+                        if self.data.ref:
+                            self.info('ref', self.data.ref, 'green')
+                            self.run(
+                                Command('git', 'checkout', '-f', self.data.ref), cwd=repo_path
+                            )
+
+                guest.push(
+                    source=repo_path,
+                    destination=repo_path,
+                    options=["-s", "-p", "--chmod=755"],
+                )
 
         if not self.is_dry_run:
             topology = tmt.steps.Topology(self.step.plan.provision.ready_guests)

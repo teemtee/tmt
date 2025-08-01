@@ -595,7 +595,7 @@ class DistGitHandler:
         except Exception as error:
             raise GeneralError(f"Couldn't read '{self.sources_file_name}' file.") from error
         if not ret_values:
-            raise GeneralError("No sources found in '{self.sources_file_name}' file.")
+            raise GeneralError(f"No sources found in '{self.sources_file_name}' file.")
         return ret_values
 
     def its_me(self, remotes: list[str]) -> bool:
