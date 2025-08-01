@@ -1,6 +1,17 @@
-discover:
-    how: fmf
-provision:
-    how: local
-execute:
-    how: tmt
+/plans:
+    discover:
+        how: fmf
+    provision:
+        how: local
+    execute:
+        how: tmt
+
+    /all:
+        summary: Run all tests
+
+    /adjust-tests:
+        summary: Change duration of specific test
+        discover+:
+            test: /duration-modified
+            adjust-tests:
+            - duration+: "*2"

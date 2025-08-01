@@ -17,6 +17,13 @@
         framework: beakerlib
         test: ./long.sh
 
+/duration-modified:
+    summary: Adjust the duration in test metadata
+    duration: 2s
+    test: sleep 1s
+    adjust:
+      - when: slow-arch == yes
+        duration+: '*2.5'
 adjust:
   - when: tty == true
     tty: true
