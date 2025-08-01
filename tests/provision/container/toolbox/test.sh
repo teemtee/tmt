@@ -13,7 +13,14 @@ rlJournalStart
         # Add a toolbox user. Running toolbox under root user does not work well,
         # so a separate user account is created.
         rlRun "useradd $toolbox_user"
-        rlRun "toolbox_user_id=$(id -u $toolbox_user)"
+
+        # Wait for the system to provision subuids for the new user.
+        # This prevents a race condition where `toolbox create` runs before
+        # the user's subuids are available.
+        rlLog "Waiting for subuid/subgid allocation for user '$toolbox_user'..."
+        rlWaitForCmd "grep -q '^${toolbox_user}:' /etc/subuid" 15 1
+
+        rlRun "toolbox_user_id=\$(id -u $toolbox_user)"
 
         # Make sure systemd user session runs for the new user. The user session
         # hosts a dbus session, which is required for toolbox.
