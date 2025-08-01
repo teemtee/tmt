@@ -91,6 +91,18 @@ def nested_file(tmppath: Path) -> tuple[Path, Path, Path]:
     return top_dir, sub_dir, file
 
 
+# Present two trees we have for identifier unit tests as fixtures, to make them
+# usable in other tests as well.
+@pytest.fixture(name='id_tree_defined')
+def fixture_id_tree_defined() -> fmf.Tree:
+    return fmf.Tree(Path(__file__).parent / 'id' / 'defined')
+
+
+@pytest.fixture(name='id_tree_empty')
+def fixture_id_tree_empty() -> fmf.Tree:
+    return fmf.Tree(Path(__file__).parent / 'id' / 'empty')
+
+
 _test_public_git_url_input = [
     ('git@github.com:teemtee/tmt.git', 'https://github.com/teemtee/tmt.git'),
     (

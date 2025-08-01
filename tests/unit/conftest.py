@@ -1,9 +1,11 @@
+import os
 import pathlib
+import shutil
+from collections.abc import Iterator
 from typing import Any
 
 import _pytest.logging
 import _pytest.tmpdir
-import fmf
 import py.path
 import pytest
 from pytest_container.container import ContainerData
@@ -81,6 +83,30 @@ except ImportError:
         return Path(str(tmpdir))
 
 
+@pytest.fixture
+def test_path() -> Path:
+    """Returns the path to the directory containing the tests."""
+    return Path(__file__).parent
+
+
+def create_path_helper(tmppath: Path, test_path: Path, name: str) -> Iterator[Path]:
+    """
+    The returned function creates a temporary directory, populates it with test
+    data from a given subdirectory, and changes the current working directory to it.
+    the original working directory is restored after the test.
+    """
+    path = tmppath / name
+    shutil.copytree(test_path / name, path)
+
+    original_directory = Path.cwd()
+    os.chdir(path)
+
+    try:
+        yield path
+    finally:
+        os.chdir(original_directory)
+
+
 @pytest.fixture(scope='module')
 def source_dir(tmppath_factory: TempPathFactory) -> Path:
     """
@@ -105,18 +131,6 @@ def target_dir(tmppath_factory: TempPathFactory) -> Path:
     """
 
     return tmppath_factory.mktemp('target')
-
-
-# Present two trees we have for identifier unit tests as fixtures, to make them
-# usable in other tests as well.
-@pytest.fixture(name='id_tree_defined')
-def fixture_id_tree_defined() -> fmf.Tree:
-    return fmf.Tree(Path(__file__).parent / 'id' / 'defined')
-
-
-@pytest.fixture(name='id_tree_empty')
-def fixture_id_tree_empty() -> fmf.Tree:
-    return fmf.Tree(Path(__file__).parent / 'id' / 'empty')
 
 
 @pytest.fixture(name='guest')
