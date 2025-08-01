@@ -4,6 +4,14 @@
     Releases
 ======================
 
+tmt-1.55.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+New keys, ``skip-tests-before`` and ``skip-tests-after``, were added to
+:ref:`/plugins/execute/upgrade` plugin, to allow not running discovered
+tests on the old or on the new system, respectively.
+
+
 tmt-1.54.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

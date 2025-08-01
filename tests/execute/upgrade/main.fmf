@@ -26,3 +26,7 @@ tier: 4
     summary: Plan and upgrade path in the local repo
     framework: shell
     test: cd local && tmt run -vvv --remove plan --name plan
+
+/skip-tests:
+    summary: Skip tests before and/or after upgrade
+    test: ./skip-test.sh
