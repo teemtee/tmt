@@ -1,28 +1,24 @@
 # mypy: disable-error-code="assignment"
 from __future__ import annotations
 
-import pydantic
+import importlib.metadata
 
-if pydantic.__version__.startswith('1.'):
-    from pydantic import (
-        BaseModel,
-        Extra,
-        Field,
-        HttpUrl,
-        ValidationError,
-    )
-else:
-    from pydantic.v1 import (  # type: ignore[no-redef]
-        BaseModel,
-        Extra,
-        Field,
-        HttpUrl,
-        ValidationError,
-    )
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    ValidationError,
+)
+
+PYDANTIC_VERSION = importlib.metadata.version('pydantic')
+
+PYDANTIC_V1 = PYDANTIC_VERSION.startswith("1.")
 
 __all__ = [
+    "PYDANTIC_V1",
     "BaseModel",
-    "Extra",
+    "ConfigDict",
     "Field",
     "HttpUrl",
     "ValidationError",
