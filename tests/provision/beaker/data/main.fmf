@@ -16,4 +16,16 @@
     provision+:
         bootc: True
         image_url: quay.io/fedora/custom-bootc:latest
-        quay_secret: dummysecret
+        bootc_secret: dummysecret
+
+/plan/bootc-invalid:
+    provision+:
+        bootc: True
+        image_url: quay.io/fedora/custom-bootc:latest
+        customize_image: True
+        bootc_secret: dummysecret
+
+/plan/bootc-bad-url:
+    provision+:
+        bootc: True
+        image_url: quay.io/fedora/custom-bootc
