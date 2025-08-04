@@ -89,6 +89,6 @@ tags
 
 # Editors & IDEs
 .vscode
-.zed/
-.cursor/
+.zed
+.cursor
 .idea
