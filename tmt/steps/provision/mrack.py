@@ -4,8 +4,9 @@ import datetime
 import functools
 import importlib.metadata
 import logging
-import os
 import re
+import threading
+from collections.abc import Mapping
 from contextlib import suppress
 from functools import wraps
 from typing import Any, Callable, Optional, TypedDict, TypeVar, Union, cast
@@ -840,49 +841,64 @@ def constraint_to_beaker_filter(
     return transformed
 
 
+# Thread-safe lock for mrack imports and initialization
+_MRACK_IMPORT_LOCK = threading.Lock()
+
+
 def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) -> None:
     """
-    Import mrack module only when needed
+    Import mrack module only when needed (thread-safe)
     """
 
     global _MRACK_IMPORTED
 
-    if _MRACK_IMPORTED:
-        return
+    # Use lock to ensure thread-safe initialization
+    with _MRACK_IMPORT_LOCK:
+        if _MRACK_IMPORTED:
+            return
 
-    global MRACK_VERSION
-    global mrack
-    global providers
-    global ProvisioningError
-    global NotAuthenticatedError
-    global BEAKER
-    global BeakerProvider
-    global BeakerTransformer
-    global TmtBeakerTransformer
+        global MRACK_VERSION
+        global mrack
+        global providers
+        global ProvisioningError
+        global NotAuthenticatedError
+        global BEAKER
+        global BeakerProvider
+        global BeakerTransformer
+        global TmtBeakerTransformer
 
-    try:
-        import mrack
-        from mrack.errors import NotAuthenticatedError, ProvisioningError
-        from mrack.providers import providers
-        from mrack.providers.beaker import PROVISIONER_KEY as BEAKER
-        from mrack.providers.beaker import BeakerProvider
-        from mrack.transformers.beaker import BeakerTransformer
+        try:
+            import mrack
+            from mrack.errors import NotAuthenticatedError, ProvisioningError
+            from mrack.providers import providers
+            from mrack.providers.beaker import PROVISIONER_KEY as BEAKER
+            from mrack.providers.beaker import BeakerProvider
+            from mrack.transformers.beaker import BeakerTransformer
 
-        MRACK_VERSION = importlib.metadata.version('mrack')
+            MRACK_VERSION = importlib.metadata.version('mrack')
 
-        # hack: remove mrack stdout and move the logfile to /tmp
-        mrack.logger.removeHandler(mrack.console_handler)
-        mrack.logger.removeHandler(mrack.file_handler)
+            # hack: remove mrack stdout and move the logfile to /tmp
+            # Make log file unique per thread to avoid conflicts
+            if hasattr(mrack, 'console_handler'):
+                mrack.logger.removeHandler(mrack.console_handler)
+            if hasattr(mrack, 'file_handler'):
+                mrack.logger.removeHandler(mrack.file_handler)
 
-        with suppress(OSError):
-            os.remove("mrack.log")
+            # Use thread-safe approach for log file cleanup
+            thread_id = threading.get_ident()
+            log_filename = f"{workdir}/{name}-mrack-{thread_id}.log"
 
-        logging.FileHandler(str(f"{workdir}/{name}-mrack.log"))
+            with suppress(OSError):
+                # Only try to remove the generic log file, not thread-specific ones
+                if Path("mrack.log").exists():
+                    Path("mrack.log").unlink()
 
-        providers.register(BEAKER, BeakerProvider)
+            logging.FileHandler(str(log_filename))
 
-    except ImportError:
-        raise ProvisionError("Install 'tmt+provision-beaker' to provision using this method.")
+            providers.register(BEAKER, BeakerProvider)
+
+        except ImportError:
+            raise ProvisionError("Install 'tmt+provision-beaker' to provision using this method.")
 
     # ignore the misc because mrack sources are not typed and result into
     # error: Class cannot subclass "BeakerTransformer" (has type "Any")
@@ -1132,38 +1148,43 @@ class BeakerAPI:
     @async_run
     async def __init__(self, guest: 'GuestBeaker') -> None:  # type: ignore[misc]
         """
-        Initialize the API class with defaults and load the config
+        Initialize the API class with defaults and load the config (thread-safe)
         """
 
         self._guest = guest
 
-        # use global context class
-        global_context = mrack.context.global_context
-
-        mrack_config_locations = [
-            Path(__file__).parent / "mrack/mrack.conf",
-            Path("/etc/tmt/mrack.conf"),
-            Path("~/.mrack/mrack.conf").expanduser(),
-            Path.cwd() / "mrack.conf",
+        # Find mrack provisioning configuration file
+        provisioning_config_locations = [
+            Path(__file__).parent / "mrack/mrack-provisioning-config.yaml",
+            Path("/etc/tmt/mrack-provisioning-config.yaml"),
+            Path("~/.mrack/mrack-provisioning-config.yaml").expanduser(),
+            Path.cwd() / "mrack-provisioning-config.yaml",
         ]
 
-        mrack_config: Optional[Path] = None
-
-        for potential_location in mrack_config_locations:
+        provisioning_config: Optional[Path] = None
+        for potential_location in provisioning_config_locations:
             if potential_location.exists():
-                mrack_config = potential_location
+                provisioning_config = potential_location
+                break
 
-        if not mrack_config:
-            raise ProvisionError("Configuration file 'mrack.conf' not found.")
+        if not provisioning_config:
+            raise ProvisionError("Configuration file 'mrack-provisioning-config.yaml' not found.")
 
+        # Load configuration file
         try:
-            global_context.init(str(mrack_config))
-        except mrack.errors.ConfigError as mrack_conf_err:
-            raise ProvisionError(mrack_conf_err)
+            config_data = tmt.utils.yaml_to_dict(provisioning_config.read_text())
+        except Exception as config_err:
+            raise ProvisionError(f"Failed to load mrack provisioning configuration: {config_err}")
 
+        # Create transformer with thread-safe context
         self._mrack_transformer = TmtBeakerTransformer()
+
         try:
-            await self._mrack_transformer.init(global_context.PROV_CONFIG, {})
+            # Instead of using global context, create a local context
+            # This requires creating the provider config dictionary manually
+            provider_config = self._create_provider_config(config_data)
+            await self._mrack_transformer.init(provider_config, {})
+
         except NotAuthenticatedError as kinit_err:
             raise ProvisionError(kinit_err) from kinit_err
         except AttributeError as hub_err:
@@ -1174,12 +1195,38 @@ class BeakerAPI:
             raise ProvisionError(
                 f"Configuration file missing: {missing_conf_err.filename}"
             ) from missing_conf_err
+        except Exception as e:
+            raise ProvisionError(f"Failed to initialize mrack transformer: {e}")
 
         self._mrack_provider = self._mrack_transformer._provider
         self._mrack_provider.poll_sleep = DEFAULT_PROVISION_TICK
 
         if guest.job_id:
             self._bkr_job_id = guest.job_id
+
+    def _create_provider_config(self, config_data: dict[str, Any]) -> dict[str, Any]:
+        """
+        Create provider configuration from parsed YAML config (thread-safe)
+        """
+        try:
+            # The YAML config should already be in the correct format for mrack
+            # Just validate that it has the necessary structure
+            if not isinstance(config_data, dict):
+                raise ProvisionError(
+                    "Invalid mrack provisioning configuration format - expected dictionary"
+                )
+
+            # Check for required provider configurations
+            if 'beaker' not in config_data:
+                raise ProvisionError(
+                    "No 'beaker' section found in mrack provisioning configuration"
+                )
+
+            # Return the configuration data as-is since it's already in the correct format
+            return config_data
+
+        except Exception as e:
+            raise ProvisionError(f"Failed to parse mrack provisioning configuration: {e}")
 
     @async_run
     async def create(self, data: CreateJobParameters) -> Any:
@@ -1572,7 +1619,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
     _data_class = ProvisionBeakerData
     _guest_class = GuestBeaker
 
-    # _thread_safe = True
+    _thread_safe = True
 
     # Guest instance
     _guest = None
