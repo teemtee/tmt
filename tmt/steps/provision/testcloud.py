@@ -1018,12 +1018,23 @@ class GuestTestcloud(tmt.GuestSsh):
             self.image_url = self._guess_image_url(self.image_url)
             self.debug(f"Guessed image url: '{self.image_url}'", level=3)
 
-        # Initialize testcloud image
+        # Initialize and prepare testcloud image
         assert testcloud is not None
         self._image = testcloud.image.Image(self.image_url)
         self.verbose('qcow', self._image.name, 'green')
         if not Path(self._image.local_path).exists():
             self.info('progress', 'downloading...', 'cyan')
+        try:
+            self._image.prepare()
+        except FileNotFoundError as error:
+            raise ProvisionError(f"Image '{self._image.local_path}' not found.") from error
+        except (testcloud.exceptions.TestcloudPermissionsError, PermissionError) as error:
+            raise ProvisionError(
+                f"Failed to prepare the image. Check the '{self.testcloud_image_dirpath}' "
+                f"directory permissions."
+            ) from error
+        except KeyError as error:
+            raise ProvisionError(f"Failed to prepare image '{self.image_url}'.") from error
 
         # Prepare hostname (get rid of possible unwanted characters)
         hostname = re.sub(r"[^a-zA-Z0-9\-]+", "-", self.name.lower()).strip("-")
@@ -1067,8 +1078,9 @@ class GuestTestcloud(tmt.GuestSsh):
         )
 
         for i, device in enumerate(self._domain.storage_devices, start=1):
-            size_gb = tmt.hardware.UNITS(f"{device.size} GB").to("GB")
-            self.debug(f'Domain disk {i} size: {size_gb}')
+            self.debug(
+                f'Domain disk {i} size', f'{tmt.hardware.UNITS(f"{device.size} GB").to("GB")}'
+            )
 
         # Is this a CoreOS?
         self._domain.coreos = self.is_coreos
@@ -1093,19 +1105,6 @@ class GuestTestcloud(tmt.GuestSsh):
         if not self._domain.coreos:
             seed_disk = RawStorageDevice(self._domain.seed_path)
             self._domain.storage_devices.append(seed_disk)
-
-        # Prepare testcloud image
-        try:
-            self._image.prepare()
-        except FileNotFoundError as error:
-            raise ProvisionError(f"Image '{self._image.local_path}' not found.") from error
-        except (testcloud.exceptions.TestcloudPermissionsError, PermissionError) as error:
-            raise ProvisionError(
-                f"Failed to prepare the image. Check the '{self.testcloud_image_dirpath}' "
-                f"directory permissions."
-            ) from error
-        except KeyError as error:
-            raise ProvisionError(f"Failed to prepare image '{self.image_url}'.") from error
 
         self._instance = testcloud.instance.Instance(
             hostname=hostname,
