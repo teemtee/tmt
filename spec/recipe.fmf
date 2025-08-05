@@ -11,94 +11,109 @@ description: |
     Generated recipe can be edited, manually or by using a script, which allows users
     to select only a subset of discovered tests to be reexecuted.
 
+    .. note::
+        All git repositories specified in the recipe will be fetched again during
+        the recipe execution.
+
+    .. note::
+        When submitting a new run based on a recipe, the ``results`` key of the
+        ``execute`` step is ignored. New results will be generated from the actual
+        test execution. Users can use the results listed in the recipe to modify
+        the recipe and filter the tests that should be reexecuted.
+
     .. code-block:: yaml
 
-        # Git repo configuration
-        git:
+        # Mapping, stores git repository configuration where the plans
+        # for the current run are hosted
+        run-repository:
             url: https://github.com/teemtee/tmt
             path: /tests/nested
             ref: c89c4b5
 
-        # Run configuration
+        # Mapping, stores run configuration
         run:
+            # String, path to the fmf root in the repository
             root: "/path/to/fmf/root"
+            # Bool, whether to remove the run directory after the run is finished
             remove: false
+            # Mapping, stores command line environment
             environment: ...
+            # Mapping, stores command line context
             context: ...
 
-        # Plan definitions with all steps
+        # Represents plans with all their steps
         plans:
-            /plan/name:
-                environment: ...
-                context: ...
-                discover:
-                    # Step data
-                    data:
-                      - name: default-0
-                        how: fmf
-                        order: 50
-                        ...
-                    # Discovered tests
-                    tests:
-                      - name: /test/name
-                        summary: Test summary
-                        # Repositories must be fetched again so
-                        # that the test code is actually available.
-                        ...
+          # String, name of the plan
+          - name: /plan/name
+            # Mapping, stores plan environment
+            environment: ...
+            # Mapping, stores plan context
+            context: ...
 
-                provision:
-                    data:
-                      - name: default-0
-                        how: local
-                        order: 50
-                        hardware:
-                            memory: 8 GiB
-                            ...
-                        ...
+            # Represents all steps of this plan
+            discover:
+                # Represents all phases of this step
+                phases:
+                  - name: default-0
+                    how: fmf
+                    order: 50
+                    ...
+                # Represents all discovered tests
+                tests:
+                  - name: /test/name
+                    summary: Test summary
+                    ...
 
-                prepare:
-                    data:
-                      - name: default-0
-                        how: ansible
-                        order: 50
-                        # Playbooks are included directly in the recipe
-                        playbook:
-                          - name: Example playbook
-                            hosts: all
-                            tasks:
-                              - name: Example task
-                                ...
-                        ...
+            provision:
+                phases:
+                  - name: default-0
+                    how: local
+                    order: 50
+                    hardware:
+                        memory: 8 GiB
+                    ...
 
-                execute:
-                    data:
-                      - name: default-0
-                        how: tmt
-                        order: 50
-                        ...
-                    # Test results
-                    results:
-                      # When submitting a new run based on a recipe, the ``results`` key
-                      # is ignored. New results will be generated from the actual test
-                      # execution. Users can use the results listed here to filter
-                      # or select tests which should be reexecuted.
-                      - name: /test/name
-                        result: pass
-                        ...
+            prepare:
+                phases:
+                  - name: default-0
+                    how: ansible
+                    order: 50
+                    # Local path to the playbook, or git reference
+                    playbook: ansible/packages.yml
+                    ...
 
-                report:
-                    data:
-                      - name: default-0
-                        how: display
-                        order: 50
-                        ...
+            execute:
+                phases:
+                  - name: default-0
+                    how: tmt
+                    order: 50
+                    ...
+                # Represents results of all tests
+                results:
+                  - name: /test/name
+                    result: pass
+                    ...
 
-                finish:
-                    data:
-                      - name: default-0
-                        how: shell
-                        order: 50
-                        ...
+            report:
+                phases:
+                  - name: default-0
+                    how: display
+                    order: 50
+                    ...
+
+            finish:
+                phases:
+                  - name: default-0
+                    how: shell
+                    order: 50
+                    ...
+
+            cleanup:
+                phases:
+                  - name: default-0
+                    how: tmt
+                    order: 50
+                    ...
 
 example:
   - |

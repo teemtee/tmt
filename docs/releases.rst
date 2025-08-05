@@ -13,6 +13,11 @@ limit for each test.
 The provision plugins now support setting an ``environment`` key.
 See the documentation of :ref:`/plugins/provision`.
 
+As the first step towards implementing support for executing a
+subset of tests based on reported results, the first draft of the
+:ref:`/spec/recipe` specification was created to gather initial
+feedback on the proposed approach.
+
 
 tmt-1.54.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -54,11 +59,6 @@ explicit configuration of the FIPS crypto-policy.
 
 Custom ``ssh`` options are now provided to the command in the
 correct order so that they have the desired effect.
-
-As the first step towards implementing support for executing a
-subset of tests based on reported results, the first draft of the
-:ref:`/spec/recipe` specification was created to gather initial
-feedback on the proposed approach.
 
 
 tmt-1.53.0
