@@ -445,6 +445,7 @@ builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 "dataclasses.dataclass".msg = "Use tmt.container.container instead."
 "dataclasses.field".msg = "Use tmt.container.field instead."
 "click.style".msg = "Use tmt.log.style instead."
+"annotationlib".msg = "Use tmt._compat.annotationlib instead"
 
 [tool.ruff.lint.flake8-type-checking]
 runtime-evaluated-base-classes = ["tmt.config.models.BaseConfig"]
