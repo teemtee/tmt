@@ -1226,7 +1226,7 @@ class BeakerAPI:
             return config_data
 
         except Exception as e:
-            raise ProvisionError(f"Failed to parse mrack provisioning configuration: {e}")
+            raise ProvisionError("Failed to parse mrack provisioning configuration.") from e
 
     @async_run
     async def create(self, data: CreateJobParameters) -> Any:
