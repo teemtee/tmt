@@ -414,11 +414,6 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
 
         super().show(keys=super_keys, verbose=verbose, logger=logger)
 
-        # TODO: find formatting that would show "MB" instead of "megabyte"
-        # https://github.com/teemtee/tmt/issues/2410
-        logger.info('memory', f'{(self.memory or DEFAULT_MEMORY).to("MB")}', 'green')
-        logger.info('disk', f'{(self.disk or DEFAULT_DISK).to("GB")}', 'green')
-
 
 @container
 class ProvisionTestcloudData(TestcloudGuestData, tmt.steps.provision.ProvisionStepData):
@@ -1023,23 +1018,12 @@ class GuestTestcloud(tmt.GuestSsh):
             self.image_url = self._guess_image_url(self.image_url)
             self.debug(f"Guessed image url: '{self.image_url}'", level=3)
 
-        # Initialize and prepare testcloud image
+        # Initialize testcloud image
         assert testcloud is not None
         self._image = testcloud.image.Image(self.image_url)
         self.verbose('qcow', self._image.name, 'green')
         if not Path(self._image.local_path).exists():
             self.info('progress', 'downloading...', 'cyan')
-        try:
-            self._image.prepare()
-        except FileNotFoundError as error:
-            raise ProvisionError(f"Image '{self._image.local_path}' not found.") from error
-        except (testcloud.exceptions.TestcloudPermissionsError, PermissionError) as error:
-            raise ProvisionError(
-                f"Failed to prepare the image. Check the '{self.testcloud_image_dirpath}' "
-                f"directory permissions."
-            ) from error
-        except KeyError as error:
-            raise ProvisionError(f"Failed to prepare image '{self.image_url}'.") from error
 
         # Prepare hostname (get rid of possible unwanted characters)
         hostname = re.sub(r"[^a-zA-Z0-9\-]+", "-", self.name.lower()).strip("-")
@@ -1073,11 +1057,18 @@ class GuestTestcloud(tmt.GuestSsh):
         _apply_hw_disk_size(self.hardware, self._domain, self._logger)
         _apply_hw_tpm(self.hardware, self._domain, self._logger)
 
-        self.debug('final domain memory', str(self._domain.memory_size))
-        self.debug('final domain root disk size', str(self._domain.storage_devices[0].size))
+        self.info(
+            'memory', f'{tmt.hardware.UNITS(f"{self._domain.memory_size} kB").to("MB")}', 'green'
+        )
+        self.info(
+            'disk',
+            f'{tmt.hardware.UNITS(f"{self._domain.storage_devices[0].size} GB").to("GB")}',
+            'green',
+        )
 
-        for i, device in enumerate(self._domain.storage_devices):
-            self.debug(f'final domain disk #{i} size', str(device.size))
+        for i, device in enumerate(self._domain.storage_devices, start=1):
+            size_gb = tmt.hardware.UNITS(f"{device.size} GB").to("GB")
+            self.debug(f'Domain disk {i} size: {size_gb}')
 
         # Is this a CoreOS?
         self._domain.coreos = self.is_coreos
@@ -1102,6 +1093,19 @@ class GuestTestcloud(tmt.GuestSsh):
         if not self._domain.coreos:
             seed_disk = RawStorageDevice(self._domain.seed_path)
             self._domain.storage_devices.append(seed_disk)
+
+        # Prepare testcloud image
+        try:
+            self._image.prepare()
+        except FileNotFoundError as error:
+            raise ProvisionError(f"Image '{self._image.local_path}' not found.") from error
+        except (testcloud.exceptions.TestcloudPermissionsError, PermissionError) as error:
+            raise ProvisionError(
+                f"Failed to prepare the image. Check the '{self.testcloud_image_dirpath}' "
+                f"directory permissions."
+            ) from error
+        except KeyError as error:
+            raise ProvisionError(f"Failed to prepare image '{self.image_url}'.") from error
 
         self._instance = testcloud.instance.Instance(
             hostname=hostname,
