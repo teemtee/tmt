@@ -145,7 +145,9 @@ class TestInvocation:
     start_time: Optional[str] = None
     end_time: Optional[str] = None
     real_duration: Optional[str] = None
-    exception: Optional[Exception] = None
+
+    #: List of exceptions encountered by the invocation.
+    exceptions: list[Exception] = simple_field(default_factory=list)
 
     #: Number of times the test has been restarted.
     _restart_count: int = 0
@@ -502,6 +504,10 @@ class TestInvocation:
                     self.terminate_process, logger=self.logger
                 )
 
+                logger.debug(
+                    f'Test invocation process spawned with pid {self.process.pid}.', level=3
+                )
+
         def _reset_process(
             command: Command,
             process: subprocess.Popen[bytes],
@@ -543,6 +549,8 @@ class TestInvocation:
                 self.return_code = tmt.utils.ProcessExitCodes.SUCCESS
 
             except tmt.utils.RunError as error:
+                self.exceptions.append(error)
+
                 output = error.output
 
                 self.return_code = error.returncode
@@ -1349,10 +1357,10 @@ class Execute(tmt.steps.Step):
             if outcome.exc:
                 outcome.logger.fail(str(outcome.exc))
 
-                # Special exception serving as a signal to not run any more phases.
-                # Not necessarily a failed task calling for the final exception
-                # to be raised, crashing the whole run.
-                if isinstance(outcome.exc, AbortExecute):
+                # Special exceptions serving as signals to not run any more
+                # phases. Not necessarily a failed task calling for the final
+                # exception to be raised, crashing the whole run.
+                if isinstance(outcome.exc, (AbortExecute, tmt.utils.signals.Interrupted)):
                     break
 
                 failed_tasks.append(outcome)

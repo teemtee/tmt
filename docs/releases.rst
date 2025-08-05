@@ -36,6 +36,15 @@ enhanced.
 tmt-1.54.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+When interrupted while running a test, tmt will now interrupt the test
+and quit immediately after, skipping all remaining tests. This is now
+aligned with a test abort or :ref:`exit-first </plugins/execute/tmt>`
+key.
+
+
+tmt-1.54.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 A new :ref:`/plugins/test-checks/journal` check has been added to
 monitor the system journal for messages recorded during test
 execution using the ``journalctl``. It can be configured to check

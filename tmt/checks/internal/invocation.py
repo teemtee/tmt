@@ -53,7 +53,9 @@ class Invocation(CheckPlugin[InvocationCheck]):
                 )
             ]
 
-        if isinstance(invocation.exception, tmt.utils.RestartMaxAttemptsError):
+        if any(
+            isinstance(exc, tmt.utils.RestartMaxAttemptsError) for exc in invocation.exceptions
+        ):
             return [
                 CheckResult(
                     name=CHECK_NAME,
