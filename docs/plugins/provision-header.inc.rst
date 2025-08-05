@@ -64,3 +64,4 @@ The following keys are supported by all provision plugins:
 * ``environment`` — Setting the environment key allows users to define
   environment variables that are injected directly into the test environment
   for each guest during the provision phase.
+  NB: Test variables take precedence over guest-specific variables.
