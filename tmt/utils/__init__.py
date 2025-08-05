@@ -17,6 +17,7 @@ import re
 import shlex
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import tempfile
@@ -178,6 +179,8 @@ INDENT = 4
 # Default name for step plugins
 DEFAULT_NAME = 'default'
 
+#: Permissions applied by tmt on its workdir root.
+WORKDIR_ROOT_MODE: int = 0o1777
 
 # Special process return codes
 
@@ -2167,9 +2170,18 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             if not self.workdir_root.is_dir():
                 try:
                     self.workdir_root.mkdir(exist_ok=True, parents=True)
-                    self.workdir_root.chmod(0o1777)
+                    self.workdir_root.chmod(WORKDIR_ROOT_MODE)
                 except OSError as error:
                     raise FileError(f"Failed to prepare workdir '{self.workdir_root}': {error}")
+            else:
+                try:
+                    if stat.S_IMODE(self.workdir_root.stat().st_mode) != WORKDIR_ROOT_MODE:
+                        self.workdir_root.chmod(WORKDIR_ROOT_MODE)
+                except PermissionError:
+                    raise FileError(
+                        f"Failed to change workdir root '{self.workdir_root}' permission to "
+                        f"'{oct(WORKDIR_ROOT_MODE)}', you need to change it manually using chmod."
+                    )
 
         if id_ is None:
             # Prepare workdir_root first
