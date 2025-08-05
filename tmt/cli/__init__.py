@@ -15,6 +15,7 @@ import fmf.utils
 import tmt
 import tmt._bootstrap
 import tmt.base
+import tmt.config
 import tmt.log
 import tmt.plugins
 import tmt.utils
@@ -74,6 +75,7 @@ class ContextObject:
     common: tmt.utils.Common
     fmf_context: tmt.utils.FmfContext
     tree: tmt.Tree
+    config: tmt.config.Config
     steps: set[str] = simple_field(default_factory=set[str])
     clean: Optional[tmt.Clean] = None
     clean_logger: Optional[tmt.log.Logger] = None
