@@ -68,6 +68,7 @@ from ruamel.yaml.representer import Representer
 from urllib3.response import HTTPResponse
 
 import tmt.log
+from tmt._compat.annotationlib import Format, get_annotations
 from tmt._compat.pathlib import Path
 from tmt._compat.typing import ParamSpec
 from tmt.container import container
@@ -5463,7 +5464,7 @@ class NormalizeKeysMixin(_CommonBase):
             if klass is Common:
                 return
 
-            for name, value in klass.__dict__.get('__annotations__', {}).items():
+            for name, value in get_annotations(klass, format=Format.STRING).items():
                 # Skip special fields that are not keys.
                 if name in (
                     '_KEYS_SHOW_ORDER',
