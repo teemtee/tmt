@@ -318,7 +318,13 @@ class FmfContext(dict[str, list[str]]):
             -c distro=fedora-33 -> {'distro': ['fedora']}
             -c arch=x86_64,ppc64 -> {'arch': ['x86_64', 'ppc64']}
         """
-
+        for spec_item in spec:
+            if '=' in spec_item and spec_item.endswith('='):
+                key = spec_item.split('=')[0]
+                raise GeneralError(
+                    f"Context dimension '{key}' has an empty value. "
+                    f"Use 'KEY=VALUE' format or remove the dimension entirely."
+                )
         return FmfContext(
             {
                 key: value.split(',')
