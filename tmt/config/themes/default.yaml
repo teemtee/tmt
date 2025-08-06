@@ -1,5 +1,22 @@
 ---
 
+linter:
+  outcome:
+    skip:
+      fg: blue
+
+    pass:
+      fg: green
+
+    fail:
+      fg: red
+
+    warn:
+      fg: yellow
+
+    fixed:
+      fg: green
+
 # restructuredtext-text:
 
 restructuredtext-literal:

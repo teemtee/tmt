@@ -236,6 +236,7 @@ def main(
         fmf_context=tmt.utils.FmfContext.from_spec('cli', context, logger),
         steps=set(),
         tree=tree,
+        config=tmt.config.Config(logger),
     )
 
     # Show overview of available tests, plans and stories

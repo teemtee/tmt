@@ -25,6 +25,63 @@
           - how: dmesg
             result: respect
 
+/journal:
+    test: /bin/true
+    check: journal
+
+    /harmless:
+        test: bash -c 'sleep 5'
+
+    /harmless2:
+
+    /segfault:
+        test: echo Some segfault happened > /dev/kmsg
+        check:
+          - how: journal
+            dmesg: true
+
+    /custom-patterns:
+        test: echo Custom detected:test > /dev/kmsg
+        check:
+          - how: journal
+            dmesg: true
+            failure-pattern:
+              - 'Custom detected'
+
+    /multiple-reports:
+        check:
+          - how: journal
+            result: respect
+          - how: journal
+            result: respect
+          - how: journal
+            result: respect
+
+    /unit-test:
+        test: systemd-run --unit=test-fail.service /bin/sh -c 'echo fail; exit 1'; sleep 5
+        check:
+          - how: journal
+            unit: test-fail.service
+            priority: warning
+            failure-pattern:
+              - 'fail'
+
+    /ignore-test:
+        test: echo "harmless error" > /dev/kmsg
+        check:
+          - how: journal
+            dmesg: true
+            failure-pattern:
+              - 'error'
+            ignore-pattern:
+              - 'harmless error'
+
+    /reboot-test:
+        test: "if [ $TMT_REBOOT_COUNT -eq 0 ]; then tmt-reboot; fi; true"
+        check:
+          - how: journal
+            dmesg: true
+
 /avc:
   /checkpoint:
     check:
