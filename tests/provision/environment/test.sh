@@ -10,11 +10,18 @@ rlJournalStart
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
     rlPhaseEnd
 
-    rlPhaseStartTest "Environment Variables in provision plugin"
-        rlRun -s "tmt -vvv run"
+    rlPhaseStartTest "Check guest environment variables are set correctly"
+        rlRun -s "tmt -vvv run plan --name /plans/guest-only"
 
         rlAssertGrep "default-0:foo" $rlRun_LOG
         rlAssertGrep "default-1:bar" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Check environment variables from guest are overridden by test variables"
+        rlRun -s "tmt -vvv run plan --name /plans/test-override"
+
+        rlAssertGrep "default-0:baz" $rlRun_LOG
+        rlAssertGrep "default-1:baz" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
