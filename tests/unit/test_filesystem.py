@@ -11,6 +11,15 @@ import tmt.utils
 import tmt.utils.filesystem
 from tmt.utils import Path
 
+# A dictionary mapping file paths to their content for test setup.
+# This reduces duplication and improves readability in tests.
+_EXPECTED_TEST_FILES = {
+    ".fmf/version": "1",
+    "file1.txt": "content1",
+    "file2.txt": "content2",
+    "subdir/file3.txt": "content3",
+}
+
 copy_tree_path_config = tuple[Path, Path, bool]
 
 
@@ -31,13 +40,11 @@ def fixture_copy_tree_paths(tmppath: Path) -> copy_tree_path_config:
     source_dir.mkdir()
     dest_dir.mkdir()
 
-    # Create test files and directories in the source directory
-    (source_dir / ".fmf").mkdir()
-    (source_dir / ".fmf" / "version").write_text("1")
-    (source_dir / "file1.txt").write_text("content1")
-    (source_dir / "file2.txt").write_text("content2")
-    (source_dir / "subdir").mkdir()
-    (source_dir / "subdir" / "file3.txt").write_text("content3")
+    # Create test files and directories from the EXPECTED_FILES dictionary
+    for path, content in _EXPECTED_TEST_FILES.items():
+        file_path = source_dir / path
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(content)
 
     # Create a symlink if the platform supports it
     symlinks_supported = False
@@ -101,23 +108,18 @@ def test_copy_tree_basic(copy_tree_paths: copy_tree_path_config, root_logger: tm
     source_dir, dest_dir, symlinks_supported = copy_tree_paths
     tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
 
-    # Check if all files were copied
-    assert (dest_dir / ".fmf" / "version").exists()
-    assert (dest_dir / "file1.txt").exists()
-    assert (dest_dir / "file2.txt").exists()
-    assert (dest_dir / "subdir" / "file3.txt").exists()
-
-    # Check file contents
-    assert (dest_dir / ".fmf" / "version").read_text() == "1"
-    assert (dest_dir / "file1.txt").read_text() == "content1"
-    assert (dest_dir / "file2.txt").read_text() == "content2"
-    assert (dest_dir / "subdir" / "file3.txt").read_text() == "content3"
+    # Check if all files were copied and their content is correct
+    for path, content in _EXPECTED_TEST_FILES.items():
+        dest_file = dest_dir / path
+        assert dest_file.exists(), f"File '{path}' was not copied."
+        assert dest_file.read_text() == content, f"Content mismatch for file '{path}'."
 
     # Check symlink if supported
     if symlinks_supported:
-        assert Path.is_symlink(dest_dir / "symlink.txt")
-        target = Path.readlink(dest_dir / "symlink.txt")
-        assert Path(target).name == "file1.txt"
+        symlink_path = dest_dir / "symlink.txt"
+        assert symlink_path.is_symlink(), "Symlink was not created."
+        target = symlink_path.readlink()
+        assert Path(target).name == "file1.txt", "Symlink points to the wrong target."
 
 
 def test_copy_empty_source_directory(tmppath: Path, root_logger: tmt.log.Logger):
@@ -150,35 +152,13 @@ def test_deeply_nested_directories(tmppath: Path, root_logger: tmt.log.Logger):
     tmt.utils.filesystem.copy_tree(deep_src, deep_dst, root_logger)
 
     # Check if the deepest directory and file exist in the copied structure
-    assert (
-        deep_dst
-        / "level_1"
-        / "level_2"
-        / "level_3"
-        / "level_4"
-        / "level_5"
-        / "level_6"
-        / "level_7"
-        / "level_8"
-        / "level_9"
-        / "level_10"
-    ).exists()
+    deepest_path = Path(
+        "level_1/level_2/level_3/level_4/level_5/level_6/level_7/level_8/level_9/level_10"
+    )
+    assert (deep_dst / deepest_path).exists()
 
     # Check content of a file in the deepest directory
-    deepest_file = (
-        deep_dst
-        / "level_1"
-        / "level_2"
-        / "level_3"
-        / "level_4"
-        / "level_5"
-        / "level_6"
-        / "level_7"
-        / "level_8"
-        / "level_9"
-        / "level_10"
-        / "file_at_level_10.txt"
-    )
+    deepest_file = deep_dst / deepest_path / "file_at_level_10.txt"
     assert deepest_file.exists()
     assert deepest_file.read_text() == f"{test_content} at level 10"
 
@@ -234,10 +214,8 @@ def test_fallback_to_shutil_copy_from_cp_failure(
     mock_copy_tree_shutil.assert_called_once_with(source_dir, dest_dir, root_logger)
 
     # Verify files were copied using the fallback approach (shutil.copytree)
-    assert (dest_dir / ".fmf" / "version").exists()
-    assert (dest_dir / "file1.txt").exists()
-    assert (dest_dir / "file2.txt").exists()
-    assert (dest_dir / "subdir" / "file3.txt").exists()
+    for file_path in _EXPECTED_TEST_FILES:
+        assert (dest_dir / file_path).exists(), f"Missing file: {file_path}"
 
 
 def test_metadata_cp_reflink(copy_tree_paths: copy_tree_path_config, root_logger: tmt.log.Logger):
@@ -325,7 +303,7 @@ def test_copy_to_existing_destination(
     tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
 
     # Check that source files were copied and overwrite conflicting ones
-    assert (dest_dir / "file1.txt").read_text() == "content1"
+    assert (dest_dir / "file1.txt").read_text() == _EXPECTED_TEST_FILES["file1.txt"]
     # Check that pre-existing non-conflicting files are still there
     assert (dest_dir / "existing_file.txt").read_text() == "pre-existing content"
     assert (dest_dir / "subdir" / "existing_in_subdir.txt").read_text() == "pre-existing in subdir"
