@@ -629,6 +629,10 @@ TMT_PLAN_ENVIRONMENT_FILE
 TMT_VERSION
     The version of tmt.
 
+TMT_PREPARE_SHELL_URL_REPOSITORY
+    The value of the repository path in prepare shell step when ``url``
+    option is used.
+
 .. _test-variables:
 
 Test Variables
@@ -877,7 +881,8 @@ Link Dupont, Mario Casquero, Martin Klusoň, Pavel Holica,
 Otto Šabart, Ismail Ibrahim Quwarah, Sergei Petrosian, Tom
 Koscielniak, Han Han, Luigi Pellecchia, Siteshwar Vashisht,
 Chris Kyrouac, Xiaofeng Wang, Coiby Xu, Michal Pospíšil, Wayne
-Sun, Evgeni Vakhonin, Mike Stowell, Therese Cornell and Mingyu Shi.
+Sun, Evgeni Vakhonin, Mike Stowell, Therese Cornell, Mingyu Shi,
+Conor Tull, Athrey Vinay, David Pascual and Vaibhav D. Aren.
 
 
 Copyright

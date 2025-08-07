@@ -12,7 +12,7 @@ import signal as _signal
 import string
 import subprocess
 import threading
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterable, Iterator, Sequence
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from shlex import quote
 from typing import (
@@ -51,7 +51,6 @@ from tmt.options import option
 from tmt.package_managers import (
     FileSystemPath,
     Package,
-    PackageManagerClass,
 )
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue
@@ -582,68 +581,57 @@ class GuestFacts(SerializableContainer):
     def _query_kernel_release(self, guest: 'Guest') -> Optional[str]:
         return self._query(guest, [(Command('uname', '-r'), r'(.+)')])
 
+    def _discover_package_manager(
+        self,
+        guest: 'Guest',
+        plugin_classes: Iterable[
+            type[tmt.package_managers.PackageManager[tmt.package_managers.PackageManagerEngine]]
+        ],
+        *,
+        debug_label: str,
+    ) -> Optional['tmt.package_managers.GuestPackageManager']:
+        # Sort available package managers by priority and probe them one by one,
+        # break after the first one is detected.
+
+        for package_manager_class in sorted(
+            plugin_classes, key=lambda pm: pm.probe_priority, reverse=True
+        ):
+            if self._execute(guest, package_manager_class.probe_command):
+                guest.debug(
+                    f'Discovered {debug_label}',
+                    package_manager_class.NAME,
+                    level=4,
+                )
+                return package_manager_class.NAME
+
+        return None
+
     def _query_package_manager(
         self, guest: 'Guest'
     ) -> Optional['tmt.package_managers.GuestPackageManager']:
-        # Discover as many package managers as possible: sometimes, the
-        # first discovered package manager is not the only or the best
-        # one available. Collect them, and sort them by their priorities
-        # to find the most suitable one.
-
-        discovered_package_managers: list[
-            PackageManagerClass[tmt.package_managers.PackageManagerEngine]
-        ] = [
-            package_manager_class
-            for package_manager_id, package_manager_class in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items()  # noqa: E501
-            if self._execute(guest, package_manager_class.probe_command)
-        ]
-
-        discovered_package_managers.sort(key=lambda pm: pm.probe_priority, reverse=True)
-
-        if discovered_package_managers:
-            guest.debug(
-                'Discovered package managers',
-                fmf.utils.listed([pm.NAME for pm in discovered_package_managers]),
-                level=4,
-            )
-
-            return discovered_package_managers[0].NAME
-
-        return None
+        return self._discover_package_manager(
+            guest,
+            plugin_classes=(
+                package_manager_class
+                for _, package_manager_class in (
+                    tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items()
+                )
+            ),
+            debug_label='package manager',
+        )
 
     def _query_bootc_builder(
         self, guest: 'Guest'
     ) -> Optional['tmt.package_managers.GuestPackageManager']:
-        # Discover as many package managers as possible: sometimes, the
-        # first discovered package manager is not the only or the best
-        # one available. Collect them, and sort them by their priorities
-        # to find the most suitable one.
-
-        discovered_package_managers: list[
-            PackageManagerClass[tmt.package_managers.PackageManagerEngine]
-        ] = []
-
-        for (
-            package_manager_class
-        ) in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.iter_plugins():
-            if not package_manager_class.bootc_builder:
-                continue
-
-            if self._execute(guest, package_manager_class.probe_command):
-                discovered_package_managers.append(package_manager_class)
-
-        discovered_package_managers.sort(key=lambda pm: pm.probe_priority, reverse=True)
-
-        if discovered_package_managers:
-            guest.debug(
-                'Discovered bootc builders',
-                fmf.utils.listed([pm.NAME for pm in discovered_package_managers]),
-                level=4,
-            )
-
-            return discovered_package_managers[0].NAME
-
-        return None
+        return self._discover_package_manager(
+            guest,
+            plugin_classes=(
+                pm
+                for pm in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.iter_plugins()
+                if pm.bootc_builder
+            ),
+            debug_label='bootc builder',
+        )
 
     def _query_has_selinux(self, guest: 'Guest') -> Optional[bool]:
         """

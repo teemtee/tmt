@@ -215,7 +215,7 @@ def test_discovery(
 
         assert guest.facts.package_manager == expected
 
-        assert_log(caplog, message=MATCH(rf"^Discovered package managers: {expected_discovery}$"))
+        assert_log(caplog, message=MATCH(rf"^Discovered package manager: {expected_discovery}$"))
 
     # Images in which `dnf5`` would be the best possible choice, do not
     # come with `dnf5`` pre-installed. Therefore run the discovery first,
@@ -227,22 +227,22 @@ def test_discovery(
         guest.info(f'{has_dnf5_preinstalled(container)=}')
 
         if has_legacy_dnf(container):
-            _test_discovery(tmt.package_managers.dnf.Dnf.NAME, 'dnf and yum')
+            _test_discovery(tmt.package_managers.dnf.Dnf.NAME, 'dnf')
 
             if not has_dnf5_preinstalled(container):
                 guest.execute(ShellScript('dnf install --nogpgcheck -y dnf5'))
 
         if has_legacy_dnf(container):
-            _test_discovery(expected_package_manager.NAME, 'dnf5, dnf and yum')
+            _test_discovery(expected_package_manager.NAME, 'dnf5')
 
         else:
             _test_discovery(expected_package_manager.NAME, 'dnf5')
 
     elif expected_package_manager is tmt.package_managers.dnf.Dnf:
-        _test_discovery(expected_package_manager.NAME, 'dnf and yum')
+        _test_discovery(expected_package_manager.NAME, 'dnf')
 
     elif expected_package_manager is tmt.package_managers.rpm_ostree.RpmOstree:
-        _test_discovery(expected_package_manager.NAME, 'rpm-ostree and dnf5')
+        _test_discovery(expected_package_manager.NAME, 'rpm-ostree')
 
     else:
         _test_discovery(expected_package_manager.NAME, expected_package_manager.NAME)

@@ -45,7 +45,8 @@ class Action(enum.Enum):
     PREPARE = "p", "prepare the environment for testing"
     EXECUTE = "e", "run tests using the specified executor"
     REPORT = "r", "provide test results overview and send reports"
-    FINISH = "f", "perform the finishing tasks, clean up guests"
+    FINISH = "f", "perform the user defined finishing tasks"
+    CLEANUP = "c", "clean up guests and prune the workdir"
 
     KEEP = "k", "exit the session but keep the run for later use"
     QUIT = "q", "clean up the run and quit the session"
@@ -320,6 +321,7 @@ class Try(tmt.utils.Common):
                         {Action.EXECUTE.menu}
                         {Action.REPORT.menu}
                         {Action.FINISH.menu}
+                        {Action.CLEANUP.menu}
 
                         {Action.KEEP.menu}
                         {Action.QUIT.menu}
@@ -490,10 +492,17 @@ class Try(tmt.utils.Common):
 
     def action_finish(self, plan: Plan) -> None:
         """
-        Clean up guests and finish
+        Perform the user defined finishing tasks
         """
 
         plan.finish.go()
+
+    def action_cleanup(self, plan: Plan) -> None:
+        """
+        Clean up guests and prune the workdir
+        """
+
+        plan.cleanup.go()
 
     def action_keep(self, plan: Plan) -> None:
         """
@@ -509,9 +518,9 @@ class Try(tmt.utils.Common):
         Clean up the run and quit the session
         """
 
-        # Finish the run unless already done
-        if plan.finish.status() != "done":
-            plan.finish.go()
+        # Clean up the run unless already done
+        if plan.cleanup.status() != "done":
+            plan.cleanup.go()
 
         # Mention the run id and say good bye
         assert plan.my_run is not None  # Narrow type
