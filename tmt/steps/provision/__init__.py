@@ -1019,6 +1019,12 @@ class GuestData(SerializableContainer):
         serialize=lambda environment: environment.to_fmf_spec(),
         unserialize=lambda serialized: tmt.utils.Environment.from_fmf_spec(serialized),
         exporter=lambda environment: environment.to_fmf_spec(),
+        help="""
+            Environment variables to be defined for this guest. These will be available
+            during test execution and can be used to customize behavior on a per-guest basis.
+            Variables defined here can be overridden by test-level environment variables.
+            See the documentation of :ref:`</plugins/provision>` for more details.
+            """,
     )
 
     hardware: Optional[tmt.hardware.Hardware] = field(

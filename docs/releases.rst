@@ -18,10 +18,6 @@ The :ref:`discover </plugins/discover>` plugins now support a new
 ``require-test`` key. This key allows users to specify a list of
 test names that must be discovered and executed during the run.
 
-The provision plugins now support setting an ``environment`` key.
-See the :ref:`common provision keys </plugins/provision/common-keys>`
-section for details.
-
 
 tmt-1.53.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
