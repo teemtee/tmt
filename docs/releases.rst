@@ -11,7 +11,7 @@ In verbose mode, the ``execute`` step now prints the duration
 limit for each test.
 
 The provision plugins now support setting an ``environment`` key.
-See the documentation of :ref:`/plugins/provision/html`.
+See the documentation of :ref:`/plugins/provision`.
 
 
 tmt-1.54.0
