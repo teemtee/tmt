@@ -4,6 +4,13 @@
     Releases
 ======================
 
+tmt-1.55.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The provision plugins now support setting an ``environment`` key.
+See the documentation of :ref:`/plugins/provision/html`.
+
+
 tmt-1.54.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -1022,8 +1022,7 @@ class GuestData(SerializableContainer):
         help="""
             Environment variables to be defined for this guest. These will be available
             during test execution and can be used to customize behavior on a per-guest basis.
-            Variables defined here can be overridden by test-level environment variables.
-            See the documentation of :ref:`</plugins/provision>` for more details.
+            Note that variables defined here can be overridden by test-level environment variables.
             """,
     )
 
