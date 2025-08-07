@@ -169,11 +169,13 @@ def test_deeply_nested_directories(tmppath: Path, root_logger: tmt.log.Logger):
     'tmt.utils.filesystem._copy_tree_shutil',
     side_effect=PermissionError("Simulated permission error"),
 )
+
 def test_permission_error_handling(
-    mock_access,
-    mock_cp,
     mock_shutil,
+    mock_cp,
+    mock_access,
     copy_tree_paths: copy_tree_path_config,
+
     root_logger: tmt.log.Logger,
 ):
     """Test handling of permission errors during copy."""
