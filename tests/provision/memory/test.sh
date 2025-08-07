@@ -7,7 +7,7 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
         rlRun "pushd data"
         rlRun "set -o pipefail"
-        rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
+        rlRun "PROVISION_HOW=${PROVISION_HOW:-virtual}"
     rlPhaseEnd
 
     rlPhaseStartTest "Check base memory is defaulted to hardware memory"
