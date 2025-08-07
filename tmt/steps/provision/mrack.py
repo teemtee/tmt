@@ -907,22 +907,15 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
             if host.beaker_job_owner:
                 req['job_owner'] = host.beaker_job_owner
 
-            if host.kickstart:
-                if 'kernel-options' in host.kickstart:
-                    req['kernel_options'] = host.kickstart['kernel-options']
+            if host.kickstart and not mrack_constructs_ks_pre():
+                ks_components: list[str] = [
+                    host.kickstart[ks_section]
+                    for ks_section in ('pre-install', 'script', 'post-install')
+                    if ks_section in host.kickstart
+                ]
 
-                if 'kernel-options-post' in host.kickstart:
-                    req['kernel_options_post'] = host.kickstart['kernel-options-post']
-
-                if not mrack_constructs_ks_pre():
-                    ks_components: list[str] = [
-                        host.kickstart[ks_section]
-                        for ks_section in ('pre-install', 'script', 'post-install')
-                        if ks_section in host.kickstart
-                    ]
-
-                    if ks_components:
-                        req['ks_append'] = ['\n'.join(ks_components)]
+                if ks_components:
+                    req['ks_append'] = ['\n'.join(ks_components)]
 
             # Whiteboard must be added *after* request preparation, to overwrite the default one.
             req['whiteboard'] = host.whiteboard
@@ -1096,6 +1089,8 @@ class CreateJobParameters:
 
             if 'metadata' in kickstart:
                 data['beaker']['ks_meta'] = kickstart.pop('metadata')
+            data['beaker']['kernel_options'] = self.kickstart.get('kernel_options')
+            data['beaker']['kernel_options_post'] = self.kickstart.get('kernel_options_post')
 
             # Mrack does not handle metadata-only kickstart nicely, ends
             # up with just an empty string. Don't tempt it, don't let it
