@@ -20,11 +20,11 @@ _EXPECTED_TEST_FILES = {
     "subdir/file3.txt": "content3",
 }
 
-copy_tree_path_config = tuple[Path, Path, bool]
+CopyTreePathConfig = tuple[Path, Path, bool]
 
 
 @pytest.fixture(name="copy_tree_paths")
-def fixture_copy_tree_paths(tmppath: Path) -> copy_tree_path_config:
+def fixture_copy_tree_paths(tmppath: Path) -> CopyTreePathConfig:
     """
     Prepare source and destination directories for copy_tree tests.
 
@@ -103,7 +103,7 @@ def _run_metadata_test_for_item(
     )
 
 
-def test_copy_tree_basic(copy_tree_paths: copy_tree_path_config, root_logger: tmt.log.Logger):
+def test_copy_tree_basic(copy_tree_paths: CopyTreePathConfig, root_logger: tmt.log.Logger):
     """Test basic copy operation with default parameters."""
     source_dir, dest_dir, symlinks_supported = copy_tree_paths
     tmt.utils.filesystem.copy_tree(source_dir, dest_dir, root_logger)
@@ -169,13 +169,11 @@ def test_deeply_nested_directories(tmppath: Path, root_logger: tmt.log.Logger):
     'tmt.utils.filesystem._copy_tree_shutil',
     side_effect=PermissionError("Simulated permission error"),
 )
-
 def test_permission_error_handling(
     mock_shutil,
     mock_cp,
     mock_access,
-    copy_tree_paths: copy_tree_path_config,
-
+    copy_tree_paths: CopyTreePathConfig,
     root_logger: tmt.log.Logger,
 ):
     """Test handling of permission errors during copy."""
@@ -205,7 +203,7 @@ def test_nonexistent_source_directory(tmppath: Path, root_logger: tmt.log.Logger
 def test_fallback_to_shutil_copy_from_cp_failure(
     mock_copy_tree_cp,
     mock_copy_tree_shutil,
-    copy_tree_paths: copy_tree_path_config,
+    copy_tree_paths: CopyTreePathConfig,
     root_logger: tmt.log.Logger,
 ):
     """Test fallback to shutil.copytree when _copy_tree_cp fails."""
@@ -220,7 +218,7 @@ def test_fallback_to_shutil_copy_from_cp_failure(
         assert (dest_dir / file_path).exists(), f"Missing file: {file_path}"
 
 
-def test_metadata_cp_reflink(copy_tree_paths: copy_tree_path_config, root_logger: tmt.log.Logger):
+def test_metadata_cp_reflink(copy_tree_paths: CopyTreePathConfig, root_logger: tmt.log.Logger):
     """Test metadata preservation with cp --reflink=auto strategy."""
     source_dir, dest_dir, _ = copy_tree_paths
     timestamp = time.time() - 3600  # One hour ago
@@ -243,7 +241,7 @@ def test_metadata_cp_reflink(copy_tree_paths: copy_tree_path_config, root_logger
 def test_metadata_preservation_on_cp_failure_fallback_to_shutil(
     mock_copy_tree_cp,
     mock_copy_tree_shutil,
-    copy_tree_paths: copy_tree_path_config,
+    copy_tree_paths: CopyTreePathConfig,
     root_logger: tmt.log.Logger,
 ):
     """Test metadata preservation by shutil.copytree when cp command fails."""
@@ -278,7 +276,7 @@ def test_metadata_preservation_on_cp_failure_fallback_to_shutil(
 def test_all_strategies_fail(
     mock_copy_tree_cp,
     mock_copy_tree_shutil,
-    copy_tree_paths: copy_tree_path_config,
+    copy_tree_paths: CopyTreePathConfig,
     root_logger: tmt.log.Logger,
 ):
     """Test GeneralError is raised when all copy strategies fail."""
@@ -291,7 +289,7 @@ def test_all_strategies_fail(
 
 
 def test_copy_to_existing_destination(
-    copy_tree_paths: copy_tree_path_config, root_logger: tmt.log.Logger
+    copy_tree_paths: CopyTreePathConfig, root_logger: tmt.log.Logger
 ):
     """Test copying into a destination directory that already contains files."""
     source_dir, dest_dir, symlinks_supported = copy_tree_paths
