@@ -1077,7 +1077,7 @@ class GuestTestcloud(tmt.GuestSsh):
             'green',
         )
 
-        for i, device in enumerate(self._domain.storage_devices, start=1):
+        for i, device in enumerate(self._domain.storage_devices):
             self.debug(
                 f'Domain disk {i} size', f'{tmt.hardware.UNITS(f"{device.size} GB").to("GB")}'
             )
