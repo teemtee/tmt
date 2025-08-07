@@ -318,19 +318,16 @@ class FmfContext(dict[str, list[str]]):
             -c distro=fedora-33 -> {'distro': ['fedora']}
             -c arch=x86_64,ppc64 -> {'arch': ['x86_64', 'ppc64']}
         """
-        for spec_item in spec:
-            if '=' in spec_item and spec_item.endswith('='):
-                key = spec_item.split('=')[0]
+
+        raw_fmf_context: dict[str, list[str]] = {}
+        for key, value in Environment.from_sequence(spec, logger).items():
+            if not value.strip():
                 raise GeneralError(
                     f"Context dimension '{key}' has an empty value. "
                     f"Use 'KEY=VALUE' format or remove the dimension entirely."
                 )
-        return FmfContext(
-            {
-                key: value.split(',')
-                for key, value in Environment.from_sequence(spec, logger).items()
-            }
-        )
+            raw_fmf_context[key] = value.split(',')
+        return FmfContext(raw_fmf_context)
 
     @classmethod
     def _normalize_fmf(
