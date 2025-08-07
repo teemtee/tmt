@@ -38,6 +38,10 @@ require+:
             We want to run this locally and it's enough to execute
             on a single distro when run in the CI. We don't need
             to exercise this again and again across all distros.
+      - when: distro == fedora-rawhide
+        enabled: false
+        because: |
+          Python 3.14 wheels for lxml and pydantic are not available yet
 
     /basic:
         summary: Basic unit tests (development packages)
@@ -67,6 +71,10 @@ require+:
         because: Enable in CI only
 
         enabled: true
+      - when: distro == fedora-rawhide
+        enabled: false
+        because: |
+          Python 3.14 wheels for lxml and pydantic are not available yet
 
     /basic:
         summary: Basic unit tests (system packages)

@@ -5,6 +5,11 @@ require:
     - python3
     - python3-devel
 tier: null
+adjust+:
+  - when: distro == fedora-rawhide
+    enabled: false
+    because: |
+      Python 3.14 wheels for lxml and pydantic are not available yet
 
 /mini:
     summary: Ensure the minimal pip install works
