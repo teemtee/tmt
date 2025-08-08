@@ -120,11 +120,13 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         overview = fmf.utils.listed(self.data.script, 'script')
         logger.info('overview', f'{overview} found', 'green')
 
-        workdir = self.step.plan.worktree
-        assert workdir is not None  # narrow type
+        worktree = self.step.plan.worktree
+        assert worktree is not None  # narrow type
 
         if self.data.url:
-            repo_path = workdir / "repository"
+            assert self.workdir is not None  # narrow type
+
+            repo_path = self.workdir / "repository"
 
             environment[self._cloned_repo_path_envvar_name] = EnvVarValue(repo_path.resolve())
 
@@ -158,7 +160,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
             environment.update(
                 topology.push(
-                    dirpath=workdir,
+                    dirpath=worktree,
                     guest=guest,
                     logger=logger,
                     filename_base=safe_filename(
@@ -168,7 +170,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             )
 
         prepare_wrapper_filename = safe_filename(PREPARE_WRAPPER_FILENAME, self, guest)
-        prepare_wrapper_path = workdir / prepare_wrapper_filename
+        prepare_wrapper_path = worktree / prepare_wrapper_filename
 
         logger.debug('prepare wrapper', prepare_wrapper_path, level=3)
 
@@ -189,6 +191,6 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 command = tmt.utils.ShellScript(f'sudo -E {prepare_wrapper_path}')
             else:
                 command = tmt.utils.ShellScript(f'{prepare_wrapper_path}')
-            guest.execute(command=command, cwd=workdir, env=environment)
+            guest.execute(command=command, cwd=worktree, env=environment)
 
         return outcome
