@@ -16,6 +16,7 @@ from tmt.utils import (
     format_timestamp,
     render_command_report,
 )
+from tmt.utils.hints import hints_as_notes
 
 if TYPE_CHECKING:
     import tmt.base
@@ -133,7 +134,17 @@ class DmesgCheck(Check):
         return outcome, log_paths
 
 
-@provides_check('dmesg')
+@provides_check(
+    'dmesg',
+    hints={
+        'fetching-skipped': """
+            Saving of the kernel ring buffer was skipped because of missing privileges.
+
+            The account, used by tmt, lacks necessary privileges. See ``man 2 syslog``
+            for more details on capabilities required for the kernel ring buffer access.
+            """
+    },
+)
 class Dmesg(CheckPlugin[DmesgCheck]):
     #
     # This plugin docstring has been reviewed and updated to follow
@@ -202,7 +213,13 @@ class Dmesg(CheckPlugin[DmesgCheck]):
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
-            return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
+            return [
+                CheckResult(
+                    name='dmesg',
+                    result=ResultOutcome.SKIP,
+                    note=hints_as_notes('test-checks/dmesg/fetching-skipped'),
+                )
+            ]
 
         outcome, paths = check._save_dmesg(invocation, CheckEvent.BEFORE_TEST, logger)
         return [CheckResult(name='dmesg', result=outcome, log=paths)]
@@ -217,10 +234,22 @@ class Dmesg(CheckPlugin[DmesgCheck]):
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if not invocation.guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
-            return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
+            return [
+                CheckResult(
+                    name='dmesg',
+                    result=ResultOutcome.SKIP,
+                    note=hints_as_notes('test-checks/dmesg/fetching-skipped'),
+                )
+            ]
 
         if not invocation.is_guest_healthy:
-            return [CheckResult(name='dmesg', result=ResultOutcome.SKIP)]
+            return [
+                CheckResult(
+                    name='dmesg',
+                    result=ResultOutcome.SKIP,
+                    note=hints_as_notes('guest-not-healthy'),
+                )
+            ]
 
         outcome, paths = check._save_dmesg(invocation, CheckEvent.AFTER_TEST, logger)
         return [CheckResult(name='dmesg', result=outcome, log=paths)]
