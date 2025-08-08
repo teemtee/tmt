@@ -114,6 +114,8 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
         environment = environment or tmt.utils.Environment()
 
+        environment.update(guest.environment)
+
         # Give a short summary
         overview = fmf.utils.listed(self.data.script, 'script')
         logger.info('overview', f'{overview} found', 'green')
