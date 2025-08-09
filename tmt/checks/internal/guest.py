@@ -43,7 +43,7 @@ class GuestFailures(CheckPlugin[GuestCheck]):
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
-        if isinstance(invocation.exception, tmt.utils.RebootTimeoutError):
+        if any(isinstance(exc, tmt.utils.RebootTimeoutError) for exc in invocation.exceptions):
             return [
                 CheckResult(
                     name=CHECK_NAME,
@@ -52,7 +52,7 @@ class GuestFailures(CheckPlugin[GuestCheck]):
                 )
             ]
 
-        if isinstance(invocation.exception, tmt.utils.ReconnectTimeoutError):
+        if any(isinstance(exc, tmt.utils.ReconnectTimeoutError) for exc in invocation.exceptions):
             return [
                 CheckResult(
                     name=CHECK_NAME,

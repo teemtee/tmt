@@ -639,7 +639,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             # unresponsive. If not handled test would stay in 'pending' state.
             # See issue https://github.com/teemtee/tmt/issues/3647.
             except Exception as exc:
-                invocation.exception = exc
+                invocation.exceptions.append(exc)
 
         # Fetch #1: we need logs and everything the test produced so we could
         # collect its results.
@@ -712,10 +712,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         index = 0
 
         # TODO: plugin does not return any value. Results are exchanged
-        # via `self.results`, to signal abort we need a bigger gun. Once
-        # we get back to refactoring the plugin, this would turn into a
-        # better way of transporting "plugin outcome" back to the step.
+        # via `self.results`, to signal abort or interruption we need a
+        # bigger gun. Once we get back to refactoring the plugin, this
+        # would turn into a better way of transporting "plugin outcome"
+        # back to the step.
         abort_execute_exception: Optional[AbortExecute] = None
+        interrupt_exception: Optional[tmt.utils.signals.Interrupted] = None
 
         with UpdatableMessage(self) as progress_bar:
             while index < len(test_invocations):
@@ -749,7 +751,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                         tmt.utils.ReconnectTimeoutError,
                         tmt.utils.RestartMaxAttemptsError,
                     ) as error:
-                        invocation.exception = error
+                        invocation.exceptions.append(error)
                         for result in invocation.results:
                             result.result = ResultOutcome.ERROR
 
@@ -761,9 +763,33 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                         if invocation.handle_reboot():
                             continue
                     except tmt.utils.RebootTimeoutError as error:
-                        invocation.exception = error
+                        invocation.exceptions.append(error)
                         for result in invocation.results:
                             result.result = ResultOutcome.ERROR
+
+                # Handle abort signs
+                if invocation.abort_requested or (
+                    self.data.exit_first
+                    and any(
+                        result.result in (ResultOutcome.FAIL, ResultOutcome.ERROR)
+                        for result in invocation.results
+                    )
+                ):
+                    if invocation.abort_requested:
+                        abort_message = f'Test {test.name} aborted, stopping execution.'
+
+                    else:
+                        abort_message = f'Test {test.name} failed, stopping execution.'
+
+                    abort_execute_exception = AbortExecute(abort_message)
+
+                    invocation.exceptions.append(abort_execute_exception)
+
+                # Handle interrupt
+                if tmt.utils.signals.INTERRUPT_PENDING.is_set():
+                    interrupt_exception = tmt.utils.signals.Interrupted()
+
+                    invocation.exceptions.append(interrupt_exception)
 
                 # Execute internal checks
                 invocation.check_results += self.run_internal_checks(
@@ -785,23 +811,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     variables={'PROGRESS': f'[{progress}]'},
                 ).print_results(invocation.results)
 
-                abort_execute = invocation.abort_requested or (
-                    self.data.exit_first
-                    and any(
-                        result.result in (ResultOutcome.FAIL, ResultOutcome.ERROR)
-                        for result in invocation.results
-                    )
-                )
-
-                if abort_execute:
-                    if invocation.abort_requested:
-                        abort_message = f'Test {test.name} aborted, stopping execution.'
-
-                    else:
-                        abort_message = f'Test {test.name} failed, stopping execution.'
-
-                    abort_execute_exception = AbortExecute(abort_message)
-
+                if abort_execute_exception is not None or interrupt_exception is not None:
                     progress_bar.clear()
 
                     break
@@ -833,6 +843,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         if abort_execute_exception:
             raise abort_execute_exception
+
+        if interrupt_exception:
+            raise interrupt_exception
 
     def results(self) -> list[Result]:
         """
