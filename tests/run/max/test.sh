@@ -8,7 +8,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest
-        rlRun -s "tmt run -vv --id $run --max 3"
+        rlRun -s "tmt run -vv --id $run --max-tests-per-plan 3"
         rlAssertGrep "Splitting plan to batches of 3 tests." $rlRun_LOG
         rlAssertGrep "3 tests selected" $rlRun_LOG
         rlAssertGrep "summary: 3 tests passed" $rlRun_LOG
