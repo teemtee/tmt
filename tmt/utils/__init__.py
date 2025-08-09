@@ -80,7 +80,7 @@ if TYPE_CHECKING:
     import tmt.cli
     import tmt.steps
     import tmt.utils.themes
-    from tmt._compat.typing import Self, TypeAlias
+    from tmt._compat.typing import ParamSpec, Self, TypeAlias
     from tmt.hardware import Size
 
 
@@ -273,8 +273,9 @@ GIT_CLONE_ATTEMPTS: int = configure_constant(DEFAULT_GIT_CLONE_ATTEMPTS, 'TMT_GI
 DEFAULT_GIT_CLONE_INTERVAL: int = 10
 GIT_CLONE_INTERVAL: int = configure_constant(DEFAULT_GIT_CLONE_INTERVAL, 'TMT_GIT_CLONE_INTERVAL')
 
-# A stand-in variable for generic use.
+# A stand-in variables for generic use.
 T = TypeVar('T')
+P = ParamSpec('P')
 
 
 WriteMode = Literal['w', 'a']
@@ -3953,9 +3954,6 @@ def format(
     return output + formatted_value
 
 
-P = ParamSpec('P')
-
-
 # [happz] I was thinking how to slot this under the umbrela of `format()`
 # and `format_value()`, but it's 3 values rather than one, and extending
 # their API did not look sane enough.
@@ -5764,13 +5762,13 @@ def format_duration(duration: datetime.timedelta) -> str:
 
 
 def retry(
-    func: Callable[..., T],
+    func: Callable[P, T],
     attempts: int,
     interval: int,
     label: str,
     logger: tmt.log.Logger,
-    *args: Any,
-    **kwargs: Any,
+    *args: P.args,
+    **kwargs: P.kwargs,
 ) -> T:
     """
     Retry functionality to be used elsewhere in the code.
