@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, Uni
 
 import fmf
 
-from tmt._compat.pydantic import BaseModel, Extra, Field, ValidationError
+from tmt._compat.pydantic import PYDANTIC_V1, BaseModel, ConfigDict, Field, ValidationError
 from tmt._compat.typing import Self
 
 if TYPE_CHECKING:
@@ -927,17 +927,27 @@ class MetadataContainer(BaseModel):
     A base class of containers backed by fmf nodes.
     """
 
-    class Config:
-        # Accept only keys with dashes instead of underscores
-        alias_generator = key_to_option
-        extra = Extra.forbid
-        validate_all = True
-        validate_assignment = True
+    if PYDANTIC_V1:
+
+        class Config:
+            # Accept only keys with dashes instead of underscores
+            alias_generator = key_to_option
+            extra = "forbid"
+            validate_all = True
+            validate_assignment = True
+
+    else:
+        model_config = ConfigDict(
+            alias_generator=key_to_option,
+            extra="forbid",
+            validate_default=True,
+            validate_assignment=True,
+        )
 
     @classmethod
     def from_fmf(cls, tree: fmf.Tree) -> Self:
         try:
-            return cls.parse_obj(tree.data)
+            return cls.model_validate(tree.data)
 
         except ValidationError as error:
             import tmt.utils
@@ -949,7 +959,7 @@ class MetadataContainer(BaseModel):
         import tmt.utils
 
         try:
-            return cls.parse_obj(tmt.utils.yaml_to_dict(yaml))
+            return cls.model_validate(tmt.utils.yaml_to_dict(yaml))
 
         except ValidationError as error:
             import tmt.utils

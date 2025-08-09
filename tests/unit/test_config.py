@@ -10,6 +10,7 @@ import fmf
 import pytest
 
 import tmt.config
+from tmt._compat.pydantic import PYDANTIC_V1
 from tmt.log import Logger
 from tmt.utils import Path
 
@@ -97,12 +98,20 @@ def test_link_config_invalid(config_path: Path, root_logger: Logger):
 
     cause = str(error.value.__cause__)
     assert '6 validation errors for LinkConfig' in cause
-    assert re.search(r'type\s*value is not a valid enumeration member', cause)
-    assert re.search(r'url\s*invalid or missing URL scheme', cause)
-    assert re.search(r'tmt-web-url\s*URL host invalid', cause)
-    assert re.search(r'unknown\s*extra fields not permitted', cause)
-    assert re.search(r'token\s*field required', cause)
-    assert re.search(r'additional_key\s*extra fields not permitted', cause)
+    if PYDANTIC_V1:
+        assert re.search(r'type\s*value is not a valid enumeration member', cause)
+        assert re.search(r'url\s*invalid or missing URL scheme', cause)
+        assert re.search(r'tmt-web-url\s*URL host invalid', cause)
+        assert re.search(r'unknown\s*extra fields not permitted', cause)
+        assert re.search(r'token\s*field required', cause)
+        assert re.search(r'additional_key\s*extra fields not permitted', cause)
+    else:
+        assert re.search(r'type\s*Input should be \'\w+\' \[type=enum', cause)
+        assert re.search(r'url\s*Input should be a valid URL, relative URL without a base', cause)
+        assert re.search(r'tmt-web-url\s*Input should be a valid URL, empty host', cause)
+        assert re.search(r'token\s*Field required', cause)
+        assert re.search(r'unknown\s*Extra inputs are not permitted', cause)
+        assert re.search(r'additional_key\s*Extra inputs are not permitted', cause)
 
 
 def test_link_config_valid(config_path: Path, root_logger: Logger):
@@ -119,8 +128,9 @@ def test_link_config_valid(config_path: Path, root_logger: Logger):
     link = tmt.config.Config(root_logger).link
 
     assert link.issue_tracker[0].type == 'jira'
-    assert link.issue_tracker[0].url == 'https://issues.redhat.com'
-    assert link.issue_tracker[0].tmt_web_url == 'https://tmt-web-url.com'
+    # Pydantic v1 and v2 differ by a trailing /
+    assert re.match(r'https://issues\.redhat\.com/?', str(link.issue_tracker[0].url))
+    assert re.match(r'https://tmt-web-url\.com/?', str(link.issue_tracker[0].tmt_web_url))
     assert link.issue_tracker[0].token == 'secret'
 
 
@@ -139,4 +149,7 @@ def test_link_config_empty(config_path: Path, root_logger: Logger):
 
     cause = str(error.value.__cause__)
     assert '1 validation error for LinkConfig' in cause
-    assert re.search(r'issue-tracker\s*field required', cause)
+    if PYDANTIC_V1:
+        assert re.search(r'issue-tracker\s*field required', cause)
+    else:
+        assert re.search(r'issue-tracker\s*Field required', cause)
