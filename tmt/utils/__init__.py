@@ -320,15 +320,12 @@ class FmfContext(dict[str, list[str]]):
             -c arch=x86_64,ppc64 -> {'arch': ['x86_64', 'ppc64']}
         """
 
-        raw_fmf_context: dict[str, list[str]] = {}
-        for key, value in Environment.from_sequence(spec, logger).items():
-            if not value.strip():
-                raise GeneralError(
-                    f"Context dimension '{key}' has an empty value. "
-                    f"Use 'KEY=VALUE' format or remove the dimension entirely."
-                )
-            raw_fmf_context[key] = value.split(',')
-        return FmfContext(raw_fmf_context)
+        return FmfContext(
+            {
+                key: value.split(',')
+                for key, value in Environment.from_sequence(spec, logger).items()
+            }
+        )
 
     @classmethod
     def _normalize_fmf(
@@ -4823,6 +4820,14 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
         # A single step configuration, represented as a mapping.
         if isinstance(step_collection, dict):
             _process_step(step_name, step_collection)
+
+            return
+
+        # Handle None/empty step configuration (e.g., "provision:" with no value)
+        if step_collection is None:
+            empty_step = {}
+            _process_step(step_name, empty_step)
+            node.data[step_name] = empty_step
 
             return
 

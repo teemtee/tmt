@@ -30,7 +30,7 @@ rlJournalStart
 
     rlPhaseStartTest "Bad"
         rlRun -s "$tmt plan lint bad" 1
-        rlAssertGrep "warn C000 fmf node failed schema validation" $rlRun_LOG
+        rlAssertGrep "pass C000 fmf node passes schema validation" $rlRun_LOG
         rlAssertGrep "warn C001 summary key is missing" $rlRun_LOG
         rlAssertGrep "fail P002 execute step must be defined with \"how\"" $rlRun_LOG
 
@@ -44,7 +44,7 @@ rlJournalStart
         rlAssertGrep "warn C000 value of \"how\" is not \"tmt\"" $rlRun_LOG
         rlAssertGrep "warn C000 key \"name\" not recognized by schema /schemas/execute/upgrade" $rlRun_LOG
         rlAssertGrep "warn C000 value of \"how\" is not \"upgrade\"" $rlRun_LOG
-        rlAssertGrep "warn C000 fmf node failed schema validation" $rlRun_LOG
+        rlAssertGrep "fail C000 fmf node failed schema validation" $rlRun_LOG
         rlAssertGrep "fail P003 unknown execute method \"somehow\" in \"default-0\"" $rlRun_LOG
         rlAssertGrep "fail P004 unknown discover method \"somehow\" in \"default-0\"" $rlRun_LOG
 
@@ -63,13 +63,13 @@ rlJournalStart
         rlAssertGrep "fail P005 remote fmf id in \"b\" is invalid, repo 'http://invalid-url' cannot be cloned" $rlRun_LOG
 
         rlRun -s "$tmt plan lint invalid_attr" 1
-        rlAssertGrep "warn C000 fmf node failed schema validation" $rlRun_LOG
+        rlAssertGrep "fail C000 fmf node failed schema validation" $rlRun_LOG
         rlAssertGrep "warn C001 summary key is missing" $rlRun_LOG
         rlAssertGrep "fail P001 unknown key \"discove\" is used" $rlRun_LOG
         rlAssertGrep "fail P001 unknown key \"environmen\" is used" $rlRun_LOG
         rlAssertGrep "fail P001 unknown key \"summaryABCDEF\" is used" $rlRun_LOG
 
-        rlRun -s "$tmt plan lint invalid-plugin-key" 0
+        rlRun -s "$tmt plan lint invalid-plugin-key" 1
         rlAssertGrep 'warn C000 key "wrong" not recognized by schema$' $rlRun_LOG
         rlAssertGrep 'warn C000 key "wrong" not recognized by schema /schemas/prepare/feature' $rlRun_LOG
 
