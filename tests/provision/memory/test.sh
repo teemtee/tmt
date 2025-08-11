@@ -30,7 +30,7 @@ rlJournalStart
         if ! rlRun "tmt run -i $run -vv --all plan --name /plans/default" ; then
             rlRun "cat $run/log.txt" 0 "Dump log.txt"
         else
-            rlAssertGrep "memory: 2048 MB" "$run/log.txt"
+            rlAssertGrep "memory: 2048.0 MB" "$run/log.txt"
         fi
     rlPhaseEnd
 
