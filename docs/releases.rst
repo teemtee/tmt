@@ -13,6 +13,10 @@ limit for each test.
 The provision plugins now support setting an ``environment`` key.
 See the documentation of :ref:`/plugins/provision`.
 
+The ``tmt lint`` command now fails with an exit code 1 instead of a
+warn with an exit code 0 when an invalid key is encountered in fmf
+metadata.
+
 
 tmt-1.54.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -287,13 +291,6 @@ The default unit of the ``memory`` hardware requirement is now
 The steps documentation was deduplicated, and all information
 from the specs was moved to the ``plugins`` section.
 
-
-tmt-1.47.0
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The ``tmt lint`` command now fails with an exit code 1 instead of a
-warn with an exit code 0 when an invalid key is encountered in fmf
-metadata.
 
 tmt-1.46.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

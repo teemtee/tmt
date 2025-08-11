@@ -320,12 +320,15 @@ class FmfContext(dict[str, list[str]]):
             -c arch=x86_64,ppc64 -> {'arch': ['x86_64', 'ppc64']}
         """
 
-        return FmfContext(
-            {
-                key: value.split(',')
-                for key, value in Environment.from_sequence(spec, logger).items()
-            }
-        )
+        raw_fmf_context: dict[str, list[str]] = {}
+        for key, value in Environment.from_sequence(spec, logger).items():
+            if not value.strip():
+                raise GeneralError(
+                    f"Context dimension '{key}' has an empty value. "
+                    f"Use 'KEY=VALUE' format or remove the dimension entirely."
+                )
+            raw_fmf_context[key] = value.split(',')
+        return FmfContext(raw_fmf_context)
 
     @classmethod
     def _normalize_fmf(
