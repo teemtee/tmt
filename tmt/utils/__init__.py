@@ -4827,8 +4827,9 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
             return
 
         # Handle None/empty step configuration (e.g., "provision:" with no value)
+        # comment
         if step_collection is None:
-            empty_step = {}
+            empty_step: dict[Any, Any] = {}
             _process_step(step_name, empty_step)
             node.data[step_name] = empty_step
 
