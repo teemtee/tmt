@@ -75,6 +75,12 @@ rlJournalStart
         rlAssertGrep 'url: https://github.com/teemtee/foobar' 'output'
     rlPhaseEnd
 
+    rlPhaseStartTest 'Empty context value should fail gracefully'
+        rlRun "tmt -c foo= run -r $plan_noctx $steps 2>&1 | tee output" 2
+        rlAssertGrep "Context dimension 'foo' has an empty value" 'output'
+        rlAssertGrep "Use 'KEY=VALUE' format or remove the dimension entirely" 'output'
+    rlPhaseEnd
+
     rlPhaseStartTest 'Using context and variable to select tests'
         rlRun -s "tmt -c PICK_FMF='^/tests/(unit|basic/ls)$' \
             run -e PICK_TMT='^/tests/core/ls$' \

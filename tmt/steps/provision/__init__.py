@@ -1001,6 +1001,21 @@ class GuestData(SerializableContainer):
         unserialize=lambda serialized: GuestFacts.from_serialized(serialized),
     )
 
+    environment: tmt.utils.Environment = field(
+        default_factory=tmt.utils.Environment,
+        normalize=tmt.utils.Environment.normalize,
+        serialize=lambda environment: environment.to_fmf_spec(),
+        unserialize=lambda serialized: tmt.utils.Environment.from_fmf_spec(serialized),
+        exporter=lambda environment: environment.to_fmf_spec(),
+        help="""
+            Environment variables to be defined for this guest. These will be available
+            during test execution and can be used to customize behavior on a per-guest basis.
+            Note that variables defined here can be overridden by test-level environment variables.
+            """,
+        option=('-e', '--environment'),
+        metavar='KEY=VALUE',
+    )
+
     hardware: Optional[tmt.hardware.Hardware] = field(
         default=cast(Optional[tmt.hardware.Hardware], None),
         option='--hardware',
@@ -1189,6 +1204,8 @@ class Guest(tmt.utils.Common):
     become: bool
 
     hardware: Optional[tmt.hardware.Hardware]
+
+    environment: tmt.utils.Environment
 
     # Flag to indicate localhost guest, requires special handling
     localhost = False
