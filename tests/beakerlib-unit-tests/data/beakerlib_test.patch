@@ -1,0 +1,19 @@
+diff --git a/src/test/test.sh b/src/test/test.sh
+index ba7733e..4d35e87 100755
+--- a/src/test/test.sh
++++ b/src/test/test.sh
+@@ -270,11 +270,11 @@ fi
+ # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ # set important variables & start journal
+-export BEAKERLIB="$PWD/.."
++export BEAKERLIB="/usr/share/beakerlib"
+ export TESTID='123456'
+ export TEST='beakerlib-unit-tests'
+-. ../beakerlib.sh
+-export __INTERNAL_JOURNALIST="$BEAKERLIB/python/journalling.py"
++. $BEAKERLIB/beakerlib.sh
++export __INTERNAL_JOURNALIST="/usr/bin/beakerlib-journalling"
+ export OUTPUTFILE=$(mktemp) # no-reboot
+ export SCOREFILE=$(mktemp) # no-reboot
+ rlJournalStart
