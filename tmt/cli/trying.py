@@ -129,13 +129,17 @@ def _construct_trying_provision_options(params: Any) -> dict[str, Any]:
     if params['image_and_how']:
         # TODO: For now just pick the first image-how pair, let's allow
         # specifying multiple images and provision methods as well
-        image_and_how = params['image_and_how'][0]
-        # We expect the 'image' or 'image@how' syntax
-        matched = re.match("([^@]+)@([^@]+)", image_and_how.strip())
-        if matched:
-            options = {"image": matched.group(1), "how": matched.group(2)}
+        image_and_how = params['image_and_how'][0].strip()
+        # Handle local provisioning - image part is irrelevant
+        if image_and_how == '@local':
+            options = {"how": image_and_how[1:]}
         else:
-            options = {"image": image_and_how}
+            # We expect the 'image' or 'image@how' syntax
+            matched = re.match("([^@]+)@([^@]+)", image_and_how)
+            if matched:
+                options = {"image": matched.group(1), "how": matched.group(2)}
+            else:
+                options = {"image": image_and_how}
 
     # Add guest architecture if provided
     if params['arch']:
