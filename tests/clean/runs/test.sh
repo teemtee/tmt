@@ -34,7 +34,7 @@ rlJournalStart
         rlAssertNotGrep "(done\s+){1}(todo\s+){6}$run1\s+/plan1" "$rlRun_LOG" -E
         rlAssertGrep "(done\s+){1}(todo\s+){6}$run2\s+/plan1" "$rlRun_LOG" -E
 
-        rlRun -s "tmt clean runs -v -l"
+        rlRun -s "tmt clean runs -v -l --workdir-root $tmprun"
         rlAssertGrep "Removing workdir '$run2'" "$rlRun_LOG"
         rlRun -s "tmt status --workdir-root $tmprun -vv"
         rlAssertNotGrep "(done\s+){1}(todo\s+){6}$run2\s+/plan1" "$rlRun_LOG" -E
