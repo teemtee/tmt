@@ -6,7 +6,7 @@ description: |
     A recipe is a YAML file that captures a complete, static snapshot of a tmt
     run after all dynamic evaluation has been resolved. It includes preprocessed
     information about plans, tests, results, and run configuration. All environment
-    variables are evaluated, and git references are replaced with fixed commit hashes.
+    variables are evaluated.
 
     Generated recipe can be edited, manually or by using a script, which allows users
     to select only a subset of discovered tests to be reexecuted.
@@ -28,7 +28,7 @@ description: |
         run-repository:
             url: https://github.com/teemtee/tmt
             path: /tests/nested
-            ref: c89c4b5
+            ref: main
 
         # Mapping, stores run configuration
         run:
