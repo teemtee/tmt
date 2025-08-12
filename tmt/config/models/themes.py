@@ -49,7 +49,7 @@ class _Theme(MetadataContainer):
                 f"No such theme field '{self.__class__.__name__.lower()}.{field}'."
             )
 
-        # Using model_fields is deprecated and will be removed in pyright v3
+        # Using model_fields is deprecated and will be removed in pydantic v3
         # If we can convert this to class method then we can avoid this issue.
         if self.model_fields[field].annotation is not Style:  # pyright: ignore[reportDeprecated]
             raise tmt.utils.GeneralError(
