@@ -4,6 +4,16 @@
     Releases
 ======================
 
+tmt-1.56.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`/plugins/test-checks/journal` check has been improved
+to match the implementation patterns of other checks. Default
+configuration for persistent journal storage is now automatically
+applied when possible, and systemd availability checking has been
+enhanced.
+
+
 tmt-1.55.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

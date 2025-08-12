@@ -82,6 +82,29 @@
           - how: journal
             dmesg: true
 
+    /config-test:
+        test: "true"
+        check:
+          - how: journal
+
+    /config-test-check:
+        test: |
+          cat /etc/systemd/journald.conf.d/50-tmt.conf
+
+    /config-no-journal:
+        test: |
+          systemctl mask systemd-journald
+
+    /config-no-journal-check:
+        test: "true"
+        check:
+          - how: journal
+
+    /cursor-file:
+        test: "true"
+        check:
+          - how: journal
+
 /avc:
   /checkpoint:
     check:

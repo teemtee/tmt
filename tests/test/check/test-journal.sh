@@ -10,11 +10,15 @@ function assert_check_result () {
     rlAssertEquals "$comment" "journal:$result" "$(yq -r ".[] | select(.name == \"$name\") | .check | .[] | select(.event == \"$event\") | \"\\(.name):\\(.result)\"" $results)"
 }
 
+# Create temporary files under custom TMT_WORKDIR_ROOT if specified
+# This is needed for Silverblue users where /var/tmp is not accessible when podman is run next to the toolbox container
+# In case of virtual provisioner, user /var/tmp which works well with non-root users
+[ "$PROVISION_HOW" = "container" ] && TMP_DIR=${TMT_WORKDIR_ROOT:-/var/tmp} || TMP_DIR=/var/tmp
 
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
-        rlRun "run=\$(mktemp -d -p /var/tmp)" 0 "Create run directory"
+        rlRun "run=\$(mktemp -d -p $TMP_DIR)" 0 "Create run directory"
 
         rlRun "results=$run/plan/execute/results.yaml"
         rlRun "harmless=$run/plan/execute/data/guest/default-0/journal/harmless-1"
@@ -24,6 +28,8 @@ rlJournalStart
         rlRun "unit_test=$run/plan/execute/data/guest/default-0/journal/unit-test-1"
         rlRun "ignore_test=$run/plan/execute/data/guest/default-0/journal/ignore-test-1"
         rlRun "reboot_test=$run/plan/execute/data/guest/default-0/journal/reboot-test-1"
+        rlRun "config_test=$run/plan/execute/data/guest/default-0/journal/config-test-check-2"
+        rlRun "cursor_file=$run/plan/execute/data/guest/default-0/journal/cursor-file-1"
 
         rlRun "pushd data"
         rlRun "set -o pipefail"
@@ -32,11 +38,12 @@ rlJournalStart
     rlPhaseStartTest "Test journal check with $PROVISION_HOW in harmless run"
         rlRun "journal_log=$harmless/checks/journal.txt"
 
-        rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /journal/harmless"
+        rlRun -s "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW test -n /journal/harmless"
         rlRun "cat $results"
 
         if [ "$PROVISION_HOW" = "container" ]; then
             assert_check_result "journal as an after-test should skip with containers" "skip" "after-test" "harmless"
+            rlAssertGrep "Note: systemd not available" $rlRun_LOG
 
             rlAssertNotExists "$journal_log"
 
@@ -125,6 +132,36 @@ rlJournalStart
             rlAssertEquals "There should be 2 reports after the test" \
                 "$(grep 'journal log' $journal_log | wc -l)" "2"
             rlAssertGrep "Linux version" $journal_log
+        rlPhaseEnd
+
+        for user in root fedora; do
+            rlPhaseStartTest "Test journal configuration ($user)"
+                rlRun -s "tmt run --id $run --scratch -a -dvv provision -h $PROVISION_HOW -u $user test -n /journal/config-test"
+
+                if [ "$user" = "root" ]; then
+                  rlAssertGrep "Configured persistent journal storage$" $rlRun_LOG
+                else
+                  rlAssertGrep "Configured persistent journal storage with sudo" $rlRun_LOG
+                fi
+
+                rlRun -s "cat $config_test/output.txt"
+                rlAssertGrep "^\[Journal\]$" $rlRun_LOG
+                rlAssertGrep "^Storage=persistent$" $rlRun_LOG
+                rlAssertGrep "^Compress=yes$" $rlRun_LOG
+            rlPhaseEnd
+
+            rlPhaseStartTest "Test cursor file ($user)"
+                rlRun "tmt run --id $run --scratch -a -vv provision -h $PROVISION_HOW -u $user test -n /journal/cursor-file"
+
+                # Check if cursor file exists and has expected content
+                rlAssertGrep "^s=" "$cursor_file/checks/journal-cursor.txt"
+            rlPhaseEnd
+        done
+
+        rlPhaseStartTest "Test journal configuration not possible"
+            rlRun -s "tmt run --id $run --scratch -a -dvv provision -h $PROVISION_HOW test -n /journal/config-no-journal"
+
+            rlAssertGrep "warn: Unable to configure persistent journal storage, continuing with default settings" $rlRun_LOG
         rlPhaseEnd
     fi
 

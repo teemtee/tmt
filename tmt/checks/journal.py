@@ -20,8 +20,10 @@ TEST_POST_JOURNAL_FILENAME = 'journal.txt'
 #: The filename of the "mark" file ``journalctl`` on the guest.
 JOURNALCTL_CURSOR_FILENAME = 'journal-cursor.txt'
 
-# Can be set in /etc/systemd/journald.conf.d/
-# See `man journald.conf`
+# Journal configuration applied automatically during check setup
+# Ensures persistent storage and compression for reliable log capture
+# Can be set in /etc/systemd/journald.conf.d/50-tmt.conf
+# See `man journald.conf` for full configuration options
 JOURNAL_CONFIG = """[Journal]
 Storage=persistent
 Compress=yes
@@ -97,44 +99,46 @@ class JournalCheck(Check):
             and not any(pattern.search(line) for pattern in self.ignore_pattern)
         ]
 
-    def _configure_journal(self, guest: "Guest", logger: tmt.log.Logger) -> None:
+    def _configure_journal(self, guest: 'Guest', logger: tmt.log.Logger) -> None:
         """
-        Try configure journal storage.
+        Configure systemd journal with persistent storage and compression.
+
+        Applies the following journal configuration:
+        - Storage=persistent: Ensures logs are stored on disk
+        - Compress=yes: Enables compression to save disk space
+
+        The configuration is written to /etc/systemd/journald.conf.d/50-tmt.conf
+        and uses the following fallback strategy:
+        1. Try direct configuration (as root or with write permissions)
+        2. Try with sudo (for non-privileged users)
+        3. Continue with default settings (if both fail)
 
         Non-privileged users might not have permission to change the config,
-        while being able to use journalctl
+        while still being able to use journalctl for log collection.
         """
-        try:
-            guest.execute(
-                ShellScript("mkdir -p /etc/systemd/journald.conf.d")
-                & ShellScript(
-                    f"echo '{JOURNAL_CONFIG}' > /etc/systemd/journald.conf.d/50-tmt.conf",
-                ),
-                silent=True,
-            )
-            return
-        except tmt.utils.RunError:
-            logger.debug("Unable to configure journal directly, trying with sudo")
+        # Determine if sudo is needed
+        needs_sudo = guest.facts.is_superuser is False
+        sudo_prefix = 'sudo ' if needs_sudo else ''
 
-        # If failed and not root, try with sudo
-        if guest.facts.is_superuser is False:
-            try:
-                guest.execute(
-                    ShellScript("sudo mkdir -p /etc/systemd/journald.conf.d")
-                    & ShellScript(
-                        f"echo '{JOURNAL_CONFIG}' | sudo tee "
-                        "/etc/systemd/journald.conf.d/50-tmt.conf > /dev/null"
-                    ),
-                    silent=True,
-                )
-                logger.debug("Configured journal with sudo")
-                return
-            except tmt.utils.RunError:
-                logger.debug(
-                    "Unable to configure journal even with sudo, continuing with default settings"
-                )
-        else:
-            logger.debug("Unable to configure journal, continuing with default settings")
+        # Pre-create command line with tee for consistent approach
+        # Restart journal because RHEL7 systemd does not support auto-reloading of configuration
+        script = (
+            ShellScript(f'{sudo_prefix}mkdir -p /etc/systemd/journald.conf.d')
+            & ShellScript(
+                f"echo '{JOURNAL_CONFIG}' | {sudo_prefix}tee /etc/systemd/journald.conf.d/50-tmt.conf > /dev/null"  # noqa: E501
+            )
+            & ShellScript(f'{sudo_prefix}systemctl restart systemd-journald')
+        )
+
+        try:
+            guest.execute(script, silent=True)
+            success_msg = 'Configured persistent journal storage'
+            success_msg += ' with sudo' if needs_sudo else ''
+            logger.debug(success_msg)
+        except tmt.utils.RunError:
+            logger.warning(
+                'Unable to configure persistent journal storage, continuing with default settings'
+            )
 
     def _get_cursor_file(self, invocation: 'TestInvocation') -> Path:
         return invocation.check_files_path / JOURNALCTL_CURSOR_FILENAME
@@ -147,22 +151,21 @@ class JournalCheck(Check):
         """
         # Determine if we need sudo
         need_sudo = invocation.guest.facts.is_superuser is False
-        sudo_prefix = "sudo " if need_sudo else ""
+        sudo_prefix = 'sudo ' if need_sudo else ''
 
         try:
             # Create the cursor file
-            invocation.guest.execute(ShellScript(f"mkdir -p {invocation.check_files_path!s}"))
+            invocation.guest.execute(ShellScript(f'mkdir -p {invocation.check_files_path!s}'))
 
             # Save cursor for journalctl
             cursor_file = self._get_cursor_file(invocation)
             invocation.guest.execute(
                 ShellScript(
-                    f"[ -f '{cursor_file}' ] || {sudo_prefix}journalctl \
-                    -n 0 --show-cursor --cursor-file={cursor_file}"
+                    f"[ -f '{cursor_file}' ] || {sudo_prefix}journalctl -n 0 --show-cursor --cursor-file={cursor_file}"  # noqa: E501
                 )
             )
         except tmt.utils.RunError as exc:
-            logger.debug(f"Failed to create journalctl cursor: {exc}")
+            logger.warning(f'Failed to create journalctl cursor: {exc}')
 
     def _save_journal(
         self, invocation: 'TestInvocation', logger: tmt.log.Logger
@@ -234,6 +237,11 @@ class Journal(CheckPlugin[JournalCheck]):
     during the test execution. It uses cursors to precisely pinpoint
     the start and end of the logging period.
 
+    The check automatically configures systemd journal with persistent
+    storage and compression to ensure reliable log capture during test
+    execution. Configuration is applied with appropriate permission
+    handling and fallback behavior.
+
     Example usage:
 
     .. code-block:: yaml
@@ -251,6 +259,14 @@ class Journal(CheckPlugin[JournalCheck]):
             unit: httpd.service
             # Filter by priority
             priority: err
+
+    .. code-block:: yaml
+
+        check:
+          - how: journal
+            # Check messages from a specific syslog identifier
+            identifier: sshd
+            priority: warning
 
     Check will identify patterns that signal kernel crashes and
     core dumps, and when detected, it will report a failed result.
@@ -270,6 +286,11 @@ class Journal(CheckPlugin[JournalCheck]):
               - '\\[Firmware Bug\\]'
             ignore-pattern:
               - 'a known harmless error message'
+
+    The check requires systemd to be available on the guest system.
+    Journal configuration is automatically applied at the start of
+    test execution, with fallback to default settings if configuration
+    fails due to insufficient permissions.
 
     .. versionadded:: 1.54.0
     """
@@ -302,10 +323,18 @@ class Journal(CheckPlugin[JournalCheck]):
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if not invocation.guest.facts.has_systemd:
-            return [CheckResult(name='journal', result=ResultOutcome.SKIP)]
+            return [
+                CheckResult(
+                    name='journal', result=ResultOutcome.SKIP, note=['systemd not available']
+                )
+            ]
 
         if not invocation.is_guest_healthy:
-            return [CheckResult(name='journal', result=ResultOutcome.SKIP)]
+            return [
+                CheckResult(
+                    name='journal', result=ResultOutcome.SKIP, note=['guest is not healthy']
+                )
+            ]
 
         outcome, paths = check._save_journal(invocation, logger)
         return [CheckResult(name='journal', result=outcome, log=paths)]
