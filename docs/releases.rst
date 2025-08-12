@@ -13,9 +13,10 @@ limit for each test.
 The provision plugins now support setting an ``environment`` key.
 See the documentation of :ref:`/plugins/provision`.
 
-The finish :ref:`/plugins/finish/shell` plugin now supports ``url`` and
-``ref`` options, so finish scripts can be fetched directly from
-remote git repositories.
+The finish :ref:`/plugins/finish/shell` plugin now shares the
+implementation with the prepare :ref:`/plugins/prepare/shell` plugin,
+so does the functionalities. As part of this change ``url`` and ``ref``
+keys, are straightforward included.
 
 
 tmt-1.54.0
