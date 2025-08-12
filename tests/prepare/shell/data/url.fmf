@@ -10,6 +10,6 @@ execute:
     script: tmt --help
 finish:
     how: shell
-    url: https://github.com/teemtee/tests
+    url: https://github.com/teemtee/try
     ref: main
-    script: cd $TMT_FINISH_SHELL_URL_REPOSITORY/scripts && ./hello.sh
+    script: cd $TMT_FINISH_SHELL_URL_REPOSITORY && ls
