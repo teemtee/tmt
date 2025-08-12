@@ -15,8 +15,8 @@ See the documentation of :ref:`/plugins/provision`.
 
 The finish :ref:`/plugins/finish/shell` plugin now shares the
 implementation with the prepare :ref:`/plugins/prepare/shell` plugin,
-so does the functionalities. As part of this change ``url`` and ``ref``
-keys, are straightforward included.
+so do the functionalities. As part of this change ``url`` and ``ref``
+keys, are now included.
 
 
 tmt-1.54.0
