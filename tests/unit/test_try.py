@@ -17,6 +17,10 @@ import tmt.cli.trying
             {'image': 'fedora', 'how': 'virtual', 'arch': 'aarch64'},
         ),
         (
+            {'image_and_how': ('@local',), 'arch': None},
+            {'how': 'local'},
+        ),
+        (
             {'image_and_how': (), 'arch': 'aarch64'},
             {'arch': 'aarch64'},
         ),
