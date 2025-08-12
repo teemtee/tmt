@@ -15,6 +15,7 @@ from tmt.package_managers import (
 from tmt.utils import (
     Command,
     CommandOutput,
+    Environment,
     GeneralError,
     Path,
     RunError,
@@ -146,6 +147,24 @@ class BootcEngine(PackageManagerEngine):
         self.containerfile_directives.append(f'RUN {script}')
         return script
 
+    def copy(self, source: str, destination: str) -> None:
+        """Add a COPY directive to the containerfile"""
+        self.open_containerfile_directives()
+
+        self.containerfile_directives.append(f'COPY {source} {destination}')
+
+    def env(self, name: str, value: str) -> None:
+        """Add an ENV directive to the containerfile"""
+        self.open_containerfile_directives()
+
+        self.containerfile_directives.append(f'ENV {name}={value}')
+
+    def run_command(self, command: str) -> None:
+        """Add a RUN directive to the containerfile"""
+        self.open_containerfile_directives()
+
+        self.containerfile_directives.append(f'RUN {command}')
+
 
 @provides_package_manager('bootc')
 class Bootc(PackageManager[BootcEngine]):
@@ -203,7 +222,9 @@ class Bootc(PackageManager[BootcEngine]):
 
         return results
 
-    def build_container(self) -> None:
+    def build_container(
+        self, workdir: Optional[Path] = None, environment: Optional[Environment] = None
+    ) -> None:
         image_tag = f"localhost/tmt/bootc/{uuid.uuid4()}"
 
         # Write the final Containerfile
@@ -231,22 +252,27 @@ class Bootc(PackageManager[BootcEngine]):
                         f'  ( podman pull {base_image} || podman pull containers-storage:{base_image} )'  # noqa: E501
                         f'  || bootc image copy-to-storage --target {base_image}'
                         ')"'
-                    )
+                    ),
+                    env=environment,
                 )
                 self.guest.execute(
-                    ShellScript(f'cat <<EOF > {containerfile_path!s} \n{containerfile} \nEOF')
+                    ShellScript(f'cat <<EOF > {containerfile_path!s} \n{containerfile} \nEOF'),
+                    env=environment,
                 )
 
                 self.debug(f"containerfile content: {containerfile}")
                 # Build the container image
                 self.info("package", "building container image with dependencies", "green")
 
-                assert self.guest.parent is not None
+                if not workdir:
+                    assert self.guest.parent is not None
+                    workdir = self.guest.parent.workdir
 
                 self.guest.execute(
                     ShellScript(
-                        f'{sudo} podman build -t {image_tag} -f {containerfile_path} {self.guest.parent.workdir}'  # noqa: E501
-                    )
+                        f'{sudo} podman build -t {image_tag} -f {containerfile_path} {workdir}'
+                    ),
+                    env=environment,
                 )
 
                 # Switch to the new image for next boot
@@ -254,7 +280,7 @@ class Bootc(PackageManager[BootcEngine]):
 
                 bootc_command, _ = self.engine.prepare_command()
                 bootc_command += Command('switch', '--transport', 'containers-storage', image_tag)
-                self.guest.execute(bootc_command)
+                self.guest.execute(bootc_command, env=environment)
 
                 # Reboot into the new image
                 self.info("package", "rebooting to apply new image", "green")
@@ -299,3 +325,24 @@ class Bootc(PackageManager[BootcEngine]):
 
         self.build_container()
         return CommandOutput(stdout=None, stderr=None)
+
+    def copy(self, source: str, destination: str, *, no_build: bool = False) -> None:
+        """Add a COPY directive to the containerfile"""
+        self.engine.copy(source, destination)
+
+        if not no_build:
+            self.build_container()
+
+    def env(self, name: str, value: str, *, no_build: bool = False) -> None:
+        """Add an ENV directive to the containerfile"""
+        self.engine.env(name, value)
+
+        if not no_build:
+            self.build_container()
+
+    def run_command(self, command: str, *, no_build: bool = False) -> None:
+        """Add a RUN directive to the containerfile"""
+        self.engine.run_command(command)
+
+        if not no_build:
+            self.build_container()
