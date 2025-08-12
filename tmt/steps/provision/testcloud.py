@@ -1069,7 +1069,9 @@ class GuestTestcloud(tmt.GuestSsh):
         _apply_hw_tpm(self.hardware, self._domain, self._logger)
 
         self.info(
-            'memory', f'{tmt.hardware.UNITS(f"{self._domain.memory_size} kB").to("MB")}', 'green'
+            'memory',
+            f'{int(tmt.hardware.UNITS(f"{self._domain.memory_size} kB").to("MB").magnitude)} MB',
+            'green',
         )
         self.info(
             'disk',
@@ -1079,7 +1081,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         for i, device in enumerate(self._domain.storage_devices):
             self.debug(
-                f'Domain disk {i} size', f'{tmt.hardware.UNITS(f"{device.size} GB").to("GB")}'
+                f'domain disk #{i} size', f'{tmt.hardware.UNITS(f"{device.size} GB").to("GB")}'
             )
 
         # Is this a CoreOS?

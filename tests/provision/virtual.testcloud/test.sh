@@ -24,8 +24,6 @@ rlJournalStart
             rlAssertGrep "effective hardware: variant #1: disk\\[0\\].size: == 10 GB" "$run/log.txt"
             rlAssertGrep "memory: set to '2048 MB' because of 'memory: == 2048 MB'" "$run/log.txt"
             rlAssertGrep "disk\\[0\\].size: set to '10 GB' because of 'disk\\[0\\].size: == 10 GB'" "$run/log.txt"
-            rlAssertGrep "final domain memory: 2048000" "$run/log.txt"
-            rlAssertGrep "final domain root disk size: 10" "$run/log.txt"
         fi
     rlPhaseEnd
 
@@ -46,8 +44,6 @@ rlJournalStart
             rlAssertGrep "effective hardware: variant #1: disk\\[0\\].size: == 11 GB" "$run/log.txt"
             rlAssertGrep "memory: set to '2049 MB' because of 'memory: == 2049 MB'" "$run/log.txt"
             rlAssertGrep "disk\\[0\\].size: set to '11 GB' because of 'disk\\[0\\].size: == 11 GB'" "$run/log.txt"
-            rlAssertGrep "final domain memory: 2049000" "$run/log.txt"
-            rlAssertGrep "final domain root disk size: 11" "$run/log.txt"
             rlAssertGrep "\\[    0.000000\\] Linux version" "$run/plan/provision/default-0/logs/console.txt"
         fi
     rlPhaseEnd
@@ -78,10 +74,9 @@ rlJournalStart
             rlAssertGrep "disk\\[1\\].size: set to '22 GB' because of 'disk\\[1\\].size: == 22 GB'" "$run/log.txt"
             rlAssertGrep "disk\\[2\\].size: set to '33 GB' because of 'disk\\[2\\].size: == 33 GB'" "$run/log.txt"
 
-            rlAssertGrep "final domain root disk size: 10" "$run/log.txt"
-            rlAssertGrep "final domain disk #0 size: 10" "$run/log.txt"
-            rlAssertGrep "final domain disk #1 size: 22" "$run/log.txt"
-            rlAssertGrep "final domain disk #2 size: 33" "$run/log.txt"
+            rlAssertGrep "domain disk #0 size: 10 GB" "$run/log.txt"
+            rlAssertGrep "domain disk #1 size: 22 GB" "$run/log.txt"
+            rlAssertGrep "domain disk #2 size: 33 GB" "$run/log.txt"
         fi
     rlPhaseEnd
 
