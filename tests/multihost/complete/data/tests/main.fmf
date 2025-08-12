@@ -5,3 +5,7 @@ test: ./test.sh
 
 /B:
   summary: Dummy test B
+
+/D:
+  summary: Test that returns SKIP if the host is client-2
+  test: ./test_D.sh

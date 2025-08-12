@@ -40,7 +40,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Prepare"
-        rlRun -s "tmt -vvv run --scratch --id $run discover provision prepare"
+        rlRun -s "tmt -vvv run --scratch --id $run discover provision prepare plan -n plans"
 
         rlRun "grep '^        queued prepare task #1: essential-requires on client-1 (client), client-2 (client) and server (server)' $rlRun_LOG"
         rlRun "grep '^        queued prepare task #2: default-0 on client-1 (client) and client-2 (client)' $rlRun_LOG"
@@ -86,7 +86,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Execute"
-        rlRun -s "tmt -vvv run --scratch --id $run discover provision execute finish"
+        rlRun -s "tmt -vvv run --scratch --id $run discover provision execute finish cleanup plan -n plans"
 
         rlRun "grep 'summary: 7 tests executed' $rlRun_LOG"
 
@@ -125,6 +125,11 @@ rlJournalStart
         check_shared_topology "$client1_topology_yaml"
         check_shared_topology "$client2_topology_yaml"
         check_shared_topology "$server_topology_yaml"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Require Test Skipped on Client-2 with error return code"
+        rlRun -s "tmt -vvv run --scratch --id $run plan -n req_test_fail" 2
+        rlAssertGrep "Required test '/tests/tests/D' on guest 'client-2' was skipped." $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
