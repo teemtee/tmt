@@ -28,7 +28,8 @@ rlJournalStart
         rlRun "unit_test=$run/plan/execute/data/guest/default-0/journal/unit-test-1"
         rlRun "ignore_test=$run/plan/execute/data/guest/default-0/journal/ignore-test-1"
         rlRun "reboot_test=$run/plan/execute/data/guest/default-0/journal/reboot-test-1"
-        rlRun "config_test=$run/plan/execute/data/guest/default-0/journal/config-test-check-2"
+        rlRun "config_test=$run/plan/execute/data/guest/default-0/journal/config-test-1"
+        rlRun "config_test_check=$run/plan/execute/data/guest/default-0/journal/config-test-check-2"
         rlRun "cursor_file=$run/plan/execute/data/guest/default-0/journal/cursor-file-1"
 
         rlRun "pushd data"
@@ -144,7 +145,9 @@ rlJournalStart
                   rlAssertGrep "Configured persistent journal storage with sudo" $rlRun_LOG
                 fi
 
-                rlRun -s "cat $config_test/output.txt"
+                rlFileExists "$config_test/checks/journal.txt"
+
+                rlRun -s "cat $config_test_check/output.txt"
                 rlAssertGrep "^\[Journal\]$" $rlRun_LOG
                 rlAssertGrep "^Storage=persistent$" $rlRun_LOG
                 rlAssertGrep "^Compress=yes$" $rlRun_LOG
