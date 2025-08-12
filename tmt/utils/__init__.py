@@ -273,7 +273,7 @@ GIT_CLONE_ATTEMPTS: int = configure_constant(DEFAULT_GIT_CLONE_ATTEMPTS, 'TMT_GI
 DEFAULT_GIT_CLONE_INTERVAL: int = 10
 GIT_CLONE_INTERVAL: int = configure_constant(DEFAULT_GIT_CLONE_INTERVAL, 'TMT_GIT_CLONE_INTERVAL')
 
-# A stand-in variables for generic use.
+# Stand-in variables for generic use.
 T = TypeVar('T')
 P = ParamSpec('P')
 
