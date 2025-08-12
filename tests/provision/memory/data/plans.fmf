@@ -1,0 +1,35 @@
+execute:
+    how: tmt
+
+discover:
+    how: shell
+    tests:
+    - name: smoke
+      test: echo
+
+/override:
+    provision:
+        how: virtual
+        hardware:
+            image: fedora
+            virtualization:
+                is-supported: true
+            memory: '>= 8 GB'
+        memory: '>= 4 GB'
+
+/hardware-only:
+    provision:
+        how: virtual
+        hardware:
+            image: fedora
+            virtualization:
+                is-supported: true
+            memory: '>= 8 GB'
+
+/default:
+    provision:
+        how: virtual
+        hardware:
+            image: fedora
+            virtualization:
+                is-supported: true

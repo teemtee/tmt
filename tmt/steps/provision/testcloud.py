@@ -414,11 +414,6 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
 
         super().show(keys=super_keys, verbose=verbose, logger=logger)
 
-        # TODO: find formatting that would show "MB" instead of "megabyte"
-        # https://github.com/teemtee/tmt/issues/2410
-        logger.info('memory', f'{(self.memory or DEFAULT_MEMORY).to("MB")}', 'green')
-        logger.info('disk', f'{(self.disk or DEFAULT_DISK).to("GB")}', 'green')
-
 
 @container
 class ProvisionTestcloudData(TestcloudGuestData, tmt.steps.provision.ProvisionStepData):
@@ -1073,11 +1068,21 @@ class GuestTestcloud(tmt.GuestSsh):
         _apply_hw_disk_size(self.hardware, self._domain, self._logger)
         _apply_hw_tpm(self.hardware, self._domain, self._logger)
 
-        self.debug('final domain memory', str(self._domain.memory_size))
-        self.debug('final domain root disk size', str(self._domain.storage_devices[0].size))
+        self.info(
+            'memory',
+            f'{int(tmt.hardware.UNITS(f"{self._domain.memory_size} kB").to("MB").magnitude)} MB',
+            'green',
+        )
+        self.info(
+            'disk',
+            f'{tmt.hardware.UNITS(f"{self._domain.storage_devices[0].size} GB").to("GB")}',
+            'green',
+        )
 
         for i, device in enumerate(self._domain.storage_devices):
-            self.debug(f'final domain disk #{i} size', str(device.size))
+            self.debug(
+                f'domain disk #{i} size', f'{tmt.hardware.UNITS(f"{device.size} GB").to("GB")}'
+            )
 
         # Is this a CoreOS?
         self._domain.coreos = self.is_coreos
