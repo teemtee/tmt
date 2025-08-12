@@ -30,7 +30,7 @@ class Style(MetadataContainer):
         Apply this style to a given string.
         """
 
-        return _style(text, **self.dict())
+        return _style(text, **self.model_dump())
 
 
 _DEFAULT_STYLE = Style()
@@ -44,14 +44,14 @@ class _Theme(MetadataContainer):
         A safer, type-annotated variant of ``getattr(theme, field)``.
         """
 
-        if field not in self.__fields__:
+        if field not in self.model_fields_set:
             raise tmt.utils.GeneralError(
                 f"No such theme field '{self.__class__.__name__.lower()}.{field}'."
             )
 
-        # attr-defined: `type_` seems to be invisible to mypy. It might
-        # be causes by Pydantic v1/v2 difference.
-        if self.__fields__[field].type_ is not Style:  # type: ignore[attr-defined]
+        # Using model_fields is deprecated and will be removed in pydantic v3
+        # If we can convert this to class method then we can avoid this issue.
+        if self.model_fields[field].annotation is not Style:  # pyright: ignore[reportDeprecated]
             raise tmt.utils.GeneralError(
                 f"Theme field '{self.__class__.__name__.lower()}.{field}' is not a style."
             )
@@ -108,7 +108,7 @@ class Theme(_Theme):
     @classmethod
     def from_spec(cls: type['Theme'], data: Any) -> 'Theme':
         try:
-            return Theme.parse_obj(data)
+            return Theme.model_validate(data)
 
         except ValidationError as error:
             raise tmt.utils.SpecificationError("Invalid theme configuration.") from error

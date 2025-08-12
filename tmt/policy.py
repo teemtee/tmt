@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Optional, TypeVar
 import tmt.container
 import tmt.utils
 from tmt._compat.pydantic import ValidationError
-from tmt.container import Extra, MetadataContainer, metadata_field
+from tmt.container import PYDANTIC_V1, ConfigDict, MetadataContainer, metadata_field
 from tmt.log import Logger, Topic
 from tmt.utils import FieldValueSource, Path, ShellScript
 from tmt.utils.templates import render_template
@@ -24,10 +24,17 @@ Field value source changed from {{ OLD_VALUE_SOURCE.value | style(fg='red') }} t
 """  # noqa: E501
 
 
-class Instruction(MetadataContainer, extra=Extra.allow):
+class Instruction(MetadataContainer):
     """
     A single instruction describing changes to test, plan or story keys.
     """
+
+    if PYDANTIC_V1:
+
+        class Config(MetadataContainer.Config):
+            extra = "allow"
+    else:
+        model_config = ConfigDict(extra="allow")
 
     def apply(self, obj: 'Core', logger: Logger) -> None:
         """
@@ -73,7 +80,8 @@ class Instruction(MetadataContainer, extra=Extra.allow):
 
             return new_value
 
-        for key, template in self.__dict__.items():
+        for key in self.model_fields_set:
+            template = getattr(self, key)
             logger = base_logger.clone()
 
             _, _, _, _, field_metadata = tmt.container.container_field(obj, key)
