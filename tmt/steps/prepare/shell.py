@@ -37,9 +37,8 @@ class PrepareShellData(tmt.steps.prepare.PrepareStepData):
         metavar='REPOSITORY',
         help="""
             URL of a repository to clone. It will be pushed to guests before
-            running any scripts,
-            and environment variable ``TMT_PREPARE_SHELL_URL_REPOSITORY`` will
-            hold its path on the guest.
+            running any scripts, the path on the guest will be stored in
+            a step variable.
             """,
     )
 
