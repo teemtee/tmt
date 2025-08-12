@@ -8,3 +8,8 @@ prepare:
 execute:
     how: tmt
     script: tmt --help
+finish:
+    how: shell
+    url: https://github.com/teemtee/try
+    ref: main
+    script: cd $TMT_FINISH_SHELL_URL_REPOSITORY && ls

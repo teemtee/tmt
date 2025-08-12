@@ -633,6 +633,10 @@ TMT_PREPARE_SHELL_URL_REPOSITORY
     The value of the repository path in prepare shell step when ``url``
     option is used.
 
+TMT_FINISH_SHELL_URL_REPOSITORY
+    The value of the repository path in finish shell step when ``url``
+    option is used.
+
 .. _test-variables:
 
 Test Variables
