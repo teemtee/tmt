@@ -15,7 +15,8 @@ See the documentation of :ref:`/plugins/provision`.
 
 The ``tmt lint`` command now fails with an exit code 1 instead of a
 warn with an exit code 0 when an invalid key is encountered in fmf
-metadata.
+metadata. Schema validation is now also aware of step default values
+filled in by tmt if they are missing.
 
 
 tmt-1.54.0
