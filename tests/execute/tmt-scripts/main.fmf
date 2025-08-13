@@ -1,4 +1,7 @@
 summary: Verify correct location of tmt scripts
+tag+:
+  - provision-container
+  - provision-only
 
 /fedora:
   environment:
