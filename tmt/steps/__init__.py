@@ -1870,7 +1870,7 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         Check if the plugin is enabled by 'when' keyword
         """
 
-        fmf_context = fmf.context.Context(**self.step.plan._fmf_context)
+        fmf_context = fmf.context.Context(**self.step.plan.fmf_context)
         when_rules = self.get('when', [])
         if not when_rules:
             # No 'when' -> enabled everywhere
