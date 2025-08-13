@@ -69,7 +69,7 @@ _:
   # Latest fedora & epel targets
   - &latest-targets
     - fedora-latest-stable
-    - epel-9
+    - epel-10
 
   # Internal jobs
   - &internal
@@ -188,3 +188,4 @@ jobs:
     dist_git_branches:
       - fedora-branched
       - epel-9
+      - epel-10
