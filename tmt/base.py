@@ -1132,7 +1132,7 @@ class Core(
                         yield from detect_unallowed_properties_with_pattern(suberror)
                         yield from detect_enum_violations(suberror)
 
-            yield LinterOutcome.WARN, 'fmf node failed schema validation'
+            yield LinterOutcome.FAIL, 'fmf node failed schema validation'
 
             return
 

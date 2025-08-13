@@ -18,6 +18,11 @@ implementation with the prepare :ref:`/plugins/prepare/shell` plugin,
 so do the functionalities. As part of this change ``url`` and ``ref``
 keys, are now included.
 
+The ``tmt lint`` command now fails with an exit code 1 instead of
+a warn with an exit code 0 when an invalid key is encountered in fmf
+metadata. Schema validation is now also aware of step default values
+filled in by tmt if they are missing.
+
 
 tmt-1.54.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

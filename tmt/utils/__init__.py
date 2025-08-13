@@ -4826,6 +4826,12 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
 
             return
 
+        # Handle None/empty step configuration (e.g., "provision:" with no value)
+        if step_collection is None:
+            node.data[step_name] = []
+
+            return
+
         # Multiple step configurations, as mappings in a list
         if isinstance(step_collection, list):
             for step_config in step_collection:

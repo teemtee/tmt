@@ -28,14 +28,9 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Old yaml"
-        if rlRun -s "tmt test lint old-yaml" 0,2; then
-            # Before fmf-1.0 we give just a warning
-            rlAssertGrep "warn: /old-yaml:enabled - 'yes' is not of type 'boolean'" $rlRun_LOG
-            rlAssertGrep "warn C000 fmf node failed schema validation" $rlRun_LOG
-        else
-            # Since fmf-1.0 old format is no more supported
-            rlAssertGrep 'Invalid.*enabled.*in test' $rlRun_LOG
-        fi
+        rlRun -s "tmt test lint old-yaml" 1
+        rlAssertGrep "warn: /old-yaml:enabled - 'yes' is not of type 'boolean'" $rlRun_LOG
+        rlAssertGrep 'fail C000 fmf node failed schema validation' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Bad"
@@ -62,8 +57,12 @@ rlJournalStart
 
     rlPhaseStartTest "Fix"
         # With --fix relevancy should be converted
-        rlRun -s "tmt test lint --fix relevancy"
+        rlRun -s "tmt test lint --fix relevancy" 1
+        rlAssertGrep 'fail C000 fmf node failed schema validation' $rlRun_LOG
         rlAssertGrep 'fix  T005 relevancy converted into adjust' $rlRun_LOG
+        # Re-run after --fix fixed the plan
+        rlRun -s "tmt test lint --fix relevancy" 0
+        rlAssertGrep 'pass C000 fmf node passes schema validation' $rlRun_LOG
         for format in list text; do
             rlAssertNotGrep 'relevancy' "relevancy-$format.fmf"
             rlIsFedora && rlAssertGrep '#comment' "relevancy-$format.fmf"
