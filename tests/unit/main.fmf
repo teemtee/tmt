@@ -69,8 +69,12 @@ require+:
     adjust+:
       - when: initiator == packit
         because: Enable in CI only
-
         enabled: true
+      - when: distro == centos-stream-10
+        enabled: false
+        because: |
+            hatch is not packaged for epel-10 yet:
+            https://bugzilla.redhat.com/show_bug.cgi?id=2388175
       - when: distro == fedora-rawhide
         enabled: false
         because: |
