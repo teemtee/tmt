@@ -674,14 +674,13 @@ class Try(tmt.utils.Common):
             self.action_verbose(plan)
 
         # Choose the initial action
+        action = Action.START_ASK
         if self.opt("login"):
             action = Action.START_LOGIN
         elif self.opt("ask"):
-            action = Action.START_ASK
+            pass  # already START_ASK
         elif self.tests:
             action = Action.START_TEST
-        else:
-            action = Action.START_ASK
 
         # Loop over the actions
         try:
