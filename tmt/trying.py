@@ -4,6 +4,7 @@ Easily try tests and experiment with guests
 
 import enum
 import re
+import shlex
 import textwrap
 from collections.abc import Iterator
 from typing import Any, cast
@@ -25,7 +26,7 @@ import tmt.utils
 from tmt import Plan
 from tmt.base import RunData
 from tmt.steps.prepare import PreparePlugin
-from tmt.utils import GeneralError, MetadataError, Path
+from tmt.utils import Command, GeneralError, MetadataError, Path
 from tmt.utils.themes import style
 
 USER_PLAN_NAME = "/user/plan"
@@ -38,6 +39,7 @@ class Action(enum.Enum):
 
     TEST = "t", "rediscover tests and execute them again"
     LOGIN = "l", "log into the guest for experimenting"
+    HOST = "h", "run command on the local host"
     VERBOSE = "v", "set the desired level of verbosity"
     DEBUG = "b", "choose a different debugging level"
 
@@ -313,6 +315,7 @@ class Try(tmt.utils.Common):
 
                         {Action.TEST.menu}
                         {Action.LOGIN.menu}
+                        {Action.HOST.menu}
                         {Action.VERBOSE.menu}
                         {Action.DEBUG.menu}
 
@@ -527,6 +530,36 @@ class Try(tmt.utils.Common):
         run_id = style(str(plan.my_run.workdir), fg="magenta")
         self.print(f"Run {run_id} successfully finished. Bye for now!")
 
+    def action_host(self, plan: Plan) -> None:
+        """
+        Run command on the host
+        """
+
+        while True:
+            self.print(style(f"Enter command (or '\\{Action.QUIT.key}' to quit): ", fg="green"))
+            try:
+                raw_command = input("> ")
+            except (KeyboardInterrupt, EOFError):
+                self.print("Exiting host command mode. Bye for now!")
+                break
+
+            if not raw_command or raw_command == f'\\{Action.QUIT.key}':
+                self.print("Exiting host command mode. Bye for now!")
+                break
+
+            # Execute the command on the host
+            try:
+                Command(*shlex.split(raw_command)).run(
+                    cwd=plan.workdir, logger=self._logger, interactive=True
+                )
+            except tmt.utils.RunError as error:
+                tmt.utils.show_exception_as_warning(
+                    exception=error,
+                    message=f"'{raw_command}' command failed to run.",
+                    include_logfiles=True,
+                    logger=self._logger,
+                )
+
     def handle_options(self, plan: Plan) -> None:
         """
         Choose requested cli option
@@ -647,14 +680,13 @@ class Try(tmt.utils.Common):
             self.action_verbose(plan)
 
         # Choose the initial action
+        action = Action.START_ASK
         if self.opt("login"):
             action = Action.START_LOGIN
         elif self.opt("ask"):
-            action = Action.START_ASK
+            pass  # already START_ASK
         elif self.tests:
             action = Action.START_TEST
-        else:
-            action = Action.START_ASK
 
         # Loop over the actions
         try:
