@@ -1,6 +1,6 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
-. ../../../images.sh || exit 1
+. ../../images.sh || exit 1
 
 rlJournalStart
     rlPhaseStartSetup
