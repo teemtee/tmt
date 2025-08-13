@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypedDict, T
 
 import tmt.log
 import tmt.utils
+import tmt.utils.hints
 from tmt.container import (
     SerializableContainer,
     SpecBasedContainer,
@@ -29,11 +30,18 @@ CheckPluginClass = type['CheckPlugin[Any]']
 _CHECK_PLUGIN_REGISTRY: PluginRegistry[CheckPluginClass] = PluginRegistry('test.check')
 
 
-def provides_check(check: str) -> Callable[[CheckPluginClass], CheckPluginClass]:
+def provides_check(
+    check: str, hints: Optional[dict[str, str]] = None
+) -> Callable[[CheckPluginClass], CheckPluginClass]:
     """
     A decorator for registering test checks.
 
     Decorate a test check plugin class to register its checks.
+
+    :param check: name of the check.
+    :param hints: a mapping containing hints the check wishes to
+        register. Hints are registered with keys prefixed by
+        ``test-checks/$check/`` string.
     """
 
     def _provides_check(check_cls: CheckPluginClass) -> CheckPluginClass:
@@ -42,6 +50,9 @@ def provides_check(check: str) -> Callable[[CheckPluginClass], CheckPluginClass]
             plugin=check_cls,
             logger=tmt.log.Logger.get_bootstrap_logger(),
         )
+
+        for hint_id, hint in (hints or {}).items():
+            tmt.utils.hints.register_hint(f'test-checks/{check}/{hint_id}', hint)
 
         return check_cls
 
