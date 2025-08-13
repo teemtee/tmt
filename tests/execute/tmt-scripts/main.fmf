@@ -1,8 +1,11 @@
 summary: Verify correct location of tmt scripts
+tag+:
+  - provision-container
+  - provision-only
 
 /fedora:
   environment:
-    IMAGE: registry.fedoraproject.org/fedora:rawhide
+    IMAGE: localhost/tmt/container/test/fedora/latest:latest
     DEFAULT_TMT_SCRIPTS_DIR: /usr/local/bin
     FOUND: |
       /usr/local/bin/rhts-abort
@@ -25,7 +28,7 @@ summary: Verify correct location of tmt scripts
 
 /fedora-force:
   environment:
-    IMAGE: registry.fedoraproject.org/fedora:rawhide
+    IMAGE: localhost/tmt/container/test/fedora/latest:latest
     TMT_SCRIPTS_DIR: /usr/bin
     DEFAULT_TMT_SCRIPTS_DIR: /usr/local/bin
     FOUND: |
@@ -63,7 +66,7 @@ summary: Verify correct location of tmt scripts
 
 /fedora-bootc:
   environment:
-    IMAGE: quay.io/fedora/fedora-bootc:rawhide
+    IMAGE: localhost/tmt/container/test/fedora/latest/bootc:latest
     DEFAULT_TMT_SCRIPTS_DIR: /var/lib/tmt/scripts
     FOUND: |
       /var/lib/tmt/scripts/rhts-abort
@@ -99,7 +102,7 @@ summary: Verify correct location of tmt scripts
 
 /fedora-bootc-force:
   environment:
-    IMAGE: quay.io/fedora/fedora-bootc:rawhide
+    IMAGE: localhost/tmt/container/test/fedora/latest/bootc:latest
     TMT_SCRIPTS_DIR: /var/tmp/tmt/bin
     DEFAULT_TMT_SCRIPTS_DIR: /var/lib/tmt/scripts
     FOUND: |

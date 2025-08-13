@@ -7,11 +7,13 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
         rlRun "pushd data"
 
-        build_container_image "fedora/rawhide\:latest"
+        rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
+
+        build_container_image "fedora/latest\:latest"
     rlPhaseEnd
 
     rlPhaseStartTest
-        rlRun -s "tmt run -vvv --id \${run}" 2 "Expect error from execution to tmt-abort."
+        rlRun -s "tmt run -vvv --id \${run} -a provision -h $PROVISION_HOW --image localhost/tmt/container/test/fedora/latest:latest" 2 "Expect error from execution to tmt-abort."
         # 2 tests discovered but only one is executed due to abort
         rlAssertGrep "1 test executed" $rlRun_LOG
         rlAssertGrep "total: 1 error and 2 pending" $rlRun_LOG

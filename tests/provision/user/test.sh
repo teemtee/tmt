@@ -6,7 +6,7 @@ rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
 
-        build_container_image "fedora/rawhide/unprivileged\:latest"
+        build_container_image "fedora/latest/unprivileged\:latest"
 
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
         rlRun "pushd data"
@@ -21,7 +21,7 @@ rlJournalStart
         image=""
 
         if [ "$PROVISION_HOW" = "container" ]; then
-            image="--image $TEST_IMAGE_PREFIX/fedora/rawhide/unprivileged:latest"
+            image="--image $TEST_IMAGE_PREFIX/fedora/latest/unprivileged:latest"
         fi
 
         rlRun -s "tmt run --scratch -i $run -a provision --how $PROVISION_HOW $image --user fedora report -vvv"

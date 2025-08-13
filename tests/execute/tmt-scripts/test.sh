@@ -1,17 +1,23 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
+. ../../images.sh || exit 1
 
 rlJournalStart
     rlPhaseStartSetup
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
         rlRun "pushd data"
+
+        rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
+
+        build_container_image "fedora/latest\:latest"
+        build_container_image "fedora/latest/bootc\:latest"
     rlPhaseEnd
 
     rlPhaseStartTest
         # List of paths to check, on a single line
         PATHS=$(echo $FOUND $NOT_FOUND)
 
-        rlRun -s "tmt run -vvv -e IMAGE=$IMAGE -e \"PATHS='$PATHS'\" --id $run" 0 "Run the plan"
+        rlRun -s "tmt run -vvv -e \"PATHS='$PATHS'\" --id $run -a provision -h $PROVISION_HOW --image $IMAGE" 0 "Run the plan"
 
         for FOUND_PATH in $FOUND; do
             rlAssertGrep "out: $FOUND_PATH" $rlRun_LOG
