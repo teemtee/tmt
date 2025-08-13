@@ -7,7 +7,7 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
         rlRun "pushd data"
 
-        build_container_image "fedora/rawhide\:latest"
+        build_container_image "fedora/latest\:latest"
     rlPhaseEnd
 
     rlPhaseStartTest

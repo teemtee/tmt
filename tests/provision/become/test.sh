@@ -7,7 +7,7 @@ rlJournalStart
         if [[ "$PROVISION_HOW" == "container" ]]; then
             . ../../images.sh || exit 1
 
-            build_container_image "fedora/rawhide/unprivileged\:latest"
+            build_container_image "fedora/latest/unprivileged\:latest"
         fi
         rlRun "pushd data"
     rlPhaseEnd

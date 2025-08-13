@@ -9,7 +9,7 @@ rlJournalStart
 
         build_container_image "ubi/8/upstream\:latest"
         build_container_image "centos/7/upstream\:latest"
-        build_container_image "fedora/rawhide/upstream\:latest"
+        build_container_image "fedora/latest/upstream\:latest"
     rlPhaseEnd
 
     tmt="tmt run --all --remove provision --how $PROVISION_HOW"
@@ -33,7 +33,7 @@ rlJournalStart
     # Check debuginfo install (only for supported distros)
     # https://bugzilla.redhat.com/show_bug.cgi?id=1964505
     if [[ "$PROVISION_HOW" == "container" ]]; then
-        for image in $TEST_IMAGE_PREFIX/fedora/rawhide/upstream:latest $TEST_IMAGE_PREFIX/centos/7/upstream:latest; do
+        for image in $TEST_IMAGE_PREFIX/fedora/latest/upstream:latest $TEST_IMAGE_PREFIX/centos/7/upstream:latest; do
             rlPhaseStartTest "Test $image ($PROVISION_HOW) [debuginfo]"
                 rlRun "$tmt --image $image $debuginfo"
             rlPhaseEnd

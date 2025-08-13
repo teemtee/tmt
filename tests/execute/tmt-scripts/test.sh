@@ -1,10 +1,14 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
+. ../../../images.sh || exit 1
 
 rlJournalStart
     rlPhaseStartSetup
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
         rlRun "pushd data"
+
+        build_container_image "fedora/latest\:latest"
+        build_container_image "fedora/latest/bootc\:latest"
     rlPhaseEnd
 
     rlPhaseStartTest
