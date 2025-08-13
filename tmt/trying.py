@@ -4,6 +4,7 @@ Easily try tests and experiment with guests
 
 import enum
 import re
+import subprocess
 import textwrap
 from collections.abc import Iterator
 from typing import Any, cast
@@ -50,6 +51,8 @@ class Action(enum.Enum):
 
     KEEP = "k", "exit the session but keep the run for later use"
     QUIT = "q", "clean up the run and quit the session"
+
+    HOST = "h", "run command on host"
 
     START_LOGIN = "-", "jump directly to login after start"
     START_ASK = "-", "do nothing without first asking the user"
@@ -325,6 +328,8 @@ class Try(tmt.utils.Common):
 
                         {Action.KEEP.menu}
                         {Action.QUIT.menu}
+
+                        {Action.HOST.menu}
                 """)
             )
 
@@ -526,6 +531,28 @@ class Try(tmt.utils.Common):
         assert plan.my_run is not None  # Narrow type
         run_id = style(str(plan.my_run.workdir), fg="magenta")
         self.print(f"Run {run_id} successfully finished. Bye for now!")
+
+    def action_host(self, plan: Plan) -> None:
+        """
+        Run command on the host
+        """
+
+        while True:
+            self.print(style(f"Enter command (or '{Action.QUIT.key}' to quit): ", fg="yellow"))
+            try:
+                command = input("> ")
+            except (KeyboardInterrupt, EOFError):
+                break
+
+            if not command or command == Action.QUIT.key:
+                break
+
+            # Execute the command on the host
+            # TODO: Maybe we should capture the output, timeout etc?
+            try:
+                subprocess.run(command.split(), cwd=plan.workdir, check=True)
+            except subprocess.CalledProcessError as exc:
+                self.print(f"Failed to run command '{command}' on the host: {exc}")
 
     def handle_options(self, plan: Plan) -> None:
         """
