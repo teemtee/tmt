@@ -72,7 +72,7 @@ rlJournalStart
                 rlRun "tmt init"
             )
             # Checks packages added by patch thus fails if patching didn't happen properly
-            echo 'test: rpm -q tree pcre' > "$tmp/with-tmt-1/tests/from-source.fmf"
+            echo 'test: rpm -q tree nmap' > "$tmp/with-tmt-1/tests/from-source.fmf"
             echo 'recommend: from-source' >> "$tmp/with-tmt-1/tests/from-source.fmf"
             touch $tmp/with-tmt-1/from-source.txt
             touch $tmp/outsider
@@ -615,7 +615,7 @@ provision:
 execute:
     how: tmt
 EOF
-        rlRun -s "tmt run -kv --id $tmp/rundir --skip report"
+        rlRun -s "tmt run -vvv --keep --id $tmp/rundir --skip report"
         rlAssertGrep 'summary: 0 tests selected' $rlRun_LOG
 
         # Assert both tests are discovered
