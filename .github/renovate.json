@@ -1,20 +1,61 @@
 {
-	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
-	"packageRules": [
-		{
-			"groupName": "CI and devDependencies",
-			"matchManagers": ["github-actions", "pre-commit"]
-		},
-		{
-			"groupName": "Runtime and test",
-			"matchManagers": ["pep621"]
-		}
-	],
-	"separateMajorMinor": false,
-	"extends": [
-		"config:recommended",
-		"schedule:weekly",
-		":enablePreCommit",
-		":semanticCommitTypeAll(chore)"
-	]
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "schedule:weekly",
+    ":enablePreCommit",
+    ":semanticCommitsDisabled"
+  ],
+  "separateMajorMinor": false,
+  "configMigration": true,
+  "packageRules": [
+    {
+      "description": "Group all GitHub Actions updates into a single PR",
+      "groupName": "GitHub Actions",
+      "matchManagers": ["github-actions"]
+    },
+    {
+      "description": "Python upgrade is a false-positive. We have to pull in both 3.x and 3.9 for pre-commit.",
+      "matchManagers": ["github-actions"],
+      "matchDepNames": ["python"],
+      "matchFileNames": ["pre-commit.yml"],
+      "enabled": false
+    },
+    {
+      "description": "Disabled because it breaks folder structure, and need to be more selective.",
+      "groupName": "Container Images",
+      "matchDatasources": ["docker"],
+      "enabled": false
+    },
+    {
+      "description": "Group Pre-commit dependencies together",
+      "groupName": "Pre-commit Dependencies",
+      "matchManagers": ["pre-commit"]
+    },
+    {
+      "description": "Disable all python dependencies. Specific matchers will be used.",
+      "matchManagers": ["pep621"],
+      "enabled": false
+    },
+    {
+      "description": "Group documentation dependencies together",
+      "groupName": "Documentation Dependencies",
+      "matchManagers": ["pep621"],
+      "matchDepTypes": ["project.optional-dependencies"],
+      "enabled": true,
+      "matchPackageNames": [
+        "/renku-sphinx-theme/",
+        "/sphinx/",
+        "/readthedocs-sphinx-ext/",
+        "/docutils/"
+      ]
+    },
+    {
+      "description": "Group hatch dev dependencies together",
+      "groupName": "hatch dev Dependencies",
+      "matchManagers": ["pep621"],
+      "matchDepTypes": ["tool.hatch.envs.dev"],
+      "enabled": true
+    }
+  ]
 }
