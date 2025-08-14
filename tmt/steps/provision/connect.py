@@ -160,6 +160,8 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
         self.verbose('primary address', self.primary_address, 'green')
         self.verbose('topology address', self.topology_address, 'green')
 
+        self.assert_reachable()
+
 
 @tmt.steps.provides_method('connect')
 class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]):
@@ -278,4 +280,5 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
         self._guest = GuestConnect(
             logger=self._logger, data=data, name=self.name, parent=self.step
         )
+        self._guest.start()
         self._guest.setup()

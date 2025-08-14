@@ -632,6 +632,8 @@ class GuestArtemis(tmt.GuestSsh):
         self.verbose('primary address', self.primary_address, 'green')
         self.verbose('topology address', self.topology_address, 'green')
 
+        self.assert_reachable()
+
     def remove(self) -> None:
         """
         Remove the guest
