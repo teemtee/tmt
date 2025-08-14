@@ -38,7 +38,7 @@ class MaxTestsPlanShaper(PlanShaper):
                 help='Split every plan to include N tests at maximum.',
                 type=int,
                 default=-1,
-                deprecated=Deprecated('1.57', hint='use ``--max-tests-per-plan`` instead'),
+                deprecated=Deprecated('1.55', hint='use ``--max-tests-per-plan`` instead'),
             ),
         ]
 
