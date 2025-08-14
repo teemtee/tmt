@@ -9,6 +9,7 @@ from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome, save_failures
 from tmt.utils import Path, ShellScript, format_timestamp, render_command_report
+from tmt.utils.hints import hints_as_notes
 
 if TYPE_CHECKING:
     from tmt.steps.execute import TestInvocation
@@ -307,7 +308,13 @@ class Journal(CheckPlugin[JournalCheck]):
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         if not invocation.guest.facts.has_systemd:
-            return [CheckResult(name='journal', result=ResultOutcome.SKIP)]
+            return [
+                CheckResult(
+                    name='journal',
+                    result=ResultOutcome.SKIP,
+                    note=hints_as_notes('systemd-not-available'),
+                )
+            ]
 
         check._configure_journal(invocation.guest, logger)
         check._create_journalctl_cursor(invocation, logger)
@@ -325,14 +332,18 @@ class Journal(CheckPlugin[JournalCheck]):
         if not invocation.guest.facts.has_systemd:
             return [
                 CheckResult(
-                    name='journal', result=ResultOutcome.SKIP, note=['systemd not available']
+                    name='journal',
+                    result=ResultOutcome.SKIP,
+                    note=hints_as_notes('systemd-not-available'),
                 )
             ]
 
         if not invocation.is_guest_healthy:
             return [
                 CheckResult(
-                    name='journal', result=ResultOutcome.SKIP, note=['guest is not healthy']
+                    name='journal',
+                    result=ResultOutcome.SKIP,
+                    note=hints_as_notes('guest-not-healthy'),
                 )
             ]
 
