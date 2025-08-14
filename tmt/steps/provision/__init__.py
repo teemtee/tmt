@@ -74,8 +74,14 @@ if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
 
 
-#: How many seconds to wait when checking the guest connection.
-CONNECTION_CHECK_TIMEOUT = 30
+#: How many seconds to wait for a connection to succeed after guest boot.
+#: This is the default value tmt would use unless told otherwise.
+DEFAULT_CONNECT_TIMEOUT = 2 * 60
+
+#: How many seconds to wait for a connection to succeed after guest boot.
+#: This is the effective value, combining the default and optional envvar,
+#: ``TMT_CONNECT_TIMEOUT``.
+CONNECT_TIMEOUT: int = configure_constant(DEFAULT_CONNECT_TIMEOUT, 'TMT_CONNECT_TIMEOUT')
 
 #: How many seconds to wait for a connection to succeed after guest reboot.
 #: This is the default value tmt would use unless told otherwise.
@@ -1914,7 +1920,7 @@ class Guest(tmt.utils.Common):
         Assert that the guest is reachable and responding.
         """
 
-        wait = wait or Waiting(Deadline.from_seconds(CONNECTION_CHECK_TIMEOUT), tick=1)
+        wait = wait or Waiting(Deadline.from_seconds(CONNECT_TIMEOUT), tick=1)
 
         if not self.is_ready:
             raise ProvisionError(f"Guest '{self.multihost_name}' is not ready.")

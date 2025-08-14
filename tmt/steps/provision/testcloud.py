@@ -24,6 +24,7 @@ import tmt.steps.provision
 import tmt.utils
 import tmt.utils.wait
 from tmt.container import container, field
+from tmt.steps.provision import CONNECT_TIMEOUT
 from tmt.utils import (
     Command,
     Path,
@@ -156,15 +157,6 @@ DEFAULT_BOOT_TIMEOUT: int = 2 * 60
 #: This is the effective value, combining the default and optional envvar,
 #: ``TMT_BOOT_TIMEOUT``.
 BOOT_TIMEOUT: int = configure_constant(DEFAULT_BOOT_TIMEOUT, 'TMT_BOOT_TIMEOUT')
-
-#: How many seconds to wait for a connection to succeed after guest boot.
-#: This is the default value tmt would use unless told otherwise.
-DEFAULT_CONNECT_TIMEOUT = 2 * 60
-
-#: How many seconds to wait for a connection to succeed after guest boot.
-#: This is the effective value, combining the default and optional envvar,
-#: ``TMT_CONNECT_TIMEOUT``.
-CONNECT_TIMEOUT: int = configure_constant(DEFAULT_CONNECT_TIMEOUT, 'TMT_CONNECT_TIMEOUT')
 
 #: How many times should the timeouts be multiplied in kvm-less cases.
 #: These include emulating a different architecture than the host,
