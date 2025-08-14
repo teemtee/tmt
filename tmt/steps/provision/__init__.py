@@ -74,6 +74,9 @@ if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
 
 
+#: How many seconds to wait when checking the guest connection.
+CONNECTION_CHECK_TIMEOUT = 30
+
 #: How many seconds to wait for a connection to succeed after guest reboot.
 #: This is the default value tmt would use unless told otherwise.
 DEFAULT_REBOOT_TIMEOUT: int = 10 * 60
@@ -1891,7 +1894,7 @@ class Guest(tmt.utils.Common):
             wait.wait(try_whoami, self._logger)
 
         except tmt.utils.wait.WaitingTimedOutError:
-            self.debug("Connection to guest failed after reboot.")
+            self.debug("Connection to guest failed.")
             return False
 
         return True
@@ -1905,6 +1908,22 @@ class Guest(tmt.utils.Common):
         """
 
         self.debug(f"Doing nothing to remove guest '{self.primary_address}'.")
+
+    def assert_reachable(self, wait: Optional[Waiting] = None) -> None:
+        """
+        Assert that the guest is reachable and responding.
+        """
+
+        wait = wait or Waiting(Deadline.from_seconds(CONNECTION_CHECK_TIMEOUT), tick=1)
+
+        if not self.is_ready:
+            raise ProvisionError(f"Guest '{self.multihost_name}' is not ready.")
+
+        if not self.reconnect(wait):
+            raise ProvisionError(
+                f"Failed to connect to the guest '{self.multihost_name}'"
+                f" in {wait.deadline.original_timeout.total_seconds()}s"
+            )
 
     @classmethod
     def essential_requires(cls) -> list['tmt.base.Dependency']:
@@ -3412,7 +3431,10 @@ class Provision(tmt.steps.Step):
                     failed_tasks.append(outcome)
 
                 if outcome.guest:
-                    outcome.guest.show()
+                    # Don't show guest details if there was an exception.
+                    # The guest may not be reachable while syncing facts.
+                    if not outcome.exc:
+                        outcome.guest.show()
 
                     self.guests.append(outcome.guest)
 

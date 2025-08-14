@@ -1155,10 +1155,7 @@ class GuestTestcloud(tmt.GuestSsh):
         self._instance.create_ip_file(self.primary_address)
 
         # Wait a bit until the box is up
-        if not self.reconnect(
-            Waiting(Deadline.from_seconds(CONNECT_TIMEOUT * time_coeff), tick=1)
-        ):
-            raise ProvisionError(f"Failed to connect in {CONNECT_TIMEOUT * time_coeff}s.")
+        self.assert_reachable(Waiting(Deadline.from_seconds(CONNECT_TIMEOUT * time_coeff), tick=1))
 
     def stop(self) -> None:
         """
