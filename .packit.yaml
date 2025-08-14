@@ -19,7 +19,7 @@ actions: &base-actions
   create-archive:
     - hatch run docs:man
     - hatch build -t sdist
-    - bash -c "ls dist/tmt-*.tar.gz"
+    - bash -c "echo dist/tmt-$PACKIT_PROJECT_VERSION.tar.gz"
   get-current-version:
     - hatch version
 
