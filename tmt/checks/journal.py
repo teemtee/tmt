@@ -104,7 +104,7 @@ class JournalCheck(Check):
         Configure systemd journal with persistent storage and compression.
 
         Applies the following journal configuration:
-        - Storage=persistent: Ensures logs are stored on disk
+        - ``Storage=persistent``: Ensures logs are stored on disk
         - Compress=yes: Enables compression to save disk space
 
         The configuration is written to /etc/systemd/journald.conf.d/50-tmt.conf
