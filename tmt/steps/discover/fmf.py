@@ -610,6 +610,11 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             self.info('ref', ref, 'green')
             self.debug(f"Checkout ref '{ref}'.")
             self.run(Command('git', 'checkout', '-f', ref), cwd=self.testdir)
+            self.info(
+                'commit-hash-after-checkout',
+                tmt.utils.git.git_hash(directory=self.testdir, logger=self._logger),
+                'green',
+            )
 
         # Show current commit hash if inside a git repository
         if self.testdir.is_dir():

@@ -349,8 +349,12 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             self.debug(f"Checkout ref '{ref}'.")
             self.run(Command('git', 'checkout', '-f', ref), cwd=testdir)
 
-        # Log where HEAD leads to
-        self.debug('hash', tmt.utils.git.git_hash(directory=testdir, logger=self._logger))
+            # Log where HEAD leads to
+            self.info(
+                'commit-hash-after-checkout',
+                tmt.utils.git.git_hash(directory=testdir, logger=self._logger),
+                'green',
+            )
 
         # Remove .git so that it's not copied to the SUT
         # if 'keep-git-metadata' option is not specified
