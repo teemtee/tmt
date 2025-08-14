@@ -1,0 +1,1171 @@
+.\" Man page generated from reStructuredText.
+.
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
+.TH "TMT" 1 "September 2019" "" "User Commands"
+.SH NAME
+tmt \- Test Management Tool
+.SH DESCRIPTION
+.sp
+The \fBtmt\fP tool provides a user\-friendly way to work with tests.
+You can comfortably create new tests, safely and easily run tests
+across different environments, review test results, debug test
+code and enable tests in the CI using a consistent and concise
+config.
+.sp
+The python module and command\-line tool implement the Metadata
+Specification which allows storing all needed test execution data
+directly within a git repository. Together with possibility to
+reference remote repositories it makes it easy to share test
+coverage across projects and distros.
+.sp
+The Flexible Metadata Format \fBfmf\fP is used to store data in both
+human and machine readable way close to the source code. Thanks to
+inheritance and elasticity metadata are organized in the structure
+efficiently, preventing unnecessary duplication.
+.SH SPECIFICATION
+.sp
+There are several metadata levels defined by the specification:
+.sp
+\fBCore\fP attributes such as \fIsummary\fP or \fIdescription\fP which are
+common across all levels are defined by the special L0 metadata.
+.sp
+\fBTests\fP, or L1 metadata, define attributes which are closely
+related to individual test cases such as \fItest\fP script,
+\fIframework\fP, directory \fIpath\fP where the test should be executed,
+maximum test \fIduration\fP or packages required to run the test.
+.sp
+\fBPlans\fP, also called L2 metadata, are used to group relevant
+tests and enable them in the CI. They describe how to \fIdiscover\fP
+tests for execution, how to \fIprovision\fP the environment, how to
+\fIprepare\fP it for testing, how to \fIexecute\fP tests and \fIreport\fP test
+results.
+.sp
+\fBStories\fP, which implement the L3 metadata, can be used to track
+implementation, test and documentation coverage for individual
+features or requirements. Thanks to this you can track everything
+in one place, including the project implementation progress.
+.SH SYNOPSIS
+.sp
+Command line usage is straightforward:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+tmt command [options]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SH EXAMPLES
+.sp
+Let\(aqs see which tests, plans and stories are available:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+tmt
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Initialize the metadata tree in the current directory, optionally
+with example content based on templates:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+tmt init
+tmt init \-\-template base
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Run all or selected steps for each plan:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+tmt run
+tmt run discover
+tmt run prepare execute
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+See any failures from a previous run:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+tmt run \-\-last report \-vvv
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Show test output while running:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+tmt run \-vvv
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+List tests, show details, check against the specification:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+tmt tests ls
+tmt tests show
+tmt tests lint
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Create a new test, import test metadata from other formats:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+tmt test create
+tmt test import
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+List plans, show details, check against the specification:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+tmt plans ls
+tmt plans show
+tmt plans lint
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+List stories, check details, show coverage status:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+tmt stories ls
+tmt stories show
+tmt stories coverage
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Many commands support regular expression filtering and other
+specific options:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+tmt stories ls cli
+tmt stories show create
+tmt stories coverage \-\-implemented
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Check help message of individual commands for the full list of
+available options.
+.SH OPTIONS
+.sp
+Here is the list of the most frequently used commands and options.
+.SS Run
+.sp
+The \fIrun\fP command is used to execute test steps. By default all
+test steps are run. See the L2 Metadata specification for detailed
+description of individual steps. Here is a brief overview:
+.INDENT 0.0
+.TP
+.B discover
+Gather information about test cases to be executed.
+.TP
+.B provision
+Provision an environment for testing or use localhost.
+.TP
+.B prepare
+Prepare the environment for testing.
+.TP
+.B execute
+Run tests using the specified executor.
+.TP
+.B report
+Provide test results overview and send reports.
+.TP
+.B finish
+Perform the finishing tasks and clean up provisioned guests.
+.UNINDENT
+.SS Tests
+.sp
+Manage tests (L1 metadata). Check available tests, inspect their
+metadata, gather old metadata from various sources and stored them
+in the new fmf format.
+.INDENT 0.0
+.TP
+.B ls
+List available tests.
+.TP
+.B show
+Show test details.
+.TP
+.B lint
+Check tests against the L1 metadata specification.
+.TP
+.B create
+Create a new test based on given template.
+.TP
+.B import
+Convert old test metadata into the new fmf format.
+.UNINDENT
+.SS Plans
+.sp
+Manage test plans (L2 metadata). Search for available plans.
+Explore detailed test step configuration.
+.INDENT 0.0
+.TP
+.B ls
+List available plans.
+.TP
+.B show
+Show plan details.
+.TP
+.B lint
+Check plans against the L2 metadata specification.
+.UNINDENT
+.SS Stories
+.sp
+Manage user stories. Check available user stories. Explore
+coverage (test, implementation, documentation).
+.INDENT 0.0
+.TP
+.B ls
+List available stories.
+.TP
+.B show
+Show story details.
+.TP
+.B coverage
+Show code, test and docs coverage for given stories.
+.TP
+.B export
+Export selected stories into desired format.
+.UNINDENT
+.SS Utils
+.sp
+Various utility options.
+.INDENT 0.0
+.TP
+.BI \-\-root \ PATH
+Path to the metadata tree, current directory used by default.
+.TP
+.B  \-\-verbose
+Print additional information.
+.TP
+.B  \-\-debug
+Turn on debugging output.
+.TP
+.BI \-\-log\-topic \ NAME
+Enable logging for a specific topic, useful for debugging particular
+areas. For example, to see logs related to policy processing,
+you can use:
+.INDENT 7.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+tmt \-\-log\-topic policy test export \-\-policy \&../policies/test/environment.yaml
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+Check help message of individual commands for the full list of
+available options.
+.SH INSTALL
+.sp
+The main \fBtmt\fP package provides the core features with a minimal
+set of dependencies:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+sudo dnf install tmt
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+In order to enable additional functionality, such as particular
+provision or report plugins, install the respective subpackage:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+sudo dnf install tmt+test\-convert
+sudo dnf install tmt+provision\-container
+sudo dnf install tmt+provision\-virtual
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+If you don\(aqt care about disk space and want to have all available
+features right at hand install everything:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+sudo dnf install tmt+all
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+For CentOS and RHEL, first make sure that you have available the
+\fI\%EPEL\fP repository.
+You might also have to enable additional repositories:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+sudo dnf config\-manager \-\-enable crb         # CentOS 9
+sudo dnf config\-manager \-\-enable rhel\-CRB    # RHEL 9
+sudo dnf install https://dl.fedoraproject.org/pub/epel/epel\-release\-latest\-9.noarch.rpm
+
+sudo dnf install tmt
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+For plugins which cannot work outside of VPN and so live within
+its walls you need to enable the internal copr repository first.
+Then you can install either everything or only those you need:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+sudo dnf install tmt\-redhat\-all
+sudo dnf install tmt\-redhat\-*
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Do you like to check the released bits as soon as they are out?
+Enable the \fBstable\fP copr repository and install from there:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+sudo dnf copr enable @teemtee/stable
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Impatient to try the fresh features as soon as they are merged
+into the \fBmain\fP branch? Enable the \fBlatest\fP copr repository:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+sudo dnf copr enable @teemtee/latest
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Not sure, just want to try out how it works? Experiment safely and
+easily inside a container:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+podman run \-it \-\-rm quay.io/teemtee/tmt bash
+podman run \-it \-\-rm quay.io/teemtee/tmt\-all bash
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+When installing using \fBpip\fP you might need to install additional
+packages on your system:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+sudo dnf install gcc redhat\-rpm\-config
+sudo dnf install {python3,libvirt,krb5,libpq}\-devel
+pip install \-\-user tmt
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+On other distributions than Fedora or RHEL the package names might
+be different. For example on Ubuntu to install all packages to
+have provision plugins working:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+sudo apt install libkrb5\-dev pkg\-config libvirt\-dev genisoimage qemu\-kvm libvirt\-daemon\-system
+pip install \-\-user \(dqtmt[provision]\(dq
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Note: You can omit the \fB\-\-user\fP flag if in a virtual environment.
+.SH SHELL COMPLETION
+.sp
+The rpm package includes a system wide script which enables the
+command line completion for \fBbash\fP so no additional config
+should be needed. If you use a different installation method or
+prefer another shell, see the instructions below.
+.sp
+For Bash, add this to \fB~/.bashrc\fP:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+eval \(dq$(_TMT_COMPLETE=source_bash tmt)\(dq
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+For Zsh, add this to \fB~/.zshrc\fP:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+eval \(dq$(_TMT_COMPLETE=source_zsh tmt)\(dq
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+For Fish, add this to \fB~/.config/fish/completions/tmt.fish\fP:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+eval (env _TMT_COMPLETE=source_fish tmt)
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Open a new shell to enable completion. Or run the \fBeval\fP command
+directly in your current shell to enable it temporarily.
+.sp
+This is however run every time you start a shell which can cause
+some delay. To speed it up, write the generated script to a file
+and then source it from your shell\(aqs configuration file. All
+of this can be achieved using \fBtmt setup completion\fP command.
+By default, it outputs the completion script to the terminal but
+it can also add it to your \fB~/.bashrc\fP or \fB~/.zshrc\fP using
+the \fB\-\-install\fP option:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+tmt setup completion {bash, zsh, fish} \-\-install
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SH EXIT CODES
+.sp
+The following exit codes are returned from \fBtmt run\fP\&. Note that
+you can use the \fB\-\-quiet\fP option to completely disable output
+and only check for the exit code.
+.INDENT 0.0
+.TP
+.B 0
+At least one test passed, there was no fail, warn or error.
+.TP
+.B 1
+There was a fail or warn identified, but no error.
+.TP
+.B 2
+Errors occurred during test execution.
+.TP
+.B 3
+No test results found.
+.TP
+.B 4
+Tests were executed, and all reported the \fBskip\fP result.
+.UNINDENT
+.SH VARIABLES
+.sp
+The list of available environment variables which can be used to
+adjust the execution.
+.SS Command Variables
+.sp
+The following environment variables can be used to modify
+behaviour of the \fBtmt\fP command.
+.INDENT 0.0
+.TP
+.B TMT_DEBUG
+Enable the desired debug level. Most of the commands support
+levels from 1 to 3. However, some of the plugins go even
+deeper when needed.
+.TP
+.B TMT_PLUGINS
+Path to a directory with additional plugins. Multiple paths
+separated with the \fB:\fP character can be provided as well.
+.TP
+.B TMT_FEELING_SAFE
+Set this variable to \fB1\fP to enable potentially dangerous
+operations such as executing tests directly on the test runner
+using the \fBlocal\fP provision method. Use with caution, only
+when you can fully trust the \fBtmt\fP metadata or if you know
+what you are doing.
+.TP
+.B TMT_CONFIG_DIR
+Path to an alternative directory with config files. By default
+\fB~/.config/tmt\fP is used.
+.TP
+.B TMT_WORKDIR_ROOT
+Path to root directory containing run workdirs. Defaults to
+\fB/var/tmp/tmt\fP\&.
+.TP
+.B NO_COLOR, TMT_NO_COLOR
+Disable colors in the output, both the actual output and
+logging messages. Output only plain, non\-colored text.
+.sp
+Two variables are accepted, one with the usual \fBTMT_\fP
+prefix, but tmt accepts also \fBNO_COLOR\fP to support the
+NO_COLOR effort, see \fI\%https://no\-color.org/\fP for more
+information.
+.TP
+.B TMT_FORCE_COLOR
+Enforce colors in the output, both the actual output and
+logging messages. Might come handy when tmt\(aqs output streams
+are not terminal\-like, yet its output would be displayed by
+tools with ANSI color support. This is often the case of
+various CI systems.
+.sp
+Note that \fBTMT_FORCE_COLOR\fP takes priority over \fBNO_COLOR\fP
+and \fBTMT_NO_COLOR\fP\&. If user tries both to disable and enable
+colorization, output would be colorized.
+.TP
+.B TMT_SHOW_TRACEBACK
+By default, when tmt reports an error, the corresponding
+traceback is not printed out. By setting this variable, the
+traceback and details would be shown:
+.INDENT 7.0
+.TP
+.B TMT_SHOW_TRACEBACK=0 (or unset)
+Render only exception and its causes.
+.TP
+.B TMT_SHOW_TRACEBACK=1
+Render also call stack for exception and each of its causes.
+.TP
+.B TMT_SHOW_TRACEBACK=2
+Render also call stack for exception and each of its causes,
+plus all local variables in each frame, trimmed to first 1024
+characters of their values.
+.TP
+.B TMT_SHOW_TRACEBACK=full
+Render everything that can be show: all causes, their call
+stacks, all frames and all locals in their completeness.
+.UNINDENT
+.TP
+.B TMT_OUTPUT_WIDTH
+By default, the output width of commands like \fBtmt * show\fP is constrained
+to 79 characters. Set this variable to an integer to change the limit.
+.TP
+.B TMT_GIT_CREDENTIALS_URL_<suffix>, TMT_GIT_CREDENTIALS_VALUE_<suffix>
+Variable pairs used to provide credentials to clone git repositories. This
+is needed when working with private repositories. The suffix identifies
+the pair and determines the order in which URL regexp is tried.
+.sp
+The \fBTMT_GIT_CREDENTIALS_URL_<suffix>\fP contains regexp to search against
+url to clone. For first successful search the content of the
+\fBTMT_GIT_CREDENTIALS_VALUE_<suffix>\fP variable is used as the credential
+value. When it is set to an empty string, unmodified url is used.
+.sp
+For \fBGitLab\fP private repositories, you have three options for specifying
+the credentials:
+.INDENT 7.0
+.IP \(bu 2
+\fI\%Personal Access Tokens\fP:
+.INDENT 2.0
+.INDENT 3.5
+Good for user\-specific permissions or service accounts. For read\-only
+access, use the \fBread_repository\fP scope:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+TMT_GIT_CREDENTIALS_URL_lab=\(aqgitlab.com/mysecretproject\(aq
+TMT_GIT_CREDENTIALS_VALUE_lab=\(aqyour_gitlab_username:your_pat\(aq
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.IP \(bu 2
+\fI\%Deploy Tokens\fP:
+.INDENT 2.0
+.INDENT 3.5
+Best for automated read\-only access. Project\-specific, not tied to
+a user, and provides strict read\-only repository access:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+TMT_GIT_CREDENTIALS_URL_lab=\(aqgitlab.com/mysecretproject\(aq
+TMT_GIT_CREDENTIALS_VALUE_lab=\(aqgitlab+deploy\-token\-123:abcxyz123\(aq
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.IP \(bu 2
+\fI\%OAuth2 Tokens\fP:
+.INDENT 2.0
+.INDENT 3.5
+Secure short\-lived tokens with the \fBread_repository\fP scope:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+TMT_GIT_CREDENTIALS_URL_lab=\(aqgitlab.com/mysecretproject\(aq
+TMT_GIT_CREDENTIALS_VALUE_lab=\(aqoauth2:your_oauth2_token\(aq
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+For \fIGitHub\fP private repositories, you have only a single method
+for specifying the cloning credentials:
+.INDENT 7.0
+.IP \(bu 2
+\fI\%OAuth Tokens\fP:
+.INDENT 2.0
+.INDENT 3.5
+You need to create a \fI\%personal access token\fP and specify it without
+your username. Both \fBclassic\fP and \fBfine\-grained\fP personal
+access tokens can be used:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+TMT_GIT_CREDENTIALS_URL_hub=\(aqgithub.com/teemtee\(aq
+TMT_GIT_CREDENTIALS_VALUE_hub=\(aqpersonaltoken\(aq
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B TMT_GIT_CLONE_ATTEMPTS
+The maximum number of retries to clone a git repository if it
+fails. By default, 3 attempts are done.
+.TP
+.B TMT_GIT_CLONE_INTERVAL
+The interval (in seconds) to retry cloning a git repository
+again, 10 seconds by default.
+.TP
+.B TMT_GIT_CLONE_TIMEOUT
+Overall maximum time in seconds to clone a git repository. By
+default, the limit is not set.
+.TP
+.B TMT_BOOT_TIMEOUT
+How many seconds to wait for a guest to boot. Applies to provision
+plugins that control the guest creation, e.g. \fBvirtual\fP\&. By
+default, it is 2 minutes.
+.TP
+.B TMT_CONNECT_TIMEOUT
+How many seconds to wait for a connection to succeed after guest
+boot. By default, it is 2 minutes.
+.TP
+.B TMT_REBOOT_TIMEOUT
+How many seconds to wait for a connection to succeed after
+guest reboot. By default, it is 10 minutes.
+.TP
+.B TMT_SCRIPTS_DIR
+Destination directory for storing \fBtmt\fP scripts on the guest.
+By default \fB/usr/local/bin\fP is used, except for guests using
+\fBrpm\-ostree\fP, where \fB/var/lib/tmt/scripts\fP is used. See the
+\fI\%tmt internal test executor\fP documentation for more details
+on the scripts installed on the guest.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B TMT_SSH_*
+Every environment variable in this format would be treated as an SSH
+option, and passed to the \fB\-o\fP option of \fBssh\fP command. See
+\fBman 5 ssh_config\fP for the list of all options.
+.sp
+The environment variable name would be converted into an SSH option,
+e.g. \fBexport TMT_SSH_CONNECTION_ATTEMPTS=5\fP would become
+\fB\-oConnectionAttempts=5\fP\&. \fBexport TMT_SSH_ConnectionAttempts=5\fP
+would also be accepted.
+.sp
+SSH options provided via environment variables will be overruled by
+guest\-specific \fBssh\-options\fP key.
+.TP
+.B TMT_REPORT_ARTIFACTS_URL
+Link to test artifacts provided for report plugins.
+.TP
+.B TMT_POLICY_FILE
+Location of a file with policy rules for modification of test
+metadata keys. Both absolute and relative paths are accepted; a
+relative path is interpreted either against the current working
+directory, or against the policy root directory if it was specified.
+.sp
+See \fI\%tmt policy specification\fP for more details on policies.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B TMT_POLICY_NAME
+Name of the file with policy rules for modification of test metadata
+keys. The name would be extended with \fB\&.yaml\fP suffix, and tmt will
+try to locate it under the policy root directory.
+.sp
+See \fI\%tmt policy specification\fP for more details on policies.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B TMT_POLICY_ROOT
+If set, policy files must be located under this directory. Policy
+specified by its name is searched under this directory only, and
+policy specified by its filepath will be allowed only if the
+filepath is under this directory.
+.sp
+See \fI\%tmt policy specification\fP for more details on policies.
+.UNINDENT
+.SS Step Variables
+.sp
+The following environment variables are provided to the environment
+during \fBprepare\fP, \fBexecute\fP and \fBfinish\fP steps:
+.INDENT 0.0
+.TP
+.B TMT_TREE
+The full path of the working directory where the metadata tree
+is copied. This usually contains the whole git repository where
+tmt plans are located in. Notice that it might not contain tmt
+tests if tmt plans and tests are in different git repositories.
+.TP
+.B TMT_PLAN_DATA
+Path to the common directory used for storing logs and other
+artifacts related to the whole plan execution. It is pulled
+back from the guest and available for inspection after the
+plan is completed.
+.TP
+.B TMT_PLAN_ENVIRONMENT_FILE
+Path to the file containing environment variables that should
+be sourced after prepare and execute steps. These variables will
+be accessible for all subsequent steps and have lower priority
+than variables specified by the \fBenvironment\fP key,
+\fBenvironment\-file\fP key, or the command line. Variables inside
+the file have to be in the format of \fBNAME=VALUE\fP and each
+variable should be on a separate line.
+.sp
+Example of the file content:
+.INDENT 7.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+COUNT=1
+VARIABLE=VALUE
+ANOTHER_VARIABLE=ANOTHER_VALUE
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.TP
+.B TMT_VERSION
+The version of tmt.
+.TP
+.B TMT_PREPARE_SHELL_URL_REPOSITORY
+The value of the repository path in prepare shell step when \fBurl\fP
+option is used.
+.TP
+.B TMT_FINISH_SHELL_URL_REPOSITORY
+The value of the repository path in finish shell step when \fBurl\fP
+option is used.
+.UNINDENT
+.SS Test Variables
+.sp
+The following environment variables are provided to the test
+during the execution:
+.INDENT 0.0
+.TP
+.B TMT_TEST_NAME
+The test name, as a resolved FMF object name starting with \fB/\fP
+from the root of the hierarchy.
+.TP
+.B TMT_TEST_DATA
+Path to the directory where test can store logs and other
+artifacts generated during its execution. These will be pulled
+back from the guest and available for inspection after the
+test execution is finished.
+.TP
+.B TMT_TEST_SERIAL_NUMBER
+The serial number of running test in the whole plan. Each test
+is assigned its own serial number.
+.TP
+.B TMT_TEST_ITERATION_ID
+The iteration ID is a combination of a unique run ID and the test
+serial number. The value is different for each new test execution.
+.TP
+.B TMT_TEST_METADATA
+Path to a YAML\-formatted file with test metadata collected
+during the \fBdiscover\fP step.
+.TP
+.B TMT_SOURCE_DIR
+Path to directory with downloaded and extracted sources if
+the \fBdist\-git\-source\fP option was used in the \fBdiscover\fP
+step.
+.TP
+.B TMT_REBOOT_COUNT
+During the test execution the \fBtmt\-reboot\fP command can be
+used to request reboot of the guest. This variable contains
+number of reboots which already happened during the test.
+Value is set to \fB0\fP if no reboot occurred.
+.sp
+In order to keep backward\-compatibility with older tests,
+\fBrhts\-reboot\fP and \fBrstrnt\-reboot\fP commands are supported
+for requesting the reboot, variables \fBREBOOTCOUNT\fP and
+\fBRSTRNT_REBOOTCOUNT\fP contain number of reboots as well.
+.TP
+.B TMT_TEST_RESTART_COUNT
+This variable contains number of times the test was restarted. Such
+restarts may be consequence of guest reboot, in which case
+\fBTMT_REBOOT_COUNT\fP gets incremented as well, or test crashed and
+has been restarted. Value is set to \fB0\fP when the test starts for
+the first time.
+.TP
+.B TMT_TOPOLOGY_BASH, TMT_TOPOLOGY_YAML
+Paths of files describing existing guests, their roles and the
+guest on which the test is running. Format of these files
+is described in the \fBGuest Topology Format\fP section of the
+plan specification.
+.TP
+.B TMT_TEST_PIDFILE, TMT_TEST_PIDFILE_LOCK
+Path to a file storing the test process pid and path to its
+reboot\-request file, separated by a space. The \(dqLOCK\(dq variable
+then holds path to a locking file which must be acquired before
+making any changes to the pid file.
+.TP
+.B TMT_TEST_PIDFILE_ROOT
+By default, the test pidfile file is stored in \fB/var/tmp\fP
+directory. If specified, the directory in this variable would be
+used instead. The directory permissions should follow the pattern
+of temporary directory permissions, e.g. \fBchmod 1777\fP, to
+allow access to users with all privilege levels.
+.UNINDENT
+.SS Plugin Variables
+.sp
+Each plugin option can be also specified via environment variable.
+Variables follow a naming scheme utilizing plugin name, step it
+belongs to, and the option name:
+.INDENT 0.0
+.INDENT 3.5
+\fBTMT_PLUGIN_${STEP}_${PLUGIN}_${OPTION}\fP
+.UNINDENT
+.UNINDENT
+.sp
+All values are upper\-cased, with dashes (\fB\-\fP) replaced by
+underscores (\fB_\fP).
+.sp
+For example, an execute plugin \(dqtmt\(dq would run with verbosity
+equal to \fB\-vvv\fP:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+TMT_PLUGIN_EXECUTE_TMT_VERBOSE=3 tmt run ... execute \-h tmt ...
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Command\-line takes precedence over environment variables, therefore
+\fB\-v\fP would undo the effect of environment variable, and reduce
+verbosity to one level only:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+TMT_PLUGIN_EXECUTE_TMT_VERBOSE=3 tmt run ... execute \-h tmt \-v ...
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Environment variables \- just like command\-line options \- take
+precedence over values stored in files. For example, consider the
+following discover step:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+discover:
+    how: fmf
+    url: https://example.org/
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+The following commands would override the URL:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+tmt run ... discover \-h fmf \-\-url https://actual.org/ ...
+
+TMT_PLUGIN_DISCOVER_FMF_URL=https://actual.org/ tmt run ...
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+For setting flag\-like option, 0 and 1 are the expected value. For
+example, an interactive mode would be enabled in this run:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+TMT_PLUGIN_EXECUTE_TMT_INTERACTIVE=1 tmt run ... execute \-h tmt ...
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+\fBNOTE:\fP
+.INDENT 0.0
+.INDENT 3.5
+The following applies to situations when a plugin is specified
+on the command line only. Keys of plugins specified in fmf files
+would not be modified. This is a limit of the current implementation,
+and will be addressed in the future:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+# Here the verbosity will not be increased since the plugin is
+# not mentioned on the command line:
+$ TMT_PLUGIN_DISCOVER_FMF_VERBOSE=2 tmt run \-a
+
+# Here the environment variable will take effect:
+$ TMT_PLUGIN_DISCOVER_FMF_VERBOSE=2 tmt run \-a discover \-h fmf ...
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Several plugins (\fBreport \-h reportportal\fP, \fBreport \-h polarion\fP,
+\fBexecute \-h tmt\fP) allow selected variables to be processed,
+even when plugin is not specified on the command line.
+.UNINDENT
+.UNINDENT
+.SH REGULAR EXPRESSIONS
+.sp
+Many specification keys and command line options accept regular
+expressions, e.g. to filter a set of tests, \fBtmt run ... test
+\-\-name \(aq^/foo\(aq\fP\&. Whenever tmt works with regular expressions, the
+following rules apply.
+.INDENT 0.0
+.TP
+.B Python implementation
+Since tmt is implemented in Python, Python\(aqs \fI\%re\fP package is
+used for handling regular expressions. It comes with Python
+standard library, and it is widely used and well documented.
+For the deep dive into supported syntax, see
+\fI\%Regular Expression Syntax\fP section, for a gentler
+introduction there is a \fI\%Regular Expression\fP HOWTO.
+.TP
+.B Search versus match
+There are two ways how to check whether a regular expression
+matches a string: \(dqmatch\(dq or \(dqsearch\(dq:
+.INDENT 7.0
+.IP \(bu 2
+in the \(dqmatch\(dq mode, the pattern must match from the very
+beginning of the string. For example, \fBfoo.ar\fP would match
+\fBfoobar\fP but not \fB/foobar\fP\&. It works in a \(dqstarts with\(dq
+fashion.
+.IP \(bu 2
+on the other hand, the \(dqsearch\(dq mode is more similar to
+\(dqcontains\(dq approach, and allows pattern to match anywhere in
+the string. In this mode, \fBfoo.ar\fP would match both
+\fBfoobar\fP and \fB/foobar\fP\&.
+.UNINDENT
+.sp
+In both modes, any characters may follow the matching pattern,
+e.g. regular expression \fBfoo.bar\fP is the same as
+\fBfoo.bar.*\fP\&.
+.sp
+tmt sticks to the \(dqsearch\(dq mode by default. But, to improve
+user experience, some keys and command line options do use the
+\(dqmatch\(dq mode. Such keys and options will note this in their
+documentation or help texts.
+.UNINDENT
+.SH LINKS
+.sp
+Git:
+\fI\%https://github.com/teemtee/tmt\fP
+.sp
+Docs:
+\fI\%https://tmt.readthedocs.io/\fP
+.sp
+Stories:
+\fI\%https://tmt.readthedocs.io/en/stable/stories.html\fP
+.sp
+Issues:
+\fI\%https://github.com/teemtee/tmt/issues\fP
+.sp
+Releases:
+\fI\%https://tmt.readthedocs.io/en/stable/releases.html\fP
+.sp
+Copr:
+\fI\%https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/\fP
+.sp
+PIP:
+\fI\%https://pypi.org/project/tmt/\fP
+.sp
+Quay:
+\fI\%https://quay.io/organization/teemtee\fP
+.sp
+Metadata Specification:
+\fI\%https://tmt.readthedocs.io/en/stable/spec.html\fP
+.sp
+Flexible Metadata Format:
+\fI\%https://fmf.readthedocs.io/\fP
+.sp
+Testing Farm:
+\fI\%https://docs.testing\-farm.io/\fP
+.sp
+Packit:
+\fI\%https://packit.dev/testing\-farm/\fP
+.SH AUTHORS
+.sp
+Petr Šplíchal, Miro Hrončok, Alexander Sosedkin, Lukáš Zachar,
+Petr Menšík, Leoš Pol, Miroslav Vadkerti, Pavel Valena, Jakub
+Heger, Honza Horák, Rachel Sibley, František Nečas, Michal
+Ruprich, Martin Kyral, Miloš Prchlík, Tomáš Navrátil, František
+Lachman, Patrik Kis, Ondrej Mosnáček, Andrea Ficková, Denis
+Karpelevich, Michal Srb, Jan Ščotka, Artem Zhukov, Vinzenz
+Feenstra, Inessa Vasilevskaya, Štěpán Němec, Robin Hack, Yulia
+Kopkova, Ondrej Moriš, Martin Zelený, Karel Šrot, František
+Zatloukal, Simon Walter, Petr Matyáš, Yariv Rachmani, Pavel
+Cahyna, Martin Litwora, Brian Grech, Vojtěch Eichler, Philip Daly,
+Vector Li, Evgeny Fedin, Guy Inger, Adrián Tomašov, Jan Havlín,
+Lukáš Kotek, Daniel Diblík, Laura Barcziova, Marián Konček,
+Marcin Sobczyk, Jiří Jabůrek, Huijing Hei, Tibor Dudlák, Jan
+Macků, Filip Vágner, Martin Hoyer, Iveta Česalová, Yi Zhang,
+Zhaojuan Guo, Natália Bubáková, Michal Josef Špaček, Jiří Popelka,
+Matej Focko, Yulia Kopkova, Tomáš Bajer, Carlos Rodriguez\-Fernandez,
+James Molet, Cristian Le, Lili Nie, Martin Čermák, Michael Vogt,
+Qinghua Cheng, Michael Engel, Anatoli Babenia, Colin Walters,
+Link Dupont, Mario Casquero, Martin Klusoň, Pavel Holica,
+Otto Šabart, Ismail Ibrahim Quwarah, Sergei Petrosian, Tom
+Koscielniak, Han Han, Luigi Pellecchia, Siteshwar Vashisht,
+Chris Kyrouac, Xiaofeng Wang, Coiby Xu, Michal Pospíšil, Wayne
+Sun, Evgeni Vakhonin, Mike Stowell, Therese Cornell, Mingyu Shi,
+Conor Tull, Athrey Vinay, David Pascual and Vaibhav D. Aren.
+.SH COPYRIGHT
+.sp
+Copyright Red Hat
+.sp
+This program is free software; you can redistribute it and/or
+modify it under the terms of the MIT License.
+.\" Generated by docutils manpage writer.
+.
