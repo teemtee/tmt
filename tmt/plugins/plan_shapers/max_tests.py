@@ -21,16 +21,25 @@ class MaxTestsPlanShaper(PlanShaper):
 
     @classmethod
     def run_options(cls) -> list['ClickOptionDecoratorType']:
-        from tmt.options import option
+        from tmt.options import Deprecated, option
 
         return [
             option(
-                '--max',
+                '--max-tests-per-plan',
                 metavar='N',
-                help='Split plans to include N tests at max.',
+                envvar='TMT_RUN_MAX_TESTS_PER_PLAN',
+                help='Split every plan to include N tests at maximum.',
                 type=int,
                 default=-1,
-            )
+            ),
+            option(
+                '--max',
+                metavar='N',
+                help='Split every plan to include N tests at maximum.',
+                type=int,
+                default=-1,
+                deprecated=Deprecated('1.55', hint='use ``--max-tests-per-plan`` instead'),
+            ),
         ]
 
     @classmethod
@@ -38,7 +47,10 @@ class MaxTestsPlanShaper(PlanShaper):
         if not plan.my_run:
             return False
 
-        max_test_count = plan.my_run.opt('max')
+        # Check new option first, fall back to deprecated option
+        max_test_count = plan.my_run.opt('max-tests-per-plan')
+        if max_test_count <= 0:
+            max_test_count = plan.my_run.opt('max')
 
         if max_test_count <= 0:
             return False
@@ -55,7 +67,10 @@ class MaxTestsPlanShaper(PlanShaper):
 
         assert plan.my_run is not None
 
-        max_test_per_batch = plan.my_run.opt('max')
+        # Check new option first, fall back to deprecated option
+        max_test_per_batch = plan.my_run.opt('max-tests-per-plan')
+        if max_test_per_batch <= 0:
+            max_test_per_batch = plan.my_run.opt('max')
 
         plan.info(f'Splitting plan to batches of {max_test_per_batch} tests.')
 
