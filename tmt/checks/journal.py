@@ -107,7 +107,7 @@ class JournalCheck(Check):
         - ``Storage=persistent``: Ensures logs are stored on disk
         - ``Compress=yes``: Enables compression to save disk space
 
-        The configuration is written to /etc/systemd/journald.conf.d/50-tmt.conf
+        The configuration is written to ``/etc/systemd/journald.conf.d/50-tmt.conf``
         and uses the following fallback strategy:
         1. Try direct configuration (as root or with write permissions)
         2. Try with sudo (for non-privileged users)
