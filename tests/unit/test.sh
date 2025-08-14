@@ -34,7 +34,6 @@ rlJournalStart
         rlRun "PYTEST_COMMAND='pytest -vvv -ra --showlocals'"
 
         rlLogInfo "pip is $(which pip), $(pip --version)"
-        rlLogInfo "hatch is $(which hatch), $(hatch --version)"
 
         . ../images.sh || exit 1
         build_container_images --force
@@ -55,6 +54,7 @@ rlJournalStart
     else
         rlPhaseStartTest "Unit tests"
             # Note: we're not in the root directory!
+            rlLogInfo "hatch is $(which hatch), $(hatch --version)"
             rlRun "hatch -v run $HATCH_ENVIRONMENT:$PYTEST_COMMAND $PYTEST_PARALLELIZE $PYTEST_MARK ."
         rlPhaseEnd
     fi

@@ -5,4 +5,4 @@
 +require:
 +- tree
 +recommend:
-+- pcre
++- nmap

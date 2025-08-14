@@ -23,6 +23,9 @@ a warn with an exit code 0 when an invalid key is encountered in fmf
 metadata. Schema validation is now also aware of step default values
 filled in by tmt if they are missing.
 
+Packages for ``epel-10`` are now built as well so that users can
+easily install ``tmt`` on ``rhel-10`` and ``centos-stream-10``.
+
 
 tmt-1.54.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

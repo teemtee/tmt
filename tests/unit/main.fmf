@@ -25,11 +25,13 @@ require+:
   - jq
   - podman
   - buildah
-  - hatch
 
 # Run against development packages via `hatch`.
 /with-development-packages:
     enabled: false
+
+    require+:
+      - hatch
 
     adjust+:
       - when: initiator is not defined or distro == fedora-rawhide
@@ -69,7 +71,6 @@ require+:
     adjust+:
       - when: initiator == packit
         because: Enable in CI only
-
         enabled: true
       - when: distro == fedora-rawhide
         enabled: false

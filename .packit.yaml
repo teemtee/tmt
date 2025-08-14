@@ -26,6 +26,7 @@ actions: &base-actions
 targets: &all-targets
   - fedora-all
   - epel-9
+  - epel-10
 
 # Uncomment below line if OpenScanHub scans are failing
 # osh_diff_scan_after_copr_build: false
@@ -68,7 +69,7 @@ _:
   # Latest fedora & epel targets
   - &latest-targets
     - fedora-latest-stable
-    - epel-9
+    - epel-10
 
   # Internal jobs
   - &internal
@@ -187,3 +188,4 @@ jobs:
     dist_git_branches:
       - fedora-branched
       - epel-9
+      - epel-10
