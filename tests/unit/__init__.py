@@ -1,5 +1,6 @@
 import logging
 import operator
+import platform
 import re
 from collections.abc import Iterable
 from typing import Any, Callable
@@ -205,8 +206,11 @@ CONTAINER_CENTOS_STREAM_10 = Container(
 CONTAINER_CENTOS_STREAM_9 = Container(
     url='containers-storage:localhost/tmt/container/test/centos/stream9/upstream:latest'
 )
-CONTAINER_CENTOS_7 = Container(
-    url='containers-storage:localhost/tmt/container/test/centos/7/upstream:latest'
+# CentOS 7 is not available for aarch64 architecture.
+CONTAINER_CENTOS_7 = (
+    Container(url='containers-storage:localhost/tmt/container/test/centos/7/upstream:latest')
+    if platform.machine() != 'aarch64'
+    else None
 )
 CONTAINER_UBI_8 = Container(
     url='containers-storage:localhost/tmt/container/test/ubi/8/upstream:latest'
@@ -229,5 +233,5 @@ CONTAINER_ALPINE = Container(url='containers-storage:localhost/tmt/container/tes
 TEST_CONTAINERS: dict[str, Container] = {
     _container_attribute: _container
     for _container_attribute, _container in locals().items()
-    if _container_attribute.startswith('CONTAINER_')
+    if _container_attribute.startswith('CONTAINER_') and _container
 }
