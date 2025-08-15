@@ -553,8 +553,7 @@ class Try(tmt.utils.Common):
             try:
                 command = Command(*shlex.split(raw_command))
                 if result := command.run(cwd=plan.workdir, logger=self._logger):
-                    output = result.stdout.strip() if result.stdout is not None else ""
-                    self.print(f"{raw_command}: {output}")
+                    self.print((result.stdout or "").strip())
             except tmt.utils.RunError:
                 self.print(f"Failed to run command '{raw_command}' on the host: command not found")
 
@@ -674,6 +673,7 @@ class Try(tmt.utils.Common):
 
         # Set the default verbosity level, handle options
         for plan in self.plans:
+            self.action_host(plan)
             self.handle_options(plan)
             self.action_verbose(plan)
 
