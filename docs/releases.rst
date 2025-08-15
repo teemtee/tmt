@@ -4,6 +4,16 @@
     Releases
 ======================
 
+tmt-1.56.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`tmt try</stories/cli/try>` command's interactive session
+now includes a new ``-h`` option to run shell commands directly
+on the host (not on provisioned guests). Users can exit cleanly
+with ``'q'``, KeyboardInterrupt, or EOFError, and failed commands
+are reported with clear error messages.
+
+
 tmt-1.55.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
