@@ -165,6 +165,19 @@ HINTS: dict[str, Hint] = {
                 """,
                 [],
             ),
+            'systemd-not-available': (
+                """
+                Systemd not detected on the guest.
+
+                The systemd init system must be running on the guest for this functionality.
+                This is expected when using the ``container`` provisioner,
+                where no init system is present.
+
+                Use a provisioner that provisions VMs or bare-metal machines,
+                such as ``virtual``, ``beaker``, etc.
+                """,
+                [],
+            ),
             # TODO: once `minute` plugin provides its own hints, we can drop
             # this hint and move it to the plugin.
             'provision/minute': (
