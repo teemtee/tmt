@@ -749,7 +749,7 @@ def git_clone(
             cwd=Path('/'), env=env, timeout=timeout, logger=logger
         )
         logger.info(
-            'head-commit-ref',
+            'commit-hash',
             git_hash(directory=destination, logger=logger),
             color="green",
         )
