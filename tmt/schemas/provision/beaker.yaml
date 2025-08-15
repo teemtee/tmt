@@ -60,5 +60,41 @@ properties:
   beaker-job-group:
     type: string
 
+  bootc_secret:
+    type: string
+
+  bootc_user:
+    type: string
+
+  bootc_password:
+    type: string
+
+  base_image_url:
+    type: string
+
+  image_url:
+    type: string
+
+  test_image_name:
+    type: string
+
+  base_repo:
+    type: string
+
+  bootc:
+    type: boolean
+
+  customize_image:
+    type: boolean
+
+  container-file:
+    type: string
+
+  container-file-workdir:
+    type: string
+
+  distro_name:
+    type: string
+
 required:
   - how
