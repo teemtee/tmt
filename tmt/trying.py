@@ -4,7 +4,7 @@ Easily try tests and experiment with guests
 
 import enum
 import re
-import subprocess
+import shlex
 import textwrap
 from collections.abc import Iterator
 from typing import Any, cast
@@ -26,7 +26,7 @@ import tmt.utils
 from tmt import Plan
 from tmt.base import RunData
 from tmt.steps.prepare import PreparePlugin
-from tmt.utils import GeneralError, MetadataError, Path
+from tmt.utils import Command, GeneralError, MetadataError, Path
 from tmt.utils.themes import style
 
 USER_PLAN_NAME = "/user/plan"
@@ -538,21 +538,25 @@ class Try(tmt.utils.Common):
         """
 
         while True:
-            self.print(style(f"Enter command (or '{Action.QUIT.key}' to quit): ", fg="yellow"))
+            self.print(style(f"Enter command (or '{Action.QUIT.key}' to quit): ", fg="green"))
             try:
-                command = input("> ")
+                raw_command = input("> ")
             except (KeyboardInterrupt, EOFError):
+                self.print("Exiting host command mode. Bye for now!")
                 break
 
-            if not command or command == Action.QUIT.key:
+            if not raw_command or raw_command == Action.QUIT.key:
+                self.print("Exiting host command mode. Bye for now!")
                 break
 
             # Execute the command on the host
-            # TODO: Maybe we should capture the output, timeout etc?
             try:
-                subprocess.run(command.split(), cwd=plan.workdir, check=True)
-            except subprocess.CalledProcessError as exc:
-                self.print(f"Failed to run command '{command}' on the host: {exc}")
+                command = Command(*shlex.split(raw_command))
+                if result := command.run(cwd=plan.workdir, logger=self._logger):
+                    output = result.stdout.strip() if result.stdout is not None else ""
+                    self.print(f"{raw_command}: {output}")
+            except tmt.utils.RunError:
+                self.print(f"Failed to run command '{raw_command}' on the host: command not found")
 
     def handle_options(self, plan: Plan) -> None:
         """
