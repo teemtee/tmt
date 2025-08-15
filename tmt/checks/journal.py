@@ -151,8 +151,7 @@ class JournalCheck(Check):
         Save a mark for ``journalctl`` in a file on the guest
         """
         # Determine if we need sudo
-        need_sudo = invocation.guest.facts.is_superuser is False
-        sudo_prefix = 'sudo ' if need_sudo else ''
+        sudo_prefix = 'sudo ' if invocation.guest.facts.is_superuser is False else ''
 
         try:
             # Create the cursor file

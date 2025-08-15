@@ -44,7 +44,7 @@ rlJournalStart
 
         if [ "$PROVISION_HOW" = "container" ]; then
             assert_check_result "journal as an after-test should skip with containers" "skip" "after-test" "harmless"
-            rlAssertGrep "Note: systemd not available" $rlRun_LOG
+            rlAssertGrep "Note: Systemd not detected on the guest." $rlRun_LOG
 
             rlAssertNotExists "$journal_log"
 
