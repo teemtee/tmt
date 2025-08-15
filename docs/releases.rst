@@ -4,16 +4,6 @@
     Releases
 ======================
 
-tmt-1.56.0
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The :ref:`/plugins/test-checks/journal` check has been improved
-to match the implementation patterns of other checks. Default
-configuration for persistent journal storage is now automatically
-applied when possible, and systemd availability checking has been
-enhanced.
-
-
 tmt-1.55.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -35,6 +25,12 @@ filled in by tmt if they are missing.
 
 Packages for ``epel-10`` are now built as well so that users can
 easily install ``tmt`` on ``rhel-10`` and ``centos-stream-10``.
+
+The :ref:`/plugins/test-checks/journal` check has been improved
+to match the implementation patterns of other checks. Default
+configuration for persistent journal storage is now automatically
+applied when possible, and systemd availability checking has been
+enhanced.
 
 
 tmt-1.54.0
