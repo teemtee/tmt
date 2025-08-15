@@ -29,7 +29,7 @@ class TestHostCommandExecution:
                 [mock.Mock(stdout="/test/workdir\n")],
                 [
                     style("Enter command (or 'q' to quit): ", fg="green"),
-                    "pwd: /test/workdir",
+                    "/test/workdir",
                     style("Enter command (or 'q' to quit): ", fg="green"),
                     "Exiting host command mode. Bye for now!",
                 ],
@@ -54,9 +54,9 @@ class TestHostCommandExecution:
                 ],
                 [
                     style("Enter command (or 'q' to quit): ", fg="green"),
-                    "pwd: /test/workdir",
+                    "/test/workdir",
                     style("Enter command (or 'q' to quit): ", fg="green"),
-                    "ls -la: file1.txt\nfile2.txt",
+                    "file1.txt\nfile2.txt",
                     style("Enter command (or 'q' to quit): ", fg="green"),
                     "Exiting host command mode. Bye for now!",
                 ],
