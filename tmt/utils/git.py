@@ -745,9 +745,15 @@ def git_clone(
         """
 
         depth = ['--depth=1'] if shallow else []
-        return Command('git', 'clone', *depth, url, destination).run(
+        output = Command('git', 'clone', *depth, url, destination).run(
             cwd=Path('/'), env=env, timeout=timeout, logger=logger
         )
+        logger.info(
+            'head-commit-ref',
+            git_hash(directory=destination, logger=logger),
+            color="green",
+        )
+        return output
 
     from tmt.utils import GIT_CLONE_ATTEMPTS, GIT_CLONE_INTERVAL, GIT_CLONE_TIMEOUT
 

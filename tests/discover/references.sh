@@ -60,6 +60,7 @@ rlJournalStart
     rlPhaseStartTest $plan
         rlRun 'tmt run -dddvr discover plan --name $plan finish 2>&1 >/dev/null | tee output'
         rlAssertGrep 'Cloning into' output
+        rlAssertGrep 'head-commit-ref' output
         rlAssertNotGrep 'Checkout ref.*main' output
         rlAssertGrep /tests/core/docs output
         rlAssertGrep /tests/core/env output
@@ -70,6 +71,7 @@ rlJournalStart
     rlPhaseStartTest $plan
         rlRun 'tmt run -dddvr discover plan --name $plan finish 2>&1 >/dev/null | tee output'
         rlAssertGrep 'Cloning into' output
+        rlAssertGrep 'head-commit-ref' output
         rlAssertNotGrep 'Checkout ref.*main' output
         rlAssertGrep '2 tests selected' output
         rlAssertGrep /tests/full output
@@ -80,6 +82,7 @@ rlJournalStart
     rlPhaseStartTest $plan
         rlRun 'tmt run -dddvr discover plan --name $plan finish 2>&1 >/dev/null | tee output'
         rlAssertGrep 'Cloning into' output
+        rlAssertGrep 'head-commit-ref: 5407fe5' output
         rlAssertGrep 'Checkout ref.*5407fe5' output
         rlAssertGrep 'hash.*5407fe5' output
         rlAssertGrep '2 tests selected' output
@@ -92,6 +95,7 @@ rlJournalStart
     rlPhaseStartTest $plan
         rlRun 'tmt run -dddvr discover plan --name $plan finish 2>&1 >/dev/null | tee output'
         rlAssertGrep 'Cloning into' output
+        rlAssertGrep 'head-commit-ref' output
         rlAssertGrep 'Checkout ref.*eae4d52' output
         rlAssertGrep 'hash.*eae4d52' output
         rlAssertGrep '2 tests selected' output
