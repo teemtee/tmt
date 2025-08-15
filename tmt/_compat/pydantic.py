@@ -43,8 +43,31 @@ if PYDANTIC_V1:
         def model_fields(self) -> dict[str, Any]:  # type: ignore[override]
             return self.__fields__
 
+    def model_rebuild(model: type[BaseModel], localns: dict[str, Any]) -> None:
+        """
+        Try to rebuild the pydantic-core schema for the model.
+
+        This may be necessary when one of the annotations is a
+        ``ForwardRef`` which could not be resolved during the initial
+        attempt to build the schema, and automatic rebuilding fails.
+        """
+
+        model.update_forward_refs(**localns)
+
 else:
     from pydantic import BaseModel
+
+    def model_rebuild(model: type[BaseModel], localns: dict[str, Any]) -> None:
+        """
+        Try to rebuild the pydantic-core schema for the model.
+
+        This may be necessary when one of the annotations is a
+        ``ForwardRef`` which could not be resolved during the initial
+        attempt to build the schema, and automatic rebuilding fails.
+        """
+
+        model.model_rebuild(_types_namespace=localns)
+
 
 __all__ = [
     "PYDANTIC_V1",
@@ -53,4 +76,5 @@ __all__ = [
     "Field",
     "HttpUrl",
     "ValidationError",
+    "model_rebuild",
 ]
