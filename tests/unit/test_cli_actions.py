@@ -40,7 +40,7 @@ class TestHostCommandExecution:
                 [RunError(command="abcde", returncode=127, message="command not found")],
                 [
                     style("Enter command (or 'q' to quit): ", fg="green"),
-                    "Failed to run command 'abcde' on the host: command not found",
+                    "command not found",
                     style("Enter command (or 'q' to quit): ", fg="green"),
                     "Exiting host command mode. Bye for now!",
                 ],

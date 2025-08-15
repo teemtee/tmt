@@ -554,8 +554,8 @@ class Try(tmt.utils.Common):
                 command = Command(*shlex.split(raw_command))
                 if result := command.run(cwd=plan.workdir, logger=self._logger):
                     self.print((result.stdout or "").strip())
-            except tmt.utils.RunError:
-                self.print(f"Failed to run command '{raw_command}' on the host: command not found")
+            except tmt.utils.RunError as error:
+                self.print(error.message)
 
     def handle_options(self, plan: Plan) -> None:
         """
