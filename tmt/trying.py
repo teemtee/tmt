@@ -673,7 +673,6 @@ class Try(tmt.utils.Common):
 
         # Set the default verbosity level, handle options
         for plan in self.plans:
-            self.action_host(plan)
             self.handle_options(plan)
             self.action_verbose(plan)
 
