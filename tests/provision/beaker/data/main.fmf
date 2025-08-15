@@ -29,3 +29,4 @@
     provision+:
         bootc: True
         image_url: quay.io/fedora/custom-bootc
+        bootc_secret: dummysecret
