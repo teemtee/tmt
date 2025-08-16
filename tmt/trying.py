@@ -552,10 +552,14 @@ class Try(tmt.utils.Common):
             # Execute the command on the host
             try:
                 command = Command(*shlex.split(raw_command))
-                if result := command.run(cwd=plan.workdir, logger=self._logger):
-                    self.print((result.stdout or "").strip())
+                command.run(cwd=plan.workdir, logger=self._logger, interactive=True)
             except tmt.utils.RunError as error:
-                self.print(error.message)
+                tmt.utils.show_exception_as_warning(
+                    exception=error,
+                    message=error.message,
+                    include_logfiles=True,
+                    logger=self._logger,
+                )
 
     def handle_options(self, plan: Plan) -> None:
         """

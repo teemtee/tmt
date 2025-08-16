@@ -10,9 +10,7 @@ from tmt.utils import RunError, style
 class TestHostCommandExecution:
     @pytest.fixture
     def mock_try_instance(self):
-        instance = mock.MagicMock()
-        instance.print = mock.MagicMock()
-        return instance
+        return mock.MagicMock()
 
     @pytest.fixture
     def mock_plan(self):
@@ -23,45 +21,34 @@ class TestHostCommandExecution:
     @pytest.mark.parametrize(
         ("inputs", "effects", "expected_outputs"),
         [
-            # Single command success
             (
                 ["pwd", "q"],
-                [mock.Mock(stdout="/test/workdir\n")],
+                [None],
                 [
                     style("Enter command (or 'q' to quit): ", fg="green"),
-                    "/test/workdir",
                     style("Enter command (or 'q' to quit): ", fg="green"),
                     "Exiting host command mode. Bye for now!",
                 ],
             ),
-            # Command failure
             (
                 ["abcde", "q"],
-                [RunError(command="abcde", returncode=127, message="command not found")],
+                [RunError("command not found", "abcde", 127)],
                 [
                     style("Enter command (or 'q' to quit): ", fg="green"),
-                    "command not found",
                     style("Enter command (or 'q' to quit): ", fg="green"),
                     "Exiting host command mode. Bye for now!",
                 ],
             ),
-            # Multiple command success & no command
             (
                 ["pwd", "ls -la", ""],
-                [
-                    mock.Mock(stdout="/test/workdir\n"),
-                    mock.Mock(stdout="file1.txt\nfile2.txt\n"),
-                ],
+                [None, None],
                 [
                     style("Enter command (or 'q' to quit): ", fg="green"),
-                    "/test/workdir",
                     style("Enter command (or 'q' to quit): ", fg="green"),
-                    "file1.txt\nfile2.txt",
                     style("Enter command (or 'q' to quit): ", fg="green"),
                     "Exiting host command mode. Bye for now!",
                 ],
             ),
-            # KeyboardInterrupt and EOFError handling
             *[
                 (
                     [exc],
@@ -74,13 +61,22 @@ class TestHostCommandExecution:
                 for exc in (KeyboardInterrupt, EOFError)
             ],
         ],
+        ids=(
+            'Single command success',
+            'Command failure',
+            'Multiple commands success',
+            'KeyboardInterrupt',
+            'EOFError',
+        ),
     )
+    @mock.patch("tmt.utils.show_exception_as_warning")
     @mock.patch("tmt.utils.Command.run")
     @mock.patch("builtins.input")
     def test_action_host(
         self,
         mock_input,
         mock_command_run,
+        mock_show_exception,
         mock_try_instance,
         mock_plan,
         inputs,
