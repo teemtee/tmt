@@ -109,6 +109,7 @@ Homepage = "https://github.com/teemtee/tmt"
 [tool.hatch.version]
 source = "vcs"
 raw-options.version_scheme = "release-branch-semver"
+raw-options.git_describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--abbrev=9", "--match", "*[0-9]*"]
 
 [tool.hatch.build.targets.sdist]
 include = [
