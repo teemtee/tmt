@@ -10,7 +10,7 @@ import re
 import sys
 import textwrap
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import docutils.frontend
 import docutils.nodes
@@ -429,10 +429,10 @@ def parse_rst(text: str) -> docutils.nodes.document:
 
     parser = docutils.parsers.rst.Parser()
     components = (docutils.parsers.rst.Parser,)
-    settings = cast(
-        docutils.frontend.Values,
-        docutils.frontend.OptionParser(components=components).get_default_values(),  # type: ignore[no-untyped-call]
-    )
+    # reportDeprecated: pyright started reporting OptionParser as deprecated in docutils 2.0.
+    settings = docutils.frontend.OptionParser(  # type: ignore[reportDeprecated,unused-ignore]
+        components=components
+    ).get_default_values()
     document = docutils.utils.new_document('<rst-doc>', settings=settings)
 
     parser.parse(text, document)
