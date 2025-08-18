@@ -5858,22 +5858,11 @@ def catch_warnings_safe(
         yield
 
 
-def get_quay_repo_tag(logger: tmt.log.Logger) -> Optional[str]:
-    # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
-
-    return (
-        ShellScript("tr -dc a-z0-9 </dev/urandom | head -c 4;echo ''")
-        .to_shell_command()
-        .run(cwd=Path(os.getcwd()), logger=logger)
-        .stdout
-    )
-
-
-def expand_path(relative_path: str) -> str:
+def expand_path(relative_path: str) -> Path:
     """
     Expand the path to the full path relative to the current working dir
     """
 
     if relative_path.startswith("/"):
-        return relative_path
-    return f"{os.getcwd()}/{relative_path}"
+        return Path(relative_path)
+    return Path(os.getcwd()) / relative_path

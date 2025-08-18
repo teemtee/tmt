@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import re
+import uuid
 from contextlib import suppress
 from functools import wraps
 from typing import Any, Callable, Optional, TypedDict, TypeVar, Union, cast
@@ -31,7 +32,6 @@ from tmt.utils import (
     ProvisionError,
     ShellScript,
     UpdatableMessage,
-    get_quay_repo_tag,
 )
 from tmt.utils.templates import render_template
 from tmt.utils.wait import Deadline, Waiting
@@ -57,6 +57,35 @@ DEFAULT_PROVISION_TICK = 60  # poll job each minute
 #: How often Beaker session should be refreshed to pick up up-to-date
 #: Kerberos ticket.
 DEFAULT_API_SESSION_REFRESH = 3600
+
+
+# Translate arch to os/arch needed for podman build.
+arch_to_platform_dict = {
+    "x86_64": "linux/amd64",
+    "aarch64": "linux/arm64",
+    "ppc64le": "linux/ppc64le",
+    "s390x": "linux/s390x",
+}
+
+harness_template = '''
+[beaker-harness]
+name=beaker-harness
+baseurl={{base_harness_url}}{{ distro_name }}/
+enabled=1
+gpgcheck=0
+'''
+containerfile_template = '''
+FROM {{ bootc_base_image_url }}
+ADD {{anamon3_url}} /usr/local/sbin/anamon
+COPY beaker-harness.repo /etc/yum.repos.d/beaker-harness.repo
+RUN <<EORUN
+set -xeuo pipefail
+chmod 755 /usr/local/sbin/anamon
+dnf install -y curl restraint restraint-rhts audit chrony
+dnf -y clean all
+rm -rf /var/cache /var/lib/dnf
+EORUN
+'''
 
 
 def mrack_constructs_ks_pre() -> bool:
@@ -949,7 +978,7 @@ EOF
                     {
                         "name": "/distribution/check-system",
                         "role": "None",
-                        "fetch_url": "https://gitlab.com/fedora/bootc/tests/bootc-beaker-test/-/archive/1.8/bootc-beaker-test-1.8.tar.gz#check-system",
+                        "fetch_url": f"{host.check_system_url}",
                         "params": [
                             f"""BOOTC_IMAGE_URL={host.image_url}""",
                         ],
@@ -1077,40 +1106,40 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              """,
     )
 
-    bootc_user: Optional[str] = field(
+    bootc_registry_user: Optional[str] = field(
         default=None,
-        option=('--bootc-user'),
-        metavar='BOOTC_USER',
+        option='--bootc-user',
+        metavar='NAME',
         help="""
-             Specify bootc user.
+             The user used for logining registry.
              """,
     )
 
-    bootc_password: Optional[str] = field(
+    bootc_registry_password: Optional[str] = field(
         default=None,
         option=('--bootc-password'),
-        metavar='BOOTC_PASSWORD',
+        metavar='PASSWORD',
         help="""
-             Specify bootc password.
+             The password used for logining registry.
              """,
     )
 
-    base_image_url: str = field(
+    bootc_base_image_url: str = field(
         default="quay.io/fedora/fedora-bootc:latest",
-        option=('--base-image-url'),
-        metavar='BASE_IMAGE_URL',
+        option=('--bootc-base-image-url'),
+        metavar='URL',
         help="""
              Select container image to be used to build the derived bootc image.
              Cannot be used with container-file.
              """,
     )
 
-    test_image_name: str = field(
+    bootc_test_image_name: str = field(
         default="bootc-workflow-test",
-        option=('--test-image-name'),
-        metavar='IMAGENAME',
+        option=('--bootc-test-image-name'),
+        metavar='NAME',
         help="""
-             Specify test image name.
+             Test image name to be built, pushed to registry, and test.
              """,
     )
 
@@ -1119,7 +1148,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         option=('--base-repo'),
         metavar='BASEREPO',
         help="""
-             Select base quay repo to push the image to.
+             Select base repo to push the image to, not strict to quay.io.
              """,
     )
 
@@ -1131,6 +1160,15 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              Customize container image or not, if not set,
              image_url need to be set to perform the installation.
              This takes priority over image_url.
+             """,
+    )
+
+    check_system_url: Optional[str] = field(
+        default="https://gitlab.com/fedora/bootc/tests/bootc-beaker-test/-/archive/1.8/bootc-beaker-test-1.8.tar.gz#check-system",
+        option=('--check-system-url'),
+        metavar='URL',
+        help="""
+             Url to check-system task, which is needed for bootc on beaker installation.
              """,
     )
 
@@ -1149,7 +1187,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         option=('--distro-name'),
         metavar='DISTRO_NAME',
         help="""
-             Specify the distro name to build the base image.
+             Specify the distro name, which will be used for image building and bootc installation.
              """,
     )
 
@@ -1158,7 +1196,25 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         option=('--bootc-secret'),
         metavar='BOOTC_SECRET',
         help="""
-             Specify bootc secret.
+             Specify bootc secret, which will be used for fetching from registry.
+             """,
+    )
+
+    anamon3_url: Optional[str] = field(
+        default="http://lab-02.rhts.eng.rdu.redhat.com/beaker/anamon3",
+        option=('--anamon3-url'),
+        metavar='URL',
+        help="""
+             Specify the url where the anamon3 is.
+             """,
+    )
+
+    base_harness_url: Optional[str] = field(
+        default="http://beaker.engineering.redhat.com/harness/Fedora",
+        option=('--base-harness-url'),
+        metavar='URL',
+        help="""
+             Specify the base url where the beaker harness is.
              """,
     )
 
@@ -1167,7 +1223,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         is_flag=True,
         option=('--bootc'),
         help="""
-             bootc installation or not.
+             if set, bootc on beaker installation will be performed.
              """,
     )
 
@@ -1197,7 +1253,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         option=('--image-tag'),
         metavar='IMAGE_TAG',
         help="""
-             Specify the image tag to build the image.
+             Specify the image tag to build the bootc image.
              """,
     )
 
@@ -1243,6 +1299,7 @@ class CreateJobParameters:
     auth_dict: Optional[str]
     image_url: Optional[str]
     bootc: Optional[bool]
+    check_system_url: Optional[str]
 
     def to_mrack(self) -> dict[str, Any]:
         data = dataclasses.asdict(self)
@@ -1473,15 +1530,18 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         Create beaker job xml request and submit it to Beaker hub
         """
         auth_dict = None
-        image_url = ''
+        image_url = None
         if self.data.bootc:
             auth_dict = self._create_auth_dict()
 
             if self.data.customize_image:
-                assert self.data.base_repo
-                assert self.data.test_image_name
+                if not (self.data.base_repo and self.data.bootc_test_image_name):
+                    raise ProvisionError(
+                        'Both base_repo and bootc_test_image_name is needed for customizing image.'
+                    )
                 image_url = (
-                    f"{self.data.base_repo}/{self.data.test_image_name}:{self.data.image_tag}"
+                    f"{self.data.base_repo}/{self.data.bootc_test_image_name}:"
+                    f"{self.data.image_tag}"
                 )
             else:
                 assert self.data.image_url
@@ -1501,6 +1561,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             auth_dict=auth_dict,
             image_url=image_url,
             bootc=self.data.bootc,
+            check_system_url=self.data.check_system_url,
         )
 
         if self.is_dry_run:
@@ -1700,9 +1761,7 @@ class BootcImageBuilder:
 
     def _handle_image_tag(self) -> None:
         if not self.data.image_tag:
-            image_tag = get_quay_repo_tag(self._logger)
-            assert image_tag
-            self.data.image_tag = image_tag.strip()
+            self.data.image_tag = str(uuid.uuid4())[:4]
 
     def _get_base_image(self) -> str:
         """
@@ -1710,7 +1769,7 @@ class BootcImageBuilder:
         """
         if self.data.container_file:
             return self._build_base_image(self.data.container_file)
-        return self.data.base_image_url
+        return self.data.bootc_base_image_url
 
     def build_and_push_image(self) -> str:
         """Main orchestration method for image building"""
@@ -1728,8 +1787,8 @@ class BootcImageBuilder:
 
     def _push_image(self, containerimage: str) -> None:
         tmt.utils.ShellScript(
-            f"podman login -u {self.data.bootc_user} -p {self.data.bootc_password} "
-            f"{self.data.base_repo}"
+            f"podman login -u {self.data.bootc_registry_user} -p "
+            f"{self.data.bootc_registry_password} {self.data.base_repo}"
         ).to_shell_command().run(cwd=self.workdir, logger=self._logger)
         tmt.utils.ShellScript(
             "podman push --tls-verify=false --quiet "
@@ -1749,7 +1808,7 @@ class BootcImageBuilder:
 
         self._logger.debug("Build container image.")
         container_workdir = tmt.utils.expand_path(self.data.container_file_workdir)
-        image_name = f'localhost/{self.data.test_image_name}:{self.data.distro_name}'
+        image_name = f'localhost/{self.data.bootc_test_image_name}:{self.data.distro_name}'
         tmt.utils.Command(
             "podman",
             "build",
@@ -1769,45 +1828,26 @@ class BootcImageBuilder:
         """
         Build the container image
         """
-        platform_dict = {
-            "x86_64": "linux/amd64",
-            "aarch64": "linux/arm64",
-            "ppc64le": "linux/ppc64le",
-            "s390x": "linux/s390x",
-        }
-        harness_template = '''
-[beaker-harness]
-name=beaker-harness
-baseurl=http://beaker.engineering.redhat.com/harness/Fedora{{ distro_name }}/
-enabled=1
-gpgcheck=0
-        '''
-        harness_parsed = render_template(harness_template, distro_name=self.data.distro_name)
-        containerfile_template = '''
-FROM {{ base_image_url }}
-ADD http://lab-02.rhts.eng.rdu.redhat.com/beaker/anamon3 /usr/local/sbin/anamon
-COPY beaker-harness.repo /etc/yum.repos.d/beaker-harness.repo
-RUN <<EORUN
-set -xeuo pipefail
-chmod 755 /usr/local/sbin/anamon
-dnf install -y curl restraint restraint-rhts audit chrony
-dnf -y clean all
-rm -rf /var/cache /var/lib/dnf
-EORUN
-        '''
+        harness_parsed = render_template(
+            harness_template,
+            base_harness_url=self.data.base_harness_url,
+            distro_name=self.data.distro_name,
+        )
         containerfile_parsed = render_template(
-            containerfile_template, base_image_url=containerimage
+            containerfile_template,
+            anamon3_url=self.data.anamon3_url,
+            bootc_base_image_url=containerimage,
         )
         assert self.workdir
         (self.workdir / 'beaker-harness.repo').write_text(harness_parsed)
         (self.workdir / 'containerfile').write_text(containerfile_parsed)
         self._logger.debug("Build container image.")
-        image_name = f"{self.data.test_image_name}:{self.data.image_tag}"
+        image_name = f"{self.data.bootc_test_image_name}:{self.data.image_tag}"
         tmt.utils.Command(
             "podman",
             "build",
             "--platform",
-            platform_dict[f'{self.data.arch}'],
+            arch_to_platform_dict[f'{self.data.arch}'],
             "--from",
             containerimage,
             "-f",
@@ -1913,12 +1953,14 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
         # bootc_secret and distro_name are needed for bootc on beaker installation
         required_fields = ['bootc_secret', 'distro_name']
         if self.data.customize_image:
-            if self.data.base_image_url is None and self.data.container_file is None:
+            if self.data.bootc_base_image_url is None and self.data.container_file is None:
                 raise tmt.utils.ProvisionError(
                     "Either 'base-image-url' or 'container-file' must be specified."
                 )
-            required_fields.extend(['bootc_user', 'bootc_password', 'test_image_name'])
-            if not self.data.base_image_url:
+            required_fields.extend(
+                ['bootc_registry_user', 'bootc_registry_password', 'bootc_test_image_name']
+            )
+            if not self.data.bootc_base_image_url:
                 # base_repo is needed if users want to use container_file to build base image.
                 required_fields.append('base_repo')
         else:
@@ -1952,8 +1994,8 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
         Get base repo
         """
         if self.data.customize_image:
-            assert self.data.base_image_url
-            return _get_registry_from_url(self.data.base_image_url)
+            assert self.data.bootc_base_image_url
+            return _get_registry_from_url(self.data.bootc_base_image_url)
         assert self.data.image_url
         return _get_registry_from_url(self.data.image_url)
 
