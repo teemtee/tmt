@@ -1516,23 +1516,23 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         except mrack.errors.MrackError:
             return False
 
-    def _create_auth_dict(self) -> Optional[str]:
+    def _create_auth_credentials(self) -> dict[str, Any]:
         """Create authentication dictionary with proper credential handling"""
         if not self.data.bootc_secret:
-            return None
+            return {}
 
         # Support multiple registries
-        auth_config = {"auths": {self.data.base_repo: {"auth": self.data.bootc_secret}}}
-        return json.dumps(auth_config)
+        return {"auths": {self.data.base_repo: {"auth": self.data.bootc_secret}}}
 
     def _create(self, tmt_name: str) -> None:
         """
         Create beaker job xml request and submit it to Beaker hub
         """
-        auth_dict = None
+        auth_dict_str = None
         image_url = None
         if self.data.bootc:
-            auth_dict = self._create_auth_dict()
+            auth_dict = self._create_auth_credentials()
+            auth_dict_str = json.dumps(auth_dict) if auth_dict else None
 
             if self.data.customize_image:
                 if not (self.data.base_repo and self.data.bootc_test_image_name):
@@ -1558,7 +1558,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             beaker_job_owner=self.beaker_job_owner,
             public_key=self.public_key,
             group=self.beaker_job_group,
-            auth_dict=auth_dict,
+            auth_dict=auth_dict_str,
             image_url=image_url,
             bootc=self.data.bootc,
             check_system_url=self.data.check_system_url,
@@ -1807,7 +1807,7 @@ class BootcImageBuilder:
         """
 
         self._logger.debug("Build container image.")
-        container_workdir = tmt.utils.expand_path(self.data.container_file_workdir)
+        container_workdir = Path(self.data.container_file_workdir).resolve()
         image_name = f'localhost/{self.data.bootc_test_image_name}:{self.data.distro_name}'
         tmt.utils.Command(
             "podman",

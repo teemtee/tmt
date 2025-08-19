@@ -5856,13 +5856,3 @@ def catch_warnings_safe(
     with _catch_warning_lock, warnings.catch_warnings():
         warnings.simplefilter(action=action, category=category)
         yield
-
-
-def expand_path(relative_path: str) -> Path:
-    """
-    Expand the path to the full path relative to the current working dir
-    """
-
-    if relative_path.startswith("/"):
-        return Path(relative_path)
-    return Path(os.getcwd()) / relative_path
