@@ -37,12 +37,12 @@ PLUGIN_TARGETS = $(addsuffix .rst,$(addprefix plugins/,$(STEPS))) plugins/prepar
         $(PLUGIN_TARGETS) \
         generate-stories \
         generate-template-extensions \
-        generate-autodocs clean
+        clean
 
 ##
 ## Generate documentation sources from inputs
 ##
-generate: $(LOGO_DST) generate-runner-guest-matrix generate-lint-checks generate-template-extensions generate-plugins generate-stories generate-autodocs  ## Refresh all generated documentation sources
+generate: $(LOGO_DST) generate-runner-guest-matrix generate-lint-checks generate-template-extensions generate-plugins generate-stories  ## Refresh all generated documentation sources
 
 #
 # Targets creating directories for generated documentation sources
@@ -125,12 +125,6 @@ spec/lint.rst: $(SCRIPTSDIR)/generate-lint-checks.py \
                $(TEMPLATESDIR)/lint-checks.rst.j2 \
                $(TMTDIR)/base.py
 	$(SCRIPTSDIR)/generate-lint-checks.py $(TEMPLATESDIR)/lint-checks.rst.j2 $@
-
-#
-# Top-level targets to generate documentation sources
-#
-generate-autodocs:  ## Generate autodocs from source docstrings
-	cd ../ && sphinx-apidoc --force --implicit-namespaces --no-toc -o docs/code/autodocs tmt
 
 generate-lint-checks: spec spec/lint.rst  ## Generate documentation sources for lint checks
 
