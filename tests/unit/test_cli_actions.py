@@ -22,20 +22,20 @@ class TestHostCommandExecution:
         ("inputs", "effects", "expected_outputs"),
         [
             (
-                ["pwd", "q"],
+                ["pwd", r"\q"],
                 [None],
                 [
-                    style("Enter command (or 'q' to quit): ", fg="green"),
-                    style("Enter command (or 'q' to quit): ", fg="green"),
+                    style(r"Enter command (or '\q' to quit): ", fg="green"),
+                    style(r"Enter command (or '\q' to quit): ", fg="green"),
                     "Exiting host command mode. Bye for now!",
                 ],
             ),
             (
-                ["abcde", "q"],
-                [RunError("command not found", "abcde", 127)],
+                ["abcde", r"\q"],
+                [RunError("abcde command failed to run.", "abcde", 127)],
                 [
-                    style("Enter command (or 'q' to quit): ", fg="green"),
-                    style("Enter command (or 'q' to quit): ", fg="green"),
+                    style(r"Enter command (or '\q' to quit): ", fg="green"),
+                    style(r"Enter command (or '\q' to quit): ", fg="green"),
                     "Exiting host command mode. Bye for now!",
                 ],
             ),
@@ -43,9 +43,9 @@ class TestHostCommandExecution:
                 ["pwd", "ls -la", ""],
                 [None, None],
                 [
-                    style("Enter command (or 'q' to quit): ", fg="green"),
-                    style("Enter command (or 'q' to quit): ", fg="green"),
-                    style("Enter command (or 'q' to quit): ", fg="green"),
+                    style(r"Enter command (or '\q' to quit): ", fg="green"),
+                    style(r"Enter command (or '\q' to quit): ", fg="green"),
+                    style(r"Enter command (or '\q' to quit): ", fg="green"),
                     "Exiting host command mode. Bye for now!",
                 ],
             ),
@@ -54,7 +54,7 @@ class TestHostCommandExecution:
                     [exc],
                     [],
                     [
-                        style("Enter command (or 'q' to quit): ", fg="green"),
+                        style(r"Enter command (or '\q' to quit): ", fg="green"),
                         "Exiting host command mode. Bye for now!",
                     ],
                 )

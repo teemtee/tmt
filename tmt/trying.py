@@ -538,25 +538,26 @@ class Try(tmt.utils.Common):
         """
 
         while True:
-            self.print(style(f"Enter command (or '{Action.QUIT.key}' to quit): ", fg="green"))
+            self.print(style(f"Enter command (or '\\{Action.QUIT.key}' to quit): ", fg="green"))
             try:
                 raw_command = input("> ")
             except (KeyboardInterrupt, EOFError):
                 self.print("Exiting host command mode. Bye for now!")
                 break
 
-            if not raw_command or raw_command == Action.QUIT.key:
+            if not raw_command or raw_command == f'\\{Action.QUIT.key}':
                 self.print("Exiting host command mode. Bye for now!")
                 break
 
             # Execute the command on the host
             try:
-                command = Command(*shlex.split(raw_command))
-                command.run(cwd=plan.workdir, logger=self._logger, interactive=True)
+                Command(*shlex.split(raw_command)).run(
+                    cwd=plan.workdir, logger=self._logger, interactive=True
+                )
             except tmt.utils.RunError as error:
                 tmt.utils.show_exception_as_warning(
                     exception=error,
-                    message=error.message,
+                    message=f"'{raw_command}' command failed to run.",
                     include_logfiles=True,
                     logger=self._logger,
                 )
