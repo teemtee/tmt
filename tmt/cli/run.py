@@ -1,5 +1,5 @@
 """
-``tmt run`` and its subcommands/
+``tmt run`` and its subcommands
 """
 
 from typing import Any, Optional
