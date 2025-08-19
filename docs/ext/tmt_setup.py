@@ -10,6 +10,10 @@ if TYPE_CHECKING:
     from sphinx.application import Sphinx
 
 
+# TODO: Figure out how to use sphinx's source caching check
+# https://github.com/sphinx-doc/sphinx/issues/11556#issuecomment-3201453172
+
+
 def generate_tmt_docs(app: "Sphinx") -> None:
     """
     Run `make generate` to populate the auto-generated sources
@@ -26,3 +30,5 @@ def setup(app: "Sphinx") -> None:
     app.connect("builder-inited", generate_tmt_docs)
     # Check a cached version of the linkcheck results
     app.setup_extension("linkcheck_cache")
+    # Do sphinx-apidoc
+    app.setup_extension("sphinx_apidoc")
