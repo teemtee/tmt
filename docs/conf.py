@@ -13,13 +13,9 @@
 
 import importlib
 import os
-import subprocess
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
-
-if TYPE_CHECKING:
-    from sphinx.application import Sphinx
+from typing import Optional
 
 import tmt.utils
 
@@ -108,7 +104,11 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autodoc.typehints',
     'sphinx_rtd_theme',
+    # Custom extensions defined in ext
+    'tmt_setup',
 ]
+# Custom extensions
+sys.path.append(str(Path('ext').resolve()))
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -332,19 +332,3 @@ linkcheck_ignore = [
     # Stack Overflow uses captcha and these links are not essential
     r'https://stackoverflow.com.*',
 ]
-
-
-def generate_tmt_docs(app: Sphinx, config: Any) -> None:
-    """
-    Run `make generate` to populate the auto-generated sources
-    """
-
-    conf_dir = Path(app.confdir)
-    subprocess.run(["make", "generate"], cwd=conf_dir, check=True)
-
-
-def setup(app: Sphinx) -> None:
-    # Generate sources after loading configuration. That should build
-    # everything, including the logo, before Sphinx starts checking
-    # whether all input files exist.
-    app.connect("config-inited", generate_tmt_docs)
