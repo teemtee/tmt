@@ -1,17 +1,17 @@
-#!/usr/bin/env python3
+"""
+Sphinx extension to generate ``spec/*`` and ``stories/*`` files
+"""
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sphinx.application import Sphinx
 
 import sys
-import textwrap
 from unittest.mock import Mock as MagicMock
 
 import tmt.plugins
 from tmt.utils import Path
-
-HELP = textwrap.dedent("""
-Usage: generate-stories.py <TEMPLATE-PATH>
-
-Generate pages for stories from their fmf specifications.
-""").strip()
 
 # Mock extra modules
 
@@ -44,13 +44,14 @@ AREA_TITLES = {
 }
 
 
-def main() -> None:
-    if len(sys.argv) != 2:
-        print(HELP)
+def generate_stories(app: "Sphinx") -> None:
+    """
+    Generate ``spec/*`` and ``stories/*`` files
+    """
 
-        sys.exit(1)
-
-    story_template_filepath = Path(sys.argv[1])
+    story_template_filepath = Path(app.confdir / "templates/story.rst.j2")
+    (app.confdir / "spec").mkdir(exist_ok=True)
+    (app.confdir / "stories").mkdir(exist_ok=True)
 
     # We will need a logger...
     logger = tmt.Logger.create()
@@ -65,7 +66,7 @@ def main() -> None:
     for area, title in AREA_TITLES.items():
         logger.info(f'Generating rst files from {area}')
 
-        with open(f"{area.lstrip('/')}.rst", 'w') as doc:
+        with (app.confdir / f"{area.lstrip('/')}.rst").open('w') as doc:
             # Anchor and title
             doc.write(f'.. _{area}:\n\n')
             doc.write(f"{title}\n{'=' * len(title)}\n")
@@ -84,5 +85,5 @@ def main() -> None:
                 doc.write('\n\n')
 
 
-if __name__ == '__main__':
-    main()
+def setup(app: "Sphinx"):
+    app.connect("builder-inited", generate_stories)
