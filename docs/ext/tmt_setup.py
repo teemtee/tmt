@@ -36,3 +36,4 @@ def setup(app: "Sphinx") -> None:
     app.setup_extension("generate_lint_checks")
     app.setup_extension("generate_hardware_matrix")
     app.setup_extension("generate_test_runner_guest_matrix")
+    app.setup_extension("generate_template_extensions")
