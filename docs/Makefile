@@ -35,13 +35,12 @@ PLUGIN_TARGETS = $(addsuffix .rst,$(addprefix plugins/,$(STEPS))) plugins/prepar
         $(GENERATED_DIRECTORIES) \
         generate-plugins \
         $(PLUGIN_TARGETS) \
-        generate-stories \
         clean
 
 ##
 ## Generate documentation sources from inputs
 ##
-generate: $(LOGO_DST) generate-plugins generate-stories  ## Refresh all generated documentation sources
+generate: $(LOGO_DST) generate-plugins  ## Refresh all generated documentation sources
 
 #
 # Targets creating directories for generated documentation sources
@@ -106,9 +105,6 @@ plugins/test-checks.rst: $(call plugins-checks-dependencies)
 	$(call build-plugins)
 
 generate-plugins: $(PLUGIN_TARGETS)  ## Generate documentation sources for plugins
-
-generate-stories: stories $(TEMPLATESDIR)/story.rst.j2  ## Generate documentation sources for stories
-	$(SCRIPTSDIR)/generate-stories.py $(TEMPLATESDIR)/story.rst.j2
 
 clean:  ## Remove all generated content
 	rm -rf _build $(GENERATED_DIRECTORIES) code/autodocs/*.rst code/template-extensions.rst plugins/hardware-matrix.rst guide/test-runner-guest-compatibility-matrix.inc.rst $(PLUGIN_TARGETS)
