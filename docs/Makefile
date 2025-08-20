@@ -42,7 +42,7 @@ PLUGIN_TARGETS = $(addsuffix .rst,$(addprefix plugins/,$(STEPS))) plugins/prepar
 ##
 ## Generate documentation sources from inputs
 ##
-generate: $(LOGO_DST) generate-runner-guest-matrix generate-lint-checks generate-template-extensions generate-plugins generate-stories  ## Refresh all generated documentation sources
+generate: $(LOGO_DST) generate-runner-guest-matrix generate-template-extensions generate-plugins generate-stories  ## Refresh all generated documentation sources
 
 #
 # Targets creating directories for generated documentation sources
@@ -120,13 +120,6 @@ guide/test-runner-guest-compatibility-matrix.inc.rst: $(SCRIPTSDIR)/generate-tes
                                                       $(TEMPLATESDIR)/test-runner-guest-compatibility-matrix.inc.rst.j2 \
                                                       $(DOCSDIR)/test-runner-guest-compatibility.yaml
 	$(SCRIPTSDIR)/generate-test-runner-guest-matrix.py $(TEMPLATESDIR)/test-runner-guest-compatibility-matrix.inc.rst.j2 $(DOCSDIR)/test-runner-guest-compatibility.yaml $@
-
-spec/lint.rst: $(SCRIPTSDIR)/generate-lint-checks.py \
-               $(TEMPLATESDIR)/lint-checks.rst.j2 \
-               $(TMTDIR)/base.py
-	$(SCRIPTSDIR)/generate-lint-checks.py $(TEMPLATESDIR)/lint-checks.rst.j2 $@
-
-generate-lint-checks: spec spec/lint.rst  ## Generate documentation sources for lint checks
 
 generate-plugins: $(PLUGIN_TARGETS) generate-hardware-matrix  ## Generate documentation sources for plugins
 

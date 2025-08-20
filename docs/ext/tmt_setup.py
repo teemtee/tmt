@@ -32,3 +32,5 @@ def setup(app: "Sphinx") -> None:
     app.setup_extension("linkcheck_cache")
     # Do sphinx-apidoc
     app.setup_extension("sphinx_apidoc")
+    # Various other extensions
+    app.setup_extension("generate_lint_checks")
