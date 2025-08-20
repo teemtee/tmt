@@ -42,7 +42,7 @@ PLUGIN_TARGETS = $(addsuffix .rst,$(addprefix plugins/,$(STEPS))) plugins/prepar
 ##
 ## Generate documentation sources from inputs
 ##
-generate: $(LOGO_DST) generate-runner-guest-matrix generate-template-extensions generate-plugins generate-stories  ## Refresh all generated documentation sources
+generate: $(LOGO_DST) generate-template-extensions generate-plugins generate-stories  ## Refresh all generated documentation sources
 
 #
 # Targets creating directories for generated documentation sources
@@ -111,14 +111,7 @@ plugins/prepare-feature.rst: $(call plugins-feature-dependencies)
 plugins/test-checks.rst: $(call plugins-checks-dependencies)
 	$(call build-plugins)
 
-guide/test-runner-guest-compatibility-matrix.inc.rst: $(SCRIPTSDIR)/generate-test-runner-guest-matrix.py \
-                                                      $(TEMPLATESDIR)/test-runner-guest-compatibility-matrix.inc.rst.j2 \
-                                                      $(DOCSDIR)/test-runner-guest-compatibility.yaml
-	$(SCRIPTSDIR)/generate-test-runner-guest-matrix.py $(TEMPLATESDIR)/test-runner-guest-compatibility-matrix.inc.rst.j2 $(DOCSDIR)/test-runner-guest-compatibility.yaml $@
-
 generate-plugins: $(PLUGIN_TARGETS)  ## Generate documentation sources for plugins
-
-generate-runner-guest-matrix: guide/test-runner-guest-compatibility-matrix.inc.rst  ## Generate runner vs. guest compatibility matrix
 
 generate-stories: stories $(TEMPLATESDIR)/story.rst.j2  ## Generate documentation sources for stories
 	$(SCRIPTSDIR)/generate-stories.py $(TEMPLATESDIR)/story.rst.j2
