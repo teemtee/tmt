@@ -198,67 +198,38 @@ def generate_plugins(app: "Sphinx") -> None:
     # ... explore available plugins...
     tmt.plugins.explore(logger)
 
-    for step_name in [
-        "cleanup",
-        "discover",
-        "execute",
-        "finish",
-        "prepare",
-        "provision",
-        "report",
-        "prepare-feature",
-        "test-checks",
-    ]:
+    for step_name, plugin_generator in {
+        "cleanup": _create_step_plugin_iterator(
+            registry=tmt.steps.cleanup.CleanupPlugin._supported_methods,
+        ),
+        "discover": _create_step_plugin_iterator(
+            registry=tmt.steps.discover.DiscoverPlugin._supported_methods,
+        ),
+        "execute": _create_step_plugin_iterator(
+            registry=tmt.steps.execute.ExecutePlugin._supported_methods,
+        ),
+        "finish": _create_step_plugin_iterator(
+            registry=tmt.steps.finish.FinishPlugin._supported_methods
+        ),
+        "prepare": _create_step_plugin_iterator(
+            registry=tmt.steps.prepare.PreparePlugin._supported_methods,
+        ),
+        "provision": _create_step_plugin_iterator(
+            registry=tmt.steps.provision.ProvisionPlugin._supported_methods,
+        ),
+        "report": _create_step_plugin_iterator(
+            registry=tmt.steps.report.ReportPlugin._supported_methods
+        ),
+        "prepare-feature": _create_feature_plugin_iterator(
+            registry=tmt.steps.prepare.feature._FEATURE_PLUGIN_REGISTRY,
+        ),
+        "test-checks": _create_test_check_plugin_iterator(
+            registry=tmt.checks._CHECK_PLUGIN_REGISTRY,
+        ),
+    }.items():
         output_filepath = Path(app.confdir / f"plugins/{step_name}.rst")
-        if step_name == 'cleanup':
-            plugin_generator = _create_step_plugin_iterator(
-                tmt.steps.cleanup.CleanupPlugin._supported_methods
-            )
 
-        elif step_name == 'discover':
-            plugin_generator = _create_step_plugin_iterator(
-                tmt.steps.discover.DiscoverPlugin._supported_methods
-            )
-
-        elif step_name == 'execute':
-            plugin_generator = _create_step_plugin_iterator(
-                tmt.steps.execute.ExecutePlugin._supported_methods
-            )
-
-        elif step_name == 'finish':
-            plugin_generator = _create_step_plugin_iterator(
-                tmt.steps.finish.FinishPlugin._supported_methods
-            )
-
-        elif step_name == 'prepare':
-            plugin_generator = _create_step_plugin_iterator(
-                tmt.steps.prepare.PreparePlugin._supported_methods
-            )
-
-        elif step_name == 'provision':
-            plugin_generator = _create_step_plugin_iterator(
-                tmt.steps.provision.ProvisionPlugin._supported_methods
-            )
-
-        elif step_name == 'report':
-            plugin_generator = _create_step_plugin_iterator(
-                tmt.steps.report.ReportPlugin._supported_methods
-            )
-
-        elif step_name == 'prepare-feature':
-            plugin_generator = _create_feature_plugin_iterator(
-                tmt.steps.prepare.feature._FEATURE_PLUGIN_REGISTRY
-            )
-
-        elif step_name == 'test-checks':
-            plugin_generator = _create_test_check_plugin_iterator(
-                tmt.checks._CHECK_PLUGIN_REGISTRY
-            )
-
-        else:
-            raise tmt.utils.GeneralError(f"Unhandled step name '{step_name}'.")
-
-        # ... and render the template.
+        # render the template.
         render_template_file_into_file(
             template_filepath,
             output_filepath,
