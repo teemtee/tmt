@@ -111,19 +111,12 @@ plugins/prepare-feature.rst: $(call plugins-feature-dependencies)
 plugins/test-checks.rst: $(call plugins-checks-dependencies)
 	$(call build-plugins)
 
-plugins/hardware-matrix.rst: $(SCRIPTSDIR)/generate-hardware-matrix.py \
-                          $(TEMPLATESDIR)/hardware-matrix.rst.j2 \
-                          $(shell find $(REPODIR)/spec/hardware -name '*.fmf')
-	$(SCRIPTSDIR)/generate-hardware-matrix.py $(TEMPLATESDIR)/hardware-matrix.rst.j2 $@
-
 guide/test-runner-guest-compatibility-matrix.inc.rst: $(SCRIPTSDIR)/generate-test-runner-guest-matrix.py \
                                                       $(TEMPLATESDIR)/test-runner-guest-compatibility-matrix.inc.rst.j2 \
                                                       $(DOCSDIR)/test-runner-guest-compatibility.yaml
 	$(SCRIPTSDIR)/generate-test-runner-guest-matrix.py $(TEMPLATESDIR)/test-runner-guest-compatibility-matrix.inc.rst.j2 $(DOCSDIR)/test-runner-guest-compatibility.yaml $@
 
-generate-plugins: $(PLUGIN_TARGETS) generate-hardware-matrix  ## Generate documentation sources for plugins
-
-generate-hardware-matrix: plugins/hardware-matrix.rst  ## Generate HW requirement support matrix
+generate-plugins: $(PLUGIN_TARGETS)  ## Generate documentation sources for plugins
 
 generate-runner-guest-matrix: guide/test-runner-guest-compatibility-matrix.inc.rst  ## Generate runner vs. guest compatibility matrix
 

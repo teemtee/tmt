@@ -34,3 +34,4 @@ def setup(app: "Sphinx") -> None:
     app.setup_extension("sphinx_apidoc")
     # Various other extensions
     app.setup_extension("generate_lint_checks")
+    app.setup_extension("generate_hardware_matrix")
