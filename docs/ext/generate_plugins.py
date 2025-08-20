@@ -1,10 +1,13 @@
-#!/usr/bin/env python3
+"""
+Sphinx extension to generate ``plugins/*.rst`` files
+"""
 
 import dataclasses
 import enum
-import sys
-import textwrap
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from sphinx.application import Sphinx
 
 import tmt.checks
 import tmt.container
@@ -39,13 +42,6 @@ REVIEWED_PLUGINS: tuple[str, ...] = (
     'test-checks/internal/permission',
     'test-checks/internal/timeout',
 )
-
-
-HELP = textwrap.dedent("""
-Usage: generate-plugins.py <STEP-NAME> <TEMPLATE-PATH> <OUTPUT-PATH>
-
-Generate pages for step plugins sources.
-""").strip()
 
 
 def _is_ignored(
@@ -187,15 +183,13 @@ def _create_test_check_plugin_iterator(registry: tmt.plugins.PluginRegistry[tmt.
     return plugin_iterator
 
 
-def main() -> None:
-    if len(sys.argv) != 4:
-        print(HELP)
+def generate_plugins(app: "Sphinx") -> None:
+    """
+    Generate ``plugins/*.rst`` files
+    """
 
-        sys.exit(1)
-
-    step_name = sys.argv[1]
-    template_filepath = Path(sys.argv[2])
-    output_filepath = Path(sys.argv[3])
+    template_filepath = Path(app.confdir / "templates/plugins.rst.j2")
+    (app.confdir / "plugins").mkdir(exist_ok=True)
 
     # We will need a logger...
     logger = tmt.log.Logger.create()
@@ -204,69 +198,83 @@ def main() -> None:
     # ... explore available plugins...
     tmt.plugins.explore(logger)
 
-    if step_name == 'cleanup':
-        plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.cleanup.CleanupPlugin._supported_methods
+    for step_name in [
+        "cleanup",
+        "discover",
+        "execute",
+        "finish",
+        "prepare",
+        "provision",
+        "report",
+        "prepare-feature",
+        "test-checks",
+    ]:
+        output_filepath = Path(app.confdir / f"plugins/{step_name}.rst")
+        if step_name == 'cleanup':
+            plugin_generator = _create_step_plugin_iterator(
+                tmt.steps.cleanup.CleanupPlugin._supported_methods
+            )
+
+        elif step_name == 'discover':
+            plugin_generator = _create_step_plugin_iterator(
+                tmt.steps.discover.DiscoverPlugin._supported_methods
+            )
+
+        elif step_name == 'execute':
+            plugin_generator = _create_step_plugin_iterator(
+                tmt.steps.execute.ExecutePlugin._supported_methods
+            )
+
+        elif step_name == 'finish':
+            plugin_generator = _create_step_plugin_iterator(
+                tmt.steps.finish.FinishPlugin._supported_methods
+            )
+
+        elif step_name == 'prepare':
+            plugin_generator = _create_step_plugin_iterator(
+                tmt.steps.prepare.PreparePlugin._supported_methods
+            )
+
+        elif step_name == 'provision':
+            plugin_generator = _create_step_plugin_iterator(
+                tmt.steps.provision.ProvisionPlugin._supported_methods
+            )
+
+        elif step_name == 'report':
+            plugin_generator = _create_step_plugin_iterator(
+                tmt.steps.report.ReportPlugin._supported_methods
+            )
+
+        elif step_name == 'prepare-feature':
+            plugin_generator = _create_feature_plugin_iterator(
+                tmt.steps.prepare.feature._FEATURE_PLUGIN_REGISTRY
+            )
+
+        elif step_name == 'test-checks':
+            plugin_generator = _create_test_check_plugin_iterator(
+                tmt.checks._CHECK_PLUGIN_REGISTRY
+            )
+
+        else:
+            raise tmt.utils.GeneralError(f"Unhandled step name '{step_name}'.")
+
+        # ... and render the template.
+        render_template_file_into_file(
+            template_filepath,
+            output_filepath,
+            LOGGER=logger,
+            STEP=step_name,
+            PLUGINS=plugin_generator,
+            REVIEWED_PLUGINS=REVIEWED_PLUGINS,
+            HINTS=tmt.utils.hints.HINTS,
+            is_enum=is_enum,
+            container_fields=tmt.container.container_fields,
+            container_field=tmt.container.container_field,
+            container_ignored_fields=container_ignored_fields,
+            container_inherited_fields=container_inherited_fields,
+            container_intrinsic_fields=container_intrinsic_fields,
         )
 
-    elif step_name == 'discover':
-        plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.discover.DiscoverPlugin._supported_methods
-        )
 
-    elif step_name == 'execute':
-        plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.execute.ExecutePlugin._supported_methods
-        )
-
-    elif step_name == 'finish':
-        plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.finish.FinishPlugin._supported_methods
-        )
-
-    elif step_name == 'prepare':
-        plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.prepare.PreparePlugin._supported_methods
-        )
-
-    elif step_name == 'provision':
-        plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.provision.ProvisionPlugin._supported_methods
-        )
-
-    elif step_name == 'report':
-        plugin_generator = _create_step_plugin_iterator(
-            tmt.steps.report.ReportPlugin._supported_methods
-        )
-
-    elif step_name == 'prepare-feature':
-        plugin_generator = _create_feature_plugin_iterator(
-            tmt.steps.prepare.feature._FEATURE_PLUGIN_REGISTRY
-        )
-
-    elif step_name == 'test-checks':
-        plugin_generator = _create_test_check_plugin_iterator(tmt.checks._CHECK_PLUGIN_REGISTRY)
-
-    else:
-        raise tmt.utils.GeneralError(f"Unhandled step name '{step_name}'.")
-
-    # ... and render the template.
-    render_template_file_into_file(
-        template_filepath,
-        output_filepath,
-        LOGGER=logger,
-        STEP=step_name,
-        PLUGINS=plugin_generator,
-        REVIEWED_PLUGINS=REVIEWED_PLUGINS,
-        HINTS=tmt.utils.hints.HINTS,
-        is_enum=is_enum,
-        container_fields=tmt.container.container_fields,
-        container_field=tmt.container.container_field,
-        container_ignored_fields=container_ignored_fields,
-        container_inherited_fields=container_inherited_fields,
-        container_intrinsic_fields=container_intrinsic_fields,
-    )
-
-
-if __name__ == '__main__':
-    main()
+def setup(app: "Sphinx"):
+    app.connect("builder-inited", generate_plugins)
