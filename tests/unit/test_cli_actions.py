@@ -7,10 +7,12 @@ from tmt.trying import Try
 from tmt.utils import RunError, style
 
 
-class TestHostCommandExecution:
+class TestTmtTryActionMenu:
     @pytest.fixture
     def mock_try_instance(self):
-        return mock.MagicMock()
+        instance = mock.MagicMock()
+        instance._handle_interactive_prompt = Try._handle_interactive_prompt.__get__(instance, Try)
+        return instance
 
     @pytest.fixture
     def mock_plan(self):
@@ -90,3 +92,44 @@ class TestHostCommandExecution:
 
         printed = [args[0] for args, _ in mock_try_instance.print.call_args_list]
         assert printed == expected_outputs
+
+    @pytest.mark.parametrize(
+        ("inputs", "effects", "expected_outputs"),
+        [
+            (
+                ["/tests", r"\q"],
+                [None],
+                [
+                    style(r"Enter directory path (or '\q' to quit): ", fg="green"),
+                    "Changed directory to: /tests",
+                    style(r"Enter directory path (or '\q' to quit): ", fg="green"),
+                    "Exiting local change directory mode. Bye for now!",
+                ],
+            ),
+        ],
+    )
+    @mock.patch("os.getcwd", return_value="/tests")
+    @mock.patch("os.chdir")
+    @mock.patch("tmt.utils.show_exception_as_warning")
+    @mock.patch("builtins.input")
+    def test_action_local_change_directory(
+        self,
+        mock_input,
+        mock_show_exception,
+        mock_chdir,
+        mock_getcwd,
+        mock_try_instance,
+        mock_plan,
+        inputs,
+        effects,
+        expected_outputs,
+    ):
+        mock_try_instance._previous_test_dir = Path("/old/dir")
+        mock_input.side_effect = inputs
+        mock_try_instance.discover_tests = mock.MagicMock()
+
+        Try.action_local_change_directory(mock_try_instance, mock_plan)
+
+        printed = [args[0] for args, _ in mock_try_instance.print.call_args_list]
+        assert printed == expected_outputs
+        mock_try_instance.discover_tests.assert_called_once_with(Path("/tests"))

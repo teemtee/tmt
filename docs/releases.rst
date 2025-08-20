@@ -8,10 +8,11 @@ tmt-1.56.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :ref:`tmt try</stories/cli/try>` command's interactive session
-now includes a new ``h`` option to run shell commands directly
-on the host (not on provisioned guests). Users can exit cleanly
-by typing ``'\q'``, pressing Ctrl-C, or pressing Ctrl-D, and failed commands
-are reported with clear error messages.
+now includes two new options: ``h`` option to run shell commands directly
+on the host (not on provisioned guests) and ``o`` option to change the
+directory on the local machine. Users can exit cleanly by typing ``'\q'``,
+pressing Ctrl-C, or pressing Ctrl-D, and failed commands are reported
+with clear error messages.
 
 
 tmt-1.55.0
