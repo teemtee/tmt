@@ -26,12 +26,14 @@ def generate_tmt_docs(app: Sphinx) -> None:
 
 
 def setup(app: Sphinx) -> None:
+    from generate_hardware_matrix import generate_hardware_matrix
     from generate_lint_checks import generate_lint_checks
     from sphinx_apidoc import sphinx_apidoc
 
     # Do sphinx-apidoc
     app.connect("builder-inited", sphinx_apidoc)
     app.connect("builder-inited", generate_lint_checks)
+    app.connect("builder-inited", generate_hardware_matrix)
     # Generate sources after loading configuration. That should build
     # everything, including the logo, before Sphinx starts checking
     # whether all input files exist.
