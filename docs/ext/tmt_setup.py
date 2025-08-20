@@ -58,6 +58,7 @@ def generate_tmt_docs(app: Sphinx) -> None:
 def setup(app: Sphinx) -> None:
     from generate_hardware_matrix import generate_hardware_matrix
     from generate_lint_checks import generate_lint_checks
+    from generate_plugins import generate_plugins
     from generate_stories import generate_stories
     from generate_template_extensions import generate_template_extensions
     from generate_test_runner_guest_matrix import generate_test_runner_guest_matrix
@@ -69,6 +70,7 @@ def setup(app: Sphinx) -> None:
     app.connect("builder-inited", generate_test_runner_guest_matrix)
     app.connect("builder-inited", generate_template_extensions)
     app.connect("builder-inited", generate_stories)
+    app.connect("builder-inited", generate_plugins)
     # Generate sources after loading configuration. That should build
     # everything, including the logo, before Sphinx starts checking
     # whether all input files exist.
