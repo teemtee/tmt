@@ -2175,6 +2175,19 @@ class Plan(
     # Plan environment and its components
     #
 
+    # Q: what part of plan environment or context should be "inheritable"
+    #    by imported plans?
+    #
+    # A: Only what the plan truly and fully owns: its own `environment`
+    #    and `environment-file` keys, `context` key, and environment
+    #    and context inherited from its importing plan if this one was
+    #    also imported.
+    #
+    #    No "shared" environment shall be part of the "inheritable" bundle.
+    #    By leaving CLI inputs or plan environment file out, we make the
+    #    inheritance clearer, without duplicities, and the composition
+    #    is then easier to extend or debug.
+
     #: Environment variables inherited from the importing plan. If the
     #: plan was not imported, the set will be empty.
     _environment_from_importing: Environment = field(default_factory=Environment, internal=True)
@@ -2293,7 +2306,7 @@ class Plan(
         sources (in the order):
 
         * plan's ``environment`` and ``environment-file`` keys,
-        * importing plan's environment,
+        * importing plan's environment.
         """
 
         return Environment(
