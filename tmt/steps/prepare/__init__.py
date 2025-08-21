@@ -406,9 +406,7 @@ class Prepare(tmt.steps.Step):
             guest_copies.append(guest_copy)
 
         if guest_copies:
-            sync_with_guests(
-                self, 'push', PushTask(logger=self._logger, guests=guest_copies), self._logger
-            )
+            sync_with_guests(self, 'push', PushTask(guest_copies, self._logger), self._logger)
 
             # To separate "push" from "prepare" queue visually
             self.info('')
@@ -497,9 +495,7 @@ class Prepare(tmt.steps.Step):
             sync_with_guests(
                 self,
                 'pull',
-                PullTask(
-                    logger=self._logger, guests=guest_copies, source=self.plan.data_directory
-                ),
+                PullTask(guest_copies, self.plan.data_directory, self._logger),
                 self._logger,
             )
 
