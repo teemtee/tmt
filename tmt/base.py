@@ -3148,10 +3148,11 @@ class Plan(
 
                 reference.resolve_dynamic_ref(tmpdirname, self)
 
+        assert reference.url
         yield from self._resolve_import_to_nodes(
             reference,
             fmf.utils.fetch_tree(
-                reference.url,
+                tmt.utils.git.clonable_git_url(reference.url),
                 reference.ref,
                 str(reference.path.unrooted()) if reference.path else '.',
             ),
