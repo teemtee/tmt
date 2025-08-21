@@ -321,6 +321,9 @@ linkcheck_ignore = [
     r'https://stackoverflow.com.*',
 ]
 
+# custom linkcheck cache variables
+linkcheck_cache_period = 1.0
+
 
 def generate_tmt_docs(app: Sphinx, config: Any) -> None:
     """
@@ -365,7 +368,7 @@ def linkcheck_check_cache(app: Sphinx, uri: str) -> str | None:
         # Check if the cache data is recent enough
         cached_time = datetime.datetime.fromtimestamp(cache_data[uri], datetime.UTC)
         age = now - cached_time
-        if age < datetime.timedelta(days=1.0):
+        if age < datetime.timedelta(days=linkcheck_cache_period):
             # cache is relatively recent, so we skip this uri
             return str(cache_file.absolute())
     # If either check fails, we want to do the check and update the cache
