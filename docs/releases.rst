@@ -4,6 +4,15 @@
     Releases
 ======================
 
+tmt-1.56.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When interrupted while running a test, tmt will now interrupt the test
+and quit immediately after, skipping all remaining tests. This is now
+aligned with a test abort or :ref:`exit-first </plugins/execute/tmt>`
+key.
+
+
 tmt-1.55.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -31,15 +40,6 @@ to match the implementation patterns of other checks. Default
 configuration for persistent journal storage is now automatically
 applied when possible, and systemd availability checking has been
 enhanced.
-
-
-tmt-1.54.0
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-When interrupted while running a test, tmt will now interrupt the test
-and quit immediately after, skipping all remaining tests. This is now
-aligned with a test abort or :ref:`exit-first </plugins/execute/tmt>`
-key.
 
 
 tmt-1.54.0
