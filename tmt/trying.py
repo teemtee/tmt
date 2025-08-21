@@ -548,10 +548,11 @@ class Try(tmt.utils.Common):
         self.print(f"Run {run_id} successfully finished. Bye for now!")
 
     def _handle_interactive_prompt(
-        self, prompt: str, quit_message: str, error_message: str, handler: Callable[[str], None]
+        self, prompt: str, context: str, error_message: str, handler: Callable[[str], None]
     ) -> None:
+        quit_message = f"Exiting {context} mode. Bye for now!"
         while True:
-            self.print(style(f"{prompt} (or '\\{Action.QUIT.key}' to quit): ", fg="green"))
+            self.print(style(f"Enter {prompt} (or '\\{Action.QUIT.key}' to quit): ", fg="green"))
             try:
                 user_input = input("> ")
             except (KeyboardInterrupt, EOFError):
@@ -590,8 +591,8 @@ class Try(tmt.utils.Common):
                 self._previous_test_dir = current_test_dir
 
         self._handle_interactive_prompt(
-            prompt="Enter directory path",
-            quit_message="Exiting local change directory mode. Bye for now!",
+            prompt="directory path",
+            context="local change directory",
             error_message="'{0}' No such file or directory",
             handler=handler,
         )
@@ -607,8 +608,8 @@ class Try(tmt.utils.Common):
             )
 
         self._handle_interactive_prompt(
-            prompt="Enter command",
-            quit_message="Exiting host command mode. Bye for now!",
+            prompt="command",
+            context="host command",
             error_message="'{0}' command failed to run",
             handler=handler,
         )
