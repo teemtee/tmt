@@ -3070,6 +3070,9 @@ class Plan(
         Discover plan-like nodes matching the given reference in fmf cache.
         """
 
+        # TODO: similar situation as in _resolve_import_from_git
+        assert reference.url is not None
+
         if str(reference.ref).startswith('@'):
             self.debug(
                 f"Not enough data to evaluate dynamic ref '{reference.ref}', "
@@ -3094,7 +3097,6 @@ class Plan(
 
                 reference.resolve_dynamic_ref(tmpdirname, self)
 
-        assert reference.url
         yield from self._resolve_import_to_nodes(
             reference,
             fmf.utils.fetch_tree(
