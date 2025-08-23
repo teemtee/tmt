@@ -1,5 +1,6 @@
 import enum
 import functools
+from collections import Counter
 from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypedDict, TypeVar, cast
 
 import tmt.log
@@ -362,10 +363,18 @@ def normalize_test_checks(
         # ignore[redundant-cast]: mypy infers the type to be `list[Any]` while
         # pyright, not making assumptions about the type of items, settles for
         # `list[Unknown]`. The `cast()` helps pyright, but mypy complains.
-        return [
+        checks = [
             normalize_test_check(f'{key_address}[{i}]', raw_test_check, logger)
             for i, raw_test_check in enumerate(cast(list[Any], raw_checks))  # type: ignore[redundant-cast]
         ]
+
+        how_counts = Counter(check.how for check in checks)
+
+        for how, count in how_counts.items():
+            if count > 1:
+                logger.warning(f"Multiple {how} checks found")
+
+        return checks
 
     raise tmt.utils.NormalizationError(
         key_address, raw_checks, 'a string, a dictionary, or a list of their combinations'
