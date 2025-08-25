@@ -148,6 +148,8 @@ class GuestLocal(tmt.Guest):
         self.verbose('primary address', self.primary_address, 'green')
         self.verbose('topology address', self.topology_address, 'green')
 
+        self.assert_reachable()
+
     def stop(self) -> None:
         """
         Stop the guest
@@ -267,4 +269,5 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
             self.warn("The 'local' provision plugin does not support hardware requirements.")
 
         self._guest = GuestLocal(logger=self._logger, data=data, name=self.name, parent=self.step)
+        self._guest.start()
         self._guest.setup()

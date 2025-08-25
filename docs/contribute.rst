@@ -807,9 +807,19 @@ Follow the steps below to create a new major or minor release:
 
 * Review the release notes in ``releases.rst``, update as needed
 * Add a ``Release x.y.z`` commit, empty if needed: ``git commit --allow-empty -m "Release x.y.z"``
-* Create a pull request with the commit, ensure tests pass, merge it
+* Create a pull request with the commit, ensure that the full test
+  coverage passed and merge it
 * Move the ``fedora`` branch to point to the new release
 * Tag the commit with ``x.y.z``, push tags ``git push --tags``
+
+.. note::
+
+    As the release pull request contains no functional changes, it
+    is generally acceptable to skip waiting for test results if
+    the full test coverage has been already successfully executed
+    in the previous pull request. In that case just include a
+    comment with a reference in the following form: ``Full test
+    passed in #1234.``
 
 Create a new `github release`__ based on the tag above
 

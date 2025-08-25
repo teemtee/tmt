@@ -24,6 +24,7 @@ import tmt.steps.provision
 import tmt.utils
 import tmt.utils.wait
 from tmt.container import container, field
+from tmt.steps.provision import CONNECT_TIMEOUT, default_connect_waiting
 from tmt.utils import (
     Command,
     Path,
@@ -156,15 +157,6 @@ DEFAULT_BOOT_TIMEOUT: int = 2 * 60
 #: This is the effective value, combining the default and optional envvar,
 #: ``TMT_BOOT_TIMEOUT``.
 BOOT_TIMEOUT: int = configure_constant(DEFAULT_BOOT_TIMEOUT, 'TMT_BOOT_TIMEOUT')
-
-#: How many seconds to wait for a connection to succeed after guest boot.
-#: This is the default value tmt would use unless told otherwise.
-DEFAULT_CONNECT_TIMEOUT = 2 * 60
-
-#: How many seconds to wait for a connection to succeed after guest boot.
-#: This is the effective value, combining the default and optional envvar,
-#: ``TMT_CONNECT_TIMEOUT``.
-CONNECT_TIMEOUT: int = configure_constant(DEFAULT_CONNECT_TIMEOUT, 'TMT_CONNECT_TIMEOUT')
 
 #: How many times should the timeouts be multiplied in kvm-less cases.
 #: These include emulating a different architecture than the host,
@@ -1155,10 +1147,9 @@ class GuestTestcloud(tmt.GuestSsh):
         self._instance.create_ip_file(self.primary_address)
 
         # Wait a bit until the box is up
-        if not self.reconnect(
-            Waiting(Deadline.from_seconds(CONNECT_TIMEOUT * time_coeff), tick=1)
-        ):
-            raise ProvisionError(f"Failed to connect in {CONNECT_TIMEOUT * time_coeff}s.")
+        waiting = default_connect_waiting()
+        waiting.deadline = Deadline.from_seconds(CONNECT_TIMEOUT * time_coeff)
+        self.assert_reachable(waiting)
 
     def stop(self) -> None:
         """

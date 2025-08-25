@@ -2594,7 +2594,6 @@ class Topology(SerializableContainer):
         return environment
 
 
-@container
 class ActionTask(tmt.queue.GuestlessTask[None]):
     """
     A task to run an action
@@ -2602,9 +2601,8 @@ class ActionTask(tmt.queue.GuestlessTask[None]):
 
     phase: Action
 
-    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
-    def __init__(self, logger: tmt.log.Logger, phase: Action, **kwargs: Any) -> None:
-        super().__init__(logger, **kwargs)
+    def __init__(self, phase: Action, logger: tmt.log.Logger) -> None:
+        super().__init__(logger)
 
         self.phase = phase
 
@@ -2616,7 +2614,6 @@ class ActionTask(tmt.queue.GuestlessTask[None]):
         self.phase.go()
 
 
-@container
 class PluginTask(
     tmt.queue.MultiGuestTask[PluginReturnValueT],
     Generic[StepDataT, PluginReturnValueT],
@@ -2627,15 +2624,13 @@ class PluginTask(
 
     phase: Plugin[StepDataT, PluginReturnValueT]
 
-    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
     def __init__(
         self,
-        logger: tmt.log.Logger,
-        guests: list['Guest'],
         phase: Plugin[StepDataT, PluginReturnValueT],
-        **kwargs: Any,
+        guests: list['Guest'],
+        logger: tmt.log.Logger,
     ) -> None:
-        super().__init__(logger, guests, **kwargs)
+        super().__init__(guests, logger)
 
         self.phase = phase
 
@@ -2670,7 +2665,7 @@ class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginR
     """
 
     def enqueue_action(self, *, phase: Action) -> None:
-        self.enqueue_task(ActionTask(logger=phase._logger, phase=phase))
+        self.enqueue_task(ActionTask(phase, phase._logger))
 
     def enqueue_plugin(
         self, *, phase: Plugin[StepDataT, PluginReturnValueT], guests: list['Guest']
@@ -2680,18 +2675,13 @@ class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginR
                 f'No guests queued for phase "{phase}". A typo in "where" key?'
             )
 
-        self.enqueue_task(PluginTask(logger=phase._logger, guests=guests, phase=phase))
+        self.enqueue_task(PluginTask(phase, guests, phase._logger))
 
 
-@container
 class PushTask(tmt.queue.MultiGuestTask[None]):
     """
     Task performing a workdir push to a guest
     """
-
-    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
-    def __init__(self, logger: tmt.log.Logger, guests: list['Guest'], **kwargs: Any) -> None:
-        super().__init__(logger, guests, **kwargs)
 
     @property
     def name(self) -> str:
@@ -2701,7 +2691,6 @@ class PushTask(tmt.queue.MultiGuestTask[None]):
         guest.push()
 
 
-@container
 class PullTask(tmt.queue.MultiGuestTask[None]):
     """
     Task performing a workdir pull from a guest
@@ -2709,15 +2698,10 @@ class PullTask(tmt.queue.MultiGuestTask[None]):
 
     source: Optional[Path]
 
-    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
     def __init__(
-        self,
-        logger: tmt.log.Logger,
-        guests: list['Guest'],
-        source: Optional[Path] = None,
-        **kwargs: Any,
+        self, guests: list['Guest'], source: Optional[Path], logger: tmt.log.Logger
     ) -> None:
-        super().__init__(logger, guests, **kwargs)
+        super().__init__(guests, logger)
 
         self.source = source
 

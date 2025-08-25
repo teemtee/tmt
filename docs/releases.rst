@@ -13,6 +13,11 @@ on the host (not on provisioned guests). Users can exit cleanly
 by typing ``'\q'``, pressing Ctrl-C, or pressing Ctrl-D, and failed commands
 are reported with clear error messages.
 
+When interrupted while running a test, tmt will now interrupt the test
+and quit immediately after, skipping all remaining tests. This is now
+aligned with a test abort or :ref:`exit-first </plugins/execute/tmt>`
+key.
+
 
 tmt-1.55.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -1,10 +1,9 @@
-import dataclasses
-import functools
+import copy
 from collections.abc import Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Callable, Generic, Optional, TypeVar
 
-from tmt.container import container
+from tmt._compat.typing import ParamSpec
 from tmt.log import Logger
 
 if TYPE_CHECKING:
@@ -12,64 +11,178 @@ if TYPE_CHECKING:
     from tmt.steps.provision import Guest
 
 
+T = TypeVar('T')
+P = ParamSpec('P')
 TaskResultT = TypeVar('TaskResultT')
+TaskT = TypeVar('TaskT', bound='Task')  # type: ignore[type-arg]
 
 
-@container
 class Task(Generic[TaskResultT]):
     """
     A base class for queueable actions.
 
-    The class provides not just the tracking, but the implementation of the said
-    action as well. Child classes must implement their action functionality in
-    :py:meth:`go`.
-
     .. note::
 
-        This class and its subclasses must provide their own ``__init__``
-        methods, and cannot rely on :py:mod:`dataclasses` generating one. This
-        is caused by subclasses often adding fields without default values,
-        and ``dataclasses`` module does not allow non-default fields to be
-        specified after those with default values. Therefore initialize fields
-        to their defaults "manually".
+        The class provides both the implementation of the action, but
+        also serves as a container for outcome of the action: every time
+        the task is invoked by :py:class:`<Queue>`, the queue yields an
+        instance of the same class, but filled with information related
+        to the result of its action.
     """
 
     #: A logger to use for logging events related to the outcome.
     logger: Logger
 
-    result: Optional[TaskResultT]
+    #: Result returned by the task when executed.
+    result: Optional[TaskResultT] = None
 
-    #: Guest on which the phase was executed. May be unset, some tasks
-    #: may handle multiguest actions on their own.
-    guest: Optional['Guest']
+    #: If set, an exception was raised by the running task, and said
+    #: exception is saved in this field.
+    exc: Optional[Exception] = None
 
-    #: If set, an exception was raised by the running task, and the exception
-    #: is saved in this field.
-    exc: Optional[Exception]
+    #: If set, the task raised :py:class:`SystemExit` exception, and
+    #: wants to terminate the run completely. Original exception is
+    #: assigned to this field.
+    requested_exit: Optional[SystemExit] = None
 
-    #: If set, the task raised :py:class:`SystemExit` exception, and wants to
-    #: terminate the run completely.
-    requested_exit: Optional[SystemExit]
-
-    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
-    def __init__(self, logger: Logger, **kwargs: Any) -> None:
+    def __init__(self, logger: Logger) -> None:
         self.logger = logger
-
-        self.result = kwargs.get('result')
-        self.guest = kwargs.get('guest')
-        self.exc = kwargs.get('exc')
-        self.requested_exit = kwargs.get('requested_exit')
 
     @property
     def name(self) -> str:
         """
         A name of this task.
 
-        Left for child classes to implement, because the name depends on the
-        actual task.
+        Left for child classes to implement, because the name depends on
+        the actual task.
         """
 
         raise NotImplementedError
+
+    def _extract_task_outcome(
+        self, logger: Logger, extract: Callable[P, TaskResultT], *args: P.args, **kwargs: P.kwargs
+    ) -> 'Self':
+        """
+        A helper for extracting the task outcome and recording it.
+
+        :param logger: used for logging, and will be attached to the
+            returned instance.
+        :param extract: a callable responsible for extracting outcome
+            of the task. It will be passed rest of positional and
+            keyword arguments.
+        :param args: positional arguments for ``extract`` callable.
+        :param kwargs: keyword arguments for ``extract`` callable.
+        :returns: new instance of this class, with :py:attr:`logger`,
+            :py:attr:`result`, :py:attr:`exc` and
+            :py:attr:`requested_exit` attributes filled according to the
+            result of ``extract``.
+        """
+
+        task = copy.copy(self)
+
+        task.logger = logger
+        task.result = None
+        task.exc = None
+        task.requested_exit = None
+
+        try:
+            task.result = extract(*args, **kwargs)
+
+        except SystemExit as exc:
+            task.requested_exit = exc
+
+        except Exception as exc:
+            task.exc = exc
+
+        return task
+
+    def _invoke_in_pool(
+        self,
+        *,
+        units: list[T],
+        get_label: Callable[['Self', T], str],
+        extract_logger: Callable[['Self', T], Logger],
+        inject_logger: Callable[['Self', T, Logger], None],
+        submit: Callable[['Self', T, Logger, ThreadPoolExecutor], Future[TaskResultT]],
+        on_complete: Optional[Callable[['Self', T], 'Self']] = None,
+        logger: Logger,
+    ) -> Iterator['Self']:
+        """
+        Execute the task across a list of "units" of work.
+
+        A helper for situations where the task is to be applied at
+        multiple guests, phases or other objects at the same time. The
+        task is scheduled as a :py:class:`Future` for each unit of
+        ``units`` list; results of these futures are then collected, and
+        yielded as instances of the task's class.
+
+        :param units: list of units the task should run for.
+        :param get_label: a callable that shall return a logger label for
+            the given unit. The label is than added to a custom logger
+            passed to ``inject_logger``.
+        :param extract_logger: a callable that shall return the current
+            logger of the given unit. The logger is saved and then
+            restored when the task for the given unit is complete.
+        :param inject_logger: a callable that should update the given
+            unit with the given unit-specific logger. It will be called
+            twice, to inject the custom logger first, and then to restore
+            the original logger.
+        :param submit: a callable that shall submit the task, with the
+            given unit, to the executor, and return the :py:class:`Future`
+            instance it receives from the executor.
+        :param on_complete: if set, it will be called once the task
+            completes for the given unit.
+        :param logger: used for logging.
+        """
+
+        multiple_units = len(units) > 1
+
+        new_loggers = prepare_loggers(logger, [get_label(self, unit) for unit in units])
+        old_loggers: dict[str, Logger] = {}
+
+        with ThreadPoolExecutor(max_workers=len(units)) as executor:
+            futures: dict[Future[TaskResultT], T] = {}
+
+            for unit in units:
+                # Swap unit's logger for the one we prepared, with labels
+                # and stuff.
+                old_loggers[get_label(self, unit)] = extract_logger(self, unit)
+                new_logger = new_loggers[get_label(self, unit)]
+
+                inject_logger(self, unit, new_logger)
+
+                if multiple_units:
+                    new_logger.info('started', color='cyan')
+
+                # Submit each task/unit combination, and save the unit
+                # and logger for later.
+                futures[submit(self, unit, new_logger, executor)] = unit
+
+            # ... and then sit and wait as they get delivered to us as they
+            # finish. Unpack the guest and logger, so we could preserve logging
+            # and prepare the right outcome package.
+            for future in as_completed(futures):
+                unit = futures[future]
+
+                old_logger = old_loggers[get_label(self, unit)]
+                new_logger = new_loggers[get_label(self, unit)]
+
+                if multiple_units:
+                    new_logger.info('finished', color='cyan')
+
+                # `Future.result()` will either 1. reraise an exception the
+                # callable raised, if any, or 2. return whatever the callable
+                # returned - which is `None` in our case, therefore we can
+                # ignore the return value.
+                task = self._extract_task_outcome(new_logger, future.result)
+
+                if on_complete:
+                    task = on_complete(task, unit)
+
+                # Don't forget to restore the original logger.
+                inject_logger(task, unit, old_logger)
+
+                yield task
 
     def go(self) -> Iterator['Self']:
         """
@@ -77,16 +190,13 @@ class Task(Generic[TaskResultT]):
 
         Called by :py:class:`Queue` machinery to accomplish the task.
 
-        :yields: instances of the same class, describing invocations of the
-            task and their outcome. The task might be executed multiple times,
-            depending on how exactly it was queued, and method would yield
-            corresponding results.
+        :yields: instances of the same class, describing invocations of
+            the task and their outcome. The task might be executed
+            multiple times, depending on how exactly it was queued, and
+            method would yield corresponding results.
         """
 
         raise NotImplementedError
-
-
-TaskT = TypeVar('TaskT', bound='Task')  # type: ignore[type-arg]
 
 
 def prepare_loggers(logger: Logger, labels: list[str]) -> dict[str, Logger]:
@@ -120,29 +230,21 @@ def prepare_loggers(logger: Logger, labels: list[str]) -> dict[str, Logger]:
     return loggers
 
 
-@container
 class GuestlessTask(Task[TaskResultT]):
     """
     A task not assigned to a particular set of guests.
 
-    An extension of the :py:class:`Task` class, provides a quite generic wrapper
-    for the actual task which takes care of catching exceptions and proper
-    reporting.
+    An extension of the :py:class:`Task` class, provides a starting
+    point for tasks that do not need to run on any guest.
     """
-
-    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
-    def __init__(self, logger: Logger, **kwargs: Any) -> None:
-        super().__init__(logger, **kwargs)
 
     def run(self, logger: Logger) -> TaskResultT:
         """
         Perform the task.
 
-        Called once from :py:meth:`go`. Subclasses of :py:class:`GuestlessTask`
-        should implement their logic in this method rather than in
-        :py:meth:`go` which is already provided. If your task requires different
-        handling in :py:class:`go`, it might be better derived directly from
-        :py:class:`Task`.
+        Called once from :py:meth:`go`. Subclasses of must implement
+        their logic in this method rather than in :py:meth:`go` which is
+        already provided.
         """
 
         raise NotImplementedError
@@ -151,49 +253,41 @@ class GuestlessTask(Task[TaskResultT]):
         """
         Perform the task.
 
-        Called by :py:class:`Queue` machinery to accomplish the task. It expects
-        the child class would implement :py:meth:`run`, with ``go`` taking care
-        of task/queue interaction.
+        Called by :py:class:`Queue` machinery to accomplish the task.
 
-        :yields: since the task is not expected to run on multiple guests,
-            only a single instance of the class is yielded to describe the task
-            and its outcome.
+        Invokes :py:meth:`run` method to perform the task itself, and
+        derived classes therefore must provide implementation of ``run``
+        method.
+
+        :yields: instances of the same class, describing invocations of
+            the task and their outcome. The task might be executed
+            multiple times, depending on how exactly it was queued, and
+            method would yield corresponding results.
         """
 
-        try:
-            self.result = self.run(self.logger)
-
-        except Exception as exc:
-            self.result = None
-            self.exc = exc
-
-            yield self
-
-        else:
-            self.exc = None
-
-            yield self
+        yield self._extract_task_outcome(self.logger, self.run, self.logger)
 
 
-@container
 class MultiGuestTask(Task[TaskResultT]):
     """
     A task assigned to a particular set of guests.
 
-    An extension of the :py:class:`Task` class, provides a quite generic wrapper
-    for the actual task which takes care of catching exceptions and proper
-    reporting.
+    An extension of the :py:class:`Task` class, provides a starting
+    point for tasks that do need to run on a set of guests.
     """
 
+    #: List of guests to run the task on.
     guests: list['Guest']
 
-    # Custom yet trivial `__init__` is necessary, see note in `tmt.queue.Task`.
-    def __init__(self, logger: Logger, guests: list['Guest'], **kwargs: Any) -> None:
-        super().__init__(logger, **kwargs)
+    #: Guest on which the phase was executed.
+    guest: Optional['Guest'] = None
+
+    def __init__(self, guests: list['Guest'], logger: Logger) -> None:
+        super().__init__(logger)
 
         self.guests = guests
 
-    @functools.cached_property
+    @property
     def guest_ids(self) -> list[str]:
         return sorted([guest.multihost_name for guest in self.guests])
 
@@ -201,11 +295,9 @@ class MultiGuestTask(Task[TaskResultT]):
         """
         Perform the task.
 
-        Called from :py:meth:`go` once for every guest to run on. Subclasses of
-        :py:class:`GuestlessTask` should implement their logic in this method
-        rather than in :py:meth:`go` which is already provided. If your task
-        requires different handling in :py:class:`go`, it might be better
-        derived directly from :py:class:`Task`.
+        Called once from :py:meth:`go`. Subclasses of must implement
+        their logic in this method rather than in :py:meth:`go` which is
+        already provided.
         """
 
         raise NotImplementedError
@@ -214,86 +306,42 @@ class MultiGuestTask(Task[TaskResultT]):
         """
         Perform the task.
 
-        Called by :py:class:`Queue` machinery to accomplish the task. It expects
-        the child class would implement :py:meth:`run`, with ``go`` taking care
-        of task/queue interaction.
+        Called by :py:class:`Queue` machinery to accomplish the task.
 
-        :yields: instances of the same class, describing invocations of the
-            task and their outcome. For each guest, one instance would be
-            yielded.
+        Invokes :py:meth:`run_on_guest` method to perform the task itself,
+        and derived classes therefore must provide implementation of
+        ``run_on_guest`` method.
+
+        :yields: instances of the same class, describing invocations of
+            the task and their outcome. The task might be executed
+            multiple times, depending on how exactly it was queued, and
+            method would yield corresponding results.
         """
 
-        multiple_guests = len(self.guests) > 1
+        def _on_complete(task: 'Self', guest: 'Guest') -> 'Self':
+            task.guest = guest
 
-        new_loggers = prepare_loggers(self.logger, [guest.multihost_name for guest in self.guests])
-        old_loggers: dict[str, Logger] = {}
+            return task
 
-        with ThreadPoolExecutor(max_workers=len(self.guests)) as executor:
-            futures: dict[Future[TaskResultT], Guest] = {}
-
-            for guest in self.guests:
-                # Swap guest's logger for the one we prepared, with labels
-                # and stuff.
-                #
-                # We can't do the same for phases - phase is shared among
-                # guests, its `self.$loggingmethod()` calls need to be
-                # fixed to use a logger we pass to it through the executor.
-                #
-                # Possibly, the same thing should happen to guest methods as
-                # well, then the phase would pass the given logger to guest
-                # methods when it calls them, propagating the single logger we
-                # prepared...
-                old_loggers[guest.multihost_name] = guest._logger
-                new_logger = new_loggers[guest.multihost_name]
-
-                guest.inject_logger(new_logger)
-
-                if multiple_guests:
-                    new_logger.info('started', color='cyan')
-
-                # Submit each task/guest combination (save the guest & logger
-                # for later)...
-                futures[executor.submit(self.run_on_guest, guest, new_logger)] = guest
-
-            # ... and then sit and wait as they get delivered to us as they
-            # finish. Unpack the guest and logger, so we could preserve logging
-            # and prepare the right outcome package.
-            for future in as_completed(futures):
-                guest = futures[future]
-
-                old_logger = old_loggers[guest.multihost_name]
-                new_logger = new_loggers[guest.multihost_name]
-
-                if multiple_guests:
-                    new_logger.info('finished', color='cyan')
-
-                # `Future.result()` will either 1. reraise an exception the
-                # callable raised, if any, or 2. return whatever the callable
-                # returned - which is `None` in our case, therefore we can
-                # ignore the return value.
-                try:
-                    result = future.result()
-
-                except SystemExit as exc:
-                    task = dataclasses.replace(self, result=None, exc=None, requested_exit=exc)
-
-                except Exception as exc:
-                    task = dataclasses.replace(self, result=None, exc=exc, requested_exit=None)
-
-                else:
-                    task = dataclasses.replace(self, result=result, exc=None, requested_exit=None)
-
-                task.guest = guest
-
-                yield task
-
-                # Don't forget to restore the original logger.
-                guest.inject_logger(old_logger)
+        yield from self._invoke_in_pool(
+            # Run across all guests known to this task.
+            units=self.guests,
+            # Unit ID here is guest's multihost name
+            get_label=lambda task, guest: guest.multihost_name,
+            extract_logger=lambda task, guest: guest._logger,
+            inject_logger=lambda task, guest, logger: guest.inject_logger(logger),
+            # Submit work for the executor pool.
+            submit=lambda task, guest, logger, executor: executor.submit(
+                self.run_on_guest, guest, logger
+            ),
+            on_complete=_on_complete,
+            logger=self.logger,
+        )
 
 
 class Queue(list[TaskT]):
     """
-    Queue class for running tasks
+    Queue class for running tasks.
     """
 
     def __init__(self, name: str, logger: Logger) -> None:
@@ -319,8 +367,8 @@ class Queue(list[TaskT]):
         """
         Start crunching the queued tasks.
 
-        Tasks are executed in the order, for each task/guest
-        combination a :py:class:`Task` instance is yielded.
+        Tasks are executed in the order, for each invoked task new
+        instance of this class is yielded.
         """
 
         for i, task in enumerate(self):
