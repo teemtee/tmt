@@ -1,0 +1,24 @@
+/plan:
+    discover:
+        how: fmf
+
+    execute:
+        how: tmt
+
+/tests:
+    framework: shell
+
+    /do:
+        test: |
+            set -x
+
+            echo "This is test #1"
+            sleep 3600
+
+    /do-not/1:
+        test: |
+            echo "This is test #2"
+
+    /do-not/2:
+        test: |
+            echo "This is test #3"

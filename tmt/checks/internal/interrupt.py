@@ -2,6 +2,7 @@ from typing import Optional
 
 import tmt.log
 import tmt.utils
+import tmt.utils.signals
 from tmt.checks import CheckPlugin, provides_check
 from tmt.checks.internal import InternalCheck
 from tmt.container import container
@@ -43,7 +44,9 @@ class Interrupt(CheckPlugin[InterruptCheck]):
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
-        if invocation.return_code in (ProcessExitCodes.SIGINT, ProcessExitCodes.SIGTERM):
+        if invocation.return_code in (ProcessExitCodes.SIGINT, ProcessExitCodes.SIGTERM) or any(
+            isinstance(exc, tmt.utils.signals.Interrupted) for exc in invocation.exceptions
+        ):
             return [
                 CheckResult(
                     name=CHECK_NAME, result=ResultOutcome.FAIL, note=['Test interrupted by signal']
