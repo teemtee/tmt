@@ -3,9 +3,7 @@ framework: beakerlib
 contact: Petr Šplíchal <psplicha@redhat.com>
 tier: 2
 require: [tmt]
-# Disabled because of irrelevant AVC denial cause by crun
-# https://github.com/containers/container-selinux/issues/389
-#check: [avc]
+check: [avc]
 duration: 10m
 environment:
     TMT_FEELING_SAFE: 1
