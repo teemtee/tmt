@@ -3,6 +3,10 @@ provision:
     how: local
 
 prepare+:
+  - name: update-guest
+    summary: Make sure we test with the latest packages
+    script: dnf update -y
+
   # Install jq and yq for cleaner tests, and required make
   - how: install
     package:
