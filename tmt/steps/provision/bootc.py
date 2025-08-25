@@ -14,6 +14,7 @@ import tmt.utils
 from tmt.container import container, field
 from tmt.steps.provision.testcloud import GuestTestcloud
 from tmt.utils import Path
+from tmt.utils.imagebuilder import PODMAN_ENV, PODMAN_MACHINE_NAME, ImageBuilder
 from tmt.utils.templates import render_template
 
 if TYPE_CHECKING:
@@ -23,11 +24,6 @@ DEFAULT_TMP_PATH = "/var/tmp/tmt"  # noqa: S108
 
 DEFAULT_IMAGE_BUILDER = "quay.io/centos-bootc/bootc-image-builder:latest"
 CONTAINER_STORAGE_DIR = tmt.utils.Path("/var/lib/containers/storage")
-
-PODMAN_MACHINE_NAME = 'podman-machine-tmt'
-PODMAN_ENV = tmt.utils.Environment.from_dict(
-    {"CONTAINER_CONNECTION": f'{PODMAN_MACHINE_NAME}-root'}
-)
 
 DEFAULT_PODMAN_MACHINE_CPU = 2
 DEFAULT_PODMAN_MACHINE_MEM: 'Size' = tmt.hardware.UNITS('2048 MB')
@@ -105,6 +101,16 @@ class BootcData(tmt.steps.provision.testcloud.ProvisionTestcloudData):
              that is then used by bootc image builder to create a disk image.
 
              Cannot be used with container-image.
+             """,
+    )
+
+    derived_container_file: Optional[str] = field(
+        default=None,
+        option='--derived-container-file',
+        metavar='CONTAINER_FILE',
+        help="""
+             Select container file to be used to build a derived container image
+             that is then used by bootc image builder to create a disk image.
              """,
     )
 
@@ -252,7 +258,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             return relative_path
         return f"{os.getcwd()}/{relative_path}"
 
-    def _build_derived_image(self, base_image: str) -> str:
+    def _create_template(self, base_image: str) -> str:
         """
         Build a "derived" container image from the base image with tmt dependencies added
         """
@@ -272,23 +278,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         containerfile_parsed = render_template(containerfile_template, base_image=base_image)
         (self.workdir / 'Containerfile').write_text(containerfile_parsed)
 
-        image_tag = f'localhost/tmtmodified-{self._get_id()}'
-        tmt.utils.Command(
-            "podman",
-            "build",
-            f'{self.workdir}',
-            "-f",
-            f'{self.workdir}/Containerfile',
-            "-t",
-            image_tag,
-        ).run(
-            cwd=self.workdir,
-            stream_output=True,
-            logger=self._logger,
-            env=PODMAN_ENV if self._rootless else None,
-        )
-
-        return image_tag
+        return str(self.workdir / 'Containerfile')
 
     def _build_base_image(self, containerfile: str, workdir: str) -> str:
         """
@@ -402,20 +392,34 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         containerimage: Optional[str] = None
 
         if not self.is_dry_run:
+            assert self.workdir
+            builder = ImageBuilder(self.data, self.workdir, self._logger)
+            image_name = f'localhost/tmtbase-{self._get_id()}'
+            derived_image_name = f'localhost/tmtmodified-{self._get_id()}'
             # Use provided container image
             if data.container_image is not None:
                 containerimage = data.container_image
                 if data.add_tmt_dependencies:
-                    containerimage = self._build_derived_image(data.container_image)
+                    container_file = self.data.derived_container_file or self._create_template(
+                        containerimage
+                    )
+                    containerimage = builder._build_derived_image(
+                        container_file, derived_image_name, self.workdir, self._rootless
+                    )
                 self._build_bootc_disk(containerimage, data.image_builder, data.rootfs)
 
             # Build image according to the container file
             elif data.container_file is not None:
-                containerimage = self._build_base_image(
-                    data.container_file, data.container_file_workdir
+                containerimage = builder._build_base_image(
+                    data.container_file, image_name, data.container_file_workdir
                 )
                 if data.add_tmt_dependencies:
-                    containerimage = self._build_derived_image(containerimage)
+                    container_file = self.data.derived_container_file or self._create_template(
+                        containerimage
+                    )
+                    containerimage = builder._build_derived_image(
+                        container_file, derived_image_name, self.workdir, self._rootless
+                    )
                 self._build_bootc_disk(containerimage, data.image_builder, data.rootfs)
 
         # Set unique disk file name, each plan will have its own disk file
