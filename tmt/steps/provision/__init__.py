@@ -73,6 +73,33 @@ if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
 
 
+#: How many seconds to wait for a connection to succeed after guest boot.
+#: This is the default value tmt would use unless told otherwise.
+DEFAULT_CONNECT_TIMEOUT = 2 * 60
+
+#: How many seconds to wait for a connection to succeed after guest boot.
+#: This is the effective value, combining the default and optional envvar,
+#: ``TMT_CONNECT_TIMEOUT``.
+CONNECT_TIMEOUT: int = configure_constant(DEFAULT_CONNECT_TIMEOUT, 'TMT_CONNECT_TIMEOUT')
+
+# When waiting for guest to connect, try re-connecting every
+# this many seconds.
+CONNECT_WAIT_TICK = 1
+CONNECT_WAIT_TICK_INCREASE = 1.0
+
+
+def default_connect_waiting() -> Waiting:
+    """
+    Create default waiting context for connecting to the guest.
+    """
+
+    return Waiting(
+        deadline=Deadline.from_seconds(CONNECT_TIMEOUT),
+        tick=CONNECT_WAIT_TICK,
+        tick_increase=CONNECT_WAIT_TICK_INCREASE,
+    )
+
+
 #: How many seconds to wait for a connection to succeed after guest reboot.
 #: This is the default value tmt would use unless told otherwise.
 DEFAULT_REBOOT_TIMEOUT: int = 10 * 60
@@ -419,36 +446,19 @@ class GuestFacts(SerializableContainer):
 
         return self.capabilities.get(cap, False)
 
-    # TODO nothing but a fancy helper, to check for some special errors that
-    # may appear this soon in provisioning. But, would it make sense to put
-    # this detection into the `GuestSsh.execute()` method?
     def _execute(self, guest: 'Guest', command: Command) -> Optional[tmt.utils.CommandOutput]:
         """
-        Run a command on the given guest.
-
-        On top of the basic :py:meth:`Guest.execute`, this helper is able to
-        detect a common issue with guest access. Facts are the first info tmt
-        fetches from the guest, and would raise the error as soon as possible.
+        Run a command on the given guest, ignoring :py:class:`tmt.utils.RunError`.
 
         :returns: command output if the command quit with a zero exit code,
             ``None`` otherwise.
-        :raises tmt.units.GeneralError: when logging into the guest fails
-            because of a username mismatch.
         """
 
         try:
             return guest.execute(command, silent=True)
 
-        except tmt.utils.RunError as exc:
-            if exc.stdout and 'Please login as the user' in exc.stdout:
-                raise tmt.utils.GeneralError(f'Login to the guest failed.\n{exc.stdout}') from exc
-            if (
-                exc.stderr
-                and f'executable file `{tmt.utils.DEFAULT_SHELL}` not found' in exc.stderr
-            ):
-                raise tmt.utils.GeneralError(
-                    f'{tmt.utils.DEFAULT_SHELL.capitalize()} is required on the guest.'
-                ) from exc
+        except tmt.utils.RunError:
+            pass
 
         return None
 
@@ -1883,14 +1893,27 @@ class Guest(tmt.utils.Common):
             try:
                 self.execute(Command('whoami'), silent=True)
 
-            except tmt.utils.RunError:
+            except tmt.utils.RunError as exc:
+                # Detect common issues with guest access
+                if exc.stdout and 'Please login as the user' in exc.stdout:
+                    raise tmt.utils.GeneralError(
+                        f'Login to the guest failed.\n{exc.stdout}'
+                    ) from exc
+                if (
+                    exc.stderr
+                    and f'executable file `{tmt.utils.DEFAULT_SHELL}` not found' in exc.stderr
+                ):
+                    raise tmt.utils.GeneralError(
+                        f'{tmt.utils.DEFAULT_SHELL.capitalize()} is required on the guest.'
+                    ) from exc
+
                 raise tmt.utils.wait.WaitingIncompleteError
 
         try:
             wait.wait(try_whoami, self._logger)
 
         except tmt.utils.wait.WaitingTimedOutError:
-            self.debug("Connection to guest failed after reboot.")
+            self.debug("Connection to guest failed.")
             return False
 
         return True
@@ -1904,6 +1927,22 @@ class Guest(tmt.utils.Common):
         """
 
         self.debug(f"Doing nothing to remove guest '{self.primary_address}'.")
+
+    def assert_reachable(self, wait: Optional[Waiting] = None) -> None:
+        """
+        Assert that the guest is reachable and responding.
+        """
+
+        wait = wait or default_connect_waiting()
+
+        if not self.is_ready:
+            raise ProvisionError(f"Guest '{self.multihost_name}' is not ready.")
+
+        if not self.reconnect(wait):
+            raise ProvisionError(
+                f"Failed to connect to the guest '{self.multihost_name}'"
+                f" in {wait.deadline.original_timeout.total_seconds()}s"
+            )
 
     @classmethod
     def essential_requires(cls) -> list['tmt.base.Dependency']:
@@ -3357,7 +3396,10 @@ class Provision(tmt.steps.Step):
                 if outcome.phase and outcome.phase.guest:
                     guest = outcome.phase.guest
 
-                    guest.show()
+                    # Don't show guest details if there was an exception.
+                    # The guest may not be reachable while syncing facts.
+                    if not outcome.exc:
+                        guest.show()
 
                     self.guests.append(guest)
 

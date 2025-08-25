@@ -251,6 +251,8 @@ class GuestContainer(tmt.Guest):
             )
         )
 
+        self.assert_reachable()
+
     def reboot(
         self,
         hard: bool = False,
