@@ -772,7 +772,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         tree = tmt.Tree(
             logger=self._logger,
             path=tree_path,
-            fmf_context=self.step.plan._fmf_context,
+            fmf_context=self.step.plan.fmf_context,
             additional_rules=self.data.adjust_tests,
         )
         self._tests = tree.tests(

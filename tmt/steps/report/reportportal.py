@@ -522,7 +522,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
         # Get common attributes across the plans
         merged_plans = [
-            {key: value[0] for key, value in plan._fmf_context.items()}
+            {key: value[0] for key, value in plan.fmf_context.items()}
             for plan in self.step.plan.my_run.plans
         ]
         result_dict = merged_plans[0]
@@ -735,7 +735,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         defect_type = self.data.defect_type or ""
 
         attributes = [
-            {'key': key, 'value': value[0]} for key, value in self.step.plan._fmf_context.items()
+            {'key': key, 'value': value[0]} for key, value in self.step.plan.fmf_context.items()
         ]
         launch_attributes = self.construct_launch_attributes(suite_per_plan, attributes)
 

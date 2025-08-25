@@ -737,7 +737,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
             # Exported metadata is the test's metadata along with other variables like the context
             test_metadata = test._metadata.copy()
-            test_metadata["context"] = self.step.plan._fmf_context.to_spec()
+            test_metadata["context"] = self.step.plan.fmf_context.to_spec()
             self.write(
                 invocation.path / TEST_METADATA_FILENAME,
                 tmt.utils.dict_to_yaml(test_metadata),
@@ -890,7 +890,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
                 partial_result.start_time = invocation.start_time
                 partial_result.end_time = invocation.end_time
                 partial_result.duration = invocation.real_duration
-                partial_result.context = self.step.plan._fmf_context
+                partial_result.context = self.step.plan.fmf_context
 
             custom_results.append(partial_result)
 
