@@ -1,0 +1,13 @@
+summary: Beakerlib journal unit tests
+require:
+    - url: https://github.com/beakerlib/beakerlib
+      type: library
+    - git
+    - beakerlib
+test: |
+    PATCH_DIR=$(pwd)
+    BEAKERLIB_TEST_DIR=$TMT_TREE/../discover/default-0/libs/beakerlib
+    cd $BEAKERLIB_TEST_DIR
+    git apply $PATCH_DIR/beakerlib_test.patch
+    cd src/test
+    ./test.sh journalTest.sh
