@@ -3070,6 +3070,9 @@ class Plan(
         Discover plan-like nodes matching the given reference in fmf cache.
         """
 
+        # TODO: similar situation as in _resolve_import_from_git
+        assert reference.url is not None
+
         if str(reference.ref).startswith('@'):
             self.debug(
                 f"Not enough data to evaluate dynamic ref '{reference.ref}', "
@@ -3097,7 +3100,7 @@ class Plan(
         yield from self._resolve_import_to_nodes(
             reference,
             fmf.utils.fetch_tree(
-                reference.url,
+                tmt.utils.git.clonable_git_url(reference.url),
                 reference.ref,
                 str(reference.path.unrooted()) if reference.path else '.',
             ),
