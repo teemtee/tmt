@@ -749,9 +749,9 @@ def git_clone(
             cwd=Path('/'), env=env, timeout=timeout, logger=logger
         )
         logger.info(
-            'commit-hash',
+            'cloned-commit-hash',
             git_hash(directory=destination, logger=logger),
-            color="green",
+            color='green',
         )
         return output
 

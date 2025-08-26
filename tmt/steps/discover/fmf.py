@@ -615,7 +615,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         if self.testdir.is_dir():
             with contextlib.suppress(tmt.utils.RunError, AttributeError):
                 self.verbose(
-                    'hash',
+                    'commit-hash',
                     tmt.utils.git.git_hash(directory=self.testdir, logger=self._logger),
                     'green',
                 )
