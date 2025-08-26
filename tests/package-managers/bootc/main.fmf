@@ -1,0 +1,7 @@
+summary: Make sure that bootc package manager works
+tag+:
+  - provision-only
+  - provision-virtual
+require:
+  - tmt+provision-virtual
+duration: 2h

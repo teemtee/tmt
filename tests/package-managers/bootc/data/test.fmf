@@ -1,0 +1,3 @@
+summary: Check that booted image matches expected pattern
+test: |
+  bootc status --booted --format humanreadable
