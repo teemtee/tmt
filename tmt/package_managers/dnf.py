@@ -199,12 +199,23 @@ class Dnf(PackageManager[DnfEngine]):
         results: dict[Installable, bool] = {}
 
         for line, installable in zip(stdout.strip().splitlines(), installables):
+            # Match for packages not installed, when "rpm -q PACKAGE" used
             match = re.match(rf'package {re.escape(str(installable))} is not installed', line)
             if match is not None:
                 results[installable] = False
                 continue
 
+            # Match for provided rpm capabilities (packages, commands, etc.),
+            # when "rpm -q --whatprovides CAPABILITY" used
             match = re.match(rf'no package provides {re.escape(str(installable))}', line)
+            if match is not None:
+                results[installable] = False
+                continue
+
+            # Match for filesystem paths, when "rpm -q --whatprovides PATH" used
+            match = re.match(
+                rf'error: file {re.escape(str(installable))}: No such file or directory', line
+            )
             if match is not None:
                 results[installable] = False
                 continue

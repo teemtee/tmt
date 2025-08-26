@@ -23,6 +23,10 @@ subset of tests based on reported results, the first draft of the
 :ref:`/spec/recipe` specification was created to gather initial
 feedback on the proposed approach.
 
+In Image Mode, container images are no longer built for installed
+dependencies, improving performance and reducing unnecessary
+operations.
+
 
 tmt-1.55.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

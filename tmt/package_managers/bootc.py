@@ -5,7 +5,6 @@ from typing import Any, Optional, cast
 
 import tmt.utils
 from tmt.package_managers import (
-    FileSystemPath,
     Installable,
     Options,
     PackageManager,
@@ -100,11 +99,7 @@ class BootcEngine(PackageManagerEngine):
         return [f'FROM containers-storage:{self._get_current_bootc_image()}']
 
     def check_presence(self, *installables: Installable) -> ShellScript:
-        self.open_containerfile_directives()
-
-        script = self.aux_engine.check_presence(*installables)
-        self.containerfile_directives.append(f'RUN {script}')
-        return script
+        return self.aux_engine.check_presence(*installables)
 
     def install(
         self,
@@ -163,18 +158,6 @@ class Bootc(PackageManager[BootcEngine]):
 
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
         script = self.engine.check_presence(*installables)
-
-        if len(installables) == 1 and isinstance(installables[0], FileSystemPath):
-            try:
-                self.guest.execute(script)
-
-            except RunError as exc:
-                if exc.returncode == 1:
-                    return {installables[0]: False}
-
-                raise exc
-
-            return {installables[0]: True}
 
         try:
             output = self.guest.execute(script)
@@ -275,9 +258,16 @@ class Bootc(PackageManager[BootcEngine]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        self.engine.install(*installables, options=options)
+        presence = self.check_presence(*installables)
 
-        self.build_container()
+        missing_installables: set[Installable] = {
+            installable for installable in installables if not presence[installable]
+        }
+
+        if missing_installables:
+            self.engine.install(*missing_installables, options=options)
+            self.build_container()
+
         return CommandOutput(stdout=None, stderr=None)
 
     def reinstall(

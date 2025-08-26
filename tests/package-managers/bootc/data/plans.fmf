@@ -1,0 +1,16 @@
+discover:
+    how: fmf
+provision:
+    how: virtual
+    image: https://artifacts.dev.testing-farm.io/images/CentOS-Stream-10-image-mode-x86_64.qcow2
+execute:
+    how: tmt
+
+/centos-stream-10/root:
+    summary: "Virtual provisioner with CentOS Stream 10 bootc image"
+
+/centos-stream-10/cloud-user:
+    summary: "Virtual provisioner with CentOS Stream 10 bootc image"
+    provision+:
+        user: cloud-user
+        become: true
