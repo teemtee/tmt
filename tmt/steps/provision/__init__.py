@@ -1394,8 +1394,14 @@ class Guest(tmt.utils.Common):
         Install scripts required by tmt.
         """
 
-        # Check for scripts directory existence before creation
-        if not self.scripts_path.exists():
+        # Check for scripts directory existence in guest before creation
+        output = self.execute(
+            ShellScript(
+                f'[ -d {self.scripts_path} ] && echo "exists" || echo "missing"'
+            ).to_shell_command()
+        )
+
+        if output.stdout and "missing" in output.stdout:
             # Make sure scripts directory exists
             command = Command("mkdir", "-p", f"{self.scripts_path}")
 
