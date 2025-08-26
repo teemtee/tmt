@@ -814,12 +814,10 @@ Follow the steps below to create a new major or minor release:
 
 .. note::
 
-    As the release pull request contains no functional changes, it
-    is generally acceptable to skip waiting for test results if
-    the full test coverage has been already successfully executed
-    in the previous pull request. In that case just include a
-    comment with a reference in the following form: ``Full test
-    passed in #1234.``
+    Although the release pull request usually does not contain any
+    functional changes, it is mandatory to make sure that the full
+    test coverage has been successfully executed as a formal proof
+    that the release is safe and stable.
 
 Create a new `github release`__ based on the tag above
 
