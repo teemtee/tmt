@@ -28,6 +28,13 @@ class GuestLocal(tmt.Guest):
     parent: Optional[tmt.steps.Step]
 
     @property
+    def scripts_path(self) -> Path:
+        """
+        Absolute path to tmt scripts directory
+        """
+        return tmt.steps.scripts.effective_scripts_dest_dir(default=Path("/var/lib/tmt/scripts"))
+
+    @property
     def is_ready(self) -> bool:
         """
         Local is always ready
