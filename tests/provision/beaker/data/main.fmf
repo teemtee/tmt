@@ -4,6 +4,9 @@
 
     provision:
         how: beaker
+
+/plan/hardware:
+    provision+:
         hardware:
             cpu:
                 model-name: dummy
@@ -17,3 +20,10 @@
                   driver: foo
               - disk:
                   driver: bar
+
+/plan/bootc:
+    provision+:
+        bootc: True
+        image_url: quay.io/fedora/custom-bootc:latest
+        bootc_secret: dummysecret
+        image: fedora-42
