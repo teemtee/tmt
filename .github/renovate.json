@@ -6,6 +6,7 @@
     ":enablePreCommit",
     ":semanticCommitsDisabled"
   ],
+  "schedule": ["* 0-6 * * 1"],
   "separateMajorMinor": false,
   "configMigration": true,
   "packageRules": [
