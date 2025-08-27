@@ -13,6 +13,9 @@ from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Pat
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
 
+#: The default helper scripts destination directory
+DEFAULT_HELPER_SCRIPTS_DEST_DIR = Path("/var/lib/tmt/helper/scripts")
+
 
 @container
 class ProvisionLocalData(tmt.steps.provision.GuestData, tmt.steps.provision.ProvisionStepData):
@@ -32,7 +35,9 @@ class GuestLocal(tmt.Guest):
         """
         Absolute path to tmt scripts directory
         """
-        return tmt.steps.scripts.effective_scripts_dest_dir(default=Path("/var/lib/tmt/scripts"))
+        return tmt.steps.scripts.effective_scripts_dest_dir(
+            default=DEFAULT_HELPER_SCRIPTS_DEST_DIR
+        )
 
     @property
     def is_ready(self) -> bool:
