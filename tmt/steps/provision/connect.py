@@ -132,19 +132,30 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
             )
 
         if command is not None:
+            reboot_command = command
+
+            if str(command) == str(tmt.steps.DEFAULT_REBOOT_COMMAND) and self.become:
+                reboot_command = ShellScript(f'sudo {reboot_command}')
+
             return super().reboot(
                 hard=False,
-                command=command,
+                command=reboot_command,
                 waiting=waiting,
             )
 
         if self.soft_reboot is not None:
-            self.debug(f"Soft reboot using the soft reboot command '{self.soft_reboot}'.")
+            reboot_command = self.soft_reboot
+
+            # Handle default reboot command with becom
+            if command == tmt.steps.DEFAULT_REBOOT_COMMAND and self.become:
+                reboot_command = ShellScript(f'sudo {reboot_command.to_shell_command()}')
+
+            self.debug(f"Soft reboot using the soft reboot command '{reboot_command}'.")
 
             # ignore[union-attr]: mypy still considers `self.soft_reboot` as possibly
             # being `None`, missing the explicit check above.
             return self.perform_reboot(
-                lambda: self._run_guest_command(self.soft_reboot.to_shell_command()),  # type: ignore[union-attr]
+                lambda: self._run_guest_command(reboot_command.to_shell_command()),
                 waiting,
             )
 
