@@ -504,9 +504,10 @@ def _transform_cpu_hyper_threading(
     return MrackHWGroup('cpu', children=[MrackHWBinOp('hyper', beaker_operator, actual_value)])
 
 
-@transforms
-def _transform_disk_driver(
-    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+def _transform_driver_helper(
+    beaker_key: str,
+    constraint: tmt.hardware.TextConstraint,
+    logger: tmt.log.Logger,
 ) -> MrackBaseHWElement:
     beaker_operator, actual_value, negate = operator_to_beaker_op(
         constraint.operator, constraint.value
@@ -514,10 +515,24 @@ def _transform_disk_driver(
 
     if negate:
         return MrackHWNotGroup(
-            children=[MrackHWKeyValue('BOOTDISK', beaker_operator, actual_value)]
+            children=[MrackHWKeyValue(beaker_key, beaker_operator, actual_value)]
         )
 
-    return MrackHWKeyValue('BOOTDISK', beaker_operator, actual_value)
+    return MrackHWKeyValue(beaker_key, beaker_operator, actual_value)
+
+
+@transforms
+def _transform_disk_driver(
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
+    return _transform_driver_helper('BOOTDISK', constraint, logger)
+
+
+@transforms
+def _transform_device_driver(
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
+    return _transform_driver_helper("MODULE", constraint, logger)
 
 
 @transforms

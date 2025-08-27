@@ -12,6 +12,8 @@ rlJournalStart
         rlRun -s "BEAKER_CONF='config/client.conf' TMT_CONFIG_DIR='config' tmt run --dry"
 
         rlAssertGrep '<dummyname op="==" value="dummy"/>' $rlRun_LOG
+        rlAssertGrep '<key_value key="MODULE" op="==" value="ahci"/>' $rlRun_LOG
+        rlAssertGrep '<key_value key="MODULE" op="==" value="uhci"/>' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
