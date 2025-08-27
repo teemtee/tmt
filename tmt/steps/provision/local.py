@@ -161,7 +161,6 @@ class GuestLocal(tmt.Guest):
             with script as source:
                 for filename in [script.source_filename, *script.aliases]:
                     destination = script.destination_path or self.scripts_path / filename
-                    self.verbose(f"Installing script '{source.name}' to '{destination}'.")
 
                     # Copy file and set permissions
                     install_cmd = Command('install', '-p', '-m', '755', source, destination)
