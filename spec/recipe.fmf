@@ -13,8 +13,10 @@ description: |
     to select only a subset of discovered tests to be reexecuted.
 
     .. note::
-        All git repositories specified in the recipe will be fetched again during
-        the recipe execution.
+        All git repositories specified in the recipe will be fetched again during the
+        recipe execution, except for the optional ``run-repository``, which describes
+        the repository where the plans of the previous run were hosted, if any. This key
+        is ignored by tmt when executing the recipe, but can be useful for some users.
 
     .. note::
         When submitting a new run based on a recipe, the ``results`` key of the
@@ -25,8 +27,8 @@ description: |
 
     .. code-block:: yaml
 
-        # Mapping, stores git repository configuration where the plans
-        # for the current run are hosted
+        # Mapping, stores optional git repository configuration where the plans
+        # of the previous run were hosted
         run-repository:
             url: https://github.com/teemtee/tmt
             path: /tests/nested
