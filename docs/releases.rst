@@ -12,6 +12,11 @@ and quit immediately after, skipping all remaining tests. This is now
 aligned with a test abort or :ref:`exit-first </plugins/execute/tmt>`
 key.
 
+As the first step towards implementing support for executing a
+subset of tests based on reported results, the first draft of the
+:ref:`/spec/recipe` specification was created to gather initial
+feedback on the proposed approach.
+
 
 tmt-1.55.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

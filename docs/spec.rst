@@ -54,6 +54,7 @@ Level 3: Stories
     spec/stories
     spec/context
     spec/policy
+    spec/recipe
     spec/hardware
     spec/results
     spec/lint
