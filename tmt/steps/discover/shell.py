@@ -350,7 +350,9 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             self.run(Command('git', 'checkout', '-f', ref), cwd=testdir)
 
         # Log where HEAD leads to
-        self.debug('hash', tmt.utils.git.git_hash(directory=testdir, logger=self._logger))
+        self.verbose(
+            'commit-hash', tmt.utils.git.git_hash(directory=testdir, logger=self._logger), 'green'
+        )
 
         # Remove .git so that it's not copied to the SUT
         # if 'keep-git-metadata' option is not specified

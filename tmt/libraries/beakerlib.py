@@ -340,8 +340,10 @@ class BeakerLib(Library):
                         raise
 
                     # Log what HEAD really is
-                    self.parent.debug(
-                        'hash', tmt.utils.git.git_hash(directory=clone_dir, logger=self._logger)
+                    self.parent.verbose(
+                        'commit-hash',
+                        tmt.utils.git.git_hash(directory=clone_dir, logger=self._logger),
+                        'green',
                     )
 
                     # Copy only the required library

@@ -7,6 +7,8 @@ rlJournalStart
         rlRun "tmp=\$(mktemp -d)" 0 "Creating tmp directory for failed run"
         rlRun 'pushd data'
         rlRun 'set -o pipefail'
+        CLONED_HASH=$(git ls-remote https://github.com/teemtee/tmt HEAD | awk '{print $1}' | cut -c1-7)
+        rlLog "Default branch HEAD hash exported as CLONED_HASH=$CLONED_HASH"
     rlPhaseEnd
 
     plan=fmf/nourl/noref/nopath
@@ -60,6 +62,8 @@ rlJournalStart
     rlPhaseStartTest $plan
         rlRun 'tmt run -dddvr discover plan --name $plan finish 2>&1 >/dev/null | tee output'
         rlAssertGrep 'Cloning into' output
+        rlAssertGrep "cloned-commit-hash: $CLONED_HASH" output
+        rlAssertGrep 'commit-hash' output
         rlAssertNotGrep 'Checkout ref.*main' output
         rlAssertGrep /tests/core/docs output
         rlAssertGrep /tests/core/env output
@@ -70,7 +74,8 @@ rlJournalStart
     rlPhaseStartTest $plan
         rlRun 'tmt run -dddvr discover plan --name $plan finish 2>&1 >/dev/null | tee output'
         rlAssertGrep 'Cloning into' output
-        rlAssertNotGrep 'Checkout ref.*main' output
+        rlAssertGrep "cloned-commit-hash: $CLONED_HASH" output
+        rlAssertNotGrep 'Checkout ref.*' output
         rlAssertGrep '2 tests selected' output
         rlAssertGrep /tests/full output
         rlAssertGrep /tests/smoke output
@@ -80,8 +85,9 @@ rlJournalStart
     rlPhaseStartTest $plan
         rlRun 'tmt run -dddvr discover plan --name $plan finish 2>&1 >/dev/null | tee output'
         rlAssertGrep 'Cloning into' output
+        rlAssertGrep "cloned-commit-hash: $CLONED_HASH" output
         rlAssertGrep 'Checkout ref.*5407fe5' output
-        rlAssertGrep 'hash.*5407fe5' output
+        rlAssertGrep 'ref: 5407fe5' output
         rlAssertGrep '2 tests selected' output
         rlAssertGrep /tests/docs output
         rlAssertNotGrep /tests/env output
@@ -92,8 +98,9 @@ rlJournalStart
     rlPhaseStartTest $plan
         rlRun 'tmt run -dddvr discover plan --name $plan finish 2>&1 >/dev/null | tee output'
         rlAssertGrep 'Cloning into' output
+        rlAssertGrep "cloned-commit-hash: $CLONED_HASH" output
         rlAssertGrep 'Checkout ref.*eae4d52' output
-        rlAssertGrep 'hash.*eae4d52' output
+        rlAssertGrep 'ref: eae4d52' output
         rlAssertGrep '2 tests selected' output
         rlAssertGrep /tests/full output
         rlAssertGrep /tests/smoke output
