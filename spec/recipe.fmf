@@ -5,8 +5,9 @@ story: |
 description: |
     A recipe is a YAML file that captures a complete, static snapshot of a tmt
     run after all dynamic evaluation has been resolved. It includes preprocessed
-    information about plans, tests, results, and run configuration. All environment
-    variables are evaluated.
+    information about plans, tests, and run configuration, as well as links to the
+    ``results.yaml`` files created in previous run. All environment variables included
+    in the recipe are evaluated.
 
     Generated recipe can be edited, manually or by using a script, which allows users
     to select only a subset of discovered tests to be reexecuted.
@@ -18,8 +19,9 @@ description: |
     .. note::
         When submitting a new run based on a recipe, the ``results`` key of the
         ``execute`` step is ignored. New results will be generated from the actual
-        test execution. Users can use the results listed in the recipe to modify
-        the recipe and filter the tests that should be reexecuted.
+        test execution. Users can use this key to access the results created
+        in previous run to modify the recipe and filter the tests that should
+        be reexecuted.
 
     .. code-block:: yaml
 
@@ -88,11 +90,8 @@ description: |
                     how: tmt
                     order: 50
                     ...
-                # Represents results of all tests
-                results:
-                  - name: /test/name
-                    result: pass
-                    ...
+                # String, relative path to the results file from the previous run
+                results: plans/name/execute/results.yaml
 
             report:
                 phases:
