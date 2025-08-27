@@ -17,7 +17,7 @@ description: |
         recipe execution.
 
     .. note::
-        When submitting a new run based on a recipe, the ``results`` key of the
+        When submitting a new run based on a recipe, the ``results-path`` key of the
         ``execute`` step is ignored. New results will be generated from the actual
         test execution. Users can use this key to access the results created
         in previous run to modify the recipe and filter the tests that should
@@ -38,7 +38,7 @@ description: |
 
         # Represents plans with all their steps
         plans:
-          # String, name of the plan
+            # String, name of the plan
           - name: /plan/name
             # Mapping, stores plan environment
             environment: ...
@@ -84,7 +84,7 @@ description: |
                     order: 50
                     ...
                 # String, relative path to the results file from the previous run
-                results: plans/name/execute/results.yaml
+                results-path: plans/name/execute/results.yaml
 
             report:
                 phases:
