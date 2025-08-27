@@ -60,11 +60,7 @@ rlJournalStart
         rlPhaseStartTest "$phase_prefix Prepare runtime"
             [ "$PROVISION_HOW" = "container" ] && rlRun "podman images $image"
 
-            if is_fedora_rawhide "$image"; then
-                rlRun "distro=fedora-rawhide"
-                rlRun "package_manager=dnf5"
-
-            elif is_fedora_42 "$image"; then
+            if is_fedora_42 "$image"; then
                 rlRun "distro=fedora-42"
                 rlRun "package_manager=dnf5"
 
@@ -241,9 +237,6 @@ rlJournalStart
             elif is_fedora_coreos "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_fedora_rawhide "$image"; then
-                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
-
             elif is_fedora_42 "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
@@ -277,9 +270,6 @@ rlJournalStart
                 fi
 
             elif is_fedora_coreos "$image"; then
-                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
-
-            elif is_fedora_rawhide "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_fedora_42 "$image"; then

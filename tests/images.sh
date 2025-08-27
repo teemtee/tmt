@@ -24,7 +24,6 @@ $TEST_IMAGE_PREFIX/centos/stream9/upstream:latest
 $TEST_IMAGE_PREFIX/centos/stream10/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/41/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/42/upstream:latest
-$TEST_IMAGE_PREFIX/fedora/rawhide/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/coreos:stable
 $TEST_IMAGE_PREFIX/fedora/coreos/ostree:stable
 $TEST_IMAGE_PREFIX/ubi/8/upstream:latest
@@ -40,17 +39,9 @@ TEST_VIRTUAL_IMAGES="${TEST_VIRTUAL_IMAGES:-centos-stream-9
 centos-stream-10
 fedora-41
 fedora-42
-fedora-rawhide
 fedora-coreos}"
 
 # A couple of "is image this?" helpers, to simplify conditions.
-function is_fedora_rawhide () {
-    [[ "$1" =~ ^.*fedora/rawhide[:/].* ]] && return 0
-    [[ "$1" = "fedora-rawhide" ]] && return 0
-
-    return 1
-}
-
 function is_fedora_41 () {
     [[ "$1" =~ ^.*fedora/41[:/].* ]] && return 0
     [[ "$1" = "fedora-41" ]] && return 0

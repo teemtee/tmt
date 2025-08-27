@@ -48,7 +48,6 @@ from . import (  # noqa: E402
     CONTAINER_FEDORA_42,
     CONTAINER_FEDORA_COREOS,
     CONTAINER_FEDORA_COREOS_OSTREE,
-    CONTAINER_FEDORA_RAWHIDE,
     CONTAINER_UBI_8,
     CONTAINER_UBUNTU_2204,
 )
@@ -75,7 +74,6 @@ def has_legacy_dnf(container: ContainerData) -> bool:
         return False
 
     return container.image_url_or_id not in (
-        CONTAINER_FEDORA_RAWHIDE.url,
         CONTAINER_FEDORA_42.url,
         CONTAINER_FEDORA_41.url,
         CONTAINER_FEDORA_COREOS.url,
@@ -89,7 +87,6 @@ def has_dnf5_preinstalled(container: ContainerData) -> bool:
     """
 
     return container.image_url_or_id in (
-        CONTAINER_FEDORA_RAWHIDE.url,
         CONTAINER_FEDORA_42.url,
         CONTAINER_FEDORA_41.url,
         CONTAINER_FEDORA_COREOS.url,
@@ -123,7 +120,6 @@ def assert_output(
 # discovered.
 CONTAINER_BASE_MATRIX = [
     # Fedora
-    (CONTAINER_FEDORA_RAWHIDE, PACKAGE_MANAGER_DNF5),
     (CONTAINER_FEDORA_41, PACKAGE_MANAGER_DNF5),
     (CONTAINER_FEDORA_42, PACKAGE_MANAGER_DNF5),
     # CentOS Stream
@@ -256,16 +252,7 @@ def _parametrize_test_install() -> Iterator[
 ]:
     for container, package_manager_class in CONTAINER_BASE_MATRIX:
         if package_manager_class is tmt.package_managers.dnf.Yum:
-            if container.url == CONTAINER_FEDORA_RAWHIDE.url:
-                yield (
-                    container,
-                    package_manager_class,
-                    Package('tree'),
-                    r"rpm -q --whatprovides tree \|\| yum install -y  tree && rpm -q --whatprovides tree",  # noqa: E501
-                    'Installing:',
-                )
-
-            elif 'ubi/8' in container.url:
+            if 'ubi/8' in container.url:
                 yield (
                     container,
                     package_manager_class,
@@ -284,16 +271,7 @@ def _parametrize_test_install() -> Iterator[
                 )
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
-            if container.url == CONTAINER_FEDORA_RAWHIDE.url:
-                yield (
-                    container,
-                    package_manager_class,
-                    Package('tree'),
-                    r"rpm -q --whatprovides tree \|\| dnf install -y  tree",
-                    'Installing:',
-                )
-
-            elif 'ubi/8' in container.url:
+            if 'ubi/8' in container.url:
                 yield (
                     container,
                     package_manager_class,
@@ -479,32 +457,15 @@ def _parametrize_test_install_nonexistent() -> Iterator[
             )
 
         elif package_manager_class is tmt.package_managers.dnf.Dnf:
-            if container.url == CONTAINER_FEDORA_RAWHIDE.url:
-                yield (
-                    container,
-                    package_manager_class,
-                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| dnf install -y  tree-but-spelled-wrong",  # noqa: E501
-                    'No match for argument: tree-but-spelled-wrong',
-                )
-
-            else:
-                yield (
-                    container,
-                    package_manager_class,
-                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| dnf install -y  tree-but-spelled-wrong",  # noqa: E501
-                    'Error: Unable to find a match: tree-but-spelled-wrong',
-                )
+            yield (
+                container,
+                package_manager_class,
+                r"rpm -q --whatprovides tree-but-spelled-wrong \|\| dnf install -y  tree-but-spelled-wrong",  # noqa: E501
+                'Error: Unable to find a match: tree-but-spelled-wrong',
+            )
 
         elif package_manager_class is tmt.package_managers.dnf.Yum:
-            if container.url == CONTAINER_FEDORA_RAWHIDE.url:
-                yield (
-                    container,
-                    package_manager_class,
-                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y  tree-but-spelled-wrong && rpm -q --whatprovides tree-but-spelled-wrong",  # noqa: E501
-                    'No match for argument: tree-but-spelled-wrong',
-                )
-
-            elif 'fedora' in container.url:
+            if 'fedora' in container.url:
                 yield (
                     container,
                     package_manager_class,
@@ -611,15 +572,7 @@ def _parametrize_test_install_nonexistent_skip() -> Iterator[
             )
 
         elif package_manager_class is tmt.package_managers.dnf.Yum:
-            if container.url == CONTAINER_FEDORA_RAWHIDE.url:  # noqa: SIM114
-                yield (
-                    container,
-                    package_manager_class,
-                    r"rpm -q --whatprovides tree-but-spelled-wrong \|\| yum install -y --skip-broken tree-but-spelled-wrong \|\| /bin/true",  # noqa: E501
-                    'No match for argument: tree-but-spelled-wrong',
-                )
-
-            elif 'fedora' in container.url:  # noqa: SIM114
+            if 'fedora' in container.url:  # noqa: SIM114
                 yield (
                     container,
                     package_manager_class,
