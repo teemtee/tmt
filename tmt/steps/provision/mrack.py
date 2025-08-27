@@ -3,6 +3,7 @@ import dataclasses
 import datetime
 import functools
 import importlib.metadata
+import json
 import logging
 import re
 import threading
@@ -302,6 +303,12 @@ def _transform_unsupported(constraint: tmt.hardware.Constraint) -> dict[str, Any
     # We have to return something, return an {}- no harm done, composable with other elements.
 
     return {}
+
+
+def _get_registry_from_url(image_url: str) -> str:
+    """Extract registry from image URL"""
+    # Handle quay.io/repo/image:tag -> quay.io
+    return image_url.split('/')[0] if '/' in image_url else image_url
 
 
 def _translate_constraint_by_config(
@@ -949,6 +956,34 @@ def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
 
             # Whiteboard must be added *after* request preparation, to overwrite the default one.
             req['whiteboard'] = host.whiteboard
+            if host.bootc:
+                req['ks_append'] = req['ks_append'] if req.get('ks_append') else []
+                ks_meta = req['ks_meta'] if req.get('ks_meta') else ''
+                req['ks_meta'] = (
+                    'no_default_harness_repo disable_debug_repos disable_onerror ' + ks_meta
+                )
+                ks_list = [
+                    f"""
+ostreecontainer --url {host.image_url}
+%pre
+#!/bin/sh
+cat > /etc/ostree/auth.json <<EOF
+{host.auth_dict}
+EOF
+%end
+"""
+                ]
+                req['ks_append'].extend(ks_list)
+                req['tasks'] = [
+                    {
+                        "name": "/distribution/check-system",
+                        "role": "None",
+                        "fetch_url": f"{host.check_system_url}",
+                        "params": [
+                            f"""BOOTC_IMAGE_URL={host.image_url}""",
+                        ],
+                    },
+                ]
 
             logger.debug('mrack request', req, level=4)
 
@@ -1029,6 +1064,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              """,
         normalize=tmt.utils.normalize_int,
     )
+
     provision_tick: int = field(
         default=DEFAULT_PROVISION_TICK,
         option='--provision-tick',
@@ -1039,6 +1075,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              """,
         normalize=tmt.utils.normalize_int,
     )
+
     api_session_refresh_tick: int = field(
         default=DEFAULT_API_SESSION_REFRESH,
         option='--api-session-refresh-tick',
@@ -1088,6 +1125,52 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              """,
     )
 
+    check_system_url: Optional[str] = field(
+        default="https://gitlab.com/fedora/bootc/tests/bootc-beaker-test/-/archive/1.8/bootc-beaker-test-1.8.tar.gz#check-system",
+        option=('--check-system-url'),
+        metavar='URL',
+        help="""
+             Url to check-system task, which is needed for bootc on beaker installation.
+             """,
+    )
+
+    image_url: Optional[str] = field(
+        default=None,
+        option=('--image-url'),
+        metavar='IMAGE_URL',
+        help="""
+             Select container image to be used to perform the installation.
+             Cannot be used with customize_image.
+             """,
+    )
+
+    distro_name: Optional[str] = field(
+        default=None,
+        option=('--distro-name'),
+        metavar='DISTRO_NAME',
+        help="""
+             Specify the distro name, which will be used for image building and bootc installation.
+             """,
+    )
+
+    bootc_secret: Optional[str] = field(
+        default=None,
+        option=('--bootc-secret'),
+        metavar='BOOTC_SECRET',
+        help="""
+             Specify bootc secret, which will be used for fetching from registry.
+             """,
+    )
+
+    bootc: bool = field(
+        default=False,
+        is_flag=True,
+        option=('--bootc'),
+        help="""
+             if set, bootc on beaker installation will be performed.
+             """,
+    )
+
 
 @container
 class ProvisionBeakerData(BeakerGuestData, tmt.steps.provision.ProvisionStepData):
@@ -1127,6 +1210,10 @@ class CreateJobParameters:
     beaker_job_owner: Optional[str]
     public_key: list[str]
     group: Optional[str]
+    auth_dict: Optional[str]
+    image_url: Optional[str]
+    bootc: Optional[bool]
+    check_system_url: Optional[str]
 
     def to_mrack(self) -> dict[str, Any]:
         data = dataclasses.asdict(self)
@@ -1274,16 +1361,20 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     provision_tick: int
     public_key: list[str]
     api_session_refresh_tick: int
+    data: BeakerGuestData
 
     _api: Optional[BeakerAPI] = None
     _api_timestamp: Optional[datetime.datetime] = None
 
-    def __init__(self, *args: Any, **kwargs: Any):
-        """
-        Make sure that the mrack module is available and imported
-        """
-
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        *,
+        data: BeakerGuestData,
+        name: Optional[str] = None,
+        parent: Optional[tmt.utils.Common] = None,
+        logger: tmt.log.Logger,
+    ) -> None:
+        super().__init__(data=data, parent=parent, name=name, logger=logger)
 
         assert isinstance(self.parent, tmt.steps.provision.Provision)
         self.mrack_log = f"{self.parent.workdir}/{self.parent.name}-mrack.log"
@@ -1342,10 +1433,23 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         except mrack.errors.MrackError:
             return False
 
+    def _create_auth_credentials(self) -> dict[str, Any]:
+        """Create authentication dictionary with proper credential handling"""
+        if not self.data.bootc_secret:
+            return {}
+        assert self.data.image_url
+        base_repo = _get_registry_from_url(self.data.image_url)
+        # Support multiple registries
+        return {"auths": {base_repo: {"auth": self.data.bootc_secret}}}
+
     def _create(self, tmt_name: str) -> None:
         """
         Create beaker job xml request and submit it to Beaker hub
         """
+        auth_dict_str = None
+        if self.data.bootc:
+            auth_dict = self._create_auth_credentials()
+            auth_dict_str = json.dumps(auth_dict) if auth_dict else None
 
         data = CreateJobParameters(
             tmt_name=tmt_name,
@@ -1358,6 +1462,10 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             beaker_job_owner=self.beaker_job_owner,
             public_key=self.public_key,
             group=self.beaker_job_group,
+            auth_dict=auth_dict_str,
+            image_url=self.data.image_url,
+            bootc=self.data.bootc,
+            check_system_url=self.data.check_system_url,
         )
 
         if self.is_dry_run:
@@ -1483,8 +1591,6 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
         self.verbose('primary address', self.primary_address, 'green')
         self.verbose('topology address', self.topology_address, 'green')
-
-        self.assert_reachable()
 
     def remove(self) -> None:
         """
@@ -1640,12 +1746,41 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
         mrack_log_filename = Path(self._guest.mrack_log).name
         return {*super()._preserved_workdir_members, mrack_log_filename}
 
+    def _validate_bootc_configuration(self) -> None:
+        """Comprehensive bootc configuration validation"""
+        if not (self.data.bootc_secret and self.data.distro_name):
+            raise tmt.utils.ProvisionError(
+                "bootc_secret and distro_name are needed for bootc on beaker installation."
+            )
+        # Required fields validation
+        # bootc_secret and distro_name are needed for bootc on beaker installation
+        required_fields = ['bootc_secret', 'distro_name', 'image_url']
+
+        missing_fields = [field for field in required_fields if not getattr(self.data, field)]
+        if missing_fields:
+            raise tmt.utils.ProvisionError(
+                f"bootc configuration incomplete. Missing: {', '.join(missing_fields)}"
+            )
+
+        # Validate image URLs
+        if self.data.image_url and not self._is_valid_image_url(self.data.image_url):
+            raise tmt.utils.ProvisionError(f"Invalid image URL: {self.data.image_url}")
+
+    def _is_valid_image_url(self, url: str) -> bool:
+        """Validate container image URL format"""
+        pattern = r'^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*:[a-zA-Z0-9._-]+$'
+        return bool(re.match(pattern, url))
+
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
         Provision the guest
         """
 
         super().go(logger=logger)
+
+        if self.data.bootc:
+            assert self.workdir
+            self._validate_bootc_configuration()
 
         data = BeakerGuestData.from_plugin(self)
 

@@ -60,5 +60,17 @@ properties:
   beaker-job-group:
     type: string
 
+  bootc_secret:
+    type: string
+
+  image_url:
+    type: string
+
+  bootc:
+    type: boolean
+
+  distro_name:
+    type: string
+
 required:
   - how
