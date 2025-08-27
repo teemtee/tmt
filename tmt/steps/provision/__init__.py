@@ -1397,7 +1397,7 @@ class Guest(tmt.utils.Common):
         # Ensure scripts directory exists on guest (create only if missing)
         self.execute(
             ShellScript(
-                f"[ ! -d {self.scripts_path} ] && "
+                f"[ -d {self.scripts_path} ] || "
                 f'{"sudo" if not self.facts.is_superuser else ""} '
                 f"mkdir -p {self.scripts_path}"
             ).to_shell_command(),
