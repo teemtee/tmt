@@ -3,14 +3,19 @@ framework: beakerlib
 contact: Petr Šplíchal <psplicha@redhat.com>
 tier: 2
 require: [tmt]
-# Disabled because of irrelevant AVC denial cause by crun
-# https://github.com/containers/container-selinux/issues/389
-#check: [avc]
+check: [avc]
 duration: 10m
 environment:
     TMT_FEELING_SAFE: 1
 
 adjust:
+  - check: []
+    when: distro == centos-stream
+    because:
+        fresh container-selinux packages are not yet available for centos-stream
+        https://gitlab.com/redhat/centos-stream/rpms/container-selinux/-/merge_requests/149
+        https://gitlab.com/redhat/centos-stream/rpms/container-selinux/-/merge_requests/148
+
   - check: []
     when: initiator is not defined or initiator != packit
     because:
