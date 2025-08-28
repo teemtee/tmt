@@ -226,10 +226,10 @@
 <h1>{{ plan.name }}</h1>
 {% if plan.summary %}<h2>{{ plan.summary }}</h2>{% endif %}
 
-{% if plan._fmf_context %}
+{% if plan.fmf_context %}
 <p class="header">
 Context:
-{% for key, values in plan._fmf_context.items() %}
+{% for key, values in plan.fmf_context.items() %}
 <span class="context-dimension">{{ key }} = {{ values | join(", ") }}</span>
 {% endfor %}
 </p>

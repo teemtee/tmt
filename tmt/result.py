@@ -392,7 +392,7 @@ class Result(BaseResult):
             name=invocation.test.name,
             serial_number=invocation.test.serial_number,
             fmf_id=invocation.test.fmf_id,
-            context=invocation.phase.step.plan._fmf_context,
+            context=invocation.phase.step.plan.fmf_context,
             result=result,
             note=note or [],
             start_time=invocation.start_time,
