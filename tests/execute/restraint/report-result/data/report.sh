@@ -17,7 +17,7 @@ rlJournalStart
 	rlRun "rm -f $RESULT_FILE" 0 "Result report successfully deleted."
         rlRun "rstrnt-report-result --server http://test-example.com --port 55 --disable-plugin avc --message 'Example output message.' -o /tmp/example_output.txt report PASS 66" 0 "Generating Restraint report of passed test."
         rlRun -s "cat $RESULT_FILE"
-        rlAssertGrep '- "report_example_output.txt"' $rlRun_LOG
+        rlAssertGrep '- "report/example_output.txt.txt"' $rlRun_LOG
         rlAssertGrep 'name: "/report"' $rlRun_LOG
         rlAssertGrep 'result: "pass"' $rlRun_LOG
 	rlRun "rm -f $RESULT_FILE" 0 "Result report successfully deleted."
@@ -39,7 +39,7 @@ rlJournalStart
 	rlRun "rm -f $RESULT_FILE" 0 "Result report successfully deleted."
         rlRun "rhts-report-result rhts-report PASS /tmp/example_output.txt 66" 0 "Generating RHTS report of passed test."
         rlRun -s "cat $RESULT_FILE"
-        rlAssertGrep '- "rhts-report_example_output.txt"' $rlRun_LOG
+        rlAssertGrep '- "rhts-report/example_output.txt.txt"' $rlRun_LOG
         rlAssertGrep 'name: "/rhts-report"' $rlRun_LOG
         rlAssertGrep 'result: "pass"' $rlRun_LOG
 	rlRun "rm -f $RESULT_FILE" 0 "Result report successfully deleted."
