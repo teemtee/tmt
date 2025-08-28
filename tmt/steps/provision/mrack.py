@@ -885,14 +885,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
 
             logger.debug('Transformed hardware', tmt.utils.dict_to_yaml(transformed))
 
-            # Mrack does not handle well situation when the filter
-            # consists of just a single filtering element, e.g. just
-            # `hostname`. In that case, the element is converted into
-            # XML element incorrectly. Therefore wrapping our filter
-            # with `<and/>` group, even if it has just a single child,
-            # it works around the problem.
-            # See https://github.com/teemtee/tmt/issues/3442
-            return {'hostRequires': MrackHWAndGroup(children=[transformed]).to_mrack()}
+            return {'hostRequires': transformed}
 
         def create_host_requirement(self, host: CreateJobParameters) -> dict[str, Any]:
             """
@@ -903,9 +896,6 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
 
             if host.hardware and host.hardware.constraint:
                 req.update(self._translate_tmt_hw(host.hardware))
-
-            if host.beaker_job_owner:
-                req['job_owner'] = host.beaker_job_owner
 
             if host.kickstart and not mrack_constructs_ks_pre():
                 ks_components: list[str] = [
@@ -1097,6 +1087,10 @@ class CreateJobParameters:
             # see kickstart if it was just metadata.
             if kickstart:
                 data['beaker']['ks_append'] = kickstart
+
+        if self.beaker_job_owner:
+            data['beaker']['beaker_job_owner'] = self.beaker_job_owner
+
         if self.public_key:
             data['beaker']['pubkeys'] = self.public_key
 
