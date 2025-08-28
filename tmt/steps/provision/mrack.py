@@ -509,6 +509,11 @@ def _transform_driver_helper(
     constraint: tmt.hardware.TextConstraint,
     logger: tmt.log.Logger,
 ) -> MrackBaseHWElement:
+    """
+    A helper to transform a hardware driver constraint into its Beaker key-value filter,
+    currently shared by _transform_disk_driver and _transform_device_driver.
+    """
+
     beaker_operator, actual_value, negate = operator_to_beaker_op(
         constraint.operator, constraint.value
     )
