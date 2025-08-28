@@ -7,25 +7,41 @@
 tmt-1.56.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :ref:`tmt try</stories/cli/try>` command's interactive session
-now includes a new ``h`` option to run shell commands directly
-on the host (not on provisioned guests). Users can exit cleanly
-by typing ``'\q'``, pressing Ctrl-C, or pressing Ctrl-D, and failed commands
-are reported with clear error messages.
+The :ref:`tmt try</stories/cli/try>` command's interactive
+session now includes a new ``h`` option to run shell commands
+directly on the host (not on provisioned guests). Users can exit
+cleanly by typing ``\q``, pressing Ctrl-C, or pressing Ctrl-D,
+and failed commands are reported with clear error messages.
 
-When interrupted while running a test, tmt will now interrupt the test
-and quit immediately after, skipping all remaining tests. This is now
-aligned with a test abort or :ref:`exit-first </plugins/execute/tmt>`
-key.
+The :ref:`/spec/plans/provision` step now detects and reports
+unreachable guests after provisioning. This prevents silent
+failures when a guest fails to become accessible via SSH.
+
+When interrupted while running a test, tmt will now interrupt
+the test and quit immediately after, skipping all remaining tests.
+This is now aligned with a test abort or
+:ref:`exit-first </plugins/execute/tmt>` key.
+
+In verbose mode, tmt now logs the git head commit reference,
+providing better traceability and debugging information when
+working with git repositories.
+
+In Image Mode, container images are no longer built for
+installed dependencies, improving performance and reducing
+unnecessary operations.
 
 As the first step towards implementing support for executing a
 subset of tests based on reported results, the first draft of the
 :ref:`/spec/recipe` specification was created to gather initial
 feedback on the proposed approach.
 
-In Image Mode, container images are no longer built for installed
-dependencies, improving performance and reducing unnecessary
-operations.
+To comply with Functional Safety certification requirements,
+it was agreed that the full test coverage must be executed for
+all release pull requests.
+
+A new :ref:`code-assistants` section has been added to the
+:ref:`contribute` guide to document the recommended format for
+specifying code assistant contributions in commit messages.
 
 
 tmt-1.55.0
