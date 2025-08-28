@@ -13,6 +13,9 @@ from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Pat
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
 
+#: The default helper scripts destination directory
+DEFAULT_HELPER_SCRIPTS_DEST_DIR = Path("/var/lib/tmt/helper/scripts")
+
 
 @container
 class ProvisionLocalData(tmt.steps.provision.GuestData, tmt.steps.provision.ProvisionStepData):
@@ -26,6 +29,15 @@ class GuestLocal(tmt.Guest):
 
     localhost = True
     parent: Optional[tmt.steps.Step]
+
+    @property
+    def scripts_path(self) -> Path:
+        """
+        Absolute path to tmt scripts directory
+        """
+        return tmt.steps.scripts.effective_scripts_dest_dir(
+            default=DEFAULT_HELPER_SCRIPTS_DEST_DIR
+        )
 
     @property
     def is_ready(self) -> bool:
@@ -136,7 +148,30 @@ class GuestLocal(tmt.Guest):
         )
 
     def install_scripts(self, scripts: Sequence[tmt.steps.scripts.Script]) -> None:
-        self.debug("No installation of tmt scripts is needed on localhost.")
+        """Install scripts required by tmt"""
+
+        # Make sure scripts directory exists
+        command = Command("mkdir", "-p", f"{self.scripts_path}")
+
+        if not self.facts.is_superuser:
+            command = Command("sudo") + command
+
+        self.execute(command, silent=True)
+
+        # Install all scripts on local guest
+        for script in scripts:
+            if not script.enabled(self):
+                continue
+
+            with script as source:
+                for filename in [script.source_filename, *script.aliases]:
+                    destination = script.destination_path or self.scripts_path / filename
+
+                    # Copy file and set permissions
+                    install_cmd = Command('install', '-p', '-m', '755', source, destination)
+                    if not self.facts.is_superuser:
+                        install_cmd = Command('sudo') + install_cmd
+                    self.execute(install_cmd, silent=True)
 
     def start(self) -> None:
         """
