@@ -1394,13 +1394,15 @@ class Guest(tmt.utils.Common):
         Install scripts required by tmt.
         """
 
-        # Make sure scripts directory exists
-        command = Command("mkdir", "-p", f"{self.scripts_path}")
-
-        if not self.facts.is_superuser:
-            command = Command("sudo") + command
-
-        self.execute(command, silent=True)
+        # Ensure scripts directory exists on guest (create only if missing)
+        self.execute(
+            ShellScript(
+                f"[ -d {quote(str(self.scripts_path))} ] || "
+                f'{"sudo " if not self.facts.is_superuser else ""}'
+                f"mkdir -p {quote(str(self.scripts_path))}"
+            ).to_shell_command(),
+            silent=True,
+        )
 
         # Install all scripts on guest
         for script in scripts:
