@@ -90,6 +90,7 @@ You can get some more context in the `stackoverflow`__ article.
 
 __ https://stackoverflow.com/questions/2290016/
 
+.. _code-assistants:
 
 Code Assistants
 ------------------------------------------------------------------
