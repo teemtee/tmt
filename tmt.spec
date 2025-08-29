@@ -145,7 +145,7 @@ export SETUPTOOLS_SCM_PRETEND_VERSION=%{version}
 %pyproject_save_files tmt
 
 mkdir -p %{buildroot}%{_mandir}/man1
-install -pm 644 tmt.1 %{buildroot}%{_mandir}/man1
+install -pm 644 docs/tmt.1 %{buildroot}%{_mandir}/man1
 mkdir -p %{buildroot}%{_datadir}/bash-completion/completions
 install -pm 644 completions/bash/%{name} %{buildroot}%{_datadir}/bash-completion/completions/%{name}
 mkdir -p %{buildroot}/etc/%{name}/
