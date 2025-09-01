@@ -57,10 +57,10 @@ class RepositoryArtifactInfo(ArtifactInfo):
         """
         parsed_url = urlparse(self.url)
         filename = Path(parsed_url.path).name
-        if not filename:
-            raise ValueError(f"Invalid filename extracted from URL: {self.url}")
         if not filename.endswith('.repo'):
             raise ValueError(f"URL must point to a .repo file, got: {filename}")
+        if not filename:
+            raise ValueError(f"Invalid filename extracted from URL: {self.url}")
         return filename
 
     @property
@@ -91,13 +91,12 @@ class RepositoryProvider(ArtifactProvider[RepositoryArtifactInfo]):
         """
         if not artifact_id.startswith(('http://', 'https://')):
             raise ValueError(f"Invalid repository URL: {artifact_id}. Only HTTP(S) is supported.")
-
         parsed_url = urlparse(artifact_id)
         filename = Path(parsed_url.path).name
-        if not filename:
-            raise ValueError(f"Invalid filename extracted from URL: {artifact_id}")
         if not filename.endswith('.repo'):
             raise ValueError(f"URL must point to a .repo file, got: {filename}")
+        if not filename:
+            raise ValueError(f"Invalid filename extracted from URL: {artifact_id}")
 
         self.logger.debug(f"Parsed repository artifact URL: {artifact_id}")
         return artifact_id
