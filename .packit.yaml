@@ -193,7 +193,7 @@ jobs:
   - <<: *test-base
     <<: *internal
     <<: *require-full-tests
-    identifier: centos-stream-9-x86_64:full
+    identifier: centos-stream-9-x86_64:fusa
     fmf_url: "https://gitlab.cee.redhat.com/automotive/tests/all.git"
     tmt_plan: '/tmt/plans/fusa/tests'
     targets:
