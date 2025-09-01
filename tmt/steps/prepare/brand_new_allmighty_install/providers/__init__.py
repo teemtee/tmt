@@ -5,6 +5,7 @@ Abstract base class for artifact providers.
 import enum
 import re
 from abc import ABC, abstractmethod
+from re import Pattern
 
 import tmt.log
 from tmt.container import container
@@ -37,8 +38,7 @@ class ArtifactProvider(ABC):
         """
         Retrieve build information by ID
 
-        Args:
-            build_id (int): The ID of the build to retrieve information for.
+        :param build_id: The ID of the build to retrieve information for.
         """
         pass
 
@@ -47,8 +47,7 @@ class ArtifactProvider(ABC):
         """
         List all available artifacts for a given build
 
-        Args:
-            build_id (int): The ID of the build to list artifacts for.
+        :param build_id: The ID of the build to list artifacts for.
         """
         pass
 
@@ -57,21 +56,19 @@ class ArtifactProvider(ABC):
         self,
         build_id: int,
         download_path: Path,
-        exclude_patterns: list[str],
+        exclude_patterns: list[Pattern[str]],
         skip_install: bool = True,
     ) -> list[Path]:
         """
         Download artifact from a build
 
-        Args:
-            build_id (int): The ID of the build to download the artifact from.
-            download_path (str): The local path to save the downloaded artifact.
-            exclude_patterns (list[str]): Patterns to exclude certain files from being downloaded.
-            skip_install (bool, optional): Whether to skip installation of the artifact.
-            Defaults to True.
 
-        Returns:
-            list[Path]: A list of paths to the downloaded artifacts.
+        :param build_id: The ID of the build to download the artifact from.
+        :param download_path: The local path to save the downloaded artifact.
+        :param exclude_patterns: Patterns to exclude certain files from being downloaded.
+        :param skip_install: Whether to skip installation of the artifact.
+            Defaults to True.
+        :returns: A list of paths to the downloaded artifacts.
         """
         pass
 
@@ -80,18 +77,18 @@ class ArtifactProvider(ABC):
         """
         Install the downloaded artifact.
 
-        Args:
-            artifact_path (Path): The path to the downloaded artifact to install.
+        :param artifact_path: The path to the downloaded artifact to install.
         """
         pass
 
-    def _filter_artifacts(self, build_id: int, exclude_patterns: list[str]) -> list[ArtifactInfo]:
+    def _filter_artifacts(
+        self, build_id: int, exclude_patterns: list[Pattern[str]]
+    ) -> list[ArtifactInfo]:
         """
         Return the filtered list of artifacts for a given build.
 
-        Args:
-            build_id (int): The ID of the build to filter artifacts for.
-            exclude_patterns (list[str]): The patterns to exclude.
+        :param build_id: The ID of the build to filter artifacts for.
+        :param exclude_patterns: The patterns to exclude.
         """
 
         if not exclude_patterns:
