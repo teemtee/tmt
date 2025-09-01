@@ -2,6 +2,8 @@
 Koji Artifact Provider
 """
 
+from re import Pattern
+
 import tmt.log
 from tmt.steps.prepare.brand_new_allmighty_install.providers import (
     ArtifactInfo,
@@ -41,7 +43,7 @@ class KojiProvider(ArtifactProvider):
         self,
         build_id: int,
         download_path: Path,
-        exclude_patterns: list[str],
+        exclude_patterns: list[Pattern[str]],
         skip_install: bool = True,
     ) -> list[Path]:
         self.logger.info(f"Downloading artifacts to {download_path!s}")
