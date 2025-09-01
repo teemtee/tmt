@@ -71,7 +71,7 @@ class ArtifactProvider(ABC):
             Defaults to True.
 
         Returns:
-            list[str]: A list of paths to the downloaded artifacts.
+            list[Path]: A list of paths to the downloaded artifacts.
         """
         pass
 
