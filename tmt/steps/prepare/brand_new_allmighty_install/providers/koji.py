@@ -59,4 +59,5 @@ class KojiProvider(ArtifactProvider):
         return downloaded_paths
 
     def install_artifact(self, artifact_path: Path) -> None:
+        # TODO: Implement actual install logic
         raise NotImplementedError("Artifact installation is not supported.")
