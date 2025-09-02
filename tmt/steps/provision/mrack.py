@@ -893,8 +893,7 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
                 if Path("mrack.log").exists():
                     Path("mrack.log").unlink()
 
-            file_handler = logging.FileHandler(str(log_filename))
-            mrack.logger.addHandler(file_handler)
+            mrack.logger.addHandler(logging.FileHandler(str(log_filename)))
 
             providers.register(BEAKER, BeakerProvider)
 
@@ -1214,13 +1213,13 @@ class BeakerAPI:
             # The YAML config should already be in the correct format for mrack
             # Just validate that it has the necessary structure
             if not isinstance(config_data, dict):
-                raise tmt.utils.SpecificationError(
+                raise ProvisionError(
                     "Invalid mrack provisioning configuration format - expected dictionary"
                 )
 
             # Check for required provider configurations
             if 'beaker' not in config_data:
-                raise tmt.utils.SpecificationError(
+                raise ProvisionError(
                     "No 'beaker' section found in mrack provisioning configuration"
                 )
 
