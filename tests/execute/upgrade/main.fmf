@@ -29,4 +29,4 @@ tier: 4
 
 /skip-tests:
     summary: Skip tests before and/or after upgrade
-    test: ./skip-test.sh
+    test: ./skip-tests.sh
