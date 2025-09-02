@@ -85,14 +85,13 @@ class ArtifactProvider(ABC):
         self, build_id: int, exclude_patterns: list[Pattern[str]]
     ) -> Iterator[ArtifactInfo]:
         """
-        Return the filtered list of artifacts for a given build.
+        Filter artifacts based on exclude patterns.
 
         :param build_id: The ID of the build to filter artifacts for.
         :param exclude_patterns: The patterns to exclude.
+        :yields: Artifacts that do not match any of the exclude patterns.
         """
 
-        return (
-            artifact
-            for artifact in self.list_artifacts(build_id)
-            if not any(pattern.search(artifact.name) for pattern in exclude_patterns)
-        )
+        for artifact in self.list_artifacts(build_id):
+            if not any(pattern.search(artifact.name) for pattern in exclude_patterns):
+                yield artifact
