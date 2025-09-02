@@ -4,9 +4,3 @@ require:
 - git-core
 - tmt
 tier: 4
-
-adjust+:
-  - when: distro == fedora-rawhide
-    enabled: false
-    because: |
-      Python 3.14 wheels for pydantic are not available yet

@@ -21,7 +21,3 @@ adjust+:
     when: distro >= fedora-41
     because: |
         We are not interested in AVCs for this test due to complicated setup.
-  - when: distro == fedora-rawhide
-    enabled: false
-    because: |
-      Python 3.14 wheels for lxml and pydantic are not available yet
