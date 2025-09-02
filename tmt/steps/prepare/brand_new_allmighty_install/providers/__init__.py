@@ -3,8 +3,8 @@ Abstract base class for artifact providers.
 """
 
 import enum
-import re
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from re import Pattern
 
 import tmt.log
@@ -43,7 +43,7 @@ class ArtifactProvider(ABC):
         pass
 
     @abstractmethod
-    def list_artifacts(self, build_id: int) -> list[ArtifactInfo]:
+    def list_artifacts(self, build_id: int) -> Iterator[ArtifactInfo]:
         """
         List all available artifacts for a given build
 
@@ -83,7 +83,7 @@ class ArtifactProvider(ABC):
 
     def _filter_artifacts(
         self, build_id: int, exclude_patterns: list[Pattern[str]]
-    ) -> list[ArtifactInfo]:
+    ) -> Iterator[ArtifactInfo]:
         """
         Return the filtered list of artifacts for a given build.
 
@@ -91,13 +91,8 @@ class ArtifactProvider(ABC):
         :param exclude_patterns: The patterns to exclude.
         """
 
-        if not exclude_patterns:
-            return self.list_artifacts(build_id)
-
-        compiled_patterns = [re.compile(pattern) for pattern in exclude_patterns]
-
-        return [
+        return (
             artifact
             for artifact in self.list_artifacts(build_id)
-            if not any(pattern.search(artifact.name) for pattern in compiled_patterns)
-        ]
+            if not any(pattern.search(artifact.name) for pattern in exclude_patterns)
+        )
