@@ -2,6 +2,7 @@
 Koji Artifact Provider
 """
 
+from collections.abc import Iterator
 from re import Pattern
 
 import tmt.log
@@ -29,13 +30,11 @@ class KojiProvider(ArtifactProvider):
             """
             raise GeneralError(f"Failed to get build info for build ID {build_id}: {err}")
 
-    def list_artifacts(self, build_id: int) -> list[ArtifactInfo]:
+    def list_artifacts(self, build_id: int) -> Iterator[ArtifactInfo]:
         try:
             # artifacts = KojiSession.listRPMs(build_id) TODO: sort Koji session details
-            return [
-                ArtifactInfo(name="example.rpm", type=ArtifactType.RPM),
-                ArtifactInfo(name="example.container", type=ArtifactType.CONTAINER),
-            ]
+            yield ArtifactInfo(name="example.rpm", type=ArtifactType.RPM)
+            yield ArtifactInfo(name="example.container", type=ArtifactType.CONTAINER)
         except Exception as err:
             raise GeneralError(f"Failed to list artifacts for build ID {build_id}: {err}")
 
