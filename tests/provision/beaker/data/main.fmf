@@ -13,3 +13,7 @@
                   driver: ahci
               - device:
                   driver: uhci
+              - disk:
+                  driver: foo
+              - disk:
+                  driver: bar

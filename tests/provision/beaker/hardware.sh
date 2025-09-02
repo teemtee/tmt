@@ -14,6 +14,8 @@ rlJournalStart
         rlAssertGrep '<dummyname op="==" value="dummy"/>' $rlRun_LOG
         rlAssertGrep '<key_value key="MODULE" op="==" value="ahci"/>' $rlRun_LOG
         rlAssertGrep '<key_value key="MODULE" op="==" value="uhci"/>' $rlRun_LOG
+        rlAssertGrep '<key_value key="BOOTDISK" op="==" value="foo"/>' $rlRun_LOG
+        rlAssertGrep '<key_value key="BOOTDISK" op="==" value="bar"/>' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
