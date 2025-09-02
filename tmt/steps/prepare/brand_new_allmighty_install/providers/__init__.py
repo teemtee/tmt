@@ -40,7 +40,7 @@ class ArtifactProvider(ABC):
 
         :param build_id: The ID of the build to retrieve information for.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def list_artifacts(self, build_id: int) -> Iterator[ArtifactInfo]:
@@ -49,7 +49,7 @@ class ArtifactProvider(ABC):
 
         :param build_id: The ID of the build to list artifacts for.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def download_artifact(
@@ -70,7 +70,7 @@ class ArtifactProvider(ABC):
             Defaults to True.
         :returns: A list of paths to the downloaded artifacts.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def install_artifact(self, artifact_path: Path) -> None:
@@ -79,7 +79,7 @@ class ArtifactProvider(ABC):
 
         :param artifact_path: The path to the downloaded artifact to install.
         """
-        pass
+        raise NotImplementedError
 
     def _filter_artifacts(
         self, build_id: int, exclude_patterns: list[Pattern[str]]
