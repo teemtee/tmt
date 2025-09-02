@@ -45,6 +45,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+tmt.1
 
 # Testing
 .mypy_cache
