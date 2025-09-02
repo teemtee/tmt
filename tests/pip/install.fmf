@@ -6,6 +6,9 @@ require:
     - python3-devel
 tier: null
 
+environment:
+    PIP_PRE: 1
+
 /mini:
     summary: Ensure the minimal pip install works
     test: |
