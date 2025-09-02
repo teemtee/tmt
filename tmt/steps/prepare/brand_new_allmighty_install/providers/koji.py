@@ -50,7 +50,7 @@ class KojiProvider(ArtifactProvider):
         downloaded_paths: list[Path] = []
 
         for artifact in artifacts:
-            local_path = Path.joinpath(download_path, artifact.name)
+            local_path = download_path / artifact.name
             self.logger.debug(f"Downloading {artifact.name} to {local_path!s}")
             # TODO: Implement actual download logic
             downloaded_paths.append(local_path)
