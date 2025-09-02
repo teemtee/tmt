@@ -55,6 +55,8 @@ beaker:
     rhel-9.6-nightly: RHEL-9.6%
     rhel-9.7: RHEL-9.7%
     rhel-9.7-nightly: RHEL-9.7%
+    rhel-9.8: RHEL-9.8%
+    rhel-9.8-nightly: RHEL-9.8%
     rhel-10: RHEL-10.0%
     rhel-10.0: RHEL-10.0%
     rhel-10-nightly: RHEL-10.0%
