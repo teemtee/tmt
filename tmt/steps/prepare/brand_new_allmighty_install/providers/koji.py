@@ -4,7 +4,6 @@ Koji Artifact Provider
 
 from collections.abc import Iterator
 
-import tmt.log
 from tmt.steps.prepare.brand_new_allmighty_install.providers import (
     ArtifactInfo,
     ArtifactProvider,
@@ -15,9 +14,6 @@ from tmt.utils import GeneralError, Path
 
 
 class KojiProvider(ArtifactProvider):
-    def __init__(self, logger: tmt.log.Logger, artifact_id: str):
-        super().__init__(logger, artifact_id)
-
     def _parse_artifact_id(self, artifact_id: str) -> str:
         # Eg: 'koji.build:123456'
         if not artifact_id.startswith("koji.build:"):
@@ -32,6 +28,6 @@ class KojiProvider(ArtifactProvider):
         except Exception as err:
             raise GeneralError(f"Failed to list artifacts for build {self.artifact_id}: {err}")
 
-    def _download_artifact(self, guest: Guest, destination: Path) -> Path:
+    def _download_artifact(self, artifact: ArtifactInfo, guest: Guest, destination: Path) -> Path:
         # TODO: Implement actual download logic
         return destination
