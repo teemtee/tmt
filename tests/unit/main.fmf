@@ -73,7 +73,7 @@ require+:
       - when: initiator == packit
         because: Enable in CI only
         enabled: true
-      - when: distro => fedora-43
+      - when: distro >= fedora-43
         enabled: false
         because: |
           Unit tests started to fail at pickling, needs investigation
