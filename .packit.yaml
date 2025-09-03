@@ -193,7 +193,7 @@ jobs:
   - <<: *test-base
     <<: *internal
     <<: *require-full-tests
-    identifier: fusa-ssh-podman
+    identifier: internal-fusa
     fmf_url: "https://gitlab.cee.redhat.com/automotive/tests/all.git"
     tmt_plan: '/tmt/plans/fusa/tests'
     targets:
