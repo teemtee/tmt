@@ -1,0 +1,7 @@
+summary: Empty prepare install with exclude
+prepare:
+    how: install
+    exclude: httpd-manual
+execute:
+    how: tmt
+    script: echo 'Good!'
