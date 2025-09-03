@@ -2147,7 +2147,7 @@ class Reboot(Action):
         )
         @option(
             '--command',
-            type=Optional[str],
+            type=str,
             default=None,
             help=f"""
             A command to run on the guest to trigger the reboot.
