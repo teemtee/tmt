@@ -10,13 +10,19 @@ from re import Pattern
 import tmt.log
 from tmt.container import container
 from tmt.steps.provision import Guest
-from tmt.utils import Path
+from tmt.utils import GeneralError, Path
 
 
 class ArtifactType(enum.Enum):
     RPM = 'rpm'
     CONTAINER = 'container'
     UNKNOWN = 'unknown'
+
+
+class DownloadError(GeneralError):
+    """
+    Raised when download fails.
+    """
 
 
 @container
@@ -77,7 +83,8 @@ class ArtifactProvider(ABC):
         :param download_path: The local path to save the downloaded artifact.
         :param exclude_patterns: Patterns to exclude certain files from being downloaded.
         :returns: A list of paths to the downloaded artifacts.
-        :raises Exception: Errors during individual artifact downloads are
+        :raises GeneralError: Unexpected errors outside the download process.
+        :note: Errors during individual artifact downloads are
             caught, logged as warnings, and ignored.
         """
         self.logger.info(f"Downloading artifacts to {download_path!s}")
@@ -94,9 +101,12 @@ class ArtifactProvider(ABC):
                 artifact_count += 1
                 self.logger.info(f"Downloaded {artifact} to {downloaded_path}")
 
-            except Exception as err:
+            except DownloadError as err:
                 # Warn about the failed download and move on
                 self.logger.warning(f"Failed to download {artifact}: {err}")
+
+            except Exception as err:
+                raise GeneralError(f"Unexpected error downloading {artifact}: {err}") from err
 
         self.logger.info(f"Successfully downloaded {artifact_count} artifacts")
         return downloaded_paths
