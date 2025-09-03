@@ -6,7 +6,7 @@ require:
     - python3-devel
 tier: null
 adjust+:
-  - when: distro => fedora-43
+  - when: distro >= fedora-43
     enabled: false
     because: |
       Python 3.14 wheels for cffi are not available yet
