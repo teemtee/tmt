@@ -27,6 +27,7 @@ from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.result import CheckResult, Result, ResultGuestData, ResultInterpret, ResultOutcome
 from tmt.steps import Action, ActionTask, PhaseQueue, PluginTask, Step
+from tmt.steps.abort import AbortContext, AbortStep
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.provision import Guest
 from tmt.utils import (
@@ -100,14 +101,6 @@ class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
 
 
 ExecuteStepDataT = TypeVar('ExecuteStepDataT', bound=ExecuteStepData)
-
-
-class AbortExecute(tmt.utils.GeneralError):
-    """
-    Raised by ``execute`` phases when the entire step should abort.
-    """
-
-    pass
 
 
 @container
@@ -237,14 +230,6 @@ class TestInvocation:
 
         return self.test_data_path / tmt.steps.scripts.TMT_REBOOT_SCRIPT.created_file
 
-    @functools.cached_property
-    def abort_request_path(self) -> Path:
-        """
-        A path to the abort request file
-        """
-
-        return self.test_data_path / tmt.steps.scripts.TMT_ABORT_SCRIPT.created_file
-
     @property
     def soft_reboot_requested(self) -> bool:
         """
@@ -272,14 +257,6 @@ class TestInvocation:
         """
 
         return self.return_code in self.test.restart_on_exit_code
-
-    @property
-    def abort_requested(self) -> bool:
-        """
-        Whether a testing abort was requested
-        """
-
-        return self.abort_request_path.exists()
 
     @property
     def is_guest_healthy(self) -> bool:
@@ -324,6 +301,14 @@ class TestInvocation:
             (self.test_data_path / line).resolve().relative_to(self.step_workdir.resolve())
             for line in self.submission_log_path.read_text().splitlines()
         ]
+
+    @functools.cached_property
+    def abort(self) -> AbortContext:
+        """
+        Abort context for this invocation.
+        """
+
+        return AbortContext(path=self.test_data_path, logger=self.logger)
 
     def handle_restart(self) -> bool:
         """
@@ -1360,7 +1345,7 @@ class Execute(tmt.steps.Step):
                 # Special exceptions serving as signals to not run any more
                 # phases. Not necessarily a failed task calling for the final
                 # exception to be raised, crashing the whole run.
-                if isinstance(outcome.exc, (AbortExecute, tmt.utils.signals.Interrupted)):
+                if isinstance(outcome.exc, (AbortStep, tmt.utils.signals.Interrupted)):
                     break
 
                 failed_tasks.append(outcome)
