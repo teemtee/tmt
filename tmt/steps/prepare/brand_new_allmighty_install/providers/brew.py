@@ -11,5 +11,5 @@ class BrewProvider(KojiProvider):
     Brew builds are just a special case of Koji builds
     """
 
-    def __init__(self, logger: tmt.log.Logger):
-        super().__init__(logger)
+    def __init__(self, logger: tmt.log.Logger, artifact_id: str):
+        super().__init__(logger, artifact_id)
