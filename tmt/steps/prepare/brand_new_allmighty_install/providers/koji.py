@@ -3,62 +3,35 @@ Koji Artifact Provider
 """
 
 from collections.abc import Iterator
-from re import Pattern
 
 import tmt.log
 from tmt.steps.prepare.brand_new_allmighty_install.providers import (
     ArtifactInfo,
     ArtifactProvider,
     ArtifactType,
-    BuildInfo,
 )
+from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path
 
 
 class KojiProvider(ArtifactProvider):
-    def __init__(self, logger: tmt.log.Logger):
-        super().__init__(logger)
+    def __init__(self, logger: tmt.log.Logger, artifact_id: str):
+        super().__init__(logger, artifact_id)
 
-    def get_build(self, build_id: int) -> BuildInfo:
-        try:
-            # build_info = KojiSession.getBuild(build_id) TODO: sort Koji session details
-            return BuildInfo(build_id)
-        except Exception as err:
-            """
-            TODO: Do a better job at handling different Exceptions
-            => BuildError, BuildNotFoundError...
-            """
-            raise GeneralError(f"Failed to get build info for build ID {build_id}: {err}")
+    def _parse_artifact_id(self, artifact_id: str) -> str:
+        # Eg: 'koji.build:123456'
+        if not artifact_id.startswith("koji.build:"):
+            raise ValueError(f"Invalid artifact ID format: {artifact_id}")
+        return artifact_id[len("koji.build:") :]
 
-    def list_artifacts(self, build_id: int) -> Iterator[ArtifactInfo]:
+    def list_artifacts(self) -> Iterator[ArtifactInfo]:
         try:
             # artifacts = KojiSession.listRPMs(build_id) TODO: sort Koji session details
             yield ArtifactInfo(name="example.rpm", type=ArtifactType.RPM)
             yield ArtifactInfo(name="example.container", type=ArtifactType.CONTAINER)
         except Exception as err:
-            raise GeneralError(f"Failed to list artifacts for build ID {build_id}: {err}")
+            raise GeneralError(f"Failed to list artifacts for build {self.artifact_id}: {err}")
 
-    def download_artifact(
-        self,
-        build_id: int,
-        download_path: Path,
-        exclude_patterns: list[Pattern[str]],
-        skip_install: bool = True,
-    ) -> list[Path]:
-        self.logger.info(f"Downloading artifacts to {download_path!s}")
-        artifacts = self.list_artifacts(build_id)
-        downloaded_paths: list[Path] = []
-
-        for artifact in artifacts:
-            local_path = download_path / artifact.name
-            self.logger.debug(f"Downloading {artifact.name} to {local_path!s}")
-            # TODO: Implement actual download logic
-            downloaded_paths.append(local_path)
-            self.logger.info(f"Downloaded {artifact.name}")
-
-        self.logger.info(f"Successfully downloaded {len(downloaded_paths)} artifacts")
-        return downloaded_paths
-
-    def install_artifact(self, artifact_path: Path) -> None:
-        # TODO: Implement actual install logic
-        raise NotImplementedError("Artifact installation is not supported.")
+    def _download_artifact(self, guest: Guest, destination: Path) -> Path:
+        # TODO: Implement actual download logic
+        return destination
