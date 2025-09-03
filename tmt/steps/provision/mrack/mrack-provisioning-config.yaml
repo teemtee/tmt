@@ -51,9 +51,17 @@ beaker:
     rhel-9.4-nightly: RHEL-9.4%
     rhel-9.5: RHEL-9.5%
     rhel-9.5-nightly: RHEL-9.5%
+    rhel-9.6: RHEL-9.6%
+    rhel-9.6-nightly: RHEL-9.6%
+    rhel-9.7: RHEL-9.7%
+    rhel-9.7-nightly: RHEL-9.7%
+    rhel-9.8: RHEL-9.8%
+    rhel-9.8-nightly: RHEL-9.8%
     rhel-10: RHEL-10.0%
     rhel-10.0: RHEL-10.0%
     rhel-10-nightly: RHEL-10.0%
+    rhel-10.1: RHEL-10.1%
+    rhel-10.1-nightly: RHEL-10.1%
     fedora-30: Fedora-30%
     fedora-31: Fedora-31%
     fedora-32: Fedora-32%
@@ -67,8 +75,10 @@ beaker:
     fedora-40: Fedora-40%
     fedora-41: Fedora-41%
     fedora-42: Fedora-42%
-    fedora-latest: Fedora-41%
-    fedora: Fedora-41%
+    fedora-43: Fedora-43%
+    fedora-44: Fedora-44%
+    fedora-latest: Fedora-42%
+    fedora: Fedora-42%
     fedora-rawhide: Fedora-Rawhide-%
 
   distro_variants:
@@ -91,6 +101,8 @@ beaker:
     Fedora-40%: Server
     Fedora-41%: Server
     Fedora-42%: Server
+    Fedora-43%: Server
+    Fedora-44%: Server
 
   distro_tags:
     RHEL-9.0%:
