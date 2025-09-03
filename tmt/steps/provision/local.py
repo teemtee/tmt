@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 import tmt
 import tmt.base
@@ -150,29 +150,7 @@ class GuestLocal(tmt.Guest):
 
     def install_scripts(self, scripts: Sequence[tmt.steps.scripts.Script]) -> None:
         """Install scripts required by tmt"""
-
-        # Make sure scripts directory exists
-        command = Command("mkdir", "-p", f"{self.scripts_path}")
-
-        if not self.facts.is_superuser:
-            command = Command("sudo") + command
-
-        self.execute(command, silent=True)
-
-        # Install all scripts on local guest
-        for script in scripts:
-            if not script.enabled(self):
-                continue
-
-            with script as source:
-                for filename in [script.source_filename, *script.aliases]:
-                    destination = script.destination_path or self.scripts_path / filename
-
-                    # Copy file and set permissions
-                    install_cmd = Command('install', '-p', '-m', '755', source, destination)
-                    if not self.facts.is_superuser:
-                        install_cmd = Command('sudo') + install_cmd
-                    self.execute(install_cmd, silent=True)
+        super().install_scripts(scripts)
 
     def start(self) -> None:
         """
@@ -212,8 +190,31 @@ class GuestLocal(tmt.Guest):
         superuser: bool = False,
     ) -> None:
         """
-        Nothing to be done to push workdir
+        Push files to local guest
         """
+        if not source:
+            raise tmt.utils.GeneralError('The source is not defined.')
+
+        if not destination:
+            raise tmt.utils.GeneralError('The destination is not defined.')
+
+        # For local guest, check source and destination are not workdir
+        parent = cast(Provision, self.parent)
+        assert parent.plan.workdir is not None
+
+        if parent.plan.workdir.resolve() in (source.resolve(), destination.resolve()):
+            return
+
+        # Prepare options and the push command
+        options = options or DEFAULT_RSYNC_PUSH_OPTIONS
+
+        cmd = Command()
+        if superuser and self.facts.is_superuser is not True:
+            cmd += Command('sudo')
+
+        cmd += Command('rsync', *options, source, destination)
+
+        self.execute(cmd, silent=True)
 
     def pull(
         self,
