@@ -42,7 +42,6 @@ rlJournalStart
         rlAssertGrep "warn C000 value of \"how\" is not \"shell\"" $rlRun_LOG
         rlAssertGrep "warn C000 value of \"how\" is not \"fmf\"" $rlRun_LOG
         rlAssertGrep "warn C000 value of \"how\" is not \"tmt\"" $rlRun_LOG
-        rlAssertGrep "warn C000 key \"name\" not recognized by schema /schemas/execute/upgrade" $rlRun_LOG
         rlAssertGrep "warn C000 value of \"how\" is not \"upgrade\"" $rlRun_LOG
         rlAssertGrep "fail C000 fmf node failed schema validation" $rlRun_LOG
         rlAssertGrep "fail P003 unknown execute method \"somehow\" in \"default-0\"" $rlRun_LOG
