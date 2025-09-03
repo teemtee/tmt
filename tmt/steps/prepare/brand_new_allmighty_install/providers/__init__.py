@@ -24,6 +24,9 @@ class ArtifactInfo:  # TODO: Gather artifact metadata
     name: str
     type: ArtifactType
 
+    def __str__(self) -> str:
+        return self.name
+
 
 class ArtifactProvider(ABC):
     def __init__(self, logger: tmt.log.Logger, artifact_id: str):
@@ -51,7 +54,7 @@ class ArtifactProvider(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _download_artifact(self, guest: Guest, destination: Path) -> Path:
+    def _download_artifact(self, artifact: ArtifactInfo, guest: Guest, destination: Path) -> Path:
         """
         Download a single artifact to the specified destination.
 
@@ -61,7 +64,6 @@ class ArtifactProvider(ABC):
         """
         raise NotImplementedError
 
-    @abstractmethod
     def download_artifacts(
         self,
         guest: Guest,
@@ -75,24 +77,26 @@ class ArtifactProvider(ABC):
         :param download_path: The local path to save the downloaded artifact.
         :param exclude_patterns: Patterns to exclude certain files from being downloaded.
         :returns: A list of paths to the downloaded artifacts.
+        :raises Exception: Errors during individual artifact downloads are
+            caught, logged as warnings, and ignored.
         """
         self.logger.info(f"Downloading artifacts to {download_path!s}")
         downloaded_paths: list[Path] = []
         artifact_count = 0
 
         for artifact in self._filter_artifacts(exclude_patterns):
-            local_path = download_path / artifact.name
-            self.logger.debug(f"Downloading {artifact.name} to {local_path}")
+            local_path = download_path / str(artifact)
+            self.logger.debug(f"Downloading {artifact} to {local_path}")
 
             try:
-                downloaded_path = self._download_artifact(guest, local_path)
+                downloaded_path = self._download_artifact(artifact, guest, local_path)
                 downloaded_paths.append(downloaded_path)
                 artifact_count += 1
-                self.logger.info(f"Downloaded {artifact.name}")
+                self.logger.info(f"Downloaded {artifact} to {downloaded_path}")
 
             except Exception as err:
                 # Warn about the failed download and move on
-                self.logger.warning(f"Failed to download {artifact.name}: {err}")
+                self.logger.warning(f"Failed to download {artifact}: {err}")
 
         self.logger.info(f"Successfully downloaded {artifact_count} artifacts")
         return downloaded_paths
