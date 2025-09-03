@@ -8,3 +8,12 @@
             cpu:
                 model-name: dummy
                 processors: 6
+            or:
+              - device:
+                  driver: ahci
+              - device:
+                  driver: uhci
+              - disk:
+                  driver: foo
+              - disk:
+                  driver: bar

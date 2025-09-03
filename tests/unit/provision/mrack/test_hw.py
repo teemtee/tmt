@@ -117,7 +117,21 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                     {'cpu': {'hyper': {'_op': '==', '_value': 'True'}}},
                 ]
             },
-            {'and': [{}, {}, {}, {}, {}]},
+            {
+                'and': [
+                    {},
+                    {},
+                    {},
+                    {},
+                    {
+                        'key_value': {
+                            '_key': 'MODULE',
+                            '_op': '==',
+                            '_value': 'mc',
+                        },
+                    },
+                ],
+            },
             {'and': [{}, {}, {}, {}, {}]},
             {'system': {'memory': {'_op': '==', '_value': '8192'}}},
             {
