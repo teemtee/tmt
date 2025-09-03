@@ -139,6 +139,8 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
             )
 
         if self.soft_reboot is not None:
+            self.debug(f"Soft reboot using the soft reboot command '{self.soft_reboot}'.")
+
             # ignore[union-attr]: mypy still considers `self.soft_reboot` as possibly
             # being `None`, missing the explicit check above.
             return self.perform_reboot(
