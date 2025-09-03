@@ -132,14 +132,9 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
             )
 
         if command is not None:
-            reboot_command = command
-
-            if str(command) == str(tmt.steps.DEFAULT_REBOOT_COMMAND) and self.become:
-                reboot_command = ShellScript(f'sudo {reboot_command}')
-
             return super().reboot(
                 hard=False,
-                command=reboot_command,
+                command=command,
                 waiting=waiting,
             )
 

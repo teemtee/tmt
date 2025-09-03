@@ -29,7 +29,7 @@ rlJournalStart
         # Test reboot with non-root user using become (should apply sudo)
         rlRun -s "tmt -vv run --scratch -i $run_connect $provision reboot --step provision"
         rlAssertGrep "Reboot finished" $rlRun_LOG
-        rlAssertGrep "sudo reboot" $rlRun_LOG
+        rlAssertGrep "sudo /bin/bash -c reboot" $rlRun_LOG
 
         # Test reboot without become (should fail for non-root user)
         provision_no_become="provision -h connect --guest localhost --port $guest_port --key $guest_key --user $guest_user"
