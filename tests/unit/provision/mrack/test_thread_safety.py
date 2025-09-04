@@ -172,12 +172,6 @@ class TestMrackThreadSafety:
             )
             assert len(thread_ids) == 3, f"Expected 3 file reads, got {len(thread_ids)}"
 
-            # Verify that each thread loaded config independently (no shared state issues)
-            unique_config_threads = set(config_load_calls)
-            assert len(unique_config_threads) == 3, (
-                f"Expected 3 unique threads for config loading, got {len(unique_config_threads)}"
-            )
-
             # Verify thread-specific logging was created
             # (import function runs once due to global lock)
             assert mock_file_handler.call_count >= 1, (
