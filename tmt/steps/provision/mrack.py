@@ -6,7 +6,6 @@ import importlib.metadata
 import logging
 import re
 import threading
-from collections.abc import Mapping
 from contextlib import suppress
 from functools import wraps
 from typing import Any, Callable, Optional, TypedDict, TypeVar, Union, cast
