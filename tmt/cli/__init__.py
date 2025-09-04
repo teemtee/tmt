@@ -72,6 +72,8 @@ class ContextObject:
     cli_context: 'Context'
 
     logger: tmt.log.Logger
+    print: tmt.log.Print
+
     common: tmt.utils.Common
     fmf_context: tmt.utils.FmfContext
     tree: tmt.Tree

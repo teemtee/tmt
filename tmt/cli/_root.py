@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, Any, Optional
 import click
 import fmf
 import fmf.utils
-from click import echo
 
 import tmt
 import tmt._bootstrap
@@ -34,7 +33,6 @@ import tmt.utils.jira
 from tmt.cli import CliInvocation, Context, ContextObject, CustomGroup, pass_context
 from tmt.options import Deprecated, create_options_decorator, option
 from tmt.utils import Command, GeneralError, Path, effective_workdir_root
-from tmt.utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.steps.cleanup
@@ -232,6 +230,7 @@ def main(
     click_contex.obj = ContextObject(
         cli_context=click_contex,
         logger=logger,
+        print=logger.print,
         common=tmt.utils.Common(logger=logger),
         fmf_context=tmt.utils.FmfContext.from_spec('cli', context, logger),
         steps=set(),
@@ -559,7 +558,7 @@ def tests_show(context: Context, /, **kwargs: Any) -> None:
 
     for test in context.obj.tree.tests(logger=logger):
         test.show()
-        echo()
+        context.obj.print()
 
 
 _script_templates = fmf.utils.listed(tmt.templates.MANAGER.templates['script'], join='or')
@@ -806,7 +805,7 @@ def tests_import(
         if not dry:
             tmt.convert.write(common_path, common)
         else:
-            echo(style(f"Metadata would be stored into '{common_path}'.", fg='magenta'))
+            context.obj.print(f"Metadata would be stored into '{common_path}'.", color='magenta')
         # Store individual data (as virtual tests)
         for testcase in individual:
             if nitrate and testcase.get('extra-nitrate'):
@@ -821,7 +820,9 @@ def tests_import(
             if not dry:
                 tmt.convert.write(testcase_path, testcase)
             else:
-                echo(style(f"Metadata would be stored into '{testcase_path}'.", fg='magenta'))
+                context.obj.print(
+                    f"Metadata would be stored into '{testcase_path}'.", color='magenta'
+                )
         # Adjust runtest.sh content and permission if needed
         if not dry:
             tmt.convert.adjust_runtest(path / 'runtest.sh')
@@ -987,7 +988,7 @@ def tests_export(
         )
 
     if kwargs.get('fmf_id'):
-        echo(
+        context.obj.print(
             tmt.base.FmfId.export_collection(
                 collection=[test.fmf_id for test in context.obj.tree.tests()],
                 format=how,
@@ -1003,7 +1004,7 @@ def tests_export(
         for policy in policies:
             policy.apply_to_tests(tests=tests, logger=context.obj.logger)
 
-        echo(
+        context.obj.print(
             tmt.Test.export_collection(
                 collection=tests,
                 format=how,
@@ -1094,7 +1095,7 @@ def plans_show(context: Context, /, **kwargs: Any) -> None:
 
     for plan in context.obj.tree.plans(logger=logger):
         plan.show()
-        echo()
+        context.obj.print()
 
 
 _plan_templates = fmf.utils.listed(tmt.templates.MANAGER.templates['plan'], join='or')
@@ -1233,7 +1234,7 @@ def plans_export(
 
         how = format
 
-    echo(
+    context.obj.print(
         tmt.Plan.export_collection(
             collection=context.obj.tree.plans(),
             format=how,
@@ -1366,7 +1367,7 @@ def stories_show(
             uncovered,
         ):
             story.show()
-            echo()
+            context.obj.print()
 
 
 _story_templates = fmf.utils.listed(tmt.templates.MANAGER.templates['story'], join='or')
@@ -1450,7 +1451,7 @@ def stories_coverage(
         Format simple header/footer
         """
 
-        echo(style(text.rjust(4) + ' ', fg='blue'), nl=False)
+        context.obj.print(text.rjust(4) + ' ', color='blue', nl=False)
 
     header = False
     total = code_coverage = test_coverage = docs_coverage = 0
@@ -1478,7 +1479,7 @@ def stories_coverage(
             if docs:
                 headfoot('docs')
             headfoot('story')
-            echo()
+            context.obj.print()
             header = True
         # Show individual stats
         status = story.coverage(code, test, docs)
@@ -1496,7 +1497,7 @@ def stories_coverage(
     if docs:
         headfoot(f'{round(100 * docs_coverage / total)}%')
     headfoot(f"from {fmf.utils.listed(total, 'story')}")
-    echo()
+    context.obj.print()
 
 
 _story_export_formats = list(tmt.Story.get_export_plugin_registry().iter_plugin_ids())
@@ -1582,7 +1583,7 @@ def stories_export(
         )
     ]
 
-    echo(
+    context.obj.print(
         tmt.Story.export_collection(
             collection=stories, format=how, template=Path(template) if template else None
         )
@@ -1697,20 +1698,20 @@ def clean(
     if last and id_:
         raise tmt.utils.GeneralError("Options --last and --id cannot be used together.")
 
-    context.obj.clean_logger = context.obj.logger.descend(
+    logger = context.obj.clean_logger = context.obj.logger.descend(
         logger_name='clean', extra_shift=0
     ).apply_verbosity_options(**kwargs)
 
-    echo(style('clean', fg='red'))
+    logger.print('clean', color='red')
     clean_obj = tmt.Clean(
-        logger=context.obj.clean_logger,
+        logger=logger,
         parent=context.obj.common,
         cli_invocation=CliInvocation.from_context(context),
     )
     context.obj.clean = clean_obj
     exit_code = 0
     if context.invoked_subcommand is None:
-        assert context.obj.clean_logger is not None  # narrow type
+        assert logger is not None  # narrow type
         workdir_root = effective_workdir_root(workdir_root)
         if not workdir_root.exists():
             raise tmt.utils.GeneralError(
@@ -1719,9 +1720,9 @@ def clean(
         # Create another level to the hierarchy so that logging indent is
         # consistent between the command and subcommands
         clean_obj = tmt.Clean(
-            logger=context.obj.clean_logger.descend(
-                logger_name='clean', extra_shift=0
-            ).apply_verbosity_options(**kwargs),
+            logger=logger.descend(logger_name='clean', extra_shift=0).apply_verbosity_options(
+                **kwargs
+            ),
             parent=clean_obj,
             cli_invocation=CliInvocation.from_context(context),
             workdir_root=workdir_root,
