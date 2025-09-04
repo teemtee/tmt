@@ -3,7 +3,8 @@
 
 rlJournalStart
     rlPhaseStartSetup
-        rlRun "export TMT_SCRIPTS_DIR=/var/tmp/helper/scripts"
+        rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
+        rlRun "export TMT_SCRIPTS_DIR=$tmp"
         rlRun "pushd data"
     rlPhaseEnd
 
@@ -12,7 +13,7 @@ rlJournalStart
         rlRun "tmt --feeling-safe run provision plan -n script"
 
         # Check if the script was installed in the default location
-        script_path="/var/tmp/helper/scripts/tmt-abort"
+        script_path="$tmp/tmt-abort"
         rlAssertExists "$script_path"
 
         # Check if the script is executable
