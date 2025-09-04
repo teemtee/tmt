@@ -207,7 +207,7 @@ man = [
     "tail -n+8 docs/overview.rst >> {root}/man.rst",
     # TODO rst2man cannot process this directive, removed for now
     "sed '/versionadded::/d' -i {root}/man.rst",
-    "rst2man.py {root}/man.rst > {root}/docs/tmt.1",
+    "rst2man.py {root}/man.rst > {root}/tmt.1",
     "rm -f {root}/man.rst",
     ]
 
@@ -463,7 +463,7 @@ markers = [
 [tool.codespell]
 ignore-words = "docs/codespell.dic"
 exclude-file = "docs/codespell.ignore"
-skip = "tests/execute/weird/data/weird.txt,tests/lint/plan/data/invalid_attr.fmf,tests/lint/plan/test.sh,docs/tmt.1"
+skip = "tests/execute/weird/data/weird.txt,tests/lint/plan/data/invalid_attr.fmf,tests/lint/plan/test.sh"
 
 [tool.djlint]
 use_gitignore=true
