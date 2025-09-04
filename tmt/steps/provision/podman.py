@@ -503,6 +503,7 @@ class GuestContainer(tmt.Guest):
             self.podman(
                 Command(
                     "cp",
+                    f"--archive={'false' if options and options.preserve_ownership else 'true'}",
                     f"{container_name}:{source}" if container_name else source,
                     f"{self.container}:{destination}",
                 )

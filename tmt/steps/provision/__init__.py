@@ -340,6 +340,9 @@ class TransferOptions:
     #: Copy symlinks as symlinks
     links: bool = False
 
+    #: Preserve file ownership (user and group)
+    preserve_ownership: bool = False
+
     #: Preserve file permissions
     preserve_perms: bool = False
 
@@ -372,6 +375,8 @@ class TransferOptions:
             options.append('--links')
         if self.protect_args:
             options.append('-s')
+        if self.preserve_ownership:
+            options += ['-o', '-g']
         if self.preserve_perms:
             options.append('-p')
         if self.recursive:
