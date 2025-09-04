@@ -23,5 +23,6 @@ rlJournalStart
 
     rlPhaseStartCleanup
         rlRun "popd"
+        rlRun "rm -r $tmp" 0 "Remove tmp directory"
     rlPhaseEnd
 rlJournalEnd
