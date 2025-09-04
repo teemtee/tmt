@@ -305,10 +305,10 @@ def _transform_unsupported(constraint: tmt.hardware.Constraint) -> dict[str, Any
     return {}
 
 
-def _get_registry_from_url(image_url: str) -> str:
+def _get_registry_from_url(bootc_image_url: str) -> str:
     """Extract registry from image URL"""
     # Handle quay.io/repo/image:tag -> quay.io
-    return image_url.split('/')[0] if '/' in image_url else image_url
+    return bootc_image_url.split('/')[0] if '/' in bootc_image_url else bootc_image_url
 
 
 def _translate_constraint_by_config(
@@ -964,7 +964,7 @@ def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
                 )
                 ks_list = [
                     f"""
-ostreecontainer --url {host.image_url}
+ostreecontainer --url {host.bootc_image_url}
 %pre
 #!/bin/sh
 cat > /etc/ostree/auth.json <<EOF
@@ -978,9 +978,9 @@ EOF
                     {
                         "name": "/distribution/check-system",
                         "role": "None",
-                        "fetch_url": f"{host.check_system_url}",
+                        "fetch_url": f"{host.bootc_check_system_url}",
                         "params": [
-                            f"""BOOTC_IMAGE_URL={host.image_url}""",
+                            f"""BOOTC_IMAGE_URL={host.bootc_image_url}""",
                         ],
                     },
                 ]
@@ -1125,31 +1125,21 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              """,
     )
 
-    check_system_url: Optional[str] = field(
+    bootc_check_system_url: Optional[str] = field(
         default="https://gitlab.com/fedora/bootc/tests/bootc-beaker-test/-/archive/1.8/bootc-beaker-test-1.8.tar.gz#check-system",
-        option=('--check-system-url'),
+        option=('--bootc-check-system-url'),
         metavar='URL',
         help="""
              Url to check-system task, which is needed for bootc on beaker installation.
              """,
     )
 
-    image_url: Optional[str] = field(
+    bootc_image_url: Optional[str] = field(
         default=None,
-        option=('--image-url'),
-        metavar='IMAGE_URL',
+        option=('--bootc-image-url'),
+        metavar='URL',
         help="""
-             Select container image to be used to perform the installation.
-             Cannot be used with customize_image.
-             """,
-    )
-
-    distro_name: Optional[str] = field(
-        default=None,
-        option=('--distro-name'),
-        metavar='DISTRO_NAME',
-        help="""
-             Specify the distro name, which will be used for image building and bootc installation.
+             Select bootc image to be used to perform the installation.
              """,
     )
 
@@ -1167,7 +1157,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
         is_flag=True,
         option=('--bootc'),
         help="""
-             if set, bootc on beaker installation will be performed.
+             If set, bootc on beaker installation will be performed.
              """,
     )
 
@@ -1211,9 +1201,9 @@ class CreateJobParameters:
     public_key: list[str]
     group: Optional[str]
     auth_dict: Optional[str]
-    image_url: Optional[str]
+    bootc_image_url: Optional[str]
     bootc: Optional[bool]
-    check_system_url: Optional[str]
+    bootc_check_system_url: Optional[str]
 
     def to_mrack(self) -> dict[str, Any]:
         data = dataclasses.asdict(self)
@@ -1437,8 +1427,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         """Create authentication dictionary with proper credential handling"""
         if not self.data.bootc_secret:
             return {}
-        assert self.data.image_url
-        base_repo = _get_registry_from_url(self.data.image_url)
+        assert self.data.bootc_image_url
+        base_repo = _get_registry_from_url(self.data.bootc_image_url)
         # Support multiple registries
         return {"auths": {base_repo: {"auth": self.data.bootc_secret}}}
 
@@ -1463,9 +1453,9 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             public_key=self.public_key,
             group=self.beaker_job_group,
             auth_dict=auth_dict_str,
-            image_url=self.data.image_url,
+            bootc_image_url=self.data.bootc_image_url,
             bootc=self.data.bootc,
-            check_system_url=self.data.check_system_url,
+            bootc_check_system_url=self.data.bootc_check_system_url,
         )
 
         if self.is_dry_run:
@@ -1748,13 +1738,9 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
 
     def _validate_bootc_configuration(self) -> None:
         """Comprehensive bootc configuration validation"""
-        if not (self.data.bootc_secret and self.data.distro_name):
-            raise tmt.utils.ProvisionError(
-                "bootc_secret and distro_name are needed for bootc on beaker installation."
-            )
+
         # Required fields validation
-        # bootc_secret and distro_name are needed for bootc on beaker installation
-        required_fields = ['bootc_secret', 'distro_name', 'image_url']
+        required_fields = ['bootc_secret', 'image', 'bootc_image_url']
 
         missing_fields = [field for field in required_fields if not getattr(self.data, field)]
         if missing_fields:
@@ -1763,10 +1749,12 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
             )
 
         # Validate image URLs
-        if self.data.image_url and not self._is_valid_image_url(self.data.image_url):
-            raise tmt.utils.ProvisionError(f"Invalid image URL: {self.data.image_url}")
+        if self.data.bootc_image_url and not self._is_valid_bootc_image_url(
+            self.data.bootc_image_url
+        ):
+            raise tmt.utils.ProvisionError(f"Invalid image URL: {self.data.bootc_image_url}")
 
-    def _is_valid_image_url(self, url: str) -> bool:
+    def _is_valid_bootc_image_url(self, url: str) -> bool:
         """Validate container image URL format"""
         pattern = r'^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*:[a-zA-Z0-9._-]+$'
         return bool(re.match(pattern, url))
