@@ -5,7 +5,6 @@ Abstract base class for artifact providers.
 import enum
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
-from datetime import datetime
 from re import Pattern
 
 import tmt.log
@@ -30,17 +29,7 @@ class DownloadError(GeneralError):
 class ArtifactInfo:
     id: int
     name: str
-    type: ArtifactType
-    arch: str
-    version: str
-    release: str
-    epoch: int
-    draft: bool
-    payloadhash: str
-    size: int
-    buildtime: datetime  # or int?
-    build_id: int
-    buildroot_id: int
+    location: str
 
     def __str__(self) -> str:
         return self.name
@@ -66,8 +55,6 @@ class ArtifactProvider(ABC):
     def list_artifacts(self) -> Iterator[ArtifactInfo]:
         """
         List all available artifacts for a given build
-
-        :param build_id: The ID of the build to list artifacts for.
         """
         raise NotImplementedError
 
@@ -127,7 +114,6 @@ class ArtifactProvider(ABC):
         """
         Filter artifacts based on exclude patterns.
 
-        :param build_id: The ID of the build to filter artifacts for.
         :param exclude_patterns: The patterns to exclude.
         :yields: Artifacts that do not match any of the exclude patterns.
         """
