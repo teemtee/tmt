@@ -50,6 +50,7 @@ from tmt.container import (
     simple_field,
 )
 from tmt.options import option
+from tmt.steps.provision import TransferOptions
 from tmt.utils import (
     DEFAULT_NAME,
     Environment,
@@ -2587,7 +2588,7 @@ class Topology(SerializableContainer):
             guest.push(
                 source=filepath,
                 destination=filepath,
-                options=["-s", "-p", "--chmod=755"],
+                options=TransferOptions(protect_args=True, preserve_perms=True, chmod=0o755),
             )
 
             if filepath.suffix == '.sh':

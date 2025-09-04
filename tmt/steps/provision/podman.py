@@ -9,7 +9,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
-from tmt.steps.provision import GuestCapability
+from tmt.steps.provision import GuestCapability, TransferOptions
 from tmt.utils import (
     Command,
     OnProcessEndCallback,
@@ -468,7 +468,7 @@ class GuestContainer(tmt.Guest):
         self,
         source: Optional[Path] = None,
         destination: Optional[Path] = None,
-        options: Optional[list[str]] = None,
+        options: Optional[TransferOptions] = None,
         superuser: bool = False,
     ) -> None:
         """
@@ -512,8 +512,7 @@ class GuestContainer(tmt.Guest):
         self,
         source: Optional[Path] = None,
         destination: Optional[Path] = None,
-        options: Optional[list[str]] = None,
-        extend_options: Optional[list[str]] = None,
+        options: Optional[TransferOptions] = None,
     ) -> None:
         """
         Nothing to be done to pull workdir

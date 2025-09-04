@@ -316,14 +316,91 @@ def _socket_path_hash(
     return None
 
 
-# Default rsync options
-DEFAULT_RSYNC_OPTIONS = ["-s", "-R", "-r", "-z", "--links", "--safe-links", "--delete"]
-
-DEFAULT_RSYNC_PUSH_OPTIONS = ["-s", "-R", "-r", "-z", "--links", "--safe-links", "--delete"]
-DEFAULT_RSYNC_PULL_OPTIONS = ["-s", "-R", "-r", "-z", "--links", "--safe-links", "--protect-args"]
-
 #: A pattern to extract ``btime`` from ``/proc/stat`` file.
 STAT_BTIME_PATTERN = re.compile(r'btime\s+(\d+)')
+
+
+@container
+class TransferOptions:
+    """Options for transferring files to/from the guest."""
+
+    #: Apply permissions to the destination files
+    chmod: Optional[int] = None
+
+    #: Enable compression during transfer
+    compress: bool = False
+
+    #: Delete extraneous files from destination directory
+    delete: bool = False
+
+    #: Exclude files matching any of these patterns
+    exclude: list[str] = field(default_factory=list, normalize=tmt.utils.normalize_string_list)
+
+    #: Copy symlinks as symlinks
+    links: bool = False
+
+    #: Preserve file permissions
+    preserve_perms: bool = False
+
+    #: Protect file and directory names from interpretation
+    protect_args: bool = False
+
+    #: Recurse into directories
+    recursive: bool = False
+
+    #: Use relative paths
+    relative: bool = False
+
+    #: Ignore symlinks that point outside the source tree
+    safe_links: bool = False
+
+    def to_rsync(self) -> list[str]:
+        """Convert to rsync command line options."""
+
+        options = []
+
+        if self.chmod:
+            options.append(f'--chmod={oct(self.chmod)[2:]}')
+        if self.compress:
+            options.append('-z')
+        if self.delete:
+            options.append('--delete')
+        if self.exclude:
+            options += [f'--exclude {pattern}' for pattern in self.exclude]
+        if self.links:
+            options.append('--links')
+        if self.protect_args:
+            options.append('-s')
+        if self.preserve_perms:
+            options.append('-p')
+        if self.recursive:
+            options.append('-r')
+        if self.relative:
+            options.append('-R')
+        if self.safe_links:
+            options.append('--safe-links')
+
+        return options
+
+
+DEFAULT_PUSH_OPTIONS = TransferOptions(
+    protect_args=True,
+    relative=True,
+    recursive=True,
+    compress=True,
+    links=True,
+    safe_links=True,
+    delete=True,
+)
+
+DEFAULT_PULL_OPTIONS = TransferOptions(
+    protect_args=True,
+    relative=True,
+    recursive=True,
+    compress=True,
+    links=True,
+    safe_links=True,
+)
 
 
 # Note: returns a static list, but we cannot make it a mere list,
@@ -1414,7 +1491,7 @@ class Guest(tmt.utils.Common):
                     self.push(
                         source=source,
                         destination=script.destination_path or self.scripts_path / filename,
-                        options=["-p", "--chmod=755"],
+                        options=TransferOptions(preserve_perms=True, chmod=0o755),
                         superuser=self.facts.is_superuser is not True,
                     )
 
@@ -1793,7 +1870,7 @@ class Guest(tmt.utils.Common):
         self,
         source: Optional[Path] = None,
         destination: Optional[Path] = None,
-        options: Optional[list[str]] = None,
+        options: Optional[TransferOptions] = None,
         superuser: bool = False,
     ) -> None:
         """
@@ -1806,8 +1883,7 @@ class Guest(tmt.utils.Common):
         self,
         source: Optional[Path] = None,
         destination: Optional[Path] = None,
-        options: Optional[list[str]] = None,
-        extend_options: Optional[list[str]] = None,
+        options: Optional[TransferOptions] = None,
     ) -> None:
         """
         Pull files from the guest
@@ -2638,7 +2714,7 @@ class GuestSsh(Guest):
         self,
         source: Optional[Path] = None,
         destination: Optional[Path] = None,
-        options: Optional[list[str]] = None,
+        options: Optional[TransferOptions] = None,
         superuser: bool = False,
     ) -> None:
         """
@@ -2652,8 +2728,8 @@ class GuestSsh(Guest):
             If not set, plan workdir is uploaded.
         :param destination: if set, content will be uploaded to this
             path. If not set, root (``/``) is used.
-        :param options: custom ``rsync`` options to use instead of
-            :py:data:`DEFAULT_RSYNC_PUSH_OPTIONS`.
+        :param options: custom transfer options to use instead of
+            :py:data:`DEFAULT_PUSH_OPTIONS`.
         :param superuser: if set, use ``sudo`` if :py:attr:`user` is not
             privileged. It is necessary for pushing to locations that
             only privileged users are allowed to modify.
@@ -2666,7 +2742,7 @@ class GuestSsh(Guest):
         self._assert_rsync()
 
         # Prepare options and the push command
-        options = options or DEFAULT_RSYNC_PUSH_OPTIONS
+        options = options or DEFAULT_PUSH_OPTIONS
         if destination is None:
             destination = Path("/")
         if source is None:
@@ -2686,7 +2762,7 @@ class GuestSsh(Guest):
             cmd += ['--rsync-path', 'sudo rsync']
 
         cmd += [
-            *options,
+            *options.to_rsync(),
             "-e",
             self._ssh_command.to_element(),
             source,
@@ -2707,8 +2783,7 @@ class GuestSsh(Guest):
         self,
         source: Optional[Path] = None,
         destination: Optional[Path] = None,
-        options: Optional[list[str]] = None,
-        extend_options: Optional[list[str]] = None,
+        options: Optional[TransferOptions] = None,
     ) -> None:
         """
         Pull files from the guest.
@@ -2721,10 +2796,8 @@ class GuestSsh(Guest):
             guest. If not set, plan workdir is downloaded.
         :param destination: if set, content will be downloaded to this
             path. If not set, root (``/``) is used.
-        :param options: custom ``rsync`` options to use instead of
-            :py:data:`DEFAULT_RSYNC_PULL_OPTIONS`.
-        :param extend_options: custom ``rsync`` options to use in
-            addition to :py:data:`DEFAULT_RSYNC_PULL_OPTIONS`.
+        :param options: custom transfer options to use instead of
+            :py:data:`DEFAULT_PULL_OPTIONS`.
         """
 
         # Abort if guest is unavailable
@@ -2734,9 +2807,7 @@ class GuestSsh(Guest):
         self._assert_rsync()
 
         # Prepare options and the pull command
-        options = options or DEFAULT_RSYNC_PULL_OPTIONS
-        if extend_options is not None:
-            options.extend(extend_options)
+        options = options or DEFAULT_PULL_OPTIONS
         if destination is None:
             destination = Path("/")
         if source is None:
@@ -2754,7 +2825,7 @@ class GuestSsh(Guest):
             self._run_guest_command(
                 Command(
                     "rsync",
-                    *options,
+                    *options.to_rsync(),
                     "-e",
                     self._ssh_command.to_element(),
                     f"{self._ssh_guest}:{source}",

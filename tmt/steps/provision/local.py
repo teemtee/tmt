@@ -9,6 +9,7 @@ import tmt.steps.provision
 import tmt.steps.scripts
 import tmt.utils
 from tmt.container import container
+from tmt.steps.provision import TransferOptions
 from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
@@ -172,7 +173,7 @@ class GuestLocal(tmt.Guest):
         self,
         source: Optional[Path] = None,
         destination: Optional[Path] = None,
-        options: Optional[list[str]] = None,
+        options: Optional[TransferOptions] = None,
         superuser: bool = False,
     ) -> None:
         """
@@ -183,8 +184,7 @@ class GuestLocal(tmt.Guest):
         self,
         source: Optional[Path] = None,
         destination: Optional[Path] = None,
-        options: Optional[list[str]] = None,
-        extend_options: Optional[list[str]] = None,
+        options: Optional[TransferOptions] = None,
     ) -> None:
         """
         Nothing to be done to pull workdir

@@ -12,7 +12,7 @@ import tmt.utils
 import tmt.utils.git
 from tmt.container import container, field
 from tmt.steps import safe_filename
-from tmt.steps.provision import Guest
+from tmt.steps.provision import Guest, TransferOptions
 from tmt.utils import Command, EnvVarValue, ShellScript
 
 PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
@@ -150,7 +150,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 guest.push(
                     source=repo_path,
                     destination=repo_path,
-                    options=["-s", "-p", "--chmod=755"],
+                    options=TransferOptions(protect_args=True, preserve_perms=True, chmod=0o755),
                 )
 
         if not self.is_dry_run:
@@ -183,7 +183,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             guest.push(
                 source=prepare_wrapper_path,
                 destination=prepare_wrapper_path,
-                options=["-s", "-p", "--chmod=755"],
+                options=TransferOptions(protect_args=True, preserve_perms=True, chmod=0o755),
             )
             command: ShellScript
             if guest.become and not guest.facts.is_superuser:

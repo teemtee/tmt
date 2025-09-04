@@ -1,5 +1,5 @@
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import tmt.log
 import tmt.result
@@ -8,6 +8,7 @@ import tmt.steps.scripts
 import tmt.utils
 from tmt.frameworks import TestFramework, provides_framework
 from tmt.result import ResultOutcome, save_failures
+from tmt.steps import TransferOptions
 from tmt.utils import Environment, EnvVarValue, GeneralError, Path
 
 if TYPE_CHECKING:
@@ -115,8 +116,15 @@ class Beakerlib(TestFramework):
         )
 
     @classmethod
-    def get_pull_options(cls, invocation: 'TestInvocation', logger: tmt.log.Logger) -> list[str]:
-        return ['--exclude', str(invocation.path / "backup*")]
+    def get_pull_options(
+        cls,
+        invocation: 'TestInvocation',
+        existing_options: Optional[TransferOptions],
+        logger: tmt.log.Logger,
+    ) -> Optional[TransferOptions]:
+        options = existing_options or TransferOptions()
+        options.exclude.append(str(invocation.path / "backup*"))
+        return options
 
     @classmethod
     def extract_results(

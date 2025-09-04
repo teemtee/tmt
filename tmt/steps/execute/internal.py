@@ -22,7 +22,7 @@ from tmt.steps.execute import (
     TEST_OUTPUT_FILENAME,
     TestInvocation,
 )
-from tmt.steps.provision import Guest
+from tmt.steps.provision import DEFAULT_PULL_OPTIONS, Guest, TransferOptions
 from tmt.steps.report.display import ResultRenderer
 from tmt.utils import (
     Environment,
@@ -520,7 +520,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             guest.push(
                 source=test_wrapper_filepath,
                 destination=test_wrapper_filepath,
-                options=["-s", "-p", "--chmod=755"],
+                options=TransferOptions(protect_args=True, preserve_perms=True, chmod=0o755),
             )
 
             return test_wrapper_filepath
@@ -621,15 +621,16 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             if not invocation.is_guest_healthy:
                 return
 
+            options = test.test_framework.get_pull_options(
+                invocation, DEFAULT_PULL_OPTIONS, logger
+            )
+            if options is None:
+                options = DEFAULT_PULL_OPTIONS
+
+            options.exclude.append(str(invocation.path / TEST_OUTPUT_FILENAME))
+
             try:
-                guest.pull(
-                    source=invocation.path,
-                    extend_options=[
-                        *test.test_framework.get_pull_options(invocation, logger),
-                        '--exclude',
-                        str(invocation.path / TEST_OUTPUT_FILENAME),
-                    ],
-                )
+                guest.pull(source=invocation.path, options=options)
 
                 # Fetch plan data content as well in order to prevent
                 # losing logs if the guest becomes later unresponsive.
