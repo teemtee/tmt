@@ -6,6 +6,9 @@ import enum
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from re import Pattern
+from typing import Any
+
+from koji import ClientSession
 
 import tmt.log
 from tmt.container import container
@@ -29,15 +32,28 @@ class DownloadError(GeneralError):
 class ArtifactInfo:  # TODO: Gather artifact metadata
     name: str
     type: ArtifactType
+    arch: str
 
     def __str__(self) -> str:
         return self.name
 
 
 class ArtifactProvider(ABC):
-    def __init__(self, logger: tmt.log.Logger, artifact_id: str):
+    def __init__(self, logger: tmt.log.Logger, artifact_id: str, api_url: str):
         self.logger = logger
         self.artifact_id = self._parse_artifact_id(artifact_id)
+        self.api_url = api_url
+        self._session: ClientSession = self._initialize_session()
+
+    @abstractmethod
+    def _initialize_session(self) -> ClientSession:
+        """
+        Initialize the API session.
+
+        :return: The initialized API session
+        :raises GeneralError: If session initialization fails
+        """
+        raise NotImplementedError
 
     @abstractmethod
     def _parse_artifact_id(self, artifact_id: str) -> str:
@@ -69,6 +85,22 @@ class ArtifactProvider(ABC):
         :return: Path to the downloaded artifact
         """
         raise NotImplementedError
+
+    def _call_api(self, method: str, *args: Any, **kwargs: Any) -> Any:
+        """
+        Generic API call method with error handling.
+
+        :param method: API method name to call
+        :param args: Positional arguments for the API call
+        :param kwargs: Keyword arguments for the API call
+        :return: API response
+        :raises GeneralError: If API call fails
+        """
+        try:
+            method_callable = getattr(self._session, method)
+            return method_callable(*args, **kwargs)
+        except Exception as error:
+            raise GeneralError(f"API call {method} failed: {error}")
 
     def download_artifacts(
         self,
