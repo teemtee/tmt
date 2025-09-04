@@ -339,9 +339,6 @@ class TransferOptions:
     #: Copy symlinks as symlinks
     links: bool = False
 
-    #: Preserve file ownership (user and group)
-    preserve_ownership: bool = False
-
     #: Preserve file permissions
     preserve_perms: bool = False
 
@@ -356,6 +353,11 @@ class TransferOptions:
 
     #: Ignore symlinks that point outside the source tree
     safe_links: bool = False
+
+    def copy(self) -> 'TransferOptions':
+        """Create a copy of the options."""
+
+        return dataclasses.replace(self, exclude=self.exclude[:])
 
     def to_rsync(self) -> list[str]:
         """Convert to rsync command line options."""
@@ -374,8 +376,6 @@ class TransferOptions:
             options.append('--links')
         if self.protect_args:
             options.append('-s')
-        if self.preserve_ownership:
-            options += ['-o', '-g']
         if self.preserve_perms:
             options.append('-p')
         if self.recursive:

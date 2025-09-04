@@ -1,4 +1,3 @@
-import copy
 from typing import TYPE_CHECKING, Callable, Optional
 
 import tmt.log
@@ -117,7 +116,7 @@ class TestFramework:
             directory from the guest.
         """
 
-        return copy.deepcopy(options) if options else TransferOptions()
+        return options.copy() if options else TransferOptions()
 
     @classmethod
     def extract_results(

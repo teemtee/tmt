@@ -1,4 +1,4 @@
-import copy
+import dataclasses
 import re
 from typing import TYPE_CHECKING, Optional
 
@@ -123,9 +123,13 @@ class Beakerlib(TestFramework):
         options: Optional['TransferOptions'],
         logger: tmt.log.Logger,
     ) -> 'TransferOptions':
-        options = copy.deepcopy(options) if options else TransferOptions()
-        options.exclude.append(str(invocation.path / "backup*"))
-        return options
+        return (
+            dataclasses.replace(
+                options, exclude=[*options.exclude, str(invocation.path / "backup*")]
+            )
+            if options
+            else TransferOptions()
+        )
 
     @classmethod
     def extract_results(
