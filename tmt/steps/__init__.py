@@ -2151,7 +2151,7 @@ class Reboot(Action):
             default=None,
             help=f"""
             A command to run on the guest to trigger the reboot.
-            Default is '{DEFAULT_REBOOT_COMMAND}'.
+            Default is ``{DEFAULT_REBOOT_COMMAND}``.
             """,
         )
         def reboot(context: 'tmt.cli.Context', **kwargs: Any) -> None:
