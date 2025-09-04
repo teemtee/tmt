@@ -30,3 +30,6 @@ tier: 4
 /skip-tests:
     summary: Skip tests before and/or after upgrade
     test: ./skip-tests.sh
+    tag+:
+      - provision-only
+      - provision-virtual

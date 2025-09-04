@@ -12,7 +12,7 @@ rlJournalStart
         rlRun -s "tmt \
             --context distro=fedora-${PREVIOUS_VERSION} \
             --context upgrade-path="${UPGRADE_PATH}" \
-            run --id $run --scratch --rm -vvv --before finish \
+            run --id $run --scratch --rm -vvv --before cleanup \
             plan --name /plan/skip-tests/before" 0 "Run the upgrade test"
 
         # 0 test before + 3 upgrade tasks + 1 test after
@@ -25,7 +25,7 @@ rlJournalStart
         rlRun -s "tmt \
             --context distro=fedora-${PREVIOUS_VERSION} \
             --context upgrade-path="${UPGRADE_PATH}" \
-            run --id $run --scratch --rm -vvv --before finish \
+            run --id $run --scratch --rm -vvv --before cleanup \
             plan --name /plan/skip-tests/after" 0 "Run the upgrade test"
 
         # 1 test before + 3 upgrade tasks + 0 test after
@@ -35,7 +35,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun "tmt run --id $run finish" 0 "Stop the guest and remove the workdir"
+        rlRun "tmt run --id $run cleanup" 0 "Stop the guest and remove the workdir"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd
