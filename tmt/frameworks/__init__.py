@@ -1,14 +1,15 @@
+import copy
 from typing import TYPE_CHECKING, Callable, Optional
 
 import tmt.log
 import tmt.plugins
 import tmt.result
 import tmt.utils
-from tmt.steps.provision import TransferOptions
 
 if TYPE_CHECKING:
     from tmt.base import DependencySimple, Test
     from tmt.steps.execute import TestInvocation
+    from tmt.steps.provision import TransferOptions
 
 
 TestFrameworkClass = type['TestFramework']
@@ -102,23 +103,21 @@ class TestFramework:
     def get_pull_options(
         cls,
         invocation: 'TestInvocation',
-        existing_options: Optional[TransferOptions],
+        options: Optional['TransferOptions'],
         logger: tmt.log.Logger,
-    ) -> Optional[TransferOptions]:
+    ) -> 'TransferOptions':
         """
         Provide additional options for pulling test data directory.
 
         :param invocation: test invocation to which the check belongs to.
-        :param existing_options: options already specified by tmt, which
+        :param options: options already specified by tmt, which
             can be extended or overridden by the framework.
         :param logger: to use for logging.
         :returns: options the tmt would use to pull the test data
             directory from the guest.
         """
 
-        if existing_options:
-            return existing_options
-        return None
+        return copy.deepcopy(options) if options else TransferOptions()
 
     @classmethod
     def extract_results(

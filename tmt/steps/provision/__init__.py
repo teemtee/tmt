@@ -1,5 +1,6 @@
 import ast
 import contextlib
+import copy
 import dataclasses
 import enum
 import functools
@@ -366,7 +367,7 @@ class TransferOptions:
         if self.delete:
             options.append('--delete')
         if self.exclude:
-            options += [f'--exclude {pattern}' for pattern in self.exclude]
+            options += [f'--exclude={pattern}' for pattern in self.exclude]
         if self.links:
             options.append('--links')
         if self.protect_args:
@@ -2742,7 +2743,7 @@ class GuestSsh(Guest):
         self._assert_rsync()
 
         # Prepare options and the push command
-        options = options or DEFAULT_PUSH_OPTIONS
+        options = copy.deepcopy(options or DEFAULT_PUSH_OPTIONS)
         if destination is None:
             destination = Path("/")
         if source is None:
@@ -2807,7 +2808,7 @@ class GuestSsh(Guest):
         self._assert_rsync()
 
         # Prepare options and the pull command
-        options = options or DEFAULT_PULL_OPTIONS
+        options = copy.deepcopy(options or DEFAULT_PULL_OPTIONS)
         if destination is None:
             destination = Path("/")
         if source is None:

@@ -624,9 +624,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             options = test.test_framework.get_pull_options(
                 invocation, DEFAULT_PULL_OPTIONS, logger
             )
-            if options is None:
-                options = DEFAULT_PULL_OPTIONS
-
             options.exclude.append(str(invocation.path / TEST_OUTPUT_FILENAME))
 
             try:

@@ -50,7 +50,6 @@ from tmt.container import (
     simple_field,
 )
 from tmt.options import option
-from tmt.steps.provision import TransferOptions
 from tmt.utils import (
     DEFAULT_NAME,
     Environment,
@@ -69,7 +68,7 @@ if TYPE_CHECKING:
     import tmt.steps.execute
     from tmt.base import Plan
     from tmt.result import BaseResult, PhaseResult
-    from tmt.steps.provision import Guest
+    from tmt.steps.provision import Guest, TransferOptions
 
 
 DEFAULT_ALLOWED_HOW_PATTERN: Pattern[str] = re.compile(r'.*')

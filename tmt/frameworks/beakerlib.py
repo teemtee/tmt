@@ -1,3 +1,4 @@
+import copy
 import re
 from typing import TYPE_CHECKING, Optional
 
@@ -8,12 +9,12 @@ import tmt.steps.scripts
 import tmt.utils
 from tmt.frameworks import TestFramework, provides_framework
 from tmt.result import ResultOutcome, save_failures
-from tmt.steps import TransferOptions
 from tmt.utils import Environment, EnvVarValue, GeneralError, Path
 
 if TYPE_CHECKING:
     from tmt.base import DependencySimple, Test
     from tmt.steps.execute import TestInvocation
+    from tmt.steps.provision import TransferOptions
 
 
 BEAKERLIB_REPORT_RESULT_COMMAND = 'rhts-report-result'
@@ -119,10 +120,10 @@ class Beakerlib(TestFramework):
     def get_pull_options(
         cls,
         invocation: 'TestInvocation',
-        existing_options: Optional[TransferOptions],
+        options: Optional['TransferOptions'],
         logger: tmt.log.Logger,
-    ) -> Optional[TransferOptions]:
-        options = existing_options or TransferOptions()
+    ) -> 'TransferOptions':
+        options = copy.deepcopy(options) if options else TransferOptions()
         options.exclude.append(str(invocation.path / "backup*"))
         return options
 
