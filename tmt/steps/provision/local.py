@@ -9,7 +9,7 @@ import tmt.steps.provision
 import tmt.steps.scripts
 import tmt.utils
 from tmt.container import container
-from tmt.steps.provision import DEFAULT_RSYNC_PUSH_OPTIONS, Provision
+from tmt.steps.provision import Provision
 from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
@@ -205,16 +205,11 @@ class GuestLocal(tmt.Guest):
         if parent.plan.workdir.resolve() in (source.resolve(), destination.resolve()):
             return
 
-        # Prepare options and the push command
-        options = options or DEFAULT_RSYNC_PUSH_OPTIONS
-
-        cmd = Command()
-        if superuser and self.facts.is_superuser is not True:
-            cmd += Command('sudo')
-
-        cmd += Command('rsync', *options, source, destination)
-
-        self.execute(cmd, silent=True)
+        # Copy scripts and set permissions
+        install_cmd = Command('install', '-p', '-m', '755', source, destination)
+        if not self.facts.is_superuser:
+            install_cmd = Command('sudo') + install_cmd
+        self.execute(install_cmd, silent=True)
 
     def pull(
         self,
