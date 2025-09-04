@@ -1,0 +1,7 @@
+summary: Provision a fedora container and run a simple command
+description:
+    Make sure that the simple use case of starting a container,
+    running a simple command in it and stopping it works fine and
+    does not trigger any AVC denials.
+tag+:
+  - podman

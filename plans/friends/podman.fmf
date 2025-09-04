@@ -1,0 +1,26 @@
+summary: Integration plan for podman & friends
+
+description:
+    Ensure that the basic functionality of the container provision
+    plugin is working and no AVC denials are triggered. This plan
+    is supposed to be run for podman, crun, container-selinux and
+    friends pull requests to prevent introducing breaking changes.
+
+discover:
+    how: fmf
+    url: https://github.com/teemtee/tmt
+    filter: "tag:podman"
+    adjust-tests:
+      - check: avc
+
+prepare:
+    name: enable-epel
+    how: feature
+    epel: enabled
+    order: 20
+
+link:
+  - relates: https://github.com/containers/container-selinux
+  - relates: https://github.com/containers/podman
+  - relates: https://github.com/containers/crun
+  - verifies: https://github.com/containers/container-selinux/issues/389

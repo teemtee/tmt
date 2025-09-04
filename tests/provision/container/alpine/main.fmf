@@ -5,6 +5,3 @@ description:
     so make sure a reasonable error is returned to the user.
     Run a simple successful check against the Alpine Linux
     tests image.
-tag+:
-    - provision-only
-    - provision-container

@@ -6,9 +6,6 @@ description:
     Silverblue.
 
 duration: 30m
-tag+:
-  - provision-only
-  - provision-container
 require+:
   - toolbox
 adjust+:
