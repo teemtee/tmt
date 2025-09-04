@@ -24,6 +24,6 @@
 /plan/bootc:
     provision+:
         bootc: True
-        image_url: quay.io/fedora/custom-bootc:latest
+        bootc_image_url: quay.io/fedora/custom-bootc:latest
         bootc_secret: dummysecret
         image: fedora-42

@@ -63,14 +63,11 @@ properties:
   bootc_secret:
     type: string
 
-  image_url:
+  bootc_image_url:
     type: string
 
   bootc:
     type: boolean
-
-  distro_name:
-    type: string
 
 required:
   - how
