@@ -8,10 +8,8 @@ tmt-1.57.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :ref:`tmt try</stories/cli/try>` command's interactive session
-now includes a new ``o`` option to change the
-directory on the local machine. Users can exit cleanly by typing ``'\q'``,
-pressing Ctrl-C, or pressing Ctrl-D, and failed commands are reported
-with clear error messages.
+now includes a new ``o`` option to switch directories,
+making it easy to select and run a different test or set of tests.
 
 
 tmt-1.56.0
