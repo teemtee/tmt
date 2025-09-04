@@ -1,6 +1,5 @@
 import ast
 import contextlib
-import copy
 import dataclasses
 import enum
 import functools
@@ -2748,7 +2747,7 @@ class GuestSsh(Guest):
         self._assert_rsync()
 
         # Prepare options and the push command
-        options = copy.deepcopy(options or DEFAULT_PUSH_OPTIONS)
+        options = options or DEFAULT_PUSH_OPTIONS
         if destination is None:
             destination = Path("/")
         if source is None:
@@ -2813,7 +2812,7 @@ class GuestSsh(Guest):
         self._assert_rsync()
 
         # Prepare options and the pull command
-        options = copy.deepcopy(options or DEFAULT_PULL_OPTIONS)
+        options = options or DEFAULT_PULL_OPTIONS
         if destination is None:
             destination = Path("/")
         if source is None:

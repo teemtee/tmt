@@ -68,7 +68,7 @@ if TYPE_CHECKING:
     import tmt.steps.execute
     from tmt.base import Plan
     from tmt.result import BaseResult, PhaseResult
-    from tmt.steps.provision import Guest, TransferOptions
+    from tmt.steps.provision import Guest
 
 
 DEFAULT_ALLOWED_HOW_PATTERN: Pattern[str] = re.compile(r'.*')
@@ -2576,6 +2576,9 @@ class Topology(SerializableContainer):
         """
         Save and push topology to a given guest
         """
+
+        # Avoid circular imports
+        from tmt.steps.provision import TransferOptions
 
         topology_filepaths = self.save(dirpath=dirpath, filename_base=filename_base)
 
