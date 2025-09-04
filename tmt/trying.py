@@ -3,11 +3,12 @@ Easily try tests and experiment with guests
 """
 
 import enum
+import os
 import re
 import shlex
 import textwrap
 from collections.abc import Iterator
-from typing import Any, cast
+from typing import Any, Callable, Optional, cast
 
 import fmf
 import fmf.utils
@@ -52,6 +53,11 @@ class Action(enum.Enum):
 
     KEEP = "k", "exit the session but keep the run for later use"
     QUIT = "q", "clean up the run and quit the session"
+
+    LOCAL_CHANGE_DIRECTORY = (
+        "o",
+        "change directory on local machine",
+    )  # FIXME: Arbitrary for now, should be CORRECTLY implemented by: https://github.com/teemtee/tmt/issues/3972
 
     START_LOGIN = "-", "jump directly to login after start"
     START_ASK = "-", "do nothing without first asking the user"
@@ -130,6 +136,7 @@ class Try(tmt.utils.Common):
         self.tree = tree
         self.tests: list[tmt.Test] = []
         self.plans: list[Plan] = []
+        self._previous_test_dir: Optional[Path] = None
         self.image_and_how = self.opt("image_and_how")
         self.cli_options = ["epel", "fips", "install"]
 
@@ -169,12 +176,14 @@ class Try(tmt.utils.Common):
         except MetadataError:
             self.tree.tree = fmf.Tree({"nothing": "here"})
 
-    def check_tests(self) -> None:
+    def discover_tests(self, directory: Optional[Path] = None) -> None:
         """
-        Check for available tests
+        Discover tests in the metadata tree
         """
 
-        # Search for tests according to provided names
+        # Determine base directory for test discovery
+        directory = directory or Path.cwd()
+
         test_names = list(self.opt("test"))
         if test_names:
             self.tests = self.tree.tests(names=test_names)
@@ -188,7 +197,7 @@ class Try(tmt.utils.Common):
             if not self.tree.root:
                 self.debug("No fmf tree root, no tests.")
                 return
-            relative_path = Path(".").relative_to(self.tree.root)
+            relative_path = directory.relative_to(self.tree.root)
             test_names = [f"^/{relative_path}"]
             self.tests = self.tree.tests(names=test_names)
             if not self.tests:
@@ -198,6 +207,12 @@ class Try(tmt.utils.Common):
         self.debug("Test name filter", fmf.utils.listed(test_names, quote="'"))
         self.debug("Matching tests found\n" + tmt.utils.format_value(self.tests))
 
+    def check_tests(self) -> None:
+        """
+        Check for available tests
+        """
+
+        self.discover_tests()
         # Inject the test filtering options into the Test class
         options = {"names": [f"^{re.escape(test.name)}$" for test in self.tests]}
         tmt.Test.store_cli_invocation(context=None, options=options)
@@ -328,6 +343,9 @@ class Try(tmt.utils.Common):
 
                         {Action.KEEP.menu}
                         {Action.QUIT.menu}
+
+                        {Action.HOST.menu}
+                        {Action.LOCAL_CHANGE_DIRECTORY.menu}
                 """)
             )
 
@@ -530,35 +548,77 @@ class Try(tmt.utils.Common):
         run_id = style(str(plan.my_run.workdir), fg="magenta")
         self.print(f"Run {run_id} successfully finished. Bye for now!")
 
+    def _handle_interactive_prompt(
+        self, prompt: str, context: str, error_message: str, handler: Callable[[str], None]
+    ) -> None:
+        quit_message = f"Exiting {context} mode. Bye for now!"
+        while True:
+            self.print(style(f"Enter {prompt} (or '\\{Action.QUIT.key}' to quit): ", fg="green"))
+            try:
+                user_input = input("> ")
+            except (KeyboardInterrupt, EOFError):
+                self.print(quit_message)
+                break
+
+            if not user_input or user_input == f'\\{Action.QUIT.key}':
+                self.print(quit_message)
+                break
+
+            try:
+                handler(user_input)
+            except Exception as error:
+                tmt.utils.show_exception_as_warning(
+                    exception=error,
+                    message=error_message.format(user_input),
+                    include_logfiles=True,
+                    logger=self._logger,
+                )
+
+    def action_local_change_directory(self, plan: Plan) -> None:
+        """
+        Change directory on the local machine & discover tests in <changed directory>
+        Use case(s):
+        1. Run the test you're currently in
+        """
+
+        def handler(dir_path: str) -> None:
+            os.chdir(dir_path)
+            current_test_dir = Path.cwd()
+
+            # Rediscover tests ONLY if directory changed
+            if self._previous_test_dir is None:
+                self.discover_tests(current_test_dir)
+                self._previous_test_dir = current_test_dir
+
+            elif self._previous_test_dir.resolve() != current_test_dir.resolve():
+                self.print(f"Changed directory to: {current_test_dir}")
+
+                self.discover_tests(current_test_dir)
+                self._previous_test_dir = current_test_dir
+
+        self._handle_interactive_prompt(
+            prompt="directory path",
+            context="local change directory",
+            error_message="'{0}' No such file or directory",
+            handler=handler,
+        )
+
     def action_host(self, plan: Plan) -> None:
         """
         Run command on the host
         """
 
-        while True:
-            self.print(style(f"Enter command (or '\\{Action.QUIT.key}' to quit): ", fg="green"))
-            try:
-                raw_command = input("> ")
-            except (KeyboardInterrupt, EOFError):
-                self.print("Exiting host command mode. Bye for now!")
-                break
+        def handler(command: str) -> None:
+            Command(*shlex.split(command)).run(
+                cwd=plan.workdir, logger=self._logger, interactive=True
+            )
 
-            if not raw_command or raw_command == f'\\{Action.QUIT.key}':
-                self.print("Exiting host command mode. Bye for now!")
-                break
-
-            # Execute the command on the host
-            try:
-                Command(*shlex.split(raw_command)).run(
-                    cwd=plan.workdir, logger=self._logger, interactive=True
-                )
-            except tmt.utils.RunError as error:
-                tmt.utils.show_exception_as_warning(
-                    exception=error,
-                    message=f"'{raw_command}' command failed to run.",
-                    include_logfiles=True,
-                    logger=self._logger,
-                )
+        self._handle_interactive_prompt(
+            prompt="command",
+            context="host command",
+            error_message="'{0}' command failed to run",
+            handler=handler,
+        )
 
     def handle_options(self, plan: Plan) -> None:
         """
