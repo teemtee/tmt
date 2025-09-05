@@ -192,16 +192,26 @@ class GuestLocal(tmt.Guest):
         """
         Push files to local guest
         """
-        if not source:
-            raise tmt.utils.GeneralError('The source is not defined.')
 
-        if not destination:
-            raise tmt.utils.GeneralError('The destination is not defined.')
-
-        # For local guest, check source and destination are not workdir
         parent = cast(Provision, self.parent)
         assert parent.plan.workdir is not None
 
+        # If not set, source defaults to workdir
+        if not source:
+            source = parent.plan.workdir
+
+        # If not set, root (``/``) is used.
+        if not destination:
+            destination = Path('/')
+
+        # no-op case
+        if (
+            source.resolve() == parent.plan.workdir.resolve()
+            and destination.resolve() == Path('/').resolve()
+        ):
+            return
+
+        # For local guest, check source and destination are not workdir
         if parent.plan.workdir.resolve() in (source.resolve(), destination.resolve()):
             return
 
