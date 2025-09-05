@@ -1,0 +1,9 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: local
+    execute:
+        how: tmt
+    environment:
+        PLAN_ENV: value
