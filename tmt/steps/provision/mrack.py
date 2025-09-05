@@ -3,6 +3,7 @@ import dataclasses
 import datetime
 import functools
 import importlib.metadata
+import json
 import logging
 import os
 import re
@@ -301,6 +302,12 @@ def _transform_unsupported(constraint: tmt.hardware.Constraint) -> dict[str, Any
     # We have to return something, return an {}- no harm done, composable with other elements.
 
     return {}
+
+
+def _get_registry_from_url(bootc_image_url: str) -> str:
+    """Extract registry from image URL"""
+    # Handle quay.io/repo/image:tag -> quay.io
+    return bootc_image_url.split('/')[0] if '/' in bootc_image_url else bootc_image_url
 
 
 def _translate_constraint_by_config(
@@ -938,6 +945,34 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
 
             # Whiteboard must be added *after* request preparation, to overwrite the default one.
             req['whiteboard'] = host.whiteboard
+            if host.bootc:
+                req['ks_append'] = req['ks_append'] if req.get('ks_append') else []
+                ks_meta = req['ks_meta'] if req.get('ks_meta') else ''
+                req['ks_meta'] = (
+                    'no_default_harness_repo disable_debug_repos disable_onerror ' + ks_meta
+                )
+                ks_list = [
+                    f"""
+ostreecontainer --url {host.bootc_image_url}
+%pre
+#!/bin/sh
+cat > /etc/ostree/auth.json <<EOF
+{json.dumps(host.bootc_credentials)}
+EOF
+%end
+"""
+                ]
+                req['ks_append'].extend(ks_list)
+                req['tasks'] = [
+                    {
+                        "name": "/distribution/check-system",
+                        "role": "None",
+                        "fetch_url": host.bootc_check_system_url,
+                        "params": [
+                            f'BOOTC_IMAGE_URL={host.bootc_image_url}',
+                        ],
+                    },
+                ]
 
             logger.debug('mrack request', req, level=4)
 
@@ -999,6 +1034,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              """,
         normalize=tmt.utils.normalize_int,
     )
+
     provision_tick: int = field(
         default=DEFAULT_PROVISION_TICK,
         option='--provision-tick',
@@ -1009,6 +1045,7 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              """,
         normalize=tmt.utils.normalize_int,
     )
+
     api_session_refresh_tick: int = field(
         default=DEFAULT_API_SESSION_REFRESH,
         option='--api-session-refresh-tick',
@@ -1058,6 +1095,42 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              """,
     )
 
+    bootc_check_system_url: Optional[str] = field(
+        default="https://gitlab.com/fedora/bootc/tests/bootc-beaker-test/-/archive/1.8/bootc-beaker-test-1.8.tar.gz#check-system",
+        option='--bootc-check-system-url',
+        metavar='URL',
+        help="""
+             URL to ``check-system`` task, which is needed for bootc on Beaker installation.
+             """,
+    )
+
+    bootc_image_url: Optional[str] = field(
+        default=None,
+        option='--bootc-image-url',
+        metavar='URL',
+        help="""
+             Select bootc image to be used to perform the installation.
+             """,
+    )
+
+    bootc_registry_secret: Optional[str] = field(
+        default=None,
+        option='--bootc-registry-secret',
+        metavar='SECRET',
+        help="""
+             Specify bootc secret, which will be used for fetching from registry.
+             """,
+    )
+
+    bootc: bool = field(
+        default=False,
+        is_flag=True,
+        option='--bootc',
+        help="""
+             If set, bootc on Beaker installation will be performed.
+             """,
+    )
+
 
 @container
 class ProvisionBeakerData(BeakerGuestData, tmt.steps.provision.ProvisionStepData):
@@ -1097,6 +1170,10 @@ class CreateJobParameters:
     beaker_job_owner: Optional[str]
     public_key: list[str]
     group: Optional[str]
+    bootc_credentials: Optional[dict[str, Any]]
+    bootc_image_url: Optional[str]
+    bootc: bool
+    bootc_check_system_url: Optional[str]
 
     def to_mrack(self) -> dict[str, Any]:
         data = dataclasses.asdict(self)
@@ -1241,19 +1318,24 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     provision_tick: int
     public_key: list[str]
     api_session_refresh_tick: int
+    data: BeakerGuestData
 
     _api: Optional[BeakerAPI] = None
     _api_timestamp: Optional[datetime.datetime] = None
 
-    def __init__(self, *args: Any, **kwargs: Any):
-        """
-        Make sure that the mrack module is available and imported
-        """
-
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        *,
+        data: BeakerGuestData,
+        name: Optional[str] = None,
+        parent: Optional[tmt.utils.Common] = None,
+        logger: tmt.log.Logger,
+    ) -> None:
+        super().__init__(data=data, parent=parent, name=name, logger=logger)
 
         assert isinstance(self.parent, tmt.steps.provision.Provision)
         import_and_load_mrack_deps(self.parent.workdir, self.parent.name, self._logger)
+        self.data = data
 
     @property
     def api(self) -> BeakerAPI:
@@ -1308,132 +1390,15 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         except mrack.errors.MrackError:
             return False
 
-    def _create(self, tmt_name: str) -> None:
-        """
-        Create beaker job xml request and submit it to Beaker hub
-        """
-
-        data = CreateJobParameters(
-            tmt_name=tmt_name,
-            hardware=self.hardware,
-            kickstart=self.kickstart,
-            arch=self.arch,
-            os=self.image,
-            name=f'{self.image}-{self.arch}',
-            whiteboard=self.whiteboard or tmt_name,
-            beaker_job_owner=self.beaker_job_owner,
-            public_key=self.public_key,
-            group=self.beaker_job_group,
-        )
-
-        if self.is_dry_run:
-            mrack_requirement = self.api._mrack_transformer.create_host_requirement(data)
-            job = self.api._mrack_provider._req_to_bkr_job(mrack_requirement)
-
-            # Mrack indents XML with tabs, tmt indents with spaces, let's make sure we
-            # don't mix these two in tmt output & modify mrack's output to use spaces as well.
-            self.print(
-                re.sub(
-                    r'^\t+',
-                    lambda match: '  ' * len(match.group()),
-                    job.toxml(prettyxml=True),
-                    flags=re.MULTILINE,
-                ),
-            )
-            return
-
-        with tmt.utils.signals.PreventSignals(self._logger):
-            try:
-                response = self.api.create(data)
-
-            except ProvisioningError as exc:
-                import xmlrpc.client
-
-                cause = exc.__cause__
-
-                if isinstance(cause, xmlrpc.client.Fault):
-                    if 'is not a valid user name' in cause.faultString:
-                        raise ProvisionError(
-                            f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
-                            "was refused as unknown."
-                        ) from exc
-
-                    if 'is not a valid submission delegate' in cause.faultString:
-                        raise ProvisionError(
-                            f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
-                            "is not a valid submission delegate."
-                        ) from exc
-
-                    if 'is not a valid group' in cause.faultString:
-                        raise ProvisionError(
-                            f"Failed to create Beaker job, job group '{self.beaker_job_group}' "
-                            "was refused as unknown."
-                        ) from exc
-
-                    if 'is not a member of group' in cause.faultString:
-                        raise ProvisionError(
-                            "Failed to create Beaker job, submitting user is not "
-                            "a member of group '{self.beaker_job_group}'"
-                        ) from exc
-
-                raise ProvisionError('Failed to create Beaker job') from exc
-
-            if not response:
-                raise ProvisionError(f"Failed to create, response: '{response}'.")
-
-            self.info('guest', 'has been requested', 'green')
-            self.job_id = f'J:{response["id"]}'
-
-        self.info('job id', self.job_id, 'green')
-
-        with UpdatableMessage("status", indent_level=self._level()) as progress_message:
-
-            def get_new_state() -> GuestInspectType:
-                response = self.api.inspect()
-
-                if response["status"] == "Aborted":
-                    raise ProvisionError(
-                        f"Failed to create, unhandled API response '{response['status']}'."
-                    )
-
-                current = cast(GuestInspectType, response)
-                state = current["status"]
-                state_color = GUEST_STATE_COLORS.get(state, GUEST_STATE_COLOR_DEFAULT)
-
-                progress_message.update(state, color=state_color)
-
-                if state in {"Error, Aborted", "Cancelled"}:
-                    raise ProvisionError('Failed to create, provisioning failed.')
-
-                if state == 'Reserved':
-                    for key in response.get('logs', []):
-                        self.guest_logs.append(
-                            GuestLogBeaker(key.replace('.log', ''), self, response["logs"][key])
-                        )
-                    # console.log contains dmesg, and accessible even when the system is dead.
-                    if response.get('logs', []).get('console.log'):
-                        self.guest_logs.append(
-                            GuestLogBeaker('dmesg', self, response.get('logs').get('console.log'))
-                        )
-                    else:
-                        self.warn('No console.log available.')
-                    return current
-
-                raise tmt.utils.wait.WaitingIncompleteError
-
-            try:
-                guest_info = Waiting(
-                    Deadline.from_seconds(self.provision_timeout), tick=self.provision_tick
-                ).wait(get_new_state, self._logger)
-
-            except tmt.utils.wait.WaitingTimedOutError:
-                response = self.api.delete()
-                raise ProvisionError(
-                    f'Failed to provision in the given amount '
-                    f'of time (--provision-timeout={self.provision_timeout}).'
-                )
-
-        self.primary_address = self.topology_address = guest_info['system']
+    @property
+    def _bootc_registry_credentials(self) -> dict[str, Any]:
+        """Create authentication dictionary with proper credential handling"""
+        if not self.data.bootc_registry_secret:
+            return {}
+        assert self.data.bootc_image_url
+        base_repo = _get_registry_from_url(self.data.bootc_image_url)
+        # Support multiple registries
+        return {"auths": {base_repo: {"auth": self.data.bootc_registry_secret}}}
 
     def start(self) -> None:
         """
@@ -1445,12 +1410,144 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         """
 
         if self.job_id is None or self.primary_address is None:
-            self._create(self._tmt_name())
+            """
+            Create beaker job xml request and submit it to Beaker hub
+            """
+            tmt_name = self._tmt_name()
+            data = CreateJobParameters(
+                tmt_name=tmt_name,
+                hardware=self.hardware,
+                kickstart=self.kickstart,
+                arch=self.arch,
+                os=self.image,
+                name=f'{self.image}-{self.arch}',
+                whiteboard=self.whiteboard or tmt_name,
+                beaker_job_owner=self.beaker_job_owner,
+                public_key=self.public_key,
+                group=self.beaker_job_group,
+                bootc_credentials=self._bootc_registry_credentials if self.data.bootc else None,
+                bootc_image_url=self.data.bootc_image_url,
+                bootc=self.data.bootc,
+                bootc_check_system_url=self.data.bootc_check_system_url,
+            )
 
-        self.verbose('primary address', self.primary_address, 'green')
-        self.verbose('topology address', self.topology_address, 'green')
+            if self.is_dry_run:
+                mrack_requirement = self.api._mrack_transformer.create_host_requirement(data)
+                job = self.api._mrack_provider._req_to_bkr_job(mrack_requirement)
 
-        self.assert_reachable()
+                # Mrack indents XML with tabs, tmt indents with spaces, let's make sure we
+                # don't mix these two in tmt output & modify mrack's output to use spaces as well.
+                self.print(
+                    re.sub(
+                        r'^\t+',
+                        lambda match: '  ' * len(match.group()),
+                        job.toxml(prettyxml=True),
+                        flags=re.MULTILINE,
+                    ),
+                )
+                return
+
+            with tmt.utils.signals.PreventSignals(self._logger):
+                try:
+                    response = self.api.create(data)
+
+                except ProvisioningError as exc:
+                    import xmlrpc.client
+
+                    cause = exc.__cause__
+
+                    if isinstance(cause, xmlrpc.client.Fault):
+                        if 'is not a valid user name' in cause.faultString:
+                            raise ProvisionError(
+                                f"Failed to create Beaker job, job owner '{self.beaker_job_owner}'"
+                                " was refused as unknown."
+                            ) from exc
+
+                        if 'is not a valid submission delegate' in cause.faultString:
+                            raise ProvisionError(
+                                f"Failed to create Beaker job, job owner '{self.beaker_job_owner}'"
+                                " is not a valid submission delegate."
+                            ) from exc
+
+                        if 'is not a valid group' in cause.faultString:
+                            raise ProvisionError(
+                                f"Failed to create Beaker job, job group '{self.beaker_job_group}'"
+                                " was refused as unknown."
+                            ) from exc
+
+                        if 'is not a member of group' in cause.faultString:
+                            raise ProvisionError(
+                                "Failed to create Beaker job, submitting user is not "
+                                "a member of group '{self.beaker_job_group}'"
+                            ) from exc
+
+                    raise ProvisionError('Failed to create Beaker job') from exc
+
+                if not response:
+                    raise ProvisionError(f"Failed to create, response: '{response}'.")
+
+                self.info('guest', 'has been requested', 'green')
+                self.job_id = f'J:{response["id"]}'
+
+            self.info('job id', self.job_id, 'green')
+
+            with UpdatableMessage("status", indent_level=self._level()) as progress_message:
+
+                def get_new_state() -> GuestInspectType:
+                    response = self.api.inspect()
+
+                    if response["status"] == "Aborted":
+                        raise ProvisionError(
+                            f"Failed to create, unhandled API response '{response['status']}'."
+                        )
+
+                    current = cast(GuestInspectType, response)
+                    state = current["status"]
+                    state_color = GUEST_STATE_COLORS.get(state, GUEST_STATE_COLOR_DEFAULT)
+
+                    progress_message.update(state, color=state_color)
+
+                    if state in {"Error, Aborted", "Cancelled"}:
+                        raise ProvisionError('Failed to create, provisioning failed.')
+
+                    if state == 'Reserved':
+                        for key in response.get('logs', []):
+                            self.guest_logs.append(
+                                GuestLogBeaker(
+                                    key.replace('.log', ''), self, response["logs"][key]
+                                )
+                            )
+                        # console.log contains dmesg, and accessible even when the system is dead.
+                        if response.get('logs', []).get('console.log'):
+                            self.guest_logs.append(
+                                GuestLogBeaker(
+                                    'dmesg', self, response.get('logs').get('console.log')
+                                )
+                            )
+                        else:
+                            self.warn('No console.log available.')
+                        return current
+
+                    raise tmt.utils.wait.WaitingIncompleteError
+
+                try:
+                    guest_info = Waiting(
+                        Deadline.from_seconds(self.provision_timeout), tick=self.provision_tick
+                    ).wait(get_new_state, self._logger)
+
+                except tmt.utils.wait.WaitingTimedOutError:
+                    response = self.api.delete()
+                    raise ProvisionError(
+                        f'Failed to provision in the given amount '
+                        f'of time (--provision-timeout={self.provision_timeout}).'
+                    )
+
+            self.primary_address = self.topology_address = guest_info['system']
+
+            self.verbose('primary address', self.primary_address, 'green')
+            self.verbose('topology address', self.topology_address, 'green')
+
+            self.assert_reachable()
 
     def remove(self) -> None:
         """
@@ -1594,12 +1691,39 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
                 logger=self._logger,
             )
 
+    def _validate_bootc_configuration(self) -> None:
+        """Comprehensive bootc configuration validation"""
+
+        # Required fields validation
+        required_fields = ['image', 'bootc_image_url']
+
+        missing_fields = [field for field in required_fields if not getattr(self.data, field)]
+        if missing_fields:
+            raise tmt.utils.ProvisionError(
+                f"bootc configuration incomplete. Missing: {', '.join(missing_fields)}"
+            )
+
+        # Validate image URLs
+        if not self._validate_bootc_image_url():
+            raise tmt.utils.ProvisionError(f"Invalid image URL: {self.data.bootc_image_url}")
+
+    def _validate_bootc_image_url(self) -> bool:
+        """Validate container image URL format"""
+
+        if not self.data.bootc_image_url:
+            return False
+        pattern = r'^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*:[a-zA-Z0-9._-]+$'
+        return bool(re.match(pattern, self.data.bootc_image_url))
+
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
         Provision the guest
         """
 
         super().go(logger=logger)
+
+        if self.data.bootc:
+            self._validate_bootc_configuration()
 
         data = BeakerGuestData.from_plugin(self)
 
