@@ -844,7 +844,7 @@ def constraint_to_beaker_filter(
 _MRACK_IMPORT_LOCK = threading.Lock()
 
 
-def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) -> None:
+def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
     """
     Import mrack module only when needed (thread-safe)
     """
@@ -877,22 +877,15 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
             MRACK_VERSION = importlib.metadata.version('mrack')
 
             # hack: remove mrack stdout and move the logfile to /tmp
-            # Make log file unique per thread to avoid conflicts
             if hasattr(mrack, 'console_handler'):
                 mrack.logger.removeHandler(mrack.console_handler)
             if hasattr(mrack, 'file_handler'):
                 mrack.logger.removeHandler(mrack.file_handler)
 
-            # Use thread-safe approach for log file cleanup
-            thread_id = threading.get_ident()
-            log_filename = f"{workdir}/{name}-mrack-{thread_id}.log"
-
             with suppress(OSError):
-                # Only try to remove the generic log file, not thread-specific ones
                 if Path("mrack.log").exists():
                     Path("mrack.log").unlink()
-
-            mrack.logger.addHandler(logging.FileHandler(str(log_filename)))
+            mrack.logger.addHandler(logging.FileHandler(mrack_log))
 
             providers.register(BEAKER, BeakerProvider)
 
@@ -1300,7 +1293,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         super().__init__(*args, **kwargs)
 
         assert isinstance(self.parent, tmt.steps.provision.Provision)
-        import_and_load_mrack_deps(self.parent.workdir, self.parent.name, self._logger)
+        self.mrack_log = f"{self.workdir}/{self.parent.name}-mrack.log"
+        import_and_load_mrack_deps(self.mrack_log, self._logger)
 
     @property
     def api(self) -> BeakerAPI:
@@ -1640,6 +1634,18 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
                 parent=self.step,
                 logger=self._logger,
             )
+
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
+        """
+        A set of members of the step workdir that should not be removed.
+        """
+        assert self._guest
+
+        # Extract just the filename from the full path since
+        # prune_directory compares against member.name
+        mrack_log_filename = Path(self._guest.mrack_log).name
+        return {*super()._preserved_workdir_members, mrack_log_filename}
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
