@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 import tmt
 import tmt.base
@@ -9,9 +9,13 @@ import tmt.steps.provision
 import tmt.steps.scripts
 import tmt.utils
 from tmt.container import container
+from tmt.steps.provision import Provision
 from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
+
+#: The default helper scripts destination directory
+DEFAULT_HELPER_SCRIPTS_DEST_DIR = Path("/var/lib/tmt/helper/scripts")
 
 
 @container
@@ -26,6 +30,15 @@ class GuestLocal(tmt.Guest):
 
     localhost = True
     parent: Optional[tmt.steps.Step]
+
+    @property
+    def scripts_path(self) -> Path:
+        """
+        Absolute path to tmt scripts directory
+        """
+        return tmt.steps.scripts.effective_scripts_dest_dir(
+            default=DEFAULT_HELPER_SCRIPTS_DEST_DIR
+        )
 
     @property
     def is_ready(self) -> bool:
@@ -136,7 +149,8 @@ class GuestLocal(tmt.Guest):
         )
 
     def install_scripts(self, scripts: Sequence[tmt.steps.scripts.Script]) -> None:
-        self.debug("No installation of tmt scripts is needed on localhost.")
+        """Install scripts required by tmt"""
+        super().install_scripts(scripts)
 
     def start(self) -> None:
         """
@@ -176,8 +190,40 @@ class GuestLocal(tmt.Guest):
         superuser: bool = False,
     ) -> None:
         """
-        Nothing to be done to push workdir
+        Push files to local guest
         """
+
+        parent = cast(Provision, self.parent)
+        assert parent.plan.workdir is not None
+
+        # If not set, source defaults to workdir
+        if not source:
+            source = parent.plan.workdir
+
+        # If not set, root (``/``) is used.
+        if not destination:
+            destination = Path('/')
+
+        # Files identical, skipping
+        if source.resolve() == destination.resolve():
+            return
+
+        # no-op case
+        if (
+            source.resolve() == parent.plan.workdir.resolve()
+            and destination.resolve() == Path('/').resolve()
+        ):
+            return
+
+        # For local guest, check source and destination are not workdir
+        if parent.plan.workdir.resolve() in (source.resolve(), destination.resolve()):
+            return
+
+        # Copy scripts and set permissions
+        install_cmd = Command('install', '-p', '-m', '755', source, destination)
+        if not self.facts.is_superuser:
+            install_cmd = Command('sudo') + install_cmd
+        self.execute(install_cmd, silent=True)
 
     def pull(
         self,
