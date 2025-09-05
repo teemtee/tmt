@@ -2148,8 +2148,11 @@ class Reboot(Action):
         @option(
             '--command',
             type=str,
-            default=str(DEFAULT_REBOOT_COMMAND),
-            help='A command to run on the guest to trigger the reboot.',
+            default=None,
+            help=f"""
+            A command to run on the guest to trigger the reboot.
+            Default is ``{DEFAULT_REBOOT_COMMAND}``.
+            """,
         )
         def reboot(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             """
@@ -2184,7 +2187,12 @@ class Reboot(Action):
         assert hasattr(self.parent, 'plan')
         assert self.parent.plan is not None
         for guest in self.parent.plan.provision.ready_guests:
-            guest.reboot(hard=self.opt('hard'), command=tmt.utils.ShellScript(self.opt('command')))
+            guest.reboot(
+                hard=self.opt('hard'),
+                command=tmt.utils.ShellScript(self.opt('command'))
+                if self.opt('command')
+                else None,
+            )
         self.info('reboot', 'Reboot finished', color='yellow')
 
 

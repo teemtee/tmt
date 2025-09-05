@@ -41,6 +41,8 @@ dependencies = [
     "packaging>=20.9",
     "pint>=0.16.1",
     "pydantic>=1.10.14",
+    # Missing python3.14 pre-compiled wheels among other issues
+    "pydantic>=2.12.0a1; python_version >= '3.14'",
     "pygments>=2.7.4",
     "requests>=2.25.1",
     "ruamel.yaml>=0.16.6",

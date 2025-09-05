@@ -1,0 +1,4 @@
+summary: Test reboot with connect provision and non-root user
+tag+:
+  - provision-only
+  - provision-virtual

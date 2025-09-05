@@ -4,6 +4,15 @@
     Releases
 ======================
 
+tmt-1.57.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When using the ``become`` option with the ``connect`` provision
+plugin, the reboot command now properly applies ``sudo`` when
+necessary, ensuring correct privilege handling during system
+restarts.
+
+
 tmt-1.56.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
