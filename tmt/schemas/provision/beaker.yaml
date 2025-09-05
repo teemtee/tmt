@@ -60,7 +60,7 @@ properties:
   beaker-job-group:
     type: string
 
-  bootc-secret:
+  bootc-registry-secret:
     type: string
 
   bootc-image-url:
@@ -70,7 +70,7 @@ properties:
     type: boolean
 
   bootc-check-system-url:
-    type: boolean
+    type: string
 
 required:
   - how
