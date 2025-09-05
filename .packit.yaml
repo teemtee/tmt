@@ -170,6 +170,16 @@ jobs:
     fmf_url: "https://gitlab.cee.redhat.com/baseos-qe/integration_scripts.git"
     tmt_plan: '/tmt/integration/plan'
 
+  # Run missing tests identified in Connect
+  - <<: *test-base
+    <<: *internal
+    <<: *require-full-tests
+    identifier: internal-fusa
+    fmf_url: "https://gitlab.cee.redhat.com/automotive/tests/all.git"
+    tmt_plan: '/tmt/plans/fusa/tests'
+    targets:
+      - epel-9
+      
   # Propose downstream pull requests
   - job: propose_downstream
     trigger: release
@@ -189,12 +199,3 @@ jobs:
       - epel-9
       - epel-10
 
-  # Run missing tests identified in Connect
-  - <<: *test-base
-    <<: *internal
-    <<: *require-full-tests
-    identifier: internal-fusa
-    fmf_url: "https://gitlab.cee.redhat.com/automotive/tests/all.git"
-    tmt_plan: '/tmt/plans/fusa/tests'
-    targets:
-      - centos-stream-9-x86_64
