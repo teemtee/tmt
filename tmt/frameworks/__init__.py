@@ -112,7 +112,7 @@ class TestFramework:
         :param options: options already specified by tmt, which
             can be extended or overridden by the framework.
         :param logger: to use for logging.
-        :returns: options the tmt would use to pull the test data
+        :returns: options tmt would use to pull the test data
             directory from the guest.
         """
 
