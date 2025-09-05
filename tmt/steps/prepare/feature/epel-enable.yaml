@@ -22,7 +22,7 @@
         'Red Hat Enterprise Linux release 8.' in release_out.stdout
         or 'CentOS Linux release 8' in release_out.stdout
         or 'CentOS Stream release 8' in release_out.stdout
-      changed_when: true
+      changed_when: false
 
 - name: Enable EPEL repositories
   hosts: all
@@ -64,7 +64,8 @@
           ansible.builtin.command: "rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"  # noqa: command-instead-of-module
           # The dnf python module is not available with python3.9 installed on the host, do not use ansible.builtin.dnf module
           when: ansible_distribution_major_version | int == 8
-          changed_when: output.rc != 0
+          register: output
+          changed_when: output.rc == 0
 
         - name: Install package 'epel-next-release'
           ansible.builtin.dnf:
