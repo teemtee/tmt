@@ -96,29 +96,19 @@ class KojiProvider(ArtifactProvider):
                     location=self._get_download_url(rpm),
                 )
 
-    def _download_artifact(self, artifact: ArtifactInfo, guest: Guest, destination: Path) -> Path:
+    def _download_artifact(self, artifact: ArtifactInfo, guest: Guest, destination: Path) -> None:
         """
         Download the specified artifact to the given destination on the guest.
 
         :param artifact: The artifact to download
         :param guest: The guest where the artifact should be downloaded
         :param destination: The destination path on the guest
-        :return: The path to the downloaded artifact on the guest
-        :raises GeneralError: If download fails
         """
 
-        dest_dir: Path = destination.parent
-
-        # Create the destination directory if it doesn't exist and download the artifact
+        # Destination directory is guaranteed to exist, download the artifact
         guest.execute(
             ShellScript(
-                f"[ -d {quote(str(dest_dir))} ] || "
-                f'{"sudo " if not guest.facts.is_superuser else ""}'
-                f"mkdir -p {quote(str(dest_dir))}; "
-                f"cd {quote(str(dest_dir))} && "
-                f"curl -LOf {quote(artifact.location)}"
+                f"cd {quote(str(destination))} && curl -LOf {quote(artifact.location)}"
             ).to_shell_command(),
             silent=True,
         )
-
-        return destination / str(artifact)

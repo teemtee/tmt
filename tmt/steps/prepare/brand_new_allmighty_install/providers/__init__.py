@@ -6,11 +6,12 @@ import enum
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from re import Pattern
+from shlex import quote
 
 import tmt.log
 from tmt.container import container
 from tmt.steps.provision import Guest
-from tmt.utils import GeneralError, Path
+from tmt.utils import GeneralError, Path, ShellScript
 
 
 class ArtifactType(enum.Enum):
@@ -59,13 +60,12 @@ class ArtifactProvider(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _download_artifact(self, artifact: ArtifactInfo, guest: Guest, destination: Path) -> Path:
+    def _download_artifact(self, artifact: ArtifactInfo, guest: Guest, destination: Path) -> None:
         """
-        Download a single artifact to the specified destination.
+        Action: Download a single artifact to the specified destination.
 
         :param guest: The guest where the artifact should be downloaded
         :param destination: Path where the artifact should be downloaded
-        :return: Path to the downloaded artifact
         """
         raise NotImplementedError
 
@@ -87,6 +87,17 @@ class ArtifactProvider(ABC):
             caught, logged as warnings, and ignored.
         """
         self.logger.info(f"Downloading artifacts to {download_path!s}")
+
+        # Ensure download directory exists on guest (create only if missing)
+        guest.execute(
+            ShellScript(
+                f"[ -d {quote(str(download_path))} ] || "
+                f'{"sudo " if not guest.facts.is_superuser else ""}'
+                f"mkdir -p {quote(str(download_path))}"
+            ).to_shell_command(),
+            silent=True,
+        )
+
         downloaded_paths: list[Path] = []
         artifact_count = 0
 
@@ -95,10 +106,10 @@ class ArtifactProvider(ABC):
             self.logger.debug(f"Downloading {artifact} to {local_path}")
 
             try:
-                downloaded_path = self._download_artifact(artifact, guest, local_path)
-                downloaded_paths.append(downloaded_path)
+                self._download_artifact(artifact, guest, local_path)
+                downloaded_paths.append(local_path)
                 artifact_count += 1
-                self.logger.info(f"Downloaded {artifact} to {downloaded_path}")
+                self.logger.info(f"Downloaded {artifact} to {local_path}")
 
             except DownloadError as err:
                 # Warn about the failed download and move on
