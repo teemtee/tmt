@@ -2,11 +2,9 @@
 Easily try tests and experiment with guests
 """
 
-import enum
 import re
 import shlex
-import textwrap
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from typing import Any, cast
 
 import fmf
@@ -32,85 +30,89 @@ from tmt.utils.themes import style
 USER_PLAN_NAME = "/user/plan"
 
 
-class Action(enum.Enum):
-    """
-    Available actions and their keyboard shortcuts
-    """
+class ActionInfo:
+    """Information about a registered action"""
 
-    TEST = "t", "rediscover tests and execute them again"
-    LOGIN = "l", "log into the guest for experimenting"
-    HOST = "h", "run command on the local host"
-    VERBOSE = "v", "set the desired level of verbosity"
-    DEBUG = "b", "choose a different debugging level"
+    def __init__(
+        self, commands: tuple[str, ...], help_text: str, func: Callable[..., Any]
+    ) -> None:
+        self.commands = commands
+        self.help_text = help_text
+        self.func = func
 
-    DISCOVER = "d", "gather information about tests to be executed"
-    PREPARE = "p", "prepare the environment for testing"
-    EXECUTE = "e", "run tests using the specified executor"
-    REPORT = "r", "provide test results overview and send reports"
-    FINISH = "f", "perform the user defined finishing tasks"
-    CLEANUP = "c", "clean up guests and prune the workdir"
-
-    KEEP = "k", "exit the session but keep the run for later use"
-    QUIT = "q", "clean up the run and quit the session"
-
-    START_LOGIN = "-", "jump directly to login after start"
-    START_ASK = "-", "do nothing without first asking the user"
-    START_TEST = "-", "start directly with executing detected tests"
+    @property
+    def primary_command(self) -> str:
+        """Return the primary (first) command"""
+        return self.commands[0]
 
     @property
     def key(self) -> str:
-        """
-        Keyboard shortcut
-        """
-
-        return self.value[0]
+        """Return the keyboard shortcut (first character of first command)"""
+        return self.commands[0][0]
 
     @property
-    def description(self) -> str:
-        """
-        Action description
-        """
-
-        return self.value[1]
-
-    @property
-    def action(self) -> str:
-        """
-        Action name in lower case
-        """
-
-        return self.name.lower()
+    def full_name(self) -> str:
+        """Return the full command name (longest command)"""
+        return max(self.commands, key=len)
 
     @property
     def menu(self) -> str:
-        """
-        Show menu with the keyboard shortcut highlighted
-        """
+        """Show menu with the keyboard shortcut highlighted"""
+        full_name = self.full_name
+        key = self.key
 
-        index = self.action.index(self.key)
+        # Find the key in the full name and highlight it
+        key_index = full_name.lower().find(key.lower())
+        if key_index == -1:
+            # Fallback: highlight first character
+            key_index = 0
 
-        before = style(self.action[0:index], fg="bright_blue")
-        key = style(self.key, fg="blue", bold=True, underline=True)
-        after = style(self.action[index + 1 :], fg="bright_blue")
+        before = style(full_name[:key_index], fg="bright_blue")
+        highlighted_key = style(full_name[key_index], fg="blue", bold=True, underline=True)
+        after = style(full_name[key_index + 1 :], fg="bright_blue")
 
-        longest = max(len(action.name) for action in Action)
-        padding = " " * (longest + 3 - len(self.action))
+        # Calculate padding based on longest action name
+        longest = 0
+        if ACTION_REGISTRY:
+            longest = max(len(action.full_name) for action in ACTION_REGISTRY.values())
+        padding = " " * (longest + 3 - len(full_name))
 
-        return before + key + after + padding + self.description
+        return before + highlighted_key + after + padding + self.help_text
 
-    @classmethod
-    def find(cls, answer: str) -> "Action":
-        """
-        Return action for given keyboard input (shortcut or whole word)
-        """
 
-        answer = answer.lower()
+ACTION_REGISTRY: dict[str, ActionInfo] = {}
 
-        for action in cls:
-            if answer in (action.key, action.action):
-                return action
 
-        raise KeyError
+def action(*commands: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    """
+    Decorator to register an action with given command names.
+
+    The help text is extracted from the function's docstring.
+    Multiple command names can be provided (e.g., 'q', 'quit').
+    """
+
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        help_text = func.__doc__ or ""
+        # Extract first line of docstring as help text
+        help_text = help_text.strip().split('\n')[0] if help_text else ""
+
+        action_info = ActionInfo(commands, help_text, func)
+
+        # Register all commands for this action
+        for command in commands:
+            ACTION_REGISTRY[command.lower()] = action_info
+
+        return func
+
+    return decorator
+
+
+def find_action(answer: str) -> ActionInfo:
+    """Find action by command name (shortcut or full name)"""
+    answer = answer.lower()
+    if answer in ACTION_REGISTRY:
+        return ACTION_REGISTRY[answer]
+    raise KeyError(f"Unknown action: {answer}")
 
 
 class Try(tmt.utils.Common):
@@ -303,42 +305,63 @@ class Try(tmt.utils.Common):
         )
         self.write(Path('run.yaml'), tmt.utils.dict_to_yaml(data.to_serialized()))
 
-    def choose_action(self) -> Action:
+    def choose_action(self) -> ActionInfo:
         """
         Print menu, get next action
         """
 
         while True:
-            self.print(
-                textwrap.dedent(f"""
-                    What do we do next?
+            # Get unique actions for menu display
+            displayed_actions: list[ActionInfo] = []
+            seen_functions: set[Callable[..., Any]] = set()
 
-                        {Action.TEST.menu}
-                        {Action.LOGIN.menu}
-                        {Action.HOST.menu}
-                        {Action.VERBOSE.menu}
-                        {Action.DEBUG.menu}
+            # Define the order we want to display actions
+            action_order = [
+                "test",
+                "login",
+                "host",
+                "verbose",
+                "debug",
+                "discover",
+                "prepare",
+                "execute",
+                "report",
+                "finish",
+                "cleanup",
+                "keep",
+                "quit",
+            ]
 
-                        {Action.DISCOVER.menu}
-                        {Action.PREPARE.menu}
-                        {Action.EXECUTE.menu}
-                        {Action.REPORT.menu}
-                        {Action.FINISH.menu}
-                        {Action.CLEANUP.menu}
+            for action_name in action_order:
+                if action_name in ACTION_REGISTRY:
+                    action_info = ACTION_REGISTRY[action_name]
+                    if action_info.func not in seen_functions:
+                        displayed_actions.append(action_info)
+                        seen_functions.add(action_info.func)
 
-                        {Action.KEEP.menu}
-                        {Action.QUIT.menu}
-                """)
-            )
+            menu_lines = ["What do we do next?", ""]
+
+            # Group actions for better readability
+            groups: list[list[ActionInfo]] = [
+                displayed_actions[0:5],  # test, login, host, verbose, debug
+                displayed_actions[5:11],  # discover, prepare, execute, report, finish, cleanup
+                displayed_actions[11:13],  # keep, quit
+            ]
+
+            for group in groups:
+                menu_lines.extend(f"    {action_info.menu}" for action_info in group)
+                menu_lines.append("")
+
+            self.print("\n".join(menu_lines))
 
             try:
                 answer = input("> ")
             except EOFError:
-                return Action.QUIT
+                return find_action("quit")
 
             try:
                 self.print("")
-                return Action.find(answer)
+                return find_action(answer)
             except KeyError:
                 self.print(style(f"Invalid action '{answer}'.", fg="red"))
 
@@ -349,6 +372,7 @@ class Try(tmt.utils.Common):
 
         plan.wake()
 
+    @action("start_test")
     def action_start_test(self, plan: Plan) -> None:
         """
         Start with testing
@@ -365,6 +389,7 @@ class Try(tmt.utils.Common):
             return
         plan.execute.go()
 
+    @action("start_login")
     def action_start_login(self, plan: Plan) -> None:
         """
         Start with login
@@ -381,6 +406,7 @@ class Try(tmt.utils.Common):
         assert plan.login is not None  # Narrow type
         plan.login.go(force=True)
 
+    @action("start_ask")
     def action_start_ask(self, plan: Plan) -> None:
         """
         Ask what to do
@@ -390,6 +416,7 @@ class Try(tmt.utils.Common):
 
         plan.provision.go()
 
+    @action("t", "test")
     def action_test(self, plan: Plan) -> None:
         """
         Test again
@@ -398,6 +425,7 @@ class Try(tmt.utils.Common):
         plan.discover.go(force=True)
         plan.execute.go(force=True)
 
+    @action("l", "login")
     def action_login(self, plan: Plan) -> None:
         """
         Log into the guest
@@ -424,6 +452,7 @@ class Try(tmt.utils.Common):
         except ValueError:
             self.print(f"Invalid level '{answer}'.")
 
+    @action("v", "verbose")
     def action_verbose(self, plan: Plan) -> None:
         """
         Set verbosity level of all loggers in given plan
@@ -452,6 +481,7 @@ class Try(tmt.utils.Common):
         except ValueError:
             self.print(f"Invalid level '{answer}'.")
 
+    @action("b", "debug")
     def action_debug(self, plan: Plan) -> None:
         """
         Set verbosity level of all loggers in given plan
@@ -462,6 +492,7 @@ class Try(tmt.utils.Common):
             for phase in step.phases():
                 phase.debug_level = self.debug_level
 
+    @action("d", "discover")
     def action_discover(self, plan: Plan) -> None:
         """
         Discover tests
@@ -469,6 +500,7 @@ class Try(tmt.utils.Common):
 
         plan.discover.go(force=True)
 
+    @action("p", "prepare")
     def action_prepare(self, plan: Plan) -> None:
         """
         Prepare the guest
@@ -479,6 +511,7 @@ class Try(tmt.utils.Common):
         except GeneralError as error:
             self._show_exception(error)
 
+    @action("e", "execute")
     def action_execute(self, plan: Plan) -> None:
         """
         Execute tests
@@ -486,6 +519,7 @@ class Try(tmt.utils.Common):
 
         plan.execute.go(force=True)
 
+    @action("r", "report")
     def action_report(self, plan: Plan) -> None:
         """
         Report results
@@ -493,6 +527,7 @@ class Try(tmt.utils.Common):
 
         plan.report.go(force=True)
 
+    @action("f", "finish")
     def action_finish(self, plan: Plan) -> None:
         """
         Perform the user defined finishing tasks
@@ -500,6 +535,7 @@ class Try(tmt.utils.Common):
 
         plan.finish.go()
 
+    @action("c", "cleanup")
     def action_cleanup(self, plan: Plan) -> None:
         """
         Clean up guests and prune the workdir
@@ -507,6 +543,7 @@ class Try(tmt.utils.Common):
 
         plan.cleanup.go()
 
+    @action("k", "keep")
     def action_keep(self, plan: Plan) -> None:
         """
         Keep run and exit the session
@@ -516,6 +553,7 @@ class Try(tmt.utils.Common):
         run_id = style(str(plan.my_run.workdir), fg="magenta")
         self.print(f"Run {run_id} kept unfinished. See you soon!")
 
+    @action("q", "quit")
     def action_quit(self, plan: Plan) -> None:
         """
         Clean up the run and quit the session
@@ -530,20 +568,22 @@ class Try(tmt.utils.Common):
         run_id = style(str(plan.my_run.workdir), fg="magenta")
         self.print(f"Run {run_id} successfully finished. Bye for now!")
 
+    @action("h", "host")
     def action_host(self, plan: Plan) -> None:
         """
         Run command on the host
         """
 
         while True:
-            self.print(style(f"Enter command (or '\\{Action.QUIT.key}' to quit): ", fg="green"))
+            quit_action = find_action("quit")
+            self.print(style(f"Enter command (or '\\{quit_action.key}' to quit): ", fg="green"))
             try:
                 raw_command = input("> ")
             except (KeyboardInterrupt, EOFError):
                 self.print("Exiting host command mode. Bye for now!")
                 break
 
-            if not raw_command or raw_command == f'\\{Action.QUIT.key}':
+            if not raw_command or raw_command == f'\\{quit_action.key}':
                 self.print("Exiting host command mode. Bye for now!")
                 break
 
@@ -680,28 +720,29 @@ class Try(tmt.utils.Common):
             self.action_verbose(plan)
 
         # Choose the initial action
-        action = Action.START_ASK
+        action = find_action("start_ask")
         if self.opt("login"):
-            action = Action.START_LOGIN
+            action = find_action("start_login")
         elif self.opt("ask"):
-            pass  # already START_ASK
+            pass  # already start_ask
         elif self.tests:
-            action = Action.START_TEST
+            action = find_action("start_test")
 
         # Loop over the actions
         try:
             while True:
                 # Choose the verbose and debug level
-                if action in [Action.VERBOSE, Action.DEBUG]:
-                    getattr(self, f"prompt_{action.action}")()
+                action_name = action.full_name
+                if action_name in ["verbose", "debug"]:
+                    getattr(self, f"prompt_{action_name}")()
 
                 # Handle the individual actions
                 for plan in self.plans:
                     plan.header()
-                    getattr(self, f"action_{action.action}")(plan)
+                    action.func(self, plan)
 
                 # Finish for keep and quit
-                if action in [Action.KEEP, Action.QUIT]:
+                if action_name in ["keep", "quit"]:
                     break
 
                 action = self.choose_action()
