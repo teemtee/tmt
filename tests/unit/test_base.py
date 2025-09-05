@@ -192,7 +192,16 @@ def test_pickleable_tree() -> None:
 
     tree = tmt.Tree.grow()
 
-    pickle.dumps(tree)
+    pickled_tree = pickle.dumps(tree)
+    unpickled_tree = pickle.loads(pickled_tree)  # noqa: S301
+    # Normally we do not expect the unpickled tree to be the same
+    assert tree != unpickled_tree
+    # Check that the underlying components are the same though
+    for k, v in tree.__dict__.items():
+        # Some items we deliberately did not pickle
+        if k in ("_logger",):
+            continue
+        assert v == getattr(unpickled_tree, k)
 
 
 def test_expand_node_data(monkeypatch) -> None:
