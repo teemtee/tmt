@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from re import Pattern
 from shlex import quote
+from typing import Any
 
 import tmt.log
 from tmt.container import container
@@ -28,9 +29,16 @@ class DownloadError(GeneralError):
 
 @container
 class ArtifactInfo:
+    _raw_artifact: dict[str, Any]
     id: int
-    name: str
-    location: str
+
+    @property
+    def name(self) -> str:
+        raise NotImplementedError
+
+    @property
+    def location(self) -> str:
+        raise NotImplementedError
 
     def __str__(self) -> str:
         return self.name
