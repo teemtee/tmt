@@ -75,6 +75,7 @@ from tmt.container import (
     field,
 )
 from tmt.lint import LinterOutcome, LinterReturn
+from tmt.recipe import RecipeBuilder
 from tmt.result import Result, ResultInterpret
 from tmt.utils import (
     Command,
@@ -1248,6 +1249,8 @@ class Test(
 
     serial_number: int = field(default=0, internal=True)
 
+    _original_environment: Optional[tmt.utils.Environment] = None
+
     _KEYS_SHOW_ORDER = [
         # Basic test information
         'summary',
@@ -1361,6 +1364,7 @@ class Test(
             )
 
         self._update_metadata()
+        self._original_environment = self.environment.copy()
 
     @staticmethod
     def overview(tree: 'Tree') -> None:
@@ -4365,6 +4369,7 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         self.unique_id = str(time.time()).split('.')[0]
 
         self.policies = policies or []
+        self.recipe_builder = RecipeBuilder(logger) if self.opt('recipe') else None
 
     @property
     def run_workdir(self) -> Path:
@@ -4462,6 +4467,9 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
             remove=self.remove,
         )
         self.write(Path('run.yaml'), tmt.utils.dict_to_yaml(data.to_serialized()))
+
+        if self.recipe_builder is not None:
+            self.recipe_builder.set_run(data, self.fmf_context)
 
     def load_from_workdir(self) -> None:
         """
@@ -4591,6 +4599,11 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         """
         Check overall results, return appropriate exit code
         """
+        # Save recipe if requested
+        if self.recipe_builder is not None:
+            self.recipe_builder.set_plans(list(self.plans))
+            self.recipe_builder.save(self.run_workdir)
+
         # We get interesting results only if execute or prepare step is enabled
         execute = self.plans[0].execute
         report = self.plans[0].report
