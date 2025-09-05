@@ -968,7 +968,7 @@ ostreecontainer --url {host.bootc_image_url}
 %pre
 #!/bin/sh
 cat > /etc/ostree/auth.json <<EOF
-{host.auth_dict}
+{json.dumps(host.bootc_credentials)}
 EOF
 %end
 """
@@ -978,9 +978,9 @@ EOF
                     {
                         "name": "/distribution/check-system",
                         "role": "None",
-                        "fetch_url": f"{host.bootc_check_system_url}",
+                        "fetch_url": host.bootc_check_system_url,
                         "params": [
-                            f"""BOOTC_IMAGE_URL={host.bootc_image_url}""",
+                            f'BOOTC_IMAGE_URL={host.bootc_image_url}',
                         ],
                     },
                 ]
@@ -1127,26 +1127,26 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
 
     bootc_check_system_url: Optional[str] = field(
         default="https://gitlab.com/fedora/bootc/tests/bootc-beaker-test/-/archive/1.8/bootc-beaker-test-1.8.tar.gz#check-system",
-        option=('--bootc-check-system-url'),
+        option='--bootc-check-system-url',
         metavar='URL',
         help="""
-             Url to check-system task, which is needed for bootc on beaker installation.
+             URL to ``check-system`` task, which is needed for bootc on Beaker installation.
              """,
     )
 
     bootc_image_url: Optional[str] = field(
         default=None,
-        option=('--bootc-image-url'),
+        option='--bootc-image-url',
         metavar='URL',
         help="""
              Select bootc image to be used to perform the installation.
              """,
     )
 
-    bootc_secret: Optional[str] = field(
+    bootc_registry_secret: Optional[str] = field(
         default=None,
-        option=('--bootc-secret'),
-        metavar='BOOTC_SECRET',
+        option='--bootc-registry-secret',
+        metavar='SECRET',
         help="""
              Specify bootc secret, which will be used for fetching from registry.
              """,
@@ -1155,9 +1155,9 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
     bootc: bool = field(
         default=False,
         is_flag=True,
-        option=('--bootc'),
+        option='--bootc',
         help="""
-             If set, bootc on beaker installation will be performed.
+             If set, bootc on Beaker installation will be performed.
              """,
     )
 
@@ -1200,9 +1200,9 @@ class CreateJobParameters:
     beaker_job_owner: Optional[str]
     public_key: list[str]
     group: Optional[str]
-    auth_dict: Optional[str]
+    bootc_credentials: Optional[dict[str, Any]]
     bootc_image_url: Optional[str]
-    bootc: Optional[bool]
+    bootc: bool
     bootc_check_system_url: Optional[str]
 
     def to_mrack(self) -> dict[str, Any]:
@@ -1423,23 +1423,20 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         except mrack.errors.MrackError:
             return False
 
-    def _create_auth_credentials(self) -> dict[str, Any]:
+    @property
+    def _bootc_registry_credentials(self) -> dict[str, Any]:
         """Create authentication dictionary with proper credential handling"""
-        if not self.data.bootc_secret:
+        if not self.data.bootc_registry_secret:
             return {}
         assert self.data.bootc_image_url
         base_repo = _get_registry_from_url(self.data.bootc_image_url)
         # Support multiple registries
-        return {"auths": {base_repo: {"auth": self.data.bootc_secret}}}
+        return {"auths": {base_repo: {"auth": self.data.bootc_registry_secret}}}
 
     def _create(self, tmt_name: str) -> None:
         """
         Create beaker job xml request and submit it to Beaker hub
         """
-        auth_dict_str = None
-        if self.data.bootc:
-            auth_dict = self._create_auth_credentials()
-            auth_dict_str = json.dumps(auth_dict) if auth_dict else None
 
         data = CreateJobParameters(
             tmt_name=tmt_name,
@@ -1452,7 +1449,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             beaker_job_owner=self.beaker_job_owner,
             public_key=self.public_key,
             group=self.beaker_job_group,
-            auth_dict=auth_dict_str,
+            bootc_credentials=self._bootc_registry_credentials if self.data.bootc else None,
             bootc_image_url=self.data.bootc_image_url,
             bootc=self.data.bootc,
             bootc_check_system_url=self.data.bootc_check_system_url,
@@ -1581,6 +1578,9 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
         self.verbose('primary address', self.primary_address, 'green')
         self.verbose('topology address', self.topology_address, 'green')
+
+        if not self.is_dry_run:
+            self.assert_reachable()
 
     def remove(self) -> None:
         """
@@ -1740,7 +1740,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
         """Comprehensive bootc configuration validation"""
 
         # Required fields validation
-        required_fields = ['bootc_secret', 'image', 'bootc_image_url']
+        required_fields = ['image', 'bootc_image_url']
 
         missing_fields = [field for field in required_fields if not getattr(self.data, field)]
         if missing_fields:
@@ -1749,15 +1749,15 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
             )
 
         # Validate image URLs
-        if self.data.bootc_image_url and not self._is_valid_bootc_image_url(
-            self.data.bootc_image_url
-        ):
+        if not self._validate_bootc_image_url():
             raise tmt.utils.ProvisionError(f"Invalid image URL: {self.data.bootc_image_url}")
 
-    def _is_valid_bootc_image_url(self, url: str) -> bool:
+    def _validate_bootc_image_url(self) -> bool:
+        if not self.data.bootc_image_url:
+            return False
         """Validate container image URL format"""
         pattern = r'^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*:[a-zA-Z0-9._-]+$'
-        return bool(re.match(pattern, url))
+        return bool(re.match(pattern, self.data.bootc_image_url))
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
@@ -1767,7 +1767,6 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
         super().go(logger=logger)
 
         if self.data.bootc:
-            assert self.workdir
             self._validate_bootc_configuration()
 
         data = BeakerGuestData.from_plugin(self)
