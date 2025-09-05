@@ -18,8 +18,3 @@ adjust+:
     when: distro >= fedora-41
     because: |
         We are not interested in AVCs for this test due to complicated setup.
-  - when: distro >= fedora-43
-    enabled: false
-    because: |
-      Tests have started to degrade, further investigation is needed
-      https://artifacts.dev.testing-farm.io/96c31e1f-425c-4e81-bb63-710a64836396/
