@@ -204,6 +204,10 @@ class GuestLocal(tmt.Guest):
         if not destination:
             destination = Path('/')
 
+        # Files identical, skipping
+        if source.resolve() == destination.resolve():
+            return
+
         # no-op case
         if (
             source.resolve() == parent.plan.workdir.resolve()
