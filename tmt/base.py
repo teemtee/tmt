@@ -3801,21 +3801,6 @@ class Tree(tmt.utils.Common):
         self._custom_fmf_context = fmf_context or FmfContext()
         self._additional_rules = additional_rules
 
-    def __getstate__(self) -> dict[str, Any]:
-        """
-        Helper function for pickling.
-        """
-        state = self.__dict__.copy()
-        del state["_logger"]
-        return state
-
-    def __setstate__(self, state: dict[str, Any]) -> None:
-        """
-        Helper function for pickling.
-        """
-        self.__dict__.update(state)
-        self._logger = tmt.log.Logger.create()
-
     @classmethod
     def grow(
         cls,
