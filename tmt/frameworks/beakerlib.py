@@ -123,12 +123,13 @@ class Beakerlib(TestFramework):
         options: Optional['TransferOptions'],
         logger: tmt.log.Logger,
     ) -> 'TransferOptions':
+        # Do not pull beakerlib backups
         return (
             dataclasses.replace(
                 options, exclude=[*options.exclude, str(invocation.path / "backup*")]
             )
             if options
-            else TransferOptions()
+            else TransferOptions(exclude=[str(invocation.path / "backup*")])
         )
 
     @classmethod
