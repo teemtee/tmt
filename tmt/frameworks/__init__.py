@@ -1,9 +1,10 @@
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Optional
 
 import tmt.log
 import tmt.plugins
 import tmt.result
 import tmt.utils
+from tmt.steps.provision import TransferOptions
 
 if TYPE_CHECKING:
     from tmt.base import DependencySimple, Test
@@ -101,18 +102,21 @@ class TestFramework:
     def get_pull_options(
         cls,
         invocation: 'TestInvocation',
+        options: Optional['TransferOptions'],
         logger: tmt.log.Logger,
-    ) -> list[str]:
+    ) -> 'TransferOptions':
         """
         Provide additional options for pulling test data directory.
 
         :param invocation: test invocation to which the check belongs to.
+        :param options: options already specified by tmt, which
+            can be extended or overridden by the framework.
         :param logger: to use for logging.
-        :returns: additional options for the ``rsync`` tmt would use to pull
-            the test data directory from the guest.
+        :returns: options tmt would use to pull the test data
+            directory from the guest.
         """
 
-        return []
+        return options.copy() if options else TransferOptions()
 
     @classmethod
     def extract_results(
