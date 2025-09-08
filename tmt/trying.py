@@ -22,12 +22,15 @@ import tmt.steps.prepare.feature
 import tmt.templates
 import tmt.utils
 from tmt import Plan
+from tmt._compat.typing import TypeAlias
 from tmt.base import RunData
 from tmt.steps.prepare import PreparePlugin
 from tmt.utils import Command, GeneralError, MetadataError, Path
 from tmt.utils.themes import style
 
 USER_PLAN_NAME = "/user/plan"
+
+ActionHandler: TypeAlias = Callable[[Callable[..., Any]], Callable[..., Any]]
 
 
 class ActionInfo:
@@ -83,7 +86,7 @@ class ActionInfo:
 ACTION_REGISTRY: dict[str, ActionInfo] = {}
 
 
-def action(*commands: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def action(*commands: str) -> ActionHandler:
     """
     Decorator to register an action with given command names.
 
