@@ -148,7 +148,7 @@ cp docs/header.txt man.rst
 tail -n+8 docs/overview.rst >> man.rst
 # TODO rst2man cannot process this directive, removed for now
 sed '/versionadded::/d' -i man.rst
-rst2man.py man.rst > tmt.1
+rst2man man.rst > tmt.1
 
 %install
 %pyproject_install
