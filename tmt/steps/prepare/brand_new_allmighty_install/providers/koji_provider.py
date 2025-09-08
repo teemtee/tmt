@@ -79,9 +79,13 @@ class KojiProvider(ArtifactProvider):
 
     def _parse_artifact_id(self, artifact_id: str) -> str:
         # Eg: 'koji.build:123456'
-        if not artifact_id.startswith("koji.build:"):
+        prefix = "koji.build:"
+        if (
+            not artifact_id.startswith(prefix)
+            or not (parsed := artifact_id[len(prefix) :]).isdigit()
+        ):
             raise ValueError(f"Invalid artifact ID format: {artifact_id}")
-        return artifact_id[len("koji.build:") :]
+        return parsed
 
     def list_artifacts(self) -> Iterator[ArtifactInfo]:
         """
