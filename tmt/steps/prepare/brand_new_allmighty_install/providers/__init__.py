@@ -28,7 +28,7 @@ class DownloadError(GeneralError):
 
 
 @container
-class ArtifactInfo:
+class ArtifactInfo(ABC):
     _raw_artifact: dict[str, Any]
     id: int
 
