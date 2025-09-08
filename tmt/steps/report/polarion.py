@@ -402,8 +402,6 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             # See https://github.com/python/mypy/issues/3004 for getter/setter discussions
             result.properties = testcase_properties  # type: ignore[assignment]
 
-        assert self.workdir is not None
-
         testsuites_properties.update(
             {
                 'polarion-project-id': project_id,
@@ -431,7 +429,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             results_context=results_context,
         )
 
-        f_path = self.data.file or self.workdir / DEFAULT_FILENAME
+        f_path = self.data.file or self.phase_workdir / DEFAULT_FILENAME
 
         try:
             f_path.write_text(xml_data)

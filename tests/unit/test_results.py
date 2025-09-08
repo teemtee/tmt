@@ -288,6 +288,7 @@ def test_save_failures(tmppath: Path, root_logger) -> None:
 
     phase = Common(workdir=tmppath, logger=root_logger)
     phase.step = MagicMock(workdir=tmppath)
+    phase.step_workdir = tmppath
     invocation = TestInvocation(root_logger, phase, None, None)
 
     (tmppath / 'data').mkdir()

@@ -189,9 +189,6 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
         Prepare the guests
         """
 
-        assert self.step.workdir is not None
-        assert self.workdir is not None
-
         outcome = super().go(guest=guest, environment=environment, logger=logger)
 
         # Apply each playbook on the guest
@@ -201,12 +198,13 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             playbook_name = f'{self.name} / {_playbook}'
             lowercased_playbook = _playbook.lower()
 
-            playbook_record_dirpath = self.workdir / f'playbook-{playbook_index}' / guest.safe_name
+            playbook_record_dirpath = (
+                self.phase_workdir / f'playbook-{playbook_index}' / guest.safe_name
+            )
             playbook_log_filepath = playbook_record_dirpath / 'output.txt'
 
             def normalize_remote_playbook(raw_playbook: str) -> tuple[Path, AnsibleApplicable]:
-                assert self.step.workdir is not None  # narrow type
-                root_path = self.step.workdir
+                root_path = self.step_workdir
 
                 try:
                     with retry_session(
@@ -278,7 +276,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                         name=playbook_name,
                         result=ResultOutcome.FAIL,
                         note=tmt.utils.render_exception_as_notes(exc),
-                        log=[playbook_log_filepath.relative_to(self.step.workdir)],
+                        log=[playbook_log_filepath.relative_to(self.step_workdir)],
                     )
                 )
 
@@ -309,7 +307,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                     tmt.result.PhaseResult(
                         name=playbook_name,
                         result=ResultOutcome.PASS,
-                        log=[playbook_log_filepath.relative_to(self.step.workdir)],
+                        log=[playbook_log_filepath.relative_to(self.step_workdir)],
                     )
                 )
 
