@@ -1166,7 +1166,9 @@ class BeakerAPI:
         try:
             config_data = tmt.utils.yaml_to_dict(provisioning_config.read_text())
         except Exception as config_err:
-            raise ProvisionError(f"Failed to load mrack provisioning configuration: {config_err}")
+            raise ProvisionError(
+                "Failed to load mrack provisioning configuration."
+            ) from config_err
 
         # Create transformer with thread-safe context
         self._mrack_transformer = TmtBeakerTransformer()
@@ -1188,7 +1190,7 @@ class BeakerAPI:
                 f"Configuration file missing: {missing_conf_err.filename}"
             ) from missing_conf_err
         except Exception as e:
-            raise ProvisionError(f"Failed to initialize mrack transformer: {e}")
+            raise ProvisionError("Failed to initialize mrack transformer.") from e
 
         self._mrack_provider = self._mrack_transformer._provider
         self._mrack_provider.poll_sleep = DEFAULT_PROVISION_TICK
