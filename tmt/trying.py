@@ -45,6 +45,7 @@ class ActionInfo:
     func: Callable[..., Any]
     order: int = 0
     group: int = 0
+    exit_loop: bool = False
 
     @functools.cached_property
     def primary_command(self) -> str:
@@ -89,14 +90,17 @@ class ActionInfo:
 ACTION_REGISTRY: dict[str, ActionInfo] = {}
 
 
-def action(*commands: str, order: int = 0, group: int = 0) -> ActionHandler:
+def action(
+    *commands: str, order: int = 0, group: int = 0, exit_loop: bool = False
+) -> ActionHandler:
     """
     Decorator to register an action with given command names.
 
     The help text is extracted from the function's docstring.
     Multiple command names can be provided (e.g., 'q', 'quit').
-    Order parameter controls display order in menu (lower values first).
-    Group parameter controls menu grouping (actions with same group are grouped together).
+    The ``order`` parameter controls display order in menu (lower values first).
+    The ``group`` parameter controls menu grouping (actions with same group are grouped together).
+    The ``exit_loop`` parameter indicates that the action should exit the main loop when invoked.
     """
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -105,7 +109,12 @@ def action(*commands: str, order: int = 0, group: int = 0) -> ActionHandler:
         help_text = help_text.strip().split('\n')[0] if help_text else ""
 
         action_info = ActionInfo(
-            commands=set(commands), help_text=help_text, func=func, order=order, group=group
+            commands=set(commands),
+            help_text=help_text,
+            func=func,
+            order=order,
+            group=group,
+            exit_loop=exit_loop,
         )
 
         # Register all commands for this action
@@ -537,7 +546,7 @@ class Try(tmt.utils.Common):
 
         plan.cleanup.go()
 
-    @action("k", "keep", order=12, group=3)
+    @action("k", "keep", order=12, group=3, exit_loop=True)
     def action_keep(self, plan: Plan) -> None:
         """
         Keep run and exit the session
@@ -547,7 +556,7 @@ class Try(tmt.utils.Common):
         run_id = style(str(plan.my_run.workdir), fg="magenta")
         self.print(f"Run {run_id} kept unfinished. See you soon!")
 
-    @action("q", "quit", order=13, group=3)
+    @action("q", "quit", order=13, group=3, exit_loop=True)
     def action_quit(self, plan: Plan) -> None:
         """
         Clean up the run and quit the session
@@ -735,8 +744,8 @@ class Try(tmt.utils.Common):
                     plan.header()
                     action.func(self, plan)
 
-                # Finish for keep and quit
-                if action_name in ["keep", "quit"]:
+                # Finish if action requests loop exit
+                if action.exit_loop:
                     break
 
                 action = self.choose_action()
