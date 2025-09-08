@@ -438,23 +438,24 @@ class Try(tmt.utils.Common):
         plan.login.go(force=True)
 
     @action("v", "verbose", order=4, group=1)
-    def action_verbose(self, plan: Plan) -> None:
+    def action_verbose(self, plan: Plan, *, prompt: bool = True) -> None:
         """
         Set verbosity level of all loggers in given plan
         """
 
-        self.print("What verbose level do you need?")
-        answer = input(f"Choose 0-3, hit Enter to keep {self.verbosity_level}> ")
+        if prompt:
+            self.print("What verbose level do you need?")
+            answer = input(f"Choose 0-3, hit Enter to keep {self.verbosity_level}> ")
 
-        if answer == "":
-            self.print(f"Keeping verbose level {self.verbosity_level}.")
-        else:
-            try:
-                self.verbosity_level = int(answer)
-                self.print(f"Switched to verbose level {self.verbosity_level}.")
-            except ValueError:
-                self.print(f"Invalid level '{answer}'.")
-                return
+            if answer == "":
+                self.print(f"Keeping verbose level {self.verbosity_level}.")
+            else:
+                try:
+                    self.verbosity_level = int(answer)
+                    self.print(f"Switched to verbose level {self.verbosity_level}.")
+                except ValueError:
+                    self.print(f"Invalid level '{answer}'.")
+                    return
 
         for step in plan.steps(enabled_only=False):
             step.verbosity_level = self.verbosity_level
@@ -462,23 +463,24 @@ class Try(tmt.utils.Common):
                 phase.verbosity_level = self.verbosity_level
 
     @action("b", "debug", order=5, group=1)
-    def action_debug(self, plan: Plan) -> None:
+    def action_debug(self, plan: Plan, *, prompt: bool = True) -> None:
         """
         Set debug level of all loggers in given plan
         """
 
-        self.print("Which debug level would you like?")
-        answer = input(f"Choose 0-3, hit Enter to keep {self.debug_level}> ")
+        if prompt:
+            self.print("Which debug level would you like?")
+            answer = input(f"Choose 0-3, hit Enter to keep {self.debug_level}> ")
 
-        if answer == "":
-            self.print(f"Keeping debug level {self.debug_level}.")
-        else:
-            try:
-                self.debug_level = int(answer)
-                self.print(f"Switched to debug level {self.debug_level}.")
-            except ValueError:
-                self.print(f"Invalid level '{answer}'.")
-                return
+            if answer == "":
+                self.print(f"Keeping debug level {self.debug_level}.")
+            else:
+                try:
+                    self.debug_level = int(answer)
+                    self.print(f"Switched to debug level {self.debug_level}.")
+                except ValueError:
+                    self.print(f"Invalid level '{answer}'.")
+                    return
 
         for step in plan.steps(enabled_only=False):
             step.debug_level = self.debug_level
@@ -710,7 +712,7 @@ class Try(tmt.utils.Common):
         # Set the default verbosity level, handle options
         for plan in self.plans:
             self.handle_options(plan)
-            self.action_verbose(plan)
+            self.action_verbose(plan, prompt=False)
 
         # Choose the initial action
         action = find_action("start_ask")
