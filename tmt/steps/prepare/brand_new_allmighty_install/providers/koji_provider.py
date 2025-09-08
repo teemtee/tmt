@@ -82,10 +82,9 @@ class KojiProvider(ArtifactProvider[KojiArtifactInfo]):
         prefix = "koji.build:"
         if not artifact_id.startswith(prefix):
             raise ValueError(f"Invalid artifact ID format: {artifact_id}")
-            
-        parsed = artifact_id[len(prefix):]
+
+        parsed = artifact_id[len(prefix) :]
         if not parsed.isdigit():
-            raise ValueError(f"Invalid artifact ID format: {artifact_id}")
             raise ValueError(f"Invalid artifact ID format: {artifact_id}")
         return parsed
 
