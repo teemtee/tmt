@@ -19,7 +19,7 @@ needed is ready ``tmt`` expects one the following three scenarios:
 If you choose option 3 above, please review carefully the detailed
 requirements described below and adjust your guest preparation
 scripts (e.g. containerfile used for creating the guest image) to
-ensure your tests can be executed smootly.
+ensure your tests can be executed smoothly.
 
 .. _minimal-requirements:
 
