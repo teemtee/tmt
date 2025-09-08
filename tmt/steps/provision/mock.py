@@ -50,6 +50,8 @@ class MockShell:
         self.rootdir = rootdir
         self.mock_shell: Optional[subprocess.Popen] = None
         self.epoll: Optional[select.epoll] = None
+        # Required by loggers
+        self.pid: Optional[int] = None
 
         self.command_prefix = Command('mock')
         if self.config is not None:
@@ -78,6 +80,7 @@ class MockShell:
             self.mock_shell = None
             self.epoll.close()
             self.epoll = None
+            self.pid = None
 
     def enter_shell(self):
         command = self.command_prefix.to_popen()
@@ -99,6 +102,7 @@ class MockShell:
             text=True,
         )
         self.epoll = select.epoll()
+        self.pid = self.mock_shell.pid
 
         self.mock_shell_stdout_fd = self.mock_shell.stdout.fileno()
         flags = fcntl.fcntl(self.mock_shell_stdout_fd, fcntl.F_GETFL)
