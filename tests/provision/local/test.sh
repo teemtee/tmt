@@ -10,14 +10,17 @@ rlJournalStart
 
     rlPhaseStartTest "Test script installation"
         # Run tmt with local provision
-        rlRun "tmt --feeling-safe run provision plan -n script"
+        rlRun -s "tmt --feeling-safe run provision plan"
 
         # Check if the script was installed in the default location
-        script_path="$tmp/tmt-abort"
+        script_path="$tmp/tmt-file-submit"
         rlAssertExists "$script_path"
 
         # Check if the script is executable
         rlRun "test -x $script_path" 0 "Check if script is executable"
+
+        # Check that the error is not in the log
+        rlAssertNotGrep "No such file or directory" $rlRun_LOG
 
     rlPhaseEnd
 

@@ -1,6 +1,5 @@
 discover:
     how: fmf
-    path: .
 provision:
     how: local
 execute:
