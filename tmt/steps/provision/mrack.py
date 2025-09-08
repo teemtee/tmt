@@ -1444,9 +1444,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
         if self.job_id and self.primary_address:
             return
-        """
-        Create beaker job xml request and submit it to Beaker hub
-        """
+
         tmt_name = self._tmt_name()
         data = CreateJobParameters(
             tmt_name=tmt_name,
