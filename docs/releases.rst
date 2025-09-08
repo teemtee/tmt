@@ -12,6 +12,10 @@ plugin, the reboot command now properly applies ``sudo`` when
 necessary, ensuring correct privilege handling during system
 restarts.
 
+New keys, ``skip-tests-before`` and ``skip-tests-after``, were added to
+the :ref:`/plugins/execute/upgrade` plugin, allowing users to skip
+running discovered tests on the old system or new system, respectively.
+
 
 tmt-1.56.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
