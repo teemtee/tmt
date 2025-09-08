@@ -2,6 +2,7 @@
 Easily try tests and experiment with guests
 """
 
+import functools
 import re
 import shlex
 from collections.abc import Callable, Iterator
@@ -42,23 +43,23 @@ class ActionInfo:
     help_text: str
     func: Callable[..., Any]
 
-    @property
+    @functools.cached_property
     def primary_command(self) -> str:
         """Return the primary (first) command"""
         return min(self.commands)
 
-    @property
+    @functools.cached_property
     def key(self) -> str:
         """Return the keyboard shortcut (first character of first command)"""
         return self.primary_command[0]
 
-    @property
+    @functools.cached_property
     def full_name(self) -> str:
         """Return the full command name (longest command)"""
         return max(self.commands, key=len)
 
-    @property
-    def menu(self) -> str:
+    @functools.cached_property
+    def menu_item(self) -> str:
         """Show menu with the keyboard shortcut highlighted"""
         full_name = self.full_name
         key = self.key
@@ -351,7 +352,7 @@ class Try(tmt.utils.Common):
             ]
 
             for group in groups:
-                menu_lines.extend(f"    {action_info.menu}" for action_info in group)
+                menu_lines.extend(f"    {action_info.menu_item}" for action_info in group)
                 menu_lines.append("")
 
             self.print("\n".join(menu_lines))
