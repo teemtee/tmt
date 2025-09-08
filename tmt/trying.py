@@ -437,9 +437,10 @@ class Try(tmt.utils.Common):
         assert plan.login is not None  # Narrow type
         plan.login.go(force=True)
 
-    def prompt_verbose(self) -> None:
+    @action("v", "verbose", order=4, group=1)
+    def action_verbose(self, plan: Plan) -> None:
         """
-        Ask for the desired verbosity level
+        Set verbosity level of all loggers in given plan
         """
 
         self.print("What verbose level do you need?")
@@ -447,28 +448,23 @@ class Try(tmt.utils.Common):
 
         if answer == "":
             self.print(f"Keeping verbose level {self.verbosity_level}.")
-            return
-
-        try:
-            self.verbosity_level = int(answer)
-            self.print(f"Switched to verbose level {self.verbosity_level}.")
-        except ValueError:
-            self.print(f"Invalid level '{answer}'.")
-
-    @action("v", "verbose", order=4, group=1)
-    def action_verbose(self, plan: Plan) -> None:
-        """
-        Set verbosity level of all loggers in given plan
-        """
+        else:
+            try:
+                self.verbosity_level = int(answer)
+                self.print(f"Switched to verbose level {self.verbosity_level}.")
+            except ValueError:
+                self.print(f"Invalid level '{answer}'.")
+                return
 
         for step in plan.steps(enabled_only=False):
             step.verbosity_level = self.verbosity_level
             for phase in step.phases():
                 phase.verbosity_level = self.verbosity_level
 
-    def prompt_debug(self) -> None:
+    @action("b", "debug", order=5, group=1)
+    def action_debug(self, plan: Plan) -> None:
         """
-        Choose the right debug level
+        Set debug level of all loggers in given plan
         """
 
         self.print("Which debug level would you like?")
@@ -476,19 +472,13 @@ class Try(tmt.utils.Common):
 
         if answer == "":
             self.print(f"Keeping debug level {self.debug_level}.")
-            return
-
-        try:
-            self.debug_level = int(answer)
-            self.print(f"Switched to debug level {self.debug_level}.")
-        except ValueError:
-            self.print(f"Invalid level '{answer}'.")
-
-    @action("b", "debug", order=5, group=1)
-    def action_debug(self, plan: Plan) -> None:
-        """
-        Set verbosity level of all loggers in given plan
-        """
+        else:
+            try:
+                self.debug_level = int(answer)
+                self.print(f"Switched to debug level {self.debug_level}.")
+            except ValueError:
+                self.print(f"Invalid level '{answer}'.")
+                return
 
         for step in plan.steps(enabled_only=False):
             step.debug_level = self.debug_level
@@ -734,11 +724,6 @@ class Try(tmt.utils.Common):
         # Loop over the actions
         try:
             while True:
-                # Choose the verbose and debug level
-                action_name = action.full_name
-                if action_name in ["verbose", "debug"]:
-                    getattr(self, f"prompt_{action_name}")()
-
                 # Handle the individual actions
                 for plan in self.plans:
                     plan.header()
