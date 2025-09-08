@@ -15,7 +15,7 @@ from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
 
 #: The default helper scripts destination directory
-DEFAULT_HELPER_SCRIPTS_DEST_DIR = Path("/var/lib/tmt/helper/scripts")
+DEFAULT_HELPER_SCRIPTS_DEST_DIR = Path("/var/tmp/tmt/scripts")  # noqa: S108
 
 
 @container
@@ -216,9 +216,10 @@ class GuestLocal(tmt.Guest):
 
         # Copy scripts and set permissions
         install_cmd = Command('install', '-p', '-m', '755', source_resolved, destination_resolved)
-        if not self.facts.is_superuser:
-            install_cmd = Command('sudo') + install_cmd
-        self.execute(install_cmd, silent=True)
+        try:
+            self.execute(install_cmd, silent=True)
+        except tmt.utils.RunError:
+            self.execute(Command('sudo') + install_cmd, silent=True)
 
     def pull(
         self,
