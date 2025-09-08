@@ -1295,7 +1295,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         super().__init__(*args, **kwargs)
 
         assert isinstance(self.parent, tmt.steps.provision.Provision)
-        self.mrack_log = f"{self.workdir}/{self.parent.name}-mrack.log"
+        self.mrack_log = f"{self.parent.workdir}/{self.parent.name}-mrack.log"
         import_and_load_mrack_deps(self.mrack_log, self._logger)
 
     @property
