@@ -102,8 +102,6 @@ class DmesgCheck(Check):
     def _save_dmesg(
         self, invocation: 'TestInvocation', event: CheckEvent, logger: tmt.log.Logger
     ) -> tuple[ResultOutcome, list[Path]]:
-        assert invocation.phase.step.workdir is not None  # narrow type
-
         timestamp = format_timestamp(datetime.datetime.now(datetime.timezone.utc))
 
         path = invocation.check_files_path / TEST_POST_DMESG_FILENAME.format(event=event.value)
@@ -127,7 +125,7 @@ class DmesgCheck(Check):
         )
 
         log_paths = [
-            path.relative_to(invocation.phase.step.workdir),
+            path.relative_to(invocation.phase.step_workdir),
             save_failures(invocation, invocation.check_files_path, failures),
         ]
 

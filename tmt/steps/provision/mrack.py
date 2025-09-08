@@ -1253,7 +1253,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         super().__init__(*args, **kwargs)
 
         assert isinstance(self.parent, tmt.steps.provision.Provision)
-        import_and_load_mrack_deps(self.parent.workdir, self.parent.name, self._logger)
+        import_and_load_mrack_deps(self.step_workdir, self.parent.name, self._logger)
 
     @property
     def api(self) -> BeakerAPI:

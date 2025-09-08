@@ -33,6 +33,7 @@ from tmt.steps.provision import Guest
 from tmt.utils import (
     Command,
     CommandOutput,
+    HasStepWorkdir,
     Path,
     ShellScript,
     Stopwatch,
@@ -104,7 +105,7 @@ ExecuteStepDataT = TypeVar('ExecuteStepDataT', bound=ExecuteStepData)
 
 
 @container
-class TestInvocation:
+class TestInvocation(HasStepWorkdir):
     """
     A bundle describing one test invocation.
 
@@ -147,15 +148,9 @@ class TestInvocation:
     #: Number of times the guest has been rebooted.
     _reboot_count: int = 0
 
-    @functools.cached_property
+    @property
     def step_workdir(self) -> Path:
-        """
-        Absolute path to which relative paths are relative to.
-        """
-
-        assert self.phase.step.workdir is not None  # narrow type
-
-        return self.phase.step.workdir
+        return self.phase.step_workdir
 
     @functools.cached_property
     def path(self) -> Path:
@@ -163,10 +158,8 @@ class TestInvocation:
         Absolute path to invocation directory
         """
 
-        assert self.phase.step.workdir is not None  # narrow type
-
         path = (
-            self.phase.step.workdir
+            self.step_workdir
             / TEST_DATA
             / 'guest'
             / self.guest.safe_name

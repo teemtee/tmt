@@ -367,13 +367,12 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         super().go(logger=logger)
         tests = fmf.Tree({'summary': 'tests'})
 
-        assert self.workdir is not None
-        testdir = self.workdir / "tests"
+        testdir = self.phase_workdir / "tests"
 
         self.log_import_plan_details()
 
         # dist-git related
-        sourcedir = self.workdir / 'source'
+        sourcedir = self.phase_workdir / 'source'
 
         # Fetch remote repository related
 
@@ -386,7 +385,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             # Symlink tests directory to the plan work tree
             assert self.step.plan.worktree  # narrow type
 
-            relative_path = self.step.plan.worktree.relative_to(self.workdir)
+            relative_path = self.step.plan.worktree.relative_to(self.phase_workdir)
             testdir.symlink_to(relative_path)
 
             if keep_git_metadata:

@@ -224,9 +224,6 @@ class GuestContainer(tmt.Guest):
                 self._logger,
             )
 
-        # Mount the whole plan directory in the container
-        workdir = self.parent.plan.workdir
-
         self.verbose('name', self.container, 'green')
 
         additional_args = []
@@ -243,7 +240,8 @@ class GuestContainer(tmt.Guest):
                 '--name',
                 self.container,
                 '-v',
-                f'{workdir}:{workdir}:z',
+                # Mount the whole plan directory in the container
+                f'{self.plan_workdir}:{self.plan_workdir}:z',
                 '-itd',
                 '--user',
                 self.user,
@@ -479,16 +477,13 @@ class GuestContainer(tmt.Guest):
             return
 
         assert self.parent.plan.my_run is not None  # narrow type
-        assert self.parent.plan.workdir is not None  # narrow type
 
         # Relabel workdir to container_file_t if SELinux supported
         self.debug("Update selinux context of the run workdir.", level=3)
 
         if self.parent.plan.my_run.runner.facts.has_selinux:
             self._run_guest_command(
-                Command(
-                    "chcon", "--recursive", "--type=container_file_t", self.parent.plan.workdir
-                ),
+                Command("chcon", "--recursive", "--type=container_file_t", self.plan_workdir),
                 shell=False,
                 silent=True,
             )

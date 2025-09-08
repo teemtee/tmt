@@ -668,5 +668,4 @@ def save_failures(
     existing_failures += failures
 
     invocation.phase.write(path, tmt.utils.dict_to_yaml(existing_failures))
-    assert invocation.phase.step.workdir is not None  # narrow type
-    return path.relative_to(invocation.phase.step.workdir)
+    return path.relative_to(invocation.phase.step_workdir)

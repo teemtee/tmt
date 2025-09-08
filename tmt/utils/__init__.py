@@ -1434,6 +1434,107 @@ def sanitize_name(name: str, allow_slash: bool = True) -> str:
     return pattern.sub('-', name).strip('-')
 
 
+class HasRunWorkdir:
+    """
+    Provides assured access to a run workdir.
+    """
+
+    # Keep this method around, to correctly support Python's method resolution order.
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+    @property
+    def run_workdir(self) -> Path:
+        """
+        Path to a run workdir.
+
+        :raises GeneralError: when there is no current run, or the run
+            does not have a workdir yet.
+        """
+
+        raise NotImplementedError
+
+
+class HasPlanWorkdir:
+    """
+    Provides assured access to a plan workdir.
+    """
+
+    # Keep this method around, to correctly support Python's method resolution order.
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+    @property
+    def plan_workdir(self) -> Path:
+        """
+        Path to a plan workdir.
+
+        :raises GeneralError: when there is no plan workdir yet.
+        """
+
+        raise NotImplementedError
+
+
+class HasStepWorkdir:
+    """
+    Provides assured access to a step workdir.
+    """
+
+    # Keep this method around, to correctly support Python's method resolution order.
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+    @property
+    def step_workdir(self) -> Path:
+        """
+        Path to a step workdir.
+
+        :raises GeneralError: when there is no step workdir yet.
+        """
+
+        raise NotImplementedError
+
+
+class HasPhaseWorkdir:
+    """
+    Provides assured access to a phase workdir.
+    """
+
+    # Keep this method around, to correctly support Python's method resolution order.
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+    @property
+    def phase_workdir(self) -> Path:
+        """
+        Path to a phase workdir.
+
+        :raises GeneralError: when there is no phase workdir yet.
+        """
+
+        raise NotImplementedError
+
+
+class HasGuestWorkdir:
+    """
+    Provides assured access to a guest workdir.
+    """
+
+    # Keep this method around, to correctly support Python's method resolution order.
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+    @property
+    def guest_workdir(self) -> Path:
+        """
+        Path to a guest workdir.
+
+        :raises GeneralError: when there is no guest workdir yet.
+        """
+
+        raise NotImplementedError
+
+
 class _CommonBase:
     """
     A base class for **all** classes contributing to "common" tree of classes.

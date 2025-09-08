@@ -1251,7 +1251,14 @@ class GuestLog:
             logger.warning(f'Failed to fetch log: {self.name}')
 
 
-class Guest(tmt.utils.Common):
+class Guest(
+    tmt.utils.HasRunWorkdir,
+    tmt.utils.HasPlanWorkdir,
+    tmt.utils.HasStepWorkdir,
+    tmt.utils.HasPhaseWorkdir,
+    tmt.utils.HasGuestWorkdir,
+    tmt.utils.Common,
+):
     """
     Guest provisioned for test execution
 
@@ -1324,6 +1331,35 @@ class Guest(tmt.utils.Common):
         super().__init__(logger=logger, parent=parent, name=name)
         self.load(data)
 
+    @property
+    def run_workdir(self) -> Path:
+        return cast(Provision, self.parent).run_workdir
+
+    @property
+    def plan_workdir(self) -> Path:
+        return cast(Provision, self.parent).plan_workdir
+
+    @property
+    def step_workdir(self) -> Path:
+        return cast(Provision, self.parent).step_workdir
+
+    # TODO: this will not work: `self.parent` is not the owning phase,
+    # but the `provision` step itself. We do not have access to the
+    # original phase.
+    #
+    # @property
+    # def phase_workdir(self) -> Path:
+    #     return cast(Provision, self.parent).phase_workdir
+
+    @property
+    def guest_workdir(self) -> Path:
+        if self.workdir is None:
+            raise GeneralError(
+                'Existence of a guest workdir was presumed but the workdir does not exist.'
+            )
+
+        return self.workdir
+
     def _random_name(self, prefix: str = '', length: int = 16) -> str:
         """
         Generate a random name
@@ -1345,9 +1381,7 @@ class Guest(tmt.utils.Common):
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
 
-        assert parent.plan.my_run is not None  # narrow type
-        assert parent.plan.my_run.workdir is not None  # narrow type
-        run_id = parent.plan.my_run.workdir.name
+        run_id = parent.run_workdir.name
         return self._random_name(prefix=f"tmt-{run_id[-3:]}-")
 
     @functools.cached_property
@@ -2301,11 +2335,7 @@ class GuestSsh(Guest):
         """
 
         # Can be any step opening the connection
-        assert isinstance(self.parent, tmt.steps.Step)
-        assert self.parent.plan.my_run is not None
-        assert self.parent.plan.my_run.workdir is not None
-
-        socket_dir = self.parent.plan.my_run.workdir / 'ssh-sockets'
+        socket_dir = self.run_workdir / 'ssh-sockets'
 
         try:
             socket_dir.mkdir(parents=True, exist_ok=True)
@@ -2751,12 +2781,7 @@ class GuestSsh(Guest):
         if destination is None:
             destination = Path("/")
         if source is None:
-            # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
-            parent = cast(Provision, self.parent)
-
-            assert parent.plan.workdir is not None
-
-            source = parent.plan.workdir
+            source = self.plan_workdir
             self.debug(f"Push workdir to guest '{self.primary_address}'.")
         else:
             self.debug(f"Copy '{source}' to '{destination}' on the guest.")
@@ -2816,12 +2841,7 @@ class GuestSsh(Guest):
         if destination is None:
             destination = Path("/")
         if source is None:
-            # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
-            parent = cast(Provision, self.parent)
-
-            assert parent.plan.workdir is not None
-
-            source = parent.plan.workdir
+            source = self.plan_workdir
             self.debug(f"Pull workdir from guest '{self.primary_address}'.")
         else:
             self.debug(f"Copy '{source}' from the guest to '{destination}'.")

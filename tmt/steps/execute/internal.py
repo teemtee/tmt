@@ -486,9 +486,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         logger.debug(f"Execute '{test.name}' as a '{test.framework}' test.")
 
         # Test will be executed in it's own directory, relative to the workdir
-        assert self.discover.workdir is not None  # narrow type
         assert test.path is not None  # narrow type
-        workdir = self.discover.workdir / test.path.unrooted()
+        workdir = self.discover.step_workdir / test.path.unrooted()
         logger.debug(f"Use workdir '{workdir}'.", level=3)
 
         # Create data directory, prepare test environment
@@ -700,8 +699,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         Execute tests on provided guest
         """
 
-        assert self.workdir is not None  # narrow type
-
         # Prepare tests, check options
         test_invocations = self.prepare_tests(guest, logger)
 
@@ -802,7 +799,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 self.step.plan.execute.save()
 
                 ResultRenderer(
-                    basepath=self.workdir,
+                    basepath=self.phase_workdir,
                     logger=logger,
                     shift=shift,
                     variables={'PROGRESS': f'[{progress}]'},
