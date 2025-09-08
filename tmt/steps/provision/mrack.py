@@ -1442,145 +1442,142 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         load() is completed so all guest data should be available.
         """
 
-        if self.job_id is None or self.primary_address is None:
-            """
-            Create beaker job xml request and submit it to Beaker hub
-            """
-            tmt_name = self._tmt_name()
-            data = CreateJobParameters(
-                tmt_name=tmt_name,
-                hardware=self.hardware,
-                kickstart=self.kickstart,
-                arch=self.arch,
-                os=self.image,
-                name=f'{self.image}-{self.arch}',
-                whiteboard=self.whiteboard or tmt_name,
-                beaker_job_owner=self.beaker_job_owner,
-                public_key=self.public_key,
-                group=self.beaker_job_group,
-                bootc_credentials=self._bootc_registry_credentials if self.data.bootc else None,
-                bootc_image_url=self.data.bootc_image_url,
-                bootc=self.data.bootc,
-                bootc_check_system_url=self.data.bootc_check_system_url,
+        if self.job_id and self.primary_address:
+            return
+        """
+        Create beaker job xml request and submit it to Beaker hub
+        """
+        tmt_name = self._tmt_name()
+        data = CreateJobParameters(
+            tmt_name=tmt_name,
+            hardware=self.hardware,
+            kickstart=self.kickstart,
+            arch=self.arch,
+            os=self.image,
+            name=f'{self.image}-{self.arch}',
+            whiteboard=self.whiteboard or tmt_name,
+            beaker_job_owner=self.beaker_job_owner,
+            public_key=self.public_key,
+            group=self.beaker_job_group,
+            bootc_credentials=self._bootc_registry_credentials if self.data.bootc else None,
+            bootc_image_url=self.data.bootc_image_url,
+            bootc=self.data.bootc,
+            bootc_check_system_url=self.data.bootc_check_system_url,
+        )
+
+        if self.is_dry_run:
+            mrack_requirement = self.api._mrack_transformer.create_host_requirement(data)
+            job = self.api._mrack_provider._req_to_bkr_job(mrack_requirement)
+
+            # Mrack indents XML with tabs, tmt indents with spaces, let's make sure we
+            # don't mix these two in tmt output & modify mrack's output to use spaces as well.
+            self.print(
+                re.sub(
+                    r'^\t+',
+                    lambda match: '  ' * len(match.group()),
+                    job.toxml(prettyxml=True),
+                    flags=re.MULTILINE,
+                ),
             )
+            return
 
-            if self.is_dry_run:
-                mrack_requirement = self.api._mrack_transformer.create_host_requirement(data)
-                job = self.api._mrack_provider._req_to_bkr_job(mrack_requirement)
+        with tmt.utils.signals.PreventSignals(self._logger):
+            try:
+                response = self.api.create(data)
 
-                # Mrack indents XML with tabs, tmt indents with spaces, let's make sure we
-                # don't mix these two in tmt output & modify mrack's output to use spaces as well.
-                self.print(
-                    re.sub(
-                        r'^\t+',
-                        lambda match: '  ' * len(match.group()),
-                        job.toxml(prettyxml=True),
-                        flags=re.MULTILINE,
-                    ),
-                )
-                return
+            except ProvisioningError as exc:
+                import xmlrpc.client
 
-            with tmt.utils.signals.PreventSignals(self._logger):
-                try:
-                    response = self.api.create(data)
+                cause = exc.__cause__
 
-                except ProvisioningError as exc:
-                    import xmlrpc.client
-
-                    cause = exc.__cause__
-
-                    if isinstance(cause, xmlrpc.client.Fault):
-                        if 'is not a valid user name' in cause.faultString:
-                            raise ProvisionError(
-                                f"Failed to create Beaker job, job owner '{self.beaker_job_owner}'"
-                                " was refused as unknown."
-                            ) from exc
-
-                        if 'is not a valid submission delegate' in cause.faultString:
-                            raise ProvisionError(
-                                f"Failed to create Beaker job, job owner '{self.beaker_job_owner}'"
-                                " is not a valid submission delegate."
-                            ) from exc
-
-                        if 'is not a valid group' in cause.faultString:
-                            raise ProvisionError(
-                                f"Failed to create Beaker job, job group '{self.beaker_job_group}'"
-                                " was refused as unknown."
-                            ) from exc
-
-                        if 'is not a member of group' in cause.faultString:
-                            raise ProvisionError(
-                                "Failed to create Beaker job, submitting user is not "
-                                "a member of group '{self.beaker_job_group}'"
-                            ) from exc
-
-                    raise ProvisionError('Failed to create Beaker job') from exc
-
-                if not response:
-                    raise ProvisionError(f"Failed to create, response: '{response}'.")
-
-                self.info('guest', 'has been requested', 'green')
-                self.job_id = f'J:{response["id"]}'
-
-            self.info('job id', self.job_id, 'green')
-
-            with UpdatableMessage("status", indent_level=self._level()) as progress_message:
-
-                def get_new_state() -> GuestInspectType:
-                    response = self.api.inspect()
-
-                    if response["status"] == "Aborted":
+                if isinstance(cause, xmlrpc.client.Fault):
+                    if 'is not a valid user name' in cause.faultString:
                         raise ProvisionError(
-                            f"Failed to create, unhandled API response '{response['status']}'."
-                        )
+                            f"Failed to create Beaker job, job owner '{self.beaker_job_owner}'"
+                            " was refused as unknown."
+                        ) from exc
 
-                    current = cast(GuestInspectType, response)
-                    state = current["status"]
-                    state_color = GUEST_STATE_COLORS.get(state, GUEST_STATE_COLOR_DEFAULT)
+                    if 'is not a valid submission delegate' in cause.faultString:
+                        raise ProvisionError(
+                            f"Failed to create Beaker job, job owner '{self.beaker_job_owner}'"
+                            " is not a valid submission delegate."
+                        ) from exc
 
-                    progress_message.update(state, color=state_color)
+                    if 'is not a valid group' in cause.faultString:
+                        raise ProvisionError(
+                            f"Failed to create Beaker job, job group '{self.beaker_job_group}'"
+                            " was refused as unknown."
+                        ) from exc
 
-                    if state in {"Error, Aborted", "Cancelled"}:
-                        raise ProvisionError('Failed to create, provisioning failed.')
+                    if 'is not a member of group' in cause.faultString:
+                        raise ProvisionError(
+                            "Failed to create Beaker job, submitting user is not "
+                            "a member of group '{self.beaker_job_group}'"
+                        ) from exc
 
-                    if state == 'Reserved':
-                        for key in response.get('logs', []):
-                            self.guest_logs.append(
-                                GuestLogBeaker(
-                                    key.replace('.log', ''), self, response["logs"][key]
-                                )
-                            )
-                        # console.log contains dmesg, and accessible even when the system is dead.
-                        if response.get('logs', []).get('console.log'):
-                            self.guest_logs.append(
-                                GuestLogBeaker(
-                                    'dmesg', self, response.get('logs').get('console.log')
-                                )
-                            )
-                        else:
-                            self.warn('No console.log available.')
-                        return current
+                raise ProvisionError('Failed to create Beaker job') from exc
 
-                    raise tmt.utils.wait.WaitingIncompleteError
+            if not response:
+                raise ProvisionError(f"Failed to create, response: '{response}'.")
 
-                try:
-                    guest_info = Waiting(
-                        Deadline.from_seconds(self.provision_timeout), tick=self.provision_tick
-                    ).wait(get_new_state, self._logger)
+            self.info('guest', 'has been requested', 'green')
+            self.job_id = f'J:{response["id"]}'
 
-                except tmt.utils.wait.WaitingTimedOutError:
-                    response = self.api.delete()
+        self.info('job id', self.job_id, 'green')
+
+        with UpdatableMessage("status", indent_level=self._level()) as progress_message:
+
+            def get_new_state() -> GuestInspectType:
+                response = self.api.inspect()
+
+                if response["status"] == "Aborted":
                     raise ProvisionError(
-                        f'Failed to provision in the given amount '
-                        f'of time (--provision-timeout={self.provision_timeout}).'
+                        f"Failed to create, unhandled API response '{response['status']}'."
                     )
 
-            self.primary_address = self.topology_address = guest_info['system']
+                current = cast(GuestInspectType, response)
+                state = current["status"]
+                state_color = GUEST_STATE_COLORS.get(state, GUEST_STATE_COLOR_DEFAULT)
 
-            self.verbose('primary address', self.primary_address, 'green')
-            self.verbose('topology address', self.topology_address, 'green')
+                progress_message.update(state, color=state_color)
 
-            self.assert_reachable()
+                if state in {"Error, Aborted", "Cancelled"}:
+                    raise ProvisionError('Failed to create, provisioning failed.')
+
+                if state == 'Reserved':
+                    for key in response.get('logs', []):
+                        self.guest_logs.append(
+                            GuestLogBeaker(key.replace('.log', ''), self, response["logs"][key])
+                        )
+                    # console.log contains dmesg, and accessible even when the system is dead.
+                    if response.get('logs', []).get('console.log'):
+                        self.guest_logs.append(
+                            GuestLogBeaker('dmesg', self, response.get('logs').get('console.log'))
+                        )
+                    else:
+                        self.warn('No console.log available.')
+                    return current
+
+                raise tmt.utils.wait.WaitingIncompleteError
+
+            try:
+                guest_info = Waiting(
+                    Deadline.from_seconds(self.provision_timeout), tick=self.provision_tick
+                ).wait(get_new_state, self._logger)
+
+            except tmt.utils.wait.WaitingTimedOutError:
+                response = self.api.delete()
+                raise ProvisionError(
+                    f'Failed to provision in the given amount '
+                    f'of time (--provision-timeout={self.provision_timeout}).'
+                )
+
+        self.primary_address = self.topology_address = guest_info['system']
+
+        self.verbose('primary address', self.primary_address, 'green')
+        self.verbose('topology address', self.topology_address, 'green')
+
+        self.assert_reachable()
 
     def remove(self) -> None:
         """
