@@ -59,7 +59,7 @@ class KojiProvider(ArtifactProvider):
         try:
             return ClientSession(self.API_URL)
         except Exception as error:
-            raise GeneralError(f"Failed to initialize API session: {error}")
+            raise GeneralError("Failed to initialize API session") from error
 
     def _call_api(self, method: str, *args: Any, **kwargs: Any) -> Any:
         """
@@ -75,7 +75,7 @@ class KojiProvider(ArtifactProvider):
             method_callable = getattr(self._session, method)
             return method_callable(*args, **kwargs)
         except Exception as error:
-            raise GeneralError(f"API call {method} failed: {error}")
+            raise GeneralError(f"API call {method} failed") from error
 
     def _parse_artifact_id(self, artifact_id: str) -> str:
         # Eg: 'koji.build:123456'
