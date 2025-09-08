@@ -299,6 +299,10 @@ rlJournalStart
             fi
         rlPhaseEnd
 
+        rlPhaseStartTest "$phase_prefix Empty prepare install with exclude"
+            rlRun "$tmt execute plan --name empty-with-exclude"
+        rlPhaseEnd
+
         # TODO: at least copr is RH-specific, but package name escaping and debuginfo should be
         # possible to extend to other distros.
         if (is_fedora "$image" && ! is_fedora_coreos "$image") || is_centos "$image" || is_ubi "$image"; then

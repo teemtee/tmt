@@ -187,6 +187,10 @@ class Bootc(PackageManager[BootcEngine]):
         return results
 
     def build_container(self) -> None:
+        if not self.engine.containerfile_directives:
+            self.debug("No Containerfile directives to build container image, skipping build.")
+            return
+
         image_tag = f"localhost/tmt/bootc/{uuid.uuid4()}"
 
         # Write the final Containerfile
