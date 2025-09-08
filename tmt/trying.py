@@ -24,6 +24,7 @@ import tmt.utils
 from tmt import Plan
 from tmt._compat.typing import TypeAlias
 from tmt.base import RunData
+from tmt.container import container
 from tmt.steps.prepare import PreparePlugin
 from tmt.utils import Command, GeneralError, MetadataError, Path
 from tmt.utils.themes import style
@@ -33,25 +34,23 @@ USER_PLAN_NAME = "/user/plan"
 ActionHandler: TypeAlias = Callable[[Callable[..., Any]], Callable[..., Any]]
 
 
+@container
 class ActionInfo:
     """Information about a registered action"""
 
-    def __init__(
-        self, commands: tuple[str, ...], help_text: str, func: Callable[..., Any]
-    ) -> None:
-        self.commands = commands
-        self.help_text = help_text
-        self.func = func
+    commands: set[str]
+    help_text: str
+    func: Callable[..., Any]
 
     @property
     def primary_command(self) -> str:
         """Return the primary (first) command"""
-        return self.commands[0]
+        return min(self.commands)
 
     @property
     def key(self) -> str:
         """Return the keyboard shortcut (first character of first command)"""
-        return self.commands[0][0]
+        return self.primary_command[0]
 
     @property
     def full_name(self) -> str:
@@ -99,7 +98,7 @@ def action(*commands: str) -> ActionHandler:
         # Extract first line of docstring as help text
         help_text = help_text.strip().split('\n')[0] if help_text else ""
 
-        action_info = ActionInfo(commands, help_text, func)
+        action_info = ActionInfo(commands=set(commands), help_text=help_text, func=func)
 
         # Register all commands for this action
         for command in commands:
