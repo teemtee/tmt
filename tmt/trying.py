@@ -7,7 +7,7 @@ import re
 import shlex
 from collections.abc import Callable, Iterator
 from itertools import groupby
-from typing import Any, cast
+from typing import Any, Optional, cast
 
 import fmf
 import fmf.utils
@@ -36,13 +36,31 @@ USER_PLAN_NAME = "/user/plan"
 ActionHandler: TypeAlias = Callable[[Callable[..., Any]], Callable[..., Any]]
 
 
+class ActionMeta(type):
+    """
+    Helper meta class to allow enum-like indexing
+    """
+
+    def __new__(
+        cls, name: str, supers: tuple[type, ...], attrdict: dict[str, Any]
+    ) -> 'ActionMeta':
+        cls._registry: dict[str, ActionInfo] = {}
+        return super().__new__(cls, name, supers, attrdict)
+
+    def __getattr__(cls, key: str) -> 'ActionInfo':
+        registry: dict[str, ActionInfo] = cls._registry
+        if key in registry:
+            return registry[key]
+        raise AttributeError(key)
+
+
 @container
 class ActionInfo:
     """Information about a registered action"""
 
     commands: set[str]
-    help_text: str
-    func: Callable[..., Any]
+    help_text: str = ""
+    func: Optional[Callable[..., Any]] = None
     order: int = 0
     group: int = 0
     exit_loop: bool = False
@@ -80,14 +98,44 @@ class ActionInfo:
 
         # Calculate padding based on longest action name
         longest = 0
-        if ACTION_REGISTRY:
-            longest = max(len(action.full_name) for action in ACTION_REGISTRY.values())
+        if Action._registry:
+            longest = max(len(action.full_name) for action in Action._registry.values())
         padding = " " * (longest + 3 - len(full_name))
 
         return before + highlighted_key + after + padding + self.help_text
 
 
-ACTION_REGISTRY: dict[str, ActionInfo] = {}
+class Action(metaclass=ActionMeta):
+    _registry: dict[str, 'ActionInfo']
+
+    def __init__(
+        self, *commands: str, order: int = 0, group: int = 0, exit_loop: bool = False
+    ) -> None:
+        info = ActionInfo(commands=set(commands), order=order, group=group, exit_loop=exit_loop)
+        self._action_info = info
+        for cmd in commands:
+            Action._registry[cmd] = info
+
+    def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
+        self._action_info.func = func
+        self._action_info.help_text = func.__doc__.strip().split('\n')[0] if func.__doc__ else ""
+        return func
+
+    @classmethod
+    def find(cls, command: str) -> 'ActionInfo':
+        registry: dict[str, ActionInfo] = cls._registry
+        return registry[command.lower()]
+
+    @classmethod
+    def get_sorted_actions(cls) -> list['ActionInfo']:
+        """Get unique actions sorted by group and order"""
+        seen_functions: set[Optional[Callable[..., Any]]] = set()
+        actions: list[ActionInfo] = []
+        for action_info in sorted(cls._registry.values(), key=lambda x: (x.group, x.order)):
+            if action_info.func not in seen_functions:
+                actions.append(action_info)
+                seen_functions.add(action_info.func)
+        return actions
 
 
 def action(
@@ -102,43 +150,7 @@ def action(
     The ``group`` parameter controls menu grouping (actions with same group are grouped together).
     The ``exit_loop`` parameter indicates that the action should exit the main loop when invoked.
     """
-
-    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
-        help_text = func.__doc__ or ""
-        # Extract first line of docstring as help text
-        help_text = help_text.strip().split('\n')[0] if help_text else ""
-
-        action_info = ActionInfo(
-            commands=set(commands),
-            help_text=help_text,
-            func=func,
-            order=order,
-            group=group,
-            exit_loop=exit_loop,
-        )
-
-        # Register all commands for this action
-        for command in commands:
-            command_lower = command.lower()
-            if command_lower in ACTION_REGISTRY:
-                existing_action = ACTION_REGISTRY[command_lower]
-                raise ValueError(
-                    f"Command '{command}' is already registered for action "
-                    f"'{existing_action.full_name}' (function: {existing_action.func.__name__})"
-                )
-            ACTION_REGISTRY[command_lower] = action_info
-
-        return func
-
-    return decorator
-
-
-def find_action(answer: str) -> ActionInfo:
-    """Find action by command name (shortcut or full name)"""
-    answer = answer.lower()
-    if answer in ACTION_REGISTRY:
-        return ACTION_REGISTRY[answer]
-    raise KeyError(f"Unknown action: {answer}")
+    return Action(*commands, order=order, group=group, exit_loop=exit_loop)
 
 
 class Try(tmt.utils.Common):
@@ -331,21 +343,14 @@ class Try(tmt.utils.Common):
         )
         self.write(Path('run.yaml'), tmt.utils.dict_to_yaml(data.to_serialized()))
 
-    def choose_action(self) -> ActionInfo:
+    def choose_action(self) -> 'ActionInfo':
         """
         Print menu, get next action
         """
 
         while True:
-            # Get unique actions for menu display, sorted by order
-            displayed_actions: list[ActionInfo] = []
-            seen_functions: set[Callable[..., Any]] = set()
-
-            # Sort all unique actions by group, then by order
-            for action_info in sorted(ACTION_REGISTRY.values(), key=lambda x: (x.group, x.order)):
-                if action_info.func not in seen_functions:
-                    displayed_actions.append(action_info)
-                    seen_functions.add(action_info.func)
+            # Get unique actions for menu display, sorted by group and order
+            displayed_actions = Action.get_sorted_actions()
 
             menu_lines = ["What do we do next?", ""]
 
@@ -360,11 +365,11 @@ class Try(tmt.utils.Common):
             try:
                 answer = input("> ")
             except EOFError:
-                return find_action("quit")
+                return Action.quit
 
             try:
                 self.print("")
-                return find_action(answer)
+                return Action.find(answer)
             except KeyError:
                 self.print(style(f"Invalid action '{answer}'.", fg="red"))
 
@@ -570,7 +575,7 @@ class Try(tmt.utils.Common):
         """
 
         while True:
-            quit_action = find_action("quit")
+            quit_action = Action.quit
             self.print(style(f"Enter command (or '\\{quit_action.key}' to quit): ", fg="green"))
             try:
                 raw_command = input("> ")
@@ -715,13 +720,13 @@ class Try(tmt.utils.Common):
             self.action_verbose(plan, prompt=False)
 
         # Choose the initial action
-        action = find_action("start_ask")
+        action = Action.start_ask
         if self.opt("login"):
-            action = find_action("start_login")
+            action = Action.start_login
         elif self.opt("ask"):
             pass  # already start_ask
         elif self.tests:
-            action = find_action("start_test")
+            action = Action.start_test
 
         # Loop over the actions
         try:
@@ -729,7 +734,8 @@ class Try(tmt.utils.Common):
                 # Handle the individual actions
                 for plan in self.plans:
                     plan.header()
-                    action.func(self, plan)
+                    if action.func is not None:
+                        action.func(self, plan)
 
                 # Finish if action requests loop exit
                 if action.exit_loop:
