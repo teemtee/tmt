@@ -44,7 +44,7 @@ class KojiArtifactInfo(ArtifactInfo):
         )
 
 
-class KojiProvider(ArtifactProvider):
+class KojiProvider(ArtifactProvider[KojiArtifactInfo]):
     API_URL = "https://koji.fedoraproject.org/kojihub"  # For metadata
 
     def __init__(self, logger: tmt.log.Logger, artifact_id: str):
@@ -87,7 +87,7 @@ class KojiProvider(ArtifactProvider):
             raise ValueError(f"Invalid artifact ID format: {artifact_id}")
         return parsed
 
-    def list_artifacts(self) -> Iterator[ArtifactInfo]:
+    def list_artifacts(self) -> Iterator[KojiArtifactInfo]:
         """
         TODO: Currently only lists rpms, extend to other types.
         See testing farm code for reference: listArtifacts, listTaskOutput etc.
@@ -99,7 +99,9 @@ class KojiProvider(ArtifactProvider):
                     id=int(self.artifact_id),
                 )
 
-    def _download_artifact(self, artifact: ArtifactInfo, guest: Guest, destination: Path) -> None:
+    def _download_artifact(
+        self, artifact: KojiArtifactInfo, guest: Guest, destination: Path
+    ) -> None:
         """
         Download the specified artifact to the given destination on the guest.
 
@@ -107,8 +109,6 @@ class KojiProvider(ArtifactProvider):
         :param guest: The guest where the artifact should be downloaded
         :param destination: The destination path on the guest
         """
-
-        assert isinstance(artifact, KojiArtifactInfo)
 
         # Destination directory is guaranteed to exist, download the artifact
         guest.execute(
