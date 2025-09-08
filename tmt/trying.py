@@ -6,6 +6,7 @@ import functools
 import re
 import shlex
 from collections.abc import Callable, Iterator
+from itertools import groupby
 from typing import Any, cast
 
 import fmf
@@ -42,6 +43,8 @@ class ActionInfo:
     commands: set[str]
     help_text: str
     func: Callable[..., Any]
+    order: int = 0
+    group: int = 0
 
     @functools.cached_property
     def primary_command(self) -> str:
@@ -86,12 +89,14 @@ class ActionInfo:
 ACTION_REGISTRY: dict[str, ActionInfo] = {}
 
 
-def action(*commands: str) -> ActionHandler:
+def action(*commands: str, order: int = 0, group: int = 0) -> ActionHandler:
     """
     Decorator to register an action with given command names.
 
     The help text is extracted from the function's docstring.
     Multiple command names can be provided (e.g., 'q', 'quit').
+    Order parameter controls display order in menu (lower values first).
+    Group parameter controls menu grouping (actions with same group are grouped together).
     """
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -99,7 +104,9 @@ def action(*commands: str) -> ActionHandler:
         # Extract first line of docstring as help text
         help_text = help_text.strip().split('\n')[0] if help_text else ""
 
-        action_info = ActionInfo(commands=set(commands), help_text=help_text, func=func)
+        action_info = ActionInfo(
+            commands=set(commands), help_text=help_text, func=func, order=order, group=group
+        )
 
         # Register all commands for this action
         for command in commands:
@@ -314,45 +321,22 @@ class Try(tmt.utils.Common):
         """
 
         while True:
-            # Get unique actions for menu display
+            # Get unique actions for menu display, sorted by order
             displayed_actions: list[ActionInfo] = []
             seen_functions: set[Callable[..., Any]] = set()
 
-            # Define the order we want to display actions
-            action_order = [
-                "test",
-                "login",
-                "host",
-                "verbose",
-                "debug",
-                "discover",
-                "prepare",
-                "execute",
-                "report",
-                "finish",
-                "cleanup",
-                "keep",
-                "quit",
-            ]
-
-            for action_name in action_order:
-                if action_name in ACTION_REGISTRY:
-                    action_info = ACTION_REGISTRY[action_name]
-                    if action_info.func not in seen_functions:
-                        displayed_actions.append(action_info)
-                        seen_functions.add(action_info.func)
+            # Sort all unique actions by group, then by order
+            for action_info in sorted(ACTION_REGISTRY.values(), key=lambda x: (x.group, x.order)):
+                if action_info.func not in seen_functions:
+                    displayed_actions.append(action_info)
+                    seen_functions.add(action_info.func)
 
             menu_lines = ["What do we do next?", ""]
 
-            # Group actions for better readability
-            groups: list[list[ActionInfo]] = [
-                displayed_actions[0:5],  # test, login, host, verbose, debug
-                displayed_actions[5:11],  # discover, prepare, execute, report, finish, cleanup
-                displayed_actions[11:13],  # keep, quit
-            ]
-
-            for group in groups:
-                menu_lines.extend(f"    {action_info.menu_item}" for action_info in group)
+            # Group actions dynamically by their group attribute
+            for _, group_actions in groupby(displayed_actions, key=lambda x: x.group):
+                group_list = list(group_actions)
+                menu_lines.extend(f"    {action_info.menu_item}" for action_info in group_list)
                 menu_lines.append("")
 
             self.print("\n".join(menu_lines))
@@ -419,7 +403,7 @@ class Try(tmt.utils.Common):
 
         plan.provision.go()
 
-    @action("t", "test")
+    @action("t", "test", order=1, group=1)
     def action_test(self, plan: Plan) -> None:
         """
         Test again
@@ -428,7 +412,7 @@ class Try(tmt.utils.Common):
         plan.discover.go(force=True)
         plan.execute.go(force=True)
 
-    @action("l", "login")
+    @action("l", "login", order=2, group=1)
     def action_login(self, plan: Plan) -> None:
         """
         Log into the guest
@@ -455,7 +439,7 @@ class Try(tmt.utils.Common):
         except ValueError:
             self.print(f"Invalid level '{answer}'.")
 
-    @action("v", "verbose")
+    @action("v", "verbose", order=4, group=1)
     def action_verbose(self, plan: Plan) -> None:
         """
         Set verbosity level of all loggers in given plan
@@ -484,7 +468,7 @@ class Try(tmt.utils.Common):
         except ValueError:
             self.print(f"Invalid level '{answer}'.")
 
-    @action("b", "debug")
+    @action("b", "debug", order=5, group=1)
     def action_debug(self, plan: Plan) -> None:
         """
         Set verbosity level of all loggers in given plan
@@ -495,7 +479,7 @@ class Try(tmt.utils.Common):
             for phase in step.phases():
                 phase.debug_level = self.debug_level
 
-    @action("d", "discover")
+    @action("d", "discover", order=6, group=2)
     def action_discover(self, plan: Plan) -> None:
         """
         Discover tests
@@ -503,7 +487,7 @@ class Try(tmt.utils.Common):
 
         plan.discover.go(force=True)
 
-    @action("p", "prepare")
+    @action("p", "prepare", order=7, group=2)
     def action_prepare(self, plan: Plan) -> None:
         """
         Prepare the guest
@@ -514,7 +498,7 @@ class Try(tmt.utils.Common):
         except GeneralError as error:
             self._show_exception(error)
 
-    @action("e", "execute")
+    @action("e", "execute", order=8, group=2)
     def action_execute(self, plan: Plan) -> None:
         """
         Execute tests
@@ -522,7 +506,7 @@ class Try(tmt.utils.Common):
 
         plan.execute.go(force=True)
 
-    @action("r", "report")
+    @action("r", "report", order=9, group=2)
     def action_report(self, plan: Plan) -> None:
         """
         Report results
@@ -530,7 +514,7 @@ class Try(tmt.utils.Common):
 
         plan.report.go(force=True)
 
-    @action("f", "finish")
+    @action("f", "finish", order=10, group=2)
     def action_finish(self, plan: Plan) -> None:
         """
         Perform the user defined finishing tasks
@@ -538,7 +522,7 @@ class Try(tmt.utils.Common):
 
         plan.finish.go()
 
-    @action("c", "cleanup")
+    @action("c", "cleanup", order=11, group=2)
     def action_cleanup(self, plan: Plan) -> None:
         """
         Clean up guests and prune the workdir
@@ -546,7 +530,7 @@ class Try(tmt.utils.Common):
 
         plan.cleanup.go()
 
-    @action("k", "keep")
+    @action("k", "keep", order=12, group=3)
     def action_keep(self, plan: Plan) -> None:
         """
         Keep run and exit the session
@@ -556,7 +540,7 @@ class Try(tmt.utils.Common):
         run_id = style(str(plan.my_run.workdir), fg="magenta")
         self.print(f"Run {run_id} kept unfinished. See you soon!")
 
-    @action("q", "quit")
+    @action("q", "quit", order=13, group=3)
     def action_quit(self, plan: Plan) -> None:
         """
         Clean up the run and quit the session
@@ -571,7 +555,7 @@ class Try(tmt.utils.Common):
         run_id = style(str(plan.my_run.workdir), fg="magenta")
         self.print(f"Run {run_id} successfully finished. Bye for now!")
 
-    @action("h", "host")
+    @action("h", "host", order=3, group=1)
     def action_host(self, plan: Plan) -> None:
         """
         Run command on the host
