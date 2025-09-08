@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from re import Pattern
 from shlex import quote
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 import tmt.log
 from tmt.container import container
@@ -33,10 +33,12 @@ class ArtifactInfo:
     id: int
 
     @property
+    @abstractmethod
     def name(self) -> str:
         raise NotImplementedError
 
     @property
+    @abstractmethod
     def location(self) -> str:
         raise NotImplementedError
 
@@ -44,7 +46,10 @@ class ArtifactInfo:
         return self.name
 
 
-class ArtifactProvider(ABC):
+ArtifactInfoT = TypeVar('ArtifactInfoT', bound=ArtifactInfo)
+
+
+class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
     def __init__(self, logger: tmt.log.Logger, artifact_id: str):
         self.logger = logger
         self.artifact_id = self._parse_artifact_id(artifact_id)
@@ -61,14 +66,14 @@ class ArtifactProvider(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def list_artifacts(self) -> Iterator[ArtifactInfo]:
+    def list_artifacts(self) -> Iterator[ArtifactInfoT]:
         """
         List all available artifacts for a given build
         """
         raise NotImplementedError
 
     @abstractmethod
-    def _download_artifact(self, artifact: ArtifactInfo, guest: Guest, destination: Path) -> None:
+    def _download_artifact(self, artifact: ArtifactInfoT, guest: Guest, destination: Path) -> None:
         """
         Action: Download a single artifact to the specified destination.
 
@@ -129,7 +134,7 @@ class ArtifactProvider(ABC):
         self.logger.info(f"Successfully downloaded {artifact_count} artifacts")
         return downloaded_paths
 
-    def _filter_artifacts(self, exclude_patterns: list[Pattern[str]]) -> Iterator[ArtifactInfo]:
+    def _filter_artifacts(self, exclude_patterns: list[Pattern[str]]) -> Iterator[ArtifactInfoT]:
         """
         Filter artifacts based on exclude patterns.
 
