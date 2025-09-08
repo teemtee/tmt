@@ -110,7 +110,14 @@ def action(*commands: str, order: int = 0, group: int = 0) -> ActionHandler:
 
         # Register all commands for this action
         for command in commands:
-            ACTION_REGISTRY[command.lower()] = action_info
+            command_lower = command.lower()
+            if command_lower in ACTION_REGISTRY:
+                existing_action = ACTION_REGISTRY[command_lower]
+                raise ValueError(
+                    f"Command '{command}' is already registered for action "
+                    f"'{existing_action.full_name}' (function: {existing_action.func.__name__})"
+                )
+            ACTION_REGISTRY[command_lower] = action_info
 
         return func
 
