@@ -124,7 +124,7 @@ class ArtifactProvider(ABC):
                 self.logger.warning(f"Failed to download {artifact}: {err}")
 
             except Exception as err:
-                raise GeneralError(f"Unexpected error downloading {artifact}: {err}") from err
+                raise GeneralError(f"Unexpected error downloading {artifact}") from err
 
         self.logger.info(f"Successfully downloaded {artifact_count} artifacts")
         return downloaded_paths
