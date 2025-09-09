@@ -1426,9 +1426,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     @property
     def _bootc_registry_credentials(self) -> dict[str, Any]:
         """Create authentication dictionary with proper credential handling"""
-        if not self.data.bootc_registry_secret:
+        if not self.data.registry_secret or not self.data.bootc_image_url:
             return {}
-        assert self.data.bootc_image_url
         base_repo = _get_registry_from_url(self.data.bootc_image_url)
         # Support multiple registries
         return {"auths": {base_repo: {"auth": self.data.bootc_registry_secret}}}
