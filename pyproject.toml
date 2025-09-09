@@ -48,7 +48,7 @@ dependencies = [
     "ruamel.yaml>=0.16.6",
     "urllib3>=1.26.5, <3.0",
     "typing-extensions>=4; python_version < '3.13'",
-    "koji>=1.22",
+    "koji>=1.35",
     ]
 
 [project.optional-dependencies]
@@ -157,7 +157,7 @@ dependencies = [
     "types-babel",
     "types-docutils",
     "types-lxml",
-    "koji>=1.22",
+    "koji>=1.35",
     ]
 features = ["all"]
 
