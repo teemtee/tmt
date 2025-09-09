@@ -1,0 +1,18 @@
+summary: Verify that the pip install works
+prepare+:
+  - summary: Prepare the virtual environment
+    script: python3 -m venv /tmp/venv && /tmp/venv/bin/pip install --upgrade pip
+execute:
+    how: tmt
+
+/mini:
+    summary+: " (mini)"
+    discover:
+        how: fmf
+        test: /tests/dev/pip/install/mini
+
+/full:
+    summary+: " (full)"
+    discover:
+        how: fmf
+        test: /tests/dev/pip/install/full
