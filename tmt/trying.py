@@ -62,14 +62,21 @@ class Action(metaclass=ActionMeta):
     order: int
     group: int
     exit_loop: bool
+    hidden: bool
 
     def __init__(
-        self, *commands: str, order: int = 0, group: int = 0, exit_loop: bool = False
+        self,
+        *commands: str,
+        order: int = 0,
+        group: int = 0,
+        exit_loop: bool = False,
+        hidden: bool = False,
     ) -> None:
         self.commands = set(commands)
         self.order = order
         self.group = group
         self.exit_loop = exit_loop
+        self.hidden = hidden
 
         for command in commands:
             command_lower = command.lower()
@@ -90,7 +97,13 @@ class Action(metaclass=ActionMeta):
 
     @classmethod
     def find(cls, command: str) -> 'Action':
-        return cls._registry[command.lower()]
+        action = cls._registry[command.lower()]
+
+        # Do not expose hidden actions
+        if action.hidden:
+            raise KeyError("Hidden action")
+
+        return action
 
     @classmethod
     def get_sorted_actions(cls) -> list['Action']:
@@ -105,7 +118,7 @@ class Action(metaclass=ActionMeta):
 
     @functools.cached_property
     def primary_command(self) -> str:
-        """Return the primary (first) command"""
+        """Return the primary command (the shortest command defined)"""
         return min(self.commands)
 
     @functools.cached_property
@@ -120,9 +133,22 @@ class Action(metaclass=ActionMeta):
 
     @functools.cached_property
     def menu_item(self) -> str:
-        """Show menu with the keyboard shortcut highlighted"""
+        """
+        Show menu with the keyboard shortcut highlighted.
+        If the primary command is not a single letter, do not highlight anything.
+        """
         full_name = self.full_name
         key = self.key
+
+        # Calculate padding based on longest action name
+        longest = 0
+        if Action._registry:
+            longest = max(len(action.full_name) for action in Action._registry.values())
+        padding = " " * (longest + 3 - len(full_name))
+
+        # No highlighted key if no single letter command defined
+        if len(self.primary_command) > 1:
+            return style(full_name, fg="bright_blue") + padding + self.help_text
 
         # Find the key in the full name and highlight it
         key_index = full_name.lower().find(key.lower())
@@ -133,12 +159,6 @@ class Action(metaclass=ActionMeta):
         before = style(full_name[:key_index], fg="bright_blue")
         highlighted_key = style(full_name[key_index], fg="blue", bold=True, underline=True)
         after = style(full_name[key_index + 1 :], fg="bright_blue")
-
-        # Calculate padding based on longest action name
-        longest = 0
-        if Action._registry:
-            longest = max(len(action.full_name) for action in Action._registry.values())
-        padding = " " * (longest + 3 - len(full_name))
 
         return before + highlighted_key + after + padding + self.help_text
 
@@ -347,7 +367,9 @@ class Try(tmt.utils.Common):
             # Group actions dynamically by their group attribute
             for _, group_actions in groupby(displayed_actions, key=lambda x: x.group):
                 group_list = list(group_actions)
-                menu_lines.extend(f"    {action_info.menu_item}" for action_info in group_list)
+                menu_lines.extend(
+                    f"    {action.menu_item}" for action in group_list if not action.hidden
+                )
                 menu_lines.append("")
 
             self.print("\n".join(menu_lines))
@@ -370,7 +392,7 @@ class Try(tmt.utils.Common):
 
         plan.wake()
 
-    @Action("start_test")
+    @Action("start_test", hidden=True)
     def action_start_test(self, plan: Plan) -> None:
         """
         Start with testing
@@ -387,7 +409,7 @@ class Try(tmt.utils.Common):
             return
         plan.execute.go()
 
-    @Action("start_login")
+    @Action("start_login", hidden=True)
     def action_start_login(self, plan: Plan) -> None:
         """
         Start with login
@@ -404,7 +426,7 @@ class Try(tmt.utils.Common):
         assert plan.login is not None  # Narrow type
         plan.login.go(force=True)
 
-    @Action("start_ask")
+    @Action("start_ask", hidden=True)
     def action_start_ask(self, plan: Plan) -> None:
         """
         Ask what to do
