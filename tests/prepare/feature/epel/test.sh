@@ -27,7 +27,7 @@ rlJournalStart
         rlPhaseEnd
 
         rlPhaseStartTest "Enable EPEL on $image (epel pre-installed)"
-            rlRun -s "tmt -vvv run -a plan --name '/epel/enabled/with-epel-installed' provision --how container --image $image"
+            rlRun -s "tmt -vvv run -a plan --name '/epel/enabled/with-epel-preinstalled' provision --how container --image $image"
         rlPhaseEnd
 
         rlPhaseStartTest "Disable EPEL on $image"
