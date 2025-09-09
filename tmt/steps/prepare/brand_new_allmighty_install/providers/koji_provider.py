@@ -13,6 +13,7 @@ from tmt.container import container
 from tmt.steps.prepare.brand_new_allmighty_install.providers import (
     ArtifactInfo,
     ArtifactProvider,
+    DownloadError,
 )
 from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path, ShellScript
@@ -25,12 +26,7 @@ class KojiArtifactInfo(ArtifactInfo):
     @property
     def name(self) -> str:
         """Get the RPM filename for the given RPM metadata."""
-        return (
-            f"{self._raw_artifact['name']}-"
-            f"{self._raw_artifact['version']}-"
-            f"{self._raw_artifact['release']}."
-            f"{self._raw_artifact['arch']}.rpm"
-        )
+        return f"{self._raw_artifact['nvr']}.{self._raw_artifact['arch']}.rpm"
 
     @property
     def location(self) -> str:
@@ -110,11 +106,11 @@ class KojiProvider(ArtifactProvider[KojiArtifactInfo]):
         :param guest: The guest where the artifact should be downloaded
         :param destination: The destination path on the guest
         """
-
-        # Destination directory is guaranteed to exist, download the artifact
-        guest.execute(
-            ShellScript(
-                f"curl -L -o {quote(str(destination))} {quote(artifact.location)}"
-            ).to_shell_command(),
-            silent=True,
-        )
+        try:
+            # Destination directory is guaranteed to exist, download the artifact
+            guest.execute(
+                ShellScript(f"curl -L -o {quote(str(destination))} {quote(artifact.location)}"),
+                silent=True,
+            )
+        except Exception as error:
+            raise DownloadError(f"Failed to download {artifact}") from error
