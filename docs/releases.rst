@@ -16,6 +16,10 @@ New keys, ``skip-tests-before`` and ``skip-tests-after``, were added to
 the :ref:`/plugins/execute/upgrade` plugin, allowing users to skip
 running discovered tests on the old system or new system, respectively.
 
+The Guide has been extended with a new :ref:`guest-preparation`
+section which covers :ref:`minimal-requirements` for guests and
+describes :ref:`helper-scripts` used for special test actions.
+
 
 tmt-1.56.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
