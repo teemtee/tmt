@@ -76,7 +76,7 @@ class GuestBootc(GuestTestcloud):
 
         if self.containerimage:
             tmt.utils.Command("podman", "rmi", self.containerimage).run(
-                cwd=self.workdir,
+                cwd=self.phase_workdir,
                 stream_output=True,
                 logger=self._logger,
                 env=PODMAN_ENV if self._rootless else None,
@@ -84,7 +84,7 @@ class GuestBootc(GuestTestcloud):
 
         try:
             tmt.utils.Command("podman", "machine", "rm", "-f", PODMAN_MACHINE_NAME).run(
-                cwd=self.workdir, stream_output=True, logger=self._logger
+                cwd=self.phase_workdir, stream_output=True, logger=self._logger
             )
         except BaseException:
             self._logger.debug(
@@ -257,8 +257,6 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         Build a "derived" container image from the base image with tmt dependencies added
         """
 
-        assert self.workdir is not None  # narrow type
-
         self._logger.debug("Build modified container image with necessary tmt packages/config.")
         containerfile_template = '''
             FROM {{ base_image }}
@@ -270,19 +268,19 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             dnf clean all
         '''
         containerfile_parsed = render_template(containerfile_template, base_image=base_image)
-        (self.workdir / 'Containerfile').write_text(containerfile_parsed)
+        (self.phase_workdir / 'Containerfile').write_text(containerfile_parsed)
 
         image_tag = f'localhost/tmtmodified-{self._get_id()}'
         tmt.utils.Command(
             "podman",
             "build",
-            f'{self.workdir}',
+            f'{self.phase_workdir}',
             "-f",
-            f'{self.workdir}/Containerfile',
+            f'{self.phase_workdir}/Containerfile',
             "-t",
             image_tag,
         ).run(
-            cwd=self.workdir,
+            cwd=self.phase_workdir,
             stream_output=True,
             logger=self._logger,
             env=PODMAN_ENV if self._rootless else None,
@@ -306,7 +304,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             "-t",
             image_tag,
         ).run(
-            cwd=self.workdir,
+            cwd=self.phase_workdir,
             stream_output=True,
             logger=self._logger,
             env=PODMAN_ENV if self._rootless else None,
@@ -330,7 +328,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             "--security-opt",
             "label=type:unconfined_t",
             "-v",
-            f"{self.workdir}:/output",
+            f"{self.phase_workdir}:/output",
             image_builder,
             "build",
             "--type",
@@ -340,7 +338,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             "--local",
             containerimage,
         ).run(
-            cwd=self.workdir,
+            cwd=self.phase_workdir,
             stream_output=True,
             logger=self._logger,
             env=PODMAN_ENV if self._rootless else None,
@@ -349,7 +347,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
     def _init_podman_machine(self) -> None:
         try:
             tmt.utils.Command("podman", "machine", "rm", "-f", PODMAN_MACHINE_NAME).run(
-                cwd=self.workdir, stream_output=True, logger=self._logger
+                cwd=self.phase_workdir, stream_output=True, logger=self._logger
             )
         except BaseException:
             self._logger.debug("Unable to remove existing podman machine (it might not exist).")
@@ -364,18 +362,18 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             "-v", f"{DEFAULT_TMP_PATH}:{DEFAULT_TMP_PATH}",
             "-v", "$HOME:$HOME",
             PODMAN_MACHINE_NAME,
-        ).run(cwd=self.workdir, stream_output=True, logger=self._logger)
+        ).run(cwd=self.phase_workdir, stream_output=True, logger=self._logger)
         # fmt: on
 
         self._logger.debug("Start podman machine.")
         tmt.utils.Command("podman", "machine", "start", PODMAN_MACHINE_NAME).run(
-            cwd=self.workdir, stream_output=True, logger=self._logger
+            cwd=self.phase_workdir, stream_output=True, logger=self._logger
         )
 
     def _check_if_podman_is_rootless(self) -> None:
         output = tmt.utils.Command(
             "podman", "info", "--format", "{{.Host.Security.Rootless}}"
-        ).run(cwd=self.workdir, stream_output=True, logger=self._logger)
+        ).run(cwd=self.phase_workdir, stream_output=True, logger=self._logger)
         self._rootless = output.stdout == "true\n"
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
@@ -428,9 +426,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             )
         )
 
-        assert self.workdir is not None
-
-        image_dir = self.workdir / 'qcow2'
+        image_dir = self.phase_workdir / 'qcow2'
 
         # Rename disk file name to unique file name
         built_image = image_dir / 'disk.qcow2'

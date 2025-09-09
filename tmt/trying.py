@@ -512,8 +512,7 @@ class Try(tmt.utils.Common):
         Keep run and exit the session
         """
 
-        assert plan.my_run is not None  # Narrow type
-        run_id = style(str(plan.my_run.workdir), fg="magenta")
+        run_id = style(str(plan.run_workdir), fg="magenta")
         self.print(f"Run {run_id} kept unfinished. See you soon!")
 
     def action_quit(self, plan: Plan) -> None:
@@ -526,8 +525,7 @@ class Try(tmt.utils.Common):
             plan.cleanup.go()
 
         # Mention the run id and say good bye
-        assert plan.my_run is not None  # Narrow type
-        run_id = style(str(plan.my_run.workdir), fg="magenta")
+        run_id = style(str(plan.run_workdir), fg="magenta")
         self.print(f"Run {run_id} successfully finished. Bye for now!")
 
     def action_host(self, plan: Plan) -> None:
@@ -664,7 +662,7 @@ class Try(tmt.utils.Common):
         # Create run, prepare it for testing
         run = tmt.base.Run(tree=self.tree, logger=self._logger, parent=self)
         run.prepare_for_try(self.tree)
-        self._workdir = run.workdir
+        self._workdir = run.run_workdir
         self.environment = run.environment
 
         # Check tree, plans and tests, welcome summary

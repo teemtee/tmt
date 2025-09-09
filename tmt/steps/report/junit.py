@@ -549,8 +549,7 @@ class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
 
         self.check_options()
 
-        assert self.workdir is not None
-        f_path = self.data.file or self.workdir / DEFAULT_FILENAME
+        f_path = self.data.file or self.phase_workdir / DEFAULT_FILENAME
 
         xml_data = make_junit_xml(
             phase=self,

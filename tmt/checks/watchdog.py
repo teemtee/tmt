@@ -518,12 +518,10 @@ class Watchdog(CheckPlugin[WatchdogCheck]):
 
             guest_context.thread = None
 
-        assert invocation.phase.step.workdir is not None  # narrow type
-
         return [
             CheckResult(
                 name='watchdog',
                 result=ResultOutcome.PASS,
-                log=[render_report_path(invocation).relative_to(invocation.phase.step.workdir)],
+                log=[render_report_path(invocation).relative_to(invocation.phase.step_workdir)],
             )
         ]

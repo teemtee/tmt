@@ -112,9 +112,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
         else:
             # Links used in html should be relative to a workdir
             def _linkable_path(path: str) -> str:
-                assert self.workdir is not None  # narrow type
-
-                return str(Path(path).relative_to(self.workdir))
+                return str(Path(path).relative_to(self.phase_workdir))
 
             environment.filters["linkable_path"] = _linkable_path
 
@@ -130,8 +128,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
             display_guest = len(seen_guests) > 1
 
         # Write the report
-        assert self.workdir is not None
-        filepath = self.data.file or self.workdir / DEFAULT_FILENAME
+        filepath = self.data.file or self.phase_workdir / DEFAULT_FILENAME
 
         try:
             filepath.write_text(
@@ -139,7 +136,7 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
                     HTML_TEMPLATE_PATH,
                     environment,
                     results=self.step.plan.execute.results(),
-                    base_dir=self.step.plan.execute.workdir,
+                    base_dir=self.step.plan.execute.step_workdir,
                     plan=self.step.plan,
                     display_guest=display_guest,
                 ),

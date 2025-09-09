@@ -322,10 +322,9 @@ def create_final_report(
     else:
         outcome = ResultOutcome.ERROR
 
-    assert invocation.phase.step.workdir is not None  # narrow type
     report_filepath = _save_report(invocation, report, report_timestamp, append=True)
     paths = [
-        report_filepath.relative_to(invocation.phase.step.workdir),
+        report_filepath.relative_to(invocation.phase.step_workdir),
         save_failures(invocation, invocation.check_files_path, failures),
     ]
 
@@ -475,8 +474,6 @@ class AvcDenials(CheckPlugin[AvcCheck]):
                     note=hints_as_notes('guest-not-healthy'),
                 )
             ]
-
-        assert invocation.phase.step.workdir is not None  # narrow type
 
         outcome, paths = create_final_report(invocation, check, logger)
 
