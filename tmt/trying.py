@@ -92,7 +92,7 @@ class Action(metaclass=ActionMeta):
         self.func = func
         self.help_text = (
             textwrap.dedent(func.__doc__).strip().splitlines()[0] if func.__doc__ else ""
-        )
+        ).lower()
         return func
 
     @classmethod
@@ -439,7 +439,7 @@ class Try(tmt.utils.Common):
     @Action("t", "test", order=1, group=1)
     def action_test(self, plan: Plan) -> None:
         """
-        Test again
+        Rediscover tests and execute them again
         """
 
         plan.discover.go(force=True)
@@ -448,7 +448,7 @@ class Try(tmt.utils.Common):
     @Action("l", "login", order=2, group=1)
     def action_login(self, plan: Plan) -> None:
         """
-        Log into the guest
+        Log into the guest for experimenting
         """
 
         assert plan.login is not None  # Narrow type
@@ -457,7 +457,7 @@ class Try(tmt.utils.Common):
     @Action("v", "verbose", order=4, group=1)
     def action_verbose(self, plan: Plan) -> None:
         """
-        Set verbosity level of all loggers in given plan
+        Set the desired level of verbosity
         """
 
         self.print("What verbose level do you need?")
@@ -488,7 +488,7 @@ class Try(tmt.utils.Common):
     @Action("b", "debug", order=5, group=1)
     def action_debug(self, plan: Plan) -> None:
         """
-        Set debug level of all loggers in given plan
+        Choose a different debugging level
         """
 
         self.print("Which debug level would you like?")
@@ -512,7 +512,7 @@ class Try(tmt.utils.Common):
     @Action("d", "discover", order=6, group=2)
     def action_discover(self, plan: Plan) -> None:
         """
-        Discover tests
+        Gather information about tests to be executed
         """
 
         plan.discover.go(force=True)
@@ -520,7 +520,7 @@ class Try(tmt.utils.Common):
     @Action("p", "prepare", order=7, group=2)
     def action_prepare(self, plan: Plan) -> None:
         """
-        Prepare the guest
+        Prepare the environment for testing
         """
 
         try:
@@ -531,7 +531,7 @@ class Try(tmt.utils.Common):
     @Action("e", "execute", order=8, group=2)
     def action_execute(self, plan: Plan) -> None:
         """
-        Execute tests
+        Run tests using the specified executor
         """
 
         plan.execute.go(force=True)
@@ -539,7 +539,7 @@ class Try(tmt.utils.Common):
     @Action("r", "report", order=9, group=2)
     def action_report(self, plan: Plan) -> None:
         """
-        Report results
+        Provide test results overview and send reports
         """
 
         plan.report.go(force=True)
@@ -563,7 +563,7 @@ class Try(tmt.utils.Common):
     @Action("k", "keep", order=12, group=3, exit_loop=True)
     def action_keep(self, plan: Plan) -> None:
         """
-        Keep run and exit the session
+        Exit the session but keep the run for later use
         """
 
         assert plan.my_run is not None  # Narrow type
