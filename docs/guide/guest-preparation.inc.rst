@@ -5,7 +5,8 @@ Guest Preparation
 
 There are several requirements which need to be satisfied in order
 to successfully execute tests on guests. To make sure everything
-needed is ready ``tmt`` expects one the following three scenarios:
+needed is ready ``tmt`` expects one of the following three
+scenarios:
 
 1. root account is used on the guest so that any missing packages
    can be installed and additional scripts can be copied to
@@ -18,7 +19,7 @@ needed is ready ``tmt`` expects one the following three scenarios:
 
 If you choose option 3 above, please review carefully the detailed
 requirements described below and adjust your guest preparation
-scripts (e.g. containerfile used for creating the guest image) to
+scripts (e.g. Containerfile used for creating the guest image) to
 ensure your tests can be executed smoothly.
 
 .. _minimal-requirements:
@@ -27,7 +28,7 @@ Minimal Requirements
 ------------------------------------------------------------------
 
 For executing shell scripts ``bash`` is required to be installed
-as it is used by the prepare :ref:`/plugins/finish/shell` and
+as it is used by the prepare :ref:`/plugins/prepare/shell` and
 finish :ref:`/plugins/finish/shell` plugins as well as for test
 execution itself.
 
