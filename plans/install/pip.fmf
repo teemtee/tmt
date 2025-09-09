@@ -8,15 +8,14 @@ prepare:
 execute:
     how: tmt
 
-/install:
-  /mini:
-      summary+: " (mini)"
-      discover:
-          how: fmf
-          test: /tests/dev/pip/install/mini
+/mini:
+    summary+: " (mini)"
+    discover:
+        how: fmf
+        test: /tests/dev/pip/install/mini
 
-  /full:
-      summary+: " (full)"
-      discover:
-          how: fmf
-          test: /tests/dev/pip/install/full
+/full:
+    summary+: " (full)"
+    discover:
+        how: fmf
+        test: /tests/dev/pip/install/full
