@@ -107,7 +107,7 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
                 f"[ -d {quote(str(download_path))} ] || "
                 f'{"sudo " if not guest.facts.is_superuser else ""}'
                 f"mkdir -p {quote(str(download_path))}"
-            ).to_shell_command(),
+            ),
             silent=True,
         )
 
