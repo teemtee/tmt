@@ -110,7 +110,9 @@ class Action(metaclass=ActionMeta):
         """Get unique actions sorted by group and order"""
         seen_functions: set[ActionHandler] = set()
         actions: list[Action] = []
-        for action in sorted(cls._registry.values(), key=lambda x: (x.group, x.order)):
+        for action in sorted(
+            cls._registry.values(), key=lambda x: (x.group, x.order, x.func.__name__)
+        ):
             if action.func not in seen_functions:
                 actions.append(action)
                 seen_functions.add(action.func)
@@ -146,15 +148,14 @@ class Action(metaclass=ActionMeta):
             longest = max(len(action.full_name) for action in Action._registry.values())
         padding = " " * (longest + 3 - len(full_name))
 
-        # No highlighted key if no single letter command defined
-        if len(self.primary_command) > 1:
-            return style(full_name, fg="bright_blue") + padding + self.help_text
-
         # Find the key in the full name and highlight it
         key_index = full_name.lower().find(key.lower())
-        if key_index == -1:
-            # Fallback: highlight first character
-            key_index = 0
+
+        # No highlighting if key
+        # * has no single letter command defined
+        # * cannot be found in full name of the command
+        if len(self.primary_command) > 1 or key_index == -1:
+            return style(full_name, fg="bright_blue") + padding + self.help_text
 
         before = style(full_name[:key_index], fg="bright_blue")
         highlighted_key = style(full_name[key_index], fg="blue", bold=True, underline=True)
