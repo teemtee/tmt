@@ -362,7 +362,7 @@ class Try(tmt.utils.Common):
             # Get unique actions for menu display, sorted by group and order
             displayed_actions = Action.get_sorted_actions()
 
-            menu_lines = ["What do we do next?", ""]
+            menu_lines = ["", "What do we do next?"]
 
             # Group actions dynamically by their group attribute
             for _, group_actions in groupby(displayed_actions, key=lambda x: x.group):
