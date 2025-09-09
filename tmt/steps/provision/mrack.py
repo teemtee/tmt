@@ -1351,7 +1351,12 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     provision_tick: int
     public_key: list[str]
     api_session_refresh_tick: int
-    data: BeakerGuestData
+
+    # Bootc-related attributes (injected by Guest.load())
+    bootc: bool
+    bootc_image_url: Optional[str]
+    bootc_check_system_url: Optional[str]
+    registry_secret: Optional[str]
 
     _api: Optional[BeakerAPI] = None
     _api_timestamp: Optional[datetime.datetime] = None
@@ -1426,11 +1431,11 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     @property
     def _bootc_registry_credentials(self) -> dict[str, Any]:
         """Create authentication dictionary with proper credential handling"""
-        if not self.data.registry_secret or not self.data.bootc_image_url:
+        if not self.registry_secret or not self.bootc_image_url:
             return {}
-        base_repo = _get_registry_from_url(self.data.bootc_image_url)
+        base_repo = _get_registry_from_url(self.bootc_image_url)
         # Support multiple registries
-        return {"auths": {base_repo: {"auth": self.data.bootc_registry_secret}}}
+        return {"auths": {base_repo: {"auth": self.registry_secret}}}
 
     def start(self) -> None:
         """
@@ -1456,10 +1461,10 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             beaker_job_owner=self.beaker_job_owner,
             public_key=self.public_key,
             group=self.beaker_job_group,
-            bootc_credentials=self._bootc_registry_credentials if self.data.bootc else None,
-            bootc_image_url=self.data.bootc_image_url,
-            bootc=self.data.bootc,
-            bootc_check_system_url=self.data.bootc_check_system_url,
+            bootc_credentials=self._bootc_registry_credentials if self.bootc else None,
+            bootc_image_url=self.bootc_image_url,
+            bootc=self.bootc,
+            bootc_check_system_url=self.bootc_check_system_url,
         )
 
         if self.is_dry_run:
@@ -1490,20 +1495,20 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                 if isinstance(cause, xmlrpc.client.Fault):
                     if 'is not a valid user name' in cause.faultString:
                         raise ProvisionError(
-                            f"Failed to create Beaker job, job owner '{self.beaker_job_owner}'"
-                            " was refused as unknown."
+                            f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
+                            "was refused as unknown."
                         ) from exc
 
                     if 'is not a valid submission delegate' in cause.faultString:
                         raise ProvisionError(
-                            f"Failed to create Beaker job, job owner '{self.beaker_job_owner}'"
-                            " is not a valid submission delegate."
+                            f"Failed to create Beaker job, job owner '{self.beaker_job_owner}' "
+                            "is not a valid submission delegate."
                         ) from exc
 
                     if 'is not a valid group' in cause.faultString:
                         raise ProvisionError(
-                            f"Failed to create Beaker job, job group '{self.beaker_job_group}'"
-                            " was refused as unknown."
+                            f"Failed to create Beaker job, job group '{self.beaker_job_group}' "
+                            "was refused as unknown."
                         ) from exc
 
                     if 'is not a member of group' in cause.faultString:
