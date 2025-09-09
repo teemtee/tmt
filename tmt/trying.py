@@ -5,9 +5,10 @@ Easily try tests and experiment with guests
 import functools
 import re
 import shlex
-from collections.abc import Callable, Iterator
+import textwrap
+from collections.abc import Iterator
 from itertools import groupby
-from typing import Any, Optional, cast
+from typing import Any, Callable, ClassVar, cast
 
 import fmf
 import fmf.utils
@@ -24,46 +25,76 @@ import tmt.steps.prepare.feature
 import tmt.templates
 import tmt.utils
 from tmt import Plan
-from tmt._compat.typing import TypeAlias
 from tmt.base import RunData
-from tmt.container import container
 from tmt.steps.prepare import PreparePlugin
 from tmt.utils import Command, GeneralError, MetadataError, Path
 from tmt.utils.themes import style
 
 USER_PLAN_NAME = "/user/plan"
 
-ActionHandler: TypeAlias = Callable[[Callable[..., Any]], Callable[..., Any]]
+
+ActionHandler = Callable[['Try', Plan], None]
 
 
 class ActionMeta(type):
-    """
-    Helper meta class to allow enum-like indexing
-    """
+    """Helper meta class to allow enum-like indexing"""
 
     def __new__(
         cls, name: str, supers: tuple[type, ...], attrdict: dict[str, Any]
     ) -> 'ActionMeta':
-        cls._registry: dict[str, ActionInfo] = {}
+        cls._registry: dict[str, Action] = {}
         return super().__new__(cls, name, supers, attrdict)
 
-    def __getattr__(cls, key: str) -> 'ActionInfo':
-        registry: dict[str, ActionInfo] = cls._registry
-        if key in registry:
-            return registry[key]
+    def __getattr__(cls, key: str) -> 'Action':
+        if key in cls._registry:
+            return cls._registry[key]
         raise AttributeError(key)
 
 
-@container
-class ActionInfo:
-    """Information about a registered action"""
+class Action(metaclass=ActionMeta):
+    """Represents an registered action"""
+
+    _registry: ClassVar[dict[str, 'Action']]
 
     commands: set[str]
-    help_text: str = ""
-    func: Optional[Callable[..., Any]] = None
-    order: int = 0
-    group: int = 0
-    exit_loop: bool = False
+    help_text: str
+    func: ActionHandler
+    order: int
+    group: int
+    exit_loop: bool
+
+    def __init__(
+        self, *commands: str, order: int = 0, group: int = 0, exit_loop: bool = False
+    ) -> None:
+        self.commands = set(commands)
+        self.order = order
+        self.group = group
+        self.exit_loop = exit_loop
+
+        for cmd in commands:
+            Action._registry[cmd] = self
+
+    def __call__(self, func: ActionHandler) -> ActionHandler:
+        self.func = func
+        self.help_text = (
+            textwrap.dedent(func.__doc__).strip().splitlines()[0] if func.__doc__ else ""
+        )
+        return func
+
+    @classmethod
+    def find(cls, command: str) -> 'Action':
+        return cls._registry[command.lower()]
+
+    @classmethod
+    def get_sorted_actions(cls) -> list['Action']:
+        """Get unique actions sorted by group and order"""
+        seen_functions: set[ActionHandler] = set()
+        actions: list[Action] = []
+        for action in sorted(cls._registry.values(), key=lambda x: (x.group, x.order)):
+            if action.func not in seen_functions:
+                actions.append(action)
+                seen_functions.add(action.func)
+        return actions
 
     @functools.cached_property
     def primary_command(self) -> str:
@@ -103,54 +134,6 @@ class ActionInfo:
         padding = " " * (longest + 3 - len(full_name))
 
         return before + highlighted_key + after + padding + self.help_text
-
-
-class Action(metaclass=ActionMeta):
-    _registry: dict[str, 'ActionInfo']
-
-    def __init__(
-        self, *commands: str, order: int = 0, group: int = 0, exit_loop: bool = False
-    ) -> None:
-        info = ActionInfo(commands=set(commands), order=order, group=group, exit_loop=exit_loop)
-        self._action_info = info
-        for cmd in commands:
-            Action._registry[cmd] = info
-
-    def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
-        self._action_info.func = func
-        self._action_info.help_text = func.__doc__.strip().split('\n')[0] if func.__doc__ else ""
-        return func
-
-    @classmethod
-    def find(cls, command: str) -> 'ActionInfo':
-        registry: dict[str, ActionInfo] = cls._registry
-        return registry[command.lower()]
-
-    @classmethod
-    def get_sorted_actions(cls) -> list['ActionInfo']:
-        """Get unique actions sorted by group and order"""
-        seen_functions: set[Optional[Callable[..., Any]]] = set()
-        actions: list[ActionInfo] = []
-        for action_info in sorted(cls._registry.values(), key=lambda x: (x.group, x.order)):
-            if action_info.func not in seen_functions:
-                actions.append(action_info)
-                seen_functions.add(action_info.func)
-        return actions
-
-
-def action(
-    *commands: str, order: int = 0, group: int = 0, exit_loop: bool = False
-) -> ActionHandler:
-    """
-    Decorator to register an action with given command names.
-
-    The help text is extracted from the function's docstring.
-    Multiple command names can be provided (e.g., 'q', 'quit').
-    The ``order`` parameter controls display order in menu (lower values first).
-    The ``group`` parameter controls menu grouping (actions with same group are grouped together).
-    The ``exit_loop`` parameter indicates that the action should exit the main loop when invoked.
-    """
-    return Action(*commands, order=order, group=group, exit_loop=exit_loop)
 
 
 class Try(tmt.utils.Common):
@@ -343,7 +326,7 @@ class Try(tmt.utils.Common):
         )
         self.write(Path('run.yaml'), tmt.utils.dict_to_yaml(data.to_serialized()))
 
-    def choose_action(self) -> 'ActionInfo':
+    def choose_action(self) -> 'Action':
         """
         Print menu, get next action
         """
@@ -380,7 +363,7 @@ class Try(tmt.utils.Common):
 
         plan.wake()
 
-    @action("start_test")
+    @Action("start_test")
     def action_start_test(self, plan: Plan) -> None:
         """
         Start with testing
@@ -397,7 +380,7 @@ class Try(tmt.utils.Common):
             return
         plan.execute.go()
 
-    @action("start_login")
+    @Action("start_login")
     def action_start_login(self, plan: Plan) -> None:
         """
         Start with login
@@ -414,7 +397,7 @@ class Try(tmt.utils.Common):
         assert plan.login is not None  # Narrow type
         plan.login.go(force=True)
 
-    @action("start_ask")
+    @Action("start_ask")
     def action_start_ask(self, plan: Plan) -> None:
         """
         Ask what to do
@@ -424,7 +407,7 @@ class Try(tmt.utils.Common):
 
         plan.provision.go()
 
-    @action("t", "test", order=1, group=1)
+    @Action("t", "test", order=1, group=1)
     def action_test(self, plan: Plan) -> None:
         """
         Test again
@@ -433,7 +416,7 @@ class Try(tmt.utils.Common):
         plan.discover.go(force=True)
         plan.execute.go(force=True)
 
-    @action("l", "login", order=2, group=1)
+    @Action("l", "login", order=2, group=1)
     def action_login(self, plan: Plan) -> None:
         """
         Log into the guest
@@ -442,57 +425,62 @@ class Try(tmt.utils.Common):
         assert plan.login is not None  # Narrow type
         plan.login.go(force=True)
 
-    @action("v", "verbose", order=4, group=1)
-    def action_verbose(self, plan: Plan, *, prompt: bool = True) -> None:
+    @Action("v", "verbose", order=4, group=1)
+    def action_verbose(self, plan: Plan) -> None:
         """
         Set verbosity level of all loggers in given plan
         """
 
-        if prompt:
-            self.print("What verbose level do you need?")
-            answer = input(f"Choose 0-3, hit Enter to keep {self.verbosity_level}> ")
+        self.print("What verbose level do you need?")
+        answer = input(f"Choose 0-3, hit Enter to keep {self.verbosity_level}> ")
 
-            if answer == "":
-                self.print(f"Keeping verbose level {self.verbosity_level}.")
-            else:
-                try:
-                    self.verbosity_level = int(answer)
-                    self.print(f"Switched to verbose level {self.verbosity_level}.")
-                except ValueError:
-                    self.print(f"Invalid level '{answer}'.")
-                    return
+        if answer == "":
+            self.print(f"Keeping verbose level {self.verbosity_level}.")
+        else:
+            try:
+                self.verbosity_level = int(answer)
+                self.print(f"Switched to verbose level {self.verbosity_level}.")
+            except ValueError:
+                self.print(f"Invalid level '{answer}'.")
+                return
 
         for step in plan.steps(enabled_only=False):
             step.verbosity_level = self.verbosity_level
             for phase in step.phases():
                 phase.verbosity_level = self.verbosity_level
 
-    @action("b", "debug", order=5, group=1)
-    def action_debug(self, plan: Plan, *, prompt: bool = True) -> None:
+    def _action_verbose_silent(self, plan: Plan) -> None:
+        """Set verbosity level without prompting"""
+        for step in plan.steps(enabled_only=False):
+            step.verbosity_level = self.verbosity_level
+            for phase in step.phases():
+                phase.verbosity_level = self.verbosity_level
+
+    @Action("b", "debug", order=5, group=1)
+    def action_debug(self, plan: Plan) -> None:
         """
         Set debug level of all loggers in given plan
         """
 
-        if prompt:
-            self.print("Which debug level would you like?")
-            answer = input(f"Choose 0-3, hit Enter to keep {self.debug_level}> ")
+        self.print("Which debug level would you like?")
+        answer = input(f"Choose 0-3, hit Enter to keep {self.debug_level}> ")
 
-            if answer == "":
-                self.print(f"Keeping debug level {self.debug_level}.")
-            else:
-                try:
-                    self.debug_level = int(answer)
-                    self.print(f"Switched to debug level {self.debug_level}.")
-                except ValueError:
-                    self.print(f"Invalid level '{answer}'.")
-                    return
+        if answer == "":
+            self.print(f"Keeping debug level {self.debug_level}.")
+        else:
+            try:
+                self.debug_level = int(answer)
+                self.print(f"Switched to debug level {self.debug_level}.")
+            except ValueError:
+                self.print(f"Invalid level '{answer}'.")
+                return
 
         for step in plan.steps(enabled_only=False):
             step.debug_level = self.debug_level
             for phase in step.phases():
                 phase.debug_level = self.debug_level
 
-    @action("d", "discover", order=6, group=2)
+    @Action("d", "discover", order=6, group=2)
     def action_discover(self, plan: Plan) -> None:
         """
         Discover tests
@@ -500,7 +488,7 @@ class Try(tmt.utils.Common):
 
         plan.discover.go(force=True)
 
-    @action("p", "prepare", order=7, group=2)
+    @Action("p", "prepare", order=7, group=2)
     def action_prepare(self, plan: Plan) -> None:
         """
         Prepare the guest
@@ -511,7 +499,7 @@ class Try(tmt.utils.Common):
         except GeneralError as error:
             self._show_exception(error)
 
-    @action("e", "execute", order=8, group=2)
+    @Action("e", "execute", order=8, group=2)
     def action_execute(self, plan: Plan) -> None:
         """
         Execute tests
@@ -519,7 +507,7 @@ class Try(tmt.utils.Common):
 
         plan.execute.go(force=True)
 
-    @action("r", "report", order=9, group=2)
+    @Action("r", "report", order=9, group=2)
     def action_report(self, plan: Plan) -> None:
         """
         Report results
@@ -527,7 +515,7 @@ class Try(tmt.utils.Common):
 
         plan.report.go(force=True)
 
-    @action("f", "finish", order=10, group=2)
+    @Action("f", "finish", order=10, group=2)
     def action_finish(self, plan: Plan) -> None:
         """
         Perform the user defined finishing tasks
@@ -535,7 +523,7 @@ class Try(tmt.utils.Common):
 
         plan.finish.go()
 
-    @action("c", "cleanup", order=11, group=2)
+    @Action("c", "cleanup", order=11, group=2)
     def action_cleanup(self, plan: Plan) -> None:
         """
         Clean up guests and prune the workdir
@@ -543,7 +531,7 @@ class Try(tmt.utils.Common):
 
         plan.cleanup.go()
 
-    @action("k", "keep", order=12, group=3, exit_loop=True)
+    @Action("k", "keep", order=12, group=3, exit_loop=True)
     def action_keep(self, plan: Plan) -> None:
         """
         Keep run and exit the session
@@ -553,7 +541,7 @@ class Try(tmt.utils.Common):
         run_id = style(str(plan.my_run.workdir), fg="magenta")
         self.print(f"Run {run_id} kept unfinished. See you soon!")
 
-    @action("q", "quit", order=13, group=3, exit_loop=True)
+    @Action("q", "quit", order=13, group=3, exit_loop=True)
     def action_quit(self, plan: Plan) -> None:
         """
         Clean up the run and quit the session
@@ -568,7 +556,7 @@ class Try(tmt.utils.Common):
         run_id = style(str(plan.my_run.workdir), fg="magenta")
         self.print(f"Run {run_id} successfully finished. Bye for now!")
 
-    @action("h", "host", order=3, group=1)
+    @Action("h", "host", order=3, group=1)
     def action_host(self, plan: Plan) -> None:
         """
         Run command on the host
@@ -717,7 +705,7 @@ class Try(tmt.utils.Common):
         # Set the default verbosity level, handle options
         for plan in self.plans:
             self.handle_options(plan)
-            self.action_verbose(plan, prompt=False)
+            self._action_verbose_silent(plan)
 
         # Choose the initial action
         action = Action.start_ask
@@ -734,8 +722,7 @@ class Try(tmt.utils.Common):
                 # Handle the individual actions
                 for plan in self.plans:
                     plan.header()
-                    if action.func is not None:
-                        action.func(self, plan)
+                    action.func(self, plan)
 
                 # Finish if action requests loop exit
                 if action.exit_loop:
