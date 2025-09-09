@@ -16,14 +16,18 @@ rlJournalStart
 
     # EPEL
     for image in $images; do
-        if rlIsFedora ">=42" && (is_centos_7 "$image" || is_ubi_8 "$image"); then
+        if rlIsFedora ">=42" && is_centos_7 "$image"; then
             rlLogInfo "Skipping because Ansible shipped with Fedora does not support Python 3.6"
 
             continue
         fi
 
         rlPhaseStartTest "Enable EPEL on $image"
-            rlRun -s "tmt -vvv run -a plan --name '/epel/enabled' provision --how container --image $image"
+            rlRun -s "tmt -vvv run -a plan --name '/epel/enabled/default' provision --how container --image $image"
+        rlPhaseEnd
+
+        rlPhaseStartTest "Enable EPEL on $image (epel pre-installed)"
+            rlRun -s "tmt -vvv run -a plan --name '/epel/enabled/with-epel-preinstalled' provision --how container --image $image"
         rlPhaseEnd
 
         rlPhaseStartTest "Disable EPEL on $image"

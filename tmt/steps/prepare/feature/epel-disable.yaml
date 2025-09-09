@@ -1,5 +1,29 @@
 ---
 
+# Pre-setup to install Python 3.9 on RHEL/CentOS 8 systems
+# This is needed because Ansible 2.17+ requires Python 3.7+ but RHEL/CentOS 8
+# ships with Python 3.6, causing "future feature annotations is not defined" errors
+- name: Workaround Ansible 2.17+ not supporting RHEL/CentOS 8 systems
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check OS release version
+      ansible.builtin.raw: cat /etc/redhat-release
+      register: release_out
+      changed_when: false
+
+    - name: Install Python 3.9 on RHEL/CentOS 8 systems
+      ansible.builtin.raw: |
+        dnf -y module enable python39
+        dnf -y install python39
+      args:
+        executable: /bin/bash
+      when: |
+        'Red Hat Enterprise Linux release 8.' in release_out.stdout
+        or 'CentOS Linux release 8' in release_out.stdout
+        or 'CentOS Stream release 8' in release_out.stdout
+      changed_when: true
+
 - name: Disable EPEL repositories
   hosts: all
   tasks:
