@@ -121,12 +121,10 @@ include = [
     "/README.rst",
     "/tests",
     "/tmt.spec",
-    "/tmt.1",
+    "/docs",
     "/completions",
     "/.fmf",
     ]
-
-artifacts = ["tmt.1"]
 
 [tool.hatch.envs.default]
 platforms = ["linux"]
