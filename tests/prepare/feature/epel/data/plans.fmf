@@ -12,7 +12,7 @@ execute:
             test: ./check-repos.sh
 
     prepare:
-        how: feature
+      - how: feature
 
     environment:
         REPOSITORIES: epel
@@ -23,6 +23,13 @@ execute:
 
         environment+:
             STATE: enabled
+
+        /default:
+
+        /with-epel-preinstalled:
+            prepare+<:
+              - how: feature
+                epel: enabled
 
     /disabled:
         prepare+:
