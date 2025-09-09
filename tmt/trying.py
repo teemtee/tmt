@@ -72,6 +72,12 @@ class Action(metaclass=ActionMeta):
         self.exit_loop = exit_loop
 
         for cmd in commands:
+            if cmd in Action._registry:
+                existing_action = Action._registry[cmd]
+                raise ValueError(
+                    f"Command '{cmd}' is already registered for action "
+                    f"'{existing_action.full_name}' (function: {existing_action.func.__name__})"
+                )
             Action._registry[cmd] = self
 
     def __call__(self, func: ActionHandler) -> ActionHandler:
