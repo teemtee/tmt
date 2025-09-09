@@ -114,7 +114,7 @@ class KojiProvider(ArtifactProvider[KojiArtifactInfo]):
         # Destination directory is guaranteed to exist, download the artifact
         guest.execute(
             ShellScript(
-                f"cd {quote(str(destination.parent))} && curl -LOf {quote(artifact.location)}"
+                f"curl -L -o {quote(str(destination))} {quote(artifact.location)}"
             ).to_shell_command(),
             silent=True,
         )
