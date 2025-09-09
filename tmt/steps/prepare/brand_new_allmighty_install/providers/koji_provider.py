@@ -46,6 +46,13 @@ class KojiProvider(ArtifactProvider[KojiArtifactInfo]):
     def __init__(self, logger: tmt.log.Logger, artifact_id: str):
         super().__init__(logger, artifact_id)
         self._session = self._initialize_session()
+        self._rpm_list = self._fetch_rpms()
+
+    def _fetch_rpms(self) -> list[dict[str, Any]]:
+        """
+        Fetch and cache the list of RPMs for the given artifact ID.
+        """
+        return self._call_api('listBuildRPMs', int(self.artifact_id)) or []
 
     def _initialize_session(self) -> ClientSession:
         """
@@ -89,12 +96,11 @@ class KojiProvider(ArtifactProvider[KojiArtifactInfo]):
         TODO: Currently only lists rpms, extend to other types.
         See testing farm code for reference: listArtifacts, listTaskOutput etc.
         """
-        if rpm_list := self._call_api('listBuildRPMs', int(self.artifact_id)):
-            for rpm in rpm_list:
-                yield KojiArtifactInfo(
-                    _raw_artifact=rpm,
-                    id=int(self.artifact_id),
-                )
+        for rpm in self._rpm_list:
+            yield KojiArtifactInfo(
+                _raw_artifact=rpm,
+                id=int(self.artifact_id),
+            )
 
     def _download_artifact(
         self, artifact: KojiArtifactInfo, guest: Guest, destination: Path
