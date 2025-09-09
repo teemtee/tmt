@@ -133,6 +133,20 @@ class MockShell:
 
         self.parent.verbose("Mock shell is ready")
 
+        self.mock_shell.stdin.write("rm -rf /tmp/stdout /tmp/stderr /tmp/returncode\n")
+        self.mock_shell.stdin.flush()
+        self.mock_shell.stdin.write("mkfifo /tmp/stdout /tmp/stderr /tmp/returncode\n")
+        self.mock_shell.stdin.flush()
+
+        loop = 2
+        while loop != 0 and self.mock_shell.poll() is None:
+            events = self.epoll.poll()
+            for fileno, _ in events:
+                if fileno == self.mock_shell_stdout_fd:
+                    loop -= 1
+                    self.mock_shell.stdout.read()
+                    break
+
         """
         NOTE Here we would like to add code which unmounts the overlayfs
         after the prepare phase is done. Nevertheless testing should work even
@@ -169,6 +183,8 @@ class MockShell:
         cwd: Optional[Path] = None,
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: str = None,
+        log: Optional[tmt.log.LoggingFunction] = None,
+        silent: bool = False,
     ):
         """
         Execute the command in a running mock shell for increased speed.
@@ -188,44 +204,97 @@ class MockShell:
         shell_command += " 1>/tmp/stdout 2>/tmp/stderr; echo $?>/tmp/returncode"
 
         self.parent.verbose("Executing inside mock shell", shell_command)
-
         shell_command += "\n"
+
+        stdout_file = self.root_path / "tmp/stdout"
+        stderr_file = self.root_path / "tmp/stderr"
+        returncode_file = self.root_path / "tmp/returncode"
+
+        stdout_fd = os.open(str(stdout_file), os.O_RDONLY | os.O_NONBLOCK)
+        self.epoll.register(stdout_fd, select.EPOLLIN)
+
+        stderr_fd = os.open(str(stderr_file), os.O_RDONLY | os.O_NONBLOCK)
+        self.epoll.register(stderr_fd, select.EPOLLIN)
+
+        returncode_fd = os.open(str(returncode_file), os.O_RDONLY | os.O_NONBLOCK)
+        self.epoll.register(returncode_fd, select.EPOLLIN)
 
         self.mock_shell.stdin.write(shell_command)
         self.mock_shell.stdin.flush()
 
-        # TODO Instead of reading stdout and stderr when the process finishes,
-        # we can open sockets or pipes and use epoll to provide real-time output.
+        logger = self.parent._logger
+        output_logger: tmt.log.LoggingFunction = (log or logger.debug) if not silent else logger.debug
+
+        # Lazy object that collects chunks of bytes and decodes them when a
+        # newline is encountered
+        class Stream:
+            def __init__(self, logger):
+                self.logger = logger
+                self.output = bytes()
+                self.string = str()
+
+            def __iadd__(self, content: bytes):
+                self.output += content
+                while True:
+                    pos = self.output.find(b'\n')
+                    if pos == -1:
+                        break
+                    string = self.output[:pos].decode('utf-8', errors='replace')
+                    self.output = self.output[pos + 1:]
+                    self.logger(string)
+                    self.string += string
+                    self.string += '\n'
+                return self
+
+        stdout = Stream(lambda text: output_logger("out", text, 'yellow', level = 0))
+        stderr = Stream(lambda text: output_logger("err", text, 'yellow', level = 0))
+        returncode = None
+
         while self.mock_shell.poll() is None:
             events = self.epoll.poll()
+            if len(events) == 1 and events[0][0] == self.mock_shell_stdout_fd:
+                self.mock_shell.stdout.read()
+                break
             for fileno, _ in events:
                 if fileno == self.mock_shell_stderr_fd:
                     self.mock_shell.stderr.read()
-                if fileno == self.mock_shell_stdout_fd:
-                    self.mock_shell.stdout.read()
-                    with open(self.root_path / "tmp/stdout") as istream:
-                        stdout = istream.read()
-                    with open(self.root_path / "tmp/stderr") as istream:
-                        stderr = istream.read()
-                    with open(self.root_path / "tmp/returncode") as istream:
-                        returncode = int(istream.read().strip())
-                    if returncode != 0:
-                        raise tmt.utils.RunError(
-                            f"Command '{friendly_command or shell_command}' returned {returncode}.",
-                            command,
-                            returncode,
-                            stdout=stdout,
-                            stderr=stderr,
-                        )
-                    return (stdout, stderr)
+                elif fileno == stdout_fd:
+                    content = os.read(stdout_fd, 128)
+                    stdout += content
+                    if not content:
+                        self.epoll.unregister(stdout_fd)
+                elif fileno == stderr_fd:
+                    content = os.read(stderr_fd, 128)
+                    stderr += content
+                    if not content:
+                        self.epoll.unregister(stderr_fd)
+                elif fileno == returncode_fd:
+                    content = os.read(returncode_fd, 16)
+                    if not content:
+                        self.epoll.unregister(returncode_fd)
+                    else:
+                        returncode = int(content.decode("utf-8").strip())
 
-        raise tmt.utils.RunError(
-            f"Invalid state when executing command '{friendly_command or shell_command}'.",
-            command,
-            127,
-            stdout="",
-            stderr="",
-        )
+        stdout = stdout.string
+        stderr = stderr.string
+
+        if returncode is None:
+            raise tmt.utils.RunError(
+                f"Invalid state when executing command '{friendly_command or shell_command}'.",
+                command,
+                127,
+                stdout=stdout,
+                stderr=stderr,
+            )
+        elif returncode != 0:
+            raise tmt.utils.RunError(
+                f"Command '{friendly_command or shell_command}' returned {returncode}.",
+                command,
+                returncode,
+                stdout=stdout,
+                stderr=stderr,
+            )
+        return (stdout, stderr)
 
 
 class GuestMock(tmt.Guest):
