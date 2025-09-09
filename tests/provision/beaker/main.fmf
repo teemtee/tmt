@@ -1,5 +1,5 @@
-# These tests are manual only for now as they need a running
-# Beaker instance
+# The reconnect tests are manual only for now as they need
+# a running Beaker instance
 /reconnect:
     summary: Verify reconnecting to a provisioned guest
     description:
