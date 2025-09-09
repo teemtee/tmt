@@ -119,7 +119,7 @@ class Action(metaclass=ActionMeta):
     @functools.cached_property
     def primary_command(self) -> str:
         """Return the primary command (the shortest command defined)"""
-        return min(self.commands)
+        return min(self.commands, key=len)
 
     @functools.cached_property
     def key(self) -> str:
