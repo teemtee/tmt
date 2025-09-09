@@ -61,7 +61,10 @@
           when: ansible_distribution_major_version | int >= 9
 
         - name: Install package 'epel-release'
-          ansible.builtin.command: "rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"  # noqa: command-instead-of-module
+          ansible.builtin.shell: |
+            if ! rpm -q epel-release; then
+              rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm
+            fi
           # The dnf python module is not available with python3.9 installed on the host, do not use ansible.builtin.dnf module
           when: ansible_distribution_major_version | int == 8
           register: output
