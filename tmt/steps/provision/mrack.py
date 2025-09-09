@@ -1174,10 +1174,10 @@ class BeakerAPI:
         self._mrack_transformer = TmtBeakerTransformer()
 
         try:
-            # Instead of using global context, create a local context
-            # This requires creating the provider config dictionary manually
-            provider_config = self._create_provider_config(config_data)
-            await self._mrack_transformer.init(provider_config, {})
+            # Pass config data directly to mrack - it will validate using
+            # BeakerTransformer.validate_config() which checks for
+            # required attributes: ["distros", "reserve_duration", "timeout"]
+            await self._mrack_transformer.init(config_data, {})
 
         except NotAuthenticatedError as kinit_err:
             raise ProvisionError(kinit_err) from kinit_err
@@ -1190,6 +1190,8 @@ class BeakerAPI:
                 f"Configuration file missing: {missing_conf_err.filename}"
             ) from missing_conf_err
         except Exception as e:
+            # This will catch mrack's ConfigError from validate_config() with detailed messages
+            # about missing required attributes like "distros", "reserve_duration", "timeout"
             raise ProvisionError("Failed to initialize mrack transformer.") from e
 
         self._mrack_provider = self._mrack_transformer._provider
@@ -1197,31 +1199,6 @@ class BeakerAPI:
 
         if guest.job_id:
             self._bkr_job_id = guest.job_id
-
-    def _create_provider_config(self, config_data: dict[str, Any]) -> dict[str, Any]:
-        """
-        Create provider configuration from parsed YAML config (thread-safe)
-        """
-
-        try:
-            # The YAML config should already be in the correct format for mrack
-            # Just validate that it has the necessary structure
-            if not isinstance(config_data, dict):
-                raise ProvisionError(
-                    "Invalid mrack provisioning configuration format - expected dictionary"
-                )
-
-            # Check for required provider configurations
-            if 'beaker' not in config_data:
-                raise ProvisionError(
-                    "No 'beaker' section found in mrack provisioning configuration"
-                )
-
-            # Return the configuration data as-is since it's already in the correct format
-            return config_data
-
-        except Exception as e:
-            raise ProvisionError("Failed to parse mrack provisioning configuration.") from e
 
     @async_run
     async def create(self, data: CreateJobParameters) -> Any:
