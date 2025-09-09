@@ -16,6 +16,9 @@ New keys, ``skip-tests-before`` and ``skip-tests-after``, were added to
 the :ref:`/plugins/execute/upgrade` plugin, allowing users to skip
 running discovered tests on the old system or new system, respectively.
 
+The ``epel`` and ``fips`` :ref:`/plugins/prepare/feature` plugins
+were fixed to work well against ``RHEL-8`` hosts.
+
 
 tmt-1.56.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
