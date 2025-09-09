@@ -16,6 +16,31 @@
 #
 # https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10-beta/html/security_hardening/switching-rhel-to-fips-mode
 ---
+
+# Pre-setup to install Python 3.9 on RHEL/CentOS 8 systems
+# This is needed because Ansible 2.17+ requires Python 3.7+ but RHEL/CentOS 8
+# ships with Python 3.6, causing "future feature annotations is not defined" errors
+- name: Workaround Ansible 2.17+ not supporting RHEL/CentOS 8 systems
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check OS release version
+      ansible.builtin.raw: cat /etc/redhat-release
+      register: release_out
+      changed_when: false
+
+    - name: Install Python 3.9 on RHEL/CentOS 8 systems
+      ansible.builtin.raw: |
+        dnf -y module enable python39
+        dnf -y install python39
+      args:
+        executable: /bin/bash
+      when: |
+        'Red Hat Enterprise Linux release 8.' in release_out.stdout
+        or 'CentOS Linux release 8' in release_out.stdout
+        or 'CentOS Stream release 8' in release_out.stdout
+      changed_when: false
+
 - name: Enable FIPS mode on RHEL/CentosStream 8, 9 or 10
   hosts: all
 
@@ -27,12 +52,22 @@
           - crypto-policies-scripts
           - dracut-fips
         state: present
-      when: ansible_distribution_major_version | int < 10
+      when:
+        - ansible_distribution_major_version | int < 10
+        - ansible_distribution_major_version | int != 8
+
+    - name: Install crypto-policies-scripts, dracut-fips and grubby on RHEL8
+      ansible.builtin.command: "dnf install -y crypto-policies-scripts dracut-fips grubby"
+      when:
+        - ansible_distribution_major_version | int == 8
+      register: output
+      changed_when: output.rc == 0
 
     - name: Install grubby
       ansible.builtin.dnf:
         name: grubby
         state: present
+      when: ansible_distribution_major_version | int != 8
 
     - name: Modify bootloader
       when: ansible_distribution_major_version | int == 10
