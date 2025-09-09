@@ -61,7 +61,6 @@
           when: ansible_distribution_major_version | int >= 9
 
         - name: Install package 'epel-release'
-
           ansible.builtin.shell: |
             set -e
             if ! rpm -q epel-release; then
