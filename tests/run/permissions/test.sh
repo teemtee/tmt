@@ -29,19 +29,14 @@ EOF
 
         rlRun "useradd $USER"
 
-
-        rlRun "export WORKDIR_ROOT=\"\$(python3 -c 'import tmt; print(tmt.utils.WORKDIR_ROOT)')\""
-        rlLog "WORKDIR_ROOT=$WORKDIR_ROOT"
+        rlRun "WORKDIR_ROOT=\$(mktemp -d)" 0 "Create another tmp directory for TMT_WORKDIR_ROOT"
     rlPhaseEnd
 
     rlPhaseStartTest "Recreated correctly"
-        rlFileBackup --clean "$WORKDIR_ROOT"
-        rlRun "rm -rf $WORKDIR_ROOT"
-        rlRun "tmt run"
+        rlRun "TMT_WORKDIR_ROOT=$WORKDIR_ROOT tmt run"
         rlAssertEquals "Correct permission" "$(stat --format '%a' $WORKDIR_ROOT)" "1777"
         # Another user can use WORKDIR_ROOT
-        rlRun "su -l -c 'cd $tmp; tmt --feeling-safe run' '$USER'"
-        rlFileRestore
+        rlRun "su -l -c 'cd $tmp; TMT_WORKDIR_ROOT=$WORKDIR_ROOT tmt --feeling-safe run' '$USER'"
     rlPhaseEnd
 
 
@@ -49,5 +44,6 @@ EOF
         rlRun "popd"
         user_cleanup "$USER"
         rlRun "rm -r $tmp" 0 "Removing tmp directory"
+        rlRun "rm -r $WORKDIR_ROOT" 0 "Removing TMT_WORKDIR_ROOT"
     rlPhaseEnd
 rlJournalEnd
