@@ -16,6 +16,14 @@ rlJournalStart
         rlAssertGrep '{"auths": {"quay.io": {"auth": "dummysecret"}}}' $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Check bootc works well through command line"
+        rlRun -s "tmt run --dry -a provision -h beaker --bootc --bootc-image-url quay.io/fedora/custom-bootc:latest --bootc-registry-secret dummysecret"
+
+        rlAssertGrep 'ostreecontainer --url quay.io/fedora/custom-bootc:latest' $rlRun_LOG
+        rlAssertGrep 'dummysecret' $rlRun_LOG
+        rlAssertGrep '{"auths": {"quay.io": {"auth": "dummysecret"}}}' $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
     rlPhaseEnd

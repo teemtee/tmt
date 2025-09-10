@@ -1356,20 +1356,17 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     bootc: bool
     bootc_image_url: Optional[str]
     bootc_check_system_url: Optional[str]
-    registry_secret: Optional[str]
+    bootc_registry_secret: Optional[str]
 
     _api: Optional[BeakerAPI] = None
     _api_timestamp: Optional[datetime.datetime] = None
 
-    def __init__(
-        self,
-        *,
-        data: BeakerGuestData,
-        name: Optional[str] = None,
-        parent: Optional[tmt.utils.Common] = None,
-        logger: tmt.log.Logger,
-    ) -> None:
-        super().__init__(data=data, parent=parent, name=name, logger=logger)
+    def __init__(self, *args: Any, **kwargs: Any):
+        """
+        Make sure that the mrack module is available and imported
+        """
+
+        super().__init__(*args, **kwargs)
 
         assert isinstance(self.parent, tmt.steps.provision.Provision)
         self.mrack_log = f"{self.parent.workdir}/{self.parent.name}-mrack.log"
@@ -1431,11 +1428,11 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     @property
     def _bootc_registry_credentials(self) -> dict[str, Any]:
         """Create authentication dictionary with proper credential handling"""
-        if not self.registry_secret or not self.bootc_image_url:
+        if not self.bootc_registry_secret or not self.bootc_image_url:
             return {}
         base_repo = _get_registry_from_url(self.bootc_image_url)
         # Support multiple registries
-        return {"auths": {base_repo: {"auth": self.registry_secret}}}
+        return {"auths": {base_repo: {"auth": self.bootc_registry_secret}}}
 
     def start(self) -> None:
         """
