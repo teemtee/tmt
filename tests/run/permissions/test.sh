@@ -29,10 +29,11 @@ EOF
 
         rlRun "useradd $USER"
 
-        rlRun "WORKDIR_ROOT=\$(mktemp -d)" 0 "Create another tmp directory for TMT_WORKDIR_ROOT"
+        rlRun "tmp_workdirs=\$(mktemp -d)" 0 "Create another tmp directory for TMT_WORKDIR_ROOT"
     rlPhaseEnd
 
     rlPhaseStartTest "Recreated correctly"
+        rlRun "WORKDIR_ROOT=$tmp_workdirs/create" 0 "Set WORKDIR_ROOT for current test case"
         rlRun "TMT_WORKDIR_ROOT=$WORKDIR_ROOT tmt run"
         rlAssertEquals "Correct permission" "$(stat --format '%a' $WORKDIR_ROOT)" "1777"
         # Another user can use WORKDIR_ROOT
@@ -44,6 +45,6 @@ EOF
         rlRun "popd"
         user_cleanup "$USER"
         rlRun "rm -r $tmp" 0 "Removing tmp directory"
-        rlRun "rm -r $WORKDIR_ROOT" 0 "Removing TMT_WORKDIR_ROOT"
+        rlRun "rm -r $tmp_workdirs" 0 "Removing TMT_WORKDIR_ROOT"
     rlPhaseEnd
 rlJournalEnd
