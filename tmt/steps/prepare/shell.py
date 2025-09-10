@@ -194,6 +194,11 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 command = tmt.utils.ShellScript(f'sudo -E {prepare_wrapper_path}')
             else:
                 command = tmt.utils.ShellScript(f'{prepare_wrapper_path}')
-            guest.execute(command=command, cwd=worktree, env=environment)
+            guest.execute(
+                command=command,
+                cwd=worktree,
+                env=environment,
+                sourced_files=[self.step.plan.plan_sourced_file],
+            )
 
         return outcome
