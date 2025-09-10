@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -25,3 +25,12 @@ def test_call_api_success():
 
     result = provider._call_api("some_method", 1, 2)
     assert result == "ok"
+
+
+def test_fetch_rpms_populates_list(root_logger):
+    rpm_data = [{"name": "foo", "version": "1.x", "release": "1", "nvr": "foo-1.x-1"}]
+
+    with patch.object(KojiProvider, "_call_api", return_value=rpm_data) as mock_call:
+        provider = KojiProvider(root_logger, "koji.build:123")
+        assert provider._rpm_list == rpm_data
+        mock_call.assert_called_once_with("listBuildRPMs", 123)
