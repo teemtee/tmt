@@ -30,6 +30,7 @@ plans:
         TMT_TREE: /run_path/plan/tree
         TMT_PLAN_DATA: /run_path/plan/data
         TMT_PLAN_ENVIRONMENT_FILE: /run_path/plan/data/variables.env
+        TMT_PLAN_SOURCED_FILE: /run_path/plan/data/plan-sourced-file.sh
     context: {}
     discover:
         enabled: true
