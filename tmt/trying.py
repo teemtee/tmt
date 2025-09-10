@@ -8,7 +8,7 @@ import shlex
 import textwrap
 from collections.abc import Iterator
 from itertools import groupby
-from typing import Any, Callable, ClassVar, cast
+from typing import Any, Callable, ClassVar, Optional, cast
 
 import fmf
 import fmf.utils
@@ -56,7 +56,7 @@ class Action(metaclass=ActionMeta):
 
     _registry: ClassVar[dict[str, 'Action']]
 
-    commands: set[str]
+    command: str
     help_text: str
     func: ActionHandler
     order: int
@@ -66,27 +66,35 @@ class Action(metaclass=ActionMeta):
 
     def __init__(
         self,
-        *commands: str,
+        command: str,
+        shortcut: Optional[str] = None,
         order: int = 0,
         group: int = 0,
         exit_loop: bool = False,
         hidden: bool = False,
     ) -> None:
-        self.commands = set(commands)
+        self.command = command.lower()
+        self.shortcut = shortcut.lower() if shortcut else None
         self.order = order
         self.group = group
         self.exit_loop = exit_loop
         self.hidden = hidden
 
-        for command in commands:
-            command_lower = command.lower()
-            if command_lower in Action._registry:
-                existing_action = Action._registry[command_lower]
+        def _add_action(action: str) -> None:
+            if action in Action._registry:
+                existing_action = Action._registry[action]
                 raise ValueError(
-                    f"Command '{command}' is already registered for action "
-                    f"'{existing_action.full_name}' (function: {existing_action.func.__name__})"
+                    f"The '{action}' is already registered for action "
+                    f"'{existing_action.command}' (function: {existing_action.func.__name__})"
                 )
-            Action._registry[command_lower] = self
+            Action._registry[action] = self
+
+        # Add action for the command
+        _add_action(command)
+
+        # Add action for the shortcut if present
+        if shortcut:
+            _add_action(shortcut)
 
     def __call__(self, func: ActionHandler) -> ActionHandler:
         self.func = func
@@ -97,7 +105,7 @@ class Action(metaclass=ActionMeta):
 
     @classmethod
     def find(cls, command: str) -> 'Action':
-        action = cls._registry[command.lower()]
+        action = cls._registry[command]
 
         # Do not expose hidden actions
         if action.hidden:
@@ -119,47 +127,61 @@ class Action(metaclass=ActionMeta):
         return actions
 
     @functools.cached_property
-    def primary_command(self) -> str:
-        """Return the primary command (the shortest command defined)"""
-        return min(self.commands, key=len)
+    def command_length(self) -> int:
+        """
+        Calculate the command length in the menu including possible separate shortcut,
+        e.g. 'command [shortcut]' in case the shortcut not matched in the command
+        """
+        # Count the length of the displayed action command
+        # plus the possible shortcut, e.g. 'command [shortcut]'
+        if self.shortcut is None or self.command.find(self.shortcut) != -1:
+            return len(self.command)
+
+        # Calculate the padding according to menu item being 'command [shortcut]'
+        return len(self.command) + len(self.shortcut) + 3
 
     @functools.cached_property
-    def key(self) -> str:
-        """Return the keyboard shortcut (first character of first command)"""
-        return self.primary_command[0]
-
-    @functools.cached_property
-    def full_name(self) -> str:
-        """Return the full command name (longest command)"""
-        return max(self.commands, key=len)
+    def longest_command_length(self) -> int:
+        """
+        Calculate longest command in the menu including possible
+        separate shortcut. Do not count the actions hidden in the menu.
+        """
+        return max(
+            action.command_length for action in Action._registry.values() if not action.hidden
+        )
 
     @functools.cached_property
     def menu_item(self) -> str:
         """
-        Show menu with the keyboard shortcut highlighted.
-        If the primary command is not a single letter, do not highlight anything.
+        Show menu with the keyboard shortcut highlighted if present.
+        If the shortcut does not match string in the command,
+        display it next to the command in square brackets.
         """
-        full_name = self.full_name
-        key = self.key
+        padding = " " * (self.longest_command_length + 3 - self.command_length)
 
-        # Calculate padding based on longest action name
-        longest = 0
-        if Action._registry:
-            longest = max(len(action.full_name) for action in Action._registry.values())
-        padding = " " * (longest + 3 - len(full_name))
+        # No shortcut
+        if self.shortcut is None:
+            return style(self.command, fg="bright_blue") + padding + self.help_text
 
-        # Find the key in the full name and highlight it
-        key_index = full_name.lower().find(key.lower())
+        # Find the key in the  and highlight it
+        shortcut_index: int = self.command.find(self.shortcut) if self.shortcut else -1
 
-        # No highlighting if key
-        # * has no single letter command defined
-        # * cannot be found in full name of the command
-        if len(self.primary_command) > 1 or key_index == -1:
-            return style(full_name, fg="bright_blue") + padding + self.help_text
+        # If shortcut cannot be found in the command, add it next to the command in brackets
+        if shortcut_index == -1:
+            return (
+                style(self.command + f' [{self.shortcut}]', fg="bright_blue")
+                + padding
+                + self.help_text
+            )
 
-        before = style(full_name[:key_index], fg="bright_blue")
-        highlighted_key = style(full_name[key_index], fg="blue", bold=True, underline=True)
-        after = style(full_name[key_index + 1 :], fg="bright_blue")
+        before = style(self.command[:shortcut_index], fg="bright_blue")
+        highlighted_key = style(
+            self.command[shortcut_index : shortcut_index + (len(self.shortcut))],
+            fg="blue",
+            bold=True,
+            underline=True,
+        )
+        after = style(self.command[shortcut_index + len(self.shortcut) :], fg="bright_blue")
 
         return before + highlighted_key + after + padding + self.help_text
 
@@ -437,7 +459,7 @@ class Try(tmt.utils.Common):
 
         plan.provision.go()
 
-    @Action("t", "test", order=1, group=1)
+    @Action("test", shortcut="t", order=1, group=1)
     def action_test(self, plan: Plan) -> None:
         """
         Rediscover tests and execute them again
@@ -446,7 +468,7 @@ class Try(tmt.utils.Common):
         plan.discover.go(force=True)
         plan.execute.go(force=True)
 
-    @Action("l", "login", order=2, group=1)
+    @Action("login", shortcut="l", order=2, group=1)
     def action_login(self, plan: Plan) -> None:
         """
         Log into the guest for experimenting
@@ -455,7 +477,7 @@ class Try(tmt.utils.Common):
         assert plan.login is not None  # Narrow type
         plan.login.go(force=True)
 
-    @Action("v", "verbose", order=4, group=1)
+    @Action("verbose", shortcut="v", order=4, group=1)
     def action_verbose(self, plan: Plan) -> None:
         """
         Set the desired level of verbosity
@@ -486,7 +508,7 @@ class Try(tmt.utils.Common):
             for phase in step.phases():
                 phase.verbosity_level = self.verbosity_level
 
-    @Action("b", "debug", order=5, group=1)
+    @Action("debug", shortcut="b", order=5, group=1)
     def action_debug(self, plan: Plan) -> None:
         """
         Choose a different debugging level
@@ -510,7 +532,7 @@ class Try(tmt.utils.Common):
             for phase in step.phases():
                 phase.debug_level = self.debug_level
 
-    @Action("d", "discover", order=6, group=2)
+    @Action("discover", shortcut="d", order=6, group=2)
     def action_discover(self, plan: Plan) -> None:
         """
         Gather information about tests to be executed
@@ -518,7 +540,7 @@ class Try(tmt.utils.Common):
 
         plan.discover.go(force=True)
 
-    @Action("p", "prepare", order=7, group=2)
+    @Action("prepare", shortcut="p", order=7, group=2)
     def action_prepare(self, plan: Plan) -> None:
         """
         Prepare the environment for testing
@@ -529,7 +551,7 @@ class Try(tmt.utils.Common):
         except GeneralError as error:
             self._show_exception(error)
 
-    @Action("e", "execute", order=8, group=2)
+    @Action("execute", shortcut="e", order=8, group=2)
     def action_execute(self, plan: Plan) -> None:
         """
         Run tests using the specified executor
@@ -537,7 +559,7 @@ class Try(tmt.utils.Common):
 
         plan.execute.go(force=True)
 
-    @Action("r", "report", order=9, group=2)
+    @Action("report", shortcut="r", order=9, group=2)
     def action_report(self, plan: Plan) -> None:
         """
         Provide test results overview and send reports
@@ -545,7 +567,7 @@ class Try(tmt.utils.Common):
 
         plan.report.go(force=True)
 
-    @Action("f", "finish", order=10, group=2)
+    @Action("finish", shortcut="f", order=10, group=2)
     def action_finish(self, plan: Plan) -> None:
         """
         Perform the user defined finishing tasks
@@ -553,7 +575,7 @@ class Try(tmt.utils.Common):
 
         plan.finish.go()
 
-    @Action("c", "cleanup", order=11, group=2)
+    @Action("cleanup", shortcut="c", order=11, group=2)
     def action_cleanup(self, plan: Plan) -> None:
         """
         Clean up guests and prune the workdir
@@ -561,7 +583,7 @@ class Try(tmt.utils.Common):
 
         plan.cleanup.go()
 
-    @Action("k", "keep", order=12, group=3, exit_loop=True)
+    @Action("keep", shortcut="k", order=12, group=3, exit_loop=True)
     def action_keep(self, plan: Plan) -> None:
         """
         Exit the session but keep the run for later use
@@ -571,7 +593,7 @@ class Try(tmt.utils.Common):
         run_id = style(str(plan.my_run.workdir), fg="magenta")
         self.print(f"Run {run_id} kept unfinished. See you soon!")
 
-    @Action("q", "quit", order=13, group=3, exit_loop=True)
+    @Action("quit", shortcut="q", order=13, group=3, exit_loop=True)
     def action_quit(self, plan: Plan) -> None:
         """
         Clean up the run and quit the session
@@ -586,7 +608,7 @@ class Try(tmt.utils.Common):
         run_id = style(str(plan.my_run.workdir), fg="magenta")
         self.print(f"Run {run_id} successfully finished. Bye for now!")
 
-    @Action("h", "host", order=3, group=1)
+    @Action("host", shortcut="h", order=3, group=1)
     def action_host(self, plan: Plan) -> None:
         """
         Run command on the host
@@ -594,14 +616,16 @@ class Try(tmt.utils.Common):
 
         while True:
             quit_action = Action.quit
-            self.print(style(f"Enter command (or '\\{quit_action.key}' to quit): ", fg="green"))
+            self.print(
+                style(f"Enter command (or '\\{quit_action.shortcut}' to quit): ", fg="green")
+            )
             try:
                 raw_command = input("> ")
             except (KeyboardInterrupt, EOFError):
                 self.print("Exiting host command mode. Bye for now!")
                 break
 
-            if not raw_command or raw_command == f'\\{quit_action.key}':
+            if not raw_command or raw_command == f'\\{quit_action.shortcut}':
                 self.print("Exiting host command mode. Bye for now!")
                 break
 
