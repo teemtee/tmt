@@ -44,6 +44,27 @@ class ProvisionMockData(MockGuestData, tmt.steps.provision.ProvisionStepData):
 
 
 class MockShell:
+    # Lazy object that collects chunks of bytes and decodes them when a
+    # newline is encountered
+    class Stream:
+        def __init__(self, logger):
+            self.logger = logger
+            self.output = bytes()
+            self.string = str()
+
+        def __iadd__(self, content: bytes):
+            self.output += content
+            while True:
+                pos = self.output.find(b'\n')
+                if pos == -1:
+                    break
+                string = self.output[:pos].decode('utf-8', errors='replace')
+                self.output = self.output[pos + 1:]
+                self.logger(string)
+                self.string += string
+                self.string += '\n'
+            return self
+
     def __init__(self, parent: 'GuestMock', config: Optional[str], rootdir: Optional[str] = None):
         self.parent = parent
         self.config = config
@@ -114,35 +135,36 @@ class MockShell:
         fcntl.fcntl(self.mock_shell_stderr_fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
         self.epoll.register(self.mock_shell_stderr_fd, select.EPOLLIN)
 
-        mock_shell_failed = False
-        loop = True
-        while loop and self.mock_shell.poll() is None:
+        # We need to wait until mock shell is ready. That is when it prints the
+        # prompt on its stdout.
+        # Meanwhile we want to log all the content from stderr.
+        #
+        # Failure to launch mock shell is detected by two ways: either .poll()
+        # returns a the exit code number or mock shell outputs an empty string
+        # to its stdout, while the process is not yet finished.
+        mock_shell_result = None
+        while True:
+            mock_shell_result = self.mock_shell.poll()
+            if mock_shell_result is not None:
+                break
             events = self.epoll.poll()
+            if len(events) == 1 and events[0][0] == self.mock_shell_stdout_fd:
+                if not self.mock_shell.stdout.read():
+                    mock_shell_result = self.mock_shell.wait()
+                # shell is ready
+                break
             for fileno, _ in events:
-                if fileno == self.mock_shell_stdout_fd:
-                    loop = False
-                    # In case mock shell creation succeeded, we should be able
-                    # to read the mock shell prompt from its stdout.
-                    # Otherwise the process failed and en empty string is read.
-                    mock_shell_failed = not self.mock_shell.stdout.read()
-                    # shell is ready
-                    break
-
-        # read stderr
-        if self.mock_shell.poll() is None:
-            for fileno, _ in self.epoll.poll(0):
                 if fileno == self.mock_shell_stderr_fd:
-                    content = self.mock_shell.stderr.read()
-                    for line in content.splitlines():
-                        self.parent._logger.debug("err", line, 'yellow', level = 0)
-                    if mock_shell_failed:
-                        raise tmt.utils.ProvisionError("Failed to launch mock shell")
-                    break
+                    for line in self.mock_shell.stderr.readlines():
+                        self.parent._logger.debug("err", line.rstrip(), 'yellow', level = 0)
+
+        if mock_shell_result is not None:
+            raise tmt.utils.ProvisionError("Failed to launch mock shell: exited {}".format(mock_shell_result))
 
         self.parent.verbose("Mock shell is ready")
 
+        # We do not expect these commands to fail.
         self.mock_shell.stdin.write("rm -rf /tmp/stdout /tmp/stderr /tmp/returncode\n")
-        self.mock_shell.stdin.flush()
         self.mock_shell.stdin.write("mkfifo /tmp/stdout /tmp/stderr /tmp/returncode\n")
         self.mock_shell.stdin.flush()
 
@@ -154,6 +176,7 @@ class MockShell:
                     loop -= 1
                     self.mock_shell.stdout.read()
                     break
+        self.mock_shell.stderr.read()
 
         """
         NOTE Here we would like to add code which unmounts the overlayfs
@@ -233,29 +256,8 @@ class MockShell:
         logger = self.parent._logger
         output_logger: tmt.log.LoggingFunction = (log or logger.debug) if not silent else logger.debug
 
-        # Lazy object that collects chunks of bytes and decodes them when a
-        # newline is encountered
-        class Stream:
-            def __init__(self, logger):
-                self.logger = logger
-                self.output = bytes()
-                self.string = str()
-
-            def __iadd__(self, content: bytes):
-                self.output += content
-                while True:
-                    pos = self.output.find(b'\n')
-                    if pos == -1:
-                        break
-                    string = self.output[:pos].decode('utf-8', errors='replace')
-                    self.output = self.output[pos + 1:]
-                    self.logger(string)
-                    self.string += string
-                    self.string += '\n'
-                return self
-
-        stdout = Stream(lambda text: output_logger("out", text, 'yellow', level = 0))
-        stderr = Stream(lambda text: output_logger("err", text, 'yellow', level = 0))
+        stdout = MockShell.Stream(lambda text: output_logger("out", text, 'yellow', level = 0))
+        stderr = MockShell.Stream(lambda text: output_logger("err", text, 'yellow', level = 0))
         returncode = None
 
         while self.mock_shell.poll() is None:
