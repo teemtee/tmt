@@ -4,8 +4,8 @@ import datetime
 import functools
 import importlib.metadata
 import logging
-import os
 import re
+import threading
 from contextlib import suppress
 from functools import wraps
 from typing import Any, Callable, Optional, TypedDict, TypeVar, Union, cast
@@ -46,6 +46,7 @@ BeakerTransformer: Any
 TmtBeakerTransformer: Any
 
 _MRACK_IMPORTED: bool = False
+_MRACK_CONTEXT_INITIALIZED: bool = False
 
 DEFAULT_ARCH = 'x86_64'
 DEFAULT_IMAGE = 'fedora'
@@ -840,49 +841,59 @@ def constraint_to_beaker_filter(
     return transformed
 
 
-def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) -> None:
+# Thread-safe lock for mrack imports and initialization
+_MRACK_IMPORT_LOCK = threading.Lock()
+_MRACK_CONTEXT_LOCK = threading.Lock()
+_MRACK_CONTEXT_CONFIG_PATH: Optional[str] = None
+
+
+def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
     """
-    Import mrack module only when needed
+    Import mrack module only when needed (thread-safe)
     """
 
     global _MRACK_IMPORTED
 
-    if _MRACK_IMPORTED:
-        return
+    # Use lock to ensure thread-safe initialization
+    with _MRACK_IMPORT_LOCK:
+        if _MRACK_IMPORTED:
+            return
 
-    global MRACK_VERSION
-    global mrack
-    global providers
-    global ProvisioningError
-    global NotAuthenticatedError
-    global BEAKER
-    global BeakerProvider
-    global BeakerTransformer
-    global TmtBeakerTransformer
+        global MRACK_VERSION
+        global mrack
+        global providers
+        global ProvisioningError
+        global NotAuthenticatedError
+        global BEAKER
+        global BeakerProvider
+        global BeakerTransformer
+        global TmtBeakerTransformer
 
-    try:
-        import mrack
-        from mrack.errors import NotAuthenticatedError, ProvisioningError
-        from mrack.providers import providers
-        from mrack.providers.beaker import PROVISIONER_KEY as BEAKER
-        from mrack.providers.beaker import BeakerProvider
-        from mrack.transformers.beaker import BeakerTransformer
+        try:
+            import mrack
+            from mrack.errors import NotAuthenticatedError, ProvisioningError
+            from mrack.providers import providers
+            from mrack.providers.beaker import PROVISIONER_KEY as BEAKER
+            from mrack.providers.beaker import BeakerProvider
+            from mrack.transformers.beaker import BeakerTransformer
 
-        MRACK_VERSION = importlib.metadata.version('mrack')
+            MRACK_VERSION = importlib.metadata.version('mrack')
 
-        # hack: remove mrack stdout and move the logfile to /tmp
-        mrack.logger.removeHandler(mrack.console_handler)
-        mrack.logger.removeHandler(mrack.file_handler)
+            # hack: remove mrack stdout and move the logfile to /tmp
+            if hasattr(mrack, 'console_handler'):
+                mrack.logger.removeHandler(mrack.console_handler)
+            if hasattr(mrack, 'file_handler'):
+                mrack.logger.removeHandler(mrack.file_handler)
 
-        with suppress(OSError):
-            os.remove("mrack.log")
+            with suppress(OSError):
+                if Path("mrack.log").exists():
+                    Path("mrack.log").unlink()
+            mrack.logger.addHandler(logging.FileHandler(mrack_log))
 
-        logging.FileHandler(str(f"{workdir}/{name}-mrack.log"))
+            providers.register(BEAKER, BeakerProvider)
 
-        providers.register(BEAKER, BeakerProvider)
-
-    except ImportError:
-        raise ProvisionError("Install 'tmt+provision-beaker' to provision using this method.")
+        except ImportError:
+            raise ProvisionError("Install 'tmt+provision-beaker' to provision using this method.")
 
     # ignore the misc because mrack sources are not typed and result into
     # error: Class cannot subclass "BeakerTransformer" (has type "Any")
@@ -946,6 +957,25 @@ def import_and_load_mrack_deps(workdir: Any, name: str, logger: tmt.log.Logger) 
             return req
 
     _MRACK_IMPORTED = True
+
+
+def init_mrack_global_context(config_path: str) -> None:
+    """
+    Initialize mrack global context in a thread-safe manner
+    """
+    global _MRACK_CONTEXT_INITIALIZED, _MRACK_CONTEXT_CONFIG_PATH
+
+    with _MRACK_CONTEXT_LOCK:
+        # If already initialized with the same config, return
+        if _MRACK_CONTEXT_INITIALIZED and config_path == _MRACK_CONTEXT_CONFIG_PATH:
+            return
+
+        # If initialized with different config, reinitialize
+        global_context = mrack.context.global_context
+        global_context.init(config_path)
+
+        _MRACK_CONTEXT_INITIALIZED = True
+        _MRACK_CONTEXT_CONFIG_PATH = config_path
 
 
 def async_run(func: Any) -> Any:
@@ -1157,13 +1187,14 @@ class BeakerAPI:
             raise ProvisionError("Configuration file 'mrack.conf' not found.")
 
         try:
-            global_context.init(str(mrack_config))
+            init_mrack_global_context(str(mrack_config))
         except mrack.errors.ConfigError as mrack_conf_err:
             raise ProvisionError(mrack_conf_err)
 
         self._mrack_transformer = TmtBeakerTransformer()
         try:
             await self._mrack_transformer.init(global_context.PROV_CONFIG, {})
+
         except NotAuthenticatedError as kinit_err:
             raise ProvisionError(kinit_err) from kinit_err
         except AttributeError as hub_err:
@@ -1174,6 +1205,8 @@ class BeakerAPI:
             raise ProvisionError(
                 f"Configuration file missing: {missing_conf_err.filename}"
             ) from missing_conf_err
+        except Exception as e:
+            raise ProvisionError("Failed to initialize mrack transformer.") from e
 
         self._mrack_provider = self._mrack_transformer._provider
         self._mrack_provider.poll_sleep = DEFAULT_PROVISION_TICK
@@ -1253,7 +1286,8 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         super().__init__(*args, **kwargs)
 
         assert isinstance(self.parent, tmt.steps.provision.Provision)
-        import_and_load_mrack_deps(self.parent.workdir, self.parent.name, self._logger)
+        self.mrack_log = f"{self.parent.workdir}/{self.parent.name}-mrack.log"
+        import_and_load_mrack_deps(self.mrack_log, self._logger)
 
     @property
     def api(self) -> BeakerAPI:
@@ -1572,7 +1606,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
     _data_class = ProvisionBeakerData
     _guest_class = GuestBeaker
 
-    # _thread_safe = True
+    _thread_safe = True
 
     # Guest instance
     _guest = None
@@ -1593,6 +1627,18 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
                 parent=self.step,
                 logger=self._logger,
             )
+
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
+        """
+        A set of members of the step workdir that should not be removed.
+        """
+        assert self._guest
+
+        # Extract just the filename from the full path since
+        # prune_directory compares against member.name
+        mrack_log_filename = Path(self._guest.mrack_log).name
+        return {*super()._preserved_workdir_members, mrack_log_filename}
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
