@@ -17,7 +17,6 @@ from tmt.utils import (
     Command,
     ProvisionError,
     ShellScript,
-    UpdatableMessage,
     dict_to_yaml,
     normalize_string_dict,
     retry_session,
@@ -587,42 +586,48 @@ class GuestArtemis(tmt.GuestSsh):
 
         self.info('guestname', self.guestname, 'green')
 
-        with UpdatableMessage('state', indent_level=self._level()) as progress_message:
+        # Track the previous state to only log when it changes
+        previous_state = None
 
-            def get_new_state() -> GuestInspectType:
-                response = self.api.inspect(f'/guests/{self.guestname}')
+        def get_new_state() -> GuestInspectType:
+            nonlocal previous_state
+            response = self.api.inspect(f'/guests/{self.guestname}')
 
-                if response.status_code != 200:
-                    raise ArtemisProvisionError('Failed to create', response=response)
+            if response.status_code != 200:
+                raise ArtemisProvisionError('Failed to create', response=response)
 
-                current = cast(GuestInspectType, response.json())
-                state = current['state']
-                state_color = GUEST_STATE_COLORS.get(state, GUEST_STATE_COLOR_DEFAULT)
+            current = cast(GuestInspectType, response.json())
+            state = current['state']
+            state_color = GUEST_STATE_COLORS.get(state, GUEST_STATE_COLOR_DEFAULT)
 
-                progress_message.update(state, color=state_color)
+            # Log state change on new line when it changes
+            if state != previous_state:
+                status_msg = f"[{self.name}({self.guestname})] state: {state}"
+                self.info(status_msg, color=state_color)
+                previous_state = state
 
-                if state == 'error':
-                    raise ArtemisProvisionError('Failed to create, provisioning failed.')
+            if state == 'error':
+                raise ArtemisProvisionError('Failed to create, provisioning failed.')
 
-                if state == 'ready':
-                    return current
+            if state == 'ready':
+                return current
 
-                raise tmt.utils.wait.WaitingIncompleteError
+            raise tmt.utils.wait.WaitingIncompleteError
 
-            try:
-                guest_info = Waiting(
-                    Deadline.from_seconds(self.provision_timeout), tick=self.provision_tick
-                ).wait(get_new_state, self._logger)
+        try:
+            guest_info = Waiting(
+                Deadline.from_seconds(self.provision_timeout), tick=self.provision_tick
+            ).wait(get_new_state, self._logger)
 
-            except tmt.utils.wait.WaitingTimedOutError:
-                # The provisioning chain has been already started, make sure we
-                # remove the guest.
-                self.remove()
+        except tmt.utils.wait.WaitingTimedOutError:
+            # The provisioning chain has been already started, make sure we
+            # remove the guest.
+            self.remove()
 
-                raise ArtemisProvisionError(
-                    f'Failed to provision in the given amount '
-                    f'of time (--provision-timeout={self.provision_timeout}).'
-                )
+            raise ArtemisProvisionError(
+                f'Failed to provision in the given amount '
+                f'of time (--provision-timeout={self.provision_timeout}).'
+            )
 
         self.primary_address = self.topology_address = guest_info['address']
 
