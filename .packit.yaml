@@ -170,7 +170,7 @@ jobs:
     fmf_url: "https://gitlab.cee.redhat.com/baseos-qe/integration_scripts.git"
     tmt_plan: '/tmt/integration/plan'
 
-  # CI tests (independent of OS)
+  # OS-agnostic checks
   - <<: *test-base
     targets:
       - fedora-latest-stable
