@@ -1,7 +1,7 @@
 summary: Run tmt-lint
 description: |
   Use the current version of the tmt source
-tag+: [ with_tmt ]
+tag+: [ with-tmt ]
 framework: shell
 test: |
   source /tmp/venv/bin/activate
