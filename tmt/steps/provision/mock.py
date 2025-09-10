@@ -114,21 +114,29 @@ class MockShell:
         fcntl.fcntl(self.mock_shell_stderr_fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
         self.epoll.register(self.mock_shell_stderr_fd, select.EPOLLIN)
 
+        mock_shell_failed = False
         loop = True
         while loop and self.mock_shell.poll() is None:
             events = self.epoll.poll()
             for fileno, _ in events:
                 if fileno == self.mock_shell_stdout_fd:
                     loop = False
-                    self.mock_shell.stdout.read()
+                    # In case mock shell creation succeeded, we should be able
+                    # to read the mock shell prompt from its stdout.
+                    # Otherwise the process failed and en empty string is read.
+                    mock_shell_failed = not self.mock_shell.stdout.read()
                     # shell is ready
                     break
 
-        # clear stderr
+        # read stderr
         if self.mock_shell.poll() is None:
             for fileno, _ in self.epoll.poll(0):
                 if fileno == self.mock_shell_stderr_fd:
-                    self.mock_shell.stderr.read()
+                    content = self.mock_shell.stderr.read()
+                    for line in content.splitlines():
+                        self.parent._logger.debug("err", line, 'yellow', level = 0)
+                    if mock_shell_failed:
+                        raise tmt.utils.ProvisionError("Failed to launch mock shell")
                     break
 
         self.parent.verbose("Mock shell is ready")
@@ -252,10 +260,15 @@ class MockShell:
 
         while self.mock_shell.poll() is None:
             events = self.epoll.poll()
+            # The command is finished when mock shell prints a newline on its
+            # stdout. We want to break loop after we handled all the other
+            # epoll events because the event ordering is not guaranteed.
             if len(events) == 1 and events[0][0] == self.mock_shell_stdout_fd:
                 self.mock_shell.stdout.read()
                 break
             for fileno, _ in events:
+                # Whatever we sent on mock shell's input it prints on the stderr
+                # so just disard it.
                 if fileno == self.mock_shell_stderr_fd:
                     self.mock_shell.stderr.read()
                 elif fileno == stdout_fd:
