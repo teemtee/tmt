@@ -1756,6 +1756,22 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
         pattern = r'^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*:[a-zA-Z0-9._-]+$'
         return bool(re.match(pattern, self.data.bootc_image_url))
 
+    def _validate_bootc_disabled_configuration(self) -> None:
+        """Verify that bootc_* variables are not specified when bootc is not enabled"""
+
+        # Check all bootc_* variables(bootc_check_system_url has default value, no check)
+        bootc_fields = ['bootc_image_url', 'bootc_registry_secret']
+
+        specified_fields = [
+            field for field in bootc_fields if getattr(self.data, field) is not None
+        ]
+
+        if specified_fields:
+            raise tmt.utils.ProvisionError(
+                f"bootc configuration variables specified when bootc is not enabled. "
+                f"Enable bootc with --bootc, or remove variables: {', '.join(specified_fields)}."
+            )
+
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
         Provision the guest
@@ -1765,6 +1781,8 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
 
         if self.data.bootc:
             self._validate_bootc_configuration()
+        else:
+            self._validate_bootc_disabled_configuration()
 
         data = BeakerGuestData.from_plugin(self)
 

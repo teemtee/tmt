@@ -24,6 +24,12 @@ rlJournalStart
         rlAssertGrep '{"auths": {"quay.io": {"auth": "dummysecret"}}}' $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Check bootc variables are specified while bootc is disabled"
+        rlRun -s "tmt run --dry -a provision -h beaker --bootc-registry-secret dummysecret" 2
+
+        rlAssertGrep 'Enable bootc with --bootc, or remove variables: bootc_registry_secret' $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
     rlPhaseEnd
