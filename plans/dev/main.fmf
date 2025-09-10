@@ -14,7 +14,7 @@ prepare:
       - python3-pip
       - git
 
-/with_tmt:
+/with-tmt:
   summary: Run CI tests with the current tmt version
   prepare+:
     - name: Install tmt in a venv
@@ -25,4 +25,4 @@ prepare:
         export SETUPTOOLS_SCM_PRETEND_VERSION=0.0.1.dev0
         pip install -e .
   discover+:
-    filter+: " & tag: with_tmt"
+    filter+: " & tag: with-tmt"
