@@ -1,5 +1,6 @@
 import fcntl
 import os
+import io
 import select
 import shlex
 import subprocess
@@ -241,75 +242,75 @@ class MockShell:
         stderr_file = self.root_path / "tmp/stderr"
         returncode_file = self.root_path / "tmp/returncode"
 
-        stdout_fd = os.open(str(stdout_file), os.O_RDONLY | os.O_NONBLOCK)
-        self.epoll.register(stdout_fd, select.EPOLLIN)
+        with io.FileIO(os.open(str(stdout_file), os.O_RDONLY | os.O_NONBLOCK)) as stdout_io, io.FileIO(os.open(str(stderr_file), os.O_RDONLY | os.O_NONBLOCK)) as stderr_io, io.FileIO(os.open(str(returncode_file), os.O_RDONLY | os.O_NONBLOCK)) as returncode_io:
+            stdout_fd = stdout_io.fileno()
+            stderr_fd = stderr_io.fileno()
+            returncode_fd = returncode_io.fileno()
 
-        stderr_fd = os.open(str(stderr_file), os.O_RDONLY | os.O_NONBLOCK)
-        self.epoll.register(stderr_fd, select.EPOLLIN)
+            self.epoll.register(stdout_fd, select.EPOLLIN)
+            self.epoll.register(stderr_fd, select.EPOLLIN)
+            self.epoll.register(returncode_fd, select.EPOLLIN)
 
-        returncode_fd = os.open(str(returncode_file), os.O_RDONLY | os.O_NONBLOCK)
-        self.epoll.register(returncode_fd, select.EPOLLIN)
+            self.mock_shell.stdin.write(shell_command)
+            self.mock_shell.stdin.flush()
 
-        self.mock_shell.stdin.write(shell_command)
-        self.mock_shell.stdin.flush()
+            logger = self.parent._logger
+            output_logger: tmt.log.LoggingFunction = (log or logger.debug) if not silent else logger.debug
 
-        logger = self.parent._logger
-        output_logger: tmt.log.LoggingFunction = (log or logger.debug) if not silent else logger.debug
+            stdout = MockShell.Stream(lambda text: output_logger("out", text, 'yellow', level = 0))
+            stderr = MockShell.Stream(lambda text: output_logger("err", text, 'yellow', level = 0))
+            returncode = None
 
-        stdout = MockShell.Stream(lambda text: output_logger("out", text, 'yellow', level = 0))
-        stderr = MockShell.Stream(lambda text: output_logger("err", text, 'yellow', level = 0))
-        returncode = None
+            while self.mock_shell.poll() is None:
+                events = self.epoll.poll()
+                # The command is finished when mock shell prints a newline on its
+                # stdout. We want to break loop after we handled all the other
+                # epoll events because the event ordering is not guaranteed.
+                if len(events) == 1 and events[0][0] == self.mock_shell_stdout_fd:
+                    self.mock_shell.stdout.read()
+                    break
+                for fileno, _ in events:
+                    # Whatever we sent on mock shell's input it prints on the stderr
+                    # so just disard it.
+                    if fileno == self.mock_shell_stderr_fd:
+                        self.mock_shell.stderr.read()
+                    elif fileno == stdout_fd:
+                        content = os.read(stdout_fd, 128)
+                        stdout += content
+                        if not content:
+                            self.epoll.unregister(stdout_fd)
+                    elif fileno == stderr_fd:
+                        content = os.read(stderr_fd, 128)
+                        stderr += content
+                        if not content:
+                            self.epoll.unregister(stderr_fd)
+                    elif fileno == returncode_fd:
+                        content = os.read(returncode_fd, 16)
+                        if not content:
+                            self.epoll.unregister(returncode_fd)
+                        else:
+                            returncode = int(content.decode("utf-8").strip())
 
-        while self.mock_shell.poll() is None:
-            events = self.epoll.poll()
-            # The command is finished when mock shell prints a newline on its
-            # stdout. We want to break loop after we handled all the other
-            # epoll events because the event ordering is not guaranteed.
-            if len(events) == 1 and events[0][0] == self.mock_shell_stdout_fd:
-                self.mock_shell.stdout.read()
-                break
-            for fileno, _ in events:
-                # Whatever we sent on mock shell's input it prints on the stderr
-                # so just disard it.
-                if fileno == self.mock_shell_stderr_fd:
-                    self.mock_shell.stderr.read()
-                elif fileno == stdout_fd:
-                    content = os.read(stdout_fd, 128)
-                    stdout += content
-                    if not content:
-                        self.epoll.unregister(stdout_fd)
-                elif fileno == stderr_fd:
-                    content = os.read(stderr_fd, 128)
-                    stderr += content
-                    if not content:
-                        self.epoll.unregister(stderr_fd)
-                elif fileno == returncode_fd:
-                    content = os.read(returncode_fd, 16)
-                    if not content:
-                        self.epoll.unregister(returncode_fd)
-                    else:
-                        returncode = int(content.decode("utf-8").strip())
+            stdout = stdout.string
+            stderr = stderr.string
 
-        stdout = stdout.string
-        stderr = stderr.string
-
-        if returncode is None:
-            raise tmt.utils.RunError(
-                f"Invalid state when executing command '{friendly_command or shell_command}'.",
-                command,
-                127,
-                stdout=stdout,
-                stderr=stderr,
-            )
-        elif returncode != 0:
-            raise tmt.utils.RunError(
-                f"Command '{friendly_command or shell_command}' returned {returncode}.",
-                command,
-                returncode,
-                stdout=stdout,
-                stderr=stderr,
-            )
-        return (stdout, stderr)
+            if returncode is None:
+                raise tmt.utils.RunError(
+                    f"Invalid state when executing command '{friendly_command or shell_command}'.",
+                    command,
+                    127,
+                    stdout=stdout,
+                    stderr=stderr,
+                )
+            elif returncode != 0:
+                raise tmt.utils.RunError(
+                    f"Command '{friendly_command or shell_command}' returned {returncode}.",
+                    command,
+                    returncode,
+                    stdout=stdout,
+                    stderr=stderr,
+                )
+            return (stdout, stderr)
 
 
 class GuestMock(tmt.Guest):
