@@ -22,6 +22,17 @@ were fixed to work well against ``RHEL-8`` hosts.
 The :ref:`/plugins/provision/beaker` provision plugin gains support for
 bootc installation, with user-provided ready-to-use images.
 
+The :ref:`/plugins/provision/beaker` provision plugin now supports
+provisioning in parallel, and therefore provisioning for multihost plans
+with `beaker` plugin will be faster.
+
+Git URLs of :ref:`imported plans</spec/plans/import>` are now treated in
+the same way as URLs of remote tests, enabling the use of credentials
+when cloning imported plan repositories.
+
+The :ref:`/plugins/provision/beaker` provision plugin now supports
+:ref:`device.driver</spec/hardware/device>` HW requirement.
+
 
 tmt-1.56.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
