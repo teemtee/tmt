@@ -410,6 +410,7 @@ class GuestContainer(tmt.Guest):
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
+        plan_sourced_file: Optional[Path] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
@@ -428,6 +429,10 @@ class GuestContainer(tmt.Guest):
         # Change to given directory on guest if cwd provided
         if cwd is not None:
             script += ShellScript(f'cd {quote(str(cwd))}')
+
+        # Source any TMT_PLAN_SOURCED_FILE
+        if plan_sourced_file:
+            script += ShellScript(f'source {plan_sourced_file}')
 
         if isinstance(command, Command):
             script += command.to_script()
