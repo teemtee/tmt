@@ -64,7 +64,7 @@ export-polarion = [
     "pylero>=0.1.0",
     ]
 prepare-allmighty-install-koji = [
-    "python-koji>=1.35.0",
+    "koji>=1.35.0",
     ]
 provision-beaker = [
     "mrack>=1.23.2",
