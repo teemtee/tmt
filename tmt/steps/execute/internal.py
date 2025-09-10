@@ -197,6 +197,9 @@ fi
 
 [ ! -z "$TMT_DEBUG" ] && set -x
 
+# Source TMT_PLAN_SOURCED_FILE
+source {{ INVOCATION.phase.step.plan.plan_sourced_file }}
+
 test_pid="$$"
 
 {% if INVOCATION.phase.data.interactive %}
