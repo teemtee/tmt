@@ -1,13 +1,12 @@
-# These tests are manual only for now as they need a running
-# Beaker instance
-enabled: false
-
+# The reconnect tests are manual only for now as they need
+# a running Beaker instance
 /reconnect:
     summary: Verify reconnecting to a provisioned guest
     description:
         Make sure that it's possible to reconnect to an already
         provisioned guest using an open tmt run.
     test: ./reconnect.sh
+    enabled: false
 
 /hardware:
     summary: Translate hardware by config tests
