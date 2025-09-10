@@ -357,7 +357,6 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                 if arch == 'x86_64':
                     arch = 'x8664'
                 testsuites_properties['polarion-custom-arch'] = arch
-
             except IndexError as error:
                 raise tmt.utils.ReportError(
                     'Failed to retrieve facts from the guest environment. '
