@@ -19,6 +19,9 @@ running discovered tests on the old system or new system, respectively.
 The ``epel`` and ``fips`` :ref:`/plugins/prepare/feature` plugins
 were fixed to work well against ``RHEL-8`` hosts.
 
+The :ref:`/plugins/provision/beaker` provision plugin gains support for
+bootc installation, with user-provided ready-to-use images.
+
 
 tmt-1.56.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
