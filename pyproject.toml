@@ -63,6 +63,9 @@ test-convert = [
 export-polarion = [
     "pylero>=0.1.0",
     ]
+prepare-install-koji = [
+    "koji>=1.35.0",
+    ]
 provision-beaker = [
     "mrack>=1.23.2",
     ]
@@ -82,12 +85,10 @@ report-polarion = [
 link-jira = [
     "jira>=3.5.0, <4",
     ]
-koji = [
-    "koji>=1.35.0",
-]
 all = [
     "tmt[test-convert]",
     "tmt[export-polarion]",
+    "tmt[prepare-install-koji]",
     "tmt[provision-container]",
     "tmt[provision-bootc]",
     "tmt[provision-virtual]",
