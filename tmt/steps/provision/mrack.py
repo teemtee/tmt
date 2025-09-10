@@ -46,6 +46,7 @@ BeakerTransformer: Any
 TmtBeakerTransformer: Any
 
 _MRACK_IMPORTED: bool = False
+_MRACK_CONTEXT_INITIALIZED: bool = False
 
 DEFAULT_ARCH = 'x86_64'
 DEFAULT_IMAGE = 'fedora'
@@ -842,6 +843,8 @@ def constraint_to_beaker_filter(
 
 # Thread-safe lock for mrack imports and initialization
 _MRACK_IMPORT_LOCK = threading.Lock()
+_MRACK_CONTEXT_LOCK = threading.Lock()
+_MRACK_CONTEXT_CONFIG_PATH: Optional[str] = None
 
 
 def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
@@ -954,6 +957,25 @@ def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
             return req
 
     _MRACK_IMPORTED = True
+
+
+def init_mrack_global_context(config_path: str) -> None:
+    """
+    Initialize mrack global context in a thread-safe manner
+    """
+    global _MRACK_CONTEXT_INITIALIZED, _MRACK_CONTEXT_CONFIG_PATH
+
+    with _MRACK_CONTEXT_LOCK:
+        # If already initialized with the same config, return
+        if _MRACK_CONTEXT_INITIALIZED and config_path == _MRACK_CONTEXT_CONFIG_PATH:
+            return
+
+        # If initialized with different config, reinitialize
+        global_context = mrack.context.global_context
+        global_context.init(config_path)
+
+        _MRACK_CONTEXT_INITIALIZED = True
+        _MRACK_CONTEXT_CONFIG_PATH = config_path
 
 
 def async_run(func: Any) -> Any:
@@ -1140,44 +1162,38 @@ class BeakerAPI:
     @async_run
     async def __init__(self, guest: 'GuestBeaker') -> None:  # type: ignore[misc]
         """
-        Initialize the API class with defaults and load the config (thread-safe)
+        Initialize the API class with defaults and load the config
         """
 
         self._guest = guest
 
-        # Find mrack provisioning configuration file
-        provisioning_config_locations = [
-            Path(__file__).parent / "mrack/mrack-provisioning-config.yaml",
-            Path("/etc/tmt/mrack-provisioning-config.yaml"),
-            Path("~/.mrack/mrack-provisioning-config.yaml").expanduser(),
-            Path.cwd() / "mrack-provisioning-config.yaml",
+        # use global context class
+        global_context = mrack.context.global_context
+
+        mrack_config_locations = [
+            Path(__file__).parent / "mrack/mrack.conf",
+            Path("/etc/tmt/mrack.conf"),
+            Path("~/.mrack/mrack.conf").expanduser(),
+            Path.cwd() / "mrack.conf",
         ]
 
-        provisioning_config: Optional[Path] = None
-        for potential_location in provisioning_config_locations:
+        mrack_config: Optional[Path] = None
+
+        for potential_location in mrack_config_locations:
             if potential_location.exists():
-                provisioning_config = potential_location
-                break
+                mrack_config = potential_location
 
-        if not provisioning_config:
-            raise ProvisionError("Configuration file 'mrack-provisioning-config.yaml' not found.")
+        if not mrack_config:
+            raise ProvisionError("Configuration file 'mrack.conf' not found.")
 
-        # Load configuration file
         try:
-            config_data = tmt.utils.yaml_to_dict(provisioning_config.read_text())
-        except Exception as config_err:
-            raise ProvisionError(
-                "Failed to load mrack provisioning configuration."
-            ) from config_err
+            init_mrack_global_context(str(mrack_config))
+        except mrack.errors.ConfigError as mrack_conf_err:
+            raise ProvisionError(mrack_conf_err)
 
-        # Create transformer with thread-safe context
         self._mrack_transformer = TmtBeakerTransformer()
-
         try:
-            # Pass config data directly to mrack - it will validate using
-            # BeakerTransformer.validate_config() which checks for
-            # required attributes: ["distros", "reserve_duration", "timeout"]
-            await self._mrack_transformer.init(config_data, {})
+            await self._mrack_transformer.init(global_context.PROV_CONFIG, {})
 
         except NotAuthenticatedError as kinit_err:
             raise ProvisionError(kinit_err) from kinit_err
@@ -1190,8 +1206,6 @@ class BeakerAPI:
                 f"Configuration file missing: {missing_conf_err.filename}"
             ) from missing_conf_err
         except Exception as e:
-            # This will catch mrack's ConfigError from validate_config() with detailed messages
-            # about missing required attributes like "distros", "reserve_duration", "timeout"
             raise ProvisionError("Failed to initialize mrack transformer.") from e
 
         self._mrack_provider = self._mrack_transformer._provider
