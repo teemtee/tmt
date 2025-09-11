@@ -2033,7 +2033,11 @@ class Plan(
     # Optional Ansible configuration for the plan
     ansible: Optional[tmt.steps.provision.PlanAnsible] = field(
         default=None,
-        normalize=lambda key_address, raw_ansible, logger: tmt.steps.provision.PlanAnsible.from_spec(raw_ansible) if raw_ansible is not None else None,
+        normalize=lambda key_address,
+        raw_ansible,
+        logger: tmt.steps.provision.PlanAnsible.from_spec(raw_ansible)
+        if raw_ansible is not None
+        else None,
         exporter=lambda value: value.to_spec() if value else None,
     )
 
