@@ -4,16 +4,27 @@
 
     provision:
         how: beaker
+
+/plan/hardware:
+    provision+:
         hardware:
-            cpu:
-                model-name: dummy
-                processors: 6
-            or:
-              - device:
-                  driver: ahci
-              - device:
-                  driver: uhci
-              - disk:
-                  driver: foo
-              - disk:
-                  driver: bar
+          and:
+            - cpu:
+                 model-name: dummy
+                 processors: 6
+            - or:
+               - device:
+                   driver: ahci
+               - device:
+                   driver: uhci
+               - disk:
+                   driver: foo
+               - disk:
+                   driver: bar
+
+/plan/bootc:
+    provision+:
+        bootc: True
+        bootc-image-url: quay.io/fedora/custom-bootc:latest
+        bootc-registry-secret: dummysecret
+        image: fedora-42
