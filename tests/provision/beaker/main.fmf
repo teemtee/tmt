@@ -14,3 +14,10 @@
         Verify translate hardware constraints using custom config
         works well, and override the default translations.
     test: ./hardware.sh
+
+/schema:
+    summary: Verify beaker provision schema
+    description:
+        Verify that the beaker plugin schema contains the
+        appropriate keys.
+    test: ./schema.sh
