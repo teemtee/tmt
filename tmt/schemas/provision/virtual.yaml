@@ -57,7 +57,7 @@ properties:
 
   environment:
     $ref: "/schemas/common#/definitions/environment"
-    
+
   ansible:
     $ref: "/schemas/common#/definitions/provision_ansible"
 
