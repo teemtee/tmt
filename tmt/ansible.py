@@ -36,7 +36,7 @@ def normalize_guest_ansible(
     logger: tmt.log.Logger,
 ) -> 'GuestAnsible':
     """
-    Normalize a ``ansible`` key value.
+    Normalize a ``ansible`` key value from provision guest data.
 
     :param key_address: location of the key being that's being normalized.
     :param logger: logger to use for logging.
@@ -59,7 +59,7 @@ def normalize_plan_ansible_inventory(
     """
     if raw_inventory is None:
         return None
-    
+
     return PlanAnsibleInventory.from_spec(raw_inventory)
 
 
@@ -73,9 +73,11 @@ class GuestAnsible(SerializableContainer):
         default=None,
         help='Assigns the guest to a specific Ansible group.',
     )
-    vars: dict[str, str] = field(
+    vars: dict[str, Any] = field(  # pyright: ignore[reportUnknownVariableType]
         default_factory=dict,
-        help='Defines host-specific Ansible variables to include under that host in the inventory.',
+        help=(
+            'Defines host-specific Ansible variables to include under that host in the inventory.'
+        ),
     )
 
     @classmethod
@@ -90,7 +92,7 @@ class GuestAnsible(SerializableContainer):
             return spec
 
         if isinstance(spec, dict):
-            return cls(**spec)
+            return cls(**spec)  # pyright: ignore[reportUnknownArgumentType]
 
         raise tmt.utils.SpecificationError(f"Invalid Ansible specification: {spec}")
 
@@ -99,13 +101,13 @@ class GuestAnsible(SerializableContainer):
         Convert GuestAnsible object to a YAML-serializable specification.
         """
         spec: dict[str, Any] = {}
-        
+
         if self.group is not None:
             spec['group'] = self.group
-        
+
         if self.vars:
             spec['vars'] = self.vars
-        
+
         return spec
 
 
@@ -119,11 +121,6 @@ class PlanAnsibleInventory(SerializableContainer):
         default=None,
         help='Path to a YAML file defining the inventory group hierarchy and layout.',
     )
-    
-    python_interpreter: Optional[str] = field(
-        default=None,
-        help='Python interpreter path on the target hosts.',
-    )
 
     @classmethod
     def from_spec(cls, spec: Any) -> 'PlanAnsibleInventory':
@@ -132,13 +129,13 @@ class PlanAnsibleInventory(SerializableContainer):
         """
         if spec is None:
             return cls()
-        
+
         if isinstance(spec, cls):
             return spec
-        
+
         if isinstance(spec, dict):
-            return cls(**spec)
-        
+            return cls(**spec)  # pyright: ignore[reportUnknownArgumentType]
+
         raise tmt.utils.SpecificationError(f"Invalid Ansible inventory specification: {spec}")
 
     def to_spec(self) -> dict[str, Any]:
@@ -146,14 +143,15 @@ class PlanAnsibleInventory(SerializableContainer):
         Convert PlanAnsibleInventory object to a YAML-serializable specification.
         """
         spec: dict[str, Any] = {}
-        
+
         if self.layout is not None:
             spec['layout'] = self.layout
-        
-        if self.python_interpreter is not None:
-            spec['python_interpreter'] = self.python_interpreter
-        
+
         return spec
+
+    def __repr__(self) -> str:
+        """Return a string representation of the PlanAnsibleInventory object."""
+        return f"PlanAnsibleInventory(layout={self.layout})"
 
 
 @container
@@ -166,7 +164,9 @@ class PlanAnsible(SerializableContainer):
         default=None,
         help='Inventory configuration for the plan.',
         serialize=lambda inventory: inventory.to_serialized() if inventory else None,
-        unserialize=lambda serialized: PlanAnsibleInventory.from_serialized(serialized) if serialized else None,
+        unserialize=lambda serialized: PlanAnsibleInventory.from_serialized(serialized)  # pyright: ignore[reportArgumentType]
+        if serialized
+        else None,
     )
 
     @classmethod
@@ -176,18 +176,18 @@ class PlanAnsible(SerializableContainer):
         """
         if spec is None:
             return cls()
-        
+
         if isinstance(spec, cls):
             return spec
-        
+
         if isinstance(spec, dict):
-            inventory_spec = spec.get('inventory')
+            inventory_spec = spec.get('inventory')  # pyright: ignore[reportUnknownVariableType]
             if inventory_spec is not None:
-                spec = spec.copy()
+                spec = spec.copy()  # pyright: ignore[reportUnknownVariableType]
                 spec['inventory'] = PlanAnsibleInventory.from_spec(inventory_spec)
-            
-            return cls(**spec)
-        
+
+            return cls(**spec)  # pyright: ignore[reportUnknownArgumentType]
+
         raise tmt.utils.SpecificationError(f"Invalid Ansible specification: {spec}")
 
     def to_spec(self) -> dict[str, Any]:
@@ -195,11 +195,15 @@ class PlanAnsible(SerializableContainer):
         Convert PlanAnsible object to a YAML-serializable specification.
         """
         spec: dict[str, Any] = {}
-        
+
         if self.inventory is not None:
             spec['inventory'] = self.inventory.to_spec()
-        
+
         return spec
+
+    def __repr__(self) -> str:
+        """Return a string representation of the PlanAnsible object."""
+        return f"PlanAnsible(inventory={self.inventory})"
 
 
 class AnsibleInventory:
@@ -224,23 +228,17 @@ class AnsibleInventory:
         """
         Load inventory layout from file or use default.
 
-        :param layout_path: path to a custom layout file, relative to the FMF file.
+        :param layout_path: path to a custom layout file, relative to the metadata tree root,
+                            or to the current working directory.
         :returns: dictionary representing the inventory layout structure.
         """
         if layout_path:
+            resolved_path = self._plan.anchor_path / layout_path
             try:
-                # Resolve path relative to the directory containing the FMF file
-                if self._plan.node.sources:
-                    # Use the directory of the first source (where the FMF file is)
-                    fmf_dir = tmt.utils.Path(self._plan.node.sources[0]).parent
-                    resolved_path = fmf_dir / layout_path
-                else:
-                    # Fallback to current working directory if no sources
-                    resolved_path = tmt.utils.Path(layout_path)
-                return tmt.utils.yaml_to_dict(resolved_path)
-            except tmt.utils.GeneralError as exc:
-                self._logger.warning(f"Failed to load inventory layout: {exc}")
-                return self._default_layout()
+                return tmt.utils.yaml_to_dict(resolved_path.read_text())
+            except (OSError, FileNotFoundError):
+                raise tmt.utils.FileError(f"Inventory layout file '{layout_path}' not found")
+
         return self._default_layout()
 
     def _default_layout(self) -> dict[str, Any]:
@@ -272,10 +270,10 @@ class AnsibleInventory:
         :returns: the group dictionary if found, ``None`` otherwise.
         """
         if target in current:
-            return current[target]
+            return current[target]  # type: ignore[no-any-return]
         for value in current.values():
             if isinstance(value, dict) and 'children' in value:
-                found = self._find_group(value['children'], target)
+                found = self._find_group(value['children'], target)  # pyright: ignore[reportUnknownArgumentType]
                 if found is not None:
                     return found
         return None
@@ -321,4 +319,4 @@ class AnsibleInventory:
             for group in groups:
                 self._add_host_to_group(inventory, guest, group)
 
-        return inventory 
+        return inventory

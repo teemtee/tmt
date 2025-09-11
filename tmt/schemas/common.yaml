@@ -80,7 +80,8 @@ definitions:
     required:
       - how
 
-  # common definition of provision ansible configuration
+  # Definition of provision ansible configuration
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#spec-plans-provision-ansible
   provision_ansible:
     type: object
     additionalProperties: false

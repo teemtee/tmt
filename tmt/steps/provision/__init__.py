@@ -46,6 +46,13 @@ import tmt.steps.scripts
 import tmt.utils
 import tmt.utils.wait
 from tmt._compat.typing import Self
+from tmt.ansible import (
+    AnsibleInventory,
+    GuestAnsible,
+    PlanAnsible,
+    normalize_guest_ansible,
+    normalize_plan_ansible,
+)
 from tmt.container import SerializableContainer, container, field, key_to_option
 from tmt.log import Logger
 from tmt.options import option
@@ -55,15 +62,6 @@ from tmt.package_managers import (
 )
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue
-from tmt.ansible import (
-    AnsibleInventory,
-    GuestAnsible,
-    PlanAnsible,
-    PlanAnsibleInventory,
-    normalize_guest_ansible,
-    normalize_plan_ansible,
-    normalize_plan_ansible_inventory,
-)
 from tmt.utils import (
     Command,
     GeneralError,
@@ -480,9 +478,6 @@ class GuestCapability(enum.Enum):
     SYSLOG_ACTION_READ_ALL = 'syslog-action-read-all'
     #: Read and clear all messages remaining in the ring buffer.
     SYSLOG_ACTION_READ_CLEAR = 'syslog-action-read-clear'
-
-
-
 
 
 @container
@@ -1092,6 +1087,22 @@ class GuestData(SerializableContainer):
     #: List of fields that are not allowed to be set via fmf keys/CLI options.
     _OPTIONLESS_FIELDS: tuple[str, ...] = ('primary_address', 'topology_address', 'facts')
 
+    def _load_keys(
+        self,
+        key_source: dict[str, Any],
+        key_source_name: str,
+        logger: tmt.log.Logger,
+    ) -> None:
+        """
+        Load keys from source, with custom mapping for ansible -> guest_ansible
+        """
+        # Map 'ansible' -> 'guest_ansible' to avoid shadowing by ansible() method
+        if 'ansible' in key_source:
+            key_source = key_source.copy()
+            key_source['guest_ansible'] = key_source.pop('ansible')
+
+        super()._load_keys(key_source, key_source_name, logger)  # type: ignore[misc]
+
     #: Primary hostname or IP address for tmt/guest communication.
     primary_address: Optional[str] = None
 
@@ -1120,8 +1131,8 @@ class GuestData(SerializableContainer):
 
     facts: GuestFacts = field(
         default_factory=GuestFacts,
-        serialize=lambda facts: facts.to_serialized() if facts else None,
-        unserialize=lambda serialized: GuestFacts.from_serialized(serialized) if serialized else GuestFacts(),
+        serialize=lambda facts: facts.to_serialized(),
+        unserialize=lambda serialized: GuestFacts.from_serialized(serialized),
     )
 
     environment: tmt.utils.Environment = field(
@@ -1154,11 +1165,13 @@ class GuestData(SerializableContainer):
         else None,
     )
 
-    guest_ansible: GuestAnsible = field(
-        default_factory=GuestAnsible,
+    guest_ansible: Optional[GuestAnsible] = field(
+        default=None,
         normalize=normalize_guest_ansible,
         serialize=lambda ansible: ansible.to_serialized() if ansible else None,
-        unserialize=lambda serialized: GuestAnsible.from_serialized(serialized) if serialized else GuestAnsible(),
+        unserialize=lambda serialized: GuestAnsible.from_serialized(serialized)
+        if serialized
+        else GuestAnsible(),
         help='Ansible configuration for individual guest inventory generation.',
     )
 
@@ -1646,10 +1659,7 @@ class Guest(
         """
         Get host variables for Ansible inventory.
         """
-        return {
-            'ansible_host': self.primary_address,
-            **self.guest_ansible.vars
-        }
+        return {'ansible_host': self.primary_address, **self.guest_ansible.vars}
 
     @functools.cached_property
     def ansible_host_groups(self) -> list[str]:
@@ -2676,34 +2686,27 @@ class GuestSsh(Guest):
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
 
-        provision_step = self.parent.plan.provision
-        inventory_path = (
-            provision_step.workdir / 'inventory.yaml' if provision_step.workdir else None
-        )
+        provision_step = parent.plan.provision
+        inventory_path = provision_step.workdir / 'inventory.yaml'  # type: ignore[operator]
 
         self.debug(f"Using Ansible inventory file '{inventory_path}'", level=3)
-        ansible_command += Command(
+
+        # Build command arguments
+        cmd_args = [
             '--ssh-common-args',
             self._ssh_options.to_element(),
             '-i',
-            inventory_path,
+            str(inventory_path),
             '--limit',
             self.name,
             playbook,
-        )
+        ]
+
+        ansible_command += Command(*cmd_args)
 
         try:
             return self._run_guest_command(
-                Command(
-                    'ansible-playbook',
-                    *self._ansible_verbosity(),
-                    *self._ansible_extra_args(extra_args),
-                    '--ssh-common-args',
-                    self._ssh_options.to_element(),
-                    '-i',
-                    f'{self._ssh_guest},',
-                    playbook,
-                ),
+                ansible_command,
                 friendly_command=friendly_command,
                 silent=silent,
                 cwd=parent.plan.worktree,
@@ -2732,20 +2735,12 @@ class GuestSsh(Guest):
         """
         Get host variables for Ansible inventory with SSH-specific variables.
         """
-        host_vars = {
+        return {
             **super().ansible_host_vars,
             'ansible_connection': 'ssh',
             'ansible_user': self.user,
-            'ansible_port': self.port
+            'ansible_port': self.port,
         }
-
-        plan_ansible = self.parent.plan.ansible
-
-        # Plan-level python interpreter
-        if plan_ansible.inventory and plan_ansible.inventory.python_interpreter is not None:
-            host_vars['ansible_python_interpreter'] = plan_ansible.inventory.python_interpreter
-
-        return host_vars
 
     def setup(self) -> None:
         super().setup()
@@ -3210,11 +3205,13 @@ class ProvisionStepData(tmt.steps.StepData):
         else None,
     )
 
-    ansible: PlanAnsible = field(
-        default_factory=PlanAnsible,
+    ansible: Optional[PlanAnsible] = field(
+        default=None,
         normalize=normalize_plan_ansible,
         serialize=lambda ansible: ansible.to_serialized() if ansible else None,
-        unserialize=lambda serialized: PlanAnsible.from_serialized(serialized) if serialized else PlanAnsible(),
+        unserialize=lambda serialized: PlanAnsible.from_serialized(serialized)
+        if serialized
+        else PlanAnsible(),
         help='Ansible configuration for inventory generation.',
     )
 
@@ -3546,14 +3543,16 @@ class Provision(tmt.steps.Step):
         """Generate Ansible inventory from provisioned guests."""
         try:
             # Get layout from plan-level ansible configuration
-            layout = self.plan.ansible.inventory.layout if self.plan.ansible.inventory else None
+            layout_path = None
+            if self.plan.ansible and self.plan.ansible.inventory:
+                layout_path = self.plan.ansible.inventory.layout
 
-            inventory = self._ansible_inventory.generate(self.guests, layout)
+            inventory = self._ansible_inventory.generate(self.guests, layout_path)
             inventory_path = Path('inventory.yaml')
             self.write(inventory_path, tmt.utils.dict_to_yaml(inventory))
             self.info('ansible', f'Inventory saved to {inventory_path}')
-        except tmt.utils.FileError:
-            self.debug('Failed to save Ansible inventory.')
+        except tmt.utils.FileError as exc:
+            self.debug(f"Failed to save Ansible inventory: {exc}")
 
     def save(self) -> None:
         """
@@ -3809,6 +3808,3 @@ class Provision(tmt.steps.Step):
         self.summary()
         self.status('done')
         self.save()
-
-
-
