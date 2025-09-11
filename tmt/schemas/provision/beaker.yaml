@@ -52,13 +52,17 @@ properties:
   beaker-job-owner:
     type: string
 
+  key:
+    $ref: "/schemas/common#/definitions/one_or_more_strings"
+
   public-key:
-    type: array
-    items:
-      type: string
+    $ref: "/schemas/common#/definitions/one_or_more_strings"
 
   beaker-job-group:
     type: string
+
+  order:
+    $ref: "/schemas/core#/definitions/order"
 
   bootc-registry-secret:
     type: string

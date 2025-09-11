@@ -14,13 +14,13 @@
                  processors: 6
             - or:
                - device:
-                   driver: ahci
+                   - driver: ahci
                - device:
-                   driver: uhci
+                   - driver: uhci
                - disk:
-                   driver: foo
+                   - driver: foo
                - disk:
-                   driver: bar
+                   - driver: bar
 
 /plan/bootc:
     provision+:
@@ -28,3 +28,29 @@
         bootc-image-url: quay.io/fedora/custom-bootc:latest
         bootc-registry-secret: dummysecret
         image: fedora-42
+
+/plan/schema1:
+    provision+:
+      - name: server1
+        image: $@{distro}
+        key: ~/.ssh/key
+        public-key: ~/.ssh/key.pub
+        role: server
+        hardware:
+            hostname: my_host2
+        order: 1
+
+/plan/schema2:
+    provision+:
+      - name: server2
+        image: $@{distro}
+        key:
+            - ~/.ssh/key1
+            - ~/.ssh/key2
+        public-key:
+            - ~/.ssh/key1.pub
+            - ~/.ssh/key2.pub
+        role: server
+        hardware:
+            hostname: my_host2
+        order: 2
