@@ -4,6 +4,14 @@
     Releases
 ======================
 
+tmt-1.58.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A new :ref:`issues` section has been added to the Contribute page.
+It provides a couple of recommendations about filing issues and
+documents that issues have to be filed for newly identified bugs.
+
+
 tmt-1.57.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
