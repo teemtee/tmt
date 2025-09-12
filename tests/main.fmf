@@ -10,13 +10,6 @@ environment:
 
 adjust:
   - check: []
-    when: distro == centos-stream
-    because:
-        fresh container-selinux packages are not yet available for centos-stream
-        https://gitlab.com/redhat/centos-stream/rpms/container-selinux/-/merge_requests/149
-        https://gitlab.com/redhat/centos-stream/rpms/container-selinux/-/merge_requests/148
-
-  - check: []
     when: initiator is not defined or initiator != packit
     because:
         we don't want to run the avc check for local testing as it
