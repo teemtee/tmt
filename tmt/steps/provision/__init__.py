@@ -1192,19 +1192,22 @@ class GuestData(SerializableContainer):
             if value == self.default(key):
                 continue
 
+            # Mask sensitive fields before displaying
+            display_value = tmt.utils.mask_sensitive_data({key: value}).get(key, value)
+
             # TODO: it seems tmt.utils.format() needs a key, and logger.info()
             # does not accept already formatted string.
-            if isinstance(value, (list, tuple)):
-                printable_value = fmf.utils.listed(value)
+            if isinstance(display_value, (list, tuple)):
+                printable_value = fmf.utils.listed(display_value)
 
-            elif isinstance(value, dict):
-                printable_value = tmt.utils.format_value(value)
+            elif isinstance(display_value, dict):
+                printable_value = tmt.utils.format_value(display_value)
 
-            elif isinstance(value, tmt.hardware.Hardware):
-                printable_value = tmt.utils.dict_to_yaml(value.to_spec())
+            elif isinstance(display_value, tmt.hardware.Hardware):
+                printable_value = tmt.utils.dict_to_yaml(display_value.to_spec())
 
             else:
-                printable_value = str(value)
+                printable_value = str(display_value)
 
             logger.info(key_to_option(key).replace('-', ' '), printable_value, color='green')
 

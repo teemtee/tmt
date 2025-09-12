@@ -985,7 +985,24 @@ EOF
                     },
                 ]
 
-            logger.debug('mrack request', req, level=4)
+            # Create a masked version for logging
+            masked_req = req.copy()
+            if masked_req.get('ks_append'):
+                masked_ks_append = []
+                for ks_item in masked_req['ks_append']:
+                    if (
+                        isinstance(ks_item, str)
+                        and 'auth.json' in ks_item
+                        and host.bootc_credentials
+                    ):
+                        # Mask JSON credentials in kickstart using utility function
+                        masked_ks_item = tmt.utils.mask_sensitive_data(ks_item)
+                        masked_ks_append.append(masked_ks_item)
+                    else:
+                        masked_ks_append.append(ks_item)
+                masked_req['ks_append'] = masked_ks_append
+
+            logger.debug('mrack request', masked_req, level=4)
 
             logger.info('whiteboard', host.whiteboard, 'green')
 

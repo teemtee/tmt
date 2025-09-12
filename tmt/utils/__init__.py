@@ -4846,6 +4846,70 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
     return node
 
 
+def mask_sensitive_data(data: Any, sensitive_fields: Optional[list[str]] = None) -> Any:
+    """
+    Mask sensitive fields in data structures for logging purposes.
+
+    :param data: Data to mask (dict, string, or any other type)
+    :param sensitive_fields: List of field names to mask. Uses default list if None.
+    :returns: Masked copy of the data
+    """
+    if sensitive_fields is None:
+        sensitive_fields = [
+            'bootc_registry_secret',
+            'bootc_registry_password',
+            'password',
+            'token',
+            'secret',
+            'key',
+            'auth',
+        ]
+
+    def mask_value(value: str) -> str:
+        """Helper to mask a single value"""
+        if len(value) > 4:
+            return value[:4] + '*' * (len(value) - 4)
+        return '****'
+
+    # Handle dictionary data
+    if isinstance(data, dict):
+        masked_data = data.copy()
+        for field in sensitive_fields:
+            if masked_data.get(field):
+                masked_data[field] = mask_value(str(masked_data[field]))
+        return masked_data
+
+    # Handle string data (like error messages)
+    if isinstance(data, str):
+        import re
+
+        masked_str = data
+
+        # Handle various patterns in strings
+        for field in sensitive_fields:
+            # Pattern for 'field': 'value' or "field": "value"
+            patterns = [
+                rf"'{field}'\s*:\s*'([^']+)'",
+                rf'"{field}"\s*:\s*"([^"]+)"',
+                rf"'{field}'\s*:\s*([^,\s}}]+)",
+                rf'"{field}"\s*:\s*([^,\s}}]+)',
+            ]
+
+            for pattern in patterns:
+
+                def mask_field_match(match: re.Match[str]) -> str:
+                    original_value = match.group(1)
+                    masked_value = mask_value(original_value)
+                    return match.group(0).replace(original_value, masked_value)
+
+                masked_str = re.sub(pattern, mask_field_match, masked_str)
+
+        return masked_str
+
+    # Return other types unchanged
+    return data
+
+
 def preformat_jsonschema_validation_errors(
     raw_errors: list[jsonschema.ValidationError],
     prefix: Optional[str] = None,
@@ -4872,8 +4936,9 @@ def preformat_jsonschema_validation_errors(
 
     for error in raw_errors:
         path = f'{prefix}{".".join(str(p) for p in error.path)}'
-
-        errors.append((error, f'{path} - {error.message}'))
+        # Use the centralized masking function
+        masked_message = mask_sensitive_data(error.message)
+        errors.append((error, f'{path} - {masked_message}'))
 
     return errors
 
