@@ -7,9 +7,9 @@
 tmt-1.58.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``execute`` plugin no longer requires ``awk`` to be
-installed on the machine, as all awk usage has been replaced
-with bash built-ins and standard utilities.
+:ref:`/plugins/execute` no longer require ``awk`` to be installed
+on the guest, as all awk usage has been replaced with bash
+built-ins and standard utilities.
 
 
 tmt-1.57.0
