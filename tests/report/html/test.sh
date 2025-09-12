@@ -137,6 +137,11 @@ rlJournalStart
         rlAssertGrep 'class="result skip">skip</td>' $tmp/$test_name_suffix -F
     rlPhaseEnd
 
+    rlPhaseStartTest "Lint warnings for html report file should be gone"
+        rlRun -s "tmt lint /report-file-plan"
+        rlAssertNotGrep "is not valid under any of the given schemas" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "rm output"
         rlRun "popd"
