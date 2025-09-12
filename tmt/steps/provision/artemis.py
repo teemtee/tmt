@@ -538,7 +538,6 @@ class GuestArtemis(tmt.GuestSsh):
                 f"API version '{self.api_version}' does not support watchdog specification."
             )
 
-        # TODO: snapshots
         # TODO: spot instance
 
         if self.post_install_script:
@@ -647,9 +646,6 @@ class GuestArtemis(tmt.GuestSsh):
 
         if response.status_code == 404:
             self.info('guest', 'no longer exists', 'red')
-
-        elif response.status_code == 409:
-            self.info('guest', 'has existing snapshots', 'red')
 
         elif response.ok:
             self.info('guest', 'has been removed', 'green')
