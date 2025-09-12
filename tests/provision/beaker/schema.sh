@@ -9,7 +9,8 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Check that beaker schema contains correct keys"
-        rlRun -s "tmt lint"
+        rlRun -s "tmt lint /plan/schema"
+        rlAssertNotGrep "is not valid under any of the given schemas" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
