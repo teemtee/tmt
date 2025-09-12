@@ -15,8 +15,7 @@ timeout="$2"
 # Thanks to being run while holding the pidfile lock, the file exists and should
 # no go away. It should be safe to read test PID and reboot-request filepath from
 # it.
-test_pid="$(awk '{print $1}' < "$TMT_TEST_PIDFILE")"
-test_reboot_file="$(awk '{print $2}' < "$TMT_TEST_PIDFILE")"
+read -r test_pid test_reboot_file < "$TMT_TEST_PIDFILE"
 
 mkdir -p "$(dirname "$test_reboot_file")"
 
