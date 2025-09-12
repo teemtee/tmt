@@ -4852,10 +4852,9 @@ def _load_schema(schema_filepath: Path) -> Schema:
     A helper returning the raw loaded schema.
     """
 
-    if not schema_filepath.is_absolute():
-        schema_filepath = resource_files('schemas') / schema_filepath
-
     try:
+        if not schema_filepath.is_absolute():
+            schema_filepath = resource_files(f'schemas/{schema_filepath}', assert_file=True)
         return cast(Schema, yaml_to_dict(schema_filepath.read_text(encoding='utf-8')))
 
     except Exception as error:

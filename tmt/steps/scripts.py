@@ -66,7 +66,9 @@ class Script:
     enabled: Callable[['tmt.steps.provision.Guest'], bool]
 
     def __enter__(self) -> Path:
-        return SCRIPTS_SRC_DIR / self.source_filename
+        script_file = SCRIPTS_SRC_DIR / self.source_filename
+        assert isinstance(script_file, Path)  # narrow type
+        return script_file
 
     def __exit__(self, *args: object) -> None:
         pass
@@ -100,11 +102,9 @@ class ScriptTemplate(Script):
 
     def __enter__(self) -> Path:
         with NamedTemporaryFile(mode='w', delete=False) as rendered_script:
-            rendered_script.write(
-                render_template_file(
-                    SCRIPTS_SRC_DIR / f"{self.source_filename}.j2", None, **self.context
-                )
-            )
+            template_file = SCRIPTS_SRC_DIR / f"{self.source_filename}.j2"
+            assert isinstance(template_file, Path)  # narrow type
+            rendered_script.write(render_template_file(template_file, None, **self.context))
 
         self._rendered_script_path = Path(rendered_script.name)
 

@@ -12,7 +12,10 @@ import tmt.utils.templates
 from tmt.container import container, field
 from tmt.utils import Path
 
-HTML_TEMPLATE_PATH = tmt.utils.resource_files('steps/report/html/template.html.j2')
+HTML_TEMPLATE_PATH = tmt.utils.resource_files(
+    'steps/report/html/template.html.j2',
+    assert_file=True,
+)
 DEFAULT_NAME = 'index.html'
 
 DEFAULT_FILENAME = 'index.html'
