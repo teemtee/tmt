@@ -125,7 +125,7 @@ class ThemeConfig(MetadataContainer):
     def load_theme(cls, theme_name: str) -> Theme:
         try:
             return Theme.from_file(
-                tmt.utils.resource_files(tmt.utils.Path('config/themes') / f'{theme_name}.yaml')
+                tmt.utils.resource_files(f'config/themes/{theme_name}.yaml', assert_file=True)
             )
 
         except FileNotFoundError as exc:
