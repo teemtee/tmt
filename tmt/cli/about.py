@@ -4,8 +4,6 @@ import json
 import re
 from typing import Any
 
-from click import echo
-
 import tmt.utils
 import tmt.utils.hints
 import tmt.utils.rest
@@ -28,7 +26,7 @@ def about(context: Context) -> None:
     """
 
     if context.invoked_subcommand is None:
-        echo(context.get_help(), color=context.color)
+        context.obj.print(context.get_help())
 
 
 def _render_plugins_list_rest() -> str:
@@ -61,15 +59,15 @@ def _render_plugins_list_rest() -> str:
 
 
 def _ls(context: Context, how: str, content: Any) -> None:
-    print = context.obj.logger.print  # noqa: A001
-
     if how in ('pretty', 'rest'):
-        print(
+        context.obj.print(
             tmt.utils.rest.render_rst(content, context.obj.logger) if how == 'pretty' else content
         )
 
     elif how in ('json', 'yaml'):
-        print(json.dumps(content) if how == 'json' else tmt.utils.dict_to_yaml(content))
+        context.obj.print(
+            json.dumps(content) if how == 'json' else tmt.utils.dict_to_yaml(content)
+        )
 
 
 @about.group(invoke_without_command=True, cls=CustomGroup)
@@ -80,7 +78,7 @@ def plugins(context: Context) -> None:
     """
 
     if context.invoked_subcommand is None:
-        echo(context.get_help(), color=context.color)
+        context.obj.print(context.get_help())
 
 
 @plugins.command(name='ls')
@@ -121,10 +119,10 @@ def hints(context: Context, hint_ids: Any) -> None:
 
     if hint_ids:
         for hint in tmt.utils.hints.get_hints(*hint_ids):
-            context.obj.logger.print(hint.render(context.obj.logger))
+            context.obj.print(hint.render(context.obj.logger))
 
     elif context.invoked_subcommand is None:
-        echo(context.get_help(), color=context.color)
+        context.obj.print(context.get_help())
 
 
 @hints.command(name='ls')
