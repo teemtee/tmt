@@ -67,7 +67,7 @@ properties:
   logs:
     type: string
 
-  composeid:
+  compose-id:
     type: string
 
   fips:
