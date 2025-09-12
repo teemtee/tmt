@@ -190,7 +190,8 @@ class FeatureBase(tmt.utils.Common):
     @classmethod
     def _find_playbook(cls, filename: str, logger: tmt.log.Logger) -> Optional[Path]:
         filepath = FEATURE_PLAYEBOOK_DIRECTORY / filename
-        if filepath.exists():
+        if filepath.exists() and filepath.is_file():
+            assert isinstance(filepath, Path)  # Narrow type
             return filepath
 
         filepath = Path(inspect.getfile(cls)).parent / filename
