@@ -15,9 +15,9 @@ The Guide has been extended with a new :ref:`guest-preparation`
 section which covers :ref:`minimal-requirements` for guests and
 describes :ref:`helper-scripts` used for special test actions.
 
-The ``execute`` plugin no longer requires ``awk`` to be
-installed on the machine, as all awk usage has been replaced
-with bash built-ins and standard utilities.
+:ref:`/plugins/execute` no longer require ``awk`` to be installed
+on the guest, as all awk usage has been replaced with bash
+built-ins and standard utilities.
 
 
 tmt-1.57.0
