@@ -9,10 +9,8 @@ Introduction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Feel free and welcome to contribute to this project. You can start
-with filing issues and ideas for improvement in GitHub tracker__.
-Before creating a new issue you might want to check the existing
-issues to prevent filing a duplicate. Important issues affecting
-many users are marked with the `known issue`__ label.
+with filing :ref:`issues` and ideas for improvement but if you
+feel like contributing some code you are welcome even more!
 
 Our favorite thoughts from The Zen of Python:
 
@@ -61,8 +59,6 @@ couple of recommendations to keep on mind when writing code:
 
   See the "maximum line length" point above for the actual limit.
 
-__ https://github.com/teemtee/tmt/issues
-__ https://github.com/teemtee/tmt/issues?q=label%3A%22known+issue%22
 __ https://www.python.org/dev/peps/pep-0008/
 
 
@@ -567,6 +563,31 @@ __ https://github.com/tldr-pages/tldr/blob/main/CONTRIBUTING.md
 
    Changes made directly to documentation in this repository will
    not be reflected in the tldr pages collection.
+
+
+.. _issues:
+
+Issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Before creating a `new issue`__ you might want to check the
+`existing issues`__ to prevent filing a duplicate. Important
+issues affecting many users are marked with the `known issue`__
+label.
+
+When creating a new issue, do not use any prefixes or file paths
+in the summary, for categorizing issues we are using labels and
+issue types which make it easier to filter relevant areas.
+
+All newly identified bugs have to be filed as github issues and
+marked with the ``Bug`` type. So, before creating a pull request
+which is fixing a bug, make sure there is a corresponding issue
+filed and mention it in the pull request description. This is
+needed because of Functional Safety certification requirements.
+
+__ https://github.com/teemtee/tmt/issues/new
+__ https://github.com/teemtee/tmt/issues
+__ https://github.com/teemtee/tmt/issues?q=label%3A%22known+issue%22
 
 
 Pull Requests
