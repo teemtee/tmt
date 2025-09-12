@@ -14,13 +14,13 @@
                  processors: 6
             - or:
                - device:
-                   - driver: ahci
+                   driver: ahci
                - device:
-                   - driver: uhci
+                   driver: uhci
                - disk:
-                   - driver: foo
+                   driver: foo
                - disk:
-                   - driver: bar
+                   driver: bar
 
 /plan/bootc:
     provision+:
