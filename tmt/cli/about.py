@@ -51,8 +51,10 @@ def _render_plugins_list_rest() -> str:
 
         raise GeneralError(f"Unknown plugin registry '{registry.name}'.")
 
+    template_file = TEMPLATES_DIRECTORY / 'plugins-ls.rst.j2'
+    assert isinstance(template_file, tmt.utils.Path)  # Narrow type
     return render_template_file(
-        TEMPLATES_DIRECTORY / 'plugins-ls.rst.j2',
+        template_file,
         REGISTRIES=iter_plugin_registries(),
         find_intro=find_intro,
     )
@@ -139,12 +141,14 @@ def hints_ls(context: Context, how: str) -> None:
     List discovered tmt hints.
     """
 
+    template_file = TEMPLATES_DIRECTORY / 'hints-ls.rst.j2'
+    assert isinstance(template_file, tmt.utils.Path)
     if how in ('pretty', 'rest'):
         _ls(
             context,
             how,
             render_template_file(
-                TEMPLATES_DIRECTORY / 'hints-ls.rst.j2',
+                template_file,
                 HINTS=tmt.utils.hints.HINTS,
             ),
         )
