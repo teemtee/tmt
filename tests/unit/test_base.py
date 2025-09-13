@@ -1,3 +1,4 @@
+import itertools
 import os
 import pickle
 import shutil
@@ -190,9 +191,30 @@ def test_pickleable_tree() -> None:
     https://github.com/teemtee/tmt/issues/2503
     """
 
+    def check_equal_pickled_object(obj1, obj2) -> bool:
+        for k, obj1_v in obj1.__dict__.items():
+            # Check for simple equality
+            if obj1_v == (obj2_v := getattr(obj2, k)):
+                continue
+            # Check that the types exactly match
+            if type(obj1_v) != type(obj2_v):  # noqa: E721
+                return False
+            # Some special cases
+            if isinstance(obj1_v, itertools.count) and next(obj1_v) == next(obj2_v):
+                continue
+            # Check for a nested object
+            if not check_equal_pickled_object(obj1_v, obj2_v):
+                return False
+        return True
+
     tree = tmt.Tree.grow()
 
-    pickle.dumps(tree)
+    pickled_tree = pickle.dumps(tree)
+    unpickled_tree = pickle.loads(pickled_tree)  # noqa: S301
+    # Normally we do not expect the unpickled tree to be the same
+    assert tree != unpickled_tree
+    # Check that the underlying components are the same though
+    assert check_equal_pickled_object(tree, unpickled_tree)
 
 
 def test_expand_node_data(monkeypatch) -> None:
