@@ -678,6 +678,54 @@ class InstallBootc(InstallBase):
         cast(Bootc, self.guest.package_manager).build_container()
 
 
+class InstallMock(InstallBase):
+    def install_from_repository(self) -> None:
+        self.guest.package_manager.install(
+            *self.list_installables("package", *self.packages),
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing,
+            ),
+        )
+
+    def install_local(self) -> None:
+        # Use both dnf install/reinstall to get all packages refreshed
+        # FIXME Simplify this once BZ#1831022 is fixed/implemented.
+        filelist = [
+            PackagePath(self.package_directory / filename.name) for filename in self.local_packages
+        ]
+
+        self.guest.package_manager.install(
+            *filelist,
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing,
+                check_first=False,
+            ),
+        )
+
+        self.guest.package_manager.reinstall(
+            *filelist,
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing,
+                check_first=False,
+            ),
+        )
+
+        summary = fmf.utils.listed([str(path) for path in self.local_packages], 'local package')
+        self.info('total', f"{summary} installed", 'green')
+
+    def install_from_url(self) -> None:
+        self.guest.package_manager.install(
+            *self.list_installables("remote package", *self.remote_packages),
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing,
+            ),
+        )
+
+
 class InstallApk(InstallBase):
     """
     Install packages using apk
@@ -908,6 +956,18 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         # code could be integrated into package manager plugins directly.
         if guest.facts.package_manager == 'bootc':
             installer: InstallBase = InstallBootc(
+                logger=logger,
+                parent=self,
+                dependencies=self.data.package,
+                directories=self.data.directory,
+                exclude=self.data.exclude,
+                guest=guest,
+            )
+
+        elif guest.facts.package_manager is not None and guest.facts.package_manager.startswith(
+            'mock-'
+        ):
+            installer = InstallMock(
                 logger=logger,
                 parent=self,
                 dependencies=self.data.package,
