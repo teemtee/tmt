@@ -4,6 +4,13 @@
     Releases
 ======================
 
+tmt-1.58.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Searching a Test Case in Polarion during test export/import or test run export
+will no longer find test cases that are set as inactive.
+
+
 tmt-1.57.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
