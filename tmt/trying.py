@@ -163,7 +163,7 @@ class Action(metaclass=ActionMeta):
         if self.shortcut is None:
             return style(self.command, fg="bright_blue") + padding + self.help_text
 
-        # Find the key in the  and highlight it
+        # Find the key in the command and highlight it
         shortcut_index: int = self.command.find(self.shortcut) if self.shortcut else -1
 
         # If shortcut cannot be found in the command, add it next to the command in brackets
