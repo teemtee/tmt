@@ -1473,9 +1473,14 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
         logger.debug(f"Created console log directory '{self.exchange_directory}'.", level=3)
 
         self.exchange_directory.chmod(0o755)
-        self.guest._run_guest_command(
-            Command("chcon", "--type", "virt_log_t", self.exchange_directory), silent=True
-        )
+
+        assert isinstance(self.guest.parent, tmt.steps.provision.Provision)  # narrow type
+        assert self.guest.parent.plan.my_run is not None  # narrow type
+
+        if self.guest.parent.plan.my_run.runner.facts.has_selinux:
+            self.guest._run_guest_command(
+                Command("chcon", "--type", "virt_log_t", self.exchange_directory), silent=True
+            )
 
     def cleanup(self, logger: tmt.log.Logger) -> None:
         """
