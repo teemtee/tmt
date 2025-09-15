@@ -11,6 +11,10 @@ A new :ref:`issues` section has been added to the Contribute page.
 It provides a couple of recommendations about filing issues and
 documents that issues have to be filed for newly identified bugs.
 
+The Guide has been extended with a new :ref:`guest-preparation`
+section which covers :ref:`minimal-requirements` for guests and
+describes :ref:`helper-scripts` used for special test actions.
+
 
 tmt-1.57.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
