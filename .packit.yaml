@@ -180,7 +180,7 @@ jobs:
     tmt_plan: '/tmt/plans/fusa/tests'
     targets:
       - epel-9
-      
+
   # Propose downstream pull requests
   - job: propose_downstream
     trigger: release
@@ -199,4 +199,3 @@ jobs:
       - fedora-branched
       - epel-9
       - epel-10
-
