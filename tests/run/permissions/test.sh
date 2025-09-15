@@ -30,6 +30,7 @@ EOF
         rlRun "useradd $USER"
 
         rlRun "tmp_workdirs=\$(mktemp -d)" 0 "Create another tmp directory for TMT_WORKDIR_ROOT"
+        rlRun "chmod 755 $tmp_workdirs" 0 "Make sure the TMT_WORKDIR_ROOT base is accessible by all users"
     rlPhaseEnd
 
     rlPhaseStartTest "Recreated correctly"
