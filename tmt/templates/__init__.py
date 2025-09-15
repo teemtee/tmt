@@ -39,11 +39,16 @@ def _get_template_file_paths(path: Union[Path, MultiplexedPath]) -> dict[str, Pa
     :param path: Path to the directory to search for templates.
     """
 
-    return {
-        file.name.removesuffix(TEMPLATE_FILE_SUFFIX): file
-        for file in path.iterdir()
-        if file.is_file() and file.suffix == TEMPLATE_FILE_SUFFIX
-    }
+    templates: dict[str, Path] = {}
+    file: Union[Path, MultiplexedPath]
+    for file in path.iterdir():  # pyright: ignore[reportAssignmentType, reportUnknownVariableType]
+        if not file.is_file():
+            continue
+        assert isinstance(file, Path)  # Narrow type
+        if file.suffix != TEMPLATE_FILE_SUFFIX:
+            continue
+        templates[file.name.removesuffix(TEMPLATE_FILE_SUFFIX)] = file
+    return templates
 
 
 def _get_templates(root_dir: Union[Path, MultiplexedPath]) -> TemplatesType:
