@@ -16,7 +16,7 @@ section which covers :ref:`minimal-requirements` for guests and
 describes :ref:`helper-scripts` used for special test actions.
 
 :ref:`/plugins/execute` no longer require ``awk`` to be installed
-on the guest, as all awk usage has been replaced with bash
+on the guest, as all ``awk`` usage has been replaced with Bash
 built-ins and standard utilities.
 
 
