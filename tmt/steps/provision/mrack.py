@@ -1161,6 +1161,16 @@ class BeakerGuestData(tmt.steps.provision.GuestSshData):
              """,
     )
 
+    return_on_panic: bool = field(
+        default=False,
+        is_flag=True,
+        option='--return-on-panic',
+        help="""
+             If set, beaker-watchdog will return the host to beaker
+             when a kernel panic is detected.
+             """,
+    )
+
 
 @container
 class ProvisionBeakerData(BeakerGuestData, tmt.steps.provision.ProvisionStepData):
@@ -1204,6 +1214,7 @@ class CreateJobParameters:
     bootc_image_url: Optional[str]
     bootc: bool
     bootc_check_system_url: Optional[str]
+    return_on_panic: bool
 
     def to_mrack(self) -> dict[str, Any]:
         data = dataclasses.asdict(self)
@@ -1225,6 +1236,9 @@ class CreateJobParameters:
                 data['beaker']['ks_append'] = kickstart
         if self.public_key:
             data['beaker']['pubkeys'] = self.public_key
+
+        if not self.return_on_panic:
+            data['beaker']['watchdog'] = {"panic": "ignore"}
 
         return data
 
@@ -1358,6 +1372,9 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
     bootc_check_system_url: Optional[str]
     bootc_registry_secret: Optional[str]
 
+    # beaker-watchdog related attributes
+    return_on_panic: bool
+
     _api: Optional[BeakerAPI] = None
     _api_timestamp: Optional[datetime.datetime] = None
 
@@ -1462,6 +1479,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             bootc_image_url=self.bootc_image_url,
             bootc=self.bootc,
             bootc_check_system_url=self.bootc_check_system_url,
+            return_on_panic=self.return_on_panic,
         )
 
         if self.is_dry_run:

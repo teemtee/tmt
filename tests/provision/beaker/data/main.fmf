@@ -28,3 +28,8 @@
         bootc-image-url: quay.io/fedora/custom-bootc:latest
         bootc-registry-secret: dummysecret
         image: fedora-42
+
+/plan/watchdog:
+    provision+:
+        return-on-panic: True
+        image: Fedora-42

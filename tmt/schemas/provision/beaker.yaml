@@ -72,5 +72,8 @@ properties:
   bootc-check-system-url:
     type: string
 
+  return-on-panic:
+    type: boolean
+
 required:
   - how
