@@ -33,7 +33,7 @@ finish :ref:`/plugins/finish/shell` plugins as well as for test
 execution itself.
 
 For correctly handling locking of important files ``flock`` is
-needed. The ``awk`` command is used for parsing text files.
+needed.
 
 .. _helper-scripts:
 
