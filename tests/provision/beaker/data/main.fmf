@@ -54,3 +54,8 @@
         hardware:
             hostname: my_host2
         order: 2
+
+/plan/watchdog:
+    provision+:
+        return-on-panic: True
+        image: Fedora-42
