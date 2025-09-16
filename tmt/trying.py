@@ -34,6 +34,7 @@ USER_PLAN_NAME = "/user/plan"
 
 
 ActionHandler = Callable[['Try', Plan], None]
+PromptActionHandler = Callable[['Try'], None]
 
 
 class ActionMeta(type):
@@ -63,6 +64,7 @@ class Action(metaclass=ActionMeta):
     group: int
     exit_loop: bool
     hidden: bool
+    prompt_function: Optional[PromptActionHandler]
 
     def __init__(
         self,
@@ -72,6 +74,7 @@ class Action(metaclass=ActionMeta):
         group: int = 0,
         exit_loop: bool = False,
         hidden: bool = False,
+        prompt_function: Optional[PromptActionHandler] = None,
     ) -> None:
         self.command = command.lower()
         self.shortcut = shortcut.lower() if shortcut else None
@@ -79,6 +82,7 @@ class Action(metaclass=ActionMeta):
         self.group = group
         self.exit_loop = exit_loop
         self.hidden = hidden
+        self.prompt_function = prompt_function
 
         def _add_action(action: str) -> None:
             if action in Action._registry:
@@ -477,12 +481,10 @@ class Try(tmt.utils.Common):
         assert plan.login is not None  # Narrow type
         plan.login.go(force=True)
 
-    @Action("verbose", shortcut="v", order=4, group=1)
-    def action_verbose(self, plan: Plan) -> None:
+    def prompt_verbose(self) -> None:
         """
-        Set the desired level of verbosity
+        Prompt for verbosity level.
         """
-
         self.print("What verbose level do you need?")
         answer = input(f"Choose 0-3, hit Enter to keep {self.verbosity_level}> ")
 
@@ -496,24 +498,20 @@ class Try(tmt.utils.Common):
                 self.print(f"Invalid level '{answer}'.")
                 return
 
+    @Action("verbose", shortcut="v", order=4, group=1, prompt_function=prompt_verbose)
+    def action_verbose(self, plan: Plan) -> None:
+        """
+        Set the desired level of verbosity.
+        """
         for step in plan.steps(enabled_only=False):
             step.verbosity_level = self.verbosity_level
             for phase in step.phases():
                 phase.verbosity_level = self.verbosity_level
 
-    def _action_verbose_silent(self, plan: Plan) -> None:
-        """Set verbosity level without prompting"""
-        for step in plan.steps(enabled_only=False):
-            step.verbosity_level = self.verbosity_level
-            for phase in step.phases():
-                phase.verbosity_level = self.verbosity_level
-
-    @Action("debug", shortcut="b", order=5, group=1)
-    def action_debug(self, plan: Plan) -> None:
+    def prompt_debug(self) -> None:
         """
-        Choose a different debugging level
+        Prompt for debug level.
         """
-
         self.print("Which debug level would you like?")
         answer = input(f"Choose 0-3, hit Enter to keep {self.debug_level}> ")
 
@@ -526,6 +524,12 @@ class Try(tmt.utils.Common):
             except ValueError:
                 self.print(f"Invalid level '{answer}'.")
                 return
+
+    @Action("debug", shortcut="b", order=5, group=1, prompt_function=prompt_debug)
+    def action_debug(self, plan: Plan) -> None:
+        """
+        Choose a different debugging level
+        """
 
         for step in plan.steps(enabled_only=False):
             step.debug_level = self.debug_level
@@ -759,7 +763,7 @@ class Try(tmt.utils.Common):
         # Set the default verbosity level, handle options
         for plan in self.plans:
             self.handle_options(plan)
-            self._action_verbose_silent(plan)
+            self.action_verbose(plan)
 
         # Choose the initial action
         action = Action.start_ask
@@ -773,6 +777,10 @@ class Try(tmt.utils.Common):
         # Loop over the actions
         try:
             while True:
+                # Handle separate prompting for certain actions
+                if action.prompt_function:
+                    action.prompt_function(self)
+
                 # Handle the individual actions
                 for plan in self.plans:
                     plan.header()
