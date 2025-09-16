@@ -18,7 +18,7 @@ rlJournalStart
 
             # Path of the generated file should be shown and the page should exist
             rlAssertGrep "output: .*/index.html" $rlRun_LOG
-            HTML=$(grep "output:" $rlRun_LOG | sed 's/.*output: //')
+            HTML=$(grep "output:.*/plan/report/default-0/index.html" $rlRun_LOG | sed 's/.*output: //')
             rlAssertExists "$HTML" || rlDie "Report file '$HTML' not found, nothing to check."
 
             test_name_suffix=error
