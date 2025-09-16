@@ -1,4 +1,7 @@
 /plan:
+    provision:
+        how: local
+
     execute:
         how: tmt
 
