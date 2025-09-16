@@ -2,7 +2,7 @@
 # Send arguments passed to the script to the `try` command
 # and timeout afterwards while catching the output.
 # The `try` command options can be extended using the
-# TMT_OPTION environment variable.
+# TMT_OPTIONS environment variable.
 
 set args [lindex $argv 0]
 set options [split $env(TMT_OPTIONS)]
