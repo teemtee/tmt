@@ -284,8 +284,16 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
         if data.hardware and data.hardware.constraint:
             self.warn("The 'local' provision plugin does not support hardware requirements.")
 
+        assert isinstance(self.parent, tmt.steps.provision.Provision)
+        assert self.parent.plan.my_run is not None
+        workdir = self.parent.plan.my_run.workdir
+        assert workdir is not None
+
         if os.environ.get("TMT_SCRIPTS_DIR"):
-            self.warn("TMT_SCRIPTS_DIR is defined for the local provision.")
+            self.warn(
+                "The TMT_SCRIPTS_DIR env is not supported in 'local' provision, "
+                f"the default scripts path {workdir / Path('scripts')} is used instead."
+            )
 
         self._guest = GuestLocal(logger=self._logger, data=data, name=self.name, parent=self.step)
         self._guest.start()

@@ -4658,6 +4658,18 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         for _, key_formatted, value_formatted in self.runner.facts.format():
             log(key_formatted, value_formatted, shift=1)
 
+    def copy_scripts(self) -> None:
+        """
+        Copy the tmt helper scripts under the running workdir
+        into a new scripts directory.
+        """
+        tmt_parent = Path(tmt.__file__).resolve().parent
+        source = tmt_parent / "steps" / "scripts"
+        assert self.workdir is not None
+        destination = self.workdir / "scripts"
+        destination.mkdir(exist_ok=True)
+        shutil.copytree(source, destination, dirs_exist_ok=True)
+
     def prepare_for_try(self, tree: Tree) -> None:
         """
         Prepare the run for the try command
@@ -4693,11 +4705,7 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         self.show_runner(self._logger)
 
         # Create scripts directory and copy tmt scripts there
-        tmt_parent = Path(tmt.__file__).resolve().parent
-        source = tmt_parent / "steps" / "scripts"
-        destination = self.workdir / "scripts"
-        destination.mkdir(exist_ok=True)
-        shutil.copytree(source, destination, dirs_exist_ok=True)
+        self.copy_scripts()
 
         # Attempt to load run data
         self.load()
