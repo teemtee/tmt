@@ -4692,6 +4692,13 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
 
         self.show_runner(self._logger)
 
+        # Create scripts directory and copy tmt scripts there
+        tmt_parent = Path(tmt.__file__).resolve().parent
+        source = tmt_parent / "steps" / "scripts"
+        destination = self.workdir / "scripts"
+        destination.mkdir(exist_ok=True)
+        shutil.copytree(source, destination, dirs_exist_ok=True)
+
         # Attempt to load run data
         self.load()
         # Follow log instead of executing the run

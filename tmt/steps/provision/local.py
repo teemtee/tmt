@@ -1,5 +1,6 @@
+import os
 from collections.abc import Sequence
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 import tmt
 import tmt.base
@@ -9,7 +10,7 @@ import tmt.steps.provision
 import tmt.steps.scripts
 import tmt.utils
 from tmt.container import container
-from tmt.steps.provision import TransferOptions
+from tmt.steps.provision import Provision, TransferOptions
 from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
@@ -27,6 +28,19 @@ class GuestLocal(tmt.Guest):
 
     localhost = True
     parent: Optional[tmt.steps.Step]
+
+    @property
+    def scripts_path(self) -> Path:
+        """
+        Absolute path to tmt scripts directory
+        """
+        parent = cast(Provision, self.parent)
+        assert parent.plan.workdir is not None
+
+        workdir_resolved = parent.plan.workdir.resolve()
+        default_path = workdir_resolved / Path("scripts")
+
+        return tmt.steps.scripts.effective_scripts_dest_dir(default=default_path)
 
     @property
     def is_ready(self) -> bool:
@@ -137,7 +151,8 @@ class GuestLocal(tmt.Guest):
         )
 
     def install_scripts(self, scripts: Sequence[tmt.steps.scripts.Script]) -> None:
-        self.debug("No installation of tmt scripts is needed on localhost.")
+        """Install scripts required by tmt"""
+        # no-op function
 
     def start(self) -> None:
         """
@@ -179,6 +194,7 @@ class GuestLocal(tmt.Guest):
         """
         Nothing to be done to push workdir
         """
+        # no-op function
 
     def pull(
         self,
@@ -267,6 +283,9 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
 
         if data.hardware and data.hardware.constraint:
             self.warn("The 'local' provision plugin does not support hardware requirements.")
+
+        if os.environ.get("TMT_SCRIPTS_DIR"):
+            self.warn("TMT_SCRIPTS_DIR is defined for the local provision.")
 
         self._guest = GuestLocal(logger=self._logger, data=data, name=self.name, parent=self.step)
         self._guest.start()
