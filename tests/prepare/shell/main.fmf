@@ -1,3 +1,7 @@
 summary: Test preparing guest using a shell script
 link:
   - verifies: https://github.com/teemtee/tmt/issues/423
+tag+:
+  - provision-container
+  - provision-local
+  - provision-virtual
