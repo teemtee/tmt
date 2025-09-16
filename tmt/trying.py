@@ -34,7 +34,7 @@ USER_PLAN_NAME = "/user/plan"
 
 
 ActionHandler = Callable[['Try', Plan], None]
-PromptActionHandler = Callable[['Try'], None]
+PromptHandler = Callable[['Try'], None]
 
 
 class ActionMeta(type):
@@ -64,7 +64,7 @@ class Action(metaclass=ActionMeta):
     group: int
     exit_loop: bool
     hidden: bool
-    prompt_function: Optional[PromptActionHandler]
+    prompt_function: Optional[PromptHandler]
 
     def __init__(
         self,
@@ -74,7 +74,7 @@ class Action(metaclass=ActionMeta):
         group: int = 0,
         exit_loop: bool = False,
         hidden: bool = False,
-        prompt_function: Optional[PromptActionHandler] = None,
+        prompt_function: Optional[PromptHandler] = None,
     ) -> None:
         self.command = command.lower()
         self.shortcut = shortcut.lower() if shortcut else None
@@ -490,13 +490,13 @@ class Try(tmt.utils.Common):
 
         if answer == "":
             self.print(f"Keeping verbose level {self.verbosity_level}.")
-        else:
-            try:
-                self.verbosity_level = int(answer)
-                self.print(f"Switched to verbose level {self.verbosity_level}.")
-            except ValueError:
-                self.print(f"Invalid level '{answer}'.")
-                return
+            return
+
+        try:
+            self.verbosity_level = int(answer)
+            self.print(f"Switched to verbose level {self.verbosity_level}.")
+        except ValueError:
+            self.print(f"Invalid level '{answer}'.")
 
     @Action("verbose", shortcut="v", order=4, group=1, prompt_function=prompt_verbose)
     def action_verbose(self, plan: Plan) -> None:
@@ -517,13 +517,13 @@ class Try(tmt.utils.Common):
 
         if answer == "":
             self.print(f"Keeping debug level {self.debug_level}.")
-        else:
-            try:
-                self.debug_level = int(answer)
-                self.print(f"Switched to debug level {self.debug_level}.")
-            except ValueError:
-                self.print(f"Invalid level '{answer}'.")
-                return
+            return
+
+        try:
+            self.debug_level = int(answer)
+            self.print(f"Switched to debug level {self.debug_level}.")
+        except ValueError:
+            self.print(f"Invalid level '{answer}'.")
 
     @Action("debug", shortcut="b", order=5, group=1, prompt_function=prompt_debug)
     def action_debug(self, plan: Plan) -> None:
