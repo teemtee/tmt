@@ -14,6 +14,12 @@ prepare:
       - python3-pip
       - git
 
+/without-tmt:
+  summary: Run CI tests without tmt installed
+  adjust+:
+    - enabled: false
+      because: Needs refactoring of pip plan first
+
 /with-tmt:
   summary: Run CI tests with the current tmt version
   prepare+:
