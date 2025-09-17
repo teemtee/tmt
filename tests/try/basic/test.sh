@@ -57,8 +57,8 @@ rlJournalStart
         rlAssertGrep "fail /tests/base/bad" $rlRun_LOG
         rlAssertGrep "pass /tests/base/good" $rlRun_LOG
         rlAssertGrep "errr /tests/base/weird" $rlRun_LOG
-        rlAssertGrep "summary: 6 tests executed" $rlRun_LOG
-        rlAssertGrep "summary: 2 tests passed, 2 tests failed and 2 errors" $rlRun_LOG
+        rlAssertGrep "summary: 7 tests executed" $rlRun_LOG
+        rlAssertGrep "summary: 3 tests passed, 2 tests failed and 2 errors" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Keep"
@@ -105,6 +105,21 @@ rlJournalStart
         rlAssertGrep "warn: No tests found under the 'no-tests' directory." $rlRun_LOG
         rlAssertGrep "Let's try something with /default/plan" $rlRun_LOG
         rlRun "popd"
+    rlPhaseEnd
+
+    # Make sure verbose/debug with multiple plans enables both at once
+    rlPhaseStartTest "Multiple Plans"
+        rlRun -s "TMT_CONFIG_DIR=$tmp TMT_OPTIONS='--plan /plans/multi' ./action.exp v 1" 0 "Try with local"
+        rlAssertGrep "Switched to verbose level 1" $rlRun_LOG
+        rlAssertNotGrep "Choose 0-3, hit Enter to keep 1" $rlRun_LOG
+        rlRun "grep -A 100 'What do we do next?' $rlRun_LOG | grep /plans/multi/plan/one"
+        rlRun "grep -A 100 'What do we do next?' $rlRun_LOG | grep /plans/multi/plan/two"
+
+        rlRun -s "TMT_CONFIG_DIR=$tmp TMT_OPTIONS='--plan /plans/multi' ./action.exp b 1" 0 "Try with local"
+        rlAssertGrep "Switched to debug level 1" $rlRun_LOG
+        rlAssertNotGrep "Choose 0-3, hit Enter to keep 1" $rlRun_LOG
+        rlRun "grep -A 100 'What do we do next?' $rlRun_LOG | grep /plans/multi/plan/one"
+        rlRun "grep -A 100 'What do we do next?' $rlRun_LOG | grep /plans/multi/plan/two"
     rlPhaseEnd
 
     rlPhaseStartCleanup

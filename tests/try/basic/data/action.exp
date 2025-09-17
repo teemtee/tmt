@@ -1,0 +1,22 @@
+#!/usr/bin/expect -f
+# Send arguments passed to the script to the `try` command
+# and timeout afterwards while catching the output.
+# The `try` command options can be extended using the
+# TMT_OPTIONS environment variable.
+
+set args [lindex $argv 0]
+set options [split $env(TMT_OPTIONS)]
+
+spawn tmt try {*}$options fedora@local
+
+# Wait for initial prompt
+expect "What do we do next?"
+
+# Send actions
+foreach arg $argv {
+  send -- "$arg\r"
+}
+
+# Make sure we wait for some output and timeout quickly
+set timeout 1
+expect eof
