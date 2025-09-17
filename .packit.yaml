@@ -176,7 +176,7 @@ jobs:
     <<: *require-full-tests
     identifier: internal-fusa
     fmf_url: "https://gitlab.cee.redhat.com/automotive/tests/all.git"
-    fmf_ref: "nsaini-pr-4009"
+    fmf_ref: "main"
     tmt_plan: '/tmt/plans/fusa/tests'
     targets:
       - epel-9
