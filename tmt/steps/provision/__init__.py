@@ -354,6 +354,9 @@ class TransferOptions:
     #: Ignore symlinks that point outside the source tree
     safe_links: bool = False
 
+    #: Run a ``mkdir -p`` of the destination before doing transfer
+    mkdir_p: bool = False
+
     def copy(self) -> 'TransferOptions':
         """Create a copy of the options."""
 
@@ -2799,6 +2802,9 @@ class GuestSsh(Guest):
         ]
 
         try:
+            if options.mkdir_p:
+                mkdir_cmd = Command("mkdir", "-p", str(destination.parent))
+                self.execute(mkdir_cmd, silent=True)
             self._run_guest_command(cmd, silent=True)
 
         except tmt.utils.RunError as exc:
