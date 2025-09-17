@@ -15,6 +15,10 @@ The Guide has been extended with a new :ref:`guest-preparation`
 section which covers :ref:`minimal-requirements` for guests and
 describes :ref:`helper-scripts` used for special test actions.
 
+External plugins can inject additional resources to be used by tmt using
+the ``tmt.resources`` entry-point, e.g. to extend the schema validation
+or tmt templates.
+
 
 tmt-1.57.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
