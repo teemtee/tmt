@@ -2,11 +2,10 @@
 Koji Artifact Provider
 """
 
+import types
 from collections.abc import Iterator
 from shlex import quote
-from typing import Any
-
-from koji import ClientSession
+from typing import Any, Optional
 
 import tmt.log
 from tmt.container import container
@@ -17,6 +16,24 @@ from tmt.steps.prepare.brand_new_allmighty_install.providers import (
 )
 from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path, ShellScript
+
+koji: Optional[types.ModuleType] = None
+
+# To silence mypy
+ClientSession: Any
+
+
+def import_koji(logger: tmt.log.Logger) -> None:
+    """Import koji module with error handling."""
+    global ClientSession, koji
+    try:
+        from koji import ClientSession
+    except ImportError as error:
+        from tmt.utils.hints import print_hints
+
+        print_hints('almighty_plugin/koji.ClientSession', logger=logger)
+
+        raise GeneralError('Could not import koji package.') from error
 
 
 @container
@@ -54,11 +71,13 @@ class KojiProvider(ArtifactProvider[KojiArtifactInfo]):
         """
         return self._call_api('listBuildRPMs', int(self.artifact_id)) or []
 
-    def _initialize_session(self) -> ClientSession:
+    def _initialize_session(self) -> 'ClientSession':
         """
         A koji session initialized via the koji.ClientSession function.
         api_url being the base URL for the koji instance
         """
+        import_koji(self.logger)
+
         try:
             return ClientSession(self.API_URL)
         except Exception as error:
