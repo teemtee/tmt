@@ -37,10 +37,9 @@ class GuestLocal(tmt.Guest):
         parent = cast(Provision, self.parent)
         assert parent.plan.workdir is not None
 
-        workdir_resolved = parent.plan.workdir.resolve()
-        default_path = workdir_resolved / Path("scripts")
-
-        return tmt.steps.scripts.effective_scripts_dest_dir(default=default_path)
+        return tmt.steps.scripts.effective_scripts_dest_dir(
+            default=parent.plan.workdir.absolute() / "scripts"
+        )
 
     @property
     def is_ready(self) -> bool:
@@ -292,7 +291,7 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
         if os.environ.get("TMT_SCRIPTS_DIR"):
             self.warn(
                 "The TMT_SCRIPTS_DIR env is not supported in 'local' provision, "
-                f"the default scripts path {workdir / Path('scripts')} is used instead."
+                f"the default scripts path {workdir.absolute() / 'scripts'} is used instead."
             )
 
         self._guest = GuestLocal(logger=self._logger, data=data, name=self.name, parent=self.step)

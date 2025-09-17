@@ -61,6 +61,7 @@ import tmt.steps.provision
 import tmt.steps.report
 import tmt.templates
 import tmt.utils
+import tmt.utils.filesystem
 import tmt.utils.git
 import tmt.utils.jira
 from tmt._compat.typing import Self
@@ -4663,12 +4664,10 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         Copy the tmt helper scripts under the running workdir
         into a new scripts directory.
         """
-        tmt_parent = Path(tmt.__file__).resolve().parent
-        source = tmt_parent / "steps" / "scripts"
         assert self.workdir is not None
-        destination = self.workdir / "scripts"
-        destination.mkdir(exist_ok=True)
-        shutil.copytree(source, destination, dirs_exist_ok=True)
+        tmt.utils.filesystem.copy_tree(
+            tmt.steps.scripts.SCRIPTS_SRC_DIR, self.workdir / "scripts", self._logger
+        )
 
     def prepare_for_try(self, tree: Tree) -> None:
         """
