@@ -76,7 +76,7 @@ class GuestBootc(GuestTestcloud):
 
         if self.containerimage:
             tmt.utils.Command("podman", "rmi", self.containerimage).run(
-                cwd=self.phase_workdir,
+                cwd=self.guest_workdir,
                 stream_output=True,
                 logger=self._logger,
                 env=PODMAN_ENV if self._rootless else None,
@@ -84,7 +84,7 @@ class GuestBootc(GuestTestcloud):
 
         try:
             tmt.utils.Command("podman", "machine", "rm", "-f", PODMAN_MACHINE_NAME).run(
-                cwd=self.phase_workdir, stream_output=True, logger=self._logger
+                cwd=self.guest_workdir, stream_output=True, logger=self._logger
             )
         except BaseException:
             self._logger.debug(

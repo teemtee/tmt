@@ -1255,7 +1255,10 @@ class Guest(
     tmt.utils.HasRunWorkdir,
     tmt.utils.HasPlanWorkdir,
     tmt.utils.HasStepWorkdir,
-    tmt.utils.HasPhaseWorkdir,
+    # TODO: this will not work: `self.parent` is not the owning phase,
+    # but the `provision` step itself. We do not have access to the
+    # original phase.
+    # tmt.utils.HasPhaseWorkdir,
     tmt.utils.HasGuestWorkdir,
     tmt.utils.Common,
 ):
@@ -1342,14 +1345,6 @@ class Guest(
     @property
     def step_workdir(self) -> Path:
         return cast(Provision, self.parent).step_workdir
-
-    # TODO: this will not work: `self.parent` is not the owning phase,
-    # but the `provision` step itself. We do not have access to the
-    # original phase.
-    #
-    # @property
-    # def phase_workdir(self) -> Path:
-    #     return cast(Provision, self.parent).phase_workdir
 
     @property
     def guest_workdir(self) -> Path:
