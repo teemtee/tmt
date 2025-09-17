@@ -9,11 +9,9 @@ import fmf.utils
 
 import tmt
 import tmt.log
-import tmt.steps
-import tmt.steps.discover
 import tmt.utils
 from tmt.base import Dependency, DependencyFile, DependencyFmfId, DependencySimple
-from tmt.utils import HasStepWorkdir, Path
+from tmt.utils import Path
 
 if TYPE_CHECKING:
     from tmt.libraries.beakerlib import BeakerLib
@@ -35,7 +33,7 @@ class LibraryError(Exception):
     """
 
 
-class Library(HasStepWorkdir):
+class Library:
     """
     General library class
 
@@ -83,12 +81,6 @@ class Library(HasStepWorkdir):
         """
 
         return f"{self.repo}{self.name}"
-
-    @property
-    def step_workdir(self) -> Path:
-        assert isinstance(self.parent, tmt.steps.discover.DiscoverPlugin)
-
-        return self.parent.step_workdir
 
 
 def library_factory(
@@ -200,6 +192,8 @@ def dependencies(
 
             if isinstance(library, BeakerLib):
                 # Recursively check for possible dependent libraries
+                assert parent is not None  # narrow type
+                assert parent.workdir is not None  # narrow type
                 # TODO: make this one go away once fmf is properly annotated.
                 # pyright detects the type might be `Unknown` because of how
                 # fmf handles some corner cases, therefore `is not None` is

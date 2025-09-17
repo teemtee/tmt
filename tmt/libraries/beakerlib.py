@@ -225,7 +225,8 @@ class BeakerLib(Library):
         try:
             library = self._library_cache[str(self)]
             # Check in case "tmt try retest" deleted the libs
-            if not (self.step_workdir / self.dest / self.repo).exists():
+            assert self.parent.workdir
+            if not (self.parent.workdir / self.dest / self.repo).exists():
                 raise FileNotFoundError
             # The url must be identical
             if library.url != self.url:
@@ -275,7 +276,8 @@ class BeakerLib(Library):
         except (KeyError, FileNotFoundError):
             self.parent.debug(f"Fetch library '{self}'.", level=3)
             # Prepare path, clone the repository, checkout ref
-            directory = self.step_workdir / self.dest / self.repo
+            assert self.parent.workdir
+            directory = self.parent.workdir / self.dest / self.repo
             # Clone repo with disabled prompt to ignore missing/private repos
             try:
                 if self.url:
