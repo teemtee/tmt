@@ -223,19 +223,27 @@ class MockShell:
 
         if self.mock_shell is None:
             self.enter_shell()
-        shell_command = ""
-        if cwd is not None:
-            shell_command += "(cd " + shlex.quote(str(cwd)) + " && "
-        if env is not None:
-            for key, value in env.items():
-                shell_command += f"{key}={shlex.quote(value)} "
-        shell_command += str(command)
-        if cwd is not None:
-            shell_command += ")"
-        shell_command += " 1>/tmp/stdout 2>/tmp/stderr; echo $?>/tmp/returncode"
+        shell_command_components: list[str] = [str(command)]
 
-        self.parent.verbose("Executing inside mock shell", shell_command)
-        shell_command += "\n"
+        if env is not None:
+            shell_command_components = [
+                *(f"{key}={shlex.quote(value)}" for key, value in env.items()),
+                *shell_command_components
+            ]
+
+        if cwd is not None:
+            shell_command_components = [
+                "(", f"cd {shlex.quote(str(cwd))}", "&&", *shell_command_components, ")"
+            ]
+
+        shell_command_components = [
+            *shell_command_components,
+            "1>/tmp/stdout 2>/tmp/stderr; echo $?>/tmp/returncode"
+        ]
+
+        shell_command = ' '.join(shell_command_components) + "\n"
+
+        self.parent.verbose("Executing inside mock shell", shell_command[:-1])
 
         stdout_file = self.root_path / "tmp/stdout"
         stderr_file = self.root_path / "tmp/stderr"
