@@ -434,14 +434,6 @@ class GuestMock(tmt.Guest):
         self.mock_shell = MockShell(parent=self, config=self.config, rootdir=self.rootdir)
         self.mock_config = data.mock_config
 
-    def save(self) -> tmt.steps.provision.GuestData:
-        # inherit
-        return super().save()
-
-    def wake(self) -> None:
-        # noop
-        return super().wake()
-
     def setup(self) -> None:
         super().setup()
         # If we are not using bootstrap, then we need to install the package manager.
