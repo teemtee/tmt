@@ -17,7 +17,20 @@
         test: exit 1
     /weird:
         order: 2
-        test: rm -f /bin/bash
+        test: |
+          case "$weird_method" in
+            bash)
+              rm -f /bin/bash
+              ;;
+            ssh)
+              pstree -p
+              echo "this_pid=$$"
+              echo "parent_pid=${PPID}"
+              echo "sshd-seesion_pid=$(ps -o ppid= -p ${PPID})"
+              # See the pstree above, we want to kill the current sshd-session
+              kill $(ps -o ppid= -p ${PPID})
+              ;;
+          esac
     /missed:
         order: 3
         test: /bin/true
