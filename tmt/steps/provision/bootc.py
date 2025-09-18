@@ -14,6 +14,7 @@ import tmt.utils
 from tmt.container import container, field
 from tmt.steps.provision.testcloud import GuestTestcloud
 from tmt.utils import Path
+from tmt.utils.imagebuilder import PODMAN_ENV, PODMAN_MACHINE_NAME, BootcImageBuilder
 from tmt.utils.templates import render_template
 
 if TYPE_CHECKING:
@@ -23,11 +24,6 @@ DEFAULT_TMP_PATH = "/var/tmp/tmt"  # noqa: S108
 
 DEFAULT_IMAGE_BUILDER = "quay.io/centos-bootc/bootc-image-builder:latest"
 CONTAINER_STORAGE_DIR = tmt.utils.Path("/var/lib/containers/storage")
-
-PODMAN_MACHINE_NAME = 'podman-machine-tmt'
-PODMAN_ENV = tmt.utils.Environment.from_dict(
-    {"CONTAINER_CONNECTION": f'{PODMAN_MACHINE_NAME}-root'}
-)
 
 DEFAULT_PODMAN_MACHINE_CPU = 2
 DEFAULT_PODMAN_MACHINE_MEM: 'Size' = tmt.hardware.UNITS('2048 MB')
@@ -101,10 +97,22 @@ class BootcData(tmt.steps.provision.testcloud.ProvisionTestcloudData):
         option='--container-file',
         metavar='CONTAINER_FILE',
         help="""
-             Select container file to be used to build a container image
-             that is then used by bootc image builder to create a disk image.
+             Path to a Containerfile for building the container image from scratch.
+             This creates the initial container image that will be used by bootc image
+             builder to create a disk image.
 
              Cannot be used with container-image.
+             """,
+    )
+
+    derived_container_file: Optional[str] = field(
+        default=None,
+        option='--derived-container-file',
+        metavar='CONTAINER_FILE',
+        help="""
+             Path to a Containerfile for building a derived image on top of an existing base image.
+             This file will only be used when add-tmt-dependencies is enabled. It allows
+             customization of the TMT dependency layer that gets added to the base container image.
              """,
     )
 
@@ -252,132 +260,6 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             return relative_path
         return f"{os.getcwd()}/{relative_path}"
 
-    def _build_derived_image(self, base_image: str) -> str:
-        """
-        Build a "derived" container image from the base image with tmt dependencies added
-        """
-
-        assert self.workdir is not None  # narrow type
-
-        self._logger.debug("Build modified container image with necessary tmt packages/config.")
-        containerfile_template = '''
-            FROM {{ base_image }}
-
-            RUN \
-            dnf -y install cloud-init rsync && \
-            ln -s ../cloud-init.target /usr/lib/systemd/system/default.target.wants && \
-            rm /usr/local -rf && ln -sr /var/usrlocal /usr/local && mkdir -p /var/usrlocal/bin && \
-            dnf clean all
-        '''
-        containerfile_parsed = render_template(containerfile_template, base_image=base_image)
-        (self.workdir / 'Containerfile').write_text(containerfile_parsed)
-
-        image_tag = f'localhost/tmtmodified-{self._get_id()}'
-        tmt.utils.Command(
-            "podman",
-            "build",
-            f'{self.workdir}',
-            "-f",
-            f'{self.workdir}/Containerfile',
-            "-t",
-            image_tag,
-        ).run(
-            cwd=self.workdir,
-            stream_output=True,
-            logger=self._logger,
-            env=PODMAN_ENV if self._rootless else None,
-        )
-
-        return image_tag
-
-    def _build_base_image(self, containerfile: str, workdir: str) -> str:
-        """
-        Build the "base" or user supplied container image
-        """
-
-        image_tag = f'localhost/tmtbase-{self._get_id()}'
-        self._logger.debug("Build container image.")
-        tmt.utils.Command(
-            "podman",
-            "build",
-            self._expand_path(workdir),
-            "-f",
-            self._expand_path(containerfile),
-            "-t",
-            image_tag,
-        ).run(
-            cwd=self.workdir,
-            stream_output=True,
-            logger=self._logger,
-            env=PODMAN_ENV if self._rootless else None,
-        )
-        return image_tag
-
-    def _build_bootc_disk(self, containerimage: str, image_builder: str, rootfs: str) -> None:
-        """
-        Build the bootc disk from a container image using bootc image builder
-        """
-
-        self._logger.debug("Build bootc disk image.")
-
-        tmt.utils.Command(
-            "podman",
-            "run",
-            "--rm",
-            "--privileged",
-            "-v",
-            f'{CONTAINER_STORAGE_DIR}:{CONTAINER_STORAGE_DIR}',
-            "--security-opt",
-            "label=type:unconfined_t",
-            "-v",
-            f"{self.workdir}:/output",
-            image_builder,
-            "build",
-            "--type",
-            "qcow2",
-            "--rootfs",
-            rootfs,
-            "--local",
-            containerimage,
-        ).run(
-            cwd=self.workdir,
-            stream_output=True,
-            logger=self._logger,
-            env=PODMAN_ENV if self._rootless else None,
-        )
-
-    def _init_podman_machine(self) -> None:
-        try:
-            tmt.utils.Command("podman", "machine", "rm", "-f", PODMAN_MACHINE_NAME).run(
-                cwd=self.workdir, stream_output=True, logger=self._logger
-            )
-        except BaseException:
-            self._logger.debug("Unable to remove existing podman machine (it might not exist).")
-
-        self._logger.debug("Initialize podman machine.")
-        # fmt: off
-        tmt.utils.Command(
-            "podman", "machine", "init", "--rootful",
-            "--disk-size", f"{DEFAULT_PODMAN_MACHINE_DISK_SIZE.magnitude}",
-            "--memory", f"{DEFAULT_PODMAN_MACHINE_MEM.magnitude}",
-            "--cpus", f"{DEFAULT_PODMAN_MACHINE_CPU}",
-            "-v", f"{DEFAULT_TMP_PATH}:{DEFAULT_TMP_PATH}",
-            "-v", "$HOME:$HOME",
-            PODMAN_MACHINE_NAME,
-        ).run(cwd=self.workdir, stream_output=True, logger=self._logger)
-        # fmt: on
-
-        self._logger.debug("Start podman machine.")
-        tmt.utils.Command("podman", "machine", "start", PODMAN_MACHINE_NAME).run(
-            cwd=self.workdir, stream_output=True, logger=self._logger
-        )
-
-    def _check_if_podman_is_rootless(self) -> None:
-        output = tmt.utils.Command(
-            "podman", "info", "--format", "{{.Host.Security.Rootless}}"
-        ).run(cwd=self.workdir, stream_output=True, logger=self._logger)
-        self._rootless = output.stdout == "true\n"
-
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
         Provision the bootc instance
@@ -385,13 +267,8 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
 
         super().go(logger=logger)
 
-        self._check_if_podman_is_rootless()
-
         data = BootcData.from_plugin(self)
         data.show(verbose=self.verbosity_level, logger=self._logger)
-
-        if self._rootless and not self.is_dry_run:
-            self._init_podman_machine()
 
         # Image of file have to provided
         if data.container_image is None and data.container_file is None:
@@ -402,22 +279,9 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         containerimage: Optional[str] = None
 
         if not self.is_dry_run:
-            # Use provided container image
-            if data.container_image is not None:
-                containerimage = data.container_image
-                if data.add_tmt_dependencies:
-                    containerimage = self._build_derived_image(data.container_image)
-                self._build_bootc_disk(containerimage, data.image_builder, data.rootfs)
-
-            # Build image according to the container file
-            elif data.container_file is not None:
-                containerimage = self._build_base_image(
-                    data.container_file, data.container_file_workdir
-                )
-                if data.add_tmt_dependencies:
-                    containerimage = self._build_derived_image(containerimage)
-                self._build_bootc_disk(containerimage, data.image_builder, data.rootfs)
-
+            assert self.workdir
+            builder = BootcImageBuilder(self.data, self.workdir, self._logger)
+            builder.handle_image(self._get_id())
         # Set unique disk file name, each plan will have its own disk file
         disk_file_name = Path(
             render_template(
