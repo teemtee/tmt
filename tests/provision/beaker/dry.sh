@@ -18,7 +18,7 @@ rlJournalStart
         rlAssertNotGrep 'watchdog panic="ignore"/' $rlRun_LOG
     rlPhaseEnd
 
-    rlPhaseStartTest "Verify beaker return-on-panic schema optionworks"
+    rlPhaseStartTest "Verify beaker return-on-panic schema option works"
         rlRun -s "tmt run --dry plan --name /plan/watchdog"
         rlAssertNotGrep 'watchdog panic="ignore"/' $rlRun_LOG
     rlPhaseEnd
