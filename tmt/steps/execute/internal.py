@@ -18,6 +18,7 @@ from tmt.container import container, field
 from tmt.result import Result, ResultOutcome
 from tmt.steps import safe_filename
 from tmt.steps.abort import AbortStep
+from tmt.steps.discover import DiscoverPlugin
 from tmt.steps.execute import (
     TEST_OUTPUT_FILENAME,
     TestInvocation,
@@ -487,7 +488,21 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Test will be executed in it's own directory, relative to the workdir
         assert test.path is not None  # narrow type
-        workdir = self.discover.step_workdir / test.path.unrooted()
+
+        # TODO: `upgrade` plugin and upgrade testing do really nasty things
+        # with the plan, step and phase tree, and `execute` gets unexpected
+        # path when asking `self.discover` for its `step_workdir`.
+        # Find how to better integrate `upgrade` with `discover` and
+        # `execute`, namely parent of the `discover/fmf` phase injected
+        # by `upgrade` could be incorrect.
+        # In the meantime, a workaround here to pick the correct workdir
+        # based on the type of `self.discover` :/
+        workdir = (
+            self.discover.phase_workdir
+            if isinstance(self.discover, DiscoverPlugin)
+            else self.discover.step_workdir
+        ) / test.path.unrooted()
+
         logger.debug(f"Use workdir '{workdir}'.", level=3)
 
         # Create data directory, prepare test environment
