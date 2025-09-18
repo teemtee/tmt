@@ -109,11 +109,10 @@ class MockShell:
         command.append("--enable-network")
         command.append("--enable-plugin")
         command.append("tmt")
-        command.append(
-            f"--plugin-option=tmt:workdir_root='{shlex.quote(str(self.parent.workdir_root))}'"
-        )
+        command.append("--plugin-option=tmt:workdir_root=" + shlex.quote(str(self.parent.workdir_root)))
         command.append("-q")
         command.append("--shell")
+
         self.parent.verbose("Entering mock shell")
         self.parent.verbose(command)
         self.mock_shell = subprocess.Popen(
