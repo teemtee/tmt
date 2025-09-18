@@ -66,7 +66,7 @@ class MockShell:
                 self.string += '\n'
             return self
 
-    def __init__(self, parent: 'GuestMock', config: Optional[str], rootdir: Optional[str] = None):
+    def __init__(self, parent: 'GuestMock', config: Optional[str], rootdir: Optional[str]):
         self.parent = parent
         self.config = config
         self.rootdir = rootdir
