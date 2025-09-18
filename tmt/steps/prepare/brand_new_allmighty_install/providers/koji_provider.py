@@ -8,6 +8,7 @@ from shlex import quote
 from typing import Any, Optional
 
 import tmt.log
+import tmt.utils
 from tmt.container import container
 from tmt.steps.prepare.brand_new_allmighty_install.providers import (
     ArtifactInfo,
@@ -15,7 +16,6 @@ from tmt.steps.prepare.brand_new_allmighty_install.providers import (
     DownloadError,
 )
 from tmt.steps.provision import Guest
-from tmt.utils import GeneralError, Path, ShellScript
 
 koji: Optional[types.ModuleType] = None
 
@@ -33,7 +33,7 @@ def import_koji(logger: tmt.log.Logger) -> None:
 
         print_hints('almighty_plugin/koji.ClientSession', logger=logger)
 
-        raise GeneralError('Could not import koji package.') from error
+        raise tmt.utils.GeneralError("Could not import koji package.") from error
 
 
 @container
@@ -81,7 +81,7 @@ class KojiProvider(ArtifactProvider[KojiArtifactInfo]):
         try:
             return ClientSession(self.API_URL)
         except Exception as error:
-            raise GeneralError("Failed to initialize API session") from error
+            raise tmt.utils.GeneralError("Failed to initialize API session.") from error
 
     def _call_api(self, method: str, *args: Any, **kwargs: Any) -> Any:
         """
@@ -97,17 +97,17 @@ class KojiProvider(ArtifactProvider[KojiArtifactInfo]):
             method_callable = getattr(self._session, method)
             return method_callable(*args, **kwargs)
         except Exception as error:
-            raise GeneralError(f"API call {method} failed") from error
+            raise tmt.utils.GeneralError(f"API call '{method}' failed.") from error
 
     def _parse_artifact_id(self, artifact_id: str) -> str:
         # Eg: 'koji.build:123456'
         prefix = "koji.build:"
         if not artifact_id.startswith(prefix):
-            raise ValueError(f"Invalid artifact ID format: {artifact_id}")
+            raise ValueError(f"Invalid artifact ID format: '{artifact_id}'.")
 
         parsed = artifact_id[len(prefix) :]
         if not parsed.isdigit():
-            raise ValueError(f"Invalid artifact ID format: {artifact_id}")
+            raise ValueError(f"Invalid artifact ID format: '{artifact_id}'.")
         return parsed
 
     def list_artifacts(self) -> Iterator[KojiArtifactInfo]:
@@ -122,7 +122,7 @@ class KojiProvider(ArtifactProvider[KojiArtifactInfo]):
             )
 
     def _download_artifact(
-        self, artifact: KojiArtifactInfo, guest: Guest, destination: Path
+        self, artifact: KojiArtifactInfo, guest: Guest, destination: tmt.utils.Path
     ) -> None:
         """
         Download the specified artifact to the given destination on the guest.
@@ -134,8 +134,10 @@ class KojiProvider(ArtifactProvider[KojiArtifactInfo]):
         try:
             # Destination directory is guaranteed to exist, download the artifact
             guest.execute(
-                ShellScript(f"curl -L -o {quote(str(destination))} {quote(artifact.location)}"),
+                tmt.utils.ShellScript(
+                    f"curl -L -o {quote(str(destination))} {quote(artifact.location)}"
+                ),
                 silent=True,
             )
         except Exception as error:
-            raise DownloadError(f"Failed to download {artifact}") from error
+            raise DownloadError(f"Failed to download '{artifact}'.") from error
