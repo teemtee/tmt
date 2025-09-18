@@ -2787,12 +2787,15 @@ class GuestSsh(Guest):
         if superuser and self.user != 'root':
             cmd += ['--rsync-path', 'sudo rsync']
 
+        # When rsync-ing directories, make sure we do not copy to a subfolder (/foo/bar/bar)
+        path_suffix = "/" if options.recursive else ""
+
         cmd += [
             *options.to_rsync(),
             "-e",
             self._ssh_command.to_element(),
-            source,
-            f"{self._ssh_guest}:{destination}",
+            f"{source}{path_suffix}",
+            f"{self._ssh_guest}:{destination}{path_suffix}",
         ]
 
         try:
