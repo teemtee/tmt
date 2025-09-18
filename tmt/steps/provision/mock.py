@@ -487,7 +487,7 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
-        self.assert_feeling_safe("1.38", "The 'mock' provision plugin")
+        self.assert_feeling_safe("1.58", "The 'mock' provision plugin")
 
         if data.hardware and data.hardware.constraint:
             self.warn("The 'mock' provision plugin does not support hardware requirements.")
