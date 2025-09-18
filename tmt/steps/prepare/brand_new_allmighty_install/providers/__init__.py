@@ -10,9 +10,9 @@ from shlex import quote
 from typing import Any, Generic, TypeVar
 
 import tmt.log
+import tmt.utils
 from tmt.container import container
 from tmt.steps.provision import Guest
-from tmt.utils import GeneralError, Path, ShellScript
 
 
 class ArtifactType(enum.Enum):
@@ -21,7 +21,7 @@ class ArtifactType(enum.Enum):
     UNKNOWN = 'unknown'
 
 
-class DownloadError(GeneralError):
+class DownloadError(tmt.utils.GeneralError):
     """
     Raised when download fails.
     """
@@ -73,7 +73,9 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         raise NotImplementedError
 
     @abstractmethod
-    def _download_artifact(self, artifact: ArtifactInfoT, guest: Guest, destination: Path) -> None:
+    def _download_artifact(
+        self, artifact: ArtifactInfoT, guest: Guest, destination: tmt.utils.Path
+    ) -> None:
         """
         Action: Download a single artifact to the specified destination.
 
@@ -85,9 +87,9 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
     def download_artifacts(
         self,
         guest: Guest,
-        download_path: Path,
+        download_path: tmt.utils.Path,
         exclude_patterns: list[Pattern[str]],
-    ) -> list[Path]:
+    ) -> list[tmt.utils.Path]:
         """
         Download all artifacts to the specified destination.
 
@@ -99,11 +101,11 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         :note: Errors during individual artifact downloads are
             caught, logged as warnings, and ignored.
         """
-        self.logger.info(f"Downloading artifacts to {download_path!s}")
+        self.logger.info(f"Downloading artifacts to '{download_path!s}'.")
 
         # Ensure download directory exists on guest (create only if missing)
         guest.execute(
-            ShellScript(
+            tmt.utils.ShellScript(
                 f"[ -d {quote(str(download_path))} ] || "
                 f'{"sudo " if not guest.facts.is_superuser else ""}'
                 f"mkdir -p {quote(str(download_path))}"
@@ -111,27 +113,32 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
             silent=True,
         )
 
-        downloaded_paths: list[Path] = []
-        artifact_count = 0
+        downloaded_paths: list[tmt.utils.Path] = []
 
         for artifact in self._filter_artifacts(exclude_patterns):
             local_path = download_path / str(artifact)
-            self.logger.debug(f"Downloading {artifact} to {local_path}")
+            self.logger.debug(f"Downloading '{artifact}' to '{local_path}'.")
 
             try:
                 self._download_artifact(artifact, guest, local_path)
                 downloaded_paths.append(local_path)
-                artifact_count += 1
-                self.logger.info(f"Downloaded {artifact} to {local_path}")
+                self.logger.info(f"Downloaded '{artifact}' to '{local_path}'.")
 
-            except DownloadError as err:
+            except DownloadError as error:
                 # Warn about the failed download and move on
-                self.logger.warning(f"Failed to download {artifact}: {err}")
+                tmt.utils.show_exception_as_warning(
+                    exception=error,
+                    message=f"Failed to download '{artifact}'.",
+                    include_logfiles=True,
+                    logger=self.logger,
+                )
 
-            except Exception as err:
-                raise GeneralError(f"Unexpected error downloading {artifact}") from err
+            except Exception as error:
+                raise tmt.utils.GeneralError(
+                    f"Unexpected error downloading '{artifact}'."
+                ) from error
 
-        self.logger.info(f"Successfully downloaded {artifact_count} artifacts")
+        self.logger.info(f"Successfully downloaded '{len(downloaded_paths)}' artifacts.")
         return downloaded_paths
 
     def _filter_artifacts(self, exclude_patterns: list[Pattern[str]]) -> Iterator[ArtifactInfoT]:
