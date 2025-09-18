@@ -249,7 +249,9 @@ class MockShell:
         stderr_file = self.root_path / "tmp/stderr"
         returncode_file = self.root_path / "tmp/returncode"
 
-        with io.FileIO(os.open(str(stdout_file), os.O_RDONLY | os.O_NONBLOCK)) as stdout_io, io.FileIO(os.open(str(stderr_file), os.O_RDONLY | os.O_NONBLOCK)) as stderr_io, io.FileIO(os.open(str(returncode_file), os.O_RDONLY | os.O_NONBLOCK)) as returncode_io:
+        with (io.FileIO(os.open(str(stdout_file), os.O_RDONLY | os.O_NONBLOCK)) as stdout_io,
+              io.FileIO(os.open(str(stderr_file), os.O_RDONLY | os.O_NONBLOCK)) as stderr_io,
+              io.FileIO(os.open(str(returncode_file), os.O_RDONLY | os.O_NONBLOCK)) as returncode_io):
             stdout_fd = stdout_io.fileno()
             stderr_fd = stderr_io.fileno()
             returncode_fd = returncode_io.fileno()
