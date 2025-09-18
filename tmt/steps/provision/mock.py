@@ -225,6 +225,11 @@ class MockShell:
         stderr_stem = "tmp/stderr"
         returncode_stem = "tmp/returncode"
 
+        # The friendly command version would be emitted only when we were not
+        # asked to be quiet.
+        if not silent and friendly_command:
+            (log or logger.verbose)("cmd", friendly_command, color="yellow", level=2)
+
         if self.mock_shell is None:
             self.enter_shell()
 
@@ -247,7 +252,7 @@ class MockShell:
         ]
 
         shell_command = ' '.join(shell_command_components) + "\n"
-
+        
         self.parent.verbose("Executing inside mock shell", shell_command[:-1])
 
         io_flags: int = os.O_RDONLY | os.O_NONBLOCK
@@ -265,6 +270,8 @@ class MockShell:
             self.mock_shell.stdin.write(shell_command)
             self.mock_shell.stdin.flush()
 
+            # For command output logging, use either the given logging callback, or
+            # use the given logger & emit to debug log.
             logger = self.parent._logger
             output_logger: tmt.log.LoggingFunction = (log or logger.debug) if not silent else logger.debug
 
