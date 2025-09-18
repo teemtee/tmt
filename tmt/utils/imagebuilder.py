@@ -129,10 +129,8 @@ class ImageBuilder:
                 logger=self._logger,
             )
             self._logger.info(f"Successfully built base image: {image_name}")
-        except tmt.utils.RunError as e:
-            raise tmt.utils.ProvisionError(
-                "Failed to build the base container image.\n{exc.stdout}"
-            ) from e
+        except tmt.utils.RunError as exc:
+            raise tmt.utils.ProvisionError("Failed to build the base container image") from exc
 
         return image_name
 
@@ -147,9 +145,9 @@ class ImageBuilder:
         Build a derived container image from a base image and templates.
         """
         self._logger.debug("Building derived container image.")
-        platform = arch_to_platform_dict.get(f'{self.data.arch}')
+        platform = arch_to_platform_dict.get(self.data.arch)
         if not platform:
-            raise tmt.utils.ProvisionError("arch {self.data.arch} is not supported.")
+            raise tmt.utils.ProvisionError(f"arch {self.data.arch} is not supported.")
         try:
             tmt.utils.Command(
                 "podman",
@@ -196,16 +194,6 @@ class BootcImageBuilder(ImageBuilder):
     Separate class to handle  image building logic,
     with improved error handling and logging for easier debugging.
     """
-
-    containerfile_template = '''
-        FROM {{ base_image }}
-
-        RUN \
-        dnf -y install cloud-init rsync && \
-        ln -s ../cloud-init.target /usr/lib/systemd/system/default.target.wants && \
-        rm /usr/local -rf && ln -sr /var/usrlocal /usr/local && mkdir -p /var/usrlocal/bin && \
-        dnf clean all
-    '''
 
     def build_bootc_disk(self, containerimage: str, image_builder: str, rootfs: str) -> None:
         """
@@ -279,32 +267,31 @@ class BootcImageBuilder(ImageBuilder):
 
         if self._rootless:
             self._init_podman_machine()
-
+        containerimage = None
         # Use provided container image
         if self.data.container_image is not None:
             containerimage = self.data.container_image
-            if self.data.add_tmt_dependencies:
-                container_file = self.data.derived_container_file or self._create_template(
-                    self.containerfile_template, containerimage
-                )
-                containerimage = self.build_derived_image(
-                    container_file, derived_image_name, self.workdir, self._rootless
-                )
-            self.build_bootc_disk(containerimage, self.data.image_builder, self.data.rootfs)
-
         # Build image according to the container file
         elif self.data.container_file is not None:
             containerimage = self.build_base_image(
                 self.data.container_file, base_image_name, self.data.container_file_workdir
             )
-            if self.data.add_tmt_dependencies:
-                container_file = self.data.derived_container_file or self._create_template(
-                    self.containerfile_template, containerimage
+
+        if self.data.add_tmt_dependencies:
+            if containerimage is None:
+                raise tmt.utils.ProvisionError(
+                    "Container image is required for building derived image"
                 )
-                containerimage = self.build_derived_image(
-                    container_file, derived_image_name, self.workdir, self._rootless
-                )
-            self.build_bootc_disk(containerimage, self.data.image_builder, self.data.rootfs)
+            container_file = self.data.derived_container_file or self._create_template(
+                tmt.utils.resource_files("steps/provision/bootc.j2").read_text(), containerimage
+            )
+            containerimage = self.build_derived_image(
+                container_file, derived_image_name, self.workdir, self._rootless
+            )
+
+        if containerimage is None:
+            raise tmt.utils.ProvisionError("Container image is required for building bootc disk")
+        self.build_bootc_disk(containerimage, self.data.image_builder, self.data.rootfs)
 
 
 class BootcBeakerImageBuilder(ImageBuilder):
