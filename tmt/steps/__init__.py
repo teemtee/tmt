@@ -557,7 +557,8 @@ class Step(
     def step_workdir(self) -> Path:
         if self.workdir is None:
             raise GeneralError(
-                "Existence of a step workdir was presumed but the workdir does not exist."
+                f"Existence of a step '{self.step_name}' workdir"
+                " was presumed but the workdir does not exist."
             )
 
         return self.workdir
@@ -1565,7 +1566,8 @@ class BasePlugin(
     def phase_workdir(self) -> Path:
         if self.workdir is None:
             raise GeneralError(
-                "Existence of a phase workdir was presumed but the workdir does not exist."
+                f"Existence of a phase '{self.name}' workdir"
+                " was presumed but the workdir does not exist."
             )
 
         return self.workdir

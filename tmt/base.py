@@ -2163,7 +2163,8 @@ class Plan(
     def plan_workdir(self) -> Path:
         if self.workdir is None:
             raise GeneralError(
-                "Existence of a plan workdir was presumed but the workdir does not exist."
+                f"Existence of a plan '{self.name}' workdir"
+                " was presumed but the workdir does not exist."
             )
 
         return self.workdir

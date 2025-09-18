@@ -1350,7 +1350,8 @@ class Guest(
     def guest_workdir(self) -> Path:
         if self.workdir is None:
             raise GeneralError(
-                'Existence of a guest workdir was presumed but the workdir does not exist.'
+                f"Existence of a guest '{self.name}' workdir"
+                " was presumed but the workdir does not exist."
             )
 
         return self.workdir
