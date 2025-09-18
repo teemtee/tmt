@@ -59,6 +59,7 @@ import tmt.steps.finish
 import tmt.steps.prepare
 import tmt.steps.provision
 import tmt.steps.report
+import tmt.steps.scripts
 import tmt.templates
 import tmt.utils
 import tmt.utils.filesystem
@@ -4665,9 +4666,14 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         into a new scripts directory.
         """
         assert self.workdir is not None
-        tmt.utils.filesystem.copy_tree(
-            tmt.steps.scripts.SCRIPTS_SRC_DIR, self.workdir / "scripts", self._logger
-        )
+        scripts = tmt.steps.scripts.SCRIPTS
+        destination = self.workdir / "scripts"
+        destination.mkdir(exist_ok=True)
+
+        for script in scripts:
+            with script as source:
+                for filename in [script.source_filename, *script.aliases]:
+                    shutil.copy(source, destination / filename)
 
     def prepare_for_try(self, tree: Tree) -> None:
         """

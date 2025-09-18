@@ -10,7 +10,7 @@ rlJournalStart
     rlPhaseStartTest "Test script installation"
         # Run tmt with local provision
         rlRun "tmp_root=\$(mktemp -d)"
-        rlRun -s "tmt --feeling-safe run --workdir-root $tmp_root provision plan"
+        rlRun -s "tmt --feeling-safe run --workdir-root $tmp_root"
 
         # Check if the script was copied to the default location
         script_path="$tmp_root/run-001/scripts/tmt-file-submit"
