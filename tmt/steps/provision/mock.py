@@ -221,6 +221,9 @@ class MockShell:
         Execute the command in a running mock shell for increased speed.
         """
 
+        if self.mock_shell is None:
+            self.enter_shell()
+
         stdout_stem = "tmp/stdout"
         stderr_stem = "tmp/stderr"
         returncode_stem = "tmp/returncode"
@@ -230,8 +233,11 @@ class MockShell:
         if not silent and friendly_command:
             (log or logger.verbose)("cmd", friendly_command, color="yellow", level=2)
 
-        if self.mock_shell is None:
-            self.enter_shell()
+        # Fail nicely if the working directory does not exist
+        if cwd:
+            chroot_cwd = self.root_path / (cwd.relative_to("/") if cwd.is_absolute() else cwd)
+            if not chroot_cwd.exists():
+                raise tmt.utils.GeneralError(f"The working directory '{chroot_cwd}' does not exist.")
 
         shell_command_components: list[str] = [str(command)]
 
