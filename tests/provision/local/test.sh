@@ -4,7 +4,6 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
-        rlRun "export TMT_SCRIPTS_DIR=$tmp"
         rlRun "pushd data"
     rlPhaseEnd
 
@@ -21,6 +20,8 @@ rlJournalStart
         rlRun "test -x $script_path" 0 "Check if script is executable"
 
         # Check warning is raised
+        rlRun "export TMT_SCRIPTS_DIR=$tmp"
+        rlRun -s "tmt --feeling-safe run --workdir-root $tmp_root provision plan"
         rlAssertGrep "The TMT_SCRIPTS_DIR env is not supported" $rlRun_LOG
 
     rlPhaseEnd

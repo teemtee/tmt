@@ -35,10 +35,11 @@ class GuestLocal(tmt.Guest):
         Absolute path to tmt scripts directory
         """
         parent = cast(Provision, self.parent)
-        assert parent.plan.workdir is not None
+        assert parent.plan.my_run is not None
+        assert parent.plan.my_run.workdir is not None
 
         return tmt.steps.scripts.effective_scripts_dest_dir(
-            default=parent.plan.workdir.absolute() / "scripts"
+            default=parent.plan.my_run.workdir.absolute() / "scripts"
         )
 
     @property
@@ -193,7 +194,6 @@ class GuestLocal(tmt.Guest):
         """
         Nothing to be done to push workdir
         """
-        # no-op function
 
     def pull(
         self,
@@ -255,6 +255,11 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
     .. note::
 
         Neither hard nor soft reboot is supported.
+
+    .. note::
+        The ``TMT_SCRIPTS_DIR`` variable is not supported in the
+        ``local`` provision. This solution has been provided as part
+        of issue #1853.
     """
 
     _data_class = ProvisionLocalData
@@ -290,8 +295,8 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
 
         if os.environ.get("TMT_SCRIPTS_DIR"):
             self.warn(
-                "The TMT_SCRIPTS_DIR env is not supported in 'local' provision, "
-                f"the default scripts path {workdir.absolute() / 'scripts'} is used instead."
+                "The 'TMT_SCRIPTS_DIR' env is not supported in 'local' provision, "
+                f"the default scripts path '{workdir.absolute() / 'scripts'}' is used instead."
             )
 
         self._guest = GuestLocal(logger=self._logger, data=data, name=self.name, parent=self.step)

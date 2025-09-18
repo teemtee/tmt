@@ -23,6 +23,14 @@ inactive.
 on the guest, as all ``awk`` usage has been replaced with Bash
 built-ins and standard utilities.
 
+When using the :ref:`/plugins/provision/local` provision, tmt
+helper scripts are now automatically copied into a scripts
+directory located within the tmt run's workdir. If
+``TMT_SCRIPTS_DIR`` is set when using
+:ref:`/plugins/provision/local` provision, a warning will be
+triggered, and the default scripts path under the run's workdir
+will be used.
+
 
 tmt-1.57.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
