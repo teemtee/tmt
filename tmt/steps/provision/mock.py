@@ -221,8 +221,13 @@ class MockShell:
         Execute the command in a running mock shell for increased speed.
         """
 
+        stdout_stem = "tmp/stdout"
+        stderr_stem = "tmp/stderr"
+        returncode_stem = "tmp/returncode"
+
         if self.mock_shell is None:
             self.enter_shell()
+
         shell_command_components: list[str] = [str(command)]
 
         if env is not None:
@@ -238,20 +243,17 @@ class MockShell:
 
         shell_command_components = [
             *shell_command_components,
-            "1>/tmp/stdout 2>/tmp/stderr; echo $?>/tmp/returncode"
+            f"1>/{stdout_stem} 2>/{stderr_stem}; echo $?>/{returncode_stem}"
         ]
 
         shell_command = ' '.join(shell_command_components) + "\n"
 
         self.parent.verbose("Executing inside mock shell", shell_command[:-1])
 
-        stdout_file = self.root_path / "tmp/stdout"
-        stderr_file = self.root_path / "tmp/stderr"
-        returncode_file = self.root_path / "tmp/returncode"
-
-        with (io.FileIO(os.open(str(stdout_file), os.O_RDONLY | os.O_NONBLOCK)) as stdout_io,
-              io.FileIO(os.open(str(stderr_file), os.O_RDONLY | os.O_NONBLOCK)) as stderr_io,
-              io.FileIO(os.open(str(returncode_file), os.O_RDONLY | os.O_NONBLOCK)) as returncode_io):
+        io_flags: int = os.O_RDONLY | os.O_NONBLOCK
+        with (io.FileIO(os.open(str(self.root_path / stdout_stem), io_flags)) as stdout_io,
+              io.FileIO(os.open(str(self.root_path / stderr_stem), io_flags)) as stderr_io,
+              io.FileIO(os.open(str(self.root_path / returncode_stem), io_flags)) as returncode_io):
             stdout_fd = stdout_io.fileno()
             stderr_fd = stderr_io.fileno()
             returncode_fd = returncode_io.fileno()
