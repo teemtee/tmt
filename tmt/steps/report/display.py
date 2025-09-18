@@ -337,10 +337,8 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
 
             display_guest = len(seen_guests) > 1
 
-        assert self.step.plan.execute.workdir is not None
-
         ResultRenderer(
-            basepath=self.step.plan.execute.workdir,
+            basepath=self.step.plan.execute.step_workdir,
             logger=self._logger,
             shift=1,
             verbosity=self.verbosity_level,

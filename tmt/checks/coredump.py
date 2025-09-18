@@ -415,8 +415,8 @@ class CoredumpCheck(Check):
             if files_output:
                 for file_path in files_output.splitlines():
                     path = Path(file_path)
-                    if path.exists() and invocation.phase.step.workdir:
-                        rel_path = path.relative_to(invocation.phase.step.workdir)
+                    if path.exists() and invocation.phase.step_workdir:
+                        rel_path = path.relative_to(invocation.phase.step_workdir)
                         log_files.append(rel_path)
         except tmt.utils.RunError:
             logger.debug("Failed to list coredump files")

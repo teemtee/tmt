@@ -516,9 +516,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         path = Path(cast(str, self.get('path'))) if self.get('path') else None
         # Save the test directory so that others can reference it
         ref = self.get('ref')
-        assert self.workdir is not None
-        self.testdir = self.workdir / 'tests'
-        sourcedir = self.workdir / 'source'
+        self.testdir = self.phase_workdir / 'tests'
+        sourcedir = self.phase_workdir / 'source'
         dist_git_source = self.get('dist-git-source', False)
         dist_git_merge = self.get('dist-git-merge', False)
 
@@ -866,8 +865,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         dist_git_merge = self.get('dist-git-merge', False)
         dist_git_remove_fmf_root = self.get('dist-git-remove-fmf-root', False)
 
-        assert self.workdir is not None  # narrow type
-        sourcedir = self.workdir / 'source'
+        sourcedir = self.phase_workdir / 'source'
 
         # '/' means everything which was extracted from the srpm and do not flatten
         # glob otherwise

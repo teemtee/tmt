@@ -821,8 +821,6 @@ class GuestTestcloud(tmt.GuestSsh):
         Prepare ssh key for authentication
         """
 
-        assert self.workdir is not None
-
         # Use existing key
         if self.key:
             self.debug("Extract public key from the provided private one.")
@@ -833,13 +831,13 @@ class GuestTestcloud(tmt.GuestSsh):
         else:
             self.debug('Generating an ssh key.')
             key_name = f"id_{key_type if key_type is not None else 'rsa'}"
-            self.key = [self.workdir / key_name]
+            self.key = [self.guest_workdir / key_name]
             command = Command("ssh-keygen", "-f", self.key[0], "-N", "")
             if key_type is not None:
                 command += Command("-t", key_type)
             self._run_guest_command(command, silent=True)
             self.verbose('key', self.key[0], 'green')
-            public_key = (self.workdir / f'{key_name}.pub').read_text()
+            public_key = (self.guest_workdir / f'{key_name}.pub').read_text()
 
         return public_key
 

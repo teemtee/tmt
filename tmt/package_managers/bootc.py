@@ -232,7 +232,7 @@ class Bootc(PackageManager[BootcEngine]):
 
                 self.guest.execute(
                     ShellScript(
-                        f'{sudo} podman build -t {image_tag} -f {containerfile_path} {self.guest.parent.workdir}'  # noqa: E501
+                        f'{sudo} podman build -t {image_tag} -f {containerfile_path} {self.guest.step_workdir}'  # noqa: E501
                     )
                 )
 

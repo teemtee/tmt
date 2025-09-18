@@ -170,7 +170,7 @@ class JournalCheck(Check):
     def _save_journal(
         self, invocation: 'TestInvocation', logger: tmt.log.Logger
     ) -> tuple[ResultOutcome, list[Path]]:
-        assert invocation.phase.step.workdir is not None  # narrow type
+        assert invocation.start_time is not None  # narrow type
 
         timestamp = format_timestamp(datetime.datetime.now(datetime.timezone.utc))
         path = invocation.check_files_path / TEST_POST_JOURNAL_FILENAME
@@ -214,7 +214,7 @@ class JournalCheck(Check):
         invocation.phase.write(path, '\n'.join(full_report), mode='a')
 
         log_paths = [
-            path.relative_to(invocation.phase.step.workdir),
+            path.relative_to(invocation.phase.step_workdir),
             save_failures(invocation, invocation.check_files_path, failures),
         ]
 
