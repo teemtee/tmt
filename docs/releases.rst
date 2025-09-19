@@ -19,6 +19,10 @@ Searching a Test Case in Polarion during test export/import or
 test run export will no longer find test cases that are set as
 inactive.
 
+:ref:`/plugins/execute` no longer require ``awk`` to be installed
+on the guest, as all ``awk`` usage has been replaced with Bash
+built-ins and standard utilities.
+
 
 tmt-1.57.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

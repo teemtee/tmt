@@ -36,7 +36,7 @@ write_report_file () {
 }
 
 copy_outputfile_to_data_dir () {
-    filename=$(echo "$outputFile" | awk -F/ '{print $NF}')
+    filename=$(basename "$outputFile")
     # Replace slashes in test name with underscores.
     fileprefix=$(echo "$TESTNAME" | tr / _ | tr ' ' _)
     # Cut first char if underscore.

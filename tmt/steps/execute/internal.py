@@ -874,6 +874,5 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         """
 
         return [
-            tmt.base.DependencySimple('/usr/bin/awk'),
             tmt.base.DependencySimple('/usr/bin/flock'),
         ]
