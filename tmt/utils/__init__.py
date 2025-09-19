@@ -1113,7 +1113,7 @@ class Command:
     """
 
     def __init__(self, *elements: RawCommandElement) -> None:
-        self._command = [str(element) for element in elements]
+        self._command = [str(element) for element in elements if element]
 
     def __str__(self) -> str:
         return self.to_element()
