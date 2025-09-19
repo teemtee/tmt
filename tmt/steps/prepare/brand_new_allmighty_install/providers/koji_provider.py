@@ -9,6 +9,7 @@ from typing import Any, Optional
 
 import tmt.log
 import tmt.utils
+import tmt.utils.hints
 from tmt.container import container
 from tmt.steps.prepare.brand_new_allmighty_install.providers import (
     ArtifactInfo,
@@ -23,6 +24,23 @@ koji: Optional[types.ModuleType] = None
 ClientSession: Any
 
 
+tmt.utils.hints.register_hint(
+    'koji',
+    """
+    The ``koji`` Python package is required by tmt for Koji integration.
+
+    To quickly test Koji presence, you can try running:
+
+        python -c 'import koji'
+
+    * Users who installed tmt from PyPI should install the ``koji`` package
+      via ``pip install koji``. On Fedora/RHEL systems, ``python3-gssapi``
+      must be installed first to allow ``pip`` to build and use the required
+      GSSAPI bindings.
+    """,
+)
+
+
 def import_koji(logger: tmt.log.Logger) -> None:
     """Import koji module with error handling."""
     global ClientSession, koji
@@ -31,7 +49,7 @@ def import_koji(logger: tmt.log.Logger) -> None:
     except ImportError as error:
         from tmt.utils.hints import print_hints
 
-        print_hints('almighty_plugin/koji.ClientSession', logger=logger)
+        print_hints('koji', logger=logger)
 
         raise tmt.utils.GeneralError("Could not import koji package.") from error
 
