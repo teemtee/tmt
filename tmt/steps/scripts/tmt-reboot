@@ -17,20 +17,21 @@ PATH=/sbin:/usr/sbin:$PATH
 
 command=""
 timeout=""
-efi=True
+efi=False
 while getopts "c:t:e" flag; do
     case "${flag}" in
         c) command="${OPTARG}";;
         t) timeout="${OPTARG}";;
-        e) efi=False;;
+        e) efi=True;;
         *) exit 1;;
     esac
 done
 
-if [ $efi = True ]; then
+# Handle EFI for Beaker
+if [[ $efi = True || -f /root/EFI_BOOT_ENTRY.TXT ]]; then
     if efibootmgr &>/dev/null ; then
         os_boot_entry=$(efibootmgr | grep 'BootCurrent' | cut -d' ' -f2)
-        # fall back to /root/EFI_BOOT_ENTRY.TXT if it exists and BootCurrent is not available
+        # fall back to /root/EFI_BOOT_ENTRY.TXT if BootCurrent is not available
         if [[ -z "$os_boot_entry" && -f /root/EFI_BOOT_ENTRY.TXT ]] ; then
             os_boot_entry=$(</root/EFI_BOOT_ENTRY.TXT)
         fi
@@ -38,8 +39,10 @@ if [ $efi = True ]; then
             logger -s "efibootmgr -n $os_boot_entry"
             efibootmgr -n "$os_boot_entry"
         else
-            logger -s "Could not determine value for BootNext!"
+            logger -s "Could not determine the value for BootNext, no changes were made!"
         fi
+    else
+        logger -s "No efibootmgr command found, skipping handling of EFI for Beaker!"
     fi
 fi
 
