@@ -1,6 +1,23 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
+SCRIPTS="
+rhts-abort
+rhts-reboot
+rhts-report-result
+rhts-submit-log
+rhts_submit_log
+rstrnt-abort
+rstrnt-reboot
+rstrnt-report-log
+rstrnt-report-result
+tmt-abort
+tmt-file-submit
+tmt-reboot
+tmt-reboot-core
+tmt-report-result
+"
+
 rlJournalStart
     rlPhaseStartSetup
         rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
@@ -19,9 +36,11 @@ rlJournalStart
         rlAssertGrep "skip /direct/skip" $rlRun_LOG
 
         # Check if the script was copied and is executable
-        script_path="$run/scripts/tmt-file-submit"
-        rlAssertExists "$script_path"
-        rlRun "test -x $script_path" 0 "Check if script is executable"
+        for script in $SCRIPTS; do
+            script_path="$run/scripts/$script"
+            rlAssertExists "$script_path"
+            rlRun "test -x $script_path" 0 "Check if script is executable"
+        done
 
         # Check that warning is raised when TMT_SCRIPTS_DIR is used
         rlRun -s "TMT_SCRIPTS_DIR=$tmp tmt --feeling-safe run --scratch --id $run -vvv"
