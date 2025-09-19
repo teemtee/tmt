@@ -120,8 +120,16 @@ TESTNAME=${TESTNAME//\"/\\\"}
 TESTRESULT=$(echo "$2" | tr '[:upper:]' '[:lower:]')
 
 if [[ "$0" == *"rhts-report-result"* ]]; then
-    outputFile=$3
+    # The original outputFile ($3) is a `mktemp` file, but we can make the
+    # filename more predictable since `copy_outputfile_to_data_dir` puts it in
+    # separate folders
+    # TODO: This may be beakerlib specific, in which case maybe better to move
+    #   this to a specific beakerlib report script
+    journal_tmp_dir=$(mktemp -d)
+    outputFile="$journal_tmp_dir/journal.txt"
+    cat "$3" > "$outputFile"
     copy_outputfile_to_data_dir
+    rm -rf "$journal_tmp_dir"
     write_report_file
     exit 0
 fi
