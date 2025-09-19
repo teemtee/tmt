@@ -4664,8 +4664,7 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         Copy the tmt helper scripts under the running workdir
         into a new scripts directory.
         """
-        assert self.workdir is not None
-        destination = self.workdir / tmt.steps.scripts.SCRIPTS_DIR_NAME
+        destination = self.run_workdir / tmt.steps.scripts.SCRIPTS_DIR_NAME
         destination.mkdir(exist_ok=True)
 
         for script in tmt.steps.scripts.SCRIPTS:

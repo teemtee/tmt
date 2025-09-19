@@ -34,13 +34,11 @@ class GuestLocal(tmt.Guest):
         """
         Absolute path to tmt scripts directory
         """
-        parent = cast(Provision, self.parent)
-        assert parent.plan.my_run is not None
-        assert parent.plan.my_run.workdir is not None
 
         # TODO: For now we ignore the 'TMT_SCRIPTS_DIR' variable.
         # To be fixed in https://github.com/teemtee/tmt/issues/4081
-        return parent.plan.my_run.workdir.absolute() / tmt.steps.scripts.SCRIPTS_DIR_NAME
+        parent = cast(Provision, self.parent)
+        return parent.run_workdir.absolute() / tmt.steps.scripts.SCRIPTS_DIR_NAME
 
     @property
     def is_ready(self) -> bool:
