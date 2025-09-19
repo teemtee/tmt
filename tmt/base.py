@@ -62,7 +62,6 @@ import tmt.steps.report
 import tmt.steps.scripts
 import tmt.templates
 import tmt.utils
-import tmt.utils.filesystem
 import tmt.utils.git
 import tmt.utils.jira
 from tmt._compat.typing import Self
