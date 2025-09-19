@@ -30,6 +30,9 @@ DEFAULT_SCRIPTS_DEST_DIR_OSTREE = Path("/var/lib/tmt/scripts")
 #: The tmt environment variable name for forcing ``SCRIPTS_DEST_DIR``
 SCRIPTS_DEST_DIR_VARIABLE = 'TMT_SCRIPTS_DIR'
 
+#: The directory where helper scripts will be copied
+SCRIPTS_DIR_NAME = "scripts"
+
 
 @container
 class Script:
