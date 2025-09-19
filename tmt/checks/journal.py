@@ -117,24 +117,20 @@ class JournalCheck(Check):
         Non-privileged users might not have permission to change the config,
         while still being able to use journalctl for log collection.
         """
-        # Determine if sudo is needed
-        needs_sudo = guest.facts.is_superuser is False
-        sudo_prefix = 'sudo ' if needs_sudo else ''
-
         # Pre-create command line with tee for consistent approach
         # Restart journal because RHEL7 systemd does not support auto-reloading of configuration
         script = (
-            ShellScript(f'{sudo_prefix}mkdir -p /etc/systemd/journald.conf.d')
+            ShellScript(f'{guest.sudo_prefix} mkdir -p /etc/systemd/journald.conf.d')
             & ShellScript(
-                f"echo '{JOURNAL_CONFIG}' | {sudo_prefix}tee /etc/systemd/journald.conf.d/50-tmt.conf > /dev/null"  # noqa: E501
+                f"echo '{JOURNAL_CONFIG}' | {guest.sudo_prefix} tee /etc/systemd/journald.conf.d/50-tmt.conf > /dev/null"  # noqa: E501
             )
-            & ShellScript(f'{sudo_prefix}systemctl restart systemd-journald')
+            & ShellScript(f'{guest.sudo_prefix} systemctl restart systemd-journald')
         )
 
         try:
             guest.execute(script, silent=True)
             success_msg = 'Configured persistent journal storage'
-            success_msg += ' with sudo' if needs_sudo else ''
+            success_msg += ' with sudo' if guest.sudo_prefix else ''
             logger.debug(success_msg)
         except tmt.utils.RunError:
             logger.warning(
@@ -150,9 +146,6 @@ class JournalCheck(Check):
         """
         Save a mark for ``journalctl`` in a file on the guest
         """
-        # Determine if we need sudo
-        sudo_prefix = 'sudo ' if invocation.guest.facts.is_superuser is False else ''
-
         try:
             # Create the cursor file
             invocation.guest.execute(ShellScript(f'mkdir -p {invocation.check_files_path!s}'))
@@ -161,7 +154,7 @@ class JournalCheck(Check):
             cursor_file = self._get_cursor_file(invocation)
             invocation.guest.execute(
                 ShellScript(
-                    f"[ -f '{cursor_file}' ] || {sudo_prefix}journalctl -n 0 --show-cursor --cursor-file={cursor_file}"  # noqa: E501
+                    f"[ -f '{cursor_file}' ] || {invocation.guest.sudo_prefix} journalctl -n 0 --show-cursor --cursor-file={cursor_file}"  # noqa: E501
                 )
             )
         except tmt.utils.RunError as exc:
@@ -177,6 +170,8 @@ class JournalCheck(Check):
 
         # Build journalctl command
         options: list[str] = []
+        cursor_file = self._get_cursor_file(invocation)
+        options.append(f"--cursor-file={cursor_file}")
         if self.dmesg:
             options.append('--dmesg')
         if self.unit:
@@ -185,14 +180,9 @@ class JournalCheck(Check):
             options.append(f'--identifier={self.identifier}')
         if self.priority:
             options.append(f'--priority={self.priority}')
+        options.append("--boot=all")
 
-        cursor_file = self._get_cursor_file(invocation)
-        script = ShellScript(
-            f"journalctl --cursor-file={cursor_file} {' '.join(options)} --boot=all"
-        )
-
-        if not invocation.guest.facts.is_superuser:
-            script = ShellScript(f'sudo {script.to_shell_command()}')
+        script = ShellScript(f"{invocation.guest.sudo_prefix} journalctl {' '.join(options)}")
 
         try:
             outcome = ResultOutcome.PASS

@@ -562,7 +562,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Prepare the actual remote command
         remote_command: ShellScript
-        if guest.become and not guest.facts.is_superuser:
+        if guest.become and guest.sudo_prefix:
             remote_command = ShellScript(f'sudo -E ./{test_outer_wrapper_filepath.name}')
         else:
             remote_command = ShellScript(f'./{test_outer_wrapper_filepath.name}')
