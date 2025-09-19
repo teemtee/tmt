@@ -1,0 +1,6 @@
+/:
+  inherit: false
+
+tag: [ dev ]
+test: ./test.sh
+framework: beakerlib
