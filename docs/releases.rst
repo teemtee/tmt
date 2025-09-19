@@ -15,6 +15,11 @@ The Guide has been extended with a new :ref:`guest-preparation`
 section which covers :ref:`minimal-requirements` for guests and
 describes :ref:`helper-scripts` used for special test actions.
 
+The ``tmt-reboot`` command was changed to handle special EFI
+handling for Beaker systems only. The ``-e`` option can be used
+to force this behaviour. See the :ref:`/stories/features/reboot`
+section for updated usage details.
+
 
 tmt-1.57.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
