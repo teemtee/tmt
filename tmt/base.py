@@ -4665,11 +4665,10 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         into a new scripts directory.
         """
         assert self.workdir is not None
-        scripts = tmt.steps.scripts.SCRIPTS
-        destination = self.workdir / "scripts"
+        destination = self.workdir / tmt.steps.scripts.SCRIPTS_DIR_NAME
         destination.mkdir(exist_ok=True)
 
-        for script in scripts:
+        for script in tmt.steps.scripts.SCRIPTS:
             with script as source:
                 for filename in [script.source_filename, *script.aliases]:
                     shutil.copy(source, destination / filename)

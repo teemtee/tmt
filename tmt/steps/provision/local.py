@@ -39,7 +39,7 @@ class GuestLocal(tmt.Guest):
         assert parent.plan.my_run.workdir is not None
 
         return tmt.steps.scripts.effective_scripts_dest_dir(
-            default=parent.plan.my_run.workdir.absolute() / "scripts"
+            default=parent.plan.my_run.workdir.absolute() / tmt.steps.scripts.SCRIPTS_DIR_NAME
         )
 
     @property
@@ -151,8 +151,7 @@ class GuestLocal(tmt.Guest):
         )
 
     def install_scripts(self, scripts: Sequence[tmt.steps.scripts.Script]) -> None:
-        """Install scripts required by tmt"""
-        # no-op function
+        self.debug("No installation of tmt scripts is needed on localhost.")
 
     def start(self) -> None:
         """
@@ -259,7 +258,7 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
     .. note::
         The ``TMT_SCRIPTS_DIR`` variable is not supported in the
         ``local`` provision. This solution has been provided as part
-        of issue #1853.
+        of issue #4081.
     """
 
     _data_class = ProvisionLocalData
@@ -296,7 +295,8 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
         if os.environ.get("TMT_SCRIPTS_DIR"):
             self.warn(
                 "The 'TMT_SCRIPTS_DIR' env is not supported in 'local' provision, "
-                f"the default scripts path '{workdir.absolute() / 'scripts'}' "
+                "the default scripts path "
+                f"'{workdir.absolute() / tmt.steps.scripts.SCRIPTS_DIR_NAME}' "
                 "will be used instead."
             )
 
