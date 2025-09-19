@@ -1,6 +1,6 @@
 import os
 from collections.abc import Sequence
-from typing import Any, Optional, Union, cast
+from typing import Any, Optional, Union
 
 import tmt
 import tmt.base
@@ -37,8 +37,8 @@ class GuestLocal(tmt.Guest):
 
         # TODO: For now we ignore the 'TMT_SCRIPTS_DIR' variable.
         # To be fixed in https://github.com/teemtee/tmt/issues/4081
-        parent = cast(Provision, self.parent)
-        return parent.run_workdir.absolute() / tmt.steps.scripts.SCRIPTS_DIR_NAME
+        assert isinstance(self.parent, Provision)
+        return self.parent.run_workdir.absolute() / tmt.steps.scripts.SCRIPTS_DIR_NAME
 
     @property
     def is_ready(self) -> bool:
