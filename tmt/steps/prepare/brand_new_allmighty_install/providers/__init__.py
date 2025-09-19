@@ -18,6 +18,7 @@ from tmt.steps.provision import Guest
 class ArtifactType(enum.Enum):
     RPM = 'rpm'
     CONTAINER = 'container'
+    REPOSITORY_FILE = 'repository-file'
     UNKNOWN = 'unknown'
 
 
