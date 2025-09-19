@@ -1513,8 +1513,7 @@ class Guest(
         self.execute(
             ShellScript(
                 f"[ -d {quote(str(self.scripts_path))} ] || "
-                f'{"sudo " if not self.facts.is_superuser else ""}'
-                f"mkdir -p {quote(str(self.scripts_path))}"
+                f"{self.sudo_prefix} mkdir -p {quote(str(self.scripts_path))}"
             ).to_shell_command(),
             silent=True,
         )

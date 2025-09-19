@@ -51,11 +51,7 @@ class BootcEngine(PackageManagerEngine):
         """
         Prepare installation command for bootc
         """
-
-        if self.guest.facts.is_superuser is False:
-            return (Command('sudo', 'bootc'), Command(''))
-
-        return (Command('bootc'), Command(''))
+        return Command(self.guest.sudo_prefix, 'bootc'), Command('')
 
     def _get_current_bootc_image(self) -> str:
         """Get the current bootc image running on the system"""
@@ -203,8 +199,6 @@ class Bootc(PackageManager[BootcEngine]):
 
             base_image = self.engine._get_current_bootc_image()
 
-            sudo = 'sudo' if self.guest.facts.is_superuser is False else ''
-
             try:
                 # First try if image is available in container registries.
                 # Next try the local container storage.
@@ -216,7 +210,7 @@ class Bootc(PackageManager[BootcEngine]):
                 # https://github.com/bootc-dev/bootc/issues/1259 for more information.
                 self.guest.execute(
                     ShellScript(
-                        f'{sudo} {tmt.utils.DEFAULT_SHELL} -c "('
+                        f'{self.guest.sudo_prefix} {tmt.utils.DEFAULT_SHELL} -c "('
                         f'  ( podman pull {base_image} || podman pull containers-storage:{base_image} )'  # noqa: E501
                         f'  || bootc image copy-to-storage --target {base_image}'
                         ')"'
@@ -234,7 +228,7 @@ class Bootc(PackageManager[BootcEngine]):
 
                 self.guest.execute(
                     ShellScript(
-                        f'{sudo} podman build -t {image_tag} -f {containerfile_path} {self.guest.step_workdir}'  # noqa: E501
+                        f'{self.guest.sudo_prefix} podman build -t {image_tag} -f {containerfile_path} {self.guest.step_workdir}'  # noqa: E501
                     )
                 )
 
