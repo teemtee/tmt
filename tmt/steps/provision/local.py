@@ -296,7 +296,8 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
         if os.environ.get("TMT_SCRIPTS_DIR"):
             self.warn(
                 "The 'TMT_SCRIPTS_DIR' env is not supported in 'local' provision, "
-                f"the default scripts path '{workdir.absolute() / 'scripts'}' is used instead."
+                f"the default scripts path '{workdir.absolute() / 'scripts'}' "
+                "will be used instead."
             )
 
         self._guest = GuestLocal(logger=self._logger, data=data, name=self.name, parent=self.step)

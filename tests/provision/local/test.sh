@@ -22,7 +22,7 @@ rlJournalStart
         # Check warning is raised
         rlRun "export TMT_SCRIPTS_DIR=$tmp"
         rlRun -s "tmt --feeling-safe run --workdir-root $tmp_root provision plan"
-        rlAssertGrep "The TMT_SCRIPTS_DIR env is not supported" $rlRun_LOG
+        rlAssertGrep "The 'TMT_SCRIPTS_DIR' env is not supported" $rlRun_LOG
 
     rlPhaseEnd
 
