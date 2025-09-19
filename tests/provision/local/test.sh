@@ -20,8 +20,7 @@ rlJournalStart
         rlRun "test -x $script_path" 0 "Check if script is executable"
 
         # Check warning is raised
-        rlRun "export TMT_SCRIPTS_DIR=$tmp"
-        rlRun -s "tmt --feeling-safe run --workdir-root $tmp_root provision plan"
+        rlRun -s "TMT_SCRIPTS_DIR=$tmp tmt --feeling-safe run --workdir-root $tmp_root provision"
         rlAssertGrep "The 'TMT_SCRIPTS_DIR' env is not supported" $rlRun_LOG
 
     rlPhaseEnd
