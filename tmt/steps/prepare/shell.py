@@ -190,7 +190,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 options=TransferOptions(protect_args=True, preserve_perms=True, chmod=0o755),
             )
             command: ShellScript
-            if guest.become and not guest.facts.is_superuser:
+            if guest.become and not guest.sudo_prefix:
                 command = tmt.utils.ShellScript(f'sudo -E {prepare_wrapper_path}')
             else:
                 command = tmt.utils.ShellScript(f'{prepare_wrapper_path}')
