@@ -55,6 +55,10 @@ from tmt.utils import (
     Environment,
     EnvVarValue,
     GeneralError,
+    HasPhaseWorkdir,
+    HasPlanWorkdir,
+    HasRunWorkdir,
+    HasStepWorkdir,
     Path,
     RunError,
 )
@@ -462,7 +466,13 @@ class WhereableStepData:
     )
 
 
-class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
+class Step(
+    HasRunWorkdir,
+    HasStepWorkdir,
+    HasPlanWorkdir,
+    tmt.utils.MultiInvokableCommon,
+    tmt.export.Exportable['Step'],
+):
     """
     Common parent of all test steps
     """
@@ -538,6 +548,24 @@ class Step(tmt.utils.MultiInvokableCommon, tmt.export.Exportable['Step']):
         raw_data = self._apply_cli_invocations(raw_data)
 
         self._raw_data = raw_data
+
+    @property
+    def plan_workdir(self) -> Path:
+        return self.plan.plan_workdir
+
+    @property
+    def step_workdir(self) -> Path:
+        if self.workdir is None:
+            raise GeneralError(
+                f"Existence of a step '{self.step_name}' workdir"
+                " was presumed but the workdir does not exist."
+            )
+
+        return self.workdir
+
+    @property
+    def run_workdir(self) -> Path:
+        return self.plan.run_workdir
 
     @property
     def _cli_invocation_logger(self) -> tmt.log.LoggingFunction:
@@ -1439,7 +1467,14 @@ class PluginOutcome:
     exceptions: list[Exception] = simple_field(default_factory=list[Exception])
 
 
-class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
+class BasePlugin(
+    HasRunWorkdir,
+    HasStepWorkdir,
+    HasPlanWorkdir,
+    HasPhaseWorkdir,
+    Phase,
+    Generic[StepDataT, PluginReturnValueT],
+):
     """
     Common parent of all step plugins
     """
@@ -1514,6 +1549,28 @@ class BasePlugin(Phase, Generic[StepDataT, PluginReturnValueT]):
         # all keys are not known at the time of the class definition
         self.data = data
         self.step = step
+
+    @property
+    def run_workdir(self) -> Path:
+        return self.step.run_workdir
+
+    @property
+    def plan_workdir(self) -> Path:
+        return self.step.plan_workdir
+
+    @property
+    def step_workdir(self) -> Path:
+        return self.step.step_workdir
+
+    @property
+    def phase_workdir(self) -> Path:
+        if self.workdir is None:
+            raise GeneralError(
+                f"Existence of a phase '{self.name}' workdir"
+                " was presumed but the workdir does not exist."
+            )
+
+        return self.workdir
 
     @property
     def _preserved_workdir_members(self) -> set[str]:

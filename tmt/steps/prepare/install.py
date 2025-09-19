@@ -153,13 +153,12 @@ class InstallBase(tmt.utils.Common):
 
         assert self.parent is not None
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
-        workdir = cast(PrepareInstall, self.parent).step.workdir
-        if not workdir:
-            raise tmt.utils.GeneralError('workdir should not be empty')
-        self.package_directory = workdir / self.guest.safe_name / 'packages'
+        self.package_directory = (
+            cast(PrepareInstall, self.parent).step_workdir / self.guest.safe_name / 'packages'
+        )
         self.package_directory.mkdir(parents=True)
 
-        # Copy local packages into workdir, push to guests
+        # Copy local packages into step workdir, push to guests
         for package in self.local_packages:
             self.verbose(package.name, shift=1)
             self.debug(f"Copy '{package}' to '{self.package_directory}'.", level=3)
@@ -624,13 +623,7 @@ class InstallBootc(InstallBase):
 
         self._engine.containerfile_directives.append(f'RUN mkdir -p {self.package_directory}')
 
-        assert self.guest.parent is not None
-        assert hasattr(self.guest.parent, 'workdir')
-
-        workdir = self.guest.parent.workdir
-        assert isinstance(workdir, Path)
-
-        files = " ".join(str(file.relative_to(workdir)) for file in filelist)
+        files = " ".join(str(file.relative_to(self.guest.step_workdir)) for file in filelist)
 
         self._engine.containerfile_directives.append(f'COPY {files} {self.package_directory}')
 

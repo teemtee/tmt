@@ -22,6 +22,9 @@ properties:
   name:
     type: string
 
+  file:
+    type: string
+
   open:
     type: boolean
 

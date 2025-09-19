@@ -81,6 +81,8 @@ from tmt.utils import (
     EnvVarValue,
     FmfContext,
     GeneralError,
+    HasPlanWorkdir,
+    HasRunWorkdir,
     Path,
     ShellScript,
     WorkdirArgumentType,
@@ -2008,6 +2010,8 @@ class RemotePlanReference(
 
 @container(repr=False)
 class Plan(
+    HasRunWorkdir,
+    HasPlanWorkdir,
     Core,
     tmt.export.Exportable['Plan'],
     tmt.lint.Lintable['Plan'],
@@ -2154,6 +2158,23 @@ class Plan(
         )
 
         self._update_metadata()
+
+    @property
+    def plan_workdir(self) -> Path:
+        if self.workdir is None:
+            raise GeneralError(
+                f"Existence of a plan '{self.name}' workdir"
+                " was presumed but the workdir does not exist."
+            )
+
+        return self.workdir
+
+    @property
+    def run_workdir(self) -> Path:
+        if self.my_run is None:
+            raise GeneralError('Existence of a run was presumed but the run does not exist.')
+
+        return self.my_run.run_workdir
 
     # TODO: better, more elaborate ways of assigning serial numbers to tests
     # can be devised - starting with a really trivial one: each test gets
@@ -2385,8 +2406,7 @@ class Plan(
             return
 
         # Prepare worktree path and detect the source tree root
-        assert self.workdir is not None  # narrow type
-        self.worktree = self.workdir / 'tree'
+        self.worktree = self.plan_workdir / 'tree'
         tree_root = Path(self.node.root) if self.node.root else None
 
         # Create an empty directory if there's no metadata tree
@@ -2440,8 +2460,7 @@ class Plan(
         prepare step, test execution or finish step and which are pulled
         from the guest for possible future inspection.
         """
-        assert self.workdir is not None  # narrow type
-        self.data_directory = self.workdir / "data"
+        self.data_directory = self.plan_workdir / "data"
         self.debug(f"Create the data directory '{self.data_directory}'.", level=2)
         self.data_directory.mkdir(exist_ok=True, parents=True)
 
@@ -3095,10 +3114,7 @@ class Plan(
         assert reference.url is not None
         assert reference.name is not None
 
-        assert self.parent is not None  # narrow type
-        assert self.parent.workdir is not None  # narrow type
-
-        destination = self.parent.workdir / "import" / self.safe_name.lstrip("/")
+        destination = self.run_workdir / "import" / self.safe_name.lstrip("/")
 
         if destination.exists():
             self.debug(f"Seems that '{destination}' has been already cloned.", level=3)
@@ -3342,10 +3358,9 @@ class Plan(
         derived_plan.discover._tests = tests
         derived_plan.discover.status('done')
 
-        assert self.discover.workdir is not None
-        assert derived_plan.discover.workdir is not None
-
-        shutil.copytree(self.discover.workdir, derived_plan.discover.workdir, dirs_exist_ok=True)
+        shutil.copytree(
+            self.discover.step_workdir, derived_plan.discover.step_workdir, dirs_exist_ok=True
+        )
 
         # Load results from discovered tests and save them to the execute step.
         derived_plan.execute._results = derived_plan.execute.create_results(
@@ -3366,7 +3381,7 @@ class Plan(
         logger = self._logger.descend(extra_shift=1)
 
         logger.verbose(
-            f"Prune '{self.name}' plan workdir '{self.workdir}'.", color="magenta", level=3
+            f"Prune '{self.name}' plan workdir '{self.plan_workdir}'.", color="magenta", level=3
         )
 
         if self.worktree:
@@ -4293,7 +4308,7 @@ class RunData(SerializableContainer):
     )
 
 
-class Run(tmt.utils.Common):
+class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
     """
     Test run, a container of plans
     """
@@ -4349,6 +4364,15 @@ class Run(tmt.utils.Common):
         self.unique_id = str(time.time()).split('.')[0]
 
         self.policies = policies or []
+
+    @property
+    def run_workdir(self) -> Path:
+        if self.workdir is None:
+            raise GeneralError(
+                "Existence of a run workdir was presumed but the workdir does not exist."
+            )
+
+        return self.workdir
 
     @functools.cached_property
     def runner(self) -> 'tmt.steps.provision.local.GuestLocal':
@@ -4579,7 +4603,7 @@ class Run(tmt.utils.Common):
 
         # Remove the workdir if enabled
         if self.remove and self.plans[0].cleanup.enabled:
-            self._workdir_cleanup(self.workdir)
+            self._workdir_cleanup(self.run_workdir)
 
         # Skip handling of the exit codes in dry mode and
         # when there are no interesting results available
@@ -4597,8 +4621,7 @@ class Run(tmt.utils.Common):
         """
         Periodically check for new lines in the log.
         """
-        assert self.workdir is not None  # narrow type
-        with open(self.workdir / tmt.log.LOG_FILENAME) as logfile:
+        with open(self.run_workdir / tmt.log.LOG_FILENAME) as logfile:
             # Move to the end of the file
             logfile.seek(0, os.SEEK_END)
             # Rewind some lines back to show more context
@@ -4642,8 +4665,8 @@ class Run(tmt.utils.Common):
         self.tree = tree
         self._save_tree(self.tree)
         self._workdir_load(self._workdir_path)
-        self.config.last_run = self.workdir
-        self.info(str(self.workdir), color='magenta')
+        self.config.last_run = self.run_workdir
+        self.info(str(self.run_workdir), color='magenta')
 
     def go(self) -> None:
         """
@@ -4658,10 +4681,9 @@ class Run(tmt.utils.Common):
             raise tmt.utils.GeneralError(
                 f"Run workdir '{self._workdir}' must not be inside fmf root '{self.tree.root}'."
             )
-        assert self.workdir is not None  # narrow type
-        self.config.last_run = self.workdir
+        self.config.last_run = self.run_workdir
         # Show run id / workdir path
-        self.info(str(self.workdir), color='magenta')
+        self.info(str(self.run_workdir), color='magenta')
         self.debug(f"tmt version: {tmt.__version__}")
         self.debug('tmt command line', Command(*sys.argv))
 
@@ -4755,7 +4777,7 @@ class Run(tmt.utils.Common):
 
         # Update the last run id at the very end
         # (override possible runs created during execution)
-        self.config.last_run = self.workdir
+        self.config.last_run = self.run_workdir
 
         # Give the final summary, remove workdir, handle exit codes
         self.finish()
@@ -4852,7 +4874,7 @@ class Status(tmt.utils.Common):
             run_status = tmt.steps.STEPS[earliest_step_index]
         run_status = self.colorize_column(self.pad_with_spaces(run_status))
         echo(run_status, nl=False)
-        echo(run.workdir)
+        echo(run.run_workdir)
 
     def print_plans_status(self, run: Run) -> None:
         """
@@ -4862,7 +4884,7 @@ class Status(tmt.utils.Common):
             if self.plan_matches_filters(plan):
                 plan_status = self.get_overall_plan_status(plan)
                 echo(self.colorize_column(self.pad_with_spaces(plan_status)), nl=False)
-                echo(f'{run.workdir}  {plan.name}')
+                echo(f'{run.run_workdir}  {plan.name}')
 
     def print_verbose_status(self, run: Run) -> None:
         """
@@ -4873,7 +4895,7 @@ class Status(tmt.utils.Common):
                 for step in plan.steps(enabled_only=False):
                     column = (step.status() or '----') + ' '
                     echo(self.colorize_column(column), nl=False)
-                echo(f' {run.workdir}  {plan.name}')
+                echo(f' {run.run_workdir}  {plan.name}')
 
     def process_run(self, run: Run) -> None:
         """
@@ -4881,7 +4903,7 @@ class Status(tmt.utils.Common):
         """
         loaded, error = tmt.utils.load_run(run)
         if not loaded:
-            self.warn(f"Failed to load run '{run.workdir}': {error}")
+            self.warn(f"Failed to load run '{run.run_workdir}': {error}")
             return
         if self.verbosity_level == 0:
             self.print_run_status(run)
@@ -4991,7 +5013,7 @@ class Clean(tmt.utils.Common):
         """
         loaded, error = tmt.utils.load_run(run)
         if not loaded:
-            self.warn(f"Failed to load run '{run.workdir}': {error}")
+            self.warn(f"Failed to load run '{run.run_workdir}': {error}")
             return False
         # Clean guests if provision is done but cleanup is not done
         successful = True
@@ -5003,11 +5025,12 @@ class Clean(tmt.utils.Common):
                     continue
                 if self.is_dry_run:
                     self.verbose(
-                        f"Would stop guests in run '{run.workdir}' plan '{plan.name}'.", shift=1
+                        f"Would stop guests in run '{run.run_workdir}' plan '{plan.name}'.",
+                        shift=1,
                     )
                 else:
                     self.verbose(
-                        f"Stopping guests in run '{run.workdir}' plan '{plan.name}'.", shift=1
+                        f"Stopping guests in run '{run.run_workdir}' plan '{plan.name}'.", shift=1
                     )
                     # Set --quiet to avoid finish logging to terminal
 
@@ -5019,7 +5042,7 @@ class Clean(tmt.utils.Common):
                         plan.cleanup.go()
                     except tmt.utils.GeneralError as error:
                         self.warn(
-                            f"Could not stop guest in run '{run.workdir}': {error}.", shift=1
+                            f"Could not stop guest in run '{run.run_workdir}': {error}.", shift=1
                         )
                         successful = False
                     finally:
@@ -5089,8 +5112,7 @@ class Clean(tmt.utils.Common):
             # the correct one.
             last_run = Run(logger=self._logger, cli_invocation=self.cli_invocation)
             last_run._workdir_load(last_run._workdir_path)
-            assert last_run.workdir is not None  # narrow type
-            return self._clean_workdir(last_run.workdir)
+            return self._clean_workdir(last_run.run_workdir)
         all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, id_))
         if keep is not None:
             # Sort by modify time of the workdirs and keep the newest workdirs

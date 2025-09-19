@@ -123,9 +123,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         assert worktree is not None  # narrow type
 
         if self.data.url:
-            assert self.workdir is not None  # narrow type
-
-            repo_path = self.workdir / "repository"
+            repo_path = self.phase_workdir / "repository"
 
             environment[self._cloned_repo_path_envvar_name] = EnvVarValue(repo_path.resolve())
 

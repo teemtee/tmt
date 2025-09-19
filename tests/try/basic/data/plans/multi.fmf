@@ -1,0 +1,15 @@
+/plan:
+    provision:
+        how: local
+
+    execute:
+        how: tmt
+
+    /one:
+        summary: Plan One
+
+    /two:
+        summary: Plan Two
+
+/test:
+    test: echo hi

@@ -54,3 +54,15 @@
     adjust:
       - when: report_multihost == yes
         enabled: true
+
+/report-file-plan:
+    summary: Verify html report with custom file option
+    discover:
+        how: fmf
+    provision:
+        how: local
+    execute:
+        how: tmt
+    report:
+        - how: html
+          file: foo.html

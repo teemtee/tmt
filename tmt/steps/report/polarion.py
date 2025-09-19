@@ -344,13 +344,19 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             # TODO: remove the os.getenv when envvars in click work with steps in plans as well
             # as with steps on cmdline
             if param:
+                # Transform x86_64 to x8664 for Polarion compatibility
+                if tr_field == 'arch' and param == 'x86_64':
+                    param = 'x8664'
                 testsuites_properties[f"polarion-custom-{tr_field.replace('_', '')}"] = param
 
         if use_facts:
             guests = self.step.plan.provision.ready_guests
             try:
                 testsuites_properties['polarion-custom-hostname'] = guests[0].primary_address
-                testsuites_properties['polarion-custom-arch'] = guests[0].facts.arch
+                arch = guests[0].facts.arch
+                if arch == 'x86_64':
+                    arch = 'x8664'
+                testsuites_properties['polarion-custom-arch'] = arch
             except IndexError as error:
                 raise tmt.utils.ReportError(
                     'Failed to retrieve facts from the guest environment. '
@@ -396,8 +402,6 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             # See https://github.com/python/mypy/issues/3004 for getter/setter discussions
             result.properties = testcase_properties  # type: ignore[assignment]
 
-        assert self.workdir is not None
-
         testsuites_properties.update(
             {
                 'polarion-project-id': project_id,
@@ -425,7 +429,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             results_context=results_context,
         )
 
-        f_path = self.data.file or self.workdir / DEFAULT_FILENAME
+        f_path = self.data.file or self.phase_workdir / DEFAULT_FILENAME
 
         try:
             f_path.write_text(xml_data)
