@@ -38,9 +38,9 @@ class GuestLocal(tmt.Guest):
         assert parent.plan.my_run is not None
         assert parent.plan.my_run.workdir is not None
 
-        return tmt.steps.scripts.effective_scripts_dest_dir(
-            default=parent.plan.my_run.workdir.absolute() / tmt.steps.scripts.SCRIPTS_DIR_NAME
-        )
+        # TODO: For now we ignore the 'TMT_SCRIPTS_DIR' variable.
+        # To be fixed in https://github.com/teemtee/tmt/issues/4081
+        return parent.plan.my_run.workdir.absolute() / tmt.steps.scripts.SCRIPTS_DIR_NAME
 
     @property
     def is_ready(self) -> bool:
@@ -256,9 +256,10 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
         Neither hard nor soft reboot is supported.
 
     .. note::
-        The ``TMT_SCRIPTS_DIR`` variable is not supported in the
-        ``local`` provision. This solution has been provided as part
-        of issue #4081.
+
+        Currently the ``TMT_SCRIPTS_DIR`` variable is not supported in
+        the ``local`` provision plugin and the default scripts path is
+        used instead. See issue #4081 for details.
     """
 
     _data_class = ProvisionLocalData
@@ -287,19 +288,13 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
         if data.hardware and data.hardware.constraint:
             self.warn("The 'local' provision plugin does not support hardware requirements.")
 
-        assert isinstance(self.parent, tmt.steps.provision.Provision)
-        assert self.parent.plan.my_run is not None
-        workdir = self.parent.plan.my_run.workdir
-        assert workdir is not None
-
-        if os.environ.get("TMT_SCRIPTS_DIR"):
-            self.warn(
-                "The 'TMT_SCRIPTS_DIR' env is not supported in 'local' provision, "
-                "the default scripts path "
-                f"'{workdir.absolute() / tmt.steps.scripts.SCRIPTS_DIR_NAME}' "
-                "will be used instead."
-            )
-
         self._guest = GuestLocal(logger=self._logger, data=data, name=self.name, parent=self.step)
         self._guest.start()
         self._guest.setup()
+
+        if os.environ.get(tmt.steps.scripts.SCRIPTS_DEST_DIR_VARIABLE):
+            self.warn(
+                f"The '{tmt.steps.scripts.SCRIPTS_DEST_DIR_VARIABLE}' variable "
+                "is not supported in 'local' provision, the default scripts path "
+                f"'{self._guest.scripts_path}' will be used instead."
+            )
