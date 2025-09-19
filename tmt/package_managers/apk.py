@@ -43,17 +43,7 @@ class ApkEngine(PackageManagerEngine):
         """
         Prepare installation command for apk
         """
-
-        if self.guest.facts.is_superuser is False:
-            self._sudo_prefix = Command('sudo')
-
-        else:
-            self._sudo_prefix = Command()
-
-        command = Command()
-
-        command += self._sudo_prefix
-        command += Command('apk')
+        command = Command(self.guest.sudo_prefix, 'apk')
 
         return (command, Command())
 
