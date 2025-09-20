@@ -40,11 +40,6 @@ require+:
             We want to run this locally and it's enough to execute
             on a single distro when run in the CI. We don't need
             to exercise this again and again across all distros.
-      - when: distro >= fedora-43
-        enabled: false
-        because: |
-          Tests have started to degrade, further investigation is needed
-          https://artifacts.dev.testing-farm.io/96c31e1f-425c-4e81-bb63-710a64836396/
 
     /basic:
         summary: Basic unit tests (development packages)
@@ -73,11 +68,6 @@ require+:
       - when: initiator == packit
         because: Enable in CI only
         enabled: true
-      - when: distro >= fedora-43
-        enabled: false
-        because: |
-          Unit tests started to fail at pickling, needs investigation
-          https://artifacts.dev.testing-farm.io/96c31e1f-425c-4e81-bb63-710a64836396/
 
     /basic:
         summary: Basic unit tests (system packages)
