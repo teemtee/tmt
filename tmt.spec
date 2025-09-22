@@ -35,10 +35,6 @@ metadata specification (L1 and L2) and allows easy test execution.
 
 %pyproject_extras_subpkg -n tmt all
 
-%description -n tmt+all
-All extra dependencies of the Test Management Tool. Install this
-package to have all available plugins ready for testing.
-
 %package -n     tmt+test-convert
 Summary:        Dependencies required for tmt test import and export
 Requires:       tmt == %{version}-%{release}
