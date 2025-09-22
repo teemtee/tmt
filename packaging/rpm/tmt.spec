@@ -131,7 +131,6 @@ package to have all available plugins ready for testing.
 %pyproject_buildrequires
 
 %build
-export SETUPTOOLS_SCM_PRETEND_VERSION=%{version}
 %pyproject_wheel
 
 # Build the man files
