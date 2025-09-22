@@ -9,6 +9,118 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
+    rlPhaseStartTest "Default Plan"
+        rlRun -s "TMT_CONFIG_DIR=$tmp ./local.exp"
+        rlAssertGrep "Let's try.*/default/plan" $rlRun_LOG
+        rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "User Plan"
+        rlRun -s "TMT_CONFIG_DIR=$config ./try.exp"
+        rlAssertGrep "Let's try.*/user/plan" $rlRun_LOG
+        rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Local Plan"
+        rlRun -s "./plan.exp"
+        rlAssertGrep "Let's try.*/plans/basic" $rlRun_LOG
+        rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Epel"
+        rlRun -s "./epel.exp"
+        rlAssertGrep "Let's try.*/plans/basic" $rlRun_LOG
+        rlAssertGrep "PLAY \[Enable EPEL repositories\]" $rlRun_LOG
+        rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Install"
+        rlRun -s "./install.exp"
+        rlAssertGrep "Let's try.*/plans/basic" $rlRun_LOG
+        rlAssertGrep "cmd: rpm -q --whatprovides tree || dnf.* install -y  tree" $rlRun_LOG
+        rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
+        rlAssertGrep "container: stopped" $rlRun_LOG
+        rlAssertGrep "container: removed" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Verbose Output"
+        rlRun -s "TMT_CONFIG_DIR=$config ./verbose.exp"
+        rlAssertGrep "custom-prepare" $rlRun_LOG
+        rlAssertGrep "fail.*/tests/base/bad" $rlRun_LOG
+        rlAssertGrep "pass.*/tests/base/good" $rlRun_LOG
+        rlAssertGrep "errr.*/tests/base/weird" $rlRun_LOG
+        rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Report Results"
+        rlRun -s "./report.exp"
+        rlAssertGrep "fail /tests/base/bad" $rlRun_LOG
+        rlAssertGrep "pass /tests/base/good" $rlRun_LOG
+        rlAssertGrep "errr /tests/base/weird" $rlRun_LOG
+        rlAssertGrep "summary: 7 tests executed" $rlRun_LOG
+        rlAssertGrep "summary: 3 tests passed, 2 tests failed and 2 errors" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Keep"
+        rlRun -s "./keep.exp" 0 "Quit the session"
+        rlAssertGrep "Run .* kept unfinished. See you soon!" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Single Test (default plan)"
+        rlRun "pushd tests/core/good"
+        rlRun -s "TMT_CONFIG_DIR=$tmp ../../../local.exp" 0 "Try with local"
+        rlAssertGrep "Let's try /tests/core/good with /default/plan" $rlRun_LOG
+        rlAssertGrep "summary: 1 test executed" $rlRun_LOG
+        rlRun "popd"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Tests directory after login"
+        rlRun "pushd tests/core/bad"
+        rlRun -s "TMT_CONFIG_DIR=$tmp ../../../test-dir.exp" 0 "Try with container"
+        rlAssertGrep "Let's try /tests/core/bad with /default/plan" $rlRun_LOG
+        rlAssertGrep "summary: 1 test executed" $rlRun_LOG
+        rlAssertGrep "bad-file.txt" $rlRun_LOG
+        rlRun "popd"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Three Tests (user plan, verbose)"
+        rlRun "pushd tests/core"
+        rlRun -s "TMT_CONFIG_DIR=$config ../../verbose.exp" 0 "Try with local"
+        rlAssertGrep "Let's try /tests/core/bad, /tests/core/good and /tests/core/weird" $rlRun_LOG
+        rlAssertGrep "/user/plan" $rlRun_LOG
+        rlAssertGrep "custom-prepare" $rlRun_LOG
+        rlAssertGrep "summary: 3 tests executed" $rlRun_LOG
+        rlAssertGrep "fail /tests/core/bad" $rlRun_LOG
+        rlAssertGrep "pass /tests/core/good" $rlRun_LOG
+        rlAssertGrep "errr /tests/core/weird" $rlRun_LOG
+        rlAssertNotGrep "fail /tests/base/bad" $rlRun_LOG
+        rlAssertNotGrep "pass /tests/base/good" $rlRun_LOG
+        rlAssertNotGrep "errr /tests/base/weird" $rlRun_LOG
+        rlRun "popd"
+    rlPhaseEnd
+
+    rlPhaseStartTest "No Test"
+        rlRun "pushd no-tests"
+        rlRun -s "TMT_CONFIG_DIR=$tmp ../local.exp" 0 "Try with local"
+        rlAssertGrep "warn: No tests found under the 'no-tests' directory." $rlRun_LOG
+        rlAssertGrep "Let's try something with /default/plan" $rlRun_LOG
+        rlRun "popd"
+    rlPhaseEnd
+
+    # Make sure verbose/debug with multiple plans enables both at once
+    rlPhaseStartTest "Multiple Plans"
+        rlRun -s "TMT_CONFIG_DIR=$tmp TMT_OPTIONS='--plan /plans/multi' ./action.exp v 1" 0 "Try with local"
+        rlAssertGrep "Switched to verbose level 1" $rlRun_LOG
+        rlAssertNotGrep "Choose 0-3, hit Enter to keep 1" $rlRun_LOG
+        rlRun "grep -A 100 'What do we do next?' $rlRun_LOG | grep /plans/multi/plan/one"
+        rlRun "grep -A 100 'What do we do next?' $rlRun_LOG | grep /plans/multi/plan/two"
+
+        rlRun -s "TMT_CONFIG_DIR=$tmp TMT_OPTIONS='--plan /plans/multi' ./action.exp b 1" 0 "Try with local"
+        rlAssertGrep "Switched to debug level 1" $rlRun_LOG
+        rlAssertNotGrep "Choose 0-3, hit Enter to keep 1" $rlRun_LOG
+        rlRun "grep -A 100 'What do we do next?' $rlRun_LOG | grep /plans/multi/plan/one"
+        rlRun "grep -A 100 'What do we do next?' $rlRun_LOG | grep /plans/multi/plan/two"
+    rlPhaseEnd
 
     rlPhaseStartTest "Local change directory"
         rlRun "cd tests/base/bad"
