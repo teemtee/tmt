@@ -1,0 +1,17 @@
+#!/usr/bin/expect -f
+# Try local change directory
+
+spawn tmt --feeling-safe try --debug --plan basic
+expect "What do we do next?"
+send -- "lcd\r"
+expect "Enter directory path"
+send -- "..\r"
+expect "Enter directory path"
+send -- "..\r"
+expect -re "Changed directory to: .*/data/tests"
+expect "Enter directory path"
+send -- "\\\q\r"
+expect "Exiting local change directory mode. Bye for now!"
+expect "What do we do next?"
+send -- "q\r"
+expect eof
