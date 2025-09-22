@@ -15,6 +15,10 @@ The Guide has been extended with a new :ref:`guest-preparation`
 section which covers :ref:`minimal-requirements` for guests and
 describes :ref:`helper-scripts` used for special test actions.
 
+The :ref:`tmt try</stories/cli/try>` command's interactive session
+now includes a new ``lcd`` option to switch directories,
+making it easy to select and run a different test or set of tests.
+
 Searching a Test Case in Polarion during test export/import or
 test run export will no longer find test cases that are set as
 inactive.

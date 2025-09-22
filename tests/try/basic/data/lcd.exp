@@ -1,0 +1,23 @@
+#!/usr/bin/expect -f
+# Try local change directory
+
+spawn tmt try --plan basic
+expect "What do we do next?"
+send -- "lcd\r"
+expect "Enter directory path"
+send -- "..\r"
+expect -re "Changed directory to: .*/data/tests/base"
+expect -re "Test name filter: '\\^/tests/base'\\r?\\nMatching tests found\\r?\\n/tests/base/bad\\r?\\n/tests/base/good\\r?\\n/tests/base/weird"
+expect "Enter directory path"
+send -- "..\r"
+expect -re "Changed directory to: .*/data/tests"
+expect -re "Test name filter: '\\^/tests'\\r?\\nMatching tests found\\r?\\n/tests/base/bad\\r?\\n/tests/base/good\\r?\\n/tests/base/weird\\r?\\n/tests/core/bad\\r?\\n/tests/core/good\\r?\\n/tests/core/weird"
+expect "Enter directory path"
+send -- "../..\r"
+expect -re "warn: Directory '(.*)' is outside the fmf root: (.*)"
+expect "Enter directory path"
+send -- "\\\q\r"
+expect "Exiting local change directory mode."
+expect "What do we do next?"
+send -- "q\r"
+expect eof
