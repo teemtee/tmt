@@ -337,11 +337,6 @@ def main(
          What to do when plan fails to finish. Quit by default, or continue with the next plan.
          """,
 )
-@option(
-    '--recipe',
-    is_flag=True,
-    help='Generate a recipe file at the end of the run.',
-)
 @environment_options
 @workdir_root_options
 @verbosity_options

@@ -3,12 +3,14 @@ from typing import TYPE_CHECKING, Any, Optional, cast
 import tmt.utils
 from tmt.container import SerializableContainer, container, field
 from tmt.log import Logger
+from tmt.steps import Login, Step, StepData
+from tmt.steps.discover import Discover
+from tmt.steps.execute import Execute
 from tmt.utils import Common, Environment, FmfContext, Path
 
 if TYPE_CHECKING:
     import tmt.base
     from tmt.base import Plan, RunData, Test, _RawAdjustRule
-    from tmt.steps import Login, StepData
 
 
 # TODO: this is a duplication of tmt.base.DEFAULT_ORDER.
@@ -16,10 +18,6 @@ DEFAULT_ORDER = 50
 
 
 def _get_step(plan: 'Plan', step_name: str) -> '_Step':
-    from tmt.steps import Step
-    from tmt.steps.discover import Discover
-    from tmt.steps.execute import Execute
-
     step = getattr(plan, step_name)
     if isinstance(step, Discover):
         return _DiscoverStep(
@@ -41,16 +39,15 @@ def _serialize_tests(tests: list['Test']) -> list[dict[str, Any]]:
     for test in tests:
         serialized_test = test._export(include_internal=True)
         # Replace the modified environment with the original one
-        if test._original_environment is not None:
-            serialized_test['environment'] = test._original_environment.to_fmf_spec()
+        serialized_test['environment'] = test._original_fmf_environment.to_fmf_spec()
         serialized_tests.append(serialized_test)
     return serialized_tests
 
 
 @container
 class _Step(SerializableContainer):
-    phases: list['StepData'] = field(
-        default_factory=list['StepData'],
+    phases: list[StepData] = field(
+        default_factory=list[StepData],
         serialize=lambda value: [phase.to_serialized() for phase in value],
     )
 
@@ -131,7 +128,7 @@ class _RecipePlan(SerializableContainer):
         normalize=tmt.utils.normalize_string_list,
     )
 
-    login: Optional['Login'] = None
+    login: Optional[Login] = None
 
     discover: Optional[_Step] = field(
         default=None, serialize=lambda step: step.to_serialized() if step else None

@@ -33,7 +33,7 @@ rlJournalStart
     }
 
     rlPhaseStartTest "Test recipe generation"
-        rlRun -s "tmt -vv run --recipe --id $run -e RUN_ENV=value"
+        rlRun -s "tmt -vv run --id $run -e RUN_ENV=value"
         recipe="$run/recipe.yaml"
         rlAssertExists "$recipe" "Recipe file exists"
         rlAssertGrep "results-path: plan/execute/results.yaml" "$recipe"
