@@ -59,6 +59,7 @@ import tmt.steps.finish
 import tmt.steps.prepare
 import tmt.steps.provision
 import tmt.steps.report
+import tmt.steps.scripts
 import tmt.templates
 import tmt.utils
 import tmt.utils.git
@@ -4658,6 +4659,19 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         for _, key_formatted, value_formatted in self.runner.facts.format():
             log(key_formatted, value_formatted, shift=1)
 
+    def copy_scripts(self) -> None:
+        """
+        Copy the tmt helper scripts under the running workdir
+        into a new scripts directory.
+        """
+        destination = self.run_workdir / tmt.steps.scripts.SCRIPTS_DIR_NAME
+        destination.mkdir(exist_ok=True)
+
+        for script in tmt.steps.scripts.SCRIPTS:
+            with script as source:
+                for filename in [script.source_filename, *script.aliases]:
+                    shutil.copy(source, destination / filename)
+
     def prepare_for_try(self, tree: Tree) -> None:
         """
         Prepare the run for the try command
@@ -4691,6 +4705,9 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
             self.warn('User is feeling safe.')
 
         self.show_runner(self._logger)
+
+        # Create scripts directory and copy tmt scripts there
+        self.copy_scripts()
 
         # Attempt to load run data
         self.load()

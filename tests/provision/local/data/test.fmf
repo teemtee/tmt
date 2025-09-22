@@ -1,0 +1,7 @@
+/beakerlib:
+    summary: Run helper scripts through beakerlib
+    test: ./test.sh
+    framework: beakerlib
+/directly:
+    summary: Run helper scripts directly
+    test: ./directly.sh

@@ -1,3 +1,4 @@
+import os
 from collections.abc import Sequence
 from typing import Any, Optional, Union
 
@@ -9,7 +10,7 @@ import tmt.steps.provision
 import tmt.steps.scripts
 import tmt.utils
 from tmt.container import container
-from tmt.steps.provision import TransferOptions
+from tmt.steps.provision import Provision, TransferOptions
 from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
@@ -27,6 +28,17 @@ class GuestLocal(tmt.Guest):
 
     localhost = True
     parent: Optional[tmt.steps.Step]
+
+    @property
+    def scripts_path(self) -> Path:
+        """
+        Absolute path to tmt scripts directory
+        """
+
+        # TODO: For now we ignore the 'TMT_SCRIPTS_DIR' variable.
+        # To be fixed in https://github.com/teemtee/tmt/issues/4081
+        assert isinstance(self.parent, Provision)
+        return self.parent.run_workdir.absolute() / tmt.steps.scripts.SCRIPTS_DIR_NAME
 
     @property
     def is_ready(self) -> bool:
@@ -240,6 +252,12 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
     .. note::
 
         Neither hard nor soft reboot is supported.
+
+    .. note::
+
+        Currently the ``TMT_SCRIPTS_DIR`` variable is not supported in
+        the ``local`` provision plugin and the default scripts path is
+        used instead. See issue #4081 for details.
     """
 
     _data_class = ProvisionLocalData
@@ -271,3 +289,10 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
         self._guest = GuestLocal(logger=self._logger, data=data, name=self.name, parent=self.step)
         self._guest.start()
         self._guest.setup()
+
+        if os.environ.get(tmt.steps.scripts.SCRIPTS_DEST_DIR_VARIABLE):
+            self.warn(
+                f"The '{tmt.steps.scripts.SCRIPTS_DEST_DIR_VARIABLE}' variable "
+                "is not supported in 'local' provision, the default scripts path "
+                f"'{self._guest.scripts_path}' will be used instead."
+            )
