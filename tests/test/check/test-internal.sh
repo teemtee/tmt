@@ -6,13 +6,13 @@ function assert_check_result () {
     test="$2"
     check="$3"
     result="$4"
-    rlAssertEquals "$comment" "$result" "$(yq -r ".[] | select(.name == \"$test\") | .check | .[] | select(.name == \"$check\") | .result" $results)"
+    rlAssertEquals "$comment" "$result" "$(yq ".[] | select(.name == \"$test\") | .check | .[] | select(.name == \"$check\") | .result" $results)"
 }
 
 function assert_no_check_results () {
     comment="$1"
     test="$2"
-    rlRun "yq -r '.[] | select(.name == \"$test\") | .check | length == 0' $results" 0 "$comment"
+    rlRun "yq '.[] | select(.name == \"$test\") | .check | length == 0' $results" 0 "$comment"
 }
 
 rlJournalStart
