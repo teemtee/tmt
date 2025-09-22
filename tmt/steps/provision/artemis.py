@@ -111,12 +111,6 @@ def _normalize_log_type(key_address: str, raw_value: Any, logger: tmt.log.Logger
     raise tmt.utils.NormalizationError(key_address, raw_value, 'a string or a list of strings')
 
 
-def _format_log_blobs(blobs: list['GuestLogBlobType']) -> str:
-    sorted_blobs = sorted(blobs, key=lambda blob: blob['ctime'])
-    parts = [f"{blob['ctime']}\n{blob['content']}" for blob in sorted_blobs]
-    return "\n\n".join(parts)
-
-
 @container
 class ArtemisGuestData(tmt.steps.provision.GuestSshData):
     # API
@@ -869,19 +863,31 @@ class GuestLogArtemis(tmt.steps.provision.GuestLog):
             return None
 
         log_data = response.json()
+        if self.log_type.endswith('/url'):
+            return _fetch_url(log_data, logger)
+        return _fetch_blob(log_data)
 
-        blobs = cast(list[GuestLogBlobType], log_data.get('blobs', []))
-        if blobs:
-            return _format_log_blobs(blobs)
 
-        url = log_data.get('url')
-        if url is not None:
-            try:
-                return tmt.utils.get_url_content(str(url))
-            except Exception as error:
-                tmt.utils.show_exception_as_warning(
-                    exception=error,
-                    message=f"Failed to fetch '{url}' log.",
-                    logger=logger,
-                )
+def _fetch_url(log_data: dict[str, Any], logger: tmt.log.Logger) -> Optional[str]:
+    url = log_data.get('url')
+    if url is None:
         return None
+    try:
+        return tmt.utils.get_url_content(str(url))
+    except Exception as error:
+        tmt.utils.show_exception_as_warning(
+            exception=error,
+            message=f"Failed to fetch '{url}' log.",
+            logger=logger,
+        )
+    return None
+
+
+def _fetch_blob(log_data: dict[str, Any]) -> Optional[str]:
+    blobs = cast(list[GuestLogBlobType], log_data.get('blobs', []))
+    if not blobs:
+        return None
+    return "\n\n".join(
+        f"{blob['ctime']}\n{blob['content']}"
+        for blob in sorted(blobs, key=lambda blob: blob['ctime'])
+    )
