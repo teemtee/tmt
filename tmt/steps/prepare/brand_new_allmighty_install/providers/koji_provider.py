@@ -41,20 +41,18 @@ tmt.utils.hints.register_hint(
 )
 
 
-
 def import_koji(logger: tmt.log.Logger) -> None:
     """Import koji module with error handling."""
     global ClientSession, koji
     try:
-        from koji import ClientSession
         import koji
+        from koji import ClientSession
     except ImportError as error:
         from tmt.utils.hints import print_hints
 
         print_hints('koji', logger=logger)
 
         raise tmt.utils.GeneralError("Could not import koji package.") from error
-
 
 
 @container
@@ -79,6 +77,18 @@ class KojiArtifactInfo(ArtifactInfo):
 
 
 class KojiProvider(ArtifactProvider[KojiArtifactInfo]):
+    """
+    Provider for downloading artifacts from Koji builds.
+
+    Supports:
+        - Listing available RPM artifacts
+        - Downloading artifacts with filtering
+
+    Example:
+        provider = KojiProvider(logger, "koji.build:123456")
+        artifacts = provider.download_artifacts(guest, Path("/tmp"), [] )
+    """
+
     API_URL = "https://koji.fedoraproject.org/kojihub"  # For metadata
 
     def __init__(self, logger: tmt.log.Logger, artifact_id: str):
