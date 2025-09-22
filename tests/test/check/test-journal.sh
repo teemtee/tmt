@@ -7,7 +7,7 @@ function assert_check_result () {
     result="$2"
     event="$3"
     name="/journal/$4"
-    rlAssertEquals "$comment" "journal:$result" "$(yq -r ".[] | select(.name == \"$name\") | .check | .[] | select(.event == \"$event\") | \"\\(.name):\\(.result)\"" $results)"
+    rlAssertEquals "$comment" "journal:$result" "$(yq ".[] | select(.name == \"$name\") | .check | .[] | select(.event == \"$event\") | \"\\(.name):\\(.result)\"" $results)"
 }
 
 # Create temporary files under custom TMT_WORKDIR_ROOT if specified
