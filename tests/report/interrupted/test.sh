@@ -13,6 +13,7 @@ rlJournalStart
         # Tests before the breakage are executed as expected
         rlAssertGrep "pass /test/good" $rlRun_LOG
         rlAssertGrep "fail /test/bad" $rlRun_LOG
+        rlAssertGrep "errr /test/weird" $rlRun_LOG
 
         # Report is generated
         rlAssertGrep "^\s*report\s*$" $rlRun_LOG
@@ -22,11 +23,12 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test ssh breakage method"
-        rlRun -s "tmt run -e weird_method=ssh -vvv --id $run" 2
+        rlRun -s "tmt run --scratch -e weird_method=ssh -vvv --id $run" 2
 
         # Tests before the breakage are executed as expected
         rlAssertGrep "pass /test/good" $rlRun_LOG
         rlAssertGrep "fail /test/bad" $rlRun_LOG
+        rlAssertGrep "errr /test/weird" $rlRun_LOG
         # In this case `/test/missed` would not be missing because we
         # are only killing the `/test/weird`'s sshd-session
         rlAssertGrep "pass /test/missed" $rlRun_LOG
@@ -35,7 +37,7 @@ rlJournalStart
         rlAssertGrep "^\s*report\s*$" $rlRun_LOG
         rlAssertGrep "how: html" $rlRun_LOG
         rlAssertGrep "output: /.*/plan/report/default-0/index.html" $rlRun_LOG
-        rlAssertGrep "summary: 2 test passed, 1 test failed and 1 error" $rlRun_LOG
+        rlAssertGrep "summary: 2 tests passed, 1 test failed and 1 error" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

@@ -26,7 +26,7 @@
               pstree -p
               echo "this_pid=$$"
               echo "parent_pid=${PPID}"
-              echo "sshd-seesion_pid=$(ps -o ppid= -p ${PPID})"
+              echo "sshd-session_pid=$(ps -o ppid= -p ${PPID})"
               # See the pstree above, we want to kill the current sshd-session
               kill $(ps -o ppid= -p ${PPID})
               ;;
