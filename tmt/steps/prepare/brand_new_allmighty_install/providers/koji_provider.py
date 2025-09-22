@@ -41,17 +41,20 @@ tmt.utils.hints.register_hint(
 )
 
 
+
 def import_koji(logger: tmt.log.Logger) -> None:
     """Import koji module with error handling."""
     global ClientSession, koji
     try:
         from koji import ClientSession
+        import koji
     except ImportError as error:
         from tmt.utils.hints import print_hints
 
         print_hints('koji', logger=logger)
 
         raise tmt.utils.GeneralError("Could not import koji package.") from error
+
 
 
 @container
