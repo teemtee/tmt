@@ -1017,6 +1017,17 @@ class GuestTestcloud(tmt.GuestSsh):
             self.image_url = self._guess_image_url(self.image_url)
             self.debug(f"Guessed image url: '{self.image_url}'", level=3)
 
+        # Make a symlink to the file image
+        if self.image_url.startswith("file://"):
+            image_path = Path(self.image_url.removeprefix("file://"))
+            # Synced with Image._process_uri image_name handling
+            image_name = image_path.name
+            if image_name.lower().endswith(".xz"):
+                image_name = image_name[:-3]
+            if image_name.lower().endswith(".box"):
+                image_name = f"{image_name[:-4]}.qcow2"
+            (self.testcloud_image_dirpath / image_name).symlink_to(image_path)
+
         # Initialize and prepare testcloud image
         assert testcloud is not None
         self._image = testcloud.image.Image(self.image_url)
