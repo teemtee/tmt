@@ -14,7 +14,7 @@ rlJournalStart
         rlRun "tmt -vv run -i $rundir discover plan -n '^/plans/features/core$'"
 
         # ... then drop all `discover-phase` keys from discovered test metadata...
-        rlRun "yq -o yaml 'del(.[].\"discover-phase\")' $tests_yaml > $tests_yaml.edited"
+        rlRun "yq  'del(.[].\"discover-phase\")' $tests_yaml > $tests_yaml.edited"
         rlRun "mv $tests_yaml.edited $tests_yaml"
 
         # ... and run tmt once more to see it report it's not possible to load tests.yaml.
