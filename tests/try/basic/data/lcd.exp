@@ -1,7 +1,7 @@
 #!/usr/bin/expect -f
 # Try local change directory
 
-spawn tmt -d try --plan basic
+spawn tmt try --plan basic
 expect "What do we do next?"
 send -- "lcd\r"
 expect "Enter directory path"
@@ -17,7 +17,7 @@ send -- "../..\r"
 expect -re "warn: Directory '(.*)' is outside the fmf root: (.*)"
 expect "Enter directory path"
 send -- "\\\q\r"
-expect "Exiting local change directory mode. Bye for now!"
+expect "Exiting local change directory mode."
 expect "What do we do next?"
 send -- "q\r"
 expect eof

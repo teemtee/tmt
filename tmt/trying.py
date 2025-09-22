@@ -623,7 +623,7 @@ class Try(tmt.utils.Common):
         handler: Callable[[str], None],
         error_message: Optional[str] = None,
     ) -> None:
-        quit_message = f"Exiting {context} mode. Bye for now!"
+        quit_message = f"Exiting {context} mode."
         quit_action = Action.quit
         while True:
             self.print(

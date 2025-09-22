@@ -30,7 +30,7 @@ def mock_plan():
             [
                 style(r"Enter command (or '\q' to quit): ", fg="green"),
                 style(r"Enter command (or '\q' to quit): ", fg="green"),
-                "Exiting host command mode. Bye for now!",
+                "Exiting host command mode.",
             ],
         ),
         (
@@ -39,7 +39,7 @@ def mock_plan():
             [
                 style(r"Enter command (or '\q' to quit): ", fg="green"),
                 style(r"Enter command (or '\q' to quit): ", fg="green"),
-                "Exiting host command mode. Bye for now!",
+                "Exiting host command mode.",
             ],
         ),
         (
@@ -49,7 +49,7 @@ def mock_plan():
                 style(r"Enter command (or '\q' to quit): ", fg="green"),
                 style(r"Enter command (or '\q' to quit): ", fg="green"),
                 style(r"Enter command (or '\q' to quit): ", fg="green"),
-                "Exiting host command mode. Bye for now!",
+                "Exiting host command mode.",
             ],
         ),
         *[
@@ -58,7 +58,7 @@ def mock_plan():
                 [],
                 [
                     style(r"Enter command (or '\q' to quit): ", fg="green"),
-                    "Exiting host command mode. Bye for now!",
+                    "Exiting host command mode.",
                 ],
             )
             for exc in (KeyboardInterrupt, EOFError)
@@ -105,7 +105,7 @@ def test_action_host(
                 "Changed directory to: /tests",
                 "Matching tests found\n/tests/base/bad\n/tests/base/good",
                 style(r"Enter directory path (or '\q' to quit): ", fg="green"),
-                "Exiting local change directory mode. Bye for now!",
+                "Exiting local change directory mode.",
             ],
         ),
     ],
