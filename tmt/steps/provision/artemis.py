@@ -72,6 +72,15 @@ SUPPORTED_LOG_TYPES = [
     'console:dump/url',
     'console:interactive/url',
     'sys.log:dump/url',
+    'flasher-debug:dump/url',
+    'flasher-debug:dump/blob',
+    'flasher-event:dump/url',
+    'flasher-event:dump/blob',
+    'anaconda.log:dump/blob',
+    'storage.log:dump/blob',
+    'program.log:dump/blob',
+    'packaging.log:dump/blob',
+    'ks.cfg:dump/blob',
 ]
 
 
@@ -100,6 +109,12 @@ def _normalize_log_type(key_address: str, raw_value: Any, logger: tmt.log.Logger
         return [str(item) for item in raw_value]
 
     raise tmt.utils.NormalizationError(key_address, raw_value, 'a string or a list of strings')
+
+
+def _format_log_blobs(blobs: list['GuestLogBlobType']) -> str:
+    sorted_blobs = sorted(blobs, key=lambda blob: blob['ctime'])
+    parts = [f"{blob['ctime']}\n{blob['content']}" for blob in sorted_blobs]
+    return "\n\n".join(parts)
 
 
 @container
@@ -629,6 +644,13 @@ class GuestArtemis(tmt.GuestSsh):
         if self.guestname is None or self.primary_address is None:
             self._create()
 
+        self.guest_logs += [
+            GuestLogArtemis(
+                name=log_type.replace(':', '_').replace('/', '_'), guest=self, log_type=log_type
+            )
+            for log_type in self.log_type
+        ]
+
         self.verbose('primary address', self.primary_address, 'green')
         self.verbose('topology address', self.topology_address, 'green')
 
@@ -813,3 +835,53 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
         )
         self._guest.start()
         self._guest.setup()
+
+
+class GuestLogBlobType(TypedDict):
+    ctime: str
+    content: str
+
+
+@container
+class GuestLogArtemis(tmt.steps.provision.GuestLog):
+    guest: GuestArtemis
+    log_type: str
+
+    def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
+        """
+        Fetch and return content of a log.
+
+        :returns: content of the log, or ``None`` if the log cannot be retrieved.
+        """
+        if self.guest.guestname is None:
+            logger.warning("Failed to fetch log - guest does not exist")
+            return None
+
+        response = self.guest.api.inspect(f'/guests/{self.guest.guestname}/logs/{self.log_type}')
+
+        if response.status_code == 404:
+            return None
+
+        if response.status_code != 200:
+            logger.warning(
+                f"Failed to fetch log '{self.log_type}': {response.status_code} {response.reason}"
+            )
+            return None
+
+        log_data = response.json()
+
+        blobs = cast(list[GuestLogBlobType], log_data.get('blobs', []))
+        if blobs:
+            return _format_log_blobs(blobs)
+
+        url = log_data.get('url')
+        if url is not None:
+            try:
+                return tmt.utils.get_url_content(str(url))
+            except Exception as error:
+                tmt.utils.show_exception_as_warning(
+                    exception=error,
+                    message=f"Failed to fetch '{url}' log.",
+                    logger=logger,
+                )
+        return None

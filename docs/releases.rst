@@ -41,6 +41,10 @@ directory located within the tmt run's workdir. If
 triggered, and the default scripts path under the run's workdir
 will be used.
 
+:ref:`/plugins/provision/artemis` provision plugin now supports
+fetching logs. The plugin will attempt to fetch only the logs
+specified by the ``log_type`` key.
+
 
 tmt-1.57.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
