@@ -17,7 +17,7 @@ rlJournalStart
             rlRun -s "tmt -vv test export --policy-file ../policies/test/$1 $plan"
             rlAssertGrep "Apply tmt policy '../policies/test/$1' to tests." $rlRun_LOG
 
-            rlRun -s "tmt -vv test export --policy-file ../policies/test/$1 $plan 2> /dev/null | yq -cSr '.[] | $filter'"
+            rlRun -s "tmt -vv test export --policy-file ../policies/test/$1 $plan 2> /dev/null | yq -cS '.[] | $filter'"
 
             rlAssertEquals \
                 "Verify that $(echo "$filter" | cut -d' ' -f1) key is modified" \
@@ -45,7 +45,7 @@ rlJournalStart
             local expected="$3"
 
             rlRun    "tmt -vv test export --policy-file ../policies/test/duration.yaml $plan"
-            rlRun -s "tmt -vv test export --policy-file ../policies/test/duration.yaml $plan 2> /dev/null | yq -cSr '.[] | .duration'"
+            rlRun -s "tmt -vv test export --policy-file ../policies/test/duration.yaml $plan 2> /dev/null | yq -cS '.[] | .duration'"
 
             rlAssertEquals \
                 "$message" \
@@ -68,7 +68,7 @@ rlJournalStart
             rlAssertGrep "content: Spiked test." $rlRun_LOG
             rlAssertEquals \
                 "Verify that test has been modified" \
-                "$(yq -cSr '.[] | .test' $run/default/plan/discover/tests.yaml)" \
+                "$(yq -cS '.[] | .test' $run/default/plan/discover/tests.yaml)" \
                 "bash -c 'echo \"Spiked test.\"; /bin/true'"
         }
 

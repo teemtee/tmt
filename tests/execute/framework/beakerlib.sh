@@ -15,7 +15,7 @@ rlJournalStart
         result="$3"
         guest="$4"
         note="$5"
-        actual=$(yq -er ".[] | \"\\(.name) \\(.\"serial-number\") \\(.result) \\(.guest.name) \\(if .note == [] then \"\" else ((.note[] | select(. == \"$note\")) // \"\") end)\"" "$results")
+        actual=$(yq -e ".[] | \"\\(.name) \\(.\"serial-number\") \\(.result) \\(.guest.name) \\(if .note == [] then \"\" else ((.note[] | select(. == \"$note\")) // \"\") end)\"" "$results")
         rlAssertEquals "Check result for $name" "$actual" "$name $serial $result $guest $note"
     }
 
@@ -24,7 +24,7 @@ rlJournalStart
         test="$2"
         check="$3"
         result="$4"
-        rlAssertEquals "$comment" "$result" "$(yq -r ".[] | select(.name == \"$test\") | .check | .[] | select(.name == \"$check\") | .result" $results)"
+        rlAssertEquals "$comment" "$result" "$(yq ".[] | select(.name == \"$test\") | .check | .[] | select(.name == \"$check\") | .result" $results)"
     }
 
     tmt_command="tmt run --scratch -a --id ${run} provision --how local execute -vv report -vvv test --name"

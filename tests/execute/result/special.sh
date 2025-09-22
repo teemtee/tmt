@@ -15,7 +15,7 @@ rlJournalStart
         rlRun "yq -e '.' $RESULT_FILE_BASIC" 0 "Check the YAML is valid"
 
         # Get and test the concrete item from the list of subresults
-        rlRun "yq -o yaml -er '.[] | select(.name == \"/0..7 \\\"special\\\": \\\" characters: *\$@|&>< in: the: name\")' \"$RESULT_FILE_BASIC\" | tee subresult.out"
+        rlRun "yq -o yaml -e '.[] | select(.name == \"/0..7 \\\"special\\\": \\\" characters: *\$@|&>< in: the: name\")' \"$RESULT_FILE_BASIC\" | tee subresult.out"
         rlAssertGrep "name: '/0\.\.7 \\\"special\\\": \\\" characters: \\*\\\$@|&>< in: the: name'" "subresult.out"
         rlAssertGrep "result: pass" "subresult.out"
         rlAssertGrep "end-time: '.*'" "subresult.out"
@@ -29,7 +29,7 @@ rlJournalStart
             '/02-so-me-phase-na-me' \
             /{03..14}-some
         do
-            rlRun "yq -o yaml -er '.[] | select(.name == \"${phase_name}\")' \"$RESULT_FILE_BKRLIB\" | tee subresult.out"
+            rlRun "yq -o yaml -e '.[] | select(.name == \"${phase_name}\")' \"$RESULT_FILE_BKRLIB\" | tee subresult.out"
             rlAssertGrep "name: ${phase_name}" "subresult.out"
             rlAssertGrep "result: pass" "subresult.out"
             rlAssertGrep "end-time: '.*'" "subresult.out"

@@ -57,7 +57,7 @@ rlJournalStart
     # misfortune.
     rlPhaseStartTest "List plugins as YAML"
         rlRun -s "tmt about plugins ls --how yaml"
-        rlRun "yq -r '. | to_entries[] | \"\(.key): \(.value | sort | join(\" \"))\"' $rlRun_LOG | sort > $tmpdir/actual-plugin-list.txt"
+        rlRun "yq '. | to_entries[] | \"\(.key): \(.value | sort | join(\" \"))\"' $rlRun_LOG | sort > $tmpdir/actual-plugin-list.txt"
 
         rlRun "diff -u $tmpdir/expected-plugin-list.txt $tmpdir/actual-plugin-list.txt"
     rlPhaseEnd

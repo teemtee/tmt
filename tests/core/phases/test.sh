@@ -9,7 +9,7 @@ rlJournalStart
         run="tmt --log-topic=cli-invocations run -i $rundir --scratch -a"
 
         function check() {
-            rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how):\\(.order)\"' $rundir/plans/$1/report/step.yaml"
+            rlRun -s "yq '.data | .[] | \"\\(.name):\\(.how):\\(.order)\"' $rundir/plans/$1/report/step.yaml"
             rlAssertEquals "$2" "$(cat $rlRun_LOG)" "$3"
         }
     rlPhaseEnd
@@ -118,7 +118,7 @@ default-3:display:50"
         check "with-multiple-reports" "Two 'html' phases shall exist" "default-0:html:50
 default-1:html:50"
 
-        rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how):\\(.\"display-guest\")\"' $rundir/plans/with-multiple-reports/report/step.yaml"
+        rlRun -s "yq '.data | .[] | \"\\(.name):\\(.how):\\(.\"display-guest\")\"' $rundir/plans/with-multiple-reports/report/step.yaml"
         rlAssertEquals "default-0 shall never display guests" "$(cat $rlRun_LOG)" "default-0:html:never
 default-1:html:auto"
     rlPhaseEnd
@@ -131,7 +131,7 @@ default-1:html:auto"
         check "with-multiple-reports" "Two 'html' phases shall exist" "default-0:html:50
 default-1:html:50"
 
-        rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how):\\(.\"display-guest\")\"' $rundir/plans/with-multiple-reports/report/step.yaml"
+        rlRun -s "yq '.data | .[] | \"\\(.name):\\(.how):\\(.\"display-guest\")\"' $rundir/plans/with-multiple-reports/report/step.yaml"
         rlAssertEquals "default-0 shall keep its setting, default-1 shall never display guests" "$(cat $rlRun_LOG)" "default-0:html:always
 default-1:html:never"
     rlPhaseEnd
@@ -143,7 +143,7 @@ default-1:html:never"
         check "with-multiple-reports" "Two 'html' phases shall exist" "default-0:html:50
 default-1:html:50"
 
-        rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how):\\(.\"display-guest\")\"' $rundir/plans/with-multiple-reports/report/step.yaml"
+        rlRun -s "yq '.data | .[] | \"\\(.name):\\(.how):\\(.\"display-guest\")\"' $rundir/plans/with-multiple-reports/report/step.yaml"
         rlAssertEquals "default-0 and default-1 shall never display guests" "$(cat $rlRun_LOG)" "default-0:html:never
 default-1:html:never"
     rlPhaseEnd
@@ -155,7 +155,7 @@ default-1:html:never"
         check "with-multiple-reports" "Two 'html' phases shall exist" "default-0:html:50
 default-1:html:50"
 
-        rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how):\\(.\"display-guest\")\"' $rundir/plans/with-multiple-reports/report/step.yaml"
+        rlRun -s "yq '.data | .[] | \"\\(.name):\\(.how):\\(.\"display-guest\")\"' $rundir/plans/with-multiple-reports/report/step.yaml"
         rlAssertEquals "default-0 shall keep its setting, default-1 shall never display guests" "$(cat $rlRun_LOG)" "default-0:html:always
 default-1:html:never"
     rlPhaseEnd
@@ -166,7 +166,7 @@ default-1:html:never"
 
         check "with-report" "One 'html' phase shall exist" "default-0:html:50"
 
-        rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/with-report/report/step.yaml"
+        rlRun -s "yq '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/with-report/report/step.yaml"
         rlAssertEquals "default-0 shall be set to html how" "$(cat $rlRun_LOG)" "default-0:html"
 
         rlRun -s "$run plan -n /with-report \
@@ -174,7 +174,7 @@ default-1:html:never"
 
         check "with-report" "One 'html' phase shall exist" "default-0:html:50"
 
-        rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/with-report/report/step.yaml"
+        rlRun -s "yq '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/with-report/report/step.yaml"
         rlAssertEquals "default-0 shall be set to html how" "$(cat $rlRun_LOG)" "default-0:html"
     rlPhaseEnd
 
@@ -184,7 +184,7 @@ default-1:html:never"
 
         check "without-how" "One 'display' phase shall exist" "default-0:display:60"
 
-        rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/without-how/report/step.yaml"
+        rlRun -s "yq '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/without-how/report/step.yaml"
         rlAssertEquals "default-0 shall be set to default how" "$(cat $rlRun_LOG)" "default-0:display"
 
         rlRun -s "$run plan -n /without-how \
@@ -192,7 +192,7 @@ default-1:html:never"
 
         check "without-how" "One 'html' phase shall exist" "default-0:html:60"
 
-        rlRun -s "yq -r '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/without-how/report/step.yaml"
+        rlRun -s "yq '.data | .[] | \"\\(.name):\\(.how)\"' $rundir/plans/without-how/report/step.yaml"
         rlAssertEquals "default-0 shall be set to html how" "$(cat $rlRun_LOG)" "default-0:html"
     rlPhaseEnd
 

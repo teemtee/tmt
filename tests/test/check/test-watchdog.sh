@@ -3,7 +3,7 @@
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
 function assert_check_result () {
-    rlAssertEquals "$1" "watchdog:$2" "$(yq -r ".[] | .check | .[] | select(.event == \"$3\") | \"\\(.name):\\(.result)\"" $results)"
+    rlAssertEquals "$1" "watchdog:$2" "$(yq ".[] | .check | .[] | select(.event == \"$3\") | \"\\(.name):\\(.result)\"" $results)"
 }
 
 

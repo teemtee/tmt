@@ -19,9 +19,9 @@ rlJournalStart
         rlRun "tmt run --scratch -i $run provision -h virtual --user fedora"
 
         # Extract SSH login details from the provision step
-        rlRun "guest_port=\$(yq -r '.\"default-0\" | .port' $run/plan/provision/guests.yaml)"
-        rlRun "guest_key=\$(yq -r '.\"default-0\" | .key[0]' $run/plan/provision/guests.yaml)"
-        rlRun "guest_user=\$(yq -r '.\"default-0\" | .user' $run/plan/provision/guests.yaml)"
+        rlRun "guest_port=\$(yq '.\"default-0\" | .port' $run/plan/provision/guests.yaml)"
+        rlRun "guest_key=\$(yq '.\"default-0\" | .key[0]' $run/plan/provision/guests.yaml)"
+        rlRun "guest_user=\$(yq '.\"default-0\" | .user' $run/plan/provision/guests.yaml)"
 
         # Create connect provision command with become=true for reboot
         provision="provision -h connect --guest localhost --port $guest_port --key $guest_key --user $guest_user --become"

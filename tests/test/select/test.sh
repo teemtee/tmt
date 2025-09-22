@@ -210,7 +210,7 @@ rlJournalStart
         rlRun "tmt -c subdir=1 run --id $run discover tests --name ."
         # only /subdir test is selected by /plans/all and /plans/filtered
         for plan in all filtered; do
-            rlRun "yq -o yaml -er '.[] | select(.name == \"/subdir\")' $run/plans/$plan/discover/tests.yaml" \
+            rlRun "yq -o yaml -e '.[] | select(.name == \"/subdir\")' $run/plans/$plan/discover/tests.yaml" \
                 0 "just /subdir in $plan"
         done
         # other two plans don't select any test

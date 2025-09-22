@@ -56,7 +56,7 @@ rlJournalStart
             rlRun "results_file=$run/plan/finish/results.yaml"
             rlAssertExists "$results_file"
             rlAssertEquals "finish produced expected result" \
-                           "$(yq -r '.[] | "\(.name):\(.result):\(.log[0])"' $results_file)" \
+                           "$(yq '.[] | "\(.name):\(.result):\(.log[0])"' $results_file)" \
                            "Ansible we want to test / playbook.yml:pass:Ansible-we-want-to-test/playbook-0/default-0/output.txt"
 
             # After the local provision remove the test file

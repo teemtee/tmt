@@ -130,7 +130,7 @@ rlJournalStart
 
     rlPhaseStartTest "Verify fmf context lands in results"
         rlRun -s "tmt -c foo=bar run --id ${run} --scratch -a provision --how local test -n '/pass'"
-        rlAssertEquals "Context is stored in result" "$(yq -r ".[] | .context | to_entries[] | \"\\(.key)=\\(.value[])\"" $run/default/plan/execute/results.yaml)" "foo=bar"
+        rlAssertEquals "Context is stored in result" "$(yq ".[] | .context | to_entries[] | \"\\(.key)=\\(.value[])\"" $run/default/plan/execute/results.yaml)" "foo=bar"
     rlPhaseEnd
 
     rlPhaseStartCleanup
