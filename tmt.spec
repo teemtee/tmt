@@ -43,10 +43,6 @@ package to have all available plugins ready for testing.
 Summary:        Dependencies required for tmt test import and export
 Requires:       tmt == %{version}-%{release}
 Requires:       make
-Requires:       python3-bugzilla
-Requires:       python3-nitrate
-Requires:       python3-html2text
-Requires:       python3-markdown
 
 %description -n tmt+test-convert %_metapackage_description
 
@@ -61,7 +57,6 @@ Requires:       ansible-collection-containers-podman
 %package -n     tmt+provision-virtual
 Summary:        Dependencies required for tmt virtual machine provisioner
 Requires:       tmt == %{version}-%{release}
-Requires:       python3-testcloud >= 0.11.7
 Requires:       libvirt-daemon-config-network
 Requires:       openssh-clients
 # Recommend qemu system emulators for supported arches
