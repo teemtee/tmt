@@ -33,6 +33,12 @@ metadata specification (L1 and L2) and allows easy test execution.
 %pyproject_extras_subpkg -n tmt link-jira
 %pyproject_extras_subpkg -n tmt prepare-artifact
 
+%pyproject_extras_subpkg -n tmt all
+
+%description -n tmt+all
+All extra dependencies of the Test Management Tool. Install this
+package to have all available plugins ready for testing.
+
 %package -n     tmt+test-convert
 Summary:        Dependencies required for tmt test import and export
 Requires:       tmt == %{version}-%{release}
@@ -85,22 +91,6 @@ Requires:       python3-mrack-beaker
 
 %description -n tmt+provision-beaker %_metapackage_description
 
-# Replace with pyproject_extras_subpkg at some point
-%package -n     tmt+all
-Summary:        Extra dependencies for the Test Management Tool
-Requires:       tmt+test-convert == %{version}-%{release}
-Requires:       tmt+export-polarion == %{version}-%{release}
-Requires:       tmt+provision-container == %{version}-%{release}
-Requires:       tmt+provision-virtual == %{version}-%{release}
-Requires:       tmt+provision-beaker == %{version}-%{release}
-Requires:       tmt+report-junit == %{version}-%{release}
-Requires:       tmt+report-polarion == %{version}-%{release}
-Requires:       tmt+prepare-artifact == %{version}-%{release}
-
-%description -n tmt+all
-All extra dependencies of the Test Management Tool. Install this
-package to have all available plugins ready for testing.
-
 %prep
 %autosetup -p1 -n tmt-%{version}
 
@@ -144,6 +134,5 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %files -n tmt+test-convert -f %{_pyproject_ghost_distinfo}
 %files -n tmt+provision-beaker -f %{_pyproject_ghost_distinfo}
 %config(noreplace) %{_sysconfdir}/%{name}/mrack*
-%files -n tmt+all -f %{_pyproject_ghost_distinfo}
 
 %changelog
