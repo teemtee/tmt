@@ -697,7 +697,7 @@ class Try(tmt.utils.Common):
             handler=handler,
         )
 
-    @Action("host", shortcut="!", order=3, group=1)
+    @Action("host", shortcut="h", order=3, group=1)
     def action_host(self, plan: Plan) -> None:
         """
         Run command on the host

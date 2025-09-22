@@ -19,10 +19,6 @@ The :ref:`tmt try</stories/cli/try>` command's interactive session
 now includes a new ``lcd`` option to switch directories,
 making it easy to select and run a different test or set of tests.
 
-Please note that in :ref:`tmt try </stories/cli/try>` the shortcut
-for running shell commands directly on the local host has changed
-from ``h`` to ``!``.
-
 Searching a Test Case in Polarion during test export/import or
 test run export will no longer find test cases that are set as
 inactive.
