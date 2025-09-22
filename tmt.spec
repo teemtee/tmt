@@ -98,7 +98,6 @@ Requires:       python3-mrack-beaker
 %pyproject_buildrequires
 
 %build
-export SETUPTOOLS_SCM_PRETEND_VERSION=%{version}
 %pyproject_wheel
 
 # Build the man files
