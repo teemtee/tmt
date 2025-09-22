@@ -1026,7 +1026,12 @@ class GuestTestcloud(tmt.GuestSsh):
                 image_name = image_name[:-3]
             if image_name.lower().endswith(".box"):
                 image_name = f"{image_name[:-4]}.qcow2"
-            (self.testcloud_image_dirpath / image_name).symlink_to(image_path)
+
+            # Create a symlink in the testcloud STORE_DIR and make sure
+            # it is always updated to the requested version.
+            image_symlink = self.testcloud_image_dirpath / image_name
+            image_symlink.unlink(missing_ok=True)
+            image_symlink.symlink_to(image_path)
 
         # Initialize and prepare testcloud image
         assert testcloud is not None
