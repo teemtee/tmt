@@ -680,12 +680,10 @@ class Try(tmt.utils.Common):
             current_test_dir = Path.cwd()
 
             # Rediscover tests ONLY if directory changed
-            if self._previous_test_dir is None:
-                self.check_tests(current_test_dir)
-                self.print("Matching tests found\n" + tmt.utils.format_value(self.tests))
-                self._previous_test_dir = current_test_dir
-
-            elif self._previous_test_dir.resolve() != current_test_dir.resolve():
+            if (
+                self._previous_test_dir is None
+                or self._previous_test_dir.resolve() != current_test_dir.resolve()
+            ):
                 self.print(f"Changed directory to: {current_test_dir}")
                 self.check_tests(current_test_dir)
                 self.print("Matching tests found\n" + tmt.utils.format_value(self.tests))

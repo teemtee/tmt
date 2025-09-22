@@ -103,6 +103,7 @@ def test_action_host(
             [
                 style(r"Enter directory path (or '\q' to quit): ", fg="green"),
                 "Changed directory to: /tests",
+                "Matching tests found\n/tests/base/bad\n/tests/base/good",
                 style(r"Enter directory path (or '\q' to quit): ", fg="green"),
                 "Exiting local change directory mode. Bye for now!",
             ],
@@ -130,6 +131,7 @@ def test_action_local_change_directory(
     mock_try_instance._previous_test_dir = Path("/old/dir")
     mock_input.side_effect = inputs
     mock_try_instance.check_tests = mock.MagicMock()
+    mock_try_instance.tests = ["/tests/base/bad", "/tests/base/good"]
 
     Try.action_local_change_directory(mock_try_instance, mock_plan)
 
