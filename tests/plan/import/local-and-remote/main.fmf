@@ -4,4 +4,4 @@ execute:
 plan:
   import:
     url: https://github.com/teemtee/tmt
-    name: /plans/sanity/lint
+    name: /plans/sanity/with-tmt

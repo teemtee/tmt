@@ -9,10 +9,10 @@ execute:
     summary+: " (mini)"
     discover:
         how: fmf
-        test: /tests/dev/pip/install/mini
+        test: /tests/sanity/pip/install/mini
 
 /full:
     summary+: " (full)"
     discover:
         how: fmf
-        test: /tests/dev/pip/install/full
+        test: /tests/sanity/pip/install/full

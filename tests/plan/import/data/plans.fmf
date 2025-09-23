@@ -3,7 +3,7 @@
     plan:
         import:
             url: https://github.com/teemtee/tmt
-            name: /plans/sanity/lint
+            name: /plans/sanity/with-tmt
 
 /ref-and-path:
     summary: Git ref and custom path
@@ -51,7 +51,7 @@
     plan:
         import:
             url: https://github.com/teemtee/tmt
-            name: /plans/sanity/lint
+            name: /plans/sanity/with-tmt
     enabled: true
 
 /imported/disabled:
@@ -67,5 +67,5 @@
     plan:
         import:
             url: https://github.com/teemtee/tmt
-            name: /plans/sanity/lint
+            name: /plans/sanity/with-tmt
     enabled: false

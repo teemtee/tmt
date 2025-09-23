@@ -181,15 +181,15 @@ jobs:
     targets:
       - epel-9
 
-  # CI tests (independent of OS)
+  # OS-agnostic sanity and coding-standard checks
   - <<: *test-base
     targets:
       - fedora-latest-stable
-    identifier: dev
+    identifier: sanity
     tf_extra_params:
       test:
         tmt:
-          name: /plans/dev
+          name: /plans/sanity
     skip_build: true
 
   # Propose downstream pull requests
