@@ -44,7 +44,7 @@ metadata specification (L1 and L2) and allows easy test execution.
 %pyproject_extras_subpkg -n tmt report-junit
 %pyproject_extras_subpkg -n tmt report-polarion
 %pyproject_extras_subpkg -n tmt link-jira
-%pyproject_extras_subpkg -n tmt prepare-artifact-install-koji
+%pyproject_extras_subpkg -n tmt prepare-artifact
 
 %package -n     tmt+test-convert
 Summary:        Dependencies required for tmt test import and export
@@ -129,7 +129,7 @@ Requires:       tmt+provision-virtual == %{version}-%{release}
 Requires:       tmt+provision-beaker == %{version}-%{release}
 Requires:       tmt+report-junit == %{version}-%{release}
 Requires:       tmt+report-polarion == %{version}-%{release}
-Requires:       tmt+prepare-artifact-install-koji == %{version}-%{release}
+Requires:       tmt+prepare-artifact == %{version}-%{release}
 
 %description -n tmt+all
 All extra dependencies of the Test Management Tool. Install this
