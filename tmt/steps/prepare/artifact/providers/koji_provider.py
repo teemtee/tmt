@@ -137,7 +137,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
             # Destination directory is guaranteed to exist, download the artifact
             guest.execute(
                 tmt.utils.ShellScript(
-                    f"curl -L -o {quote(str(destination))} {quote(artifact.location)}"
+                    f"curl -L --fail -o {quote(str(destination))} {quote(artifact.location)}"
                 ),
                 silent=True,
             )
