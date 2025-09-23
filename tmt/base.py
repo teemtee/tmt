@@ -4471,8 +4471,6 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         )
         self.write(Path('run.yaml'), tmt.utils.dict_to_yaml(data.to_serialized()))
 
-        self.recipe_builder.set_run(data, self.fmf_context)
-
     def load_from_workdir(self) -> None:
         """
         Load the run from its workdir, do not require the root in
@@ -4601,11 +4599,9 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         """
         Check overall results, return appropriate exit code
         """
-        self.recipe_builder.set_plans(list(self.plans))
-
         # Save recipe
         if not self.is_dry_run:
-            self.recipe_builder.save(self.run_workdir)
+            self.recipe_builder.save(self)
 
         # We get interesting results only if execute or prepare step is enabled
         execute = self.plans[0].execute

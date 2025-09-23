@@ -11,7 +11,7 @@ rlJournalStart
 
     function replace_values () {
         temp_recipe=$(mktemp)
-        yq '.run.root = "/fmf_root_path" | .plans[].environment.TMT_VERSION = "1.57.0"' "$recipe" > "$temp_recipe"
+        yq '.run.root = "/fmf_root_path" | .plans[]."environment-from-intrinsics".TMT_VERSION = "version"' "$recipe" > "$temp_recipe"
         mv "$temp_recipe" "$recipe"
         sed -i "s#$run#/run_path#g" "$recipe"
     }

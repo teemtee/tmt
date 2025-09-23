@@ -20,16 +20,20 @@ plans:
     tag: []
     tier:
     adjust: []
-    environment:
+    environment-from-fmf:
         PLAN_ENV: value
-        TMT_VERSION: 1.57.0
+    environment-from-importing: {}
+    environment-from-cli:
+        RUN_ENV: value
+    environment-from-intrinsics:
+        TMT_VERSION: version
         TMT_TREE: /run_path/plan/tree
         TMT_PLAN_DATA: /run_path/plan/data
         TMT_PLAN_ENVIRONMENT_FILE: /run_path/plan/data/variables.env
     context: {}
     gate: []
-    login:
     discover:
+        enabled: true
         phases:
           - name: default-0
             how: fmf
@@ -105,6 +109,7 @@ plans:
             module: tmt.recipe
             name: _DiscoverStep
     provision:
+        enabled: true
         phases:
           - name: default-0
             how: local
@@ -149,6 +154,7 @@ plans:
             module: tmt.recipe
             name: _Step
     prepare:
+        enabled: true
         phases:
           - name: default-0
             how: shell
@@ -166,6 +172,7 @@ plans:
             module: tmt.recipe
             name: _Step
     execute:
+        enabled: true
         phases:
           - name: default-0
             how: tmt
@@ -188,6 +195,7 @@ plans:
             module: tmt.recipe
             name: _ExecuteStep
     report:
+        enabled: true
         phases:
           - name: default-0
             how: display
@@ -202,6 +210,7 @@ plans:
             module: tmt.recipe
             name: _Step
     finish:
+        enabled: true
         phases:
           - name: default-0
             how: shell
@@ -219,6 +228,7 @@ plans:
             module: tmt.recipe
             name: _Step
     cleanup:
+        enabled: true
         phases:
           - name: default-0
             how: tmt
