@@ -153,7 +153,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                         preserve_perms=True,
                         chmod=0o755,
                         recursive=True,
-                        mkdir_p=True,
+                        create_destination=True,
                     ),
                 )
 

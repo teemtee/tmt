@@ -355,7 +355,7 @@ class TransferOptions:
     safe_links: bool = False
 
     #: Run a ``mkdir -p`` of the destination before doing transfer
-    mkdir_p: bool = False
+    create_destination: bool = False
 
     def copy(self) -> 'TransferOptions':
         """Create a copy of the options."""
@@ -2802,7 +2802,7 @@ class GuestSsh(Guest):
         ]
 
         try:
-            if options.mkdir_p:
+            if options.create_destination:
                 self.execute(Command("mkdir", "-p", destination.parent), silent=True)
             self._run_guest_command(cmd, silent=True)
 
