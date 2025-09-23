@@ -26,10 +26,10 @@ description: |
 
     On Beaker machines booted in UEFI mode, by default, the
     ``BootNext`` property shall be set to the value of ``BootCurrent``.
-    If ``BootCurrent`` cannot be found, use the value of file
-    ``/root/EFI_BOOT_ENTRY.TXT`` for ``BootNext``. The ``-e``
-    option of the reboot script can be used to force this behaviour,
-    e.g. ``tmt-reboot -e``.
+    If ``BootCurrent`` cannot be resolved from ``efibootmgr``, use the
+    value of file ``/root/EFI_BOOT_ENTRY.TXT`` for ``BootNext``. The
+    ``-e``  option of the reboot script can be used to force the EFI
+    handling on non-Beaker machines, e.g. ``tmt-reboot -e``.
 
     For backward-compatibility with the `restraint`__ framework
     the ``rstrnt-reboot`` and ``rhts-reboot`` commands are provided
