@@ -2803,8 +2803,7 @@ class GuestSsh(Guest):
 
         try:
             if options.mkdir_p:
-                mkdir_cmd = Command("mkdir", "-p", str(destination.parent))
-                self.execute(mkdir_cmd, silent=True)
+                self.execute(Command("mkdir", "-p", destination.parent), silent=True)
             self._run_guest_command(cmd, silent=True)
 
         except tmt.utils.RunError as exc:
