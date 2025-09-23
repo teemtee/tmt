@@ -2,6 +2,7 @@
 Step Classes
 """
 
+import abc
 import collections
 import functools
 import itertools
@@ -806,6 +807,7 @@ class Step(
         for data in self.data:
             self._plugin_base_class.delegate(self, data=data).show()
 
+    @abc.abstractmethod
     def summary(self) -> None:
         """
         Give a concise summary about the step result
@@ -1602,6 +1604,7 @@ class BasePlugin(
         return self.pathless_safe_name
 
     @classmethod
+    @abc.abstractmethod
     def base_command(
         cls,
         usage: str,
@@ -2067,6 +2070,7 @@ class GuestlessPlugin(BasePlugin[StepDataT, PluginReturnValueT]):
     Common parent of all step plugins that do not work against a particular guest
     """
 
+    @abc.abstractmethod
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> PluginReturnValueT:
         """
         Perform actions shared among plugins when beginning their tasks
@@ -2080,6 +2084,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
     Common parent of all step plugins that do work against a particular guest
     """
 
+    @abc.abstractmethod
     def go(
         self,
         *,
@@ -2171,6 +2176,7 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
                 phases[step_name] = [phase]
         return phases
 
+    @abc.abstractmethod
     def go(self) -> None:
         raise NotImplementedError
 

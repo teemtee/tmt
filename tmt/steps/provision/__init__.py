@@ -1,3 +1,4 @@
+import abc
 import ast
 import contextlib
 import dataclasses
@@ -1228,13 +1229,14 @@ class GuestData(SerializableContainer):
 
 
 @container
-class GuestLog:
+class GuestLog(abc.ABC):
     # Log file name
     name: str
 
     # Linked guest
     guest: "Guest"
 
+    @abc.abstractmethod
     def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
         """
         Fetch and return content of a log.
@@ -1407,6 +1409,7 @@ class Guest(
         return format_guest_full_name(self.name, self.role)
 
     @property
+    @abc.abstractmethod
     def is_ready(self) -> bool:
         """
         Detect guest is ready or not
@@ -1805,6 +1808,7 @@ class Guest(
             **kwargs,
         )
 
+    @abc.abstractmethod
     def _run_ansible(
         self,
         playbook: AnsibleApplicable,
@@ -1912,6 +1916,7 @@ class Guest(
     ) -> tmt.utils.CommandOutput:
         pass
 
+    @abc.abstractmethod
     def execute(
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
@@ -1938,6 +1943,7 @@ class Guest(
 
         raise NotImplementedError
 
+    @abc.abstractmethod
     def push(
         self,
         source: Optional[Path] = None,
@@ -1951,6 +1957,7 @@ class Guest(
 
         raise NotImplementedError
 
+    @abc.abstractmethod
     def pull(
         self,
         source: Optional[Path] = None,
@@ -1963,6 +1970,7 @@ class Guest(
 
         raise NotImplementedError
 
+    @abc.abstractmethod
     def stop(self) -> None:
         """
         Stop the guest
@@ -1992,6 +2000,7 @@ class Guest(
     ) -> bool:
         pass
 
+    @abc.abstractmethod
     def reboot(
         self,
         hard: bool = False,
