@@ -28,7 +28,7 @@ Obsoletes:      tmt-report-reportportal < %{version}-%{release}
 %endif
 
 Recommends:     bash-completion
-Recommends:	ansible-core
+Recommends:     ansible-core
 
 %py_provides    python3-tmt
 
