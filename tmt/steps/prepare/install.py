@@ -1,3 +1,4 @@
+import abc
 import re
 import shutil
 from collections.abc import Iterator
@@ -121,6 +122,7 @@ class InstallBase(tmt.utils.Common):
                     self.debug(f"Found rpm '{filepath}'.", level=3)
                     self.local_packages.append(PackagePath(filepath))
 
+    @abc.abstractmethod
     def prepare_repository(self) -> None:
         """
         Configure additional repository

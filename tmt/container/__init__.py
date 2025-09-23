@@ -2,6 +2,7 @@
 Container decorators and helpers.
 """
 
+import abc
 import dataclasses
 import functools
 import inspect
@@ -447,8 +448,9 @@ SpecOutT = TypeVar('SpecOutT')
 
 
 @container
-class SpecBasedContainer(Generic[SpecInT, SpecOutT], DataContainer):  # noqa: PYI059
+class SpecBasedContainer(Generic[SpecInT, SpecOutT], DataContainer, abc.ABC):  # noqa: PYI059
     @classmethod
+    @abc.abstractmethod
     def from_spec(cls, spec: SpecInT) -> Self:
         """
         Convert from a specification file or from a CLI option
