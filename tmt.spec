@@ -115,6 +115,14 @@ Requires:       python3-mrack-beaker
 
 %description -n tmt+provision-beaker %_metapackage_description
 
+%package -n     tmt+provision-mock
+Summary:        Dependencies required for tmt mock provisioner
+Provides:       tmt-provision-mock == %{version}-%{release}
+Requires:       tmt == %{version}-%{release}
+Requires:       mock
+
+%description -n tmt+provision-mock %_metapackage_description
+
 # Replace with pyproject_extras_subpkg at some point
 %package -n     tmt+all
 Summary:        Extra dependencies for the Test Management Tool
@@ -162,6 +170,7 @@ mkdir -p %{buildroot}%{_datadir}/bash-completion/completions
 install -pm 644 completions/bash/%{name} %{buildroot}%{_datadir}/bash-completion/completions/%{name}
 mkdir -p %{buildroot}/etc/%{name}/
 install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
+install -pm 644 %{name}/utils/mock-plugin-tmt.py %{buildroot}%{python3_sitelib}/mockbuild/plugins/tmt.py
 
 %check
 %pyproject_check_import
@@ -178,6 +187,8 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %files -n tmt+test-convert -f %{_pyproject_ghost_distinfo}
 %files -n tmt+provision-beaker -f %{_pyproject_ghost_distinfo}
 %config(noreplace) %{_sysconfdir}/%{name}/mrack*
+%files -n tmt+provision-mock -f %{_pyproject_ghost_distinfo}
+%{python3_sitelib}/mockbuild/plugins/tmt.py
 %files -n tmt+all -f %{_pyproject_ghost_distinfo}
 
 %changelog
