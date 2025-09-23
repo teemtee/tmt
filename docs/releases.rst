@@ -8,13 +8,9 @@ tmt-1.58.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``tmt-reboot`` command was changed to handle special EFI
-handling for Beaker systems only. The ``-e`` option can be used
-to force this behaviour. This is a change in behaviour; previously
-the handling was done on all EFI machines, not just the ones
-running in Beaker. Also, the ``-e`` option changed meaning
-and is now used to enforce the EFI handling, not to disable it.
-Please update your tests to not use the ``-e`` option if you used
-it before. See the :ref:`/stories/features/reboot` section
+handling for Beaker systems only. The ``-e`` option is ignored
+and has no effect now. We are keeping it for backwards
+compatibility only. See the :ref:`/stories/features/reboot` section
 for updated usage details.
 
 A new :ref:`issues` section has been added to the Contribute page.
