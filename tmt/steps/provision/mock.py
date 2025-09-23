@@ -106,10 +106,8 @@ class MockShell:
 
     def enter_shell(self):
         command = self.command_prefix.to_popen()
-        command.append("--enable-network")
-        command.append("--enable-plugin")
-        command.append("tmt")
-        command.append("--plugin-option=tmt:workdir_root=" + shlex.quote(str(self.parent.workdir_root)))
+        command.append("--enable-plugin=bind_mount")
+        command.append(f'--plugin-option=bind_mount:dirs=[("{shlex.quote(str(self.parent.workdir_root))}", "{shlex.quote(str(self.parent.workdir_root))}")]')
         command.append("-q")
         command.append("--shell")
 
@@ -211,11 +209,13 @@ class MockShell:
     def execute(
         self,
         command: Command,
+        *,
         cwd: Optional[Path] = None,
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: str = None,
         log: Optional[tmt.log.LoggingFunction] = None,
         silent: bool = False,
+        logger: tmt.log.Logger,
     ):
         """
         Execute the command in a running mock shell for increased speed.
@@ -278,7 +278,6 @@ class MockShell:
 
             # For command output logging, use either the given logging callback, or
             # use the given logger & emit to debug log.
-            logger = self.parent._logger
             output_logger: tmt.log.LoggingFunction = (log or logger.debug) if not silent else logger.debug
 
             stdout = MockShell.Stream(lambda text: output_logger("out", text, 'yellow', level = 0))
@@ -402,13 +401,18 @@ class GuestMock(tmt.Guest):
         """
 
         actual_command = command if isinstance(command, Command) else command.to_shell_command()
-        if on_process_start:
-            on_process_start(actual_command, self.mock_shell, self._logger)
-        stdout, stderr = self.mock_shell.execute(
-            actual_command, cwd=cwd, env=env, friendly_command=friendly_command or str(command)
-        )
-        result = tmt.utils.CommandOutput(stdout, stderr)
-        return result
+        if getattr(command, "_local", False):
+            return actual_command.run(
+                cwd=cwd, env=env, friendly_command=friendly_command or str(command), logger=self._logger, interactive=interactive, on_process_start=on_process_start,
+            )
+        else:
+            if on_process_start:
+                on_process_start(actual_command, self.mock_shell, self._logger)
+            stdout, stderr = self.mock_shell.execute(
+                actual_command, cwd=cwd, env=env, friendly_command=friendly_command or str(command), logger=self._logger,
+            )
+            result = tmt.utils.CommandOutput(stdout, stderr)
+            return result
 
     def start(self) -> None:
         """

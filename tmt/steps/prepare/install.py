@@ -684,8 +684,11 @@ class InstallMock(InstallBase):
     def install_local(self) -> None:
         # Use both dnf install/reinstall to get all packages refreshed
         # FIXME Simplify this once BZ#1831022 is fixed/implemented.
+
+        # mock's package manager mounts the buildroot directory, so we need to
+        # prefix the path.
         filelist = [
-            PackagePath(self.package_directory / filename.name) for filename in self.local_packages
+            PackagePath(self.guest.mock_shell.root_path / self.package_directory.relative_to("/") / filename.name) for filename in self.local_packages
         ]
 
         self.guest.package_manager.install(

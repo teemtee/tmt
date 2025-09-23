@@ -170,7 +170,6 @@ mkdir -p %{buildroot}%{_datadir}/bash-completion/completions
 install -pm 644 completions/bash/%{name} %{buildroot}%{_datadir}/bash-completion/completions/%{name}
 mkdir -p %{buildroot}/etc/%{name}/
 install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
-install -pm 644 %{name}/utils/mock-plugin-tmt.py %{buildroot}%{python3_sitelib}/mockbuild/plugins/tmt.py
 
 %check
 %pyproject_check_import
@@ -188,7 +187,6 @@ install -pm 644 %{name}/utils/mock-plugin-tmt.py %{buildroot}%{python3_sitelib}/
 %files -n tmt+provision-beaker -f %{_pyproject_ghost_distinfo}
 %config(noreplace) %{_sysconfdir}/%{name}/mrack*
 %files -n tmt+provision-mock -f %{_pyproject_ghost_distinfo}
-%{python3_sitelib}/mockbuild/plugins/tmt.py
 %files -n tmt+all -f %{_pyproject_ghost_distinfo}
 
 %changelog
