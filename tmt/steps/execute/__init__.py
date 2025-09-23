@@ -1,3 +1,4 @@
+import abc
 import copy
 import functools
 import json
@@ -1007,6 +1008,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             level=3,
         )
 
+    @abc.abstractmethod
     def results(self) -> list["tmt.Result"]:
         """
         Return test results

@@ -1,3 +1,4 @@
+import abc
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Callable
 
@@ -43,6 +44,7 @@ class PlanShaper(tmt.utils.Common):
         super().__init__(*args, **kwargs)
 
     @classmethod
+    @abc.abstractmethod
     def run_options(cls) -> list['ClickOptionDecoratorType']:
         """
         Return additional options for ``tmt run``.
@@ -51,6 +53,7 @@ class PlanShaper(tmt.utils.Common):
         raise NotImplementedError
 
     @classmethod
+    @abc.abstractmethod
     def check(cls, plan: 'Plan', tests: list['TestOrigin']) -> bool:
         """
         Check whether this shaper should be applied to the given plan.
@@ -61,6 +64,7 @@ class PlanShaper(tmt.utils.Common):
         raise NotImplementedError
 
     @classmethod
+    @abc.abstractmethod
     def apply(cls, plan: 'Plan', tests: list['TestOrigin']) -> Iterator['Plan']:
         """
         Apply the shaper to a given plan and a set of tests.
