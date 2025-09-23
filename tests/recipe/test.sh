@@ -6,40 +6,21 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
         rlRun "pushd data"
         recipe="$run/recipe.yaml"
+        expected_recipe="recipe.yaml"
     rlPhaseEnd
 
-    function check_run_env () {
-        if ! yq -e -r '.run.environment.RUN_ENV' "$recipe" > /dev/null 2>&1; then
-            rlFail "Run environment is not correct"
-        else
-            rlPass "Run environment is correct"
-        fi
-    }
-
-    function check_plan_env () {
-        if ! yq -e '.plans[0] | select(.environment.PLAN_ENV != null and (.environment | has("RUN_ENV") | not))' "$recipe" > /dev/null; then
-            rlFail "Plan environment is not correct"
-        else
-            rlPass "Plan environment is correct"
-        fi
-    }
-
-    function check_test_env () {
-        if ! yq -e '.plans[0].discover.tests[0] | select(.environment.TEST_ENV != null and (.environment | has("PLAN_ENV") | not))' "$recipe" > /dev/null; then
-            rlFail "Test environment is not correct"
-        else
-            rlPass "Test environment is correct"
-        fi
+    function replace_values () {
+        temp_recipe=$(mktemp)
+        yq '.run.root = "/fmf_root_path" | .plans[].environment.TMT_VERSION = "1.57.0"' "$recipe" > "$temp_recipe"
+        mv "$temp_recipe" "$recipe"
+        sed -i "s#$run#/run_path#g" "$recipe"
     }
 
     rlPhaseStartTest "Test recipe generation"
         rlRun -s "tmt -vv run --id $run -e RUN_ENV=value"
-        recipe="$run/recipe.yaml"
         rlAssertExists "$recipe" "Recipe file exists"
-        rlAssertGrep "results-path: plan/execute/results.yaml" "$recipe"
-        check_run_env
-        check_plan_env
-        check_test_env
+        replace_values
+        rlAssertEquals "Generated recipe matches expected recipe" "$(yq -S . "$recipe")" "$(yq -S . "$expected_recipe")"
     rlPhaseEnd
 
     rlPhaseStartCleanup
