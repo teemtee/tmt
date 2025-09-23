@@ -10,12 +10,11 @@ from typing import Any, Optional
 import tmt.log
 import tmt.utils
 import tmt.utils.hints
-from tmt.container import container
-from tmt.steps.prepare.brand_new_allmighty_install.providers import (
-    ArtifactInfo,
+from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     DownloadError,
 )
+from tmt.steps.prepare.artifact.providers.info import RpmArtifactInfo
 from tmt.steps.provision import Guest
 
 koji: Optional[types.ModuleType] = None
@@ -55,37 +54,13 @@ def import_koji(logger: tmt.log.Logger) -> None:
         raise tmt.utils.GeneralError("Could not import koji package.") from error
 
 
-@container
-class KojiArtifactInfo(ArtifactInfo):
-    PKG_URL = "https://kojipkgs.fedoraproject.org/packages/"  # For actual package downloads
-
-    @property
-    def name(self) -> str:
-        """Get the RPM filename for the given RPM metadata."""
-        return f"{self._raw_artifact['nvr']}.{self._raw_artifact['arch']}.rpm"
-
-    @property
-    def location(self) -> str:
-        """Get the download URL for the given RPM metadata."""
-        return (
-            f"{self.PKG_URL}{self._raw_artifact['name']}/"
-            f"{self._raw_artifact['version']}/"
-            f"{self._raw_artifact['release']}/"
-            f"{self._raw_artifact['arch']}/"
-            f"{self.name}"
-        )
-
-
-class KojiProvider(ArtifactProvider[KojiArtifactInfo]):
+class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
     """
     Provider for downloading artifacts from Koji builds.
-
-    Supports:
-        - Listing available RPM artifacts
-        - Downloading artifacts with filtering
+    Currently only supports RPM artifacts.
 
     Example:
-        provider = KojiProvider(logger, "koji.build:123456")
+        provider = KojiArtifactProvider(logger, "koji.build:123456")
         artifacts = provider.download_artifacts(guest, Path("/tmp"), [] )
     """
 
@@ -141,19 +116,16 @@ class KojiProvider(ArtifactProvider[KojiArtifactInfo]):
             raise ValueError(f"Invalid artifact ID format: '{artifact_id}'.")
         return parsed
 
-    def list_artifacts(self) -> Iterator[KojiArtifactInfo]:
+    def list_artifacts(self) -> Iterator[RpmArtifactInfo]:
         """
         TODO: Currently only lists rpms, extend to other types.
         See testing farm code for reference: listArtifacts, listTaskOutput etc.
         """
         for rpm in self._rpm_list:
-            yield KojiArtifactInfo(
-                _raw_artifact=rpm,
-                id=int(self.artifact_id),
-            )
+            yield RpmArtifactInfo(_raw_artifact=rpm)
 
     def _download_artifact(
-        self, artifact: KojiArtifactInfo, guest: Guest, destination: tmt.utils.Path
+        self, artifact: RpmArtifactInfo, guest: Guest, destination: tmt.utils.Path
     ) -> None:
         """
         Download the specified artifact to the given destination on the guest.

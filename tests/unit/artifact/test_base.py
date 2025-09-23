@@ -1,19 +1,17 @@
 import re
 from unittest.mock import MagicMock
 
-from tmt.steps.prepare.brand_new_allmighty_install.providers import (
-    ArtifactInfo,
-    ArtifactProvider,
-)
+from tmt.steps.prepare.artifact.providers import ArtifactProvider
+from tmt.steps.prepare.artifact.providers.info import ArtifactInfo
 
 
 class MockArtifactInfo(ArtifactInfo):
     @property
-    def name(self):
+    def id(self) -> str:
         return "mock.rpm"
 
     @property
-    def location(self):
+    def location(self) -> str:
         return "http://example.com/mock.rpm"
 
 
@@ -22,7 +20,7 @@ class MockProvider(ArtifactProvider[MockArtifactInfo]):
         return artifact_id.split(":", 1)[1]
 
     def list_artifacts(self):
-        yield MockArtifactInfo(_raw_artifact={}, id=1)
+        yield MockArtifactInfo(_raw_artifact={})
 
     def _download_artifact(self, artifact, guest, destination):
         destination.write_text("ok")

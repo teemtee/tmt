@@ -63,7 +63,7 @@ test-convert = [
 export-polarion = [
     "pylero>=0.1.0",
     ]
-prepare-allmighty-install-koji = [
+prepare-artifact-install-koji = [
     "koji>=1.35.0",
     ]
 provision-beaker = [
@@ -88,7 +88,7 @@ link-jira = [
 all = [
     "tmt[test-convert]",
     "tmt[export-polarion]",
-    "tmt[prepare-allmighty-install-koji]",
+    "tmt[prepare-artifact-install-koji]",
     "tmt[provision-container]",
     "tmt[provision-bootc]",
     "tmt[provision-virtual]",
@@ -269,8 +269,8 @@ ignore = [
     "tmt/steps/prepare/feature/__init__.py",
     "tmt/steps/prepare/__init__.py",
     "tmt/steps/prepare/install.py",
-    "tmt/steps/prepare/brand_new_allmighty_install/__init__.py",
-    "tmt/steps/prepare/brand_new_allmighty_install/providers/*.py",
+    "tmt/steps/prepare/artifact/__init__.py",
+    "tmt/steps/prepare/artifact/providers/*.py",
     "tmt/steps/provision/*.py",
     "tmt/steps/report/__init__.py",
     "tmt/steps/report/polarion.py",

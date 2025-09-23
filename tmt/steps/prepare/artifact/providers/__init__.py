@@ -2,23 +2,16 @@
 Abstract base class for artifact providers.
 """
 
-import enum
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from re import Pattern
 from shlex import quote
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 
 import tmt.log
 import tmt.utils
-from tmt.container import container
+from tmt.steps.prepare.artifact.providers.info import ArtifactInfo
 from tmt.steps.provision import Guest
-
-
-class ArtifactType(enum.Enum):
-    RPM = 'rpm'
-    CONTAINER = 'container'
-    UNKNOWN = 'unknown'
 
 
 class DownloadError(tmt.utils.GeneralError):
@@ -27,39 +20,35 @@ class DownloadError(tmt.utils.GeneralError):
     """
 
 
-@container
-class ArtifactInfo(ABC):
-    _raw_artifact: dict[str, Any]
-    id: int
-
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def location(self) -> str:
-        raise NotImplementedError
-
-    def __str__(self) -> str:
-        return self.name
-
-
 ArtifactInfoT = TypeVar('ArtifactInfoT', bound=ArtifactInfo)
 
 
 class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
+    """
+    Abstract provider of artifacts
+    e.g. KojiArtifactProvider, BrewArtifactProvider, RepoFileArtifactProvider.
+
+    Each provider must implement:
+        - Parsing and validating the artifact ID
+        - Listing available artifacts
+        - Downloading a single artifact
+    The base class provides:
+        - Downloading all artifacts with filtering
+
+    """
+
     def __init__(self, logger: tmt.log.Logger, artifact_id: str):
         self.logger = logger
-        self.artifact_id = self._parse_artifact_id(artifact_id)
+        self.artifact_id = self._parse_artifact_id(
+            artifact_id
+        )  # Identifier for the source, e.g. 'koji.build:12345', URL for repository
 
     @abstractmethod
     def _parse_artifact_id(self, artifact_id: str) -> str:
         """
         Parse and validate the artifact identifier.
 
-        :param artifact_id: The raw artifact identifier
+        :param id: Identifier for the source
         :return: The parsed identifier specific to this provider
         :raises ValueError: If the artifact ID format is invalid
         """
@@ -150,5 +139,5 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         """
 
         for artifact in self.list_artifacts():
-            if not any(pattern.search(artifact.name) for pattern in exclude_patterns):
+            if not any(pattern.search(artifact.id) for pattern in exclude_patterns):
                 yield artifact
