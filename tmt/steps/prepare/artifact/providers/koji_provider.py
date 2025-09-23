@@ -118,8 +118,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
     def list_artifacts(self) -> Iterator[RpmArtifactInfo]:
         """
-        TODO: Currently only lists rpms, extend to other types.
-        See testing farm code for reference: listArtifacts, listTaskOutput etc.
+        List all RPM artifacts for the given build.
         """
         for rpm in self._rpm_list:
             yield RpmArtifactInfo(_raw_artifact=rpm)

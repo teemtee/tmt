@@ -21,7 +21,7 @@ class ArtifactInfo(ABC):
                   * Containers → image digest or tag
     """
 
-    _raw_artifact: dict[str, Any]
+    _raw_artifact: Any
 
     @property
     @abstractmethod
@@ -40,10 +40,11 @@ class ArtifactInfo(ABC):
 @container
 class RpmArtifactInfo(ArtifactInfo):
     """
-    Represents a single RPM file from Koji.
+    Represents a single RPM package.
     """
 
     PKG_URL = "https://kojipkgs.fedoraproject.org/packages/"  # For actual package downloads
+    _raw_artifact: dict[str, str]
 
     @property
     def id(self) -> str:

@@ -269,7 +269,6 @@ ignore = [
     "tmt/steps/prepare/feature/__init__.py",
     "tmt/steps/prepare/__init__.py",
     "tmt/steps/prepare/install.py",
-    "tmt/steps/prepare/artifact/__init__.py",
     "tmt/steps/prepare/artifact/providers/*.py",
     "tmt/steps/provision/*.py",
     "tmt/steps/report/__init__.py",
