@@ -4601,9 +4601,11 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         """
         Check overall results, return appropriate exit code
         """
-        # Save recipe
         self.recipe_builder.set_plans(list(self.plans))
-        self.recipe_builder.save(self.run_workdir)
+
+        # Save recipe
+        if not self.is_dry_run:
+            self.recipe_builder.save(self.run_workdir)
 
         # We get interesting results only if execute or prepare step is enabled
         execute = self.plans[0].execute
