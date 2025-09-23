@@ -5,7 +5,7 @@ execute:
   how: tmt
 discover:
   how: fmf
-  filter: "tag: dev"
+  filter: "tag: sanity"
 
 prepare:
   - name: Install common base packages
