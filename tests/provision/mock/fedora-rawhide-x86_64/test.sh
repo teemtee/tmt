@@ -8,7 +8,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest
-        rlRun -s "tmt --feeling-safe run --id $run -vvv"
+        rlRun -s "TMT_SHOW_TRACEBACK=1 tmt --feeling-safe run --id $run -vvv"
         rlAssertGrep "NAME.*Fedora Linux" $rlRun_LOG
     rlPhaseEnd
 
