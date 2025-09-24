@@ -176,34 +176,6 @@ class MockShell:
                     break
         self.mock_shell.stderr.read()
 
-        """
-        NOTE Here we would like to add code which unmounts the overlayfs
-        after the prepare phase is done. Nevertheless testing should work even
-        with the bootstrap chroot mounted.
-
-        plan = self.parent.parent.parent
-
-        prepare_data_class = cast(  # type: ignore[redundant-cast]
-            type[tmt.steps.prepare.shell.PrepareShellData],
-            tmt.steps.prepare.shell.PrepareShell.get_data_class(),
-        )
-
-        data = prepare_data_class(
-            name="tmt-unmount-mock-bootstrap-overlay",
-            how='shell',
-            script=[
-                TODO
-            ],
-        )
-
-        phase: PreparePlugin[Any] = cast(
-            PreparePlugin[Any],
-            PreparePlugin.delegate(plan.prepare, data=data),
-        )
-
-        plan.prepare._phases.append(phase)
-        """
-
         return self
 
     def execute(
