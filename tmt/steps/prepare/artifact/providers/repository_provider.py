@@ -1,110 +1,139 @@
 """
-Artifact providers for Repository and Repository Files.
+Artifact provider for repository files.
 """
 
 from collections.abc import Iterator
+from re import Pattern
 from shlex import quote
-from urllib.parse import urlparse
+from typing import Any, Optional
+from urllib.parse import unquote, urlparse
 
-import tmt.log
-import tmt.utils
-from tmt.container import container
 from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     DownloadError,
 )
-from tmt.steps.prepare.artifact.providers.info import ArtifactInfo
+from tmt.steps.prepare.artifact.providers.info import RpmArtifactInfo
 from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path, ShellScript
 
 
-@container
-class RepositoryFileInfo(ArtifactInfo):
+class RepositoryFileInfo:
     """
-    A single repository file channel.
-
-    Encapsulates information about a repository file, including its URL and
-    derived identifier (filename). It validates that the URL uses HTTP/HTTPS
-    and points to a file with a ``.repo`` extension.
+    A helper class representing a repository .repo file from a URL.
     """
 
-    _raw_artifact: str
+    def __init__(self, url: str) -> None:
+        # The constructor also serves as a validator for the URL format
+        try:
+            result = urlparse(url)
+            if not all([result.scheme, result.netloc]):
+                raise ValueError
+        except (ValueError, AttributeError):
+            raise GeneralError(f"Invalid URL format for .repo file: '{url}'.")
+        self._url = url
+
+    @property
+    def url(self) -> str:
+        """The URL of the .repo file."""
+        return self._url
+
+    @property
+    def filename(self) -> str:
+        """A suitable filename extracted from the URL path."""
+        path = urlparse(self.url).path
+        return unquote(Path(path).name)
+
+
+class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
+    """
+    Sets up a repository on the guest and lists the RPMs it provides.
+
+    The artifact_id is a URL to a .repo file. This provider's main
+    purpose is to download this file and place it in '/etc/yum.repos.d/'.
+
+    It then lists all RPMs made available by the new repository but does
+    not download any of them.
+    """
 
     def __post_init__(self) -> None:
-        parsed_url = urlparse(self._raw_artifact)
-        if parsed_url.scheme not in ('http', 'https'):
-            raise ValueError(
-                f"Invalid repository URL: {self._raw_artifact}. Only HTTP(S) is supported."
-            )
-        # TODO: make url checking less stringent
-        path = tmt.utils.Path(parsed_url.path)
-        if path.suffix != '.repo':
-            raise ValueError(f"URL must point to a .repo file, got: {path.name}")
-        self._id = path.name
-
-    @property
-    def id(self) -> str:
-        """The filename of the repository file"""
-        return self._id
-
-    @property
-    def location(self) -> str:
-        """The location (URL) of the repository file"""
-        return self._raw_artifact
-
-
-class RepositoryFileProvider(ArtifactProvider[RepositoryFileInfo]):
-    """
-    Provides repository files for download.
-
-    The artifact_id is expected to be a URL to a repository file, which will be
-    downloaded to a specified destination on a guest system. The provider
-    ensures the URL points to a valid ``.repo`` file and handles downloading
-    it to the guest.
-    """
-
-    # TODO: Change to RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo])
-    # because we will be listing RPM's
+        # Create a helper object to represent the .repo file
+        self.repo_file = RepositoryFileInfo(url=self.artifact_id)
+        # Cache for the list of RPMs discovered in the repository
+        self._rpm_list: Optional[list[dict[str, Any]]] = None
+        self._repository_installed = False
 
     def _parse_artifact_id(self, artifact_id: str) -> str:
-        # Validate the artifact_id by creating a RepositoryFileInfo instance
-        RepositoryFileInfo(_raw_artifact=artifact_id)
+        """
+        Validate the artifact identifier using the RepositoryFileInfo class.
+        """
+        # The constructor of RepositoryFileInfo handles URL validation
+        RepositoryFileInfo(url=artifact_id)
         return artifact_id
 
-    def list_artifacts(self) -> Iterator[RepositoryFileInfo]:
-        yield RepositoryFileInfo(_raw_artifact=self.artifact_id)
+    def _fetch_rpms(self, guest: Guest, repo_filepath: Path) -> None:
+        """
+        Query the guest to find all packages available in the new repository.
+        """
+        raise NotImplementedError
+
+    def list_artifacts(self) -> Iterator[RpmArtifactInfo]:
+        """
+        List all RPMs available from the repository.
+
+        Note: This requires the repository to be installed and queried first,
+        which is handled by the `download_artifacts` method.
+        """
+        if self._rpm_list is None:
+            raise GeneralError(
+                "RPM list not fetched. Call 'download_artifacts' to install "
+                "the repository and populate the package list."
+            )
+        for rpm in self._rpm_list:
+            yield RpmArtifactInfo(_raw_artifact=rpm)
 
     def _download_artifact(
-        self, artifact: RepositoryFileInfo, guest: Guest, destination: Path
+        self, artifact: RpmArtifactInfo, guest: Guest, destination: Path
     ) -> None:
-        url = artifact.location
-        filename = artifact.id
-        repo_destination = Path("/etc/yum.repos.d") / filename
-        sudo_prefix = "sudo " if not guest.facts.is_superuser else ""
+        """This provider only sets up the repo, it does not download RPMs."""
+        self.logger.debug(f"Skipping download of '{artifact.id}'.")
 
-        self.logger.debug(f"Processing repository file from {url} to {repo_destination} on guest.")
+    def download_artifacts(
+        self,
+        guest: Guest,
+        download_path: Path,
+        exclude_patterns: list[Pattern[str]],
+    ) -> list[Path]:
+        """
+        Download the .repo file to the guest, making the repository available.
+
+        This method overrides the default behavior to prevent downloading
+        individual RPMs. It installs the repository, lists the available
+        packages for discovery, and then returns.
+        """
+        if self._repository_installed:
+            self.logger.debug("Repository file already installed, skipping.")
+            return []
+
+        # 1. Install the repository file on the guest using info from our helper object
+        filename = self.repo_file.filename
+        url = self.repo_file.url
+        repo_dest = Path("/etc/yum.repos.d") / filename
+
+        sudo = "sudo " if not guest.facts.is_superuser else ""
+        self.logger.info(f"Installing repository '{url}' to '{repo_dest}'.")
 
         try:
-            # TODO: Add retries for the curl call
-            # Download the file to the temporary destination
+            # TODO: Add retry Mechanism
             guest.execute(
-                ShellScript(f"curl -L --fail -o {quote(str(destination))} {quote(url)}"),
+                ShellScript(f"{sudo}curl -L --fail -o {quote(str(repo_dest))} {quote(url)}"),
                 silent=True,
             )
+            self._repository_installed = True
+        except GeneralError as error:
+            raise DownloadError(f"Failed to download repository file to '{repo_dest}'.") from error
 
-            # Move the file to /etc/yum.repos.d and set permissions
-            guest.execute(
-                ShellScript(
-                    f"""
-                 set -e
-                 {sudo_prefix}mv {quote(str(destination))} {quote(str(repo_destination))}
-                 {sudo_prefix}chmod 644 {quote(str(repo_destination))}
-                """
-                ),
-                silent=True,
-            )
+        # 2. Populate the RPM list for discovery purposes
+        self._fetch_rpms(guest, repo_dest)
 
-        except GeneralError as e:
-            raise DownloadError(
-                f"Failed to process repository file from {url} to {repo_destination}."
-            ) from e
+        self.logger.info("Repository setup is complete.")
+        return [repo_dest]
