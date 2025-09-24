@@ -45,6 +45,10 @@ The :ref:`/plugins/provision/artemis` provision plugin now
 supports fetching logs. The plugin will attempt to fetch only the
 logs specified by the ``log-type`` key.
 
+At the end of each run, tmt now generates a ``recipe.yaml``
+file based on the :ref:`specification</spec/recipe>`. Loading
+recipes is not yet supported.
+
 
 tmt-1.57.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
