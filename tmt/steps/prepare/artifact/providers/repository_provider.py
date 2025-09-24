@@ -8,6 +8,7 @@ from shlex import quote
 from typing import Any, Optional
 from urllib.parse import unquote, urlparse
 
+import tmt.log
 from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     DownloadError,
@@ -17,7 +18,7 @@ from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path, ShellScript
 
 
-class RepositoryFileInfo:
+class RepositoryFile:
     """
     A helper class representing a repository .repo file from a URL.
     """
@@ -55,26 +56,28 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
     not download any of them.
     """
 
-    def __post_init__(self) -> None:
-        # Create a helper object to represent the .repo file
-        self.repo_file = RepositoryFileInfo(url=self.artifact_id)
+    def __init__(self, logger: tmt.log.Logger, artifact_id: str):
+        super().__init__(logger, artifact_id)
+        self.repo_file = RepositoryFile(url=self.artifact_id)
         # Cache for the list of RPMs discovered in the repository
         self._rpm_list: Optional[list[dict[str, Any]]] = None
         self._repository_installed = False
 
     def _parse_artifact_id(self, artifact_id: str) -> str:
         """
-        Validate the artifact identifier using the RepositoryFileInfo class.
+        Validate the artifact identifier using the RepositoryFile class.
         """
-        # The constructor of RepositoryFileInfo handles URL validation
-        RepositoryFileInfo(url=artifact_id)
+        # The constructor of RepositoryFile handles URL validation
+        RepositoryFile(url=artifact_id)
         return artifact_id
 
     def _fetch_rpms(self, guest: Guest, repo_filepath: Path) -> None:
         """
         Query the guest to find all packages available in the new repository.
         """
-        raise NotImplementedError
+        # TODO: This method needs to be implemented to populate self._rpm_list with RPMs
+        # from the repository. Currently using an empty list as a temporary solution.
+        self._rpm_list = []
 
     def list_artifacts(self) -> Iterator[RpmArtifactInfo]:
         """
@@ -136,4 +139,6 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         self._fetch_rpms(guest, repo_dest)
 
         self.logger.info("Repository setup is complete.")
-        return [repo_dest]
+        # 3. Return list of available Artifacts
+        # TODO: Finalize contract of what needs to be returned from Artifact Repository
+        return []
