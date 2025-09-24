@@ -36,17 +36,17 @@ class _Step(SerializableContainer):
         if isinstance(step, Discover):
             return _DiscoverStep(
                 enabled=bool(step.enabled),
-                phases=cast(Step, step).data,
+                phases=cast(Step, step).data if step.enabled else [],
                 tests=[test_origin.test for test_origin in step.tests()],
             )
         if isinstance(step, Execute):
             return _ExecuteStep(
                 enabled=bool(step.enabled),
-                phases=cast(Step, step).data,
+                phases=cast(Step, step).data if step.enabled else [],
                 results_path=(step.step_workdir / 'results.yaml').relative_to(step.run_workdir),
             )
         if isinstance(step, Step):
-            return _Step(enabled=bool(step.enabled), phases=step.data)
+            return _Step(enabled=bool(step.enabled), phases=step.data if step.enabled else [])
 
         raise ValueError(f"Step '{step_name}' is not defined in plan '{plan.name}'")
 
