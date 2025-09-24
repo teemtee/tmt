@@ -15,5 +15,5 @@ prepare:
     # as root?
   - how: shell
     script:
-      - pip3 install --user yq || pip3 install yq
+      - command -v yq || pip3 install --user yq || pip3 install yq
       - yq --help
