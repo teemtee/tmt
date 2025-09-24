@@ -1,3 +1,4 @@
+from tmt.steps.provision.mock import GuestMock
 from typing import (
     Optional,
 )
@@ -12,7 +13,6 @@ from tmt.package_managers import (
 from tmt.utils import (
     Command,
     CommandOutput,
-    Path,
     ShellScript
 )
 
@@ -23,6 +23,9 @@ class BaseMockEngine(PackageManagerEngine):
     shell. To differentiate these scripts we set a special attribute `_local`
     of the script object.
     """
+
+    def _prepare_local_script(self, script: str):
+        return ShellScript(f'{self.command} {self.options.to_script()} {script}')
 
     def _prepare_install_script(
         self,
@@ -39,13 +42,14 @@ class BaseMockEngine(PackageManagerEngine):
         if options.skip_missing:
             extra_options += Command('--skip-broken')
 
-        return ShellScript(f'{self.command} {self.options.to_script()} '
+        return self._prepare_local_script(
             f'{installword} {extra_options} '
             f'{" ".join(escape_installables(*installables))}'
         )
 
     def prepare_command(self) -> tuple[Command, Command]:
         options = Command()
+        assert isinstance(self.guest, GuestMock)
         if self.guest.config is not None:
             options += Command('-r')
             options += Command(self.guest.config)
