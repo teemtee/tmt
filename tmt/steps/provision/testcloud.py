@@ -27,6 +27,7 @@ from tmt.container import container, field
 from tmt.steps.provision import CONNECT_TIMEOUT, default_connect_waiting
 from tmt.utils import (
     Command,
+    GuestLogError,
     Path,
     ProvisionError,
     ShellScript,
@@ -992,8 +993,9 @@ class GuestTestcloud(tmt.GuestSsh):
             testcloud_symlink_path=self.logdir / CONSOLE_LOG_FILE,
             guest=self,
         )
-        console_log.prepare(logger=self._logger)
         self.guest_logs.append(console_log)
+
+        self.setup_logs()
 
         # Prepare config
         self.prepare_config()
@@ -1453,20 +1455,15 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
 
 @container
 class ConsoleLog(tmt.steps.provision.GuestLog):
-    # Path where testcloud will create the symlink to the console log
+    #: Path where :py:mod:`testcloud`` will create the symlink to the
+    #: console log.
     testcloud_symlink_path: Path
 
-    # Temporary directory for storing the console log content
+    #: Temporary directory for storing the console log content.
     exchange_directory: Optional[Path] = None
 
-    def prepare(self, logger: tmt.log.Logger) -> None:
-        """
-        Prepare temporary directory for the console log.
-
-        Special directory is needed for console logs with the right
-        selinux context so that virtlogd is able to write there.
-        """
-
+    def setup(self, logger: tmt.log.Logger) -> None:
+        # Prepare the exchange directory for testcloud/tmt console log transport.
         self.exchange_directory = Path(tempfile.mkdtemp(prefix="testcloud-"))
         logger.debug(f"Created console log directory '{self.exchange_directory}'.", level=3)
 
@@ -1480,11 +1477,7 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
                 Command("chcon", "--type", "virt_log_t", self.exchange_directory), silent=True
             )
 
-    def cleanup(self, logger: tmt.log.Logger) -> None:
-        """
-        Remove the temporary directory.
-        """
-
+    def teardown(self, logger: tmt.log.Logger) -> None:
         if self.exchange_directory is None:
             return
 
@@ -1498,7 +1491,7 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
                 f"Failed to remove console log directory '{self.exchange_directory}': {error}"
             )
 
-    def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
+    def fetch(self, logger: tmt.log.Logger) -> str:
         """
         Read the content of the symlink target prepared by testcloud.
         """
@@ -1512,13 +1505,8 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
             text = self.testcloud_symlink_path.read_text(errors="ignore")
 
         except OSError as error:
-            tmt.utils.show_exception_as_warning(
-                exception=error,
-                message='Failed to read the console log.',
-                logger=self.guest._logger,
-            )
+            raise GuestLogError('Failed to read the console log.', self) from error
 
         self.testcloud_symlink_path.unlink()
-        self.cleanup(logger)
 
         return text

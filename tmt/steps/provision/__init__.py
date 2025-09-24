@@ -1,6 +1,7 @@
 import ast
 import contextlib
 import dataclasses
+import datetime
 import enum
 import functools
 import hashlib
@@ -54,6 +55,7 @@ from tmt.package_managers import (
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue
 from tmt.utils import (
+    OUTPUT_WIDTH,
     Command,
     GeneralError,
     OnProcessEndCallback,
@@ -63,6 +65,7 @@ from tmt.utils import (
     ShellScript,
     configure_constant,
     effective_workdir_root,
+    format_timestamp,
 )
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Deadline, Waiting
@@ -1214,44 +1217,85 @@ class GuestData(SerializableContainer):
 
 @container
 class GuestLog:
-    # Log file name
+    #: Name of the guest log
     name: str
 
-    # Linked guest
+    #: Guest whose log this instance represents.
     guest: "Guest"
 
-    def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
+    @functools.cached_property
+    def filename(self) -> str:
+        return self.name
+
+    def _render_content(
+        self,
+        *,
+        label: str,
+        content: str,
+        comment_sign: str = '#',
+    ) -> Iterator[str]:
+        """
+        Format a guest log content for a report file.
+        """
+
+        yield f'{comment_sign}{comment_sign} {label}'
+        yield ''
+
+        yield (OUTPUT_WIDTH - 2) * '~'
+        yield from content.splitlines()
+        yield (OUTPUT_WIDTH - 2) * '~'
+        yield ''
+
+    def setup(self, logger: tmt.log.Logger) -> None:
+        """
+        Prepare for collecting the log.
+
+        It is left for plugins to setup the needed infrastructure,
+        make API calls, etc.
+        """
+
+        pass
+
+    def teardown(self, logger: tmt.log.Logger) -> None:
+        """
+        Finalize collection of the log.
+
+        It is left for plugins to tear down and remove what is no longer
+        needed once the log stops being collected.
+        """
+
+        pass
+
+    def fetch(self, logger: tmt.log.Logger) -> str:
         """
         Fetch and return content of a log.
 
-        :returns: content of the log, or ``None`` if the log cannot be retrieved.
+        :returns: content of the log.
         """
+
         raise NotImplementedError
 
-    def store(self, logger: tmt.log.Logger, path: Path, logname: Optional[str] = None) -> None:
+    def store(self, filepath: Path, logger: tmt.log.Logger) -> None:
         """
         Save log content to a file.
 
         :param logger: logger to use for logging.
-        :param path: a path to save into, could be a directory
+        :param filepath: a path to save into, could be a directory
             or a file path.
-        :param logname: name of the log, if not set, ``path``
-            is supposed to be a file path.
         """
-        log_content = self.fetch(logger)
-        if log_content:
-            # if path is file path
-            if not path.is_dir():
-                path.write_text(log_content)
-            # if path is a directory
-            elif logname:
-                (path / logname).write_text(log_content)
-            else:
-                raise tmt.utils.GeneralError(
-                    'Log path is a directory but log name is not defined.'
+
+        timestamp = format_timestamp(datetime.datetime.now(datetime.timezone.utc))
+
+        filepath.touch()
+
+        filepath.append_text(
+            '\n'.join(
+                self._render_content(
+                    label=f'Acquired at {timestamp}',
+                    content=self.fetch(logger),
                 )
-        else:
-            logger.warning(f'Failed to fetch log: {self.name}')
+            )
+        )
 
 
 class Guest(
@@ -2089,6 +2133,14 @@ class Guest(
 
         return dirpath
 
+    def setup_logs(self) -> None:
+        for log in self.guest_logs:
+            log.setup(self._logger)
+
+    def teardown_logs(self) -> None:
+        for log in self.guest_logs:
+            log.teardown(self._logger)
+
     def fetch_logs(
         self,
         logger: tmt.log.Logger,
@@ -2106,11 +2158,16 @@ class Guest(
         """
 
         guest_logs = guest_logs or self.guest_logs
-
         dirpath = dirpath or self.logdir or Path.cwd()
+
         dirpath.mkdir(parents=True, exist_ok=True)
+
         for log in guest_logs:
-            log.store(logger, dirpath, log.name)
+            log_filepath = dirpath / log.filename
+
+            log.store(log_filepath, logger)
+
+            logger.info(log.name, f'stored in {log_filepath}')
 
     def _construct_mkdtemp_command(
         self,

@@ -25,13 +25,7 @@ import tmt.utils.signals
 import tmt.utils.wait
 from tmt.config.models.hardware import MrackTranslation
 from tmt.container import container, field, simple_field
-from tmt.utils import (
-    Command,
-    Path,
-    ProvisionError,
-    ShellScript,
-    UpdatableMessage,
-)
+from tmt.utils import Command, GuestLogError, Path, ProvisionError, ShellScript, UpdatableMessage
 from tmt.utils.templates import render_template
 from tmt.utils.wait import Deadline, Waiting
 
@@ -1555,6 +1549,9 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                         )
                     else:
                         self.warn('No console.log available.')
+
+                    self.setup_logs()
+
                     return current
 
                 raise tmt.utils.wait.WaitingIncompleteError
@@ -1803,19 +1800,11 @@ class GuestLogBeaker(tmt.steps.provision.GuestLog):
     guest: GuestBeaker
     url: str
 
-    def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
-        """
-        Fetch and return content of a log.
-
-        :returns: content of the log, or ``None`` if the log cannot be retrieved.
-        """
+    def fetch(self, logger: tmt.log.Logger) -> str:
         try:
             return tmt.utils.get_url_content(self.url)
-        except Exception as error:
-            tmt.utils.show_exception_as_warning(
-                exception=error,
-                message=f"Failed to fetch '{self.url}' log.",
-                logger=self.guest._logger,
-            )
 
-            return None
+        except Exception as error:
+            raise GuestLogError('Failed to fetch log.', self) from error
+
+        raise GuestLogError('Failed to fetch, for unknown reason.', self)
