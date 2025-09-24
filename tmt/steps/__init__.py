@@ -1314,7 +1314,7 @@ class Step(
         Run all loaded Login or Reboot action instances of the step
         """
 
-        for phase in self.phases(classes=Action):
+        for phase in self.phases(classes=Action):  # type: ignore[type-abstract]
             phase.go()
 
     def go(self, force: bool = False) -> None:
@@ -1349,7 +1349,7 @@ class Step(
 
         # Do not prune plugin workdirs, each plugin decides what should
         # be pruned from the workdir and what should be kept there
-        plugins = self.phases(classes=BasePlugin)
+        plugins = self.phases(classes=BasePlugin)  # type: ignore[type-abstract]
         for plugin in plugins:
             if plugin.workdir is not None:
                 preserved_members = {*preserved_members, plugin.workdir.name}

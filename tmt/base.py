@@ -2796,14 +2796,20 @@ class Plan(
         P003: execute step methods must be known
         """
 
-        yield from self._lint_step_methods('execute', tmt.steps.execute.ExecutePlugin)
+        yield from self._lint_step_methods(
+            'execute',
+            tmt.steps.execute.ExecutePlugin,  # type: ignore[type-abstract]
+        )
 
     def lint_discover_unknown_method(self) -> LinterReturn:
         """
         P004: discover step methods must be known
         """
 
-        yield from self._lint_step_methods('discover', tmt.steps.discover.DiscoverPlugin)
+        yield from self._lint_step_methods(
+            'discover',
+            tmt.steps.discover.DiscoverPlugin,  # type: ignore[type-abstract]
+        )
 
     def lint_fmf_remote_ids_valid(self) -> LinterReturn:
         """
