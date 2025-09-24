@@ -62,6 +62,9 @@ class RepositoryFileProvider(ArtifactProvider[RepositoryFileInfo]):
     it to the guest.
     """
 
+    # TODO: Change to RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo])
+    # because we will be listing RPM's
+
     def _parse_artifact_id(self, artifact_id: str) -> str:
         # Validate the artifact_id by creating a RepositoryFileInfo instance
         RepositoryFileInfo(_raw_artifact=artifact_id)
