@@ -3,5 +3,5 @@ execute:
 
 plan:
   import:
-    url: https://github.com/teemtee/tmt
-    name: /plans/sanity/with-tmt
+    url: https://github.com/teemtee/tests
+    name: /plans
