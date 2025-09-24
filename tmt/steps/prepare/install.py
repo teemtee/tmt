@@ -1,4 +1,3 @@
-import abc
 import re
 import shutil
 from collections.abc import Iterator
@@ -121,14 +120,6 @@ class InstallBase(tmt.utils.Common):
                 if filepath.suffix == '.rpm':
                     self.debug(f"Found rpm '{filepath}'.", level=3)
                     self.local_packages.append(PackagePath(filepath))
-
-    @abc.abstractmethod
-    def prepare_repository(self) -> None:
-        """
-        Configure additional repository
-        """
-
-        raise NotImplementedError
 
     def list_installables(self, title: str, *installables: Installable) -> Iterator[Installable]:
         """
