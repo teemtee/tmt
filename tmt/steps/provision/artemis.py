@@ -848,7 +848,7 @@ class GuestLogArtemis(tmt.steps.provision.GuestLog):
         :returns: content of the log, or ``None`` if the log cannot be retrieved.
         """
         if self.guest.guestname is None:
-            logger.warning("Failed to fetch log - guest does not exist")
+            logger.warning("Failed to fetch log - guest does not exist.")
             return None
 
         response = self.guest.api.inspect(f'/guests/{self.guest.guestname}/logs/{self.log_type}')
