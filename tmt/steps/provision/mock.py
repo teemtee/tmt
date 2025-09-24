@@ -7,11 +7,6 @@ import subprocess
 from pathlib import Path
 from typing import Any, Optional, Union
 
-import mockbuild
-import mockbuild.config
-import mockbuild.plugins
-import mockbuild.plugins.pm_request
-
 import tmt
 import tmt.base
 import tmt.log
@@ -460,6 +455,13 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
     _guest = None
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+        try:
+            import mockbuild.config
+        except ImportError as error:
+            from tmt.utils.hints import print_hints
+            print_hints('mockbuild.config', logger=logger)
+            raise tmt.utils.GeneralError("Could not import mockbuild.config package.") from error
+
         """
         Provision the container
         """
