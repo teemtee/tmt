@@ -864,30 +864,30 @@ class GuestLogArtemis(tmt.steps.provision.GuestLog):
 
         log_data = response.json()
         if self.log_type.endswith('/url'):
-            return _fetch_url(log_data, logger)
-        return _fetch_blob(log_data)
+            return self._fetch_url(log_data, logger)
+        return self._fetch_blob(log_data)
 
-
-def _fetch_url(log_data: dict[str, Any], logger: tmt.log.Logger) -> Optional[str]:
-    url = log_data.get('url')
-    if url is None:
+    @staticmethod
+    def _fetch_url(log_data: dict[str, Any], logger: tmt.log.Logger) -> Optional[str]:
+        url = log_data.get('url')
+        if url is None:
+            return None
+        try:
+            return tmt.utils.get_url_content(str(url))
+        except Exception as error:
+            tmt.utils.show_exception_as_warning(
+                exception=error,
+                message=f"Failed to fetch '{url}' log.",
+                logger=logger,
+            )
         return None
-    try:
-        return tmt.utils.get_url_content(str(url))
-    except Exception as error:
-        tmt.utils.show_exception_as_warning(
-            exception=error,
-            message=f"Failed to fetch '{url}' log.",
-            logger=logger,
+
+    @staticmethod
+    def _fetch_blob(log_data: dict[str, Any]) -> Optional[str]:
+        blobs = cast(list[GuestLogBlobType], log_data.get('blobs', []))
+        if not blobs:
+            return None
+        return "\n\n".join(
+            f"{blob['ctime']}\n{blob['content']}"
+            for blob in sorted(blobs, key=lambda blob: blob['ctime'])
         )
-    return None
-
-
-def _fetch_blob(log_data: dict[str, Any]) -> Optional[str]:
-    blobs = cast(list[GuestLogBlobType], log_data.get('blobs', []))
-    if not blobs:
-        return None
-    return "\n\n".join(
-        f"{blob['ctime']}\n{blob['content']}"
-        for blob in sorted(blobs, key=lambda blob: blob['ctime'])
-    )
