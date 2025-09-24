@@ -107,7 +107,7 @@ class MockShell:
     def enter_shell(self):
         command = self.command_prefix.to_popen()
         command.append("--enable-plugin=bind_mount")
-        command.append(f'--plugin-option=bind_mount:dirs=[("{shlex.quote(str(self.parent.workdir_root))}", "{shlex.quote(str(self.parent.workdir_root))}")]')
+        command.append(f'--plugin-option=bind_mount:dirs=[("{shlex.quote(str(self.parent.run_workdir))}", "{shlex.quote(str(self.parent.run_workdir))}")]')
         command.append("-q")
         command.append("--shell")
 
