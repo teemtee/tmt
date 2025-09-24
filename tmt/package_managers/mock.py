@@ -22,10 +22,10 @@ class BaseMockEngine(PackageManagerEngine):
     of the script object.
     """
 
-    def _prepare_local_script(self, script: str):
+    def _prepare_mock_command_script(self, script: str) -> ShellScript:
         return ShellScript(f'{self.command} {self.options.to_script()} {script}')
 
-    def _prepare_install_script(
+    def _prepare_mock_install_script(
         self,
         installword: str,
         *installables: Installable,
@@ -40,7 +40,7 @@ class BaseMockEngine(PackageManagerEngine):
         if options.skip_missing:
             extra_options += Command('--skip-broken')
 
-        return self._prepare_local_script(
+        return self._prepare_mock_command_script(
             f'{installword} {extra_options} {" ".join(escape_installables(*installables))}'
         )
 
@@ -48,8 +48,7 @@ class BaseMockEngine(PackageManagerEngine):
         options = Command()
         assert isinstance(self.guest, GuestMock)
         if self.guest.config is not None:
-            options += Command('-r')
-            options += Command(self.guest.config)
+            options += Command('-r', self.guest.config)
         options += Command('--pm-cmd')
         return (Command('mock'), options)
 
@@ -61,24 +60,26 @@ class BaseMockEngine(PackageManagerEngine):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> ShellScript:
-        return self._prepare_install_script('install', *installables, options=options)
+        return self._prepare_mock_install_script('install', *installables, options=options)
 
     def reinstall(
         self,
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> ShellScript:
-        return self._prepare_install_script('reinstall', *installables, options=options)
+        return self._prepare_mock_install_script('reinstall', *installables, options=options)
 
     def install_debuginfo(
         self,
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> ShellScript:
-        return self._prepare_install_script('debuginfo-install', *installables, options=options)
+        return self._prepare_mock_install_script(
+            'debuginfo-install', *installables, options=options
+        )
 
     def refresh_metadata(self) -> ShellScript:
-        return self._prepare_local_script('makecache --refresh')
+        return self._prepare_mock_command_script('makecache --refresh')
 
 
 class MockYumEngine(BaseMockEngine):

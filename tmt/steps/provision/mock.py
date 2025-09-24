@@ -4,8 +4,7 @@ import os
 import select
 import shlex
 import subprocess
-from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 import tmt
 import tmt.base
@@ -13,6 +12,7 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt._compat.typing import Self
 from tmt.container import container, field
 from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript
 from tmt.utils.wait import Waiting
@@ -35,6 +35,7 @@ class MockGuestData(tmt.steps.provision.GuestData):
         metavar='ROOTDIR',
         help='The path for where the chroot should be built.',
     )
+    mock_config: dict[Any, Any] = {}
 
 
 @container
@@ -46,12 +47,12 @@ class MockShell:
     # Lazy object that collects chunks of bytes and decodes them when a
     # newline is encountered
     class Stream:
-        def __init__(self, logger):
+        def __init__(self, logger: Callable[[str], None]):
             self.logger = logger
             self.output = b''
             self.string = ''
 
-        def __iadd__(self, content: bytes):
+        def __iadd__(self, content: bytes) -> Self:
             self.output += content
             while True:
                 pos = self.output.find(b'\n')
@@ -68,7 +69,7 @@ class MockShell:
         self.parent = parent
         self.config = config
         self.rootdir = rootdir
-        self.mock_shell: Optional[subprocess.Popen] = None
+        self.mock_shell: Optional[subprocess.Popen[str]] = None
         self.epoll: Optional[select.epoll] = None
         # Required by loggers
         self.pid: Optional[int] = None
@@ -87,32 +88,37 @@ class MockShell:
         assert root_path is not None
         self.root_path = Path(root_path.rstrip())
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.exit_shell()
 
     def exit_shell(self) -> None:
         if self.mock_shell is not None:
             self.parent.verbose('Exiting mock shell')
 
-            self.mock_shell.stdin.write("")
+            assert self.mock_shell.stdin is not None
+            self.mock_shell.stdin.write('')
             self.mock_shell.stdin.flush()
             self.mock_shell.communicate()
             self.mock_shell = None
+            assert self.epoll is not None
             self.epoll.close()
             self.epoll = None
             self.pid = None
 
-    def enter_shell(self):
+    def enter_shell(self) -> None:
         command = self.command_prefix.to_popen()
         command.append('--enable-plugin=bind_mount')
         command.append(
-            f'--plugin-option=bind_mount:dirs=[("{shlex.quote(str(self.parent.run_workdir))}", "{shlex.quote(str(self.parent.run_workdir))}")]'
+            '--plugin-option=bind_mount:dirs=['
+            f'("{shlex.quote(str(self.parent.run_workdir))}", '
+            f'"{shlex.quote(str(self.parent.run_workdir))}")'
+            ']'
         )
         command.append('-q')
         command.append('--shell')
 
         self.parent.verbose('Entering mock shell')
-        self.parent.verbose(command)
+        self.parent.verbose(str(command))
         self.mock_shell = subprocess.Popen(
             command,
             stdin=subprocess.PIPE,
@@ -122,6 +128,11 @@ class MockShell:
         )
         self.epoll = select.epoll()
         self.pid = self.mock_shell.pid
+
+        assert self.mock_shell.stdout is not None
+        assert self.mock_shell.stderr is not None
+        assert self.mock_shell.stdin is not None
+        assert self.epoll is not None
 
         self.mock_shell_stdout_fd = self.mock_shell.stdout.fileno()
         flags = fcntl.fcntl(self.mock_shell_stdout_fd, fcntl.F_GETFL)
@@ -178,25 +189,22 @@ class MockShell:
                     break
         self.mock_shell.stderr.read()
 
-        return self
-
     def execute(
         self,
         command: Command,
         *,
         cwd: Optional[Path] = None,
         env: Optional[tmt.utils.Environment] = None,
-        friendly_command: str = None,
+        friendly_command: Optional[str] = None,
         log: Optional[tmt.log.LoggingFunction] = None,
         silent: bool = False,
         logger: tmt.log.Logger,
-    ):
+    ) -> tuple[str, str]:
         """
         Execute the command in a running mock shell for increased speed.
         """
 
-        if self.mock_shell is None:
-            self.enter_shell()
+        assert self.mock_shell is not None
 
         stdout_stem = 'tmp/stdout'
         stderr_stem = 'tmp/stderr'
@@ -251,6 +259,12 @@ class MockShell:
             stderr_fd = stderr_io.fileno()
             returncode_fd = returncode_io.fileno()
 
+            assert self.epoll is not None
+            assert self.mock_shell is not None
+            assert self.mock_shell.stdin is not None
+            assert self.mock_shell.stdout is not None
+            assert self.mock_shell.stderr is not None
+
             self.epoll.register(stdout_fd, select.EPOLLIN)
             self.epoll.register(stderr_fd, select.EPOLLIN)
             self.epoll.register(returncode_fd, select.EPOLLIN)
@@ -264,8 +278,12 @@ class MockShell:
                 (log or logger.debug) if not silent else logger.debug
             )
 
-            stdout = MockShell.Stream(lambda text: output_logger('out', text, 'yellow', level=0))
-            stderr = MockShell.Stream(lambda text: output_logger('err', text, 'yellow', level=0))
+            stream_out = MockShell.Stream(
+                lambda text: output_logger('out', text, 'yellow', level=0)
+            )
+            stream_err = MockShell.Stream(
+                lambda text: output_logger('err', text, 'yellow', level=0)
+            )
             returncode = None
 
             while self.mock_shell.poll() is None:
@@ -283,12 +301,12 @@ class MockShell:
                         self.mock_shell.stderr.read()
                     elif fileno == stdout_fd:
                         content = os.read(stdout_fd, 128)
-                        stdout += content
+                        stream_out += content
                         if not content:
                             self.epoll.unregister(stdout_fd)
                     elif fileno == stderr_fd:
                         content = os.read(stderr_fd, 128)
-                        stderr += content
+                        stream_err += content
                         if not content:
                             self.epoll.unregister(stderr_fd)
                     elif fileno == returncode_fd:
@@ -298,8 +316,8 @@ class MockShell:
                         else:
                             returncode = int(content.decode('utf-8').strip())
 
-            stdout = stdout.string
-            stderr = stderr.string
+            stdout = stream_out.string
+            stderr = stream_err.string
 
             if returncode is None:
                 raise tmt.utils.RunError(
@@ -326,8 +344,11 @@ class GuestMock(tmt.Guest):
     """
 
     _data_class = MockGuestData
+    config: Optional[str] = None
+    rootdir: Optional[str] = None
+
     mock_shell: MockShell
-    mock_config: dict
+    mock_config: dict[Any, Any]
 
     @property
     def is_ready(self) -> bool:
@@ -384,9 +405,12 @@ class GuestMock(tmt.Guest):
         Execute command inside mock
         """
 
+        if self.mock_shell.mock_shell is None:
+            self.mock_shell.enter_shell()
+
         actual_command = command if isinstance(command, Command) else command.to_shell_command()
         if on_process_start:
-            on_process_start(actual_command, self.mock_shell, self._logger)
+            on_process_start(actual_command, self.mock_shell.mock_shell, self._logger)
         stdout, stderr = self.mock_shell.execute(
             actual_command,
             cwd=cwd,
@@ -394,8 +418,7 @@ class GuestMock(tmt.Guest):
             friendly_command=friendly_command or str(command),
             logger=self._logger,
         )
-        result = tmt.utils.CommandOutput(stdout, stderr)
-        return result
+        return tmt.utils.CommandOutput(stdout, stderr)
 
     def start(self) -> None:
         """
@@ -423,7 +446,7 @@ class GuestMock(tmt.Guest):
         self,
         source: Optional[Path] = None,
         destination: Optional[Path] = None,
-        options: Optional[list[str]] = None,
+        options: Optional[tmt.steps.provision.TransferOptions] = None,
         superuser: bool = False,
     ) -> None:
         """
@@ -434,26 +457,17 @@ class GuestMock(tmt.Guest):
         self,
         source: Optional[Path] = None,
         destination: Optional[Path] = None,
-        options: Optional[list[str]] = None,
-        extend_options: Optional[list[str]] = None,
+        options: Optional[tmt.steps.provision.TransferOptions] = None,
     ) -> None:
         """
         Thanks to mock's bind-mounting, no file copying is needed
         """
 
     def load(self, data: tmt.steps.provision.GuestData) -> None:
+        assert isinstance(data, MockGuestData)
         super().load(data)
         self.mock_shell = MockShell(parent=self, config=self.config, rootdir=self.rootdir)
         self.mock_config = data.mock_config
-
-    def setup(self) -> None:
-        super().setup()
-        # If we are not using bootstrap, then we need to install the package manager.
-        # Otherwise we use overlayfs and the package manager from bootstrap chroot.
-        if self.mock_config['use_bootstrap'] is not True:
-            (
-                self.mock_shell.command_prefix + ['--install', self.mock_config['package_manager']]
-            ).run(cwd=None, logger=self.parent._logger)
 
 
 @tmt.steps.provides_method('mock')
