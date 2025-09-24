@@ -24,7 +24,10 @@ class MockGuestData(tmt.steps.provision.GuestData):
         default=None,
         option=('-r', '--config'),
         metavar='CONFIG',
-        help='Mock chroot configuration file.',
+        help="""
+             Mock chroot configuration file.
+             The `--root` flag to be passed to the mock process.
+             """,
     )
     rootdir: Optional[str] = field(
         default=None,
@@ -443,7 +446,32 @@ class GuestMock(tmt.Guest):
 @tmt.steps.provides_method('mock')
 class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
     """
-    Provisioning using mock chroot.
+    Use the mock tool for the test execution.
+
+    Tests will be executed inside a mock buildroot.
+
+    .. warning::
+
+        This plusing requires the ``--feeling-safe`` option or
+        the ``TMT_FEELING_SAFE=1`` environment variable defined.
+        While it is roughly as safe as ``container`` provisioning,
+        the plugin still bind-mounts the test directory.
+
+    Using the plugin:
+
+    .. code-block:: yaml
+
+        provision:
+            how: mock
+            config: fedora-rawhide-x86_64
+
+    .. code-block:: shell
+
+        provision --how mock --config fedora-rawhide-x86_64
+
+    .. note::
+
+        Neither hard nor soft reboot is supported.
     """
 
     _data_class = ProvisionMockData
