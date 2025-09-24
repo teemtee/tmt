@@ -40,13 +40,18 @@ description: |
         plans:
             # String, name of the plan
           - name: /plan/name
-            # Mapping, stores plan environment
-            environment: ...
+            # Mapping, stores plan environment from various sources
+            environment_from_fmf: ...
+            environment_from_importing: ...
+            environment_from_cli: ...
+            environment_from_intrinsics: ..
             # Mapping, stores plan context
             context: ...
 
             # Represents all steps of this plan
             discover:
+                # Bool, whether the step is enabled
+                enabled: true
                 # Represents all phases of this step
                 phases:
                   - name: default-0
@@ -60,6 +65,7 @@ description: |
                     ...
 
             provision:
+                enabled: true
                 phases:
                   - name: default-0
                     how: local
@@ -69,6 +75,7 @@ description: |
                     ...
 
             prepare:
+                enabled: true
                 phases:
                   - name: default-0
                     how: ansible
@@ -78,6 +85,7 @@ description: |
                     ...
 
             execute:
+                enabled: true
                 phases:
                   - name: default-0
                     how: tmt
@@ -87,6 +95,7 @@ description: |
                 results-path: plans/name/execute/results.yaml
 
             report:
+                enabled: true
                 phases:
                   - name: default-0
                     how: display
@@ -94,6 +103,7 @@ description: |
                     ...
 
             finish:
+                enabled: true
                 phases:
                   - name: default-0
                     how: shell
@@ -101,6 +111,7 @@ description: |
                     ...
 
             cleanup:
+                enabled: true
                 phases:
                   - name: default-0
                     how: tmt
