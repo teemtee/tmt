@@ -19,7 +19,7 @@ from tmt.utils import (
 class BaseMockEngine(PackageManagerEngine):
     """
     We use `mock --pm-cmd ...` to execute the package manager commands inside
-    the mock. Such scripts nees to be executed locally and not inside the mock
+    the mock. Such scripts need to be executed locally and not inside the mock
     shell. To differentiate these scripts we set a special attribute `_local`
     of the script object.
     """
