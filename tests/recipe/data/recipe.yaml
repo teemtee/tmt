@@ -31,7 +31,6 @@ plans:
         TMT_PLAN_DATA: /run_path/plan/data
         TMT_PLAN_ENVIRONMENT_FILE: /run_path/plan/data/variables.env
     context: {}
-    gate: []
     discover:
         enabled: true
         phases:
@@ -80,10 +79,11 @@ plans:
             contact: []
             enabled: true
             order: 50
-            link: []
             id:
             tag: []
             tier:
+            adjust: []
+            link: []
             component: []
             test: /bin/true
             path: /default-0/tests
@@ -102,12 +102,13 @@ plans:
             restart-max-count: 1
             restart-with-reboot: false
             serial-number: 1
-            sources:
-              - /run_path/plan/discover/default-0/tests/main.fmf
-              - /run_path/plan/discover/default-0/tests/tests.fmf
+            discover-phase: default-0
+            __class__:
+                module: tmt.recipe
+                name: _RecipeTest
         __class__:
             module: tmt.recipe
-            name: _DiscoverStep
+            name: _RecipeDiscoverStep
     provision:
         enabled: true
         phases:
@@ -152,7 +153,7 @@ plans:
                 name: ProvisionLocalData
         __class__:
             module: tmt.recipe
-            name: _Step
+            name: _RecipeStep
     prepare:
         enabled: true
         phases:
@@ -170,7 +171,7 @@ plans:
                 name: PrepareShellData
         __class__:
             module: tmt.recipe
-            name: _Step
+            name: _RecipeStep
     execute:
         enabled: true
         phases:
@@ -193,7 +194,7 @@ plans:
         results-path: plan/execute/results.yaml
         __class__:
             module: tmt.recipe
-            name: _ExecuteStep
+            name: _RecipeExecuteStep
     report:
         enabled: true
         phases:
@@ -208,7 +209,7 @@ plans:
                 name: ReportDisplayData
         __class__:
             module: tmt.recipe
-            name: _Step
+            name: _RecipeStep
     finish:
         enabled: true
         phases:
@@ -226,7 +227,7 @@ plans:
                 name: PrepareShellData
         __class__:
             module: tmt.recipe
-            name: _Step
+            name: _RecipeStep
     cleanup:
         enabled: true
         phases:
@@ -240,7 +241,7 @@ plans:
                 name: CleanupInternalData
         __class__:
             module: tmt.recipe
-            name: _Step
+            name: _RecipeStep
     __class__:
         module: tmt.recipe
         name: _RecipePlan
