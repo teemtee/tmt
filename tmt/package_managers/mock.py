@@ -24,11 +24,6 @@ class BaseMockEngine(PackageManagerEngine):
     of the script object.
     """
 
-    def _prepare_local_script(self, script: str):
-        result = ShellScript(f'{self.command} {self.options.to_script()} {script}')
-        setattr(result, "_local", True)
-        return result
-
     def _prepare_install_script(
         self,
         installword: str,
@@ -44,7 +39,7 @@ class BaseMockEngine(PackageManagerEngine):
         if options.skip_missing:
             extra_options += Command('--skip-broken')
 
-        return self._prepare_local_script(
+        return ShellScript(f'{self.command} {self.options.to_script()} '
             f'{installword} {extra_options} '
             f'{" ".join(escape_installables(*installables))}'
         )
@@ -101,6 +96,30 @@ class MockDnf5Engine(BaseMockEngine):
 class BaseMock:
     probe_command = Command("false")
     probe_priority = 130
+
+    def install(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
+        return self.guest.run(self.engine.install(*installables, options=options).to_shell_command())
+
+    def reinstall(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
+        return self.guest.run(self.engine.reinstall(*installables, options=options).to_shell_command())
+
+    def install_debuginfo(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
+        return self.guest.run(self.engine.install_debuginfo(*installables, options=options).to_shell_command())
+
+    def refresh_metadata(self) -> CommandOutput:
+        return self.guest.execute(self.engine.refresh_metadata())
 
 
 @provides_package_manager('mock-yum')

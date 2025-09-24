@@ -371,18 +371,13 @@ class GuestMock(tmt.Guest):
         """
 
         actual_command = command if isinstance(command, Command) else command.to_shell_command()
-        if getattr(command, "_local", False):
-            return actual_command.run(
-                cwd=cwd, env=env, friendly_command=friendly_command or str(command), logger=self._logger, interactive=interactive, on_process_start=on_process_start,
-            )
-        else:
-            if on_process_start:
-                on_process_start(actual_command, self.mock_shell, self._logger)
-            stdout, stderr = self.mock_shell.execute(
-                actual_command, cwd=cwd, env=env, friendly_command=friendly_command or str(command), logger=self._logger,
-            )
-            result = tmt.utils.CommandOutput(stdout, stderr)
-            return result
+        if on_process_start:
+            on_process_start(actual_command, self.mock_shell, self._logger)
+        stdout, stderr = self.mock_shell.execute(
+            actual_command, cwd=cwd, env=env, friendly_command=friendly_command or str(command), logger=self._logger,
+        )
+        result = tmt.utils.CommandOutput(stdout, stderr)
+        return result
 
     def start(self) -> None:
         """
