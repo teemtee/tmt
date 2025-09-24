@@ -1,6 +1,6 @@
 import fcntl
-import os
 import io
+import os
 import select
 import shlex
 import subprocess
@@ -48,8 +48,8 @@ class MockShell:
     class Stream:
         def __init__(self, logger):
             self.logger = logger
-            self.output = bytes()
-            self.string = str()
+            self.output = b''
+            self.string = ''
 
         def __iadd__(self, content: bytes):
             self.output += content
@@ -58,7 +58,7 @@ class MockShell:
                 if pos == -1:
                     break
                 string = self.output[:pos].decode('utf-8', errors='replace')
-                self.output = self.output[pos + 1:]
+                self.output = self.output[pos + 1 :]
                 self.logger(string)
                 self.string += string
                 self.string += '\n'
@@ -92,7 +92,7 @@ class MockShell:
 
     def exit_shell(self) -> None:
         if self.mock_shell is not None:
-            self.parent.verbose("Exiting mock shell")
+            self.parent.verbose('Exiting mock shell')
 
             self.mock_shell.stdin.write("")
             self.mock_shell.stdin.flush()
@@ -104,12 +104,14 @@ class MockShell:
 
     def enter_shell(self):
         command = self.command_prefix.to_popen()
-        command.append("--enable-plugin=bind_mount")
-        command.append(f'--plugin-option=bind_mount:dirs=[("{shlex.quote(str(self.parent.run_workdir))}", "{shlex.quote(str(self.parent.run_workdir))}")]')
-        command.append("-q")
-        command.append("--shell")
+        command.append('--enable-plugin=bind_mount')
+        command.append(
+            f'--plugin-option=bind_mount:dirs=[("{shlex.quote(str(self.parent.run_workdir))}", "{shlex.quote(str(self.parent.run_workdir))}")]'
+        )
+        command.append('-q')
+        command.append('--shell')
 
-        self.parent.verbose("Entering mock shell")
+        self.parent.verbose('Entering mock shell')
         self.parent.verbose(command)
         self.mock_shell = subprocess.Popen(
             command,
@@ -152,16 +154,18 @@ class MockShell:
             for fileno, _ in events:
                 if fileno == self.mock_shell_stderr_fd:
                     for line in self.mock_shell.stderr.readlines():
-                        self.parent._logger.debug("err", line.rstrip(), 'yellow', level = 0)
+                        self.parent._logger.debug('err', line.rstrip(), 'yellow', level=0)
 
         if mock_shell_result is not None:
-            raise tmt.utils.ProvisionError(f"Failed to launch mock shell: exited {mock_shell_result}")
+            raise tmt.utils.ProvisionError(
+                f'Failed to launch mock shell: exited {mock_shell_result}'
+            )
 
-        self.parent.verbose("Mock shell is ready")
+        self.parent.verbose('Mock shell is ready')
 
         # We do not expect these commands to fail.
-        self.mock_shell.stdin.write("rm -rf /tmp/stdout /tmp/stderr /tmp/returncode\n")
-        self.mock_shell.stdin.write("mkfifo /tmp/stdout /tmp/stderr /tmp/returncode\n")
+        self.mock_shell.stdin.write('rm -rf /tmp/stdout /tmp/stderr /tmp/returncode\n')
+        self.mock_shell.stdin.write('mkfifo /tmp/stdout /tmp/stderr /tmp/returncode\n')
         self.mock_shell.stdin.flush()
 
         loop = 2
@@ -194,47 +198,55 @@ class MockShell:
         if self.mock_shell is None:
             self.enter_shell()
 
-        stdout_stem = "tmp/stdout"
-        stderr_stem = "tmp/stderr"
-        returncode_stem = "tmp/returncode"
+        stdout_stem = 'tmp/stdout'
+        stderr_stem = 'tmp/stderr'
+        returncode_stem = 'tmp/returncode'
 
         # The friendly command version would be emitted only when we were not
         # asked to be quiet.
         if not silent and friendly_command:
-            (log or logger.verbose)("cmd", friendly_command, color="yellow", level=2)
+            (log or logger.verbose)('cmd', friendly_command, color='yellow', level=2)
 
         # Fail nicely if the working directory does not exist
         if cwd:
-            chroot_cwd = self.root_path / (cwd.relative_to("/") if cwd.is_absolute() else cwd)
+            chroot_cwd = self.root_path / (cwd.relative_to('/') if cwd.is_absolute() else cwd)
             if not chroot_cwd.exists():
-                raise tmt.utils.GeneralError(f"The working directory '{chroot_cwd}' does not exist.")
+                raise tmt.utils.GeneralError(
+                    f"The working directory '{chroot_cwd}' does not exist."
+                )
 
         shell_command_components: list[str] = [str(command)]
 
         if env is not None:
             shell_command_components = [
-                *(f"{key}={shlex.quote(value)}" for key, value in env.items()),
-                *shell_command_components
+                *(f'{key}={shlex.quote(value)}' for key, value in env.items()),
+                *shell_command_components,
             ]
 
         if cwd is not None:
             shell_command_components = [
-                "(", f"cd {shlex.quote(str(cwd))}", "&&", *shell_command_components, ")"
+                '(',
+                f'cd {shlex.quote(str(cwd))}',
+                '&&',
+                *shell_command_components,
+                ')',
             ]
 
         shell_command_components = [
             *shell_command_components,
-            f"1>/{stdout_stem} 2>/{stderr_stem}; echo $?>/{returncode_stem}"
+            f'1>/{stdout_stem} 2>/{stderr_stem}; echo $?>/{returncode_stem}',
         ]
 
-        shell_command = ' '.join(shell_command_components) + "\n"
-        
-        self.parent.verbose("Executing inside mock shell", shell_command[:-1])
+        shell_command = ' '.join(shell_command_components) + '\n'
+
+        self.parent.verbose('Executing inside mock shell', shell_command[:-1])
 
         io_flags: int = os.O_RDONLY | os.O_NONBLOCK
-        with (io.FileIO(os.open(str(self.root_path / stdout_stem), io_flags)) as stdout_io,
-              io.FileIO(os.open(str(self.root_path / stderr_stem), io_flags)) as stderr_io,
-              io.FileIO(os.open(str(self.root_path / returncode_stem), io_flags)) as returncode_io):
+        with (
+            io.FileIO(os.open(str(self.root_path / stdout_stem), io_flags)) as stdout_io,
+            io.FileIO(os.open(str(self.root_path / stderr_stem), io_flags)) as stderr_io,
+            io.FileIO(os.open(str(self.root_path / returncode_stem), io_flags)) as returncode_io,
+        ):
             stdout_fd = stdout_io.fileno()
             stderr_fd = stderr_io.fileno()
             returncode_fd = returncode_io.fileno()
@@ -248,10 +260,12 @@ class MockShell:
 
             # For command output logging, use either the given logging callback, or
             # use the given logger & emit to debug log.
-            output_logger: tmt.log.LoggingFunction = (log or logger.debug) if not silent else logger.debug
+            output_logger: tmt.log.LoggingFunction = (
+                (log or logger.debug) if not silent else logger.debug
+            )
 
-            stdout = MockShell.Stream(lambda text: output_logger("out", text, 'yellow', level = 0))
-            stderr = MockShell.Stream(lambda text: output_logger("err", text, 'yellow', level = 0))
+            stdout = MockShell.Stream(lambda text: output_logger('out', text, 'yellow', level=0))
+            stderr = MockShell.Stream(lambda text: output_logger('err', text, 'yellow', level=0))
             returncode = None
 
             while self.mock_shell.poll() is None:
@@ -282,7 +296,7 @@ class MockShell:
                         if not content:
                             self.epoll.unregister(returncode_fd)
                         else:
-                            returncode = int(content.decode("utf-8").strip())
+                            returncode = int(content.decode('utf-8').strip())
 
             stdout = stdout.string
             stderr = stderr.string
@@ -295,7 +309,7 @@ class MockShell:
                     stdout=stdout,
                     stderr=stderr,
                 )
-            elif returncode != 0:
+            if returncode != 0:
                 raise tmt.utils.RunError(
                     f"Command '{friendly_command or shell_command}' returned {returncode}.",
                     command,
@@ -374,7 +388,11 @@ class GuestMock(tmt.Guest):
         if on_process_start:
             on_process_start(actual_command, self.mock_shell, self._logger)
         stdout, stderr = self.mock_shell.execute(
-            actual_command, cwd=cwd, env=env, friendly_command=friendly_command or str(command), logger=self._logger,
+            actual_command,
+            cwd=cwd,
+            env=env,
+            friendly_command=friendly_command or str(command),
+            logger=self._logger,
         )
         result = tmt.utils.CommandOutput(stdout, stderr)
         return result
@@ -481,8 +499,6 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
         try:
             import mockbuild.config
         except ImportError as error:
-            from tmt.utils.hints import print_hints
-            print_hints('mockbuild.config', logger=logger)
             raise tmt.utils.GeneralError("Could not import mockbuild.config package.") from error
 
         """
@@ -503,7 +519,7 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
         # NOTE use a global variable instead?
         tmt.package_managers.find_package_manager(
             package_manager
-        ).probe_command = tmt.utils.Command('true')
+        ).probe_command = tmt.utils.Command('/usr/bin/true')
 
         # NOTE any better ideas?
         data.primary_address = (data.config or '<default>') + (
