@@ -3131,6 +3131,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
     # ignore[assignment]: as a base class, ProvisionStepData is not included in
     # ProvisionStepDataT.
     _data_class = ProvisionStepData  # type: ignore[assignment]
+    # TODO: Make Guest be a generic input
     _guest_class = Guest
 
     #: If set, the plugin can be asked to provision in multiple threads at the
@@ -3214,7 +3215,8 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
         super().wake()
 
         if data is not None:
-            guest = self._guest_class(
+            # Note: This is a genuine type-annotation issue. _guest_class must be non-abstract here
+            guest = self._guest_class(  # type: ignore[abstract]
                 logger=self._logger, data=data, name=self.name, parent=self.step
             )
             guest.wake()
