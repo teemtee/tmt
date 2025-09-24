@@ -29,8 +29,8 @@ execute:
 /remote:
     plan:
         import:
-            url: https://github.com/teemtee/tmt
-            name: /plans/features/basic
+            url: https://github.com/teemtee/tests
+            name: /plans/remote
 
 /with-envvars:
     prepare:
