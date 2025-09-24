@@ -6,13 +6,11 @@ import requests
 import tmt
 import tmt.base
 import tmt.log
-import tmt.result
 import tmt.steps
 import tmt.steps.prepare
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
-from tmt.result import ResultOutcome
 from tmt.steps.provision import (
     ANSIBLE_COLLECTION_PLAYBOOK_PATTERN,
     AnsibleApplicable,
@@ -24,7 +22,6 @@ from tmt.utils import (
     ENVFILE_RETRY_SESSION_RETRIES,
     Path,
     PrepareError,
-    RunError,
     normalize_string_list,
     retry_session,
 )
@@ -263,53 +260,13 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                     extra_args=self.data.extra_args,
                 )
 
-            except RunError as exc:
-                self.write(
-                    playbook_log_filepath,
-                    '\n'.join(
-                        tmt.utils.render_command_report(label=playbook_name, output=exc.output)
-                    ),
-                )
-
-                outcome.results.append(
-                    tmt.result.PhaseResult(
-                        name=playbook_name,
-                        result=ResultOutcome.FAIL,
-                        note=tmt.utils.render_exception_as_notes(exc),
-                        log=[playbook_log_filepath.relative_to(self.step_workdir)],
-                    )
-                )
-
-                outcome.exceptions.append(exc)
-
-                return outcome
-
             except Exception as exc:
-                outcome.results.append(
-                    tmt.result.PhaseResult(
-                        name=playbook_name,
-                        result=ResultOutcome.ERROR,
-                        note=tmt.utils.render_exception_as_notes(exc),
-                    )
+                return self._outcome_record_exception(
+                    outcome, exc, playbook_name, log_filepath=playbook_log_filepath
                 )
-
-                outcome.exceptions.append(exc)
-
-                return outcome
 
             else:
-                self.write(
-                    playbook_log_filepath,
-                    '\n'.join(tmt.utils.render_command_report(label=playbook_name, output=output)),
-                )
-
-                outcome.results.append(
-                    tmt.result.PhaseResult(
-                        name=playbook_name,
-                        result=ResultOutcome.PASS,
-                        log=[playbook_log_filepath.relative_to(self.step_workdir)],
-                    )
-                )
+                self._outcome_record_success(outcome, output, playbook_name, playbook_log_filepath)
 
         return outcome
 

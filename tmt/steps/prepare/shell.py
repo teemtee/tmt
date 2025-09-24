@@ -98,6 +98,47 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
     _url_clone_lock = threading.Lock()
     _cloned_repo_path_envvar_name = 'TMT_PREPARE_SHELL_URL_REPOSITORY'
 
+    def _prepare_script_repository(
+        self,
+        guest: 'Guest',
+        environment: tmt.utils.Environment,
+        repository_url: str,
+        repository_ref: Optional[str],
+    ) -> tmt.utils.Path:
+        repository_path = self.phase_workdir / "repository"
+
+        if self.is_dry_run:
+            return repository_path
+
+        with self._url_clone_lock:
+            if not repository_path.exists():
+                repository_path.parent.mkdir(parents=True, exist_ok=True)
+                tmt.utils.git.git_clone(
+                    url=repository_url,
+                    destination=repository_path,
+                    shallow=False,
+                    env=environment,
+                    logger=self._logger,
+                )
+
+                if repository_ref:
+                    self.info('ref', repository_ref, 'green')
+                    self.run(Command('git', 'checkout', '-f', repository_ref), cwd=repository_path)
+
+        guest.push(
+            source=repository_path,
+            destination=repository_path,
+            options=TransferOptions(
+                protect_args=True,
+                preserve_perms=True,
+                chmod=0o755,
+                recursive=True,
+                create_destination=True,
+            ),
+        )
+
+        return repository_path
+
     def go(
         self,
         *,
@@ -123,54 +164,34 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         assert worktree is not None  # narrow type
 
         if self.data.url:
-            repo_path = self.phase_workdir / "repository"
-
-            environment[self._cloned_repo_path_envvar_name] = EnvVarValue(repo_path.resolve())
-
-            if not self.is_dry_run:
-                with self._url_clone_lock:
-                    if not repo_path.exists():
-                        repo_path.parent.mkdir(parents=True, exist_ok=True)
-                        tmt.utils.git.git_clone(
-                            url=self.data.url,
-                            destination=repo_path,
-                            shallow=False,
-                            env=environment,
-                            logger=self._logger,
-                        )
-
-                        if self.data.ref:
-                            self.info('ref', self.data.ref, 'green')
-                            self.run(
-                                Command('git', 'checkout', '-f', self.data.ref), cwd=repo_path
-                            )
-
-                guest.push(
-                    source=repo_path,
-                    destination=repo_path,
-                    options=TransferOptions(
-                        protect_args=True,
-                        preserve_perms=True,
-                        chmod=0o755,
-                        recursive=True,
-                        create_destination=True,
-                    ),
+            try:
+                environment[self._cloned_repo_path_envvar_name] = EnvVarValue(
+                    self._prepare_script_repository(
+                        guest, environment, self.data.url, self.data.ref
+                    )
                 )
+
+            except tmt.utils.RunError as exc:
+                return self._outcome_record_exception(outcome, exc, 'script repository')
 
         if not self.is_dry_run:
             topology = tmt.steps.Topology(self.step.plan.provision.ready_guests)
             topology.guest = tmt.steps.GuestTopology(guest)
 
-            environment.update(
-                topology.push(
-                    dirpath=worktree,
-                    guest=guest,
-                    logger=logger,
-                    filename_base=safe_filename(
-                        tmt.steps.TEST_TOPOLOGY_FILENAME_BASE, self, guest
-                    ),
+            try:
+                environment.update(
+                    topology.push(
+                        dirpath=worktree,
+                        guest=guest,
+                        logger=logger,
+                        filename_base=safe_filename(
+                            tmt.steps.TEST_TOPOLOGY_FILENAME_BASE, self, guest
+                        ),
+                    )
                 )
-            )
+
+            except tmt.utils.RunError as exc:
+                return self._outcome_record_exception(outcome, exc, 'guest topology')
 
         prepare_wrapper_filename = safe_filename(PREPARE_WRAPPER_FILENAME, self, guest)
         prepare_wrapper_path = worktree / prepare_wrapper_filename
@@ -178,8 +199,14 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         logger.debug('prepare wrapper', prepare_wrapper_path, level=3)
 
         # Execute each script on the guest (with default shell options)
-        for script in self.data.script:
+        for script_index, script in enumerate(self.data.script):
             logger.verbose('script', script, 'green')
+
+            script_name = f'{self.name} / script #{script_index + 1}'
+
+            script_record_dirpath = self.phase_workdir / f'script-{script_index}' / guest.safe_name
+            script_log_filepath = script_record_dirpath / 'output.txt'
+
             script_with_options = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}')
             self.write(prepare_wrapper_path, str(script_with_options), 'w')
             if not self.is_dry_run:
@@ -194,6 +221,16 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 command = tmt.utils.ShellScript(f'sudo -E {prepare_wrapper_path}')
             else:
                 command = tmt.utils.ShellScript(f'{prepare_wrapper_path}')
-            guest.execute(command=command, cwd=worktree, env=environment)
+
+            try:
+                output = guest.execute(command=command, cwd=worktree, env=environment)
+
+            except tmt.utils.RunError as exc:
+                return self._outcome_record_exception(
+                    outcome, exc, script_name, log_filepath=script_log_filepath
+                )
+
+            else:
+                self._outcome_record_success(outcome, output, script_name, script_log_filepath)
 
         return outcome
