@@ -1367,6 +1367,7 @@ class Test(
             )
 
         self._update_metadata()
+        # TODO: refactor the code so it does not modify the test environment
         self._original_fmf_environment = self.environment.copy()
 
     @staticmethod

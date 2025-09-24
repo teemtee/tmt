@@ -13,26 +13,6 @@ if TYPE_CHECKING:
     from tmt.base import Plan, Run, Test, _RawAdjustRule
 
 
-def _get_step(plan: 'Plan', step_name: str) -> '_Step':
-    step = getattr(plan, step_name)
-    if isinstance(step, Discover):
-        return _DiscoverStep(
-            enabled=bool(step.enabled),
-            phases=cast(Step, step).data,
-            tests=[test_origin.test for test_origin in step.tests()],
-        )
-    if isinstance(step, Execute):
-        return _ExecuteStep(
-            enabled=bool(step.enabled),
-            phases=cast(Step, step).data,
-            results_path=(step.step_workdir / 'results.yaml').relative_to(step.run_workdir),
-        )
-    if isinstance(step, Step):
-        return _Step(enabled=bool(step.enabled), phases=step.data)
-
-    raise ValueError(f"Step '{step_name}' is not defined in plan '{plan.name}'")
-
-
 def _serialize_tests(tests: list['Test']) -> list[dict[str, Any]]:
     serialized_tests: list[dict[str, Any]] = []
     for test in tests:
@@ -49,6 +29,26 @@ class _Step(SerializableContainer):
     phases: list[StepData] = field(
         serialize=lambda value: [phase.to_serialized() for phase in value],
     )
+
+    @classmethod
+    def from_plan(cls, plan: 'Plan', step_name: str) -> '_Step':
+        step = getattr(plan, step_name)
+        if isinstance(step, Discover):
+            return _DiscoverStep(
+                enabled=bool(step.enabled),
+                phases=cast(Step, step).data,
+                tests=[test_origin.test for test_origin in step.tests()],
+            )
+        if isinstance(step, Execute):
+            return _ExecuteStep(
+                enabled=bool(step.enabled),
+                phases=cast(Step, step).data,
+                results_path=(step.step_workdir / 'results.yaml').relative_to(step.run_workdir),
+            )
+        if isinstance(step, Step):
+            return _Step(enabled=bool(step.enabled), phases=step.data)
+
+        raise ValueError(f"Step '{step_name}' is not defined in plan '{plan.name}'")
 
 
 @container
@@ -133,13 +133,13 @@ class _RecipePlan(SerializableContainer):
             environment_from_intrinsics=plan._environment_from_intrinsics,
             context=plan.context,
             gate=plan.gate,
-            discover=_get_step(plan, 'discover'),
-            provision=_get_step(plan, 'provision'),
-            prepare=_get_step(plan, 'prepare'),
-            execute=_get_step(plan, 'execute'),
-            report=_get_step(plan, 'report'),
-            finish=_get_step(plan, 'finish'),
-            cleanup=_get_step(plan, 'cleanup'),
+            discover=_Step.from_plan(plan, 'discover'),
+            provision=_Step.from_plan(plan, 'provision'),
+            prepare=_Step.from_plan(plan, 'prepare'),
+            execute=_Step.from_plan(plan, 'execute'),
+            report=_Step.from_plan(plan, 'report'),
+            finish=_Step.from_plan(plan, 'finish'),
+            cleanup=_Step.from_plan(plan, 'cleanup'),
         )
 
 
@@ -159,10 +159,7 @@ class _RecipeRun(SerializableContainer):
 
 @container
 class Recipe(SerializableContainer):
-    run: Optional[_RecipeRun] = field(
-        default=None,
-        serialize=lambda run: run.to_serialized() if run else None,
-    )
+    run: _RecipeRun = field(serialize=lambda run: cast(_RecipeRun, run).to_serialized())
     plans: list[_RecipePlan] = field(
         default_factory=list[_RecipePlan],
         serialize=lambda plans: [plan.to_serialized() for plan in plans],
@@ -170,18 +167,20 @@ class Recipe(SerializableContainer):
 
 
 class RecipeBuilder(Common):
-    def __init__(self, logger: Logger):
+    def __init__(self, logger: Logger, recipe: Optional[Recipe] = None):
         super().__init__(logger=logger)
-        self.recipe = Recipe()
+        self.recipe: Optional[Recipe] = recipe
 
     def save(self, run: 'Run') -> None:
-        self.recipe.run = _RecipeRun(
-            root=str(run.tree.root) if run.tree and run.tree.root else None,
-            remove=bool(run.remove),
-            environment=run.environment,
-            context=run.fmf_context,
+        self.recipe = Recipe(
+            run=_RecipeRun(
+                root=str(run.tree.root) if run.tree and run.tree.root else None,
+                remove=bool(run.remove),
+                environment=run.environment,
+                context=run.fmf_context,
+            ),
+            plans=[_RecipePlan.from_plan(plan) for plan in run.plans],
         )
-        self.recipe.plans = [_RecipePlan.from_plan(plan) for plan in run.plans]
         self.write(
             run.run_workdir / 'recipe.yaml', tmt.utils.dict_to_yaml(self.recipe.to_serialized())
         )
