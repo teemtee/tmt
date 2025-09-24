@@ -1,20 +1,18 @@
-from tmt.steps.provision.mock import GuestMock
 from typing import (
     Optional,
 )
+
 from tmt.package_managers import (
-    PackageManager,
-    PackageManagerEngine,
-    provides_package_manager,
-    escape_installables,
     Installable,
     Options,
+    PackageManager,
+    PackageManagerEngine,
+    escape_installables,
+    provides_package_manager,
 )
-from tmt.utils import (
-    Command,
-    CommandOutput,
-    ShellScript
-)
+from tmt.steps.provision.mock import GuestMock
+from tmt.utils import Command, CommandOutput, ShellScript
+
 
 class BaseMockEngine(PackageManagerEngine):
     """
@@ -43,8 +41,7 @@ class BaseMockEngine(PackageManagerEngine):
             extra_options += Command('--skip-broken')
 
         return self._prepare_local_script(
-            f'{installword} {extra_options} '
-            f'{" ".join(escape_installables(*installables))}'
+            f'{installword} {extra_options} {" ".join(escape_installables(*installables))}'
         )
 
     def prepare_command(self) -> tuple[Command, Command]:
@@ -57,9 +54,7 @@ class BaseMockEngine(PackageManagerEngine):
         return (Command('mock'), options)
 
     def check_presence(self, *installables: Installable) -> ShellScript:
-        return ShellScript(
-            f'rpm -q --whatprovides {" ".join(escape_installables(*installables))}'
-        )
+        return ShellScript(f'rpm -q --whatprovides {" ".join(escape_installables(*installables))}')
 
     def install(
         self,
@@ -85,6 +80,7 @@ class BaseMockEngine(PackageManagerEngine):
     def refresh_metadata(self) -> ShellScript:
         return self._prepare_local_script('makecache --refresh')
 
+
 class MockYumEngine(BaseMockEngine):
     pass
 
@@ -98,7 +94,7 @@ class MockDnf5Engine(BaseMockEngine):
 
 
 class BaseMock:
-    probe_command = Command("false")
+    probe_command = Command('/usr/bin/false')
     probe_priority = 130
 
     def install(
@@ -106,21 +102,27 @@ class BaseMock:
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        return self.guest.run(self.engine.install(*installables, options=options).to_shell_command())
+        return self.guest.run(
+            self.engine.install(*installables, options=options).to_shell_command()
+        )
 
     def reinstall(
         self,
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        return self.guest.run(self.engine.reinstall(*installables, options=options).to_shell_command())
+        return self.guest.run(
+            self.engine.reinstall(*installables, options=options).to_shell_command()
+        )
 
     def install_debuginfo(
         self,
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        return self.guest.run(self.engine.install_debuginfo(*installables, options=options).to_shell_command())
+        return self.guest.run(
+            self.engine.install_debuginfo(*installables, options=options).to_shell_command()
+        )
 
     def refresh_metadata(self) -> CommandOutput:
         return self.guest.execute(self.engine.refresh_metadata())
