@@ -354,6 +354,9 @@ class TransferOptions:
     #: Ignore symlinks that point outside the source tree
     safe_links: bool = False
 
+    #: Run a ``mkdir -p`` of the destination before doing transfer
+    create_destination: bool = False
+
     def copy(self) -> 'TransferOptions':
         """Create a copy of the options."""
 
@@ -2787,15 +2790,20 @@ class GuestSsh(Guest):
         if superuser and self.user != 'root':
             cmd += ['--rsync-path', 'sudo rsync']
 
+        # When rsync-ing directories, make sure we do not copy to a subfolder (/foo/bar/bar)
+        path_suffix = "/" if options.recursive else ""
+
         cmd += [
             *options.to_rsync(),
             "-e",
             self._ssh_command.to_element(),
-            source,
-            f"{self._ssh_guest}:{destination}",
+            f"{source}{path_suffix}",
+            f"{self._ssh_guest}:{destination}{path_suffix}",
         ]
 
         try:
+            if options.create_destination:
+                self.execute(Command("mkdir", "-p", destination.parent), silent=True)
             self._run_guest_command(cmd, silent=True)
 
         except tmt.utils.RunError as exc:
