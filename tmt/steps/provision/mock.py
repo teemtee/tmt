@@ -157,7 +157,7 @@ class MockShell:
                         self.parent._logger.debug("err", line.rstrip(), 'yellow', level = 0)
 
         if mock_shell_result is not None:
-            raise tmt.utils.ProvisionError("Failed to launch mock shell: exited {}".format(mock_shell_result))
+            raise tmt.utils.ProvisionError(f"Failed to launch mock shell: exited {mock_shell_result}")
 
         self.parent.verbose("Mock shell is ready")
 
