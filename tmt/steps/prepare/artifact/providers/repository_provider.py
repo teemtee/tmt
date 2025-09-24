@@ -5,7 +5,6 @@ Artifact provider for repository files.
 from collections.abc import Iterator
 from re import Pattern
 from shlex import quote
-from typing import Any, Optional
 from urllib.parse import unquote, urlparse
 
 import tmt.log
@@ -29,7 +28,7 @@ class RepositoryFile:
             result = urlparse(url)
             if not result.scheme or not result.netloc:
                 raise ValueError
-        except (ValueError, AttributeError):
+        except ValueError:
             raise GeneralError(f"Invalid URL format for .repo file: '{url}'.")
         self._url = url
 
@@ -60,8 +59,7 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         super().__init__(logger, artifact_id)
         self.repo_file = RepositoryFile(url=self.artifact_id)
         # Cache for the list of RPMs discovered in the repository
-        self._rpm_list: Optional[list[dict[str, Any]]] = None
-        self._repository_installed = False
+        self._rpm_list: list[RpmArtifactInfo] = []
 
     def _parse_artifact_id(self, artifact_id: str) -> str:
         """
@@ -84,17 +82,14 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         List all RPMs available from the repository.
 
         Note: This requires the repository to be installed and queried first,
-        which is handled by the `download_artifacts` method.
+        which is handled by the ``download_artifacts`` method.
         """
-        assert self._rpm_list is not None
-        for rpm in self._rpm_list:
-            yield RpmArtifactInfo(_raw_artifact=rpm)
+        raise NotImplementedError
 
     def _download_artifact(
         self, artifact: RpmArtifactInfo, guest: Guest, destination: Path
     ) -> None:
         """This provider only sets up the repo, it does not download RPMs."""
-        self.logger.debug(f"Skipping download of '{artifact.id}'.")
 
     def download_artifacts(
         self,
@@ -109,9 +104,6 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         individual RPMs. It installs the repository, lists the available
         packages for discovery, and then returns.
         """
-        if self._repository_installed:
-            self.logger.debug("Repository file already installed, skipping.")
-            return []
 
         # 1. Install the repository file on the guest using info from our helper object
         filename = self.repo_file.filename
@@ -127,7 +119,6 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
                 ShellScript(f"{sudo}curl -L --fail -o {quote(str(repo_dest))} {quote(url)}"),
                 silent=True,
             )
-            self._repository_installed = True
         except GeneralError as error:
             raise DownloadError(f"Failed to download repository file to '{repo_dest}'.") from error
 
