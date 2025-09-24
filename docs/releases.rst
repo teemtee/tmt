@@ -7,6 +7,12 @@
 tmt-1.58.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The ``tmt-reboot`` command was changed to handle special EFI
+handling for Beaker systems only. The ``-e`` option is ignored
+and has no effect now. We are keeping it for backwards
+compatibility only. See the :ref:`/stories/features/reboot` section
+for updated usage details.
+
 A new :ref:`issues` section has been added to the Contribute page.
 It provides a couple of recommendations about filing issues and
 documents that issues have to be filed for newly identified bugs.
