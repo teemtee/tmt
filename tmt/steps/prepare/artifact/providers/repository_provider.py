@@ -1,8 +1,5 @@
 """
-This file provides classes for handling repository file artifacts in the tmt framework.
-It includes the `RepositoryFileInfo` class, which encapsulates metadata about a repository
-file (e.g., URL and filename), and the `RepositoryFileProvider` class, which manages the
-downloading of `.repo` files to a guest system.
+Artifact providers for Repository and Repository Files.
 """
 
 from collections.abc import Iterator
@@ -34,13 +31,6 @@ class RepositoryFileInfo(ArtifactInfo):
     _raw_artifact: str
 
     def __post_init__(self) -> None:
-        """
-        Validate the repository file URL after initialization.
-
-        Raises:
-            ValueError: If the URL scheme is not HTTP/HTTPS or if the file
-                        does not have a ``.repo`` extension.
-        """
         parsed_url = urlparse(self._raw_artifact)
         if parsed_url.scheme not in ('http', 'https'):
             raise ValueError(
