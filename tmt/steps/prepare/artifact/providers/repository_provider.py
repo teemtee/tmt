@@ -36,6 +36,7 @@ class RepositoryFileInfo(ArtifactInfo):
             raise ValueError(
                 f"Invalid repository URL: {self._raw_artifact}. Only HTTP(S) is supported."
             )
+        # TODO: make url checking less stringent
         path = tmt.utils.Path(parsed_url.path)
         if path.suffix != '.repo':
             raise ValueError(f"URL must point to a .repo file, got: {path.name}")
@@ -84,6 +85,7 @@ class RepositoryFileProvider(ArtifactProvider[RepositoryFileInfo]):
         self.logger.debug(f"Processing repository file from {url} to {repo_destination} on guest.")
 
         try:
+            # TODO: Add retries for the curl call
             # Download the file to the temporary destination
             guest.execute(
                 ShellScript(f"curl -L --fail -o {quote(str(destination))} {quote(url)}"),
