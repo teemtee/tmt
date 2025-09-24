@@ -3287,6 +3287,9 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
             logger=self.logger,
         )
 
+    def run(self, logger: Logger) -> None:
+        raise AssertionError("run is not used by ProvisionTask.go")
+
 
 class ProvisionQueue(tmt.queue.Queue[ProvisionTask]):
     """
