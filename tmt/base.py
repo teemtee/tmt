@@ -5422,6 +5422,10 @@ class Links(SpecBasedContainer[Any, list[_RawLinkRelation]]):
         # Ensure that each link is in the canonical form
         self._links = [Link.from_spec(spec) for spec in specs]
 
+    @classmethod
+    def from_spec(cls, spec: Union[_RawLink, list[_RawLink]]) -> Self:
+        return cls(data=spec)
+
     def to_spec(self) -> list[_RawLinkRelation]:
         """
         Convert to a form suitable for saving in a specification file
