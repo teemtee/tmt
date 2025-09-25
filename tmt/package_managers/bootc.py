@@ -142,7 +142,9 @@ class BootcEngine(PackageManagerEngine):
         return script
 
 
-@provides_package_manager('bootc')
+# ignore[type-arg]: TypeVar in package manager registry annotations is
+# puzzling for type checkers. And not a good idea in general, probably.
+@provides_package_manager('bootc')  # type: ignore[arg-type]
 class Bootc(PackageManager[BootcEngine]):
     NAME = 'bootc'
 
