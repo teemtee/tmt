@@ -80,6 +80,7 @@ def _discover_packages() -> list[tuple[str, Path]]:
         ('tmt.checks.internal', Path('checks/internal')),
         ('tmt.package_managers', Path('package_managers')),
         ('tmt.steps.prepare.feature', Path('steps/prepare/feature')),
+        ('tmt.steps.prepare.artifact.providers', Path('steps/prepare/artifact/providers')),
         ('tmt.plugins.plan_shapers', Path('plugins/plan_shapers')),
     ]
 
