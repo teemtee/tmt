@@ -1,8 +1,7 @@
 import re
 from unittest.mock import MagicMock
 
-from tmt.steps.prepare.artifact.providers import ArtifactProvider
-from tmt.steps.prepare.artifact.providers.info import ArtifactInfo
+from tmt.steps.prepare.artifact.providers import ArtifactInfo, ArtifactProvider
 
 
 class MockArtifactInfo(ArtifactInfo):
