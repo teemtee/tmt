@@ -34,7 +34,7 @@ rlJournalStart
         rlAssertGrep "title: A Concise Title" $rlRun_LOG
         rlAssertGrep "priority: must have" $rlRun_LOG
         assert_internal_fields "$rlRun_LOG"
-        rlRun "yq .[].link[] $rlRun_LOG | grep -- 'implemented-by\": \"/some/code.py'"
+        rlRun "yq .[].link[] $rlRun_LOG | grep -- 'implemented-by: /some/code.py'"
         rlRun "yq .[].tag[] $rlRun_LOG | grep -- 'foo'"
         rlRun "yq .[].example[] $rlRun_LOG | grep -- 'An inspiring example'"
     rlPhaseEnd
