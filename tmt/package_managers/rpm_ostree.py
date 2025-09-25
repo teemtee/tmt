@@ -113,7 +113,9 @@ class RpmOstreeEngine(PackageManagerEngine):
         raise GeneralError("rpm-ostree does not support debuginfo packages.")
 
 
-@provides_package_manager('rpm-ostree')
+# ignore[type-arg]: TypeVar in package manager registry annotations is
+# puzzling for type checkers. And not a good idea in general, probably.
+@provides_package_manager('rpm-ostree')  # type: ignore[arg-type]
 class RpmOstree(PackageManager[RpmOstreeEngine]):
     NAME = 'rpm-ostree'
 

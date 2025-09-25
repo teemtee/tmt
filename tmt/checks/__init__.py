@@ -1,6 +1,6 @@
 import enum
 import functools
-from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypedDict, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypedDict, TypeVar, cast
 
 import tmt.log
 import tmt.utils
@@ -30,33 +30,14 @@ CheckPluginClass = type['CheckPlugin[Any]']
 _CHECK_PLUGIN_REGISTRY: PluginRegistry[CheckPluginClass] = PluginRegistry('test.check')
 
 
-def provides_check(
-    check: str, hints: Optional[dict[str, str]] = None
-) -> Callable[[CheckPluginClass], CheckPluginClass]:
-    """
-    A decorator for registering test checks.
+def _register_hints(
+    plugin_id: str, plugin_class: CheckPluginClass, hints: Optional[dict[str, str]] = None
+) -> None:
+    for hint_id, hint in (hints or {}).items():
+        tmt.utils.hints.register_hint(f'test-checks/{plugin_id}/{hint_id}', hint)
 
-    Decorate a test check plugin class to register its checks.
 
-    :param check: name of the check.
-    :param hints: a mapping containing hints the check wishes to
-        register. Hints are registered with keys prefixed by
-        ``test-checks/$check/`` string.
-    """
-
-    def _provides_check(check_cls: CheckPluginClass) -> CheckPluginClass:
-        _CHECK_PLUGIN_REGISTRY.register_plugin(
-            plugin_id=check,
-            plugin=check_cls,
-            logger=tmt.log.Logger.get_bootstrap_logger(),
-        )
-
-        for hint_id, hint in (hints or {}).items():
-            tmt.utils.hints.register_hint(f'test-checks/{check}/{hint_id}', hint)
-
-        return check_cls
-
-    return _provides_check
+provides_check = _CHECK_PLUGIN_REGISTRY.create_decorator(on_register=_register_hints)
 
 
 def find_plugin(name: str) -> 'CheckPluginClass':
