@@ -57,5 +57,7 @@
 
 /plan/watchdog:
     provision+:
-        return-on-panic: True
-        image: Fedora-42
+        hardware:
+            beaker:
+                panic-watchdog: True
+        image: fedora-42

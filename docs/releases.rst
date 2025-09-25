@@ -4,6 +4,15 @@
     Releases
 ======================
 
+tmt-1.59.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`/plugins/provision/beaker` provision plugin gains
+support for :ref:`beaker.panic-watchdog</spec/hardware/beaker>`
+hardware requirement. If set, beaker-watchdog will return the
+host to beaker when a kernel panic is detected.
+
+
 tmt-1.58.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
