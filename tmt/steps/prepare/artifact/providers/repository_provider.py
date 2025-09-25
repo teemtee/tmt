@@ -27,7 +27,7 @@ class RepositoryFile:
         # The constructor also serves as a validator for the URL format
         try:
             result = urlparse(url)
-            if not all([result.scheme, result.netloc]):
+            if not result.scheme or not result.netloc:
                 raise ValueError
         except (ValueError, AttributeError):
             raise GeneralError(f"Invalid URL format for .repo file: '{url}'.")
