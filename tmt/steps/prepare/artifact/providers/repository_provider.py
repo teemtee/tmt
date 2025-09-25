@@ -86,11 +86,7 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         Note: This requires the repository to be installed and queried first,
         which is handled by the `download_artifacts` method.
         """
-        if self._rpm_list is None:
-            raise GeneralError(
-                "RPM list not fetched. Call 'download_artifacts' to install "
-                "the repository and populate the package list."
-            )
+        assert self._rpm_list is not None
         for rpm in self._rpm_list:
             yield RpmArtifactInfo(_raw_artifact=rpm)
 
