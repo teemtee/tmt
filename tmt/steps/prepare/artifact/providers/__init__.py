@@ -6,10 +6,11 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from re import Pattern
 from shlex import quote
-from typing import Generic, TypeVar
+from typing import Generic, Optional, TypeVar
 
 import tmt.log
 import tmt.utils
+from tmt.plugins import PluginRegistry
 from tmt.steps.prepare.artifact.providers.info import ArtifactInfo
 from tmt.steps.provision import Guest
 
@@ -141,3 +142,20 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         for artifact in self.list_artifacts():
             if not any(pattern.search(artifact.id) for pattern in exclude_patterns):
                 yield artifact
+
+
+_PROVIDER_REGISTRY: PluginRegistry[type[ArtifactProvider[ArtifactInfo]]] = PluginRegistry(
+    'prepare.artifact.providers'
+)
+
+
+def _register_hints(
+    plugin_id: str,
+    plugin_class: type[ArtifactProvider[ArtifactInfoT]],
+    hints: Optional[dict[str, str]] = None,
+) -> None:
+    for hint_id, hint in (hints or {}).items():
+        tmt.utils.hints.register_hint(f'artifact-provider/{plugin_id}/{hint_id}', hint)
+
+
+provides_artifact_provider = _PROVIDER_REGISTRY.create_decorator(on_register=_register_hints)
