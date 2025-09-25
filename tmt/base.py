@@ -633,6 +633,9 @@ class DependencyFile(
         """
         return True, ''
 
+    def _export(self, *, keys: Optional[list[str]] = None) -> tmt.export._RawExportedInstance:
+        return cast(tmt.export._RawExportedInstance, self.to_dict())
+
 
 _RawDependencyItem = Union[str, _RawDependencyFmfId, _RawDependencyFile]
 _RawDependency = Union[_RawDependencyItem, list[_RawDependencyItem]]
