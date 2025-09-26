@@ -8,7 +8,7 @@ tmt-1.59.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Introduced ``RSTRNT_TASKNAME`` environment variable gated by
-``restraint-compatible`` flag, see :ref:`_restraint-compatibility`.
+``restraint-compatible`` flag.
 
 
 tmt-1.58.0
