@@ -2,7 +2,7 @@
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
 function assert_check_result () {
-    rlAssertEquals "$1" "coredump:$2" "$(yq -r ".[] | select(.name == \"$4\") | .check | .[] | select(.event == \"$3\") | \"\\(.name):\\(.result)\"" $results)"
+    rlAssertEquals "$1" "coredump:$2" "$(yq ".[] | select(.name == \"$4\") | .check | .[] | select(.event == \"$3\") | \"\\(.name):\\(.result)\"" $results)"
 }
 
 function check_systemd_availability () {

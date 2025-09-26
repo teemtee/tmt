@@ -7,7 +7,7 @@ function assert_check_result () {
     result="$2"
     event="$3"
     name="/dmesg/$4"
-    rlAssertEquals "$comment" "dmesg:$result" "$(yq -r ".[] | select(.name == \"$name\") | .check | .[] | select(.event == \"$event\") | \"\\(.name):\\(.result)\"" $results)"
+    rlAssertEquals "$comment" "dmesg:$result" "$(yq ".[] | select(.name == \"$name\") | .check | .[] | select(.event == \"$event\") | \"\\(.name):\\(.result)\"" $results)"
 }
 
 
@@ -39,7 +39,7 @@ rlJournalStart
             rlAssertNotExists "$dump_before"
 
             rlAssertEquals "result shall contain a note" \
-                           "$(yq -r '.[] | .check | .[] | .note | .[]' $results)" \
+                           "$(yq '.[] | .check | .[] | .note | .[]' $results)" \
                            "Saving of the kernel ring buffer was skipped because of missing privileges.
 Saving of the kernel ring buffer was skipped because of missing privileges.
 Saving of the kernel ring buffer was skipped because of missing privileges.
@@ -59,7 +59,7 @@ Saving of the kernel ring buffer was skipped because of missing privileges."
             rlAssertNotExists "$dump_after"
 
             rlAssertEquals "result shall contain a note" \
-                           "$(yq -r '.[] | .check | .[] | .note | .[]' $results)" \
+                           "$(yq '.[] | .check | .[] | .note | .[]' $results)" \
                            "Saving of the kernel ring buffer was skipped because of missing privileges.
 Saving of the kernel ring buffer was skipped because of missing privileges.
 Saving of the kernel ring buffer was skipped because of missing privileges.

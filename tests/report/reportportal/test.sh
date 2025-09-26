@@ -3,7 +3,7 @@
 
 TOKEN=$TMT_PLUGIN_REPORT_REPORTPORTAL_TOKEN
 URL=$TMT_PLUGIN_REPORT_REPORTPORTAL_URL
-PROJECT="$(yq -r .report.project 'data/plan.fmf')"
+PROJECT="$(yq .report.project 'data/plan.fmf')"
 ARTIFACTS=$TMT_REPORT_ARTIFACTS_URL
 
 PLAN_PREFIX='/plan'
@@ -134,7 +134,7 @@ rlJournalStart
         rlAssertEquals "Assert the URL ID of launch is correct" "$(echo $response | jq -r '.id')" "$launch_id"
         rlAssertEquals "Assert the name of launch is correct" "$(echo $response | jq -r '.name')" "$launch_name"
         rlAssertEquals "Assert the status of launch is correct" "$(echo $response | jq -r '.status')" "$launch_status"
-        plan_summary=$(yq -r '.summary' plan.fmf)
+        plan_summary=$(yq '.summary' plan.fmf)
         if [[ -z $ARTIFACTS ]]; then
                 rlAssertEquals "Assert the description of launch is correct" "$(echo $response | jq -r '.description')" "$plan_summary"
         else
@@ -149,10 +149,10 @@ rlJournalStart
         # Check all the launch attributes
         rl_message="Test attributes of the launch (context)"
         echo "$response" | jq -r ".attributes" > tmp_attributes.json && rlPass "$rl_message" || rlFail "$rl_message"
-        length=$(yq -r ".context | length" plan.fmf)
+        length=$(yq ".context | length" plan.fmf)
         for ((item_index=0; item_index<$length; item_index++ )); do
-            key=$(yq -r ".context | keys | .[$item_index]" plan.fmf)
-            value=$(yq -r ".context.$key" plan.fmf)
+            key=$(yq ".context | keys | .[$item_index]" plan.fmf)
+            value=$(yq ".context.$key" plan.fmf)
             rlAssertGrep "$key" tmp_attributes.json -A1 > tmp_attributes_selection
             rlAssertGrep "$value" tmp_attributes_selection
         done
@@ -179,9 +179,9 @@ rlJournalStart
             rlAssertNotEquals "Assert the test id is not empty" "$test_id" ""
             rlAssertEquals "Assert the name is correct" "$(echo $response | jq -r '.name')" "$test_fullname"
             rlAssertEquals "Assert the status is correct" "$(echo $response | jq -r '.status')" "$test_status"
-            test_description=$(yq -er ".\"$test_name\".summary" test.fmf) || test_description=''
+            test_description=$(yq -e ".\"$test_name\".summary" test.fmf) || test_description=''
             rlAssertEquals "Assert the description is correct" "$(echo $response | jq -r '.description // ""')" "$test_description"
-            test_case_id=$(yq -r ".\"$test_name\".id" test.fmf)
+            test_case_id=$(yq ".\"$test_name\".id" test.fmf)
 
             [[ $test_case_id != null ]] && rlAssertEquals "Assert the testCaseId is correct" "$(echo $response | jq -r '.testCaseId')" "$test_case_id"
 
@@ -193,10 +193,10 @@ rlJournalStart
                     [[ $jq_element == parameters ]] && fmf_label="environment"
                     rlLogInfo "Check the $jq_element for test $test_name ($fmf_label)"
                     echo "$response" | jq -r ".$jq_element" > tmp_attributes.json || rlFail "$jq_element listing into tmp_attributes.json"
-                    length=$(yq -r ".$fmf_label | length" plan.fmf)
+                    length=$(yq ".$fmf_label | length" plan.fmf)
                     for ((item_index=0; item_index<$length; item_index++ )); do
-                        key=$(yq -r ".$fmf_label | keys | .[$item_index]" plan.fmf)
-                        value=$(yq -r ".$fmf_label.$key" plan.fmf)
+                        key=$(yq ".$fmf_label | keys | .[$item_index]" plan.fmf)
+                        value=$(yq ".$fmf_label.$key" plan.fmf)
                         rlAssertGrep "$key" tmp_attributes.json -A1 > tmp_attributes_selection
                         rlAssertGrep "$value" tmp_attributes_selection
                     done
@@ -204,11 +204,11 @@ rlJournalStart
                     # Check the rarities in the test attributes/parameters
                     if [[ $jq_element == attributes ]]; then
                         key="contact"
-                        value="$(yq -r ".\"$test_name\".$key" test.fmf)"
+                        value="$(yq ".\"$test_name\".$key" test.fmf)"
 
                         if [[ $value != null ]]; then
                             # Get the contact items as values separated by a comma
-                            value="$(yq -r '. | join(",")' <<< $value)"
+                            value="$(yq '. | join(",")' <<< $value)"
                             rlAssertGrep "$key" tmp_attributes.json -A1 > tmp_attributes_selection
 
                             IFS=, read -r -a contact_items <<< "$value"
@@ -237,7 +237,7 @@ rlJournalStart
 
                 # Check the log message is correct (except the weird parent test)
                 if [[ $i -ne 10 ]]; then
-                    log_message=$(yq -r ".\"$test_name\".test" test.fmf | awk -F '"' '{print $2}' )
+                    log_message=$(yq ".\"$test_name\".test" test.fmf | awk -F '"' '{print $2}' )
                     rlAssertEquals "Assert the message of the info log is correct" "$(echo $response | jq -r .content[$content_index].message)" "$log_message"
                 fi
             done
@@ -279,7 +279,7 @@ rlJournalStart
     # Testing suite-per-plan mapping with launch-suite-test structure
     rlPhaseStartTest "Extended Functionality - SUITE-PER-PLAN"
         launch_name=${PLAN_PREFIX}/suite-per-plan
-        plan_summary=$(yq -r '.summary' plan.fmf)
+        plan_summary=$(yq '.summary' plan.fmf)
         launch_description="Testing the integration of tmt and Report Portal via its API with suite-per-plan mapping"
         launch_status=$PLAN_STATUS
         suite_name=$PLAN_PREFIX
@@ -303,11 +303,11 @@ rlJournalStart
         # Check all the launch attributes
         rl_message="Test attributes of the launch (context)"
         echo "$response" | jq -r ".attributes" > tmp_attributes.json && rlPass "$rl_message" || rlFail "$rl_message"
-        length=$(yq -r ".context | length" plan.fmf)
+        length=$(yq ".context | length" plan.fmf)
         for ((item_index=0; item_index<$length; item_index++ )); do
             echo ""
-            key=$(yq -r ".context | keys | .[$item_index]" plan.fmf)
-            value=$(yq -r ".context.$key" plan.fmf)
+            key=$(yq ".context | keys | .[$item_index]" plan.fmf)
+            value=$(yq ".context.$key" plan.fmf)
             rlAssertGrep "$key" tmp_attributes.json -A1 > tmp_attributes_selection
             rlAssertGrep "$value" tmp_attributes_selection
         done
@@ -406,7 +406,7 @@ rlJournalStart
             rlAssertEquals "Assert the name is correct" "$(echo $response | jq -r '.name')" "$test_fullname"
             launch3_test_id[$i]=$(echo $response | jq -r '.id')
             rlAssertNotEquals "Assert the test id is not empty" "$launch3_test_id[$i]" ""
-            test_case_id=$(yq -r ".\"$test_name\".id" test.fmf)
+            test_case_id=$(yq ".\"$test_name\".id" test.fmf)
             [[ $test_case_id != null ]] && rlAssertEquals "Assert the test ${test_name} has a correct testCaseId" "$(echo $response | jq -r '.testCaseId')" "$test_case_id"
             echo "$response" | jq -r ".$jq_element" > tmp_attributes.json || rlFail "$jq_element listing into tmp_attributes.json"
 
@@ -509,7 +509,7 @@ rlJournalStart
             for ((content_index=0; content_index<$length_log; content_index++ )); do
                 rlAssertEquals "Assert the level of the info log is correct" "$(echo $response_log | jq -r .content[$content_index].level)" "${level[$content_index]}"
                 if [[ $i -ne 3 ]]; then
-                    log_message=$(yq -r ".\"$test_name\".test" test.fmf | awk -F '"' '{print $2}' )
+                    log_message=$(yq ".\"$test_name\".test" test.fmf | awk -F '"' '{print $2}' )
                     rlAssertEquals "Assert the message of the info log is correct" "$(echo $response_log | jq -r .content[$content_index].message)" "$log_message"
                 fi
             done
