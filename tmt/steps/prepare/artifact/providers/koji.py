@@ -10,11 +10,12 @@ from typing import Any, Optional
 import tmt.log
 import tmt.utils
 import tmt.utils.hints
+from tmt.container import container
 from tmt.steps.prepare.artifact.providers import (
+    ArtifactInfo,
     ArtifactProvider,
     DownloadError,
 )
-from tmt.steps.prepare.artifact.providers.info import RpmArtifactInfo
 from tmt.steps.provision import Guest
 
 koji: Optional[types.ModuleType] = None
@@ -52,6 +53,32 @@ def import_koji(logger: tmt.log.Logger) -> None:
         print_hints('koji', logger=logger)
 
         raise tmt.utils.GeneralError("Could not import koji package.") from error
+
+
+@container
+class RpmArtifactInfo(ArtifactInfo):
+    """
+    Represents a single RPM package.
+    """
+
+    PKG_URL = "https://kojipkgs.fedoraproject.org/packages/"  # For actual package downloads
+    _raw_artifact: dict[str, str]
+
+    @property
+    def id(self) -> str:
+        """A koji rpm identifier"""
+        return f"{self._raw_artifact['nvr']}.{self._raw_artifact['arch']}.rpm"
+
+    @property
+    def location(self) -> str:
+        """Get the download URL for the given RPM metadata."""
+        return (
+            f"{self.PKG_URL}{self._raw_artifact['name']}/"
+            f"{self._raw_artifact['version']}/"
+            f"{self._raw_artifact['release']}/"
+            f"{self._raw_artifact['arch']}/"
+            f"{self.id}"
+        )
 
 
 class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):

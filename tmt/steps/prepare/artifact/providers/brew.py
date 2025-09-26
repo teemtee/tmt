@@ -2,7 +2,7 @@
 Brew Artifact Provider
 """
 
-from tmt.steps.prepare.artifact.providers.koji_provider import KojiArtifactProvider
+from tmt.steps.prepare.artifact.providers.koji import KojiArtifactProvider
 
 
 class BrewProvider(KojiArtifactProvider):

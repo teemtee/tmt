@@ -6,11 +6,11 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from re import Pattern
 from shlex import quote
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 import tmt.log
 import tmt.utils
-from tmt.steps.prepare.artifact.providers.info import ArtifactInfo
+from tmt.container import container
 from tmt.steps.provision import Guest
 
 
@@ -18,6 +18,33 @@ class DownloadError(tmt.utils.GeneralError):
     """
     Raised when download fails.
     """
+
+
+@container
+class ArtifactInfo(ABC):
+    """
+    Information about a single artifact.
+
+    Attributes:
+        id (str): A unique identifier for the artifact.
+                  * RPMs → 'tmt-1.58.0.dev21+gb229884df-main.fc41.noarch'
+                  * Containers → image digest or tag
+    """
+
+    _raw_artifact: Any
+
+    @property
+    @abstractmethod
+    def id(self) -> str:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def location(self) -> str:
+        raise NotImplementedError
+
+    def __str__(self) -> str:
+        return self.id
 
 
 ArtifactInfoT = TypeVar('ArtifactInfoT', bound=ArtifactInfo)
