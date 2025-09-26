@@ -1513,8 +1513,7 @@ class Guest(
         self.execute(
             ShellScript(
                 f"[ -d {quote(str(self.scripts_path))} ] || "
-                f'{"sudo " if not self.facts.is_superuser else ""}'
-                f"mkdir -p {quote(str(self.scripts_path))}"
+                f"{self.sudo_prefix} mkdir -p {quote(str(self.scripts_path))}"
             ).to_shell_command(),
             silent=True,
         )
@@ -2189,6 +2188,23 @@ class Guest(
 
         else:
             self.execute(Command('rm', '-rf', path))
+
+    @functools.cached_property
+    def sudo_prefix(self) -> str:
+        """
+        Command prefix to run sudo commands.
+
+        Can be empty string if the user is already a superuser, otherwise we check if
+        non-interactive sudo is available.
+        """
+        if self.facts.is_superuser:
+            return ""
+        try:
+            self.execute(Command("sudo", "-n", "true"))
+        except tmt.utils.RunError:
+            # TODO: What do we do if we don't have sudo access?
+            raise GeneralError("User does not have sudo access")
+        return "sudo"
 
 
 @container

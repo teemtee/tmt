@@ -23,10 +23,7 @@ class DnfEngine(PackageManagerEngine):
 
     def prepare_command(self) -> tuple[Command, Command]:
         options = Command('-y')
-        command = Command()
-
-        if self.guest.facts.is_superuser is False:
-            command += Command('sudo')
+        command = Command(self.guest.sudo_prefix)
 
         command += self._base_command
 
