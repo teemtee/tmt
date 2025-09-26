@@ -1983,6 +1983,104 @@ class BasePlugin(
         #         f'supported methods {", ".join([method.name for method in self.methods()])}, ' \
         #         f'current data is {self.data}'
 
+    def _outcome_record_exception(
+        self,
+        outcome: PluginOutcome,
+        exc: Exception,
+        label: str,
+        log_filepath: Optional[Path] = None,
+    ) -> PluginOutcome:
+        """
+        Record an exception as a phase result.
+
+        A helper for plugins producing results for actions they take.
+
+        An exception is recorded as a phase-level result, and added among
+        outcome exceptions as well. If the exceptions is :py:class:`RunError`
+        one, its attached command output is saved into a designated file.
+
+        :py:class:`RunError` exceptions produce :py:attr:`ResultOutcome.FAIL`
+        result outcome; other exceptions produce :py:attr:`ResultOutcome.ERROR`.
+
+        :param outcome: phase outcome to update with the new result.
+        :param exc: exception to record.
+        :param label: label to use for naming the result and optional
+            command report.
+        :param log_filepath: a path to save command output report into.
+        :returns: the ``outcome`` argument.
+        """
+
+        from tmt.result import PhaseResult, ResultOutcome
+
+        if isinstance(exc, tmt.utils.RunError):
+            if log_filepath:
+                self.write(
+                    log_filepath,
+                    '\n'.join(tmt.utils.render_command_report(label=label, output=exc.output)),
+                )
+
+            outcome.results.append(
+                PhaseResult(
+                    name=label,
+                    result=ResultOutcome.FAIL,
+                    note=tmt.utils.render_exception_as_notes(exc),
+                    log=[log_filepath.relative_to(self.step_workdir)] if log_filepath else [],
+                )
+            )
+
+            outcome.exceptions.append(exc)
+
+            return outcome
+
+        outcome.results.append(
+            PhaseResult(
+                name=label,
+                result=ResultOutcome.ERROR,
+                note=tmt.utils.render_exception_as_notes(exc),
+            )
+        )
+
+        outcome.exceptions.append(exc)
+
+        return outcome
+
+    def _outcome_record_success(
+        self,
+        outcome: PluginOutcome,
+        output: tmt.utils.CommandOutput,
+        label: str,
+        log_filepath: Path,
+    ) -> PluginOutcome:
+        """
+        Record a successful command call as a phase result.
+
+        A helper for plugins producing results for actions they take.
+
+        :param outcome: phase outcome to update with the new result.
+        :param output: command output produced by the successful call.
+        :param label: label to use for naming the result and command
+            report.
+        :param log_filepath: a path to save command output report into.
+        :returns: the ``outcome`` argument.
+        """
+
+        from tmt.result import PhaseResult, ResultOutcome
+
+        self.write(
+            log_filepath,
+            '\n'.join(tmt.utils.render_command_report(label=label, output=output)),
+        )
+
+        outcome.results.append(
+            PhaseResult(
+                name=label,
+                result=ResultOutcome.PASS,
+                log=[log_filepath.relative_to(self.step_workdir)],
+            )
+        )
+
+        return outcome
+
     # NOTE: it's tempting to rename this method to `go()` and use more natural
     # `super().go()` in child classes' `go()` methods. But, `go()` does not have
     # the same signature across all plugin types, therefore we cannot have shared
