@@ -185,6 +185,14 @@ execute:
             dist-git-init: false
             test: tests/prepare/install$
 
+    /archive-url:
+        summary: Test url-type archive
+        discover:
+            how: fmf
+            url: https://github.com/teemtee/tests/archive/refs/heads/main.tar.gz
+            url-type: archive
+            test: /tests
+
     /dynamic-ref:
         /no-context:
             discover:
