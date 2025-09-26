@@ -87,22 +87,32 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
     Currently only supports RPM artifacts.
 
     Example:
-        provider = KojiArtifactProvider(logger, "koji.build:123456")
-        artifacts = provider.download_artifacts(guest, Path("/tmp"), [] )
+        provider = KojiArtifactProvider(logger, build_id=123456)
+        provider = KojiArtifactProvider(logger, task_id=654321)
+        provider = KojiArtifactProvider(logger, nvr="tmt-1.58.0.dev21+gb229884df-main.fc41.noarch")
+        artifacts = provider.download_artifacts(guest, Path("/tmp"), [])
     """
 
     API_URL = "https://koji.fedoraproject.org/kojihub"  # For metadata
 
-    def __init__(self, logger: tmt.log.Logger, artifact_id: str):
-        super().__init__(logger, artifact_id)
+    def __init__(
+        self,
+        logger: tmt.log.Logger,
+        *,
+        build_id: Optional[int] = None,
+        task_id: Optional[int] = None,
+        nvr: Optional[str] = None,
+    ):
+        super().__init__(logger)
         self._session = self._initialize_session()
+        self.artifact_id = self._resolve_artifact_id(build_id, task_id, nvr)
         self._rpm_list = self._fetch_rpms()
 
     def _fetch_rpms(self) -> list[dict[str, Any]]:
         """
-        Fetch and cache the list of RPMs for the given artifact ID.
+        Fetch and cache the list of RPMs for the given build ID.
         """
-        return self._call_api('listBuildRPMs', int(self.artifact_id)) or []
+        return self._call_api('listBuildRPMs', self.artifact_id) or []
 
     def _initialize_session(self) -> 'ClientSession':
         """
@@ -115,6 +125,35 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
             return ClientSession(self.API_URL)
         except Exception as error:
             raise tmt.utils.GeneralError("Failed to initialize API session.") from error
+
+    def _resolve_artifact_id(
+        self, build_id: Optional[int], task_id: Optional[int], nvr: Optional[str]
+    ) -> int:
+        """
+        Resolve and return the build ID based on the provided identifier.
+
+        :param build_id: Direct build ID if available
+        :param task_id: Task ID to resolve the build ID
+        :param nvr: Name-Version-Release string to resolve the build ID
+        :return: Resolved build ID
+        :raises GeneralError: If the build ID cannot be resolved
+        :raises ValueError: if no identifier is provided
+        """
+        if build_id is not None:
+            return build_id
+        if task_id is not None:
+            # TODO: What needs to happen here?
+            raise NotImplementedError("Task ID resolution is not implemented yet.")
+        if nvr is not None:
+            build = self._call_api('getBuild', nvr)
+            if not build or 'id' not in build:
+                raise tmt.utils.GeneralError(f"No build found for NVR '{nvr}'.")
+            build_id = build['id']
+            assert isinstance(build_id, int)
+            return build_id
+        raise ValueError(
+            "Exactly one of build_id, task_id, or nvr must be provided."
+        )  # What if multiples are provided?
 
     def _call_api(self, method: str, *args: Any, **kwargs: Any) -> Any:
         """
@@ -131,17 +170,6 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
             return method_callable(*args, **kwargs)
         except Exception as error:
             raise tmt.utils.GeneralError(f"API call '{method}' failed.") from error
-
-    def _parse_artifact_id(self, artifact_id: str) -> str:
-        # Eg: 'koji.build:123456'
-        prefix = "koji.build:"
-        if not artifact_id.startswith(prefix):
-            raise ValueError(f"Invalid artifact ID format: '{artifact_id}'.")
-
-        parsed = artifact_id[len(prefix) :]
-        if not parsed.isdigit():
-            raise ValueError(f"Invalid artifact ID format: '{artifact_id}'.")
-        return parsed
 
     def list_artifacts(self) -> Iterator[RpmArtifactInfo]:
         """
