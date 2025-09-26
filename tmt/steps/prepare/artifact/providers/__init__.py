@@ -56,7 +56,6 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
     e.g. KojiArtifactProvider, BrewArtifactProvider, RepoFileArtifactProvider.
 
     Each provider must implement:
-        - Parsing and validating the artifact ID
         - Listing available artifacts
         - Downloading a single artifact
     The base class provides:
@@ -64,22 +63,8 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
 
     """
 
-    def __init__(self, logger: tmt.log.Logger, artifact_id: str):
+    def __init__(self, logger: tmt.log.Logger):
         self.logger = logger
-        self.artifact_id = self._parse_artifact_id(
-            artifact_id
-        )  # Identifier for the source, e.g. 'koji.build:12345', URL for repository
-
-    @abstractmethod
-    def _parse_artifact_id(self, artifact_id: str) -> str:
-        """
-        Parse and validate the artifact identifier.
-
-        :param id: Identifier for the source
-        :return: The parsed identifier specific to this provider
-        :raises ValueError: If the artifact ID format is invalid
-        """
-        raise NotImplementedError
 
     @abstractmethod
     def list_artifacts(self) -> Iterator[ArtifactInfoT]:
