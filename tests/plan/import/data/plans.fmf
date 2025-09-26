@@ -2,8 +2,8 @@
     summary: Just url and name
     plan:
         import:
-            url: https://github.com/teemtee/tmt
-            name: /plans/sanity/lint
+            url: https://github.com/teemtee/tests
+            name: /plans/remote
 
 /ref-and-path:
     summary: Git ref and custom path
@@ -50,8 +50,8 @@
     summary: Imported plan should be enabled by default
     plan:
         import:
-            url: https://github.com/teemtee/tmt
-            name: /plans/sanity/lint
+            url: https://github.com/teemtee/tests
+            name: /plans/remote
     enabled: true
 
 /imported/disabled:
@@ -66,6 +66,6 @@
     summary: Imported plan will be disabled by local plan
     plan:
         import:
-            url: https://github.com/teemtee/tmt
-            name: /plans/sanity/lint
+            url: https://github.com/teemtee/tests
+            name: /plans/remote
     enabled: false
