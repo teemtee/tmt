@@ -931,7 +931,7 @@ def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
             # See https://github.com/teemtee/tmt/issues/3442
             return {'hostRequires': MrackHWAndGroup(children=[transformed]).to_mrack()}
 
-        def _requires_watchdog_panic(self, constraint: tmt.hardware.BaseConstraint) -> bool:
+        def _requires_panic_watchdog(self, constraint: tmt.hardware.BaseConstraint) -> bool:
             """
             Check if any of the constraints are beaker panic-watchdog with the value True
             """
@@ -940,7 +940,7 @@ def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
 
             if isinstance(constraint, (tmt.hardware.And, tmt.hardware.Or)):
                 return any(
-                    self._requires_watchdog_panic(child) for child in constraint.constraints
+                    self._requires_panic_watchdog(child) for child in constraint.constraints
                 )
 
             return False
@@ -953,14 +953,14 @@ def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
             req: dict[str, Any] = super().create_host_requirement(host.to_mrack())
 
             # set beaker-watchdog to ignore kernel panic by default
-            watchdog_panic = False
+            panic_watchdog = False
 
             if host.hardware and host.hardware.constraint:
                 req.update(self._translate_tmt_hw(host.hardware))
 
-                watchdog_panic = self._requires_watchdog_panic(host.hardware.constraint)
+                panic_watchdog = self._requires_panic_watchdog(host.hardware.constraint)
 
-            if not watchdog_panic:
+            if not panic_watchdog:
                 req['watchdog'] = {'panic': 'ignore'}
 
             if host.beaker_job_owner:
