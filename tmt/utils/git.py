@@ -5,6 +5,7 @@ Test Metadata Utilities
 import functools
 import os
 import re
+import shutil
 import subprocess
 import urllib.parse
 from re import Pattern
@@ -641,6 +642,24 @@ class RedHatDistGit(DistGitHandler):
     remote_substring = re.compile(r'redhat/rhel/|pkgs\.devel\.redhat\.com')
 
 
+class LocalDistGit(DistGitHandler):
+    """
+    Local source files
+    """
+
+    usage_name = "local"
+    re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
+    lookaside_server = "file://"
+    uri = "./{filename}"
+
+    def its_me(self, remotes: list[str]) -> bool:
+        """
+        Has to be an explicit request for this type
+        """
+
+        return False
+
+
 def get_distgit_handler(
     remotes: Optional[list[str]] = None,
     usage_name: Optional[str] = None,
@@ -697,7 +716,11 @@ def distgit_download(
 
     for url, source_name in handler.url_and_name(distgit_dir):
         target_dir.mkdir(exist_ok=True, parents=True)
-        tmt.utils.url.download(url, target_dir / source_name, logger=logger)
+        if url.startswith('file://'):
+            shutil.copy(url[7:], target_dir / source_name)
+        else:
+            tmt.utils.url.download(url, target_dir / source_name, logger=logger)
+
 
 
 def git_clone(
