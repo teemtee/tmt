@@ -69,6 +69,9 @@ prepare-artifact = [
 provision-beaker = [
     "mrack>=1.23.2",
     ]
+provision-mock = [
+    # mockbuild
+    ]
 provision-virtual = [
     "testcloud>=0.11.7",
     ]
@@ -93,6 +96,7 @@ all = [
     "tmt[provision-bootc]",
     "tmt[provision-virtual]",
     "tmt[provision-beaker]",
+    "tmt[provision-mock]",
     "tmt[report-junit]",
     "tmt[report-polarion]",
     "tmt[link-jira]",
