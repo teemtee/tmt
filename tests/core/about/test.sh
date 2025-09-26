@@ -2,12 +2,14 @@
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
 EXPECTED_PLUGIN_LIST=\
-"export.plan: dict json template yaml
+"export.fmfid: dict json template yaml
+export.plan: dict json template yaml
 export.story: dict json rst template yaml
 export.test: dict json nitrate polarion template yaml
 package_managers: apk apt bootc dnf dnf5 rpm-ostree yum
 plan_shapers: max-tests repeat
 prepare.feature: crb epel fips profile
+step.cleanup: tmt
 step.discover: fmf shell
 step.execute: tmt upgrade
 step.finish: ansible shell
