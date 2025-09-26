@@ -135,6 +135,9 @@ EXTRA_STORY_KEYS = [
 # User-defined custom metadata prefix
 EXTRA_KEYS_PREFIX = 'extra-'
 
+# Extra keys used for identification in Result class
+EXTRA_RESULT_IDENTIFICATION_KEYS = ['extra-nitrate', 'extra-task']
+
 SECTIONS_HEADINGS = {
     'Setup': ['<h1>Setup</h1>'],
     'Test': ['<h1>Test</h1>', '<h1>Test .*</h1>'],
@@ -1573,6 +1576,18 @@ class Test(
                 value = self.node.get(key)
                 if value not in [None, [], {}]:
                     echo(tmt.utils.format(key, value, key_color='blue'))
+
+    @functools.cached_property
+    def ids(self) -> tmt.result.ResultIds:
+        """
+        Get a dictionary with ids like tmt id, extra-nitrate and extra-task for report step
+        """
+        ids: tmt.result.ResultIds = {tmt.identifier.ID_KEY: self.id}
+        for key in EXTRA_RESULT_IDENTIFICATION_KEYS:
+            value: Any = cast(Any, self.node.get(key))
+            ids[key] = None if value is None else str(value)
+
+        return ids
 
     # FIXME - Make additional attributes configurable
     def lint_unknown_keys(self) -> LinterReturn:
