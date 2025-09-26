@@ -1856,6 +1856,7 @@ class Guest(
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
+        plan_sourced_file: Optional[Path] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         pass
@@ -1874,6 +1875,7 @@ class Guest(
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
+        plan_sourced_file: Optional[Path] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         pass
@@ -1891,6 +1893,7 @@ class Guest(
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
+        plan_sourced_file: Optional[Path] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
@@ -2642,6 +2645,7 @@ class GuestSsh(Guest):
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
+        plan_sourced_file: Optional[Path] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
@@ -2681,6 +2685,10 @@ class GuestSsh(Guest):
         # Change to given directory on guest if cwd provided
         if cwd:
             remote_commands += ShellScript(f'cd {quote(str(cwd))}')
+
+        # Source any TMT_PLAN_SOURCED_FILE
+        if plan_sourced_file:
+            remote_commands += ShellScript(f'source {plan_sourced_file}')
 
         if isinstance(command, Command):
             remote_commands += command.to_script()
