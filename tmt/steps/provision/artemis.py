@@ -15,6 +15,7 @@ import tmt.utils.wait
 from tmt.container import container, field
 from tmt.utils import (
     Command,
+    GuestLogError,
     ProvisionError,
     ShellScript,
     UpdatableMessage,
@@ -587,6 +588,12 @@ class GuestArtemis(tmt.GuestSsh):
 
         self.info('guestname', self.guestname, 'green')
 
+        self.guest_logs += [
+            GuestLogArtemis(name=log_type, guest=self) for log_type in self.log_type
+        ]
+
+        self.setup_logs()
+
         with UpdatableMessage('state', indent_level=self._level()) as progress_message:
 
             def get_new_state() -> GuestInspectType:
@@ -637,13 +644,6 @@ class GuestArtemis(tmt.GuestSsh):
 
         if self.guestname is None or self.primary_address is None:
             self._create()
-
-        self.guest_logs += [
-            GuestLogArtemis(
-                name=log_type.replace(':', '_').replace('/', '_'), guest=self, log_type=log_type
-            )
-            for log_type in self.log_type
-        ]
 
         self.verbose('primary address', self.primary_address, 'green')
         self.verbose('topology address', self.topology_address, 'green')
@@ -839,54 +839,80 @@ class GuestLogBlobType(TypedDict):
 @container
 class GuestLogArtemis(tmt.steps.provision.GuestLog):
     guest: GuestArtemis
-    log_type: str
 
-    def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
-        """
-        Fetch and return content of a log.
+    @functools.cached_property
+    def filename(self) -> str:
+        return self.name.replace(':', '-').replace('/', '-')
 
-        :returns: content of the log, or ``None`` if the log cannot be retrieved.
-        """
+    def setup(self, logger: tmt.log.Logger) -> None:
         if self.guest.guestname is None:
-            logger.warning("Failed to fetch log - guest does not exist.")
-            return None
+            raise GuestLogError("Failed to initialize, guestname is not known yet.", self)
 
-        response = self.guest.api.inspect(f'/guests/{self.guest.guestname}/logs/{self.log_type}')
+        response = self.guest.api.create(
+            f'/guests/{self.guest.guestname}/logs/{self.name}', data={}
+        )
+
+        if response.status_code != 202:  # 202 Accepted
+            raise GuestLogError(
+                f"Failed to initialize, API responded with HTTP {response.status_code} code.", self
+            )
+
+        logger.info(f'{self.name} log', 'requested', 'green')
+
+    def fetch(self, logger: tmt.log.Logger) -> str:
+        if self.guest.guestname is None:
+            raise GuestLogError("Failed to fetch, guestname is not known yet.", self)
+
+        response = self.guest.api.inspect(f'/guests/{self.guest.guestname}/logs/{self.name}')
 
         if response.status_code == 404:
-            return None
+            raise GuestLogError("Failed to fetch, log does not exist.", self)
 
         if response.status_code != 200:
-            logger.warning(
-                f"Failed to fetch log '{self.log_type}': {response.status_code} {response.reason}"
+            raise GuestLogError(
+                f"Failed to fetch, API responded with {response.status_code} {response.reason}",
+                self,
             )
-            return None
 
         log_data = response.json()
-        if self.log_type.endswith('/url'):
-            return self._fetch_url(log_data, logger)
-        return self._fetch_blob(log_data)
 
-    @staticmethod
-    def _fetch_url(log_data: dict[str, Any], logger: tmt.log.Logger) -> Optional[str]:
+        if log_data['state'] == 'unsupported':
+            return f'# Guest log {self.name} is not supported by the guest.'
+
+        if log_data['state'] == 'pending':
+            return f'# Guest log {self.name} is not available yet.'
+
+        if log_data['state'] == 'error':
+            return f'# Guest log {self.name} is failed to deliver.'
+
+        return (
+            self._fetch_url(log_data, logger)
+            if self.name.endswith('/url')
+            else self._fetch_blob(log_data, logger)
+        )
+
+    def _fetch_url(self, log_data: dict[str, Any], logger: tmt.log.Logger) -> str:
         url = log_data.get('url')
+
         if url is None:
-            return None
+            raise GuestLogError("Failed to fetch, URL is empty.", self)
+
         try:
             return tmt.utils.get_url_content(str(url))
-        except Exception as error:
-            tmt.utils.show_exception_as_warning(
-                exception=error,
-                message=f"Failed to fetch '{url}' log.",
-                logger=logger,
-            )
-        return None
 
-    @staticmethod
-    def _fetch_blob(log_data: dict[str, Any]) -> Optional[str]:
+        except Exception as error:
+            raise GuestLogError('Failed to fetch', self) from error
+
+        raise GuestLogError('Failed to fetch, for unknown reason.', self)
+
+    def _fetch_blob(self, log_data: dict[str, Any], logger: tmt.log.Logger) -> str:
         blobs = cast(list[GuestLogBlobType], log_data.get('blobs', []))
+
         if not blobs:
-            return None
+            logger.debug(self.name, 'no guest log blobs yet')
+
+            return ''
+
         return "\n\n".join(
             f"{blob['ctime']}\n{blob['content']}"
             for blob in sorted(blobs, key=lambda blob: blob['ctime'])
