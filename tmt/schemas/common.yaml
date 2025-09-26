@@ -80,6 +80,25 @@ definitions:
     required:
       - how
 
+  # Definition of provision ansible configuration
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#spec-plans-provision-ansible
+  provision_ansible:
+    type: object
+    additionalProperties: false
+
+    properties:
+      group:
+        type: string
+        description: Assigns the guest to a specific Ansible group
+
+      vars:
+        type: object
+        additionalProperties: true
+        description: >
+          Defines host-specific Ansible variables to include under that host in the inventory
+
+    minProperties: 1
+
   # List of all available require types
   # https://tmt.readthedocs.io/en/stable/spec/tests.html#require
   require_type:
