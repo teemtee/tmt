@@ -15,6 +15,7 @@ import fmf.utils
 
 import tmt
 import tmt.base
+import tmt.identifier
 import tmt.log
 import tmt.steps
 import tmt.steps.scripts
@@ -25,7 +26,9 @@ from tmt.checks import Check, CheckEvent, CheckPlugin
 from tmt.container import container, field, simple_field
 from tmt.options import option
 from tmt.plugins import PluginRegistry
-from tmt.result import CheckResult, Result, ResultGuestData, ResultInterpret, ResultOutcome
+from tmt.result import (
+    EXTRA_RESULT_IDENTIFICATION_KEYS, CheckResult, Result, ResultGuestData,
+    ResultIds, ResultInterpret, ResultOutcome)
 from tmt.steps import Action, ActionTask, PhaseQueue, PluginTask, Step
 from tmt.steps.abort import AbortContext, AbortStep
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
@@ -1246,6 +1249,14 @@ class Execute(tmt.steps.Step):
             if not test.where:
                 result_guests = guests
 
+            # Saving identifiable information for each test case so we can match them
+            # to Polarion/Nitrate/other cases and report run results there
+            # TODO: would an exception be better? Can test.id be None?
+            ids: ResultIds = {tmt.identifier.ID_KEY: test.id}
+            for key in EXTRA_RESULT_IDENTIFICATION_KEYS:
+                value: Any = cast(Any, test.node.get(key))
+                ids[key] = None if value is None else str(value)
+
             results.extend(
                 [
                     Result(
@@ -1253,6 +1264,7 @@ class Execute(tmt.steps.Step):
                         serial_number=test.serial_number,
                         result=tmt.result.ResultOutcome.PENDING,
                         fmf_id=test.fmf_id,
+                        ids=ids,
                         guest=ResultGuestData(
                             name=guest[0],
                             role=guest[1],
