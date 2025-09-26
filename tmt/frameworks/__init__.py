@@ -1,3 +1,4 @@
+import abc
 from typing import TYPE_CHECKING, Callable, Optional
 
 import tmt.log
@@ -38,7 +39,7 @@ def provides_framework(framework: str) -> Callable[[TestFrameworkClass], TestFra
     return _provides_framework
 
 
-class TestFramework:
+class TestFramework(abc.ABC):
     """
     A base class for test framework plugins.
 
@@ -119,6 +120,7 @@ class TestFramework:
         return options.copy() if options else TransferOptions()
 
     @classmethod
+    @abc.abstractmethod
     def extract_results(
         cls,
         invocation: 'TestInvocation',

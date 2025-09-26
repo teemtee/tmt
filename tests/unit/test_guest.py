@@ -1,28 +1,110 @@
 import os
 import re
-from typing import Any
+from typing import Any, Optional, Union
 from unittest.mock import MagicMock
 
 import _pytest.logging
 import pytest
 from pytest_container.container import ContainerData
 
-from tmt.log import Logger
-from tmt.steps.provision import Guest, GuestData, GuestSsh, GuestSshData, Provision
+from tmt.log import Logger, LoggingFunction
+from tmt.steps.provision import (
+    AnsibleApplicable,
+    Guest,
+    GuestData,
+    GuestSsh,
+    GuestSshData,
+    Provision,
+    TransferOptions,
+)
 from tmt.steps.provision.podman import GuestContainer
-from tmt.utils import Command, CommandOutput, Path, RunError, ShellScript
+from tmt.utils import (
+    Command,
+    CommandOutput,
+    Environment,
+    OnProcessEndCallback,
+    OnProcessStartCallback,
+    Path,
+    RunError,
+    ShellScript,
+)
+from tmt.utils.wait import Waiting
 
 from . import TEST_CONTAINERS
 
 
+class MockGuest(Guest):
+    def reboot(
+        self,
+        hard: bool = False,
+        command: Optional[Union[Command, ShellScript]] = None,
+        waiting: Optional[Waiting] = None,
+    ) -> bool:
+        raise RuntimeError("Mocked but not used")
+
+    def stop(self) -> None:
+        raise RuntimeError("Mocked but not used")
+
+    def pull(
+        self,
+        source: Optional[Path] = None,
+        destination: Optional[Path] = None,
+        options: Optional[TransferOptions] = None,
+    ) -> None:
+        raise RuntimeError("Mocked but not used")
+
+    def push(
+        self,
+        source: Optional[Path] = None,
+        destination: Optional[Path] = None,
+        options: Optional[TransferOptions] = None,
+        superuser: bool = False,
+    ) -> None:
+        raise RuntimeError("Mocked but not used")
+
+    def execute(
+        self,
+        command: Union[Command, ShellScript],
+        cwd: Optional[Path] = None,
+        env: Optional[Environment] = None,
+        friendly_command: Optional[str] = None,
+        test_session: bool = False,
+        tty: bool = False,
+        silent: bool = False,
+        log: Optional[LoggingFunction] = None,
+        interactive: bool = False,
+        on_process_start: Optional[OnProcessStartCallback] = None,
+        on_process_end: Optional[OnProcessEndCallback] = None,
+        **kwargs: Any,
+    ) -> CommandOutput:
+        raise RuntimeError("Mocked but not used")
+
+    def _run_ansible(
+        self,
+        playbook: AnsibleApplicable,
+        playbook_root: Optional[Path] = None,
+        extra_args: Optional[str] = None,
+        friendly_command: Optional[str] = None,
+        log: Optional[LoggingFunction] = None,
+        silent: bool = False,
+    ) -> CommandOutput:
+        raise RuntimeError("Mocked but not used")
+
+    @property
+    def is_ready(self) -> bool:
+        raise RuntimeError("Mocked but not used")
+
+
 def test_multihost_name(root_logger: Logger) -> None:
     assert (
-        Guest(logger=root_logger, name='foo', data=GuestData(primary_address='bar')).multihost_name
+        MockGuest(
+            logger=root_logger, name='foo', data=GuestData(primary_address='bar')
+        ).multihost_name
         == 'foo'
     )
 
     assert (
-        Guest(
+        MockGuest(
             logger=root_logger, name='foo', data=GuestData(primary_address='bar', role='client')
         ).multihost_name
         == 'foo (client)'
