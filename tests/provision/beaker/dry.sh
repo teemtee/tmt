@@ -8,7 +8,7 @@ rlJournalStart
         rlRun "set -o pipefail"
     rlPhaseEnd
 
-    rlPhaseStartTest "Verify that beaker watchdog is set to panic=ignore by default"
+    rlPhaseStartTest "Verify that beaker-watchdog is set to panic=ignore by default"
         rlRun -s "tmt run --dry provision --how beaker --image Fedora-42 plan --default"
         rlAssertGrep 'watchdog panic="ignore"/' $rlRun_LOG
     rlPhaseEnd
@@ -19,7 +19,7 @@ rlJournalStart
         rlAssertGrep 'pool op="==" value="best-pool"/' $rlRun_LOG
     rlPhaseEnd
 
-    rlPhaseStartTest "Verify that beaker watchdog config is not included when beaker panic-watchdog is True"
+    rlPhaseStartTest "Verify that beaker-watchdog config is not included when beaker panic-watchdog is True"
         rlRun -s "tmt run --dry provision --how beaker --hardware beaker.panic-watchdog=True --image Fedora-42 plan --default"
         rlAssertNotGrep 'watchdog panic="ignore"/' $rlRun_LOG
     rlPhaseEnd

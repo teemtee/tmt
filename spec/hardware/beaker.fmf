@@ -10,6 +10,8 @@ description: |
 
            # Boolean, True to enable beaker-watchdog to abort the
            # recipe when a kernel panic is detected.
+           # By default this option is disabled so tmt can keep
+           # control over the Beaker machine.
            panic-watchdog: True
 
     .. note::
