@@ -103,6 +103,11 @@ class BaseMock:
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
+        if options.check_first:
+            try:
+                return self.guest.execute(self.engine.check_presence(*installables))
+            except tmt.utils.RunError:
+                pass
         return self.guest.run(
             self.engine.install(*installables, options=options).to_shell_command()
         )
@@ -112,6 +117,11 @@ class BaseMock:
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
+        if options.check_first:
+            try:
+                return self.guest.execute(self.engine.check_presence(*installables))
+            except tmt.utils.RunError:
+                pass
         return self.guest.run(
             self.engine.reinstall(*installables, options=options).to_shell_command()
         )
@@ -121,6 +131,11 @@ class BaseMock:
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
+        if options.check_first:
+            try:
+                return self.guest.execute(self.engine.check_presence(*installables))
+            except tmt.utils.RunError:
+                pass
         return self.guest.run(
             self.engine.install_debuginfo(*installables, options=options).to_shell_command()
         )
