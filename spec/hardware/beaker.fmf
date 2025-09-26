@@ -8,6 +8,11 @@ description: |
            # String, name of the Beaker pool to use for provisioning.
            pool: "some-pool"
 
+           # Boolean, True to enable beaker-watchdog to abort the
+           # recipe when a kernel panic is detected.
+           # By default this option is disabled so tmt can keep
+           # control over the Beaker machine.
+           panic-watchdog: True
 
     .. note::
 
@@ -20,6 +25,7 @@ description: |
 example:
   - |
     # Select any system, as long as it is not from the given Beaker pool
+    # By default beaker-watchdog is instructed to ignore kernel panic
     beaker:
         pool: "!= very-rare-machines"
 
