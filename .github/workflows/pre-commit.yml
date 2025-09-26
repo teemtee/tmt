@@ -15,12 +15,12 @@ jobs:
     - run: |
         wget -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
         chmod +x /usr/local/bin/hadolint
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         persist-credentials: false
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: |
           3.9
           3.x
-    - uses: pre-commit/action@v3.0.0
+    - uses: pre-commit/action@v3.0.1
