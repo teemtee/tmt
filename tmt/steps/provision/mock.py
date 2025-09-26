@@ -14,7 +14,7 @@ import tmt.steps.provision
 import tmt.utils
 from tmt._compat.typing import Self
 from tmt.container import container, field
-from tmt.utils import Command, OnProcessStartCallback, Path, ShellScript
+from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
 from tmt.utils.wait import Waiting
 
 
@@ -35,7 +35,6 @@ class MockGuestData(tmt.steps.provision.GuestData):
         metavar='ROOTDIR',
         help='The path for where the chroot should be built.',
     )
-    mock_config: dict[Any, Any] = {}
 
 
 @container
@@ -399,6 +398,7 @@ class GuestMock(tmt.Guest):
         log: Optional[tmt.log.LoggingFunction] = None,
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
+        on_process_end: Optional[OnProcessEndCallback] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
