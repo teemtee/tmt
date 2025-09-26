@@ -1520,18 +1520,38 @@ class Guest(
         )
 
         # Install all scripts on guest
+        excluded_scripts = []
+        scripts_staging_dir = self.run_workdir / tmt.steps.scripts.SCRIPTS_DIR_NAME
         for script in scripts:
-            if not script.enabled(self):
-                continue
-
-            with script as source:
-                for filename in [script.source_filename, *script.aliases]:
+            if script.destination_path:
+                # scripts with destination_path we have to copy individually
+                if script.enabled(self):
                     self.push(
-                        source=source,
-                        destination=script.destination_path or self.scripts_path / filename,
+                        source=scripts_staging_dir / script.source_filename,
+                        destination=script.destination_path,
                         options=TransferOptions(preserve_perms=True, chmod=0o755),
                         superuser=self.facts.is_superuser is not True,
                     )
+                excluded_scripts.append(scripts_staging_dir / script.source_filename)
+            elif not script.enabled(self):
+                # Otherwise just make a list of scripts and their aliases to skip
+                # (they are being copied as a whole from scripts_staging_dir)
+                excluded_scripts.extend(
+                    scripts_staging_dir / filename
+                    for filename in [script.source_filename, *script.aliases]
+                )
+        # Finally copy the whole staging directory
+        self.push(
+            source=scripts_staging_dir,
+            destination=self.scripts_path,
+            options=TransferOptions(
+                preserve_perms=True,
+                recursive=True,
+                create_destination=True,
+                exclude=[str(path.absolute()) for path in excluded_scripts],
+            ),
+            superuser=self.facts.is_superuser is not True,
+        )
 
     def setup(self) -> None:
         """
