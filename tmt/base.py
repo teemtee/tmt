@@ -75,6 +75,7 @@ from tmt.container import (
     field,
 )
 from tmt.lint import LinterOutcome, LinterReturn
+from tmt.recipe import RecipeBuilder
 from tmt.result import Result, ResultInterpret
 from tmt.utils import (
     Command,
@@ -1248,6 +1249,11 @@ class Test(
 
     serial_number: int = field(default=0, internal=True)
 
+    _original_fmf_environment: tmt.utils.Environment = field(
+        internal=True,
+        default_factory=tmt.utils.Environment,
+    )
+
     _KEYS_SHOW_ORDER = [
         # Basic test information
         'summary',
@@ -1361,6 +1367,8 @@ class Test(
             )
 
         self._update_metadata()
+        # TODO: refactor the code so it does not modify the test environment
+        self._original_fmf_environment = self.environment.copy()
 
     @staticmethod
     def overview(tree: 'Tree') -> None:
@@ -4365,6 +4373,7 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         self.unique_id = str(time.time()).split('.')[0]
 
         self.policies = policies or []
+        self.recipe_builder = RecipeBuilder(logger)
 
     @property
     def run_workdir(self) -> Path:
@@ -4591,6 +4600,10 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         """
         Check overall results, return appropriate exit code
         """
+        # Save recipe
+        if not self.is_dry_run:
+            self.recipe_builder.save(self)
+
         # We get interesting results only if execute or prepare step is enabled
         execute = self.plans[0].execute
         report = self.plans[0].report

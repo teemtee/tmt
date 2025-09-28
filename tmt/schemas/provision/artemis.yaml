@@ -101,6 +101,15 @@ properties:
           - "console:dump/url"
           - "console:interactive/url"
           - "sys.log:dump/url"
+          - "flasher-debug:dump/url"
+          - "flasher-debug:dump/blob"
+          - "flasher-event:dump/url"
+          - "flasher-event:dump/blob"
+          - "anaconda.log:dump/blob"
+          - "storage.log:dump/blob"
+          - "program.log:dump/blob"
+          - "packaging.log:dump/blob"
+          - "ks.cfg:dump/blob"
       - type: array
         items:
           type: string
@@ -109,6 +118,15 @@ properties:
             - "console:dump/url"
             - "console:interactive/url"
             - "sys.log:dump/url"
+            - "flasher-debug:dump/url"
+            - "flasher-debug:dump/blob"
+            - "flasher-event:dump/url"
+            - "flasher-event:dump/blob"
+            - "anaconda.log:dump/blob"
+            - "storage.log:dump/blob"
+            - "program.log:dump/blob"
+            - "packaging.log:dump/blob"
+            - "ks.cfg:dump/blob"
 
 required:
   - how

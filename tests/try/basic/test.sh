@@ -122,6 +122,11 @@ rlJournalStart
         rlRun "grep -A 100 'What do we do next?' $rlRun_LOG | grep /plans/multi/plan/two"
     rlPhaseEnd
 
+    rlPhaseStartTest "Local change directory"
+        rlRun "cd tests/base/bad"
+        rlRun "../../../lcd.exp"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -f config/last-run"

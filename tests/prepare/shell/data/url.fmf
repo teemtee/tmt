@@ -7,7 +7,7 @@ prepare:
     script: cd $TMT_PREPARE_SHELL_URL_REPOSITORY/scripts && ./hello.sh
 execute:
     how: tmt
-    script: tmt --help
+    script: /usr/bin/true
 finish:
     how: shell
     url: https://github.com/teemtee/try

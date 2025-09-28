@@ -1,0 +1,6 @@
+test: /bin/true
+
+/first:
+    summary: First test
+    environment:
+        TEST_ENV: value

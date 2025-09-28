@@ -148,7 +148,13 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 guest.push(
                     source=repo_path,
                     destination=repo_path,
-                    options=TransferOptions(protect_args=True, preserve_perms=True, chmod=0o755),
+                    options=TransferOptions(
+                        protect_args=True,
+                        preserve_perms=True,
+                        chmod=0o755,
+                        recursive=True,
+                        create_destination=True,
+                    ),
                 )
 
         if not self.is_dry_run:

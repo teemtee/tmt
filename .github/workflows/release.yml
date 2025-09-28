@@ -20,18 +20,18 @@ jobs:
     steps:
 
       # Check out the repo
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: ${{ github.event_name == 'release' }}
         with:
           persist-credentials: false
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: ${{ github.event_name == 'workflow_dispatch' }}
         with:
           ref: ${{ github.event.inputs.ref }}
           persist-credentials: false
 
       # Setup python
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
 
@@ -39,7 +39,6 @@ jobs:
       - name: Build a binary wheel and a source tarball
         run: |
             python -m pip install hatch
-            hatch run docs:man
             hatch build
 
       # Publish it

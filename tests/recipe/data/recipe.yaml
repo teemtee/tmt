@@ -1,0 +1,250 @@
+run:
+    root: /fmf_root_path
+    remove: false
+    environment:
+        RUN_ENV: value
+    context: {}
+    __class__:
+        module: tmt.recipe
+        name: _RecipeRun
+plans:
+  - name: /plan
+    summary:
+    description:
+    author: []
+    contact: []
+    enabled: true
+    order: 50
+    link: []
+    id:
+    tag: []
+    tier:
+    adjust: []
+    environment-from-fmf:
+        PLAN_ENV: value
+    environment-from-importing: {}
+    environment-from-cli:
+        RUN_ENV: value
+    environment-from-intrinsics:
+        TMT_VERSION: version
+        TMT_TREE: /run_path/plan/tree
+        TMT_PLAN_DATA: /run_path/plan/data
+        TMT_PLAN_ENVIRONMENT_FILE: /run_path/plan/data/variables.env
+    context: {}
+    discover:
+        enabled: true
+        phases:
+          - name: default-0
+            how: fmf
+            order: 50
+            when: []
+            summary:
+            where: &id001 []
+            dist-git-source: false
+            dist-git-type:
+            dist-git-download-only: false
+            dist-git-install-builddeps: false
+            dist-git-require: []
+            require-test: []
+            url:
+            ref:
+            path:
+            test: []
+            link: []
+            filter: []
+            include: []
+            exclude: []
+            modified-only: false
+            modified-url:
+            modified-ref:
+            dist-git-init: false
+            dist-git-remove-fmf-root: false
+            dist-git-merge: false
+            dist-git-extract:
+            sync-repo: false
+            fmf-id: false
+            prune: false
+            adjust-tests: []
+            upgrade-path:
+            repository:
+            revision:
+            __class__:
+                module: tmt.steps.discover.fmf
+                name: DiscoverFmfStepData
+        tests:
+          - name: /tests/first
+            summary: First test
+            description:
+            author: []
+            contact: []
+            enabled: true
+            order: 50
+            id:
+            tag: []
+            tier:
+            adjust: []
+            link: []
+            component: []
+            test: /bin/true
+            path: /default-0/tests
+            framework: shell
+            manual: false
+            tty: false
+            require: []
+            recommend: []
+            environment:
+                TEST_ENV: value
+            duration: 5m
+            result: respect
+            where: *id001
+            check: []
+            restart-on-exit-code: []
+            restart-max-count: 1
+            restart-with-reboot: false
+            serial-number: 1
+            discover-phase: default-0
+            __class__:
+                module: tmt.recipe
+                name: _RecipeTest
+        __class__:
+            module: tmt.recipe
+            name: _RecipeDiscoverStep
+    provision:
+        enabled: true
+        phases:
+          - name: default-0
+            how: local
+            order: 50
+            when: []
+            summary:
+            role:
+            hardware:
+            -OPTIONLESS-FIELDS:
+              - primary_address
+              - topology_address
+              - facts
+            primary-address:
+            topology-address:
+            become: false
+            facts:
+                in-sync: false
+                arch:
+                distro:
+                kernel-release:
+                package-manager:
+                bootc-builder:
+                has-selinux:
+                has-systemd:
+                has-rsync:
+                is-superuser:
+                is-ostree:
+                is-toolbox:
+                toolbox-container-name:
+                is-container:
+                capabilities: {}
+                os-release-content: {}
+                lsb-release-content: {}
+                __class__:
+                    module: tmt.steps.provision
+                    name: GuestFacts
+            environment: {}
+            __class__:
+                module: tmt.steps.provision.local
+                name: ProvisionLocalData
+        __class__:
+            module: tmt.recipe
+            name: _RecipeStep
+    prepare:
+        enabled: true
+        phases:
+          - name: default-0
+            how: shell
+            order: 50
+            when: []
+            summary:
+            where: []
+            script: []
+            url:
+            ref:
+            __class__:
+                module: tmt.steps.prepare.shell
+                name: PrepareShellData
+        __class__:
+            module: tmt.recipe
+            name: _RecipeStep
+    execute:
+        enabled: true
+        phases:
+          - name: default-0
+            how: tmt
+            order: 50
+            when: []
+            summary:
+            where: []
+            duration: 1h
+            ignore-duration: false
+            exit-first: false
+            script: []
+            interactive: false
+            restraint-compatible: false
+            no-progress-bar: false
+            __class__:
+                module: tmt.steps.execute.internal
+                name: ExecuteInternalData
+        results-path: plan/execute/results.yaml
+        __class__:
+            module: tmt.recipe
+            name: _RecipeExecuteStep
+    report:
+        enabled: true
+        phases:
+          - name: default-0
+            how: display
+            order: 50
+            when: []
+            summary:
+            display-guest: auto
+            __class__:
+                module: tmt.steps.report.display
+                name: ReportDisplayData
+        __class__:
+            module: tmt.recipe
+            name: _RecipeStep
+    finish:
+        enabled: true
+        phases:
+          - name: default-0
+            how: shell
+            order: 50
+            when: []
+            summary:
+            where: []
+            script: []
+            url:
+            ref:
+            __class__:
+                module: tmt.steps.prepare.shell
+                name: PrepareShellData
+        __class__:
+            module: tmt.recipe
+            name: _RecipeStep
+    cleanup:
+        enabled: true
+        phases:
+          - name: default-0
+            how: tmt
+            order: 50
+            when: []
+            summary:
+            __class__:
+                module: tmt.steps.cleanup.internal
+                name: CleanupInternalData
+        __class__:
+            module: tmt.recipe
+            name: _RecipeStep
+    __class__:
+        module: tmt.recipe
+        name: _RecipePlan
+__class__:
+    module: tmt.recipe
+    name: Recipe

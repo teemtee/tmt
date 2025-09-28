@@ -7,21 +7,27 @@
 tmt-1.58.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A new :ref:`issues` section has been added to the Contribute page.
-It provides a couple of recommendations about filing issues and
-documents that issues have to be filed for newly identified bugs.
+The ``tmt-reboot`` command was changed to handle special EFI
+handling for Beaker systems only. The ``-e`` option is ignored and
+has no effect now. We are keeping it for backwards compatibility
+only. See the :ref:`/stories/features/reboot` section for updated
+usage details.
 
-The Guide has been extended with a new :ref:`guest-preparation`
-section which covers :ref:`minimal-requirements` for guests and
-describes :ref:`helper-scripts` used for special test actions.
+The :ref:`tmt try</stories/cli/try>` command's interactive session
+now includes a new ``lcd`` option to switch directories,
+making it easy to select and run a different test or set of tests.
 
-Searching a Test Case in Polarion during test export/import or
-test run export will no longer find test cases that are set as
-inactive.
+At the end of each run, tmt now generates a ``recipe.yaml``
+file based on the :ref:`/spec/recipe` specification. Loading
+recipes is not yet supported.
 
 :ref:`/plugins/execute` no longer require ``awk`` to be installed
 on the guest, as all ``awk`` usage has been replaced with Bash
 built-ins and standard utilities.
+
+Searching a Test Case in Polarion during test export/import or
+test run export will no longer find test cases that are set as
+inactive.
 
 When using the :ref:`/plugins/provision/local` provision, the tmt
 helper scripts are now automatically copied into a scripts
@@ -30,6 +36,23 @@ directory located within the tmt run's workdir. If
 :ref:`/plugins/provision/local` provision, a warning will be
 triggered, and the default scripts path under the run's workdir
 will be used.
+
+Several missing keys were added into the config schema. Now the
+``tmt lint`` commands should provide more precise reports.
+
+The ``chcon`` command is now correctly skipped when not needed,
+fixing test execution from hosts where SELinux is not supported.
+
+The :ref:`/plugins/prepare/shell` prepare plugin now correctly
+works with remote repositories for ssh-type provision plugins.
+
+A new :ref:`issues` section has been added to the Contribute page.
+It provides a couple of recommendations about filing issues and
+documents that issues have to be filed for newly identified bugs.
+
+The Guide has been extended with a new :ref:`guest-preparation`
+section which covers :ref:`minimal-requirements` for guests and
+describes :ref:`helper-scripts` used for special test actions.
 
 
 tmt-1.57.0
