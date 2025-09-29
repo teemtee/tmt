@@ -12,8 +12,9 @@ correctly execute the ``cleanup`` step instead of skipping it.
 
 The :ref:`/plugins/provision/beaker` provision plugin gains
 support for :ref:`beaker.panic-watchdog</spec/hardware/beaker>`
-hardware requirement. If set, beaker-watchdog will return the
-host to beaker when a kernel panic is detected.
+hardware requirement. If enabled, beaker-watchdog will return the
+host to beaker when a kernel panic is detected. By default this
+option is disabled so tmt can keep control over the Beaker machine.
 
 
 tmt-1.58.0
