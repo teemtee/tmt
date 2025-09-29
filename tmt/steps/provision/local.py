@@ -133,15 +133,18 @@ class GuestLocal(tmt.Guest):
         if tty:
             self.warn("Ignoring requested tty, not supported by the 'local' provision plugin.")
 
-        actual_command = command if isinstance(command, Command) else command.to_shell_command()
-
         # Source any TMT_PLAN_SOURCED_FILE
         if plan_sourced_file:
-            actual_command = (
-                ShellScript(f'source {plan_sourced_file}').to_shell_command()
-                + Command("&&")
-                + actual_command
-            )
+            if isinstance(command, Command):
+                command = (
+                    ShellScript(f'source {plan_sourced_file}').to_shell_command()
+                    + Command("&&")
+                    + command
+                )
+            else:
+                command = ShellScript(f'source {plan_sourced_file}') + command
+
+        actual_command = command if isinstance(command, Command) else command.to_shell_command()
 
         # Run the command under the prepared environment
         return self._run_guest_command(
