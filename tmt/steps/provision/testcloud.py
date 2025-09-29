@@ -121,8 +121,10 @@ chpasswd:
 users:
   - default
   - name: ${user_name}
-ssh_authorized_keys:
-  - ${public_key}
+    groups: [wheel, sudo]
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh_authorized_keys:
+      - ${public_key}
 ssh_pwauth: true
 disable_root: false
 runcmd:
@@ -134,6 +136,7 @@ version: 1.4.0
 passwd:
   users:
     - name: ${user_name}
+      groups: [wheel, sudo]
       ssh_authorized_keys:
         - ${public_key}
 storage:
@@ -146,6 +149,12 @@ storage:
           # Enable it.
           # This file must sort before 40-rhcos-defaults.conf.
           PermitRootLogin yes
+    - path: /etc/sudoers.d/tmt-user
+      mode: 0440
+      contents:
+        inline: |
+          # Allow tmt user to run sudo commands without password
+          ${user_name} ALL=(ALL) NOPASSWD:ALL
 """
 
 # VM defaults
