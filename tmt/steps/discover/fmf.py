@@ -322,6 +322,13 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     If no ``ref`` is provided, the default branch from the origin is used.
 
+    .. versionadded:: 1.59
+
+       Introduced ``url-type`` which can be ``git`` (default) or ``archive``.
+       When set to ``archive`` the ``url`` is treated as an archive download
+       url which will be downloaded and unarchived. Make sure you navigate
+       appropriately to the tmt tree in the archive using ``path``.
+
 
     Dist Git
     ^^^^^^^^
