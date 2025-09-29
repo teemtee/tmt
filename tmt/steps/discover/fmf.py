@@ -322,12 +322,22 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     If no ``ref`` is provided, the default branch from the origin is used.
 
-    .. versionadded:: 1.59
+    Archive
+    ^^^^^^^
 
-       Introduced ``url-type`` which can be ``git`` (default) or ``archive``.
-       When set to ``archive`` the ``url`` is treated as an archive download
-       url which will be downloaded and unarchived. Make sure you navigate
-       appropriately to the tmt tree in the archive using ``path``.
+    By default ``url`` is treated as a git url to be cloned, but you can set
+    ``url-type`` to ``archive`` to instead treat it as an archive url and
+    download and extract it. For example:
+
+    .. code-block:: yaml
+
+        discover:
+            how: fmf
+            url: https://github.com/teemtee/tmt/archive/refs/heads/main.tar.gz
+            url-type: archive
+            path: /tmt-main/fmf/root
+
+    .. versionadded:: 1.59
 
 
     Dist Git
