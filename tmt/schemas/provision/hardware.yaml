@@ -15,6 +15,47 @@ definitions:
   # arch:
   #   type: string
 
+  # HW requirements shared by device-like objects
+  _device_name:
+    type: string
+
+  _device_id:
+    anyOf:
+      - type: string
+      - type: integer
+
+  _device_driver:
+    type: string
+
+  _device_vendor_name:
+    type: string
+
+  _device_vendor_id:
+    anyOf:
+      - type: string
+      - type: integer
+
+  # TODO: currently unused because validation from fmf does not allow
+  # newer validator than Draft4
+  _device:
+    type: object
+
+    properties:
+      device-name:
+        "$ref": "#/definitions/_device_name"
+
+      device:
+        "$ref": "#/definitions/_device_id"
+
+      driver:
+        "$ref": "#/definitions/_device_driver"
+
+      vendor-name:
+        "$ref": "#/definitions/_device_vendor_name"
+
+      vendor:
+        "$ref": "#/definitions/_device_id"
+
   # HW requirements: single `beaker` item
   beaker:
     type: object
@@ -111,11 +152,9 @@ definitions:
         items:
           type: string
       vendor-name:
-        type: string
+        "$ref": "#/definitions/_device_vendor_name"
       vendor:
-        anyOf:
-          - type: string
-          - type: integer
+        "$ref": "#/definitions/_device_vendor_id"
       hyper-threading:
         type: boolean
 
@@ -130,35 +169,27 @@ definitions:
     type: object
 
     properties:
+      # TODO: copied from #/definitions/_device till the validator maturity gets resolved.
+      # See the note at #/definitions/_device.
       device-name:
-        type: string
+        "$ref": "#/definitions/_device_name"
 
       device:
-        anyOf:
-          - type: string
-          - type: integer
+        "$ref": "#/definitions/_device_id"
 
       driver:
-        type: string
+        "$ref": "#/definitions/_device_driver"
 
       vendor-name:
-        type: string
+        "$ref": "#/definitions/_device_vendor_name"
 
       vendor:
-        anyOf:
-          - type: string
-          - type: integer
+        "$ref": "#/definitions/_device_id"
 
     additionalProperties: false
 
     # enforce at least one property
     minProperties: 1
-
-  # HW requirements: `device` block
-  devices:
-    type: array
-    items:
-      "$ref": "#/definitions/device"
 
   # HW requirements: single `disk` item
   disk:
@@ -169,11 +200,12 @@ definitions:
         anyOf:
           - type: string
           - type: integer
+
       model-name:
         type: string
 
       driver:
-        type: string
+        "$ref": "#/definitions/_device_driver"
 
       logical-sector-size:
         anyOf:
@@ -184,6 +216,7 @@ definitions:
         anyOf:
           - type: string
           - type: integer
+
     additionalProperties: false
 
     # enforce at least one property - we don't care which one, but we don't want
@@ -198,27 +231,23 @@ definitions:
 
   # HW requirements: single `gpu` item
   gpu:
-    type: object
-
     properties:
+      # TODO: copied from #/definitions/_device till the validator maturity gets resolved.
+      # See the note at #/definitions/_device.
       device-name:
-        type: string
+        "$ref": "#/definitions/_device_name"
 
       device:
-        anyOf:
-          - type: string
-          - type: integer
-
-      vendor-name:
-        type: string
-
-      vendor:
-        anyOf:
-          - type: string
-          - type: integer
+        "$ref": "#/definitions/_device_id"
 
       driver:
-        type: string
+        "$ref": "#/definitions/_device_driver"
+
+      vendor-name:
+        "$ref": "#/definitions/_device_vendor_name"
+
+      vendor:
+        "$ref": "#/definitions/_device_id"
 
     additionalProperties: false
 
@@ -252,27 +281,25 @@ definitions:
     type: object
 
     properties:
-      device-name:
-        type: string
-
-      device:
-        anyOf:
-          - type: string
-          - type: integer
-
-      vendor-name:
-        type: string
-
-      vendor:
-        anyOf:
-          - type: string
-          - type: integer
-
-      driver:
-        type: string
-
       type:
         type: string
+
+      # TODO: copied from #/definitions/_device till the validator maturity gets resolved.
+      # See the note at #/definitions/_device.
+      device-name:
+        "$ref": "#/definitions/_device_name"
+
+      device:
+        "$ref": "#/definitions/_device_id"
+
+      driver:
+        "$ref": "#/definitions/_device_driver"
+
+      vendor-name:
+        "$ref": "#/definitions/_device_vendor_name"
+
+      vendor:
+        "$ref": "#/definitions/_device_id"
 
     additionalProperties: false
 
@@ -292,12 +319,10 @@ definitions:
 
     properties:
       vendor:
-        anyOf:
-          - type: string
-          - type: integer
+        "$ref": "#/definitions/_device_vendor_id"
 
       vendor-name:
-        type: string
+        "$ref": "#/definitions/_device_vendor_name"
 
       model:
         anyOf:
@@ -319,21 +344,25 @@ definitions:
           protocol:
             type: string
 
-          device:
-            anyOf:
-              - type: string
-              - type: integer
-
+          # TODO: copied from #/definitions/_device till the validator maturity gets resolved.
+          # See the note at #/definitions/_device.
           device-name:
-            type: string
+            "$ref": "#/definitions/_device_name"
 
-          vendor:
-            anyOf:
-              - type: string
-              - type: integer
+          device:
+            "$ref": "#/definitions/_device_id"
+
+          driver:
+            "$ref": "#/definitions/_device_driver"
 
           vendor-name:
-            type: string
+            "$ref": "#/definitions/_device_vendor_name"
+
+          vendor:
+            "$ref": "#/definitions/_device_vendor_id"
+
+        additionalProperties: false
+        minProperties: 1
 
     additionalProperties: false
 
@@ -406,6 +435,9 @@ definitions:
       # arch:
       #   "$ref": "#/definitions/arch"
 
+      beaker:
+        "$ref": "#/definitions/beaker"
+
       boot:
         "$ref": "#/definitions/boot"
 
@@ -416,7 +448,7 @@ definitions:
         "$ref": "#/definitions/cpu"
 
       device:
-        "$ref": "#/definitions/devices"
+        "$ref": "#/definitions/device"
 
       disk:
         "$ref": "#/definitions/disks"

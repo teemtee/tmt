@@ -3,6 +3,7 @@ import textwrap
 from typing import Any
 
 import _pytest.logging
+import fmf
 import pytest
 
 import tmt.hardware
@@ -262,6 +263,23 @@ OR_HARDWARE_REQUIREMENTS = """
           - hostname: == dummy3.redhat.com
           - hostname: == dummy4.redhat.com
 """
+
+
+def test_validate_maximal_constraint(root_logger: Logger) -> None:
+    node = fmf.Tree({'hardware': tmt.utils.yaml_to_dict(FULL_HARDWARE_REQUIREMENTS)})
+
+    errors = tmt.utils.validate_fmf_node(node, 'hardware.yaml', root_logger)
+
+    if errors:
+        for error, message in errors:
+            print(f"""* {message}
+
+Detailed validation error:
+
+{textwrap.indent(str(error), '  ')}
+""")
+
+        pytest.fail("Maximal HW constraint example fails schema validation")
 
 
 def test_parse_maximal_constraint() -> None:
