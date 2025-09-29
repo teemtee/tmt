@@ -385,6 +385,15 @@ class RestVisitor(docutils.nodes.NodeVisitor):
 
     depart_transition = _noop_departure
 
+    def visit_versionadded(self, node: docutils.nodes.Node) -> None:
+        self.log_visit(node)
+        self.flush()
+
+    def depart_versionadded(self, node: docutils.nodes.Node) -> None:
+        self.log_departure(node)
+        self.flush()
+        self.nl()
+
     def unknown_visit(self, node: docutils.nodes.Node) -> None:
         raise GeneralError(f"Unhandled ReST node '{node}'.")
 
