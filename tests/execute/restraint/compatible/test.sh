@@ -11,11 +11,14 @@ rlJournalStart
     # restraint-compatible mode.
 
     rlPhaseStartTest "Test /plans/compatible"
-        rlRun -s "tmt run -vvv --id $run plan --name /plans/compatible" 1
+        rlRun -s "tmt run -vvv --id $run plan --name /plans/compatible tests -n /tmt-report-result" 1
         rlRun "grep -A2 'pass /good-with-log' $rlRun_LOG | grep fine.txt"
         rlRun "grep -A2 'pass /good-with-var' $rlRun_LOG | grep fine.txt"
         rlRun "grep -A2 'fail /bad-with-log'  $rlRun_LOG | grep wrong.txt"
         rlRun "grep -A2 'fail /bad-with-var'  $rlRun_LOG | grep wrong.txt"
+        rlRun -s "tmt run -vvv --id $run plan --name /plans/compatible tests -n /env-var" 1
+        rlAssertGrep "TMT_RESTRAINT_COMPATIBLE=1" "$rlRun_LOG"
+        rlAssertGrep "RSTRNT_TASKNAME=/env-var" "$rlRun_LOG"
     rlPhaseEnd
 
     # In the incompatible mode the OUTPUTFILE variable should be
@@ -23,11 +26,14 @@ rlJournalStart
 
     for plan in "/plans/default" "/plans/incompatible"; do
         rlPhaseStartTest "Test $plan"
-            rlRun -s "tmt run -vvv --id $run plan --name $plan" 1
+            rlRun -s "tmt run -vvv --id $run plan --name $plan tests -n /tmt-report-result" 1
             rlRun "grep -A2 'pass /good-with-log' $rlRun_LOG | grep fine.txt"
             rlRun "grep -A2 'pass /good-with-var' $rlRun_LOG | grep txt" 1
             rlRun "grep -A2 'fail /bad-with-log'  $rlRun_LOG | grep wrong.txt"
             rlRun "grep -A2 'fail /bad-with-var'  $rlRun_LOG | grep txt" 1
+            rlRun -s "tmt run -vvv --id $run plan --name $plan tests -n /env-var" 1
+            rlAssertGrep "TMT_RESTRAINT_COMPATIBLE=0" "$rlRun_LOG"
+            rlAssertNotGrep "RSTRNT_TASKNAME=" "$rlRun_LOG"
         rlPhaseEnd
     done
 
