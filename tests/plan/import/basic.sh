@@ -17,8 +17,7 @@ rlJournalStart
         rlAssertGrep "/plans/minimal" $rlRun_LOG
         rlAssertNotGrep "summary Just url and name" $rlRun_LOG
         rlAssertGrep "summary A simple smoke plan for remote testing" $rlRun_LOG
-        # TODO: re-enable this check after removing `import` word from teemtee/tests
-        # rlAssertNotGrep "\<import\>" $rlRun_LOG
+        rlAssertNotGrep "^\s*import\s*$" $rlRun_LOG
         rlAssertNotGrep "ref 1.16.0" $rlRun_LOG
         rlAssertNotGrep "warn" $rlRun_LOG
     rlPhaseEnd
@@ -28,8 +27,7 @@ rlJournalStart
         rlAssertGrep "/plans/minimal" $rlRun_LOG
         rlAssertGrep "summary Just url and name" $rlRun_LOG
         rlAssertNotGrep "summary A simple smoke plan for remote testing" $rlRun_LOG
-        # TODO: re-enable this check after removing `import` word from teemtee/tests
-        # rlAssertNotGrep "\<import\>" $rlRun_LOG
+        rlAssertNotGrep "^\s*import\s*$" $rlRun_LOG
         rlAssertNotGrep "ref 1.16.0" $rlRun_LOG
         rlAssertNotGrep "warn" $rlRun_LOG
     rlPhaseEnd
@@ -39,8 +37,7 @@ rlJournalStart
         rlAssertGrep "/plans/minimal" $rlRun_LOG
         rlAssertNotGrep "summary Just url and name" $rlRun_LOG
         rlAssertGrep "summary A simple smoke plan for remote testing" $rlRun_LOG
-        # TODO: re-enable this check after removing `import` word from teemtee/tests
-        # rlAssertGrep "\<import\>" $rlRun_LOG
+        rlAssertGrep "^\s*import\s*$" $rlRun_LOG
         rlAssertGrep "url https://github.com/teemtee/tmt" $rlRun_LOG
         rlAssertGrep "path /tests/run/worktree/data/prepare" $rlRun_LOG
         rlAssertGrep "name /plan" $rlRun_LOG
@@ -53,8 +50,7 @@ rlJournalStart
         rlAssertGrep "/plans/minimal" $rlRun_LOG
         rlAssertGrep "summary Just url and name" $rlRun_LOG
         rlAssertNotGrep "summary A simple smoke plan for remote testing" $rlRun_LOG
-        # TODO: re-enable this check after removing `import` word from teemtee/tests
-        # rlAssertGrep "\<import\>" $rlRun_LOG
+        rlAssertGrep "^\s*import\s*$" $rlRun_LOG
         rlAssertGrep "url https://github.com/teemtee/tmt" $rlRun_LOG
         rlAssertGrep "path /tests/run/worktree/data/prepare" $rlRun_LOG
         rlAssertGrep "name /plan" $rlRun_LOG
