@@ -72,7 +72,11 @@ class RpmArtifactInfo(ArtifactInfo):
         """
 
         try:
-            base, arch, _ = filename.rsplit(".", 2)
+            if filename.endswith('.src.rpm'):
+                base = filename[:-8]  # Remove '.src.rpm'
+                arch = 'src'
+            else:
+                base, arch, _ = filename.rsplit(".", 2)
             name, version, release = base.rsplit("-", 2)
         except ValueError:
             raise ValueError(f"Invalid RPM filename format: '{filename}'")
