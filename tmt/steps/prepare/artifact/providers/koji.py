@@ -106,6 +106,13 @@ class RpmArtifactInfo(ArtifactInfo):
             f"{self.id}"
         )
 
+    @property
+    def is_draft(self) -> bool:
+        """
+        Whether this RPM is a draft/scratch artifact.
+        """
+        return bool(self._raw_artifact['draft'])
+
 
 class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
     """
@@ -166,15 +173,21 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         Fetch and cache the list of RPMs from the given identifier.
         """
         if self.task_id is not None:
+            # listTaskOutput returns just a list of filenames and not full metadata
             filenames = self._call_api("listTaskOutput", self.task_id) or []
-            # Convert filenames into dicts for RpmArtifactInfo.
-            # TODO: Check if there's a better way via the API to get metadata directly.
-            return [
-                RpmArtifactInfo.from_filename(f)._raw_artifact
-                for f in filenames
-                if f.endswith(".rpm")
-            ]
-        return self._call_api('listBuildRPMs', self.build_id) or []
+            rpm_filenames = [f for f in filenames if f.endswith(".rpm")]
+
+            rpm_dicts: list[dict[str, Any]] = []
+            for filename in rpm_filenames:
+                base_info = RpmArtifactInfo.from_filename(filename)._raw_artifact
+
+                # Fetch rpm info/metadata for each filename
+                if rpm_info := self._call_api("getRPM", base_info):
+                    rpm_dicts.append(rpm_info)
+
+            return rpm_dicts
+
+        return self._call_api("listBuildRPMs", self.build_id) or []
 
     def _initialize_session(self) -> 'ClientSession':
         """
