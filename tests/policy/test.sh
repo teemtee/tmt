@@ -34,8 +34,8 @@ rlJournalStart
         run_test environment.yaml /basic .environment "{\"FOO\":\"xyzzy\"}"
         run_test environment.yaml /full  .environment "{\"FOO\":\"baz\",\"QUX\":\"QUUX\"}"
 
-        run_test check.yaml /basic '.check | [.[] | {how, result}]' "[{\"how\":\"avc\",\"result\":\"respect\"}]"
-        run_test check.yaml /full  '.check | [.[] | {how, result}]' "[{\"how\":\"avc\",\"result\":\"info\"},{\"how\":\"dmesg\",\"result\":\"respect\"}]"
+        run_test check.yaml /basic '.check | [.[] | with_entries(select(.key | test("^(how|result)$")))]' "[{\"how\":\"avc\",\"result\":\"respect\"}]"
+        run_test check.yaml /full  '.check | [.[] | with_entries(select(.key | test("^(how|result)$")))]' "[{\"how\":\"avc\",\"result\":\"info\"},{\"how\":\"dmesg\",\"result\":\"respect\"}]"
     rlPhaseEnd
 
     rlPhaseStartTest "Test VALUE_SOURCE usage"

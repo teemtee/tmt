@@ -22,7 +22,7 @@ rlJournalStart
         rlRun -s "${tmt_command} /tests/shell/pass" 0
         rlAssertGrep "pass /tests/shell/pass" $rlRun_LOG
         rlAssertExists "${failure_log}"
-        rlRun "yq -e '.[0] == null and length == 0' ${failure_log}" 0 "Log does not contain failures"
+        rlRun "yq -e 'tag == \"!!seq\" and length == 0' ${failure_log}" 0 "Log does not contain failures"
     rlPhaseEnd
 
     rlPhaseStartTest "Failing shell test has failures"
@@ -41,7 +41,7 @@ rlJournalStart
         rlRun -s "${tmt_command} /tests/beakerlib/pass" 0
         rlAssertGrep "pass /tests/beakerlib/pass" $rlRun_LOG
         rlAssertExists "${failure_log}"
-        rlRun "yq -e '.[0] == null and length == 0' ${failure_log}" 0 "Log does not contain failures"
+        rlRun "yq -e 'tag == \"!!seq\" and length == 0' ${failure_log}" 0 "Log does not contain failures"
     rlPhaseEnd
 
     rlPhaseStartTest "Failing beakerlib test has failures"

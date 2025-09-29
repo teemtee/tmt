@@ -15,7 +15,7 @@ rlJournalStart
         result="$3"
         guest="$4"
         note="$5"
-        actual=$(yq -e ".[] | \"\\(.name) \\(.\"serial-number\") \\(.result) \\(.guest.name) \\(if .note == [] then \"\" else ((.note[] | select(. == \"$note\")) // \"\") end)\"" "$results")
+        actual=$(yq -e ".[] | \"\\(.name) \\(.serial-number) \\(.result) \\(.guest.name) \\(if .note == [] then \"\" else ((.note[] | select(. == \"$note\")) // \"\") end)\"" "$results")
         rlAssertEquals "Check result for $name" "$actual" "$name $serial $result $guest $note"
     }
 
