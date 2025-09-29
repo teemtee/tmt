@@ -586,22 +586,40 @@ class InstallBootc(InstallBase):
         return self.guest.package_manager.engine
 
     def install_from_repository(self) -> None:
-        self._engine.install(
-            *self.list_installables("package", *self.packages),
-            options=Options(
-                excluded_packages=self.exclude,
-                skip_missing=self.skip_missing,
-            ),
-        )
+        installables = self.list_installables("package", *self.packages)
+        if not installables:
+            return
+
+        # Check presence to avoid unnecessary container rebuilds
+        presence = self.guest.package_manager.check_presence(*installables)
+        missing = [i for i in installables if not presence.get(i, False)]
+
+        if missing:
+            self._engine.install(
+                *missing,
+                options=Options(
+                    excluded_packages=self.exclude,
+                    skip_missing=self.skip_missing,
+                ),
+            )
 
     def install_from_url(self) -> None:
-        self._engine.install(
-            *self.list_installables("remote package", *self.remote_packages),
-            options=Options(
-                excluded_packages=self.exclude,
-                skip_missing=self.skip_missing,
-            ),
-        )
+        installables = self.list_installables("remote package", *self.remote_packages)
+        if not installables:
+            return
+
+        # Check presence to avoid unnecessary container rebuilds
+        presence = self.guest.package_manager.check_presence(*installables)
+        missing = [i for i in installables if not presence.get(i, False)]
+
+        if missing:
+            self._engine.install(
+                *missing,
+                options=Options(
+                    excluded_packages=self.exclude,
+                    skip_missing=self.skip_missing,
+                ),
+            )
 
     def install_local(self) -> None:
         # Make sure the containerfile session has been initialized. The
