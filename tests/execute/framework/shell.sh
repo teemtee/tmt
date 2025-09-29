@@ -18,7 +18,7 @@ rlJournalStart
     }
 
     tmt_command="LANG=en_US.UTF-8 tmt run --scratch -a --id ${run} provision --how local execute -vv report -vvv test --name"
-    extract_results_command="yq -e '.[] | \"\\(.name) \\(.\"serial-number\") \\(.result) \\(.guest.name)\"'"
+    extract_results_command="yq -e '.[] | \"\\(.name) \\(.serial-number) \\(.result) \\(.guest.name)\"'"
 
     testName="/tests/success"
     rlPhaseStartTest "${testName}"

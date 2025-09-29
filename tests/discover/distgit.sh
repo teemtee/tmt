@@ -321,7 +321,7 @@ EOF
         rlAssertNotExists $WORKDIR_TESTS/with-tmt-1
         rlAssertNotExists $WORKDIR_TESTS/rename-with-tmt-1.tgz
 
-        assert_tests $WORKDIR '"/top_test' '"/from-source'
+        assert_tests $WORKDIR '^/top_test$' '^/from-source$'
         rlRun 'popd'
     rlPhaseEnd
 
@@ -352,7 +352,7 @@ EOF
         # But not the tarball/patches..
         rlAssertNotExists $WORKDIR_TESTS/rename-with-tmt.tgz
 
-        assert_tests $WORKDIR '"/top_test' '"/with-tmt-1/tests/from-source'
+        assert_tests $WORKDIR '^/top_test$' '^/with-tmt-1/tests/from-source$'
         rlRun 'popd'
     rlPhaseEnd
 
@@ -430,7 +430,7 @@ EOF
         rlRun -s "tmt run --keep --id $WORKDIR --scratch plans --default \
              discover -vvv -ddd --how fmf --dist-git-source \
              --dist-git-type TESTING tests --name /tests/from-source provision -h local prepare"
-        assert_tests $WORKDIR '"/tests/from-source'
+        assert_tests $WORKDIR '^/tests/from-source$'
 
         # Source dir has everything available
         rlAssertExists $WORKDIR_SOURCE/with-tmt-1/tests/from-source.fmf

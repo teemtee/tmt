@@ -2,23 +2,93 @@
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
 EXPECTED_PLUGIN_LIST=\
-"export.fmfid: dict json template yaml
-export.plan: dict json template yaml
-export.story: dict json rst template yaml
-export.test: dict json nitrate polarion template yaml
-package_managers: apk apt bootc dnf dnf5 rpm-ostree yum
-plan_shapers: max-tests repeat
-prepare.artifact.providers: brew koji
-prepare.feature: crb epel fips profile
-step.cleanup: tmt
-step.discover: fmf shell
-step.execute: tmt upgrade
-step.finish: ansible shell
-step.prepare: ansible feature install shell
-step.provision: artemis beaker bootc connect container local virtual.testcloud
-step.report: display html junit polarion reportportal
-test.check: avc coredump dmesg internal/abort internal/guest internal/interrupt internal/invocation internal/permission internal/timeout journal watchdog
-test.framework: beakerlib shell"
+"export.fmfid:
+  - dict
+  - json
+  - template
+  - yaml
+export.plan:
+  - dict
+  - json
+  - template
+  - yaml
+export.story:
+  - dict
+  - json
+  - rst
+  - template
+  - yaml
+export.test:
+  - dict
+  - json
+  - nitrate
+  - polarion
+  - template
+  - yaml
+package_managers:
+  - apk
+  - apt
+  - bootc
+  - dnf
+  - dnf5
+  - rpm-ostree
+  - yum
+plan_shapers:
+  - max-tests
+  - repeat
+prepare.artifact.providers:
+  - brew
+  - koji
+prepare.feature:
+  - crb
+  - epel
+  - fips
+  - profile
+step.cleanup:
+  - tmt
+step.discover:
+  - fmf
+  - shell
+step.execute:
+  - tmt
+  - upgrade
+step.finish:
+  - ansible
+  - shell
+step.prepare:
+  - ansible
+  - feature
+  - install
+  - shell
+step.provision:
+  - artemis
+  - beaker
+  - bootc
+  - connect
+  - container
+  - local
+  - virtual.testcloud
+step.report:
+  - display
+  - html
+  - junit
+  - polarion
+  - reportportal
+test.check:
+  - avc
+  - coredump
+  - dmesg
+  - internal/abort
+  - internal/guest
+  - internal/interrupt
+  - internal/invocation
+  - internal/permission
+  - internal/timeout
+  - journal
+  - watchdog
+test.framework:
+  - beakerlib
+  - shell"
 
 
 rlJournalStart
@@ -57,7 +127,8 @@ rlJournalStart
     # misfortune.
     rlPhaseStartTest "List plugins as YAML"
         rlRun -s "tmt about plugins ls --how yaml"
-        rlRun "yq '. | to_entries[] | \"\(.key): \(.value | sort | join(\" \"))\"' $rlRun_LOG | sort > $tmpdir/actual-plugin-list.txt"
+        # Make sure the dict is sorted by the keys and its values (list of strings) is also sorted
+        rlRun "yq 'sort_keys(. | map_values(sort))' $rlRun_LOG > $tmpdir/actual-plugin-list.txt"
 
         rlRun "diff -u $tmpdir/expected-plugin-list.txt $tmpdir/actual-plugin-list.txt"
     rlPhaseEnd
