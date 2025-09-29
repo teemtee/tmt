@@ -4,6 +4,7 @@ Koji Artifact Provider
 
 import types
 from collections.abc import Iterator
+from functools import cached_property
 from shlex import quote
 from typing import Any, Optional
 
@@ -64,6 +65,27 @@ class RpmArtifactInfo(ArtifactInfo):
     PKG_URL = "https://kojipkgs.fedoraproject.org/packages/"  # For actual package downloads
     _raw_artifact: dict[str, str]
 
+    @classmethod
+    def from_filename(cls, filename: str) -> "RpmArtifactInfo":
+        """
+        Convert an RPM filename like 'tmt-1.58.0-1.fc41.noarch.rpm' into an RpmArtifactInfo.
+        """
+
+        try:
+            base, arch, _ = filename.rsplit(".", 2)
+            name, version, release = base.rsplit("-", 2)
+        except ValueError:
+            raise ValueError(f"Invalid RPM filename format: '{filename}'")
+
+        raw_artifact = {
+            "name": name,
+            "version": version,
+            "release": release,
+            "arch": arch,
+            "nvr": f"{name}-{version}-{release}",
+        }
+        return cls(_raw_artifact=raw_artifact)
+
     @property
     def id(self) -> str:
         """A koji rpm identifier"""
@@ -104,15 +126,51 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         nvr: Optional[str] = None,
     ):
         super().__init__(logger)
+
+        # Validate inputs: exactly one identifier must be provided
+        provided = [arg for arg in (build_id, task_id, nvr) if arg is not None]
+        if len(provided) != 1:
+            raise ValueError("Exactly one of build_id, task_id, or nvr must be provided.")
+
+        self._build_id = build_id
+        self.task_id = task_id
+        self.nvr = nvr
         self._session = self._initialize_session()
-        self.artifact_id = self._resolve_artifact_id(build_id, task_id, nvr)
         self._rpm_list = self._fetch_rpms()
+
+    @cached_property
+    def build_id(self) -> Optional[int]:
+        """
+        Resolve and return the build ID.
+
+        :return: Resolved build_id if provided or resolved by nvr, else None if task_id was used
+        :raises GeneralError: If the build cannot be found
+        """
+        if self._build_id is not None:
+            return self._build_id
+        if self.nvr is not None:
+            build = self._call_api("getBuild", self.nvr)
+            if not build or "id" not in build:
+                raise tmt.utils.GeneralError(f"No build found for NVR '{self.nvr}'.")
+            build_id = build["id"]
+            assert isinstance(build_id, int)
+            return build_id
+        return None
 
     def _fetch_rpms(self) -> list[dict[str, Any]]:
         """
-        Fetch and cache the list of RPMs for the given build ID.
+        Fetch and cache the list of RPMs from the given identifier.
         """
-        return self._call_api('listBuildRPMs', self.artifact_id) or []
+        if self.task_id is not None:
+            filenames = self._call_api("listTaskOutput", self.task_id) or []
+            # Convert filenames into dicts for RpmArtifactInfo.
+            # TODO: Check if there's a better way via the API to get metadata directly.
+            return [
+                RpmArtifactInfo.from_filename(f)._raw_artifact
+                for f in filenames
+                if f.endswith(".rpm")
+            ]
+        return self._call_api('listBuildRPMs', self.build_id) or []
 
     def _initialize_session(self) -> 'ClientSession':
         """
@@ -125,35 +183,6 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
             return ClientSession(self.API_URL)
         except Exception as error:
             raise tmt.utils.GeneralError("Failed to initialize API session.") from error
-
-    def _resolve_artifact_id(
-        self, build_id: Optional[int], task_id: Optional[int], nvr: Optional[str]
-    ) -> int:
-        """
-        Resolve and return the build ID based on the provided identifier.
-
-        :param build_id: Direct build ID if available
-        :param task_id: Task ID to resolve the build ID
-        :param nvr: Name-Version-Release string to resolve the build ID
-        :return: Resolved build ID
-        :raises GeneralError: If the build ID cannot be resolved
-        :raises ValueError: if no identifier is provided
-        """
-        if build_id is not None:
-            return build_id
-        if task_id is not None:
-            # TODO: What needs to happen here?
-            raise NotImplementedError("Task ID resolution is not implemented yet.")
-        if nvr is not None:
-            build = self._call_api('getBuild', nvr)
-            if not build or 'id' not in build:
-                raise tmt.utils.GeneralError(f"No build found for NVR '{nvr}'.")
-            build_id = build['id']
-            assert isinstance(build_id, int)
-            return build_id
-        raise ValueError(
-            "Exactly one of build_id, task_id, or nvr must be provided."
-        )  # What if multiples are provided?
 
     def _call_api(self, method: str, *args: Any, **kwargs: Any) -> Any:
         """

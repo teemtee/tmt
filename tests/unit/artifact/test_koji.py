@@ -1,54 +1,58 @@
-from unittest.mock import MagicMock, patch
-
 import pytest
 
-from tmt.steps.prepare.artifact.providers.koji import KojiArtifactProvider
-
-
-@pytest.fixture
-def koji_provider(root_logger):
-    """Return a KojiArtifactProvider with a stable build ID for testing."""
-    return KojiArtifactProvider(root_logger, build_id=12345)
-
-
-def test_parse_artifact_id_valid(koji_provider):
-    assert koji_provider.artifact_id == 12345
-
-
-def test_resolve_artifact_id_nvr(root_logger):
-    with patch.object(KojiArtifactProvider, "_call_api", return_value={"id": 42}):
-        provider = KojiArtifactProvider(root_logger, nvr="tmt-1.0.0-1.fc40")
-        assert provider.artifact_id == 42
-
-
-def test_call_api_success(koji_provider):
-    koji_provider._session = MagicMock()
-    koji_provider._session.some_method.return_value = "ok"
-
-    result = koji_provider._call_api("some_method", 1, 2)
-    assert result == "ok"
-
-
-def test_list_artifacts_returns_rpm_artifacts(koji_provider):
-    koji_provider._rpm_list = [
-        {"nvr": "foo-1.0-1", "arch": "x86_64", "name": "foo", "version": "1.0", "release": "1"}
-    ]
-    artifacts = list(koji_provider.list_artifacts())
-    assert len(artifacts) == 1
-    artifact = artifacts[0]
-    assert artifact.id.startswith("foo-1.0-1")
-    assert "kojipkgs.fedoraproject.org" in artifact.location
+from tmt.steps.prepare.artifact.providers.koji import KojiArtifactProvider, RpmArtifactInfo
 
 
 @pytest.mark.integration
-def test_koji_real_build(koji_provider):
-    artifacts = list(koji_provider.list_artifacts())
-    assert len(artifacts) > 0
+def test_koji_valid_build(root_logger):
+    provider = KojiArtifactProvider(root_logger, build_id=2829512)
+    rpms = list(provider.list_artifacts())
+    assert len(rpms) == 13
 
 
 @pytest.mark.integration
-def test_koji_real_nvr(root_logger):
+def test_koji_valid_nvr(root_logger):
     provider = KojiArtifactProvider(root_logger, nvr="tmt-1.58.0-1.fc43")
-    artifacts = list(provider.list_artifacts())
-    assert len(artifacts) > 0
-    assert provider.artifact_id == 2829512  # Known build ID for this NVR
+    rpms = list(provider.list_artifacts())
+    assert len(rpms) == 13
+    assert provider.build_id == 2829512  # Known build ID for this NVR
+
+
+def test_koji_invalid_nvr(root_logger):
+    from tmt.utils import GeneralError
+
+    with pytest.raises(GeneralError):
+        KojiArtifactProvider(root_logger, nvr="nonexistent-1.0-1.fc43")
+
+
+@pytest.mark.integration
+def test_koji_valid_task_id(root_logger):
+    provider = KojiArtifactProvider(root_logger, task_id=137451529)
+    rpms = list(provider.list_artifacts())
+    assert len(rpms) == 13
+
+
+def test_provider_without_identifier(root_logger):
+    with pytest.raises(
+        ValueError, match="Exactly one of build_id, task_id, or nvr must be provided."
+    ):
+        KojiArtifactProvider(root_logger)
+
+
+def test_rpm_artifactinfo_from_filename_valid():
+    filename = "tmt-1.58.0-1.fc41.noarch.rpm"
+    artifact = RpmArtifactInfo.from_filename(filename)
+
+    assert artifact.id == "tmt-1.58.0-1.fc41.noarch.rpm"
+    assert artifact._raw_artifact["name"] == "tmt"
+    assert artifact._raw_artifact["version"] == "1.58.0"
+    assert artifact._raw_artifact["release"] == "1.fc41"
+    assert artifact._raw_artifact["arch"] == "noarch"
+    assert artifact._raw_artifact["nvr"] == "tmt-1.58.0-1.fc41"
+
+
+def test_rpm_artifactinfo_from_filename_invalid():
+    with pytest.raises(
+        ValueError, match=r"Invalid RPM filename format: 'not-a-real-rpm-file\.txt'"
+    ):
+        RpmArtifactInfo.from_filename("not-a-real-rpm-file.txt")
