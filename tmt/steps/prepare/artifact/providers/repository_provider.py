@@ -12,7 +12,7 @@ from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     DownloadError,
 )
-from tmt.steps.prepare.artifact.providers.info import RpmArtifactInfo
+from tmt.steps.prepare.artifact.providers.koji import RpmArtifactInfo
 from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path, ShellScript
 
