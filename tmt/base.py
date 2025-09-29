@@ -4700,6 +4700,9 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         self.config.last_run = self.run_workdir
         self.info(str(self.run_workdir), color='magenta')
 
+        # Create scripts directory and copy tmt scripts there
+        self.copy_scripts()
+
     def go(self) -> None:
         """
         Go and do test steps for selected plans
