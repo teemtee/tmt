@@ -147,7 +147,6 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         self.task_id = task_id
         self.nvr = nvr
         self._session = self._initialize_session()
-        self._rpm_list = self._fetch_rpms()
 
     @cached_property
     def build_id(self) -> Optional[int]:
@@ -168,26 +167,46 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
             return build_id
         return None
 
-    def _fetch_rpms(self) -> list[dict[str, Any]]:
-        """
-        Fetch and cache the list of RPMs from the given identifier.
-        """
+    @cached_property
+    def rpm_list(self) -> list[RpmArtifactInfo]:
+        """Return all RPM artifacts for the given identifier."""
         if self.task_id is not None:
-            # listTaskOutput returns just a list of filenames and not full metadata
-            filenames = self._call_api("listTaskOutput", self.task_id) or []
-            rpm_filenames = [f for f in filenames if f.endswith(".rpm")]
+            return self._resolve_rpms_from_task
+        return self._resolve_rpms_from_build
 
-            rpm_dicts: list[dict[str, Any]] = []
-            for filename in rpm_filenames:
-                base_info = RpmArtifactInfo.from_filename(filename)._raw_artifact
+    @cached_property
+    def _resolve_rpms_from_task(self) -> list[RpmArtifactInfo]:
+        """
+        Resolve and return the list of RPMs for the given task ID.
 
-                # Fetch rpm info/metadata for each filename
-                if rpm_info := self._call_api("getRPM", base_info):
-                    rpm_dicts.append(rpm_info)
+        :return: List of RpmArtifactInfo objects
+        """
+        filenames = self._call_api("listTaskOutput", self.task_id) or []
 
-            return rpm_dicts
+        rpms: list[RpmArtifactInfo] = []
+        for filename in filenames:
+            if not filename.endswith(".rpm"):
+                self.logger.warning(f"Skipping '{filename}': not an RPM.")
+                continue
+            # Parse basic info from filename
+            artifact = RpmArtifactInfo.from_filename(filename)
+            # Fetch full rpm metadata
+            if rpm_info := self._call_api("getRPM", artifact.id):
+                rpms.append(RpmArtifactInfo(_raw_artifact=rpm_info))
+            else:
+                self.logger.warning(f"Skipping '{filename}': getRPM returned nothing.")
 
-        return self._call_api("listBuildRPMs", self.build_id) or []
+        return rpms
+
+    @cached_property
+    def _resolve_rpms_from_build(self) -> list[RpmArtifactInfo]:
+        """
+        Resolve and return the list of RPMs for the given build ID or NVR.
+
+        :return: List of RpmArtifactInfo objects
+        """
+        rpm_dicts = self._call_api("listBuildRPMs", self.build_id) or []
+        return [RpmArtifactInfo(_raw_artifact={**rpm}) for rpm in rpm_dicts]
 
     def _initialize_session(self) -> 'ClientSession':
         """
@@ -221,8 +240,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         """
         List all RPM artifacts for the given build.
         """
-        for rpm in self._rpm_list:
-            yield RpmArtifactInfo(_raw_artifact=rpm)
+        yield from self.rpm_list
 
     def _download_artifact(
         self, artifact: RpmArtifactInfo, guest: Guest, destination: tmt.utils.Path

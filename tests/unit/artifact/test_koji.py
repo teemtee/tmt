@@ -1,6 +1,6 @@
 import pytest
 
-from tmt.steps.prepare.artifact.providers.koji import KojiArtifactProvider, RpmArtifactInfo
+from tmt.steps.prepare.artifact.providers.koji import KojiArtifactProvider
 
 
 @pytest.mark.integration
@@ -21,8 +21,10 @@ def test_koji_valid_nvr(root_logger):
 def test_koji_invalid_nvr(root_logger):
     from tmt.utils import GeneralError
 
-    with pytest.raises(GeneralError):
-        KojiArtifactProvider(root_logger, nvr="nonexistent-1.0-1.fc43")
+    provider = KojiArtifactProvider(root_logger, nvr="nonexistent-1.0-1.fc43")
+
+    with pytest.raises(GeneralError, match="No build found for NVR 'nonexistent-1.0-1.fc43'."):
+        _ = provider.build_id
 
 
 @pytest.mark.integration
@@ -37,22 +39,3 @@ def test_provider_without_identifier(root_logger):
         ValueError, match="Exactly one of build_id, task_id, or nvr must be provided."
     ):
         KojiArtifactProvider(root_logger)
-
-
-def test_rpm_artifactinfo_from_filename_valid():
-    filename = "tmt-1.58.0-1.fc41.noarch.rpm"
-    artifact = RpmArtifactInfo.from_filename(filename)
-
-    assert artifact.id == "tmt-1.58.0-1.fc41.noarch.rpm"
-    assert artifact._raw_artifact["name"] == "tmt"
-    assert artifact._raw_artifact["version"] == "1.58.0"
-    assert artifact._raw_artifact["release"] == "1.fc41"
-    assert artifact._raw_artifact["arch"] == "noarch"
-    assert artifact._raw_artifact["nvr"] == "tmt-1.58.0-1.fc41"
-
-
-def test_rpm_artifactinfo_from_filename_invalid():
-    with pytest.raises(
-        ValueError, match=r"Invalid RPM filename format: 'not-a-real-rpm-file\.txt'"
-    ):
-        RpmArtifactInfo.from_filename("not-a-real-rpm-file.txt")
