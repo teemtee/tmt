@@ -337,9 +337,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             url-type: archive
             path: /tmt-main/fmf/root
 
-    .. versionadded:: 1.59
-
-
     Dist Git
     ^^^^^^^^
 
