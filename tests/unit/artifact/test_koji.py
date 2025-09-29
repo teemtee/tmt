@@ -2,9 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tmt.steps.prepare.artifact.providers.koji_provider import (
-    KojiArtifactProvider,
-)
+from tmt.steps.prepare.artifact.providers.koji import KojiArtifactProvider
 
 
 @pytest.fixture

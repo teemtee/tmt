@@ -211,7 +211,7 @@ man = [
     "tail -n+8 docs/overview.rst >> {root}/man.rst",
     # TODO rst2man cannot process this directive, removed for now
     "sed '/versionadded::/d' -i {root}/man.rst",
-    "rst2man.py {root}/man.rst > {root}/tmt.1",
+    "rst2man {root}/man.rst > {root}/tmt.1",
     "rm -f {root}/man.rst",
     ]
 
