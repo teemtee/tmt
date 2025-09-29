@@ -22,12 +22,16 @@ description: |
 
     .. versionadded:: 1.35
 
+    .. versionchanged:: 1.59
+       ``hardware`` plugin supports ``beaker.panic-watchdog``
+
 example:
   - |
     # Select any system, as long as it is not from the given Beaker pool
-    # By default beaker-watchdog is instructed to ignore kernel panic
+    # Allow beaker-watchdog daemon to abort recipe when kernel panic occurs
     beaker:
         pool: "!= very-rare-machines"
+        panic-watchdog: True
 
 link:
   - implemented-by: /tmt/steps/provision/mrack.py
