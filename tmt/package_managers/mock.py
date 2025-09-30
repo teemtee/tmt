@@ -47,8 +47,8 @@ class BaseMockEngine(PackageManagerEngine):
     def prepare_command(self) -> tuple[Command, Command]:
         options = Command()
         assert isinstance(self.guest, GuestMock)
-        if self.guest.config is not None:
-            options += Command('-r', self.guest.config)
+        if self.guest.root is not None:
+            options += Command('-r', self.guest.root)
         options += Command('--pm-cmd')
         return (Command('mock'), options)
 
@@ -141,7 +141,7 @@ class BaseMock:
         )
 
     def refresh_metadata(self) -> CommandOutput:
-        return self.guest.execute(self.engine.refresh_metadata())
+        return self.guest.run(self.engine.refresh_metadata().to_shell_command())
 
 
 @provides_package_manager('mock-yum')
