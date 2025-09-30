@@ -8,6 +8,7 @@ from shlex import quote
 from urllib.parse import unquote, urlparse
 
 import tmt.log
+from tmt.container import container
 from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     DownloadError,
@@ -17,31 +18,30 @@ from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path, ShellScript
 
 
+@container
 class RepositoryFile:
     """
     A helper class representing a repository .repo file from a URL.
     """
 
-    def __init__(self, url: str) -> None:
-        # The constructor also serves as a validator for the URL format
+    url: str
+
+    def __post_init__(self) -> None:
         try:
-            result = urlparse(url)
-            if not result.scheme or not result.netloc:
+            self._parsed_url = urlparse(self.url)
+            if not self._parsed_url.scheme or not self._parsed_url.netloc:
                 raise ValueError
         except ValueError:
-            raise GeneralError(f"Invalid URL format for .repo file: '{url}'.")
-        self._url = url
-
-    @property
-    def url(self) -> str:
-        """The URL of the .repo file."""
-        return self._url
+            raise GeneralError(f"Invalid URL format for .repo file: '{self.url}'.")
 
     @property
     def filename(self) -> str:
         """A suitable filename extracted from the URL path."""
-        path = urlparse(self.url).path
+        path = self._parsed_url.path
         return unquote(Path(path).name)
+
+    def __str__(self) -> str:
+        return f"{self.filename}"
 
 
 class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
@@ -66,7 +66,6 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         Validate the artifact identifier using the RepositoryFile class.
         """
         # The constructor of RepositoryFile handles URL validation
-        RepositoryFile(url=artifact_id)
         return artifact_id
 
     def _fetch_rpms(self, guest: Guest, repo_filepath: Path) -> None:
