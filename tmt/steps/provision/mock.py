@@ -20,10 +20,10 @@ from tmt.utils.wait import Waiting
 
 @container
 class MockGuestData(tmt.steps.provision.GuestData):
-    config: Optional[str] = field(
+    root: Optional[str] = field(
         default=None,
-        option=('-r', '--config'),
-        metavar='CONFIG',
+        option=('-r', '--root'),
+        metavar='ROOT',
         help="""
              Mock chroot configuration file.
              The `--root` flag to be passed to the mock process.
@@ -64,9 +64,9 @@ class MockShell:
                 self.string += '\n'
             return self
 
-    def __init__(self, parent: 'GuestMock', config: Optional[str], rootdir: Optional[str]):
+    def __init__(self, parent: 'GuestMock', root: Optional[str], rootdir: Optional[str]):
         self.parent = parent
-        self.config = config
+        self.root = root
         self.rootdir = rootdir
         self.mock_shell: Optional[subprocess.Popen[str]] = None
         self.epoll: Optional[select.epoll] = None
@@ -74,8 +74,8 @@ class MockShell:
         self.pid: Optional[int] = None
 
         self.command_prefix = Command('mock')
-        if self.config is not None:
-            self.command_prefix += ['-r', self.config]
+        if self.root is not None:
+            self.command_prefix += ['-r', self.root]
         if self.rootdir is not None:
             self.command_prefix += ['--rootdir', self.rootdir]
 
@@ -343,7 +343,7 @@ class GuestMock(tmt.Guest):
     """
 
     _data_class = MockGuestData
-    config: Optional[str] = None
+    root: Optional[str] = None
     rootdir: Optional[str] = None
 
     mock_shell: MockShell
@@ -466,7 +466,7 @@ class GuestMock(tmt.Guest):
     def load(self, data: tmt.steps.provision.GuestData) -> None:
         assert isinstance(data, MockGuestData)
         super().load(data)
-        self.mock_shell = MockShell(parent=self, config=self.config, rootdir=self.rootdir)
+        self.mock_shell = MockShell(parent=self, root=self.root, rootdir=self.rootdir)
         self.mock_config = data.mock_config
 
 
@@ -526,7 +526,7 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
 
         # NOTE this may be unnecessary, tmt package manager detection should work fine
         # but mock already knows what the package manager is...
-        mock_config = mockbuild.config.simple_load_config(data.config)
+        mock_config = mockbuild.config.simple_load_config(data.root)
         package_manager = "mock-" + mock_config['package_manager']
 
         # If this provisioning is selected, then we force the use of `mock-` package manager.
@@ -536,7 +536,7 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
         ).probe_command = tmt.utils.Command('/usr/bin/true')
 
         # NOTE any better ideas?
-        data.primary_address = (data.config or '<default>') + (
+        data.primary_address = (data.root or '<default>') + (
             '@' + data.rootdir if data.rootdir is not None else ''
         )
         data.mock_config = mock_config
