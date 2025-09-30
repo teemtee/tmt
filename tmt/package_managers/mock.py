@@ -11,7 +11,7 @@ from tmt.package_managers import (
     provides_package_manager,
 )
 from tmt.steps.provision.mock import GuestMock
-from tmt.utils import Command, CommandOutput, ShellScript
+from tmt.utils import Command, CommandOutput, RunError, ShellScript
 
 
 class BaseMockEngine(PackageManagerEngine):
@@ -106,7 +106,7 @@ class BaseMock:
         if options.check_first:
             try:
                 return self.guest.execute(self.engine.check_presence(*installables))
-            except tmt.utils.RunError:
+            except RunError:
                 pass
         return self.guest.run(
             self.engine.install(*installables, options=options).to_shell_command()
@@ -120,7 +120,7 @@ class BaseMock:
         if options.check_first:
             try:
                 return self.guest.execute(self.engine.check_presence(*installables))
-            except tmt.utils.RunError:
+            except RunError:
                 pass
         return self.guest.run(
             self.engine.reinstall(*installables, options=options).to_shell_command()
@@ -134,7 +134,7 @@ class BaseMock:
         if options.check_first:
             try:
                 return self.guest.execute(self.engine.check_presence(*installables))
-            except tmt.utils.RunError:
+            except RunError:
                 pass
         return self.guest.run(
             self.engine.install_debuginfo(*installables, options=options).to_shell_command()
