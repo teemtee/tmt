@@ -9,6 +9,8 @@ description: |
     Allows to parametrize a single test script and in this way
     create virtual test cases.
 
+    If the test is a script file, it must be executable.
+
     If the test is :ref:`/spec/tests/manual`, it points to the
     document describing the manual test case steps in Markdown
     format with defined structure.

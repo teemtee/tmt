@@ -310,6 +310,11 @@ init`` command in the root of the git repository. Then store the
 new config files with the ``.fmf`` extension. Naming and location
 of the files is up to you. See the :ref:`guide` for more details.
 
+.. note::
+
+    With ``tmt`` script files used in the ``script`` or ``test``
+    field must be executable, unlike with STI.
+
 __ https://docs.fedoraproject.org/en-US/ci/standard-test-interface/
 __ https://docs.fedoraproject.org/en-US/ci/standard-test-roles/
 

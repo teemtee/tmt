@@ -66,6 +66,11 @@ description: |
             how: tmt
             script: a-long-test-suite
             duration: 3h
+      - |
+        # Run a script file, note that script files must be executable
+        execute:
+            script: ./run_tests.sh
+
     link:
       - implemented-by: /tmt/steps/execute/internal.py
 
