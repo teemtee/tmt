@@ -12,7 +12,7 @@ description: |
            # recipe when a kernel panic is detected.
            # By default this option is disabled so tmt can keep
            # control over the Beaker machine.
-           panic-watchdog: True
+           panic-watchdog: true|false
 
     .. note::
 
@@ -23,7 +23,7 @@ description: |
     .. versionadded:: 1.35
 
     .. versionchanged:: 1.59
-       ``hardware`` plugin supports ``beaker.panic-watchdog``
+       ``beaker`` plugin supports ``beaker.panic-watchdog``
 
 example:
   - |
@@ -31,7 +31,7 @@ example:
     # Allow beaker-watchdog daemon to abort recipe when kernel panic occurs
     beaker:
         pool: "!= very-rare-machines"
-        panic-watchdog: True
+        panic-watchdog: true
 
 link:
   - implemented-by: /tmt/steps/provision/mrack.py
