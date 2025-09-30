@@ -28,9 +28,18 @@ def test_koji_invalid_nvr(root_logger):
 
 
 @pytest.mark.integration
-def test_koji_valid_task_id(root_logger):
+def test_koji_valid_task_id_that_produced_build(root_logger):
+    provider = KojiArtifactProvider(root_logger, task_id=137451383)
+    rpms = list(provider.list_artifacts())
+    assert provider.build_id == 2829512  # Known build ID for this task
+    assert len(rpms) == 13
+
+
+@pytest.mark.integration
+def test_koji_valid_task_id_that_did_not_produce_build(root_logger):
     provider = KojiArtifactProvider(root_logger, task_id=137451529)
     rpms = list(provider.list_artifacts())
+    assert provider.build_id is None
     assert len(rpms) == 13
 
 

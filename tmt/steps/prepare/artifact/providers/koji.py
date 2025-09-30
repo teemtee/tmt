@@ -153,7 +153,11 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         """
         Resolve and return the build ID.
 
-        :return: Resolved build_id if provided or resolved by nvr, else None if task_id was used
+        - If provided directly, return it.
+        - If provided via NVR, resolve using getBuild.
+        - If provided via task_id, resolve using listBuilds.
+
+        :return: The resolved build ID, or None if not found for task_id
         :raises GeneralError: If the build cannot be found
         """
         if self._build_id is not None:
@@ -165,6 +169,12 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
             build_id = build["id"]
             assert isinstance(build_id, int)
             return build_id
+        if self.task_id is not None:
+            builds = self._call_api("listBuilds", taskID=self.task_id) or []
+            if builds:
+                build_id = builds[0]["build_id"]  # Assume the task produced a single build
+                assert isinstance(build_id, int)
+                return build_id
         return None
 
     @cached_property
@@ -181,6 +191,11 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
         :return: List of RpmArtifactInfo objects
         """
+        # If the task produced a build, reuse the build_id resolution
+        if self.build_id is not None:
+            return self._resolve_rpms_from_build
+
+        # Otherwise, list the task output files
         filenames = self._call_api("listTaskOutput", self.task_id) or []
 
         rpms: list[RpmArtifactInfo] = []
