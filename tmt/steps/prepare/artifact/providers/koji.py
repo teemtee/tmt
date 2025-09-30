@@ -84,11 +84,15 @@ class RpmArtifactInfo(ArtifactInfo):
 class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
     """
     Provider for downloading artifacts from Koji builds.
-    Currently only supports RPM artifacts.
 
-    Example:
+    .. note::
+
+        Only RPMs are supported currently.
+
+    .. code-block:: python
+
         provider = KojiArtifactProvider(logger, "koji.build:123456")
-        artifacts = provider.download_artifacts(guest, Path("/tmp"), [] )
+        artifacts = provider.download_artifacts(guest, Path("/tmp"), [])
     """
 
     API_URL = "https://koji.fedoraproject.org/kojihub"  # For metadata
