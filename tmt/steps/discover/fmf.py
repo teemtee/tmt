@@ -46,17 +46,15 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         help="""
             External url containing the metadata tree.
             Current git repository used by default.
-            See '--url-type' option.
+            See ``url-type`` option.
             """,
     )
 
     url_type: Literal["git", "archive"] = field(
         default="git",
         option="--url-type",
-        metavar="URL_TYPE",
         help="""
-            How to handle the 'url' field. Can be one of
-            'git' (default), 'archive'.
+            How to handle the ``url`` field.
             """,
         choices=("git", "archive"),
     )
