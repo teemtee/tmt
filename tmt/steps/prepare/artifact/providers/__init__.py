@@ -182,7 +182,5 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         """
 
         for artifact in self.list_artifacts():
-            if not exclude_patterns or not any(
-                pattern.search(artifact.id) for pattern in exclude_patterns
-            ):
+            if not any(pattern.search(artifact.id) for pattern in exclude_patterns):
                 yield artifact
