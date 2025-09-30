@@ -48,8 +48,8 @@ class ArtifactInfo(ABC):
         return self.id
 
 
-#: A type of an artifact identifier.
-ArtifactId: TypeAlias = str
+#: A type of an artifact provider identifier.
+ArtifactProviderId: TypeAlias = str
 
 #: A type variable representing subclasses of :py:class:`ArtifactInfo`
 #: containers.
@@ -68,23 +68,24 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
     """
 
     #: Identifier of this artifact provider. It is valid and unique
-    #: in the domain of this provider.
-    artifact_id: ArtifactId
+    #: in the domain of this provider. ``koji.build:12345``. URL for a
+    #: repository, and so on.
+    id: ArtifactProviderId
 
-    def __init__(self, logger: tmt.log.Logger, artifact_id: str):
+    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
         self.logger = logger
-        self.artifact_id = self._parse_artifact_id(
-            artifact_id
-        )  # Identifier for the source, e.g. 'koji.build:12345', URL for repository
 
+        self.id = self._extract_provider_id(raw_provider_id)
+
+    @classmethod
     @abstractmethod
-    def _parse_artifact_id(self, artifact_id: str) -> ArtifactId:
+    def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
         """
-        Parse and validate the artifact identifier.
+        Parse and validate the artifact provider identifier.
 
-        :param artifact_id: artifact identifier to parse and validate.
-        :returns: parsed identifier specific to this provider.
-        :raises ValueError: when the artifact identifier is invalid.
+        :param raw_provider_id: artifact provider identifier to parse and validate.
+        :returns: parsed identifier specific to this provider class.
+        :raises ValueError: when the artifact provider identifier is invalid.
         """
 
         raise NotImplementedError
