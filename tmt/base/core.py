@@ -1154,6 +1154,45 @@ class Core(
         return self.link.has_link(needle=needle)
 
 
+@container
+class TestFixture(
+    SerializableContainer,
+    SpecBasedContainer[dict[str, Any], dict[str, Any]],
+    tmt.utils.NormalizeKeysMixin,
+):
+    setup: Optional[str] = None
+    cleanup: Optional[str] = None
+
+    @classmethod
+    def normalize(
+        cls,
+        key_address: str,
+        value: Any,
+        logger: tmt.log.Logger,
+    ) -> list["TestFixture"]:
+        if value is None:
+            return []
+        if isinstance(value, dict):
+            return [TestFixture.from_spec(value, logger)]
+        if isinstance(value, Iterable):
+            return [TestFixture.from_spec(fixture, logger) for fixture in value]
+        raise tmt.utils.SpecificationError(f"Invalid test fixture '{value}' at {key_address}.")
+
+    @classmethod
+    def from_spec(cls, raw_data: dict[str, Any], logger: tmt.log.Logger) -> Self:  # type: ignore[override]
+        data = cls()
+        data._load_keys(raw_data, cls.__name__, logger)
+        return data
+
+    def to_minimal_spec(self) -> dict[str, Any]:
+        data = self.to_spec()
+        if not data["setup"]:
+            del data["setup"]
+        if not data["cleanup"]:
+            del data["cleanup"]
+        return data
+
+
 @container(repr=False)
 class Test(
     # TODO: `Test` does "have" environment, but it's a genuine attribute,
@@ -1190,6 +1229,11 @@ class Test(
     manual: bool = False
     tty: bool = False
 
+    fixture: list[TestFixture] = field(
+        default_factory=list,
+        normalize=TestFixture.normalize,
+        exporter=lambda value: [fixture.to_minimal_spec() for fixture in value],
+    )
     require: list[Dependency] = field(
         default_factory=list,
         normalize=normalize_require,
@@ -1265,6 +1309,8 @@ class Test(
         'framework',
         'manual',
         'tty',
+        'setup_test',
+        'cleanup_test',
         'require',
         'recommend',
         'environment',

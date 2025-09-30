@@ -90,6 +90,13 @@ properties:
     type: string
     pattern: "^/"
 
+  fixture:
+    anyOf:
+      - $ref: "#/definitions/fixture"
+      - type: array
+        items:
+          $ref: "#/definitions/fixture"
+
   # https://tmt.readthedocs.io/en/stable/spec/tests.html#recommend
   recommend:
     $ref: "/schemas/common#/definitions/one_or_more_strings"
@@ -186,3 +193,11 @@ definitions:
         type: string
     required:
       - how
+
+  fixture:
+    type: object
+    properties:
+      setup:
+        type: string
+      cleanup:
+        type: string
