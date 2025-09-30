@@ -2222,8 +2222,10 @@ class Guest(
         try:
             self.execute(Command("sudo", "-n", "true"))
         except tmt.utils.RunError:
-            # TODO: What do we do if we don't have sudo access?
-            raise GeneralError("User does not have sudo access")
+            # If the user does not have sudo access assume that everything else
+            # is setup properly
+            self.info("User does not have sudo access, we assume everything is pre-setup.")
+            return ""
         return "sudo"
 
 
