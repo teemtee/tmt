@@ -239,7 +239,9 @@ class AptEngine(PackageManagerEngine):
         raise tmt.utils.GeneralError("There is no support for debuginfo packages in apt.")
 
 
-@provides_package_manager('apt')
+# ignore[type-arg]: TypeVar in package manager registry annotations is
+# puzzling for type checkers. And not a good idea in general, probably.
+@provides_package_manager('apt')  # type: ignore[arg-type]
 class Apt(PackageManager[AptEngine]):
     NAME = 'apt'
 
