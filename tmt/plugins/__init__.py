@@ -472,7 +472,7 @@ class PluginRegistry(Generic[RegisterableT]):
         """
 
         def _registerable_decorator(
-            plugin_id: str, *args: P.args, **kwargs: P.kwargs
+            plugin_id: str, /, *args: P.args, **kwargs: P.kwargs
         ) -> Callable[[RegisterableT], RegisterableT]:
             def __registerable_decorator(cls: RegisterableT) -> RegisterableT:
                 self.register_plugin(
@@ -493,7 +493,7 @@ class PluginRegistry(Generic[RegisterableT]):
         # the correct type, but having a name, it leads to `Arg(str, 'plugin_id')`
         # rather than `str` when mypy processes the annotations. And that's
         # not the same thing.
-        return _registerable_decorator  # type: ignore[return-value]
+        return _registerable_decorator
 
 
 class ModuleImporter(Generic[ModuleT]):
