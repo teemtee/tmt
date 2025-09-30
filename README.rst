@@ -3,7 +3,7 @@
                     tmt - Test Management Tool
 ==================================================================
 
-|docs| |matrix| |fedora-pkg| |copr-build| |pypi-version| |license|
+|docs| |deepwiki| |matrix| |fedora-pkg| |copr-build| |pypi-version| |license|
 
 The ``tmt`` tool provides a user-friendly way to work with tests.
 You can comfortably create new tests, safely and easily run tests
@@ -42,6 +42,10 @@ Use the ``tldr tmt`` command to quickly get started.
 .. |docs| image:: https://img.shields.io/badge/Read%20the%20Docs-8CA1AF?logo=readthedocs&logoColor=fff
     :target: https://tmt.readthedocs.io/
     :alt: Documentation
+
+.. |deepwiki| image:: https://deepwiki.com/badge.svg
+    :target: https://deepwiki.com/teemtee/tmt
+    :alt: Ask DeepWiki
 
 .. |matrix| image:: https://img.shields.io/badge/Matrix-000?logo=matrix&logoColor=fff
     :target: https://matrix.to/#/#tmt:fedoraproject.org
