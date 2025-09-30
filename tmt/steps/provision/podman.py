@@ -9,7 +9,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
-from tmt.steps.provision import GuestCapability, TransferOptions
+from tmt.steps.provision import DEFAULT_PUSH_OPTIONS, GuestCapability, TransferOptions
 from tmt.utils import (
     Command,
     OnProcessEndCallback,
@@ -476,6 +476,8 @@ class GuestContainer(tmt.Guest):
         if not self.is_ready:
             return
 
+        options = options or DEFAULT_PUSH_OPTIONS
+
         assert self.parent.plan.my_run is not None  # narrow type
 
         # Relabel workdir to container_file_t if SELinux supported
@@ -488,6 +490,9 @@ class GuestContainer(tmt.Guest):
                 silent=True,
             )
 
+        # When rsync-ing directories, make sure we do not copy to a subfolder (/foo/bar/bar)
+        path_suffix = "/." if options.recursive else ""
+
         # In case explicit destination is given, use `podman cp` to copy data
         # to the container. If running in toolbox, make sure to copy from the toolbox
         # container instead of localhost.
@@ -498,7 +503,9 @@ class GuestContainer(tmt.Guest):
             self.podman(
                 Command(
                     "cp",
-                    f"{container_name}:{source}" if container_name else source,
+                    f"{container_name}:{source}{path_suffix}"
+                    if container_name
+                    else f"{source}{path_suffix}",
                     f"{self.container}:{destination}",
                 )
             )
