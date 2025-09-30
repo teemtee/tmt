@@ -1,0 +1,7 @@
+---
+- name: Frontend-specific tasks
+  hosts: frontend
+  tasks:
+    - name: Log frontend configuration
+      ansible.builtin.debug:
+        msg: "FRONTEND_TASK_EXECUTED on {{ inventory_hostname }}"

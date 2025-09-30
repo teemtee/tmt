@@ -1,0 +1,10 @@
+all:
+    children:
+        webservers:
+            children:
+                frontend: {}
+                backend: {}
+        database:
+            children:
+                primary: {}
+                replica: {}
