@@ -312,7 +312,7 @@ of the files is up to you. See the :ref:`guide` for more details.
 
 .. note::
 
-    With ``tmt`` files used in the ``script`` or ``test``
+    With ``tmt``, files used in the ``script`` or ``test``
     key are expected to be executable, unlike with STI.
 
 __ https://docs.fedoraproject.org/en-US/ci/standard-test-interface/
