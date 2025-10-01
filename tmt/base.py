@@ -3062,10 +3062,12 @@ class Plan(
                 step.suspend()
 
             if not abort:
-                if self.report.enabled and self.report.status() != "done":
-                    self.report.go()
-                if self.cleanup.enabled:
-                    self.cleanup.go()
+                try:
+                    if self.report.enabled and self.report.status() != "done":
+                        self.report.go()
+                finally:
+                    if self.cleanup.enabled:
+                        self.cleanup.go()
 
     def _export(
         self, *, keys: Optional[list[str]] = None, include_internal: bool = False

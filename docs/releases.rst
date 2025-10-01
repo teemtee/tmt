@@ -4,6 +4,13 @@
     Releases
 ======================
 
+tmt-1.59.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If there is an error during the ``report`` step, tmt will now
+correctly execute the ``cleanup`` step instead of skipping it.
+
+
 tmt-1.58.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -9,13 +9,15 @@ import sys
 from collections.abc import Iterator
 from importlib.metadata import entry_points
 from types import ModuleType
-from typing import Any, Generic, Optional, TypeVar, cast
+from typing import Any, Callable, Generic, Optional, TypeVar, cast
 
 import tmt
 import tmt.utils
+from tmt._compat.typing import Concatenate, ParamSpec
 from tmt.log import Logger
 from tmt.utils import GeneralError, Path
 
+P = ParamSpec('P')
 ModuleT = TypeVar('ModuleT', bound=ModuleType)
 
 
@@ -78,6 +80,7 @@ def _discover_packages() -> list[tuple[str, Path]]:
         ('tmt.checks.internal', Path('checks/internal')),
         ('tmt.package_managers', Path('package_managers')),
         ('tmt.steps.prepare.feature', Path('steps/prepare/feature')),
+        ('tmt.steps.prepare.artifact.providers', Path('steps/prepare/artifact/providers')),
         ('tmt.plugins.plan_shapers', Path('plugins/plan_shapers')),
     ]
 
@@ -333,13 +336,46 @@ def import_member(
 
 RegisterableT = TypeVar('RegisterableT')
 
+#: A collection of known registries.
+REGISTRIES: list['PluginRegistry[Any]'] = []
+
 
 class PluginRegistry(Generic[RegisterableT]):
     """
     A container for plugins of shared purpose.
 
     A fancy wrapper for a dictionary at its core, but allows for nicer
-    annotations and more visible semantics.
+    annotations and more visible semantics when working with plugins.
+
+    For the basic use cases, the following should provide overview of
+    the usage:
+
+    .. code-block:: python
+
+        # Create a new registry called `my plugins`, collecting plugins
+        # of `MyPlugin` class:
+        my_registry: PluginRegistry[type[MyPlugin]] = PluginRegistry('my plugins')
+
+        # Create a decorator to mark classes as plugins belonging to the
+        # new registry:
+        my_plugin = my_registry.create_decorator()
+
+        # Register a couple of plugins:
+        @my_plugin('foo')
+        class Foo(MyPlugin):
+            ...
+
+        @my_plugin('bar')
+        class Bar(MyPlugin):
+            ...
+
+        # Work with plugins:
+        my_registry.get_plugin('foo')  # Foo
+        my_registry.get_plugin('baz')  # None
+
+        my_registry.iter_plugin_ids()  # 'foo', 'bar', ...
+        my_registry.iter_plugins()     # Foo, Bar, ...
+        my_registry.items()            # ('foo', Foo), ('bar', Bar), ...
     """
 
     _plugins: dict[str, RegisterableT]
@@ -348,6 +384,9 @@ class PluginRegistry(Generic[RegisterableT]):
         self.name = name
 
         self._plugins = {}
+
+        global REGISTRIES
+        REGISTRIES.append(self)
 
     def register_plugin(
         self,
@@ -417,6 +456,46 @@ class PluginRegistry(Generic[RegisterableT]):
     def __bool__(self) -> bool:
         return bool(self._plugins)
 
+    def create_decorator(
+        self, on_register: Optional[Callable[Concatenate[str, RegisterableT, P], None]] = None
+    ) -> Callable[Concatenate[str, P], Callable[[RegisterableT], RegisterableT]]:
+        """
+        Create a decorator that, applied to classes, registers them as plugins.
+
+        :param on_register: if specified, it is called for every plugin
+            being registered. It must accept plugin ID and plugin class,
+            any additional positional and keyword arguments are made part
+            of the decorator signature.
+        :returns: a decorator registering the decorated class with the
+            registry. The decorator must accept a single argument, the
+            plugin ID, plus any additional positional and keyword arguments
+            accepted by the ``on_register`` callback.
+        """
+
+        def _registerable_decorator(
+            plugin_id: str, /, *args: P.args, **kwargs: P.kwargs
+        ) -> Callable[[RegisterableT], RegisterableT]:
+            def __registerable_decorator(cls: RegisterableT) -> RegisterableT:
+                self.register_plugin(
+                    plugin_id=plugin_id,
+                    plugin=cls,
+                    logger=Logger.get_bootstrap_logger(),
+                )
+
+                if on_register:
+                    on_register(plugin_id, cls, *args, **kwargs)
+
+                return cls
+
+            return __registerable_decorator
+
+        # ignore[return-value]: on paper, return value is not compatible
+        # with the declaration, as `plugin_id` is a named argument. It is
+        # the correct type, but having a name, it leads to `Arg(str, 'plugin_id')`
+        # rather than `str` when mypy processes the annotations. And that's
+        # not the same thing.
+        return _registerable_decorator
+
 
 class ModuleImporter(Generic[ModuleT]):
     """
@@ -446,42 +525,3 @@ class ModuleImporter(Generic[ModuleT]):
 
         assert self._module  # narrow type
         return self._module
-
-
-def iter_plugin_registries() -> Iterator[PluginRegistry[Any]]:
-    # TODO: maybe there is a better way, but as of now, registries do
-    # not report their existence, there is no method to iterate over
-    # them. Using a static list for now.
-    from tmt.base import Plan, Story, Test
-    from tmt.checks import _CHECK_PLUGIN_REGISTRY
-    from tmt.frameworks import _FRAMEWORK_PLUGIN_REGISTRY
-    from tmt.package_managers import _PACKAGE_MANAGER_PLUGIN_REGISTRY
-    from tmt.plugins.plan_shapers import _PLAN_SHAPER_PLUGIN_REGISTRY
-    from tmt.steps.discover import DiscoverPlugin
-    from tmt.steps.execute import ExecutePlugin
-    from tmt.steps.finish import FinishPlugin
-    from tmt.steps.prepare import PreparePlugin
-    from tmt.steps.prepare.feature import _FEATURE_PLUGIN_REGISTRY
-    from tmt.steps.provision import ProvisionPlugin
-    from tmt.steps.report import ReportPlugin
-
-    yield Story._export_plugin_registry
-    yield Plan._export_plugin_registry
-    yield Test._export_plugin_registry
-    yield _CHECK_PLUGIN_REGISTRY
-    yield _FRAMEWORK_PLUGIN_REGISTRY
-    yield _PLAN_SHAPER_PLUGIN_REGISTRY
-    yield _PACKAGE_MANAGER_PLUGIN_REGISTRY
-    yield _FEATURE_PLUGIN_REGISTRY
-    yield DiscoverPlugin._supported_methods
-    yield ProvisionPlugin._supported_methods
-    yield PreparePlugin._supported_methods
-    yield ExecutePlugin._supported_methods
-    yield FinishPlugin._supported_methods
-    yield ReportPlugin._supported_methods
-
-
-def iter_plugins() -> Iterator[tuple[PluginRegistry[RegisterableT], str, RegisterableT]]:
-    for registry in iter_plugin_registries():
-        for plugin_id, plugin_class in registry.items():
-            yield registry, plugin_id, plugin_class

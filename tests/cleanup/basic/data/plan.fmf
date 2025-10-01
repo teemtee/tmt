@@ -1,0 +1,19 @@
+discover:
+    how: shell
+    tests:
+      - name: /test
+        test: echo "Test executed"
+provision:
+    how: container
+prepare:
+    how: shell
+    script: echo "Prepare step executed"
+execute:
+    how: tmt
+finish:
+    how: shell
+    script: echo "Finish step executed"
+report:
+    how: reportportal
+    project: nonexistent_project
+    url: http://localhost

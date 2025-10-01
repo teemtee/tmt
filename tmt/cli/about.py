@@ -10,7 +10,7 @@ import tmt.utils.rest
 from tmt.cli import Context, CustomGroup, pass_context
 from tmt.cli._root import main
 from tmt.options import option
-from tmt.plugins import PluginRegistry, iter_plugin_registries
+from tmt.plugins import REGISTRIES, PluginRegistry
 from tmt.utils import GeneralError
 from tmt.utils.templates import render_template, render_template_file
 
@@ -37,6 +37,7 @@ def _render_plugins_list_rest() -> str:
         r'package_managers': 'Package manager plugins',
         r'plan_shapers': 'Plan shapers',
         r'prepare.feature': 'prepare/feature plugins',
+        r'prepare.artifact.providers': 'prepare/artifact provider plugins',
         r'step\.([a-z]+)': '{{ MATCH.group(1).capitalize() }} step plugins',
     }
 
@@ -53,7 +54,7 @@ def _render_plugins_list_rest() -> str:
 
     return render_template_file(
         TEMPLATES_DIRECTORY / 'plugins-ls.rst.j2',
-        REGISTRIES=iter_plugin_registries(),
+        REGISTRIES=REGISTRIES,
         find_intro=find_intro,
     )
 
@@ -102,10 +103,7 @@ def plugins_ls(context: Context, how: str) -> None:
         _ls(
             context,
             how,
-            {
-                registry.name: list(registry.iter_plugin_ids())
-                for registry in iter_plugin_registries()
-            },
+            {registry.name: list(registry.iter_plugin_ids()) for registry in REGISTRIES},
         )
 
 
