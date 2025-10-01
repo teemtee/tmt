@@ -209,6 +209,12 @@ restraint server, are ignored.
     ``tmt-report-result`` scripts instead. These are not planned
     to be removed and will be supported in the future.
 
+.. versionadded:: 1.59
+
+   When ``restraint-compatible`` is set, an environment variable
+   ``RSTRNT_TASKNAME`` is set with a value equivalent to that of
+   ``TMT_TEST_NAME``.
+
 __ https://restraint.readthedocs.io/
 
 
