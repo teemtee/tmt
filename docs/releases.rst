@@ -23,7 +23,7 @@ TMT now supports automatic generation of Ansible inventory files
 during the provision phase. The new :ref:`/spec/plans/ansible`
 configuration allows users to define custom inventory layouts and
 organize provisioned guests into Ansible groups with host-specific
-variables. See the :ref:`/spec/plans/ansible` and 
+variables. See the :ref:`/spec/plans/ansible` and
 :ref:`/spec/plans/provision/ansible` sections for configuration details.
 
 tmt-1.59.0
