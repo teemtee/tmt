@@ -347,7 +347,10 @@ class GuestMock(tmt.Guest):
     rootdir: Optional[str] = None
 
     mock_shell: MockShell
-    mock_config: dict[Any, Any]
+
+    def __init__(self, *args: Any, mock_config: dict[Any, Any], **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.mock_config = mock_config
 
     @property
     def is_ready(self) -> bool:
@@ -467,7 +470,6 @@ class GuestMock(tmt.Guest):
         assert isinstance(data, MockGuestData)
         super().load(data)
         self.mock_shell = MockShell(parent=self, root=self.root, rootdir=self.rootdir)
-        self.mock_config = data.mock_config
 
 
 @tmt.steps.provides_method('mock')
@@ -539,7 +541,6 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
         data.primary_address = (data.root or '<default>') + (
             '@' + data.rootdir if data.rootdir is not None else ''
         )
-        data.mock_config = mock_config
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
 
@@ -548,5 +549,11 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
         if data.hardware and data.hardware.constraint:
             self.warn("The 'mock' provision plugin does not support hardware requirements.")
 
-        self._guest = GuestMock(logger=self._logger, data=data, name=self.name, parent=self.step)
+        self._guest = GuestMock(
+            logger=self._logger,
+            data=data,
+            name=self.name,
+            parent=self.step,
+            mock_config=mock_config,
+        )
         self._guest.setup()
