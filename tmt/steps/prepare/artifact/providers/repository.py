@@ -2,6 +2,7 @@
 Artifact provider for repository files.
 """
 
+import re
 from collections.abc import Iterator
 from re import Pattern
 from shlex import quote
@@ -73,9 +74,66 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         """
         Query the guest to find all packages available in the new repository.
         """
-        # TODO: This method needs to be implemented to populate self._rpm_list with RPMs
-        # from the repository. Currently using an empty list as a temporary solution.
+
+        # Get the repository ID
+        cmd = f"""
+            grep '^\\[' {quote(str(repo_filepath))} | head -n 1 | sed 's/^\\[\\(.*\\)\\]$/\\1/'
+            """
+        result = guest.execute(ShellScript(cmd), silent=True)
+        if result.stdout is None:
+            raise GeneralError("No output from repository ID query.")
+        repo_id = result.stdout.strip()
+        if not repo_id:
+            raise GeneralError(f"No repository ID found in {repo_filepath}.")
+
+        # List available packages
+        cmd = f"""
+            dnf repoquery --refresh --disablerepo='*' --enablerepo={quote(repo_id)} --available
+            """
+        result = guest.execute(ShellScript(cmd), silent=True)
+        if result.stdout is None:
+            raise GeneralError("No output from package list query.")
+        output = result.stdout
+
+        # Parse the output
         self._rpm_list = []
+        with_epoch = re.compile(r'^(.+)-(\d+):(.+)-(.+)\.(.+)$')
+        without_epoch = re.compile(r'^(.+)-(.+)-(.+)\.(.+)$')
+
+        for line in output.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+
+            match = with_epoch.match(line)
+            if match:
+                name, epoch_str, version, release, arch = match.groups()
+                epoch = int(epoch_str)
+            else:
+                match = without_epoch.match(line)
+                if match:
+                    name, version, release, arch = match.groups()
+                    epoch = None
+                else:
+                    self.logger.warning(f"Failed to parse RPM: {line}")
+                    continue
+
+            nvr = (
+                f"{name}-{version}-{release}"
+                if epoch is None
+                else f"{name}-{epoch}:{version}-{release}"
+            )
+            self._rpm_list.append(
+                RpmArtifactInfo(
+                    _raw_artifact={
+                        'name': name,
+                        'version': version,
+                        'release': release,
+                        'arch': arch,
+                        'nvr': nvr,
+                    }
+                )
+            )
 
     def list_artifacts(self) -> Iterator[RpmArtifactInfo]:
         """
