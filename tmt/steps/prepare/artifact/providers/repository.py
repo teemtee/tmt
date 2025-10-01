@@ -5,6 +5,7 @@ Artifact provider for repository files.
 from collections.abc import Iterator
 from re import Pattern
 from shlex import quote
+from typing import Optional
 from urllib.parse import unquote, urlparse
 
 import tmt.log
@@ -93,9 +94,9 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
     def download_artifacts(
         self,
         guest: Guest,
-        download_path: Path,
-        exclude_patterns: list[Pattern[str]],
-    ) -> list[Path]:
+        download_path: tmt.utils.Path,
+        exclude_patterns: Optional[list[Pattern[str]]] = None,
+    ) -> list[tmt.utils.Path]:
         """
         Download the .repo file to the guest, making the repository available.
 
