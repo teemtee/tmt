@@ -490,7 +490,7 @@ class GuestContainer(tmt.Guest):
                 silent=True,
             )
 
-        # When rsync-ing directories, make sure we do not copy to a subfolder (/foo/bar/bar)
+        # Make sure we do not copy to a subfolder (/foo/bar/bar), see `man podman-cp`
         path_suffix = "/." if options.recursive else ""
 
         # In case explicit destination is given, use `podman cp` to copy data
