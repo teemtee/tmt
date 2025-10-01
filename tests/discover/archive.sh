@@ -16,12 +16,12 @@ rlJournalStart
 
     rlPhaseStartTest "Basic archive tests"
         plan="/plans/fmf/archive-url"
-        rlRun -s "tmt run $run discover plans -n /plans/fmf/archive-url"
-        rlAssertGrep "2 test selected" $rlRun_LOG
+        rlRun -s "tmt run -i $run discover plans -n /plans/fmf/archive-url"
+        rlAssertGrep "2 tests selected" $rlRun_LOG
         plan_path="$run$plan"
         step_workdir="$plan_path/discover/default-0"
         rlAssertExists "$step_workdir/tests-main.tar.gz" 0 "Check that the archive is present"
-        rlAssertExists "$step_workdir/tests/test-main" 0 "Check that the extracted archive is present"
+        rlAssertExists "$step_workdir/tests/tests-main" 0 "Check that the extracted archive is present"
     rlPhaseEnd
 
     rlPhaseStartCleanup
