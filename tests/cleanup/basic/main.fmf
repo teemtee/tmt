@@ -1,0 +1,1 @@
+summary: Verify that cleanup step is executed even when report step fails
