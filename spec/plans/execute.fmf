@@ -67,7 +67,7 @@ description: |
             script: a-long-test-suite
             duration: 3h
       - |
-        # Run a script file, note that script files must be executable
+        # Run a script file, note that files are expected to be executable
         execute:
             script: ./run_tests.sh
 
