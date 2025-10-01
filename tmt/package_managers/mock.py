@@ -10,6 +10,7 @@ from tmt.package_managers import (
     escape_installables,
     provides_package_manager,
 )
+from tmt.steps.provision import Guest
 from tmt.steps.provision.mock import GuestMock
 from tmt.utils import Command, CommandOutput, RunError, ShellScript
 
@@ -97,13 +98,15 @@ class MockDnf5Engine(BaseMockEngine):
 class BaseMock:
     probe_command = Command('/usr/bin/false')
     probe_priority = 130
+    guest: Guest
+    engine: PackageManagerEngine
 
     def install(
         self,
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        if options.check_first:
+        if options is not None and options.check_first:
             try:
                 return self.guest.execute(self.engine.check_presence(*installables))
             except RunError:
@@ -117,7 +120,7 @@ class BaseMock:
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        if options.check_first:
+        if options is not None and options.check_first:
             try:
                 return self.guest.execute(self.engine.check_presence(*installables))
             except RunError:
@@ -131,7 +134,7 @@ class BaseMock:
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        if options.check_first:
+        if options is not None and options.check_first:
             try:
                 return self.guest.execute(self.engine.check_presence(*installables))
             except RunError:
@@ -144,18 +147,21 @@ class BaseMock:
         return self.guest.run(self.engine.refresh_metadata().to_shell_command())
 
 
+# ignore[type-arg]: Follow the rest of package managers
 @provides_package_manager('mock-yum')
 class MockYum(BaseMock, PackageManager[MockYumEngine]):
     NAME = 'mock-yum'
     _engine_class = MockYumEngine
 
 
+# ignore[type-arg]: Follow the rest of package managers
 @provides_package_manager('mock-dnf')
 class MockDnf(BaseMock, PackageManager[MockDnfEngine]):
     NAME = 'mock-dnf'
     _engine_class = MockDnfEngine
 
 
+# ignore[type-arg]: Follow the rest of package managers
 @provides_package_manager('mock-dnf5')
 class MockDnf5(BaseMock, PackageManager[MockDnf5Engine]):
     NAME = 'mock-dnf5'

@@ -75,12 +75,12 @@ class MockShell:
 
         self.command_prefix = Command('mock')
         if self.root is not None:
-            self.command_prefix += ['-r', self.root]
+            self.command_prefix += Command('-r', self.root)
         if self.rootdir is not None:
-            self.command_prefix += ['--rootdir', self.rootdir]
+            self.command_prefix += Command('--rootdir', self.rootdir)
 
         root_path = (
-            (self.command_prefix + ['--print-root-path'])
+            (self.command_prefix + Command('--print-root-path'))
             .run(cwd=None, logger=self.parent._logger)
             .stdout
         )
