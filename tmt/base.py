@@ -38,6 +38,7 @@ from click import confirm, echo
 from fmf.utils import listed
 from ruamel.yaml.error import MarkedYAMLError
 
+import tmt.ansible
 import tmt.base
 import tmt.checks
 import tmt.config
@@ -2047,13 +2048,9 @@ class Plan(
     login: Optional[tmt.steps.Login] = None
 
     # Optional Ansible configuration for the plan
-    ansible: Optional[tmt.steps.provision.PlanAnsible] = field(
+    ansible: Optional[tmt.ansible.PlanAnsible] = field(
         default=None,
-        normalize=lambda key_address,
-        raw_ansible,
-        logger: tmt.steps.provision.PlanAnsible.from_spec(raw_ansible)
-        if raw_ansible is not None
-        else None,
+        normalize=tmt.ansible.normalize_plan_ansible,
         exporter=lambda value: value.to_spec() if value else None,
     )
 
