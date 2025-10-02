@@ -37,7 +37,10 @@ def test_koji_valid_task_id_that_produced_build(root_logger):
 
 @pytest.mark.integration
 def test_koji_valid_task_id_that_did_not_produce_build(root_logger):
-    provider = KojiArtifactProvider(root_logger, artifact_id="koji.task:137451529")
+    provider = KojiArtifactProvider(root_logger, artifact_id="koji.task:137705547")
+    tasks = provider._get_task_children(137705547)
+    assert len(tasks) == 13
+    assert 137705547 in tasks  # The parent task itself should be included
     rpms = list(provider.list_artifacts())
     assert provider.build_id is None
-    assert len(rpms) == 13
+    assert len(rpms) == 0

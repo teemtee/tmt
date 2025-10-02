@@ -95,7 +95,7 @@ class RpmArtifactInfo(ArtifactInfo):
         """
         Whether this RPM is a draft/scratch artifact.
         """
-        return bool(self._raw_artifact['draft'])
+        return bool(self._raw_artifact.get('draft', False))
 
 
 # ignore[type-arg]: TypeVar in provider registry annotations is
@@ -260,6 +260,23 @@ class KojiTask(KojiArtifactProvider):
             return build_id
         return None
 
+    def _get_task_children(self, task_id: int) -> list[int]:
+        """
+        Recursively fetch all child tasks of the given task ID.
+
+        :param task_id: The parent task ID
+        :return: List of all child task IDs
+        """
+        child_tasks: list[int] = [task_id]  # Include the parent task itself
+        direct_children = self._call_api("getTaskChildren", task_id) or []
+        for child in direct_children:
+            child_id = child["id"]
+            assert isinstance(child_id, int)
+            child_tasks.append(child_id)
+            # Recursively fetch grandchildren
+            child_tasks.extend(self._get_task_children(child_id))
+        return child_tasks
+
     @cached_property
     def rpm_list(self) -> list[RpmArtifactInfo]:
         # If task produced a build, reuse build path
@@ -268,17 +285,19 @@ class KojiTask(KojiArtifactProvider):
 
         # Otherwise, list the task output files
         rpms: list[RpmArtifactInfo] = []
-        for filename in self._call_api("listTaskOutput", int(self.artifact_id)) or []:
-            if not filename.endswith(".rpm"):
-                self.logger.warning(f"Skipping '{filename}': not an RPM")
-                continue
-            # Parse basic info from filename
-            artifact = RpmArtifactInfo.from_filename(filename)
-            # Fetch full rpm metadata
-            if rpm_info := self._call_api("getRPM", artifact.id):
-                rpms.append(RpmArtifactInfo(_raw_artifact=rpm_info))
-            else:
-                self.logger.warning(f"Skipping '{filename}': getRPM returned nothing")
+
+        for child_task in self._get_task_children(int(self.artifact_id)):
+            for filename in self._call_api("listTaskOutput", child_task) or []:
+                if not filename.endswith(".rpm"):
+                    self.logger.warning(f"Skipping '{filename}': not an RPM")
+                    continue
+                # Parse basic info from filename
+                artifact = RpmArtifactInfo.from_filename(filename)
+                # Fetch full rpm metadata
+                if rpm_info := self._call_api("getRPM", artifact.id):
+                    rpms.append(RpmArtifactInfo(_raw_artifact=rpm_info))
+                else:
+                    self.logger.warning(f"Skipping '{filename}': getRPM returned nothing")
         return rpms
 
 
