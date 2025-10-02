@@ -213,6 +213,7 @@ class MockShell:
         silent: bool = False,
         logger: tmt.log.Logger,
         join: Optional[bool] = None,
+        timeout: Optional[int] = None,
         **kwargs: dict[Any, Any],
     ) -> tuple[str, str]:
         """
@@ -310,7 +311,13 @@ class MockShell:
             returncode = None
 
             while self.mock_shell.poll() is None:
-                events = self.epoll.poll()
+                events = self.epoll.poll(timeout=timeout)
+
+                if len(events) == 0:
+                    # TODO
+                    # kill the process spawned inside the mock shell
+                    pass
+
                 # The command is finished when mock shell prints a newline on its
                 # stdout. We want to break loop after we handled all the other
                 # epoll events because the event ordering is not guaranteed.
