@@ -47,6 +47,7 @@ class RpmArtifactInfo(ArtifactInfo):
     Represents a single RPM package.
     """
 
+    # TODO: Make RPM_BASE_URL configurable via FMF/CLI, not just env var
     BASE_URL = os.getenv("RPM_BASE_URL", "https://kojipkgs.fedoraproject.org/packages").rstrip(
         "/"
     )  # For actual package downloads
@@ -102,6 +103,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         artifacts = provider.download_artifacts(guest, Path("/tmp"), [])
     """
 
+    # TODO: Make RPM_BASE_URL configurable via FMF/CLI, not just env var
     API_URL = os.getenv("KOJI_API_URL", "https://koji.fedoraproject.org/kojihub")  # For metadata
 
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
