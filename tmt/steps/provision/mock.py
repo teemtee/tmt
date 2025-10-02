@@ -500,7 +500,7 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
 
     .. warning::
 
-        This plusing requires the ``--feeling-safe`` option or
+        This plugin requires the ``--feeling-safe`` option or
         the ``TMT_FEELING_SAFE=1`` environment variable defined.
         While it is roughly as safe as ``container`` provisioning,
         the plugin still bind-mounts the test directory.
