@@ -155,7 +155,9 @@ class ApkEngine(PackageManagerEngine):
         raise tmt.utils.GeneralError("There is no support for debuginfo packages in apk.")
 
 
-@provides_package_manager('apk')
+# ignore[type-arg]: TypeVar in package manager registry annotations is
+# puzzling for type checkers. And not a good idea in general, probably.
+@provides_package_manager('apk')  # type: ignore[arg-type]
 class Apk(PackageManager[ApkEngine]):
     NAME = 'apk'
 

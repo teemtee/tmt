@@ -16,6 +16,7 @@ from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
     DownloadError,
+    provides_artifact_provider,
 )
 from tmt.steps.provision import Guest
 
@@ -23,23 +24,6 @@ koji: Optional[types.ModuleType] = None
 
 # To silence mypy
 ClientSession: Any
-
-
-tmt.utils.hints.register_hint(
-    'koji',
-    """
-    The ``koji`` Python package is required by tmt for Koji integration.
-
-    To quickly test Koji presence, you can try running:
-
-        python -c 'import koji'
-
-    * Users who installed tmt from PyPI should install the ``koji`` package
-      via ``pip install koji``. On Fedora/RHEL systems, ``python3-gssapi``
-      must be installed first to allow ``pip`` to build and use the required
-      GSSAPI bindings.
-    """,
-)
 
 
 def import_koji(logger: tmt.log.Logger) -> None:
@@ -51,7 +35,7 @@ def import_koji(logger: tmt.log.Logger) -> None:
     except ImportError as error:
         from tmt.utils.hints import print_hints
 
-        print_hints('koji', logger=logger)
+        print_hints('artifact-provider/koji/koji', logger=logger)
 
         raise tmt.utils.GeneralError("Could not import koji package.") from error
 
@@ -114,15 +98,36 @@ class RpmArtifactInfo(ArtifactInfo):
         return bool(self._raw_artifact['draft'])
 
 
+# ignore[type-arg]: TypeVar in provider registry annotations is
+# puzzling for type checkers. And not a good idea in general, probably.
+@provides_artifact_provider(  # type: ignore[arg-type]
+    'koji',
+    hints={
+        'koji': """
+        The ``koji`` Python package is required by tmt for Koji integration.
+
+        To quickly test Koji presence, you can try running:
+
+            python -c 'import koji'
+
+        * Users who installed tmt from PyPI should install the ``koji`` package
+          via ``pip install koji``. On Fedora/RHEL systems, ``python3-gssapi``
+          must be installed first to allow ``pip`` to build and use the required
+          GSSAPI bindings.
+    """,
+    },
+)
 class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
     """
     Provider for downloading artifacts from Koji builds.
-    Currently only supports RPM artifacts.
 
-    Example:
-        provider = KojiArtifactProvider(logger, build_id=123456)
-        provider = KojiArtifactProvider(logger, task_id=654321)
-        provider = KojiArtifactProvider(logger, nvr="tmt-1.58.0.dev21+gb229884df-main.fc41.noarch")
+    .. note::
+
+        Only RPMs are supported currently.
+
+    .. code-block:: python
+
+        provider = KojiArtifactProvider(logger, "koji.build:123456")
         artifacts = provider.download_artifacts(guest, Path("/tmp"), [])
     """
 
