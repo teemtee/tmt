@@ -211,6 +211,7 @@ class MockShell:
         log: Optional[tmt.log.LoggingFunction] = None,
         silent: bool = False,
         logger: tmt.log.Logger,
+        join: Optional[bool] = None,
     ) -> tuple[str, str]:
         """
         Execute the command in a running mock shell for increased speed.
@@ -254,7 +255,10 @@ class MockShell:
 
         shell_command_components = [
             *shell_command_components,
-            f'1>/{stdout_stem} 2>/{stderr_stem}; echo $?>/{returncode_stem}',
+            f'1>/{stdout_stem}',
+            f'2>/{stderr_stem}' if not join else '2>&1',
+            ';',
+            f'echo $?>/{returncode_stem}',
         ]
 
         shell_command = ' '.join(shell_command_components) + '\n'
