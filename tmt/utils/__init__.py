@@ -2964,13 +2964,25 @@ def render_exception(
         for number, cause in enumerate(causes, start=1):
             yield from _render_cause(number, cause)
 
+    # Collect the causes of the exception.
     causes: list[BaseException] = []
 
+    # 1. our custom exception has an explicit list of causes, to play well
+    # with our multithreading and possibly multiple contributing errors
+    # summarized with just one exception. Start with this list of causes.
     if isinstance(exception, GeneralError) and exception.causes:
         causes += exception.causes
 
-    if exception.__cause__:
+    # 2. exception's own `__cause__` attribute. It's set by the interpreter
+    # when `raise ... from ...` is invoked.
+    if exception.__cause__ and exception.__cause__ not in causes:
         causes += [exception.__cause__]
+
+    # 3. there's also exception *context*, set e.g. when an exception is
+    # raised in `finally` block when exception was raised in `except` already.
+    # We should include that one as well.
+    if exception.__context__ and exception.__context__ not in causes:
+        causes += [exception.__context__]
 
     if causes:
         yield from _render_causes(causes)
