@@ -213,12 +213,18 @@ class MockShell:
         silent: bool = False,
         logger: tmt.log.Logger,
         join: Optional[bool] = None,
+        **kwargs: dict[Any, Any],
     ) -> tuple[str, str]:
         """
         Execute the command in a running mock shell for increased speed.
         """
 
         assert self.mock_shell is not None
+
+        if kwargs is not None and len(kwargs) != 0:
+            logger.debug(
+                'mock::execute: unrecognized keyword arguments', ', '.join(kwargs.keys()), level=2
+            )
 
         stdout_stem = 'tmp/stdout'
         stderr_stem = 'tmp/stderr'
