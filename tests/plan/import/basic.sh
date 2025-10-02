@@ -16,8 +16,8 @@ rlJournalStart
         rlRun -s "tmt plan show"
         rlAssertGrep "/plans/minimal" $rlRun_LOG
         rlAssertNotGrep "summary Just url and name" $rlRun_LOG
-        rlAssertGrep "summary Metadata used by tmt itself are valid" $rlRun_LOG
-        rlAssertNotGrep "\<import\>" $rlRun_LOG
+        rlAssertGrep "summary A simple smoke plan for remote testing" $rlRun_LOG
+        rlAssertNotGrep "^\s*import\s*$" $rlRun_LOG
         rlAssertNotGrep "ref 1.16.0" $rlRun_LOG
         rlAssertNotGrep "warn" $rlRun_LOG
     rlPhaseEnd
@@ -26,8 +26,8 @@ rlJournalStart
         rlRun -s "tmt plan show --shallow"
         rlAssertGrep "/plans/minimal" $rlRun_LOG
         rlAssertGrep "summary Just url and name" $rlRun_LOG
-        rlAssertNotGrep "summary Metadata used by tmt itself are valid" $rlRun_LOG
-        rlAssertNotGrep "\<import\>" $rlRun_LOG
+        rlAssertNotGrep "summary A simple smoke plan for remote testing" $rlRun_LOG
+        rlAssertNotGrep "^\s*import\s*$" $rlRun_LOG
         rlAssertNotGrep "ref 1.16.0" $rlRun_LOG
         rlAssertNotGrep "warn" $rlRun_LOG
     rlPhaseEnd
@@ -36,8 +36,8 @@ rlJournalStart
         rlRun -s "tmt plan show --verbose"
         rlAssertGrep "/plans/minimal" $rlRun_LOG
         rlAssertNotGrep "summary Just url and name" $rlRun_LOG
-        rlAssertGrep "summary Metadata used by tmt itself are valid" $rlRun_LOG
-        rlAssertGrep "\<import\>" $rlRun_LOG
+        rlAssertGrep "summary A simple smoke plan for remote testing" $rlRun_LOG
+        rlAssertGrep "^\s*import\s*$" $rlRun_LOG
         rlAssertGrep "url https://github.com/teemtee/tmt" $rlRun_LOG
         rlAssertGrep "path /tests/run/worktree/data/prepare" $rlRun_LOG
         rlAssertGrep "name /plan" $rlRun_LOG
@@ -49,8 +49,8 @@ rlJournalStart
         rlRun -s "tmt plan show --verbose --shallow"
         rlAssertGrep "/plans/minimal" $rlRun_LOG
         rlAssertGrep "summary Just url and name" $rlRun_LOG
-        rlAssertNotGrep "summary Metadata used by tmt itself are valid" $rlRun_LOG
-        rlAssertGrep "\<import\>" $rlRun_LOG
+        rlAssertNotGrep "summary A simple smoke plan for remote testing" $rlRun_LOG
+        rlAssertGrep "^\s*import\s*$" $rlRun_LOG
         rlAssertGrep "url https://github.com/teemtee/tmt" $rlRun_LOG
         rlAssertGrep "path /tests/run/worktree/data/prepare" $rlRun_LOG
         rlAssertGrep "name /plan" $rlRun_LOG
@@ -83,8 +83,8 @@ rlJournalStart
         rlAssertGrep "/tests/basic/ls" $rlRun_LOG
         rlAssertGrep "/tests/basic/show" $rlRun_LOG
         rlAssertGrep "/plans/minimal" $rlRun_LOG
-        rlAssertGrep "/lint/tests" $rlRun_LOG
-        rlAssertGrep "/lint/plans" $rlRun_LOG
+        rlAssertGrep "/tests/one" $rlRun_LOG
+        rlAssertGrep "/tests/two" $rlRun_LOG
         rlAssertNotGrep "/default/plan" $rlRun_LOG
         # Disabled plans should not be discovered
         rlAssertNotGrep "/plans/full/tmt" $rlRun_LOG
@@ -124,8 +124,8 @@ rlJournalStart
     rlPhaseStartTest "Run Tests"
         rlRun -s "tmt run -v --remove --dry plan --name /plans/minimal" 0 "Run tests (dry mode)"
         rlRun -s "tmt run -v --remove       plan --name /plans/minimal" 0 "Run tests"
-        rlAssertGrep "pass /lint/plans" $rlRun_LOG
-        rlAssertGrep "pass /lint/tests" $rlRun_LOG
+        rlAssertGrep "pass /tests/one" $rlRun_LOG
+        rlAssertGrep "pass /tests/two" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Disabled plans should not be executed"

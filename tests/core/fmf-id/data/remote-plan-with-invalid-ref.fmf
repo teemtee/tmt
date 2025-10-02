@@ -1,6 +1,6 @@
 plan:
     import:
-        url: https://github.com/teemtee/tmt.git
+        url: https://github.com/teemtee/tests.git
         name: '.*'
 
         ref: 12345678
