@@ -18,8 +18,7 @@ class MockEngine(PackageManagerEngine):
     """
     We use `mock --pm-cmd ...` to execute the package manager commands inside
     the mock. Such scripts need to be executed locally and not inside the mock
-    shell. To differentiate these scripts we set a special attribute `_local`
-    of the script object.
+    shell.
     """
 
     def _prepare_mock_command_script(self, script: str) -> ShellScript:
@@ -85,6 +84,7 @@ class MockEngine(PackageManagerEngine):
 class _MockPackageManager(PackageManager[MockEngine]):
     probe_command = Command('/usr/bin/false')
     probe_priority = 130
+    _engine_class = MockEngine
 
     def install(
         self,
