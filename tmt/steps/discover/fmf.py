@@ -122,6 +122,7 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
             and target. Relation part can be omitted to match all
             relations.
              """,
+        normalize=tmt.utils.normalize_string_list,
     )
 
     filter: list[str] = field(
