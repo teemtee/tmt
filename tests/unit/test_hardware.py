@@ -265,8 +265,16 @@ OR_HARDWARE_REQUIREMENTS = """
 """
 
 
-def test_validate_maximal_constraint(root_logger: Logger) -> None:
-    node = fmf.Tree({'hardware': tmt.utils.yaml_to_dict(FULL_HARDWARE_REQUIREMENTS)})
+@pytest.mark.parametrize(
+    'requirements',
+    [
+        FULL_HARDWARE_REQUIREMENTS,
+        OR_HARDWARE_REQUIREMENTS,
+    ],
+    ids=('Full requirements', 'OR-ed requirements'),
+)
+def test_validate_requirements(requirements: str, root_logger: Logger) -> None:
+    node = fmf.Tree({'hardware': tmt.utils.yaml_to_dict(requirements)})
 
     errors = tmt.utils.validate_fmf_node(node, 'hardware.yaml', root_logger)
 
@@ -279,7 +287,7 @@ Detailed validation error:
 {textwrap.indent(str(error), '  ')}
 """)
 
-        pytest.fail("Maximal HW constraint example fails schema validation")
+        pytest.fail("Requirement example fails schema validation")
 
 
 def test_parse_maximal_constraint() -> None:

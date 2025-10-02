@@ -54,7 +54,7 @@ definitions:
         "$ref": "#/definitions/_device_vendor_name"
 
       vendor:
-        "$ref": "#/definitions/_device_id"
+        "$ref": "#/definitions/_device_vendor_id"
 
   # HW requirements: single `beaker` item
   beaker:
@@ -184,7 +184,7 @@ definitions:
         "$ref": "#/definitions/_device_vendor_name"
 
       vendor:
-        "$ref": "#/definitions/_device_id"
+        "$ref": "#/definitions/_device_vendor_id"
 
     additionalProperties: false
 
@@ -247,7 +247,7 @@ definitions:
         "$ref": "#/definitions/_device_vendor_name"
 
       vendor:
-        "$ref": "#/definitions/_device_id"
+        "$ref": "#/definitions/_device_vendor_id"
 
     additionalProperties: false
 
@@ -299,7 +299,7 @@ definitions:
         "$ref": "#/definitions/_device_vendor_name"
 
       vendor:
-        "$ref": "#/definitions/_device_id"
+        "$ref": "#/definitions/_device_vendor_id"
 
     additionalProperties: false
 
