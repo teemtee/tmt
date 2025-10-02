@@ -36,7 +36,7 @@ def test_download_artifacts(tmp_path, root_logger):
     guest = MagicMock()
     provider = MockProvider("mock:123", root_logger)
 
-    paths = provider.download_artifacts(guest, tmp_path, [])
+    paths = provider.fetch_contents(guest, tmp_path, [])
 
     file_path = tmp_path / "mock.rpm"
     assert file_path in paths

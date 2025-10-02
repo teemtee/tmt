@@ -93,7 +93,7 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
     ) -> None:
         """This provider only sets up the repo, it does not download RPMs."""
 
-    def download_artifacts(
+    def fetch_contents(
         self,
         guest: Guest,
         download_path: tmt.utils.Path,
