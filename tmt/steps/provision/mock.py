@@ -105,8 +105,7 @@ class MockShell:
 
     def exit_shell(self) -> None:
         if self.mock_shell is not None:
-            self.parent.verbose('Exiting mock shell')
-
+            self.parent.verbose('mock', 'Exiting shell...', color='blue', level=2)
             assert self.mock_shell.stdin is not None
             self.mock_shell.stdin.write('')
             self.mock_shell.stdin.flush()
@@ -116,6 +115,7 @@ class MockShell:
             self.epoll.close()
             self.epoll = None
             self.pid = None
+            self.parent.verbose('mock', 'Exited shell.', color='blue', level=2)
 
     def enter_shell(self) -> None:
         command = self.command_prefix.to_popen()
@@ -129,8 +129,8 @@ class MockShell:
         command.append('-q')
         command.append('--shell')
 
-        self.parent.verbose('Entering mock shell')
-        self.parent.verbose(str(command))
+        self.parent.verbose('mock', 'Entering shell.', color='blue', level=2)
+        self.parent.debug('mock', f'Command line arguments:  {command}.', color='blue')
         self.mock_shell = subprocess.Popen(
             command,
             stdin=subprocess.PIPE,
@@ -177,14 +177,14 @@ class MockShell:
             for fileno, _ in events:
                 if fileno == self.mock_shell_stderr_fd:
                     for line in self.mock_shell.stderr.readlines():
-                        self.parent._logger.debug('err', line.rstrip(), 'yellow', level=0)
+                        self.parent._logger.debug('err', line.rstrip(), 'yellow')
 
         if mock_shell_result is not None:
             raise tmt.utils.ProvisionError(
-                f'Failed to launch mock shell: exited {mock_shell_result}'
+                f'Failed to launch mock shell: exited {mock_shell_result}.'
             )
 
-        self.parent.verbose('Mock shell is ready')
+        self.parent.verbose('mock', 'Shell is ready.', color='blue', level=3)
 
         # We do not expect these commands to fail.
         self.mock_shell.stdin.write('rm -rf /tmp/stdout /tmp/stderr /tmp/returncode\n')
@@ -224,7 +224,9 @@ class MockShell:
 
         if kwargs is not None and len(kwargs) != 0:
             logger.debug(
-                'mock::execute: unrecognized keyword arguments', ', '.join(kwargs.keys()), level=2
+                'mock',
+                f'execute: unrecognized keyword arguments: {", ".join(kwargs.keys())}.',
+                color='blue',
             )
 
         stdout_stem = 'tmp/stdout'
@@ -271,7 +273,7 @@ class MockShell:
 
         shell_command = ' '.join(shell_command_components) + '\n'
 
-        self.parent.verbose('Executing inside mock shell', shell_command[:-1])
+        logger.debug('mock', f'Executing shell command: {shell_command[:-1]}', color='blue')
 
         io_flags: int = os.O_RDONLY | os.O_NONBLOCK
         with (
@@ -297,16 +299,17 @@ class MockShell:
             self.mock_shell.stdin.flush()
 
             # For command output logging, use either the given logging callback, or
-            # use the given logger & emit to debug log.
+            # use the given logger & emit to verbose log.
+            # NOTE Command.run uses debug, not verbose.
             output_logger: tmt.log.LoggingFunction = (
-                (log or logger.debug) if not silent else logger.debug
+                (log or logger.verbose) if not silent else logger.verbose
             )
 
             stream_out = MockShell.Stream(
-                lambda text: output_logger('out', text, 'yellow', level=0)
+                lambda text: output_logger('out', text, 'yellow', level=3)
             )
             stream_err = MockShell.Stream(
-                lambda text: output_logger('err', text, 'yellow', level=0)
+                lambda text: output_logger('err', text, 'yellow', level=3)
             )
             returncode = None
 
@@ -414,7 +417,7 @@ class GuestMock(tmt.Guest):
             reduced.
         """
 
-        raise NotImplementedError("ansible is not currently supported")
+        raise NotImplementedError("Ansible is not currently supported.")
 
     def execute(
         self,
