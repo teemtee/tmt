@@ -28,12 +28,15 @@ class RepositoryFile:
     url: str
 
     def __post_init__(self) -> None:
+        """
+        Validates the URL format upon object creation.
+        """
         try:
             self._parsed_url = urlparse(self.url)
             if not self._parsed_url.scheme or not self._parsed_url.netloc:
                 raise ValueError
-        except ValueError:
-            raise GeneralError(f"Invalid URL format for .repo file: '{self.url}'.")
+        except ValueError as exc:
+            raise GeneralError(f"Invalid URL format for .repo file: '{self.url}'.") from exc
 
     @property
     def filename(self) -> str:
@@ -41,7 +44,7 @@ class RepositoryFile:
         return unquote(Path(self._parsed_url.path).name)
 
     def __str__(self) -> str:
-        return f"{self.filename}"
+        return self.filename
 
 
 class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
