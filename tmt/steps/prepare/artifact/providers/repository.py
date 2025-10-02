@@ -38,8 +38,7 @@ class RepositoryFile:
     @property
     def filename(self) -> str:
         """A suitable filename extracted from the URL path."""
-        path = self._parsed_url.path
-        return unquote(Path(path).name)
+        return unquote(Path(self._parsed_url.path).name)
 
     def __str__(self) -> str:
         return f"{self.filename}"
