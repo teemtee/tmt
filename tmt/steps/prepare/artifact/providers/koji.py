@@ -131,27 +131,39 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         artifacts = provider.download_artifacts(guest, Path("/tmp"), [])
     """
 
+    SUPPORTED_PREFIXES = ("koji.build:", "koji.task:", "koji.nvr:")
     API_URL = "https://koji.fedoraproject.org/kojihub"  # For metadata
+
+    def __new__(cls, logger: tmt.log.Logger, artifact_id: str) -> 'KojiArtifactProvider':
+        """
+        Factory method to return the appropriate subclass based on the prefix
+        of the artifact_id.
+        """
+        if artifact_id.startswith("koji.build:"):
+            return super().__new__(KojiBuild)
+        if artifact_id.startswith("koji.task:"):
+            return super().__new__(KojiTask)
+        if artifact_id.startswith("koji.nvr:"):
+            return super().__new__(KojiNvr)
+        return super().__new__(cls)
 
     def __init__(
         self,
         logger: tmt.log.Logger,
-        *,
-        build_id: Optional[int] = None,
-        task_id: Optional[int] = None,
-        nvr: Optional[str] = None,
+        artifact_id: str,
     ):
-        super().__init__(logger)
-
-        # Validate inputs: exactly one identifier must be provided
-        provided = [arg for arg in (build_id, task_id, nvr) if arg is not None]
-        if len(provided) != 1:
-            raise ValueError("Exactly one of build_id, task_id, or nvr must be provided.")
-
-        self._build_id = build_id
-        self.task_id = task_id
-        self.nvr = nvr
+        super().__init__(logger, artifact_id)
         self._session = self._initialize_session()
+        self._build_provider: Optional[KojiBuild] = None
+
+    def _parse_artifact_id(self, artifact_id: str) -> str:
+        for prefix in self.SUPPORTED_PREFIXES:
+            if artifact_id.startswith(prefix):
+                value = artifact_id[len(prefix) :]
+                if not value:
+                    raise ValueError(f"Missing value in '{self.artifact_id}'.")
+                return value
+        raise ValueError(f"Unsupported artifact ID format: '{self.artifact_id}'.")
 
     @cached_property
     def build_id(self) -> Optional[int]:
@@ -165,68 +177,12 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         :return: The resolved build ID, or None if not found for task_id
         :raises GeneralError: If the build cannot be found
         """
-        if self._build_id is not None:
-            return self._build_id
-        if self.nvr is not None:
-            build = self._call_api("getBuild", self.nvr)
-            if not build or "id" not in build:
-                raise tmt.utils.GeneralError(f"No build found for NVR '{self.nvr}'.")
-            build_id = build["id"]
-            assert isinstance(build_id, int)
-            return build_id
-        if self.task_id is not None:
-            builds = self._call_api("listBuilds", taskID=self.task_id) or []
-            if builds:
-                build_id = builds[0]["build_id"]  # Assume the task produced a single build
-                assert isinstance(build_id, int)
-                return build_id
-        return None
+        raise NotImplementedError
 
     @cached_property
     def rpm_list(self) -> list[RpmArtifactInfo]:
         """Return all RPM artifacts for the given identifier."""
-        if self.task_id is not None:
-            return self._resolve_rpms_from_task
-        return self._resolve_rpms_from_build
-
-    @cached_property
-    def _resolve_rpms_from_task(self) -> list[RpmArtifactInfo]:
-        """
-        Resolve and return the list of RPMs for the given task ID.
-
-        :return: List of RpmArtifactInfo objects
-        """
-        # If the task produced a build, reuse the build_id resolution
-        if self.build_id is not None:
-            return self._resolve_rpms_from_build
-
-        # Otherwise, list the task output files
-        filenames = self._call_api("listTaskOutput", self.task_id) or []
-
-        rpms: list[RpmArtifactInfo] = []
-        for filename in filenames:
-            if not filename.endswith(".rpm"):
-                self.logger.warning(f"Skipping '{filename}': not an RPM.")
-                continue
-            # Parse basic info from filename
-            artifact = RpmArtifactInfo.from_filename(filename)
-            # Fetch full rpm metadata
-            if rpm_info := self._call_api("getRPM", artifact.id):
-                rpms.append(RpmArtifactInfo(_raw_artifact=rpm_info))
-            else:
-                self.logger.warning(f"Skipping '{filename}': getRPM returned nothing.")
-
-        return rpms
-
-    @cached_property
-    def _resolve_rpms_from_build(self) -> list[RpmArtifactInfo]:
-        """
-        Resolve and return the list of RPMs for the given build ID or NVR.
-
-        :return: List of RpmArtifactInfo objects
-        """
-        rpm_dicts = self._call_api("listBuildRPMs", self.build_id) or []
-        return [RpmArtifactInfo(_raw_artifact={**rpm}) for rpm in rpm_dicts]
+        raise NotImplementedError
 
     def _initialize_session(self) -> 'ClientSession':
         """
@@ -256,6 +212,14 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         except Exception as error:
             raise tmt.utils.GeneralError(f"API call '{method}' failed.") from error
 
+    def _get_build_provider(self, build_id: int) -> 'KojiBuild':
+        """
+        Cache a KojiBuild instance to avoid redundant API calls
+        """
+        if not self._build_provider:
+            self._build_provider = KojiBuild(self.logger, f"koji.build:{build_id}")
+        return self._build_provider
+
     def list_artifacts(self) -> Iterator[RpmArtifactInfo]:
         """
         List all RPM artifacts for the given build.
@@ -282,3 +246,71 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
             )
         except Exception as error:
             raise DownloadError(f"Failed to download '{artifact}'.") from error
+
+
+@provides_artifact_provider("koji.task")  # type: ignore[arg-type]
+class KojiTask(KojiArtifactProvider):
+    @cached_property
+    def build_id(self) -> Optional[int]:
+        task_id = int(self.artifact_id)
+        builds = self._call_api("listBuilds", taskID=task_id) or []
+        if builds:
+            build_id = builds[0]["build_id"]  # Assume the task produced a single build
+            assert isinstance(build_id, int)
+            return build_id
+        return None
+
+    @cached_property
+    def rpm_list(self) -> list[RpmArtifactInfo]:
+        # If task produced a build, reuse build path
+        if self.build_id is not None:
+            return self._get_build_provider(self.build_id).rpm_list
+
+        # Otherwise, list the task output files
+        rpms: list[RpmArtifactInfo] = []
+        for filename in self._call_api("listTaskOutput", int(self.artifact_id)) or []:
+            if not filename.endswith(".rpm"):
+                self.logger.warning(f"Skipping '{filename}': not an RPM")
+                continue
+            # Parse basic info from filename
+            artifact = RpmArtifactInfo.from_filename(filename)
+            # Fetch full rpm metadata
+            if rpm_info := self._call_api("getRPM", artifact.id):
+                rpms.append(RpmArtifactInfo(_raw_artifact=rpm_info))
+            else:
+                self.logger.warning(f"Skipping '{filename}': getRPM returned nothing")
+        return rpms
+
+
+@provides_artifact_provider('koji.build')  # type: ignore[arg-type]
+class KojiBuild(KojiArtifactProvider):
+    @cached_property
+    def build_id(self) -> int:
+        return int(self.artifact_id)
+
+    @cached_property
+    def rpm_list(self) -> list[RpmArtifactInfo]:
+        """
+        Resolve and return the list of RPMs for the given build ID or NVR.
+
+        :return: List of RpmArtifactInfo objects
+        """
+        rpm_dicts = self._call_api("listBuildRPMs", self.build_id) or []
+        return [RpmArtifactInfo(_raw_artifact={**rpm}) for rpm in rpm_dicts]
+
+
+@provides_artifact_provider("koji.nvr")  # type: ignore[arg-type]
+class KojiNvr(KojiArtifactProvider):
+    @cached_property
+    def build_id(self) -> int:
+        nvr = self.artifact_id
+        build = self._call_api("getBuild", nvr)
+        if not build:
+            raise tmt.utils.GeneralError(f"No build found for NVR '{nvr}'.")
+        build_id = build["id"]
+        assert isinstance(build_id, int)
+        return build_id
+
+    @cached_property
+    def rpm_list(self) -> list[RpmArtifactInfo]:
+        return self._get_build_provider(self.build_id).rpm_list
