@@ -191,6 +191,7 @@ class MockShell:
         self.mock_shell.stdin.write('mkfifo /tmp/stdout /tmp/stderr /tmp/returncode\n')
         self.mock_shell.stdin.flush()
 
+        # Wait until the previous commands finished.
         loop = 2
         while loop != 0 and self.mock_shell.poll() is None:
             events = self.epoll.poll()
