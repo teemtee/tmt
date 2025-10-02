@@ -15,7 +15,13 @@ description: |
     Ansible groups accordingly. If no layout is provided, a simple
     default basic layout is used.
 
-    .. versionadded:: 1.59  # TODO
+    .. note::
+
+        Ansible execution with ansible inventory is only supported for SSH-based
+        provisioning plugins (e.g. virtual). It is not implemented yet for
+        container and local provisioning plugins.
+
+    .. versionadded:: 1.59
 
 example:
   - |
