@@ -12,6 +12,7 @@ import tmt.log
 from tmt.container import container
 from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
+    ArtifactProviderId,
     DownloadError,
 )
 from tmt.steps.prepare.artifact.providers.koji import RpmArtifactInfo
@@ -58,18 +59,15 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
     not download any of them.
     """
 
-    def __init__(self, logger: tmt.log.Logger, artifact_id: str):
-        super().__init__(logger, artifact_id)
-        self.repo_file = RepositoryFile(url=self.artifact_id)
+    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
+        super().__init__(raw_provider_id, logger)
+        self.repo_file = RepositoryFile(url=self.id)
         # Cache for the list of RPMs discovered in the repository
         self._rpm_list: list[RpmArtifactInfo] = []
 
-    def _parse_artifact_id(self, artifact_id: str) -> str:
-        """
-        Validate the artifact identifier using the RepositoryFile class.
-        """
-        # The constructor of RepositoryFile handles URL validation
-        return artifact_id
+    @classmethod
+    def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
+        return raw_provider_id
 
     def _fetch_rpms(self, guest: Guest, repo_filepath: Path) -> None:
         """
