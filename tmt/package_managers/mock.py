@@ -10,12 +10,11 @@ from tmt.package_managers import (
     escape_installables,
     provides_package_manager,
 )
-from tmt.steps.provision import Guest
 from tmt.steps.provision.mock import GuestMock
 from tmt.utils import Command, CommandOutput, RunError, ShellScript
 
 
-class BaseMockEngine(PackageManagerEngine):
+class MockEngine(PackageManagerEngine):
     """
     We use `mock --pm-cmd ...` to execute the package manager commands inside
     the mock. Such scripts need to be executed locally and not inside the mock
@@ -83,23 +82,9 @@ class BaseMockEngine(PackageManagerEngine):
         return self._prepare_mock_command_script('makecache --refresh')
 
 
-class MockYumEngine(BaseMockEngine):
-    pass
-
-
-class MockDnfEngine(BaseMockEngine):
-    pass
-
-
-class MockDnf5Engine(BaseMockEngine):
-    pass
-
-
-class BaseMock:
+class _MockPackageManager(PackageManager[MockEngine]):
     probe_command = Command('/usr/bin/false')
     probe_priority = 130
-    guest: Guest
-    engine: PackageManagerEngine
 
     def install(
         self,
@@ -147,22 +132,22 @@ class BaseMock:
         return self.guest.run(self.engine.refresh_metadata().to_shell_command())
 
 
-# ignore[type-arg]: Follow the rest of package managers
-@provides_package_manager('mock-yum')
-class MockYum(BaseMock, PackageManager[MockYumEngine]):
+# ignore[type-arg]: TypeVar in package manager registry annotations is
+# puzzling for type checkers. And not a good idea in general, probably.
+@provides_package_manager('mock-yum')  # type: ignore[arg-type]
+class MockYum(_MockPackageManager):
     NAME = 'mock-yum'
-    _engine_class = MockYumEngine
 
 
-# ignore[type-arg]: Follow the rest of package managers
-@provides_package_manager('mock-dnf')
-class MockDnf(BaseMock, PackageManager[MockDnfEngine]):
+# ignore[type-arg]: TypeVar in package manager registry annotations is
+# puzzling for type checkers. And not a good idea in general, probably.
+@provides_package_manager('mock-dnf')  # type: ignore[arg-type]
+class MockDnf(_MockPackageManager):
     NAME = 'mock-dnf'
-    _engine_class = MockDnfEngine
 
 
-# ignore[type-arg]: Follow the rest of package managers
-@provides_package_manager('mock-dnf5')
-class MockDnf5(BaseMock, PackageManager[MockDnf5Engine]):
+# ignore[type-arg]: TypeVar in package manager registry annotations is
+# puzzling for type checkers. And not a good idea in general, probably.
+@provides_package_manager('mock-dnf5')  # type: ignore[arg-type]
+class MockDnf5(_MockPackageManager):
     NAME = 'mock-dnf5'
-    _engine_class = MockDnf5Engine

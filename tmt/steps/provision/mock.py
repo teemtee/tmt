@@ -1,10 +1,11 @@
 import fcntl
+import functools
 import io
 import os
 import select
 import shlex
 import subprocess
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Union, cast
 
 import tmt
 import tmt.base
@@ -18,6 +19,17 @@ from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Pat
 from tmt.utils.wait import Waiting
 
 
+@functools.cache
+def mock_config(root: Optional[str]) -> dict[str, Any]:
+    try:
+        import mockbuild.config
+
+    except ImportError as error:
+        raise tmt.utils.GeneralError("Could not import mockbuild.config package.") from error
+
+    return cast(dict[str, Any], mockbuild.config.simple_load_config(root if root else 'default'))
+
+
 @container
 class MockGuestData(tmt.steps.provision.GuestData):
     root: Optional[str] = field(
@@ -29,11 +41,12 @@ class MockGuestData(tmt.steps.provision.GuestData):
              The `--root` flag to be passed to the mock process.
              """,
     )
-    rootdir: Optional[str] = field(
+    rootdir: Optional[Path] = field(
         default=None,
         option=('--rootdir'),
         metavar='ROOTDIR',
         help='The path for where the chroot should be built.',
+        normalize=tmt.utils.normalize_path,
     )
 
 
@@ -64,7 +77,7 @@ class MockShell:
                 self.string += '\n'
             return self
 
-    def __init__(self, parent: 'GuestMock', root: Optional[str], rootdir: Optional[str]):
+    def __init__(self, parent: 'GuestMock', root: Optional[Path], rootdir: Optional[Path]):
         self.parent = parent
         self.root = root
         self.rootdir = rootdir
@@ -295,7 +308,7 @@ class MockShell:
                     break
                 for fileno, _ in events:
                     # Whatever we sent on mock shell's input it prints on the stderr
-                    # so just disard it.
+                    # so just discard it.
                     if fileno == self.mock_shell_stderr_fd:
                         self.mock_shell.stderr.read()
                     elif fileno == stdout_fd:
@@ -343,14 +356,10 @@ class GuestMock(tmt.Guest):
     """
 
     _data_class = MockGuestData
-    root: Optional[str] = None
-    rootdir: Optional[str] = None
+    root: Optional[Path] = None
+    rootdir: Optional[Path] = None
 
     mock_shell: MockShell
-
-    def __init__(self, *args: Any, mock_config: dict[Any, Any], **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.mock_config = mock_config
 
     @property
     def is_ready(self) -> bool:
@@ -413,7 +422,17 @@ class GuestMock(tmt.Guest):
 
         actual_command = command if isinstance(command, Command) else command.to_shell_command()
         if on_process_start:
-            on_process_start(actual_command, self.mock_shell.mock_shell, self._logger)
+            assert self.mock_shell.mock_shell is not None  # narrow type
+
+            # ignore[arg-type]: `on_process_start` expects `Popen[bytes]`,
+            # `mock_shell` is `Popen[str]`. Callbacks are not supposed to
+            # communicate with the process, but it's not written down anywhere.
+            # Tracked in https://github.com/teemtee/tmt/issues/4097
+            on_process_start(
+                actual_command,
+                self.mock_shell.mock_shell,  # type: ignore[arg-type]
+                self._logger,
+            )
         stdout, stderr = self.mock_shell.execute(
             actual_command,
             cwd=cwd,
@@ -512,11 +531,6 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
     _guest = None
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
-        try:
-            import mockbuild.config
-        except ImportError as error:
-            raise tmt.utils.GeneralError("Could not import mockbuild.config package.") from error
-
         """
         Provision the container
         """
@@ -528,18 +542,15 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
 
         # NOTE this may be unnecessary, tmt package manager detection should work fine
         # but mock already knows what the package manager is...
-        mock_config = mockbuild.config.simple_load_config(data.root)
-        package_manager = "mock-" + mock_config['package_manager']
-
         # If this provisioning is selected, then we force the use of `mock-` package manager.
         # NOTE use a global variable instead?
         tmt.package_managers.find_package_manager(
-            package_manager
+            f"mock-{mock_config(data.root)['package_manager']}"
         ).probe_command = tmt.utils.Command('/usr/bin/true')
 
         # NOTE any better ideas?
-        data.primary_address = (data.root or '<default>') + (
-            '@' + data.rootdir if data.rootdir is not None else ''
+        data.primary_address = (str(data.root) if data.root is not None else '<default>') + (
+            f'@{data.rootdir}' if data.rootdir is not None else ''
         )
 
         data.show(verbose=self.verbosity_level, logger=self._logger)
@@ -554,6 +565,5 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
             data=data,
             name=self.name,
             parent=self.step,
-            mock_config=mock_config,
         )
         self._guest.setup()
