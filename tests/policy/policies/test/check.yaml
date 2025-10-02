@@ -74,6 +74,11 @@ test-policy:
         result: respect
       {% endif %}
 
+      {% if 'journal' not in VALUE | map(attribute='how') %}
+      - how: journal
+        result: respect
+      {% endif %}
+
       {% for check in VALUE %}
-      - {{ check }}
+      - {{ check | to_yaml | indent(2, first=False) }}
       {% endfor %}
