@@ -77,7 +77,7 @@ class MockShell:
                 self.string += '\n'
             return self
 
-    def __init__(self, parent: 'GuestMock', root: Optional[Path], rootdir: Optional[Path]):
+    def __init__(self, parent: 'GuestMock', root: Optional[str], rootdir: Optional[Path]):
         self.parent = parent
         self.root = root
         self.rootdir = rootdir
@@ -356,7 +356,7 @@ class GuestMock(tmt.Guest):
     """
 
     _data_class = MockGuestData
-    root: Optional[Path] = None
+    root: Optional[str] = None
     rootdir: Optional[Path] = None
 
     mock_shell: MockShell
