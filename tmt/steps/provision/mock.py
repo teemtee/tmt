@@ -433,14 +433,32 @@ class GuestMock(tmt.Guest):
                 self.mock_shell.mock_shell,  # type: ignore[arg-type]
                 self._logger,
             )
-        stdout, stderr = self.mock_shell.execute(
-            actual_command,
-            cwd=cwd,
-            env=env,
-            friendly_command=friendly_command or str(command),
-            logger=self._logger,
+        command_output = tmt.utils.CommandOutput(
+            *self.mock_shell.execute(
+                actual_command,
+                cwd=cwd,
+                env=env,
+                friendly_command=friendly_command or str(command),
+                logger=self._logger,
+                **kwargs,
+            )
         )
-        return tmt.utils.CommandOutput(stdout, stderr)
+        if on_process_end is not None:
+            try:
+                on_process_end(
+                    actual_command,
+                    self.mock_shell.mock_shell,  # type: ignore[arg-type]
+                    command_output,
+                    self._logger,
+                )
+
+            except Exception as exc:
+                tmt.utils.show_exception_as_warning(
+                    exception=exc,
+                    message=f'On-process-end callback {on_process_end.__name__} failed.',
+                    logger=self._logger,
+                )
+        return command_output
 
     def start(self) -> None:
         """
