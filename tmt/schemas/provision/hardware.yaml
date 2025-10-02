@@ -231,6 +231,8 @@ definitions:
 
   # HW requirements: single `gpu` item
   gpu:
+    type: object
+
     properties:
       # TODO: copied from #/definitions/_device till the validator maturity gets resolved.
       # See the note at #/definitions/_device.
