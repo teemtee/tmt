@@ -79,6 +79,7 @@ class GuestLocal(tmt.Guest):
         playbook = self._sanitize_ansible_playbook_path(playbook, playbook_root)
 
         try:
+            # TODO: add ansible inventory support
             # fmt: off
             return self._run_guest_command(
                 Command(
