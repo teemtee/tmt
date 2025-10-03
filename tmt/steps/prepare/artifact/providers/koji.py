@@ -138,7 +138,9 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
     def __new__(cls, raw_provider_id: str, logger: tmt.log.Logger) -> 'KojiArtifactProvider':
         """
         Factory method to return the appropriate subclass based on the prefix
-        of the artifact_id.
+        of the raw_provider_id.
+
+        :raises ValueError: If the prefix is not supported
         """
         if raw_provider_id.startswith("koji.build:"):
             return super().__new__(KojiBuild)
@@ -146,7 +148,11 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
             return super().__new__(KojiTask)
         if raw_provider_id.startswith("koji.nvr:"):
             return super().__new__(KojiNvr)
-        return super().__new__(cls)
+        # If we get here, the prefix is not supported
+        raise ValueError(
+            f"Unsupported artifact ID format: '{raw_provider_id}'. "
+            f"Supported formats are: 'koji.build:', 'koji.task:', 'koji.nvr:'"
+        )
 
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
         super().__init__(raw_provider_id, logger)
@@ -205,20 +211,18 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         Cache a KojiBuild instance to avoid redundant API calls
         """
         if not self._build_provider:
-            self._build_provider = KojiBuild(self.logger, f"koji.build:{build_id}")
+            self._build_provider = KojiBuild(f"koji.build:{build_id}", self.logger)
         return self._build_provider
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
-        # Eg: 'koji.build:123456'
-        prefix = "koji.build:"
-        if not raw_provider_id.startswith(prefix):
-            raise ValueError(f"Invalid Koji identifier: '{raw_provider_id}'.")
-
-        parsed = raw_provider_id[len(prefix) :]
-        if not parsed.isdigit():
-            raise ValueError(f"Invalid Koji identifier: '{raw_provider_id}'.")
-        return parsed
+        for prefix in cls.SUPPORTED_PREFIXES:
+            if raw_provider_id.startswith(prefix):
+                value = raw_provider_id[len(prefix) :]
+                if not value:
+                    raise ValueError(f"Missing value in '{raw_provider_id}'.")
+                return value
+        raise ValueError(f"Unsupported artifact ID format: '{raw_provider_id}'.")
 
     def list_artifacts(self) -> Iterator[RpmArtifactInfo]:
         """
@@ -252,7 +256,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 class KojiTask(KojiArtifactProvider):
     @cached_property
     def build_id(self) -> Optional[int]:
-        task_id = int(self.artifact_id)
+        task_id = int(self.id)
         builds = self._call_api("listBuilds", taskID=task_id) or []
         if builds:
             build_id = builds[0]["build_id"]  # Assume the task produced a single build
@@ -279,19 +283,18 @@ class KojiTask(KojiArtifactProvider):
 
     @cached_property
     def rpm_list(self) -> list[RpmArtifactInfo]:
-        self.logger.debug(f"Fetching RPMs for task '{self.artifact_id}'.")
+        self.logger.debug(f"Fetching RPMs for task '{self.id}'.")
         # If task produced a build, reuse build path
         if self.build_id is not None:
             self.logger.debug(
-                f"Task '{self.artifact_id}' produced build '{self.build_id}', "
-                "fetching RPMs from the build."
+                f"Task '{self.id}' produced build '{self.build_id}', fetching RPMs from the build."
             )
             return self._get_build_provider(self.build_id).rpm_list
 
         # Otherwise, list the task output files
         rpms: list[RpmArtifactInfo] = []
 
-        for child_task in self._get_task_children(int(self.artifact_id)):
+        for child_task in self._get_task_children(int(self.id)):
             for filename in self._call_api("listTaskOutput", child_task) or []:
                 if not filename.endswith(".rpm"):
                     self.logger.warning(f"Skipping '{filename}': not an RPM")
@@ -311,7 +314,7 @@ class KojiTask(KojiArtifactProvider):
 class KojiBuild(KojiArtifactProvider):
     @cached_property
     def build_id(self) -> int:
-        return int(self.artifact_id)
+        return int(self.id)
 
     @cached_property
     def rpm_list(self) -> list[RpmArtifactInfo]:
@@ -329,7 +332,7 @@ class KojiBuild(KojiArtifactProvider):
 class KojiNvr(KojiArtifactProvider):
     @cached_property
     def build_id(self) -> int:
-        nvr = self.artifact_id
+        nvr = self.id
         build = self._call_api("getBuild", nvr)
         if not build:
             raise tmt.utils.GeneralError(f"No build found for NVR '{nvr}'.")
@@ -339,5 +342,5 @@ class KojiNvr(KojiArtifactProvider):
 
     @cached_property
     def rpm_list(self) -> list[RpmArtifactInfo]:
-        self.logger.debug(f"Fetching RPMs for NVR '{self.artifact_id}'.")
+        self.logger.debug(f"Fetching RPMs for NVR '{self.id}'.")
         return self._get_build_provider(self.build_id).rpm_list
