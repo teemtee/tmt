@@ -1585,6 +1585,12 @@ def _parse_beaker(spec: Spec) -> BaseConstraint:
         allowed_operators=(Operator.EQ, Operator.NEQ),
     )
 
+    group.constraints += _parse_flag_constraints(
+        spec,
+        'beaker',
+        ('panic-watchdog',),
+    )
+
     return group
 
 

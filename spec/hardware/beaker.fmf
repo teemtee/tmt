@@ -8,6 +8,11 @@ description: |
            # String, name of the Beaker pool to use for provisioning.
            pool: "some-pool"
 
+           # Boolean, True to enable beaker-watchdog to abort the
+           # recipe when a kernel panic is detected.
+           # By default this option is disabled so tmt can keep
+           # control over the Beaker machine.
+           panic-watchdog: true|false
 
     .. note::
 
@@ -17,11 +22,16 @@ description: |
 
     .. versionadded:: 1.35
 
+    .. versionchanged:: 1.59
+       ``beaker`` plugin supports ``beaker.panic-watchdog``
+
 example:
   - |
     # Select any system, as long as it is not from the given Beaker pool
+    # Allow beaker-watchdog daemon to abort recipe when kernel panic occurs
     beaker:
         pool: "!= very-rare-machines"
+        panic-watchdog: true
 
 link:
   - implemented-by: /tmt/steps/provision/mrack.py

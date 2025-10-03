@@ -842,7 +842,7 @@ def constraint_to_beaker_filter(
         constraint, logger
     ) or _translate_constraint_by_transformer(constraint, logger)
 
-    if not transformed:
+    if not transformed and constraint.name != 'beaker.panic_watchdog':
         # Make sure user is aware constraint would have no effect.
         logger.warning(f"Hardware requirement '{constraint.printable_name}' will have no effect.")
     return transformed
@@ -931,6 +931,20 @@ def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
             # See https://github.com/teemtee/tmt/issues/3442
             return {'hostRequires': MrackHWAndGroup(children=[transformed]).to_mrack()}
 
+        def _requires_panic_watchdog(self, constraint: tmt.hardware.BaseConstraint) -> bool:
+            """
+            Check if any of the constraints are beaker panic-watchdog with the value True
+            """
+            if isinstance(constraint, tmt.hardware.FlagConstraint):
+                return constraint.name == 'beaker.panic_watchdog' and constraint.value
+
+            if isinstance(constraint, (tmt.hardware.And, tmt.hardware.Or)):
+                return any(
+                    self._requires_panic_watchdog(child) for child in constraint.constraints
+                )
+
+            return False
+
         def create_host_requirement(self, host: CreateJobParameters) -> dict[str, Any]:
             """
             Create single input for Beaker provisioner
@@ -938,8 +952,16 @@ def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
 
             req: dict[str, Any] = super().create_host_requirement(host.to_mrack())
 
+            # set beaker-watchdog to ignore kernel panic by default
+            panic_watchdog = False
+
             if host.hardware and host.hardware.constraint:
                 req.update(self._translate_tmt_hw(host.hardware))
+
+                panic_watchdog = self._requires_panic_watchdog(host.hardware.constraint)
+
+            if not panic_watchdog:
+                req['watchdog'] = {'panic': 'ignore'}
 
             if host.beaker_job_owner:
                 req['job_owner'] = host.beaker_job_owner

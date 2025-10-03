@@ -22,6 +22,8 @@ definitions:
     properties:
       pool:
         type: string
+      panic-watchdog:
+        type: boolean
 
     additionalProperties: false
 

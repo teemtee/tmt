@@ -21,3 +21,7 @@
         Verify that the beaker plugin schema contains the
         appropriate keys.
     test: ./schema.sh
+
+/dry:
+    summary: Verify default beaker configs using dry option
+    test: ./dry.sh
