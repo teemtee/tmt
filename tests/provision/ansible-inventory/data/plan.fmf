@@ -13,7 +13,7 @@ execute:
     summary: Test comprehensive ansibleinventory features together
     ansible:
         inventory:
-            layout: layout.yaml
+            layout: layout-comprehensive.yaml
     provision+:
       - name: frontend-1
         role: webserver
@@ -26,7 +26,7 @@ execute:
       - name: orphan-host  # No group -> should go to ungrouped
       - name: auto-group-host
         ansible:
-            group: nonexistent  # Group doesn't exist in layout -> auto-creation
+            group: auto-created  # Group doesn't exist in layout -> auto-creation
     prepare:
       - name: Run frontend-specific tasks
         how: ansible
@@ -37,3 +37,15 @@ execute:
       - name: Run ungrouped hosts tasks
         how: ansible
         playbook: playbooks/ungrouped-playbook.yaml
+
+# Default groups normalization test - incomplete layout
+/default-groups:
+    summary: Test layout normalization with missing default groups
+    ansible:
+        inventory:
+            layout: incomplete-layout.yaml
+    provision+:
+      - name: no-group-host  # No group specified -> should go to 'ungrouped'
+      - name: custom-host
+        ansible:
+            group: custom-group  # Uses group from incomplete layout
