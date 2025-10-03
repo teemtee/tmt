@@ -83,8 +83,6 @@ class MockShell:
         self.rootdir = rootdir
         self.mock_shell: Optional[subprocess.Popen[str]] = None
         self.epoll: Optional[select.epoll] = None
-        # Required by loggers
-        self.pid: Optional[int] = None
 
         self.command_prefix = Command('mock')
         if self.root is not None:
@@ -140,7 +138,6 @@ class MockShell:
             text=True,
         )
         self.epoll = select.epoll()
-        self.pid = self.mock_shell.pid
 
         assert self.mock_shell.stdout is not None
         assert self.mock_shell.stderr is not None
