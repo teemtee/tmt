@@ -119,6 +119,8 @@ class MockShell:
 
     def enter_shell(self) -> None:
         command = self.command_prefix.to_popen()
+        command.append('-q')
+        command.append('--enable-network')
         command.append('--enable-plugin=bind_mount')
         command.append(
             '--plugin-option=bind_mount:dirs=['
@@ -126,8 +128,6 @@ class MockShell:
             f'"{shlex.quote(str(self.parent.run_workdir))}")'
             ']'
         )
-        command.append('--enable-network')
-        command.append('-q')
         command.append('--shell')
 
         self.parent.verbose('mock', 'Entering shell.', color='blue', level=2)
