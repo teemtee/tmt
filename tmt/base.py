@@ -2610,7 +2610,7 @@ class Plan(
 
     def _iter_steps(
         self, enabled_only: bool = True, skip: Optional[list[str]] = None
-    ) -> Iterator[tuple[str, tmt.steps.Step]]:
+    ) -> Iterator[tuple[tmt.steps.StepStr, tmt.steps.Step]]:
         """
         Iterate over steps.
 
@@ -2642,7 +2642,7 @@ class Plan(
 
     def step_names(
         self, enabled_only: bool = True, skip: Optional[list[str]] = None
-    ) -> Iterator[str]:
+    ) -> Iterator[tmt.steps.StepStr]:
         """
         Iterate over step names.
 
@@ -4852,7 +4852,7 @@ class Status(tmt.utils.Common):
     FIRST_COL_LEN = len(LONGEST_STEP) + 2
 
     @staticmethod
-    def get_overall_plan_status(plan: Plan) -> str:
+    def get_overall_plan_status(plan: Plan) -> Union[Literal["done", "todo"], tmt.steps.StepStr]:
         """
         Examines the plan status (find the last done step)
         """
@@ -4923,6 +4923,7 @@ class Status(tmt.utils.Common):
                 # If plan has no steps done, consider the whole run not done
                 earliest_step_index = -1
                 break
+            assert tmt.steps.is_step(plan_status)
             plan_status_index = tmt.steps.STEPS.index(plan_status)
             earliest_step_index = min(plan_status_index, earliest_step_index)
 
