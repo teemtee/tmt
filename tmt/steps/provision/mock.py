@@ -84,14 +84,8 @@ class MockShell:
         self.mock_shell: Optional[subprocess.Popen[str]] = None
         self.epoll: Optional[select.epoll] = None
 
-        self.command_prefix = Command('mock')
-        if self.root is not None:
-            self.command_prefix += Command('-r', self.root)
-        if self.rootdir is not None:
-            self.command_prefix += Command('--rootdir', self.rootdir)
-
         root_path = (
-            (self.command_prefix + Command('--print-root-path'))
+            (self.parent.mock_command_prefix + Command('--print-root-path'))
             .run(cwd=None, logger=self.parent._logger)
             .stdout
         )
@@ -116,7 +110,7 @@ class MockShell:
             self.parent.verbose('mock', 'Exited shell.', color='blue', level=2)
 
     def enter_shell(self) -> None:
-        command = self.command_prefix.to_popen()
+        command = self.parent.mock_command_prefix.to_popen()
         command.append('-q')
         command.append('--enable-network')
         command.append('--enable-plugin=bind_mount')
@@ -381,6 +375,11 @@ class GuestMock(tmt.Guest):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.mock_shell = MockShell(parent=self, root=self.root, rootdir=self.rootdir)
+        self.mock_command_prefix = Command('mock')
+        if self.root is not None:
+            self.mock_command_prefix += Command('-r', self.root)
+        if self.rootdir is not None:
+            self.mock_command_prefix += Command('--rootdir', self.rootdir)
 
     @property
     def is_ready(self) -> bool:
