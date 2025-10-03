@@ -105,10 +105,10 @@ PHASE_ORDER_PREPARE_INSTALL_REQUIRES = 70
 PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS = 75
 
 # Supported steps and actions
-StepStr = Literal['discover', 'provision', 'prepare', 'execute', 'report', 'finish', 'cleanup']
-STEPS: list[StepStr] = list(typing.get_args(StepStr))
-ActionStr = Literal['login', 'reboot']
-ACTIONS: list[ActionStr] = list(typing.get_args(ActionStr))
+StepName = Literal['discover', 'provision', 'prepare', 'execute', 'report', 'finish', 'cleanup']
+STEPS: list[StepName] = list(typing.get_args(StepName))
+ActionName = Literal['login', 'reboot']
+ACTIONS: list[ActionName] = list(typing.get_args(ActionName))
 DEFAULT_LOGIN_COMMAND = 'bash'
 
 #: A default command to trigger a guest reboot when executed remotely.
@@ -172,11 +172,11 @@ PHASE_OPTIONS = tmt.options.create_options_decorator(
 )
 
 
-def is_step(val: str) -> TypeGuard[StepStr]:
+def is_step(val: str) -> TypeGuard[StepName]:
     return val in STEPS
 
 
-def is_action(val: str) -> TypeGuard[ActionStr]:
+def is_action(val: str) -> TypeGuard[ActionName]:
     return val in ACTIONS
 
 
