@@ -14,6 +14,7 @@ from tmt.container import container
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
+    ArtifactProviderId,
     DownloadError,
     provides_artifact_provider,
 )
@@ -100,8 +101,8 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
     API_URL = "https://koji.fedoraproject.org/kojihub"  # For metadata
 
-    def __init__(self, logger: tmt.log.Logger, artifact_id: str):
-        super().__init__(logger, artifact_id)
+    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
+        super().__init__(raw_provider_id, logger)
         self._session = self._initialize_session()
         self._rpm_list = self._fetch_rpms()
 
@@ -109,7 +110,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         """
         Fetch and cache the list of RPMs for the given artifact ID.
         """
-        return self._call_api('listBuildRPMs', int(self.artifact_id)) or []
+        return self._call_api('listBuildRPMs', int(self.id)) or []
 
     def _initialize_session(self) -> 'ClientSession':
         """
@@ -139,15 +140,16 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         except Exception as error:
             raise tmt.utils.GeneralError(f"API call '{method}' failed.") from error
 
-    def _parse_artifact_id(self, artifact_id: str) -> str:
+    @classmethod
+    def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
         # Eg: 'koji.build:123456'
         prefix = "koji.build:"
-        if not artifact_id.startswith(prefix):
-            raise ValueError(f"Invalid artifact ID format: '{artifact_id}'.")
+        if not raw_provider_id.startswith(prefix):
+            raise ValueError(f"Invalid Koji identifier: '{raw_provider_id}'.")
 
-        parsed = artifact_id[len(prefix) :]
+        parsed = raw_provider_id[len(prefix) :]
         if not parsed.isdigit():
-            raise ValueError(f"Invalid artifact ID format: '{artifact_id}'.")
+            raise ValueError(f"Invalid Koji identifier: '{raw_provider_id}'.")
         return parsed
 
     def list_artifacts(self) -> Iterator[RpmArtifactInfo]:
