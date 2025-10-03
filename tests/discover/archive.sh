@@ -13,7 +13,7 @@ rlJournalStart
 
     rlPhaseStartTest "Basic archive tests"
         plan="/plans/fmf/archive-url"
-        rlRun -s "tmt run -i $run discover plans -n $run"
+        rlRun -s "tmt run -i $run discover plans -n $plan"
         rlAssertGrep "2 tests selected" $rlRun_LOG
         plan_path="$run$plan"
         step_workdir="$plan_path/discover/default-0"
