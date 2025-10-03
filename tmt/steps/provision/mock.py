@@ -106,6 +106,7 @@ class MockShell:
         command = self.parent.mock_command_prefix.to_popen()
         command.append('-q')
         command.append('--enable-network')
+        """
         command.append('--enable-plugin=bind_mount')
         command.append(
             '--plugin-option=bind_mount:dirs=['
@@ -113,6 +114,7 @@ class MockShell:
             f'"{shlex.quote(str(self.parent.run_workdir))}")'
             ']'
         )
+        """
         command.append('--shell')
 
         self.parent.verbose('mock', 'Entering shell.', color='blue', level=2)
@@ -172,12 +174,21 @@ class MockShell:
         self.parent.verbose('mock', 'Shell is ready.', color='blue', level=3)
 
         # We do not expect these commands to fail.
-        self.mock_shell.stdin.write('rm -rf /tmp/stdout /tmp/stderr /tmp/returncode\n')
-        self.mock_shell.stdin.write('mkfifo /tmp/stdout /tmp/stderr /tmp/returncode\n')
+        self.mock_shell.stdin.write('rm -rf /srv/tmt-mock\n')
+        self.mock_shell.stdin.write('mkdir /srv/tmt-mock\n')
+        self.mock_shell.stdin.write(
+            'mkfifo'
+            ' /srv/tmt-mock/stdout'
+            ' /srv/tmt-mock/stderr'
+            ' /srv/tmt-mock/returncode'
+            ' /srv/tmt-mock/filesync'
+            '\n'
+        )
+        self.mock_shell.stdin.write('chmod a+w /srv/tmt-mock/filesync\n')
         self.mock_shell.stdin.flush()
 
         # Wait until the previous commands finished.
-        loop = 2
+        loop = 4
         while loop != 0 and self.mock_shell.poll() is None:
             events = self.epoll.poll()
             for fileno, _ in events:
@@ -214,9 +225,9 @@ class MockShell:
                 color='blue',
             )
 
-        stdout_stem = 'tmp/stdout'
-        stderr_stem = 'tmp/stderr'
-        returncode_stem = 'tmp/returncode'
+        stdout_stem = 'srv/tmt-mock/stdout'
+        stderr_stem = 'srv/tmt-mock/stderr'
+        returncode_stem = 'srv/tmt-mock/returncode'
 
         # The friendly command version would be emitted only when we were not
         # asked to be quiet.
@@ -517,8 +528,53 @@ class GuestMock(tmt.Guest):
         superuser: bool = False,
     ) -> None:
         """
-        Thanks to mock's bind-mounting, no file copying is needed
+        Push content into the mock chroot via a pipe at /srv/tmt-mock/filesync.
+        For directories we use tar.
+        For files we use cp / install.
         """
+        options = options or tmt.steps.provision.DEFAULT_PUSH_OPTIONS
+        excludes = Command()
+        compress = Command()
+        permissions = Command('-m', f'{(options.chmod or 0o755):03o}')
+        if options.compress:
+            compress = Command('--gzip')
+        for exclude in options.exclude:
+            excludes += Command(f'--exclude={exclude}')
+        source = source or self.plan_workdir
+        destination = destination or source
+        if source.is_dir():
+            if options.create_destination:
+                self.mock_shell.execute(
+                    Command('mkdir', '-p', str(destination)), logger=self._logger
+                )
+            p = self.mock_shell._spawn_command(
+                Command('tar', '-C', str(destination), '-xvf', '/srv/tmt-mock/filesync')
+                + excludes
+                + compress,
+                logger=self._logger,
+            )
+            next(p)
+            (
+                Command(
+                    'tar', '-C', str(source), '-cvf', self.root_path / 'srv/tmt-mock/filesync', '.'
+                )
+                + compress
+            ).run(cwd=None, logger=self._logger)
+            next(p)
+        else:
+            if options.create_destination:
+                self.mock_shell.execute(
+                    Command('mkdir', '-p', str(destination.parent)), logger=self._logger
+                )
+            p = self.mock_shell._spawn_command(
+                Command('install', '/srv/tmt-mock/filesync', str(destination)) + permissions,
+                logger=self._logger,
+            )
+            next(p)
+            Command('cp', str(source), self.root_path / 'srv/tmt-mock/filesync').run(
+                cwd=None, logger=self._logger
+            )
+            next(p)
 
     def pull(
         self,
@@ -527,8 +583,52 @@ class GuestMock(tmt.Guest):
         options: Optional[tmt.steps.provision.TransferOptions] = None,
     ) -> None:
         """
-        Thanks to mock's bind-mounting, no file copying is needed
+        Pull content from the mock chroot via a pipe at /srv/tmt-mock/filesync.
+        For directories we use tar.
+        For files we use cp / install.
         """
+        options = options or tmt.steps.provision.DEFAULT_PULL_OPTIONS
+        excludes = Command()
+        compress = Command()
+        permissions = Command('-m', f'{(options.chmod or 0o755):03o}')
+        if options.compress:
+            compress = Command('--gzip')
+        for exclude in options.exclude:
+            excludes += Command(f'--exclude={exclude}')
+        source = source or self.plan_workdir
+        destination = destination or source
+        if not (self.root_path / source.relative_to('/')).exists():
+            if options.create_destination:
+                Command('mkdir', '-p', str(destination)).run(cwd=None, logger=self._logger)
+        elif source.is_dir():
+            if options.create_destination:
+                Command('mkdir', '-p', str(destination)).run(cwd=None, logger=self._logger)
+            p = self.mock_shell._spawn_command(
+                Command('tar', '-C', str(source), '-cvf', '/srv/tmt-mock/filesync', '.')
+                + compress,
+                logger=self._logger,
+            )
+            next(p)
+            (
+                Command(
+                    'tar', '-C', str(destination), '-xvf', self.root_path / 'srv/tmt-mock/filesync'
+                )
+                + excludes
+                + compress
+            ).run(cwd=None, logger=self._logger)
+            next(p)
+        else:
+            if options.create_destination:
+                Command('mkdir', '-p', str(destination.parent)).run(cwd=None, logger=self._logger)
+            p = self.mock_shell._spawn_command(
+                Command('cp', str(source), '/srv/tmt-mock/filesync'), logger=self._logger
+            )
+            next(p)
+            (
+                Command('install', self.root_path / 'srv/tmt-mock/filesync', str(destination))
+                + permissions
+            ).run(cwd=None, logger=self._logger)
+            next(p)
 
 
 @tmt.steps.provides_method('mock')
