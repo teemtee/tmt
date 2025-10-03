@@ -26,6 +26,7 @@ decoupled from the rest, and made available for inspection.
 [1] https://tmt.readthedocs.io/en/stable/spec/hardware.html
 """
 
+import abc
 import enum
 import functools
 import itertools
@@ -348,12 +349,14 @@ class BaseConstraint(SpecBasedContainer[Spec, Spec]):
     def from_spec(cls, spec: Any) -> 'BaseConstraint':
         return parse_hw_requirements(spec)
 
+    @abc.abstractmethod
     def to_spec(self) -> Spec:
         raise NotImplementedError
 
     def to_minimal_spec(self) -> Spec:
         return self.to_spec()
 
+    @abc.abstractmethod
     def uses_constraint(self, constraint_name: str, logger: tmt.log.Logger) -> bool:
         """
         Inspect constraint whether the constraint or one of its children use a constraint of
@@ -366,6 +369,7 @@ class BaseConstraint(SpecBasedContainer[Spec, Spec]):
 
         raise NotImplementedError
 
+    @abc.abstractmethod
     def variants(
         self, members: Optional[list['Constraint']] = None
     ) -> Iterator[list['Constraint']]:
@@ -450,6 +454,7 @@ class CompoundConstraint(BaseConstraint):
             constraint.uses_constraint(constraint_name, logger) for constraint in self.constraints
         )
 
+    @abc.abstractmethod
     def variants(
         self, members: Optional[list['Constraint']] = None
     ) -> Iterator[list['Constraint']]:

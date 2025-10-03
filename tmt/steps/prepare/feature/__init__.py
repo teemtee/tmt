@@ -1,3 +1,4 @@
+import abc
 import dataclasses
 import inspect
 import re
@@ -224,10 +225,12 @@ class ToggleableFeature(FeatureBase):
         super().__init__(*args, **kwargs)
 
     @classmethod
+    @abc.abstractmethod
     def enable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
         raise NotImplementedError
 
     @classmethod
+    @abc.abstractmethod
     def disable(cls, guest: Guest, logger: tmt.log.Logger) -> None:
         raise NotImplementedError
 
@@ -239,6 +242,7 @@ class Feature(FeatureBase):
         super().__init__(*args, **kwargs)
 
     @classmethod
+    @abc.abstractmethod
     def enable(cls, guest: Guest, value: str, logger: tmt.log.Logger) -> None:
         raise NotImplementedError
 
