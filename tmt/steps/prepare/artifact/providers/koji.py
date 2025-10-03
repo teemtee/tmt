@@ -15,6 +15,7 @@ from tmt.container import container
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
+    ArtifactProviderId,
     DownloadError,
     provides_artifact_provider,
 )
@@ -134,36 +135,23 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
     SUPPORTED_PREFIXES = ("koji.build:", "koji.task:", "koji.nvr:")
     API_URL = "https://koji.fedoraproject.org/kojihub"  # For metadata
 
-    def __new__(cls, logger: tmt.log.Logger, artifact_id: str) -> 'KojiArtifactProvider':
+    def __new__(cls, raw_provider_id: str, logger: tmt.log.Logger) -> 'KojiArtifactProvider':
         """
         Factory method to return the appropriate subclass based on the prefix
         of the artifact_id.
         """
-        if artifact_id.startswith("koji.build:"):
+        if raw_provider_id.startswith("koji.build:"):
             return super().__new__(KojiBuild)
-        if artifact_id.startswith("koji.task:"):
+        if raw_provider_id.startswith("koji.task:"):
             return super().__new__(KojiTask)
-        if artifact_id.startswith("koji.nvr:"):
+        if raw_provider_id.startswith("koji.nvr:"):
             return super().__new__(KojiNvr)
         return super().__new__(cls)
 
-    def __init__(
-        self,
-        logger: tmt.log.Logger,
-        artifact_id: str,
-    ):
-        super().__init__(logger, artifact_id)
+    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
+        super().__init__(raw_provider_id, logger)
         self._session = self._initialize_session()
         self._build_provider: Optional[KojiBuild] = None
-
-    def _parse_artifact_id(self, artifact_id: str) -> str:
-        for prefix in self.SUPPORTED_PREFIXES:
-            if artifact_id.startswith(prefix):
-                value = artifact_id[len(prefix) :]
-                if not value:
-                    raise ValueError(f"Missing value in '{self.artifact_id}'.")
-                return value
-        raise ValueError(f"Unsupported artifact ID format: '{self.artifact_id}'.")
 
     @cached_property
     def build_id(self) -> Optional[int]:
@@ -219,6 +207,18 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         if not self._build_provider:
             self._build_provider = KojiBuild(self.logger, f"koji.build:{build_id}")
         return self._build_provider
+
+    @classmethod
+    def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
+        # Eg: 'koji.build:123456'
+        prefix = "koji.build:"
+        if not raw_provider_id.startswith(prefix):
+            raise ValueError(f"Invalid Koji identifier: '{raw_provider_id}'.")
+
+        parsed = raw_provider_id[len(prefix) :]
+        if not parsed.isdigit():
+            raise ValueError(f"Invalid Koji identifier: '{raw_provider_id}'.")
+        return parsed
 
     def list_artifacts(self) -> Iterator[RpmArtifactInfo]:
         """
