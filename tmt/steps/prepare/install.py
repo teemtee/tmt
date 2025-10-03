@@ -694,9 +694,7 @@ class InstallMock(InstallBase):
 
         filelist = [
             PackagePath(
-                self.guest.mock_shell.root_path
-                / self.package_directory.relative_to("/")
-                / filename.name
+                self.guest.root_path / self.package_directory.relative_to("/") / filename.name
             )
             for filename in self.local_packages
         ]

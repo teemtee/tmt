@@ -84,14 +84,6 @@ class MockShell:
         self.mock_shell: Optional[subprocess.Popen[str]] = None
         self.epoll: Optional[select.epoll] = None
 
-        root_path = (
-            (self.parent.mock_command_prefix + Command('--print-root-path'))
-            .run(cwd=None, logger=self.parent._logger)
-            .stdout
-        )
-        assert root_path is not None
-        self.root_path = Path(root_path.rstrip())
-
     def __del__(self) -> None:
         self.exit_shell()
 
@@ -230,9 +222,11 @@ class MockShell:
         if not silent and friendly_command:
             (log or logger.verbose)('cmd', friendly_command, color='yellow', level=2)
 
-        # Fail nicely if the working directory does not exist
+        # Fail nicely if the working directory does not exist.
         if cwd:
-            chroot_cwd = self.root_path / (cwd.relative_to('/') if cwd.is_absolute() else cwd)
+            chroot_cwd = self.parent.root_path / (
+                cwd.relative_to('/') if cwd.is_absolute() else cwd
+            )
             if not chroot_cwd.exists():
                 raise tmt.utils.GeneralError(
                     f"The working directory '{chroot_cwd}' does not exist."
@@ -269,9 +263,11 @@ class MockShell:
 
         io_flags: int = os.O_RDONLY | os.O_NONBLOCK
         with (
-            io.FileIO(os.open(str(self.root_path / stdout_stem), io_flags)) as stdout_io,
-            io.FileIO(os.open(str(self.root_path / stderr_stem), io_flags)) as stderr_io,
-            io.FileIO(os.open(str(self.root_path / returncode_stem), io_flags)) as returncode_io,
+            io.FileIO(os.open(str(self.parent.root_path / stdout_stem), io_flags)) as stdout_io,
+            io.FileIO(os.open(str(self.parent.root_path / stderr_stem), io_flags)) as stderr_io,
+            io.FileIO(
+                os.open(str(self.parent.root_path / returncode_stem), io_flags)
+            ) as returncode_io,
         ):
             stdout_fd = stdout_io.fileno()
             stderr_fd = stderr_io.fileno()
@@ -374,12 +370,21 @@ class GuestMock(tmt.Guest):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.mock_shell = MockShell(parent=self, root=self.root, rootdir=self.rootdir)
+
         self.mock_command_prefix = Command('mock')
         if self.root is not None:
             self.mock_command_prefix += Command('-r', self.root)
         if self.rootdir is not None:
             self.mock_command_prefix += Command('--rootdir', self.rootdir)
+        root_path = (
+            (self.mock_command_prefix + Command('--print-root-path'))
+            .run(cwd=None, logger=self._logger)
+            .stdout
+        )
+        assert root_path is not None
+        self.root_path = Path(root_path.rstrip())
+
+        self.mock_shell = MockShell(parent=self, root=self.root, rootdir=self.rootdir)
 
     @property
     def is_ready(self) -> bool:
