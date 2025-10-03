@@ -184,7 +184,7 @@ class MockShell:
             ' /srv/tmt-mock/filesync'
             '\n'
         )
-        self.mock_shell.stdin.write('chmod a+w /srv/tmt-mock/filesync\n')
+        self.mock_shell.stdin.write('chmod a+rw /srv/tmt-mock/filesync\n')
         self.mock_shell.stdin.flush()
 
         # Wait until the previous commands finished.
@@ -515,9 +515,21 @@ class GuestMock(tmt.Guest):
         return False
 
     def remove(self) -> None:
+        """
+        Currently do not prune the mock chroot, that may be undesirable.
+        """
+        pass
+
+    def _do_scrub(self) -> None:
+        """
+        This is the actual implementation of `remove`.
+        """
         (self.mock_command_prefix + Command('--scrub=all')).run(cwd=None, logger=self._logger)
 
     def suspend(self) -> None:
+        self.mock_shell.exit_shell()
+
+    def stop(self) -> None:
         self.mock_shell.exit_shell()
 
     def push(
@@ -531,47 +543,45 @@ class GuestMock(tmt.Guest):
         Push content into the mock chroot via a pipe at /srv/tmt-mock/filesync.
         For directories we use tar.
         For files we use cp / install.
+        Compress option is ignored, it only slows down the execution.
+        Create destination option is ignored, there have been  problems with workdir.
         """
         options = options or tmt.steps.provision.DEFAULT_PUSH_OPTIONS
         excludes = Command()
-        compress = Command()
         permissions = Command('-m', f'{(options.chmod or 0o755):03o}')
-        if options.compress:
-            compress = Command('--gzip')
         for exclude in options.exclude:
             excludes += Command(f'--exclude={exclude}')
         source = source or self.plan_workdir
         destination = destination or source
+
         if source.is_dir():
-            if options.create_destination:
-                self.mock_shell.execute(
-                    Command('mkdir', '-p', str(destination)), logger=self._logger
-                )
+            self.mock_shell.execute(Command('mkdir', '-p', str(destination)), logger=self._logger)
             p = self.mock_shell._spawn_command(
-                Command('tar', '-C', str(destination), '-xvf', '/srv/tmt-mock/filesync')
-                + excludes
-                + compress,
+                Command('tar', '-C', str(destination), '-xf', '/srv/tmt-mock/filesync') + excludes,
                 logger=self._logger,
             )
             next(p)
             (
                 Command(
-                    'tar', '-C', str(source), '-cvf', self.root_path / 'srv/tmt-mock/filesync', '.'
+                    'tar',
+                    '-C',
+                    str(source),
+                    '-cf',
+                    str(self.root_path / 'srv/tmt-mock/filesync'),
+                    '.',
                 )
-                + compress
             ).run(cwd=None, logger=self._logger)
             next(p)
         else:
-            if options.create_destination:
-                self.mock_shell.execute(
-                    Command('mkdir', '-p', str(destination.parent)), logger=self._logger
-                )
+            self.mock_shell.execute(
+                Command('mkdir', '-p', str(destination.parent)), logger=self._logger
+            )
             p = self.mock_shell._spawn_command(
                 Command('install', '/srv/tmt-mock/filesync', str(destination)) + permissions,
                 logger=self._logger,
             )
             next(p)
-            Command('cp', str(source), self.root_path / 'srv/tmt-mock/filesync').run(
+            Command('cp', str(source), str(self.root_path / 'srv/tmt-mock/filesync')).run(
                 cwd=None, logger=self._logger
             )
             next(p)
@@ -586,13 +596,11 @@ class GuestMock(tmt.Guest):
         Pull content from the mock chroot via a pipe at /srv/tmt-mock/filesync.
         For directories we use tar.
         For files we use cp / install.
+        Compress option is ignored, it only slows down the execution.
         """
         options = options or tmt.steps.provision.DEFAULT_PULL_OPTIONS
         excludes = Command()
-        compress = Command()
         permissions = Command('-m', f'{(options.chmod or 0o755):03o}')
-        if options.compress:
-            compress = Command('--gzip')
         for exclude in options.exclude:
             excludes += Command(f'--exclude={exclude}')
         source = source or self.plan_workdir
@@ -604,17 +612,19 @@ class GuestMock(tmt.Guest):
             if options.create_destination:
                 Command('mkdir', '-p', str(destination)).run(cwd=None, logger=self._logger)
             p = self.mock_shell._spawn_command(
-                Command('tar', '-C', str(source), '-cvf', '/srv/tmt-mock/filesync', '.')
-                + compress,
+                Command('tar', '-C', str(source), '-cf', '/srv/tmt-mock/filesync', '.'),
                 logger=self._logger,
             )
             next(p)
             (
                 Command(
-                    'tar', '-C', str(destination), '-xvf', self.root_path / 'srv/tmt-mock/filesync'
+                    'tar',
+                    '-C',
+                    str(destination),
+                    '-xf',
+                    str(self.root_path / 'srv/tmt-mock/filesync'),
                 )
                 + excludes
-                + compress
             ).run(cwd=None, logger=self._logger)
             next(p)
         else:
@@ -625,7 +635,7 @@ class GuestMock(tmt.Guest):
             )
             next(p)
             (
-                Command('install', self.root_path / 'srv/tmt-mock/filesync', str(destination))
+                Command('install', str(self.root_path / 'srv/tmt-mock/filesync'), str(destination))
                 + permissions
             ).run(cwd=None, logger=self._logger)
             next(p)
