@@ -495,6 +495,9 @@ class GuestMock(tmt.Guest):
         self.debug(f"Doing nothing to reboot guest '{self.primary_address}'.")
         return False
 
+    def remove(self) -> None:
+        (self.mock_command_prefix + Command('--scrub=all')).run(cwd=None, logger=self._logger)
+
     def suspend(self) -> None:
         self.mock_shell.exit_shell()
 
