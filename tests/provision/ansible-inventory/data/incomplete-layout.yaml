@@ -1,0 +1,4 @@
+# Incomplete layout - missing 'all' and 'ungrouped' groups
+# This tests the normalization logic that auto-creates required groups
+custom-group:
+  hosts: {}
