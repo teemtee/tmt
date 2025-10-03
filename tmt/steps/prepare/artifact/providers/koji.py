@@ -2,6 +2,7 @@
 Koji Artifact Provider
 """
 
+import os
 import types
 from collections.abc import Iterator
 from shlex import quote
@@ -46,7 +47,10 @@ class RpmArtifactInfo(ArtifactInfo):
     Represents a single RPM package.
     """
 
-    PKG_URL = "https://kojipkgs.fedoraproject.org/packages/"  # For actual package downloads
+    # TODO: Make RPM_BASE_URL configurable via FMF/CLI, not just env var
+    BASE_URL = os.getenv("RPM_BASE_URL", "https://kojipkgs.fedoraproject.org/packages").rstrip(
+        "/"
+    )  # For actual package downloads
     _raw_artifact: dict[str, str]
 
     @property
@@ -58,7 +62,7 @@ class RpmArtifactInfo(ArtifactInfo):
     def location(self) -> str:
         """Get the download URL for the given RPM metadata."""
         return (
-            f"{self.PKG_URL}{self._raw_artifact['name']}/"
+            f"{self.BASE_URL}/{self._raw_artifact['name']}/"
             f"{self._raw_artifact['version']}/"
             f"{self._raw_artifact['release']}/"
             f"{self._raw_artifact['arch']}/"
@@ -99,7 +103,8 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         artifacts = provider.download_artifacts(guest, Path("/tmp"), [])
     """
 
-    API_URL = "https://koji.fedoraproject.org/kojihub"  # For metadata
+    # TODO: Make RPM_BASE_URL configurable via FMF/CLI, not just env var
+    API_URL = os.getenv("KOJI_API_URL", "https://koji.fedoraproject.org/kojihub")  # For metadata
 
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
         super().__init__(raw_provider_id, logger)
