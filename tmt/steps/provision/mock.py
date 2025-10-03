@@ -380,7 +380,9 @@ class GuestMock(tmt.Guest):
     root: Optional[str] = None
     rootdir: Optional[Path] = None
 
-    mock_shell: MockShell
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.mock_shell = MockShell(parent=self, root=self.root, rootdir=self.rootdir)
 
     @property
     def is_ready(self) -> bool:
@@ -481,27 +483,18 @@ class GuestMock(tmt.Guest):
                 )
         return command_output
 
-    def start(self) -> None:
-        """
-        Start the guest
-        """
-        self.debug(f"Doing nothing to start guest '{self.primary_address}'.")
-
-    def stop(self) -> None:
-        """
-        Stop the guest
-        """
-        self.debug(f"Doing nothing to stop guest '{self.primary_address}'.")
-
     def reboot(
         self,
         hard: bool = False,
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
-        # No localhost reboot allowed!
+        # Nothing to do.
         self.debug(f"Doing nothing to reboot guest '{self.primary_address}'.")
         return False
+
+    def suspend(self) -> None:
+        self.mock_shell.exit_shell()
 
     def push(
         self,
@@ -523,11 +516,6 @@ class GuestMock(tmt.Guest):
         """
         Thanks to mock's bind-mounting, no file copying is needed
         """
-
-    def load(self, data: tmt.steps.provision.GuestData) -> None:
-        assert isinstance(data, MockGuestData)
-        super().load(data)
-        self.mock_shell = MockShell(parent=self, root=self.root, rootdir=self.rootdir)
 
 
 @tmt.steps.provides_method('mock')
