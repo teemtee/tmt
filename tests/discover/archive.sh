@@ -2,9 +2,6 @@
 
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
-
-PROVISION_HOW="${PROVISION_HOW:-local}"
-
 # Make it easier to see what went wrong
 export TMT_SHOW_TRACEBACK=1
 
@@ -16,7 +13,7 @@ rlJournalStart
 
     rlPhaseStartTest "Basic archive tests"
         plan="/plans/fmf/archive-url"
-        rlRun -s "tmt run -i $run discover plans -n /plans/fmf/archive-url"
+        rlRun -s "tmt run -i $run discover plans -n $run"
         rlAssertGrep "2 tests selected" $rlRun_LOG
         plan_path="$run$plan"
         step_workdir="$plan_path/discover/default-0"

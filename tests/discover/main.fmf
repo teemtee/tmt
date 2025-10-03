@@ -44,8 +44,6 @@ tier: 3
 /archive:
     summary: Get tests from arbitrary external archive
     test: ./archive.sh
-    tag+:
-    - provision-container
 
 /dynamic-ref:
     /fmf:
