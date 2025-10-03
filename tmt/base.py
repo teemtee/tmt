@@ -4923,7 +4923,6 @@ class Status(tmt.utils.Common):
                 # If plan has no steps done, consider the whole run not done
                 earliest_step_index = -1
                 break
-            assert tmt.steps.is_step(plan_status)
             plan_status_index = tmt.steps.STEPS.index(plan_status)
             earliest_step_index = min(plan_status_index, earliest_step_index)
 
