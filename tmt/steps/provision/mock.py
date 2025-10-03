@@ -126,6 +126,7 @@ class MockShell:
             f'"{shlex.quote(str(self.parent.run_workdir))}")'
             ']'
         )
+        command.append('--enable-network')
         command.append('-q')
         command.append('--shell')
 
