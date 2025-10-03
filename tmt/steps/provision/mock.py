@@ -5,6 +5,7 @@ import os
 import select
 import shlex
 import subprocess
+from collections.abc import Generator
 from typing import Any, Callable, Optional, Union, cast
 
 import tmt
@@ -186,7 +187,7 @@ class MockShell:
                     break
         self.mock_shell.stderr.read()
 
-    def execute(
+    def _spawn_command(
         self,
         command: Command,
         *,
@@ -198,8 +199,8 @@ class MockShell:
         logger: tmt.log.Logger,
         join: Optional[bool] = None,
         timeout: Optional[int] = None,
-        **kwargs: dict[Any, Any],
-    ) -> tuple[str, str]:
+        **kwargs: Any,
+    ) -> Generator[tuple[str, str]]:
         """
         Execute the command in a running mock shell for increased speed.
         """
@@ -301,6 +302,8 @@ class MockShell:
             )
             returncode = None
 
+            yield  # type: ignore[misc]
+
             while self.mock_shell.poll() is None:
                 events = self.epoll.poll(timeout=timeout)
 
@@ -356,7 +359,12 @@ class MockShell:
                     stdout=stdout,
                     stderr=stderr,
                 )
-            return (stdout, stderr)
+            yield (stdout, stderr)
+
+    def execute(self, *args: Any, **kwargs: Any) -> tuple[str, str]:
+        process = self._spawn_command(*args, **kwargs)
+        next(process)
+        return next(process)
 
 
 class GuestMock(tmt.Guest):
