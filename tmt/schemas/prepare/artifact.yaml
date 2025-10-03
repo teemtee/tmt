@@ -1,0 +1,26 @@
+---
+
+#
+# JSON Schema definition for `artifact` prepare plugin
+#
+# https://tmt.readthedocs.io/en/stable/spec/plans.html#spec-plans-prepare-install
+#
+
+$id: /schemas/prepare/artifact
+$schema: https://json-schema.org/draft-07/schema
+
+type: object
+additionalProperties: false
+
+properties:
+
+  how:
+    type: string
+    enum:
+      - artifact
+
+  provide:
+    $ref: "/schemas/common#/definitions/one_or_more_strings"
+
+required:
+  - how
