@@ -28,7 +28,7 @@ def test_koji_invalid_nvr(root_logger):
 
 
 @pytest.mark.integration
-def test_koji_valid_task_id_that_produced_build(root_logger):
+def test_koji_valid_task_id_actual_build(root_logger):
     provider = KojiArtifactProvider("koji.task:137451383", root_logger)
     rpms = list(provider.list_artifacts())
     assert provider.build_id == 2829512  # Known build ID for this task
@@ -36,11 +36,15 @@ def test_koji_valid_task_id_that_produced_build(root_logger):
 
 
 @pytest.mark.integration
-def test_koji_valid_task_id_that_did_not_produce_build(root_logger):
+def test_koji_valid_task_id_scratch_build(root_logger):
     provider = KojiArtifactProvider("koji.task:137705547", root_logger)
     tasks = provider._get_task_children(137705547)
     assert len(tasks) == 13
     assert 137705547 in tasks  # The parent task itself should be included
     rpms = list(provider.list_artifacts())
     assert provider.build_id is None
-    assert len(rpms) == 0
+    assert (
+        rpms[0]._raw_artifact['url']
+        == 'https://kojipkgs.fedoraproject.org/work/tasks/5553/137705553/python-scikit-build-core-0.11.5-5.fc44.src.rpm'
+    )
+    assert len(rpms) == 2

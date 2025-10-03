@@ -54,31 +54,6 @@ class RpmArtifactInfo(ArtifactInfo):
     )  # For actual package downloads
     _raw_artifact: dict[str, str]
 
-    @classmethod
-    def from_filename(cls, filename: str) -> "RpmArtifactInfo":
-        """
-        Convert an RPM filename like 'tmt-1.58.0-1.fc41.noarch.rpm' into an RpmArtifactInfo.
-        """
-
-        try:
-            if filename.endswith('.src.rpm'):
-                base = filename[:-8]  # Remove '.src.rpm'
-                arch = 'src'
-            else:
-                base, arch, _ = filename.rsplit(".", 2)
-            name, version, release = base.rsplit("-", 2)
-        except ValueError:
-            raise ValueError(f"Invalid RPM filename format: '{filename}'")
-
-        raw_artifact = {
-            "name": name,
-            "version": version,
-            "release": release,
-            "arch": arch,
-            "nvr": f"{name}-{version}-{release}",
-        }
-        return cls(_raw_artifact=raw_artifact)
-
     @property
     def id(self) -> str:
         """A koji rpm identifier"""
@@ -87,7 +62,7 @@ class RpmArtifactInfo(ArtifactInfo):
     @property
     def location(self) -> str:
         """Get the download URL for the given RPM metadata."""
-        return (
+        return self._raw_artifact.get('url') or (
             f"{self.BASE_URL}/{self._raw_artifact['name']}/"
             f"{self._raw_artifact['version']}/"
             f"{self._raw_artifact['release']}/"
@@ -100,7 +75,7 @@ class RpmArtifactInfo(ArtifactInfo):
         """
         Whether this RPM is a draft/scratch artifact.
         """
-        return bool(self._raw_artifact.get('draft', False))
+        return bool(self._raw_artifact.get('draft', True))
 
 
 # ignore[type-arg]: TypeVar in provider registry annotations is
@@ -137,7 +112,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
     """
 
     SUPPORTED_PREFIXES = ("koji.build:", "koji.task:", "koji.nvr:")
-    # TODO: Make RPM_BASE_URL configurable via FMF/CLI, not just env var
+    # TODO: Make KOJI_API_URL configurable via FMF/CLI, not just env var
     API_URL = os.getenv("KOJI_API_URL", "https://koji.fedoraproject.org/kojihub")  # For metadata
 
     def __new__(cls, raw_provider_id: str, logger: tmt.log.Logger) -> 'KojiArtifactProvider':
@@ -259,6 +234,11 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
 @provides_artifact_provider("koji.task")  # type: ignore[arg-type]
 class KojiTask(KojiArtifactProvider):
+    # TODO: Make RPM_SCRATCH_BASE_URL configurable via FMF/CLI, not just env var
+    SCRATCH_BASE_URL = os.getenv(
+        "RPM_SCRATCH_BASE_URL", "https://kojipkgs.fedoraproject.org"
+    ).rstrip("/")  # For scratch builds
+
     @cached_property
     def build_id(self) -> Optional[int]:
         task_id = int(self.id)
@@ -286,6 +266,26 @@ class KojiTask(KojiArtifactProvider):
             child_tasks.extend(self._get_task_children(child_id))
         return child_tasks
 
+    def _rpm_from_scratch(self, task_id: int, filename: str) -> RpmArtifactInfo:
+        task_dir = f"{task_id % 10000}/{task_id}"  # TODO: use pathInfo; signing off for now ;)
+        url = f"{self.SCRATCH_BASE_URL}/work/tasks/{task_dir}/{filename}"
+        try:
+            if filename.endswith('.src.rpm'):
+                base = filename[:-8]  # Remove '.src.rpm'
+                arch = 'src'
+            else:
+                base, arch, _ = filename.rsplit(".", 2)
+            name, version, release = base.rsplit("-", 2)
+        except ValueError:
+            raise ValueError(f"Invalid RPM filename format: '{filename}'")
+
+        raw_artifact = {  # Minimal metadata for RPM
+            "arch": arch,
+            "nvr": f"{name}-{version}-{release}",
+            "url": url,
+        }
+        return RpmArtifactInfo(_raw_artifact=raw_artifact)
+
     @cached_property
     def rpm_list(self) -> list[RpmArtifactInfo]:
         self.logger.debug(f"Fetching RPMs for task '{self.id}'.")
@@ -296,22 +296,19 @@ class KojiTask(KojiArtifactProvider):
             )
             return self._get_build_provider(self.build_id).rpm_list
 
-        # Otherwise, list the task output files
+        # Otherwise, list the task output files for scratch builds
+        self.logger.debug(f"Task '{self.id}' did not produce a build, fetching scratch RPMs.")
         rpms: list[RpmArtifactInfo] = []
-
+        seen_ids = set()  # Multiple tasks may produce the same RPM
         for child_task in self._get_task_children(int(self.id)):
             for filename in self._call_api("listTaskOutput", child_task) or []:
                 if not filename.endswith(".rpm"):
                     self.logger.warning(f"Skipping '{filename}': not an RPM")
                     continue
-                # Parse basic info from filename
-                artifact = RpmArtifactInfo.from_filename(filename)
-                # Fetch full rpm metadata
-                if rpm_info := self._call_api("getRPM", artifact.id):
-                    self.logger.debug(f"Found RPM '{artifact.id}' in task output.")
-                    rpms.append(RpmArtifactInfo(_raw_artifact=rpm_info))
-                else:
-                    self.logger.warning(f"Skipping '{filename}': getRPM returned nothing")
+                rpm = self._rpm_from_scratch(child_task, filename)
+                if rpm.id not in seen_ids:
+                    rpms.append(rpm)
+                    seen_ids.add(rpm.id)
         return rpms
 
 
