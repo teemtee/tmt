@@ -279,8 +279,13 @@ class KojiTask(KojiArtifactProvider):
 
     @cached_property
     def rpm_list(self) -> list[RpmArtifactInfo]:
+        self.logger.debug(f"Fetching RPMs for task '{self.artifact_id}'.")
         # If task produced a build, reuse build path
         if self.build_id is not None:
+            self.logger.debug(
+                f"Task '{self.artifact_id}' produced build '{self.build_id}', "
+                "fetching RPMs from the build."
+            )
             return self._get_build_provider(self.build_id).rpm_list
 
         # Otherwise, list the task output files
@@ -295,6 +300,7 @@ class KojiTask(KojiArtifactProvider):
                 artifact = RpmArtifactInfo.from_filename(filename)
                 # Fetch full rpm metadata
                 if rpm_info := self._call_api("getRPM", artifact.id):
+                    self.logger.debug(f"Found RPM '{artifact.id}' in task output.")
                     rpms.append(RpmArtifactInfo(_raw_artifact=rpm_info))
                 else:
                     self.logger.warning(f"Skipping '{filename}': getRPM returned nothing")
@@ -314,6 +320,7 @@ class KojiBuild(KojiArtifactProvider):
 
         :return: List of RpmArtifactInfo objects
         """
+        self.logger.debug(f"Fetching RPMs for build '{self.build_id}'.")
         rpm_dicts = self._call_api("listBuildRPMs", self.build_id) or []
         return [RpmArtifactInfo(_raw_artifact={**rpm}) for rpm in rpm_dicts]
 
@@ -332,4 +339,5 @@ class KojiNvr(KojiArtifactProvider):
 
     @cached_property
     def rpm_list(self) -> list[RpmArtifactInfo]:
+        self.logger.debug(f"Fetching RPMs for NVR '{self.artifact_id}'.")
         return self._get_build_provider(self.build_id).rpm_list
