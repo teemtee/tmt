@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import tmt.log
 import tmt.utils
+from tmt._compat.pathlib import Path
 from tmt.container import SerializableContainer, container, field
 
 if TYPE_CHECKING:
@@ -215,39 +216,51 @@ class AnsibleInventory:
     configures host variables based on guest properties.
     """
 
-    def __init__(self, plan: 'tmt.Plan') -> None:
+    def __init__(self, logger: tmt.log.Logger) -> None:
         """
         Initialize the Ansible inventory handler.
 
-        :param plan: the plan containing provisioned guests and configuration.
+        :param logger: logger instance for debug/info messages.
         """
-        self._logger = plan._logger
-        self._plan = plan
+        self._logger = logger
 
-    def _load_layout(self, layout_path: Optional[str] = None) -> dict[str, Any]:
+    def _load_layout(self, layout_path: Optional[Path] = None) -> dict[str, Any]:
         """
-        Load inventory layout from file or use default.
+        Load inventory layout from file or use default, ensuring required Ansible structure.
 
-        :param layout_path: path to a custom layout file, relative to the metadata tree root,
-                            or to the current working directory.
-        :returns: dictionary representing the inventory layout structure.
+        :param layout_path: full path to a custom layout file.
+        :returns: dictionary representing the inventory layout structure with required groups.
         """
         if layout_path:
-            resolved_path = self._plan.anchor_path / layout_path
             try:
-                return tmt.utils.yaml_to_dict(resolved_path.read_text())
+                layout = tmt.utils.yaml_to_dict(layout_path.read_text())
             except (OSError, FileNotFoundError):
                 raise tmt.utils.FileError(f"Inventory layout file '{layout_path}' not found")
+        else:
+            layout = {}
 
-        return self._default_layout()
+        return self._normalize_layout(layout)
 
-    def _default_layout(self) -> dict[str, Any]:
+    def _normalize_layout(self, layout: dict[str, Any]) -> dict[str, Any]:
         """
-        Create default inventory layout.
+        Normalize layout to ensure required Ansible inventory structure.
 
-        :returns: basic inventory structure with 'all' and 'ungrouped' groups.
+        Ensures 'all' and 'ungrouped' groups are present.
+
+        :param layout: raw layout dictionary from file or empty dict.
+        :returns: normalized inventory with required Ansible structure.
         """
-        return {'all': {'children': {'ungrouped': {}}}}
+        # Ensure 'all' group exists
+        if 'all' not in layout:
+            layout['all'] = {}
+
+        # Ensure 'ungrouped' exists for hosts without explicit groups
+        if 'children' not in layout['all']:
+            layout['all']['children'] = {}
+        if 'ungrouped' not in layout['all']['children']:
+            layout['all']['children']['ungrouped'] = {}
+
+        return layout
 
     def _add_host_to_all(self, inventory: dict[str, Any], guest: 'Guest') -> None:
         """
@@ -300,12 +313,14 @@ class AnsibleInventory:
             target_group['hosts'] = {}
         target_group['hosts'][guest.name] = {}
 
-    def generate(self, guests: list['Guest'], layout_path: Optional[str] = None) -> dict[str, Any]:
+    def generate(
+        self, guests: list['Guest'], layout_path: Optional[Path] = None
+    ) -> dict[str, Any]:
         """
         Generate Ansible inventory from guests and layout.
 
         :param guests: list of provisioned guests to include in the inventory.
-        :param layout_path: optional path to a custom layout template.
+        :param layout_path: optional full path to a custom layout template.
         :returns: complete Ansible inventory dictionary.
         """
         inventory = self._load_layout(layout_path)
@@ -315,8 +330,7 @@ class AnsibleInventory:
             self._add_host_to_all(inventory, guest)
 
             # Add host to its groups (without variables)
-            groups = guest.ansible_host_groups
-            for group in groups:
+            for group in guest.ansible_host_groups:
                 self._add_host_to_group(inventory, guest, group)
 
         return inventory

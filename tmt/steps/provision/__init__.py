@@ -49,9 +49,7 @@ from tmt._compat.typing import Self
 from tmt.ansible import (
     AnsibleInventory,
     GuestAnsible,
-    PlanAnsible,
     normalize_guest_ansible,
-    normalize_plan_ansible,
 )
 from tmt.container import SerializableContainer, container, field, key_to_option
 from tmt.log import Logger
@@ -2678,10 +2676,9 @@ class GuestSsh(Guest):
 
         playbook = self._sanitize_ansible_playbook_path(playbook, playbook_root)
 
-        ansible_command = Command('ansible-playbook', *self._ansible_verbosity())
-
-        if extra_args:
-            ansible_command += self._ansible_extra_args(extra_args)
+        ansible_command = Command(
+            'ansible-playbook', *self._ansible_verbosity(), *self._ansible_extra_args(extra_args)
+        )
 
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
@@ -3205,16 +3202,6 @@ class ProvisionStepData(tmt.steps.StepData):
         else None,
     )
 
-    ansible: Optional[PlanAnsible] = field(
-        default=None,
-        normalize=normalize_plan_ansible,
-        serialize=lambda ansible: ansible.to_serialized() if ansible else None,
-        unserialize=lambda serialized: PlanAnsible.from_serialized(serialized)
-        if serialized
-        else PlanAnsible(),
-        help='Ansible configuration for inventory generation.',
-    )
-
 
 ProvisionStepDataT = TypeVar('ProvisionStepDataT', bound=ProvisionStepData)
 
@@ -3496,7 +3483,7 @@ class Provision(tmt.steps.Step):
 
         self.guests = []
         self._guest_data: dict[str, GuestData] = {}
-        self._ansible_inventory = AnsibleInventory(self.plan)
+        self._ansible_inventory = AnsibleInventory(self._logger)
 
     @property
     def _preserved_workdir_members(self) -> set[str]:
@@ -3542,10 +3529,14 @@ class Provision(tmt.steps.Step):
     def _generate_ansible_inventory(self) -> None:
         """Generate Ansible inventory from provisioned guests."""
         try:
-            # Get layout from plan-level ansible configuration
+            # Get layout from plan-level ansible configuration and resolve path
             layout_path = None
-            if self.plan.ansible and self.plan.ansible.inventory:
-                layout_path = self.plan.ansible.inventory.layout
+            if (
+                self.plan.ansible
+                and self.plan.ansible.inventory
+                and self.plan.ansible.inventory.layout
+            ):
+                layout_path = self.plan.anchor_path / self.plan.ansible.inventory.layout
 
             inventory = self._ansible_inventory.generate(self.guests, layout_path)
             inventory_path = Path('inventory.yaml')

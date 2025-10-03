@@ -150,11 +150,6 @@ plans:
                     module: tmt.steps.provision
                     name: GuestFacts
             environment: {}
-            ansible:
-                inventory:
-                __class__:
-                    module: tmt.ansible
-                    name: PlanAnsible
             guest-ansible:
                 group:
                 vars: {}

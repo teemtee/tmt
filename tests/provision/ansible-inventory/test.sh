@@ -20,7 +20,7 @@ rlJournalStart
         rlRun -s "${tmt_command} ${planName}" 0
 
         # Check that inventory file was generated in the provision step and directory
-        inventory_file="$(find $run -path '*/provision/inventory.yaml' | head -1)"
+        inventory_file="$run/$planName/provision/inventory.yaml"
         if [ -n "$inventory_file" ] && rlAssertExists "$inventory_file" "Inventory file should exist"; then
             # Verify basic inventory structure with default layout
             rlRun "cat $inventory_file"
@@ -38,7 +38,7 @@ rlJournalStart
         rlRun -s "${tmt_command} ${planName}" 0
 
         # Find and verify inventory exists
-        inventory_file="$(find $run -path '*/provision/inventory.yaml' | head -1)"
+        inventory_file="$run/$planName/provision/inventory.yaml"
         if [ -n "$inventory_file" ] && rlAssertExists "$inventory_file" "Inventory file should exist"; then
             # Basic inventory structure validation
             rlRun "cat $inventory_file"
@@ -46,8 +46,7 @@ rlJournalStart
             rlRun "yq -e '.all.hosts' $inventory_file" 0 "Has 'hosts' section"
 
             # Host vars specified in metadata are added to 'all' group
-            rlRun "frontend_var=\$(yq -r '.all.hosts.\"frontend-1\".custom_var' $inventory_file)"
-            rlAssertEquals "Frontend host has custom variable" "value1" "$frontend_var"
+            rlAssertEquals "Frontend host has custom variable" "value1" "$(yq -r '.all.hosts."frontend-1".custom_var' $inventory_file)"
 
             # TMT-provided ansible behavioral vars are added automatically
             rlRun "yq -e '.all.hosts.\"frontend-1\".ansible_host' $inventory_file" 0 "Host has ansible_host env var"
@@ -70,7 +69,9 @@ rlJournalStart
             rlRun "yq -e '.all.children.webservers.children.backend' $inventory_file" 0 "Backend group nested under webservers"
 
             # Automatic creation of group if it doesn't exist in layout
-            rlRun "yq -e '.all.children.nonexistent.hosts.\"auto-group-host\"' $inventory_file" 0 "Auto-created group exists"
+            # Debug: Show the actual inventory structure around auto-created group
+            rlRun "yq -r '.all.children | keys' $inventory_file" 0 "Show all children groups"
+            rlRun "yq -e '.all.children.\"auto-created\".hosts.\"auto-group-host\"' $inventory_file" 0 "Auto-created group exists"
 
             # Ansible tasks are executed on correct hosts based on group membership
             # This validates that TMT-generated inventory correctly drives Ansible task execution
@@ -91,6 +92,35 @@ rlJournalStart
             rlAssertGrep "UNGROUPED_TASK_EXECUTED on orphan-host" $log_file
             rlAssertNotGrep "UNGROUPED_TASK_EXECUTED on frontend-1" $log_file
             rlAssertNotGrep "UNGROUPED_TASK_EXECUTED on backend-1" $log_file
+
+        else
+            rlFail "Inventory file not found or doesn't exist at expected location"
+        fi
+    rlPhaseEnd
+
+    planName="plan/default-groups"
+    rlPhaseStartTest "Default groups normalization"
+        rlLogInfo "Testing layout normalization with missing 'all' and 'ungrouped' groups"
+
+        rlRun -s "${tmt_command} ${planName}" 0
+
+        # Check that inventory file was generated
+        inventory_file="$run/$planName/provision/inventory.yaml"
+        if [ -n "$inventory_file" ] && rlAssertExists "$inventory_file" "Inventory file should exist"; then
+            rlRun "cat $inventory_file"
+
+            # Verify 'all' group is present (even if not in layout)
+            rlRun "yq -e '.all' $inventory_file" 0 "Has 'all' group"
+            rlRun "yq -e '.all.hosts' $inventory_file" 0 "Has 'hosts' section in 'all'"
+
+            # Verify 'ungrouped' group is present (even if not in layout)
+            rlRun "yq -e '.all.children.ungrouped' $inventory_file" 0 "Has 'ungrouped' group"
+
+            # Verify host without group ends up in 'ungrouped'
+            rlRun "yq -e '.all.children.ungrouped.hosts.\"no-group-host\"' $inventory_file" 0 "Host without group in 'ungrouped'"
+
+            # Verify host with custom group still works
+            rlRun "yq -e '.all.children.\"custom-group\".hosts.\"custom-host\"' $inventory_file" 0 "Host with custom group works"
 
         else
             rlFail "Inventory file not found or doesn't exist at expected location"
