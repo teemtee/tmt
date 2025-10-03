@@ -84,7 +84,7 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         List all RPMs available from the repository.
 
         Note: This requires the repository to be installed and queried first,
-        which is handled by the ``download_artifacts`` method.
+        which is handled by the ``fetch_contents`` method.
         """
         raise NotImplementedError
 
