@@ -9,7 +9,7 @@ import shlex
 import subprocess
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Optional, Union
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import fmf.utils
 from click import echo
@@ -965,7 +965,7 @@ def read_polarion_case(
             UUID(polarion_case.test_case_id)
             uuid = str(polarion_case.test_case_id)
         except (TypeError, ValueError):
-            uuid = str(uuid4())
+            uuid = tmt.identifier.generate_uuid()
             if not dry_run:
                 polarion_case.tmtid = uuid
                 polarion_case.update()

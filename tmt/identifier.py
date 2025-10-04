@@ -25,6 +25,13 @@ class IdLeafError(IdError):
     """
 
 
+def generate_uuid() -> str:
+    """
+    Generate and return a new UUID
+    """
+    return str(uuid4())
+
+
 def get_id(node: fmf.Tree, leaf_only: bool = True) -> Optional[str]:
     """
     Get identifier if defined, optionally ensure leaf node
@@ -54,7 +61,7 @@ def add_uuid_if_not_defined(node: fmf.Tree, dry: bool, logger: Logger) -> Option
         return None
 
     # Generate a new one
-    gen_uuid = str(uuid4())
+    gen_uuid = generate_uuid()
     if not dry:
         # ignore[reportUnknownVariableType]: yep, fmf lacks annotations, and
         # pyright can't infer the type. Adding `cast()` seems to be the easiest
