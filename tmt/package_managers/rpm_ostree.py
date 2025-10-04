@@ -19,12 +19,7 @@ class RpmOstreeEngine(PackageManagerEngine):
         Prepare installation command for rpm-ostree
         """
 
-        command = Command()
-
-        if self.guest.facts.is_superuser is False:
-            command += Command('sudo')
-
-        command += Command('rpm-ostree')
+        command = Command(self.guest.sudo_prefix, 'rpm-ostree')
 
         options = Command('--apply-live', '--idempotent', '--allow-inactive', '--assumeyes')
 

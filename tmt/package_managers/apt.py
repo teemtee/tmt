@@ -82,30 +82,18 @@ exit $?
 class AptEngine(PackageManagerEngine):
     install_command = Command('install')
 
-    _sudo_prefix: Command
-
     def prepare_command(self) -> tuple[Command, Command]:
         """
         Prepare installation command for apt
         """
-
-        if self.guest.facts.is_superuser is False:
-            self._sudo_prefix = Command('sudo')
-
-        else:
-            self._sudo_prefix = Command()
-
-        command = Command()
+        command = Command(self.guest.sudo_prefix, 'apt')
         options = Command('-y')
-
-        command += self._sudo_prefix
-        command += Command('apt')
 
         return (command, options)
 
     def _enable_apt_file(self) -> ShellScript:
         return ShellScript(
-            f'( {self.install(Package("apt-file"))} ) && {self._sudo_prefix} apt-file update'
+            f'( {self.install(Package("apt-file"))} ) && {self.guest.sudo_prefix} apt-file update'
         )
 
     def _reduce_to_packages(
