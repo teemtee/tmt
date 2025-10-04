@@ -6,7 +6,7 @@ rlJournalStart
         local result_file=$1
         local test_name=$2
 
-        rlRun "yq -ery '.[] | select(.name == \"$test_name\") | .duration | test(\"^[0-9]{2,}:[0-5][0-9]:[0-5][0-9]$\")' $result_file" \
+        rlRun "yq  -e '.[] | select(.name == \"$test_name\") | .duration | test(\"^[0-9]{2,}:[0-5][0-9]:[0-5][0-9]$\")' $result_file" \
             0 "duration is in HH:MM:SS format"
     }
 
@@ -38,41 +38,41 @@ rlJournalStart
     rlPhaseStartTest "Check shell results"
         results="$run/plan/shell/execute/results.yaml"
 
-        rlRun "yq -ery '.[] | select(.name == \"/test/shell/good\" and .result == \"pass\")' $results" 0 "Check pass"
+        rlRun "yq  -e '.[] | select(.name == \"/test/shell/good\" and .result == \"pass\")' $results" 0 "Check pass"
         check_duration "$results" "/test/shell/good"
 
-        rlRun "yq -ery '.[] | select(.name == \"/test/shell/weird\" and .result == \"error\")' $results" 0 "Check error"
+        rlRun "yq  -e '.[] | select(.name == \"/test/shell/weird\" and .result == \"error\")' $results" 0 "Check error"
         check_duration "$results" "/test/shell/weird"
 
-        rlRun "yq -ery '.[] | select(.name == \"/test/shell/bad\" and .result == \"fail\")' $results" 0 "Check fail"
+        rlRun "yq  -e '.[] | select(.name == \"/test/shell/bad\" and .result == \"fail\")' $results" 0 "Check fail"
         check_duration "$results" "/test/shell/bad"
 
         # Check log file exists
-        rlRun "yq -ery '.[] | select(.name == \"/test/shell/good\") | any(.log[]; test(\"^data/.+/output.txt$\"))' $results" \
+        rlRun "yq  -e '.[] | select(.name == \"/test/shell/good\") | .log | any_c(test(\"^data/.+/output.txt$\"))' $results" \
             0 "Check output.txt log exists in $results"
     rlPhaseEnd
 
     rlPhaseStartTest "Check beakerlib results"
         results="$run/plan/beakerlib/execute/results.yaml"
 
-        rlRun "yq -ery '.[] | select(.name == \"/test/beakerlib/good\" and .result == \"pass\")' $results" 0 "Check pass"
+        rlRun "yq  -e '.[] | select(.name == \"/test/beakerlib/good\" and .result == \"pass\")' $results" 0 "Check pass"
         check_duration "$results" "/test/beakerlib/good"
 
-        rlRun "yq -ery '.[] | select(.name == \"/test/beakerlib/need\" and .result == \"warn\")' $results" 0 "Check warn"
+        rlRun "yq  -e '.[] | select(.name == \"/test/beakerlib/need\" and .result == \"warn\")' $results" 0 "Check warn"
         check_duration "$results" "/test/beakerlib/need"
 
-        rlRun "yq -ery '.[] | select(.name == \"/test/beakerlib/weird\" and .result == \"error\")' $results" 0 "Check error"
+        rlRun "yq  -e '.[] | select(.name == \"/test/beakerlib/weird\" and .result == \"error\")' $results" 0 "Check error"
         check_duration "$results" "/test/beakerlib/weird"
 
-        rlRun "yq -ery '.[] | select(.name == \"/test/beakerlib/bad\" and .result == \"fail\")' $results" 0 "Check fail"
+        rlRun "yq  -e '.[] | select(.name == \"/test/beakerlib/bad\" and .result == \"fail\")' $results" 0 "Check fail"
         check_duration "$results" "/test/beakerlib/bad"
 
         # Check log files exist
-        rlRun "yq -ery '.[] | select(.name == \"/test/beakerlib/good\") | .log | map({path: .}) | .[] | select(.path | test(\"^data/.+/output.txt$\"))' $results" \
+        rlRun "yq  -e '.[] | select(.name == \"/test/beakerlib/good\") | .log | any_c(test(\"^data/.+/output.txt$\"))' $results" \
             0 "Check output.txt log exists in $results"
-        rlRun "yq -ery '.[] | select(.name == \"/test/beakerlib/good\") | .log | map({path: .}) | .[] | select(.path | test(\"^data/.+/journal.txt$\"))' $results" \
+        rlRun "yq  -e '.[] | select(.name == \"/test/beakerlib/good\") | .log | any_c(test(\"^data/.+/journal.txt$\"))' $results" \
             0 "Check journal.txt log exists in $results"
-        rlRun "yq -ery '.[] | select(.name == \"/test/beakerlib/good\") | .log | map({path: .}) | .[] | select(.path | test(\"^data/.+/journal.xml$\"))' $results" \
+        rlRun "yq  -e '.[] | select(.name == \"/test/beakerlib/good\") | .log | any_c(test(\"^data/.+/journal.xml$\"))' $results" \
             0 "Check journal.xml log exists in $results"
     rlPhaseEnd
 

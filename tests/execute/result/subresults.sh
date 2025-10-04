@@ -67,26 +67,26 @@ rlJournalStart
         # Check the subresults get correctly saved in results.yaml
         rlRun "results_file=${run_dir}/plan/execute/results.yaml"
 
-        rlRun "yq -ey '.[] | select(.name == \"/test/shell/pass\") | .subresult' ${results_file} > subresults_pass.yaml"
+        rlRun "yq  -e '.[] | select(.name == \"/test/shell/pass\") | .subresult' ${results_file} > subresults_pass.yaml"
         rlAssertGrep "name: /pass-subtest/good0" "subresults_pass.yaml"
         rlAssertGrep "name: /pass-subtest/good1" "subresults_pass.yaml"
         rlAssertGrep "name: /pass-subtest/good2" "subresults_pass.yaml"
         rlAssertGrep "name: /pass-subtest/good3" "subresults_pass.yaml"
         rlAssertNotGrep "original-result: \(fail\|skip\|warn\)" "subresults_pass.yaml"
 
-        rlRun "yq -ey '.[] | select(.name == \"/test/shell/skip\") | .subresult' ${results_file} > subresults_skip.yaml"
+        rlRun "yq  -e '.[] | select(.name == \"/test/shell/skip\") | .subresult' ${results_file} > subresults_skip.yaml"
         rlAssertGrep "name: /skip-subtest/extra-pass" "subresults_skip.yaml"
         rlAssertGrep "name: /skip-subtest/extra-skip1" "subresults_skip.yaml"
         rlAssertGrep "name: /skip-subtest/extra-skip2" "subresults_skip.yaml"
 
-        rlRun "yq -ey '.[] | select(.name == \"/test/shell/fail\") | .subresult' ${results_file} > subresults_fail.yaml"
+        rlRun "yq  -e '.[] | select(.name == \"/test/shell/fail\") | .subresult' ${results_file} > subresults_fail.yaml"
         rlAssertGrep "name: /fail-subtest/good" "subresults_fail.yaml"
         rlAssertGrep "name: /fail-subtest/fail" "subresults_fail.yaml"
         rlAssertGrep "name: /fail-subtest/weird" "subresults_fail.yaml"
         rlAssertGrep "name: /fail-subtest/skip" "subresults_fail.yaml"
         rlAssertGrep "name: /fail-subtest/fail-rhts" "subresults_fail.yaml"
 
-        rlRun "yq -ey '.[] | select(.name == \"/test/beakerlib\") | .subresult' ${results_file} > subresults_beakerlib.yaml"
+        rlRun "yq  -e '.[] | select(.name == \"/test/beakerlib\") | .subresult' ${results_file} > subresults_beakerlib.yaml"
         rlAssertGrep "name: /phase-setup" "subresults_beakerlib.yaml"
         rlAssertGrep "name: /phase-test-pass" "subresults_beakerlib.yaml"
         rlAssertGrep "name: /phase-test-fail" "subresults_beakerlib.yaml"
