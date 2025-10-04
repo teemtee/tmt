@@ -73,7 +73,6 @@ def insert_to_prepare_step(
     future_requires: PreparePlugin[Any] = cast(
         PreparePlugin[Any], PreparePlugin.delegate(prepare_step, data=data_require)
     )
-    prepare_step._phases.append(future_requires)
 
     # Future install recommend
     data_recommend = PrepareInstallData(
@@ -88,27 +87,28 @@ def insert_to_prepare_step(
     future_recommends: PreparePlugin[Any] = cast(
         PreparePlugin[Any], PreparePlugin.delegate(prepare_step, data=data_recommend)
     )
-    prepare_step._phases.append(future_recommends)
 
-    prepare_step._phases.append(
-        PrepareDistGit(
-            step=prepare_step,
-            data=DistGitData(
-                where=where,
-                source_dir=sourcedir,
-                phase_name=discover_plugin.name,
-                install_builddeps=discover_plugin.get('dist-git-install-builddeps'),
-                require=discover_plugin.get('dist-git-require'),
-                how='distgit',
-                name="Prepare dist-git sources (buildrequires, patches, discovery...)",
-            ),
-            workdir=None,
-            discover=discover_plugin,
-            future_requires=future_requires,
-            future_recommends=future_recommends,
-            logger=discover_plugin._logger.descend(logger_name="extract-distgit", extra_shift=0),
-        )
+    prepare_dist_git = PrepareDistGit(
+        step=prepare_step,
+        data=DistGitData(
+            where=where,
+            source_dir=sourcedir,
+            phase_name=discover_plugin.name,
+            install_builddeps=discover_plugin.get('dist-git-install-builddeps'),
+            require=discover_plugin.get('dist-git-require'),
+            how='distgit',
+            name="Prepare dist-git sources (buildrequires, patches, discovery...)",
+        ),
+        workdir=None,
+        discover=discover_plugin,
+        future_requires=future_requires,
+        future_recommends=future_recommends,
+        logger=discover_plugin._logger.descend(logger_name="extract-distgit", extra_shift=0),
     )
+
+    prepare_step.add_phase(future_requires)
+    prepare_step.add_phase(future_recommends)
+    prepare_step.add_phase(prepare_dist_git)
 
 
 @container
