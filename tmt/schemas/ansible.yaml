@@ -1,0 +1,22 @@
+---
+
+#
+# JSON Schema definition for Ansible configuration
+#
+# https://tmt.readthedocs.io/en/stable/spec/plans.html#ansible
+#
+
+$id: /schemas/ansible
+$schema: https://json-schema.org/draft-07/schema
+
+type: object
+additionalProperties: false
+
+properties:
+  inventory:
+    type: object
+    additionalProperties: false
+    properties:
+      layout:
+        type: string
+        description: Path to a YAML file defining the inventory group hierarchy and layout

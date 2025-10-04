@@ -344,6 +344,7 @@ class GuestContainer(tmt.Guest):
         if os.geteuid() != 0:
             podman_command += ['podman', 'unshare']
 
+        # TODO: add ansible inventory support
         podman_command += cast(
             tmt.utils.RawCommand,
             [

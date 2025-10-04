@@ -1,0 +1,7 @@
+---
+- name: Ungrouped hosts tasks
+  hosts: ungrouped
+  tasks:
+    - name: Log ungrouped configuration
+      ansible.builtin.debug:
+        msg: "UNGROUPED_TASK_EXECUTED on {{ inventory_hostname }}"

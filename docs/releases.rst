@@ -4,6 +4,14 @@
     Releases
 ======================
 
+# TODO
+TMT now supports automatic generation of Ansible inventory files
+during the provision phase. The new :ref:`/spec/plans/ansible`
+configuration allows users to define custom inventory layouts and
+organize provisioned guests into Ansible groups with host-specific
+variables. See the :ref:`/spec/plans/ansible` and
+:ref:`/spec/plans/provision/ansible` sections for configuration details.
+
 tmt-1.59.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -15,7 +23,6 @@ support for :ref:`beaker.panic-watchdog</spec/hardware/beaker>`
 hardware requirement. If enabled, beaker-watchdog will return the
 host to beaker when a kernel panic is detected. By default this
 option is disabled so tmt can keep control over the Beaker machine.
-
 
 tmt-1.58.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
