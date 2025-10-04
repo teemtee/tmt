@@ -106,7 +106,6 @@ definitions:
     # seems like we have to repeat properties schemas here as well.
     properties:
       url:
-        # https://github.com/teemtee/tmt/issues/1258
         type: string
 
       ref:
@@ -240,7 +239,6 @@ definitions:
     # seems like we have to repeat properties schemas here as well.
     properties:
       url:
-        # https://github.com/teemtee/tmt/issues/1258
         type: string
 
       ref:
@@ -271,7 +269,6 @@ definitions:
     minProperties: 1
     properties:
       url:
-        # https://github.com/teemtee/tmt/issues/1258
         type: string
 
       ref:
