@@ -111,14 +111,14 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
 
         raise NotImplementedError
 
-    def download_artifacts(
+    def fetch_contents(
         self,
         guest: Guest,
         download_path: tmt.utils.Path,
         exclude_patterns: Optional[list[Pattern[str]]] = None,
     ) -> list[tmt.utils.Path]:
         """
-        Download all artifacts to the specified destination.
+        Fetch all artifacts to the specified destination.
 
         :param guest: the guest on which the artifact should be
             downloaded.
