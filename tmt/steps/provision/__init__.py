@@ -2221,6 +2221,7 @@ class GuestSshData(GuestData):
         default_factory=list,
         option=('-k', '--key'),
         metavar='PATH',
+        multiple=True,
         help="""
              Private key to use as SSH identity for key-based
              authentication.
