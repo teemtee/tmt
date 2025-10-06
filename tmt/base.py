@@ -3441,7 +3441,7 @@ class Plan(
         :param phase: The phase to add to the step.
         """
         if isinstance(step, str):
-            if step in tmt.steps.STEPS:
+            if step not in tmt.steps.STEPS:
                 raise GeneralError(f"Tried to add to an unknown step: {step}")
             step = getattr(self, step)
         assert isinstance(step, tmt.steps.Step)
