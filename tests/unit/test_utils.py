@@ -998,14 +998,14 @@ def test_fmf_id(local_git_repo, root_logger, git_ref):
 class TestGitAdd:
     @classmethod
     def test_not_in_repository(cls, nested_file: tuple[Path, Path, Path], root_logger):
-        top_dir, sub_dir, file = nested_file
+        _, sub_dir, _ = nested_file
 
         with pytest.raises(GeneralError, match=r"Failed to add path .* to git index."):
             git_add(path=sub_dir, logger=root_logger)
 
     @classmethod
     def test_in_repository(cls, nested_file: tuple[Path, Path, Path], root_logger):
-        top_dir, sub_dir, file = nested_file
+        top_dir, sub_dir, _ = nested_file
         run(ShellScript('git init').to_shell_command(), cwd=top_dir)
 
         git_add(path=sub_dir, logger=root_logger)
