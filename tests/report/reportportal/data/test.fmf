@@ -19,14 +19,14 @@
     summary: Test the tmt subresults (ReportPortal child items)
     test: |
         tmt-report-result /subtest/good PASS
-        tmt-report-result /subtest/fail FAIL
+        tmt-report-result /subtest/bad FAIL
         tmt-report-result /subtest/weird WARN
 
 /subresults-restraint:
     result: restraint
     test: |
         tmt-report-result /subtest-restraint/good PASS
-        tmt-report-result /subtest-restraint/fail FAIL
+        tmt-report-result /subtest-restraint/bad FAIL
         tmt-report-result /subtest-restraint/weird WARN
 
 # TODO: Enable test of subresults for beakerlib phases
