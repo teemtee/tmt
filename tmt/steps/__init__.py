@@ -2712,10 +2712,7 @@ class PluginTask(
         if isinstance(self.phase, ExecutePlugin):
             # mypy reports `self.phase` as `Never` type, probably some
             # issue in how it's declared above.
-            return (
-                cast(ExecutePlugin[Any], self.phase).discover_phase
-                or cast(ExecutePlugin[Any], self.phase).discover.name
-            )
+            return self.phase.discover_phase or self.phase.discover.name
 
         return self.phase.name
 

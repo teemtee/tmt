@@ -873,7 +873,7 @@ def field(
     # would make the `T` match.
     return simple_field(
         default=default,
-        default_factory=default_factory or dataclasses.MISSING,  # type: ignore[arg-type]
+        default_factory=default_factory or dataclasses.MISSING,
         metadata={
             'tmt': FieldMetadata(
                 internal=internal,

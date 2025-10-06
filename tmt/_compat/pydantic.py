@@ -40,7 +40,7 @@ if PYDANTIC_V1:
         # The names of the model_fields and __fields__ value types are different,
         # but it shouldn't matter for our implementation so far
         @property
-        def model_fields(self) -> dict[str, Any]:  # type: ignore[override]
+        def model_fields(self) -> dict[str, Any]:
             return self.__fields__
 
 else:
