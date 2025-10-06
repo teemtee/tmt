@@ -3,6 +3,7 @@ import textwrap
 from typing import Any
 
 import _pytest.logging
+import fmf
 import pytest
 
 import tmt.hardware
@@ -178,6 +179,7 @@ def test_normalize_invalid_hardware(
 FULL_HARDWARE_REQUIREMENTS = """
     beaker:
         pool: "!= foo.*"
+        panic-watchdog: True
     boot:
         method: bios
     compatible:
@@ -263,10 +265,37 @@ OR_HARDWARE_REQUIREMENTS = """
 """
 
 
+@pytest.mark.parametrize(
+    'requirements',
+    [
+        FULL_HARDWARE_REQUIREMENTS,
+        OR_HARDWARE_REQUIREMENTS,
+    ],
+    ids=('Full requirements', 'OR-ed requirements'),
+)
+def test_validate_requirements(requirements: str, root_logger: Logger) -> None:
+    node = fmf.Tree({'hardware': tmt.utils.yaml_to_dict(requirements)})
+
+    errors = tmt.utils.validate_fmf_node(node, 'hardware.yaml', root_logger)
+
+    if errors:
+        for error, message in errors:
+            print(f"""* {message}
+
+Detailed validation error:
+
+{textwrap.indent(str(error), '  ')}
+""")
+
+        pytest.fail("Requirement example fails schema validation")
+
+
 def test_parse_maximal_constraint() -> None:
     hw_spec_out = """
         and:
-          - beaker.pool: '!= foo.*'
+          - and:
+              - beaker.pool: '!= foo.*'
+              - beaker.panic-watchdog: == True
           - boot.method: contains bios
           - and:
               - compatible.distro: contains rhel-7

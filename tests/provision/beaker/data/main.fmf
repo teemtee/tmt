@@ -54,3 +54,10 @@
         hardware:
             hostname: my_host2
         order: 2
+
+/plan/watchdog:
+    provision+:
+        hardware:
+            beaker:
+                panic-watchdog: True
+        image: fedora-42

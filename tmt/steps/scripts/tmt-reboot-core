@@ -20,4 +20,8 @@ read -r test_pid test_reboot_file < "$TMT_TEST_PIDFILE"
 mkdir -p "$(dirname "$test_reboot_file")"
 
 printf '{"command": "%s", "timeout": "%s"}' "$command" "$timeout" > "$test_reboot_file"
+
+# Flush buffers to prevent potential data loss
+sync
+
 kill "$test_pid"

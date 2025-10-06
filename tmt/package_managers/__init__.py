@@ -80,30 +80,12 @@ _PACKAGE_MANAGER_PLUGIN_REGISTRY: tmt.plugins.PluginRegistry[
     'PackageManagerClass[PackageManagerEngine]'
 ] = tmt.plugins.PluginRegistry('package_managers')
 
-
-def provides_package_manager(
-    package_manager: str,
-) -> Callable[
-    ['PackageManagerClass[PackageManagerEngineT]'], 'PackageManagerClass[PackageManagerEngineT]'
-]:
-    """
-    A decorator for registering package managers.
-
-    Decorate a package manager plugin class to register a package manager.
-    """
-
-    def _provides_package_manager(
-        package_manager_cls: 'PackageManagerClass[PackageManagerEngineT]',
-    ) -> 'PackageManagerClass[PackageManagerEngineT]':
-        _PACKAGE_MANAGER_PLUGIN_REGISTRY.register_plugin(
-            plugin_id=package_manager,
-            plugin=package_manager_cls,  # type: ignore[arg-type]
-            logger=tmt.log.Logger.get_bootstrap_logger(),
-        )
-
-        return package_manager_cls
-
-    return _provides_package_manager
+provides_package_manager: Callable[
+    [str],
+    Callable[
+        ['PackageManagerClass[PackageManagerEngine]'], 'PackageManagerClass[PackageManagerEngine]'
+    ],
+] = _PACKAGE_MANAGER_PLUGIN_REGISTRY.create_decorator()
 
 
 def find_package_manager(

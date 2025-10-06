@@ -3062,10 +3062,12 @@ class Plan(
                 step.suspend()
 
             if not abort:
-                if self.report.enabled and self.report.status() != "done":
-                    self.report.go()
-                if self.cleanup.enabled:
-                    self.cleanup.go()
+                try:
+                    if self.report.enabled and self.report.status() != "done":
+                        self.report.go()
+                finally:
+                    if self.cleanup.enabled:
+                        self.cleanup.go()
 
     def _export(
         self, *, keys: Optional[list[str]] = None, include_internal: bool = False
@@ -4682,8 +4684,11 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
 
         for script in tmt.steps.scripts.SCRIPTS:
             with script as source:
+                # TODO: Consider making these symlinks instead
                 for filename in [script.source_filename, *script.aliases]:
-                    shutil.copy(source, destination / filename)
+                    target_file = destination / filename
+                    shutil.copy(source, target_file)
+                    target_file.chmod(0o0755)
 
     def prepare_for_try(self, tree: Tree) -> None:
         """
@@ -4694,6 +4699,9 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         self._workdir_load(self._workdir_path)
         self.config.last_run = self.run_workdir
         self.info(str(self.run_workdir), color='magenta')
+
+        # Create scripts directory and copy tmt scripts there
+        self.copy_scripts()
 
     def go(self) -> None:
         """

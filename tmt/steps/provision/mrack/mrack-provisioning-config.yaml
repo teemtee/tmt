@@ -103,6 +103,7 @@ beaker:
     Fedora-42%: Server
     Fedora-43%: Server
     Fedora-44%: Server
+    Fedora-Rawhide-%: Server
 
   distro_tags:
     RHEL-9.0%:

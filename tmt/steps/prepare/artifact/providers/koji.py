@@ -2,6 +2,7 @@
 Koji Artifact Provider
 """
 
+import os
 import types
 from collections.abc import Iterator
 from shlex import quote
@@ -14,7 +15,9 @@ from tmt.container import container
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
+    ArtifactProviderId,
     DownloadError,
+    provides_artifact_provider,
 )
 from tmt.steps.provision import Guest
 
@@ -22,23 +25,6 @@ koji: Optional[types.ModuleType] = None
 
 # To silence mypy
 ClientSession: Any
-
-
-tmt.utils.hints.register_hint(
-    'koji',
-    """
-    The ``koji`` Python package is required by tmt for Koji integration.
-
-    To quickly test Koji presence, you can try running:
-
-        python -c 'import koji'
-
-    * Users who installed tmt from PyPI should install the ``koji`` package
-      via ``pip install koji``. On Fedora/RHEL systems, ``python3-gssapi``
-      must be installed first to allow ``pip`` to build and use the required
-      GSSAPI bindings.
-    """,
-)
 
 
 def import_koji(logger: tmt.log.Logger) -> None:
@@ -50,7 +36,7 @@ def import_koji(logger: tmt.log.Logger) -> None:
     except ImportError as error:
         from tmt.utils.hints import print_hints
 
-        print_hints('koji', logger=logger)
+        print_hints('artifact-provider/koji/koji', logger=logger)
 
         raise tmt.utils.GeneralError("Could not import koji package.") from error
 
@@ -61,7 +47,10 @@ class RpmArtifactInfo(ArtifactInfo):
     Represents a single RPM package.
     """
 
-    PKG_URL = "https://kojipkgs.fedoraproject.org/packages/"  # For actual package downloads
+    # TODO: Make RPM_BASE_URL configurable via FMF/CLI, not just env var
+    BASE_URL = os.getenv("RPM_BASE_URL", "https://kojipkgs.fedoraproject.org/packages").rstrip(
+        "/"
+    )  # For actual package downloads
     _raw_artifact: dict[str, str]
 
     @property
@@ -73,7 +62,7 @@ class RpmArtifactInfo(ArtifactInfo):
     def location(self) -> str:
         """Get the download URL for the given RPM metadata."""
         return (
-            f"{self.PKG_URL}{self._raw_artifact['name']}/"
+            f"{self.BASE_URL}/{self._raw_artifact['name']}/"
             f"{self._raw_artifact['version']}/"
             f"{self._raw_artifact['release']}/"
             f"{self._raw_artifact['arch']}/"
@@ -81,20 +70,44 @@ class RpmArtifactInfo(ArtifactInfo):
         )
 
 
+# ignore[type-arg]: TypeVar in provider registry annotations is
+# puzzling for type checkers. And not a good idea in general, probably.
+@provides_artifact_provider(  # type: ignore[arg-type]
+    'koji',
+    hints={
+        'koji': """
+        The ``koji`` Python package is required by tmt for Koji integration.
+
+        To quickly test Koji presence, you can try running:
+
+            python -c 'import koji'
+
+        * Users who installed tmt from PyPI should install the ``koji`` package
+          via ``pip install koji``. On Fedora/RHEL systems, ``python3-gssapi``
+          must be installed first to allow ``pip`` to build and use the required
+          GSSAPI bindings.
+    """,
+    },
+)
 class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
     """
     Provider for downloading artifacts from Koji builds.
-    Currently only supports RPM artifacts.
 
-    Example:
+    .. note::
+
+        Only RPMs are supported currently.
+
+    .. code-block:: python
+
         provider = KojiArtifactProvider(logger, "koji.build:123456")
-        artifacts = provider.download_artifacts(guest, Path("/tmp"), [] )
+        artifacts = provider.download_artifacts(guest, Path("/tmp"), [])
     """
 
-    API_URL = "https://koji.fedoraproject.org/kojihub"  # For metadata
+    # TODO: Make RPM_BASE_URL configurable via FMF/CLI, not just env var
+    API_URL = os.getenv("KOJI_API_URL", "https://koji.fedoraproject.org/kojihub")  # For metadata
 
-    def __init__(self, logger: tmt.log.Logger, artifact_id: str):
-        super().__init__(logger, artifact_id)
+    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
+        super().__init__(raw_provider_id, logger)
         self._session = self._initialize_session()
         self._rpm_list = self._fetch_rpms()
 
@@ -102,7 +115,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         """
         Fetch and cache the list of RPMs for the given artifact ID.
         """
-        return self._call_api('listBuildRPMs', int(self.artifact_id)) or []
+        return self._call_api('listBuildRPMs', int(self.id)) or []
 
     def _initialize_session(self) -> 'ClientSession':
         """
@@ -132,15 +145,16 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         except Exception as error:
             raise tmt.utils.GeneralError(f"API call '{method}' failed.") from error
 
-    def _parse_artifact_id(self, artifact_id: str) -> str:
+    @classmethod
+    def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
         # Eg: 'koji.build:123456'
         prefix = "koji.build:"
-        if not artifact_id.startswith(prefix):
-            raise ValueError(f"Invalid artifact ID format: '{artifact_id}'.")
+        if not raw_provider_id.startswith(prefix):
+            raise ValueError(f"Invalid Koji identifier: '{raw_provider_id}'.")
 
-        parsed = artifact_id[len(prefix) :]
+        parsed = raw_provider_id[len(prefix) :]
         if not parsed.isdigit():
-            raise ValueError(f"Invalid artifact ID format: '{artifact_id}'.")
+            raise ValueError(f"Invalid Koji identifier: '{raw_provider_id}'.")
         return parsed
 
     def list_artifacts(self) -> Iterator[RpmArtifactInfo]:

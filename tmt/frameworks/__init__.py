@@ -18,24 +18,9 @@ _FRAMEWORK_PLUGIN_REGISTRY: tmt.plugins.PluginRegistry[TestFrameworkClass] = (
     tmt.plugins.PluginRegistry('test.framework')
 )
 
-
-def provides_framework(framework: str) -> Callable[[TestFrameworkClass], TestFrameworkClass]:
-    """
-    A decorator for registering test frameworks.
-
-    Decorate a test framework plugin class to register a test framework.
-    """
-
-    def _provides_framework(framework_cls: TestFrameworkClass) -> TestFrameworkClass:
-        _FRAMEWORK_PLUGIN_REGISTRY.register_plugin(
-            plugin_id=framework,
-            plugin=framework_cls,
-            logger=tmt.log.Logger.get_bootstrap_logger(),
-        )
-
-        return framework_cls
-
-    return _provides_framework
+provides_framework: Callable[[str], Callable[[TestFrameworkClass], TestFrameworkClass]] = (
+    _FRAMEWORK_PLUGIN_REGISTRY.create_decorator()
+)
 
 
 class TestFramework:
