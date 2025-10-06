@@ -4,7 +4,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "v5.0.0"
+    rev: "v6.0.0"
     hooks:
       - id: check-merge-conflict
       - id: check-symlinks
@@ -18,7 +18,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.15.0"
+    rev: "v1.18.2"
     hooks:
       - id: mypy
         language: python # Required for Renovate additional_dependencies
@@ -56,7 +56,7 @@ repos:
           # frozen.
           - "types-Markdown"
           # prevent conflict between types-requests and urllib3
-          - "types-requests<2.31.0.7; python_version < '3.10'"
+          - "types-requests<2.32.4.20250914; python_version < '3.10'"
           - "types-requests; python_version >= '3.10'"
           - "types-setuptools"
           - "types-jsonschema"
@@ -69,7 +69,7 @@ repos:
         pass_filenames: false
 
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.399
+    rev: v1.1.406
     hooks:
       - id: pyright
         language: python # Required for Renovate additional_dependencies
@@ -107,7 +107,7 @@ repos:
           # frozen.
           - "types-Markdown"
           # prevent conflict between types-requests and urllib3
-          - "types-requests<2.31.0.7; python_version < '3.10'"
+          - "types-requests<2.32.4.20250914; python_version < '3.10'"
           - "types-requests; python_version >= '3.10'"
           - "types-setuptools"
           - "types-jsonschema"
@@ -118,14 +118,14 @@ repos:
           - "types-lxml"
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.33.0"
+    rev: "0.34.0"
     hooks:
       - id: check-metaschema
         name: "Check JSON schemas validity"
         files: ^tmt/schemas/.*\.yaml
 
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.37.0
+    rev: v1.37.1
     hooks:
       - id: yamllint
         files: >
@@ -143,7 +143,7 @@ repos:
           )$
 
   - repo: https://github.com/ansible-community/ansible-lint.git
-    rev: v25.2.1
+    rev: v25.9.1
     hooks:
       - id: ansible-lint
         language: python # Required for Renovate additional_dependencies
@@ -160,7 +160,7 @@ repos:
           # in order to be parsed by ansible-lint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.11.5
+    rev: v0.13.3
     hooks:
       - id: ruff
         args:
@@ -169,14 +169,14 @@ repos:
       - id: ruff-format
 
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.46.0
+    rev: 1.58.0
     hooks:
       - id: tmt-lint
         language: python # Required for Renovate additional_dependencies
         additional_dependencies:
           - "docutils>=0.16" # 0.16 is the current one available for RHEL9
           - "packaging>=20" # 20 seems to be available with RHEL8
-          - "pint<0.20"
+          - "pint<0.26"
           - "pydantic>=1.10.14"
           # Missing python3.14 pre-compiled wheels among other issues
           - "pydantic>=2.12.0a1; python_version >= '3.14'"
@@ -214,7 +214,7 @@ repos:
           - "--"
 
   - repo: https://github.com/AleksaC/hadolint-py
-    rev: v2.12.1b3
+    rev: v2.14.0
     hooks:
       - id: hadolint
         files: ^containers/.*
@@ -234,7 +234,7 @@ repos:
           )$
 
   - repo: https://github.com/pycqa/flake8
-    rev: "7.2.0"
+    rev: "7.3.0"
     hooks:
       - id: flake8
         additional_dependencies:
