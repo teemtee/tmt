@@ -114,8 +114,12 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
     def __new__(cls, raw_provider_id: str, logger: tmt.log.Logger) -> 'KojiArtifactProvider':
         """
-        Factory method to return the appropriate subclass based on the prefix
-        of the raw_provider_id.
+        Create a specific Koji provider based on the ``raw_provider_id`` prefix.
+
+        The supported provides are:
+        :py:class:`KojiBuild`,
+        :py:class:`KojiTask`,
+        :py:class:`KojiNvr`.
 
         :raises ValueError: If the prefix is not supported
         """
