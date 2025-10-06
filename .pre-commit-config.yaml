@@ -176,7 +176,7 @@ repos:
         additional_dependencies:
           - "docutils>=0.16" # 0.16 is the current one available for RHEL9
           - "packaging>=20" # 20 seems to be available with RHEL8
-          - "pint<0.20"
+          - "pint>=0.16.1"
           - "pydantic>=1.10.14"
           # Missing python3.14 pre-compiled wheels among other issues
           - "pydantic>=2.12.0a1; python_version >= '3.14'"
