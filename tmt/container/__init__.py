@@ -447,7 +447,7 @@ SpecOutT = TypeVar('SpecOutT')
 
 
 @container
-class SpecBasedContainer(Generic[SpecInT, SpecOutT], DataContainer):
+class SpecBasedContainer(Generic[SpecInT, SpecOutT], DataContainer):  # noqa: PYI059
     @classmethod
     def from_spec(cls, spec: SpecInT) -> Self:
         """

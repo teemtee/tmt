@@ -69,7 +69,7 @@ class Exporter(Protocol):
         pass
 
 
-class Exportable(Generic[ExportableT], tmt.utils._CommonBase):
+class Exportable(Generic[ExportableT], tmt.utils._CommonBase):  # noqa: PYI059
     """
     Mixin class adding support for exportability of class instances
     """
