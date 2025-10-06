@@ -1293,7 +1293,7 @@ class Step(
         """
         # FIXME: Check that the where are consistent
         if not isinstance(phase, self._plugin_base_class):
-            raise GeneralError(f"The phase {phase} is not part of {self}")
+            raise GeneralError(f"The phase '{phase}' is not part of step '{self}'.")
         self._phases.append(phase)
 
     def actions(self) -> None:
