@@ -1020,18 +1020,17 @@ class GuestTestcloud(tmt.GuestSsh):
         # Make a symlink to the file image
         if self.image_url.startswith("file://"):
             image_path = Path(self.image_url.removeprefix("file://"))
-            # Synced with Image._process_uri image_name handling
-            image_name = image_path.name
-            if image_name.lower().endswith(".xz"):
-                image_name = image_name[:-3]
-            if image_name.lower().endswith(".box"):
-                image_name = f"{image_name[:-4]}.qcow2"
-
-            # Create a symlink in the testcloud STORE_DIR and make sure
-            # it is always updated to the requested version.
-            image_symlink = self.testcloud_image_dirpath / image_name
-            image_symlink.unlink(missing_ok=True)
-            image_symlink.symlink_to(image_path)
+            # We should not symlink any supported formats, e.g. the `.xz`
+            # does an extract step that would be skip if we make the symlink.
+            # TODO: Maybe more suffixes are desired
+            # Note: we are assuming selinux and other preparations are done
+            #  by the user.
+            if image_path.suffixes[-1] in (".qcow2",):
+                # Create a symlink in the testcloud STORE_DIR and make sure
+                # it is always updated to the requested version.
+                image_symlink = self.testcloud_image_dirpath / image_path.name
+                image_symlink.unlink(missing_ok=True)
+                image_symlink.symlink_to(image_path)
 
         # Initialize and prepare testcloud image
         assert testcloud is not None
