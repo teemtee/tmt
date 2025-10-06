@@ -41,10 +41,11 @@ class RepositoryManager:
         :raises DownloadError: If the download fails.
         """
         repo_dest = Path("/etc/yum.repos.d") / repo_filename
-        sudo = "sudo " if not guest.facts.is_superuser else ""
         try:
             # Use -L to follow redirects and --fail to error out on HTTP errors.
-            script = ShellScript(f"{sudo}curl -L --fail -o {quote(str(repo_dest))} {quote(url)}")
+            script = ShellScript(
+                f"{guest.facts.sudo_prefix}curl -L --fail -o {quote(str(repo_dest))} {quote(url)}"
+            )
             guest.execute(script, silent=True)
         except GeneralError as error:
             raise DownloadError(f"Failed to download repository file to '{repo_dest}'.") from error
@@ -189,7 +190,7 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         if self._rpm_list is None:
             raise GeneralError(
                 "RPM list not available. The 'fetch_contents' method must be "
-                "called before 'list_artifacts'."
+                "called before accessing the artifacts property."
             )
         return self._rpm_list
 
