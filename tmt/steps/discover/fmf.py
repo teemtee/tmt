@@ -44,9 +44,9 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         option=('-u', '--url'),
         metavar='URL',
         help="""
-            External url containing the metadata tree.
+            External URL containing the metadata tree.
             Current git repository used by default.
-            See ``url-type`` option.
+            See ``url-type`` key for details on what content is accepted.
             """,
     )
 
@@ -54,7 +54,7 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         default="git",
         option="--url-type",
         help="""
-            How to handle the ``url`` field.
+            How to handle the ``url`` key.
             """,
         choices=("git", "archive"),
     )
