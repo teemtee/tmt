@@ -952,6 +952,9 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         if self.is_dry_run:
             return outcome
 
+        if guest.facts.package_manager is None:
+            raise tmt.utils.PrepareError('Unrecognized package manager.')
+
         # Pick the right implementation
         # TODO: it'd be nice to use a "plugin registry" and make the
         # implementations discovered as any other plugins. Package managers are
@@ -968,9 +971,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
                 guest=guest,
             )
 
-        elif guest.facts.package_manager is not None and guest.facts.package_manager.startswith(
-            'mock-'
-        ):
+        elif guest.facts.package_manager.startswith('mock-'):
             installer = InstallMock(
                 logger=logger,
                 parent=self,
@@ -1039,9 +1040,6 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
                 exclude=self.data.exclude,
                 guest=guest,
             )
-
-        elif guest.facts.package_manager is None:
-            raise tmt.utils.PrepareError('Unrecognized package manager.')
 
         else:
             raise tmt.utils.PrepareError(
