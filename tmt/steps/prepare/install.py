@@ -672,6 +672,7 @@ class InstallBootc(InstallBase):
 
 
 class InstallMock(InstallBase):
+    # TODO this really looks like it should be a subclass of InstallDnf
     def install_from_repository(self) -> None:
         self.guest.package_manager.install(
             *self.list_installables("package", *self.packages),
@@ -691,6 +692,7 @@ class InstallMock(InstallBase):
 
         # mock's package manager mounts the buildroot directory, so we need to
         # prefix the path.
+        # TODO revisit and check if we don't want to override `prepare_install_local` instead
 
         filelist = [
             PackagePath(
