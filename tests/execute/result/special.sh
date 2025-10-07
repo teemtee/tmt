@@ -15,7 +15,7 @@ rlJournalStart
         rlRun "yq -e '.' $RESULT_FILE_BASIC" 0 "Check the YAML is valid"
 
         # Get and test the concrete item from the list of subresults
-        rlRun "yq -e 'length == 1'" 0 "This should have only 1 subresult"
+        rlRun "yq -e 'length == 1' \"$RESULT_FILE_BASIC\"" 0 "This should have only 1 subresult"
         rlRun "yq  -e '.[0]' \"$RESULT_FILE_BASIC\" | tee subresult.out"
         rlAssertGrep 'name: "/0\.\.7 \\"special\\": \\" characters: \*\$@|&>< in: the: name"' "subresult.out"
         rlAssertGrep 'result: "pass"' "subresult.out"
