@@ -190,7 +190,7 @@ execute:
         discover:
             how: fmf
             url: https://github.com/teemtee/tests/archive/refs/heads/main.tar.gz
-            url-type: archive
+            url-content-type: archive
             test: /tests
             path: /tests-main
 

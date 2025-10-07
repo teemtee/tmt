@@ -25,7 +25,7 @@ properties:
   url:
     $ref: "/schemas/common#/definitions/fmf_id/properties/url"
 
-  url-type:
+  url-content-type:
     type: string
     enum:
       - git

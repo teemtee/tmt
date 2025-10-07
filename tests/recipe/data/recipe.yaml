@@ -47,7 +47,7 @@ plans:
             dist-git-require: []
             require-test: []
             url:
-            url-type: git
+            url-content-type: git
             ref:
             path:
             test: []

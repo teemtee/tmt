@@ -46,13 +46,13 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         help="""
             External URL containing the metadata tree.
             Current git repository used by default.
-            See ``url-type`` key for details on what content is accepted.
+            See ``url-content-type`` key for details on what content is accepted.
             """,
     )
 
-    url_type: Literal["git", "archive"] = field(
+    url_content_type: Literal["git", "archive"] = field(
         default="git",
-        option="--url-type",
+        option="--url-content-type",
         help="""
             How to handle the ``url`` key.
             """,
@@ -324,15 +324,15 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     ^^^^^^^
 
     By default ``url`` is treated as a git url to be cloned, but you can set
-    ``url-type`` to ``archive`` to instead treat it as an archive url and
-    download and extract it. For example:
+    ``url-content-type`` to ``archive`` to instead treat it as an archive url
+    and download and extract it. For example:
 
     .. code-block:: yaml
 
         discover:
             how: fmf
             url: https://github.com/teemtee/tmt/archive/refs/heads/main.tar.gz
-            url-type: archive
+            url-content-type: archive
             path: /tmt-main/fmf/root
 
     Dist Git
@@ -560,7 +560,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # prompt to ignore possibly missing or private repositories
         if url:
             self.info('url', url, 'green')
-            if self.data.url_type == "git":
+            if self.data.url_content_type == "git":
                 self.debug(f"Clone '{url}' to '{self.testdir}'.")
                 # Shallow clone to speed up testing and
                 # minimize data transfers if ref is not provided
@@ -572,7 +572,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     logger=self._logger,
                 )
                 git_root = self.testdir
-            elif self.data.url_type == "archive":
+            elif self.data.url_content_type == "archive":
                 self.debug(f"Downloading '{url}' and extracting to '{self.testdir}'.")
                 with tmt.utils.retry_session() as session:
                     response = session.get(url, stream=True)
@@ -589,7 +589,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 shutil.unpack_archive(archive_path, self.testdir)
                 git_root = self.testdir
             else:
-                raise ValueError(f"url-type has unsupported value: {self.data.url_type}")
+                raise ValueError(
+                    f"url-content-type has unsupported value: {self.data.url_content_type}"
+                )
         # Copy git repository root to workdir
         else:
             if path is not None:
