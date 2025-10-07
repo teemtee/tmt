@@ -897,6 +897,7 @@ class GuestFacts(SerializableContainer):
             self.has_systemd = self._query_has_systemd(guest)
             self.has_rsync = self._query_has_rsync(guest)
             self.is_superuser = self._query_is_superuser(guest)
+            self.sudo_prefix = self._query_sudo_prefix(guest)
             self.is_ostree = self._query_is_ostree(guest)
             self.is_toolbox = self._query_is_toolbox(guest)
             self.toolbox_container_name = self._query_toolbox_container_name(guest)
