@@ -125,7 +125,12 @@ class MockShell:
     def enter_shell(self) -> None:
         command = self.parent.mock_command_prefix.to_popen()
         command.append('-q')
+
+        # TODO should networking be configurable?
         command.append('--enable-network')
+
+        # Bind-mounting can be an easy way to implement push/pull.
+        # Currently we do not use it.
         """
         command.append('--enable-plugin=bind_mount')
         command.append(
@@ -135,6 +140,7 @@ class MockShell:
             ']'
         )
         """
+
         command.append('--shell')
 
         self.parent.verbose('mock', 'Entering shell.', color='blue', level=2)
@@ -532,7 +538,7 @@ class GuestMock(tmt.Guest):
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
-        # Nothing to do.
+        # TODO refresh shell
         self.debug(f"Doing nothing to reboot guest '{self.primary_address}'.")
         return False
 
@@ -540,6 +546,7 @@ class GuestMock(tmt.Guest):
         """
         Currently do not prune the mock chroot, that may be undesirable.
         """
+        # TODO consider whether we really want this
         pass
 
     def _do_scrub(self) -> None:
