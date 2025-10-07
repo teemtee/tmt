@@ -7,6 +7,9 @@
 tmt-1.59.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Introduced ``RSTRNT_TASKNAME`` environment variable gated by
+``restraint-compatible`` flag.
+
 If there is an error during the ``report`` step, tmt will now
 correctly execute the ``cleanup`` step instead of skipping it.
 

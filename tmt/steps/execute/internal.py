@@ -443,6 +443,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         environment["TMT_RESTRAINT_COMPATIBLE"] = EnvVarValue(
             str(int(self.data.restraint_compatible))
         )
+        if self.data.restraint_compatible:
+            environment["RSTRNT_TASKNAME"] = EnvVarValue(invocation.test.name)
 
         # Set all supported reboot variables
         for reboot_variable in tmt.steps.scripts.TMT_REBOOT_SCRIPT.related_variables:
