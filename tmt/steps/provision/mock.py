@@ -6,6 +6,7 @@ import select
 import shlex
 import subprocess
 from collections.abc import Generator
+from types import TracebackType
 from typing import Any, Callable, Optional, Union, cast
 
 import tmt
@@ -78,6 +79,29 @@ class MockShell:
                 self.string += '\n'
             return self
 
+    class ManagedEpollFd:
+        def __init__(self, epoll: select.epoll, fd: int) -> None:
+            self.epoll = epoll
+            self.fd: Optional[int] = fd
+
+        def __enter__(self) -> 'MockShell.ManagedEpollFd':
+            assert self.fd is not None
+            self.epoll.register(self.fd, select.EPOLLIN)
+            return self
+
+        def try_unregister(self) -> None:
+            if self.fd is not None:
+                self.epoll.unregister(self.fd)
+                self.fd = None
+
+        def __exit__(
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_value: Optional[BaseException],
+            exc_traceback: Optional[TracebackType],
+        ) -> None:
+            self.try_unregister()
+
     def __init__(self, parent: 'GuestMock', root: Optional[str], rootdir: Optional[Path]):
         self.parent = parent
         self.root = root
@@ -114,7 +138,7 @@ class MockShell:
         command.append('--shell')
 
         self.parent.verbose('mock', 'Entering shell.', color='blue', level=2)
-        self.parent.debug('mock', f'Command line arguments:  {command}.', color='blue')
+        self.parent.debug('mock', f'Command line arguments: {command}.', color='blue')
         self.mock_shell = subprocess.Popen(
             command,
             stdin=subprocess.PIPE,
@@ -287,86 +311,88 @@ class MockShell:
             assert self.mock_shell.stdout is not None
             assert self.mock_shell.stderr is not None
 
-            self.epoll.register(stdout_fd, select.EPOLLIN)
-            self.epoll.register(stderr_fd, select.EPOLLIN)
-            self.epoll.register(returncode_fd, select.EPOLLIN)
+            with (
+                MockShell.ManagedEpollFd(self.epoll, stdout_fd) as stdout_epoll,
+                MockShell.ManagedEpollFd(self.epoll, stderr_fd) as stderr_epoll,
+                MockShell.ManagedEpollFd(self.epoll, returncode_fd) as returncode_epoll,
+            ):
+                self.mock_shell.stdin.write(shell_command)
+                self.mock_shell.stdin.flush()
 
-            self.mock_shell.stdin.write(shell_command)
-            self.mock_shell.stdin.flush()
-
-            # For command output logging, use either the given logging callback, or
-            # use the given logger & emit to verbose log.
-            # NOTE Command.run uses debug, not verbose.
-            output_logger: tmt.log.LoggingFunction = (
-                (log or logger.verbose) if not silent else logger.verbose
-            )
-
-            stream_out = MockShell.Stream(
-                lambda text: output_logger('out', text, 'yellow', level=3)
-            )
-            stream_err = MockShell.Stream(
-                lambda text: output_logger('err', text, 'yellow', level=3)
-            )
-            returncode = None
-
-            yield  # type: ignore[misc]
-
-            while self.mock_shell.poll() is None:
-                events = self.epoll.poll(timeout=timeout)
-
-                if len(events) == 0:
-                    # TODO
-                    # kill the process spawned inside the mock shell
-                    pass
-
-                # The command is finished when mock shell prints a newline on its
-                # stdout. We want to break loop after we handled all the other
-                # epoll events because the event ordering is not guaranteed.
-                if len(events) == 1 and events[0][0] == self.mock_shell_stdout_fd:
-                    self.mock_shell.stdout.read()
-                    break
-                for fileno, _ in events:
-                    # Whatever we sent on mock shell's input it prints on the stderr
-                    # so just discard it.
-                    if fileno == self.mock_shell_stderr_fd:
-                        self.mock_shell.stderr.read()
-                    elif fileno == stdout_fd:
-                        content = os.read(stdout_fd, 128)
-                        stream_out += content
-                        if not content:
-                            self.epoll.unregister(stdout_fd)
-                    elif fileno == stderr_fd:
-                        content = os.read(stderr_fd, 128)
-                        stream_err += content
-                        if not content:
-                            self.epoll.unregister(stderr_fd)
-                    elif fileno == returncode_fd:
-                        content = os.read(returncode_fd, 16)
-                        if not content:
-                            self.epoll.unregister(returncode_fd)
-                        else:
-                            returncode = int(content.decode('utf-8').strip())
-
-            stdout = stream_out.string
-            stderr = stream_err.string
-
-            if returncode is None:
-                raise tmt.utils.RunError(
-                    f"Invalid state when executing command '{friendly_command or shell_command}'.",
-                    command,
-                    127,
-                    stdout=stdout,
-                    stderr=stderr,
+                # For command output logging, use either the given logging callback, or
+                # use the given logger & emit to verbose log.
+                # NOTE Command.run uses debug, not verbose.
+                output_logger: tmt.log.LoggingFunction = (
+                    (log or logger.verbose) if not silent else logger.verbose
                 )
-            if returncode != 0:
-                raise tmt.utils.RunError(
-                    f"Command '{friendly_command or shell_command}' returned {returncode}.",
-                    command,
-                    returncode,
-                    stdout=stdout,
-                    stderr=stderr,
+
+                stream_out = MockShell.Stream(
+                    lambda text: output_logger('out', text, 'yellow', level=3)
                 )
-            yield (stdout, stderr)
+                stream_err = MockShell.Stream(
+                    lambda text: output_logger('err', text, 'yellow', level=3)
+                )
+                returncode = None
+
+                yield  # type: ignore[misc]
+
+                while self.mock_shell.poll() is None:
+                    events = self.epoll.poll(timeout=timeout)
+
+                    if len(events) == 0:
+                        # TODO
+                        # kill the process spawned inside the mock shell
+                        pass
+
+                    # The command is finished when mock shell prints a newline on its
+                    # stdout. We want to break loop after we handled all the other
+                    # epoll events because the event ordering is not guaranteed.
+                    if len(events) == 1 and events[0][0] == self.mock_shell_stdout_fd:
+                        self.mock_shell.stdout.read()
+                        break
+                    for fileno, _ in events:
+                        # Whatever we sent on mock shell's input it prints on the stderr
+                        # so just discard it.
+                        if fileno == self.mock_shell_stderr_fd:
+                            self.mock_shell.stderr.read()
+                        elif fileno == stdout_fd:
+                            content = os.read(stdout_fd, 128)
+                            stream_out += content
+                            if not content:
+                                stdout_epoll.try_unregister()
+                        elif fileno == stderr_fd:
+                            content = os.read(stderr_fd, 128)
+                            stream_err += content
+                            if not content:
+                                stderr_epoll.try_unregister()
+                        elif fileno == returncode_fd:
+                            content = os.read(returncode_fd, 16)
+                            if not content:
+                                returncode_epoll.try_unregister()
+                            else:
+                                returncode = int(content.decode('utf-8').strip())
+
+                stdout = stream_out.string
+                stderr = stream_err.string
+
+                if returncode is None:
+                    raise tmt.utils.RunError(
+                        'Invalid state when executing command '
+                        f"'{friendly_command or shell_command}'.",
+                        command,
+                        127,
+                        stdout=stdout,
+                        stderr=stderr,
+                    )
+                if returncode != 0:
+                    raise tmt.utils.RunError(
+                        f"Command '{friendly_command or shell_command}' returned {returncode}.",
+                        command,
+                        returncode,
+                        stdout=stdout,
+                        stderr=stderr,
+                    )
+                yield (stdout, stderr)
 
     def execute(self, *args: Any, **kwargs: Any) -> tuple[str, str]:
         process = self._spawn_command(*args, **kwargs)
