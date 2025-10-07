@@ -994,6 +994,8 @@ class GuestTestcloud(tmt.GuestSsh):
         if self.is_dry_run:
             return
 
+        assert testcloud is not None  # Narrow type
+
         # Prepare the console log
         assert self.logdir is not None  # Narrow type
         console_log = ConsoleLog(
@@ -1031,9 +1033,10 @@ class GuestTestcloud(tmt.GuestSsh):
                 image_symlink = self.testcloud_image_dirpath / image_path.name
                 image_symlink.unlink(missing_ok=True)
                 image_symlink.symlink_to(image_path)
+                # Adjust selinux tags for the actual image
+                testcloud.image.Image._adjust_image_selinux(image_path)
 
         # Initialize and prepare testcloud image
-        assert testcloud is not None
         self._image = testcloud.image.Image(self.image_url)
         self.verbose('qcow', self._image.name, 'green')
         if not Path(self._image.local_path).exists():
