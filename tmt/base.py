@@ -3449,8 +3449,7 @@ class Plan(
             raise GeneralError(
                 f"Tried to add to a step belonging to a different plan: {step.plan}"
             )
-        # FIXME: Check that the current step/phase will be in the future
-        # FIXME: Do we only add if the current step is enabled?
+        # TODO: Check that the current step/phase is after the current step/phase
         step.add_phase(phase)
 
 
