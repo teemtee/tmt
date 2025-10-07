@@ -7,19 +7,9 @@ prepare+:
   - how: install
     package:
       - jq
+      - yq
       - make
       - python3-pip
-
-  - how: shell
-    script:
-      # Try to install into .local first, if that fails, try without --user.
-      # In the sane world, tmt would be running in a virtualenv, and we'd
-      # install yq there. Otherwise, we'd change system packages, but we'd
-      # have to run as root to do that, and who's running tmt test suite
-      # as root?
-      #
-      - command -v yq || pip3 install --user yq || pip3 install yq
-      - yq --help
 
 # Use the internal executor
 execute:

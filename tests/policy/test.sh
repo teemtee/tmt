@@ -17,7 +17,7 @@ rlJournalStart
             rlRun -s "tmt -vv test export --policy-file ../policies/test/$1 $plan"
             rlAssertGrep "Apply tmt policy '../policies/test/$1' to tests." $rlRun_LOG
 
-            rlRun -s "tmt -vv test export --policy-file ../policies/test/$1 $plan 2> /dev/null | yq -cSr '.[] | $filter'"
+            rlRun -s "tmt -vv test export --policy-file ../policies/test/$1 $plan 2> /dev/null | yq -o json '.[] | $filter' | jq -cSr"
 
             rlAssertEquals \
                 "Verify that $(echo "$filter" | cut -d' ' -f1) key is modified" \
@@ -34,8 +34,8 @@ rlJournalStart
         run_test environment.yaml /basic .environment "{\"FOO\":\"xyzzy\"}"
         run_test environment.yaml /full  .environment "{\"FOO\":\"baz\",\"QUX\":\"QUUX\"}"
 
-        run_test check.yaml /basic '.check | [.[] | {how, result}]' "[{\"how\":\"avc\",\"result\":\"respect\"}]"
-        run_test check.yaml /full  '.check | [.[] | {how, result}]' "[{\"how\":\"avc\",\"result\":\"info\"},{\"how\":\"dmesg\",\"result\":\"respect\"}]"
+        run_test check.yaml /basic '.check | [.[] | with_entries(select(.key | test("^(how|result)$")))]' "[{\"how\":\"avc\",\"result\":\"respect\"}]"
+        run_test check.yaml /full  '.check | [.[] | with_entries(select(.key | test("^(how|result)$")))]' "[{\"how\":\"avc\",\"result\":\"info\"},{\"how\":\"dmesg\",\"result\":\"respect\"}]"
     rlPhaseEnd
 
     rlPhaseStartTest "Test VALUE_SOURCE usage"
@@ -45,7 +45,7 @@ rlJournalStart
             local expected="$3"
 
             rlRun    "tmt -vv test export --policy-file ../policies/test/duration.yaml $plan"
-            rlRun -s "tmt -vv test export --policy-file ../policies/test/duration.yaml $plan 2> /dev/null | yq -cSr '.[] | .duration'"
+            rlRun -s "tmt -vv test export --policy-file ../policies/test/duration.yaml $plan 2> /dev/null | yq -o json '.[] | .duration' | jq -cSr"
 
             rlAssertEquals \
                 "$message" \
@@ -68,7 +68,7 @@ rlJournalStart
             rlAssertGrep "content: Spiked test." $rlRun_LOG
             rlAssertEquals \
                 "Verify that test has been modified" \
-                "$(yq -cSr '.[] | .test' $run/default/plan/discover/tests.yaml)" \
+                "$(yq -o json '.[] | .test' $run/default/plan/discover/tests.yaml | jq -cSr)" \
                 "bash -c 'echo \"Spiked test.\"; /bin/true'"
         }
 

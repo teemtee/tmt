@@ -15,10 +15,11 @@ rlJournalStart
         rlRun "yq -e '.' $RESULT_FILE_BASIC" 0 "Check the YAML is valid"
 
         # Get and test the concrete item from the list of subresults
-        rlRun "yq -ery '.[] | select(.name == \"/0..7 \\\"special\\\": \\\" characters: *\$@|&>< in: the: name\")' \"$RESULT_FILE_BASIC\" | tee subresult.out"
-        rlAssertGrep "name: '/0\.\.7 \\\"special\\\": \\\" characters: \\*\\\$@|&>< in: the: name'" "subresult.out"
-        rlAssertGrep "result: pass" "subresult.out"
-        rlAssertGrep "end-time: '.*'" "subresult.out"
+        rlRun "yq -e 'length == 1' \"$RESULT_FILE_BASIC\"" 0 "This should have only 1 subresult"
+        rlRun "yq  -e '.[0]' \"$RESULT_FILE_BASIC\" | tee subresult.out"
+        rlAssertGrep 'name: "/0\.\.7 \\"special\\": \\" characters: \*\$@|&>< in: the: name"' "subresult.out"
+        rlAssertGrep 'result: "pass"' "subresult.out"
+        rlAssertGrep 'end-time: ".*"' "subresult.out"
 
         # Beakerlib phase names with special chars
         RESULT_FILE_BKRLIB="$run/plan/execute/data/guest/default-0/test/beakerlib-special-names-2/data/tmt-report-results.yaml"
@@ -29,10 +30,10 @@ rlJournalStart
             '/02-so-me-phase-na-me' \
             /{03..14}-some
         do
-            rlRun "yq -ery '.[] | select(.name == \"${phase_name}\")' \"$RESULT_FILE_BKRLIB\" | tee subresult.out"
-            rlAssertGrep "name: ${phase_name}" "subresult.out"
-            rlAssertGrep "result: pass" "subresult.out"
-            rlAssertGrep "end-time: '.*'" "subresult.out"
+            rlRun "yq  -e '.[] | select(.name == \"${phase_name}\")' \"$RESULT_FILE_BKRLIB\" | tee subresult.out"
+            rlAssertGrep "name: \"${phase_name}\"" "subresult.out"
+            rlAssertGrep 'result: "pass"' "subresult.out"
+            rlAssertGrep 'end-time: ".*"' "subresult.out"
         done
     rlPhaseEnd
 

@@ -144,7 +144,6 @@ dependencies = [
     "pytest-container",
     "pytest-xdist",
     "requre",
-    "yq==3.1.1",
     "pre-commit",
     # Do not install *types-click* - it's not recommended with Click 8 & newer,
     # which is the version a developer encounters given the requirements are not

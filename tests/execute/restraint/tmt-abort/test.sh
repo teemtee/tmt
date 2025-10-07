@@ -28,10 +28,10 @@ rlJournalStart
 
         rlAssertGrep "result: error" "${run}/plan/execute/results.yaml"
         rlAssertEquals "check expected outcomes" \
-            "$(yq -r '[sort_by(.name) | .[] | "\(.name):\(.result)"] | join(" ")' ${run}/plan/execute/results.yaml)" \
+            "$(yq '[sort_by(.name) | .[] | "\(.name):\(.result)"] | join(" ")' ${run}/plan/execute/results.yaml)" \
             "/default-0/abort:error /default-0/do-not-run/1:pending /default-1/do-not-run/2:pending"
         rlAssertEquals "results should record the test aborted" \
-            "$(yq -r '[.[] | .check[] | .name] | sort | join(", ")' ${run}/plan/execute/results.yaml)" \
+            "$(yq '[.[] | .check[] | .name] | sort | join(", ")' ${run}/plan/execute/results.yaml)" \
             "internal/abort, internal/interrupt"
     rlPhaseEnd
 

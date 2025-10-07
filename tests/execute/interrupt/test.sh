@@ -44,11 +44,11 @@ rlJournalStart
         rlAssertGrep "pending /tests/do-not/2" "$run/log.txt"
 
         rlAssertEquals "check expected outcomes" \
-            "$(yq -r '[sort_by(.name) | .[] | "\(.name):\(.result)"] | join(" ")' ${run}/plan/execute/results.yaml)" \
+            "$(yq '[sort_by(.name) | .[] | "\(.name):\(.result)"] | join(" ")' ${run}/plan/execute/results.yaml)" \
             "/tests/do:error /tests/do-not/1:pending /tests/do-not/2:pending"
 
         rlAssertEquals "results should record the test aborted" \
-            "$(yq -r '[.[] | .check[] | .name] | sort | join(" ")' ${run}/plan/execute/results.yaml)" \
+            "$(yq '[.[] | .check[] | .name] | sort | join(" ")' ${run}/plan/execute/results.yaml)" \
             "internal/interrupt"
     rlPhaseEnd
 

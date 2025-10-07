@@ -71,10 +71,10 @@ rlJournalStart
 
     rlPhaseStartTest "tmt plan export /plan/with-envvars"
         rlRun -s "tmt plan export /plan/with-envvars" 0 "Show plan"
-        rlAssertEquals "prepare script shall be an envvar" "$(yq -r '.[] | .prepare | .[] | .script' $rlRun_LOG)" "\$ENV_SCRIPT"
+        rlAssertEquals "prepare script shall be an envvar" "$(yq '.[] | .prepare | .[] | .script' $rlRun_LOG)" "\$ENV_SCRIPT"
 
         rlRun -s "tmt plan export -e ENV_SCRIPT=dummy-script /plan/with-envvars" 0 "Export plan"
-        rlAssertEquals "prepare script shall be an replaced" "$(yq -r '.[] | .prepare | .[] | .script' $rlRun_LOG)" "dummy-script"
+        rlAssertEquals "prepare script shall be an replaced" "$(yq '.[] | .prepare | .[] | .script' $rlRun_LOG)" "dummy-script"
     rlPhaseEnd
 
     rlPhaseStartTest "Invalid format"

@@ -70,9 +70,9 @@ rlJournalStart
         rlPhaseStartTest "Connect"
             rlRun "tmt run --scratch -i $run provision -h virtual"
 
-            guest_ip="$(yq -r '."default-0" | .guest' $run/plan/provision/guests.yaml)"
-            guest_port="$(yq -r '."default-0" | .port' $run/plan/provision/guests.yaml)"
-            guest_key="$(yq -r '."default-0" | .key[0]' $run/plan/provision/guests.yaml)"
+            guest_ip="$(yq '."default-0" | .guest' $run/plan/provision/guests.yaml)"
+            guest_port="$(yq '."default-0" | .port' $run/plan/provision/guests.yaml)"
+            guest_key="$(yq '."default-0" | .key[0]' $run/plan/provision/guests.yaml)"
 
             provision="provision -h connect --guest $guest_ip --port $guest_port --key $guest_key"
 

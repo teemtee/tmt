@@ -8,28 +8,28 @@ function check_current_topology () {
     role=$3
     hostname=$4
 
-    rlAssertEquals "Current guest name"     "$name"     "$(yq -r '.guest.name' $topology_file)"
-    rlAssertEquals "Current guest role"     "$role"     "$(yq -r '.guest.role' $topology_file)"
-    rlAssertEquals "Current guest hostname" "$hostname" "$(yq -r '.guest.hostname' $topology_file)"
+    rlAssertEquals "Current guest name"     "$name"     "$(yq '.guest.name' $topology_file)"
+    rlAssertEquals "Current guest role"     "$role"     "$(yq '.guest.role' $topology_file)"
+    rlAssertEquals "Current guest hostname" "$hostname" "$(yq '.guest.hostname' $topology_file)"
 }
 
 function check_shared_topology () {
-    rlAssertEquals "Guest names"        "client-1 client-2 server" "$(yq -r '."guest-names" | sort | join(" ")' $1)"
-    rlAssertEquals "Role names"         "client server"            "$(yq -r '."role-names" | sort | join(" ")' $1)"
-    rlAssertEquals "Client role guests" "client-1 client-2"        "$(yq -r '.roles.client | sort | join(" ")' $1)"
-    rlAssertEquals "Server role guests" "server"                   "$(yq -r '.roles.server | sort | join(" ")' $1)"
+    rlAssertEquals "Guest names"        "client-1 client-2 server" "$(yq '."guest-names" | sort | join(" ")' $1)"
+    rlAssertEquals "Role names"         "client server"            "$(yq '."role-names" | sort | join(" ")' $1)"
+    rlAssertEquals "Client role guests" "client-1 client-2"        "$(yq '.roles.client | sort | join(" ")' $1)"
+    rlAssertEquals "Server role guests" "server"                   "$(yq '.roles.server | sort | join(" ")' $1)"
 
-    rlAssertEquals "Guest client-1 name"     "client-1"          "$(yq -r '.guests["client-1"].name' $1)"
-    rlAssertEquals "Guest client-1 role"     "client"            "$(yq -r '.guests["client-1"].role' $1)"
-    rlAssertEquals "Guest client-1 hostname" "$client1_hostname" "$(yq -r '.guests["client-1"].hostname' $1)"
+    rlAssertEquals "Guest client-1 name"     "client-1"          "$(yq '.guests["client-1"].name' $1)"
+    rlAssertEquals "Guest client-1 role"     "client"            "$(yq '.guests["client-1"].role' $1)"
+    rlAssertEquals "Guest client-1 hostname" "$client1_hostname" "$(yq '.guests["client-1"].hostname' $1)"
 
-    rlAssertEquals "Guest client-2 name"     "client-2"          "$(yq -r '.guests["client-2"].name' $1)"
-    rlAssertEquals "Guest client-2 role"     "client"            "$(yq -r '.guests["client-2"].role' $1)"
-    rlAssertEquals "Guest client-2 hostname" "$client2_hostname" "$(yq -r '.guests["client-2"].hostname' $1)"
+    rlAssertEquals "Guest client-2 name"     "client-2"          "$(yq '.guests["client-2"].name' $1)"
+    rlAssertEquals "Guest client-2 role"     "client"            "$(yq '.guests["client-2"].role' $1)"
+    rlAssertEquals "Guest client-2 hostname" "$client2_hostname" "$(yq '.guests["client-2"].hostname' $1)"
 
-    rlAssertEquals "Guest server name"     "server"              "$(yq -r '.guests["server"].name' $1)"
-    rlAssertEquals "Guest server role"     "server"              "$(yq -r '.guests["server"].role' $1)"
-    rlAssertEquals "Guest server hostname" "$server_hostname"    "$(yq -r '.guests["server"].hostname' $1)"
+    rlAssertEquals "Guest server name"     "server"              "$(yq '.guests["server"].name' $1)"
+    rlAssertEquals "Guest server role"     "server"              "$(yq '.guests["server"].role' $1)"
+    rlAssertEquals "Guest server hostname" "$server_hostname"    "$(yq '.guests["server"].hostname' $1)"
 }
 
 rlJournalStart
@@ -65,9 +65,9 @@ rlJournalStart
         rlRun "grep '^        guest: server' $rlRun_LOG"
         rlRun "grep '^        overview: 3 scripts found' $rlRun_LOG"
 
-        client1_hostname="$(yq -r '."client-1" | .container' $run/plans/provision/guests.yaml)"
-        client2_hostname="$(yq -r '."client-2" | .container' $run/plans/provision/guests.yaml)"
-        server_hostname="$(yq -r '."server" | .container' $run/plans/provision/guests.yaml)"
+        client1_hostname="$(yq '."client-1" | .container' $run/plans/provision/guests.yaml)"
+        client2_hostname="$(yq '."client-2" | .container' $run/plans/provision/guests.yaml)"
+        server_hostname="$(yq '."server" | .container' $run/plans/provision/guests.yaml)"
 
         rlRun "client1_topology_yaml=$(grep -Po '(?<=^\[client-1 \(client\)\]             out: TMT_TOPOLOGY_YAML=).*' $rlRun_LOG)"
         rlRun "client2_topology_yaml=$(grep -Po '(?<=^\[client-2 \(client\)\]             out: TMT_TOPOLOGY_YAML=).*' $rlRun_LOG)"
@@ -107,9 +107,9 @@ rlJournalStart
         rlRun "grep '^\\[client-1 (client)\\]                 ..:..:.. pass /teardown/tests/C (on client-1 (client)) \\[1/1\\]' $rlRun_LOG"
         rlRun "grep '^\\[client-2 (client)\\]                 ..:..:.. pass /teardown/tests/C (on client-2 (client)) \\[1/1\\]' $rlRun_LOG"
 
-        client1_hostname="$(yq -r '."client-1" | .container' $run/plans/provision/guests.yaml)"
-        client2_hostname="$(yq -r '."client-2" | .container' $run/plans/provision/guests.yaml)"
-        server_hostname="$(yq -r '."server" | .container' $run/plans/provision/guests.yaml)"
+        client1_hostname="$(yq '."client-1" | .container' $run/plans/provision/guests.yaml)"
+        client2_hostname="$(yq '."client-2" | .container' $run/plans/provision/guests.yaml)"
+        server_hostname="$(yq '."server" | .container' $run/plans/provision/guests.yaml)"
 
         rlRun "client1_topology_yaml=$(grep -Po '(?<=^\[client-1 \(client\)\]                 out: TMT_TOPOLOGY_YAML=).*B-2.*' $rlRun_LOG)"
         rlRun "client2_topology_yaml=$(grep -Po '(?<=^\[client-2 \(client\)\]                 out: TMT_TOPOLOGY_YAML=).*B-2.*' $rlRun_LOG)"

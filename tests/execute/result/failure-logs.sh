@@ -3,7 +3,7 @@
 
 function check_beakerlib_failure() {
     local log
-    log=$(yq -er '.[0]' "$1") || return 1
+    log=$(yq -e '.[0]' "$1") || return 1
     echo "$log" | grep -qE "^:: *Failing beakerlib test$" || return 1
     echo "$log" | grep -qE "^:: \[ [0-9]{2}:[0-9]{2}:[0-9]{2} \] :: \[ *FAIL *\] :: Command 'false' \(Expected 0, got 1\)$" || return 1
 }
@@ -22,7 +22,7 @@ rlJournalStart
         rlRun -s "${tmt_command} /tests/shell/pass" 0
         rlAssertGrep "pass /tests/shell/pass" $rlRun_LOG
         rlAssertExists "${failure_log}"
-        rlRun "yq -e '.[0] == null and length == 0' ${failure_log}" 0 "Log does not contain failures"
+        rlRun "yq -e 'tag == \"!!seq\" and length == 0' ${failure_log}" 0 "Log does not contain failures"
     rlPhaseEnd
 
     rlPhaseStartTest "Failing shell test has failures"
@@ -31,9 +31,9 @@ rlJournalStart
         rlAssertGrep "fail /tests/shell/fail" $rlRun_LOG
         rlAssertExists "${failure_log}"
         rlAssertEquals "Log contains the failure line" \
-            "$(yq -er '.[0]' "${failure_log}")" "Output containing fail or error."
+            "$(yq -e '.[0]' "${failure_log}")" "Output containing fail or error."
         rlAssertNotEquals "Log does not contain irrelevant lines" \
-            "$(yq -er '.[1]' "${failure_log}")" "Another output."
+            "$(yq -e '.[1]' "${failure_log}")" "Another output."
     rlPhaseEnd
 
     rlPhaseStartTest "Passing beakerlib test has no failures"
@@ -41,7 +41,7 @@ rlJournalStart
         rlRun -s "${tmt_command} /tests/beakerlib/pass" 0
         rlAssertGrep "pass /tests/beakerlib/pass" $rlRun_LOG
         rlAssertExists "${failure_log}"
-        rlRun "yq -e '.[0] == null and length == 0' ${failure_log}" 0 "Log does not contain failures"
+        rlRun "yq -e 'tag == \"!!seq\" and length == 0' ${failure_log}" 0 "Log does not contain failures"
     rlPhaseEnd
 
     rlPhaseStartTest "Failing beakerlib test has failures"
