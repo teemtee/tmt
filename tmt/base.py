@@ -228,7 +228,7 @@ class FmfId(
         Convert to specification, skip default values
         """
 
-        spec = cast(_RawFmfId, super().to_minimal_spec())
+        spec = super().to_minimal_spec()
 
         if self.path is not None:
             spec['path'] = str(self.path)

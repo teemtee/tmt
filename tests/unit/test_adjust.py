@@ -198,7 +198,7 @@ def test_invalid_rule(root_logger):
     Invalid relevancy rule
     """
 
-    with pytest.raises(ConvertError, match='Invalid.*rule'):
+    with pytest.raises(ConvertError, match=r'Invalid.*rule'):
         relevancy_to_adjust("weird", root_logger)
 
 
@@ -207,7 +207,7 @@ def test_invalid_decision(root_logger):
     Invalid relevancy decision
     """
 
-    with pytest.raises(ConvertError, match='Invalid.*decision'):
+    with pytest.raises(ConvertError, match=r'Invalid.*decision'):
         relevancy_to_adjust("distro < fedora-33: weird", root_logger)
 
 
@@ -216,7 +216,7 @@ def test_invalid_expression(root_logger):
     Invalid relevancy expression
     """
 
-    with pytest.raises(ConvertError, match='Invalid.*expression'):
+    with pytest.raises(ConvertError, match=r'Invalid.*expression'):
         relevancy_to_adjust("distro * fedora-33: False", root_logger)
 
 
@@ -225,5 +225,5 @@ def test_invalid_operator(root_logger):
     Invalid relevancy operator
     """
 
-    with pytest.raises(ConvertError, match='Invalid.*operator'):
+    with pytest.raises(ConvertError, match=r'Invalid.*operator'):
         relevancy_to_adjust("distro <> fedora-33: False", root_logger)

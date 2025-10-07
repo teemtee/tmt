@@ -447,7 +447,7 @@ SpecOutT = TypeVar('SpecOutT')
 
 
 @container
-class SpecBasedContainer(Generic[SpecInT, SpecOutT], DataContainer):
+class SpecBasedContainer(Generic[SpecInT, SpecOutT], DataContainer):  # noqa: PYI059
     @classmethod
     def from_spec(cls, spec: SpecInT) -> Self:
         """
@@ -873,7 +873,7 @@ def field(
     # would make the `T` match.
     return simple_field(
         default=default,
-        default_factory=default_factory or dataclasses.MISSING,  # type: ignore[arg-type]
+        default_factory=default_factory or dataclasses.MISSING,
         metadata={
             'tmt': FieldMetadata(
                 internal=internal,

@@ -642,9 +642,7 @@ def _transform_tpm_version(
 def _transform_virtualization_is_virtualized(
     constraint: tmt.hardware.FlagConstraint, logger: tmt.log.Logger
 ) -> BeakerizedConstraint:
-    beaker_operator, actual_value, _ = operator_to_beaker_op(
-        constraint.operator, str(constraint.value)
-    )
+    operator_to_beaker_op(constraint.operator, str(constraint.value))
 
     test = (constraint.operator, constraint.value)
 

@@ -58,12 +58,10 @@ class FinishAnsible(
 
     # We are reusing "prepare" step for "finish",
     # and they both have different expectations
-    _data_class = tmt.steps.prepare.ansible.PrepareAnsibleData
-
     # FIXME: ignore[assignment]: https://github.com/teemtee/tmt/issues/1540
-    # Also, assigning class methods seems to cause trouble to mypy
-    # See https://github.com/python/mypy/issues/6700
-    base_command = tmt.steps.finish.FinishPlugin.base_command  # type: ignore[assignment]
+    _data_class = tmt.steps.prepare.ansible.PrepareAnsibleData  # type: ignore[assignment]
+
+    base_command = tmt.steps.finish.FinishPlugin.base_command
 
     # `FinishPlugin` plugin would win the inheritance battle and provide
     # its no-op `go()`. Force the one from `PrepareAnsible`.

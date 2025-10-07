@@ -46,8 +46,9 @@ class FinishShell(tmt.steps.finish.FinishPlugin[tmt.steps.finish.FinishStepData]
     _cloned_repo_path_envvar_name = "TMT_FINISH_SHELL_URL_REPOSITORY"
 
     # We are reusing "prepare" step for "finish",
-    # and they both have different expectations
-    _data_class = tmt.steps.prepare.shell.PrepareShellData
+    # and they both have different expectations.
+    # Mypy is not happy about this though.
+    _data_class = tmt.steps.prepare.shell.PrepareShellData  # type: ignore[assignment]
 
     # `FinishPlugin` plugin would win the inheritance battle and provide
     # its no-op `go()`. Force the one from `PrepareShell`.

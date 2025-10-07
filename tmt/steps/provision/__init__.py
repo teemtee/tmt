@@ -368,7 +368,7 @@ class TransferOptions:
         options = []
 
         if self.chmod:
-            options.append(f'--chmod={oct(self.chmod)[2:]}')
+            options.append(f'--chmod={self.chmod:o}')
         if self.compress:
             options.append('-z')
         if self.delete:

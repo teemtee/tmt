@@ -415,11 +415,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
         deployment_mode = self.step.plan.fmf_context.get('deployment-mode', [])
         if deployment_mode:
             testsuites_properties.update({'polarion-custom-deploymentMode': deployment_mode[0]})
-
-        # ignore[assignment]: mypy does not support different types for property getter
-        # and setter. The assignment is correct, but mypy cannot tell.
-        # See https://github.com/python/mypy/issues/3004 for getter/setter discussions
-        results_context.properties = testsuites_properties  # type: ignore[assignment]
+        results_context.properties = testsuites_properties
 
         xml_data = make_junit_xml(
             phase=self,

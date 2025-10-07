@@ -227,8 +227,10 @@ def export_to_polarion(test: tmt.base.Test) -> None:
             )
 
     # Title
-    if not dry_mode and test.summary is not None and polarion_case.title != test.summary:
-        polarion_case.title = test.summary
+    if not dry_mode:
+        assert polarion_case  # Narrow type
+        if test.summary is not None and polarion_case.title != test.summary:
+            polarion_case.title = test.summary
     # TODO: test.summary may be left unset, i.e. `None` is a possibility here. Shall we print
     # new title then? It may also be `None`...
     if test.summary is not None:
@@ -239,6 +241,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     if not uuid:
         uuid = test.node.get(ID_KEY)
     if not dry_mode:
+        assert polarion_case  # Narrow type
         polarion_case.tmtid = uuid
         polarion_case.update()  # upload the ID first so the case can be found in case of errors
         # Check if it was really uploaded
@@ -252,7 +255,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
                     fg='yellow',
                 )
             )
-    if dry_mode or polarion_case.tmtid:
+    if dry_mode or (polarion_case is not None and polarion_case.tmtid):
         echo(style(f"Append the ID {uuid}.", fg='green'))
 
     # Description
@@ -264,6 +267,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
         for key, value in test.environment.items():
             description += f'<br/>{key}={value}'
     if not dry_mode:
+        assert polarion_case  # Narrow type
         polarion_case.description = description
     echo(style('description: ', fg='green') + description)
 
@@ -275,6 +279,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     else:
         automation_script = test.fmf_id.url
     if not dry_mode:
+        assert polarion_case  # Narrow type
         polarion_case.caseautomation = 'automated'
         if test.link:
             for link in test.link.get(relation='test-script'):
@@ -289,6 +294,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
 
     # Components
     if not dry_mode:
+        assert polarion_case  # Narrow type
         polarion_case.caselevel = 'component'
         polarion_case.testtype = 'functional'
         if test.component:
@@ -302,6 +308,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
 
     # Tags and Importance
     if not dry_mode:
+        assert polarion_case  # Narrow type
         if test.tier is not None:
             if int(test.tier) <= 1:
                 polarion_case.caseimportance = 'high'
@@ -315,6 +322,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
 
     test.tag.append('fmf-export')
     if not dry_mode:
+        assert polarion_case  # Narrow type
         polarion_case.tags = ' '.join(test.tag)
     echo(style('tags: ', fg='green') + ' '.join(set(test.tag)))
 
@@ -325,6 +333,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
         login_name = email_address[: email_address.find('@')]
         try:
             if not dry_mode:
+                assert polarion_case  # Narrow type
                 polarion_case.add_assignee(login_name)
             echo(style('default tester: ', fg='green') + login_name)
         except PolarionException as err:
@@ -332,6 +341,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
 
     # Status
     if not dry_mode:
+        assert polarion_case  # Narrow type
         if test.enabled:
             polarion_case.status = 'approved'
         else:
@@ -340,6 +350,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
 
     echo(style("Append the Polarion test case link.", fg='green'))
     if not dry_mode and link_polarion:
+        assert polarion_case  # Narrow type
         with test.node as data:
             server_url = str(polarion_case._session._server.url)
             tmt.convert.add_link(
@@ -376,26 +387,31 @@ def export_to_polarion(test: tmt.base.Test) -> None:
 
     # Add bugs to the Polarion case
     if not dry_mode:
+        assert polarion_case  # Narrow type
         polarion_case.tcmsbug = ', '.join(str(bug_ids))
 
     # Add TCMS Case ID to Polarion case
     if test.node.get('extra-nitrate') and not dry_mode:
+        assert polarion_case  # Narrow type
         tcms_case_id_search = re.search(r'\d+', test.node.get("extra-nitrate"))
         if tcms_case_id_search:
             polarion_case.tcmscaseid = str(int(tcms_case_id_search.group()))
 
     # Add Requirements to Polarion case
     if not dry_mode:
+        assert polarion_case  # Narrow type
         for req in requirements:
             polarion_case.add_linked_item(req, 'verifies')
 
     # Update Polarion test case
     if not dry_mode:
+        assert polarion_case  # Narrow type
         polarion_case.update()
     echo(style(f"Test case '{summary}' successfully exported to Polarion.", fg='magenta'))
 
     # Optionally link Bugzilla to Polarion case
     if link_bugzilla and bug_ids and not dry_mode:
+        assert polarion_case  # Narrow type
         case_id = f"{polarion_case.project_id}/workitem?id={polarion_case.work_item_id!s}"
         tmt.export.bz_set_coverage(bug_ids, case_id, POLARION_TRACKER_ID)
 
