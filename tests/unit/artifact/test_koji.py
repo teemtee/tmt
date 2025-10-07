@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 from tmt.steps.prepare.artifact.providers.koji import KojiArtifactProvider
@@ -23,7 +25,9 @@ def test_koji_invalid_nvr(root_logger):
 
     provider = KojiArtifactProvider("koji.nvr:nonexistent-1.0-1.fc43", root_logger)
 
-    with pytest.raises(GeneralError, match="No build found for NVR 'nonexistent-1.0-1.fc43'."):
+    with pytest.raises(
+        GeneralError, match=re.escape("No build found for NVR 'nonexistent-1.0-1.fc43'.")
+    ):
         _ = provider.build_id
 
 
