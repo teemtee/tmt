@@ -233,7 +233,7 @@ class CoredumpCheck(Check):
         while total_wait < max_wait:
             try:
                 # Check if any systemd-coredump processes are running
-                cmd = f"{guest.sudo_prefix} pgrep systemd-coredump || true"
+                cmd = f"{guest.facts.sudo_prefix} pgrep systemd-coredump || true"
                 result = guest.execute(ShellScript(cmd), silent=True)
 
                 # If no processes found, we're good to go
@@ -295,7 +295,7 @@ class CoredumpCheck(Check):
 
             # Get list of coredumps newer than the latest one before the test
             # Use --all to check coredumps from all users, not just current user
-            cmd = f"{guest.sudo_prefix} coredumpctl list --all --no-legend --no-pager"
+            cmd = f"{guest.facts.sudo_prefix} coredumpctl list --all --no-legend --no-pager"
             if latest_timestamp:
                 cmd = f'{cmd} --since="{latest_timestamp}"'
                 logger.debug(f"Checking for coredumps newer than: {latest_timestamp}")
@@ -325,7 +325,7 @@ class CoredumpCheck(Check):
                 # so all dumps in this list are already post-test
 
                 # Get detailed info for this crash (use --all to ensure we can access it)
-                cmd = f"{guest.sudo_prefix} coredumpctl info --all --no-pager {pid}"
+                cmd = f"{guest.facts.sudo_prefix} coredumpctl info --all --no-pager {pid}"
                 crash_info = guest.execute(ShellScript(cmd)).stdout
                 if not crash_info:
                     logger.debug(f"No crash info available for PID {pid}")
@@ -349,7 +349,7 @@ class CoredumpCheck(Check):
                 info_filepath = check_files_path / f"dump.{exe}_{sig}_{pid}.txt"
                 guest.execute(
                     ShellScript(
-                        f"sh -c {guest.sudo_prefix} coredumpctl info --all --no-pager {pid} > {info_filepath!s}"  # noqa: E501
+                        f"sh -c {guest.facts.sudo_prefix} coredumpctl info --all --no-pager {pid} > {info_filepath!s}"  # noqa: E501
                     )
                 )
                 logger.debug(f"Saved crash info to {info_filepath}")
@@ -361,7 +361,7 @@ class CoredumpCheck(Check):
                     try:
                         guest.execute(
                             ShellScript(
-                                f"{guest.sudo_prefix} coredumpctl dump --all --no-pager -o {dump_path!s} {pid}"  # noqa: E501
+                                f"{guest.facts.sudo_prefix} coredumpctl dump --all --no-pager -o {dump_path!s} {pid}"  # noqa: E501
                             )
                         )
                         logger.debug(f"Saved coredump to {dump_path}")
@@ -438,7 +438,8 @@ class CoredumpCheck(Check):
             # and save it to a file. If there are no dumps, create an empty file.
             # Use --all to check coredumps from all users, not just current user
             cmd = (
-                f"{invocation.guest.sudo_prefix} coredumpctl list -1 --all --no-legend --no-pager"
+                f"{invocation.guest.facts.sudo_prefix} coredumpctl "
+                "list -1 --all --no-legend --no-pager"
             )
             invocation.guest.execute(
                 ShellScript(f"({cmd} || true) > {self.coredump_last_dumps_filepath!s}")

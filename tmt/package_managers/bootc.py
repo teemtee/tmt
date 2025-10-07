@@ -51,7 +51,8 @@ class BootcEngine(PackageManagerEngine):
         """
         Prepare installation command for bootc
         """
-        return Command(self.guest.sudo_prefix, 'bootc'), Command('')
+        assert self.guest.facts.sudo_prefix is not None  # Narrow type
+        return Command(self.guest.facts.sudo_prefix, 'bootc'), Command('')
 
     def _get_current_bootc_image(self) -> str:
         """Get the current bootc image running on the system"""
@@ -210,7 +211,7 @@ class Bootc(PackageManager[BootcEngine]):
                 # https://github.com/bootc-dev/bootc/issues/1259 for more information.
                 self.guest.execute(
                     ShellScript(
-                        f'{self.guest.sudo_prefix} {tmt.utils.DEFAULT_SHELL} -c "('
+                        f'{self.guest.facts.sudo_prefix} {tmt.utils.DEFAULT_SHELL} -c "('
                         f'  ( podman pull {base_image} || podman pull containers-storage:{base_image} )'  # noqa: E501
                         f'  || bootc image copy-to-storage --target {base_image}'
                         ')"'
@@ -228,7 +229,7 @@ class Bootc(PackageManager[BootcEngine]):
 
                 self.guest.execute(
                     ShellScript(
-                        f'{self.guest.sudo_prefix} podman build -t {image_tag} -f {containerfile_path} {self.guest.step_workdir}'  # noqa: E501
+                        f'{self.guest.facts.sudo_prefix} podman build -t {image_tag} -f {containerfile_path} {self.guest.step_workdir}'  # noqa: E501
                     )
                 )
 

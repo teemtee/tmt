@@ -88,7 +88,7 @@ class DmesgCheck(Check):
                 key=key, value=value, color=color, shift=shift, level=level, topic=topic
             )
 
-        script = tmt.utils.ShellScript(f'{guest.sudo_prefix} dmesg')
+        script = tmt.utils.ShellScript(f'{guest.facts.sudo_prefix} dmesg')
         if guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_CLEAR):
             script = tmt.utils.ShellScript(f'{script.to_element()} -c')
 

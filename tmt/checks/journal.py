@@ -120,17 +120,17 @@ class JournalCheck(Check):
         # Pre-create command line with tee for consistent approach
         # Restart journal because RHEL7 systemd does not support auto-reloading of configuration
         script = (
-            ShellScript(f'{guest.sudo_prefix} mkdir -p /etc/systemd/journald.conf.d')
+            ShellScript(f'{guest.facts.sudo_prefix} mkdir -p /etc/systemd/journald.conf.d')
             & ShellScript(
-                f"echo '{JOURNAL_CONFIG}' | {guest.sudo_prefix} tee /etc/systemd/journald.conf.d/50-tmt.conf > /dev/null"  # noqa: E501
+                f"echo '{JOURNAL_CONFIG}' | {guest.facts.sudo_prefix} tee /etc/systemd/journald.conf.d/50-tmt.conf > /dev/null"  # noqa: E501
             )
-            & ShellScript(f'{guest.sudo_prefix} systemctl restart systemd-journald')
+            & ShellScript(f'{guest.facts.sudo_prefix} systemctl restart systemd-journald')
         )
 
         try:
             guest.execute(script, silent=True)
             success_msg = 'Configured persistent journal storage'
-            success_msg += ' with sudo' if guest.sudo_prefix else ''
+            success_msg += ' with sudo' if guest.facts.sudo_prefix else ''
             logger.debug(success_msg)
         except tmt.utils.RunError:
             logger.warning(
@@ -154,7 +154,7 @@ class JournalCheck(Check):
             cursor_file = self._get_cursor_file(invocation)
             invocation.guest.execute(
                 ShellScript(
-                    f"[ -f '{cursor_file}' ] || {invocation.guest.sudo_prefix} journalctl -n 0 --show-cursor --cursor-file={cursor_file}"  # noqa: E501
+                    f"[ -f '{cursor_file}' ] || {invocation.guest.facts.sudo_prefix} journalctl -n 0 --show-cursor --cursor-file={cursor_file}"  # noqa: E501
                 )
             )
         except tmt.utils.RunError as exc:
@@ -182,7 +182,9 @@ class JournalCheck(Check):
             options.append(f'--priority={self.priority}')
         options.append("--boot=all")
 
-        script = ShellScript(f"{invocation.guest.sudo_prefix} journalctl {' '.join(options)}")
+        script = ShellScript(
+            f"{invocation.guest.facts.sudo_prefix} journalctl {' '.join(options)}"
+        )
 
         try:
             outcome = ResultOutcome.PASS

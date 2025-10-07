@@ -152,7 +152,7 @@ def _run_script(
     """
 
     if needs_sudo:
-        script = ShellScript(f'{invocation.guest.sudo_prefix} {script.to_shell_command()}')
+        script = ShellScript(f'{invocation.guest.facts.sudo_prefix} {script.to_shell_command()}')
 
     def _output_logger(
         key: str,

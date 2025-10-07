@@ -86,14 +86,16 @@ class AptEngine(PackageManagerEngine):
         """
         Prepare installation command for apt
         """
-        command = Command(self.guest.sudo_prefix, 'apt')
+        assert self.guest.facts.sudo_prefix is not None  # Narrow type
+        command = Command(self.guest.facts.sudo_prefix, 'apt')
         options = Command('-y')
 
         return (command, options)
 
     def _enable_apt_file(self) -> ShellScript:
         return ShellScript(
-            f'( {self.install(Package("apt-file"))} ) && {self.guest.sudo_prefix} apt-file update'
+            f'( {self.install(Package("apt-file"))} ) && '
+            f'{self.guest.facts.sudo_prefix} apt-file update'
         )
 
     def _reduce_to_packages(

@@ -23,7 +23,8 @@ class DnfEngine(PackageManagerEngine):
 
     def prepare_command(self) -> tuple[Command, Command]:
         options = Command('-y')
-        command = Command(self.guest.sudo_prefix)
+        assert self.guest.facts.sudo_prefix is not None  # Narrow type
+        command = Command(self.guest.facts.sudo_prefix)
 
         command += self._base_command
 
