@@ -106,10 +106,12 @@ class _MockPackageManager(PackageManager[MockEngine]):
         options: Optional[Options] = None,
     ) -> CommandOutput:
         if options is not None and options.check_first:
+            # TODO implement a more robust check that the package is not installed
+            # other than catching RunError.
             try:
-                return self.guest.execute(self.engine.check_presence(*installables))
-            except RunError:
-                pass
+                self.guest.execute(self.engine.check_presence(*installables))
+            except RunError as err:
+                return err.output
         return self.guest.run(
             self.engine.reinstall(*installables, options=options).to_shell_command()
         )
@@ -119,11 +121,6 @@ class _MockPackageManager(PackageManager[MockEngine]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        if options is not None and options.check_first:
-            try:
-                return self.guest.execute(self.engine.check_presence(*installables))
-            except RunError:
-                pass
         return self.guest.run(
             self.engine.install_debuginfo(*installables, options=options).to_shell_command()
         )
