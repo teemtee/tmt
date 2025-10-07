@@ -138,6 +138,7 @@ Requires:       tmt+provision-beaker == %{version}-%{release}
 Requires:       tmt+report-junit == %{version}-%{release}
 Requires:       tmt+report-polarion == %{version}-%{release}
 Requires:       tmt+prepare-artifact == %{version}-%{release}
+Requires:       tmt+provision-mock == %{version}-%{release}
 
 %description -n tmt+all
 All extra dependencies of the Test Management Tool. Install this
