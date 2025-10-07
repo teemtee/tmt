@@ -575,9 +575,12 @@ class GuestMock(tmt.Guest):
         Compress option is ignored, it only slows down the execution.
         Create destination option is ignored, there were problems with workdir.
         """
+        # TODO chmod permissions for tar
         options = options or tmt.steps.provision.DEFAULT_PUSH_OPTIONS
         excludes = Command()
-        permissions = Command('-m', f'{(options.chmod or 0o755):03o}')
+        permissions = Command()
+        if options.chmod is not None:
+            permissions = Command('-m', f'{options.chmod:03o}')
         for exclude in options.exclude:
             excludes += Command(f'--exclude={exclude}')
         source = source or self.plan_workdir
@@ -627,9 +630,12 @@ class GuestMock(tmt.Guest):
         For files we use cp / install.
         Compress option is ignored, it only slows down the execution.
         """
+        # TODO chmod permissions for tar
         options = options or tmt.steps.provision.DEFAULT_PULL_OPTIONS
         excludes = Command()
-        permissions = Command('-m', f'{(options.chmod or 0o755):03o}')
+        permissions = Command()
+        if options.chmod is not None:
+            permissions = Command('-m', f'{options.chmod:03o}')
         for exclude in options.exclude:
             excludes += Command(f'--exclude={exclude}')
         source = source or self.plan_workdir
