@@ -566,7 +566,7 @@ class GuestMock(tmt.Guest):
         For directories we use tar.
         For files we use cp / install.
         Compress option is ignored, it only slows down the execution.
-        Create destination option is ignored, there have been  problems with workdir.
+        Create destination option is ignored, there were problems with workdir.
         """
         options = options or tmt.steps.provision.DEFAULT_PUSH_OPTIONS
         excludes = Command()
@@ -627,10 +627,12 @@ class GuestMock(tmt.Guest):
             excludes += Command(f'--exclude={exclude}')
         source = source or self.plan_workdir
         destination = destination or source
-        if not (self.root_path / source.relative_to('/')).exists():
+        source_in_chroot = self.root_path / source.relative_to('/')
+
+        if not source_in_chroot.exists():
             if options.create_destination:
                 Command('mkdir', '-p', str(destination)).run(cwd=None, logger=self._logger)
-        elif source.is_dir():
+        elif source_in_chroot.is_dir():
             if options.create_destination:
                 Command('mkdir', '-p', str(destination)).run(cwd=None, logger=self._logger)
             p = self.mock_shell._spawn_command(
