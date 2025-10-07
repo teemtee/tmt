@@ -91,15 +91,11 @@ class MockShell:
     def exit_shell(self) -> None:
         if self.mock_shell is not None:
             self.parent.verbose('mock', 'Exiting shell...', color='blue', level=2)
-            assert self.mock_shell.stdin is not None
-            self.mock_shell.stdin.write('')
-            self.mock_shell.stdin.flush()
+            if self.epoll is not None:
+                self.epoll.close()
+                self.epoll = None
             self.mock_shell.communicate()
             self.mock_shell = None
-            assert self.epoll is not None
-            self.epoll.close()
-            self.epoll = None
-            self.pid = None
             self.parent.verbose('mock', 'Exited shell.', color='blue', level=2)
 
     def enter_shell(self) -> None:
