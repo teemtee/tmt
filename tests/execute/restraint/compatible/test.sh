@@ -36,7 +36,7 @@ rlJournalStart
             rlRun "tmt run --scratch --id $run plans -n $plan tests -n /test/env-var"
             test_log="$run$plan/execute/data/guest/default-0/test/env-var-1/output.txt"
             rlAssertGrep "^TMT_RESTRAINT_COMPATIBLE=0$" "$test_log"
-            rlAssertNotGrep "^RSTRNT_TASKNAME=$" "$test_log"
+            rlAssertNotGrep "^RSTRNT_TASKNAME=" "$test_log"
         rlPhaseEnd
     done
 
