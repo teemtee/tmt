@@ -276,8 +276,11 @@ class KojiTask(KojiArtifactProvider):
     @cached_property
     def build_id(self) -> Optional[int]:
         task_id = int(self.id)
-        builds = self._call_api("listBuilds", taskID=task_id)
-        if builds:
+        if builds := self._call_api("listBuilds", taskID=task_id):
+            if len(builds) > 1:
+                self.logger.warning(
+                    f"Task '{task_id}' produced {len(builds)} builds, using the first one."
+                )
             build_id = builds[0]["build_id"]  # Assume the task produced a single build
             assert isinstance(build_id, int)
             return build_id
