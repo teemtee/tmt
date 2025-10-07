@@ -49,13 +49,14 @@ copy_outputfile_to_data_dir () {
         fi
     else
         filename=$(basename "$outputFile")
+        filename="${filename}.txt"
     fi
     # Replace slashes in test name with underscores.
     fileprefix=$(echo "$TESTNAME" | tr / _ | tr ' ' _)
     # Cut first char if underscore.
     [[ ${fileprefix:0:1} == '_' ]] && fileprefix=$(echo "$fileprefix" | cut -c 2-)
     # Construct the final outputfile.
-    relativeFinalOutputFile="${fileprefix}/${filename}.txt"
+    relativeFinalOutputFile="${fileprefix}/${filename}"
     finalOutputFile="${TMT_TEST_DATA}/${relativeFinalOutputFile}"
     # make sure the directory exists.
     mkdir -p "$(dirname "$finalOutputFile")"
