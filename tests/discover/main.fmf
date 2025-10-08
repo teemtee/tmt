@@ -41,6 +41,10 @@ tier: 3
     - provision-virtual
     - provision-container
 
+/archive:
+    summary: Get tests from arbitrary external archive
+    test: ./archive.sh
+
 /dynamic-ref:
     /fmf:
         summary: Check that dynamic ref evaluation works (fmf)

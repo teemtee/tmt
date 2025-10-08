@@ -2,7 +2,7 @@ import contextlib
 import glob
 import re
 import shutil
-from typing import Any, Optional, cast
+from typing import Any, Literal, Optional, cast
 
 import fmf
 
@@ -42,11 +42,21 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
     url: Optional[str] = field(
         default=cast(Optional[str], None),
         option=('-u', '--url'),
-        metavar='REPOSITORY',
+        metavar='URL',
         help="""
-            Git repository containing the metadata tree.
+            External URL containing the metadata tree.
             Current git repository used by default.
+            See ``url-content-type`` key for details on what content is accepted.
             """,
+    )
+
+    url_content_type: Literal["git", "archive"] = field(
+        default="git",
+        option="--url-content-type",
+        help="""
+            How to handle the ``url`` key.
+            """,
+        choices=("git", "archive"),
     )
 
     ref: Optional[str] = field(
@@ -310,6 +320,20 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     If no ``ref`` is provided, the default branch from the origin is used.
 
+    Archive
+    ^^^^^^^
+
+    By default ``url`` is treated as a git url to be cloned, but you can set
+    ``url-content-type`` to ``archive`` to instead treat it as an archive url
+    and download and extract it. For example:
+
+    .. code-block:: yaml
+
+        discover:
+            how: fmf
+            url: https://github.com/teemtee/tmt/archive/refs/heads/main.tar.gz
+            url-content-type: archive
+            path: /tmt-main/fmf/root
 
     Dist Git
     ^^^^^^^^
@@ -536,17 +560,38 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # prompt to ignore possibly missing or private repositories
         if url:
             self.info('url', url, 'green')
-            self.debug(f"Clone '{url}' to '{self.testdir}'.")
-            # Shallow clone to speed up testing and
-            # minimize data transfers if ref is not provided
-            tmt.utils.git.git_clone(
-                url=url,
-                destination=self.testdir,
-                shallow=ref is None,
-                env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
-                logger=self._logger,
-            )
-            git_root = self.testdir
+            if self.data.url_content_type == "git":
+                self.debug(f"Clone '{url}' to '{self.testdir}'.")
+                # Shallow clone to speed up testing and
+                # minimize data transfers if ref is not provided
+                tmt.utils.git.git_clone(
+                    url=url,
+                    destination=self.testdir,
+                    shallow=ref is None,
+                    env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
+                    logger=self._logger,
+                )
+                git_root = self.testdir
+            elif self.data.url_content_type == "archive":
+                self.debug(f"Downloading '{url}' and extracting to '{self.testdir}'.")
+                with tmt.utils.retry_session() as session:
+                    response = session.get(url, stream=True)
+                response.raise_for_status()
+                # TODO: Generalize this file download
+                if "Content-Disposition" in response.headers:
+                    archive_name = re.findall(
+                        "filename=(.+)", response.headers["Content-Disposition"]
+                    )[0]
+                else:
+                    archive_name = response.url.split("/")[-1]
+                archive_path = self.workdir / archive_name
+                archive_path.write_bytes(response.content)
+                shutil.unpack_archive(archive_path, self.testdir)
+                git_root = self.testdir
+            else:
+                raise ValueError(
+                    f"url-content-type has unsupported value: {self.data.url_content_type}"
+                )
         # Copy git repository root to workdir
         else:
             if path is not None:
