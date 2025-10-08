@@ -1,6 +1,4 @@
-"""
-Koji Artifact Provider
-"""
+"""Koji Artifact Provider"""
 
 import types
 from abc import abstractmethod
@@ -149,8 +147,8 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
     @cached_property
     @abstractmethod
-    def rpm_list(self) -> list[RpmArtifactInfo]:
-        """Return all RPM artifacts for this provider."""
+    def rpm_iterator(self) -> Iterator[RpmArtifactInfo]:
+        """Return an iterator over all RPM artifacts for this provider."""
         raise NotImplementedError
 
     def _initialize_session(self) -> 'ClientSession':
@@ -205,7 +203,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         """
         List all RPM artifacts for the given build.
         """
-        yield from self.rpm_list
+        yield from self.rpm_iterator
 
     def _download_artifact(
         self, artifact: RpmArtifactInfo, guest: Guest, destination: tmt.utils.Path
@@ -262,22 +260,21 @@ class KojiTask(KojiArtifactProvider):
             return build_id
         return None
 
-    def _get_task_children(self, task_id: int) -> list[int]:
+    def _get_task_children(self, task_id: int) -> Iterator[int]:
         """
         Recursively fetch all child tasks of the given task ID.
 
         :param task_id: The parent task ID
-        :return: List of all child task IDs
+        :yield: All child task IDs
         """
-        child_tasks: list[int] = [task_id]  # Include the parent task itself
+        yield task_id  # Include the parent task itself
         direct_children = self._call_api("getTaskChildren", task_id)
         for child in direct_children:
             child_id = child["id"]
             assert isinstance(child_id, int)
-            child_tasks.append(child_id)
+            yield child_id
             # Recursively fetch grandchildren
-            child_tasks.extend(self._get_task_children(child_id))
-        return child_tasks
+            yield from self._get_task_children(child_id)
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
@@ -299,34 +296,40 @@ class KojiTask(KojiArtifactProvider):
         return KojiScratchRpmArtifactInfo(_raw_artifact=raw_artifact)
 
     @cached_property
-    def rpm_list(self) -> list[RpmArtifactInfo]:
+    def rpm_iterator(self) -> Iterator[RpmArtifactInfo]:
+        """
+        RPM artifacts for this task.
+
+        If the task produced a build, yield RPMs from the build.
+        Otherwise, yield scratch RPMs from task outputs.
+        """
         self.logger.debug(f"Fetching RPMs for task '{self.id}'.")
+
         # If task produced a build, reuse build path
         if self.build_id is not None:
             self.logger.debug(
                 f"Task '{self.id}' produced build '{self.build_id}', fetching RPMs from the build."
             )
             assert self.build_provider is not None
-            return self.build_provider.rpm_list
+            yield from self.build_provider.rpm_iterator
 
-        # Otherwise, list the task output files for scratch builds
-        self.logger.debug(f"Task '{self.id}' did not produce a build, fetching scratch RPMs.")
-        rpms: list[RpmArtifactInfo] = []
-        seen_ids = set()  # Multiple tasks may produce the same RPM
-        for child_task in self._get_task_children(int(self.id)):
-            for filename in self._call_api("listTaskOutput", child_task):
-                if not filename.endswith(".rpm"):
-                    self.logger.warning(f"Skipping '{filename}': not an RPM")
-                    continue
-                rpm = self.make_rpm_artifact(child_task, filename)
-                if rpm.id not in seen_ids:
-                    rpms.append(rpm)
-                    seen_ids.add(rpm.id)
-                else:
-                    self.logger.debug(
-                        f"Skipping redundant RPM '{rpm.id}' from task '{child_task}'"
-                    )
-        return rpms
+        else:
+            # Otherwise, list the task output files for scratch builds
+            self.logger.debug(f"Task '{self.id}' did not produce a build, fetching scratch RPMs.")
+            seen_ids = set()  # Multiple tasks may produce the same RPM
+            for child_task in self._get_task_children(int(self.id)):
+                for filename in self._call_api("listTaskOutput", child_task):
+                    if not filename.endswith(".rpm"):
+                        self.logger.warning(f"Skipping '{filename}': not an RPM")
+                        continue
+                    rpm = self.make_rpm_artifact(child_task, filename)
+                    if rpm.id not in seen_ids:
+                        yield rpm
+                        seen_ids.add(rpm.id)
+                    else:
+                        self.logger.debug(
+                            f"Skipping redundant RPM '{rpm.id}' from task '{child_task}'"
+                        )
 
 
 @provides_artifact_provider('koji.build')  # type: ignore[arg-type]
@@ -336,15 +339,16 @@ class KojiBuild(KojiArtifactProvider):
         return int(self.id)
 
     @cached_property
-    def rpm_list(self) -> list[RpmArtifactInfo]:
+    def rpm_iterator(self) -> Iterator[RpmArtifactInfo]:
         """
-        Resolve and return the list of RPMs for the given build ID or NVR.
+        RPM artifacts for the given build ID.
 
-        :return: List of RpmArtifactInfo objects
+        :yield: RpmArtifactInfo objects
         """
         self.logger.debug(f"Fetching RPMs for build '{self.build_id}'.")
         rpm_dicts = self._call_api("listBuildRPMs", self.build_id)
-        return [self.make_rpm_artifact(rpm) for rpm in rpm_dicts]
+        for rpm_dict in rpm_dicts:
+            yield self.make_rpm_artifact(rpm_dict)
 
 
 @provides_artifact_provider("koji.nvr")  # type: ignore[arg-type]
@@ -360,7 +364,10 @@ class KojiNvr(KojiArtifactProvider):
         return build_id
 
     @cached_property
-    def rpm_list(self) -> list[RpmArtifactInfo]:
+    def rpm_iterator(self) -> Iterator[RpmArtifactInfo]:
+        """
+        RPM artifacts for the given NVR.
+        """
         self.logger.debug(f"Fetching RPMs for NVR '{self.id}'.")
         assert self.build_provider is not None
-        return self.build_provider.rpm_list
+        yield from self.build_provider.rpm_iterator

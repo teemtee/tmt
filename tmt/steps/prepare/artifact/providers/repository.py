@@ -62,20 +62,18 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
         super().__init__(raw_provider_id, logger)
         self.repo_file = RepositoryFile(url=self.id)
-        # Cache for the list of RPMs discovered in the repository
-        self._rpm_list: list[RpmArtifactInfo] = []
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
         return raw_provider_id
 
-    def _fetch_rpms(self, guest: Guest, repo_filepath: Path) -> None:
+    def _fetch_rpms(self, guest: Guest, repo_filepath: Path) -> Iterator[RpmArtifactInfo]:
         """
         Query the guest to find all packages available in the new repository.
         """
-        # TODO: This method needs to be implemented to populate self._rpm_list with RPMs
-        # from the repository. Currently using an empty list as a temporary solution.
-        self._rpm_list = []
+        # TODO: This method needs to be implemented to yield RpmArtifactInfo objects
+        # for RPMs from the repository. Currently yielding nothing as a temporary solution.
+        yield from ()
 
     def list_artifacts(self) -> Iterator[RpmArtifactInfo]:
         """
@@ -96,7 +94,7 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         guest: Guest,
         download_path: tmt.utils.Path,
         exclude_patterns: Optional[list[Pattern[str]]] = None,
-    ) -> list[tmt.utils.Path]:
+    ) -> Iterator[tmt.utils.Path]:
         """
         Download the .repo file to the guest, making the repository available.
 
@@ -123,9 +121,10 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
             raise DownloadError(f"Failed to download repository file to '{repo_dest}'.") from error
 
         # 2. Populate the RPM list for discovery purposes
-        self._fetch_rpms(guest, repo_dest)
+        self._rpm_iterator = self._fetch_rpms(guest, repo_dest)
 
         self.logger.info("Repository setup is complete.")
-        # 3. Return list of available Artifacts
-        # TODO: Finalize contract of what needs to be returned from Artifact Repository
-        return []
+
+        # Yield paths or RPMs (depending on contract)
+        # For now, yield nothing until the API contract is finalized
+        yield from ()

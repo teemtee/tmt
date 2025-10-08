@@ -38,7 +38,7 @@ def test_koji_valid_task_id_actual_build(root_logger):
 @pytest.mark.integration
 def test_koji_valid_task_id_scratch_build(root_logger):
     provider = KojiArtifactProvider("koji.task:137705547", root_logger)
-    tasks = provider._get_task_children(137705547)
+    tasks = list(provider._get_task_children(137705547))
     assert len(tasks) == 13
     assert 137705547 in tasks  # The parent task itself should be included
     rpms = list(provider.list_artifacts())

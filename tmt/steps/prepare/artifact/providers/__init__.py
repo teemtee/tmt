@@ -116,7 +116,7 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         guest: Guest,
         download_path: tmt.utils.Path,
         exclude_patterns: Optional[list[Pattern[str]]] = None,
-    ) -> list[tmt.utils.Path]:
+    ) -> Iterator[tmt.utils.Path]:
         """
         Fetch all artifacts to the specified destination.
 
@@ -126,7 +126,7 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
             downloaded.
         :param exclude_patterns: if set, artifacts whose names match any
             of the given regular expressions would not be downloaded.
-        :returns: a list of paths to the downloaded artifacts.
+        :yields: paths to the successfully downloaded artifacts.
         :raises GeneralError: Unexpected errors outside the download process.
         :note: Errors during individual artifact downloads are
             caught, logged as warnings, and ignored.
@@ -146,7 +146,7 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
             silent=True,
         )
 
-        downloaded_paths: list[tmt.utils.Path] = []
+        downloaded_count = 0
 
         for artifact in self._filter_artifacts(exclude_patterns):
             local_path = download_path / str(artifact)
@@ -154,9 +154,9 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
 
             try:
                 self._download_artifact(artifact, guest, local_path)
-                downloaded_paths.append(local_path)
+                downloaded_count += 1
                 self.logger.info(f"Downloaded '{artifact}' to '{local_path}'.")
-
+                yield local_path
             except DownloadError as error:
                 # Warn about the failed download and move on
                 tmt.utils.show_exception_as_warning(
@@ -171,8 +171,7 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
                     f"Unexpected error downloading '{artifact}'."
                 ) from error
 
-        self.logger.info(f"Successfully downloaded '{len(downloaded_paths)}' artifacts.")
-        return downloaded_paths
+        self.logger.info(f"Successfully downloaded '{downloaded_count}' artifacts.")
 
     def _filter_artifacts(self, exclude_patterns: list[Pattern[str]]) -> Iterator[ArtifactInfoT]:
         """
