@@ -137,6 +137,7 @@ plans:
                 has-systemd:
                 has-rsync:
                 is-superuser:
+                sudo-prefix:
                 is-ostree:
                 is-toolbox:
                 toolbox-container-name:

@@ -37,8 +37,6 @@ PACKAGE_PATH: dict[FileSystemPath, str] = {
 class ApkEngine(PackageManagerEngine):
     install_command = Command('add')
 
-    _sudo_prefix: Command
-
     def prepare_command(self) -> tuple[Command, Command]:
         """
         Prepare installation command for apk
