@@ -215,7 +215,7 @@ class MockShell:
             ' /srv/tmt-mock/filesync'
             '\n'
         )
-        self.mock_shell.stdin.write('chmod a+rw /srv/tmt-mock/filesync\n')
+        self.mock_shell.stdin.write('chmod -R a+rw /srv/tmt-mock\n')
         self.mock_shell.stdin.flush()
 
         # Wait until the previous commands finished.
@@ -545,7 +545,7 @@ class GuestMock(tmt.Guest):
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
-        # TODO refresh shell
+        # TODO refresh shell, or is that for `reconnect`?
         self.debug(f"Doing nothing to reboot guest '{self.primary_address}'.")
         return False
 
@@ -563,10 +563,14 @@ class GuestMock(tmt.Guest):
         (self.mock_command_prefix + Command('--scrub=all')).run(cwd=None, logger=self._logger)
 
     def suspend(self) -> None:
-        self.mock_shell.exit_shell()
+        self.stop()
+
+    def start(self) -> None:
+        self.mock_shell.enter_shell()
 
     def stop(self) -> None:
         self.mock_shell.exit_shell()
+        self.run(Command('rm', '-rf', str(self.root_path / 'srv/tmt-mock/*')))
 
     def push(
         self,
@@ -760,4 +764,5 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
             name=self.name,
             parent=self.step,
         )
+        self._guest.start()
         self._guest.setup()
