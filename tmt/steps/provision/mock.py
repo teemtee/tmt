@@ -59,9 +59,12 @@ class ProvisionMockData(MockGuestData, tmt.steps.provision.ProvisionStepData):
 
 
 class MockShell:
-    # Lazy object that collects chunks of bytes and decodes them when a
-    # newline is encountered
     class Stream:
+        """
+        Lazy object that collects chunks of bytes and decodes them when a
+        newline is encountered.
+        """
+
         def __init__(self, logger: Callable[[str], None]):
             self.logger = logger
             self.output = b''
@@ -81,6 +84,10 @@ class MockShell:
             return self
 
     class ManagedEpollFd:
+        """
+        Context manager for file descriptors registered with epoll.
+        """
+
         def __init__(self, epoll: 'select.epoll', fd: int) -> None:
             self.epoll = epoll
             self.fd: Optional[int] = fd
@@ -243,7 +250,9 @@ class MockShell:
         **kwargs: Any,
     ) -> Generator[tuple[str, str]]:
         """
-        Execute the command in a running mock shell for increased speed.
+        Spawn a command in the shell. The first call to `next` will start
+        executing it (returns nothing). The second call to `next` will finish
+        the command returning its standard outputs.
         """
 
         if self.mock_shell is None:
@@ -492,7 +501,7 @@ class GuestMock(tmt.Guest):
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
-        Execute command inside mock
+        Execute the command in a running mock shell for increased speed.
         """
 
         sourced_files = sourced_files or []
