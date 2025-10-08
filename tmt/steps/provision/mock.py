@@ -427,7 +427,7 @@ class GuestMock(tmt.Guest):
         if self.root is not None:
             self.mock_command_prefix += Command('-r', self.root)
         if self.rootdir is not None:
-            self.mock_command_prefix += Command('--rootdir', self.rootdir)
+            self.mock_command_prefix += Command('--rootdir', str(self.rootdir))
         root_path = (
             (self.mock_command_prefix + Command('--print-root-path'))
             .run(cwd=None, logger=self._logger)
