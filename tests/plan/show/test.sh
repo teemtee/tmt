@@ -4,7 +4,7 @@
 function dump_fmf_id_block
 {
     typeset output=${1?"*** output file"}
-    typeset lineno=$(cat -n $output | grep -E 'fmf-id' | awk '{print $1}')
+    typeset lineno=$(cat -n $output | grep -E 'fmf-id' | grep -v false | awk '{print $1}')
     sed -n "$lineno,$"p $output
 }
 
@@ -79,7 +79,7 @@ rlJournalStart
 
     rlPhaseStartTest "Show a plan with -vvv in work tree"
         local_repo="$show_dir3/tmt"
-        plan="/plans/sanity/lint"
+        plan="/plans/sanity/with-tmt"
         worktree="TREE"
         ref="myref"
 
