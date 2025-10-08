@@ -502,6 +502,7 @@ class GuestFacts(SerializableContainer):
     has_systemd: Optional[bool] = None
     has_rsync: Optional[bool] = None
     is_superuser: Optional[bool] = None
+    sudo_prefix: Optional[str] = None
     is_ostree: Optional[bool] = None
     is_toolbox: Optional[bool] = None
     toolbox_container_name: Optional[str] = None
@@ -773,6 +774,19 @@ class GuestFacts(SerializableContainer):
 
         return output.stdout.strip() == 'root'
 
+    def _query_sudo_prefix(self, guest: 'Guest') -> Optional[str]:
+        # Note: we cannot reuse `is_superuser` fact so we just recall the query for now
+        if self._query_is_superuser(guest):
+            return ""
+        try:
+            guest.execute(Command("sudo", "-n", "true"))
+        except tmt.utils.RunError:
+            # If the user does not have sudo access assume that everything else
+            # is setup properly
+            guest.info("User does not have sudo access, we assume everything is pre-setup.")
+            return ""
+        return "sudo"
+
     def _query_is_ostree(self, guest: 'Guest') -> Optional[bool]:
         # https://github.com/vrothberg/chkconfig/commit/538dc7edf0da387169d83599fe0774ea080b4a37#diff-562b9b19cb1cd12a7343ce5c739745ebc8f363a195276ca58e926f22927238a5R1334
         output = self._execute(
@@ -883,6 +897,7 @@ class GuestFacts(SerializableContainer):
             self.has_systemd = self._query_has_systemd(guest)
             self.has_rsync = self._query_has_rsync(guest)
             self.is_superuser = self._query_is_superuser(guest)
+            self.sudo_prefix = self._query_sudo_prefix(guest)
             self.is_ostree = self._query_is_ostree(guest)
             self.is_toolbox = self._query_is_toolbox(guest)
             self.toolbox_container_name = self._query_toolbox_container_name(guest)
@@ -1513,8 +1528,7 @@ class Guest(
         self.execute(
             ShellScript(
                 f"[ -d {quote(str(self.scripts_path))} ] || "
-                f'{"sudo " if not self.facts.is_superuser else ""}'
-                f"mkdir -p {quote(str(self.scripts_path))}"
+                f"{self.facts.sudo_prefix} mkdir -p {quote(str(self.scripts_path))}"
             ).to_shell_command(),
             silent=True,
         )

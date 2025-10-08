@@ -88,14 +88,9 @@ class DmesgCheck(Check):
                 key=key, value=value, color=color, shift=shift, level=level, topic=topic
             )
 
+        script = tmt.utils.ShellScript(f'{guest.facts.sudo_prefix} dmesg')
         if guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_CLEAR):
-            script = tmt.utils.ShellScript('dmesg -c')
-
-        else:
-            script = tmt.utils.ShellScript('dmesg')
-
-        if not guest.facts.is_superuser:
-            script = tmt.utils.ShellScript(f'sudo {script.to_shell_command()}')
+            script = tmt.utils.ShellScript(f'{script.to_element()} -c')
 
         return guest.execute(script, log=_test_output_logger, silent=True)
 

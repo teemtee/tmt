@@ -37,23 +37,15 @@ PACKAGE_PATH: dict[FileSystemPath, str] = {
 class ApkEngine(PackageManagerEngine):
     install_command = Command('add')
 
-    _sudo_prefix: Command
-
     def prepare_command(self) -> tuple[Command, Command]:
         """
         Prepare installation command for apk
         """
+        assert self.guest.facts.sudo_prefix is not None  # Narrow type
+        command = Command('apk')
 
-        if self.guest.facts.is_superuser is False:
-            self._sudo_prefix = Command('sudo')
-
-        else:
-            self._sudo_prefix = Command()
-
-        command = Command()
-
-        command += self._sudo_prefix
-        command += Command('apk')
+        if self.guest.facts.sudo_prefix:
+            command = Command(self.guest.facts.sudo_prefix, 'apk')
 
         return (command, Command())
 

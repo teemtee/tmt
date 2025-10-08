@@ -225,9 +225,6 @@ class CoredumpCheck(Check):
 
         Uses progressive waiting with a timeout to avoid getting stuck.
         """
-        need_sudo = guest.facts.is_superuser is False
-        sudo_prefix = "sudo " if need_sudo else ""
-
         total_wait = 0
         max_wait = 60  # Total maximum wait time in seconds
         wait_time = 1  # Start with 1 second, will increase progressively
@@ -236,7 +233,7 @@ class CoredumpCheck(Check):
         while total_wait < max_wait:
             try:
                 # Check if any systemd-coredump processes are running
-                cmd = f"{sudo_prefix}pgrep systemd-coredump || true"
+                cmd = f"{guest.facts.sudo_prefix} pgrep systemd-coredump || true"
                 result = guest.execute(ShellScript(cmd), silent=True)
 
                 # If no processes found, we're good to go
@@ -275,10 +272,6 @@ class CoredumpCheck(Check):
         Uses the timestamp of the latest coredump before the test to identify
         new coredumps created during test execution.
         """
-        # Determine if we need sudo
-        need_sudo = guest.facts.is_superuser is False
-        sudo_prefix = "sudo " if need_sudo else ""
-
         # Make sure dumps are processed
         self._wait_for_coredump_processes(guest, logger)
 
@@ -302,13 +295,12 @@ class CoredumpCheck(Check):
 
             # Get list of coredumps newer than the latest one before the test
             # Use --all to check coredumps from all users, not just current user
+            cmd = f"{guest.facts.sudo_prefix} coredumpctl list --all --no-legend --no-pager"
             if latest_timestamp:
-                since_param = f'--since="{latest_timestamp}"'
-                cmd = f"{sudo_prefix}coredumpctl list --all --no-legend --no-pager {since_param}"
+                cmd = f'{cmd} --since="{latest_timestamp}"'
                 logger.debug(f"Checking for coredumps newer than: {latest_timestamp}")
             else:
                 # If we have no prior timestamp, get all coredumps
-                cmd = f"{sudo_prefix}coredumpctl list --all --no-legend --no-pager"
                 logger.debug("No prior coredumps found, checking all available coredumps")
 
             output = guest.execute(ShellScript(cmd), silent=True).stdout
@@ -333,7 +325,7 @@ class CoredumpCheck(Check):
                 # so all dumps in this list are already post-test
 
                 # Get detailed info for this crash (use --all to ensure we can access it)
-                cmd = f"{sudo_prefix}coredumpctl info --all --no-pager {pid}"
+                cmd = f"{guest.facts.sudo_prefix} coredumpctl info --all --no-pager {pid}"
                 crash_info = guest.execute(ShellScript(cmd)).stdout
                 if not crash_info:
                     logger.debug(f"No crash info available for PID {pid}")
@@ -357,7 +349,7 @@ class CoredumpCheck(Check):
                 info_filepath = check_files_path / f"dump.{exe}_{sig}_{pid}.txt"
                 guest.execute(
                     ShellScript(
-                        f"sh -c {sudo_prefix}coredumpctl info --all --no-pager {pid} > {info_filepath!s}"  # noqa: E501
+                        f"sh -c {guest.facts.sudo_prefix} coredumpctl info --all --no-pager {pid} > {info_filepath!s}"  # noqa: E501
                     )
                 )
                 logger.debug(f"Saved crash info to {info_filepath}")
@@ -369,7 +361,7 @@ class CoredumpCheck(Check):
                     try:
                         guest.execute(
                             ShellScript(
-                                f"{sudo_prefix}coredumpctl dump --all --no-pager -o {dump_path!s} {pid}"  # noqa: E501
+                                f"{guest.facts.sudo_prefix} coredumpctl dump --all --no-pager -o {dump_path!s} {pid}"  # noqa: E501
                             )
                         )
                         logger.debug(f"Saved coredump to {dump_path}")
@@ -442,18 +434,15 @@ class CoredumpCheck(Check):
             # Create directory for check files
             invocation.guest.execute(ShellScript(f"mkdir -p {invocation.check_files_path!s}"))
 
-            # Determine if sudo is needed
-            need_sudo = invocation.guest.facts.is_superuser is False
-            sudo_prefix = "sudo " if need_sudo else ""
-
             # Get only the latest coredump before the test using -1 flag
             # and save it to a file. If there are no dumps, create an empty file.
             # Use --all to check coredumps from all users, not just current user
+            cmd = (
+                f"{invocation.guest.facts.sudo_prefix} coredumpctl "
+                "list -1 --all --no-legend --no-pager"
+            )
             invocation.guest.execute(
-                ShellScript(
-                    f"({sudo_prefix}coredumpctl list -1 --all --no-legend --no-pager || true) > "
-                    f"{self.coredump_last_dumps_filepath!s}"
-                )
+                ShellScript(f"({cmd} || true) > {self.coredump_last_dumps_filepath!s}")
             )
             return True
         except tmt.utils.RunError:

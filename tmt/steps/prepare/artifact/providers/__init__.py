@@ -140,8 +140,7 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         guest.execute(
             tmt.utils.ShellScript(
                 f"[ -d {quote(str(download_path))} ] || "
-                f'{"sudo " if not guest.facts.is_superuser else ""}'
-                f"mkdir -p {quote(str(download_path))}"
+                f"{guest.facts.sudo_prefix} mkdir -p {quote(str(download_path))}"
             ),
             silent=True,
         )

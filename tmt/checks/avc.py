@@ -151,8 +151,8 @@ def _run_script(
         describing the command failure.
     """
 
-    if needs_sudo and invocation.guest.facts.is_superuser is False:
-        script = ShellScript(f'sudo {script.to_shell_command()}')
+    if needs_sudo:
+        script = ShellScript(f'{invocation.guest.facts.sudo_prefix} {script.to_shell_command()}')
 
     def _output_logger(
         key: str,
