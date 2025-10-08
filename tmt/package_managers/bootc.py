@@ -52,7 +52,13 @@ class BootcEngine(PackageManagerEngine):
         Prepare installation command for bootc
         """
         assert self.guest.facts.sudo_prefix is not None  # Narrow type
-        return Command(self.guest.facts.sudo_prefix, 'bootc'), Command('')
+
+        command = Command('bootc')
+
+        if self.guest.facts.sudo_prefix:
+            command = Command(self.guest.facts.sudo_prefix, 'bootc')
+
+        return command, Command('')
 
     def _get_current_bootc_image(self) -> str:
         """Get the current bootc image running on the system"""

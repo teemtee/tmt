@@ -42,7 +42,10 @@ class ApkEngine(PackageManagerEngine):
         Prepare installation command for apk
         """
         assert self.guest.facts.sudo_prefix is not None  # Narrow type
-        command = Command(self.guest.facts.sudo_prefix, 'apk')
+        command = Command('apk')
+
+        if self.guest.facts.sudo_prefix:
+            command = Command(self.guest.facts.sudo_prefix, 'apk')
 
         return (command, Command())
 

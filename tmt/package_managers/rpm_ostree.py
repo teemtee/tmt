@@ -20,7 +20,11 @@ class RpmOstreeEngine(PackageManagerEngine):
         """
 
         assert self.guest.facts.sudo_prefix is not None  # Narrow type
-        command = Command(self.guest.facts.sudo_prefix, 'rpm-ostree')
+
+        command = Command('rpm-ostree')
+
+        if self.guest.facts.sudo_prefix:
+            command = Command(self.guest.facts.sudo_prefix, 'rpm-ostree')
 
         options = Command('--apply-live', '--idempotent', '--allow-inactive', '--assumeyes')
 

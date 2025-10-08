@@ -87,7 +87,12 @@ class AptEngine(PackageManagerEngine):
         Prepare installation command for apt
         """
         assert self.guest.facts.sudo_prefix is not None  # Narrow type
-        command = Command(self.guest.facts.sudo_prefix, 'apt')
+
+        command = Command('apt')
+
+        if self.guest.facts.sudo_prefix:
+            command = Command(self.guest.facts.sudo_prefix, 'apt')
+
         options = Command('-y')
 
         return (command, options)
