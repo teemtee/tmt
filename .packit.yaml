@@ -181,6 +181,17 @@ jobs:
     targets:
       - epel-9
 
+  # OS-agnostic sanity and coding-standard checks
+  - <<: *test-base
+    targets:
+      - fedora-latest-stable
+    identifier: sanity
+    tf_extra_params:
+      test:
+        tmt:
+          name: /plans/sanity
+    skip_build: true
+
   # Propose downstream pull requests
   - job: propose_downstream
     trigger: release
