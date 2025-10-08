@@ -83,6 +83,13 @@ class MockEngine(PackageManagerEngine):
 
 
 class _MockPackageManager(PackageManager[MockEngine]):
+    """
+    Base class implementing the package manager for mock-provisioned guests.
+    Note:
+    * self.guest.run - execute a command *on the host*.
+    * self.guest.execute - execute a command *in the mock shell*.
+    """
+
     probe_command = Command('/usr/bin/false')
     probe_priority = 130
     _engine_class = MockEngine
