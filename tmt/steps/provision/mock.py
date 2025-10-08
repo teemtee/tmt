@@ -110,10 +110,8 @@ class MockShell:
         ) -> None:
             self.try_unregister()
 
-    def __init__(self, parent: 'GuestMock', root: Optional[str], rootdir: Optional[Path]):
+    def __init__(self, parent: 'GuestMock') -> None:
         self.parent = parent
-        self.root = root
-        self.rootdir = rootdir
         self.mock_shell: Optional[subprocess.Popen[str]] = None
 
         # `select.epoll` is not available on non-Linux platforms.
@@ -445,7 +443,7 @@ class GuestMock(tmt.Guest):
         assert root_path is not None
         self.root_path = Path(root_path.rstrip())
 
-        self.mock_shell = MockShell(parent=self, root=self.root, rootdir=self.rootdir)
+        self.mock_shell = MockShell(parent=self)
 
     @property
     def is_ready(self) -> bool:
