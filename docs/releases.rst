@@ -7,18 +7,6 @@
 tmt-1.59.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Introduced ``RSTRNT_TASKNAME`` environment variable gated by
-``restraint-compatible`` flag.
-
-If there is an error during the ``report`` step, tmt will now
-correctly execute the ``cleanup`` step instead of skipping it.
-
-The :ref:`/plugins/provision/beaker` provision plugin gains
-support for :ref:`beaker.panic-watchdog</spec/hardware/beaker>`
-hardware requirement. If enabled, beaker-watchdog will return the
-host to beaker when a kernel panic is detected. By default this
-option is disabled so tmt can keep control over the Beaker machine.
-
 Please note, that in the future the ``restraint`` compatibility
 features will not be available on guests by default but will have
 to be explicitly enabled using the ``restraint-compatible`` flag.
@@ -26,9 +14,59 @@ Currently the change is planned for January 2027. See the
 :ref:`restraint-compatibility` section for the full schedule and
 details.
 
+The :ref:`/plugins/provision/beaker` provision plugin gains
+support for :ref:`beaker.panic-watchdog</spec/hardware/beaker>`
+hardware requirement. If enabled, beaker-watchdog will return the
+host to beaker when a kernel panic is detected. By default this
+option is disabled so tmt can keep control over the Beaker
+machine.
+
+Introduced ``RSTRNT_TASKNAME`` environment variable gated by
+``restraint-compatible`` flag.
+
+If there is an error during the ``report`` step, tmt will now
+correctly execute the ``cleanup`` step instead of skipping it.
+
 The :ref:`/plugins/discover/fmf` discover plugin now has
-``url-content-type`` key which can be set to ``archive`` to download
-and extract a ``url`` pointing to an archive.
+``url-content-type`` key which can be set to ``archive``
+to download and extract a ``url`` pointing to an archive.
+
+The ``tmt-reboot`` command now calls ``sync`` before reboot
+to flush buffers to disk, preventing potential data loss.
+
+Scripts copying has been optimized to copy the entire scripts
+directory at once, improving performance for all executions.
+
+Test dependencies are now switched to using the packaged ``yq``
+instead of the Python-based version, improving compatibility and
+reducing dependency management complexity.
+
+Fixed hardware :ref:`/spec/hardware/device` schema to properly
+handle single device specifications, resolving schema validation
+issues.
+
+Fixed recursive directory copying in the
+:ref:`/plugins/provision/container` provision plugin to properly
+handle directory structures when copying files.
+
+Documentation has been enhanced to explicitly state that scripts
+need to be executable when used in ``test`` or ``script`` fields,
+a common source of test failures.
+
+Added a `DeepWiki`__ badge and link to the README and
+documentation overview to make AI-powered code exploration
+and documentation easily discoverable for contributors.
+
+__ https://deepwiki.com/teemtee/tmt
+
+Status update logging in the :ref:`/plugins/provision/beaker` and
+:ref:`/plugins/provision/artemis` provision plugins has been aligned
+with other plugins to display the guest name at the beginning of
+status messages for consistency.
+
+Fixed :ref:`/plugins/provision/beaker` provision plugin configuration
+to properly translate ``fedora-rawhide`` images to use the Server
+variant instead of BaseOS, resolving provisioning failures.
 
 Added a new :ref:`/plugins/provision/mock` provision plugin, which uses
 the environment provided by mock and shell access for executing tests.
