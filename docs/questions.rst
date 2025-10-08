@@ -191,12 +191,9 @@ restraint server, are ignored.
 
 .. warning::
 
-    Currently this functionality is enabled by default. If your
-    tests depend on these compatibility scripts, please ensure
-    that the ``restraint-compatible`` option is enabled under the
-    :ref:`/plugins/execute/tmt` execute step. In the future these
-    scripts will be available on the guest only if this option is
-    enabled.
+    If your tests depend on these compatibility scripts, please
+    ensure that the ``restraint-compatible`` option is enabled
+    under the :ref:`/plugins/execute/tmt` execute step.
 
     .. code-block:: yaml
 
@@ -209,6 +206,21 @@ restraint server, are ignored.
     ``tmt-report-result`` scripts instead. These are not planned
     to be removed and will be supported in the future.
 
+.. note::
+
+    Currently this functionality is enabled by default but will be
+    removed according to the following schedule:
+
+    * March 2026 ... print warning for all restraint features used
+      without the ``restraint-compatible`` flag enabled
+    * September 2026 ... send email reminders about the planned
+      deprecation to all users identified to be still using them
+    * January 2027 ... no backward compatibility features are
+      enabled without the ``restraint-compatible`` flag enabled
+
+    See the `tracking issue`__ for more details about the
+    deprecation and progress of the effort.
+
 .. versionadded:: 1.59
 
    When ``restraint-compatible`` is set, an environment variable
@@ -216,6 +228,7 @@ restraint server, are ignored.
    ``TMT_TEST_NAME``.
 
 __ https://restraint.readthedocs.io/
+__ https://github.com/teemtee/tmt/issues/4021
 
 
 .. _mulithost-compatibility:

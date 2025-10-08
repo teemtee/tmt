@@ -19,9 +19,17 @@ hardware requirement. If enabled, beaker-watchdog will return the
 host to beaker when a kernel panic is detected. By default this
 option is disabled so tmt can keep control over the Beaker machine.
 
+Please note, that in the future the ``restraint`` compatibility
+features will not be available on guests by default but will have
+to be explicitly enabled using the ``restraint-compatible`` flag.
+Currently the change is planned for January 2027. See the
+:ref:`restraint-compatibility` section for the full schedule and
+details.
+
 The :ref:`/plugins/discover/fmf` discover plugin now has
 ``url-content-type`` key which can be set to ``archive`` to download
 and extract a ``url`` pointing to an archive.
+
 
 tmt-1.58.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
