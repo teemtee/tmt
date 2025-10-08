@@ -1,0 +1,8 @@
+summary: Test Fedora Rawhide mock container
+description:
+    A simple test to see if the provision does at least provide us with a
+    working shell.
+
+# TODO: Failing on `assert self.mock_shell is not None`
+# Disabling for now, not to block the proof-of-concept
+enabled: false

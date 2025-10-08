@@ -30,6 +30,11 @@ The :ref:`/plugins/discover/fmf` discover plugin now has
 ``url-content-type`` key which can be set to ``archive`` to download
 and extract a ``url`` pointing to an archive.
 
+Added a new :ref:`/plugins/provision/mock` provision plugin, which uses
+the environment provided by mock and shell access for executing tests.
+This feature is currently experimental and subject to change. We are
+looking forward to user feedback.
+
 
 tmt-1.58.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

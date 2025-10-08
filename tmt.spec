@@ -115,6 +115,14 @@ Requires:       python3-mrack-beaker
 
 %description -n tmt+provision-beaker %_metapackage_description
 
+%package -n     tmt+provision-mock
+Summary:        Dependencies required for tmt mock provisioner
+Provides:       tmt-provision-mock == %{version}-%{release}
+Requires:       tmt == %{version}-%{release}
+Requires:       mock
+
+%description -n tmt+provision-mock %_metapackage_description
+
 # Replace with pyproject_extras_subpkg at some point
 %package -n     tmt+all
 Summary:        Extra dependencies for the Test Management Tool
@@ -130,6 +138,7 @@ Requires:       tmt+provision-beaker == %{version}-%{release}
 Requires:       tmt+report-junit == %{version}-%{release}
 Requires:       tmt+report-polarion == %{version}-%{release}
 Requires:       tmt+prepare-artifact == %{version}-%{release}
+Requires:       tmt+provision-mock == %{version}-%{release}
 
 %description -n tmt+all
 All extra dependencies of the Test Management Tool. Install this
@@ -178,6 +187,7 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %files -n tmt+test-convert -f %{_pyproject_ghost_distinfo}
 %files -n tmt+provision-beaker -f %{_pyproject_ghost_distinfo}
 %config(noreplace) %{_sysconfdir}/%{name}/mrack*
+%files -n tmt+provision-mock -f %{_pyproject_ghost_distinfo}
 %files -n tmt+all -f %{_pyproject_ghost_distinfo}
 
 %changelog
