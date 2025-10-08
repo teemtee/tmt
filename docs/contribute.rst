@@ -965,3 +965,13 @@ sharing daily updates in the team chat:
 
 __ https://github.com/orgs/teemtee/projects/1/views/3
 __ https://github.com/orgs/teemtee/projects/1/views/14
+
+AI tools such as `Claude Code`__ or `Gemini CLI`__ can help with
+generating release notes. The ``.claude/CLAUDE.md`` file in the
+repository contains instructions for AI tools on how to search PRs
+by milestone and create release note fmf files in the correct format.
+It also documents how to set up the GitHub MCP server for enhanced
+GitHub integration.
+
+__ https://claude.ai/download
+__ https://github.com/google-gemini/gemini-cli
