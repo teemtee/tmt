@@ -1285,6 +1285,16 @@ class Step(
             key=lambda phase: phase.order,
         )
 
+    def add_phase(self, phase: Phase) -> None:
+        """
+        Add a phase dynamically to the current step.
+
+        :param phase: The phase to add.
+        """
+        if not isinstance(phase, self._plugin_base_class):
+            raise GeneralError(f"The phase '{phase}' is not part of step '{self}'.")
+        self._phases.append(phase)
+
     def actions(self) -> None:
         """
         Run all loaded Login or Reboot action instances of the step

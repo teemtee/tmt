@@ -3432,6 +3432,26 @@ class Plan(
 
         return False
 
+    # TODO: Make the str type-hint more narrow
+    def add_phase(self, step: Union[str, tmt.steps.Step], phase: tmt.steps.Phase) -> None:
+        """
+        Add a phase dynamically to the current plan.
+
+        :param step: The (future) step in which to add the phase.
+        :param phase: The phase to add to the step.
+        """
+        if isinstance(step, str):
+            if step not in tmt.steps.STEPS:
+                raise GeneralError(f"Tried to add to an unknown step: {step}")
+            step = getattr(self, step)
+        assert isinstance(step, tmt.steps.Step)
+        if step.plan != self:
+            raise GeneralError(
+                f"Tried to add to a step belonging to a different plan: {step.plan}"
+            )
+        # TODO: Check that the current step/phase is after the current step/phase
+        step.add_phase(phase)
+
 
 class StoryPriority(enum.Enum):
     MUST_HAVE = 'must have'
