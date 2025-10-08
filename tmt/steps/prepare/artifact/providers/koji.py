@@ -3,10 +3,11 @@ Koji Artifact Provider
 """
 
 import types
+from abc import abstractmethod
 from collections.abc import Iterator
 from functools import cached_property
 from shlex import quote
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 import tmt.log
 import tmt.utils
@@ -58,13 +59,6 @@ class RpmArtifactInfo(ArtifactInfo):
     def location(self) -> str:
         return self._raw_artifact['url']
 
-    @property
-    def is_draft(self) -> bool:
-        """
-        Whether this RPM is a draft/scratch artifact.
-        """
-        return bool(self._raw_artifact.get('draft', False))
-
 
 @container
 class KojiScratchRpmArtifactInfo(RpmArtifactInfo):
@@ -110,7 +104,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         artifacts = provider.download_artifacts(guest, Path("/tmp"), [])
     """
 
-    SUPPORTED_PREFIXES = ("koji.build:", "koji.task:", "koji.nvr:")
+    SUPPORTED_PREFIXES: ClassVar[tuple[str, ...]] = ("koji.build:", "koji.task:", "koji.nvr:")
 
     def __new__(cls, raw_provider_id: str, logger: tmt.log.Logger) -> 'KojiArtifactProvider':
         """
@@ -138,38 +132,39 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
         super().__init__(raw_provider_id, logger)
         self._session = self._initialize_session()
-        self._build_provider: Optional[KojiBuild] = None
 
     @cached_property
+    @abstractmethod
     def build_id(self) -> Optional[int]:
         """
         Resolve and return the build ID.
 
-        - If provided directly, return it.
-        - If provided via NVR, resolve using getBuild.
-        - If provided via task_id, resolve using listBuilds.
+        There are multiple possible ways of finding a build ID from the artifact provider inputs,
+        individual artifact providers must chose the most fitting one.
 
-        :return: The resolved build ID, or None if not found for task_id
-        :raises GeneralError: If the build cannot be found
+        :returns: the build ID, or ``None`` if there is no build attached to this provider.
+        :raises GeneralError: when the build should exist, but cannot be found in Koji.
         """
         raise NotImplementedError
 
     @cached_property
+    @abstractmethod
     def rpm_list(self) -> list[RpmArtifactInfo]:
-        """Return all RPM artifacts for the given identifier."""
+        """Return all RPM artifacts for this provider."""
         raise NotImplementedError
 
     def _initialize_session(self) -> 'ClientSession':
         """
         A koji session initialized via the koji.ClientSession function.
-        Also sets self._topurl and self._api_url being the base URL for the koji instance
+
+        Also :py:attr:`_top_url` and :py:attr:`_api_url` being the base URL for the Koji instance.
         """
         import_koji(self.logger)
 
         try:
             config = koji.read_config("koji")  # type: ignore[union-attr]
             self._api_url = config.get("server")
-            self._topurl = config.get("topurl")
+            self._top_url = config.get("topurl")
             return ClientSession(self._api_url)
         except Exception as error:
             raise tmt.utils.GeneralError("Failed to initialize API session.") from error
@@ -190,13 +185,11 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         except Exception as error:
             raise tmt.utils.GeneralError(f"API call '{method}' failed.") from error
 
-    def _get_build_provider(self, build_id: int) -> 'KojiBuild':
-        """
-        Cache a KojiBuild instance to avoid redundant API calls
-        """
-        if not self._build_provider:
-            self._build_provider = KojiBuild(f"koji.build:{build_id}", self.logger)
-        return self._build_provider
+    @cached_property
+    def build_provider(self) -> Optional['KojiBuild']:
+        if self.build_id is None:
+            return None
+        return KojiBuild(f"koji.build:{self.build_id}", self.logger)
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
@@ -246,29 +239,12 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
         # Construct the full URL for this RPM
         url = (
-            f"{self._topurl}/packages/{name}/"
+            f"{self._top_url}/packages/{name}/"
             f"{version}/{release}/{arch}/"
             f"{name}-{version}-{release}.{arch}.rpm"
         )
 
         return RpmArtifactInfo(_raw_artifact={**rpm_meta, "url": url})
-
-    def make_scratch_artifact(self, task_id: int, filename: str) -> KojiScratchRpmArtifactInfo:
-        """
-        Create a scratch RPM artifact from a task output filename.
-        """
-        pathinfo = koji.PathInfo(  # type: ignore[union-attr]
-            topdir=self._topurl
-        )
-        work_path = pathinfo.work("DEFAULT")
-        task_path = pathinfo.taskrelpath(task_id)
-        url = f"{work_path}/{task_path}/{filename}"
-
-        raw_artifact = {
-            "filename": filename,
-            "url": url,
-        }
-        return KojiScratchRpmArtifactInfo(_raw_artifact=raw_artifact)
 
 
 @provides_artifact_provider("koji.task")  # type: ignore[arg-type]
@@ -303,6 +279,25 @@ class KojiTask(KojiArtifactProvider):
             child_tasks.extend(self._get_task_children(child_id))
         return child_tasks
 
+    # ignore[override]: expected, we do want to return more specific
+    # type than the one declared in superclass.
+    def make_rpm_artifact(self, task_id: int, filename: str) -> KojiScratchRpmArtifactInfo:  # type: ignore[override]
+        """
+        Create a scratch RPM artifact from a task output filename.
+        """
+        pathinfo = koji.PathInfo(  # type: ignore[union-attr]
+            topdir=self._top_url
+        )
+        work_path = pathinfo.work("DEFAULT")
+        task_path = pathinfo.taskrelpath(task_id)
+        url = f"{work_path}/{task_path}/{filename}"
+
+        raw_artifact = {
+            "filename": filename,
+            "url": url,
+        }
+        return KojiScratchRpmArtifactInfo(_raw_artifact=raw_artifact)
+
     @cached_property
     def rpm_list(self) -> list[RpmArtifactInfo]:
         self.logger.debug(f"Fetching RPMs for task '{self.id}'.")
@@ -311,7 +306,8 @@ class KojiTask(KojiArtifactProvider):
             self.logger.debug(
                 f"Task '{self.id}' produced build '{self.build_id}', fetching RPMs from the build."
             )
-            return self._get_build_provider(self.build_id).rpm_list
+            assert self.build_provider is not None
+            return self.build_provider.rpm_list
 
         # Otherwise, list the task output files for scratch builds
         self.logger.debug(f"Task '{self.id}' did not produce a build, fetching scratch RPMs.")
@@ -322,7 +318,7 @@ class KojiTask(KojiArtifactProvider):
                 if not filename.endswith(".rpm"):
                     self.logger.warning(f"Skipping '{filename}': not an RPM")
                     continue
-                rpm = self.make_scratch_artifact(child_task, filename)
+                rpm = self.make_rpm_artifact(child_task, filename)
                 if rpm.id not in seen_ids:
                     rpms.append(rpm)
                     seen_ids.add(rpm.id)
@@ -366,4 +362,5 @@ class KojiNvr(KojiArtifactProvider):
     @cached_property
     def rpm_list(self) -> list[RpmArtifactInfo]:
         self.logger.debug(f"Fetching RPMs for NVR '{self.id}'.")
-        return self._get_build_provider(self.build_id).rpm_list
+        assert self.build_provider is not None
+        return self.build_provider.rpm_list
