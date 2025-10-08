@@ -416,7 +416,8 @@ at https://github.com/psss/python-nitrate
 Configuration and guide for setting up pylero can be found
 at https://github.com/RedHatQE/pylero
 
-Test Libraries
+
+BeakerLib Libraries
 ------------------------------------------------------------------
 
 In order to prevent unnecessary test code duplication it makes
