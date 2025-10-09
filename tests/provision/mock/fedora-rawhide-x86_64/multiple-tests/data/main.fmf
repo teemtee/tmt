@@ -1,0 +1,16 @@
+discover:
+    how: fmf
+provision:
+    how: mock
+    root: fedora-rawhide-x86_64
+execute:
+    how: tmt
+
+/test-os-release:
+  test: cat /etc/os-release
+
+/test-lscpu:
+  test: lscpu
+
+/test-list-root-files:
+  test: ls -l /
