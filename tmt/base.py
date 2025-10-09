@@ -3082,6 +3082,8 @@ class Plan(
             if value:
                 data[key] = value
 
+        data['context'] = self.fmf_context.to_spec()
+
         for step_name in tmt.steps.STEPS:
             step = cast(tmt.steps.Step, getattr(self, step_name))
 
