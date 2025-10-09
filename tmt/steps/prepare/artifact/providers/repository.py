@@ -2,7 +2,7 @@
 Artifact provider for repository files.
 """
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from re import Pattern
 from shlex import quote
 from typing import Optional
@@ -77,13 +77,8 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         # from the repository. Currently using an empty list as a temporary solution.
         self._rpm_list = []
 
-    def list_artifacts(self) -> Iterator[RpmArtifactInfo]:
-        """
-        List all RPMs available from the repository.
-
-        Note: This requires the repository to be installed and queried first,
-        which is handled by the ``fetch_contents`` method.
-        """
+    @property
+    def artifacts(self) -> Sequence[RpmArtifactInfo]:
         raise NotImplementedError
 
     def _download_artifact(

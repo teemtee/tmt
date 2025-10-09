@@ -3,7 +3,8 @@ Abstract base class for artifact providers.
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
+from functools import cached_property
 from re import Pattern
 from shlex import quote
 from typing import Any, Generic, Optional, TypeVar
@@ -90,10 +91,17 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
 
         raise NotImplementedError
 
+    @cached_property
     @abstractmethod
-    def list_artifacts(self) -> Iterator[ArtifactInfoT]:
+    def artifacts(self) -> Sequence[ArtifactInfoT]:
         """
-        List all artifacts available from this provider.
+        Collect all artifacts available from this provider.
+
+        The method is left for derived classes to implement with respect
+        to the actual artifact provider they implement. The list of
+        artifacts will be cached, and is treated as read-only.
+
+        :returns: a list of provided artifacts.
         """
 
         raise NotImplementedError
@@ -182,7 +190,7 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         :yields: artifacts that satisfy the filtering.
         """
 
-        for artifact in self.list_artifacts():
+        for artifact in self.artifacts:
             if not any(pattern.search(artifact.id) for pattern in exclude_patterns):
                 yield artifact
 
