@@ -18,8 +18,9 @@ class MockProvider(ArtifactProvider[MockArtifactInfo]):
     def _extract_provider_id(self, raw_provider_id: str) -> str:
         return raw_provider_id.split(":", 1)[1]
 
-    def list_artifacts(self):
-        yield MockArtifactInfo(_raw_artifact={})
+    @property
+    def artifacts(self):
+        return [MockArtifactInfo(_raw_artifact={})]
 
     def _download_artifact(self, artifact, guest, destination):
         destination.write_text("ok")

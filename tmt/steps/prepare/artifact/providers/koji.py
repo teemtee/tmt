@@ -4,7 +4,7 @@ Koji Artifact Provider
 
 import types
 from abc import abstractmethod
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from functools import cached_property
 from shlex import quote
 from typing import Any, ClassVar, Optional
@@ -147,12 +147,6 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         """
         raise NotImplementedError
 
-    @cached_property
-    @abstractmethod
-    def rpm_list(self) -> list[RpmArtifactInfo]:
-        """Return all RPM artifacts for this provider."""
-        raise NotImplementedError
-
     def _initialize_session(self) -> 'ClientSession':
         """
         A koji session initialized via the koji.ClientSession function.
@@ -200,12 +194,6 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
                     raise ValueError(f"Missing value in '{raw_provider_id}'.")
                 return value
         raise ValueError(f"Unsupported artifact ID format: '{raw_provider_id}'.")
-
-    def list_artifacts(self) -> Iterator[RpmArtifactInfo]:
-        """
-        List all RPM artifacts for the given build.
-        """
-        yield from self.rpm_list
 
     def _download_artifact(
         self, artifact: RpmArtifactInfo, guest: Guest, destination: tmt.utils.Path
@@ -299,7 +287,7 @@ class KojiTask(KojiArtifactProvider):
         return KojiScratchRpmArtifactInfo(_raw_artifact=raw_artifact)
 
     @cached_property
-    def rpm_list(self) -> list[RpmArtifactInfo]:
+    def artifacts(self) -> Sequence[RpmArtifactInfo]:
         self.logger.debug(f"Fetching RPMs for task '{self.id}'.")
         # If task produced a build, reuse build path
         if self.build_id is not None:
@@ -307,12 +295,14 @@ class KojiTask(KojiArtifactProvider):
                 f"Task '{self.id}' produced build '{self.build_id}', fetching RPMs from the build."
             )
             assert self.build_provider is not None
-            return self.build_provider.rpm_list
+            return list(self.build_provider.artifacts)
 
         # Otherwise, list the task output files for scratch builds
         self.logger.debug(f"Task '{self.id}' did not produce a build, fetching scratch RPMs.")
-        rpms: list[RpmArtifactInfo] = []
+
+        artifacts: list[RpmArtifactInfo] = []
         seen_ids = set()  # Multiple tasks may produce the same RPM
+
         for child_task in self._get_task_children(int(self.id)):
             for filename in self._call_api("listTaskOutput", child_task):
                 if not filename.endswith(".rpm"):
@@ -320,13 +310,14 @@ class KojiTask(KojiArtifactProvider):
                     continue
                 rpm = self.make_rpm_artifact(child_task, filename)
                 if rpm.id not in seen_ids:
-                    rpms.append(rpm)
+                    artifacts.append(rpm)
                     seen_ids.add(rpm.id)
                 else:
                     self.logger.debug(
                         f"Skipping redundant RPM '{rpm.id}' from task '{child_task}'"
                     )
-        return rpms
+
+        return artifacts
 
 
 @provides_artifact_provider('koji.build')  # type: ignore[arg-type]
@@ -336,15 +327,13 @@ class KojiBuild(KojiArtifactProvider):
         return int(self.id)
 
     @cached_property
-    def rpm_list(self) -> list[RpmArtifactInfo]:
-        """
-        Resolve and return the list of RPMs for the given build ID or NVR.
-
-        :return: List of RpmArtifactInfo objects
-        """
+    def artifacts(self) -> Sequence[RpmArtifactInfo]:
         self.logger.debug(f"Fetching RPMs for build '{self.build_id}'.")
-        rpm_dicts = self._call_api("listBuildRPMs", self.build_id)
-        return [self.make_rpm_artifact(rpm) for rpm in rpm_dicts]
+
+        return [
+            self.make_rpm_artifact(rpm_dict)
+            for rpm_dict in self._call_api("listBuildRPMs", self.build_id)
+        ]
 
 
 @provides_artifact_provider("koji.nvr")  # type: ignore[arg-type]
@@ -360,7 +349,10 @@ class KojiNvr(KojiArtifactProvider):
         return build_id
 
     @cached_property
-    def rpm_list(self) -> list[RpmArtifactInfo]:
+    def artifacts(self) -> Sequence[RpmArtifactInfo]:
+        """
+        RPM artifacts for the given NVR.
+        """
         self.logger.debug(f"Fetching RPMs for NVR '{self.id}'.")
         assert self.build_provider is not None
-        return self.build_provider.rpm_list
+        return list(self.build_provider.artifacts)
