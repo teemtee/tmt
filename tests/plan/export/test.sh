@@ -35,13 +35,14 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "tmt plan export /plan/context"
-        rlRun -s "tmt plan export /plan/context" 0 "Export plan"
+        rlRun -s "tmt --context cmd-context=value plan export /plan/context" 0 "Export plan"
         rlAssertGrep "- name: /plan/context" $rlRun_LOG
         rlAssertGrep "summary: Define context" $rlRun_LOG
         rlAssertGrep "discover:" $rlRun_LOG
         rlAssertGrep "execute:" $rlRun_LOG
         rlAssertGrep "context:" $rlRun_LOG
-        rlAssertGrep "component: dash" $rlRun_LOG
+        rlRun "yq '.[0].context.component == [\"dash\"]' $rlRun_LOG" 0 "Plan context is present"
+        rlRun "yq '.[0].context.\"cmd-context\" == [\"value\"]' $rlRun_LOG" 0 "Command-line context is present"
         assert_internal_fields "$rlRun_LOG"
     rlPhaseEnd
 
