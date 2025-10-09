@@ -8,6 +8,9 @@
   ],
   "separateMajorMinor": false,
   "configMigration": true,
+  "labels": [
+    "renovate"
+  ],
   "packageRules": [
     {
       "description": "Group all GitHub Actions updates into a single PR",
