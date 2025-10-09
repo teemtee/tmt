@@ -11,7 +11,7 @@ rlJournalStart
     rlPhaseStartTest
         rlRun -s "TMT_SHOW_TRACEBACK=1 tmt --feeling-safe run --id $run -vvv discover provision"
         rlAssertGrep "NAME.*Fedora Linux" $rlRun_LOG
-        rlRun -s "TMT_SHOW_TRACEBACK=1 tmt --feeling-safe run --id $run -vvv prepare execute report"
+        rlRun -s "TMT_SHOW_TRACEBACK=1 tmt --feeling-safe run --id $run -vvv prepare execute report cleanup"
     rlPhaseEnd
 
     rlPhaseStartCleanup
