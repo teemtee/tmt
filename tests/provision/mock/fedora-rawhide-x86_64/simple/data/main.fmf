@@ -1,11 +1,9 @@
-/plan:
-    discover:
-        how: fmf
-    provision:
-        how: mock
-        config: fedora-rawhide-x86_64
-    execute:
-        how: tmt
+discover:
+    how: fmf
+provision:
+    how: mock
+    root: fedora-rawhide-x86_64
+execute:
+    how: tmt
 
-/test:
-    test: cat /etc/os-release
+test: cat /etc/os-release
