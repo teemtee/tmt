@@ -1,0 +1,7 @@
+---
+- name: Webservers group tasks
+  hosts: webservers
+  tasks:
+    - name: Log webservers configuration
+      ansible.builtin.debug:
+        msg: "WEBSERVERS_TASK_EXECUTED on {{ inventory_hostname }}"
