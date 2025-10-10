@@ -10,6 +10,10 @@ tmt-1.61.0
 Pending tests are now also exported to Polarion thanks to no
 longer missing test case ids in the ``results.yaml``.
 
+Polarion export plugin now fails properly when exporting an fmf tree that
+is not part of a git repository and when there are unsubmitted changes.
+Also allowing the export when ``--ignore-git-validation`` is passed.
+
 
 tmt-1.60.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
