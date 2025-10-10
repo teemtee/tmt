@@ -89,31 +89,32 @@ class _ManagedEpollIo(io.FileIO):
         super().__exit__(exc_type, exc_value, exc_traceback)
 
 
+class _DecodingStream:
+    """
+    Lazy object that collects chunks of bytes and decodes them when a
+    newline is encountered.
+    """
+
+    def __init__(self, logger: Callable[[str], None]):
+        self.logger = logger
+        self.output = b''
+        self.string = ''
+
+    def __iadd__(self, content: bytes) -> Self:
+        self.output += content
+        while True:
+            pos = self.output.find(b'\n')
+            if pos == -1:
+                break
+            string = self.output[:pos].decode('utf-8', errors='replace')
+            self.output = self.output[pos + 1 :]
+            self.logger(string)
+            self.string += string
+            self.string += '\n'
+        return self
+
+
 class MockShell:
-    class Stream:
-        """
-        Lazy object that collects chunks of bytes and decodes them when a
-        newline is encountered.
-        """
-
-        def __init__(self, logger: Callable[[str], None]):
-            self.logger = logger
-            self.output = b''
-            self.string = ''
-
-        def __iadd__(self, content: bytes) -> Self:
-            self.output += content
-            while True:
-                pos = self.output.find(b'\n')
-                if pos == -1:
-                    break
-                string = self.output[:pos].decode('utf-8', errors='replace')
-                self.output = self.output[pos + 1 :]
-                self.logger(string)
-                self.string += string
-                self.string += '\n'
-            return self
-
     def __init__(self, parent: 'GuestMock') -> None:
         self.parent = parent
         self.mock_shell: Optional[subprocess.Popen[str]] = None
@@ -347,10 +348,10 @@ class MockShell:
                 (log or logger.verbose) if not silent else logger.verbose
             )
 
-            stream_out = MockShell.Stream(
+            stream_out = _DecodingStream(
                 lambda text: output_logger('out', text, 'yellow', level=3)
             )
-            stream_err = MockShell.Stream(
+            stream_err = _DecodingStream(
                 lambda text: output_logger('err', text, 'yellow', level=3)
             )
             returncode = None
