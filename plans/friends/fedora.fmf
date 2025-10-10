@@ -1,0 +1,18 @@
+summary: Fedora integration plan
+
+description:
+    Execute the basic set of functionality tests to ensure that
+    the Fedora build is working as expected.
+
+link:
+  - relates: https://src.fedoraproject.org/rpms/tmt
+    note: this plan is referenced from the dist git repo
+
+discover:
+    how: fmf
+    url: https://github.com/teemtee/tmt
+    ref: fedora
+    filter: "tier:1"
+
+execute:
+    how: tmt

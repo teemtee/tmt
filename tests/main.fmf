@@ -2,7 +2,7 @@ test: ./test.sh
 framework: beakerlib
 contact: Petr Šplíchal <psplicha@redhat.com>
 tier: 2
-require: [tmt]
+require: [tmt, yq]
 check: [avc]
 duration: 10m
 environment:
