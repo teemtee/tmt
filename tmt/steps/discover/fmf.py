@@ -122,6 +122,7 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
             and target. Relation part can be omitted to match all
             relations.
              """,
+        normalize=tmt.utils.normalize_string_list,
     )
 
     filter: list[str] = field(
@@ -421,6 +422,16 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         discover:
             how: fmf
             link: verifies:.*issue/850$
+
+    Multiple links can be provided as well:
+
+    .. code-block:: yaml
+
+        discover:
+            how: fmf
+            link:
+              - verifies:.*issue/850$
+              - verifies:.*issue/1374$
 
     Advanced Filter
     ^^^^^^^^^^^^^^^
