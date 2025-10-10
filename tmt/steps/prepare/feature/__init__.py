@@ -214,7 +214,7 @@ class FeatureBase(tmt.utils.Common):
             )
 
         logger.info(f'{op.capitalize()} {cls.FEATURE_NAME.upper()}')
-        guest.ansible(playbook_path)
+        guest.run_ansible_playbook(playbook_path)
 
 
 class ToggleableFeature(FeatureBase):

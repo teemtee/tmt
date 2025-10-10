@@ -257,7 +257,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                 else:
                     playbook_root, playbook = normalize_local_playbook(lowercased_playbook)
 
-                output = guest.ansible(
+                output = guest.run_ansible_playbook(
                     playbook,
                     playbook_root=playbook_root,
                     extra_args=self.data.extra_args,

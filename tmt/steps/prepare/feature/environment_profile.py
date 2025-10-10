@@ -63,4 +63,4 @@ class Profile(Feature):
     def enable(cls, guest: Guest, value: str, logger: tmt.log.Logger) -> None:
         logger.info('Guest profile', value)
 
-        guest.ansible(AnsibleCollectionPlaybook(f'{value}.{PLAYBOOK_NAME}'))
+        guest.run_ansible_playbook(AnsibleCollectionPlaybook(f'{value}.{PLAYBOOK_NAME}'))
