@@ -1835,7 +1835,7 @@ class Guest(
 
         raise NotImplementedError
 
-    def ansible(
+    def run_ansible_playbook(
         self,
         playbook: AnsibleApplicable,
         playbook_root: Optional[Path] = None,
