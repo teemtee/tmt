@@ -423,6 +423,16 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             how: fmf
             link: verifies:.*issue/850$
 
+    Multiple links can be provided as well:
+
+    .. code-block:: yaml
+
+        discover:
+            how: fmf
+            link:
+              - verifies:.*issue/850$
+              - verifies:.*issue/1374$
+
     Advanced Filter
     ^^^^^^^^^^^^^^^
 
