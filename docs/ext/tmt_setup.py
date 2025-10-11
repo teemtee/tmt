@@ -1,0 +1,50 @@
+"""
+Custom tmt sphinx extensions
+"""
+
+from __future__ import annotations
+
+import subprocess
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sphinx.application import Sphinx
+
+
+# TODO: Figure out how to use sphinx's source caching check
+# https://github.com/sphinx-doc/sphinx/issues/11556#issuecomment-3201453172
+
+
+def generate_tmt_docs(app: Sphinx) -> None:
+    """
+    Run `make generate` to populate the auto-generated sources
+    """
+
+    conf_dir = Path(app.confdir)
+    subprocess.run(["make", "generate"], cwd=conf_dir, check=True)
+
+
+def setup(app: Sphinx) -> None:
+    from generate_hardware_matrix import generate_hardware_matrix
+    from generate_lint_checks import generate_lint_checks
+    from generate_plugins import generate_plugins
+    from generate_stories import generate_stories
+    from generate_template_extensions import generate_template_extensions
+    from generate_test_runner_guest_matrix import generate_test_runner_guest_matrix
+    from sphinx_apidoc import sphinx_apidoc
+
+    # Do sphinx-apidoc
+    app.connect("builder-inited", sphinx_apidoc)
+    app.connect("builder-inited", generate_lint_checks)
+    app.connect("builder-inited", generate_hardware_matrix)
+    app.connect("builder-inited", generate_test_runner_guest_matrix)
+    app.connect("builder-inited", generate_template_extensions)
+    app.connect("builder-inited", generate_stories)
+    app.connect("builder-inited", generate_plugins)
+    # Generate sources after loading configuration. That should build
+    # everything, including the logo, before Sphinx starts checking
+    # whether all input files exist.
+    app.connect("builder-inited", generate_tmt_docs)
+    # Check a cached version of the linkcheck results
+    app.setup_extension("linkcheck_cache")

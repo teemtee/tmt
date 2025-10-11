@@ -1,28 +1,28 @@
-#!/usr/bin/env python3
+"""
+Sphinx extension to generate plugins/hardware-matrix.rst file
+"""
 
-import sys
-import textwrap
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sphinx.application import Sphinx
 
 import tmt.plugins
 import tmt.steps.provision
 from tmt.utils import Path
 from tmt.utils.templates import render_template_file_into_file
 
-HELP = textwrap.dedent("""
-Usage: generate-hardware-matrix.py <TEMPLATE-PATH> <OUTPUT-PATH>
 
-Generate page with HW requirement support matrix from stories.
-""").strip()
+def generate_hardware_matrix(app: Sphinx) -> None:
+    """
+    Generate plugins/hardware-matrix.rst file
+    """
 
-
-def main() -> None:
-    if len(sys.argv) != 3:
-        print(HELP)
-
-        sys.exit(1)
-
-    template_filepath = Path(sys.argv[1])
-    output_filepath = Path(sys.argv[2])
+    template_filepath = Path(app.confdir / "templates/hardware-matrix.rst.j2")
+    output_filepath = Path(app.confdir / "plugins/hardware-matrix.rst")
+    (app.confdir / "plugins").mkdir(exist_ok=True)
 
     # We will need a logger...
     logger = tmt.Logger.create()
@@ -82,7 +82,3 @@ def main() -> None:
         MATRIX=matrix,
         NOTES=notes,
     )
-
-
-if __name__ == '__main__':
-    main()
