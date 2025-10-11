@@ -31,10 +31,10 @@ import packaging.version
 from click import echo
 from click.core import ParameterSource
 
+import tmt._queue
 import tmt.export
 import tmt.log
 import tmt.options
-import tmt.queue
 import tmt.utils
 import tmt.utils.rest
 from tmt._compat.typing import Self
@@ -2672,7 +2672,7 @@ class Topology(SerializableContainer):
         return environment
 
 
-class ActionTask(tmt.queue.GuestlessTask[None]):
+class ActionTask(tmt._queue.GuestlessTask[None]):
     """
     A task to run an action
     """
@@ -2693,7 +2693,7 @@ class ActionTask(tmt.queue.GuestlessTask[None]):
 
 
 class PluginTask(
-    tmt.queue.MultiGuestTask[PluginReturnValueT],
+    tmt._queue.MultiGuestTask[PluginReturnValueT],
     Generic[StepDataT, PluginReturnValueT],
 ):
     """
@@ -2734,7 +2734,7 @@ class PluginTask(
         return self.phase.go(guest=guest, logger=logger)
 
 
-class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginReturnValueT]]]):
+class PhaseQueue(tmt._queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginReturnValueT]]]):
     """
     Queue class for running phases on guests
     """
@@ -2753,7 +2753,7 @@ class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginR
         self.enqueue_task(PluginTask(phase, guests, phase._logger))
 
 
-class PushTask(tmt.queue.MultiGuestTask[None]):
+class PushTask(tmt._queue.MultiGuestTask[None]):
     """
     Task performing a workdir push to a guest
     """
@@ -2766,7 +2766,7 @@ class PushTask(tmt.queue.MultiGuestTask[None]):
         guest.push()
 
 
-class PullTask(tmt.queue.MultiGuestTask[None]):
+class PullTask(tmt._queue.MultiGuestTask[None]):
     """
     Task performing a workdir pull from a guest
     """
@@ -2811,7 +2811,7 @@ def sync_with_guests(
     :param logger: logger to use for logging.
     """
 
-    queue: tmt.queue.Queue[GuestSyncTaskT] = tmt.queue.Queue(
+    queue: tmt._queue.Queue[GuestSyncTaskT] = tmt._queue.Queue(
         action, logger.descend(logger_name=action)
     )
 

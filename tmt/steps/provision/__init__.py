@@ -33,11 +33,11 @@ import fmf.utils
 from click import echo
 
 import tmt
+import tmt._queue
 import tmt.hardware
 import tmt.log
 import tmt.package_managers
 import tmt.plugins
-import tmt.queue
 import tmt.steps
 import tmt.steps.provision
 import tmt.steps.scripts
@@ -3268,7 +3268,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
                 echo(tmt.utils.format('hardware', tmt.utils.dict_to_yaml(hardware.to_spec())))
 
 
-class ProvisionTask(tmt.queue.GuestlessTask[None]):
+class ProvisionTask(tmt._queue.GuestlessTask[None]):
     """
     A task to run provisioning of multiple guests
     """
@@ -3313,7 +3313,7 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
         )
 
 
-class ProvisionQueue(tmt.queue.Queue[ProvisionTask]):
+class ProvisionQueue(tmt._queue.Queue[ProvisionTask]):
     """
     Queue class for running provisioning tasks
     """
