@@ -2766,6 +2766,7 @@ class GuestSsh(Guest):
         self.debug('rsync has not been confirmed on the guest, try installing it')
 
         try:
+            self.package_manager.refresh_metadata()
             self.package_manager.install(Package('rsync'))
 
         except Exception as exc:
