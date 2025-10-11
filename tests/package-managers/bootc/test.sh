@@ -11,8 +11,13 @@ rlJournalStart
         rlPhaseStartTest "Virtual provisioner with CentOS Stream 10 bootc image ($user)"
             rlRun "run=\$(mktemp -d --tmpdir=/var/tmp/tmt)" 0 "Create run directory"
             rlRun -s "tmt -vvv run --scratch -i $run plan --name /plans/centos-stream-10/$user"
-            rlAssertGrep "Booted image: containers-storage:localhost/tmt/bootc/\\w+-\\w+-\\w+-\\w+-\\w+" $rlRun_LOG -P
-            rlAssertGrep "Trying to pull quay.io/testing-farm/centos-bootc:stream10" $rlRun_LOG
+            # rlAssertGrep "Booted image: containers-storage:localhost/tmt/bootc/\\w+-\\w+-\\w+-\\w+-\\w+" $rlRun_LOG -P
+            rlAssertGrep "Booted image: quay.io/testing-farm/centos-bootc:stream10" $rlRun_LOG
+            rlAssertGrep "package: 1 package requested" $rlRun_LOG
+            rlAssertGrep "/usr/bin/flock" $rlRun_LOG
+            rlAssertGrep "cmd: rpm -q --whatprovides /usr/bin/flock" $rlRun_LOG
+            rlAssertGrep "out: util-linux-core" $rlRun_LOG
+            rlAssertNotGrep "Trying to pull quay.io/testing-farm/centos-bootc:stream10" $rlRun_LOG
             rlRun "rm -rf $run" 0 "Remove run directory"
         rlPhaseEnd
 
@@ -22,6 +27,7 @@ rlJournalStart
             rlRun "run=\$(mktemp -d --tmpdir=/var/tmp/tmt)" 0 "Create run directory"
             rlRun -s "tmt -vvv run --scratch -i $run --skip prepare plan --name /plans/centos-stream-10/$user"
             rlAssertGrep "Booted image: quay.io/testing-farm/centos-bootc:stream10" $rlRun_LOG
+            rlAssertNotGrep "package: 1 package requested" $rlRun_LOG
             rlAssertNotGrep "Trying to pull quay.io/testing-farm/centos-bootc:stream10" $rlRun_LOG
             rlRun "rm -rf $run" 0 "Remove run directory"
         rlPhaseEnd
