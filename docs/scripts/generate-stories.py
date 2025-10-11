@@ -66,6 +66,12 @@ def main() -> None:
         logger.info(f'Generating rst files from {area}')
 
         with open(f"{area.lstrip('/')}.rst", 'w') as doc:
+            # Metadata -
+            # https://www.sphinx-doc.org/en/master/usage/restructuredtext/field-lists.html
+            doc.write(
+                f':github_url: https://github.com/teemtee/tmt/blob/main{area}'
+                )
+            doc.write('\n\n')
             # Anchor and title
             doc.write(f'.. _{area}:\n\n')
             doc.write(f"{title}\n{'=' * len(title)}\n")
