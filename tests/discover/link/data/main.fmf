@@ -1,0 +1,37 @@
+/plans:
+    discover:
+        how: fmf
+    provision:
+        how: local
+    execute:
+        how: tmt
+
+    /single:
+        summary: just a single link
+        discover+:
+            link: /tmp/foo
+
+    /multiple:
+        summary: a list of links
+        discover+:
+            link:
+              - /tmp/foo
+              - verifies:.*/issues/870
+
+/tests:
+    test: echo hi
+
+    /related:
+        summary: just a single link
+        link: /tmp/foo
+
+    /verifying:
+        summary: multiple links with notes
+        link:
+          - verifies: https://github.com/teemtee/tmt/issues/870
+            note: original issue for basic functionality
+          - verifies: https://github.com/teemtee/tmt/issues/1374
+            note: add support for a single link as well
+
+    /irrelevant:
+        summary: no links

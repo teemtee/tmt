@@ -18,23 +18,6 @@ rlJournalStart
         rlAssertNotGrep '/tests/discover3' output
     rlPhaseEnd
 
-    rlPhaseStartTest "Filter by link"
-        plan='plans --default'
-        for link_relation in "" "relates:" "rel.*:"; do
-            discover="discover -h fmf --link ${link_relation}/tmp/foo"
-            rlRun "tmt run -dvr $discover $plan finish 2>&1 >/dev/null | tee output"
-            rlAssertGrep '1 test selected' output
-            rlAssertGrep '/tests/discover1' output
-        done
-        for link_relation in "verifies:https://github.com/teemtee/tmt/issues/870" \
-            "ver.*:.*/issues/870" ".*/issues/870"; do
-            discover="discover -h fmf --link $link_relation --link rubbish"
-            rlRun "tmt run -dvr $discover $plan finish 2>&1 >/dev/null | tee output"
-            rlAssertGrep '1 test selected' output
-            rlAssertGrep '/tests/discover2' output
-        done
-    rlPhaseEnd
-
     rlPhaseStartTest 'fmf-id (w/ url): Show fmf ids for discovered tests'
         plan='plan --name fmf/url/ref/path'
         rlRun "tmt run -r $plan discover -h fmf --fmf-id finish | tee output"

@@ -4,6 +4,14 @@
     Releases
 ======================
 
+tmt-1.60.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``link`` key of the :ref:`/plugins/discover/fmf` discover
+plugin now supports both single link and a list of links to keep
+consistency with other filtering options.
+
+
 tmt-1.59.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
