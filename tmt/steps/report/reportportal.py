@@ -13,8 +13,9 @@ import tmt.steps.report
 import tmt.utils
 import tmt.utils.templates
 from tmt._compat.pathlib import Path
+from tmt.base import Test
 from tmt.container import container, field
-from tmt.result import ResultOutcome
+from tmt.result import Result, ResultOutcome
 from tmt.utils import (
     ActionType,
     catch_warnings_safe,
@@ -328,6 +329,13 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
              """,
     )
 
+    auto_analysis: bool = field(
+        option="--auto-analysis",
+        default=_flag_env_to_default('auto_analysis', False),
+        is_flag=True,
+        help="Enable immediate auto-analysis of failed tests in ReportPortal.",
+    )
+
     launch_url: Optional[str] = None
     launch_uuid: Optional[str] = None
     suite_uuid: Optional[str] = None
@@ -534,6 +542,36 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             }
             result_dict = tmp_dict
         return [{'key': key, 'value': value} for key, value in result_dict.items()]
+
+    def construct_item_attributes(
+        self,
+        attributes: Optional[list[dict[str, str]]] = None,
+        result: Optional[Result] = None,
+        test: Optional[Test] = None,
+    ) -> list[dict[str, str]]:
+        attributes = attributes.copy() if attributes else []
+
+        if self.data.auto_analysis:
+            attributes.append({'key': 'immediateAutoAnalysis', 'value': 'true', 'system': 'true'})
+
+        if result is not None:
+            # for guests, save their primary address
+            if result.guest.primary_address:
+                attributes.append(
+                    {'key': 'guest_primary_address', 'value': result.guest.primary_address}
+                )
+            # for multi-host tests store also provision name and role
+            if result.guest.name != 'default-0':
+                attributes.append({'key': 'guest_name', 'value': result.guest.name})
+            if result.guest.role:
+                attributes.append({'key': 'guest_role', 'value': result.guest.role})
+
+        if test is not None:
+            if test.author:
+                attributes += [{'key': 'author', 'value': author} for author in test.author]
+            if test.contact:
+                attributes += [{'key': 'contact', 'value': contact} for contact in test.contact]
+        return attributes
 
     def get_defect_type_locator(
         self, session: requests.Session, defect_type: Optional[str]
@@ -849,7 +887,6 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 test_id = None
                 env_vars = None
 
-                item_attributes = attributes.copy()
                 if result:
                     serial_number = result.serial_number
                     test_name = result.name
@@ -857,30 +894,11 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                     # Use the actual timestamp or reuse the old one if missing
                     test_start_time = result.start_time or test_start_time
 
-                    # for guests, save their primary address
-                    if result.guest.primary_address:
-                        item_attributes.append(
-                            {'key': 'guest_primary_address', 'value': result.guest.primary_address}
-                        )
-                    # for multi-host tests store also provision name and role
-                    if result.guest.name != 'default-0':
-                        item_attributes.append({'key': 'guest_name', 'value': result.guest.name})
-                    if result.guest.role:
-                        item_attributes.append({'key': 'guest_role', 'value': result.guest.role})
-
                 # update RP item with additional attributes if test details are available
                 if test:
                     serial_number = test.serial_number
                     if not test_name:
                         test_name = test.name
-                    if test.author:
-                        item_attributes += [
-                            {'key': 'author', 'value': author} for author in test.author
-                        ]
-                    if test.contact:
-                        item_attributes += [
-                            {'key': 'contact', 'value': contact} for contact in test.contact
-                        ]
                     if test.summary:
                         test_description = test.summary
                     if test.web_link():
@@ -915,7 +933,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                         json={
                             "name": test_name,
                             "description": test_description,
-                            "attributes": item_attributes,
+                            "attributes": self.construct_item_attributes(attributes, result, test),
                             "parameters": env_vars,
                             "codeRef": test_link,
                             "launchUuid": launch_uuid,
@@ -971,6 +989,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                                     "launchUuid": launch_uuid,
                                     "type": "step",
                                     "startTime": subresult_start_time,
+                                    "attributes": self.construct_item_attributes(),
                                 },
                             )
 

@@ -15,6 +15,10 @@ While running ``tmt plan export``, the exported plan now includes
 combined context from multiple sources, including command line,
 making it consistent with ``tmt plan show`` command.
 
+The :ref:`/plugins/report/reportportal` report plugin now supports
+a new ``auto-analysis`` key. This key allows users to enable
+immediate auto-analysis of failed tests reported to ReportPortal.
+
 
 tmt-1.59.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
