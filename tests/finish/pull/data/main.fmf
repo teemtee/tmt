@@ -1,0 +1,8 @@
+/plan:
+    provision:
+        how: container
+    execute:
+        how: tmt
+        script: /bin/true
+    finish:
+        script: echo hi > $TMT_PLAN_DATA/message

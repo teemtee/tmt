@@ -1,0 +1,6 @@
+summary: Verify data is pulled after the finish step
+description: |
+    Check that files created on the guest during the 'finish'
+    step are available on the host for a subsequent 'login' command.
+    Reproduces the issue where guest.pull() was missing.
+test: ./test.sh
