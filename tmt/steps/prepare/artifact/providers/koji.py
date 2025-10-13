@@ -126,7 +126,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         # If we get here, the prefix is not supported
         raise ValueError(
             f"Unsupported artifact ID format: '{raw_provider_id}'. "
-            f"Supported formats are: 'koji.build:', 'koji.task:', 'koji.nvr:'"
+            f"Supported formats are: {', '.join(cls.SUPPORTED_PREFIXES)}"
         )
 
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
