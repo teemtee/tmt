@@ -602,8 +602,7 @@ class GuestArtemis(tmt.GuestSsh):
 
             # Log state change on new line when it changes
             if state != previous_state:
-                status_msg = f"[{self.name}({self.guestname})] state: {state}"
-                self.info(status_msg, color=state_color)
+                self.info('state', state, color=state_color)
                 previous_state = state
 
             if state == 'error':
