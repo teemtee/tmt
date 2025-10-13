@@ -5079,6 +5079,8 @@ class Clean(tmt.utils.Common):
             if plan.provision.status() == 'done' and plan.cleanup.status() != 'done':
                 # Wake up provision to load the active guests
                 plan.provision.wake()
+                # Wake up cleanup to ensure it's properly initialized
+                plan.cleanup.wake()
                 if not self._matches_how(plan):
                     continue
                 if self.is_dry_run:
