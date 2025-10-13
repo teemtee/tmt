@@ -19,6 +19,10 @@ New :ref:`sprints` section has been added to the documentation for
 contributors. It describes the overall sprint process, the key
 sync points and provides links to progress tracking boards.
 
+The :ref:`/plugins/report/reportportal` report plugin now supports
+a new ``auto-analysis`` key. This key allows users to enable
+immediate auto-analysis of failed tests reported to ReportPortal.
+
 
 tmt-1.59.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
