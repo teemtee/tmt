@@ -82,14 +82,18 @@ class Operator(enum.Enum):
     LTE = '<='
     LT = '<'
 
+    #: Needle must be present in the haystack.
     CONTAINS = 'contains'
+    #: Needle must not be present in the haystack.
     NOTCONTAINS = 'not contains'
+    #: Needle may be present in the haystack as long it is not the only item.
+    NOTCONTAINS_EXCLUSIVE = 'not contains exclusive'
 
 
 INPUTABLE_OPERATORS = [
     operator
     for operator in Operator.__members__.values()
-    if operator not in (Operator.CONTAINS, Operator.NOTCONTAINS)
+    if operator not in (Operator.CONTAINS, Operator.NOTCONTAINS, Operator.NOTCONTAINS_EXCLUSIVE)
 ]
 
 
@@ -275,6 +279,24 @@ def not_contains(haystack: list[str], needle: str) -> bool:
     return needle not in haystack
 
 
+def not_contains_exclusive(haystack: list[str], needle: str) -> bool:
+    """
+    Find out whether an item is in the given list.
+
+    .. note::
+
+       A variant of :py:func:`not_contains`: an item may be present,
+       as long as other items are present.
+
+    :param haystack: container to examine.
+    :param needle: item to look for in ``haystack``.
+    :returns: ``True`` if ``needle`` is **not** in ``haystack`` or if
+        ``needle`` is in ``haystack`` but other items are there as well.
+    """
+
+    return haystack != [needle]
+
+
 OPERATOR_SIGN_TO_OPERATOR = {
     '=': Operator.EQ,
     '==': Operator.EQ,
@@ -303,6 +325,7 @@ OPERATOR_TO_HANDLER: dict[Operator, OperatorHandlerType] = {
     Operator.NOTMATCH: not_match,
     Operator.CONTAINS: operator.contains,
     Operator.NOTCONTAINS: not_contains,
+    Operator.NOTCONTAINS_EXCLUSIVE: not_contains_exclusive,
 }
 
 
@@ -1169,7 +1192,7 @@ def _parse_boot(spec: Spec) -> BaseConstraint:
             constraint.change_operator(Operator.CONTAINS)
 
         elif constraint.operator == Operator.NEQ:
-            constraint.change_operator(Operator.NOTCONTAINS)
+            constraint.change_operator(Operator.NOTCONTAINS_EXCLUSIVE)
 
         group.constraints += [constraint]
 
