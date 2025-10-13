@@ -44,11 +44,13 @@ class RepositoryManager:
         try:
             # Use -L to follow redirects and --fail to error out on HTTP errors.
             script = ShellScript(
-                f"{guest.facts.sudo_prefix}curl -L --fail -o {quote(str(repo_dest))} {quote(url)}"
+                f"{guest.facts.sudo_prefix} curl -L --fail -o {quote(str(repo_dest))} {quote(url)}"
             )
             guest.execute(script, silent=True)
         except GeneralError as error:
-            raise DownloadError(f"Failed to download repository file to '{repo_dest}'.") from error
+            raise DownloadError(
+                f"Failed to download repository file from '{url}' to '{repo_dest}'."
+            ) from error
 
         return repo_dest
 
@@ -184,8 +186,10 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         """
         List all RPMs discovered from the repository.
 
-        Note: The `fetch_contents` method must be called first to populate
-        the artifact list from the guest.
+        .. note::
+
+            The ``fetch_contents`` method must be called first to populate
+            the artifact list from the guest.
         """
         if self._rpm_list is None:
             raise GeneralError(

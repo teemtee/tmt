@@ -25,6 +25,8 @@ def mock_guest():
     """Provides a MagicMock for the guest."""
     guest = MagicMock()
     guest.facts.is_superuser = False
+    # This is the fix: Explicitly set the sudo_prefix on the mock guest.
+    guest.facts.sudo_prefix = "sudo"
     return guest
 
 
