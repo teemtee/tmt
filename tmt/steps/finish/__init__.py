@@ -1,5 +1,5 @@
 import copy
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 import click
 import fmf
@@ -168,18 +168,16 @@ class Finish(tmt.steps.Step):
 
                 guest_copies.append(guest_copy)
 
+            # Run plugin phases first
             queue: PhaseQueue[FinishStepData, PluginOutcome] = PhaseQueue(
                 'finish', self._logger.descend(logger_name=f'{self}.queue')
             )
 
-            for phase in self.phases(classes=(Action, FinishPlugin)):
-                if isinstance(phase, Action):
-                    queue.enqueue_action(phase=phase)
-
-                elif phase.enabled_by_when:
+            for plugin in self.phases(classes=FinishPlugin):
+                if plugin.enabled_by_when:
                     queue.enqueue_plugin(
-                        phase=phase,  # type: ignore[arg-type]
-                        guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)],
+                        phase=plugin,
+                        guests=[guest for guest in guest_copies if plugin.enabled_on_guest(guest)],
                     )
 
             results: list[PhaseResult] = []
@@ -243,8 +241,8 @@ class Finish(tmt.steps.Step):
             self.info('')
 
             # Pull artifacts created in the plan data directory
-            # if there was at least one plugin executed
-            if self.phases() and guest_copies:
+            # after plugins before actions like login
+            if guest_copies:
                 sync_with_guests(
                     self,
                     'pull',
@@ -252,8 +250,28 @@ class Finish(tmt.steps.Step):
                     self._logger,
                 )
 
-                # To separate "finish" from "pull" queue visually
+                # To separate "pull" from "actions" queue visually
                 self.info('')
+
+            # Now run action phases (e.g., login if enabled)
+            queue = PhaseQueue(
+                'finish actions', self._logger.descend(logger_name=f'{self}.queue.actions')
+            )
+
+            for action in cast('list[Action]', self.phases(classes=Action)):
+                queue.enqueue_action(phase=action)
+
+            for outcome in queue.run():
+                # Actions may not produce results, but handle exceptions
+                if outcome.exc:
+                    outcome.logger.fail(str(outcome.exc))
+                    exceptions.append(outcome.exc)
+
+            if exceptions:
+                raise tmt.utils.GeneralError(
+                    'finish actions failed',
+                    causes=exceptions,
+                )
 
             self.summary()
 
