@@ -806,6 +806,41 @@ make clean
     Cleanup all temporary files.
 
 
+Sprints
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The team works in biweekly sprints with the following schedule:
+
+* Day 0, Thursday ... retrospective & planning meeting
+* Day 3, Tuesday ... hacking session, progress check
+* Day 4, Wednesday ... issue triage
+* Day 6, Friday ... all must have items should be done
+* Day 8, Tuesday ... hacking session, pre-release sync
+* Day 9, Wednesday ... issue triage, new version released
+
+On the planning meeting team agrees on issues, tasks and pull
+requests which should be completed during the sprint. Any
+**additional items** which pop up during the sprint:
+
+* are proposed to the team and discussed together
+* release lead is consulted and approves the inclusion
+
+Team members sync daily on the chat about the progress and
+blocking issues. The progress is tracked in the `current sprint`__
+board. Tentative suggestions for the `next sprint`__ can be added
+anybody. Those will be reviewed and dropped or approved on the
+planning meeting.
+
+See the `triage`__ project for the current status of the issue
+triage and the `backlog`__ for the list of approved and
+prioritized issues.
+
+__ https://github.com/orgs/teemtee/projects/1/views/3
+__ https://github.com/orgs/teemtee/projects/1/views/11
+__ https://github.com/orgs/teemtee/projects/10
+__ https://github.com/orgs/teemtee/projects/1/views/1
+
+
 Release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
