@@ -15,6 +15,10 @@ While running ``tmt plan export``, the exported plan now includes
 combined context from multiple sources, including command line,
 making it consistent with ``tmt plan show`` command.
 
+New :ref:`sprints` section has been added to the documentation for
+contributors. It describes the overall sprint process, the key
+sync points and provides links to progress tracking boards.
+
 
 tmt-1.59.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

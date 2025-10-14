@@ -806,6 +806,8 @@ make clean
     Cleanup all temporary files.
 
 
+.. _sprints:
+
 Sprints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
