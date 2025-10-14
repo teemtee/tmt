@@ -49,7 +49,7 @@ def test_causes() -> None:
 
         # ... but we also can test whether exception context is rendered.
         # Raising an exception from `finally` should attach the `Level 1`
-        # exception the the newly raised one.
+        # exception to the newly raised one.
         finally:
             raise Exception('Level 1 - finally')
 
