@@ -458,7 +458,7 @@ class RawWhereableStepData(TypedDict, total=False):
 
 
 @container
-class WhereableStepData:
+class WhereableStepData(SerializableContainer):
     """
     Keys shared by step data that may be limited to a particular guest.
 
