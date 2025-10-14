@@ -11,6 +11,10 @@ The ``link`` key of the :ref:`/plugins/discover/fmf` discover
 plugin now supports both single link and a list of links to keep
 consistency with other filtering options.
 
+While running ``tmt plan export``, the exported plan now includes
+combined context from multiple sources, including command line,
+making it consistent with ``tmt plan show`` command.
+
 
 tmt-1.59.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
