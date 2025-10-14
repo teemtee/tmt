@@ -676,8 +676,17 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             except Exception as error:
                 raise tmt.utils.DiscoverError("Failed to process 'dist-git-source'.") from error
 
-        # Discover tests
-        self.do_the_discovery(path)
+        # Try loading tests from the recipe first
+        if self.step.plan.my_run:
+            self._tests = [
+                test_origin.test
+                for test_origin in self.step.plan.my_run.recipe_manager.tests(self.step.plan.name)
+                if test_origin.phase == self.name
+            ]
+
+        if not self._tests:
+            # Discover tests
+            self.do_the_discovery(path)
 
         # Apply tmt run policy
         if self.step.plan.my_run is not None:
