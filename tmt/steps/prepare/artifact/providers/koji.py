@@ -7,7 +7,7 @@ from abc import abstractmethod
 from collections.abc import Iterator, Sequence
 from functools import cached_property
 from shlex import quote
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, Union
 
 import tmt.log
 import tmt.utils
@@ -133,6 +133,27 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         super().__init__(raw_provider_id, logger)
         self._session = self._initialize_session()
 
+    @property
+    @abstractmethod
+    def build_ref(self) -> Optional[Union[str, int]]:
+        """
+        Return a value that can be used to identify the build. An alias for build_id.
+        """
+        raise NotImplementedError
+
+    @cached_property
+    def build_info(self) -> Optional[dict[str, Any]]:
+        """
+        Fetch and return the build metadata for the resolved build ID.
+
+        :returns: the build metadata, or ``None`` if not found.
+        """
+        if self.build_ref is None:
+            return None
+        build_info = self._call_api("getBuild", self.build_ref)
+        assert build_info is None or isinstance(build_info, dict)
+        return build_info
+
     @cached_property
     @abstractmethod
     def build_id(self) -> Optional[int]:
@@ -237,6 +258,10 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
 @provides_artifact_provider("koji.task")  # type: ignore[arg-type]
 class KojiTask(KojiArtifactProvider):
+    @property
+    def build_ref(self) -> Optional[int]:
+        return self.build_id
+
     @cached_property
     def build_id(self) -> Optional[int]:
         task_id = int(self.id)
@@ -322,6 +347,10 @@ class KojiTask(KojiArtifactProvider):
 
 @provides_artifact_provider('koji.build')  # type: ignore[arg-type]
 class KojiBuild(KojiArtifactProvider):
+    @property
+    def build_ref(self) -> int:
+        return self.build_id
+
     @cached_property
     def build_id(self) -> int:
         return int(self.id)
@@ -338,12 +367,15 @@ class KojiBuild(KojiArtifactProvider):
 
 @provides_artifact_provider("koji.nvr")  # type: ignore[arg-type]
 class KojiNvr(KojiArtifactProvider):
+    @property
+    def build_ref(self) -> str:
+        return self.id
+
     @cached_property
     def build_id(self) -> int:
-        nvr = self.id
-        build = self._call_api("getBuild", nvr)
+        build = self.build_info
         if not build:
-            raise tmt.utils.GeneralError(f"No build found for NVR '{nvr}'.")
+            raise tmt.utils.GeneralError(f"No build found for NVR '{self.id}'.")
         build_id = build["id"]
         assert isinstance(build_id, int)
         return build_id
