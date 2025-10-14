@@ -828,7 +828,7 @@ requests which should be completed during the sprint. Any
 Team members sync daily on the chat about the progress and
 blocking issues. The progress is tracked in the `current sprint`__
 board. Tentative suggestions for the `next sprint`__ can be added
-anybody. Those will be reviewed and dropped or approved on the
+by anybody. Those will be reviewed and dropped or approved on the
 planning meeting.
 
 See the `triage`__ project for the current status of the issue
