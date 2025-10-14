@@ -334,7 +334,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
         use_facts = self.get('use-facts', os.getenv('TMT_PLUGIN_REPORT_POLARION_USE_FACTS'))
 
         # Mapping from field names to Polarion API field names
-        POLARION_FIELD_MAPPING = {
+        polarion_field_mapping = {
             'test_cycle': 'scheduleTask',
         }
         other_testrun_fields = [
@@ -362,7 +362,9 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                 # Transform x86_64 to x8664 for Polarion compatibility
                 if tr_field == 'arch' and param == 'x86_64':
                     param = 'x8664'
-                polarion_field_name = POLARION_FIELD_MAPPING.get(tr_field, tr_field.replace('_', ''))
+                polarion_field_name = polarion_field_mapping.get(
+                    tr_field, tr_field.replace('_', '')
+                )
                 testsuites_properties[f"polarion-custom-{polarion_field_name}"] = param
 
         if use_facts:
