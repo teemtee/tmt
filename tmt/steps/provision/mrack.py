@@ -1561,8 +1561,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
             # Log state change on new line when it changes
             if state != previous_state:
-                status_msg = f"({self.job_id}) status: {state}"
-                self.info(status_msg, color=state_color)
+                self.info('status', state, color=state_color)
                 previous_state = state
 
             if state in {"Error, Aborted", "Cancelled"}:
