@@ -1,8 +1,9 @@
 """
 Artifact provider for discovering RPMs from repository files.
-
 """
 
+import configparser
+import tempfile
 from collections.abc import Iterator, Sequence
 from re import Pattern
 from shlex import quote
@@ -18,106 +19,150 @@ from tmt.steps.prepare.artifact.providers import (
 )
 from tmt.steps.prepare.artifact.providers.koji import RpmArtifactInfo
 from tmt.steps.provision import Guest
-from tmt.utils import GeneralError, Path, ShellScript
+from tmt.utils import GeneralError, Path, RetryError, ShellScript, retry
 
 
-class RepositoryManager:
+class Repository:
     """
-    A utility class for managing DNF repositories on a guest.
+    Represents a DNF or Yum repository on a guest.
+
+    :param url: The URL of the .repo file.
+    :param filename: The target filename for the .repo file on the guest.
     """
 
-    @staticmethod
-    def enable_repository(
-        guest: Guest, url: str, repo_filename: str, logger: tmt.log.Logger
-    ) -> Path:
+    def __init__(self, url: str, filename: str):
+        self.url = url
+        self.filename = filename
+        self.names: list[str] = []
+        self.filepath: Optional[Path] = None
+        self._rpms: Optional[list[RpmArtifactInfo]] = None
+        self.guest: Optional[Guest] = None
+        self.logger: Optional[tmt.log.Logger] = None
+
+    def install(self, guest: Guest, logger: tmt.log.Logger) -> None:
         """
-        Download a .repo file to the guest, making the repository available.
+        Install the .repo file on the guest and extract its repository IDs.
+
+        This method downloads the .repo file from the specified URL and places it in
+        ``/etc/yum.repos.d/`` on the guest, making all repositories defined in the
+        file available to DNF or Yum. The download is retried up to 3 times with a
+        5-second delay between attempts to handle transient network failures (e.g.,
+        timeouts or server errors). Command output and errors are logged via the
+        provided logger for debugging. The repository IDs are extracted by pulling
+        the file to the local system and parsing it as an INI file, taking all
+        section names.
 
         :param guest: The guest to operate on.
-        :param url: The URL of the .repo file to download.
-        :param repo_filename: The target filename for the .repo file.
         :param logger: The logger for outputting messages.
-        :return: The path to the newly created repository file on the guest.
-        :raises DownloadError: If the download fails.
+        :raises DownloadError: If the download fails after all retries.
+        :raises GeneralError: If no repository IDs can be extracted or the file is
+                             not a valid INI file.
         """
-        repo_dest = Path("/etc/yum.repos.d") / repo_filename
+        self.logger = logger
+        self.guest = guest
+        self.filepath = Path("/etc/yum.repos.d") / self.filename
+        script = ShellScript(
+            f"{guest.facts.sudo_prefix} curl -L --fail -o {quote(str(self.filepath))} "
+            f"{quote(self.url)}"
+        )
+        # Retry the curl command up to 3 times if it fails (e.g., due to network issues).
+        # The retry function catches any Exception, logs failures with logger.fail,
+        # waits 5 seconds between attempts, and raises RetryError if all attempts fail.
+        # Use silent=False (default) to ensure full error details are included in
+        # exceptions for proper retry handling and debugging.
         try:
-            # Use -L to follow redirects and --fail to error out on HTTP errors.
-            script = ShellScript(
-                f"{guest.facts.sudo_prefix} curl -L --fail -o {quote(str(repo_dest))} {quote(url)}"
+            retry(
+                func=lambda: guest.execute(script),
+                attempts=3,
+                interval=5,
+                label=f"download .repo file from '{self.url}'",
+                logger=logger,
             )
-            guest.execute(script, silent=True)
-        except GeneralError as error:
+        except RetryError as error:
+            # Use the last exception for the DownloadError message
+            last_error = error.causes[-1] if error.causes else Exception("Unknown error")
             raise DownloadError(
-                f"Failed to download repository file from '{url}' to '{repo_dest}'."
+                f"Failed to download repository file from '{self.url}' to "
+                f"'{self.filepath}': {last_error!s}"
+            ) from last_error
+
+        # Pull the .repo file to a local temporary file and parse it
+        with tempfile.NamedTemporaryFile(mode='w+', suffix='.repo') as temp_file:
+            try:
+                guest.pull(source=self.filepath, destination=Path(temp_file.name))
+            except GeneralError as error:
+                raise GeneralError(
+                    f"Failed to pull .repo file from '{self.filepath}' on guest: {error!s}"
+                ) from error
+
+            # Parse the .repo file as INI
+            parser = configparser.ConfigParser()
+            try:
+                parser.read(temp_file.name)
+            except configparser.Error as error:
+                raise GeneralError(
+                    f"Failed to parse .repo file '{self.filepath}' as INI: {error!s}"
+                ) from error
+
+            # Get all section names as repository IDs
+            self.names = parser.sections()
+            if not self.names:
+                raise GeneralError(
+                    f"No repository sections found in .repo file '{self.filepath}'."
+                )
+
+    @property
+    def rpms(self) -> list[RpmArtifactInfo]:
+        """
+        List all packages available in the repositories.
+
+        Queries all repositories defined in the .repo file (by their IDs) using
+        the dnf package manager to discover available packages. Currently supports
+        only dnf-based systems (e.g., RHEL 8+, Fedora).
+        :return: A list of RpmArtifactInfo objects for each found package.
+        :raises GeneralError: If no repositories have been installed or if the package query fails.
+        """
+        if self._rpms is not None:
+            return self._rpms
+
+        if not self.names or self.filepath is None:
+            raise GeneralError("Repositories must be installed before accessing RPMs.")
+
+        if self.guest is None or self.logger is None:
+            raise GeneralError("Must call install() first to set guest and logger.")
+
+        # List all available packages from the repositories using a robust query format.
+        qf = "'%{name} %{epoch} %{version} %{release} %{arch}'"
+        # Join all repository IDs for --enablerepo
+        repo_ids = ','.join(quote(name) for name in self.names)
+        # FIXME: Using direct 'dnf repoquery' command breaks compatibility with yum
+        # (RHEL 6, RHEL 7). Should create and extend guest.package_manager.repoquery to
+        # support both dnf and yum package managers.
+        try:
+            script = ShellScript(
+                f"dnf repoquery --refresh --disablerepo='*' --enablerepo={repo_ids} "
+                f"--queryformat {qf}"
+            )
+            result = self.guest.execute(script, silent=True)
+            output = result.stdout or ""
+        except GeneralError as error:
+            raise GeneralError(
+                f"Failed to query packages from repos '{', '.join(self.names)}': {error!s}"
             ) from error
 
-        return repo_dest
-
-    @staticmethod
-    def get_repository_id(guest: Guest, repo_filepath: Path, logger: tmt.log.Logger) -> str:
-        """
-        Get the repository ID from a .repo file on the guest.
-
-        :param guest: The guest to query.
-        :param repo_filepath: The path to the .repo file on the guest.
-        :param logger: The logger for outputting messages.
-        :return: The repository ID.
-        :raises GeneralError: If the repo ID cannot be extracted.
-        """
-        script = ShellScript(
-            f"grep '^\\[' {quote(str(repo_filepath))} | head -n 1 | sed 's/^\\[\\(.*\\)\\]$/\\1/'"
-        )
-        result = guest.execute(script, silent=True)
-
-        repo_id = result.stdout.strip() if result.stdout else ""
-        if not repo_id:
-            raise GeneralError(f"Could not extract repository ID from '{repo_filepath}'.")
-
-        return repo_id
-
-    @staticmethod
-    def fetch_rpms(
-        guest: Guest, repo_filepath: Path, logger: tmt.log.Logger
-    ) -> list[RpmArtifactInfo]:
-        """
-        Query the guest to find all packages available in a specific repository.
-
-        :param guest: The guest to query.
-        :param repo_filepath: The path to the .repo file on the guest.
-        :param logger: The logger for outputting messages.
-        :return: A list of RpmArtifactInfo objects for each found package.
-        :raises GeneralError: If dnf query fails.
-        """
-        # 1. Get the repository ID.
-        repo_id = RepositoryManager.get_repository_id(guest, repo_filepath, logger)
-
-        # 2. List all available packages from that repository using a robust query format.
-        # We query for name, epoch, version, release, and architecture.
-        qf = "'%{name} %{epoch} %{version} %{release} %{arch}'"
-        script = ShellScript(
-            "dnf repoquery --refresh --disablerepo='*' "
-            f"--enablerepo={quote(repo_id)} --available --queryformat {qf}"
-        )
-        result = guest.execute(script, silent=True)
-        if result.stdout is None:
-            raise GeneralError(
-                f"Failed to list packages from repo '{repo_id}': no command output."
-            )
-
-        # 3. Parse the structured output into RpmArtifactInfo objects.
-        rpm_list: list[RpmArtifactInfo] = []
-        for line in result.stdout.strip().splitlines():
+        # Parse the structured output into RpmArtifactInfo objects.
+        self._rpms = []
+        for line in output.strip().splitlines():
             try:
                 name, epoch, version, release, arch = line.split()
-                # dnf uses '(none)' for a missing epoch.
+                # dnf uses '(none)' for a missing epoch
                 if epoch == "(none)":
                     epoch = ""
                     nvr = f"{name}-{version}-{release}"
                 else:
                     nvr = f"{name}-{epoch}:{version}-{release}"
 
-                rpm_list.append(
+                self._rpms.append(
                     RpmArtifactInfo(
                         _raw_artifact={
                             'name': name,
@@ -130,10 +175,10 @@ class RepositoryManager:
                     )
                 )
             except ValueError:
-                logger.warning(f"Failed to parse RPM from repoquery output: '{line}'")
+                self.logger.warning(f"Failed to parse RPM from repoquery output: '{line}'")
                 continue
 
-        return rpm_list
+        return self._rpms
 
 
 # ignore[type-arg]: TypeVar in provider registry annotations is
@@ -141,13 +186,14 @@ class RepositoryManager:
 @provides_artifact_provider('repository')  # type: ignore[arg-type]
 class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
     """
-    Sets up a repository from a .repo file and discovers available RPMs.
+    Sets up repositories from a .repo file and discovers available RPMs.
 
     The artifact ID is a URL to a .repo file. This provider's main purpose
     is to download this file to '/etc/yum.repos.d/' on the guest.
 
-    It then lists all RPMs made available by the new repository but does
-    not download them, serving as a "discovery-only" provider.
+    It then lists all RPMs made available by all repositories defined in
+    the .repo file but does not download them, serving as a "discovery-only"
+    provider.
     """
 
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
@@ -167,7 +213,7 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         except ValueError as exc:
             raise GeneralError(f"Invalid URL format for .repo file: '{self.id}'.") from exc
 
-        # Cache for the list of RPMs discovered in the repository.
+        # Cache for the list of RPMs discovered in the repositories.
         # It's populated by fetch_contents().
         self._rpm_list: Optional[list[RpmArtifactInfo]] = None
 
@@ -184,11 +230,11 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
     @property
     def artifacts(self) -> Sequence[RpmArtifactInfo]:
         """
-        List all RPMs discovered from the repository.
+        List all RPMs discovered from the repositories.
 
         .. note::
 
-            The ``fetch_contents`` method must be called first to populate
+            The :py:meth:`fetch_contents` method must be called first to populate
             the artifact list from the guest.
         """
         if self._rpm_list is None:
@@ -213,21 +259,18 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         exclude_patterns: Optional[list[Pattern[str]]] = None,
     ) -> list[Path]:
         """
-        Enable the repository on the guest and discover its packages.
+        Install the repositories on the guest and discover their packages.
 
-        This method installs the repository and queries it to discover available
-        packages. It does not download any RPMs itself and will return an
-        empty list.
+        This method installs all repositories defined in the .repo file by
+        downloading it and queries them to discover available packages.
+        It does not download any RPMs itself and will return an empty list.
         """
-        # 1. Install the repository file on the guest.
-        repo_dest = RepositoryManager.enable_repository(
-            guest=guest, url=self.id, repo_filename=self.repo_filename, logger=self.logger
-        )
+        # 1. Create and install the repositories on the guest.
+        repo = Repository(url=self.id, filename=self.repo_filename)
+        repo.install(guest=guest, logger=self.logger)
 
-        # 2. Populate the RPM list for discovery purposes by querying the new repo.
-        self._rpm_list = RepositoryManager.fetch_rpms(
-            guest=guest, repo_filepath=repo_dest, logger=self.logger
-        )
+        # 2. Populate the RPM list for discovery purposes by querying the repositories.
+        self._rpm_list = repo.rpms
 
         # This provider does not download any artifacts, so return an empty list.
         return []
