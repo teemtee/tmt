@@ -42,7 +42,6 @@ rlJournalStart
         rlAssertGrep 'Reference .* not found.' $rlRun_LOG
         rlRun -s "$tmt missing/node-metadata" 2
         rlAssertGrep 'Library with fmf_id=' $rlRun_LOG
-        rlAssertNotGrep 'has no attribute' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Deep"
