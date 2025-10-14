@@ -1,0 +1,8 @@
+summary: Verify recipe loading works as expected
+duration: 25m
+test: ./test.sh
+require+:
+  - tmt+provision-container
+tag+:
+  - provision-only
+  - provision-container

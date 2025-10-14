@@ -676,8 +676,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             except Exception as error:
                 raise tmt.utils.DiscoverError("Failed to process 'dist-git-source'.") from error
 
-        # Discover tests
-        self.do_the_discovery(path)
+        if self.step.plan.my_run and self.step.plan.my_run.recipe_manager.recipe:
+            self._tests = self.discover_from_recipe()
+        else:
+            self._tests = self.do_the_discovery(path)
 
         # Apply tmt run policy
         if self.step.plan.my_run is not None:
@@ -718,7 +720,27 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         self.step.plan.discover.extract_tests_later = True
         self.info("Tests will be discovered after dist-git patching in prepare.")
 
-    def do_the_discovery(self, path: Optional[Path] = None) -> None:
+    def discover_from_recipe(self) -> list[tmt.base.Test]:
+        assert self.step.plan.my_run is not None
+        tests = [
+            test_origin.test
+            for test_origin in self.step.plan.my_run.recipe_manager.tests(self.step.plan.name)
+            if test_origin.phase == self.name
+        ]
+
+        for test in tests:
+            if test.require or test.recommend:
+                test.require, test.recommend, _ = tmt.libraries.dependencies(
+                    original_require=test.require,
+                    original_recommend=test.recommend,
+                    parent=self,
+                    logger=self._logger,
+                    source_location=self.testdir,
+                    target_location=self.testdir,
+                )
+        return tests
+
+    def do_the_discovery(self, path: Optional[Path] = None) -> list[tmt.base.Test]:
         """
         Discover the tests
         """
@@ -804,25 +826,25 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 }
                 if not modified:
                     # Nothing was modified, do not select anything
-                    return
+                    return []
                 self.debug(f"Limit to modified test dirs: {modified}", level=3)
                 names.extend(modified)
             else:
                 self.debug(f"No modified directories between '{modified_ref}..HEAD' found.")
                 # Nothing was modified, do not select anything
-                return
+                return []
 
         # Initialize the metadata tree, search for available tests
         self.debug(f"Check metadata tree in '{tree_path}'.")
         if self.is_dry_run:
-            return
+            return []
         tree = tmt.Tree(
             logger=self._logger,
             path=tree_path,
             fmf_context=self.step.plan.fmf_context,
             additional_rules=self.data.adjust_tests,
         )
-        self._tests = tree.tests(
+        tests = tree.tests(
             filters=filters,
             names=names,
             conditions=["manual is False"],
@@ -852,7 +874,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 shutil.copymode(tree_path / upgrade_path, clone_tree_path / upgrade_path)
 
         # Prefix tests and handle library requires
-        for test in self._tests:
+        for test in tests:
             # Propagate `where` key
             test.where = cast(tmt.steps.discover.DiscoverStepData, self.data).where
 
@@ -901,6 +923,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # Cleanup clone directories
         if self.clone_dirpath.exists():
             shutil.rmtree(self.clone_dirpath, ignore_errors=True)
+
+        return tests
 
     def post_dist_git(self, created_content: list[Path]) -> None:
         """
