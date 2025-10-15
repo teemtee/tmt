@@ -824,13 +824,13 @@ On the planning meeting team agrees on issues, tasks and pull
 requests which should be completed during the sprint. Any
 **additional items** which pop up during the sprint:
 
-* are proposed to the team and discussed together
-* release lead is consulted and approves the inclusion
+* Are proposed to the team and discussed together
+* Release lead is consulted and approves the inclusion
 
-Team members sync daily on the chat about the progress and
+Team members sync daily in the chat about the progress and
 blocking issues. The progress is tracked in the `current sprint`__
 board. Tentative suggestions for the `next sprint`__ can be added
-by anybody. Those will be reviewed and dropped or approved on the
+by anybody. Those will be reviewed and dropped or approved in the
 planning meeting.
 
 See the `triage`__ project for the current status of the issue
