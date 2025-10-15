@@ -8,6 +8,7 @@ from collections.abc import Iterator, Sequence
 from functools import cached_property
 from shlex import quote
 from typing import Any, ClassVar, Optional, Union
+from urllib.parse import urljoin
 
 import tmt.log
 import tmt.utils
@@ -61,7 +62,7 @@ class RpmArtifactInfo(ArtifactInfo):
 
 
 @container
-class KojiScratchRpmArtifactInfo(RpmArtifactInfo):
+class ScratchRpmArtifactInfo(RpmArtifactInfo):
     """
     Represents a single RPM url from Koji scratch builds.
     """
@@ -168,7 +169,9 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         """
         raise NotImplementedError
 
-    def _initialize_session(self) -> 'ClientSession':
+    def _initialize_session(
+        self, api_url: Optional[str] = None, top_url: Optional[str] = None
+    ) -> 'ClientSession':
         """
         A koji session initialized via the koji.ClientSession function.
 
@@ -178,8 +181,8 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
         try:
             config = koji.read_config("koji")  # type: ignore[union-attr]
-            self._api_url = config.get("server")
-            self._top_url = config.get("topurl")
+            self._api_url = api_url or config.get("server")
+            self._top_url = top_url or config.get("topurl")
             return ClientSession(self._api_url)
         except Exception as error:
             raise tmt.utils.GeneralError("Failed to initialize API session.") from error
@@ -237,23 +240,20 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         except Exception as error:
             raise DownloadError(f"Failed to download '{artifact}'.") from error
 
-    def make_rpm_artifact(self, rpm_meta: dict[str, str]) -> RpmArtifactInfo:
-        """
-        Create a normal build RPM artifact from metadata returned by listBuildRPMs.
-        """
+    def _rpm_url(self, rpm_meta: dict[str, str]) -> str:
+        """Construct Koji RPM URL."""
         name = rpm_meta["name"]
         version = rpm_meta["version"]
         release = rpm_meta["release"]
         arch = rpm_meta["arch"]
+        path = f"packages/{name}/{version}/{release}/{arch}/{name}-{version}-{release}.{arch}.rpm"
+        return urljoin(self._top_url + "/", path)
 
-        # Construct the full URL for this RPM
-        url = (
-            f"{self._top_url}/packages/{name}/"
-            f"{version}/{release}/{arch}/"
-            f"{name}-{version}-{release}.{arch}.rpm"
-        )
-
-        return RpmArtifactInfo(_raw_artifact={**rpm_meta, "url": url})
+    def make_rpm_artifact(self, rpm_meta: dict[str, str]) -> RpmArtifactInfo:
+        """
+        Create a normal build RPM artifact from metadata returned by listBuildRPMs.
+        """
+        return RpmArtifactInfo(_raw_artifact={**rpm_meta, "url": self._rpm_url(rpm_meta)})
 
 
 @provides_artifact_provider("koji.task")  # type: ignore[arg-type]
@@ -294,7 +294,7 @@ class KojiTask(KojiArtifactProvider):
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.
-    def make_rpm_artifact(self, task_id: int, filename: str) -> KojiScratchRpmArtifactInfo:  # type: ignore[override]
+    def make_rpm_artifact(self, task_id: int, filename: str) -> ScratchRpmArtifactInfo:  # type: ignore[override]
         """
         Create a scratch RPM artifact from a task output filename.
         """
@@ -309,7 +309,7 @@ class KojiTask(KojiArtifactProvider):
             "filename": filename,
             "url": url,
         }
-        return KojiScratchRpmArtifactInfo(_raw_artifact=raw_artifact)
+        return ScratchRpmArtifactInfo(_raw_artifact=raw_artifact)
 
     @cached_property
     def artifacts(self) -> Sequence[RpmArtifactInfo]:

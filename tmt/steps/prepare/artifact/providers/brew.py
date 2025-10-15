@@ -5,6 +5,7 @@ Brew Artifact Provider
 from collections.abc import Sequence
 from functools import cached_property
 from typing import TYPE_CHECKING, ClassVar, Optional
+from urllib.parse import urljoin
 
 import tmt.log
 import tmt.utils
@@ -66,28 +67,36 @@ class BrewArtifactProvider(KojiArtifactProvider):
             f"Supported formats are: {', '.join(cls.SUPPORTED_PREFIXES)}"
         )
 
-    def _initialize_session(self) -> 'ClientSession':
-        """
-        Initialize a Brew session using Brew-specific configuration.
+    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
+        super().__init__(raw_provider_id, logger)
+        self._session = self._initialize_session(
+            api_url="https://brewhub.engineering.redhat.com/brewhub",
+            top_url="https://download.eng.bos.redhat.com/brew",
+        )
 
-        Brew uses a different configuration profile than standard Koji.
-        This method reads the 'brew' profile from the Koji configuration.
+    @cached_property
+    def build_provider(self) -> Optional['BrewBuild']:
+        if self.build_id is None:
+            return None
+        return BrewBuild(f"brew.build:{self.build_id}", self.logger)
 
-        :returns: Initialized ClientSession for Brew
-        :raises GeneralError: If session initialization fails
-        """
-        import_koji(self.logger)
-        from tmt.steps.prepare.artifact.providers.koji import ClientSession
+    def _rpm_url(self, rpm_meta: dict[str, str]) -> str:
+        """Construct Brew RPM URL."""
+        name = rpm_meta["name"]
+        version = rpm_meta["version"]
+        release = rpm_meta["release"]
+        arch = rpm_meta["arch"]
+        assert self.build_info is not None
+        volume = self.build_info["volume_name"]
+        draft_suffix = f",draft_{self.build_id}" if self.build_info["draft"] else ""
 
-        try:
-            # config = koji.read_config("brew")  # This does not work!
-            self._api_url = "https://brewhub.engineering.redhat.com/brewhub"
-            self._top_url = "https://download.eng.bos.redhat.com/brew"
-            return ClientSession(self._api_url)
-        except Exception as error:
-            raise tmt.utils.GeneralError(
-                "Failed to initialize Brew API session. Ensure Brew configuration is available."
-            ) from error
+        path = (
+            f"vol/{volume}/packages/{name}/{version}/"
+            f"{release}{draft_suffix}/{arch}/"
+            f"{name}-{version}-{release}.{arch}.rpm"
+        )
+
+        return urljoin(self._top_url + "/", path)
 
 
 @provides_artifact_provider("brew.build")  # type: ignore[arg-type]
