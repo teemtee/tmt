@@ -6,7 +6,7 @@ import tmt.steps
 import tmt.steps.cleanup
 import tmt.utils
 from tmt.container import container
-from tmt.steps.prepare.artifact.providers.repository import Repository
+from tmt.steps.prepare.artifact.providers import Repository
 from tmt.steps.provision import Guest
 
 
@@ -34,10 +34,10 @@ class CleanupInternal(tmt.steps.cleanup.CleanupPlugin[CleanupInternalData]):
         """
         Stop and remove guest
         """
-        
+
         logger.info(f'I AM ZEREF {guest} {logger}')
         url = 'https://download.docker.com/linux/centos/docker-ce.repo'
-        repo = Repository(url=url,filename='config.repo')
+        repo = Repository(url=url, filename='config.repo')
         repo.install(guest=guest, logger=logger)
         p = repo.rpms
         logger.info("", f"{len(p)}")
