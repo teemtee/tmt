@@ -113,7 +113,8 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         artifacts = provider.download_artifacts(guest, Path("/tmp"), [])
     """
 
-    SUPPORTED_PREFIXES: ClassVar[tuple[str, ...]] = ("koji.build:", "koji.task:", "koji.nvr:")
+    _REGISTRY: ClassVar[dict[str, type['KojiArtifactProvider']]] = {}
+    SUPPORTED_PREFIXES: ClassVar[tuple[str, ...]] = ()
 
     @classmethod
     def _dispatch_subclass(
@@ -138,14 +139,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
         :raises ValueError: If the prefix is not supported
         """
-        return cls._dispatch_subclass(
-            raw_provider_id,
-            {
-                "koji.build:": KojiBuild,
-                "koji.task:": KojiTask,
-                "koji.nvr:": KojiNvr,
-            },
-        )
+        return cls._dispatch_subclass(raw_provider_id, cls._REGISTRY)
 
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
         super().__init__(raw_provider_id, logger)
@@ -409,3 +403,11 @@ class KojiNvr(KojiArtifactProvider):
         self.logger.debug(f"Fetching RPMs for NVR '{self.id}'.")
         assert self.build_provider is not None
         return list(self.build_provider.artifacts)
+
+
+KojiArtifactProvider._REGISTRY = {
+    "koji.build:": KojiBuild,
+    "koji.task:": KojiTask,
+    "koji.nvr:": KojiNvr,
+}
+KojiArtifactProvider.SUPPORTED_PREFIXES = tuple(KojiArtifactProvider._REGISTRY.keys())

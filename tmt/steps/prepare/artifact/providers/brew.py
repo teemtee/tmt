@@ -4,7 +4,7 @@ Brew Artifact Provider
 
 from collections.abc import Sequence
 from functools import cached_property
-from typing import TYPE_CHECKING, ClassVar, Optional
+from typing import Any, ClassVar, Optional
 from urllib.parse import urljoin
 
 import tmt.log
@@ -36,9 +36,9 @@ class BrewArtifactProvider(KojiArtifactProvider):
         artifacts = provider.fetch_contents(guest, Path("/tmp"))
     """
 
-    SUPPORTED_PREFIXES: ClassVar[tuple[str, ...]] = ("brew.build:", "brew.task:", "brew.nvr:")
+    SUPPORTED_PREFIXES: ClassVar[tuple[str, ...]] = ()
 
-    def __new__(cls, raw_provider_id: str, logger: tmt.log.Logger) -> 'BrewArtifactProvider':
+    def __new__(cls, raw_provider_id: str, logger: tmt.log.Logger) -> Any:
         """
         Create a specific Brew provider based on the ``raw_provider_id`` prefix.
 
@@ -49,14 +49,7 @@ class BrewArtifactProvider(KojiArtifactProvider):
 
         :raises ValueError: If the prefix is not supported
         """
-        return cls._dispatch_subclass(
-            raw_provider_id,
-            {
-                "brew.build:": BrewBuild,
-                "brew.task:": BrewTask,
-                "brew.nvr:": BrewNvr,
-            },
-        )
+        return cls._dispatch_subclass(raw_provider_id, cls._REGISTRY)
 
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
         super().__init__(raw_provider_id, logger)
@@ -101,3 +94,11 @@ class BrewTask(BrewArtifactProvider, KojiTask):
 @provides_artifact_provider("brew.nvr")  # type: ignore[arg-type]
 class BrewNvr(BrewArtifactProvider, KojiNvr):
     pass
+
+
+BrewArtifactProvider._REGISTRY = {
+    "brew.build:": BrewBuild,
+    "brew.task:": BrewTask,
+    "brew.nvr:": BrewNvr,
+}
+BrewArtifactProvider.SUPPORTED_PREFIXES = tuple(BrewArtifactProvider._REGISTRY.keys())
