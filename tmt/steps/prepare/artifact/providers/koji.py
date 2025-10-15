@@ -292,22 +292,16 @@ class KojiTask(KojiArtifactProvider):
             return build_id
         return None
 
-    def _get_task_children(self, task_id: int) -> list[int]:
+    def _get_task_children(self, task_id: int) -> Iterator[int]:
         """
-        Recursively fetch all child tasks of the given task ID.
+        Fetch all descendant tasks using getTaskDescendents.
 
-        :param task_id: The parent task ID
-        :return: List of all child task IDs
+        :param task_id: the parent task ID
+        :yield: task IDs including parent and all descendants
         """
-        child_tasks: list[int] = [task_id]  # Include the parent task itself
-        direct_children = self._call_api("getTaskChildren", task_id)
-        for child in direct_children:
-            child_id = child["id"]
-            assert isinstance(child_id, int)
-            child_tasks.append(child_id)
-            # Recursively fetch grandchildren
-            child_tasks.extend(self._get_task_children(child_id))
-        return child_tasks
+        descendants_map = self._call_api("getTaskDescendents", task_id, request=False)
+        for task_id_str in descendants_map:
+            yield int(task_id_str)
 
     # ignore[override]: expected, we do want to return more specific
     # type than the one declared in superclass.

@@ -36,9 +36,9 @@ def test_koji_valid_task_id_actual_build(root_logger):
 def test_koji_valid_task_id_scratch_build(root_logger):
     task_id = 137705547
     provider = KojiArtifactProvider(f"koji.task:{task_id}", root_logger)
-    tasks = provider._get_task_children(task_id)
+    tasks = list(provider._get_task_children(task_id))
 
-    assert len(tasks) == 13
+    assert len(tasks) == 7
     assert task_id in tasks
     assert provider.build_id is None
     assert len(provider.artifacts) == 2

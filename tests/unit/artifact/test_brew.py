@@ -45,7 +45,7 @@ def test_brew_valid_task_id_actual_build(root_logger):
 def test_brew_valid_task_id_scratch_build(root_logger):
     task_id = 69111304
     provider = BrewArtifactProvider(f"brew.task:{task_id}", root_logger)
-    tasks = provider._get_task_children(task_id)
+    tasks = list(provider._get_task_children(task_id))
 
     assert len(tasks) == 11
     assert task_id in tasks
