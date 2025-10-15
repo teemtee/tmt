@@ -6,7 +6,9 @@ import tmt.steps
 import tmt.steps.cleanup
 import tmt.utils
 from tmt.container import container
+from tmt.options import Path
 from tmt.steps.prepare.artifact.providers import Repository
+from tmt.steps.prepare.artifact.providers.repository import RepositoryFileProvider
 from tmt.steps.provision import Guest
 
 
@@ -37,10 +39,20 @@ class CleanupInternal(tmt.steps.cleanup.CleanupPlugin[CleanupInternalData]):
 
         logger.info(f'I AM ZEREF {guest} {logger}')
         url = 'https://download.docker.com/linux/centos/docker-ce.repo'
-        repo = Repository(url=url, filename='config.repo')
-        repo.install(guest=guest, logger=logger)
-        p = repo.rpms
-        logger.info("", f"{len(p)}")
+        # repo = Repository(url=url, filename='config.repo')
+        # repo.install(guest=guest, logger=logger)
+        # p = repo.rpms
+        # logger.info("", f"{len(p)}")
+        dp = Path()
+        rp = RepositoryFileProvider(raw_provider_id=url, logger=logger)
+        rp.fetch_contents(guest=guest, download_path=dp)
+        logger.info('BLAKZEREF ', rp.id)
+        logger.info('BLAKZEREF ', rp.repo_filename)
+        logger.info('BLAKZEREF ', rp._parsed_url)
+        # logger.info('BLAKZEREF ', rp._rpm_list[0:6])
+        # for i in rp.artifacts[:6]:
+        #     logger.info('WHITE_ZEREF ', str(i))
+
         outcome = super().go(guest=guest, environment=environment, logger=logger)
 
         # Nothing to do in dry mode
