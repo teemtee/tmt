@@ -49,9 +49,12 @@ class CleanupInternal(tmt.steps.cleanup.CleanupPlugin[CleanupInternalData]):
         logger.info('BLAKZEREF ', rp.id)
         logger.info('BLAKZEREF ', rp.repo_filename)
         logger.info('BLAKZEREF ', rp._parsed_url)
-        # logger.info('BLAKZEREF ', rp._rpm_list[0:6])
-        # for i in rp.artifacts[:6]:
-        #     logger.info('WHITE_ZEREF ', str(i))
+        p1 = 0 
+        for i in rp.artifacts[:6]:
+            p1 = p1 + 1 
+            if p1 == 6:
+                break
+            logger.info('WHITE_ZEREF ', str(i))
 
         outcome = super().go(guest=guest, environment=environment, logger=logger)
 

@@ -204,10 +204,13 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
 
 class Repository:
     """
-    Represents a DNF or Yum repository on a guest.
+    Represents a DNF or Yum repository on a guest system for test management.
 
-    :param url: The URL of the .repo file.
-    :param filename: The target filename for the .repo file on the guest.
+    Handles downloading, installing, and querying a repository configuration file
+    (.repo) on a guest, enabling package management for TMT testing environments.
+
+    :param url: URL of the .repo file to download.
+    :param filename: Target filename for the .repo file in ``/etc/yum.repos.d/``.
     """
 
     def __init__(self, url: str, filename: str):
@@ -221,9 +224,17 @@ class Repository:
 
     def install(self, guest: Guest, logger: tmt.log.Logger) -> None:
         """
-        Install the .repo file on the guest and extract its repository IDs.
-        """
+        Install the repository configuration file on the guest and extract repository IDs.
 
+        Downloads the .repo file to ``/etc/yum.repos.d/`` and parses it to extract
+        repository IDs for package management.
+
+        :param guest: Guest system where the .repo file will be installed.
+        :param logger: Logger instance for tracking progress and errors.
+        :raises DownloadError: If downloading the .repo file fails after retries.
+        :raises GeneralError: If the .repo file is empty, not readable, cannot be parsed
+                             as INI, or contains no repository sections.
+        """
         self.logger = logger
         self.guest = guest
         self.filepath = Path("/etc/yum.repos.d") / self.filename
@@ -231,9 +242,7 @@ class Repository:
             f"{guest.facts.sudo_prefix} curl -L --fail -o {quote(str(self.filepath))} "
             f"{quote(self.url)}"
         )
-        logger.info("", f"Executing curl command: {script}")
-
-        # Retry the curl command
+        # Retry downloading up to three times
         try:
             retry(
                 func=lambda: guest.execute(script),
@@ -244,19 +253,18 @@ class Repository:
             )
         except Exception as error:
             last_error = error.causes[-1] if hasattr(error, 'causes') and error.causes else error
-            logger.info("", f"Download failed after retries: {last_error!s}")
+            logger.debug(f"Download failed after retries: {last_error!s}")
             raise DownloadError(
                 f"Failed to download repository file from '{self.url}' to "
                 f"'{self.filepath}': {last_error!s}"
             ) from last_error
 
-        # Get the repo file content directly from the guest's stdout
         try:
-            result = guest.execute(ShellScript(f'cat {self.filepath}'))
+            result = guest.execute(ShellScript(f'{guest.facts.sudo_prefix} cat {self.filepath}'))
             content = result.stdout
 
             if content is None:
-                raise GeneralError("Command did not return any output.")
+                raise GeneralError("cat command did not return any output.")
 
             content = content.strip()
             if not content:
@@ -264,15 +272,12 @@ class Repository:
                     f"Repository file '{self.filepath}' is empty or not readable on guest."
                 )
 
-            logger.info("", f"Guest .repo file content:\n{content}")
-
         except GeneralError as error:
             logger.warning(
                 f"Could not read the repo file '{self.filepath}' from the guest: {error!s}"
             )
             raise
 
-        # Parse the content directly from the string
         parser = configparser.ConfigParser(
             strict=False,
             allow_no_value=True,
@@ -280,31 +285,30 @@ class Repository:
         )
         try:
             parser.read_string(content)
-            logger.info("", "Parsed .repo file successfully")
         except configparser.Error as error:
-            logger.info("", f"Failed to parse .repo file content: {error!s}")
+            logger.debug(f"Failed to parse .repo file content: {error!s}")
             raise GeneralError(
                 f"Failed to parse .repo file from guest path '{self.filepath}' as INI: {error!s}"
             ) from error
 
-        # Get all section names as repository IDs
         self.names = parser.sections()
-        logger.info("", f"Repository IDs found: {self.names}")
+        logger.debug(f"Repository IDs found: {self.names}")
         if not self.names:
-            logger.info("", "No repository sections found in .repo file")
             raise GeneralError(f"No repository sections found in .repo file '{self.filepath}'.")
 
     @property
     def rpms(self) -> list['RpmArtifactInfo']:
         """
-        List all packages available in the repositories.
+        List all packages available in the repository.
 
-        Queries all repositories defined in the .repo file (by their IDs) using
-        the dnf or yum package manager to discover available packages.
-        :return: A list of RpmArtifactInfo objects for each found package.
-        :raises GeneralError: If no repositories have been installed or if the package query fails.
+        Queries repositories defined in the .repo file using the guest's package
+        manager (dnf or yum) to retrieve available RPM packages.
+
+        :returns: List of ``RpmArtifactInfo`` objects for available packages.
+        :raises GeneralError: If repositories are not installed, guest or logger is unset,
+                             the package manager is unsupported, or the query fails.
         """
-        # Moved from top-level to here to prevent circular import
+        # Import here to avoid circular imports
         from tmt.steps.prepare.artifact.providers.koji import RpmArtifactInfo
 
         if self._rpms is not None:
@@ -316,22 +320,17 @@ class Repository:
         if self.guest is None or self.logger is None:
             raise GeneralError("Must call install() first to set guest and logger.")
 
-        # List all available packages from the repositories using a robust query format.
         qf = "'%{name} %{epoch} %{version} %{release} %{arch}'"
-        # Join all repository IDs for --enablerepo
         repo_ids = ','.join(quote(name) for name in self.names)
-
         try:
-            # --- MODIFICATION START ---
-            # Choose the correct repoquery command based on the guest's package manager.
-            # Note: For yum, the 'yum-utils' package must be installed on the guest.
+            # FIXME: Add repoquery function to guest.package_manager for better abstraction
             if self.guest.facts.package_manager == 'dnf':
                 script = ShellScript(
                     f"dnf repoquery --refresh --disablerepo='*' --enablerepo={repo_ids} "
                     f"--queryformat {qf}"
                 )
             elif self.guest.facts.package_manager == 'yum':
-                # CentOS 7 uses the 'repoquery' command from the 'yum-utils' package.
+                # Requires 'yum-utils' package on the guest for repoquery
                 script = ShellScript(
                     f"repoquery --disablerepo='*' --enablerepo={repo_ids} --queryformat {qf}"
                 )
@@ -339,8 +338,6 @@ class Repository:
                 raise GeneralError(
                     f"Unsupported package manager: '{self.guest.facts.package_manager}'"
                 )
-            # --- MODIFICATION END ---
-
             result = self.guest.execute(script, silent=True)
             output = result.stdout or ""
         except GeneralError as error:
@@ -348,19 +345,15 @@ class Repository:
                 f"Failed to query packages from repos '{', '.join(self.names)}': {error!s}"
             ) from error
 
-        # Parse the structured output into RpmArtifactInfo objects.
         self._rpms = []
         for line in output.strip().splitlines():
             try:
                 name, epoch, version, release, arch = line.split()
-                # --- MODIFICATION START ---
-                # Handle different null epoch formats: dnf uses '(none)', yum uses '0'.
                 if epoch == "(none)" or epoch == "0":
                     epoch = ""
                     nvr = f"{name}-{version}-{release}"
                 else:
                     nvr = f"{name}-{epoch}:{version}-{release}"
-                # --- MODIFICATION END ---
 
                 self._rpms.append(
                     RpmArtifactInfo(
@@ -377,8 +370,6 @@ class Repository:
             except ValueError:
                 self.logger.warning(f"Failed to parse RPM from repoquery output: '{line}'")
                 continue
-        for r in self._rpms:
-            self.logger.info("rpmi ", r)
         return self._rpms
 
 
