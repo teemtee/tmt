@@ -8,19 +8,13 @@ from typing import TYPE_CHECKING, ClassVar, Optional
 from urllib.parse import urljoin
 
 import tmt.log
-import tmt.utils
 from tmt.steps.prepare.artifact.providers import provides_artifact_provider
 from tmt.steps.prepare.artifact.providers.koji import (
     KojiArtifactProvider,
     KojiBuild,
     KojiNvr,
     KojiTask,
-    RpmArtifactInfo,
-    import_koji,
 )
-
-if TYPE_CHECKING:
-    from koji import ClientSession
 
 
 # ignore[type-arg]: TypeVar in provider registry annotations is
@@ -55,16 +49,13 @@ class BrewArtifactProvider(KojiArtifactProvider):
 
         :raises ValueError: If the prefix is not supported
         """
-        if raw_provider_id.startswith("brew.build:"):
-            return object.__new__(BrewBuild)
-        if raw_provider_id.startswith("brew.task:"):
-            return object.__new__(BrewTask)
-        if raw_provider_id.startswith("brew.nvr:"):
-            return object.__new__(BrewNvr)
-        # If we get here, the prefix is not supported
-        raise ValueError(
-            f"Unsupported artifact ID format: '{raw_provider_id}'. "
-            f"Supported formats are: {', '.join(cls.SUPPORTED_PREFIXES)}"
+        return cls._dispatch_subclass(
+            raw_provider_id,
+            {
+                "brew.build:": BrewBuild,
+                "brew.task:": BrewTask,
+                "brew.nvr:": BrewNvr,
+            },
         )
 
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
@@ -76,9 +67,7 @@ class BrewArtifactProvider(KojiArtifactProvider):
 
     @cached_property
     def build_provider(self) -> Optional['BrewBuild']:
-        if self.build_id is None:
-            return None
-        return BrewBuild(f"brew.build:{self.build_id}", self.logger)
+        return self._make_build_provider(BrewBuild, "brew.build:")
 
     def _rpm_url(self, rpm_meta: dict[str, str]) -> str:
         """Construct Brew RPM URL."""

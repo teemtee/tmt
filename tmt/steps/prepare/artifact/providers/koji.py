@@ -7,7 +7,7 @@ from abc import abstractmethod
 from collections.abc import Iterator, Sequence
 from functools import cached_property
 from shlex import quote
-from typing import Any, ClassVar, Optional, Union
+from typing import Any, ClassVar, Optional, TypeVar, Union
 from urllib.parse import urljoin
 
 import tmt.log
@@ -72,6 +72,14 @@ class ScratchRpmArtifactInfo(RpmArtifactInfo):
         return f"{self._raw_artifact['filename']}"
 
 
+TBuild = TypeVar(
+    "TBuild", bound="ArtifactProvider[RpmArtifactInfo]"
+)  # Generic type for build provider classes (e.g., KojiBuild, BrewBuild)
+TProvider = TypeVar(
+    "TProvider", bound="KojiArtifactProvider"
+)  # Generic type for artifact provider subclasses
+
+
 # ignore[type-arg]: TypeVar in provider registry annotations is
 # puzzling for type checkers. And not a good idea in general, probably.
 @provides_artifact_provider(  # type: ignore[arg-type]
@@ -107,6 +115,18 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
     SUPPORTED_PREFIXES: ClassVar[tuple[str, ...]] = ("koji.build:", "koji.task:", "koji.nvr:")
 
+    @classmethod
+    def _dispatch_subclass(
+        cls, raw_provider_id: str, mapping: dict[str, type[TProvider]]
+    ) -> TProvider:
+        for prefix, subclass in mapping.items():
+            if raw_provider_id.startswith(prefix):
+                return super().__new__(subclass)
+        raise ValueError(
+            f"Unsupported artifact ID format: '{raw_provider_id}'. "
+            f"Supported formats are: {', '.join(cls.SUPPORTED_PREFIXES)}"
+        )
+
     def __new__(cls, raw_provider_id: str, logger: tmt.log.Logger) -> 'KojiArtifactProvider':
         """
         Create a specific Koji provider based on the ``raw_provider_id`` prefix.
@@ -118,16 +138,13 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
         :raises ValueError: If the prefix is not supported
         """
-        if raw_provider_id.startswith("koji.build:"):
-            return super().__new__(KojiBuild)
-        if raw_provider_id.startswith("koji.task:"):
-            return super().__new__(KojiTask)
-        if raw_provider_id.startswith("koji.nvr:"):
-            return super().__new__(KojiNvr)
-        # If we get here, the prefix is not supported
-        raise ValueError(
-            f"Unsupported artifact ID format: '{raw_provider_id}'. "
-            f"Supported formats are: {', '.join(cls.SUPPORTED_PREFIXES)}"
+        return cls._dispatch_subclass(
+            raw_provider_id,
+            {
+                "koji.build:": KojiBuild,
+                "koji.task:": KojiTask,
+                "koji.nvr:": KojiNvr,
+            },
         )
 
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
@@ -203,11 +220,15 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         except Exception as error:
             raise tmt.utils.GeneralError(f"API call '{method}' failed.") from error
 
-    @cached_property
-    def build_provider(self) -> Optional['KojiBuild']:
+    def _make_build_provider(self, build_cls: type[TBuild], prefix: str) -> Optional[TBuild]:
+        """Create a build provider instance if build_id is available."""
         if self.build_id is None:
             return None
-        return KojiBuild(f"koji.build:{self.build_id}", self.logger)
+        return build_cls(f"{prefix}{self.build_id}", self.logger)
+
+    @cached_property
+    def build_provider(self) -> Optional['KojiBuild']:
+        return self._make_build_provider(KojiBuild, "koji.build:")
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
