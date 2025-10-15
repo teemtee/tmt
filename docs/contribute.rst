@@ -820,7 +820,7 @@ The team works in biweekly sprints with the following schedule:
 * Day 8, Tuesday ... hacking session, pre-release sync
 * Day 9, Wednesday ... issue triage, new version released
 
-On the planning meeting team agrees on issues, tasks and pull
+On the planning meeting (day 0) team agrees on issues, tasks and pull
 requests which should be completed during the sprint. Any
 **additional items** which pop up during the sprint:
 
