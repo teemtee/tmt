@@ -196,7 +196,9 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
             self._top_url = top_url or config.get("topurl")
             return ClientSession(self._api_url)
         except Exception as error:
-            raise tmt.utils.GeneralError("Failed to initialize API session.") from error
+            raise tmt.utils.GeneralError(
+                f"Failed to initialize API session from url '{self._api_url}'."
+            ) from error
 
     def _call_api(self, method: str, *args: Any, **kwargs: Any) -> Any:
         """
