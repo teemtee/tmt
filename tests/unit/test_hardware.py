@@ -181,7 +181,7 @@ FULL_HARDWARE_REQUIREMENTS = """
         pool: "!= foo.*"
         panic-watchdog: True
     boot:
-        method: bios
+        method: "!= bios"
     compatible:
         distro:
             - rhel-7
@@ -296,7 +296,7 @@ def test_parse_maximal_constraint() -> None:
           - and:
               - beaker.pool: '!= foo.*'
               - beaker.panic-watchdog: == True
-          - boot.method: contains bios
+          - boot.method: not contains exclusive bios
           - and:
               - compatible.distro: contains rhel-7
               - compatible.distro: contains rhel-8
@@ -419,3 +419,20 @@ def test_report_support(
         message=MATCH(r"warn: Hardware requirement 'memory: != 4 GB' is not supported."),
         levelno=logging.WARNING,
     )
+
+
+@pytest.mark.parametrize(
+    ('operator', 'left', 'right', 'expected'),
+    [
+        (tmt.hardware.not_contains, ['foo'], 'foo', False),
+        (tmt.hardware.not_contains, ['foo', 'bar'], 'foo', False),
+        (tmt.hardware.not_contains, ['foo'], 'bar', True),
+        (tmt.hardware.not_contains_exclusive, ['foo'], 'foo', False),
+        (tmt.hardware.not_contains_exclusive, ['foo', 'bar'], 'foo', True),
+        (tmt.hardware.not_contains_exclusive, ['foo'], 'bar', True),
+    ],
+)
+def test_operators(
+    operator: tmt.hardware.OperatorHandlerType, left: Any, right: Any, expected: bool
+) -> None:
+    assert operator(left, right) is expected
