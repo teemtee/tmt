@@ -299,7 +299,7 @@ class KojiTask(KojiArtifactProvider):
         :param task_id: the parent task ID
         :yield: task IDs including parent and all descendants
         """
-        descendants_map = self._call_api("getTaskDescendents", task_id, request=False)
+        descendants_map = self._call_api("getTaskDescendents", task_id)
         for task_id_str in descendants_map:
             yield int(task_id_str)
 
