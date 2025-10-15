@@ -711,7 +711,12 @@ class GuestMock(tmt.Guest):
             next(p)
 
 
-@tmt.steps.provides_method('mock')
+@tmt.steps.provides_method(
+    'mock',
+    installation_hint="""
+        Make sure `mock` package is installed.
+    """,
+)
 class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
     """
     Use the mock tool for the test execution.
