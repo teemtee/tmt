@@ -269,10 +269,9 @@ class AnsibleInventory:
         :param inventory: the inventory dictionary to modify.
         :param guest: the guest to add to the inventory.
         """
-        host_vars = guest.ansible_host_vars
         if 'hosts' not in inventory['all']:
             inventory['all']['hosts'] = {}
-        inventory['all']['hosts'][guest.name] = host_vars
+        inventory['all']['hosts'][guest.name] = guest.ansible_host_vars
 
     def _find_group(self, current: dict[str, Any], target: str) -> Optional[dict[str, Any]]:
         """

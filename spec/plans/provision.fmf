@@ -98,7 +98,7 @@ link:
             Defines host-specific Ansible variables to include under
             that host in the inventory.
 
-        .. versionadded:: 1.59  # TODO
+        .. versionadded:: 1.60
 
     example: |
         # Plan file
