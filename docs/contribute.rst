@@ -813,16 +813,16 @@ Sprints
 
 The team works in biweekly sprints with the following schedule:
 
-* Day 0, Thursday ... retrospective & planning meeting
-* Day 3, Tuesday ... hacking session, progress check
-* Day 4, Wednesday ... issue triage
-* Day 6, Friday ... all must have items should be done
-* Day 8, Tuesday ... hacking session, pre-release sync
-* Day 9, Wednesday ... issue triage, new version released
+* Sprint day 0, Thursday ... retrospective & planning meeting
+* Sprint day 3, Tuesday ... hacking session, progress check
+* Sprint day 4, Wednesday ... issue triage
+* Sprint day 6, Friday ... all must have items should be done
+* Sprint day 8, Tuesday ... hacking session, pre-release sync
+* Sprint day 9, Wednesday ... issue triage, new version released
 
-On the planning meeting (day 0) team agrees on issues, tasks and pull
-requests which should be completed during the sprint. Any
-**additional items** which pop up during the sprint:
+On the planning meeting (sprint day 0) team agrees on issues,
+tasks and pull requests which should be completed during the
+sprint. Any **additional items** which pop up during the sprint:
 
 * Are proposed to the team and discussed together
 * Release lead is consulted and approves the inclusion
