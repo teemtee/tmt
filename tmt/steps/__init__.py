@@ -172,11 +172,11 @@ PHASE_OPTIONS = tmt.options.create_options_decorator(
 )
 
 
-def is_step(val: str) -> TypeGuard[StepName]:
+def is_step_name(val: str) -> TypeGuard[StepName]:
     return val in STEPS
 
 
-def is_action(val: str) -> TypeGuard[ActionName]:
+def is_action_name(val: str) -> TypeGuard[ActionName]:
     return val in ACTIONS
 
 
