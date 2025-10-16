@@ -1092,13 +1092,8 @@ class GuestData(SerializableContainer):
         logger: tmt.log.Logger,
     ) -> None:
         """
-        Load keys from source, with custom mapping for ansible -> guest_ansible
+        Load keys from source
         """
-        # Map 'ansible' -> 'guest_ansible' to avoid shadowing by ansible() method
-        if 'ansible' in key_source:
-            key_source = key_source.copy()
-            key_source['guest_ansible'] = key_source.pop('ansible')
-
         super()._load_keys(key_source, key_source_name, logger)  # type: ignore[misc]
 
     #: Primary hostname or IP address for tmt/guest communication.
@@ -1163,7 +1158,7 @@ class GuestData(SerializableContainer):
         else None,
     )
 
-    guest_ansible: Optional[GuestAnsible] = field(
+    ansible: Optional[GuestAnsible] = field(
         default=None,
         normalize=normalize_guest_ansible,
         serialize=lambda ansible: ansible.to_serialized() if ansible else None,
@@ -1360,7 +1355,7 @@ class Guest(
 
     environment: tmt.utils.Environment
 
-    guest_ansible: GuestAnsible
+    ansible: GuestAnsible
 
     # Flag to indicate localhost guest, requires special handling
     localhost = False
@@ -1657,7 +1652,7 @@ class Guest(
         """
         Get host variables for Ansible inventory.
         """
-        return {'ansible_host': self.primary_address, **self.guest_ansible.vars}
+        return {'ansible_host': self.primary_address, **self.ansible.vars}
 
     @functools.cached_property
     def ansible_host_groups(self) -> list[str]:
@@ -1666,9 +1661,9 @@ class Guest(
         """
         groups = ['all']  # All hosts are in 'all' group
 
-        # Try to get ansible group from guest_ansible.group key in provision guest data
-        if self.guest_ansible.group:
-            groups.append(self.guest_ansible.group)
+        # Try to get ansible group from ansible.group key in provision guest data
+        if self.ansible.group:
+            groups.append(self.ansible.group)
         elif self.role:  # Otherwise use role as group
             groups.append(self.role)
         else:
