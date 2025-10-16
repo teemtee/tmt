@@ -1085,17 +1085,6 @@ class GuestData(SerializableContainer):
     #: List of fields that are not allowed to be set via fmf keys/CLI options.
     _OPTIONLESS_FIELDS: tuple[str, ...] = ('primary_address', 'topology_address', 'facts')
 
-    def _load_keys(
-        self,
-        key_source: dict[str, Any],
-        key_source_name: str,
-        logger: tmt.log.Logger,
-    ) -> None:
-        """
-        Load keys from source
-        """
-        super()._load_keys(key_source, key_source_name, logger)  # type: ignore[misc]
-
     #: Primary hostname or IP address for tmt/guest communication.
     primary_address: Optional[str] = None
 
@@ -2678,13 +2667,12 @@ class GuestSsh(Guest):
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
 
-        provision_step = parent.plan.provision
-        inventory_path = provision_step.workdir / 'inventory.yaml'  # type: ignore[operator]
+        inventory_path = parent.plan.provision.step_workdir / 'inventory.yaml'
 
         self.debug(f"Using Ansible inventory file '{inventory_path}'", level=3)
 
         # Build command arguments
-        cmd_args = [
+        ansible_command += Command(
             '--ssh-common-args',
             self._ssh_options.to_element(),
             '-i',
@@ -2692,9 +2680,7 @@ class GuestSsh(Guest):
             '--limit',
             self.name,
             playbook,
-        ]
-
-        ansible_command += Command(*cmd_args)
+        )
 
         try:
             return self._run_guest_command(
@@ -3536,7 +3522,7 @@ class Provision(tmt.steps.Step):
             inventory = self._ansible_inventory.generate(self.guests, layout_path)
             inventory_path = Path('inventory.yaml')
             self.write(inventory_path, tmt.utils.dict_to_yaml(inventory))
-            self.info('ansible', f'Inventory saved to {inventory_path}')
+            self.info('ansible', f"Inventory saved to '{inventory_path}'")
         except tmt.utils.FileError as exc:
             self.debug(f"Failed to save Ansible inventory: {exc}")
 

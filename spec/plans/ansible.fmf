@@ -18,10 +18,10 @@ description: |
     .. note::
 
         Ansible execution with ansible inventory is only supported for SSH-based
-        provisioning plugins (e.g. virtual). It is not implemented yet for
-        container and local provisioning plugins.
+        provisioning plugins (e.g. :ref:`/plugins/provision/virtual.testcloud`).
+        It is not implemented (yet) for :ref:`/plugins/provision/container` and :ref:`/plugins/provision/local` provisioning plugins.
 
-    .. versionadded:: 1.59
+    .. versionadded:: 1.60
 
 example:
   - |

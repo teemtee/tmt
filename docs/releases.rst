@@ -19,7 +19,7 @@ New :ref:`sprints` section has been added to the documentation for
 contributors. It describes the overall sprint process, the key
 sync points and provides links to progress tracking boards.
 
-TMT now supports automatic generation of Ansible inventory files
+tmt now supports automatic generation of Ansible inventory files
 during the provision phase. The new :ref:`/spec/plans/ansible`
 configuration allows users to define custom inventory layouts and
 organize provisioned guests into Ansible groups with host-specific
@@ -94,6 +94,7 @@ Added a new :ref:`/plugins/provision/mock` provision plugin, which uses
 the environment provided by mock and shell access for executing tests.
 This feature is currently experimental and subject to change. We are
 looking forward to user feedback.
+
 
 tmt-1.58.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
