@@ -408,7 +408,9 @@ class StepData(
         Called before normalization, useful for tweaking raw data
         """
 
-        logger.debug(f'{cls.__name__}: original raw data', str(raw_data), level=4)
+        # Mask sensitive data before logging
+        masked_raw_data = tmt.utils.mask_sensitive_data(raw_data)
+        logger.debug(f'{cls.__name__}: original raw data', str(masked_raw_data), level=4)
 
     def post_normalization(self, raw_data: _RawStepData, logger: tmt.log.Logger) -> None:
         """
@@ -1746,8 +1748,14 @@ class BasePlugin(
         else:
             raise tmt.utils.GeneralError('Either data or raw data must be given.')
 
+        # Create masked versions for logging to hide sensitive data
+        masked_data = f"<{data.__class__.__name__}>" if data is not None else None
+        masked_raw_data = f"<{type(raw_data).__name__}>" if raw_data is not None else None
+
         step.debug(
-            f'{cls.__name__}.delegate(step={step}, data={data}, raw_data={raw_data})', level=3
+            f'{cls.__name__}.delegate(step={step}, data={masked_data}, '
+            f'raw_data={masked_raw_data})',
+            level=3,
         )
 
         # Filter matching methods, pick the one with the lowest order
