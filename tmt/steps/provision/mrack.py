@@ -1220,7 +1220,7 @@ class CreateJobParameters:
     whiteboard: Optional[str]
     beaker_job_owner: Optional[str]
     public_key: list[str]
-    group: Optional[str]
+    beaker_job_group: Optional[str]
     bootc_credentials: Optional[dict[str, Any]]
     bootc_image_url: Optional[str]
     bootc: bool
@@ -1478,7 +1478,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             whiteboard=self.whiteboard or tmt_name,
             beaker_job_owner=self.beaker_job_owner,
             public_key=self.public_key,
-            group=self.beaker_job_group,
+            beaker_job_group=self.beaker_job_group,
             bootc_credentials=self._bootc_registry_credentials if self.bootc else None,
             bootc_image_url=self.bootc_image_url,
             bootc=self.bootc,
