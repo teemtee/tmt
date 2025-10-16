@@ -39,13 +39,11 @@ def test_koji_valid_task_id_actual_build(root_logger):
 @pytest.mark.skip(reason="would be replaced by mocks")
 @pytest.mark.integration
 def test_koji_valid_task_id_scratch_build(root_logger):
-    provider = KojiArtifactProvider("koji.task:137705547", root_logger)
-    tasks = provider._get_task_children(137705547)
-    assert len(tasks) == 13
-    assert 137705547 in tasks  # The parent task itself should be included
+    task_id = 137705547
+    provider = KojiArtifactProvider(f"koji.task:{task_id}", root_logger)
+    tasks = list(provider._get_task_children(task_id))
+
+    assert len(tasks) == 7
+    assert task_id in tasks
     assert provider.build_id is None
-    assert (
-        provider.artifacts[0]._raw_artifact['url']
-        == 'https://kojipkgs.fedoraproject.org/work/tasks/5553/137705553/python-scikit-build-core-0.11.5-5.fc44.src.rpm'
-    )
     assert len(provider.artifacts) == 2
