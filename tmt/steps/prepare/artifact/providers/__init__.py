@@ -3,13 +3,17 @@ Abstract base class for artifact providers.
 """
 
 import configparser
+import functools
+import hashlib
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
 from functools import cached_property
 from re import Pattern
 from shlex import quote
 from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
+from urllib.parse import urlparse
 
+import tmt
 import tmt.log
 import tmt.utils
 from tmt._compat.typing import TypeAlias
@@ -17,11 +21,6 @@ from tmt.container import container
 from tmt.plugins import PluginRegistry
 from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path, ShellScript, retry
-
-# This avoids a circular import with koji.py, which needs ArtifactInfo.
-# We only need the type for hinting, not for runtime logic in this file's top level.
-if TYPE_CHECKING:
-    from tmt.steps.prepare.artifact.providers.koji import RpmArtifactInfo
 
 
 class DownloadError(tmt.utils.GeneralError):
@@ -203,171 +202,111 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
 
 
 class Repository:
-    """
-    Represents a DNF or Yum repository
+    """A class to represent a dnf/yum software repository."""
 
-    :param url: URL of the .repo file to download.
-    :param filename: Target filename for the .repo file in ``/etc/yum.repos.d/``.
-    """
-
-    def __init__(self, url: str, filename: str):
-        self.url = url
-        self.filename = filename
-        self.names: list[str] = []
-        self.filepath: Optional[Path] = None
-        self._rpms: Optional[list[RpmArtifactInfo]] = None
-        self.guest: Optional[Guest] = None
-        self.logger: Optional[tmt.log.Logger] = None
-
-    def install(self, guest: Guest, logger: tmt.log.Logger) -> None:
-        """
-        Install the repository configuration file on the guest and extract repository IDs.
-
-        Downloads the .repo file to ``/etc/yum.repos.d/`` and parses it to extract
-        repository IDs for package management.
-
-        :param guest: Guest system where the .repo file will be installed.
-        :param logger: Logger instance for tracking progress and errors.
-        :raises DownloadError: If downloading the .repo file fails after retries.
-        :raises GeneralError: If the .repo file is empty, not readable, cannot be parsed
-                             as INI, or contains no repository sections.
-        """
+    def __init__(
+        self,
+        logger: tmt.log.Logger,
+        name: Optional[str] = None,
+        url: Optional[str] = None,
+        file_path: Optional[Path] = None,
+        content: Optional[str] = None,
+    ):
         self.logger = logger
-        self.guest = guest
-        self.filepath = Path("/etc/yum.repos.d") / self.filename
-        script = ShellScript(
-            f"{guest.facts.sudo_prefix} curl -L --fail -o {quote(str(self.filepath))} "
-            f"{quote(self.url)}"
-        )
-        # Retry downloading up to three times
-        try:
-            retry(
-                func=lambda: guest.execute(script),
-                attempts=3,
-                interval=5,
-                label=f"download .repo file from '{self.url}'",
-                logger=logger,
+        self._provided_name = name
+        self._provided_url = url
+        self._provided_file_path = file_path
+        self._provided_content = content
+
+        if not self.content:
+            raise tmt.utils.GeneralError(
+                "Repository content could not be loaded. "
+                "You must provide a 'url', 'file_path', or 'content'."
             )
-        except Exception as error:
-            last_error = error.causes[-1] if hasattr(error, 'causes') and error.causes else error
-            logger.debug(f"Download failed after retries: {last_error!s}")
-            raise DownloadError(
-                f"Failed to download repository file from '{self.url}' to "
-                f"'{self.filepath}': {last_error!s}"
-            ) from last_error
 
-        try:
-            result = guest.execute(ShellScript(f'{guest.facts.sudo_prefix} cat {self.filepath}'))
-            content = result.stdout
-
-            if content is None:
-                raise GeneralError("cat command did not return any output.")
-
-            content = content.strip()
-            if not content:
-                raise GeneralError(
-                    f"Repository file '{self.filepath}' is empty or not readable on guest."
-                )
-
-        except GeneralError as error:
-            logger.warning(
-                f"Could not read the repo file '{self.filepath}' from the guest: {error!s}"
+        if not self.repo_ids:
+            self.logger.warning(
+                f"No repository sections (e.g., [my-repo]) found in the content for '{self.name}'."
             )
-            raise
 
-        parser = configparser.ConfigParser(
-            strict=False,
-            allow_no_value=True,
-            delimiters=('=', ':'),
-        )
+    @functools.cached_property
+    def id(self) -> str:
+        """A deterministic ID based on the repository's definition."""
+        hasher = hashlib.sha256()
+        source_data = ""
+
+        # Use the first available source for the hash for true determinism
+        if self._provided_url:
+            source_data = self._provided_url
+        elif self._provided_file_path:
+            source_data = str(self._provided_file_path.resolve())
+        elif self._provided_content:
+            # Normalize whitespace to ensure content hash is consistent
+            source_data = "\n".join(
+                line.strip() for line in self._provided_content.strip().splitlines()
+            )
+
+        hasher.update(source_data.encode('utf-8'))
+        return hasher.hexdigest()
+
+    @functools.cached_property
+    def name(self) -> str:
+        """Determine the repository name, using a provided name or deriving it."""
+        if self._provided_name:
+            return self._provided_name
+        if self._provided_url:
+            # Use the last path segment from the URL
+            parsed_path = urlparse(self._provided_url).path
+            return parsed_path.rstrip('/').split('/')[-1].replace('.repo', '')
+        if self._provided_file_path:
+            # Derive from local filename
+            return self._provided_file_path.name.replace('.repo', '')
+        # Fallback to a name derived from the unique ID
+        return f"repo-{self.id[:8]}"
+
+    @functools.cached_property
+    def content(self) -> Optional[str]:
+        """Loads the repository content from the provided source."""
+        if self._provided_content:
+            return self._provided_content
+        if self._provided_url:
+            try:
+                with tmt.utils.retry_session() as session:
+                    response = session.get(self._provided_url)
+                    response.raise_for_status()
+                    return response.text
+            except Exception as error:
+                raise tmt.utils.GeneralError(
+                    f"Failed to fetch repository content from '{self._provided_url}'."
+                ) from error
+        if self._provided_file_path:
+            try:
+                return self._provided_file_path.read_text()
+            except OSError as error:
+                raise tmt.utils.GeneralError(
+                    f"Failed to read repository file '{self._provided_file_path}'."
+                ) from error
+        return None
+
+    @functools.cached_property
+    def repo_ids(self) -> list[str]:
+        """Parses the .repo content to extract repository IDs using configparser."""
+        if not self.content:
+            return []
+        config = configparser.ConfigParser()
         try:
-            parser.read_string(content)
-        except configparser.Error as error:
-            logger.debug(f"Failed to parse .repo file content: {error!s}")
-            raise GeneralError(
-                f"Failed to parse .repo file from guest path '{self.filepath}' as INI: {error!s}"
-            ) from error
-
-        self.names = parser.sections()
-        logger.debug(f"Repository IDs found: {self.names}")
-        if not self.names:
-            raise GeneralError(f"No repository sections found in .repo file '{self.filepath}'.")
+            config.read_string(self.content)
+            return config.sections()
+        except configparser.Error as e:
+            raise tmt.utils.GeneralError(
+                f"Failed to parse the content of repository '{self.name}'. "
+                "The .repo file may be malformed."
+            ) from e
 
     @property
-    def rpms(self) -> list['RpmArtifactInfo']:
-        """
-        List all packages available in the repository.
-
-        Queries repositories defined in the .repo file using the guest's package
-        manager (dnf or yum) to retrieve available RPM packages.
-
-        :returns: List of ``RpmArtifactInfo`` objects for available packages.
-        :raises GeneralError: If repositories are not installed, guest or logger is unset,
-                             the package manager is unsupported, or the query fails.
-        """
-        # Import here to avoid circular imports
-        from tmt.steps.prepare.artifact.providers.koji import RpmArtifactInfo
-
-        if self._rpms is not None:
-            return self._rpms
-
-        if not self.names or self.filepath is None:
-            raise GeneralError("Repositories must be installed before accessing RPMs.")
-
-        if self.guest is None or self.logger is None:
-            raise GeneralError("Must call install() first to set guest and logger.")
-
-        qf = "'%{name} %{epoch} %{version} %{release} %{arch}'"
-        repo_ids = ','.join(quote(name) for name in self.names)
-        try:
-            # FIXME: Add repoquery function to guest.package_manager for better abstraction
-            if self.guest.facts.package_manager == 'dnf':
-                script = ShellScript(
-                    f"dnf repoquery --refresh --disablerepo='*' --enablerepo={repo_ids} "
-                    f"--queryformat {qf}"
-                )
-            elif self.guest.facts.package_manager == 'yum':
-                # Requires 'yum-utils' package on the guest for repoquery
-                script = ShellScript(
-                    f"repoquery --disablerepo='*' --enablerepo={repo_ids} --queryformat {qf}"
-                )
-            else:
-                raise GeneralError(
-                    f"Unsupported package manager: '{self.guest.facts.package_manager}'"
-                )
-            result = self.guest.execute(script, silent=True)
-            output = result.stdout or ""
-        except GeneralError as error:
-            raise GeneralError(
-                f"Failed to query packages from repos '{', '.join(self.names)}': {error!s}"
-            ) from error
-
-        self._rpms = []
-        for line in output.strip().splitlines():
-            try:
-                name, epoch, version, release, arch = line.split()
-                if epoch in {"(none)", "0"}:
-                    epoch = ""
-                    nvr = f"{name}-{version}-{release}"
-                else:
-                    nvr = f"{name}-{epoch}:{version}-{release}"
-
-                self._rpms.append(
-                    RpmArtifactInfo(
-                        _raw_artifact={
-                            'name': name,
-                            'version': version,
-                            'release': release,
-                            'arch': arch,
-                            'nvr': nvr,
-                            'epoch': epoch,
-                        }
-                    )
-                )
-            except ValueError:
-                self.logger.warning(f"Failed to parse RPM from repoquery output: '{line}'")
-                continue
-        return self._rpms
+    def filename(self) -> str:
+        """The filename for the repository file on the guest."""
+        return f"{self.name}.repo"
 
 
 _PROVIDER_REGISTRY: PluginRegistry[type[ArtifactProvider[ArtifactInfo]]] = PluginRegistry(
