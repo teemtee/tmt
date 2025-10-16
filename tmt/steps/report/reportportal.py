@@ -555,16 +555,15 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             attributes.append({'key': 'immediateAutoAnalysis', 'value': 'true', 'system': 'true'})
 
         if result is not None:
+            guest = result.guest
             # for guests, save their primary address
-            if result.guest.primary_address:
-                attributes.append(
-                    {'key': 'guest_primary_address', 'value': result.guest.primary_address}
-                )
+            if guest.primary_address:
+                attributes.append({'key': 'guest_primary_address', 'value': guest.primary_address})
             # for multi-host tests store also provision name and role
-            if result.guest.name != 'default-0':
-                attributes.append({'key': 'guest_name', 'value': result.guest.name})
-            if result.guest.role:
-                attributes.append({'key': 'guest_role', 'value': result.guest.role})
+            if guest.name != 'default-0':
+                attributes.append({'key': 'guest_name', 'value': guest.name})
+            if guest.role:
+                attributes.append({'key': 'guest_role', 'value': guest.role})
 
         if test is not None:
             if test.author:
