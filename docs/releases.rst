@@ -15,6 +15,10 @@ While running ``tmt plan export``, the exported plan now includes
 combined context from multiple sources, including command line,
 making it consistent with ``tmt plan show`` command.
 
+Polarion export plugin now fails properly when exporting an fmf tree that
+is not part of a git repository and when there are unsubmitted changes.
+Also allowing the export when ``--ignore-git-validation`` is passed.
+
 
 tmt-1.59.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
