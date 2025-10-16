@@ -71,7 +71,7 @@ description: |
                 - how: dmesg
 
                 {% for item in VALUE %}
-                - {{ item }}
+                - {{ item | to_yaml | indent(2, first=False) }}
                 {% endfor %}
 
     .. important::
@@ -90,6 +90,30 @@ description: |
                   # which, if emitted into template this way, would produce
                   # invalid fmf (a list nested in a mapping).
                   {{ VALUE }}
+
+    .. important::
+
+       For emitting original values more complex than strings or numbers,
+       it is highly recommended to use ``to_yaml`` and ``indent`` filters.
+       Otherwise, some Python data types may render incorrectly:
+
+       .. code-block:: yaml
+
+          # Incorrect outcome when `unit` key is not set
+          - {{ check }}
+
+          # [{"how": "journal", ..., "unit": "None"}]
+
+          # On the other hand, `to_yaml` filter produces correct "value"
+          # for the `unit` key:
+          - {{ check | to_yaml | indent(2, first=False) }}
+
+          # - how: journal
+          #   unit:
+
+          After all, the goal here is to emit an fmf snippet, and fmf
+          is a YAML at its core, therefore ``to_yaml`` filter will lead
+          to the most safe result.
 
     Within the templates, additional variables are defined:
 
