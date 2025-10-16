@@ -11,6 +11,7 @@ from tmt.package_managers import (
     escape_installables,
     provides_package_manager,
 )
+from tmt.steps.prepare.artifact.providers import Repository
 from tmt.utils import Command, GeneralError, RunError, ShellScript
 
 
@@ -165,6 +166,38 @@ class DnfEngine(PackageManagerEngine):
 
         return script
 
+    def install_repository(self, repository: Repository) -> ShellScript:
+        """
+        Install a repository by placing its configuration in /etc/yum.repos.d/.
+
+        :param repository: The repository to install.
+        :returns: A shell script to install the repository and verify its presence.
+        """
+        repo_path = f"/etc/yum.repos.d/{repository.filename}"
+        return ShellScript(
+            rf"""
+            {self.guest.facts.sudo_prefix} tee {repo_path} <<EOF
+            {repository.content}
+            EOF
+            [ -f {repo_path} ] || exit 1
+            """
+        )
+
+    def repoquery(self, repository: Repository) -> ShellScript:
+        """
+        Query the packages available in the specified repository.
+
+        :param repository: The repository to query.
+        :returns: A shell script to list packages in the repository.
+        """
+        repo_ids = ",".join(f"--enablerepo {repo_id}" for repo_id in repository.repo_ids)
+        qf = "'%{name} %{epoch} %{version} %{release} %{arch}'"
+        return ShellScript(
+            rf"""
+            {self.command.to_script()} repoquery --disablerepo='*' {repo_ids} --queryformat {qf}
+            """
+        )
+
 
 # ignore[type-arg]: TypeVar in package manager registry annotations is
 # puzzling for type checkers. And not a good idea in general, probably.
@@ -239,7 +272,7 @@ class Dnf5(Dnf):
 
     _engine_class = Dnf5Engine
 
-    probe_command = probe_command = Command('dnf5', '--version')
+    probe_command = Command('dnf5', '--version')
     probe_priority = 60
 
 
