@@ -176,11 +176,11 @@ class DnfEngine(PackageManagerEngine):
         repo_path = f"/etc/yum.repos.d/{repository.filename}"
         return ShellScript(
             rf"""
-            {self.guest.facts.sudo_prefix} tee {repo_path} <<EOF
-            {repository.content}
-            EOF
-            [ -f {repo_path} ] || exit 1
-            """
+{self.guest.facts.sudo_prefix} tee {repo_path} <<'EOF'
+{repository.content}
+
+EOF
+"""
         )
 
     def repoquery(self, repository: Repository) -> ShellScript:
@@ -190,10 +190,10 @@ class DnfEngine(PackageManagerEngine):
         :param repository: The repository to query.
         :returns: A shell script to list packages in the repository.
         """
-        repo_ids = ",".join(f"--enablerepo {repo_id}" for repo_id in repository.repo_ids)
+        repo_ids = " ".join(f"--enablerepo={repo_id}" for repo_id in repository.repo_ids)
         qf = "'%{name} %{epoch} %{version} %{release} %{arch}'"
         return ShellScript(
-            rf"""
+            f"""
             {self.command.to_script()} repoquery --disablerepo='*' {repo_ids} --queryformat {qf}
             """
         )

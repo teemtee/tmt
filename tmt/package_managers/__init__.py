@@ -279,7 +279,6 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         :returns: The output of the command execution.
         """
         script = self.engine.install_repository(repository)
-        script &= self.engine.refresh_metadata()
         return self.guest.execute(script)
 
     def list_packages(self, repository: "Repository") -> list[str]:
