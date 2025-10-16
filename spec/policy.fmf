@@ -102,7 +102,7 @@ description: |
           # Incorrect outcome when `unit` key is not set
           - {{ check }}
 
-          # [{"how": journal", ..., "unit": "None"}]
+          # [{"how": "journal", ..., "unit": "None"}]
 
           # On the other hand, `to_yaml` filter produces correct "value"
           # for the `unit` key:
