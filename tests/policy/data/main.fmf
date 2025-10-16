@@ -14,6 +14,13 @@ test: /bin/true
   check:
     - how: avc
       result: info
+    # Add `journal` as well: it has some optional fields that can be left
+    # unset, and having it inspected by a policy would verify they are
+    # processed correctly.
+    #
+    # See https://issues.redhat.com/browse/TFT-3928 for the original bug
+    # report against a policy.
+    - how: journal
     - how: dmesg
       failure-pattern: ".*"
 
