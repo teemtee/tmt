@@ -7,11 +7,11 @@ import tmt.log
 import tmt.plugins
 import tmt.utils
 from tmt.container import container, simple_field
-from tmt.steps.prepare.artifact.providers import Repository
 from tmt.utils import Command, CommandOutput, GeneralError, Path, ShellScript
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
+    from tmt.steps.prepare.artifact.providers import Repository
     from tmt.steps.provision import Guest
 
     #: A type of package manager names.
@@ -187,7 +187,7 @@ class PackageManagerEngine(tmt.utils.Common):
     def refresh_metadata(self) -> ShellScript:
         raise NotImplementedError
 
-    def install_repository(self, repository: Repository) -> ShellScript:
+    def install_repository(self, repository: "Repository") -> ShellScript:
         """
         Install a repository by placing its configuration in /etc/yum.repos.d/.
 
@@ -196,7 +196,7 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
-    def repoquery(self, repository: Repository) -> ShellScript:
+    def repoquery(self, repository: "Repository") -> ShellScript:
         """
         Query the packages available in the specified repository.
 
@@ -270,7 +270,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
     def refresh_metadata(self) -> CommandOutput:
         return self.guest.execute(self.engine.refresh_metadata())
 
-    def install_repository(self, repository: Repository) -> CommandOutput:
+    def install_repository(self, repository: "Repository") -> CommandOutput:
         """
         Install a repository by placing its configuration in /etc/yum.repos.d/
         and refresh the package manager cache.
@@ -282,7 +282,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         script &= self.engine.refresh_metadata()
         return self.guest.execute(script)
 
-    def list_packages(self, repository: Repository) -> list[str]:
+    def list_packages(self, repository: "Repository") -> list[str]:
         """
         List packages available in the specified repository.
 
