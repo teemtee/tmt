@@ -1,0 +1,10 @@
+---
+# Minimal playbook to trigger inventory generation for testing
+# This playbook does nothing but ensures ansible_inventory_path gets accessed
+- name: Minimal playbook for inventory generation testing
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Debug message to confirm playbook execution
+      debug:
+        msg: "Minimal playbook executed - inventory generation triggered"

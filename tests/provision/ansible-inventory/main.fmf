@@ -1,0 +1,12 @@
+summary: Test Ansible inventory generation
+description:
+    Verify that TMT correctly generates Ansible inventory files during
+    the provision phase with various configurations including custom
+    layouts, group assignments, host variables, and playbook execution.
+    validation.
+tag+:
+  - provision-only
+  - provision-virtual
+require:
+  - tmt+provision-virtual
+duration: 15m
