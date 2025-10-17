@@ -264,7 +264,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         release = rpm_meta["release"]
         arch = rpm_meta["arch"]
         path = f"packages/{name}/{version}/{release}/{arch}/{name}-{version}-{release}.{arch}.rpm"
-        return urljoin(self._top_url + "/", path)
+        return urljoin(self._top_url, path)
 
     def make_rpm_artifact(self, rpm_meta: dict[str, str]) -> RpmArtifactInfo:
         """
