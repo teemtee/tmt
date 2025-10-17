@@ -4524,7 +4524,15 @@ def remove_color(text: str) -> str:
 def generate_runs(path: Path, id_: tuple[str, ...], all_: bool = False) -> Iterator[Path]:
     """
     Generate absolute paths to runs from path
+
+    :param path: Path to search for runs
+    :param ``id_``: Tuple of specific run IDs to filter by
+    :param ``all_``: If True, process workdirs without run.yaml files (for directories
+                 prefixed with 'run-'). This allows commands that don't require
+                 run.yaml to process workdirs without affecting other commands.
+    :returns: Iterator yielding absolute paths to run directories
     """
+
     # Prepare absolute workdir path if --id was used
     run_path = None
     for id_name in id_:
