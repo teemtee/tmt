@@ -633,6 +633,9 @@ class DependencyFile(
         """
         return True, ''
 
+    def _export(self, *, keys: Optional[list[str]] = None) -> tmt.export._RawExportedInstance:
+        return cast(tmt.export._RawExportedInstance, self.to_dict())
+
 
 _RawDependencyItem = Union[str, _RawDependencyFmfId, _RawDependencyFile]
 _RawDependency = Union[_RawDependencyItem, list[_RawDependencyItem]]
@@ -2796,14 +2799,20 @@ class Plan(
         P003: execute step methods must be known
         """
 
-        yield from self._lint_step_methods('execute', tmt.steps.execute.ExecutePlugin)
+        yield from self._lint_step_methods(
+            'execute',
+            tmt.steps.execute.ExecutePlugin,  # type: ignore[type-abstract]
+        )
 
     def lint_discover_unknown_method(self) -> LinterReturn:
         """
         P004: discover step methods must be known
         """
 
-        yield from self._lint_step_methods('discover', tmt.steps.discover.DiscoverPlugin)
+        yield from self._lint_step_methods(
+            'discover',
+            tmt.steps.discover.DiscoverPlugin,  # type: ignore[type-abstract]
+        )
 
     def lint_fmf_remote_ids_valid(self) -> LinterReturn:
         """
@@ -5421,6 +5430,10 @@ class Links(SpecBasedContainer[Any, list[_RawLinkRelation]]):
 
         # Ensure that each link is in the canonical form
         self._links = [Link.from_spec(spec) for spec in specs]
+
+    @classmethod
+    def from_spec(cls, spec: Union[_RawLink, list[_RawLink]]) -> Self:
+        return cls(data=spec)
 
     def to_spec(self) -> list[_RawLinkRelation]:
         """
