@@ -14,11 +14,15 @@ if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
 
     # TODO: Move Repository abstraction to tmt.package_manager subpackage
-    from tmt.steps.prepare.artifact.providers import Repository
+    # This class will be added in a future PR.
+    # For now, just type it as Any to satisfy pyright.
+    Repository: TypeAlias = Any
     from tmt.steps.provision import Guest
 
     #: A type of package manager names.
     GuestPackageManager: TypeAlias = str
+else:
+    Repository: Any = None  # type: ignore[assignment]
 
 
 #

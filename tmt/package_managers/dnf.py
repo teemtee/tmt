@@ -1,5 +1,5 @@
 import re
-from typing import Optional, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from tmt.package_managers import (
     FileSystemPath,
@@ -12,8 +12,16 @@ from tmt.package_managers import (
     provides_package_manager,
 )
 
-# TODO: Move Repository abstraction to tmt.package_manager subpackage
-from tmt.steps.prepare.artifact.providers import Repository
+if TYPE_CHECKING:
+    from tmt._compat.typing import TypeAlias
+
+    # TODO: Move Repository abstraction to tmt.package_manager subpackage
+    # This class will be added in a future PR.
+    # For now, just type it as Any to satisfy pyright.
+    Repository: TypeAlias = Any
+else:
+    Repository: Any = None  # type: ignore[assignment]
+
 from tmt.utils import Command, GeneralError, RunError, ShellScript
 
 
