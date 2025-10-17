@@ -1,126 +1,114 @@
 """
-Artifact provider for repository files.
+Artifact provider for discovering RPMs from repository files.
 """
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Sequence
 from re import Pattern
-from shlex import quote
 from typing import Optional
 from urllib.parse import unquote, urlparse
 
 import tmt.log
-from tmt.container import container
 from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     ArtifactProviderId,
-    DownloadError,
+    Repository,
+    provides_artifact_provider,
 )
 from tmt.steps.prepare.artifact.providers.koji import RpmArtifactInfo
 from tmt.steps.provision import Guest
-from tmt.utils import GeneralError, Path, ShellScript
+from tmt.utils import GeneralError, Path
 
 
-@container
-class RepositoryFile:
-    """
-    A helper class representing a repository .repo file from a URL.
-    """
-
-    url: str
-
-    def __post_init__(self) -> None:
-        """
-        Validates the URL format upon object creation.
-        """
-        try:
-            self._parsed_url = urlparse(self.url)
-            if not self._parsed_url.scheme or not self._parsed_url.netloc:
-                raise ValueError
-        except ValueError as exc:
-            raise GeneralError(f"Invalid URL format for .repo file: '{self.url}'.") from exc
-
-    @property
-    def filename(self) -> str:
-        """A suitable filename extracted from the URL path."""
-        return unquote(Path(self._parsed_url.path).name)
-
-    def __str__(self) -> str:
-        return self.filename
-
-
+# ignore[type-arg]: TypeVar in provider registry annotations is
+# puzzling for type checkers. And not a good idea in general, probably.
+@provides_artifact_provider('repository')  # type: ignore[arg-type]
 class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
     """
-    Sets up a repository on the guest and lists the RPMs it provides.
+    Sets up repositories from a .repo file and discovers available RPMs.
 
-    The artifact_id is a URL to a .repo file. This provider's main
-    purpose is to download this file and place it in '/etc/yum.repos.d/'.
+    The provider uses a URL to a .repo file, downloads it to the guest's
+    ``/etc/yum.repos.d/`` directory, and lists RPMs available in the defined
+    repositories without downloading them, acting as a discovery-only provider.
 
-    It then lists all RPMs made available by the new repository but does
-    not download any of them.
+    :param raw_provider_id: URL of the .repo file.
+    :param logger: Logger instance for outputting messages.
+    :raises GeneralError: If the .repo file URL is invalid.
     """
 
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
         super().__init__(raw_provider_id, logger)
-        self.repo_file = RepositoryFile(url=self.id)
-        # Cache for the list of RPMs discovered in the repository
-        self._rpm_list: list[RpmArtifactInfo] = []
+
+        # Validate and parse the .repo file URL
+        try:
+            self._parsed_url = urlparse(self.id)
+            if not self._parsed_url.scheme or not self._parsed_url.netloc:
+                raise ValueError("URL must have a scheme and network location.")
+        except ValueError as exc:
+            raise GeneralError(f"Invalid .repo file URL: '{self.id}'.") from exc
+
+        # Cache for RPMs discovered in the repositories
+        self._rpm_list: Optional[list[RpmArtifactInfo]] = None
+
+    @property
+    def repo_filename(self) -> str:
+        """
+        Extract a suitable filename from the URL path.
+
+        :returns: Unquoted filename derived from the URL's path component.
+        """
+        return unquote(Path(self._parsed_url.path).name)
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
         return raw_provider_id
 
-    def _fetch_rpms(self, guest: Guest, repo_filepath: Path) -> None:
-        """
-        Query the guest to find all packages available in the new repository.
-        """
-        # TODO: This method needs to be implemented to populate self._rpm_list with RPMs
-        # from the repository. Currently using an empty list as a temporary solution.
-        self._rpm_list = []
-
     @property
     def artifacts(self) -> Sequence[RpmArtifactInfo]:
-        raise NotImplementedError
+        """
+        List all RPMs discovered from the repositories.
+
+        .. note::
+
+            The :py:meth:`fetch_contents` method must be called first to populate
+            the artifact list from the guest.
+        """
+        if self._rpm_list is None:
+            raise GeneralError(
+                "RPM list not available. Call 'fetch_contents' before accessing artifacts."
+            )
+        return self._rpm_list
 
     def _download_artifact(
         self, artifact: RpmArtifactInfo, guest: Guest, destination: Path
     ) -> None:
-        """This provider only sets up the repo, it does not download RPMs."""
+        """This provider only discovers repos; it does not download individual RPMs."""
+        raise NotImplementedError(
+            "RepositoryFileProvider does not support downloading individual RPMs."
+        )
 
     def fetch_contents(
         self,
         guest: Guest,
-        download_path: tmt.utils.Path,
+        download_path: Path,
         exclude_patterns: Optional[list[Pattern[str]]] = None,
-    ) -> list[tmt.utils.Path]:
+    ) -> list[Path]:
         """
-        Download the .repo file to the guest, making the repository available.
+        Install repositories on the guest and discover available packages.
 
-        This method overrides the default behavior to prevent downloading
-        individual RPMs. It installs the repository, lists the available
-        packages for discovery, and then returns.
+        Downloads the .repo file to the guest, installs the repositories, and queries
+        them to discover available RPMs. No RPMs are downloaded.
+
+        :param guest: Guest system to install the repositories on.
+        :param download_path: Unused, as no artifacts are downloaded.
+        :param exclude_patterns: Optional regex patterns to exclude specific RPMs (unused).
+        :returns: Empty list, as no files are downloaded.
         """
+        # Initialize and install the repository on the guest
+        repository = Repository(url=self.id, filename=self.repo_filename)
+        repository.install(guest=guest, logger=self.logger)
 
-        # 1. Install the repository file on the guest using info from our helper object
-        filename = self.repo_file.filename
-        url = self.repo_file.url
-        repo_dest = Path("/etc/yum.repos.d") / filename
+        # Cache the list of discovered RPMs
+        self._rpm_list = repository.rpms
 
-        sudo = "sudo " if not guest.facts.is_superuser else ""
-        self.logger.info(f"Installing repository '{url}' to '{repo_dest}'.")
-
-        try:
-            # TODO: Add retry Mechanism
-            guest.execute(
-                ShellScript(f"{sudo}curl -L --fail -o {quote(str(repo_dest))} {quote(url)}"),
-                silent=True,
-            )
-        except GeneralError as error:
-            raise DownloadError(f"Failed to download repository file to '{repo_dest}'.") from error
-
-        # 2. Populate the RPM list for discovery purposes
-        self._fetch_rpms(guest, repo_dest)
-
-        self.logger.info("Repository setup is complete.")
-        # 3. Return list of available Artifacts
-        # TODO: Finalize contract of what needs to be returned from Artifact Repository
+        # Return empty list as no artifacts are downloaded
         return []
