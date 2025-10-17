@@ -29,5 +29,7 @@ def download(url: str, destination: Path, *, logger: tmt.log.Logger) -> Path:
         destination = destination.parent
     assert isinstance(file_name, str)  # Narrow type
     download_file = destination / file_name
-    download_file.write_bytes(response.content)
+    with download_file.open(mode="wb") as f:
+        for chunk in response.iter_content(chunk_size=None):
+            f.write(chunk)
     return download_file
