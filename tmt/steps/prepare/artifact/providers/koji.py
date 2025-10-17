@@ -220,17 +220,17 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         """Create a build provider instance if build_id is available."""
         if self.build_id is None:
             return None
-        return build_cls(f"{prefix}{self.build_id}", self.logger)
+        return build_cls(f"{prefix}:{self.build_id}", self.logger)
 
     @cached_property
     def build_provider(self) -> Optional['KojiBuild']:
-        return self._make_build_provider(KojiBuild, "koji.build:")
+        return self._make_build_provider(KojiBuild, "koji.build")
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
         for prefix in cls.SUPPORTED_PREFIXES:
             if raw_provider_id.startswith(prefix):
-                value = raw_provider_id[len(prefix) :]
+                value = raw_provider_id[len(prefix) :].lstrip(':')
                 if not value:
                     raise ValueError(f"Missing value in '{raw_provider_id}'.")
                 return value
@@ -402,8 +402,8 @@ class KojiNvr(KojiArtifactProvider):
 
 
 KojiArtifactProvider._REGISTRY = {
-    "koji.build:": KojiBuild,
-    "koji.task:": KojiTask,
-    "koji.nvr:": KojiNvr,
+    "koji.build": KojiBuild,
+    "koji.task": KojiTask,
+    "koji.nvr": KojiNvr,
 }
 KojiArtifactProvider.SUPPORTED_PREFIXES = tuple(KojiArtifactProvider._REGISTRY.keys())
