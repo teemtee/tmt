@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Optional
 
 import tmt.log
 import tmt.utils
+import tmt.utils.url
 from tmt.container import container
 from tmt.utils import (
     Command,
@@ -695,12 +696,8 @@ def distgit_download(
         handler = get_distgit_handler(usage_name=handler_name)
 
     for url, source_name in handler.url_and_name(distgit_dir):
-        logger.debug(f"Download sources from '{url}'.")
-        with tmt.utils.retry_session(logger=logger) as session:
-            response = session.get(url)
-        response.raise_for_status()
         target_dir.mkdir(exist_ok=True, parents=True)
-        (target_dir / source_name).write_bytes(response.content)
+        tmt.utils.url.download(url, target_dir / source_name, logger=logger)
 
 
 def git_clone(
