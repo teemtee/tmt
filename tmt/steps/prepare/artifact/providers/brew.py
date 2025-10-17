@@ -97,8 +97,8 @@ class BrewNvr(BrewArtifactProvider, KojiNvr):
 
 
 BrewArtifactProvider._REGISTRY = {
-    "brew.build:": BrewBuild,
-    "brew.task:": BrewTask,
-    "brew.nvr:": BrewNvr,
+    "brew.build": BrewBuild,
+    "brew.task": BrewTask,
+    "brew.nvr": BrewNvr,
 }
 BrewArtifactProvider.SUPPORTED_PREFIXES = tuple(BrewArtifactProvider._REGISTRY.keys())
