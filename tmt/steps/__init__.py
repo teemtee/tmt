@@ -8,6 +8,7 @@ import itertools
 import re
 import shutil
 import textwrap
+import typing
 from collections.abc import Iterable, Iterator, Sequence
 from contextlib import suppress
 from re import Pattern
@@ -16,6 +17,7 @@ from typing import (
     Any,
     Callable,
     Generic,
+    Literal,
     Optional,
     TypedDict,
     TypeVar,
@@ -37,7 +39,7 @@ import tmt.options
 import tmt.queue
 import tmt.utils
 import tmt.utils.rest
-from tmt._compat.typing import Self
+from tmt._compat.typing import Self, TypeGuard
 from tmt.container import (
     SerializableContainer,
     SpecBasedContainer,
@@ -103,8 +105,10 @@ PHASE_ORDER_PREPARE_INSTALL_REQUIRES = 70
 PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS = 75
 
 # Supported steps and actions
-STEPS: list[str] = ['discover', 'provision', 'prepare', 'execute', 'report', 'finish', 'cleanup']
-ACTIONS: list[str] = ['login', 'reboot']
+StepName = Literal['discover', 'provision', 'prepare', 'execute', 'report', 'finish', 'cleanup']
+STEPS: list[StepName] = list(typing.get_args(StepName))
+ActionName = Literal['login', 'reboot']
+ACTIONS: list[ActionName] = list(typing.get_args(ActionName))
 DEFAULT_LOGIN_COMMAND = 'bash'
 
 #: A default command to trigger a guest reboot when executed remotely.
@@ -166,6 +170,14 @@ PHASE_OPTIONS = tmt.options.create_options_decorator(
         ),
     ]
 )
+
+
+def is_step_name(val: str) -> TypeGuard[StepName]:
+    return val in STEPS
+
+
+def is_action_name(val: str) -> TypeGuard[ActionName]:
+    return val in ACTIONS
 
 
 def prune_directory(path: Path, preserved_members: set[str], logger: tmt.log.Logger) -> set[str]:
