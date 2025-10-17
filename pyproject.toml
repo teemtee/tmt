@@ -67,7 +67,7 @@ prepare-artifact = [
     "koji>=1.35.0",
     ]
 provision-beaker = [
-    "mrack>=1.23.2",
+    "mrack>=1.25.0",
     ]
 provision-mock = [
     # mockbuild
