@@ -60,7 +60,7 @@ class BrewArtifactProvider(KojiArtifactProvider):
 
     @cached_property
     def build_provider(self) -> Optional['BrewBuild']:
-        return self._make_build_provider(BrewBuild, "brew.build:")
+        return self._make_build_provider(BrewBuild, "brew.build")
 
     def _rpm_url(self, rpm_meta: dict[str, str]) -> str:
         """Construct Brew RPM URL."""
