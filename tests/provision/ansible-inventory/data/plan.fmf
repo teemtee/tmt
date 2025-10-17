@@ -7,6 +7,10 @@ execute:
 # Default layout test - single guest
 /default-layout:
     summary: Test default inventory layout with single guest
+    prepare:
+      - name: Trigger inventory generation
+        how: ansible
+        playbook: playbooks/minimal-playbook.yaml
 
 # Comprehensive test - multiple inventory features
 /comprehensive-inventory:
@@ -49,3 +53,7 @@ execute:
       - name: custom-host
         ansible:
             group: custom-group  # Uses group from incomplete layout
+    prepare:
+      - name: Trigger inventory generation
+        how: ansible
+        playbook: playbooks/minimal-playbook.yaml
