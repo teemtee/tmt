@@ -209,7 +209,7 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
-    def packages(self, repository: "Repository") -> ShellScript:
+    def list_packages(self, repository: "Repository") -> ShellScript:
         """
         List packages available in the specified repository.
 
@@ -301,7 +301,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         :param repository: The repository to query.
         :returns: A list of package names available in the repository.
         """
-        script = self.engine.packages(repository)
+        script = self.engine.list_packages(repository)
         output = self.guest.execute(script)
         stdout = output.stdout
 

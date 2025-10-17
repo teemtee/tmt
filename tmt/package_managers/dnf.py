@@ -185,7 +185,7 @@ class DnfEngine(PackageManagerEngine):
             EOF"""
         )
 
-    def packages(self, repository: Repository) -> ShellScript:
+    def list_packages(self, repository: Repository) -> ShellScript:
         repo_ids = " ".join(f"--enablerepo={repo_id}" for repo_id in repository.repo_ids)
         qf = "'%{name} %{epoch} %{version} %{release} %{arch}'"
         return ShellScript(
