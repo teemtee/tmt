@@ -72,11 +72,11 @@ class ScratchRpmArtifactInfo(RpmArtifactInfo):
         return f"{self._raw_artifact['filename']}"
 
 
-TBuild = TypeVar(
-    "TBuild", bound="ArtifactProvider[RpmArtifactInfo]"
+BuildT = TypeVar(
+    "BuildT", bound="ArtifactProvider[RpmArtifactInfo]"
 )  # Generic type for build provider classes (e.g., KojiBuild, BrewBuild)
-TProvider = TypeVar(
-    "TProvider", bound="KojiArtifactProvider"
+ProviderT = TypeVar(
+    "ProviderT", bound="KojiArtifactProvider"
 )  # Generic type for artifact provider subclasses
 
 
@@ -118,8 +118,8 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
     @classmethod
     def _dispatch_subclass(
-        cls, raw_provider_id: str, mapping: dict[str, type[TProvider]]
-    ) -> TProvider:
+        cls, raw_provider_id: str, mapping: dict[str, type[ProviderT]]
+    ) -> ProviderT:
         for prefix, subclass in mapping.items():
             if raw_provider_id.startswith(prefix):
                 return super().__new__(subclass)
@@ -216,7 +216,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         except Exception as error:
             raise tmt.utils.GeneralError(f"API call '{method}' failed.") from error
 
-    def _make_build_provider(self, build_cls: type[TBuild], prefix: str) -> Optional[TBuild]:
+    def _make_build_provider(self, build_cls: type[BuildT], prefix: str) -> Optional[BuildT]:
         """Create a build provider instance if build_id is available."""
         if self.build_id is None:
             return None
