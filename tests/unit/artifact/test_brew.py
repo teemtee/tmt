@@ -3,12 +3,14 @@ import pytest
 from tmt.steps.prepare.artifact.providers.brew import BrewArtifactProvider
 
 
+@pytest.mark.skip(reason="would be replaced by mocks")
 @pytest.mark.integration
 def test_brew_valid_build(root_logger):
     provider = BrewArtifactProvider("brew.build:3866328", root_logger)
     assert len(provider.artifacts) == 21
 
 
+@pytest.mark.skip(reason="would be replaced by mocks")
 @pytest.mark.integration
 def test_brew_valid_draft_build(root_logger):
     provider = BrewArtifactProvider("brew.build:3525300", root_logger)
@@ -18,6 +20,7 @@ def test_brew_valid_draft_build(root_logger):
     ), "No artifact URL contains 'draft_3525300'"
 
 
+@pytest.mark.skip(reason="would be replaced by mocks")
 @pytest.mark.integration
 def test_brew_valid_nvr(root_logger):
     provider = BrewArtifactProvider("brew.nvr:unixODBC-2.3.12-1.el9", root_logger)
@@ -25,6 +28,7 @@ def test_brew_valid_nvr(root_logger):
     assert provider.build_id == 3866328  # Known build ID for this NVR
 
 
+@pytest.mark.skip(reason="would be replaced by mocks")
 @pytest.mark.integration
 def test_brew_invalid_nvr(root_logger):
     from tmt.utils import GeneralError
@@ -35,6 +39,7 @@ def test_brew_invalid_nvr(root_logger):
         _ = provider.build_id
 
 
+@pytest.mark.skip(reason="would be replaced by mocks")
 @pytest.mark.integration
 def test_brew_valid_task_id_actual_build(root_logger):
     provider = BrewArtifactProvider("brew.task:69098388", root_logger)
@@ -42,6 +47,7 @@ def test_brew_valid_task_id_actual_build(root_logger):
     assert len(provider.artifacts) == 21
 
 
+@pytest.mark.skip(reason="would be replaced by mocks")
 @pytest.mark.integration
 def test_brew_valid_task_id_scratch_build(root_logger):
     task_id = 69111304
