@@ -64,6 +64,27 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     .. note::
 
        This is a draft plugin to be implemented
+
+    This step downloads and makes available a given artifact
+    on the guests. Currently the artifacts supported are:
+
+    * Koji builds:
+      * prefix: ``koji.build``
+      * id: Koji build ID
+
+    * Koji tasks (scratch builds):
+      * prefix: ``koji.task``
+      * id: Koji task ID
+
+    * Koji nvr:
+      * prefix: ``koji.nvr``
+      * id: package nvr
+
+    .. code-block:: yaml
+
+        prepare:
+            how: artifact
+            provision: koji.build:123456
     """
 
     _data_class = PrepareArtifactData
