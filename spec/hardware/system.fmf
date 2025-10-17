@@ -50,9 +50,6 @@ description: |
     .. versionchanged:: 1.38
        ``beaker`` plugin supports ``model-name``
 
-    .. versionchanged:: 1.60
-       ``beaker`` plugin supports ``type``
-
 example:
   - |
     # Select any system by a given vendor
