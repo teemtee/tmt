@@ -2667,7 +2667,7 @@ class GuestSsh(Guest):
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
 
-        inventory_path = parent.plan.provision.step_workdir / 'inventory.yaml'
+        inventory_path = parent.plan.provision.ansible_inventory_path
 
         self.debug(f"Using Ansible inventory file '{inventory_path}'", level=3)
 
@@ -3449,6 +3449,31 @@ class Provision(tmt.steps.Step):
 
         return [guest for guest in self.guests if guest.is_ready]
 
+    @functools.cached_property
+    def ansible_inventory_path(self) -> Path:
+        """
+        Get path to Ansible inventory
+        This property lazily generates the Ansible inventory file on first access.
+
+        :returns: Path to the generated inventory.yaml file
+        """
+        inventory_path = Path('inventory.yaml')
+
+        # Get layout from plan-level ansible configuration and resolve path
+        layout_path = None
+        if (
+            self.plan.ansible
+            and self.plan.ansible.inventory
+            and self.plan.ansible.inventory.layout
+        ):
+            layout_path = self.plan.anchor_path / self.plan.ansible.inventory.layout
+
+        inventory = self._ansible_inventory.generate(self.ready_guests, layout_path)
+        self.write(inventory_path, tmt.utils.dict_to_yaml(inventory))
+        self.info('ansible', f"Inventory saved to '{inventory_path}'")
+
+        return self.step_workdir / inventory_path
+
     def __init__(
         self,
         *,
@@ -3507,25 +3532,6 @@ class Provision(tmt.steps.Step):
         except tmt.utils.FileError:
             self.debug('Provisioned guests not found.', level=2)
 
-    def _generate_ansible_inventory(self) -> None:
-        """Generate Ansible inventory from provisioned guests."""
-        try:
-            # Get layout from plan-level ansible configuration and resolve path
-            layout_path = None
-            if (
-                self.plan.ansible
-                and self.plan.ansible.inventory
-                and self.plan.ansible.inventory.layout
-            ):
-                layout_path = self.plan.anchor_path / self.plan.ansible.inventory.layout
-
-            inventory = self._ansible_inventory.generate(self.guests, layout_path)
-            inventory_path = Path('inventory.yaml')
-            self.write(inventory_path, tmt.utils.dict_to_yaml(inventory))
-            self.info('ansible', f"Inventory saved to '{inventory_path}'")
-        except tmt.utils.FileError as exc:
-            self.debug(f"Failed to save Ansible inventory: {exc}")
-
     def save(self) -> None:
         """
         Save guest data to the workdir
@@ -3540,8 +3546,6 @@ class Provision(tmt.steps.Step):
             self.write(Path('guests.yaml'), tmt.utils.dict_to_yaml(raw_guest_data))
         except tmt.utils.FileError:
             self.debug('Failed to save provisioned guests.')
-
-        self._generate_ansible_inventory()
 
     def wake(self) -> None:
         """

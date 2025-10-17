@@ -19,7 +19,7 @@ rlJournalStart
         # Run the plan that provisions a single guest with default layout
         rlRun -s "${tmt_command} ${planName}" 0
 
-        # Check that inventory file was generated in the provision step and directory
+        # Check that inventory file was generated
         inventory_file="$run/$planName/provision/inventory.yaml"
         if [ -n "$inventory_file" ] && rlAssertExists "$inventory_file" "Inventory file should exist"; then
             # Verify basic inventory structure with default layout
@@ -106,7 +106,7 @@ rlJournalStart
 
         # Check that inventory file was generated
         inventory_file="$run/$planName/provision/inventory.yaml"
-        if [ -n "$inventory_file" ] && rlAssertExists "$inventory_file" "Inventory file should exist"; then
+        if [ -n "$inventory_file" ] && rlAssertExists "$inventory_file" "should exist"; then
             rlRun "cat $inventory_file"
 
             # Verify 'all' group is present (even if not in layout)
