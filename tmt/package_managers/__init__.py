@@ -12,6 +12,8 @@ from tmt.utils import Command, CommandOutput, GeneralError, Path, ShellScript
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
+
+    # TODO: Move Repository abstraction to tmt.package_manager subpackage
     from tmt.steps.prepare.artifact.providers import Repository
     from tmt.steps.provision import Guest
 
@@ -203,13 +205,13 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
-    def repoquery(self, repository: "Repository") -> ShellScript:
+    def packages(self, repository: "Repository") -> ShellScript:
         """
-        Query the packages available in the specified repository.
+        List packages available in the specified repository.
 
         :param repository: The repository to query.
         :returns: A shell script to list packages in the repository.
-        :raises NotImplementedError: If the package manager does not support repoquery.
+        :raises NotImplementedError: If the package manager does not support listing packages.
         """
         raise NotImplementedError
 
@@ -296,7 +298,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         :param repository: The repository to query.
         :returns: A list of package names available in the repository.
         """
-        script = self.engine.repoquery(repository)
+        script = self.engine.packages(repository)
         output = self.guest.execute(script)
         stdout = output.stdout
 

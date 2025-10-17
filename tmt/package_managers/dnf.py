@@ -11,6 +11,8 @@ from tmt.package_managers import (
     escape_installables,
     provides_package_manager,
 )
+
+# TODO: Move Repository abstraction to tmt.package_manager subpackage
 from tmt.steps.prepare.artifact.providers import Repository
 from tmt.utils import Command, GeneralError, RunError, ShellScript
 
@@ -175,7 +177,7 @@ class DnfEngine(PackageManagerEngine):
             EOF"""
         )
 
-    def repoquery(self, repository: Repository) -> ShellScript:
+    def packages(self, repository: Repository) -> ShellScript:
         repo_ids = " ".join(f"--enablerepo={repo_id}" for repo_id in repository.repo_ids)
         qf = "'%{name} %{epoch} %{version} %{release} %{arch}'"
         return ShellScript(
