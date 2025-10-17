@@ -1,10 +1,11 @@
 import copy
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 import click
 import fmf
 
 import tmt
+import tmt.queue
 import tmt.steps
 from tmt.container import container
 from tmt.options import option
@@ -12,6 +13,7 @@ from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult, ResultOutcome
 from tmt.steps import (
     Action,
+    ActionTask,
     Method,
     PhaseQueue,
     PluginOutcome,
@@ -168,33 +170,48 @@ class Finish(tmt.steps.Step):
 
                 guest_copies.append(guest_copy)
 
-            queue: PhaseQueue[FinishStepData, PluginOutcome] = PhaseQueue(
-                'finish', self._logger.descend(logger_name=f'{self}.queue')
+            # Create two queues
+            plugin_queue: PhaseQueue[FinishStepData, PluginOutcome] = PhaseQueue(
+                'finish-plugins', self._logger.descend(logger_name=f'{self}.plugin-queue')
             )
+            action_queue: PhaseQueue[FinishStepData, PluginOutcome] = PhaseQueue(
+                'finish-actions', self._logger.descend(logger_name=f'{self}.action-queue')
+            )
+
+            # Separate plugins and actions
+            plugins: list[FinishPlugin[FinishStepData]] = []
+            actions: list[Action] = []
 
             for phase in self.phases(classes=(Action, FinishPlugin)):
                 if isinstance(phase, Action):
-                    queue.enqueue_action(phase=phase)
+                    actions.append(phase)
 
-                elif phase.enabled_by_when:
-                    queue.enqueue_plugin(
-                        phase=phase,  # type: ignore[arg-type]
-                        guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)],
-                    )
+                elif isinstance(phase, FinishPlugin) and phase.enabled_by_when:
+                    # FIXME: cast() - see https://github.com/teemtee/tmt/issues/1599
+                    plugins.append(cast(FinishPlugin[FinishStepData], phase))
+
+            # Enqueue plugins
+            for phase in plugins:
+                plugin_queue.enqueue_plugin(
+                    phase=phase,
+                    guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)],
+                )
 
             results: list[PhaseResult] = []
             exceptions: list[Exception] = []
 
             def _record_exception(
-                outcome: PluginTask[FinishStepData, PluginOutcome], exc: Exception
+                outcome: Union[ActionTask, PluginTask[FinishStepData, PluginOutcome]],
+                exc: Exception,
             ) -> None:
                 outcome.logger.fail(str(exc))
 
                 exceptions.append(exc)
 
-            for outcome in queue.run():
-                if not isinstance(outcome.phase, FinishPlugin):
-                    continue
+            # Run plugin queue
+            for outcome in plugin_queue.run():
+                # Plugins are... plugins.
+                assert isinstance(outcome.phase, FinishPlugin)
 
                 # Possible outcomes: plugin crashed, raised an exception,
                 # and that exception has been delivered to the top of the
@@ -233,18 +250,12 @@ class Finish(tmt.steps.Step):
 
             self._save_results(results)
 
-            if exceptions:
-                raise tmt.utils.GeneralError(
-                    'finish step failed',
-                    causes=exceptions,
-                )
-
             # To separate "finish" from "pull" queue visually
-            self.info('')
+            if plugins:
+                self.info('')
 
-            # Pull artifacts created in the plan data directory
-            # if there was at least one plugin executed
-            if self.phases() and guest_copies:
+            # Pull artifacts created by plugins
+            if plugins and guest_copies:
                 sync_with_guests(
                     self,
                     'pull',
@@ -252,9 +263,26 @@ class Finish(tmt.steps.Step):
                     self._logger,
                 )
 
-                # To separate "finish" from "pull" queue visually
-                self.info('')
+                # To separate "pull" from "actions" queue visually
+                if actions:
+                    self.info('')
 
+            # Now, enqueue and run actions
+            for phase in actions:
+                action_queue.enqueue_action(phase=phase)
+
+            for outcome in action_queue.run():
+                # Actions (like login) don't produce results, but can fail.
+                if outcome.exc:
+                    _record_exception(outcome, outcome.exc)
+
+            if exceptions:
+                raise tmt.utils.GeneralError(
+                    'finish step failed',
+                    causes=exceptions,
+                )
+
+            # To separate "finish" from "pull" queue visually
             self.summary()
 
         # Update status and save
