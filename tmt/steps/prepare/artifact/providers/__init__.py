@@ -297,11 +297,11 @@ class Repository:
         try:
             config.read_string(self.content)
             return config.sections()
-        except configparser.Error as e:
+        except configparser.Error as error:
             raise tmt.utils.GeneralError(
                 f"Failed to parse the content of repository '{self.name}'. "
                 "The .repo file may be malformed."
-            ) from e
+            ) from error
 
     @property
     def filename(self) -> str:
