@@ -78,7 +78,7 @@ class BrewArtifactProvider(KojiArtifactProvider):
             f"{name}-{version}-{release}.{arch}.rpm"
         )
 
-        return urljoin(self._top_url + "/", path)
+        return urljoin(self._top_url, path)
 
 
 @provides_artifact_provider("brew.build")  # type: ignore[arg-type]
