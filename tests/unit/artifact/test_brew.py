@@ -25,6 +25,7 @@ def test_brew_valid_nvr(root_logger):
     assert provider.build_id == 3866328  # Known build ID for this NVR
 
 
+@pytest.mark.integration
 def test_brew_invalid_nvr(root_logger):
     from tmt.utils import GeneralError
 
