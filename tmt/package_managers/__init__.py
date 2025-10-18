@@ -205,7 +205,7 @@ class PackageManagerEngine(tmt.utils.Common):
         Install a repository by placing its configuration in /etc/yum.repos.d/.
 
         :param repository: The repository to install.
-        :returns: A shell script to install the repository and verify its presence.
+        :returns: A shell script to install the repository.
         """
         raise NotImplementedError
 
