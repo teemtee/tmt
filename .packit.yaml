@@ -144,7 +144,6 @@ jobs:
 
   # Test virtual & bootc provision plugins
   - <<: *test-base
-    <<: *internal
     <<: *require-full-tests
     identifier: provision
     tmt_plan: '/plans/provision/(bootc|virtual)'
@@ -153,6 +152,7 @@ jobs:
         - tmt:
             context:
               how: provision
+          <<: *copr-teemtee-stable
           <<: *tmt-cloud-resources
 
   # Test internal plugins
