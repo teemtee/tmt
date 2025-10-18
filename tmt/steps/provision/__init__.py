@@ -775,6 +775,9 @@ class GuestFacts(SerializableContainer):
         return output.stdout.strip() == 'root'
 
     def _query_sudo_prefix(self, guest: 'Guest') -> Optional[str]:
+        # Special handle for `tmt runner`, we do not expect to use sudo for it.
+        if guest.name == "tmt runner":
+            return ""
         # Note: we cannot reuse `is_superuser` fact so we just recall the query for now
         if self._query_is_superuser(guest):
             return ""
