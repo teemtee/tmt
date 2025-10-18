@@ -1,3 +1,4 @@
+# test_repository.py
 import hashlib
 from unittest.mock import MagicMock, patch
 
@@ -35,9 +36,11 @@ EXPECTED_REPO_IDS = ["docker-ce-stable", "docker-ce-test", "docker-ce-nightly"]
 
 # Malformed content for error handling tests
 MALFORMED_REPO_CONTENT = """
-[my-repo
-name=Missing closing bracket
+[my-repo]
+name
 """
+
+NO_SECTION_CONTENT = "name=No sections here\nenabled=1"
 
 
 # Fixture to create a temporary .repo file
@@ -49,9 +52,17 @@ def temp_repo_file(tmp_path):
     return repo_file
 
 
+@pytest.fixture
+def temp_repo_file_no_ext(tmp_path):
+    """Creates a temporary repo file without .repo extension"""
+    repo_file = tmp_path / "docker-ce"
+    repo_file.write_text(VALID_REPO_CONTENT)
+    return repo_file
+
+
 def test_init_from_content(root_logger):
     """Test successful initialization from a content string"""
-    repo = Repository(logger=root_logger, name="from-content", content=VALID_REPO_CONTENT)
+    repo = Repository.create(logger=root_logger, name="from-content", content=VALID_REPO_CONTENT)
     assert repo.name == "from-content"
     assert repo.content == VALID_REPO_CONTENT
     assert repo.repo_ids == EXPECTED_REPO_IDS
@@ -60,7 +71,7 @@ def test_init_from_content(root_logger):
 
 def test_init_from_file(root_logger, temp_repo_file):
     """Test successful initialization from a local file path"""
-    repo = Repository(logger=root_logger, file_path=temp_repo_file)
+    repo = Repository.create(logger=root_logger, file_path=temp_repo_file)
     assert repo.name == "docker-ce"
     assert repo.content == VALID_REPO_CONTENT
     assert repo.repo_ids == EXPECTED_REPO_IDS
@@ -77,7 +88,7 @@ def test_init_from_url(mock_retry_session, root_logger):
     mock_retry_session.return_value.__enter__.return_value = mock_session
 
     repo_url = "https://download.docker.com/linux/centos/docker-ce.repo"
-    repo = Repository(logger=root_logger, url=repo_url)
+    repo = Repository.create(logger=root_logger, url=repo_url)
 
     assert repo.name == "docker-ce"
     assert repo.content == VALID_REPO_CONTENT
@@ -85,17 +96,11 @@ def test_init_from_url(mock_retry_session, root_logger):
     mock_session.get.assert_called_once_with(repo_url)
 
 
-def test_init_no_source_fails(root_logger):
-    """Test that initialization fails if no source is provided"""
-    with pytest.raises(GeneralError, match="Repository content could not be loaded"):
-        Repository(logger=root_logger)
-
-
 @patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
 def test_name_derivation(mock_retry_session, root_logger, temp_repo_file):
     """Test the logic for deriving the repository name"""
     # Provided name takes precedence
-    repo = Repository(logger=root_logger, name="explicit-name", content="[foo]")
+    repo = Repository.create(logger=root_logger, name="explicit-name", content="[foo]")
     assert repo.name == "explicit-name"
 
     # Mock the session for the URL test
@@ -107,59 +112,31 @@ def test_name_derivation(mock_retry_session, root_logger, temp_repo_file):
     mock_retry_session.return_value.__enter__.return_value = mock_session
 
     # Name derived from URL
-    repo = Repository(logger=root_logger, url="http://a.b/c/docker-ce.repo")
+    repo = Repository.create(logger=root_logger, url="http://a.b/c/docker-ce.repo")
     assert repo.name == "docker-ce"
 
     # Name derived from file path
-    repo = Repository(logger=root_logger, file_path=temp_repo_file)
+    repo = Repository.create(logger=root_logger, file_path=temp_repo_file)
     assert repo.name == "docker-ce"
-
-    # Fallback name
-    repo = Repository(logger=root_logger, content="[foo]")
-    assert repo.name.startswith("repo-")
 
 
 def test_repo_id_parsing(root_logger):
     """Test the parsing of repo IDs from content"""
     # Valid content with multiple sections
-    repo = Repository(logger=root_logger, content=VALID_REPO_CONTENT)
+    repo = Repository.create(logger=root_logger, name="valid", content=VALID_REPO_CONTENT)
     assert repo.repo_ids == EXPECTED_REPO_IDS
 
-    # Content with no sections is invalid for configparser
-    with pytest.raises(GeneralError, match=r"The .repo file may be malformed"):
-        Repository(logger=root_logger, content="name=No sections here\nenabled=1")
+    # Content with no sections (empty)
+    with pytest.raises(GeneralError, match="No repository sections found"):
+        Repository.create(logger=root_logger, name="no-sections", content="")
+
+    # Content with options but no section header
+    with pytest.raises(GeneralError, match="No repository sections found"):
+        Repository.create(logger=root_logger, name="no-sections", content=NO_SECTION_CONTENT)
 
     # Malformed content should also raise an error
     with pytest.raises(GeneralError, match=r"The .repo file may be malformed"):
-        Repository(logger=root_logger, content=MALFORMED_REPO_CONTENT)
-
-
-@patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
-def test_deterministic_id(mock_retry_session, root_logger):
-    """Test that the generated ID is deterministic"""
-    repo_content = "[docker-ce-stable]\nname=Docker CE Stable"
-    # Mock the session for URL tests
-    mock_session = MagicMock()
-    mock_response = MagicMock()
-    mock_response.text = repo_content
-    mock_response.raise_for_status.return_value = None
-    mock_session.get.return_value = mock_response
-    mock_retry_session.return_value.__enter__.return_value = mock_session
-
-    repo_url = "http://example.com/docker.repo"
-
-    # Same URL should produce the same ID
-    repo1_url = Repository(logger=root_logger, url=repo_url)
-    repo2_url = Repository(logger=root_logger, url=repo_url)
-    assert repo1_url.id == repo2_url.id
-
-    # Same content should produce the same ID
-    repo1_content = Repository(logger=root_logger, name="same-name", content=repo_content)
-    repo2_content = Repository(logger=root_logger, name="same-name", content=repo_content)
-    assert repo1_content.id == repo2_content.id
-
-    # Different sources should produce different IDs
-    assert repo1_url.id != repo1_content.id
+        Repository.create(logger=root_logger, name="malformed", content=MALFORMED_REPO_CONTENT)
 
 
 @patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
@@ -170,10 +147,153 @@ def test_failed_url_fetch(mock_retry_session, root_logger):
     mock_retry_session.return_value.__enter__.return_value = mock_session
 
     with pytest.raises(GeneralError, match="Failed to fetch repository content"):
-        Repository(logger=root_logger, url="http://example.com/invalid.repo")
+        Repository.create(logger=root_logger, url="http://example.com/invalid.repo")
 
 
 def test_nonexistent_file(root_logger):
     """Test that a non-existent file path raises an error"""
     with pytest.raises(GeneralError, match="Failed to read repository file"):
-        Repository(logger=root_logger, file_path=Path("/no/such/file.repo"))
+        Repository.create(logger=root_logger, file_path=Path("/no/such/file.repo"))
+
+
+def test_url_trailing_slash(root_logger):
+    """Test URL with trailing slash"""
+    with patch(
+        'tmt.steps.prepare.artifact.providers.tmt.utils.retry_session'
+    ) as mock_retry_session:
+        mock_session = MagicMock()
+        mock_response = MagicMock()
+        mock_response.text = VALID_REPO_CONTENT
+        mock_response.raise_for_status.return_value = None
+        mock_session.get.return_value = mock_response
+        mock_retry_session.return_value.__enter__.return_value = mock_session
+
+        repo = Repository.create(root_logger, url="https://example.com/repo/")
+        assert repo.name == "repo"
+
+
+def test_url_no_repo_ext(root_logger):
+    """Test URL without .repo extension"""
+    with patch(
+        'tmt.steps.prepare.artifact.providers.tmt.utils.retry_session'
+    ) as mock_retry_session:
+        mock_session = MagicMock()
+        mock_response = MagicMock()
+        mock_response.text = VALID_REPO_CONTENT
+        mock_response.raise_for_status.return_value = None
+        mock_session.get.return_value = mock_response
+        mock_retry_session.return_value.__enter__.return_value = mock_session
+
+        repo = Repository.create(root_logger, url="https://example.com/docker-ce")
+        assert repo.name == "docker-ce"
+
+
+def test_file_no_repo_ext(root_logger, temp_repo_file_no_ext):
+    """Test file without .repo extension"""
+    repo = Repository.create(logger=root_logger, file_path=temp_repo_file_no_ext)
+    assert repo.name == "docker-ce"
+
+
+def test_content_no_name(root_logger):
+    """Test content without name raises error"""
+    with pytest.raises(GeneralError, match="Name must be provided"):
+        Repository.create(logger=root_logger, content=VALID_REPO_CONTENT)
+
+
+def test_factory_method(root_logger, temp_repo_file):
+    """Test the factory method creates correct subclass"""
+    # From URL
+    with patch(
+        'tmt.steps.prepare.artifact.providers.tmt.utils.retry_session'
+    ) as mock_retry_session:
+        mock_session = MagicMock()
+        mock_response = MagicMock()
+        mock_response.text = VALID_REPO_CONTENT
+        mock_response.raise_for_status.return_value = None
+        mock_session.get.return_value = mock_response
+        mock_retry_session.return_value.__enter__.return_value = mock_session
+
+        repo = Repository.create(logger=root_logger, url="https://example.com/docker-ce.repo")
+        from tmt.steps.prepare.artifact.providers import UrlRepository
+
+        assert isinstance(repo, UrlRepository)
+        assert repo.name == "docker-ce"
+
+    # From file_path
+    repo = Repository.create(logger=root_logger, file_path=temp_repo_file)
+    from tmt.steps.prepare.artifact.providers import FileRepository
+
+    assert isinstance(repo, FileRepository)
+    assert repo.name == "docker-ce"
+
+    # From content
+    repo = Repository.create(logger=root_logger, content=VALID_REPO_CONTENT, name="from-content")
+    from tmt.steps.prepare.artifact.providers import ContentRepository
+
+    assert isinstance(repo, ContentRepository)
+    assert repo.name == "from-content"
+
+    # No source
+    with pytest.raises(GeneralError, match="At least one of"):
+        Repository.create(logger=root_logger)
+
+    # Multiple sources
+    with pytest.raises(GeneralError, match="Only one of"):
+        Repository.create(logger=root_logger, url="url", file_path=temp_repo_file)
+
+    # Content without name
+    with pytest.raises(GeneralError, match="Name must be provided"):
+        Repository.create(logger=root_logger, content=VALID_REPO_CONTENT)
+
+
+@patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
+def test_invalid_url_format(mock_retry_session, root_logger):
+    """Test initialization with invalid URL format"""
+    mock_session = MagicMock()
+    mock_session.get.side_effect = requests.exceptions.InvalidURL("Invalid URL")
+    mock_retry_session.return_value.__enter__.return_value = mock_session
+
+    with pytest.raises(GeneralError, match="Failed to fetch repository content"):
+        Repository.create(logger=root_logger, url="invalid_url")
+
+
+@patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
+def test_url_ends_with_slash(mock_retry_session, root_logger):
+    """Test URL that ends with a slash"""
+    mock_session = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = VALID_REPO_CONTENT
+    mock_response.raise_for_status.return_value = None
+    mock_session.get.return_value = mock_response
+    mock_retry_session.return_value.__enter__.return_value = mock_session
+
+    repo = Repository.create(logger=root_logger, url="https://example.com/repo/")
+    assert repo.name == "repo"
+
+
+@patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
+def test_url_no_repo_extension(mock_retry_session, root_logger):
+    """Test URL that does not end with .repo"""
+    mock_session = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = VALID_REPO_CONTENT
+    mock_response.raise_for_status.return_value = None
+    mock_session.get.return_value = mock_response
+    mock_retry_session.return_value.__enter__.return_value = mock_session
+
+    repo = Repository.create(logger=root_logger, url="https://example.com/docker-ce")
+    assert repo.name == "docker-ce"
+
+
+def test_file_no_repo_extension(root_logger, temp_repo_file_no_ext):
+    """Test file path that does not end with .repo"""
+    repo = Repository.create(logger=root_logger, file_path=temp_repo_file_no_ext)
+    assert repo.name == "docker-ce"
+    assert repo.content == VALID_REPO_CONTENT
+    assert repo.repo_ids == EXPECTED_REPO_IDS
+
+
+def test_url_no_path(root_logger):
+    """Test URL with no path raises error"""
+    with pytest.raises(GeneralError, match="Could not derive repository name from URL"):
+        Repository.create(root_logger, url="https://example.com/")

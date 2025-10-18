@@ -4,13 +4,12 @@ Abstract base class for artifact providers.
 
 import configparser
 import functools
-import hashlib
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
 from functools import cached_property
 from re import Pattern
 from shlex import quote
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar, cast
 from urllib.parse import urlparse
 
 import tmt
@@ -201,112 +200,141 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
                 yield artifact
 
 
-class Repository:
+class Repository(ABC):
     """A class to represent a dnf/yum software repository."""
 
-    def __init__(
-        self,
+    def __init__(self, logger: tmt.log.Logger, name: Optional[str] = None):
+        self.logger = logger
+        self._name = name
+        _ = self.name  # Force name derivation
+        self._repo_ids = self._get_repo_ids()
+
+    @classmethod
+    def create(
+        cls,
         logger: tmt.log.Logger,
         name: Optional[str] = None,
         url: Optional[str] = None,
         file_path: Optional[Path] = None,
         content: Optional[str] = None,
-    ):
-        self.logger = logger
-        self._provided_name = name
-        self._provided_url = url
-        self._provided_file_path = file_path
-        self._provided_content = content
-
-        if not self.content:
-            raise tmt.utils.GeneralError(
-                "Repository content could not be loaded. "
-                "You must provide a 'url', 'file_path', or 'content'."
+    ) -> "Repository":
+        provided = sum(x is not None for x in (url, file_path, content))
+        if provided == 0:
+            raise GeneralError(
+                "At least one of 'url', 'file_path', or 'content' must be provided."
             )
+        if provided > 1:
+            raise GeneralError("Only one of 'url', 'file_path', or 'content' should be provided.")
 
-        if not self.repo_ids:
-            self.logger.warning(
-                f"No repository sections (e.g., [my-repo]) found in the content for '{self.name}'."
-            )
+        if url is not None:
+            return UrlRepository(logger=logger, url=url, name=name)
+        if file_path is not None:
+            return FileRepository(logger=logger, file_path=file_path, name=name)
+        if content is not None:
+            if name is None:
+                raise GeneralError("Name must be provided when creating repository from content.")
+            return ContentRepository(logger=logger, content=content, name=name)
+        raise GeneralError("No source provided.")  # Unreachable
 
-    @functools.cached_property
-    def id(self) -> str:
-        """A deterministic ID based on the repository's definition."""
-        hasher = hashlib.sha256()
-        source_data = ""
+    @cached_property
+    @abstractmethod
+    def content(self) -> str:
+        raise NotImplementedError
 
-        # Use the first available source for the hash for true determinism
-        if self._provided_url:
-            source_data = self._provided_url
-        elif self._provided_file_path:
-            source_data = str(self._provided_file_path.resolve())
-        elif self._provided_content:
-            # Normalize whitespace to ensure content hash is consistent
-            source_data = "\n".join(
-                line.strip() for line in self._provided_content.strip().splitlines()
-            )
-
-        hasher.update(source_data.encode('utf-8'))
-        return hasher.hexdigest()
-
-    @functools.cached_property
+    @cached_property
     def name(self) -> str:
-        """Determine the repository name, using a provided name or deriving it."""
-        if self._provided_name:
-            return self._provided_name
-        if self._provided_url:
-            # Use the last path segment from the URL
-            parsed_path = urlparse(self._provided_url).path
-            return parsed_path.rstrip('/').split('/')[-1].replace('.repo', '')
-        if self._provided_file_path:
-            # Derive from local filename
-            return self._provided_file_path.name.replace('.repo', '')
-        # Fallback to a name derived from the unique ID
-        return f"repo-{self.id[:8]}"
+        if self._name:
+            return self._name
+        return self._derive_name()
 
-    @functools.cached_property
-    def content(self) -> Optional[str]:
-        """Loads the repository content from the provided source."""
-        if self._provided_content:
-            return self._provided_content
-        if self._provided_url:
-            try:
-                with tmt.utils.retry_session() as session:
-                    response = session.get(self._provided_url)
-                    response.raise_for_status()
-                    return response.text
-            except Exception as error:
-                raise tmt.utils.GeneralError(
-                    f"Failed to fetch repository content from '{self._provided_url}'."
-                ) from error
-        if self._provided_file_path:
-            try:
-                return self._provided_file_path.read_text()
-            except OSError as error:
-                raise tmt.utils.GeneralError(
-                    f"Failed to read repository file '{self._provided_file_path}'."
-                ) from error
-        return None
+    @abstractmethod
+    def _derive_name(self) -> str:
+        raise NotImplementedError
 
-    @functools.cached_property
-    def repo_ids(self) -> list[str]:
-        """Parses the .repo content to extract repository IDs using configparser."""
-        if not self.content:
-            return []
+    def _get_repo_ids(self) -> list[str]:
+        content = self.content
         config = configparser.ConfigParser()
         try:
-            config.read_string(self.content)
-            return config.sections()
+            config.read_string(content)
+            sections = config.sections()
+            if not sections:
+                raise GeneralError(
+                    f"No repository sections found in the content for '{self.name}'."
+                )
+            return sections
+        except configparser.MissingSectionHeaderError:
+            raise GeneralError(f"No repository sections found in the content for '{self.name}'.")
         except configparser.Error as error:
-            raise tmt.utils.GeneralError(
+            raise GeneralError(
                 f"Failed to parse the content of repository '{self.name}'. "
                 "The .repo file may be malformed."
             ) from error
 
     @property
+    def repo_ids(self) -> list[str]:
+        return self._repo_ids
+
+    @property
     def filename(self) -> str:
-        """The filename for the repository file on the guest."""
         return f"{self.name}.repo"
+
+
+class UrlRepository(Repository):
+    def __init__(self, logger: tmt.log.Logger, url: str, name: Optional[str] = None):
+        self.url = url
+        super().__init__(logger, name)
+
+    @cached_property
+    def content(self) -> str:
+        try:
+            with tmt.utils.retry_session() as session:
+                response = session.get(self.url)
+                response.raise_for_status()
+                return response.text
+        except Exception as error:
+            raise GeneralError(f"Failed to fetch repository content from '{self.url}'.") from error
+
+    def _derive_name(self) -> str:
+        parsed_url = urlparse(self.url)
+        parsed_path = parsed_url.path.rstrip('/').split('/')[-1]
+        name = parsed_path.replace('.repo', '')
+        if not name:
+            raise GeneralError(f"Could not derive repository name from URL '{self.url}'.")
+        return name
+
+
+class FileRepository(Repository):
+    def __init__(self, logger: tmt.log.Logger, file_path: Path, name: Optional[str] = None):
+        self._file_path = file_path
+        super().__init__(logger, name)
+
+    @cached_property
+    def content(self) -> str:
+        try:
+            return self._file_path.read_text()
+        except OSError as error:
+            raise GeneralError(f"Failed to read repository file '{self._file_path}'.") from error
+
+    def _derive_name(self) -> str:
+        name = self._file_path.stem
+        if not name:
+            raise GeneralError(
+                f"Could not derive repository name from file path '{self._file_path}'."
+            )
+        return name
+
+
+class ContentRepository(Repository):
+    def __init__(self, logger: tmt.log.Logger, content: str, name: str):
+        self._content = content
+        super().__init__(logger, name)
+
+    @cached_property
+    def content(self) -> str:
+        return self._content
+
+    def _derive_name(self) -> str:
+        raise GeneralError("Name must be provided when creating repository from content.")
 
 
 _PROVIDER_REGISTRY: PluginRegistry[type[ArtifactProvider[ArtifactInfo]]] = PluginRegistry(
