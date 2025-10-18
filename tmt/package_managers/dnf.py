@@ -191,10 +191,9 @@ EOF
         :returns: A shell script to list packages in the repository.
         """
         repo_ids = " ".join(f"--enablerepo={repo_id}" for repo_id in repository.repo_ids)
-        qf = "'%{name} %{epoch} %{version} %{release} %{arch}'"
         return ShellScript(
             f"""
-            {self.command.to_script()} repoquery --disablerepo='*' {repo_ids} --queryformat {qf}
+            {self.command.to_script()} repoquery --disablerepo='*' {repo_ids}
             """
         )
 

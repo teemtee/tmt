@@ -123,7 +123,7 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
                 name, epoch, version, release, arch = rpm.strip().split()
                 nvr = f"{name}-{version}-{release}"
                 raw_artifact = {"nvr": nvr, "arch": arch, "url": self.id, "epoch": epoch}
-                self._rpm_list.append(RpmArtifactInfo(_raw_artifact=raw_artifact))
+                self._rpm_list.append(RpmArtifactInfo(_raw_artifact=rpm))
             except ValueError:
                 self.logger.warning(f"Skipping malformed RPM entry: '{rpm}'")
 
