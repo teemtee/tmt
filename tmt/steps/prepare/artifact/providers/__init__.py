@@ -9,10 +9,9 @@ from collections.abc import Iterator, Sequence
 from functools import cached_property
 from re import Pattern
 from shlex import quote
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar, cast, overload
 from urllib.parse import urlparse
 
-import tmt
 import tmt.log
 import tmt.utils
 from tmt._compat.typing import TypeAlias
@@ -200,24 +199,86 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
                 yield artifact
 
 
-class Repository(ABC):
+class Repository:
     """A class to represent a dnf/yum software repository."""
 
-    def __init__(self, logger: tmt.log.Logger, name: Optional[str] = None):
+    def __init__(self, logger: tmt.log.Logger, name: str, content: str):
         self.logger = logger
-        self._name = name
-        _ = self.name  # Force name derivation
+        self.name = name
+        self.content = content
         self._repo_ids = self._get_repo_ids()
+
+    # The @overload decorator is used here to provide type hinting for multiple possible
+    # call signatures of the 'create' class method. This helps static type checkers like
+    # mypy understand that the method can be called in different ways (e.g., with 'url',
+    # 'file_path', or 'content'), even though Python doesn't support true function overloading.
+    # This specific overload defines the signature when creating a Repository from a URL.
+    @overload
+    @classmethod
+    def create(
+        cls,
+        logger: tmt.log.Logger,
+        *,
+        name: Optional[str] = None,
+        url: str,
+        file_path: None = None,
+        content: None = None,
+    ) -> "Repository": ...
+
+    # This @overload decorator defines the signature when creating a Repository from a file path.
+    # It specifies the types for parameters when 'file_path' is provided,
+    # and 'url' and 'content' are None.
+    @overload
+    @classmethod
+    def create(
+        cls,
+        logger: tmt.log.Logger,
+        *,
+        name: Optional[str] = None,
+        file_path: Path,
+        url: None = None,
+        content: None = None,
+    ) -> "Repository": ...
+
+    # This @overload decorator defines the signature when creating a Repository directly
+    # from a content string. It specifies the types for parameters when 'content'
+    # is provided, along with a required 'name' and 'url' and 'file_path' are None.
+    @overload
+    @classmethod
+    def create(
+        cls,
+        logger: tmt.log.Logger,
+        *,
+        name: str,
+        content: str,
+        url: None = None,
+        file_path: None = None,
+    ) -> "Repository": ...
 
     @classmethod
     def create(
         cls,
         logger: tmt.log.Logger,
+        *,
         name: Optional[str] = None,
         url: Optional[str] = None,
         file_path: Optional[Path] = None,
         content: Optional[str] = None,
     ) -> "Repository":
+        """
+        Create a Repository instance from one of the provided sources: URL, file path, or content.
+
+        This method acts as a factory, delegating to specific from_* methods.
+        Exactly one of 'url', 'file_path', or 'content' must be provided.
+
+        :param logger: The logger instance to use.
+        :param name: Optional name for the repository. It will be derived from the source.
+        :param url: URL to fetch the repository content from.
+        :param file_path: Local file path to read the repository content from.
+        :param content: Direct string content of the repository.
+        :returns: A Repository instance.
+        :raises GeneralError: If invalid combination of arguments is provided.
+        """
         provided = sum(x is not None for x in (url, file_path, content))
         if provided == 0:
             raise GeneralError(
@@ -227,29 +288,83 @@ class Repository(ABC):
             raise GeneralError("Only one of 'url', 'file_path', or 'content' should be provided.")
 
         if url is not None:
-            return UrlRepository(logger=logger, url=url, name=name)
+            return cls.from_url(logger=logger, url=url, name=name)
         if file_path is not None:
-            return FileRepository(logger=logger, file_path=file_path, name=name)
+            return cls.from_file_path(logger=logger, file_path=file_path, name=name)
         if content is not None:
             if name is None:
                 raise GeneralError("Name must be provided when creating repository from content.")
-            return ContentRepository(logger=logger, content=content, name=name)
-        raise GeneralError("No source provided.")  # Unreachable
+            return cls.from_content(logger=logger, content=content, name=name)
+        raise AssertionError("No source provided.")
 
-    @cached_property
-    @abstractmethod
-    def content(self) -> str:
-        raise NotImplementedError
+    @classmethod
+    def from_url(
+        cls, logger: tmt.log.Logger, url: str, name: Optional[str] = None
+    ) -> "Repository":
+        """
+        Create a Repository instance by fetching content from a URL.
 
-    @cached_property
-    def name(self) -> str:
-        if self._name:
-            return self._name
-        return self._derive_name()
+        :param logger: The logger instance to use.
+        :param url: The URL to fetch the repository content from.
+        :param name: Optional name for the repository. If not provided, derived from the URL.
+        :returns: A Repository instance.
+        :raises GeneralError: If fetching or parsing fails.
+        """
+        try:
+            with tmt.utils.retry_session() as session:
+                response = session.get(url)
+                response.raise_for_status()
+                content = response.text
+        except Exception as error:
+            raise GeneralError(f"Failed to fetch repository content from '{url}'.") from error
 
-    @abstractmethod
-    def _derive_name(self) -> str:
-        raise NotImplementedError
+        if name is None:
+            parsed_url = urlparse(url)
+            parsed_path = parsed_url.path.rstrip('/').split('/')[-1]
+            name = parsed_path.replace('.repo', '')
+            if not name:
+                raise GeneralError(f"Could not derive repository name from URL '{url}'.")
+
+        return cls(logger=logger, name=name, content=content)
+
+    @classmethod
+    def from_file_path(
+        cls, logger: tmt.log.Logger, file_path: Path, name: Optional[str] = None
+    ) -> "Repository":
+        """
+        Create a Repository instance by reading content from a local file path.
+
+        :param logger: The logger instance to use.
+        :param file_path: The local path to the repository file.
+        :param name: Optional name for the repository. If not provided, derived from the file path.
+        :returns: A Repository instance.
+        :raises GeneralError: If reading the file fails.
+        """
+        try:
+            content = file_path.read_text()
+        except OSError as error:
+            raise GeneralError(f"Failed to read repository file '{file_path}'.") from error
+
+        if name is None:
+            name = file_path.stem
+            if not name:
+                raise GeneralError(
+                    f"Could not derive repository name from file path '{file_path}'."
+                )
+
+        return cls(logger=logger, name=name, content=content)
+
+    @classmethod
+    def from_content(cls, logger: tmt.log.Logger, content: str, name: str) -> "Repository":
+        """
+        Create a Repository instance directly from provided content string.
+
+        :param logger: The logger instance to use.
+        :param content: The string content of the repository.
+        :param name: The name for the repository (required when using content).
+        :returns: A Repository instance.
+        """
+        return cls(logger=logger, name=name, content=content)
 
     def _get_repo_ids(self) -> list[str]:
         content = self.content
@@ -277,64 +392,6 @@ class Repository(ABC):
     @property
     def filename(self) -> str:
         return f"{self.name}.repo"
-
-
-class UrlRepository(Repository):
-    def __init__(self, logger: tmt.log.Logger, url: str, name: Optional[str] = None):
-        self.url = url
-        super().__init__(logger, name)
-
-    @cached_property
-    def content(self) -> str:
-        try:
-            with tmt.utils.retry_session() as session:
-                response = session.get(self.url)
-                response.raise_for_status()
-                return response.text
-        except Exception as error:
-            raise GeneralError(f"Failed to fetch repository content from '{self.url}'.") from error
-
-    def _derive_name(self) -> str:
-        parsed_url = urlparse(self.url)
-        parsed_path = parsed_url.path.rstrip('/').split('/')[-1]
-        name = parsed_path.replace('.repo', '')
-        if not name:
-            raise GeneralError(f"Could not derive repository name from URL '{self.url}'.")
-        return name
-
-
-class FileRepository(Repository):
-    def __init__(self, logger: tmt.log.Logger, file_path: Path, name: Optional[str] = None):
-        self._file_path = file_path
-        super().__init__(logger, name)
-
-    @cached_property
-    def content(self) -> str:
-        try:
-            return self._file_path.read_text()
-        except OSError as error:
-            raise GeneralError(f"Failed to read repository file '{self._file_path}'.") from error
-
-    def _derive_name(self) -> str:
-        name = self._file_path.stem
-        if not name:
-            raise GeneralError(
-                f"Could not derive repository name from file path '{self._file_path}'."
-            )
-        return name
-
-
-class ContentRepository(Repository):
-    def __init__(self, logger: tmt.log.Logger, content: str, name: str):
-        self._content = content
-        super().__init__(logger, name)
-
-    @cached_property
-    def content(self) -> str:
-        return self._content
-
-    def _derive_name(self) -> str:
-        raise GeneralError("Name must be provided when creating repository from content.")
 
 
 _PROVIDER_REGISTRY: PluginRegistry[type[ArtifactProvider[ArtifactInfo]]] = PluginRegistry(
