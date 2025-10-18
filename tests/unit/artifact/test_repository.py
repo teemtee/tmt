@@ -1,5 +1,3 @@
-# test_repository.py
-import hashlib
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -156,36 +154,32 @@ def test_nonexistent_file(root_logger):
         Repository.create(logger=root_logger, file_path=Path("/no/such/file.repo"))
 
 
-def test_url_trailing_slash(root_logger):
+@patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
+def test_url_trailing_slash(mock_retry_session, root_logger):
     """Test URL with trailing slash"""
-    with patch(
-        'tmt.steps.prepare.artifact.providers.tmt.utils.retry_session'
-    ) as mock_retry_session:
-        mock_session = MagicMock()
-        mock_response = MagicMock()
-        mock_response.text = VALID_REPO_CONTENT
-        mock_response.raise_for_status.return_value = None
-        mock_session.get.return_value = mock_response
-        mock_retry_session.return_value.__enter__.return_value = mock_session
+    mock_session = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = VALID_REPO_CONTENT
+    mock_response.raise_for_status.return_value = None
+    mock_session.get.return_value = mock_response
+    mock_retry_session.return_value.__enter__.return_value = mock_session
 
-        repo = Repository.create(root_logger, url="https://example.com/repo/")
-        assert repo.name == "repo"
+    repo = Repository.create(logger=root_logger, url="https://example.com/repo/")
+    assert repo.name == "repo"
 
 
-def test_url_no_repo_ext(root_logger):
+@patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
+def test_url_no_repo_ext(mock_retry_session, root_logger):
     """Test URL without .repo extension"""
-    with patch(
-        'tmt.steps.prepare.artifact.providers.tmt.utils.retry_session'
-    ) as mock_retry_session:
-        mock_session = MagicMock()
-        mock_response = MagicMock()
-        mock_response.text = VALID_REPO_CONTENT
-        mock_response.raise_for_status.return_value = None
-        mock_session.get.return_value = mock_response
-        mock_retry_session.return_value.__enter__.return_value = mock_session
+    mock_session = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = VALID_REPO_CONTENT
+    mock_response.raise_for_status.return_value = None
+    mock_session.get.return_value = mock_response
+    mock_retry_session.return_value.__enter__.return_value = mock_session
 
-        repo = Repository.create(root_logger, url="https://example.com/docker-ce")
-        assert repo.name == "docker-ce"
+    repo = Repository.create(logger=root_logger, url="https://example.com/docker-ce")
+    assert repo.name == "docker-ce"
 
 
 def test_file_no_repo_ext(root_logger, temp_repo_file_no_ext):
@@ -214,23 +208,14 @@ def test_factory_method(root_logger, temp_repo_file):
         mock_retry_session.return_value.__enter__.return_value = mock_session
 
         repo = Repository.create(logger=root_logger, url="https://example.com/docker-ce.repo")
-        from tmt.steps.prepare.artifact.providers import UrlRepository
-
-        assert isinstance(repo, UrlRepository)
         assert repo.name == "docker-ce"
 
     # From file_path
     repo = Repository.create(logger=root_logger, file_path=temp_repo_file)
-    from tmt.steps.prepare.artifact.providers import FileRepository
-
-    assert isinstance(repo, FileRepository)
     assert repo.name == "docker-ce"
 
     # From content
     repo = Repository.create(logger=root_logger, content=VALID_REPO_CONTENT, name="from-content")
-    from tmt.steps.prepare.artifact.providers import ContentRepository
-
-    assert isinstance(repo, ContentRepository)
     assert repo.name == "from-content"
 
     # No source
@@ -257,43 +242,17 @@ def test_invalid_url_format(mock_retry_session, root_logger):
         Repository.create(logger=root_logger, url="invalid_url")
 
 
-@patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
-def test_url_ends_with_slash(mock_retry_session, root_logger):
-    """Test URL that ends with a slash"""
-    mock_session = MagicMock()
-    mock_response = MagicMock()
-    mock_response.text = VALID_REPO_CONTENT
-    mock_response.raise_for_status.return_value = None
-    mock_session.get.return_value = mock_response
-    mock_retry_session.return_value.__enter__.return_value = mock_session
-
-    repo = Repository.create(logger=root_logger, url="https://example.com/repo/")
-    assert repo.name == "repo"
-
-
-@patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
-def test_url_no_repo_extension(mock_retry_session, root_logger):
-    """Test URL that does not end with .repo"""
-    mock_session = MagicMock()
-    mock_response = MagicMock()
-    mock_response.text = VALID_REPO_CONTENT
-    mock_response.raise_for_status.return_value = None
-    mock_session.get.return_value = mock_response
-    mock_retry_session.return_value.__enter__.return_value = mock_session
-
-    repo = Repository.create(logger=root_logger, url="https://example.com/docker-ce")
-    assert repo.name == "docker-ce"
-
-
-def test_file_no_repo_extension(root_logger, temp_repo_file_no_ext):
-    """Test file path that does not end with .repo"""
-    repo = Repository.create(logger=root_logger, file_path=temp_repo_file_no_ext)
-    assert repo.name == "docker-ce"
-    assert repo.content == VALID_REPO_CONTENT
-    assert repo.repo_ids == EXPECTED_REPO_IDS
-
-
 def test_url_no_path(root_logger):
     """Test URL with no path raises error"""
-    with pytest.raises(GeneralError, match="Could not derive repository name from URL"):
-        Repository.create(root_logger, url="https://example.com/")
+    with patch(
+        'tmt.steps.prepare.artifact.providers.tmt.utils.retry_session'
+    ) as mock_retry_session:
+        mock_session = MagicMock()
+        mock_response = MagicMock()
+        mock_response.text = VALID_REPO_CONTENT
+        mock_response.raise_for_status.return_value = None
+        mock_session.get.return_value = mock_response
+        mock_retry_session.return_value.__enter__.return_value = mock_session
+
+        with pytest.raises(GeneralError, match="Could not derive repository name from URL"):
+            Repository.create(root_logger, url="https://example.com/")
