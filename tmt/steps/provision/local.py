@@ -117,6 +117,7 @@ class GuestLocal(tmt.Guest):
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
+        plan_sourced_file: Optional[Path] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
@@ -131,6 +132,17 @@ class GuestLocal(tmt.Guest):
 
         if tty:
             self.warn("Ignoring requested tty, not supported by the 'local' provision plugin.")
+
+        # Source any TMT_PLAN_SOURCED_FILE
+        if plan_sourced_file:
+            if isinstance(command, Command):
+                command = (
+                    ShellScript(f'source {plan_sourced_file}').to_shell_command()
+                    + Command("&&")
+                    + command
+                )
+            else:
+                command = ShellScript(f'source {plan_sourced_file}') + command
 
         actual_command = command if isinstance(command, Command) else command.to_shell_command()
 
