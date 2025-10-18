@@ -17,11 +17,12 @@ from tmt.container import MetadataContainer
 
 MetadataContainerT = TypeVar('MetadataContainerT', bound='MetadataContainer')
 
-# Config directory
-DEFAULT_CONFIG_DIR = Path('~/.config/tmt')
+# Config directories
+DEFAULT_USER_CONFIG_DIR = Path('~/.config/tmt')
+DEFAULT_GLOBAL_CONFIG_DIR = Path('/etc/tmt/config')
 
 
-def effective_config_dir() -> Path:
+def _effective_user_config_dir() -> Path:
     """
     Find out what the actual config directory is.
 
@@ -32,7 +33,7 @@ def effective_config_dir() -> Path:
     if 'TMT_CONFIG_DIR' in os.environ:
         return Path(os.environ['TMT_CONFIG_DIR']).expanduser()
 
-    return DEFAULT_CONFIG_DIR.expanduser()
+    return DEFAULT_USER_CONFIG_DIR.expanduser()
 
 
 class Config:
@@ -45,17 +46,21 @@ class Config:
         Initialize config directory path
         """
 
-        self.path = effective_config_dir()
         self.logger = logger
 
+        self.user_path = _effective_user_config_dir()
+        self.global_path = DEFAULT_GLOBAL_CONFIG_DIR
+
         try:
-            self.path.mkdir(parents=True, exist_ok=True)
+            self.user_path.mkdir(parents=True, exist_ok=True)
         except OSError as error:
-            raise tmt.utils.GeneralError(f"Failed to create config '{self.path}'.") from error
+            raise tmt.utils.GeneralError(
+                f"Failed to create user config path '{self.user_path}'."
+            ) from error
 
     @property
     def _last_run_symlink(self) -> Path:
-        return self.path / 'last-run'
+        return self.user_path / 'last-run'
 
     @property
     def last_run(self) -> Optional[Path]:
@@ -83,31 +88,48 @@ class Config:
                 "'tmt run --last' might not pick the right run directory."
             )
         except OSError as error:
-            raise tmt.utils.GeneralError(f"Unable to save last run '{self.path}'.\n{error}")
+            raise tmt.utils.GeneralError(f"Unable to save last run '{self.user_path}'.") from error
 
     @functools.cached_property
-    def fmf_tree(self) -> Optional[fmf.Tree]:
+    def _fmf_tree(self) -> tuple[Optional[Path], Optional[fmf.Tree]]:
+        try:
+            return (self.user_path, fmf.Tree(self.user_path))
+
+        except (fmf.utils.FileError, fmf.utils.RootError):
+            self.logger.debug(f"Config tree not found in user path '{self.user_path}'.")
+
+            try:
+                return (self.global_path, fmf.Tree(self.global_path))
+
+            except (fmf.utils.FileError, fmf.utils.RootError):
+                self.logger.debug(f"Config tree not found in global path '{self.global_path}'.")
+
+                return None, None
+
+    @functools.cached_property
+    def tree(self) -> Optional[fmf.Tree]:
         """
         Return the configuration tree
         """
 
-        try:
-            return fmf.Tree(self.path)
-        except fmf.utils.RootError:
-            self.logger.debug(f"Config tree not found in '{self.path}'.")
+        return self._fmf_tree[1]
 
-            return None
+    @functools.cached_property
+    def tree_location(self) -> Path:
+        path, _ = self._fmf_tree
+
+        return path if path is not None else self.global_path
 
     def _parse_config_subtree(
         self, path: str, model: type[MetadataContainerT]
     ) -> Optional[MetadataContainerT]:
-        if self.fmf_tree is None:
+        if self.tree is None:
             return None
 
-        subtree = cast(Optional[fmf.Tree], self.fmf_tree.find(path))
+        subtree = cast(Optional[fmf.Tree], self.tree.find(path))
 
         if not subtree:
-            self.logger.debug(f"Config path '{path}' not found in '{self.path}'.")
+            self.logger.debug(f"Config path '{path}' not found in '{self.tree_location}'.")
 
             return None
 
