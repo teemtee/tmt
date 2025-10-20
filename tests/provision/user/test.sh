@@ -25,7 +25,11 @@ rlJournalStart
         fi
 
         rlRun -s "tmt run --scratch -i $run -a provision --how $PROVISION_HOW $image --user fedora report -vvv"
-        rlAssertGrep "uid=1000(fedora) gid=1000(fedora) groups=1000(fedora)" $rlRun_LOG
+        if [ "$PROVISION_HOW" = "container" ]; then
+            rlAssertGrep "uid=1000(fedora) gid=1000(fedora) groups=1000(fedora)" $rlRun_LOG
+        elif [ "$PROVISION_HOW" = "virtual" ]; then
+            rlAssertGrep "uid=1000(fedora) gid=1001(fedora) groups=1001(fedora)" $rlRun_LOG
+        fi
     rlPhaseEnd
 
     rlPhaseStartCleanup
