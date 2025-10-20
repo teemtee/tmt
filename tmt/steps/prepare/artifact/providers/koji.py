@@ -222,7 +222,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
         for prefix in cls.SUPPORTED_PREFIXES:
             if raw_provider_id.startswith(prefix):
-                value = raw_provider_id[len(prefix) :].lstrip(':')
+                value = raw_provider_id[len(prefix) + 1 :]
                 if not value:
                     raise ValueError(f"Missing value in '{raw_provider_id}'.")
                 return value
