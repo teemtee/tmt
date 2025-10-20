@@ -150,7 +150,7 @@ plans:
                     module: tmt.steps.provision
                     name: GuestFacts
             environment: {}
-            guest-ansible:
+            ansible:
                 group:
                 vars: {}
                 __class__:

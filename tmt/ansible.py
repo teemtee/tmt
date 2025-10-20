@@ -46,24 +46,6 @@ def normalize_guest_ansible(
     return GuestAnsible.from_spec(raw_ansible)
 
 
-def normalize_plan_ansible_inventory(
-    key_address: str,
-    raw_inventory: Any,
-    logger: tmt.log.Logger,
-) -> Optional['PlanAnsibleInventory']:
-    """
-    Normalize a ``inventory`` key value.
-
-    :param key_address: location of the key being that's being normalized.
-    :param logger: logger to use for logging.
-    :param raw_inventory: input from either command line or fmf node.
-    """
-    if raw_inventory is None:
-        return None
-
-    return PlanAnsibleInventory.from_spec(raw_inventory)
-
-
 @container
 class GuestAnsible(SerializableContainer):
     """
