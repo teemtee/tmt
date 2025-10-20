@@ -994,8 +994,6 @@ class GuestTestcloud(tmt.GuestSsh):
         if self.is_dry_run:
             return
 
-        assert testcloud is not None  # Narrow type
-
         # Prepare the console log
         assert self.logdir is not None  # Narrow type
         console_log = ConsoleLog(
@@ -1018,6 +1016,8 @@ class GuestTestcloud(tmt.GuestSsh):
         if not re.match(r'^(?:https?|file)://.*', self.image_url):
             self.image_url = self._guess_image_url(self.image_url)
             self.debug(f"Guessed image url: '{self.image_url}'", level=3)
+
+        assert testcloud is not None  # Narrow type
 
         # Make a symlink to the file image
         if self.image_url.startswith("file://"):
