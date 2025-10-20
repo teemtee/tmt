@@ -4525,12 +4525,12 @@ def generate_runs(path: Path, id_: tuple[str, ...], all_: bool = False) -> Itera
     """
     Generate absolute paths to runs from path
 
-    :param path: Path to search for runs
-    :param ``id_``: Tuple of specific run IDs to filter by
-    :param ``all_``: If True, process workdirs without run.yaml files (for directories
-                 prefixed with 'run-'). This allows commands that don't require
-                 run.yaml to process workdirs without affecting other commands.
-    :returns: Iterator yielding absolute paths to run directories
+    :param path: path to search for runs
+    :param ``id_``: specific run IDs to filter by
+    :param ``all_``: if set, process workdirs without ``run.yaml`` files (for directories
+        prefixed with ``run-``). This allows commands that don't require
+        ``run.yaml`` to process workdirs without affecting other commands.
+    :yields: absolute paths to run directories
     """
 
     # Prepare absolute workdir path if --id was used
