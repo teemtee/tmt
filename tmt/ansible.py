@@ -5,7 +5,9 @@ This module provides classes and utilities for managing Ansible inventory genera
 and configuration within tmt test plans.
 """
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
+
+from typing_extensions import TypedDict
 
 import tmt.log
 import tmt.utils
@@ -14,6 +16,19 @@ from tmt.container import SerializableContainer, container, field
 
 if TYPE_CHECKING:
     from tmt.steps.provision import Guest
+
+
+class _RawGuestAnsible(TypedDict, total=False):
+    """Raw input data for GuestAnsible.from_spec()"""
+
+    group: Optional[str]
+    vars: Optional[dict[str, Any]]
+
+
+class _RawPlanAnsibleInventory(TypedDict, total=False):
+    """Raw input data for PlanAnsibleInventory.from_spec()"""
+
+    layout: Optional[str]
 
 
 def normalize_plan_ansible(
@@ -64,34 +79,30 @@ class GuestAnsible(SerializableContainer):
     )
 
     @classmethod
-    def from_spec(cls, spec: Any) -> 'GuestAnsible':
+    def from_spec(cls, spec: Union[_RawGuestAnsible, None]) -> 'GuestAnsible':
         """
         Convert a YAML mapping into GuestAnsible object.
         """
         if spec is None:
             return cls()
 
-        if isinstance(spec, cls):
-            return spec
+        return cls(
+            group=spec.get('group'),
+            vars=spec.get('vars') or {},
+        )
 
-        if isinstance(spec, dict):
-            return cls(**spec)  # pyright: ignore[reportUnknownArgumentType]
-
-        raise tmt.utils.SpecificationError(f"Invalid Ansible specification: {spec}")
-
-    def to_spec(self) -> dict[str, Any]:
+    def to_spec(self) -> _RawGuestAnsible:
         """
         Convert GuestAnsible object to a YAML-serializable specification.
         """
-        spec: dict[str, Any] = {}
+        spec_dict = self.to_dict()
 
-        if self.group is not None:
-            spec['group'] = self.group
+        if not self.group:
+            spec_dict.pop('group', None)
+        if not self.vars:
+            spec_dict.pop('vars', None)
 
-        if self.vars:
-            spec['vars'] = self.vars
-
-        return spec
+        return cast(_RawGuestAnsible, spec_dict)
 
 
 @container
@@ -106,31 +117,28 @@ class PlanAnsibleInventory(SerializableContainer):
     )
 
     @classmethod
-    def from_spec(cls, spec: Any) -> 'PlanAnsibleInventory':
+    def from_spec(cls, spec: Union[_RawPlanAnsibleInventory, None]) -> 'PlanAnsibleInventory':
         """
         Convert a YAML mapping into PlanAnsibleInventory object.
         """
         if spec is None:
             return cls()
 
-        if isinstance(spec, cls):
-            return spec
+        # Handle Optional fields from TypedDict
+        return cls(
+            layout=spec.get('layout'),
+        )
 
-        if isinstance(spec, dict):
-            return cls(**spec)  # pyright: ignore[reportUnknownArgumentType]
-
-        raise tmt.utils.SpecificationError(f"Invalid Ansible inventory specification: {spec}")
-
-    def to_spec(self) -> dict[str, Any]:
+    def to_spec(self) -> _RawPlanAnsibleInventory:
         """
         Convert PlanAnsibleInventory object to a YAML-serializable specification.
         """
-        spec: dict[str, Any] = {}
+        spec_dict = self.to_dict()
 
-        if self.layout is not None:
-            spec['layout'] = self.layout
+        if not self.layout:
+            spec_dict.pop('layout', None)
 
-        return spec
+        return cast(_RawPlanAnsibleInventory, spec_dict)
 
 
 @container
@@ -160,9 +168,9 @@ class PlanAnsible(SerializableContainer):
             return spec
 
         if isinstance(spec, dict):
-            inventory_spec = spec.get('inventory')  # pyright: ignore[reportUnknownVariableType]
+            inventory_spec = cast(Optional[_RawPlanAnsibleInventory], spec.get('inventory'))
             if inventory_spec is not None:
-                spec = spec.copy()  # pyright: ignore[reportUnknownVariableType]
+                spec = cast(dict[str, Any], spec.copy())
                 spec['inventory'] = PlanAnsibleInventory.from_spec(inventory_spec)
 
             return cls(**spec)  # pyright: ignore[reportUnknownArgumentType]
