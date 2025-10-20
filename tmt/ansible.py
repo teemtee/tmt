@@ -150,10 +150,6 @@ class PlanAnsibleInventory(SerializableContainer):
 
         return spec
 
-    def __repr__(self) -> str:
-        """Return a string representation of the PlanAnsibleInventory object."""
-        return f"PlanAnsibleInventory(layout={self.layout})"
-
 
 @container
 class PlanAnsible(SerializableContainer):
@@ -202,10 +198,6 @@ class PlanAnsible(SerializableContainer):
 
         return spec
 
-    def __repr__(self) -> str:
-        """Return a string representation of the PlanAnsible object."""
-        return f"PlanAnsible(inventory={self.inventory})"
-
 
 class AnsibleInventory:
     """
@@ -216,15 +208,8 @@ class AnsibleInventory:
     configures host variables based on guest properties.
     """
 
-    def __init__(self, logger: tmt.log.Logger) -> None:
-        """
-        Initialize the Ansible inventory handler.
-
-        :param logger: logger instance for debug/info messages.
-        """
-        self._logger = logger
-
-    def _load_layout(self, layout_path: Optional[Path] = None) -> dict[str, Any]:
+    @classmethod
+    def _load_layout(cls, layout_path: Optional[Path] = None) -> dict[str, Any]:
         """
         Load inventory layout from file or use default, ensuring required Ansible structure.
 
@@ -239,9 +224,10 @@ class AnsibleInventory:
         else:
             layout = {}
 
-        return self._normalize_layout(layout)
+        return cls._normalize_layout(layout)
 
-    def _normalize_layout(self, layout: dict[str, Any]) -> dict[str, Any]:
+    @classmethod
+    def _normalize_layout(cls, layout: dict[str, Any]) -> dict[str, Any]:
         """
         Normalize layout to ensure required Ansible inventory structure.
 
@@ -262,7 +248,8 @@ class AnsibleInventory:
 
         return layout
 
-    def _add_host_to_all(self, inventory: dict[str, Any], guest: 'Guest') -> None:
+    @classmethod
+    def _add_host_to_all(cls, inventory: dict[str, Any], guest: 'Guest') -> None:
         """
         Add host with its variables to the 'all' group.
 
@@ -273,7 +260,8 @@ class AnsibleInventory:
             inventory['all']['hosts'] = {}
         inventory['all']['hosts'][guest.name] = guest.ansible_host_vars
 
-    def _find_group(self, current: dict[str, Any], target: str) -> Optional[dict[str, Any]]:
+    @classmethod
+    def _find_group(cls, current: dict[str, Any], target: str) -> Optional[dict[str, Any]]:
         """
         Find a group at any level in the hierarchy.
 
@@ -285,12 +273,13 @@ class AnsibleInventory:
             return current[target]  # type: ignore[no-any-return]
         for value in current.values():
             if isinstance(value, dict) and 'children' in value:
-                found = self._find_group(value['children'], target)  # pyright: ignore[reportUnknownArgumentType]
+                found = cls._find_group(value['children'], target)  # pyright: ignore[reportUnknownArgumentType]
                 if found is not None:
                     return found
         return None
 
-    def _add_host_to_group(self, inventory: dict[str, Any], guest: 'Guest', group: str) -> None:
+    @classmethod
+    def _add_host_to_group(cls, inventory: dict[str, Any], guest: 'Guest', group: str) -> None:
         """
         Add host to a specific group without variables.
 
@@ -301,7 +290,7 @@ class AnsibleInventory:
         if group == 'all':
             return
 
-        target_group = self._find_group(inventory['all']['children'], group)
+        target_group = cls._find_group(inventory['all']['children'], group)
         if target_group is None:
             # Group not found, create it at the root level
             if group not in inventory['all']['children']:
@@ -312,9 +301,8 @@ class AnsibleInventory:
             target_group['hosts'] = {}
         target_group['hosts'][guest.name] = {}
 
-    def generate(
-        self, guests: list['Guest'], layout_path: Optional[Path] = None
-    ) -> dict[str, Any]:
+    @classmethod
+    def generate(cls, guests: list['Guest'], layout_path: Optional[Path] = None) -> dict[str, Any]:
         """
         Generate Ansible inventory from guests and layout.
 
@@ -322,14 +310,14 @@ class AnsibleInventory:
         :param layout_path: optional full path to a custom layout template.
         :returns: complete Ansible inventory dictionary.
         """
-        inventory = self._load_layout(layout_path)
+        inventory = cls._load_layout(layout_path)
 
         for guest in guests:
             # Add host to 'all' group with its variables
-            self._add_host_to_all(inventory, guest)
+            cls._add_host_to_all(inventory, guest)
 
             # Add host to its groups (without variables)
             for group in guest.ansible_host_groups:
-                self._add_host_to_group(inventory, guest, group)
+                cls._add_host_to_group(inventory, guest, group)
 
         return inventory

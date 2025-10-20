@@ -79,7 +79,8 @@ class GuestLocal(tmt.Guest):
         playbook = self._sanitize_ansible_playbook_path(playbook, playbook_root)
 
         try:
-            # TODO: add ansible inventory support
+            # NOTE: Inventory generation is not applicable for local provisioning
+            # Local always uses 'localhost,' with 'local' connection for simplicity and security.
             # fmt: off
             return self._run_guest_command(
                 Command(

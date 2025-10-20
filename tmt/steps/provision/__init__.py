@@ -1344,7 +1344,7 @@ class Guest(
 
     environment: tmt.utils.Environment
 
-    ansible: GuestAnsible
+    ansible: Optional[GuestAnsible]
 
     # Flag to indicate localhost guest, requires special handling
     localhost = False
@@ -1641,7 +1641,10 @@ class Guest(
         """
         Get host variables for Ansible inventory.
         """
-        return {'ansible_host': self.primary_address, **self.ansible.vars}
+        return {
+            'ansible_host': self.primary_address,
+            **(self.ansible.vars if self.ansible else {}),
+        }
 
     @functools.cached_property
     def ansible_host_groups(self) -> list[str]:
@@ -1651,7 +1654,7 @@ class Guest(
         groups = ['all']  # All hosts are in 'all' group
 
         # Try to get ansible group from ansible.group key in provision guest data
-        if self.ansible.group:
+        if self.ansible and self.ansible.group:
             groups.append(self.ansible.group)
         elif self.role:  # Otherwise use role as group
             groups.append(self.role)
@@ -3457,7 +3460,7 @@ class Provision(tmt.steps.Step):
 
         :returns: Path to the generated inventory.yaml file
         """
-        inventory_path = Path('inventory.yaml')
+        inventory_file = Path('inventory.yaml')
 
         # Get layout from plan-level ansible configuration and resolve path
         layout_path = None
@@ -3468,11 +3471,13 @@ class Provision(tmt.steps.Step):
         ):
             layout_path = self.plan.anchor_path / self.plan.ansible.inventory.layout
 
-        inventory = self._ansible_inventory.generate(self.ready_guests, layout_path)
-        self.write(inventory_path, tmt.utils.dict_to_yaml(inventory))
+        inventory = AnsibleInventory.generate(self.ready_guests, layout_path)
+        self.write(inventory_file, tmt.utils.dict_to_yaml(inventory))
+
+        inventory_path = self.step_workdir / inventory_file
         self.info('ansible', f"Inventory saved to '{inventory_path}'")
 
-        return self.step_workdir / inventory_path
+        return inventory_path
 
     def __init__(
         self,
@@ -3489,7 +3494,6 @@ class Provision(tmt.steps.Step):
 
         self.guests = []
         self._guest_data: dict[str, GuestData] = {}
-        self._ansible_inventory = AnsibleInventory(self._logger)
 
     @property
     def _preserved_workdir_members(self) -> set[str]:
