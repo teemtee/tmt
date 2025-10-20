@@ -333,7 +333,13 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         option="--auto-analysis",
         default=_flag_env_to_default('auto_analysis', False),
         is_flag=True,
-        help="Enable immediate auto-analysis of failed tests in ReportPortal.",
+        help="""
+             Enable immediate auto-analysis of failed tests in ReportPortal. When enabled,
+             ReportPortal will automatically analyze failed test items and attempt
+             to identify defect types and patterns based on historical data. This requires
+             logs to be sent with each failure, and applies only to test items marked
+             with the ``To Investigate`` defect type.
+             """,
     )
 
     launch_url: Optional[str] = None
