@@ -3,12 +3,14 @@ import pytest
 from tmt.steps.prepare.artifact.providers.koji import KojiArtifactProvider
 
 
+@pytest.mark.skip(reason="would be replaced by mocks")
 @pytest.mark.integration
 def test_koji_valid_build(root_logger):
     provider = KojiArtifactProvider("koji.build:2829512", root_logger)
     assert len(provider.artifacts) == 13
 
 
+@pytest.mark.skip(reason="would be replaced by mocks")
 @pytest.mark.integration
 def test_koji_valid_nvr(root_logger):
     provider = KojiArtifactProvider("koji.nvr:tmt-1.58.0-1.fc43", root_logger)
@@ -16,6 +18,7 @@ def test_koji_valid_nvr(root_logger):
     assert provider.build_id == 2829512  # Known build ID for this NVR
 
 
+@pytest.mark.skip(reason="would be replaced by mocks")
 def test_koji_invalid_nvr(root_logger):
     from tmt.utils import GeneralError
 
@@ -25,6 +28,7 @@ def test_koji_invalid_nvr(root_logger):
         _ = provider.build_id
 
 
+@pytest.mark.skip(reason="would be replaced by mocks")
 @pytest.mark.integration
 def test_koji_valid_task_id_actual_build(root_logger):
     provider = KojiArtifactProvider("koji.task:137451383", root_logger)
@@ -32,6 +36,7 @@ def test_koji_valid_task_id_actual_build(root_logger):
     assert len(provider.artifacts) == 13
 
 
+@pytest.mark.skip(reason="would be replaced by mocks")
 @pytest.mark.integration
 def test_koji_valid_task_id_scratch_build(root_logger):
     provider = KojiArtifactProvider("koji.task:137705547", root_logger)
