@@ -4,6 +4,7 @@ import io
 import os
 import select
 import shlex
+import socket
 import subprocess
 from collections.abc import Generator
 from types import TracebackType
@@ -30,6 +31,19 @@ def mock_config(root: Optional[str]) -> dict[str, Any]:
         raise tmt.utils.GeneralError("Could not import mockbuild.config package.") from error
 
     return cast(dict[str, Any], mockbuild.config.simple_load_config(root if root else 'default'))
+
+
+@functools.cache
+def mock_pm_request_path() -> Path:
+    try:
+        from mockbuild.plugins.pm_request import RUNDIR, SOCKET_NAME
+
+    except ImportError as error:
+        raise tmt.utils.GeneralError(
+            "Could not import mockbuild.plugins.pm_request package."
+        ) from error
+
+    return Path(RUNDIR, SOCKET_NAME)
 
 
 @container
@@ -131,6 +145,8 @@ class MockShell:
 
         # TODO should networking be configurable?
         command.append('--enable-network')
+        command.append('--enable-plugin')
+        command.append('pm_request')
 
         # Bind-mounting can be an easy way to implement push/pull.
         # Currently we do not use it.
@@ -226,6 +242,70 @@ class MockShell:
                     self.mock_shell.stdout.read()
                     break
         self.mock_shell.stderr.read()
+
+    def _pm_request(self, script: ShellScript) -> tmt.utils.CommandOutput:
+        """
+        Execute a package manager request via the enabled `pm_request` plugin.
+        This is done by communicating via a socket.
+        Currently we cannot distinguish between stdout and stderr.
+        """
+
+        if self.mock_shell is None:
+            self.enter_shell()
+
+        with (
+            socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as socket_stream,
+            socket_stream.makefile() as socket_file,
+        ):
+            pm_request_socket_in_chroot = (
+                self.parent.root_path / mock_pm_request_path().relative_to('/')
+            )
+            socket_stream.connect(str(pm_request_socket_in_chroot))
+            self.parent.debug('mock', f'Package manager request: {script}', color='blue')
+            socket_stream.send(f'{script}\n'.encode())
+
+            # First 3 lines are some debug info and the last line contains the return code.
+            # Anything in-between is the actual command output.
+            self.parent.debug(
+                'mock',
+                f'Package manager response: {socket_file.readline().rstrip()}',
+                color='blue',
+            )
+            self.parent.debug(
+                'mock',
+                f'Package manager response: {socket_file.readline().rstrip()}',
+                color='blue',
+                level=2,
+            )
+            self.parent.debug(
+                'mock',
+                f'Package manager response: {socket_file.readline().rstrip()}',
+                color='blue',
+                level=2,
+            )
+
+            stdout = ''
+            it = iter(socket_file)
+            line = next(it).rstrip()
+            while True:
+                prev_line = line
+                try:
+                    line = next(it).rstrip()
+                except StopIteration:
+                    break
+                self.parent.verbose('out', prev_line, color='yellow', level=3)
+                stdout += prev_line
+                stdout += '\n'
+            returncode = int(line[line.rfind(' ') + 1 :])
+            if returncode != 0:
+                raise tmt.utils.RunError(
+                    f"Package manager request '{script}' failed.",
+                    command=script.to_shell_command(),
+                    returncode=returncode,
+                    stdout=stdout,
+                    stderr='',
+                )
+            return tmt.utils.CommandOutput(stdout=stdout, stderr='')
 
     def _spawn_command(
         self,
