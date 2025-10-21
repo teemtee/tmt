@@ -29,6 +29,16 @@ rlJournalStart
         rlAssertNotGrep 'watchdog panic="ignore"/' $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Verify that beaker_job_group is passed correctly to dry beaker job"
+        rlRun -s "tmt run --dry provision --how beaker --beaker-job-group test-group --image Fedora-42 plan --default"
+        rlAssertGrep 'group="test-group">' $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Verify that beaker_job_group is not shown when not specified"
+        rlRun -s "tmt run --dry provision --how beaker --image Fedora-42 plan --default"
+        rlAssertNotGrep 'group="test-group">' $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
     rlPhaseEnd
