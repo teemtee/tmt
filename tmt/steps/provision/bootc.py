@@ -12,6 +12,7 @@ import tmt.steps.provision
 import tmt.steps.provision.testcloud
 import tmt.utils
 from tmt.container import container, field
+from tmt.package_managers.bootc import LOCALHOST_BOOTC_IMAGE_PREFIX
 from tmt.steps.provision.testcloud import GuestTestcloud
 from tmt.utils import Path
 from tmt.utils.templates import render_template
@@ -270,7 +271,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         containerfile_parsed = render_template(containerfile_template, base_image=base_image)
         (self.phase_workdir / 'Containerfile').write_text(containerfile_parsed)
 
-        image_tag = f'localhost/tmtmodified-{self._get_id()}'
+        image_tag = f'{LOCALHOST_BOOTC_IMAGE_PREFIX}modified-{self._get_id()}'
         tmt.utils.Command(
             "podman",
             "build",
@@ -293,7 +294,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         Build the "base" or user supplied container image
         """
 
-        image_tag = f'localhost/tmtbase-{self._get_id()}'
+        image_tag = f'{LOCALHOST_BOOTC_IMAGE_PREFIX}base-{self._get_id()}'
         self._logger.debug("Build container image.")
         tmt.utils.Command(
             "podman",

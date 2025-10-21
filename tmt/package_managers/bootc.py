@@ -20,6 +20,8 @@ from tmt.utils import (
     ShellScript,
 )
 
+LOCALHOST_BOOTC_IMAGE_PREFIX = "localhost/tmt"
+
 
 class BootcEngine(PackageManagerEngine):
     containerfile_directives: list[str]
@@ -99,7 +101,12 @@ class BootcEngine(PackageManagerEngine):
             raise tmt.utils.PrepareError(f"Failed to extract bootc image info: missing {error}")
 
     def _get_base_containerfile_directives(self) -> list[str]:
-        return [f'FROM containers-storage:{self._get_current_bootc_image()}']
+        bootc_image = self._get_current_bootc_image()
+
+        if bootc_image.startswith(LOCALHOST_BOOTC_IMAGE_PREFIX):
+            return [f'FROM containers-storage:{bootc_image}']
+
+        return [f'FROM {bootc_image}']
 
     def check_presence(self, *installables: Installable) -> ShellScript:
         return self.aux_engine.check_presence(*installables)
@@ -196,7 +203,7 @@ class Bootc(PackageManager[BootcEngine]):
             self.debug("No Containerfile directives to build container image, skipping build.")
             return
 
-        image_tag = f"localhost/tmt/bootc/{uuid.uuid4()}"
+        image_tag = f"{LOCALHOST_BOOTC_IMAGE_PREFIX}/bootc/{uuid.uuid4()}"
 
         # Write the final Containerfile
         with self.guest.mkdtemp() as containerfile_dir:
