@@ -1,3 +1,4 @@
+import abc
 import shlex
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, Union
@@ -148,6 +149,7 @@ class PackageManagerEngine(tmt.utils.Common):
 
         self.command, self.options = self.prepare_command()
 
+    @abc.abstractmethod
     def prepare_command(self) -> tuple[Command, Command]:
         """
         Prepare installation command and subcommand options
@@ -155,6 +157,7 @@ class PackageManagerEngine(tmt.utils.Common):
 
         raise NotImplementedError
 
+    @abc.abstractmethod
     def check_presence(self, *installables: Installable) -> ShellScript:
         """
         Return a presence status for each given installable
@@ -162,6 +165,7 @@ class PackageManagerEngine(tmt.utils.Common):
 
         raise NotImplementedError
 
+    @abc.abstractmethod
     def install(
         self,
         *installables: Installable,
@@ -169,6 +173,7 @@ class PackageManagerEngine(tmt.utils.Common):
     ) -> ShellScript:
         raise NotImplementedError
 
+    @abc.abstractmethod
     def reinstall(
         self,
         *installables: Installable,
@@ -176,6 +181,7 @@ class PackageManagerEngine(tmt.utils.Common):
     ) -> ShellScript:
         raise NotImplementedError
 
+    @abc.abstractmethod
     def install_debuginfo(
         self,
         *installables: Installable,
@@ -183,6 +189,7 @@ class PackageManagerEngine(tmt.utils.Common):
     ) -> ShellScript:
         raise NotImplementedError
 
+    @abc.abstractmethod
     def refresh_metadata(self) -> ShellScript:
         raise NotImplementedError
 
@@ -219,6 +226,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
         self.guest = guest
 
+    @abc.abstractmethod
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
         """
         Return a presence status for each given installable

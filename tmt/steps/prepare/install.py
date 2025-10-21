@@ -121,13 +121,6 @@ class InstallBase(tmt.utils.Common):
                     self.debug(f"Found rpm '{filepath}'.", level=3)
                     self.local_packages.append(PackagePath(filepath))
 
-    def prepare_repository(self) -> None:
-        """
-        Configure additional repository
-        """
-
-        raise NotImplementedError
-
     def list_installables(self, title: str, *installables: Installable) -> Iterator[Installable]:
         """
         Show package info and return package names

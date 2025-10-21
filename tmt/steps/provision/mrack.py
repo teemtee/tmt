@@ -1,3 +1,4 @@
+import abc
 import asyncio
 import dataclasses
 import datetime
@@ -141,7 +142,7 @@ def operator_to_beaker_op(operator: tmt.hardware.Operator, value: str) -> tuple[
 # to accept, but with strict type annotations; the layer is aware of how to convert
 # its components into dictionaries.
 @container
-class MrackBaseHWElement:
+class MrackBaseHWElement(abc.ABC):
     """
     Base for Mrack hardware requirement elements
     """
@@ -150,6 +151,7 @@ class MrackBaseHWElement:
     # types.
     name: str
 
+    @abc.abstractmethod
     def to_mrack(self) -> dict[str, Any]:
         """
         Convert the element to Mrack-compatible dictionary tree

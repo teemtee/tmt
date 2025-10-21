@@ -1,3 +1,4 @@
+import abc
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
@@ -151,6 +152,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
 
         self.go_prolog(logger or self._logger)
 
+    @abc.abstractmethod
     def tests(
         self, *, phase_name: Optional[str] = None, enabled: Optional[bool] = None
     ) -> list['TestOrigin']:
