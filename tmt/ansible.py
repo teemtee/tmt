@@ -5,7 +5,7 @@ This module provides classes and utilities for managing Ansible inventory genera
 and configuration within tmt test plans.
 """
 
-from typing import TYPE_CHECKING, Any, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from typing_extensions import TypedDict
 
@@ -80,7 +80,7 @@ class GuestAnsible(SerializableContainer):
     )
 
     @classmethod
-    def from_spec(cls, spec: Union[_RawGuestAnsible, None]) -> 'GuestAnsible':
+    def from_spec(cls, spec: Optional[_RawGuestAnsible]) -> 'GuestAnsible':
         """
         Convert a YAML mapping into GuestAnsible object.
         """
@@ -115,7 +115,7 @@ class PlanAnsibleInventory(SerializableContainer):
     )
 
     @classmethod
-    def from_spec(cls, spec: Union[_RawPlanAnsibleInventory, None]) -> 'PlanAnsibleInventory':
+    def from_spec(cls, spec: Optional[_RawPlanAnsibleInventory]) -> 'PlanAnsibleInventory':
         """
         Convert a YAML mapping into PlanAnsibleInventory object.
         """
