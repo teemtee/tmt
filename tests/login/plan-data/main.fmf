@@ -1,0 +1,10 @@
+summary: Check that login does not override plan data
+description:
+    Make sure that the login action does not override content of
+    the TMT_PLAN_DATA directory.
+link:
+  - verifies: https://github.com/teemtee/tmt/issues/2681
+tag+:
+  - provision-only
+  - provision-container
+  - provision-virtual

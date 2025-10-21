@@ -30,6 +30,10 @@ The :ref:`/plugins/report/reportportal` report plugin now supports
 a new ``auto-analysis`` key. This key allows users to enable
 immediate auto-analysis of failed tests reported to ReportPortal.
 
+User generated content in the ``TMT_PLAN_DATA`` directory is now
+correctly preserved when the :ref:`/stories/cli/run/login` action
+is used to log into the guest.
+
 
 tmt-1.59.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
