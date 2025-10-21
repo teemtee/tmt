@@ -3460,7 +3460,7 @@ class Provision(tmt.steps.Step):
 
         :returns: Path to the generated inventory.yaml file
         """
-        inventory_file = Path('inventory.yaml')
+        inventory_path = self.step_workdir / 'inventory.yaml'
 
         # Get layout from plan-level ansible configuration and resolve path
         layout_path = None
@@ -3472,9 +3472,8 @@ class Provision(tmt.steps.Step):
             layout_path = self.plan.anchor_path / self.plan.ansible.inventory.layout
 
         inventory = AnsibleInventory.generate(self.ready_guests, layout_path)
-        self.write(inventory_file, tmt.utils.dict_to_yaml(inventory))
+        self.write(inventory_path, tmt.utils.dict_to_yaml(inventory))
 
-        inventory_path = self.step_workdir / inventory_file
         self.info('ansible', f"Inventory saved to '{inventory_path}'")
 
         return inventory_path
