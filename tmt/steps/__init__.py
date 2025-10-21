@@ -2,6 +2,7 @@
 Step Classes
 """
 
+import abc
 import collections
 import functools
 import itertools
@@ -818,6 +819,7 @@ class Step(
         for data in self.data:
             self._plugin_base_class.delegate(self, data=data).show()
 
+    @abc.abstractmethod
     def summary(self) -> None:
         """
         Give a concise summary about the step result
@@ -1312,7 +1314,7 @@ class Step(
         Run all loaded Login or Reboot action instances of the step
         """
 
-        for phase in self.phases(classes=Action):
+        for phase in self.phases(classes=Action):  # type: ignore[type-abstract]
             phase.go()
 
     def go(self, force: bool = False) -> None:
@@ -1347,7 +1349,7 @@ class Step(
 
         # Do not prune plugin workdirs, each plugin decides what should
         # be pruned from the workdir and what should be kept there
-        plugins = self.phases(classes=BasePlugin)
+        plugins = self.phases(classes=BasePlugin)  # type: ignore[type-abstract]
         for plugin in plugins:
             if plugin.workdir is not None:
                 preserved_members = {*preserved_members, plugin.workdir.name}
@@ -1614,6 +1616,7 @@ class BasePlugin(
         return self.pathless_safe_name
 
     @classmethod
+    @abc.abstractmethod
     def base_command(
         cls,
         usage: str,
@@ -2079,6 +2082,7 @@ class GuestlessPlugin(BasePlugin[StepDataT, PluginReturnValueT]):
     Common parent of all step plugins that do not work against a particular guest
     """
 
+    @abc.abstractmethod
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> PluginReturnValueT:
         """
         Perform actions shared among plugins when beginning their tasks
@@ -2092,6 +2096,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
     Common parent of all step plugins that do work against a particular guest
     """
 
+    @abc.abstractmethod
     def go(
         self,
         *,
@@ -2183,6 +2188,7 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
                 phases[step_name] = [phase]
         return phases
 
+    @abc.abstractmethod
     def go(self) -> None:
         raise NotImplementedError
 
