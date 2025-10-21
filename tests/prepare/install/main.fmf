@@ -9,6 +9,7 @@ tag+:
   - provision-only
   - provision-container
   - provision-virtual
+  - provision-mock
 
 # TODO: what test cases are safe enough to be executed against the localhost?
 #  - provision-local
