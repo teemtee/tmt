@@ -33,7 +33,9 @@ class MockEngine(PackageManagerEngine):
             extra_options += Command('--exclude', package)
 
         if options.skip_missing:
-            extra_options += Command('--skip-broken')
+            # TODO this probably needs to behave the same as in `dnf.py`, i.e.
+            # `--skip-broken` for non-Dnf5.
+            extra_options += Command('--skip-unavailable')
 
         return ShellScript(
             f'{installword} {extra_options} {" ".join(escape_installables(*installables))}'

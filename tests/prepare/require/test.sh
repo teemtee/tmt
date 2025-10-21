@@ -2,8 +2,6 @@
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ../../images.sh || exit 1
 
-PROVISION_HOW=container
-
 rlJournalStart
     rlPhaseStartSetup
 
@@ -17,8 +15,13 @@ rlJournalStart
     for image in $TEST_IMAGE_PREFIX/fedora/latest:latest \
                  $TEST_IMAGE_PREFIX/centos/7/upstream:latest; do
         # Prepare the tmt command and expected error message
-        tmt="tmt run -avr provision -h $PROVISION_HOW -i $image"
-        if [[ $image =~ fedora ]]; then
+        tmt="tmt run -avr provision -h $PROVISION_HOW"
+        if [ "$PROVISION_HOW" = "container" ]; then
+            tmt+=" -i $image"
+        elif [ "$PROVISION_HOW" = "mock" ]; then
+            tmt+=" -r fedora-rawhide-x86_64"
+        fi
+        if [[ $image =~ fedora || $PROVISION_HOW = "mock" ]]; then
             error='No match for argument: forest'
         else
             error='No package forest available'
