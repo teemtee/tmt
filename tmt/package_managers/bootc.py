@@ -275,7 +275,7 @@ class Bootc(PackageManager[BootcEngine]):
         presence = self.check_presence(*installables)
 
         missing_installables: set[Installable] = {
-            installable for installable in installables if not presence[installable]
+            installable for installable, present in presence.items() if not present
         }
 
         if missing_installables:

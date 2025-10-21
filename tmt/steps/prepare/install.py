@@ -587,16 +587,17 @@ class InstallBootc(InstallBase):
 
     def install_from_repository(self) -> None:
         installables = self.list_installables("package", *self.packages)
-        if not installables:
-            return
 
         # Check presence to avoid unnecessary container rebuilds
         presence = self.guest.package_manager.check_presence(*installables)
-        missing = [i for i in installables if not presence.get(i, False)]
 
-        if missing:
+        missing_installables = {
+            installable for installable, present in presence.items() if not present
+        }
+
+        if missing_installables:
             self._engine.install(
-                *missing,
+                *missing_installables,
                 options=Options(
                     excluded_packages=self.exclude,
                     skip_missing=self.skip_missing,
@@ -605,16 +606,17 @@ class InstallBootc(InstallBase):
 
     def install_from_url(self) -> None:
         installables = self.list_installables("remote package", *self.remote_packages)
-        if not installables:
-            return
 
         # Check presence to avoid unnecessary container rebuilds
         presence = self.guest.package_manager.check_presence(*installables)
-        missing = [i for i in installables if not presence.get(i, False)]
 
-        if missing:
+        missing_installables = {
+            installable for installable, present in presence.items() if not present
+        }
+
+        if missing_installables:
             self._engine.install(
-                *missing,
+                *missing_installables,
                 options=Options(
                     excluded_packages=self.exclude,
                     skip_missing=self.skip_missing,
