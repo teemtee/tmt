@@ -19,6 +19,9 @@ New :ref:`sprints` section has been added to the documentation for
 contributors. It describes the overall sprint process, the key
 sync points and provides links to progress tracking boards.
 
+Pending tests are now also exported to Polarion thanks to no
+longer missing test case ids in the ``results.yaml``.
+
 
 tmt-1.59.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
