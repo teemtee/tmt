@@ -1,3 +1,4 @@
+import re
 from typing import (
     Optional,
 )
@@ -11,7 +12,7 @@ from tmt.package_managers import (
     provides_package_manager,
 )
 from tmt.steps.provision.mock import GuestMock
-from tmt.utils import Command, CommandOutput, RunError, ShellScript
+from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScript
 
 
 class MockEngine(PackageManagerEngine):
@@ -85,6 +86,47 @@ class _MockPackageManager(PackageManager[MockEngine]):
     probe_command = Command('/usr/bin/false')
     probe_priority = 130
     _engine_class = MockEngine
+
+    # Implementation "stolen" from the dnf package manager family. It should
+    # be good enough for mock, at least for now.
+    def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
+        try:
+            output = self.guest.execute(self.engine.check_presence(*installables))
+            stdout = output.stdout
+
+        except RunError as exc:
+            stdout = exc.stdout
+
+        if stdout is None:
+            raise GeneralError("rpm presence check provided no output")
+
+        results: dict[Installable, bool] = {}
+
+        for line, installable in zip(stdout.strip().splitlines(), installables):
+            # Match for packages not installed, when "rpm -q PACKAGE" used
+            match = re.match(rf'package {re.escape(str(installable))} is not installed', line)
+            if match is not None:
+                results[installable] = False
+                continue
+
+            # Match for provided rpm capabilities (packages, commands, etc.),
+            # when "rpm -q --whatprovides CAPABILITY" used
+            match = re.match(rf'no package provides {re.escape(str(installable))}', line)
+            if match is not None:
+                results[installable] = False
+                continue
+
+            # Match for filesystem paths, when "rpm -q --whatprovides PATH" used
+            match = re.match(
+                rf'error: file {re.escape(str(installable))}: No such file or directory', line
+            )
+            if match is not None:
+                results[installable] = False
+                continue
+
+            results[installable] = True
+
+        return results
 
     def install(
         self,
