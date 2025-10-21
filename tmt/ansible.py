@@ -71,6 +71,7 @@ class GuestAnsible(SerializableContainer):
         default=None,
         help='Assigns the guest to a specific Ansible group.',
     )
+    # TODO Add typing for vars raw input data
     vars: dict[str, Any] = field(  # pyright: ignore[reportUnknownVariableType]
         default_factory=dict,
         help=(
@@ -86,10 +87,7 @@ class GuestAnsible(SerializableContainer):
         if spec is None:
             return cls()
 
-        return cls(
-            group=spec.get('group'),
-            vars=spec.get('vars') or {},
-        )
+        return cls(**spec)  # type: ignore[arg-type]
 
     def to_spec(self) -> _RawGuestAnsible:
         """
@@ -124,10 +122,7 @@ class PlanAnsibleInventory(SerializableContainer):
         if spec is None:
             return cls()
 
-        # Handle Optional fields from TypedDict
-        return cls(
-            layout=spec.get('layout'),
-        )
+        return cls(**spec)
 
     def to_spec(self) -> _RawPlanAnsibleInventory:
         """
