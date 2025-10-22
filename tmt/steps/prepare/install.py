@@ -735,6 +735,7 @@ class InstallMock(InstallBase):
         summary = fmf.utils.listed([str(path) for path in self.local_packages], 'local package')
         self.info('total', f"{summary} installed", 'green')
 
+    # NOTE copied from InstallDnf
     def install_from_url(self) -> None:
         self.guest.package_manager.install(
             *self.list_installables("remote package", *self.remote_packages),
@@ -743,6 +744,25 @@ class InstallMock(InstallBase):
                 skip_missing=self.skip_missing,
             ),
         )
+
+    # NOTE copied from InstallDnf
+    def install_debuginfo(self) -> None:
+        packages = self.list_installables("debuginfo", *self.debuginfo_packages)
+
+        self.guest.package_manager.install_debuginfo(
+            *packages,
+            options=Options(
+                excluded_packages=self.exclude,
+                skip_missing=self.skip_missing,
+            ),
+        )
+
+        # Check the packages are installed on the guest because 'debuginfo-install'
+        # returns 0 even though it didn't manage to install the required packages
+        if not self.skip_missing:
+            self.guest.package_manager.check_presence(
+                *[Package(f'{package}-debuginfo') for package in self.debuginfo_packages]
+            )
 
 
 class InstallApk(InstallBase):

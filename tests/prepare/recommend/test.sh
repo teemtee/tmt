@@ -47,6 +47,18 @@ rlJournalStart
         rlPhaseEnd
     fi
 
+    if [[ "$PROVISION_HOW" == "mock" ]]; then
+        rlPhaseStartTest "Test fedora-rawhide-x86_64 ($PROVISION_HOW)"
+            rlRun "$tmt --root fedora-rawhide-x86_64 $basic"
+        rlPhaseEnd
+    fi
+
+    if [[ "$PROVISION_HOW" == "mock" ]]; then
+        rlPhaseStartTest "Test fedora-rawhide-x86_64 ($PROVISION_HOW) [[debuginfo]]"
+            rlRun "$tmt --root fedora-rawhide-x86_64 $debuginfo"
+        rlPhaseEnd
+    fi
+
     rlPhaseStartCleanup
         rlRun "popd"
     rlPhaseEnd
