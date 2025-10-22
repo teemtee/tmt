@@ -160,7 +160,7 @@ class WatchdogCheck(Check):
         if not self.reboot:
             return
 
-        invocation.hard_reboot_requested = True
+        invocation.reboot.hard_requested = True
         invocation.terminate_process(logger=logger)
 
     def do_ping(
