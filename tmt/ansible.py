@@ -43,6 +43,10 @@ def normalize_plan_ansible(
     :param logger: logger to use for logging.
     :param raw_ansible: input from either command line or fmf node.
     """
+
+    if isinstance(raw_ansible, PlanAnsible):
+        return raw_ansible
+
     return PlanAnsible.from_spec(raw_ansible)
 
 
@@ -58,6 +62,10 @@ def normalize_guest_ansible(
     :param logger: logger to use for logging.
     :param raw_ansible: input from either command line or fmf node.
     """
+
+    if isinstance(raw_ansible, GuestAnsible):
+        return raw_ansible
+
     return GuestAnsible.from_spec(raw_ansible)
 
 
