@@ -965,9 +965,6 @@ def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
             if host.beaker_job_owner:
                 req['job_owner'] = host.beaker_job_owner
 
-            if host.beaker_job_group:
-                req['job_group'] = host.beaker_job_group
-
             if host.kickstart and not mrack_constructs_ks_pre():
                 ks_components: list[str] = [
                     host.kickstart[ks_section]
@@ -1250,6 +1247,8 @@ class CreateJobParameters:
                 data['beaker']['ks_append'] = kickstart
         if self.public_key:
             data['beaker']['pubkeys'] = self.public_key
+        if self.beaker_job_group:
+            data['beaker']['beaker_job_group'] = self.beaker_job_group
 
         return data
 
