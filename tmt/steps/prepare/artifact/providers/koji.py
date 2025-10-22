@@ -109,7 +109,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
     .. code-block:: python
 
-        provider = KojiArtifactProvider(logger, "koji.build:123456")
+        provider = KojiArtifactProvider("koji.build:123456", logger)
         artifacts = provider.download_artifacts(guest, Path("/tmp"), [])
     """
 
