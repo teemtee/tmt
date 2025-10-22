@@ -1024,10 +1024,7 @@ class GuestTestcloud(tmt.GuestSsh):
             image_path = Path(self.image_url.removeprefix("file://"))
             # We should not symlink any supported formats, e.g. the `.xz`
             # does an extract step that would be skip if we make the symlink.
-            # TODO: Maybe more suffixes are desired
-            # Note: we are assuming selinux and other preparations are done
-            #  by the user.
-            if image_path.suffixes[-1] in (".qcow2",):
+            if image_path.suffixes and image_path.suffixes[-1] in (".qcow2",):
                 # Create a symlink in the testcloud STORE_DIR and make sure
                 # it is always updated to the requested version.
                 image_symlink = self.testcloud_image_dirpath / image_path.name
