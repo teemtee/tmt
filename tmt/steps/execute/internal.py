@@ -17,7 +17,7 @@ import tmt.utils.themes
 from tmt.container import container, field
 from tmt.result import Result, ResultOutcome
 from tmt.steps import safe_filename
-from tmt.steps.abort import AbortStep
+from tmt.steps.context.abort import AbortStep
 from tmt.steps.discover import DiscoverPlugin
 from tmt.steps.execute import (
     TEST_OUTPUT_FILENAME,
@@ -448,8 +448,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Set all supported reboot variables
         for reboot_variable in tmt.steps.scripts.TMT_REBOOT_SCRIPT.related_variables:
-            environment[reboot_variable] = EnvVarValue(str(invocation._reboot_count))
-        environment['TMT_TEST_RESTART_COUNT'] = EnvVarValue(str(invocation._restart_count))
+            environment[reboot_variable] = EnvVarValue(str(invocation.reboot._reboot_count))
+        environment['TMT_TEST_RESTART_COUNT'] = EnvVarValue(str(invocation.restart._restart_count))
 
         # Add variables the framework wants to expose
         environment.update(
@@ -751,12 +751,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 shift = 1 if self.verbosity_level < 2 else 2
 
                 # Handle test restart. May include guest reboot too.
-                if invocation.restart_requested:
+                if invocation.restart.requested:
                     # Output before the restart
                     logger.verbose(f"{duration} {test.name} [{progress}]", shift=shift)
 
                     try:
-                        if invocation.handle_restart():
+                        if invocation.restart.handle_restart():
                             continue
 
                     except (
@@ -769,11 +769,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                             result.result = ResultOutcome.ERROR
 
                 # Handle reboot
-                if invocation.reboot_requested:
+                if invocation.reboot.requested:
                     # Output before the reboot
                     logger.verbose(f"{duration} {test.name} [{progress}]", shift=shift)
                     try:
-                        if invocation.handle_reboot():
+                        if invocation.reboot.handle_reboot(restart=invocation.restart):
                             continue
                     except tmt.utils.RebootTimeoutError as error:
                         invocation.exceptions.append(error)
