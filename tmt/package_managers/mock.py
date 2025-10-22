@@ -17,13 +17,8 @@ from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScrip
 
 class MockEngine(PackageManagerEngine):
     """
-    We use `mock --pm-cmd ...` to execute the package manager commands inside
-    the mock. Such scripts need to be executed locally and not inside the mock
-    shell.
+    For package manager operations we use the `pm_request` mock plugin.
     """
-
-    def _prepare_mock_command_script(self, script: str) -> ShellScript:
-        return ShellScript(f'{self.command} {self.options.to_script()} {script}')
 
     def _prepare_mock_install_script(
         self,
@@ -38,19 +33,16 @@ class MockEngine(PackageManagerEngine):
             extra_options += Command('--exclude', package)
 
         if options.skip_missing:
-            extra_options += Command('--skip-broken')
+            # TODO this probably needs to behave the same as in `dnf.py`, i.e.
+            # `--skip-broken` for non-Dnf5.
+            extra_options += Command('--skip-unavailable')
 
-        return self._prepare_mock_command_script(
+        return ShellScript(
             f'{installword} {extra_options} {" ".join(escape_installables(*installables))}'
         )
 
     def prepare_command(self) -> tuple[Command, Command]:
-        options = Command()
-        assert isinstance(self.guest, GuestMock)
-        if self.guest.root is not None:
-            options += Command('-r', self.guest.root)
-        options += Command('--pm-cmd')
-        return (Command('mock'), options)
+        return (Command(), Command())
 
     def check_presence(self, *installables: Installable) -> ShellScript:
         return ShellScript(f'rpm -q --whatprovides {" ".join(escape_installables(*installables))}')
@@ -79,7 +71,7 @@ class MockEngine(PackageManagerEngine):
         )
 
     def refresh_metadata(self) -> ShellScript:
-        return self._prepare_mock_command_script('makecache --refresh')
+        return ShellScript('makecache --refresh')
 
 
 class _MockPackageManager(PackageManager[MockEngine]):
@@ -138,8 +130,9 @@ class _MockPackageManager(PackageManager[MockEngine]):
                 return self.guest.execute(self.engine.check_presence(*installables))
             except RunError:
                 pass
-        return self.guest.run(
-            self.engine.install(*installables, options=options).to_shell_command()
+        assert isinstance(self.guest, GuestMock)
+        return self.guest.mock_shell._pm_request(
+            self.engine.install(*installables, options=options)
         )
 
     def reinstall(
@@ -154,8 +147,9 @@ class _MockPackageManager(PackageManager[MockEngine]):
                 self.guest.execute(self.engine.check_presence(*installables))
             except RunError as err:
                 return err.output
-        return self.guest.run(
-            self.engine.reinstall(*installables, options=options).to_shell_command()
+        assert isinstance(self.guest, GuestMock)
+        return self.guest.mock_shell._pm_request(
+            self.engine.reinstall(*installables, options=options)
         )
 
     def install_debuginfo(
@@ -163,12 +157,14 @@ class _MockPackageManager(PackageManager[MockEngine]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        return self.guest.run(
-            self.engine.install_debuginfo(*installables, options=options).to_shell_command()
+        assert isinstance(self.guest, GuestMock)
+        return self.guest.mock_shell._pm_request(
+            self.engine.install_debuginfo(*installables, options=options)
         )
 
     def refresh_metadata(self) -> CommandOutput:
-        return self.guest.run(self.engine.refresh_metadata().to_shell_command())
+        assert isinstance(self.guest, GuestMock)
+        return self.guest.mock_shell._pm_request(self.engine.refresh_metadata())
 
 
 # ignore[type-arg]: TypeVar in package manager registry annotations is

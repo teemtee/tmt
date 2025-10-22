@@ -60,7 +60,12 @@ rlJournalStart
         rlPhaseStartTest "$phase_prefix Prepare runtime"
             [ "$PROVISION_HOW" = "container" ] && rlRun "podman images $image"
 
-            if is_fedora_rawhide "$image"; then
+            if [ "$PROVISION_HOW" = "mock" ]; then
+                rlRun "root=fedora-rawhide-x86_64"
+                rlRun "mock -r $root --init"
+                rlRun "distro=fedora-rawhide"
+                rlRun "package_manager=mock-dnf5"
+            elif is_fedora_rawhide "$image"; then
                 rlRun "distro=fedora-rawhide"
                 rlRun "package_manager=dnf5"
 
@@ -125,7 +130,7 @@ rlJournalStart
                 rlFail "Cannot infer distro for image $image"
             fi
 
-            tmt="tmt -vvv -c distro=$distro run --id $run --scratch cleanup discover provision --how $PROVISION_HOW --image $image prepare"
+            tmt="tmt -vvv -c distro=$distro run --id $run --scratch cleanup discover provision --how $PROVISION_HOW ${image:+"--image $image"} ${root:+"--root $root"} prepare"
         rlPhaseEnd
 
         # TODO: find out whether all those exceptions can be simplified and parametrized...
@@ -228,7 +233,10 @@ rlJournalStart
 
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
-            if is_centos_7 "$image"; then
+            if [ "$PROVISION_HOW" = "mock" ]; then
+                rlAssertGrep "out: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+
+            elif is_centos_7 "$image"; then
                 rlAssertGrep "out: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ostree "$image"; then
@@ -266,7 +274,10 @@ rlJournalStart
 
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
-            if is_centos_7 "$image"; then
+            if [ "$PROVISION_HOW" = "mock" ]; then
+                rlAssertGrep "out: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+
+            elif is_centos_7 "$image"; then
                 rlAssertGrep "out: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ostree "$image"; then
