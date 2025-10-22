@@ -85,6 +85,9 @@ properties:
   become:
     type: boolean
 
+  ansible:
+    $ref: "/schemas/common#/definitions/provision_ansible"
+
   watchdog-dispatch-delay:
     type: integer
     minimum: 1

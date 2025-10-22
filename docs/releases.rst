@@ -19,6 +19,13 @@ New :ref:`sprints` section has been added to the documentation for
 contributors. It describes the overall sprint process, the key
 sync points and provides links to progress tracking boards.
 
+tmt now supports automatic generation of Ansible inventory files
+during the provision phase. The new :ref:`/spec/plans/ansible`
+configuration allows users to define custom inventory layouts and
+organize provisioned guests into Ansible groups with host-specific
+variables. See the :ref:`/spec/plans/ansible` and
+:ref:`/spec/plans/provision/ansible` sections for configuration details.
+
 The :ref:`/plugins/report/reportportal` report plugin now supports
 a new ``auto-analysis`` key. This key allows users to enable
 immediate auto-analysis of failed tests reported to ReportPortal.

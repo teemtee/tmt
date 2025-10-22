@@ -98,6 +98,8 @@ link:
             Defines host-specific Ansible variables to include under
             that host in the inventory.
 
+        .. versionadded:: 1.60
+
     example: |
         # Plan file
         provision:
@@ -116,6 +118,10 @@ link:
                 vars:
                     ansible_user: fedora
                     ansible_port: 2222
+            # If a specified group doesn't exist in the layout,
+            # it will be created automatically in the output inventory.
+          - name: database-guest
+            role: database
             # Orphan guest without role or ansible.group,
             # will be placed in `ungrouped`
           - name: orphan-guest
@@ -129,6 +135,9 @@ link:
                 client:
                     hosts:
                         client-guest: {}
+                database:
+                    hosts:
+                        database-guest: {}
                 ungrouped:
                     hosts:
                         orphan-guest: {}
@@ -139,4 +148,5 @@ link:
                 client-guest:
                     ansible_user: fedora
                     ansible_port: 2222
+                database-guest: {}
                 orphan-guest: {}

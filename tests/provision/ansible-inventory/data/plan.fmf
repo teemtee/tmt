@@ -1,0 +1,59 @@
+provision:
+    how: virtual
+    image: fedora
+execute:
+    script: 'true'
+
+# Default layout test - single guest
+/default-layout:
+    summary: Test default inventory layout with single guest
+    prepare:
+      - name: Trigger inventory generation
+        how: ansible
+        playbook: playbooks/minimal-playbook.yaml
+
+# Comprehensive test - multiple inventory features
+/comprehensive-inventory:
+    summary: Test comprehensive ansibleinventory features together
+    ansible:
+        inventory:
+            layout: layout-comprehensive.yaml
+    provision+:
+      - name: frontend-1
+        role: webserver
+        ansible:
+            group: frontend  # Precedence over role
+            vars:
+                custom_var: value1
+      - name: backend-1
+        role: backend
+      - name: orphan-host  # No group -> should go to ungrouped
+      - name: auto-group-host
+        ansible:
+            group: auto-created  # Group doesn't exist in layout -> auto-creation
+    prepare:
+      - name: Run frontend-specific tasks
+        how: ansible
+        playbook: playbooks/frontend-playbook.yaml
+      - name: Run webservers group tasks
+        how: ansible
+        playbook: playbooks/webservers-playbook.yaml
+      - name: Run ungrouped hosts tasks
+        how: ansible
+        playbook: playbooks/ungrouped-playbook.yaml
+
+# Default groups normalization test - incomplete layout
+/default-groups:
+    summary: Test layout normalization with missing default groups
+    ansible:
+        inventory:
+            layout: incomplete-layout.yaml
+    provision+:
+      - name: no-group-host  # No group specified -> should go to 'ungrouped'
+      - name: custom-host
+        ansible:
+            group: custom-group  # Uses group from incomplete layout
+    prepare:
+      - name: Trigger inventory generation
+        how: ansible
+        playbook: playbooks/minimal-playbook.yaml
