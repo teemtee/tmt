@@ -965,6 +965,9 @@ def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
             if host.beaker_job_owner:
                 req['job_owner'] = host.beaker_job_owner
 
+            if host.beaker_job_group:
+                req['job_group'] = host.beaker_job_group
+
             if host.kickstart and not mrack_constructs_ks_pre():
                 ks_components: list[str] = [
                     host.kickstart[ks_section]
@@ -1225,6 +1228,7 @@ class CreateJobParameters:
     bootc_image_url: Optional[str]
     bootc: bool
     bootc_check_system_url: Optional[str]
+    group: str = 'linux'
 
     def to_mrack(self) -> dict[str, Any]:
         data = dataclasses.asdict(self)
