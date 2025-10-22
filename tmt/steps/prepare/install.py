@@ -586,22 +586,42 @@ class InstallBootc(InstallBase):
         return self.guest.package_manager.engine
 
     def install_from_repository(self) -> None:
-        self._engine.install(
-            *self.list_installables("package", *self.packages),
-            options=Options(
-                excluded_packages=self.exclude,
-                skip_missing=self.skip_missing,
-            ),
-        )
+        installables = self.list_installables("package", *self.packages)
+
+        # Check presence to avoid unnecessary container rebuilds
+        presence = self.guest.package_manager.check_presence(*installables)
+
+        missing_installables = {
+            installable for installable, present in presence.items() if not present
+        }
+
+        if missing_installables:
+            self._engine.install(
+                *missing_installables,
+                options=Options(
+                    excluded_packages=self.exclude,
+                    skip_missing=self.skip_missing,
+                ),
+            )
 
     def install_from_url(self) -> None:
-        self._engine.install(
-            *self.list_installables("remote package", *self.remote_packages),
-            options=Options(
-                excluded_packages=self.exclude,
-                skip_missing=self.skip_missing,
-            ),
-        )
+        installables = self.list_installables("remote package", *self.remote_packages)
+
+        # Check presence to avoid unnecessary container rebuilds
+        presence = self.guest.package_manager.check_presence(*installables)
+
+        missing_installables = {
+            installable for installable, present in presence.items() if not present
+        }
+
+        if missing_installables:
+            self._engine.install(
+                *missing_installables,
+                options=Options(
+                    excluded_packages=self.exclude,
+                    skip_missing=self.skip_missing,
+                ),
+            )
 
     def install_local(self) -> None:
         # Make sure the containerfile session has been initialized. The
