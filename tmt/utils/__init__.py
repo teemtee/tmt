@@ -4521,9 +4521,16 @@ def remove_color(text: str) -> str:
     return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
 
 
-def generate_runs(path: Path, id_: tuple[str, ...]) -> Iterator[Path]:
+def generate_runs(path: Path, id_: tuple[str, ...], all_: bool = False) -> Iterator[Path]:
     """
     Generate absolute paths to runs from path
+
+    :param path: path to search for runs
+    :param ``id_``: specific run IDs to filter by
+    :param ``all_``: if set, process workdirs without ``run.yaml`` files (for directories
+        prefixed with ``run-``). This allows commands that don't require
+        ``run.yaml`` to process workdirs without affecting other commands.
+    :yields: absolute paths to run directories
     """
 
     # Prepare absolute workdir path if --id was used
@@ -4551,6 +4558,12 @@ def generate_runs(path: Path, id_: tuple[str, ...]) -> Iterator[Path]:
         # in abs_path to be generated.
         invalid_id = id_ and str(abs_child_path) not in id_
         invalid_run = not abs_child_path.joinpath('run.yaml').exists()
+        # Setting _all parameter to True overrides the invalid_run check above,
+        # allowing commands that don't require a run.yaml file to process workdirs
+        # without affecting other commands. This override only applies to paths
+        # prefixed with 'run-' to target actual run directories.
+        if invalid_run and all_ and abs_child_path.name.startswith('run-'):
+            invalid_run = False
         if not abs_child_path.is_dir() or invalid_id or invalid_run:
             continue
         yield abs_child_path
