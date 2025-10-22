@@ -53,7 +53,7 @@ description: |
        ``beaker`` plugin supports ``model-name``
 
     .. versionchanged:: 1.60
-       added ``type`` field
+       added ``type`` into specification
 
 example:
   - |
