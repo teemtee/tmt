@@ -35,7 +35,8 @@ rlJournalStart
         rlRun "tmt-report-result -o bkr_skip_log extra-tmt-report-result/skip SKIP"
 
         # We also support reporting the subresult via rhts-report-result alias
-        rlRun "rhts-report-result extra-rhts-report-result/bad FAIL bkr_rhts_bad_log"
+        rlRun "TMT_RESTRAINT_COMPATIBLE=1 rhts-report-result extra-rhts-report-result/bad-with-compat FAIL bkr_rhts_bad_log"
+        rlRun "rhts-report-result extra-rhts-report-result/bad-without-compat FAIL bkr_rhts_bad_log"
     rlPhaseEnd
 
     rlPhaseStartCleanup "phase-cleanup"
