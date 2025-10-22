@@ -45,7 +45,7 @@ copy_outputfile_to_data_dir () {
         if [ "$TMT_RESTRAINT_COMPATIBLE" == "1" ]; then
             filename="resultoutputfile.log"
         else
-            filename="journal.txt"
+            filename="output.txt"
         fi
     else
         filename=$(basename "$outputFile")
