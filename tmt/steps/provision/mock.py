@@ -80,7 +80,7 @@ class MockShell:
             return self
 
     class ManagedEpollFd:
-        def __init__(self, epoll: select.epoll, fd: int) -> None:
+        def __init__(self, epoll: 'select.epoll', fd: int) -> None:
             self.epoll = epoll
             self.fd: Optional[int] = fd
 
@@ -107,7 +107,10 @@ class MockShell:
         self.root = root
         self.rootdir = rootdir
         self.mock_shell: Optional[subprocess.Popen[str]] = None
-        self.epoll: Optional[select.epoll] = None
+
+        # `select.epoll` is not available on non-Linux platforms.
+        # The `ruff` linter complains but for no good reason, so we silence it.
+        self.epoll: Optional['select.epoll'] = None  # noqa: UP037
 
     def __del__(self) -> None:
         self.exit_shell()
