@@ -54,11 +54,6 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
               - file:/build/specific.rpm           # Single file
               - file:https://example.com/pkg.rpm   # Remote URL
               - file:/path/to/packages/                # Directory
-
-    .. code-block:: python
-
-        provider = FileArtifactProvider("file:/tmp/*.rpm", logger)
-        artifacts = provider.download_artifacts(guest, Path("/tmp"), [])
     """
 
     @classmethod
