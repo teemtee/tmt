@@ -4,6 +4,7 @@ import tmt.log
 import tmt.utils
 from tmt.container import container
 from tmt.steps.provision import Guest
+from tmt.utils import Environment, EnvVarValue
 
 if TYPE_CHECKING:
     from tmt.steps.context.reboot import RebootContext
@@ -47,6 +48,10 @@ class RestartContext:
         """
 
         return self.is_requested_test()
+
+    @property
+    def environment(self) -> Environment:
+        return Environment({'TMT_TEST_RESTART_COUNT': EnvVarValue(str(self._restart_count))})
 
     def handle_restart(self, reboot: Optional['RebootContext'] = None) -> bool:
         """

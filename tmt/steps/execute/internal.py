@@ -173,7 +173,7 @@ flock "$TMT_TEST_PIDFILE_LOCK" -c "echo '${test_pid} ${TMT_REBOOT_REQUEST}' > ${
 {{
     log_to_dmesg(
       "Running test '%s' (serial number %d) with reboot count %d and test restart count %d. (Be aware the test name is sanitized!)"
-      | format(INVOCATION.test.safe_name, INVOCATION.test.serial_number, INVOCATION._reboot_count, INVOCATION._restart_count)
+      | format(INVOCATION.test.safe_name, INVOCATION.test.serial_number, INVOCATION.reboot.count, INVOCATION.restart.count)
     )
 }}
 {%- endmacro %}
@@ -435,9 +435,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         environment["TMT_TEST_METADATA"] = EnvVarValue(
             invocation.path / tmt.steps.execute.TEST_METADATA_FILENAME
         )
-        environment["TMT_REBOOT_REQUEST"] = EnvVarValue(
-            invocation.test_data_path / tmt.steps.scripts.TMT_REBOOT_SCRIPT.created_file
-        )
 
         # Set the restraint-compatible mode if enabled
         environment["TMT_RESTRAINT_COMPATIBLE"] = EnvVarValue(
@@ -446,10 +443,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         if self.data.restraint_compatible:
             environment["RSTRNT_TASKNAME"] = EnvVarValue(invocation.test.name)
 
-        # Set all supported reboot variables
-        for reboot_variable in tmt.steps.scripts.TMT_REBOOT_SCRIPT.related_variables:
-            environment[reboot_variable] = EnvVarValue(str(invocation.reboot._reboot_count))
-        environment['TMT_TEST_RESTART_COUNT'] = EnvVarValue(str(invocation.restart._restart_count))
+        # Add variables from invocation contexts
+        environment.update(invocation.abort.environment)
+        environment.update(invocation.reboot.environment)
+        environment.update(invocation.restart.environment)
 
         # Add variables the framework wants to expose
         environment.update(
