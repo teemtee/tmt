@@ -753,7 +753,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     logger.verbose(f"{duration} {test.name} [{progress}]", shift=shift)
 
                     try:
-                        if invocation.restart.handle_restart():
+                        if invocation.restart.handle_restart(reboot=invocation.reboot):
                             continue
 
                     except (
