@@ -1,6 +1,10 @@
+import glob
+import urllib.parse
 from collections.abc import Sequence
 from functools import cached_property
+from typing import Optional, TypedDict
 
+import tmt.log
 from tmt.container import container
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
@@ -11,6 +15,13 @@ from tmt.steps.prepare.artifact.providers import (
 )
 from tmt.steps.provision import Guest
 from tmt.utils import Path
+
+
+class SourceInfo(TypedDict):
+    raw: str
+    is_url: bool
+    is_glob: bool
+    path: Optional[Path]
 
 
 @container
@@ -56,13 +67,62 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
               - file:/path/to/packages/                # Directory
     """
 
+    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
+        super().__init__(raw_provider_id, logger)
+        self._source_info = self._parse_source(raw_provider_id)
+
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
-        return ""
+        if not raw_provider_id.startswith("file:"):
+            raise ValueError(f"Unsupported provider id: {raw_provider_id}")
+        return ArtifactProviderId(raw_provider_id)
+
+    def _parse_source(self, raw_provider_id: str) -> SourceInfo:
+        source = raw_provider_id[5:]
+        parsed = urllib.parse.urlparse(source)
+
+        return SourceInfo(
+            raw=source,
+            is_url=parsed.scheme in ("http", "https"),
+            is_glob='*' in source,
+            path=Path(source) if not parsed.scheme else None,
+        )
 
     @cached_property
     def artifacts(self) -> Sequence[PackageAsFileArtifactInfo]:
-        return []
+        artifacts: list[PackageAsFileArtifactInfo] = []
+        seen_ids: set[str] = set()
+
+        def add(info: PackageAsFileArtifactInfo) -> None:
+            if info.id not in seen_ids:
+                artifacts.append(info)
+                seen_ids.add(info.id)
+
+        src = self._source_info
+
+        if src['is_url']:
+            add(PackageAsFileArtifactInfo(_raw_artifact=src['raw']))
+
+        elif src['is_glob']:
+            if matched_files := glob.glob(src['raw']):
+                for matched_file in sorted(matched_files):
+                    f = Path(matched_file)
+                    if f.is_file():
+                        add(PackageAsFileArtifactInfo(_raw_artifact=str(f)))
+            else:
+                self.logger.warning(f"No files matched the glob pattern: {src['raw']}.")
+
+        elif src["path"] and src['path'].is_file():
+            add(PackageAsFileArtifactInfo(_raw_artifact=str(src['path'])))
+
+        elif src["path"] and src['path'].is_dir():
+            for f in sorted(src['path'].glob("*.rpm")):
+                add(PackageAsFileArtifactInfo(_raw_artifact=str(f)))
+
+        if not artifacts:
+            self.logger.warning(f"No artifacts found for source: {src['raw']}")
+
+        return artifacts
 
     def _download_artifact(
         self, artifact: PackageAsFileArtifactInfo, guest: Guest, destination: Path
