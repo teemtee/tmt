@@ -84,14 +84,14 @@ class RestartContext:
         if self.restart_counter >= self.restart_limit:
             if reboot:
                 self.logger.debug(
-                    f"Restart denied during during {self.owner_label}"
+                    f"Restart denied during {self.owner_label}"
                     f" with reboot count {reboot.reboot_counter}"
                     f" and restart count {self.restart_counter}."
                 )
 
             else:
                 self.logger.debug(
-                    f"Restart denied during during {self.owner_label}"
+                    f"Restart denied during {self.owner_label}"
                     f" with restart count {self.restart_counter}."
                 )
 
@@ -99,7 +99,9 @@ class RestartContext:
 
         if self.restart_with_reboot:
             if not reboot:
-                raise tmt.utils.GeneralError('foo')
+                raise tmt.utils.GeneralError(
+                    'A guest reboot before restart is not possible without a reboot context.'
+                )
 
             reboot.hard_requested = True
 
