@@ -1455,7 +1455,7 @@ def _parse_system(spec: Spec) -> BaseConstraint:
     group.constraints += _parse_text_constraints(
         spec,
         'system',
-        ('model-name',),
+        ('model-name', 'type'),
     )
 
     return group
