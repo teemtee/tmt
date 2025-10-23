@@ -61,7 +61,7 @@ SSH key placement and non-root ``sudo`` have been fixed in the
 
 The implementation of the :ref:`boot.method</spec/hardware/boot>` HW
 requirement changes to support instance types which offer multiple boot
-methods at the same time. Plugin is then free to chose the right one,
+methods at the same time. Plugin is then free to choose the right one,
 given the HW requirements. Current strict implementation would prevent
 the use of such instance types.
 
