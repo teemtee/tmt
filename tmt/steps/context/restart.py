@@ -39,7 +39,7 @@ class RestartContext:
     logger: tmt.log.Logger
 
     #: Number of times the action has been restarted.
-    _restart_count: int = 0
+    restart_counter: int = 0
 
     @property
     def requested(self) -> bool:
@@ -51,7 +51,7 @@ class RestartContext:
 
     @property
     def environment(self) -> Environment:
-        return Environment({'TMT_TEST_RESTART_COUNT': EnvVarValue(str(self._restart_count))})
+        return Environment({'TMT_TEST_RESTART_COUNT': EnvVarValue(str(self.restart_counter))})
 
     def handle_restart(self, reboot: Optional['RebootContext'] = None) -> bool:
         """
@@ -81,18 +81,18 @@ class RestartContext:
         if not self.requested:
             return False
 
-        if self._restart_count >= self.restart_limit:
+        if self.restart_counter >= self.restart_limit:
             if reboot:
                 self.logger.debug(
                     f"Restart denied during during {self.owner_label}"
-                    f" with reboot count {reboot._reboot_count}"
-                    f" and restart count {self._restart_count}."
+                    f" with reboot count {reboot.reboot_counter}"
+                    f" and restart count {self.restart_counter}."
                 )
 
             else:
                 self.logger.debug(
                     f"Restart denied during during {self.owner_label}"
-                    f" with restart count {self._restart_count}."
+                    f" with restart count {self.restart_counter}."
                 )
 
             raise tmt.utils.RestartMaxAttemptsError("Maximum restart attempts exceeded.")
@@ -107,7 +107,7 @@ class RestartContext:
                 return False
 
         else:
-            self._restart_count += 1
+            self.restart_counter += 1
 
             # Even though the reboot was not requested, it might have
             # still happened! Imagine a test configuring autoreboot on
@@ -121,13 +121,14 @@ class RestartContext:
         if reboot:
             self.logger.debug(
                 f"Test restart during {self.owner_label}"
-                f" with reboot count {reboot._reboot_count}"
-                f" and restart count {self._restart_count}."
+                f" with reboot count {reboot.reboot_counter}"
+                f" and restart count {self.restart_counter}."
             )
 
         else:
             self.logger.debug(
-                f"Test restart during {self.owner_label} with restart count {self._restart_count}."
+                f"Test restart during {self.owner_label}"
+                f" with restart count {self.restart_counter}."
             )
 
         self.guest.push()

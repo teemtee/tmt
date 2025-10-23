@@ -173,7 +173,7 @@ flock "$TMT_TEST_PIDFILE_LOCK" -c "echo '${test_pid} ${TMT_REBOOT_REQUEST}' > ${
 {{
     log_to_dmesg(
       "Running test '%s' (serial number %d) with reboot count %d and test restart count %d. (Be aware the test name is sanitized!)"
-      | format(INVOCATION.test.safe_name, INVOCATION.test.serial_number, INVOCATION.reboot.count, INVOCATION.restart.count)
+      | format(INVOCATION.test.safe_name, INVOCATION.test.serial_number, INVOCATION.reboot.reboot_counter, INVOCATION.restart.restart_counter)
     )
 }}
 {%- endmacro %}

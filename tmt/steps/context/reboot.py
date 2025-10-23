@@ -37,7 +37,7 @@ class RebootContext:
     logger: tmt.log.Logger
 
     #: Number of times the guest has been rebooted.
-    _reboot_count: int = 0
+    reboot_counter: int = 0
 
     @functools.cached_property
     def request_path(self) -> Path:
@@ -72,7 +72,7 @@ class RebootContext:
 
         # Set all supported reboot variables
         for reboot_variable in tmt.steps.scripts.TMT_REBOOT_SCRIPT.related_variables:
-            environment[reboot_variable] = EnvVarValue(str(self._reboot_count))
+            environment[reboot_variable] = EnvVarValue(str(self.reboot_counter))
 
         environment["TMT_REBOOT_REQUEST"] = EnvVarValue(
             self.path / tmt.steps.scripts.TMT_REBOOT_SCRIPT.created_file
@@ -96,22 +96,22 @@ class RebootContext:
         if not self.requested:
             return False
 
-        self._reboot_count += 1
+        self.reboot_counter += 1
 
         if restart:
-            restart._restart_count += 1
+            restart.restart_counter += 1
 
         if restart:
             self.logger.debug(
                 f"{'Hard' if self.hard_requested else 'Soft'} reboot during {self.owner_label}"
-                f" with reboot count {self._reboot_count}"
-                f" and test restart count {restart._restart_count}."
+                f" with reboot count {self.reboot_counter}"
+                f" and test restart count {restart.restart_counter}."
             )
 
         else:
             self.logger.debug(
                 f"{'Hard' if self.hard_requested else 'Soft'} reboot during {self.owner_label}"
-                f" with reboot count {self._reboot_count}."
+                f" with reboot count {self.reboot_counter}."
             )
 
         rebooted = False
