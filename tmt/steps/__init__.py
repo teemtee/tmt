@@ -2444,7 +2444,7 @@ class Login(Action):
         for guest in self.parent.plan.provision.ready_guests:
             # Attempt to push the workdir to the guest
             try:
-                guest.push()
+                guest.push(source=self.parent.plan.worktree)
                 if not cwd:
                     # Use path of the last executed test as the default
                     # current working directory
@@ -2455,6 +2455,7 @@ class Login(Action):
                         cwd = worktree
                     else:
                         try:
+                            guest.push(source=self.parent.plan.discover.workdir)
                             cwd = worktree.parent / "discover" / test_path.unrooted()
                             guest.execute(
                                 tmt.utils.ShellScript("/bin/true"),

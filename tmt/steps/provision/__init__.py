@@ -59,7 +59,7 @@ from tmt.package_managers import (
     Package,
 )
 from tmt.plugins import PluginRegistry
-from tmt.steps import Action, ActionTask, PhaseQueue
+from tmt.steps import Action, ActionTask, PhaseQueue, PushTask, sync_with_guests
 from tmt.utils import (
     Command,
     GeneralError,
@@ -3779,6 +3779,14 @@ class Provision(tmt.steps.Step):
                 'provision step failed',
                 causes=[outcome.exc for outcome in failed_outcomes if outcome.exc is not None],
             )
+
+        # Push the plan workdir to the provisioned guests as the last
+        # step. This is a counterpart of the PullTask in Finish.go().
+        # Without it `tmt run provision finish login` would break on
+        # non-existent plan data directory.
+        # TODO simplify as part of the data pulling/pushing cleanup
+        # https://github.com/teemtee/tmt/issues/4067
+        sync_with_guests(self, 'push', PushTask(self.guests, self._logger), self._logger)
 
         # To separate "provision" from the follow-up logging visually
         self.info('')

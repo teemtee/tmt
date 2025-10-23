@@ -1,0 +1,8 @@
+provision:
+    how: virtual
+prepare:
+    script: echo hi > $TMT_PLAN_DATA/prepare
+execute:
+    script: echo hi > $TMT_PLAN_DATA/execute
+finish:
+    script: echo hi > $TMT_PLAN_DATA/finish
