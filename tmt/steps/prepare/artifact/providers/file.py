@@ -67,18 +67,32 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
               - file:/path/to/packages/                # Directory
     """
 
+    SUPPORTED_PREFIX = "file"
+
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
         super().__init__(raw_provider_id, logger)
         self._source_info = self._parse_source(raw_provider_id)
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
-        if not raw_provider_id.startswith("file:"):
+        if not raw_provider_id.startswith(f"{cls.SUPPORTED_PREFIX}:"):
             raise ValueError(f"Unsupported provider id: {raw_provider_id}")
         return ArtifactProviderId(raw_provider_id)
 
     def _parse_source(self, raw_provider_id: str) -> SourceInfo:
-        source = raw_provider_id[5:]
+        """
+        Parse and classify a provider source string into its components.
+
+        This extracts the actual artifact source from a raw provider ID by
+        removing the provider prefix (e.g. ``file:``). It determines whether the source
+        represents a URL, a glob pattern, or a local file/directory, and constructs a
+        :py:class:`SourceInfo` object describing these properties.
+
+        :param raw_provider_id: artifact provider identifier to parse.
+        :returns: a :py:class:`SourceInfo` instance describing the parsed source.
+        :raises ValueError: if the provider ID does not start with the expected prefix.
+        """
+        source = raw_provider_id[len(f"{self.SUPPORTED_PREFIX}:") :]
         parsed = urllib.parse.urlparse(source)
 
         return SourceInfo(
