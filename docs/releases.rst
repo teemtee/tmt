@@ -23,8 +23,8 @@ tmt now supports automatic generation of Ansible inventory files
 during the provision phase. The new :ref:`/spec/plans/ansible`
 configuration allows users to define custom inventory layouts and
 organize provisioned guests into Ansible groups with host-specific
-variables. See the :ref:`plan ansible</spec/plans/ansible>` and
-:ref:`provision ansible</spec/plans/provision/ansible>` keys for
+variables. See the :ref:`plan ansible </spec/plans/ansible>` and
+:ref:`provision ansible </spec/plans/provision/ansible>` keys for
 configuration details.
 
 The :ref:`/plugins/report/reportportal` report plugin now supports
@@ -66,7 +66,10 @@ methods at the same time. Plugin is then free to choose the right one,
 given the HW requirements. Current strict implementation would prevent
 the use of such instance types.
 
-:ref:`/plugins/provision/connect` accepts multiple SSH keys.
+:ref:`/plugins/provision` which use ``ssh`` to connect to the
+guest, for example :ref:`/plugins/provision/connect` or
+:ref:`/plugins/provision/virtual.testcloud`, now support providing
+multiple ssh keys using the ``--key`` option.
 
 
 tmt-1.59.0
