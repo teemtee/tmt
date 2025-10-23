@@ -34,6 +34,39 @@ User generated content in the ``TMT_PLAN_DATA`` directory is now
 correctly preserved when the :ref:`/stories/cli/run/login` action
 is used to log into the guest.
 
+The :ref:`system.type</spec/hardware/system>` HW requirement is now
+recognized by tmt.
+
+Beakerlib output from phases is now saved in files with more predictable
+filenames, ``output.txt`` instead of random temporary filenames.
+
+The ``bootc`` package manager now correctly checks for the existence of
+installable packages, and skips their installation - and image rebuild
+- when they are installed already.
+
+``tmt cleanup`` now correctly handles workdirs that no longer contain a
+valid ``run.yaml`` file. This allows guest removal in the case of invalid
+or incomplete runs.
+
+The :ref:`/plugins/provision/bootc` guest now uses ``containers-storage:``
+prefix for local containers only. It was incorrectly used for remote
+containers, and the image build process might have failed when such an
+image was not already ``pull``ed.
+
+SSH key placement and non-root ``sudo`` have been fixed in the
+:ref:`/plugins/provision/virtual.testcloud` guests.
+
+:ref:`/spec/policy` examples were updated to demonstrate the use of
+``to_yaml`` filter with complex objects, which preserves them correctly.
+
+The implementation of the :ref:`boot.method</spec/hardware/boot>` HW
+requirement changes to support instance types which offer multiple boot
+methods at the same time. Plugin is then free to chose the right one,
+given the HW requirements. Current strict implementation would prevent
+the use of such instance types.
+
+:ref:`/plugins/provision/connect` accepts multiple SSH keys.
+
 
 tmt-1.59.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
