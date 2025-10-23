@@ -23,8 +23,9 @@ tmt now supports automatic generation of Ansible inventory files
 during the provision phase. The new :ref:`/spec/plans/ansible`
 configuration allows users to define custom inventory layouts and
 organize provisioned guests into Ansible groups with host-specific
-variables. See the :ref:`/spec/plans/ansible` and
-:ref:`/spec/plans/provision/ansible` sections for configuration details.
+variables. See the :ref:`plan ansible</spec/plans/ansible>` and
+:ref:`provision ansible</spec/plans/provision/ansible>` keys for
+configuration details.
 
 The :ref:`/plugins/report/reportportal` report plugin now supports
 a new ``auto-analysis`` key. This key allows users to enable
@@ -51,7 +52,7 @@ or incomplete runs.
 The :ref:`/plugins/provision/bootc` guest now uses ``containers-storage:``
 prefix for local containers only. It was incorrectly used for remote
 containers, and the image build process might have failed when such an
-image was not already ``pull``ed.
+image was not already present on the guest.
 
 SSH key placement and non-root ``sudo`` have been fixed in the
 :ref:`/plugins/provision/virtual.testcloud` guests.
