@@ -10,7 +10,7 @@ import tmt.steps.scripts
 import tmt.utils
 from tmt.container import container
 from tmt.steps.provision import Guest
-from tmt.utils import Path, ShellScript
+from tmt.utils import Environment, EnvVarValue, Path, ShellScript
 from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
@@ -65,6 +65,20 @@ class RebootContext:
         """
 
         return self.soft_requested or self.hard_requested
+
+    @property
+    def environment(self) -> Environment:
+        environment = Environment()
+
+        # Set all supported reboot variables
+        for reboot_variable in tmt.steps.scripts.TMT_REBOOT_SCRIPT.related_variables:
+            environment[reboot_variable] = EnvVarValue(str(self._reboot_count))
+
+        environment["TMT_REBOOT_REQUEST"] = EnvVarValue(
+            self.path / tmt.steps.scripts.TMT_REBOOT_SCRIPT.created_file
+        )
+
+        return environment
 
     def handle_reboot(self, restart: Optional['RestartContext'] = None) -> bool:
         """
