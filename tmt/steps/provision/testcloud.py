@@ -1017,8 +1017,23 @@ class GuestTestcloud(tmt.GuestSsh):
             self.image_url = self._guess_image_url(self.image_url)
             self.debug(f"Guessed image url: '{self.image_url}'", level=3)
 
+        assert testcloud is not None  # Narrow type
+
+        # Make a symlink to the file image
+        if self.image_url.startswith("file://"):
+            image_path = Path(self.image_url.removeprefix("file://"))
+            # We should not symlink any supported formats, e.g. the `.xz`
+            # does an extract step that would be skip if we make the symlink.
+            if image_path.suffixes and image_path.suffixes[-1] in (".qcow2",):
+                # Create a symlink in the testcloud STORE_DIR and make sure
+                # it is always updated to the requested version.
+                image_symlink = self.testcloud_image_dirpath / image_path.name
+                image_symlink.unlink(missing_ok=True)
+                image_symlink.symlink_to(image_path)
+                # Adjust selinux tags for the actual image
+                testcloud.image.Image._adjust_image_selinux(image_path)
+
         # Initialize and prepare testcloud image
-        assert testcloud is not None
         self._image = testcloud.image.Image(self.image_url)
         self.verbose('qcow', self._image.name, 'green')
         if not Path(self._image.local_path).exists():
