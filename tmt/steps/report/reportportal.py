@@ -725,7 +725,7 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             for failure_log in result.failure_logs:
                 upload_log(failure_log, is_yaml=True, is_traceback=True)
 
-    def execute_rp_import(self) -> None:
+    def execute_rp_import(self, logger: tmt.log.Logger) -> None:
         """
         Execute the import of test, results and subresults into ReportPortal
         """
@@ -803,7 +803,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
                 502,  # Bad Gateway
                 503,  # Service Unavailable
                 504,  # Gateway Timeout
-            )
+            ),
+            logger=logger,
         ) as session:
             session.verify = self.data.ssl_verify
 
@@ -1106,4 +1107,4 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
         with catch_warnings_safe(
             action=warning_filter_action, category=urllib3.exceptions.InsecureRequestWarning
         ):
-            self.execute_rp_import()
+            self.execute_rp_import(logger or self._logger)
