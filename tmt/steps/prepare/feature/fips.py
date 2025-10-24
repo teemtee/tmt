@@ -7,7 +7,7 @@ from tmt.container import container, field
 from tmt.steps.prepare.feature import PrepareFeatureData, ToggleableFeature, provides_feature
 from tmt.steps.provision import Guest
 
-SUPPORTED_DISTRO_PATTERNS = (
+SUPPORTED_DISTRO_PATTERNS = tuple(
     re.compile(pattern)
     for pattern in (r'Red Hat Enterprise Linux (8|9|10)', r'CentOS Stream (8|9|10)')
 )
