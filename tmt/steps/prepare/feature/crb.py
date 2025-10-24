@@ -8,7 +8,7 @@ from tmt.steps.prepare.feature import PrepareFeatureData, ToggleableFeature, pro
 from tmt.steps.provision import Guest
 from tmt.utils import ShellScript
 
-SUPPORTED_DISTRO_PATTERNS = (
+SUPPORTED_DISTRO_PATTERNS = tuple(
     re.compile(pattern)
     for pattern in (r'Red Hat Enterprise Linux (8|9|10)', r'CentOS Stream (8|9|10)')
 )
