@@ -20,7 +20,7 @@ from tmt.steps.provision import Guest
 from tmt.utils import Path
 from tmt.utils.templates import render_template
 
-FEATURE_PLAYEBOOK_DIRECTORY = tmt.utils.resource_files('steps/prepare/feature')
+FEATURE_PLAYEBOOK_RESOURCE = 'steps/prepare/feature'
 
 FeatureClass = type['FeatureBase']
 _FEATURE_PLUGIN_REGISTRY: PluginRegistry[FeatureClass] = PluginRegistry('prepare.feature')
@@ -189,7 +189,7 @@ class FeatureBase(tmt.utils.Common):
 
     @classmethod
     def _find_playbook(cls, filename: str, logger: tmt.log.Logger) -> Optional[Path]:
-        filepath = FEATURE_PLAYEBOOK_DIRECTORY / filename
+        filepath = tmt.utils.resource_files(FEATURE_PLAYEBOOK_RESOURCE, logger=logger) / filename
         if filepath.exists() and filepath.is_file():
             assert isinstance(filepath, Path)  # Narrow type
             return filepath
