@@ -4289,8 +4289,15 @@ class TimeoutHTTPAdapter(requests.adapters.HTTPAdapter):
 
 
 class RetryStrategy(urllib3.util.retry.Retry):
-    def __init__(self, *args: Any, logger: Optional[tmt.log.Logger] = None, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
+    logger: tmt.log.Logger
+
+    # Note: the signature is different than the one of `super().__init__()`.
+    # This is on purpose, so we can add mandatory `logger` parameter, without
+    # a default value (most likely `None`). But it looks we are fairly safe
+    # because `super().__init__()` accepts no positional arguments, for quite
+    # some time already, so, effectively, the signatures are equivalent.
+    def __init__(self, *, logger: tmt.log.Logger, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
         self.logger = logger
 
     def new(self, **kw: Any) -> 'Self':
@@ -4303,9 +4310,6 @@ class RetryStrategy(urllib3.util.retry.Retry):
         Log current GitHub rate limit information
         """
 
-        if not self.logger:
-            return
-
         self.logger.debug("Limit", headers.get('X-RateLimit-Limit', 'unknown'))
         self.logger.debug("Remaining", headers.get('X-RateLimit-Remaining', 'unknown'))
         self.logger.debug("Reset", headers.get('X-RateLimit-Reset', 'unknown'))
@@ -4316,9 +4320,6 @@ class RetryStrategy(urllib3.util.retry.Retry):
         Log detailed response information for debugging
         """
 
-        if not self.logger:
-            return
-
         self.logger.debug("Response status", response.status)
         self.logger.debug("Response headers", dict(response.headers))
         self.logger.debug("Response text", response.data.decode('utf-8'))
@@ -4328,7 +4329,7 @@ class RetryStrategy(urllib3.util.retry.Retry):
     def is_retry(self, method: str, status_code: int, has_retry_after: bool = False) -> bool:
         answer = super().is_retry(method, status_code, has_retry_after=has_retry_after)
 
-        if answer and self.history and self.logger:
+        if answer and self.history:
             last_request = self.history[-1]
 
             self.logger.warning(
@@ -4456,12 +4457,13 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
 
     @staticmethod
     def create(
+        *,
         retries: int = DEFAULT_RETRY_SESSION_RETRIES,
         backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
         allowed_methods: Optional[tuple[str, ...]] = None,
         status_forcelist: tuple[int, ...] = DEFAULT_RETRIABLE_HTTP_CODES,
         timeout: Optional[int] = None,
-        logger: Optional[tmt.log.Logger] = None,
+        logger: tmt.log.Logger,
     ) -> requests.Session:
         # `method_whitelist`` has been renamed to `allowed_methods` since
         # urllib3 1.26, and it will be removed in urllib3 2.0.
@@ -4501,12 +4503,13 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
 
     def __init__(
         self,
+        *,
         retries: int = DEFAULT_RETRY_SESSION_RETRIES,
         backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
         allowed_methods: Optional[tuple[str, ...]] = None,
         status_forcelist: tuple[int, ...] = DEFAULT_RETRIABLE_HTTP_CODES,
         timeout: Optional[int] = None,
-        logger: Optional[tmt.log.Logger] = None,
+        logger: tmt.log.Logger,
     ) -> None:
         self.retries = retries
         self.backoff_factor = backoff_factor
