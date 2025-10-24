@@ -1130,10 +1130,35 @@ class Core(
                     f'value of "{json_path.split(".")[-1]}" is not "{match.group(2)}"',
                 )
 
+            def detect_missing_required_properties(
+                error: jsonschema.ValidationError,
+            ) -> LinterReturn:
+                match = re.search(
+                    r"(?mi)'([a-zA-Z0-9', \-]+)' is a required property",
+                    str(error),
+                )
+
+                if not match:
+                    return
+
+                if isinstance(error.schema, dict) and '$id' in error.schema:
+                    yield (
+                        LinterOutcome.WARN,
+                        f'"{match.group(1)}" is a required property by schema '
+                        f'{error.schema["$id"]}',
+                    )
+
+                else:
+                    yield (
+                        LinterOutcome.WARN,
+                        f'"{match.group(1)}" is a required property by schema',
+                    )
+
             for error, _ in errors:
                 yield from detect_unallowed_properties(error)
                 yield from detect_unallowed_properties_with_pattern(error)
                 yield from detect_enum_violations(error)
+                yield from detect_missing_required_properties(error)
 
                 # Validation errors can have "context", a list of "sub" errors encountered during
                 # validation. Interesting ones are identified & added to our error message.
@@ -1142,6 +1167,7 @@ class Core(
                         yield from detect_unallowed_properties(suberror)
                         yield from detect_unallowed_properties_with_pattern(suberror)
                         yield from detect_enum_violations(suberror)
+                        yield from detect_missing_required_properties(suberror)
 
             yield LinterOutcome.FAIL, 'fmf node failed schema validation'
 
