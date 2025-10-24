@@ -2843,6 +2843,8 @@ class GuestSsh(Guest):
         self.debug('rsync has not been confirmed on the guest, try installing it')
 
         try:
+            # Refresh package metadata to ensure packages are locatable,
+            # this is needed for example on fresh Debian installs.
             self.package_manager.refresh_metadata()
             self.package_manager.install(Package('rsync'))
 
