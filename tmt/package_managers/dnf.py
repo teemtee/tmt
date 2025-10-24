@@ -1,5 +1,5 @@
 import re
-from typing import Optional, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from tmt.package_managers import (
     FileSystemPath,
@@ -11,6 +11,17 @@ from tmt.package_managers import (
     escape_installables,
     provides_package_manager,
 )
+
+if TYPE_CHECKING:
+    from tmt._compat.typing import TypeAlias
+
+    # TODO: Move Repository abstraction to tmt.package_manager subpackage
+    # This class will be added in a future PR.
+    # For now, just type it as Any to satisfy pyright.
+    Repository: TypeAlias = Any
+else:
+    Repository: Any = None  # type: ignore[assignment]
+
 from tmt.utils import Command, GeneralError, RunError, ShellScript
 
 
@@ -165,6 +176,23 @@ class DnfEngine(PackageManagerEngine):
 
         return script
 
+    def install_repository(self, repository: Repository) -> ShellScript:
+        repo_path = f"/etc/yum.repos.d/{repository.filename}"
+        return ShellScript(
+            rf"""
+            {self.guest.facts.sudo_prefix} tee {repo_path} <<'EOF'
+            {repository.content}
+            EOF"""
+        )
+
+    def list_packages(self, repository: Repository) -> ShellScript:
+        repo_ids = " ".join(f"--enablerepo={repo_id}" for repo_id in repository.repo_ids)
+        return ShellScript(
+            f"""
+            {self.command.to_script()} repoquery --disablerepo='*' {repo_ids}
+            """
+        )
+
 
 # ignore[type-arg]: TypeVar in package manager registry annotations is
 # puzzling for type checkers. And not a good idea in general, probably.
@@ -239,7 +267,7 @@ class Dnf5(Dnf):
 
     _engine_class = Dnf5Engine
 
-    probe_command = probe_command = Command('dnf5', '--version')
+    probe_command = Command('dnf5', '--version')
     probe_priority = 60
 
 

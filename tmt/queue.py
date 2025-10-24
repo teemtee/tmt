@@ -1,3 +1,4 @@
+import abc
 import copy
 from collections.abc import Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
@@ -17,7 +18,7 @@ TaskResultT = TypeVar('TaskResultT')
 TaskT = TypeVar('TaskT', bound='Task')  # type: ignore[type-arg]
 
 
-class Task(Generic[TaskResultT]):
+class Task(abc.ABC, Generic[TaskResultT]):
     """
     A base class for queueable actions.
 
@@ -49,6 +50,7 @@ class Task(Generic[TaskResultT]):
         self.logger = logger
 
     @property
+    @abc.abstractmethod
     def name(self) -> str:
         """
         A name of this task.
@@ -184,6 +186,7 @@ class Task(Generic[TaskResultT]):
 
                 yield task
 
+    @abc.abstractmethod
     def go(self) -> Iterator['Self']:
         """
         Perform the task.
@@ -238,6 +241,7 @@ class GuestlessTask(Task[TaskResultT]):
     point for tasks that do not need to run on any guest.
     """
 
+    @abc.abstractmethod
     def run(self, logger: Logger) -> TaskResultT:
         """
         Perform the task.
@@ -291,6 +295,7 @@ class MultiGuestTask(Task[TaskResultT]):
     def guest_ids(self) -> list[str]:
         return sorted([guest.multihost_name for guest in self.guests])
 
+    @abc.abstractmethod
     def run_on_guest(self, guest: 'Guest', logger: Logger) -> TaskResultT:
         """
         Perform the task.

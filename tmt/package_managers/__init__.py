@@ -1,3 +1,4 @@
+import abc
 import shlex
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, Union
@@ -7,14 +8,21 @@ import tmt.log
 import tmt.plugins
 import tmt.utils
 from tmt.container import container, simple_field
-from tmt.utils import Command, CommandOutput, Path, ShellScript
+from tmt.utils import Command, CommandOutput, GeneralError, Path, ShellScript
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
+
+    # TODO: Move Repository abstraction to tmt.package_manager subpackage
+    # This class will be added in a future PR.
+    # For now, just type it as Any to satisfy pyright.
+    Repository: TypeAlias = Any
     from tmt.steps.provision import Guest
 
     #: A type of package manager names.
     GuestPackageManager: TypeAlias = str
+else:
+    Repository: Any = None  # type: ignore[assignment]
 
 
 #
@@ -148,6 +156,7 @@ class PackageManagerEngine(tmt.utils.Common):
 
         self.command, self.options = self.prepare_command()
 
+    @abc.abstractmethod
     def prepare_command(self) -> tuple[Command, Command]:
         """
         Prepare installation command and subcommand options
@@ -155,6 +164,7 @@ class PackageManagerEngine(tmt.utils.Common):
 
         raise NotImplementedError
 
+    @abc.abstractmethod
     def check_presence(self, *installables: Installable) -> ShellScript:
         """
         Return a presence status for each given installable
@@ -162,6 +172,7 @@ class PackageManagerEngine(tmt.utils.Common):
 
         raise NotImplementedError
 
+    @abc.abstractmethod
     def install(
         self,
         *installables: Installable,
@@ -169,6 +180,7 @@ class PackageManagerEngine(tmt.utils.Common):
     ) -> ShellScript:
         raise NotImplementedError
 
+    @abc.abstractmethod
     def reinstall(
         self,
         *installables: Installable,
@@ -176,6 +188,7 @@ class PackageManagerEngine(tmt.utils.Common):
     ) -> ShellScript:
         raise NotImplementedError
 
+    @abc.abstractmethod
     def install_debuginfo(
         self,
         *installables: Installable,
@@ -183,7 +196,27 @@ class PackageManagerEngine(tmt.utils.Common):
     ) -> ShellScript:
         raise NotImplementedError
 
+    @abc.abstractmethod
     def refresh_metadata(self) -> ShellScript:
+        raise NotImplementedError
+
+    def install_repository(self, repository: "Repository") -> ShellScript:
+        """
+        Install a repository by placing its configuration in /etc/yum.repos.d/.
+
+        :param repository: The repository to install.
+        :returns: A shell script to install the repository.
+        """
+        raise NotImplementedError
+
+    def list_packages(self, repository: "Repository") -> ShellScript:
+        """
+        List packages available in the specified repository.
+
+        :param repository: The repository to query.
+        :returns: A shell script to list packages in the repository.
+        :raises NotImplementedError: If the package manager does not support listing packages.
+        """
         raise NotImplementedError
 
 
@@ -219,6 +252,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
         self.guest = guest
 
+    @abc.abstractmethod
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
         """
         Return a presence status for each given installable
@@ -249,3 +283,29 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
     def refresh_metadata(self) -> CommandOutput:
         return self.guest.execute(self.engine.refresh_metadata())
+
+    def install_repository(self, repository: "Repository") -> CommandOutput:
+        """
+        Install a repository by placing its configuration in /etc/yum.repos.d/
+        and refresh the package manager cache.
+
+        :param repository: The repository to install.
+        :returns: The output of the command execution.
+        """
+        return self.guest.execute(self.engine.install_repository(repository))
+
+    def list_packages(self, repository: "Repository") -> list[str]:
+        """
+        List packages available in the specified repository.
+
+        :param repository: The repository to query.
+        :returns: A list of package names available in the repository.
+        """
+        script = self.engine.list_packages(repository)
+        output = self.guest.execute(script)
+        stdout = output.stdout
+
+        if stdout is None:
+            raise GeneralError("Repository query provided no output")
+
+        return stdout.strip().splitlines()

@@ -38,6 +38,7 @@ from click import confirm, echo
 from fmf.utils import listed
 from ruamel.yaml.error import MarkedYAMLError
 
+import tmt.ansible
 import tmt.base
 import tmt.checks
 import tmt.config
@@ -632,6 +633,9 @@ class DependencyFile(
         valid, return an empty string as the message.
         """
         return True, ''
+
+    def _export(self, *, keys: Optional[list[str]] = None) -> tmt.export._RawExportedInstance:
+        return cast(tmt.export._RawExportedInstance, self.to_dict())
 
 
 _RawDependencyItem = Union[str, _RawDependencyFmfId, _RawDependencyFile]
@@ -2043,6 +2047,13 @@ class Plan(
     # Optional Login instance attached to the plan for easy login in tmt try
     login: Optional[tmt.steps.Login] = None
 
+    # Optional Ansible configuration for the plan
+    ansible: Optional[tmt.ansible.PlanAnsible] = field(
+        default=None,
+        normalize=tmt.ansible.normalize_plan_ansible,
+        exporter=lambda value: value.to_spec() if value else None,
+    )
+
     # When fetching remote plans or splitting plans, we store links
     # between the original plan with the fmf id and the imported or
     # derived plans with the content.
@@ -2069,6 +2080,7 @@ class Plan(
         'environment',
         'environment-file',
         'gate',
+        'ansible',
     ]
 
     def __init__(
@@ -2610,7 +2622,7 @@ class Plan(
 
     def _iter_steps(
         self, enabled_only: bool = True, skip: Optional[list[str]] = None
-    ) -> Iterator[tuple[str, tmt.steps.Step]]:
+    ) -> Iterator[tuple[tmt.steps.StepName, tmt.steps.Step]]:
         """
         Iterate over steps.
 
@@ -2642,7 +2654,7 @@ class Plan(
 
     def step_names(
         self, enabled_only: bool = True, skip: Optional[list[str]] = None
-    ) -> Iterator[str]:
+    ) -> Iterator[tmt.steps.StepName]:
         """
         Iterate over step names.
 
@@ -2796,14 +2808,20 @@ class Plan(
         P003: execute step methods must be known
         """
 
-        yield from self._lint_step_methods('execute', tmt.steps.execute.ExecutePlugin)
+        yield from self._lint_step_methods(
+            'execute',
+            tmt.steps.execute.ExecutePlugin,  # type: ignore[type-abstract]
+        )
 
     def lint_discover_unknown_method(self) -> LinterReturn:
         """
         P004: discover step methods must be known
         """
 
-        yield from self._lint_step_methods('discover', tmt.steps.discover.DiscoverPlugin)
+        yield from self._lint_step_methods(
+            'discover',
+            tmt.steps.discover.DiscoverPlugin,  # type: ignore[type-abstract]
+        )
 
     def lint_fmf_remote_ids_valid(self) -> LinterReturn:
         """
@@ -4852,7 +4870,7 @@ class Status(tmt.utils.Common):
     FIRST_COL_LEN = len(LONGEST_STEP) + 2
 
     @staticmethod
-    def get_overall_plan_status(plan: Plan) -> str:
+    def get_overall_plan_status(plan: Plan) -> Union[Literal["done", "todo"], tmt.steps.StepName]:
         """
         Examines the plan status (find the last done step)
         """
@@ -5173,12 +5191,10 @@ class Clean(tmt.utils.Common):
             last_run = Run(logger=self._logger, cli_invocation=self.cli_invocation)
             last_run._workdir_load(last_run._workdir_path)
             return self._clean_workdir(last_run.run_workdir)
-        all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, id_))
+        all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, id_, all_=True))
         if keep is not None:
-            # Sort by modify time of the workdirs and keep the newest workdirs
-            all_workdirs.sort(
-                key=lambda workdir: (workdir / 'run.yaml').stat().st_mtime, reverse=True
-            )
+            # Sort by change time of the workdirs and keep the newest workdirs
+            all_workdirs.sort(key=lambda workdir: workdir.stat().st_ctime, reverse=True)
             all_workdirs = all_workdirs[keep:]
 
         successful = True
@@ -5421,6 +5437,10 @@ class Links(SpecBasedContainer[Any, list[_RawLinkRelation]]):
 
         # Ensure that each link is in the canonical form
         self._links = [Link.from_spec(spec) for spec in specs]
+
+    @classmethod
+    def from_spec(cls, spec: Union[_RawLink, list[_RawLink]]) -> Self:
+        return cls(data=spec)
 
     def to_spec(self) -> list[_RawLinkRelation]:
         """

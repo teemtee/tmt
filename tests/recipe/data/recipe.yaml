@@ -150,6 +150,12 @@ plans:
                     module: tmt.steps.provision
                     name: GuestFacts
             environment: {}
+            ansible:
+                group:
+                vars: {}
+                __class__:
+                    module: tmt.ansible
+                    name: GuestAnsible
             __class__:
                 module: tmt.steps.provision.local
                 name: ProvisionLocalData

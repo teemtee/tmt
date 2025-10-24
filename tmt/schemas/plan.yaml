@@ -120,6 +120,10 @@ properties:
   tier:
     $ref: "/schemas/core#/definitions/tier"
 
+  # https://tmt.readthedocs.io/en/stable/spec/plans.html#ansible
+  ansible:
+    $ref: "/schemas/ansible"
+
   plan:
     type: object
     additionalProperties: false

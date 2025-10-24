@@ -1,3 +1,4 @@
+import abc
 import ast
 import contextlib
 import dataclasses
@@ -33,6 +34,7 @@ import fmf.utils
 from click import echo
 
 import tmt
+import tmt.ansible
 import tmt.hardware
 import tmt.log
 import tmt.package_managers
@@ -44,6 +46,11 @@ import tmt.steps.scripts
 import tmt.utils
 import tmt.utils.wait
 from tmt._compat.typing import Self
+from tmt.ansible import (
+    AnsibleInventory,
+    GuestAnsible,
+    normalize_guest_ansible,
+)
 from tmt.container import SerializableContainer, container, field, key_to_option
 from tmt.log import Logger
 from tmt.options import option
@@ -52,7 +59,7 @@ from tmt.package_managers import (
     Package,
 )
 from tmt.plugins import PluginRegistry
-from tmt.steps import Action, ActionTask, PhaseQueue
+from tmt.steps import Action, ActionTask, PhaseQueue, PushTask, sync_with_guests
 from tmt.utils import (
     Command,
     GeneralError,
@@ -1140,6 +1147,16 @@ class GuestData(SerializableContainer):
         else None,
     )
 
+    ansible: Optional[GuestAnsible] = field(
+        default=None,
+        normalize=normalize_guest_ansible,
+        serialize=lambda ansible: ansible.to_serialized() if ansible else None,
+        unserialize=lambda serialized: GuestAnsible.from_serialized(serialized)
+        if serialized
+        else GuestAnsible(),
+        help='Ansible configuration for individual guest inventory generation.',
+    )
+
     # TODO: find out whether this could live in DataContainer. It probably could,
     # but there are containers not backed by options... Maybe a mixin then?
     @classmethod
@@ -1228,13 +1245,14 @@ class GuestData(SerializableContainer):
 
 
 @container
-class GuestLog:
+class GuestLog(abc.ABC):
     # Log file name
     name: str
 
     # Linked guest
     guest: "Guest"
 
+    @abc.abstractmethod
     def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
         """
         Fetch and return content of a log.
@@ -1326,6 +1344,8 @@ class Guest(
 
     environment: tmt.utils.Environment
 
+    ansible: Optional[GuestAnsible]
+
     # Flag to indicate localhost guest, requires special handling
     localhost = False
 
@@ -1407,6 +1427,7 @@ class Guest(
         return format_guest_full_name(self.name, self.role)
 
     @property
+    @abc.abstractmethod
     def is_ready(self) -> bool:
         """
         Detect guest is ready or not
@@ -1615,6 +1636,33 @@ class Guest(
         else:
             self.__dict__['facts'] = GuestFacts.from_serialized(facts)
 
+    @functools.cached_property
+    def ansible_host_vars(self) -> dict[str, Any]:
+        """
+        Get host variables for Ansible inventory.
+        """
+        return {
+            'ansible_host': self.primary_address,
+            **(self.ansible.vars if self.ansible else {}),
+        }
+
+    @functools.cached_property
+    def ansible_host_groups(self) -> list[str]:
+        """
+        Get guest list of groups for Ansible inventory.
+        """
+        groups = ['all']  # All hosts are in 'all' group
+
+        # Try to get ansible group from ansible.group key in provision guest data
+        if self.ansible and self.ansible.group:
+            groups.append(self.ansible.group)
+        elif self.role:  # Otherwise use role as group
+            groups.append(self.role)
+        else:
+            groups.append('ungrouped')
+
+        return groups
+
     def show(self, show_multihost_name: bool = True) -> None:
         """
         Show guest details such as distro and kernel
@@ -1805,6 +1853,7 @@ class Guest(
             **kwargs,
         )
 
+    @abc.abstractmethod
     def _run_ansible(
         self,
         playbook: AnsibleApplicable,
@@ -1912,6 +1961,7 @@ class Guest(
     ) -> tmt.utils.CommandOutput:
         pass
 
+    @abc.abstractmethod
     def execute(
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
@@ -1938,6 +1988,7 @@ class Guest(
 
         raise NotImplementedError
 
+    @abc.abstractmethod
     def push(
         self,
         source: Optional[Path] = None,
@@ -1951,6 +2002,7 @@ class Guest(
 
         raise NotImplementedError
 
+    @abc.abstractmethod
     def pull(
         self,
         source: Optional[Path] = None,
@@ -1963,6 +2015,7 @@ class Guest(
 
         raise NotImplementedError
 
+    @abc.abstractmethod
     def stop(self) -> None:
         """
         Stop the guest
@@ -1992,6 +2045,7 @@ class Guest(
     ) -> bool:
         pass
 
+    @abc.abstractmethod
     def reboot(
         self,
         hard: bool = False,
@@ -2609,21 +2663,31 @@ class GuestSsh(Guest):
 
         playbook = self._sanitize_ansible_playbook_path(playbook, playbook_root)
 
+        ansible_command = Command(
+            'ansible-playbook', *self._ansible_verbosity(), *self._ansible_extra_args(extra_args)
+        )
+
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
         parent = cast(Provision, self.parent)
 
+        inventory_path = parent.plan.provision.ansible_inventory_path
+
+        self.debug(f"Using Ansible inventory file '{inventory_path}'", level=3)
+
+        # Build command arguments
+        ansible_command += Command(
+            '--ssh-common-args',
+            self._ssh_options.to_element(),
+            '-i',
+            str(inventory_path),
+            '--limit',
+            self.name,
+            playbook,
+        )
+
         try:
             return self._run_guest_command(
-                Command(
-                    'ansible-playbook',
-                    *self._ansible_verbosity(),
-                    *self._ansible_extra_args(extra_args),
-                    '--ssh-common-args',
-                    self._ssh_options.to_element(),
-                    '-i',
-                    f'{self._ssh_guest},',
-                    playbook,
-                ),
+                ansible_command,
                 friendly_command=friendly_command,
                 silent=silent,
                 cwd=parent.plan.worktree,
@@ -2646,6 +2710,18 @@ class GuestSsh(Guest):
 
         # Enough for now, ssh connection can be created later
         return self.primary_address is not None
+
+    @functools.cached_property
+    def ansible_host_vars(self) -> dict[str, Any]:
+        """
+        Get host variables for Ansible inventory with SSH-specific variables.
+        """
+        return {
+            **super().ansible_host_vars,
+            'ansible_connection': 'ssh',
+            'ansible_user': self.user,
+            'ansible_port': self.port,
+        }
 
     def setup(self) -> None:
         super().setup()
@@ -3122,6 +3198,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
     # ignore[assignment]: as a base class, ProvisionStepData is not included in
     # ProvisionStepDataT.
     _data_class = ProvisionStepData  # type: ignore[assignment]
+    # TODO: Make Guest be a generic input
     _guest_class = Guest
 
     #: If set, the plugin can be asked to provision in multiple threads at the
@@ -3205,7 +3282,8 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
         super().wake()
 
         if data is not None:
-            guest = self._guest_class(
+            # Note: This is a genuine type-annotation issue. _guest_class must be non-abstract here
+            guest = self._guest_class(  # type: ignore[abstract]
                 logger=self._logger, data=data, name=self.name, parent=self.step
             )
             guest.wake()
@@ -3313,6 +3391,9 @@ class ProvisionTask(tmt.queue.GuestlessTask[None]):
             logger=self.logger,
         )
 
+    def run(self, logger: Logger) -> None:
+        raise AssertionError("run is not used by ProvisionTask.go")
+
 
 class ProvisionQueue(tmt.queue.Queue[ProvisionTask]):
     """
@@ -3371,6 +3452,32 @@ class Provision(tmt.steps.Step):
 
         return [guest for guest in self.guests if guest.is_ready]
 
+    @functools.cached_property
+    def ansible_inventory_path(self) -> Path:
+        """
+        Get path to Ansible inventory
+        This property lazily generates the Ansible inventory file on first access.
+
+        :returns: Path to the generated inventory.yaml file
+        """
+        inventory_path = self.step_workdir / 'inventory.yaml'
+
+        # Get layout from plan-level ansible configuration and resolve path
+        layout_path = None
+        if (
+            self.plan.ansible
+            and self.plan.ansible.inventory
+            and self.plan.ansible.inventory.layout
+        ):
+            layout_path = self.plan.anchor_path / self.plan.ansible.inventory.layout
+
+        inventory = AnsibleInventory.generate(self.ready_guests, layout_path)
+        self.write(inventory_path, tmt.utils.dict_to_yaml(inventory))
+
+        self.info('ansible', f"Inventory saved to '{inventory_path}'")
+
+        return inventory_path
+
     def __init__(
         self,
         *,
@@ -3393,7 +3500,7 @@ class Provision(tmt.steps.Step):
         A set of members of the step workdir that should not be removed.
         """
 
-        return {*super()._preserved_workdir_members, 'guests.yaml'}
+        return {*super()._preserved_workdir_members, 'guests.yaml', 'inventory.yaml'}
 
     @property
     def is_multihost(self) -> bool:
@@ -3672,6 +3779,14 @@ class Provision(tmt.steps.Step):
                 'provision step failed',
                 causes=[outcome.exc for outcome in failed_outcomes if outcome.exc is not None],
             )
+
+        # Push the plan workdir to the provisioned guests as the last
+        # step. This is a counterpart of the PullTask in Finish.go().
+        # Without it `tmt run provision finish login` would break on
+        # non-existent plan data directory.
+        # TODO simplify as part of the data pulling/pushing cleanup
+        # https://github.com/teemtee/tmt/issues/4067
+        sync_with_guests(self, 'push', PushTask(self.guests, self._logger), self._logger)
 
         # To separate "provision" from the follow-up logging visually
         self.info('')

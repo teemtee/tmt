@@ -38,6 +38,11 @@ description: |
                # String, a name of the management interface device (product).
                device-name: "~ Some device name"
 
+           # String, a system type. The value is interpreted by the
+           # plugin and its backing infrastructure, and not all plugins
+           # will support the same set of system types.
+           type: "Machine"
+
     .. versionchanged:: 1.46
        added ``management-controller`` specification
 
@@ -47,11 +52,18 @@ description: |
     .. versionchanged:: 1.38
        ``beaker`` plugin supports ``model-name``
 
+    .. versionchanged:: 1.60
+       added ``type`` into specification
+
 example:
   - |
     # Select any system by a given vendor
     system:
         vendor-name: "~ HPE"
+
+    # With the beaker plugin, provision a guest of the "Machine" type
+    system:
+        type: "Machine"
 
   - |
     # Select any system by a given model name

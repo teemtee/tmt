@@ -5,6 +5,7 @@ Internal APIs, plugin classes and shared functionality and helpers for metadata
 export of tests, plans or stories.
 """
 
+import abc
 import re
 import traceback
 import types
@@ -69,7 +70,7 @@ class Exporter(Protocol):
         pass
 
 
-class Exportable(Generic[ExportableT], tmt.utils._CommonBase):  # noqa: PYI059
+class Exportable(Generic[ExportableT], tmt.utils._CommonBase, abc.ABC):  # noqa: PYI059
     """
     Mixin class adding support for exportability of class instances
     """
@@ -139,6 +140,7 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase):  # noqa: PYI059
 
         return cast(Exporter, getattr(exporter_class, f'export_{cls.__name__.lower()}_collection'))
 
+    @abc.abstractmethod
     def _export(self, *, keys: Optional[list[str]] = None) -> _RawExportedInstance:
         """
         Export instance as "raw" dictionary.
@@ -189,12 +191,13 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase):  # noqa: PYI059
             )
 
 
-class ExportPlugin:
+class ExportPlugin(abc.ABC):
     """
     Base class for plugins providing metadata export functionality
     """
 
     @classmethod
+    @abc.abstractmethod
     def export_fmfid_collection(cls, fmf_ids: list['tmt.base.FmfId'], **kwargs: Any) -> str:
         """
         Export collection of fmf ids
@@ -203,6 +206,7 @@ class ExportPlugin:
         raise NotImplementedError
 
     @classmethod
+    @abc.abstractmethod
     def export_test_collection(
         cls,
         tests: list['tmt.base.Test'],
@@ -216,6 +220,7 @@ class ExportPlugin:
         raise NotImplementedError
 
     @classmethod
+    @abc.abstractmethod
     def export_plan_collection(
         cls,
         plans: list['tmt.base.Plan'],
@@ -229,6 +234,7 @@ class ExportPlugin:
         raise NotImplementedError
 
     @classmethod
+    @abc.abstractmethod
     def export_story_collection(
         cls,
         stories: list['tmt.base.Story'],
@@ -260,6 +266,7 @@ class TrivialExporter(ExportPlugin):
     """
 
     @classmethod
+    @abc.abstractmethod
     def _export(cls, data: _RawExported) -> str:
         """
         Perform the actual conversion of internal data package to desired format.

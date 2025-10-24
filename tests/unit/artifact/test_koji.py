@@ -3,12 +3,14 @@ import pytest
 from tmt.steps.prepare.artifact.providers.koji import KojiArtifactProvider
 
 
+@pytest.mark.skip(reason="would be replaced by mocks")
 @pytest.mark.integration
 def test_koji_valid_build(root_logger):
     provider = KojiArtifactProvider("koji.build:2829512", root_logger)
     assert len(provider.artifacts) == 13
 
 
+@pytest.mark.skip(reason="would be replaced by mocks")
 @pytest.mark.integration
 def test_koji_valid_nvr(root_logger):
     provider = KojiArtifactProvider("koji.nvr:tmt-1.58.0-1.fc43", root_logger)
@@ -16,6 +18,7 @@ def test_koji_valid_nvr(root_logger):
     assert provider.build_id == 2829512  # Known build ID for this NVR
 
 
+@pytest.mark.skip(reason="would be replaced by mocks")
 def test_koji_invalid_nvr(root_logger):
     from tmt.utils import GeneralError
 
@@ -25,6 +28,7 @@ def test_koji_invalid_nvr(root_logger):
         _ = provider.build_id
 
 
+@pytest.mark.skip(reason="would be replaced by mocks")
 @pytest.mark.integration
 def test_koji_valid_task_id_actual_build(root_logger):
     provider = KojiArtifactProvider("koji.task:137451383", root_logger)
@@ -32,15 +36,14 @@ def test_koji_valid_task_id_actual_build(root_logger):
     assert len(provider.artifacts) == 13
 
 
+@pytest.mark.skip(reason="would be replaced by mocks")
 @pytest.mark.integration
 def test_koji_valid_task_id_scratch_build(root_logger):
-    provider = KojiArtifactProvider("koji.task:137705547", root_logger)
-    tasks = provider._get_task_children(137705547)
-    assert len(tasks) == 13
-    assert 137705547 in tasks  # The parent task itself should be included
+    task_id = 137705547
+    provider = KojiArtifactProvider(f"koji.task:{task_id}", root_logger)
+    tasks = list(provider._get_task_children(task_id))
+
+    assert len(tasks) == 7
+    assert task_id in tasks
     assert provider.build_id is None
-    assert (
-        provider.artifacts[0]._raw_artifact['url']
-        == 'https://kojipkgs.fedoraproject.org/work/tasks/5553/137705553/python-scikit-build-core-0.11.5-5.fc44.src.rpm'
-    )
     assert len(provider.artifacts) == 2

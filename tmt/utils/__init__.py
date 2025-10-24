@@ -2,6 +2,7 @@
 Test Metadata Utilities
 """
 
+import abc
 import contextlib
 import copy
 import dataclasses
@@ -1434,7 +1435,7 @@ def sanitize_name(name: str, allow_slash: bool = True) -> str:
     return pattern.sub('-', name).strip('-')
 
 
-class HasRunWorkdir:
+class HasRunWorkdir(abc.ABC):
     """
     Provides assured access to a run workdir.
     """
@@ -1444,6 +1445,7 @@ class HasRunWorkdir:
         super().__init__(*args, **kwargs)
 
     @property
+    @abc.abstractmethod
     def run_workdir(self) -> Path:
         """
         Path to a run workdir.
@@ -1455,7 +1457,7 @@ class HasRunWorkdir:
         raise NotImplementedError
 
 
-class HasPlanWorkdir:
+class HasPlanWorkdir(abc.ABC):
     """
     Provides assured access to a plan workdir.
     """
@@ -1465,6 +1467,7 @@ class HasPlanWorkdir:
         super().__init__(*args, **kwargs)
 
     @property
+    @abc.abstractmethod
     def plan_workdir(self) -> Path:
         """
         Path to a plan workdir.
@@ -1475,7 +1478,7 @@ class HasPlanWorkdir:
         raise NotImplementedError
 
 
-class HasStepWorkdir:
+class HasStepWorkdir(abc.ABC):
     """
     Provides assured access to a step workdir.
     """
@@ -1485,6 +1488,7 @@ class HasStepWorkdir:
         super().__init__(*args, **kwargs)
 
     @property
+    @abc.abstractmethod
     def step_workdir(self) -> Path:
         """
         Path to a step workdir.
@@ -1495,7 +1499,7 @@ class HasStepWorkdir:
         raise NotImplementedError
 
 
-class HasPhaseWorkdir:
+class HasPhaseWorkdir(abc.ABC):
     """
     Provides assured access to a phase workdir.
     """
@@ -1505,6 +1509,7 @@ class HasPhaseWorkdir:
         super().__init__(*args, **kwargs)
 
     @property
+    @abc.abstractmethod
     def phase_workdir(self) -> Path:
         """
         Path to a phase workdir.
@@ -1515,7 +1520,7 @@ class HasPhaseWorkdir:
         raise NotImplementedError
 
 
-class HasGuestWorkdir:
+class HasGuestWorkdir(abc.ABC):
     """
     Provides assured access to a guest workdir.
     """
@@ -1525,6 +1530,7 @@ class HasGuestWorkdir:
         super().__init__(*args, **kwargs)
 
     @property
+    @abc.abstractmethod
     def guest_workdir(self) -> Path:
         """
         Path to a guest workdir.
@@ -1569,14 +1575,14 @@ class _CommonBase:
         # https://github.com/python/mypy/issues/4177
         parent = mro[mro.index(__class__) + 1]  # type: ignore[name-defined]
 
-        if parent in (object, Generic):
+        if parent in (object, Generic, abc.ABC):
             super().__init__()
 
         else:
             super().__init__(**kwargs)
 
 
-class _CommonMeta(type):
+class _CommonMeta(abc.ABCMeta):
     """
     A meta class for all :py:class:`Common` classes.
 
@@ -4515,9 +4521,16 @@ def remove_color(text: str) -> str:
     return re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
 
 
-def generate_runs(path: Path, id_: tuple[str, ...]) -> Iterator[Path]:
+def generate_runs(path: Path, id_: tuple[str, ...], all_: bool = False) -> Iterator[Path]:
     """
     Generate absolute paths to runs from path
+
+    :param path: path to search for runs
+    :param ``id_``: specific run IDs to filter by
+    :param ``all_``: if set, process workdirs without ``run.yaml`` files (for directories
+        prefixed with ``run-``). This allows commands that don't require
+        ``run.yaml`` to process workdirs without affecting other commands.
+    :yields: absolute paths to run directories
     """
 
     # Prepare absolute workdir path if --id was used
@@ -4545,6 +4558,12 @@ def generate_runs(path: Path, id_: tuple[str, ...]) -> Iterator[Path]:
         # in abs_path to be generated.
         invalid_id = id_ and str(abs_child_path) not in id_
         invalid_run = not abs_child_path.joinpath('run.yaml').exists()
+        # Setting _all parameter to True overrides the invalid_run check above,
+        # allowing commands that don't require a run.yaml file to process workdirs
+        # without affecting other commands. This override only applies to paths
+        # prefixed with 'run-' to target actual run directories.
+        if invalid_run and all_ and abs_child_path.name.startswith('run-'):
+            invalid_run = False
         if not abs_child_path.is_dir() or invalid_id or invalid_run:
             continue
         yield abs_child_path

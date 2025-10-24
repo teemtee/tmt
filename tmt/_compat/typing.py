@@ -3,9 +3,9 @@ from __future__ import annotations
 import sys
 
 if sys.version_info >= (3, 10):
-    from typing import Concatenate, ParamSpec, TypeAlias
+    from typing import Concatenate, ParamSpec, TypeAlias, TypeGuard
 else:
-    from typing_extensions import Concatenate, ParamSpec, TypeAlias
+    from typing_extensions import Concatenate, ParamSpec, TypeAlias, TypeGuard
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -17,4 +17,5 @@ __all__ = [
     "ParamSpec",
     "Self",
     "TypeAlias",
+    "TypeGuard",
 ]
