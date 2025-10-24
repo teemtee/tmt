@@ -1,0 +1,11 @@
+/plan:
+    provision:
+        how: virtual
+        image: fedora
+    discover:
+        how: fmf
+    execute:
+        how: tmt
+
+/test:
+    test: echo hi
