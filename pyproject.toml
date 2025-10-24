@@ -427,6 +427,7 @@ typing-modules = ["tmt._compat.typing"]
 # The purpose of tmt/_compat is to be used with TID251 (banned imports)
 "tmt/_compat/**.py" = ["TID251"]
 "docs/conf.py" = ["TID251"]
+"docs/ext/*.py" = ["TID251"]
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["tmt.utils.field"]
