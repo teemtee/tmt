@@ -3,6 +3,7 @@ from typing import Any, Optional, Union
 
 import tmt
 import tmt.config
+import tmt.log
 import tmt.utils
 import tmt.utils.templates
 from tmt._compat.importlib.readers import MultiplexedPath
@@ -100,7 +101,10 @@ class TemplateManager:
         Return all default templates.
         """
 
-        templates_dir = tmt.utils.resource_files('templates/')
+        templates_dir = tmt.utils.resource_files(
+            'templates/',
+            logger=tmt.log.Logger.get_bootstrap_logger(),
+        )
         templates = _get_templates(templates_dir)
         if not templates:
             raise tmt.utils.GeneralError(f"Could not find default templates in '{templates_dir}'.")

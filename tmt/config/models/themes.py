@@ -3,6 +3,7 @@ from typing import Any, Optional, Union, cast
 # TID251: this use of `click.style()` is expected, and on purpose.
 from click import style as _style  # noqa: TID251
 
+import tmt.log
 import tmt.utils
 from tmt._compat.pydantic import ValidationError
 from tmt._compat.typing import TypeAlias
@@ -122,18 +123,22 @@ class ThemeConfig(MetadataContainer):
     active_theme: str = 'default'
 
     @classmethod
-    def load_theme(cls, theme_name: str) -> Theme:
+    def load_theme(cls, theme_name: str, logger: tmt.log.Logger) -> Theme:
         try:
             return Theme.from_file(
-                tmt.utils.resource_files(f'config/themes/{theme_name}.yaml', assert_file=True)
+                tmt.utils.resource_files(
+                    f'config/themes/{theme_name}.yaml',
+                    logger=logger,
+                    assert_file=True,
+                )
             )
 
         except FileNotFoundError as exc:
             raise tmt.utils.GeneralError(f"No such theme '{theme_name}'.") from exc
 
     @classmethod
-    def get_default_theme(cls) -> Theme:
-        return cls.load_theme('default')
+    def get_default_theme(cls, logger: tmt.log.Logger) -> Theme:
+        return cls.load_theme('default', logger)
 
-    def get_active_theme(self) -> Theme:
-        return self.load_theme(self.active_theme)
+    def get_active_theme(self, logger: tmt.log.Logger) -> Theme:
+        return self.load_theme(self.active_theme, logger)
