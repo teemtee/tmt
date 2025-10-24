@@ -4,6 +4,14 @@
     Releases
 ======================
 
+tmt-1.61.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :ref:`/plugins/provision/virtual.testcloud` plugin now works
+with the ``debian`` images as well thanks to refreshing package
+metadata before trying to install ``rsync`` on the guest.
+
+
 tmt-1.60.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
