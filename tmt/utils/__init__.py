@@ -4829,7 +4829,11 @@ def _load_schema(schema_filepath: Path) -> Schema:
 
     try:
         if not schema_filepath.is_absolute():
-            schema_filepath = resource_files(f'schemas/{schema_filepath}', assert_file=True)
+            schema_filepath = resource_files(
+                f'schemas/{schema_filepath}',
+                logger=tmt.log.Logger.get_bootstrap_logger(),
+                assert_file=True,
+            )
         return cast(Schema, yaml_to_dict(schema_filepath.read_text(encoding='utf-8')))
 
     except Exception as error:
@@ -4864,7 +4868,7 @@ def load_schema_store() -> SchemaStore:
     """
 
     store: SchemaStore = {}
-    schema_dirpath = resource_files('schemas')
+    schema_dirpath = resource_files('schemas', logger=tmt.log.Logger.get_bootstrap_logger())
 
     try:
         for filepath in schema_dirpath.glob('**/*ml'):
@@ -5906,7 +5910,7 @@ def resource_files(
     path: Union[str, Path],
     package: Union[str, ModuleType] = "tmt",
     *,
-    logger: Optional[tmt.log.Logger] = None,
+    logger: tmt.log.Logger,
     assert_file: Literal[True],
 ) -> Path: ...
 
@@ -5916,7 +5920,7 @@ def resource_files(
     path: Union[str, Path],
     package: Union[str, ModuleType] = "tmt",
     *,
-    logger: Optional[tmt.log.Logger] = None,
+    logger: tmt.log.Logger,
     assert_file: Literal[False] = False,
 ) -> Union[Path, MultiplexedPath]: ...
 
@@ -5925,7 +5929,7 @@ def resource_files(
     path: Union[str, Path],
     package: Union[str, ModuleType] = "tmt",
     *,
-    logger: Optional[tmt.log.Logger] = None,
+    logger: tmt.log.Logger,
     assert_file: bool = False,
 ) -> Union[Path, MultiplexedPath]:
     """
@@ -5950,9 +5954,6 @@ def resource_files(
     :returns: a (maybe multiplexed) path to the requested file or directory.
     """
 
-    if not logger:
-        # Make sure there is a logger to report entry-point failures
-        logger = tmt.log.Logger.get_bootstrap_logger()
     search_path = _get_resource_files_search_path(package, logger)
     resource_path = search_path / path
     if assert_file and not resource_path.is_file():
