@@ -6,7 +6,7 @@ from tmt.checks import CheckPlugin, provides_check
 from tmt.checks.internal import InternalCheck
 from tmt.container import container
 from tmt.result import CheckResult, ResultOutcome
-from tmt.steps.abort import AbortStep
+from tmt.steps.context.abort import AbortStep
 from tmt.steps.execute import TestInvocation
 from tmt.utils import ProcessExitCodes
 
