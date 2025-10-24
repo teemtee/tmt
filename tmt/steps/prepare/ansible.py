@@ -20,7 +20,6 @@ from tmt.steps.provision import (
     Guest,
 )
 from tmt.utils import (
-    DEFAULT_RETRIABLE_HTTP_CODES,
     ENVFILE_RETRY_SESSION_RETRIES,
     Path,
     PrepareError,
@@ -208,8 +207,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
                 try:
                     with retry_session(
-                        retries=ENVFILE_RETRY_SESSION_RETRIES,
-                        status_forcelist=DEFAULT_RETRIABLE_HTTP_CODES,
+                        retries=ENVFILE_RETRY_SESSION_RETRIES, logger=logger
                     ) as session:
                         response = session.get(raw_playbook)
 

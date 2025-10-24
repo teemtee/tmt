@@ -696,7 +696,7 @@ def distgit_download(
 
     for url, source_name in handler.url_and_name(distgit_dir):
         logger.debug(f"Download sources from '{url}'.")
-        with tmt.utils.retry_session() as session:
+        with tmt.utils.retry_session(logger=logger) as session:
             response = session.get(url)
         response.raise_for_status()
         target_dir.mkdir(exist_ok=True, parents=True)

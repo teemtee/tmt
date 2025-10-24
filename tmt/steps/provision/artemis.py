@@ -353,6 +353,7 @@ class ArtemisAPI:
                 504,  # Gateway Timeout
             ),
             timeout=guest.api_timeout,
+            logger=guest._logger,
         )
 
     def query(
@@ -551,7 +552,7 @@ class GuestArtemis(tmt.GuestSsh):
         if self.post_install_script:
             if tmt.utils.is_url(self.post_install_script):
                 try:
-                    with retry_session() as session:
+                    with retry_session(logger=self._logger) as session:
                         response = session.get(self.post_install_script)
 
                     if not response.ok:
@@ -877,7 +878,7 @@ class GuestLogArtemis(tmt.steps.provision.GuestLog):
         if url is None:
             return None
         try:
-            return tmt.utils.get_url_content(str(url))
+            return tmt.utils.get_url_content(str(url), logger)
         except Exception as error:
             tmt.utils.show_exception_as_warning(
                 exception=error,

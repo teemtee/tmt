@@ -585,7 +585,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 git_root = self.testdir
             elif self.data.url_content_type == "archive":
                 self.debug(f"Downloading '{url}' and extracting to '{self.testdir}'.")
-                with tmt.utils.retry_session() as session:
+                with tmt.utils.retry_session(logger=logger) as session:
                     response = session.get(url, stream=True)
                 response.raise_for_status()
                 # TODO: Generalize this file download
