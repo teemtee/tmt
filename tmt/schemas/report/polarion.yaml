@@ -1,5 +1,4 @@
 ---
-
 #
 # JSON Schema definition for `polarion` report plugin
 #
@@ -13,7 +12,6 @@ type: object
 additionalProperties: false
 
 properties:
-
   how:
     type: string
     enum:
@@ -68,6 +66,9 @@ properties:
     type: string
 
   compose-id:
+    type: string
+
+  test-cycle:
     type: string
 
   fips:
