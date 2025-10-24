@@ -1,60 +1,80 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
 
+from tests.unit.artifact.conftest import (
+    MOCK_BUILD_ID,
+    MOCK_RPMS_BREW,
+    create_mock_pathinfo,
+    mock_build_api_responses,
+    mock_call_api_for,
+    mock_task_api_responses,
+)
 from tmt.steps.prepare.artifact.providers.brew import BrewArtifactProvider
+from tmt.utils import GeneralError
 
 
-@pytest.mark.skip(reason="would be replaced by mocks")
-@pytest.mark.integration
-def test_brew_valid_build(root_logger):
-    provider = BrewArtifactProvider("brew.build:3866328", root_logger)
+@pytest.fixture
+def mock_brew():
+    with (
+        patch.object(BrewArtifactProvider, "_initialize_session", return_value=MagicMock()),
+        patch.object(
+            BrewArtifactProvider,
+            "_rpm_url",
+            side_effect=lambda rpm: f"http://brew.example.com/{rpm['name']}.rpm",
+        ),
+    ):
+        yield
+
+
+@pytest.fixture
+def mock_call_api():
+    with mock_call_api_for(BrewArtifactProvider) as mock:
+        yield mock
+
+
+def test_brew_valid_build(mock_brew, mock_call_api, root_logger):
+    mock_build_api_responses(mock_call_api, MOCK_BUILD_ID, MOCK_RPMS_BREW)
+    provider = BrewArtifactProvider(f"brew.build:{MOCK_BUILD_ID}", root_logger)
+    assert provider.build_id == MOCK_BUILD_ID
     assert len(provider.artifacts) == 21
 
 
-@pytest.mark.skip(reason="would be replaced by mocks")
-@pytest.mark.integration
-def test_brew_valid_draft_build(root_logger):
-    provider = BrewArtifactProvider("brew.build:3525300", root_logger)
+def test_brew_valid_draft_build(mock_brew, mock_call_api, root_logger):
+    draft_id = 3525300
+    mock_rpms = [
+        {
+            "name": f"draft_{draft_id}_pkg{i}",
+            "version": "1.0",
+            "release": "1.el9",
+            "arch": "x86_64",
+        }
+        for i in range(2)
+    ]
+    mock_call_api.side_effect = (
+        lambda method, *a, **kw: mock_rpms if method == "listBuildRPMs" else {"id": draft_id}
+    )
+
+    provider = BrewArtifactProvider(f"brew.build:{draft_id}", root_logger)
     assert len(provider.artifacts) == 2
-    assert any(
-        "draft_3525300" in artifact._raw_artifact['url'] for artifact in provider.artifacts
-    ), "No artifact URL contains 'draft_3525300'"
+    assert any(f"draft_{draft_id}" in a.location for a in provider.artifacts)
 
 
-@pytest.mark.skip(reason="would be replaced by mocks")
-@pytest.mark.integration
-def test_brew_valid_nvr(root_logger):
-    provider = BrewArtifactProvider("brew.nvr:unixODBC-2.3.12-1.el9", root_logger)
-    assert len(provider.artifacts) == 21
-    assert provider.build_id == 3866328  # Known build ID for this NVR
+def test_brew_valid_task_id_scratch_build(mock_brew, mock_call_api, root_logger):
+    from tmt.steps.prepare.artifact.providers import koji as koji_module
 
-
-@pytest.mark.skip(reason="would be replaced by mocks")
-@pytest.mark.integration
-def test_brew_invalid_nvr(root_logger):
-    from tmt.utils import GeneralError
-
-    provider = BrewArtifactProvider("brew.nvr:nonexistent-1.0-1.fc43", root_logger)
-
-    with pytest.raises(GeneralError, match=r"No build found for NVR 'nonexistent-1\.0-1\.fc43'\."):
-        _ = provider.build_id
-
-
-@pytest.mark.skip(reason="would be replaced by mocks")
-@pytest.mark.integration
-def test_brew_valid_task_id_actual_build(root_logger):
-    provider = BrewArtifactProvider("brew.task:69098388", root_logger)
-    assert provider.build_id == 3866328  # Known build ID for this task
-    assert len(provider.artifacts) == 21
-
-
-@pytest.mark.skip(reason="would be replaced by mocks")
-@pytest.mark.integration
-def test_brew_valid_task_id_scratch_build(root_logger):
     task_id = 69111304
-    provider = BrewArtifactProvider(f"brew.task:{task_id}", root_logger)
-    tasks = list(provider._get_task_children(task_id))
+    mock_pathinfo = create_mock_pathinfo()
+    mock_koji = MagicMock()
+    mock_koji.PathInfo.return_value = mock_pathinfo
+    mock_task_api_responses(mock_call_api, has_build=False)
 
-    assert len(tasks) == 6
-    assert task_id in tasks
-    assert provider.build_id is None
-    assert len(provider.artifacts) == 12
+    with patch.object(koji_module, "koji", mock_koji):
+        provider = BrewArtifactProvider(f"brew.task:{task_id}", root_logger)
+        provider._top_url = "http://brew.example.com"
+        tasks = list(provider._get_task_children(task_id))
+
+        assert len(tasks) == 2
+        assert task_id in tasks
+        assert provider.build_id is None
+        assert len(provider.artifacts) == 2
