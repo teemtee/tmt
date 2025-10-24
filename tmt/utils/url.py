@@ -2,7 +2,7 @@
 Url handling helpers.
 """
 
-import re
+import email.message
 
 import tmt.log
 import tmt.utils
@@ -15,12 +15,17 @@ def download(url: str, destination: Path, *, logger: tmt.log.Logger) -> Path:
         response = session.get(url, stream=True)
     response.raise_for_status()
     if destination.is_dir():
+        file_name = None
         if "Content-Disposition" in response.headers:
-            match = re.findall("filename=(.+)", response.headers["Content-Disposition"])
-            if not match:
-                raise tmt.utils.GeneralError("Could not determine filename from header")
-            file_name = match[0]
-        else:
+            # We use email.message to parse the Content-Disposition header since the regex can get
+            # quite complicate. We do not support `filename*` with this yet, but that is even more
+            # complicated to handle. Waiting on a better library to handle it.
+            # See: https://stackoverflow.com/a/12017573
+            _msg_handler = email.message.Message()
+            _msg_handler["Content-Disposition"] = response.headers["Content-Disposition"]
+            # If this one fails, it should return a None object, then try to get from url instead
+            file_name = _msg_handler.get_filename()
+        if not file_name:
             file_name = response.url.split("/")[-1]
     else:
         if destination.exists():
