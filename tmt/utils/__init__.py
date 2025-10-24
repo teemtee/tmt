@@ -253,7 +253,7 @@ ENVFILE_RETRY_SESSION_RETRIES: int = 10
 ENVFILE_RETRY_SESSION_BACKOFF_FACTOR: float = 1
 
 # Defaults for HTTP/HTTPS codes that are considered retriable
-DEFAULT_RETRIABLE_HTTP_CODES: Optional[tuple[int, ...]] = (
+DEFAULT_RETRIABLE_HTTP_CODES: tuple[int, ...] = (
     403,  # Forbidden (but Github uses it for rate limiting)
     429,  # Too Many Requests
     500,  # Internal Server Error
@@ -609,7 +609,6 @@ class Environment(dict[str, EnvVarValue]):
                 retries=ENVFILE_RETRY_SESSION_RETRIES,
                 backoff_factor=ENVFILE_RETRY_SESSION_BACKOFF_FACTOR,
                 allowed_methods=('GET',),
-                status_forcelist=DEFAULT_RETRIABLE_HTTP_CODES,
                 logger=logger,
             )
             try:
@@ -4324,6 +4323,21 @@ class RetryStrategy(urllib3.util.retry.Retry):
         self.logger.debug("Response headers", dict(response.headers))
         self.logger.debug("Response text", response.data.decode('utf-8'))
 
+    # Override parent implementation - use its code, sure, but then add
+    # custom logging, and propagate the return value.
+    def is_retry(self, method: str, status_code: int, has_retry_after: bool = False) -> bool:
+        answer = super().is_retry(method, status_code, has_retry_after=has_retry_after)
+
+        if answer and self.history and self.logger:
+            last_request = self.history[-1]
+
+            self.logger.warning(
+                f"Retrying HTTP request at '{last_request.url}', "
+                f"service responded with HTTP {last_request.status}."
+            )
+
+        return answer
+
     def increment(self, *args: Any, **kwargs: Any) -> urllib3.util.retry.Retry:
         error = cast(Optional[Exception], kwargs.get('error'))
 
@@ -4445,7 +4459,7 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
         retries: int = DEFAULT_RETRY_SESSION_RETRIES,
         backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
         allowed_methods: Optional[tuple[str, ...]] = None,
-        status_forcelist: Optional[tuple[int, ...]] = None,
+        status_forcelist: tuple[int, ...] = DEFAULT_RETRIABLE_HTTP_CODES,
         timeout: Optional[int] = None,
         logger: Optional[tmt.log.Logger] = None,
     ) -> requests.Session:
@@ -4490,7 +4504,7 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
         retries: int = DEFAULT_RETRY_SESSION_RETRIES,
         backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
         allowed_methods: Optional[tuple[str, ...]] = None,
-        status_forcelist: Optional[tuple[int, ...]] = None,
+        status_forcelist: tuple[int, ...] = DEFAULT_RETRIABLE_HTTP_CODES,
         timeout: Optional[int] = None,
         logger: Optional[tmt.log.Logger] = None,
     ) -> None:
@@ -4499,6 +4513,7 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
         self.allowed_methods = allowed_methods
         self.status_forcelist = status_forcelist
         self.timeout = timeout
+        self.logger = logger
 
     def __enter__(self) -> requests.Session:
         return self.create(
@@ -4507,6 +4522,7 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
             allowed_methods=self.allowed_methods,
             status_forcelist=self.status_forcelist,
             timeout=self.timeout,
+            logger=self.logger,
         )
 
     def __exit__(self, *args: object) -> None:
@@ -5929,13 +5945,13 @@ def retry(
     raise RetryError(label, causes=exceptions)
 
 
-def get_url_content(url: str) -> str:
+def get_url_content(url: str, logger: tmt.log.Logger) -> str:
     """
     Get content of a given URL as a string
     """
 
     try:
-        with retry_session() as session:
+        with retry_session(logger=logger) as session:
             response = session.get(url)
 
             if response.ok:

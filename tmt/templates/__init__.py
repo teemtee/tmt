@@ -3,6 +3,7 @@ from typing import Any, Optional
 
 import tmt
 import tmt.config
+import tmt.log
 import tmt.utils
 import tmt.utils.templates
 from tmt.utils import Path
@@ -120,14 +121,14 @@ class TemplateManager:
 
         return _append_newline_if_missing(self.render_file(path, plan_name=DEFAULT_PLAN_NAME))
 
-    def render_from_url(self, url: str, **variables: Any) -> str:
+    def render_from_url(self, url: str, logger: tmt.log.Logger, **variables: Any) -> str:
         """
         Render template from given URL.
         :param url: URL to the template file.
         :param variables: variables to be passed to the template.
         """
 
-        template = tmt.utils.get_url_content(url)
+        template = tmt.utils.get_url_content(url, logger)
         template = tmt.utils.templates.render_template(
             template, None, self._environment, **variables
         )
