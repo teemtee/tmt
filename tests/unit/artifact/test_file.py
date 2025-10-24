@@ -1,4 +1,5 @@
 import tempfile
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -53,3 +54,22 @@ def test_file_artifact_provider_deduplicates_globs(root_logger):
 
         assert len(artifacts) == 1
         assert artifacts[0].id == "baz.rpm"
+
+
+def test_download_artifact(root_logger):
+    # Test file download
+    file_provider = PackageAsFileArtifactProvider("file:/tmp/foo.rpm", root_logger)
+    file_provider._source_info = {'is_url': False}
+    guest = MagicMock()
+    file_artifact = PackageAsFileArtifactInfo(_raw_artifact="/tmp/foo.rpm")
+
+    file_provider._download_artifact(file_artifact, guest, Path("/remote/foo.rpm"))
+    guest.push.assert_called_once()
+
+    # Test URL download
+    url_provider = PackageAsFileArtifactProvider("file:https://example.com/foo.rpm", root_logger)
+    url_provider._source_info = {'is_url': True}
+    url_artifact = PackageAsFileArtifactInfo(_raw_artifact="https://example.com/foo.rpm")
+
+    url_provider._download_artifact(url_artifact, guest, Path("/remote/foo.rpm"))
+    guest.execute.assert_called_once()

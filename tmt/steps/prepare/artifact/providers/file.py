@@ -2,9 +2,11 @@ import glob
 import urllib.parse
 from collections.abc import Sequence
 from functools import cached_property
+from shlex import quote
 from typing import Optional, TypedDict
 
 import tmt.log
+import tmt.utils
 from tmt.container import container
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
@@ -14,14 +16,13 @@ from tmt.steps.prepare.artifact.providers import (
     provides_artifact_provider,
 )
 from tmt.steps.provision import Guest
-from tmt.utils import Path
 
 
 class SourceInfo(TypedDict):
     raw: str
     is_url: bool
     is_glob: bool
-    path: Optional[Path]
+    path: Optional[tmt.utils.Path]
 
 
 @container
@@ -34,7 +35,7 @@ class PackageAsFileArtifactInfo(ArtifactInfo):
 
     @property
     def id(self) -> str:
-        return Path(self._raw_artifact).name
+        return tmt.utils.Path(self._raw_artifact).name
 
     @property
     def location(self) -> str:
@@ -99,7 +100,7 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
             raw=source,
             is_url=parsed.scheme in ("http", "https"),
             is_glob='*' in source,
-            path=Path(source) if not parsed.scheme else None,
+            path=tmt.utils.Path(source) if not parsed.scheme else None,
         )
 
     @cached_property
@@ -120,7 +121,7 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
         elif src['is_glob']:
             if matched_files := glob.glob(src['raw']):
                 for matched_file in sorted(matched_files):
-                    f = Path(matched_file)
+                    f = tmt.utils.Path(matched_file)
                     if f.is_file():
                         add(PackageAsFileArtifactInfo(_raw_artifact=str(f)))
             else:
@@ -139,6 +140,18 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
         return artifacts
 
     def _download_artifact(
-        self, artifact: PackageAsFileArtifactInfo, guest: Guest, destination: Path
+        self, artifact: PackageAsFileArtifactInfo, guest: Guest, destination: tmt.utils.Path
     ) -> None:
-        raise NotImplementedError
+        try:
+            if self._source_info['is_url']:  # Remote file, download it
+                guest.execute(
+                    tmt.utils.ShellScript(
+                        f"curl -L --fail -o {quote(str(destination))} {quote(artifact.location)}"
+                    ),
+                    silent=True,
+                )
+            else:  # Local file, push it to the guest
+                guest.push(tmt.utils.Path(artifact.location), destination)
+            self.logger.info(f"Successfully downloaded: {artifact.id}")
+        except Exception as error:
+            raise DownloadError(f"Failed to download '{artifact.id}': {error}") from error
