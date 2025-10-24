@@ -590,8 +590,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 response.raise_for_status()
                 # TODO: Generalize this file download
                 if "Content-Disposition" in response.headers:
+                    # Note: technically filename* is also a thing but that's too messy...
+                    # Content-Disposition: filename*=utf-8''%e2%82%ac%20rates
                     archive_name = re.findall(
-                        "filename=(.+)", response.headers["Content-Disposition"]
+                        r"filename=['\"]?([^'\"]+)", response.headers["Content-Disposition"]
                     )[0]
                 else:
                     archive_name = response.url.split("/")[-1]
