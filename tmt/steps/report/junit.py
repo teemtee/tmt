@@ -29,7 +29,7 @@ DEFAULT_FLAVOR_NAME = 'default'
 CUSTOM_FLAVOR_NAME = 'custom'
 
 # Relative path to tmt junit template directory.
-DEFAULT_TEMPLATE_DIR = Path('steps/report/junit/templates/')
+DEFAULT_TEMPLATE_RESOURCE = 'steps/report/junit/templates'
 
 
 @overload
@@ -285,7 +285,8 @@ def make_junit_xml(
 
     try:
         template_path = template_path or tmt.utils.resource_files(
-            DEFAULT_TEMPLATE_DIR / f'{flavor}.xml.j2',
+            f'{DEFAULT_TEMPLATE_RESOURCE}/{flavor}.xml.j2',
+            logger=phase._logger,
             assert_file=True,
         )
     except FileNotFoundError as exc:
@@ -295,9 +296,9 @@ def make_junit_xml(
     if flavor != CUSTOM_FLAVOR_NAME:
         # TODO: Relax Loader requirement to be Path type, see PackageLoader implementation
         #   (missing entry-point handling there)
-        searchpath = tmt.utils.resource_files(DEFAULT_TEMPLATE_DIR)
+        searchpath = tmt.utils.resource_files(DEFAULT_TEMPLATE_RESOURCE, logger=phase._logger)
         if isinstance(searchpath, MultiplexedPath):
-            phase.warn(f"Multiplexed {DEFAULT_TEMPLATE_DIR} not supported")
+            phase.warn(f"Multiplexed {DEFAULT_TEMPLATE_RESOURCE} not supported")
             searchpath = searchpath._paths[0]
         environment.loader = FileSystemLoader(searchpath=searchpath)
 
@@ -374,7 +375,9 @@ def make_junit_xml(
     if flavor != CUSTOM_FLAVOR_NAME:
         try:
             xsd_schema_path = tmt.utils.resource_files(
-                f'steps/report/junit/schemas/{flavor}.xsd', assert_file=True
+                f'steps/report/junit/schemas/{flavor}.xsd',
+                logger=phase._logger,
+                assert_file=True,
             )
         except FileNotFoundError as exc:
             raise tmt.utils.GeneralError(f"Junit schema '{flavor}.xsd' not found") from exc

@@ -4,6 +4,7 @@ import json
 import re
 from typing import Any
 
+import tmt.log
 import tmt.utils
 import tmt.utils.hints
 import tmt.utils.rest
@@ -14,7 +15,7 @@ from tmt.plugins import REGISTRIES, PluginRegistry
 from tmt.utils import GeneralError
 from tmt.utils.templates import render_template, render_template_file
 
-TEMPLATES_DIRECTORY = tmt.utils.resource_files('cli/templates/about')
+TEMPLATES_RESOURCE = 'cli/templates/about'
 
 
 @main.group(invoke_without_command=True, cls=CustomGroup)
@@ -29,7 +30,7 @@ def about(context: Context) -> None:
         context.obj.print(context.get_help())
 
 
-def _render_plugins_list_rest() -> str:
+def _render_plugins_list_rest(logger: tmt.log.Logger) -> str:
     registry_intro_map: dict[str, str] = {
         r'export\.([a-z]+)': 'Export plugins for {{ MATCH.group(1).lower() }}',
         r'test.check': 'Test check plugins',
@@ -52,8 +53,11 @@ def _render_plugins_list_rest() -> str:
 
         raise GeneralError(f"Unknown plugin registry '{registry.name}'.")
 
-    template_file = TEMPLATES_DIRECTORY / 'plugins-ls.rst.j2'
-    assert isinstance(template_file, tmt.utils.Path)  # Narrow type
+    template_file = tmt.utils.resource_files(
+        f"{TEMPLATES_RESOURCE}/plugins-ls.rst.j2",
+        logger=logger,
+        assert_file=True,
+    )
     return render_template_file(
         template_file,
         REGISTRIES=REGISTRIES,
@@ -99,7 +103,7 @@ def plugins_ls(context: Context, how: str) -> None:
     """
 
     if how in ('pretty', 'rest'):
-        _ls(context, how, _render_plugins_list_rest())
+        _ls(context, how, _render_plugins_list_rest(context.obj.logger))
 
     elif how in ('json', 'yaml'):
         _ls(
@@ -139,8 +143,11 @@ def hints_ls(context: Context, how: str) -> None:
     List discovered tmt hints.
     """
 
-    template_file = TEMPLATES_DIRECTORY / 'hints-ls.rst.j2'
-    assert isinstance(template_file, tmt.utils.Path)
+    template_file = tmt.utils.resource_files(
+        f"{TEMPLATES_RESOURCE}/hints-ls.rst.j2",
+        logger=context.obj.logger,
+        assert_file=True,
+    )
     if how in ('pretty', 'rest'):
         _ls(
             context,
