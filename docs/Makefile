@@ -20,11 +20,6 @@ GENERATED_DIRECTORIES = spec stories
         $(GENERATED_DIRECTORIES) \
         clean
 
-##
-## Generate documentation sources from inputs
-##
-generate: $(LOGO_DST)  ## Refresh all generated documentation sources
-
 #
 # Targets creating directories for generated documentation sources
 #
