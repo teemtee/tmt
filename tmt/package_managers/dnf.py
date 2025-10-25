@@ -178,12 +178,10 @@ class DnfEngine(PackageManagerEngine):
 
     def install_repository(self, repository: Repository) -> ShellScript:
         repo_path = f"/etc/yum.repos.d/{repository.filename}"
-        return ShellScript(
-            rf"""
-            {self.guest.facts.sudo_prefix} tee {repo_path} <<'EOF'
-            {repository.content}
-            EOF"""
+        script = (
+            f"{self.guest.facts.sudo_prefix} tee {repo_path} <<'EOF'\n{repository.content}\nEOF"
         )
+        return ShellScript(script)
 
     def list_packages(self, repository: Repository) -> ShellScript:
         repo_ids = " ".join(f"--enablerepo={repo_id}" for repo_id in repository.repo_ids)
