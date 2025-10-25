@@ -1220,11 +1220,12 @@ class CreateJobParameters:
     whiteboard: Optional[str]
     beaker_job_owner: Optional[str]
     public_key: list[str]
-    group: Optional[str]
+    beaker_job_group: Optional[str]
     bootc_credentials: Optional[dict[str, Any]]
     bootc_image_url: Optional[str]
     bootc: bool
     bootc_check_system_url: Optional[str]
+    group: str = 'linux'
 
     def to_mrack(self) -> dict[str, Any]:
         data = dataclasses.asdict(self)
@@ -1246,6 +1247,8 @@ class CreateJobParameters:
                 data['beaker']['ks_append'] = kickstart
         if self.public_key:
             data['beaker']['pubkeys'] = self.public_key
+        if self.beaker_job_group:
+            data['beaker']['beaker_job_group'] = self.beaker_job_group
 
         return data
 
@@ -1478,7 +1481,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             whiteboard=self.whiteboard or tmt_name,
             beaker_job_owner=self.beaker_job_owner,
             public_key=self.public_key,
-            group=self.beaker_job_group,
+            beaker_job_group=self.beaker_job_group,
             bootc_credentials=self._bootc_registry_credentials if self.bootc else None,
             bootc_image_url=self.bootc_image_url,
             bootc=self.bootc,
