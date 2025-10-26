@@ -238,18 +238,21 @@ class Repository:
             ) from error
 
     @classmethod
-    def from_url(cls, url: str, name: Optional[str] = None) -> "Repository":
+    def from_url(
+        cls, url: str, logger: tmt.log.Logger, name: Optional[str] = None
+    ) -> "Repository":
         """
         Create a Repository instance by fetching content from a URL.
 
         :param url: The URL to fetch the repository content from.
+        :param logger: Logger to use for the operation.
         :param name: Optional name for the repository. If not provided,
             derived from the URL.
         :returns: A Repository instance.
         :raises GeneralError: If fetching or parsing fails.
         """
         try:
-            with tmt.utils.retry_session() as session:
+            with tmt.utils.retry_session(logger=logger) as session:
                 response = session.get(url)
                 response.raise_for_status()
                 content = response.text
@@ -266,11 +269,14 @@ class Repository:
         return cls(name=name, content=content)
 
     @classmethod
-    def from_file_path(cls, file_path: Path, name: Optional[str] = None) -> "Repository":
+    def from_file_path(
+        cls, file_path: Path, logger: tmt.log.Logger, name: Optional[str] = None
+    ) -> "Repository":
         """
         Create a Repository instance by reading content from a local file path.
 
         :param file_path: The local path to the repository file.
+        :param logger: Logger to use for the operation.
         :param name: Optional name for the repository. If not provided,
             derived from the file path.
         :returns: A Repository instance.
@@ -291,12 +297,13 @@ class Repository:
         return cls(name=name, content=content)
 
     @classmethod
-    def from_content(cls, content: str, name: str) -> "Repository":
+    def from_content(cls, content: str, name: str, logger: tmt.log.Logger) -> "Repository":
         """
         Create a Repository instance directly from provided content string.
 
         :param content: The string content of the repository.
         :param name: The name for the repository (required when using content).
+        :param logger: Logger to use for the operation.
         :returns: A Repository instance.
         :raises GeneralError: If the name is empty.
         """
