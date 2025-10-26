@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from tmt.steps.prepare.artifact.providers import Repository
+from tmt.steps.prepare.artifact.providers.repository import parse_rpm_string
 from tmt.utils import GeneralError, Path, requests
 
 # A valid .repo file content for testing, using Docker CE repo
@@ -223,3 +224,92 @@ def test_url_no_path(root_logger):
 
         with pytest.raises(GeneralError, match="Could not derive repository name from URL"):
             Repository.from_url(url="https://example.com/", logger=root_logger)
+
+
+@pytest.mark.parametrize(
+    ("pkg_string", "expected"),
+    [
+        # With epoch
+        (
+            "docker-ce-1:20.10.7-3.el8.x86_64",
+            {
+                "name": "docker-ce",
+                "epoch": "1",
+                "version": "20.10.7",
+                "release": "3.el8",
+                "arch": "x86_64",
+                "nvr": "docker-ce-20.10.7-3.el8",
+            },
+        ),
+        # Without epoch
+        (
+            "bash-5.1.8-6.el9.x86_64",
+            {
+                "name": "bash",
+                "epoch": "0",
+                "version": "5.1.8",
+                "release": "6.el9",
+                "arch": "x86_64",
+                "nvr": "bash-5.1.8-6.el9",
+            },
+        ),
+        # Name with '+', version with '+' and '.', release with '.'
+        (
+            "tmt+export-polarion-1.61.0.dev17+gf29b2e83e-1.fc41.x86_64",
+            {
+                "name": "tmt+export-polarion",
+                "epoch": "0",
+                "version": "1.61.0.dev17+gf29b2e83e",
+                "release": "1.fc41",
+                "arch": "x86_64",
+                "nvr": "tmt+export-polarion-1.61.0.dev17+gf29b2e83e-1.fc41",
+            },
+        ),
+        # Name with multiple '-', no epoch
+        (
+            "keylime-agent-rust-push-debuginfo-0.2.3-1.fc41.x86_64",
+            {
+                "name": "keylime-agent-rust-push-debuginfo",
+                "epoch": "0",
+                "version": "0.2.3",
+                "release": "1.fc41",
+                "arch": "x86_64",
+                "nvr": "keylime-agent-rust-push-debuginfo-0.2.3-1.fc41",
+            },
+        ),
+        # With epoch 0 explicitly
+        (
+            "example-0:1.0-1.noarch",
+            {
+                "name": "example",
+                "epoch": "0",
+                "version": "1.0",
+                "release": "1",
+                "arch": "noarch",
+                "nvr": "example-1.0-1",
+            },
+        ),
+    ],
+)
+def test_parse_rpm_string_valid(pkg_string, expected):
+    result = parse_rpm_string(pkg_string)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "pkg_string",
+    [
+        "invalid-string",  # No match
+        "name-version.x86_64",  # Missing release
+        "name-1:version.x86_64",  # Missing release
+        "name-version-release",  # Missing arch
+        "name-version-release.x86.64",  # Dot in arch
+        "name-version--release.x86_64",  # Double '-'
+        "name-a:b-release.x86_64",  # Invalid epoch (not digit before :)
+        "name-1:ver-sion-release.x86_64",  # '-' in version
+        "name-version-rel-ease.x86_64",  # '-' in release
+    ],
+)
+def test_parse_rpm_string_invalid(pkg_string):
+    with pytest.raises(ValueError, match=r"does not match|Malformed package string"):
+        parse_rpm_string(pkg_string)
