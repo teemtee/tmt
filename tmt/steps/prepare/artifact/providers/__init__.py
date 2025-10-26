@@ -259,7 +259,7 @@ class Repository:
         if name is None:
             parsed_url = urlparse(url)
             parsed_path = parsed_url.path.rstrip('/').split('/')[-1]
-            name = parsed_path.replace('.repo', '')
+            name = parsed_path.removesuffix('.repo')
             if not name:
                 raise GeneralError(f"Could not derive repository name from URL '{url}'.")
 
