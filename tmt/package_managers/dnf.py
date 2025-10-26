@@ -179,19 +179,16 @@ class DnfEngine(PackageManagerEngine):
     def install_repository(self, repository: Repository) -> ShellScript:
         repo_path = f"/etc/yum.repos.d/{repository.filename}"
         return ShellScript(
-            rf"""
-            {self.guest.facts.sudo_prefix} tee {repo_path} <<'EOF'
-            {repository.content}
-            EOF"""
+            f"{self.guest.facts.sudo_prefix} tee {repo_path} <<'EOF'\n{repository.content}\nEOF"
         )
 
     def list_packages(self, repository: Repository) -> ShellScript:
-        repo_ids = " ".join(f"--enablerepo={repo_id}" for repo_id in repository.repo_ids)
-        return ShellScript(
-            f"""
-            {self.command.to_script()} repoquery --disablerepo='*' {repo_ids}
-            """
+        command = self.command + Command(
+            "repoquery",
+            "--disablerepo=*",
+            *[f"--enablerepo={repo_id}" for repo_id in repository.repo_ids],
         )
+        return command.to_script()
 
 
 # ignore[type-arg]: TypeVar in package manager registry annotations is
