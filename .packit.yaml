@@ -201,6 +201,13 @@ jobs:
           name: /plans/sanity
     skip_build: true
 
+  # Downstream tests
+  - <<: *test-base
+    targets:
+      - fedora-latest-stable
+    identifier: downstream
+    fmf_path: .distro
+
   # Propose downstream pull requests
   - job: propose_downstream
     trigger: release

@@ -2,11 +2,13 @@ summary: Run a basic set of upstream tests
 
 discover:
     how: fmf
-    url: https://github.com/teemtee/tmt
-    ref: fedora
+    # Using a hack for when running in upstream where it is able to
+    # discover tests from outside the current fmf tree.
+    # https://github.com/teemtee/tmt/issues/2568
+    path: .
     filter: "tier:1"
 
-prepare+:
+prepare:
   - how: install
     package:
       - jq
@@ -14,3 +16,8 @@ prepare+:
 
 execute:
     how: tmt
+
+adjust+:
+    when: initiator == fedora-ci
+    discover+:
+        dist-git-source: true
