@@ -1133,10 +1133,11 @@ class Core(
             def detect_missing_required_properties(
                 error: jsonschema.ValidationError,
             ) -> LinterReturn:
-                match = re.search(
-                    r"(?mi)'([a-zA-Z0-9', \-]+)' is a required property",
-                    str(error),
+                pattern = re.compile(
+                    r"'([a-zA-Z0-9', \-]+)' is a required property",
+                    flags=re.MULTILINE | re.IGNORECASE,
                 )
+                match = pattern.search(str(error))
 
                 if not match:
                     return
