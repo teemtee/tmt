@@ -1,7 +1,9 @@
 import datetime
 import enum
+import re
 import textwrap
 import time
+from re import Pattern
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import jinja2
@@ -296,13 +298,36 @@ def create_final_report(
     # `rpm -q`, because not all non-zero exit codes mean error.
     if exc is None:
         assert output is not None
+        assert isinstance(output, CommandOutput)
 
         got_ausearch = True
-        got_denials = True
 
-        failure = list(render_command_report(label='ausearch', output=output))
-        report += failure
-        failures.append('\n'.join(failure))
+        # Include all failures in the report, even those that would be ignored later.
+        report += list(render_command_report(label='ausearch', output=output))
+
+        if check.ignore_pattern and output.stdout:
+            filtered_lines: list[str] = []
+            for line in output.stdout.splitlines():
+                matching_pattern = next(
+                    (pattern for pattern in check.ignore_pattern if pattern.search(line)),
+                    None,
+                )
+                if matching_pattern:
+                    logger.info(
+                        f"Ignoring AVC denial due to pattern match: '{matching_pattern.pattern}'"
+                    )
+                    logger.debug(f"Full ignored AVC denial: {line}")
+                    # Remove the separator line before the ignored denial, if present.
+                    if filtered_lines and filtered_lines[-1].strip() == '----':
+                        filtered_lines.pop()
+                else:
+                    filtered_lines.append(line)
+            output = CommandOutput(stdout='\n'.join(filtered_lines), stderr=output.stderr)
+
+        # In the failure evaluation, include only denials that were not ignored.
+        if output.stdout:
+            got_denials = True
+            failures.append('\n'.join(render_command_report(label='ausearch', output=output)))
 
     else:
         failure = _report_failure('ausearch', exc)
@@ -360,11 +385,29 @@ class AvcCheck(Check):
         normalize=tmt.utils.normalize_int,
     )
 
+    ignore_pattern: list[Pattern[str]] = field(
+        default_factory=list,
+        help="""
+             Optional list of regular expressions to ignore in AVC denials.
+             If an AVC denial matches any of these patterns, it will be ignored
+             and not cause a failure. Any other denials will still cause the test
+             to fail. If no patterns are specified, any denial will cause a failure.
+             """,
+        metavar="PATTERN",
+        normalize=tmt.utils.normalize_pattern_list,
+        exporter=lambda patterns: [pattern.pattern for pattern in patterns],
+        serialize=lambda patterns: [pattern.pattern for pattern in patterns],
+        unserialize=lambda serialized: [re.compile(pattern) for pattern in serialized],
+    )
+
     # TODO: fix `to_spec` of `Check` to support nested serializables
     def to_spec(self) -> _RawCheck:
         spec = super().to_spec()
 
         spec['test-method'] = self.test_method.value  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
+        spec['ignore-pattern'] = [  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
+            pattern.pattern for pattern in self.ignore_pattern
+        ]
 
         return spec
 
