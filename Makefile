@@ -260,6 +260,24 @@ $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/4
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/42/unprivileged\:latest:
 	$(call build-test-container-image,$@,fedora/42/Containerfile.unprivileged)
 
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/43\:latest:
+	$(call build-test-container-image,$@,fedora/43/Containerfile)
+
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/43/upstream\:latest:
+	$(call build-test-container-image,$@,fedora/43/Containerfile.upstream)
+
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/43/unprivileged\:latest:
+	$(call build-test-container-image,$@,fedora/43/Containerfile.unprivileged)
+
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/44\:latest:
+	$(call build-test-container-image,$@,fedora/44/Containerfile)
+
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/44/upstream\:latest:
+	$(call build-test-container-image,$@,fedora/44/Containerfile.upstream)
+
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/44/unprivileged\:latest:
+	$(call build-test-container-image,$@,fedora/44/Containerfile.unprivileged)
+
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/ubi/8/upstream\:latest:
 	$(call build-test-container-image,$@,ubi/8/Containerfile.upstream)
 
