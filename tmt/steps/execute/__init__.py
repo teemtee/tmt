@@ -26,6 +26,7 @@ from tmt.plugins import PluginRegistry
 from tmt.result import CheckResult, Result, ResultGuestData, ResultInterpret, ResultOutcome
 from tmt.steps import Action, ActionTask, PhaseQueue, PluginTask, Step
 from tmt.steps.context.abort import AbortContext, AbortStep
+from tmt.steps.context.pidfile import PidFileContext
 from tmt.steps.context.reboot import RebootContext
 from tmt.steps.context.restart import RestartContext
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
@@ -291,6 +292,14 @@ class TestInvocation(HasStepWorkdir):
         """
 
         return AbortContext(path=self.test_data_path, logger=self.logger)
+
+    @functools.cached_property
+    def pidfile(self) -> PidFileContext:
+        """
+        PID file context for this invocation.
+        """
+
+        return PidFileContext(phase=self.phase, guest=self.guest, logger=self.logger)
 
     def invoke_test(
         self,
