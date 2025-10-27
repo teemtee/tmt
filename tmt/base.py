@@ -143,6 +143,11 @@ SECTIONS_HEADINGS = {
     'Cleanup': ['<h1>Cleanup</h1>'],
 }
 
+# Reguar expression to match a required property in a schema validation error
+SCHEMA_REQUIRED_PROPERTY_PATTERN = re.compile(
+    r"'([a-zA-Z0-9', \-]+)' is a required property",
+    flags=re.MULTILINE | re.IGNORECASE,
+)
 
 #
 # fmf id types
@@ -1130,11 +1135,7 @@ class Core(
             def detect_missing_required_properties(
                 error: jsonschema.ValidationError,
             ) -> LinterReturn:
-                pattern = re.compile(
-                    r"'([a-zA-Z0-9', \-]+)' is a required property",
-                    flags=re.MULTILINE | re.IGNORECASE,
-                )
-                match = pattern.search(str(error))
+                match = SCHEMA_REQUIRED_PROPERTY_PATTERN.search(str(error))
 
                 if not match:
                     return
