@@ -60,6 +60,10 @@ rlJournalStart
         rlAssertGrep "^/plans/become-parent/all-plans/plans/provision/container" $rlRun_LOG -E
         rlAssertGrep "^/plans/become-parent/all-plans/plans/provision/local" $rlRun_LOG -E
         rlAssertGrep "^/plans/become-parent/all-plans/plans/provision/virtual" $rlRun_LOG -E
+
+        # Make sure the filter works on the expanded plan names also
+        rlRun -s "tmt plan ls /plans/become-parent/all-plans/plans"
+        rlAssertGrep "^/plans/become-parent/all-plans/plans/provision/artemis" $rlRun_LOG -E
     rlPhaseEnd
 
     rlPhaseStartCleanup
