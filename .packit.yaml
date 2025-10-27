@@ -199,7 +199,12 @@ jobs:
   # Propose downstream pull requests
   - job: propose_downstream
     trigger: release
-    dist_git_branches: *all-targets
+    dist_git_branches:
+      rawhide:
+        fast_forward_merge_into:
+          - fedora-branched
+          - epel-10
+          - epel-9
 
   # Create koji builds
   - job: koji_build
