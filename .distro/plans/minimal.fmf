@@ -1,0 +1,12 @@
+summary: Verify that the minimal package works
+discover:
+    tests:
+      - name: /install/minimal
+        test: cd $(mktemp -d) && tmt init -t full && tmt
+prepare:
+    summary: Ensure that only 'tmt' is installed
+    name: minimal
+    order: 90
+    script: dnf remove -y 'tmt-*' --exclude tmt
+execute:
+    how: tmt
