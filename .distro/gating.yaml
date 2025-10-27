@@ -1,0 +1,10 @@
+--- !Policy
+product_versions:
+  - fedora-*
+decision_contexts:
+  - bodhi_update_push_stable
+subject_type: koji_build
+rules:
+  - !PassingTestCaseRule {test_case_name: fedora-ci.koji-build./plans/minimal.functional}
+  - !PassingTestCaseRule {test_case_name: fedora-ci.koji-build./plans/smoke.functional}
+  - !PassingTestCaseRule {test_case_name: fedora-ci.koji-build./plans/upstream.functional}

@@ -1,0 +1,5 @@
+---
+addedfiles:
+  ignore:
+    # rpminspect forbids /var/tmp prefix by default
+    - /var/tmp/tmt

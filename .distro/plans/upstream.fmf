@@ -1,0 +1,16 @@
+summary: Run a basic set of upstream tests
+
+discover:
+    how: fmf
+    url: https://github.com/teemtee/tmt
+    ref: fedora
+    filter: "tier:1"
+
+prepare+:
+  - how: install
+    package:
+      - jq
+      - yq
+
+execute:
+    how: tmt

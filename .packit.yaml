@@ -1,8 +1,13 @@
 ---
 
-specfile_path: tmt.spec
+specfile_path: .distro/tmt.spec
 files_to_sync:
-  - tmt.spec
+  - src: .distro/
+    dest: ./
+    delete: true
+    filters:
+      - "protect .git*"
+      - "protect sources"
   - .packit.yaml
 
 upstream_package_name: tmt
