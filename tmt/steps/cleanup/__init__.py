@@ -252,7 +252,7 @@ class Cleanup(tmt.steps.Step):
         assert self.plan.my_run is not None
         if self.is_dry_run:
             self.debug("Nothing to prune in dry mode.", level=3)
-        elif self.plan.my_run.opt('keep'):
+        elif self.plan.my_run.opt('skip_prune'):
             self.verbose("Skipping workdir prune as requested.", level=2)
         else:
             self.plan.prune()
