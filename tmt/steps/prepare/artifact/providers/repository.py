@@ -131,15 +131,21 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
 # Regex to parse N-E:V-R.A format.
 # Groups: 1:Name, 3:Epoch (optional), 4:Version, 5:Release, 6:Arch
 _PKG_REGEX = re.compile(
-    r"^(?P<name>.+?)"  # 1: Name (non-greedy)
-    r"-"  # (literal hyphen)
-    r"((?P<epoch>\d+):)?"  # 2, 3: Epoch (optional group)
-    # 4: Version (must contain at least one digit)
-    r"(?P<version>[^-:]*\d[^-:]*)"
-    r"-"  # (literal hyphen)
-    r"(?P<release>[^-]+)"  # 5: Release (no hyphens)
-    r"\."  # (literal dot)
-    r"(?P<arch>[^.]+)$"  # 6: Arch
+    r"""
+    ^                                   # must match the whole string
+    (?P<name>[^:]+)                     # Name (one or more characters except colon)
+    -                                   # literal hyphen
+    ((?P<epoch>\d+):)?                  # optional group: epoch (one or more digits)
+                                        # followed by colon
+    (?P<version>[^-:]*\d[^-:]*)         # Version (zero or more non-hyphen/colon,
+                                        # at least one digit, zero or more non-hyphen/colon)
+    -                                   # literal hyphen
+    (?P<release>[^-]+)                  # Release (one or more non-hyphen characters)
+    \.                                  # literal dot
+    (?P<arch>[^.]+)                     # Arch (one or more non-dot characters)
+    $                                   # must match the whole string
+    """,
+    re.VERBOSE,
 )
 
 
@@ -156,7 +162,7 @@ def parse_rpm_string(pkg_string: str) -> dict[str, str]:
     match = _PKG_REGEX.match(pkg_string)
 
     if not match:
-        raise ValueError(f"String '{pkg_string}' does not match N-V-R.A format")
+        raise ValueError(f"String '{pkg_string}' does not match N-E:V-R.A format")
 
     # 2. Extract the named parts
     # Non-optional groups are guaranteed to be strings.
@@ -169,11 +175,12 @@ def parse_rpm_string(pkg_string: str) -> dict[str, str]:
     epoch = match.group('epoch')
     if epoch is None:
         epoch = '0'
-
-    # Additional validation
-    # RPM package names are not allowed to contain colons.
-    if ':' in name:
-        raise ValueError(f"Malformed package string: {pkg_string} colon in package name.")
+    # TODO: Add support for source rpms
+    # Filter out source RPMs
+    # If the architecture is 'src', this is a source package and should
+    # be skipped. Raising ValueError ensures it's caught and logged.
+    if arch == 'src':
+        raise ValueError(f"Package '{pkg_string}' is a source RPM. Skipping.")
 
     # Reconstruct NVR (Name-Version-Release)
     nvr = f"{name}-{version}-{release}"
