@@ -26,7 +26,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Destination"
-        rlRun -s "tmt run --id $tmp/destination --keep discover -vvvddd plan --name destination"
+        rlRun -s "tmt run --id $tmp/destination --skip-prune discover -vvvddd plan --name destination"
         rlAssertGrep "custom/example" $rlRun_LOG -s
         rlAssertExists "$tmp/destination/plan/certificate/destination/discover/default-0/custom/example/file/lib.sh"
     rlPhaseEnd

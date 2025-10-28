@@ -147,7 +147,7 @@ EOF
             WORKDIR=/var/tmp/tmt/XXX
             WORKDIR_TESTS=$WORKDIR/plans/discover/default-0/tests
 
-            rlRun -s "tmt run -vv --id $WORKDIR --scratch --keep"
+            rlRun -s "tmt run -vv --id $WORKDIR --scratch --skip-prune"
 
             rlAssertGrep "/unit" $rlRun_LOG -F
             # 0 tests as we know real number only during prepare
@@ -181,7 +181,7 @@ EOF
         WORKDIR_SOURCE=$WORKDIR/default/plan/discover/default-0/source
         WORKDIR_TESTS=$WORKDIR/default/plan/discover/default-0/tests
 
-        rlRun -s "tmt run --keep --id $WORKDIR --scratch plans --default \
+        rlRun -s "tmt run --skip-prune --id $WORKDIR --scratch plans --default \
              discover -vvv -ddd --how fmf --dist-git-source \
              --dist-git-type TESTING tests --name /tests/from-source provision -h local prepare"
 
@@ -359,7 +359,7 @@ EOF
     rlPhaseStartTest "Run directly from the DistGit (Fedora) [cli]"
         rlRun 'pushd tmt'
         WORKDIR=/var/tmp/tmt/XXX
-        rlRun -s 'tmt run --id $WORKDIR --keep --scratch plans --default \
+        rlRun -s 'tmt run --id $WORKDIR --skip-prune --scratch plans --default \
             discover -v --how fmf --dist-git-source \
             tests --name tests/prepare/install$ provision -h local prepare'
          assert_tests $WORKDIR "/tests/prepare/install"
@@ -369,14 +369,14 @@ EOF
     rlPhaseStartTest "Run directly from the DistGit (Fedora) [plan]"
         rlRun 'pushd tmt'
         WORKDIR=/var/tmp/tmt/XXX
-        rlRun -s 'tmt run --keep --id $WORKDIR --scratch plans --name distgit discover provision -h local prepare'
+        rlRun -s 'tmt run --skip-prune --id $WORKDIR --scratch plans --name distgit discover provision -h local prepare'
         assert_tests $WORKDIR "/tests/prepare/install"
         rlRun 'popd'
     rlPhaseEnd
 
     rlPhaseStartTest "URL is path to a local distgit repo"
         WORKDIR=/var/tmp/tmt/XXX
-        rlRun -s 'tmt run --keep --scratch --id $WORKDIR plans --default \
+        rlRun -s 'tmt run --skip-prune --scratch --id $WORKDIR plans --default \
             discover --how fmf --dist-git-source --dist-git-type fedora --url $CLONED_RPMS_TMT \
             --dist-git-merge tests --name tests/prepare/install$ prepare provision -h local'
         assert_tests $WORKDIR tests/prepare/install
@@ -386,7 +386,7 @@ EOF
         rlPhaseStartTest "${prefix}path pointing to the fmf root in the extracted sources"
             rlRun 'pushd tmt'
             WORKDIR=/var/tmp/tmt/XXX
-            rlRun -s "tmt run --keep --scratch --id $WORKDIR plans --default discover -v --how fmf \
+            rlRun -s "tmt run --skip-prune --scratch --id $WORKDIR plans --default discover -v --how fmf \
             --dist-git-source --dist-git-merge --ref e2d36db --dist-git-extract ${prefix}tmt-1.7.0/tests/execute/framework/data \
             tests --name ^/tests/beakerlib/with-framework\$ prepare provision -h local"
             assert_tests $WORKDIR /tests/beakerlib/with-framework
@@ -397,7 +397,7 @@ EOF
 
     rlPhaseStartTest "Specify URL and REF of DistGit repo (Fedora)"
         WORKDIR=/var/tmp/tmt/XXX
-        rlRun -s 'tmt run --keep --scratch --id $WORKDIR plans --default discover -v --how fmf \
+        rlRun -s 'tmt run --skip-prune --scratch --id $WORKDIR plans --default discover -v --how fmf \
         --dist-git-source --ref e2d36db --dist-git-merge  --dist-git-init \
         --url https://src.fedoraproject.org/rpms/tmt.git \
         tests --name tests/prepare/install$  prepare provision -h local'
@@ -427,7 +427,7 @@ EOF
         WORKDIR_SOURCE=$WORKDIR/default/plan/discover/default-0/source
         WORKDIR_TESTS=$WORKDIR/default/plan/discover/default-0/tests
 
-        rlRun -s "tmt run --keep --id $WORKDIR --scratch plans --default \
+        rlRun -s "tmt run --skip-prune --id $WORKDIR --scratch plans --default \
              discover -vvv -ddd --how fmf --dist-git-source \
              --dist-git-type TESTING tests --name /tests/from-source provision -h local prepare"
         assert_tests $WORKDIR '^/tests/from-source$'
@@ -499,7 +499,7 @@ EOF
             WORKDIR=/var/tmp/tmt/XXX
             WORKDIR_SOURCE=$WORKDIR/plans/discover/default-0/source
 
-            rlRun -s "tmt run --keep --id $WORKDIR --scratch -vvv"
+            rlRun -s "tmt run --skip-prune --id $WORKDIR --scratch -vvv"
 
             # Source dir has everything available
             rlAssertExists $WORKDIR_SOURCE/no-tmt-2/all_in_one
@@ -537,7 +537,7 @@ EOF
         WORKDIR=/var/tmp/tmt/XXX
         WORKDIR_SOURCE=$WORKDIR/plans/discover/default-0/source
 
-        rlRun -s "tmt run --keep --id $WORKDIR --scratch -vvv"
+        rlRun -s "tmt run --skip-prune --id $WORKDIR --scratch -vvv"
 
         # Tarball was not extracted
         rlAssertNotExists $WORKDIR_SOURCE/no-tmt-2/all_in_one
@@ -587,7 +587,7 @@ EOF
     #        rlRun -s "tmt run --scratch --id $tmp/rundir discover"
     #        rlAssertGrep "Sources will not be extracted, prepare step is not enabled" $rlRun_LOG
 
-        rlRun -s "tmt run --keep --scratch --id $tmp/rundir -vvv --skip report"
+        rlRun -s "tmt run --skip-prune --scratch --id $tmp/rundir -vvv --skip report"
         rlAssertGrep "total: 3 tests passed" $rlRun_LOG
         # File created by applying the patch is pulled back to the host
         rlAssertExists "$tmp/rundir/plans/discover/default-0/source/no-tmt-2/by-patch.txt"
@@ -615,7 +615,7 @@ provision:
 execute:
     how: tmt
 EOF
-        rlRun -s "tmt run -vvv --keep --id $tmp/rundir --skip report"
+        rlRun -s "tmt run -vvv --skip-prune --id $tmp/rundir --skip report"
         rlAssertGrep 'summary: 0 tests selected' $rlRun_LOG
 
         # Assert both tests are discovered
