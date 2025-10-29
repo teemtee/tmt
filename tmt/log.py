@@ -120,8 +120,10 @@ def _debug_level_from_global_envvar() -> int:
     try:
         return int(raw_value)
 
-    except ValueError:
-        raise tmt.utils.GeneralError(f"Invalid debug level '{raw_value}', use an integer.")
+    except ValueError as error:
+        raise tmt.utils.GeneralError(
+            f"Invalid debug level '{raw_value}', use an integer."
+        ) from error
 
 
 def decide_colorization(no_color: bool, force_color: bool) -> tuple[bool, bool]:
@@ -717,13 +719,13 @@ class Logger:
             try:
                 self.topics.add(Topic(topic_spec))
 
-            except Exception:
+            except Exception as exc:
                 import tmt.utils
 
                 raise tmt.utils.GeneralError(
                     f'Logging topic "{topic_spec}" is invalid.'
                     f" Possible choices are {', '.join(topic.value for topic in Topic)}"
-                )
+                ) from exc
 
         return self
 

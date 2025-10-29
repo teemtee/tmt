@@ -75,7 +75,7 @@ class BootcEngine(PackageManagerEngine):
         try:
             image_status = json.loads(output.stdout)
         except json.JSONDecodeError as error:
-            raise tmt.utils.PrepareError(f"Failed to parse bootc status JSON: {error}")
+            raise tmt.utils.PrepareError(f"Failed to parse bootc status JSON: {error}") from error
 
         if not image_status:
             raise tmt.utils.PrepareError("Failed to get current bootc status: empty JSON.")
@@ -98,7 +98,9 @@ class BootcEngine(PackageManagerEngine):
 
             return base_image
         except KeyError as error:
-            raise tmt.utils.PrepareError(f"Failed to extract bootc image info: missing {error}")
+            raise tmt.utils.PrepareError(
+                f"Failed to extract bootc image info: missing {error}"
+            ) from error
 
     def _get_base_containerfile_directives(self) -> list[str]:
         bootc_image = self._get_current_bootc_image()

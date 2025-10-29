@@ -765,8 +765,8 @@ class GuestTestcloud(tmt.GuestSsh):
                 try_get_url, self._logger
             )
 
-        except tmt.utils.wait.WaitingTimedOutError:
-            raise ProvisionError(f'Failed to {message} in {CONNECT_TIMEOUT}s.')
+        except tmt.utils.wait.WaitingTimedOutError as error:
+            raise ProvisionError(f'Failed to {message} in {CONNECT_TIMEOUT}s.') from error
 
     def _guess_image_url(self, name: str) -> str:
         """
@@ -1160,7 +1160,7 @@ class GuestTestcloud(tmt.GuestSsh):
             self._instance.spawn_vm()
             self._instance.start(BOOT_TIMEOUT * time_coeff)
         except (testcloud.exceptions.TestcloudInstanceError, libvirt.libvirtError) as error:
-            raise ProvisionError(f'Failed to boot testcloud instance ({error}).')
+            raise ProvisionError(f'Failed to boot testcloud instance ({error}).') from error
         self.primary_address = self.topology_address = self._instance.get_ip()
         self.port = int(self._instance.get_instance_port())
         self.verbose('primary address', self.primary_address, 'green')
@@ -1186,7 +1186,9 @@ class GuestTestcloud(tmt.GuestSsh):
             try:
                 self._instance.stop()
             except testcloud.exceptions.TestcloudInstanceError as error:
-                raise tmt.utils.ProvisionError(f"Failed to stop testcloud instance: {error}")
+                raise tmt.utils.ProvisionError(
+                    f"Failed to stop testcloud instance: {error}"
+                ) from error
 
             self.info('guest', 'stopped', 'green')
 
@@ -1200,7 +1202,9 @@ class GuestTestcloud(tmt.GuestSsh):
             try:
                 self._instance.remove(autostop=True)
             except FileNotFoundError as error:
-                raise tmt.utils.ProvisionError(f"Failed to remove testcloud instance: {error}")
+                raise tmt.utils.ProvisionError(
+                    f"Failed to remove testcloud instance: {error}"
+                ) from error
 
             self.info('guest', 'removed', 'green')
 

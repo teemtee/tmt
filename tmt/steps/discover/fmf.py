@@ -610,10 +610,12 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 # Ensure we're in a git repo when extracting dist-git sources
                 try:
                     git_root = self.get_git_root(Path(self.step.plan.node.root))
-                except tmt.utils.RunError:
+                except tmt.utils.RunError as error:
                     assert self.step.plan.my_run is not None  # narrow type
                     assert self.step.plan.my_run.tree is not None  # narrow type
-                    raise tmt.utils.DiscoverError(f"{self.step.plan.node.root} is not a git repo")
+                    raise tmt.utils.DiscoverError(
+                        f"{self.step.plan.node.root} is not a git repo"
+                    ) from error
             else:
                 if fmf_root is None:
                     raise tmt.utils.DiscoverError("No metadata found in the current directory.")
@@ -650,7 +652,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 plan=self.step.plan,
             )
         except tmt.utils.FileError as error:
-            raise tmt.utils.DiscoverError(str(error))
+            raise tmt.utils.DiscoverError(str(error)) from error
 
         # Checkout revision if requested
         if ref:
@@ -922,10 +924,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 dist_git_extract = Path(
                     glob.glob(str(sourcedir / dist_git_extract.lstrip('/')))[0]
                 )
-            except IndexError:
+            except IndexError as error:
                 raise tmt.utils.DiscoverError(
                     f"Couldn't glob '{dist_git_extract}' within extracted sources."
-                )
+                ) from error
         if dist_git_init:
             if dist_git_extract == '/' or not dist_git_extract:
                 dist_git_extract = '/'
