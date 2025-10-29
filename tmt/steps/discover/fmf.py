@@ -585,9 +585,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 )
                 git_root = self.testdir
             elif self.data.url_content_type == "archive":
-                assert self.workdir  # Narrow type
                 archive_path = tmt.utils.url.download(
-                    url, self.workdir, logger=logger or self._logger
+                    url, self.phase_workdir, logger=logger or self._logger
                 )
                 self.debug(f"Extracting archive to '{self.testdir}'.")
                 shutil.unpack_archive(archive_path, self.testdir)
