@@ -2842,7 +2842,7 @@ def render_run_exception_streams(
 @overload
 def render_command_report(
     *,
-    label: str,
+    label: Optional[str] = None,
     command: Optional[Union[ShellScript, Command]] = None,
     output: CommandOutput,
     exc: None = None,
@@ -2853,7 +2853,7 @@ def render_command_report(
 @overload
 def render_command_report(
     *,
-    label: str,
+    label: Optional[str] = None,
     command: Optional[Union[ShellScript, Command]] = None,
     output: None = None,
     exc: RunError,
@@ -2863,11 +2863,10 @@ def render_command_report(
 
 def render_command_report(
     *,
-    label: str,
+    label: Optional[str] = None,
     command: Optional[Union[ShellScript, Command]] = None,
     output: Optional[CommandOutput] = None,
     exc: Optional[RunError] = None,
-    comment_sign: str = '#',
 ) -> Iterator[str]:
     """
     Format a command output for a report file.
@@ -2878,11 +2877,12 @@ def render_command_report(
 
     .. code-block::
 
-        ## ${label}
+        # {{ label }}                       // When `label` was provided.
 
-        # ${command}
+        # {{ command }}                     // When `command` was provided.
 
-        # exit code ${exit_code}
+        # finished successfully             // When `output` was provided.
+        # exit code: {{ exc.returncode }}   // When `output` was not provided, but `exc` was.
 
         # stdout (N lines)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2901,26 +2901,70 @@ def render_command_report(
         higher priority than ``exc``.
     :param exc: if set, it represents a failed command, and input stored
         in it is rendered.
-    :param comment_sign: a character to mark lines with comments that
-        document the report.
+    :yields: lines of the command report.
     """
 
-    yield f'{comment_sign}{comment_sign} {label}'
-    yield ''
+    if label:
+        yield f'# {label}'
+        yield ''
 
     if command:
-        yield f'{comment_sign} {command.to_element()}'
+        yield f'# {command.to_element()}'
+        yield ''
+
+    if exc:
+        yield f'# exit code: {exc.returncode}'
+        yield ''
+
+    else:
+        yield '# finished successfully'
         yield ''
 
     if output is not None:
-        yield f'{comment_sign} exit code: finished successfully'
-        yield ''
         yield from render_run_exception_streams(output, verbose=1)
+        yield ''
 
     elif exc is not None:
-        yield f'{comment_sign} exit code: {exc.returncode}'
-        yield ''
         yield from render_run_exception_streams(exc.output, verbose=1)
+        yield ''
+
+
+def render_report(
+    *, label: str, timer: 'Stopwatch', report: Optional[Iterable[str]] = None
+) -> Iterator[str]:
+    """
+    Format an arbitrary body of text for a report file.
+
+    To provide unified look of various files reporting command outputs,
+    this helper would combine its arguments and emit lines the caller
+    may then write to a file. The following template is used:
+
+    .. code-block::
+
+        # {{ label }}
+        # Acquired at {{ timer.start_time_formatted }}
+        # Finished at {{ timer.end_time_formatted }}
+        # Duration {{ timer.duration }}
+
+        {{ body }}  // When `body` was provided.
+
+    :param label: a string describing the intent of the command. It is
+        useful for user who reads the report file eventually.
+    :param timestamp: a timestamp marking the moment the report is
+        attributed to.
+    :param report: if provided, represents a sequence of lines to emit
+        into the report file.
+    :yields: lines of the report.
+    """
+
+    yield f'# {label}'
+    yield f'# Acquired at {timer.start_time_formatted}'
+    yield f'# Finished at {timer.end_time_formatted}'
+    yield f'# Duration {timer.duration}'
+    yield ''
+
+    if report is not None:
+        yield from report
 
 
 def render_run_exception(exception: RunError) -> Iterator[str]:
@@ -6022,6 +6066,36 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
     @property
     def duration(self) -> datetime.timedelta:
         return self.end_time - self.start_time
+
+    @property
+    def start_time_formatted(self) -> str:
+        return format_timestamp(self.start_time)
+
+    @property
+    def end_time_formatted(self) -> str:
+        return format_timestamp(self.end_time)
+
+    @classmethod
+    def measure(
+        cls, fn: Callable[P, T], *args: P.args, **kwargs: P.kwargs
+    ) -> tuple[Optional[T], Optional[Exception], 'Stopwatch']:
+        """
+        Run a function while the stopwatch is running.
+
+        :param fn: a function to call. It will be invoked with all
+            positional and keyword arguments given to ``measure()``.
+        :returns: a tuple of three items: the return value of ``fn``,
+            ``None``, and the stopwatch instance on success, or ``None``,
+            the raised exception, and the stopwatch instance when ``fn``
+            raised an exception.
+        """
+
+        with cls() as timer:
+            try:
+                return (fn(*args, **kwargs), None, timer)
+
+            except Exception as exc:
+                return (None, exc, timer)
 
 
 def format_timestamp(timestamp: datetime.datetime) -> str:
