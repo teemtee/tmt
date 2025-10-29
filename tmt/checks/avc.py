@@ -16,7 +16,6 @@ from tmt.utils import (
     CommandOutput,
     Path,
     ShellScript,
-    format_timestamp,
     render_command_report,
 )
 from tmt.utils.hints import hints_as_notes
@@ -98,40 +97,6 @@ ausearch --input-logs --checkpoint {{ MARK_FILEPATH }} -m AVC -m USER_AVC -m SEL
 )
 
 
-def _save_report(
-    invocation: 'TestInvocation',
-    report: list[str],
-    timestamp: datetime.datetime,
-    append: bool = False,
-) -> Path:
-    """
-    Save the given report into check's report file.
-
-    :param invocation: test invocation to which the check belongs to.
-        The report file path would be in this invocation's
-        :py:attr:`check_files_path`.
-    :param report: lines of the report.
-    :param timestamp: time at which the report has been created. It will
-        be saved in the report file, before the report itself.
-    :param append: if set, the report would be appended to the report
-        file instead of overwriting it.
-    :returns: path to the report file.
-    """
-
-    report_filepath = invocation.check_files_path / TEST_POST_AVC_FILENAME
-
-    full_report = [''] if append else []
-
-    full_report += [
-        f'# Reported at {format_timestamp(timestamp)}',
-        *report,
-    ]
-
-    invocation.phase.write(report_filepath, '\n'.join(full_report), mode='a' if append else 'w')
-
-    return report_filepath
-
-
 def _run_script(
     *,
     invocation: 'TestInvocation',
@@ -173,22 +138,6 @@ def _run_script(
         return None, exc
 
 
-def _report_success(label: str, output: tmt.utils.CommandOutput) -> list[str]:
-    """
-    Format successful command output for the report
-    """
-
-    return list(render_command_report(label=label, output=output))
-
-
-def _report_failure(label: str, exc: tmt.utils.RunError) -> list[str]:
-    """
-    Format failed command output for the report
-    """
-
-    return list(render_command_report(label=label, exc=exc))
-
-
 def create_ausearch_mark(
     invocation: 'TestInvocation', check: 'AvcCheck', logger: tmt.log.Logger
 ) -> None:
@@ -215,12 +164,19 @@ def create_ausearch_mark(
     if exc is None:
         assert output is not None
 
-        report += _report_success('mark', output)
+        report.extend(render_command_report(label='mark', output=output))
 
     else:
-        report += _report_failure('mark', exc)
+        report.extend(render_command_report(label='mark', exc=exc))
 
-    _save_report(invocation, report, report_timestamp)
+    report_filepath = invocation.check_files_path / TEST_POST_AVC_FILENAME
+
+    invocation.phase.write_report(
+        path=report_filepath,
+        label='AVC denials check',
+        timestamp=report_timestamp,
+        body=iter(report),
+    )
 
 
 def create_final_report(
@@ -260,10 +216,10 @@ def create_final_report(
 
         got_sestatus = True
 
-        report += _report_success('sestatus', output)
+        report.extend(render_command_report(label='sestatus', output=output))
 
     else:
-        failure = _report_failure('sestatus', exc)
+        failure = list(render_command_report(label='sestatus', exc=exc))
         report += failure
         failures.append('\n'.join(failure))
 
@@ -278,10 +234,10 @@ def create_final_report(
 
         got_rpm = True
 
-        report += _report_success(f'rpm -q {interesting_packages}', output)
+        report.extend(render_command_report(label=f'rpm -q {interesting_packages}', output=output))
 
     else:
-        failure = _report_failure(f'rpm -q {interesting_packages}', exc)
+        failure = list(render_command_report(label=f'rpm -q {interesting_packages}', exc=exc))
         report += failure
         failures.append('\n'.join(failure))
 
@@ -305,7 +261,7 @@ def create_final_report(
         failures.append('\n'.join(failure))
 
     else:
-        failure = _report_failure('ausearch', exc)
+        failure = list(render_command_report(label='ausearch', exc=exc))
         report += failure
 
         if exc.returncode == 1 and exc.stderr and '<no matches>' in exc.stderr.strip():
@@ -322,7 +278,15 @@ def create_final_report(
     else:
         outcome = ResultOutcome.ERROR
 
-    report_filepath = _save_report(invocation, report, report_timestamp, append=True)
+    report_filepath = invocation.check_files_path / TEST_POST_AVC_FILENAME
+
+    invocation.phase.write_report(
+        path=report_filepath,
+        label='AVC denials check',
+        timestamp=report_timestamp,
+        body=iter(report),
+    )
+
     paths = [
         report_filepath.relative_to(invocation.phase.step_workdir),
         save_failures(invocation, invocation.check_files_path, failures),
