@@ -62,8 +62,16 @@ rlJournalStart
         rlAssertGrep "^/plans/become-parent/all-plans/plans/provision/virtual" $rlRun_LOG -E
 
         # Make sure the filter works on the expanded plan names also
+        # If we did not specify import-before-filter it should still fail
         rlRun -s "tmt plan ls /plans/become-parent/all-plans/plans"
+        rlAssertNotGrep "^/plans/become-parent/all-plans/plans" $rlRun_LOG -E
+        # But if we do, the filter should apply afterwards
+        rlRun -s "tmt --import-before-filter plan ls /plans/become-parent/all-plans/plans"
         rlAssertGrep "^/plans/become-parent/all-plans/plans/provision/artemis" $rlRun_LOG -E
+        # Some plans are intentionally broken, make sure that they are reported
+        rlAssertGrep "Failed to import plan '/plans/become-parent/single-plan-only'" $rlRun_LOG -E
+        rlAssertGrep "Failed to import plan '/plans/replace/all-plans'" $rlRun_LOG -E
+        rlAssertGrep "Failed to import plan '/plans/replace/single-plan-only'" $rlRun_LOG -E
     rlPhaseEnd
 
     rlPhaseStartCleanup
