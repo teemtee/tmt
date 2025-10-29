@@ -5,6 +5,7 @@ import os
 import select
 import shlex
 import subprocess
+import time
 from collections.abc import Generator
 from types import TracebackType
 from typing import Any, Callable, Optional, Union, cast
@@ -276,6 +277,13 @@ class MockShell:
 
         shell_command_components: list[str] = [str(command)]
 
+        if timeout is not None:
+            shell_command_components = [
+                'timeout',
+                str(timeout),
+                *shell_command_components,
+            ]
+
         if env is not None:
             shell_command_components = [
                 *(f'{key}={shlex.quote(value)}' for key, value in env.items()),
@@ -320,6 +328,22 @@ class MockShell:
             assert self.mock_shell.stdin is not None
             assert self.mock_shell.stdout is not None
             assert self.mock_shell.stderr is not None
+
+            # A bit of logging helpers for debugging duration behavior
+            start_timestamp = time.monotonic()
+
+            def _event_timestamp() -> str:
+                return f'{time.monotonic() - start_timestamp:.4}'
+
+            def log_event(msg: str) -> None:
+                logger.debug(
+                    'Command event',
+                    f'{_event_timestamp()} {msg}',
+                    level=4,
+                    topic=tmt.log.Topic.COMMAND_EVENTS,
+                )
+
+            log_event('waiting for process to finish')
 
             with (
                 MockShell.ManagedEpollFd(self.epoll, stdout_fd) as stdout_epoll,
@@ -382,8 +406,19 @@ class MockShell:
                             else:
                                 returncode = int(content.decode('utf-8').strip())
 
+                # The `timeout` command returns exit codes consistent with
+                # `tmt.utils.ProcessExitCodes`.
+                # Logging is needed to pass `execute/duration` tests.
+                if returncode == tmt.utils.ProcessExitCodes.TIMEOUT:
+                    log_event(f'duration "{timeout}" exceeded')
+                    log_event('sent SIGKILL signal')
+                    log_event('kill confirmed')
+
+                log_event('waiting for stream readers')
                 stdout = stream_out.string
+                log_event('stdout reader done')
                 stderr = stream_err.string
+                log_event('stderr reader done')
 
                 if returncode is None:
                     raise tmt.utils.RunError(
