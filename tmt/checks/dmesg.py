@@ -1,4 +1,3 @@
-import datetime
 import re
 from re import Pattern
 from typing import TYPE_CHECKING, Optional
@@ -11,11 +10,7 @@ from tmt.checks import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome, save_failures
 from tmt.steps.provision import GuestCapability
-from tmt.utils import (
-    Path,
-    format_timestamp,
-    render_command_report,
-)
+from tmt.utils import Path, Stopwatch
 from tmt.utils.hints import hints_as_notes
 
 if TYPE_CHECKING:
@@ -97,27 +92,39 @@ class DmesgCheck(Check):
     def _save_dmesg(
         self, invocation: 'TestInvocation', event: CheckEvent, logger: tmt.log.Logger
     ) -> tuple[ResultOutcome, list[Path]]:
-        timestamp = format_timestamp(datetime.datetime.now(datetime.timezone.utc))
-
         path = invocation.check_files_path / TEST_POST_DMESG_FILENAME.format(event=event.value)
 
-        try:
-            outcome = ResultOutcome.PASS
-            output = self._fetch_dmesg(invocation.guest, logger)
+        outcome = ResultOutcome.PASS
+        failures: list[str] = []
 
-        except tmt.utils.RunError as exc:
+        output, exc, timer = Stopwatch.measure(self._fetch_dmesg, invocation.guest, logger)
+
+        if exc:
             outcome = ResultOutcome.ERROR
-            output = exc.output
 
-        failures = self._extract_failures(output.stdout or '')
+            if isinstance(exc, tmt.utils.RunError):
+                output = exc.output
+
+                invocation.phase.write_command_report(
+                    path=path, label='dmesg log', timer=timer, exc=exc
+                )
+
+                failures = self._extract_failures(output.stdout or '')
+
+            else:
+                invocation.phase.write_report(
+                    path=path, label='dmesg log', timer=timer, body=tmt.utils.render_exception(exc)
+                )
+
+        elif output:
+            invocation.phase.write_command_report(
+                path=path, label='dmesg log', timer=timer, output=output
+            )
+
+            failures = self._extract_failures(output.stdout or '')
+
         if failures and outcome == ResultOutcome.PASS:
             outcome = ResultOutcome.FAIL
-
-        invocation.phase.write(
-            path,
-            '\n'.join(render_command_report(label=f'Acquired at {timestamp}', output=output)),
-            mode='a',
-        )
 
         log_paths = [
             path.relative_to(invocation.phase.step_workdir),
