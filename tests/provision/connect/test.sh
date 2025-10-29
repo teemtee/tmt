@@ -35,7 +35,7 @@ rlJournalStart
         provision_no_become="provision -h connect --guest localhost --port $guest_port --key $guest_key --user $guest_user"
         rlRun -s "tmt -vv run --scratch -i $run_connect_no_become $provision_no_become reboot --step provision" 2
         rlAssertGrep "fail: Command 'reboot' returned 1." $rlRun_LOG
-        rlAssertGrep "Call to Reboot failed: Interactive authentication required." $rlRun_LOG
+        rlAssertGrep "Call to Reboot failed: Access denied" $rlRun_LOG
 
         rlRun "tmt run -i $run cleanup"
         rlRun "tmt run -i $run_connect cleanup"
