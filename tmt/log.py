@@ -513,6 +513,24 @@ class Logger:
 
         self._decolorize_output = create_decolorizer(apply_colors_output)
 
+    def __getstate__(self) -> dict[str, Any]:
+        """
+        Helper function for pickling.
+        """
+        state = self.__dict__.copy()
+        current_count = next(state["_child_id_counter"])
+        state["_child_id_counter"] = current_count
+        self._child_id_counter = itertools.count(current_count)
+        return state
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        """
+        Helper function for pickling.
+        """
+        current_count: int = state["_child_id_counter"]
+        state["_child_id_counter"] = itertools.count(current_count)
+        self.__dict__.update(state)
+
     def __repr__(self) -> str:
         return (
             f'<Logger:'

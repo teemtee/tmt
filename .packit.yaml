@@ -154,6 +154,10 @@ jobs:
             context:
               how: provision
           <<: *tmt-cloud-resources
+    # Temporarily running these on F42 because tests started to break due to avc on F43
+    # TODO: Move revert this targets overwrite
+    targets:
+      - fedora-42
 
   # Test internal plugins
   - <<: *test-base

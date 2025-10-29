@@ -5,11 +5,6 @@ require:
     - python3
     - python3-devel
 tier: null
-adjust+:
-  - when: distro >= fedora-43
-    enabled: false
-    because: |
-      Python 3.14 wheels for cffi are not available yet
 
 environment:
     # Pretend SCM version as tests are not running in git environment
