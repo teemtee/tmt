@@ -4301,9 +4301,10 @@ class RetryStrategy(urllib3.util.retry.Retry):
         self.logger = logger
 
     def new(self, **kw: Any) -> 'Self':
-        new_retry = super().new(**kw)
-        new_retry.logger = self.logger
-        return new_retry
+        if 'logger' in kw:
+            kw.pop('logger')
+
+        return super().new(logger=self.logger, **kw)
 
     def _log_rate_limit_info(self, headers: urllib3._collections.HTTPHeaderDict) -> None:
         """
