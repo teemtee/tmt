@@ -1408,7 +1408,7 @@ class Test(
 
         def _get_template_content(template: str, template_type: str) -> str:
             if tmt.utils.is_url(template):
-                return tmt.templates.MANAGER.render_from_url(template)
+                return tmt.templates.MANAGER.render_from_url(template, logger)
             templates = tmt.templates.MANAGER.templates[template_type]
             try:
                 return tmt.templates.MANAGER.render_file(templates[template])
@@ -2575,7 +2575,7 @@ class Plan(
 
         # Get plan template
         if tmt.utils.is_url(template):
-            plan_content = tmt.templates.MANAGER.render_from_url(template)
+            plan_content = tmt.templates.MANAGER.render_from_url(template, logger)
         else:
             plan_templates = tmt.templates.MANAGER.templates['plan']
             try:
@@ -3644,7 +3644,7 @@ class Story(
 
         # Get story template
         if tmt.utils.is_url(template):
-            story_content = tmt.templates.MANAGER.render_from_url(template)
+            story_content = tmt.templates.MANAGER.render_from_url(template, logger)
         else:
             story_templates = tmt.templates.MANAGER.templates['story']
             try:

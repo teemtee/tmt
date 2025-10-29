@@ -1836,7 +1836,7 @@ class GuestLogBeaker(tmt.steps.provision.GuestLog):
         :returns: content of the log, or ``None`` if the log cannot be retrieved.
         """
         try:
-            return tmt.utils.get_url_content(self.url)
+            return tmt.utils.get_url_content(self.url, logger)
         except Exception as error:
             tmt.utils.show_exception_as_warning(
                 exception=error,

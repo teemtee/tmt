@@ -749,7 +749,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         def try_get_url() -> requests.Response:
             try:
-                with retry_session() as session:
+                with retry_session(logger=self._logger) as session:
                     response = session.get(url)
 
                 if response.ok:
