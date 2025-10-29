@@ -4168,9 +4168,14 @@ class Tree(tmt.utils.Common):
 
         # Build the list, convert to objects, sort and filter
         local_plans = list(self.tree.prune(keys=local_plan_keys, names=names, sources=sources))
-        importing_plans = list(
-            self.tree.prune(keys=remote_plan_keys, names=names, sources=sources)
-        )
+        if self.import_before_filter:
+            importing_plans = list(
+                self.tree.prune(keys=remote_plan_keys, names=None, sources=sources)
+            )
+        else:
+            importing_plans = list(
+                self.tree.prune(keys=remote_plan_keys, names=names, sources=sources)
+            )
 
         for plan in importing_plans:
             if plan in local_plans:
@@ -4194,7 +4199,25 @@ class Tree(tmt.utils.Common):
         ]
 
         if not Plan._opt('shallow'):
-            plans = functools.reduce(operator.iadd, (plan.resolve_imports() for plan in plans), [])
+            unresolved_plans = plans
+            plans = []
+            for plan in unresolved_plans:
+                try:
+                    plans += plan.resolve_imports()
+                except Exception as error:
+                    if self.import_before_filter:
+                        # If we filter later, we can skip some resolve failures
+                        # since it may be unrelated
+                        self.warn(f"Failed to import plan '{plan.name}'")
+                        self.debug("import-fail", str(error))
+                    else:
+                        # Otherwise the filter was already applied and the resolve failure
+                        # is an error
+                        raise
+
+        # Do the name filter after the import
+        if self.import_before_filter and names:
+            plans = [plan for plan in plans if any(re.search(name, plan.name) for name in names)]
 
         return self._filters_conditions(
             nodes=sorted(plans, key=lambda plan: plan.order),
