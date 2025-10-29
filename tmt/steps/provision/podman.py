@@ -395,7 +395,7 @@ class GuestContainer(tmt.Guest):
             ):
                 raise tmt.utils.ProvisionError(
                     "Install 'tmt+provision-container' to provision using this method."
-                )
+                ) from err
             raise err
 
     def execute(

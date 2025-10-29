@@ -83,7 +83,9 @@ class Config:
                 "'tmt run --last' might not pick the right run directory."
             )
         except OSError as error:
-            raise tmt.utils.GeneralError(f"Unable to save last run '{self.path}'.\n{error}")
+            raise tmt.utils.GeneralError(
+                f"Unable to save last run '{self.path}'.\n{error}"
+            ) from error
 
     @functools.cached_property
     def fmf_tree(self) -> Optional[fmf.Tree]:

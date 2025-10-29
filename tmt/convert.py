@@ -75,8 +75,8 @@ def read_manual(
 
     try:
         tree = fmf.Tree(str(old_cwd))
-    except fmf.utils.RootError:
-        raise ConvertError("Initialize metadata tree using 'tmt init'.")
+    except fmf.utils.RootError as error:
+        raise ConvertError("Initialize metadata tree using 'tmt init'.") from error
 
     try:
         if plan_id:
@@ -84,8 +84,8 @@ def read_manual(
             case_ids = [case.id for case in all_cases if not case.automated]
         else:
             case_ids = [case_id]
-    except ValueError:
-        raise ConvertError('Test plan/case identifier must be an integer.')
+    except ValueError as error:
+        raise ConvertError('Test plan/case identifier must be an integer.') from error
 
     # Create directory to store manual tests in
     new_cwd = Path(tree.root) / 'Manual'
@@ -147,8 +147,8 @@ def html_to_markdown(html: str) -> str:
         import html2text
 
         md_handler = html2text.HTML2Text()
-    except ImportError:
-        raise ConvertError("Install tmt+test-convert to import tests.")
+    except ImportError as error:
+        raise ConvertError("Install tmt+test-convert to import tests.") from error
 
     if html is None:
         markdown: str = ""
@@ -177,8 +177,8 @@ def write_markdown(path: Path, content: dict[str, str]) -> None:
     try:
         path.write_text(to_print, encoding='utf-8')
         echo(style(f"Test case successfully stored into '{path}'.", fg='magenta'))
-    except OSError:
-        raise ConvertError(f"Unable to write '{path}'.")
+    except OSError as error:
+        raise ConvertError(f"Unable to write '{path}'.") from error
 
 
 def add_link(
@@ -297,8 +297,8 @@ def read_datafile(
                     makefile_path.read_text(encoding='utf-8'),
                     re.MULTILINE,
                 )
-            except OSError:
-                raise ConvertError("Makefile is missing.")
+            except OSError as error:
+                raise ConvertError("Makefile is missing.") from error
             # Retrieve the path to the test file from the Makefile
             if search_result is not None:
                 test_path = path / search_result.group(1).split()[-1]
@@ -311,8 +311,8 @@ def read_datafile(
         else:
             data["framework"] = "shell"
         echo(style("framework: ", fg="green") + data["framework"])
-    except OSError:
-        raise ConvertError(f"Unable to open '{test_path}'.")
+    except OSError as error:
+        raise ConvertError(f"Unable to open '{test_path}'.") from error
 
     # Contact
     search_result = re.search(regex_contact, testinfo, re.MULTILINE)
@@ -433,8 +433,8 @@ def read(
     # Make sure there is a metadata tree initialized
     try:
         tree = fmf.Tree(str(path))
-    except fmf.utils.RootError:
-        raise ConvertError("Initialize metadata tree using 'tmt init'.")
+    except fmf.utils.RootError as error:
+        raise ConvertError("Initialize metadata tree using 'tmt init'.") from error
 
     # Ascertain if datafile is of type Makefile or metadata
     makefile_file = None
@@ -484,8 +484,8 @@ def read(
         datafile_path = path / filename
         try:
             datafile = datafile_path.read_text(encoding='utf-8')
-        except OSError:
-            raise ConvertError(f"Unable to open '{datafile_path}'.")
+        except OSError as error:
+            raise ConvertError(f"Unable to open '{datafile_path}'.") from error
         echo(f"found in '{datafile_path}'.")
 
     # If testinfo.desc exists read it to preserve content and remove it
@@ -494,8 +494,8 @@ def read(
         try:
             old_testinfo = testinfo_path.read_text(encoding='utf-8')
             testinfo_path.unlink()
-        except OSError:
-            raise ConvertError(f"Unable to open '{testinfo_path}'.")
+        except OSError as error:
+            raise ConvertError(f"Unable to open '{testinfo_path}'.") from error
     else:
         old_testinfo = None
 
@@ -519,16 +519,18 @@ def read(
                 encoding='utf-8',
                 stdout=subprocess.DEVNULL,
             )
-        except FileNotFoundError:
-            raise ConvertError(f"Install tmt+test-convert to convert metadata from {filename}.")
-        except subprocess.CalledProcessError:
-            raise ConvertError("Failed to convert metadata using 'make testinfo.desc'.")
+        except FileNotFoundError as err:
+            raise ConvertError(
+                f"Install tmt+test-convert to convert metadata from {filename}."
+            ) from err
+        except subprocess.CalledProcessError as error:
+            raise ConvertError("Failed to convert metadata using 'make testinfo.desc'.") from error
 
         # Read testinfo.desc
         try:
             testinfo = testinfo_path.read_text(encoding='utf-8')
-        except OSError:
-            raise ConvertError(f"Unable to open '{testinfo_path}'.")
+        except OSError as error:
+            raise ConvertError(f"Unable to open '{testinfo_path}'.") from error
 
     # restraint
     if restraint_file:
@@ -593,8 +595,8 @@ def read(
             try:
                 testinfo_path.write_text(old_testinfo, encoding='utf-8')
 
-            except OSError:
-                raise ConvertError(f"Unable to write '{testinfo_path}'.")
+            except OSError as error:
+                raise ConvertError(f"Unable to write '{testinfo_path}'.") from error
         # Remove created testinfo.desc otherwise
         else:
             testinfo_path.unlink()
@@ -705,8 +707,8 @@ def read_nitrate(
     try:
         import gssapi
         import nitrate
-    except ImportError:
-        raise ConvertError('Install tmt+test-convert to import metadata.')
+    except ImportError as error:
+        raise ConvertError('Install tmt+test-convert to import metadata.') from error
 
     # Check test case
     echo(style('Nitrate ', fg='blue'), nl=False)
@@ -727,7 +729,7 @@ def read_nitrate(
         nitrate.xmlrpc_driver.NitrateXmlrpcError,
         gssapi.raw.misc.GSSError,
     ) as error:
-        raise ConvertError(str(error))
+        raise ConvertError(str(error)) from error
     if not testcases:
         echo(
             "No {}testcase found for '{}'.".format(
@@ -771,8 +773,8 @@ def read_nitrate(
             echo(style(f"Test case file '{md_path}' successfully removed.", fg='magenta'))
         except FileNotFoundError:
             pass
-        except OSError:
-            raise ConvertError(f"Unable to remove '{md_path}'.")
+        except OSError as error:
+            raise ConvertError(f"Unable to remove '{md_path}'.") from error
 
     # Merge environment from Makefile and Nitrate
     if 'environment' in common_data:
@@ -1222,14 +1224,14 @@ def adjust_runtest(path: Path) -> None:
                 else:
                     runtest.write(line)
             runtest.truncate()
-    except OSError:
-        raise ConvertError(f"Unable to read/write '{path}'.")
+    except OSError as error:
+        raise ConvertError(f"Unable to read/write '{path}'.") from error
 
     # Make sure the script has correct execute permissions
     try:
         path.chmod(0o755)
-    except OSError:
-        raise tmt.convert.ConvertError(f"Could not make '{path}' executable.")
+    except OSError as error:
+        raise tmt.convert.ConvertError(f"Could not make '{path}' executable.") from error
 
 
 def write(path: Path, data: NitrateDataType, quiet: bool = False) -> None:
@@ -1255,8 +1257,8 @@ def write(path: Path, data: NitrateDataType, quiet: bool = False) -> None:
     try:
         path.write_text(tmt.utils.dict_to_yaml(sorted_data), encoding='utf-8')
 
-    except OSError:
-        raise ConvertError(f"Unable to write '{path}'")
+    except OSError as error:
+        raise ConvertError(f"Unable to write '{path}'") from error
     if not quiet:
         echo(style(f"Metadata successfully stored into '{path}'.", fg='magenta'))
 
@@ -1299,8 +1301,10 @@ def relevancy_to_adjust(
         else:
             try:
                 rule['environment'] = tmt.utils.Environment.from_sequence(decision, logger)
-            except tmt.utils.GeneralError:
-                raise tmt.utils.ConvertError(f"Invalid test case relevancy decision '{decision}'.")
+            except tmt.utils.GeneralError as error:
+                raise tmt.utils.ConvertError(
+                    f"Invalid test case relevancy decision '{decision}'."
+                ) from error
 
         # Adjust condition syntax
         expressions = []
@@ -1329,10 +1333,10 @@ def relevancy_to_adjust(
                         'defined': 'is defined',
                         '!defined': 'is not defined',
                     }[operator]
-                except KeyError:
+                except KeyError as error:
                     raise tmt.utils.ConvertError(
                         f"Invalid test case relevancy operator '{operator}'."
-                    )
+                    ) from error
             # Special handling for the '!=' operator with comma-separated
             # values (in relevancy this was treated as 'no value equals')
             values = re.split(r'\s*,\s*', right)

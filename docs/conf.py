@@ -66,10 +66,10 @@ if 'TMT_DOCS_THEME' in os.environ:
     try:
         theme_package_name, theme_name = theme_specs.split(':', 1)
 
-    except ValueError:
+    except ValueError as error:
         raise tmt.utils.GeneralError(
             f"Cannot split TMT_DOCS_THEME '{theme_specs}' into theme package and theme name."
-        )
+        ) from error
 
     if not _load_theme(theme_package_name, theme_name):
         raise tmt.utils.GeneralError(f"Cannot load theme from TMT_DOCS_THEME, '{theme_specs}'.")

@@ -1415,8 +1415,8 @@ class Test(
             templates = tmt.templates.MANAGER.templates[template_type]
             try:
                 return tmt.templates.MANAGER.render_file(templates[template])
-            except KeyError:
-                raise tmt.utils.GeneralError(f"Invalid template '{template}'.")
+            except KeyError as error:
+                raise tmt.utils.GeneralError(f"Invalid template '{template}'.") from error
 
         metadata_content = _get_template_content(template, 'test')
         if script:
@@ -1913,8 +1913,10 @@ class RemotePlanReferenceImporting(enum.Enum):
     def from_spec(cls, spec: str) -> 'RemotePlanReferenceImporting':
         try:
             return RemotePlanReferenceImporting(spec)
-        except ValueError:
-            raise tmt.utils.SpecificationError(f"Invalid remote plan replacement '{spec}'.")
+        except ValueError as error:
+            raise tmt.utils.SpecificationError(
+                f"Invalid remote plan replacement '{spec}'."
+            ) from error
 
 
 class RemotePlanReferenceImportScope(enum.Enum):
@@ -1926,8 +1928,10 @@ class RemotePlanReferenceImportScope(enum.Enum):
     def from_spec(cls, spec: str) -> 'RemotePlanReferenceImportScope':
         try:
             return RemotePlanReferenceImportScope(spec)
-        except ValueError:
-            raise tmt.utils.SpecificationError(f"Invalid remote plan match scope '{spec}'.")
+        except ValueError as error:
+            raise tmt.utils.SpecificationError(
+                f"Invalid remote plan match scope '{spec}'."
+            ) from error
 
 
 @container
@@ -2544,10 +2548,12 @@ class Plan(
                     except tmt.utils.GeneralError as error:
                         raise tmt.utils.GeneralError(
                             f"Invalid step data for {step}: '{option}'\n{error}"
-                        )
+                        ) from error
                     step_data.append(data)
                 except MarkedYAMLError as error:
-                    raise tmt.utils.GeneralError(f"Invalid yaml data for {step}:\n{error}")
+                    raise tmt.utils.GeneralError(
+                        f"Invalid yaml data for {step}:\n{error}"
+                    ) from error
 
             # Use list only when multiple step data provided
             if len(step_data) == 1:
@@ -2595,8 +2601,8 @@ class Plan(
             plan_templates = tmt.templates.MANAGER.templates['plan']
             try:
                 plan_content = tmt.templates.MANAGER.render_file(plan_templates[template])
-            except KeyError:
-                raise tmt.utils.GeneralError(f"Invalid template '{template}'.")
+            except KeyError as error:
+                raise tmt.utils.GeneralError(f"Invalid template '{template}'.") from error
 
         # Override template with data provided on command line
         plan_content = Plan.edit_template(plan_content)
@@ -3664,8 +3670,8 @@ class Story(
             story_templates = tmt.templates.MANAGER.templates['story']
             try:
                 story_content = tmt.templates.MANAGER.render_file(story_templates[template])
-            except KeyError:
-                raise tmt.utils.GeneralError(f"Invalid template '{template}'.")
+            except KeyError as error:
+                raise tmt.utils.GeneralError(f"Invalid template '{template}'.") from error
 
         # Append link with appropriate relation
         links = Links(data=list(cast(list[_RawLink], Story._opt('link', []))))
@@ -3894,7 +3900,9 @@ class Tree(tmt.utils.Common):
                 # Handle missing attributes as if condition failed
                 continue
             except Exception as error:
-                raise tmt.utils.GeneralError(f"Invalid --condition raised exception: {error}")
+                raise tmt.utils.GeneralError(
+                    f"Invalid --condition raised exception: {error}"
+                ) from error
 
             # Filters
             try:
@@ -3945,13 +3953,13 @@ class Tree(tmt.utils.Common):
         if self._tree is None:
             try:
                 self._tree = fmf.Tree(str(self._path))
-            except fmf.utils.RootError:
+            except fmf.utils.RootError as error:
                 raise tmt.utils.MetadataError(
                     f"No metadata found in the '{self._path}' directory. "
                     f"Use 'tmt init' to get started."
-                )
+                ) from error
             except fmf.utils.FileError as error:
-                raise tmt.utils.GeneralError(f"Invalid yaml syntax: {error}")
+                raise tmt.utils.GeneralError(f"Invalid yaml syntax: {error}") from error
             # Adjust metadata for current fmf context
             self._tree.adjust(
                 fmf.context.Context(**self.fmf_context),
@@ -4861,7 +4869,7 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
 
             except Exception as exc:
                 if self.opt('on-plan-error') == 'quit':
-                    raise tmt.utils.GeneralError('plan failed', causes=[exc])
+                    raise tmt.utils.GeneralError('plan failed', causes=[exc]) from exc
 
                 crashed_plans.append((plan, exc))
 

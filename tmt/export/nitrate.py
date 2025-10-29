@@ -73,11 +73,11 @@ def import_nitrate() -> Nitrate:
         assert nitrate
         DEFAULT_PRODUCT = nitrate.Product(name='RHEL Tests')
         return nitrate
-    except ImportError:
-        raise ConvertError("Install tmt+test-convert to export tests to nitrate.")
+    except ImportError as e:
+        raise ConvertError("Install tmt+test-convert to export tests to nitrate.") from e
     # FIXME: ignore[union-attr]: https://github.com/teemtee/tmt/issues/1616
     except nitrate.NitrateError as error:  # type: ignore[union-attr]
-        raise ConvertError(error)
+        raise ConvertError(str(error)) from error
 
 
 def _nitrate_find_fmf_testcases(test: 'tmt.Test') -> Iterator[Any]:
@@ -457,7 +457,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
         nitrate_case: NitrateTestCase = nitrate.TestCase(int(nitrate_id))
         nitrate_case.summary  # noqa: B018 - Make sure we connect to the server now
         echo(style(f"Test case '{nitrate_case.identifier}' found.", fg='blue'))
-    except TypeError:
+    except TypeError as error:
         # Create a new nitrate test case
         if create:
             nitrate_case = None
@@ -487,9 +487,9 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
                 f"Nitrate test case id not found for {test}"
                 " (You can use --create option to enforce"
                 " creating testcases)"
-            )
+            ) from error
     except (nitrate.NitrateError, gssapi.raw.misc.GSSError) as error:
-        raise ConvertError(error)
+        raise ConvertError(error) from error
 
     if not ignore_git_validation:
         # Check if URL is accessible, to be able to reach from nitrate
@@ -575,7 +575,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
             echo(style('default tester: ', fg='green') + email_address)
         except nitrate.NitrateError as error:
             log.debug(error)
-            raise ConvertError(f"Nitrate issue: {error}")
+            raise ConvertError(f"Nitrate issue: {error}") from error
 
     # Duration
     if not dry_mode:

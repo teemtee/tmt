@@ -2111,7 +2111,7 @@ class Guest(
                         f'{tmt.utils.DEFAULT_SHELL.capitalize()} is required on the guest.'
                     ) from exc
 
-                raise tmt.utils.wait.WaitingIncompleteError
+                raise tmt.utils.wait.WaitingIncompleteError from exc
 
         try:
             wait.wait(try_whoami, self._logger)
@@ -3091,9 +3091,9 @@ class GuestSsh(Guest):
                 # Same boot time, reboot didn't happen yet, retrying
                 raise tmt.utils.wait.WaitingIncompleteError
 
-            except tmt.utils.RunError:
+            except tmt.utils.RunError as error:
                 self.debug('Failed to connect to the guest.')
-                raise tmt.utils.wait.WaitingIncompleteError
+                raise tmt.utils.wait.WaitingIncompleteError from error
 
         try:
             wait.wait(check_boot_time, self._logger)

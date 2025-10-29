@@ -898,8 +898,10 @@ def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
 
             providers.register(BEAKER, BeakerProvider)
 
-        except ImportError:
-            raise ProvisionError("Install 'tmt+provision-beaker' to provision using this method.")
+        except ImportError as error:
+            raise ProvisionError(
+                "Install 'tmt+provision-beaker' to provision using this method."
+            ) from error
 
     # ignore the misc because mrack sources are not typed and result into
     # error: Class cannot subclass "BeakerTransformer" (has type "Any")
@@ -1290,7 +1292,7 @@ class BeakerAPI:
         try:
             init_mrack_global_context(str(mrack_config))
         except mrack.errors.ConfigError as mrack_conf_err:
-            raise ProvisionError(mrack_conf_err)
+            raise ProvisionError(mrack_conf_err) from mrack_conf_err
 
         self._mrack_transformer = TmtBeakerTransformer()
         try:
@@ -1593,12 +1595,12 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                 Deadline.from_seconds(self.provision_timeout), tick=self.provision_tick
             ).wait(get_new_state, self._logger)
 
-        except tmt.utils.wait.WaitingTimedOutError:
+        except tmt.utils.wait.WaitingTimedOutError as error:
             response = self.api.delete()
             raise ProvisionError(
                 f'Failed to provision in the given amount '
                 f'of time (--provision-timeout={self.provision_timeout}).'
-            )
+            ) from error
 
         self.primary_address = self.topology_address = guest_info['system']
 

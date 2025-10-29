@@ -444,18 +444,18 @@ class StructuredField:
 
         try:
             content = self._sections[section]
-        except KeyError:
-            raise StructuredFieldError(f"Section [{pure_ascii(section)!r}] not found")
+        except KeyError as error:
+            raise StructuredFieldError(f"Section [{pure_ascii(section)!r}] not found") from error
         # Return the whole section content
         if item is None:
             return content
         # Return only selected item from the section
         try:
             return self._read_section(content)[item]
-        except KeyError:
+        except KeyError as error:
             raise StructuredFieldError(
                 f"Unable to read '{pure_ascii(item)!r}' from section '{pure_ascii(section)!r}'"
-            )
+            ) from error
 
     def set(self, section: str, content: Any, item: Optional[str] = None) -> None:
         """
@@ -498,16 +498,18 @@ class StructuredField:
             try:
                 del self._sections[section]
                 del self._order[self._order.index(section)]
-            except KeyError:
-                raise StructuredFieldError(f"Section [{pure_ascii(section)!r}] not found")
+            except KeyError as error:
+                raise StructuredFieldError(
+                    f"Section [{pure_ascii(section)!r}] not found"
+                ) from error
         # Remove only selected item from the section
         else:
             try:
                 dictionary = self._read_section(self._sections[section])
                 del dictionary[item]
-            except KeyError:
+            except KeyError as error:
                 raise StructuredFieldError(
                     f"Unable to remove '{pure_ascii(item)!r}' "
                     f"from section '{pure_ascii(section)!r}'"
-                )
+                ) from error
             self._sections[section] = self._write_section(dictionary)

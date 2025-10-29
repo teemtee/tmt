@@ -264,7 +264,7 @@ class Copr(tmt.utils.Common):
             )
         except tmt.utils.RunError as error:
             if error.stderr and 'not found' in error.stderr.lower():
-                raise tmt.utils.PrepareError(f"Copr repository '{copr}' not found.")
+                raise tmt.utils.PrepareError(f"Copr repository '{copr}' not found.") from error
             raise
 
     def enable_copr(self, repositories: list[str]) -> None:

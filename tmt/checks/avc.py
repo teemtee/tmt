@@ -37,8 +37,8 @@ class TestMethod(enum.Enum):
     def from_spec(cls, spec: str) -> 'TestMethod':
         try:
             return TestMethod(spec)
-        except ValueError:
-            raise tmt.utils.SpecificationError(f"Invalid AVC check method '{spec}'.")
+        except ValueError as error:
+            raise tmt.utils.SpecificationError(f"Invalid AVC check method '{spec}'.") from error
 
     @classmethod
     def normalize(

@@ -157,8 +157,8 @@ def check_git_url(url: str, logger: tmt.log.Logger) -> str:
             env={"GIT_ASKPASS": "echo", "GIT_TERMINAL_PROMPT": "0"},
         )
         return url
-    except subprocess.CalledProcessError:
-        raise GitUrlError(f"Unable to contact remote git via '{url}'.")
+    except subprocess.CalledProcessError as error:
+        raise GitUrlError(f"Unable to contact remote git via '{url}'.") from error
 
 
 PUBLIC_GIT_URL_PATTERNS: list[tuple[str, str]] = [
@@ -253,10 +253,10 @@ def inject_auth_git_url(url: str) -> str:
             # Get credentials value
             try:
                 creds = os.environ[variable_with_value]
-            except KeyError:
+            except KeyError as error:
                 raise GitUrlError(
                     f'Missing "{variable_with_value}" variable with credentials for "{url}"'
-                )
+                ) from error
             # Return original url if credentials is an empty value
             if not creds:
                 return url
