@@ -3,7 +3,10 @@ discover:
     tests:
       - name: /install/minimal
         test: cd $(mktemp -d) && tmt init -t full && tmt
+        require:
+          - tmt
 prepare:
+    # TODO: Remove when artifact installation is live
     summary: Ensure that only 'tmt' is installed
     name: minimal
     order: 90
