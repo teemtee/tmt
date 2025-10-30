@@ -16,6 +16,7 @@ import tmt.steps.discover
 import tmt.utils
 import tmt.utils.filesystem
 import tmt.utils.git
+import tmt.utils.url
 from tmt.base import _RawAdjustRule
 from tmt.container import container, field
 from tmt.steps.prepare.distgit import insert_to_prepare_step
@@ -584,19 +585,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 )
                 git_root = self.testdir
             elif self.data.url_content_type == "archive":
-                self.debug(f"Downloading '{url}' and extracting to '{self.testdir}'.")
-                with tmt.utils.retry_session(logger=logger or self._logger) as session:
-                    response = session.get(url, stream=True)
-                response.raise_for_status()
-                # TODO: Generalize this file download
-                if "Content-Disposition" in response.headers:
-                    archive_name = re.findall(
-                        "filename=(.+)", response.headers["Content-Disposition"]
-                    )[0]
-                else:
-                    archive_name = response.url.split("/")[-1]
-                archive_path = self.workdir / archive_name
-                archive_path.write_bytes(response.content)
+                archive_path = tmt.utils.url.download(
+                    url, self.phase_workdir, logger=logger or self._logger
+                )
+                self.debug(f"Extracting archive to '{self.testdir}'.")
                 shutil.unpack_archive(archive_path, self.testdir)
                 git_root = self.testdir
             else:
