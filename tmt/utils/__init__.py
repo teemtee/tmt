@@ -1289,8 +1289,8 @@ class Command:
         try:
             process = _spawn_process()
 
-        except FileNotFoundError as exc:
-            raise RunError(f"File '{exc.filename}' not found.", self, 127, caller=caller) from exc
+        except FileNotFoundError as error:
+            raise RunError("File not found.", self, 127, caller=caller) from error
 
         if on_process_start:
             on_process_start(self, process, logger)
@@ -4819,7 +4819,7 @@ def _load_schema(schema_filepath: Path) -> Schema:
         return cast(Schema, yaml_to_dict(schema_filepath.read_text(encoding='utf-8')))
 
     except Exception as exc:
-        raise FileError(f"Failed to load schema file {schema_filepath}\n{exc}") from exc
+        raise FileError(f"Failed to load schema file {schema_filepath}.") from exc
 
 
 @functools.cache
@@ -4863,7 +4863,7 @@ def load_schema_store() -> SchemaStore:
             store[schema['$id']] = schema
 
     except Exception as exc:
-        raise FileError(f"Failed to discover schema files\n{exc}") from exc
+        raise FileError("Failed to discover schema files.") from exc
 
     if '/schemas/plan' not in store:
         raise FileError('Failed to discover schema for plans')
