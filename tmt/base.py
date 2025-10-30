@@ -1144,32 +1144,30 @@ class Core(
                     return
 
                 if isinstance(error.schema, dict) and '$id' in error.schema:
-                    yield (
-                        LinterOutcome.WARN,
-                        f'"{match.group(1)}" is a required property by schema '
-                        f'{error.schema["$id"]}',
+                    message = (
+                        f'"{match.group(1)}" is a required property by '
+                        f'schema {error.schema["$id"]}'
                     )
 
                 else:
-                    yield (
-                        LinterOutcome.WARN,
-                        f'"{match.group(1)}" is a required property by schema',
-                    )
+                    message = f'"{match.group(1)}" is a required property by schema'
 
-            for error, _ in errors:
+                yield (LinterOutcome.WARN, message)
+
+            def detect_errors(error: jsonschema.ValidationError) -> LinterReturn:
                 yield from detect_unallowed_properties(error)
                 yield from detect_unallowed_properties_with_pattern(error)
                 yield from detect_enum_violations(error)
                 yield from detect_missing_required_properties(error)
 
+            for error, _ in errors:
+                yield from detect_errors(error)
+
                 # Validation errors can have "context", a list of "sub" errors encountered during
                 # validation. Interesting ones are identified & added to our error message.
                 if error.context:
                     for suberror in error.context:
-                        yield from detect_unallowed_properties(suberror)
-                        yield from detect_unallowed_properties_with_pattern(suberror)
-                        yield from detect_enum_violations(suberror)
-                        yield from detect_missing_required_properties(suberror)
+                        yield from detect_errors(suberror)
 
             yield LinterOutcome.FAIL, 'fmf node failed schema validation'
 
