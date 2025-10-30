@@ -12,7 +12,7 @@ rlJournalStart
     rlPhaseStartTest $plan
         rlRun -s 'tmt run --id $tmp/run discover -v plan --name $plan'
         discovered_workdir="$tmp/run/plans/$plan/discover/default-0/tests"
-        rlAssertExists "$discovered_workdir/tmt.spec"
+        rlAssertExists "$discovered_workdir/pyproject.toml"
         # .git is intentionally removed (test for /tests/discover/keep-git-metadata)
         rlAssertNotExists "$discovered_workdir/.git"
     rlPhaseEnd

@@ -84,7 +84,7 @@ rlJournalStart
         rlRun "git show -s | cat"
 
         # Do not "patch" version for pre-release...
-        [[ $PRE_RELEASE -ne 1 ]] && rlRun "sed 's/^Version:.*/Version: 9.9.9/' -i tmt.spec"
+        [[ $PRE_RELEASE -ne 1 ]] && rlRun "sed 's/^Version:.*/Version: 9.9.9/' -i .distro/tmt.spec"
 
         # Build tmt packages
         rlRun "make build-deps" 0 "Install build dependencies"
