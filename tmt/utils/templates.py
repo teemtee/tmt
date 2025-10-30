@@ -503,17 +503,15 @@ def render_template(
     try:
         return environment.from_string(template).render(**variables).strip()
 
-    except jinja2.exceptions.TemplateSyntaxError as exc:
+    except jinja2.exceptions.TemplateSyntaxError as error:
         if template_filepath:
-            raise GeneralError(
-                f"Could not parse template '{template_filepath}' at line {exc.lineno}."
-            ) from exc
-        raise GeneralError(f"Could not parse template at line {exc.lineno}.") from exc
+            raise GeneralError(f"Could not parse template '{template_filepath}'.") from error
+        raise GeneralError("Could not parse template.") from error
 
-    except jinja2.exceptions.TemplateError as exc:
+    except jinja2.exceptions.TemplateError as error:
         if template_filepath:
-            raise GeneralError(f"Could not render template '{template_filepath}'.") from exc
-        raise GeneralError("Could not render template.") from exc
+            raise GeneralError(f"Could not render template '{template_filepath}'.") from error
+        raise GeneralError("Could not render template.") from error
 
 
 def render_template_file(
@@ -534,8 +532,8 @@ def render_template_file(
             template_filepath.read_text(), template_filepath, environment, **variables
         )
 
-    except FileNotFoundError as exc:
-        raise GeneralError(f"Could not open template '{template_filepath}'.") from exc
+    except FileNotFoundError as error:
+        raise GeneralError(f"Could not open template '{template_filepath}'.") from error
 
 
 def render_template_file_into_file(
