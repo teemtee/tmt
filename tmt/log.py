@@ -719,13 +719,13 @@ class Logger:
             try:
                 self.topics.add(Topic(topic_spec))
 
-            except Exception as exc:
+            except Exception as error:
                 import tmt.utils
 
                 raise tmt.utils.GeneralError(
                     f'Logging topic "{topic_spec}" is invalid.'
                     f" Possible choices are {', '.join(topic.value for topic in Topic)}"
-                ) from exc
+                ) from error
 
         return self
 

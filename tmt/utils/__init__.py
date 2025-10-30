@@ -2283,9 +2283,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
                     self.workdir_root.mkdir(exist_ok=True, parents=True)
                     self.workdir_root.chmod(WORKDIR_ROOT_MODE)
                 except OSError as error:
-                    raise FileError(
-                        f"Failed to prepare workdir '{self.workdir_root}': {error}"
-                    ) from error
+                    raise FileError(f"Failed to prepare workdir '{self.workdir_root}'.") from error
             else:
                 try:
                     if stat.S_IMODE(self.workdir_root.stat().st_mode) != WORKDIR_ROOT_MODE:
@@ -3360,7 +3358,7 @@ def yaml_to_list(data: Any, yaml_type: Optional[YamlTypType] = 'safe') -> list[A
     try:
         loaded_data = yaml.load(data)
     except ParserError as error:
-        raise GeneralError(f"Invalid yaml syntax: {error}") from error
+        raise GeneralError("Invalid yaml syntax.") from error
 
     if loaded_data is None:
         return []
@@ -3377,7 +3375,7 @@ def json_to_list(data: Any) -> list[Any]:
     try:
         loaded_data = json.loads(data)
     except json.decoder.JSONDecodeError as error:
-        raise GeneralError(f"Invalid json syntax: {error}") from error
+        raise GeneralError("Invalid json syntax.") from error
 
     if not isinstance(loaded_data, list):
         raise GeneralError(f"Expected list in json data, got '{type(loaded_data).__name__}'.")

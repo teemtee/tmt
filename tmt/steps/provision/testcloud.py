@@ -1160,7 +1160,7 @@ class GuestTestcloud(tmt.GuestSsh):
             self._instance.spawn_vm()
             self._instance.start(BOOT_TIMEOUT * time_coeff)
         except (testcloud.exceptions.TestcloudInstanceError, libvirt.libvirtError) as error:
-            raise ProvisionError(f'Failed to boot testcloud instance ({error}).') from error
+            raise ProvisionError("Failed to boot testcloud instance.") from error
         self.primary_address = self.topology_address = self._instance.get_ip()
         self.port = int(self._instance.get_instance_port())
         self.verbose('primary address', self.primary_address, 'green')

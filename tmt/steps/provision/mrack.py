@@ -1291,23 +1291,19 @@ class BeakerAPI:
 
         try:
             init_mrack_global_context(str(mrack_config))
-        except mrack.errors.ConfigError as mrack_conf_err:
-            raise ProvisionError(mrack_conf_err) from mrack_conf_err
+        except mrack.errors.ConfigError as error:
+            raise ProvisionError("mrack configuration error at provision.") from error
 
         self._mrack_transformer = TmtBeakerTransformer()
         try:
             await self._mrack_transformer.init(global_context.PROV_CONFIG, {})
 
-        except NotAuthenticatedError as kinit_err:
-            raise ProvisionError(kinit_err) from kinit_err
-        except AttributeError as hub_err:
-            raise ProvisionError(
-                f"Can not use current kerberos ticket to authenticate: {hub_err}"
-            ) from hub_err
-        except FileNotFoundError as missing_conf_err:
-            raise ProvisionError(
-                f"Configuration file missing: {missing_conf_err.filename}"
-            ) from missing_conf_err
+        except NotAuthenticatedError as error:
+            raise ProvisionError("Authentication error.") from error
+        except AttributeError as error:
+            raise ProvisionError("Can not use current kerberos ticket to authenticate.") from error
+        except FileNotFoundError as error:
+            raise ProvisionError("Configuration file missing.") from error
         except Exception as e:
             raise ProvisionError("Failed to initialize mrack transformer.") from e
 

@@ -652,7 +652,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 plan=self.step.plan,
             )
         except tmt.utils.FileError as error:
-            raise tmt.utils.DiscoverError(str(error)) from error
+            raise tmt.utils.DiscoverError("Could not resolve dynamic reference") from error
 
         # Checkout revision if requested
         if ref:
