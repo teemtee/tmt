@@ -266,7 +266,7 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
                 cwd=source_dir,
             )
         except tmt.utils.RunError as error:
-            raise tmt.utils.PrepareError("Unable to 'rpmbuild -bp'.", causes=[error]) from error
+            raise tmt.utils.PrepareError("Unable to 'rpmbuild -bp'.") from error
 
         # Workaround around new rpm behavior, https://github.com/teemtee/tmt/issues/2987
         # No hardcoded name, should keep working in the future

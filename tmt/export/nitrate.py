@@ -73,11 +73,11 @@ def import_nitrate() -> Nitrate:
         assert nitrate
         DEFAULT_PRODUCT = nitrate.Product(name='RHEL Tests')
         return nitrate
-    except ImportError as e:
-        raise ConvertError("Install tmt+test-convert to export tests to nitrate.") from e
+    except ImportError as error:
+        raise ConvertError("Install tmt+test-convert to export tests to nitrate.") from error
     # FIXME: ignore[union-attr]: https://github.com/teemtee/tmt/issues/1616
     except nitrate.NitrateError as error:  # type: ignore[union-attr]
-        raise ConvertError(str(error)) from error
+        raise ConvertError("Nitrate issue encountered.") from error
 
 
 def _nitrate_find_fmf_testcases(test: 'tmt.Test') -> Iterator[Any]:
@@ -575,7 +575,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
             echo(style('default tester: ', fg='green') + email_address)
         except nitrate.NitrateError as error:
             log.debug(error)
-            raise ConvertError(f"Nitrate issue: {error}") from error
+            raise ConvertError("Nitrate issue encountered.") from error
 
     # Duration
     if not dry_mode:

@@ -3959,7 +3959,7 @@ class Tree(tmt.utils.Common):
                     f"Use 'tmt init' to get started."
                 ) from error
             except fmf.utils.FileError as error:
-                raise tmt.utils.GeneralError(f"Invalid yaml syntax: {error}") from error
+                raise tmt.utils.GeneralError("Invalid yaml syntax.") from error
             # Adjust metadata for current fmf context
             self._tree.adjust(
                 fmf.context.Context(**self.fmf_context),
