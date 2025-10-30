@@ -75,7 +75,7 @@ rlJournalStart
             rlRun "chown root:root -R ."
         else
             # Clone repo otherwise
-            rlRun "git clone https://github.com/teemtee/tmt $USER_HOME/tmt"
+            rlWaitForCmd "git clone https://github.com/teemtee/tmt $USER_HOME/tmt" -m 5 -d 10 -t 300 || rlDie "Unable to clone tmt repository"
             rlRun "pushd $USER_HOME/tmt"
             [ -n "$BRANCH" ] && rlRun "git checkout --force '$BRANCH'"
         fi
