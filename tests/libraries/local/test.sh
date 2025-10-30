@@ -5,7 +5,7 @@ rlJournalStart
     rlPhaseStartSetup "Prepare library"
         rlRun "libdir=\$(mktemp -d)" 0 "Create libdir directory"
         rlRun "pushd $libdir"
-        rlRun "git clone https://github.com/beakerlib/example"
+        rlWaitForCmd "git clone https://github.com/beakerlib/example" -m 5 -d 10 -t 300 || rlDie "Unable to clone beakerlib/example repository"
         rlRun "sed -i 's/Creating file/Create fyle/' example/file/lib.sh"
         rlRun "popd"
     rlPhaseEnd

@@ -83,7 +83,7 @@ rlJournalStart
         worktree="TREE"
         ref="myref"
 
-        rlRun "git clone https://github.com/teemtee/tmt $local_repo"
+        rlWaitForCmd "git clone https://github.com/teemtee/tmt $local_repo" -m 5 -d 10 -t 300 || rlDie "Unable to clone tmt repository"
         rlRun "pushd $local_repo"
         # fmf id fields should be shown when under the default branch
         rlRun -s "tmt plan show $plan -vvv"

@@ -39,7 +39,7 @@ rlJournalStart
     rlPhaseStartSetup
         rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
         rlRun 'set -o pipefail'
-        rlRun "git clone https://src.fedoraproject.org/rpms/tmt.git $tmp/tmt"
+        rlWaitForCmd "git clone https://src.fedoraproject.org/rpms/tmt.git $tmp/tmt" -m 5 -d 10 -t 300 || rlDie "Unable to clone Fedora distgit repository"
         export CLONED_RPMS_TMT=$tmp/tmt
         rlRun "cp data/plans.fmf $CLONED_RPMS_TMT/plans"
         # Append existing TMT_PLUGINS content
