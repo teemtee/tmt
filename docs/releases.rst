@@ -26,6 +26,11 @@ Fixed an import issue for non-Linux users encountered in the ``mock`` plugin.
 Improved handling of download file name when downloading archives,
 leading to better support for downloading large files.
 
+The :ref:`/plugins/test-checks/avc` check now supports
+``ignore-pattern`` key to exclude specific AVC denials
+from being reported as failures.
+
+
 tmt-1.60.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
