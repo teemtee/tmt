@@ -245,7 +245,8 @@ class MockShell:
         Execute the command in a running mock shell for increased speed.
         """
 
-        assert self.mock_shell is not None
+        if self.mock_shell is None:
+            self.enter_shell()
 
         if kwargs is not None and len(kwargs) != 0:
             logger.debug(

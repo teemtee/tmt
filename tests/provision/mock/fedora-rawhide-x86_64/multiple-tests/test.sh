@@ -7,11 +7,9 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
-    # Split provision and prepare steps into separate processes
     rlPhaseStartTest
-        rlRun -s "TMT_SHOW_TRACEBACK=1 tmt --feeling-safe run --id $run -vvv discover provision"
+        rlRun -s "TMT_SHOW_TRACEBACK=1 tmt --feeling-safe run --id $run -vvv"
         rlAssertGrep "NAME.*Fedora Linux" $rlRun_LOG
-        rlRun -s "TMT_SHOW_TRACEBACK=1 tmt --feeling-safe run --id $run -vvv prepare execute report cleanup"
     rlPhaseEnd
 
     rlPhaseStartCleanup
