@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any, Optional
 
-import fmf.utils
+import fmf
 
 import tmt.utils
 from tmt.checks import Check
@@ -14,8 +14,6 @@ from tmt.utils import Common, Environment, FmfContext, Path, ShellScript
 if TYPE_CHECKING:
     import tmt.base
     from tmt.base import Dependency, Plan, Run, _RawAdjustRule, _RawLinks
-
-log = fmf.utils.Logging('tmt').logger
 
 
 # This needs to be a stand-alone function because of the import of `tmt.base`.
@@ -161,9 +159,19 @@ class _RecipeTest(SerializableContainer):
 class _RecipeStep(SerializableContainer):
     enabled: bool
     phases: list[StepData] = field(
-        serialize=lambda value: [phase.to_serialized() for phase in value],
-        unserialize=lambda value: [StepData.unserialize(phase, log) for phase in value],
+        serialize=lambda value: [phase.to_serialized() for phase in value]
     )
+
+    # ignore[override]: does not match the signature on purpose, we need to pass logger
+    @classmethod
+    def from_serialized(cls, serialized: dict[str, Any], logger: Logger) -> '_RecipeStep':  # type: ignore[override]
+        enabled = bool(serialized.get('enabled', False))
+        return _RecipeStep(
+            enabled=enabled,
+            phases=[StepData.unserialize(phase, logger) for phase in serialized.get('phases', [])]
+            if enabled
+            else [],
+        )
 
     @classmethod
     def from_step(cls, step: 'Step') -> '_RecipeStep':
@@ -179,8 +187,19 @@ class _RecipeDiscoverStep(_RecipeStep):
     tests: list[_RecipeTest] = field(
         default_factory=list[_RecipeTest],
         serialize=lambda tests: [test.to_serialized() for test in tests],
-        unserialize=lambda tests: [_RecipeTest.from_serialized(test) for test in tests],
     )
+
+    # ignore[override]: does not match the signature on purpose, we need to pass logger
+    @classmethod
+    def from_serialized(cls, serialized: dict[str, Any], logger: Logger) -> '_RecipeDiscoverStep':  # type: ignore[override]
+        enabled = bool(serialized.get('enabled', False))
+        return _RecipeDiscoverStep(
+            enabled=enabled,
+            phases=[StepData.unserialize(phase, logger) for phase in serialized.get('phases', [])]
+            if enabled
+            else [],
+            tests=[_RecipeTest.from_serialized(test) for test in serialized.get('tests', [])],
+        )
 
     @classmethod
     def from_step(cls, step: 'Step') -> '_RecipeDiscoverStep':
@@ -199,6 +218,19 @@ class _RecipeExecuteStep(_RecipeStep):
         serialize=lambda value: str(value) if isinstance(value, Path) else None,
         unserialize=lambda value: Path(value) if value is not None else None,
     )
+
+    # ignore[override]: does not match the signature on purpose, we need to pass logger
+    @classmethod
+    def from_serialized(cls, serialized: dict[str, Any], logger: Logger) -> '_RecipeExecuteStep':  # type: ignore[override]
+        enabled = bool(serialized.get('enabled', False))
+        results_path = serialized.get('results-path')
+        return _RecipeExecuteStep(
+            enabled=enabled,
+            phases=[StepData.unserialize(phase, logger) for phase in serialized.get('phases', [])]
+            if enabled
+            else [],
+            results_path=Path(results_path) if results_path is not None else None,
+        )
 
     @classmethod
     def from_step(cls, step: 'Step') -> '_RecipeExecuteStep':
@@ -223,63 +255,72 @@ class _RecipePlan(SerializableContainer):
     tag: list[str]
     tier: Optional[str]
     adjust: Optional[list['_RawAdjustRule']]
-    link: Optional['tmt.base.Links'] = field(
-        serialize=lambda link: link.to_spec() if link else [],
-        unserialize=lambda serialized: tmt.base.Links.from_spec(serialized)
-        if serialized
-        else None,
-    )
+    link: Optional['tmt.base.Links'] = field(serialize=lambda link: link.to_spec() if link else [])
     environment_from_fmf: Environment = field(
-        serialize=lambda environment: environment.to_fmf_spec(),
-        unserialize=lambda serialized: Environment.from_fmf_spec(serialized),
+        serialize=lambda environment: environment.to_fmf_spec()
     )
     environment_from_importing: Environment = field(
-        serialize=lambda environment: environment.to_fmf_spec(),
-        unserialize=lambda serialized: Environment.from_fmf_spec(serialized),
+        serialize=lambda environment: environment.to_fmf_spec()
     )
     environment_from_cli: Environment = field(
-        serialize=lambda environment: environment.to_fmf_spec(),
-        unserialize=lambda serialized: Environment.from_fmf_spec(serialized),
+        serialize=lambda environment: environment.to_fmf_spec()
     )
     environment_from_intrinsics: Environment = field(
-        serialize=lambda environment: environment.to_fmf_spec(),
-        unserialize=lambda serialized: Environment.from_fmf_spec(serialized),
+        serialize=lambda environment: environment.to_fmf_spec()
     )
 
-    discover: _RecipeDiscoverStep = field(
-        serialize=lambda step: step.to_serialized(),
-        unserialize=lambda step: _RecipeDiscoverStep.from_serialized(step),
-    )
-    provision: _RecipeStep = field(
-        serialize=lambda step: step.to_serialized(),
-        unserialize=lambda step: _RecipeStep.from_serialized(step),
-    )
-    prepare: _RecipeStep = field(
-        serialize=lambda step: step.to_serialized(),
-        unserialize=lambda step: _RecipeStep.from_serialized(step),
-    )
-    execute: _RecipeExecuteStep = field(
-        serialize=lambda step: step.to_serialized(),
-        unserialize=lambda step: _RecipeExecuteStep.from_serialized(step),
-    )
-    report: _RecipeStep = field(
-        serialize=lambda step: step.to_serialized(),
-        unserialize=lambda step: _RecipeStep.from_serialized(step),
-    )
-    finish: _RecipeStep = field(
-        serialize=lambda step: step.to_serialized(),
-        unserialize=lambda step: _RecipeStep.from_serialized(step),
-    )
-    cleanup: _RecipeStep = field(
-        serialize=lambda step: step.to_serialized(),
-        unserialize=lambda step: _RecipeStep.from_serialized(step),
-    )
+    discover: _RecipeDiscoverStep = field(serialize=lambda step: step.to_serialized())
+    provision: _RecipeStep = field(serialize=lambda step: step.to_serialized())
+    prepare: _RecipeStep = field(serialize=lambda step: step.to_serialized())
+    execute: _RecipeExecuteStep = field(serialize=lambda step: step.to_serialized())
+    report: _RecipeStep = field(serialize=lambda step: step.to_serialized())
+    finish: _RecipeStep = field(serialize=lambda step: step.to_serialized())
+    cleanup: _RecipeStep = field(serialize=lambda step: step.to_serialized())
 
     context: FmfContext = field(
         default_factory=FmfContext,
         serialize=lambda context: context.to_spec(),
-        unserialize=lambda serialized: FmfContext.from_serialized(serialized),
     )
+
+    # ignore[override]: does not match the signature on purpose, we need to pass logger
+    @classmethod
+    def from_serialized(cls, serialized: dict[str, Any], logger: Logger) -> '_RecipePlan':  # type: ignore[override]
+        from tmt.base import DEFAULT_ORDER
+
+        return _RecipePlan(
+            name=serialized.get('name', ''),
+            summary=serialized.get('summary'),
+            description=serialized.get('description'),
+            author=serialized.get('author', []),
+            contact=serialized.get('contact', []),
+            enabled=bool(serialized.get('enabled', False)),
+            order=int(serialized.get('order', DEFAULT_ORDER)),
+            id=serialized.get('id'),
+            tag=serialized.get('tag', []),
+            tier=serialized.get('tier'),
+            adjust=serialized.get('adjust'),
+            link=_unserialize_links(serialized.get('link')),
+            environment_from_fmf=Environment.from_fmf_spec(
+                serialized.get('environment-from-fmf', {})
+            ),
+            environment_from_importing=Environment.from_fmf_spec(
+                serialized.get('environment-from-importing', {})
+            ),
+            environment_from_cli=Environment.from_fmf_spec(
+                serialized.get('environment-from-cli', {})
+            ),
+            environment_from_intrinsics=Environment.from_fmf_spec(
+                serialized.get('environment-from-intrinsics', {})
+            ),
+            discover=_RecipeDiscoverStep.from_serialized(serialized.get('discover', {}), logger),
+            provision=_RecipeStep.from_serialized(serialized.get('provision', {}), logger),
+            prepare=_RecipeStep.from_serialized(serialized.get('prepare', {}), logger),
+            execute=_RecipeExecuteStep.from_serialized(serialized.get('execute', {}), logger),
+            report=_RecipeStep.from_serialized(serialized.get('report', {}), logger),
+            finish=_RecipeStep.from_serialized(serialized.get('finish', {}), logger),
+            cleanup=_RecipeStep.from_serialized(serialized.get('cleanup', {}), logger),
+            context=FmfContext.from_serialized(serialized.get('context', {})),
+        )
 
     @classmethod
     def from_plan(cls, plan: 'Plan') -> '_RecipePlan':
@@ -332,15 +373,21 @@ class _RecipeRun(SerializableContainer):
 
 @container
 class Recipe(SerializableContainer):
-    run: _RecipeRun = field(
-        serialize=lambda run: run.to_serialized(),
-        unserialize=lambda run: _RecipeRun.from_serialized(run),
-    )
+    run: _RecipeRun = field(serialize=lambda run: run.to_serialized())
     plans: list[_RecipePlan] = field(
         default_factory=list[_RecipePlan],
         serialize=lambda plans: [plan.to_serialized() for plan in plans],
-        unserialize=lambda plans: [_RecipePlan.from_serialized(plan) for plan in plans],
     )
+
+    # ignore[override]: does not match the signature on purpose, we need to pass logger
+    @classmethod
+    def from_serialized(cls, serialized: dict[str, Any], logger: Logger) -> 'Recipe':  # type: ignore[override]
+        return Recipe(
+            run=_RecipeRun.from_serialized(serialized.get('run', {})),
+            plans=[
+                _RecipePlan.from_serialized(plan, logger) for plan in serialized.get('plans', [])
+            ],
+        )
 
 
 class RecipeManager(Common):
@@ -348,7 +395,9 @@ class RecipeManager(Common):
         super().__init__(logger=logger)
         self.recipe: Optional[Recipe] = None
         if path:
-            self.recipe = Recipe.from_serialized(tmt.utils.yaml_to_dict(self.read(path)))
+            self.recipe = Recipe.from_serialized(
+                tmt.utils.yaml_to_dict(self.read(path)), self._logger
+            )
 
     def save(self, run: 'Run') -> None:
         recipe = Recipe(
