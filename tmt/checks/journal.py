@@ -8,7 +8,7 @@ import tmt.utils
 from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome, save_failures
-from tmt.utils import Path, ShellScript, format_timestamp, render_command_report
+from tmt.utils import Path, ShellScript
 from tmt.utils.hints import hints_as_notes
 
 if TYPE_CHECKING:
@@ -165,7 +165,7 @@ class JournalCheck(Check):
     ) -> tuple[ResultOutcome, list[Path]]:
         assert invocation.start_time is not None  # narrow type
 
-        timestamp = format_timestamp(datetime.datetime.now(datetime.timezone.utc))
+        timestamp = datetime.datetime.now(datetime.timezone.utc)
         path = invocation.check_files_path / TEST_POST_JOURNAL_FILENAME
 
         # Build journalctl command
@@ -194,16 +194,18 @@ class JournalCheck(Check):
             outcome = ResultOutcome.ERROR
             output = exc.output
 
+            invocation.phase.write_command_report(
+                path=path, label='journal log', timestamp=timestamp, command=script, exc=exc
+            )
+
+        else:
+            invocation.phase.write_command_report(
+                path=path, label='journal log', timestamp=timestamp, command=script, output=output
+            )
+
         failures = self._extract_failures(output.stdout or '')
         if failures and outcome == ResultOutcome.PASS:
             outcome = ResultOutcome.FAIL
-
-        # Use render_command_report but with append mode for multiple reports
-        report_content = list(render_command_report(label='journal log', output=output))
-
-        # Add timestamp header and append to file like original implementation
-        full_report = [f'# Reported at {timestamp}', *report_content]
-        invocation.phase.write(path, '\n'.join(full_report), mode='a')
 
         log_paths = [
             path.relative_to(invocation.phase.step_workdir),
