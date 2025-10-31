@@ -1,30 +1,15 @@
-from unittest.mock import MagicMock, patch
-
 import pytest
 
-from tests.unit.artifact.conftest import (
+from tmt.steps.prepare.artifact.providers.brew import BrewArtifactProvider
+from tmt.utils import GeneralError
+
+from .utils import (
     MOCK_BUILD_ID,
     MOCK_RPMS_BREW,
-    create_mock_pathinfo,
     mock_build_api_responses,
     mock_call_api_for,
     mock_task_api_responses,
 )
-from tmt.steps.prepare.artifact.providers.brew import BrewArtifactProvider
-from tmt.utils import GeneralError
-
-
-@pytest.fixture
-def mock_brew():
-    with (
-        patch.object(BrewArtifactProvider, "_initialize_session", return_value=MagicMock()),
-        patch.object(
-            BrewArtifactProvider,
-            "_rpm_url",
-            side_effect=lambda rpm: f"http://brew.example.com/{rpm['name']}.rpm",
-        ),
-    ):
-        yield
 
 
 @pytest.fixture
@@ -61,20 +46,14 @@ def test_brew_valid_draft_build(mock_brew, mock_call_api, root_logger):
 
 
 def test_brew_valid_task_id_scratch_build(mock_brew, mock_call_api, root_logger):
-    from tmt.steps.prepare.artifact.providers import koji as koji_module
-
     task_id = 69111304
-    mock_pathinfo = create_mock_pathinfo()
-    mock_koji = MagicMock()
-    mock_koji.PathInfo.return_value = mock_pathinfo
     mock_task_api_responses(mock_call_api, has_build=False)
 
-    with patch.object(koji_module, "koji", mock_koji):
-        provider = BrewArtifactProvider(f"brew.task:{task_id}", root_logger)
-        provider._top_url = "http://brew.example.com"
-        tasks = list(provider._get_task_children(task_id))
+    provider = BrewArtifactProvider(f"brew.task:{task_id}", root_logger)
+    provider._top_url = "http://brew.example.com"
+    tasks = list(provider._get_task_children(task_id))
 
-        assert len(tasks) == 2
-        assert task_id in tasks
-        assert provider.build_id is None
-        assert len(provider.artifacts) == 2
+    assert len(tasks) == 2
+    assert task_id in tasks
+    assert provider.build_id is None
+    assert len(provider.artifacts) == 2
