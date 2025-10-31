@@ -206,6 +206,16 @@ autodoc_typehints_description_target = 'all'
 # a list of builtin themes.
 html_theme = HTML_THEME
 
+print("Using theme: " + HTML_THEME)
+
+# ## Edit on GitHub feature, inherited by renku theme from rtd theme
+html_context = {
+    'display_github': True,
+    'github_user': 'teemtee',
+    'github_repo': 'tmt',
+    'github_version': 'main/docs/'
+    }
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
