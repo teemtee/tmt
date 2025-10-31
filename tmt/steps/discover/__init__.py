@@ -481,8 +481,11 @@ class Discover(tmt.steps.Step):
                 for test_origin in phase.tests(enabled=True):
                     test = test_origin.test
 
-                    test.name = f"{prefix}{test.name}"
-                    test.path = Path(f"/{phase.safe_name}{test.path}")
+                    # Prefix test name and path if not loaded from a recipe
+                    if self.plan.my_run and self.plan.my_run.recipe_manager.recipe is None:
+                        test.name = f"{prefix}{test.name}"
+                        test.path = Path(f"/{phase.safe_name}{test.path}")
+
                     # Update test environment with plan environment
                     test.environment.update(self.plan.environment)
                     self._tests[phase.name].append(test)

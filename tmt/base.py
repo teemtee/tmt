@@ -76,7 +76,7 @@ from tmt.container import (
     field,
 )
 from tmt.lint import LinterOutcome, LinterReturn
-from tmt.recipe import RecipeBuilder
+from tmt.recipe import Recipe, RecipeManager, _RecipeTest
 from tmt.result import Result, ResultInterpret
 from tmt.utils import (
     Command,
@@ -3069,9 +3069,8 @@ class Plan(
                         return
 
                     if not self.is_dry_run:
-                        self.execute._results = self.execute.create_results(
-                            self.discover.tests(enabled=True)
-                        )
+                        tests = self.discover.tests(enabled=True)
+                        self.execute._results = self.execute.create_results(tests)
                         self.execute.save()
 
         # Make sure we run 'report' and 'cleanup' steps always if enabled
@@ -4378,6 +4377,7 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         parent: Optional[tmt.utils.Common] = None,
         workdir_root: Optional[Path] = None,
         policies: Optional[list[tmt.policy.Policy]] = None,
+        recipe_path: Optional[Path] = None,
         logger: tmt.log.Logger,
     ) -> None:
         """
@@ -4415,7 +4415,9 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         self.unique_id = str(time.time()).split('.')[0]
 
         self.policies = policies or []
-        self.recipe_builder = RecipeBuilder(logger)
+        self.recipe_manager = RecipeManager(recipe_path, logger)
+        if self._tree is not None:
+            self.recipe_manager.update_tree(self._tree.tree)
 
     @property
     def run_workdir(self) -> Path:
@@ -4644,7 +4646,7 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         """
         # Save recipe
         if not self.is_dry_run:
-            self.recipe_builder.save(self)
+            self.recipe_manager.save(self)
 
         # We get interesting results only if execute or prepare step is enabled
         execute = self.plans[0].execute

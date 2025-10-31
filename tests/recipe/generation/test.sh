@@ -6,7 +6,6 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
         rlRun "pushd data"
         recipe="$run/recipe.yaml"
-        expected_recipe="recipe.yaml"
     rlPhaseEnd
 
     function replace_values () {
@@ -20,7 +19,7 @@ rlJournalStart
         rlRun -s "tmt -vv run --id $run -e RUN_ENV=value"
         rlAssertExists "$recipe" "Recipe file exists"
         replace_values
-        rlAssertEquals "Generated recipe matches expected recipe" "$(yq -S . "$recipe")" "$(yq -S . "$expected_recipe")"
+        rlAssertEquals "Generated recipe matches expected recipe" "$(yq -S . "$recipe")" "$(yq -S . "recipe.yaml")"
     rlPhaseEnd
 
     rlPhaseStartCleanup
