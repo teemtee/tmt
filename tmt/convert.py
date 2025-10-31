@@ -729,7 +729,7 @@ def read_nitrate(
         nitrate.xmlrpc_driver.NitrateXmlrpcError,
         gssapi.raw.misc.GSSError,
     ) as error:
-        raise ConvertError(str(error)) from error
+        raise ConvertError("Nitrate issue encountered.") from error
     if not testcases:
         echo(
             "No {}testcase found for '{}'.".format(

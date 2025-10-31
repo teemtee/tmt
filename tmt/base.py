@@ -2547,13 +2547,11 @@ class Plan(
                             raise tmt.utils.GeneralError("Step data cannot be empty.")
                     except tmt.utils.GeneralError as error:
                         raise tmt.utils.GeneralError(
-                            f"Invalid step data for {step}: '{option}'\n{error}"
+                            f"Invalid step data for {step}: '{option}'."
                         ) from error
                     step_data.append(data)
                 except MarkedYAMLError as error:
-                    raise tmt.utils.GeneralError(
-                        f"Invalid yaml data for {step}:\n{error}"
-                    ) from error
+                    raise tmt.utils.GeneralError(f"Invalid yaml data for {step}.") from error
 
             # Use list only when multiple step data provided
             if len(step_data) == 1:
@@ -3900,9 +3898,7 @@ class Tree(tmt.utils.Common):
                 # Handle missing attributes as if condition failed
                 continue
             except Exception as error:
-                raise tmt.utils.GeneralError(
-                    f"Invalid --condition raised exception: {error}"
-                ) from error
+                raise tmt.utils.GeneralError("Invalid --condition raised exception.") from error
 
             # Filters
             try:
@@ -4869,7 +4865,7 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
 
             except Exception as exc:
                 if self.opt('on-plan-error') == 'quit':
-                    raise tmt.utils.GeneralError('plan failed', causes=[exc]) from exc
+                    raise tmt.utils.GeneralError('plan failed.') from exc
 
                 crashed_plans.append((plan, exc))
 

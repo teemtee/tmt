@@ -1290,7 +1290,9 @@ class Command:
             process = _spawn_process()
 
         except FileNotFoundError as error:
-            raise RunError("File not found.", self, 127, caller=caller) from error
+            raise RunError(
+                f"File '{error.filename}' not found.", self, 127, caller=caller
+            ) from error
 
         if on_process_start:
             on_process_start(self, process, logger)

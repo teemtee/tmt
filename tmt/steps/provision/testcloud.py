@@ -1186,9 +1186,7 @@ class GuestTestcloud(tmt.GuestSsh):
             try:
                 self._instance.stop()
             except testcloud.exceptions.TestcloudInstanceError as error:
-                raise tmt.utils.ProvisionError(
-                    f"Failed to stop testcloud instance: {error}"
-                ) from error
+                raise tmt.utils.ProvisionError("Failed to stop testcloud instance.") from error
 
             self.info('guest', 'stopped', 'green')
 
@@ -1202,9 +1200,7 @@ class GuestTestcloud(tmt.GuestSsh):
             try:
                 self._instance.remove(autostop=True)
             except FileNotFoundError as error:
-                raise tmt.utils.ProvisionError(
-                    f"Failed to remove testcloud instance: {error}"
-                ) from error
+                raise tmt.utils.ProvisionError("Failed to remove testcloud instance.") from error
 
             self.info('guest', 'removed', 'green')
 
