@@ -48,7 +48,7 @@ rlJournalStart
 
             assert_check_result "avc as an after-test should pass" "pass" "after-test" "/avc/$method/ignored"
 
-            rlRun "yq -e '.[0] == null' $failures" 0 "No failures should be recorded"
+            rlRun "yq -e 'tag == \"!!seq\" and length == 0' $failures" 0 "No failures should be recorded"
 
             # AVC denial should still be present in the log
             rlAssertGrep "avc:  denied" "$avc_log"
