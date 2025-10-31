@@ -133,8 +133,9 @@ def test_step_execute():
     # Test execute empty with discover output missing
     assert result.exit_code != 0
     assert isinstance(result.exception, tmt.utils.GeneralError)
-    assert len(result.exception.causes) == 1
-    assert isinstance(result.exception.causes[0], tmt.utils.ExecuteError)
+    # As we started using 'from' everywhere, '__cause__' must be set
+    assert result.exception.__cause__ is not None
+    assert isinstance(result.exception.__cause__, tmt.utils.ExecuteError)
     assert step in result.output
     assert 'provision' not in result.output
     shutil.rmtree(tmp)
