@@ -2179,8 +2179,8 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
                 # Convert 'start' and 'end' aliases
                 try:
                     phase = cast(dict[str, int], {'start': PHASE_START, 'end': PHASE_END})[phase]
-                except KeyError:
-                    raise tmt.utils.GeneralError(f"Invalid phase '{phase}'.")
+                except KeyError as error:
+                    raise tmt.utils.GeneralError(f"Invalid phase '{phase}'.") from error
             # Store the phase for given step
             try:
                 phases[step_name].append(phase)

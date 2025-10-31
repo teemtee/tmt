@@ -359,7 +359,6 @@ select = [
     "D213", # multi-line-summary-second-line
     ]
 ignore = [
-    "B904",  # Within an `except` clause, raise exceptions with `raise ... from err` or `raise ...
     "COM812",  # Trailing comma missing
     "G004",  # Logging statement uses f-string
     "PIE790",  # Unnecessary `pass` statement

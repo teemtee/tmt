@@ -2100,9 +2100,7 @@ class Guest(
             except tmt.utils.RunError as exc:
                 # Detect common issues with guest access
                 if exc.stdout and 'Please login as the user' in exc.stdout:
-                    raise tmt.utils.GeneralError(
-                        f'Login to the guest failed.\n{exc.stdout}'
-                    ) from exc
+                    raise tmt.utils.GeneralError('Login to the guest failed.') from exc
                 if (
                     exc.stderr
                     and f'executable file `{tmt.utils.DEFAULT_SHELL}` not found' in exc.stderr
@@ -2111,7 +2109,7 @@ class Guest(
                         f'{tmt.utils.DEFAULT_SHELL.capitalize()} is required on the guest.'
                     ) from exc
 
-                raise tmt.utils.wait.WaitingIncompleteError
+                raise tmt.utils.wait.WaitingIncompleteError from exc
 
         try:
             wait.wait(try_whoami, self._logger)
@@ -3081,9 +3079,9 @@ class GuestSsh(Guest):
                 # Same boot time, reboot didn't happen yet, retrying
                 raise tmt.utils.wait.WaitingIncompleteError
 
-            except tmt.utils.RunError:
+            except tmt.utils.RunError as error:
                 self.debug('Failed to connect to the guest.')
-                raise tmt.utils.wait.WaitingIncompleteError
+                raise tmt.utils.wait.WaitingIncompleteError from error
 
         try:
             wait.wait(check_boot_time, self._logger)

@@ -619,7 +619,7 @@ class GuestArtemis(tmt.GuestSsh):
                 Deadline.from_seconds(self.provision_timeout), tick=self.provision_tick
             ).wait(get_new_state, self._logger)
 
-        except tmt.utils.wait.WaitingTimedOutError:
+        except tmt.utils.wait.WaitingTimedOutError as error:
             # The provisioning chain has been already started, make sure we
             # remove the guest.
             self.remove()
@@ -627,7 +627,7 @@ class GuestArtemis(tmt.GuestSsh):
             raise ArtemisProvisionError(
                 f'Failed to provision in the given amount '
                 f'of time (--provision-timeout={self.provision_timeout}).'
-            )
+            ) from error
 
         self.primary_address = self.topology_address = guest_info['address']
 

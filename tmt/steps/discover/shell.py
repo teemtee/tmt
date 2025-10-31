@@ -341,7 +341,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                 logger=self._logger, workdir=testdir, ref=ref, plan=self.step.plan
             )
         except tmt.utils.FileError as error:
-            raise tmt.utils.DiscoverError(str(error))
+            raise tmt.utils.DiscoverError("Could not resolve dynamic reference") from error
 
         # Checkout revision if requested
         if ref:
@@ -450,12 +450,12 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                 )
                 assert run_result.stdout is not None
                 git_root = Path(run_result.stdout.strip('\n'))
-            except tmt.utils.RunError:
+            except tmt.utils.RunError as error:
                 assert self.step.plan.my_run is not None  # narrow type
                 assert self.step.plan.my_run.tree is not None  # narrow type
                 raise tmt.utils.DiscoverError(
                     f"Directory '{self.step.plan.my_run.tree.root}' is not a git repository."
-                )
+                ) from error
             try:
                 self.download_distgit_source(
                     distgit_dir=git_root,
