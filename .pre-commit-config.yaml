@@ -250,7 +250,7 @@ repos:
           # Listing them for flake8-rst-docstrings, in the future we
           # may need to add more as needed.
           - '--rst-roles'
-          - 'py:class,py:attr,py:func,py:meth,py:exc,py:mod,py:const,py:data,py:member,ref'
+          - 'py:class,py:attr,py:func,py:meth,py:exc,py:mod,py:const,py:data,py:member,ref,tmt:story'
           - '--rst-directives'
           - 'versionadded,versionchanged'
 

@@ -426,6 +426,7 @@ def parse_rst(text: str) -> docutils.nodes.document:
     """
 
     docutils.parsers.rst.roles.register_local_role('ref', role_ref)
+    docutils.parsers.rst.roles.register_local_role('tmt:story', role_ref)
 
     parser = docutils.parsers.rst.Parser()
     components = (docutils.parsers.rst.Parser,)
