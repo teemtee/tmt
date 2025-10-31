@@ -3,7 +3,7 @@ import pytest
 from tmt.steps.prepare.artifact.providers.koji import KojiArtifactProvider
 from tmt.utils import GeneralError
 
-from .utils import (
+from . import (
     MOCK_BUILD_ID,
     MOCK_RPMS_KOJI,
     mock_build_api_responses,
