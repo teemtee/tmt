@@ -2100,9 +2100,7 @@ class Guest(
             except tmt.utils.RunError as exc:
                 # Detect common issues with guest access
                 if exc.stdout and 'Please login as the user' in exc.stdout:
-                    raise tmt.utils.GeneralError(
-                        f'Login to the guest failed.\n{exc.stdout}'
-                    ) from exc
+                    raise tmt.utils.GeneralError('Login to the guest failed.') from exc
                 if (
                     exc.stderr
                     and f'executable file `{tmt.utils.DEFAULT_SHELL}` not found' in exc.stderr
