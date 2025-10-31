@@ -2,19 +2,23 @@
 Abstract base class for artifact providers.
 """
 
+import configparser
+import functools
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
 from functools import cached_property
 from re import Pattern
 from shlex import quote
-from typing import Any, Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar, cast, overload
+from urllib.parse import urlparse
 
 import tmt.log
 import tmt.utils
 from tmt._compat.typing import TypeAlias
-from tmt.container import container
+from tmt.container import container, simple_field
 from tmt.plugins import PluginRegistry
 from tmt.steps.provision import Guest
+from tmt.utils import GeneralError, Path, ShellScript, retry
 
 
 class DownloadError(tmt.utils.GeneralError):
@@ -193,6 +197,124 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         for artifact in self.artifacts:
             if not any(pattern.search(artifact.id) for pattern in exclude_patterns):
                 yield artifact
+
+
+@container
+class Repository:
+    """
+    Thin wrapper/holder for .repo file content
+    """
+
+    #: Content of the repository
+    content: str
+    #: Uniquely identifiable name
+    name: str
+    #: repository_ids present in the .repo file
+    repo_ids: list[str] = simple_field(default_factory=list[str])
+
+    def __post_init__(self) -> None:
+        """
+        Extract repository IDs from the .repo file content after initialization.
+
+        :raises GeneralError: If the content is malformed or no repository
+            sections are found.
+        """
+        config = configparser.ConfigParser()
+        try:
+            config.read_string(self.content)
+            sections = config.sections()
+            if not sections:
+                raise GeneralError(
+                    f"No repository sections found in the content for '{self.name}'."
+                )
+            # Store the parsed sections in our private attribute
+            self.repo_ids = sections
+        except configparser.MissingSectionHeaderError:
+            raise GeneralError(f"No repository sections found in the content for '{self.name}'.")
+        except configparser.Error as error:
+            raise GeneralError(
+                f"Failed to parse the content of repository '{self.name}'. "
+                "The .repo file may be malformed."
+            ) from error
+
+    @classmethod
+    def from_url(
+        cls, url: str, logger: tmt.log.Logger, name: Optional[str] = None
+    ) -> "Repository":
+        """
+        Create a Repository instance by fetching content from a URL.
+
+        :param url: The URL to fetch the repository content from.
+        :param logger: Logger to use for the operation.
+        :param name: Optional name for the repository. If not provided,
+            derived from the URL.
+        :returns: A Repository instance.
+        :raises GeneralError: If fetching or parsing fails.
+        """
+        try:
+            with tmt.utils.retry_session(logger=logger) as session:
+                response = session.get(url)
+                response.raise_for_status()
+                content = response.text
+        except Exception as error:
+            raise GeneralError(f"Failed to fetch repository content from '{url}'.") from error
+
+        if name is None:
+            parsed_url = urlparse(url)
+            parsed_path = parsed_url.path.rstrip('/').split('/')[-1]
+            name = parsed_path.removesuffix('.repo')
+            if not name:
+                raise GeneralError(f"Could not derive repository name from URL '{url}'.")
+
+        return cls(name=name, content=content)
+
+    @classmethod
+    def from_file_path(
+        cls, file_path: Path, logger: tmt.log.Logger, name: Optional[str] = None
+    ) -> "Repository":
+        """
+        Create a Repository instance by reading content from a local file path.
+
+        :param file_path: The local path to the repository file.
+        :param logger: Logger to use for the operation.
+        :param name: Optional name for the repository. If not provided,
+            derived from the file path.
+        :returns: A Repository instance.
+        :raises GeneralError: If reading the file fails.
+        """
+        try:
+            content = file_path.read_text()
+        except OSError as error:
+            raise GeneralError(f"Failed to read repository file '{file_path}'.") from error
+
+        if name is None:
+            name = file_path.stem
+            if not name:
+                raise GeneralError(
+                    f"Could not derive repository name from file path '{file_path}'."
+                )
+
+        return cls(name=name, content=content)
+
+    @classmethod
+    def from_content(cls, content: str, name: str, logger: tmt.log.Logger) -> "Repository":
+        """
+        Create a Repository instance directly from provided content string.
+
+        :param content: The string content of the repository.
+        :param name: The name for the repository (required when using content).
+        :param logger: Logger to use for the operation.
+        :returns: A Repository instance.
+        :raises GeneralError: If the name is empty.
+        """
+        if not name:
+            raise GeneralError("Repository name cannot be empty.")
+        return cls(name=name, content=content)
+
+    @property
+    def filename(self) -> str:
+        """The name of the .repo file (e.g., 'my-repo.repo')."""
+        return f"{tmt.utils.sanitize_name(self.name)}.repo"
 
 
 _PROVIDER_REGISTRY: PluginRegistry[type[ArtifactProvider[ArtifactInfo]]] = PluginRegistry(
