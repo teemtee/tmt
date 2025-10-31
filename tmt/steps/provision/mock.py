@@ -277,7 +277,7 @@ class MockShell:
 
         if env is not None:
             shell_command_components = [
-                *(f'{key}={shlex.quote(value)}' for key, value in env.items()),
+                *env.to_shell(),
                 *shell_command_components,
             ]
 
