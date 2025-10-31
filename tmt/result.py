@@ -5,7 +5,6 @@ import fmf
 import fmf.utils
 
 import tmt.container
-import tmt.identifier
 import tmt.log
 import tmt.utils
 from tmt.checks import CheckEvent, CheckResultInterpret
@@ -16,9 +15,6 @@ from tmt.utils.themes import style
 if TYPE_CHECKING:
     import tmt.base
     import tmt.steps.execute
-
-# Extra keys used for identification in Result class
-EXTRA_RESULT_IDENTIFICATION_KEYS = ['extra-nitrate', 'extra-task']
 
 
 class ResultOutcome(enum.Enum):
@@ -374,20 +370,6 @@ class Result(BaseResult):
         :param log: optional list of test logs.
         """
 
-        # Saving identifiable information for each test case so we can match them
-        # to Polarion/Nitrate/other cases and report run results there
-        # TODO: would an exception be better? Can test.id be None?
-        ids = ids or {}
-        default_ids: ResultIds = {tmt.identifier.ID_KEY: invocation.test.id}
-
-        for key in EXTRA_RESULT_IDENTIFICATION_KEYS:
-            value: Any = cast(Any, invocation.test.node.get(key))
-
-            default_ids[key] = None if value is None else str(value)
-
-        default_ids.update(ids)
-        ids = default_ids
-
         _result = Result(
             name=invocation.test.name,
             serial_number=invocation.test.serial_number,
@@ -398,7 +380,7 @@ class Result(BaseResult):
             start_time=invocation.start_time,
             end_time=invocation.end_time,
             duration=invocation.real_duration,
-            ids=ids,
+            ids={**invocation.test.ids, **(ids or {})},
             log=log or [],
             guest=ResultGuestData.from_test_invocation(invocation=invocation),
             data_path=invocation.relative_test_data_path,

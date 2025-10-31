@@ -4,6 +4,13 @@
     Releases
 ======================
 
+tmt-1.61.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Pending tests are now also exported to Polarion thanks to no
+longer missing test case ids in the ``results.yaml``.
+
+
 tmt-1.60.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
