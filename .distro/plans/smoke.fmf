@@ -1,0 +1,3 @@
+summary: Minimal smoke test
+execute:
+    script: tmt --help

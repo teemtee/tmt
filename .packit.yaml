@@ -1,8 +1,13 @@
 ---
 
-specfile_path: tmt.spec
+specfile_path: .distro/tmt.spec
 files_to_sync:
-  - tmt.spec
+  - src: .distro/
+    dest: ./
+    delete: true
+    filters:
+      - "protect .git*"
+      - "protect sources"
   - .packit.yaml
 
 upstream_package_name: tmt
@@ -196,10 +201,22 @@ jobs:
           name: /plans/sanity
     skip_build: true
 
+  # Downstream tests
+  - <<: *test-base
+    targets:
+      - fedora-latest-stable
+    identifier: downstream
+    fmf_path: .distro
+
   # Propose downstream pull requests
   - job: propose_downstream
     trigger: release
-    dist_git_branches: *all-targets
+    dist_git_branches:
+      rawhide:
+        fast_forward_merge_into:
+          - fedora-branched
+          - epel-10
+          - epel-9
 
   # Create koji builds
   - job: koji_build
