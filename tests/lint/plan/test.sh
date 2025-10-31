@@ -92,6 +92,11 @@ rlJournalStart
         rlAssertGrep "pass P007 finish phase 'default-2' shall run on role 'server'" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Lint of missing required property"
+        rlRun -s "$tmt plan lint missing_required" 1
+        rlAssertGrep "warn C000 \"project-id\" is a required property by schema /schemas/report/polarion" "$rlRun_LOG"
+    rlPhaseEnd
+
     rlPhaseStartTest "Lint of duplicate ids"
         if [ "$EXPLICIT_ROOT" = "yes" ]; then
             tmt="tmt --root data_duplicate_ids"
