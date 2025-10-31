@@ -3,3 +3,4 @@ duration: 30m
 tag+:
   - provision-container
   - provision-virtual
+  - provision-mock
