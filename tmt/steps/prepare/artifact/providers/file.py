@@ -19,12 +19,6 @@ from tmt.steps.provision import Guest
 
 
 @container
-class SourceInfo:
-    raw: str
-    is_url: bool
-
-
-@container
 class PackageAsFileArtifactInfo(ArtifactInfo):
     """
     Represents a single local or remote package file or directory.
@@ -71,34 +65,16 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
 
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
         super().__init__(raw_provider_id, logger)
-        self._source_info = self._parse_source(raw_provider_id)
+        source = raw_provider_id[len(f"{self.SUPPORTED_PREFIX}:") :]
+        parsed = urllib.parse.urlparse(source)
+        self._source = source
+        self._is_url = parsed.scheme in ("http", "https")
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
         if not raw_provider_id.startswith(f"{cls.SUPPORTED_PREFIX}:"):
             raise ValueError(f"Unsupported provider id: '{raw_provider_id}'.")
         return ArtifactProviderId(raw_provider_id)
-
-    def _parse_source(self, raw_provider_id: str) -> SourceInfo:
-        """
-        Parse and classify a provider source string into its components.
-
-        This extracts the actual artifact source from a raw provider ID by
-        removing the provider prefix (e.g. ``file:``). It determines whether the source
-        represents a URL or a local file/directory/glob pattern, and constructs a
-        :py:class:`SourceInfo` object describing these properties.
-
-        :param raw_provider_id: artifact provider identifier to parse.
-        :returns: a :py:class:`SourceInfo` instance describing the parsed source.
-        :raises ValueError: if the provider ID does not start with the expected prefix.
-        """
-        source = raw_provider_id[len(f"{self.SUPPORTED_PREFIX}:") :]
-        parsed = urllib.parse.urlparse(source)
-
-        return SourceInfo(
-            raw=source,
-            is_url=parsed.scheme in ("http", "https"),
-        )
 
     @cached_property
     def artifacts(self) -> Sequence[PackageAsFileArtifactInfo]:
@@ -114,21 +90,19 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
                     f"Duplicate artifact '{info.id}' found; ignoring duplicate entry."
                 )
 
-        src = self._source_info
-
-        if src.is_url:
-            add(PackageAsFileArtifactInfo(_raw_artifact=src.raw))
+        if self._is_url:
+            add(PackageAsFileArtifactInfo(_raw_artifact=self._source))
         # Everything else is treated as a local file/directory/glob
-        elif matched_files := glob.glob(src.raw):
+        elif matched_files := glob.glob(self._source):
             for matched_file in sorted(matched_files):
                 f = tmt.utils.Path(matched_file)
                 if f.is_file():
                     add(PackageAsFileArtifactInfo(_raw_artifact=str(f)))
         else:
-            self.logger.warning(f"No files matched pattern: '{src.raw}'.")
+            self.logger.warning(f"No files matched pattern: '{self._source}'.")
 
         if not artifacts:
-            self.logger.warning(f"No artifacts found for source: '{src.raw}'.")
+            self.logger.warning(f"No artifacts found for source: '{self._source}'.")
 
         return artifacts
 
@@ -136,7 +110,7 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
         self, artifact: PackageAsFileArtifactInfo, guest: Guest, destination: tmt.utils.Path
     ) -> None:
         try:
-            if self._source_info.is_url:  # Remote file, download it
+            if self._is_url:  # Remote file, download it
                 guest.execute(
                     tmt.utils.ShellScript(
                         f"curl -L --fail -o {quote(str(destination))} {quote(artifact.location)}"
