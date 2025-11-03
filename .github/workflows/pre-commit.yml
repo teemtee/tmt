@@ -20,7 +20,10 @@ jobs:
         persist-credentials: false
     - uses: actions/setup-python@v6
       with:
+        # Python 3.9 is for mypy testing the lowest python version
+        # Python 3.13 is for ansible-lint hard-coding the python requirement
         python-version: |
           3.9
+          3.13
           3.x
     - uses: pre-commit/action@v3.0.1
