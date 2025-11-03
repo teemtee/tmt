@@ -21,6 +21,12 @@ from tmt.steps.provision import RebootMode
 from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
 from tmt.utils.wait import Waiting
 
+MOCK_PIPE_STEM: str = 'srv/tmt-mock'
+MOCK_PIPE_STDOUT_STEM: str = f'{MOCK_PIPE_STEM}/stdout'
+MOCK_PIPE_STDERR_STEM: str = f'{MOCK_PIPE_STEM}/stderr'
+MOCK_PIPE_RETURNCODE_STEM: str = f'{MOCK_PIPE_STEM}/returncode'
+MOCK_PIPE_FILESYNC_STEM: str = f'{MOCK_PIPE_STEM}/filesync'
+
 
 @functools.cache
 def mock_config(root: Optional[str]) -> dict[str, Any]:
@@ -230,17 +236,17 @@ class MockShell:
         self.parent.verbose('mock', 'Shell is ready.', color='blue', level=3)
 
         # We do not expect these commands to fail.
-        self.mock_shell.stdin.write('rm -rf /srv/tmt-mock\n')
-        self.mock_shell.stdin.write('mkdir /srv/tmt-mock\n')
+        self.mock_shell.stdin.write(f'rm -rf /{MOCK_PIPE_STEM}\n')
+        self.mock_shell.stdin.write(f'mkdir /{MOCK_PIPE_STEM}\n')
         self.mock_shell.stdin.write(
             'mkfifo'
-            ' /srv/tmt-mock/stdout'
-            ' /srv/tmt-mock/stderr'
-            ' /srv/tmt-mock/returncode'
-            ' /srv/tmt-mock/filesync'
+            f' /{MOCK_PIPE_STDOUT_STEM}'
+            f' /{MOCK_PIPE_STDERR_STEM}'
+            f' /{MOCK_PIPE_RETURNCODE_STEM}'
+            f' /{MOCK_PIPE_FILESYNC_STEM}'
             '\n'
         )
-        self.mock_shell.stdin.write('chmod -R a+rw /srv/tmt-mock\n')
+        self.mock_shell.stdin.write(f'chmod -R a+rw /{MOCK_PIPE_STEM}\n')
         self.mock_shell.stdin.flush()
 
         # Wait until the previous commands finished.
@@ -291,10 +297,6 @@ class MockShell:
                 color='blue',
             )
 
-        stdout_stem = 'srv/tmt-mock/stdout'
-        stderr_stem = 'srv/tmt-mock/stderr'
-        returncode_stem = 'srv/tmt-mock/returncode'
-
         # The friendly command version would be emitted only when we were not
         # asked to be quiet.
         if not silent and friendly_command:
@@ -329,10 +331,10 @@ class MockShell:
 
         shell_command_components = [
             *shell_command_components,
-            f'1>/{stdout_stem}',
-            f'2>/{stderr_stem}' if not join else '2>&1',
+            f'1>/{MOCK_PIPE_STDOUT_STEM}',
+            f'2>/{MOCK_PIPE_STDERR_STEM}' if not join else '2>&1',
             ';',
-            f'echo $?>/{returncode_stem}',
+            f'echo $?>/{MOCK_PIPE_RETURNCODE_STEM}',
         ]
 
         shell_command = ' '.join(shell_command_components) + '\n'
@@ -340,9 +342,9 @@ class MockShell:
         logger.debug('mock', f'Executing shell command: {shell_command[:-1]}', color='blue')
 
         with (
-            self._managed_epoll_io(stdout_stem) as stdout_io,
-            self._managed_epoll_io(stderr_stem) as stderr_io,
-            self._managed_epoll_io(returncode_stem) as returncode_io,
+            self._managed_epoll_io(MOCK_PIPE_STDOUT_STEM) as stdout_io,
+            self._managed_epoll_io(MOCK_PIPE_STDERR_STEM) as stderr_io,
+            self._managed_epoll_io(MOCK_PIPE_RETURNCODE_STEM) as returncode_io,
         ):
             stdout_fd = stdout_io.fileno()
             stderr_fd = stderr_io.fileno()
@@ -608,7 +610,7 @@ class GuestMock(tmt.Guest):
 
     def stop(self) -> None:
         self.mock_shell.exit_shell()
-        self.run(Command('rm', '-rf', str(self.root_path / 'srv/tmt-mock/*')))
+        self.run(Command('rm', '-rf', str(self.root_path / f'{MOCK_PIPE_STEM}/*')))
 
     def push(
         self,
@@ -618,7 +620,7 @@ class GuestMock(tmt.Guest):
         superuser: bool = False,
     ) -> None:
         """
-        Push content into the mock chroot via a pipe at /srv/tmt-mock/filesync.
+        Push content into the mock chroot via a pipe at /{MOCK_PIPE_FILESYNC_STEM}.
         For directories we use tar.
         For files we use cp / install.
         Compress option is ignored, it only slows down the execution.
@@ -638,7 +640,8 @@ class GuestMock(tmt.Guest):
         if source.is_dir():
             self.mock_shell.execute(Command('mkdir', '-p', str(destination)), logger=self._logger)
             p = self.mock_shell._spawn_command(
-                Command('tar', '-C', str(destination), '-xf', '/srv/tmt-mock/filesync') + excludes,
+                Command('tar', '-C', str(destination), '-xf', f'/{MOCK_PIPE_FILESYNC_STEM}')
+                + excludes,
                 logger=self._logger,
             )
             next(p)
@@ -648,7 +651,7 @@ class GuestMock(tmt.Guest):
                     '-C',
                     str(source),
                     '-cf',
-                    str(self.root_path / 'srv/tmt-mock/filesync'),
+                    str(self.root_path / f'{MOCK_PIPE_FILESYNC_STEM}'),
                     '.',
                 )
             ).run(cwd=None, logger=self._logger)
@@ -658,11 +661,11 @@ class GuestMock(tmt.Guest):
                 Command('mkdir', '-p', str(destination.parent)), logger=self._logger
             )
             p = self.mock_shell._spawn_command(
-                Command('install', '/srv/tmt-mock/filesync', str(destination)) + permissions,
+                Command('install', f'/{MOCK_PIPE_FILESYNC_STEM}', str(destination)) + permissions,
                 logger=self._logger,
             )
             next(p)
-            Command('cp', str(source), str(self.root_path / 'srv/tmt-mock/filesync')).run(
+            Command('cp', str(source), str(self.root_path / f'{MOCK_PIPE_FILESYNC_STEM}')).run(
                 cwd=None, logger=self._logger
             )
             next(p)
@@ -674,7 +677,7 @@ class GuestMock(tmt.Guest):
         options: Optional[tmt.steps.provision.TransferOptions] = None,
     ) -> None:
         """
-        Pull content from the mock chroot via a pipe at /srv/tmt-mock/filesync.
+        Pull content from the mock chroot via a pipe at /{MOCK_PIPE_FILESYNC_STEM}.
         For directories we use tar.
         For files we use cp / install.
         Compress option is ignored, it only slows down the execution.
@@ -698,7 +701,7 @@ class GuestMock(tmt.Guest):
             if options.create_destination:
                 Command('mkdir', '-p', str(destination)).run(cwd=None, logger=self._logger)
             p = self.mock_shell._spawn_command(
-                Command('tar', '-C', str(source), '-cf', '/srv/tmt-mock/filesync', '.'),
+                Command('tar', '-C', str(source), '-cf', f'/{MOCK_PIPE_FILESYNC_STEM}', '.'),
                 logger=self._logger,
             )
             next(p)
@@ -708,7 +711,7 @@ class GuestMock(tmt.Guest):
                     '-C',
                     str(destination),
                     '-xf',
-                    str(self.root_path / 'srv/tmt-mock/filesync'),
+                    str(self.root_path / f'{MOCK_PIPE_FILESYNC_STEM}'),
                 )
                 + excludes
             ).run(cwd=None, logger=self._logger)
@@ -717,11 +720,13 @@ class GuestMock(tmt.Guest):
             if options.create_destination:
                 Command('mkdir', '-p', str(destination.parent)).run(cwd=None, logger=self._logger)
             p = self.mock_shell._spawn_command(
-                Command('cp', str(source), '/srv/tmt-mock/filesync'), logger=self._logger
+                Command('cp', str(source), f'/{MOCK_PIPE_FILESYNC_STEM}'), logger=self._logger
             )
             next(p)
             (
-                Command('install', str(self.root_path / 'srv/tmt-mock/filesync'), str(destination))
+                Command(
+                    'install', str(self.root_path / f'{MOCK_PIPE_FILESYNC_STEM}'), str(destination)
+                )
                 + permissions
             ).run(cwd=None, logger=self._logger)
             next(p)
