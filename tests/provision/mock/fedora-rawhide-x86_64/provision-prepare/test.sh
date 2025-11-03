@@ -7,11 +7,13 @@ rlJournalStart
         rlRun "pushd ../data"
     rlPhaseEnd
 
-    # Split provision and prepare steps into separate processes
+    # Invoke tmt twice, the first time having done up to the provision step,
+    # the second time finish the rest of the steps.
+    # This checks that the internal objects are properly serialized or reused.
     rlPhaseStartTest
         rlRun -s "TMT_SHOW_TRACEBACK=1 tmt --feeling-safe run --id $run test --name /test/os-release -vvv discover provision"
         rlRun -s "TMT_SHOW_TRACEBACK=1 tmt --feeling-safe run --id $run test --name /test/os-release -vvv prepare execute report cleanup"
-        rlAssertGrep "NAME.*Fedora Linux" $run/plan/execute/data/guest/*/test/os-release-*/output.txt
+        rlAssertGrep "NAME.*Fedora Linux" $run/plan/execute/data/guest/default-0/test/os-release-1/output.txt
     rlPhaseEnd
 
     rlPhaseStartCleanup
