@@ -25,14 +25,15 @@ def sphinx_apidoc(app: "Sphinx") -> None:
     # call sphinx-apidoc
     # TODO: Clean the folder before running sphinx-apidoc
     logger.info("Running sphinx-apidoc")
-    (conf_dir / "code/autodocs").mkdir(exist_ok=True)
+    autodocs_path = conf_dir / "z_autodocs"
+    autodocs_path.mkdir(exist_ok=True)
     apidoc.main(
         [
             "--force",
             "--implicit-namespaces",
             "--no-toc",
             "-o",
-            str(conf_dir / "code/autodocs"),
+            str(autodocs_path),
             str(root / "tmt"),
         ]
     )

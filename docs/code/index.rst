@@ -16,9 +16,9 @@ the documentation generated from sources linked below.
     Class Overview <classes>
     Template Extensions <template-extensions>
     Plugin Introduction <plugin-introduction>
-    tmt <autodocs/tmt>
+    tmt <../z_autodocs/tmt>
 
 .. toctree::
     :maxdepth: 3
 
-    tmt.steps <autodocs/tmt.steps>
+    tmt.steps <../z_autodocs/tmt.steps>
