@@ -58,6 +58,9 @@ properties:
   public-key:
     $ref: "/schemas/common#/definitions/one_or_more_strings"
 
+  ssh-option:
+    $ref: "/schemas/common#/definitions/one_or_more_strings"
+
   beaker-job-group:
     type: string
 
