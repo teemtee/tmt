@@ -2837,6 +2837,12 @@ class GuestSsh(Guest):
         Make sure ``rsync`` is installed on the guest.
         """
 
+        # Refresh the fact first if it's unknown. This will prevent us
+        # trying to install rsync if it's (still, or already) installed,
+        # with whatever price such an attempt comes with.
+        if self.facts.has_rsync is None:
+            self.facts.sync(self, 'has_rsync')
+
         if self.facts.has_rsync:
             return
 
@@ -2856,6 +2862,7 @@ class GuestSsh(Guest):
                 f" connection itself."
             ) from exc
 
+        # We changed the state of the guest, refresh the fact.
         self.facts.sync(self, 'has_rsync')
 
     def push(
