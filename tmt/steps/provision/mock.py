@@ -158,6 +158,36 @@ class MockShell:
             self.mock_shell = None
             self.parent.verbose('mock', 'Exited shell.', color='blue', level=2)
 
+    def _simple_execute(self, *commands: str) -> None:
+        """
+        Invoke commands in the mock shell without checking for errors.
+        This is done by writing the commands to the shell, ending each with
+        a newline.
+        Each command invocation causes the shell to print a newline when the
+        command has finished.
+        """
+
+        assert self.epoll is not None
+        assert self.mock_shell is not None
+        assert self.mock_shell.stdin is not None
+        assert self.mock_shell.stdout is not None
+        assert self.mock_shell.stderr is not None
+
+        self.mock_shell.stdin.write(''.join(command + '\n' for command in commands))
+        self.mock_shell.stdin.flush()
+
+        # Wait until the previous commands finished.
+        loop = len(commands)
+        while loop != 0 and self.mock_shell.poll() is None:
+            events = self.epoll.poll()
+            for fileno, _ in events:
+                if fileno == self.mock_shell_stdout_fd:
+                    loop -= 1
+                    self.mock_shell.stdout.read()
+                    break
+        for line in self.mock_shell.stderr.readlines():
+            self.parent.debug('mock', line.rstrip(), color='blue', level=2)
+
     def enter_shell(self) -> None:
         command = self.parent.mock_command_prefix.to_popen()
         command.append('-q')
@@ -233,32 +263,19 @@ class MockShell:
                 f'Failed to launch mock shell: exited {mock_shell_result}.'
             )
 
-        self.parent.verbose('mock', 'Shell is ready.', color='blue', level=3)
-
-        # We do not expect these commands to fail.
-        self.mock_shell.stdin.write(f'rm -rf /{MOCK_PIPE_STEM}\n')
-        self.mock_shell.stdin.write(f'mkdir /{MOCK_PIPE_STEM}\n')
-        self.mock_shell.stdin.write(
+        # Prepare the tmt-mock communication pipes inside the chroot.
+        self._simple_execute(
+            f'rm -rf /{MOCK_PIPE_STEM}',
+            f'mkdir /{MOCK_PIPE_STEM}',
             'mkfifo'
             f' /{MOCK_PIPE_STDOUT_STEM}'
             f' /{MOCK_PIPE_STDERR_STEM}'
             f' /{MOCK_PIPE_RETURNCODE_STEM}'
-            f' /{MOCK_PIPE_FILESYNC_STEM}'
-            '\n'
+            f' /{MOCK_PIPE_FILESYNC_STEM}',
+            f'chmod -R a+rw /{MOCK_PIPE_STEM}',
         )
-        self.mock_shell.stdin.write(f'chmod -R a+rw /{MOCK_PIPE_STEM}\n')
-        self.mock_shell.stdin.flush()
 
-        # Wait until the previous commands finished.
-        loop = 4
-        while loop != 0 and self.mock_shell.poll() is None:
-            events = self.epoll.poll()
-            for fileno, _ in events:
-                if fileno == self.mock_shell_stdout_fd:
-                    loop -= 1
-                    self.mock_shell.stdout.read()
-                    break
-        self.mock_shell.stderr.read()
+        self.parent.verbose('mock', 'Shell is ready.', color='blue', level=3)
 
     def _managed_epoll_io(self, file_stem: str) -> _ManagedEpollIo:
         assert self.epoll is not None
@@ -735,7 +752,7 @@ class GuestMock(tmt.Guest):
 @tmt.steps.provides_method(
     'mock',
     installation_hint="""
-        Make sure `mock` package is installed.
+        Make sure ``mock`` package is installed.
     """,
 )
 class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
