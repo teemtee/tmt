@@ -61,12 +61,23 @@ class ProvisionMockData(MockGuestData, tmt.steps.provision.ProvisionStepData):
 class _ManagedEpollIo(io.FileIO):
     """
     Context manager for file descriptors registered with epoll.
+    Wraps a ``select.epoll`` object and a file descriptor, itself wrapped as an
+    ``FileIO`` object.
+    In addition to context manager operations done by ``FileIO``, invokes
+    ``register`` upon ``__enter__`` and ``unregister`` upon ``__exit__``.
+    The object keeps track of whether it is registered.
+
+    See: https://docs.python.org/3/library/select.html#edge-and-level-trigger-polling-epoll-objects
     """
 
     def __init__(self, *args: Any, epoll: 'select.epoll', **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.epoll = epoll
-        self.registered = False
+
+        # `select.epoll` is not available on non-Linux platforms.
+        # The `ruff` linter complains but for no good reason, so we silence it.
+        self.epoll: 'select.epoll' = epoll  # noqa: UP037
+
+        self.registered: bool = False
 
     def __enter__(self) -> Self:
         super().__enter__()
@@ -95,10 +106,15 @@ class _DecodingStream:
     newline is encountered.
     """
 
-    def __init__(self, logger: Callable[[str], None]):
-        self.logger = logger
-        self.output = b''
-        self.string = ''
+    def __init__(self, log_func: Callable[[str], None]):
+        """
+        :param log_func: Function receiving the decoded text line-by-line as
+            soon as it is available.
+        """
+
+        self.log_func: Callable[[str], None] = log_func
+        self.output: bytes = b''
+        self.string: str = ''
 
     def __iadd__(self, content: bytes) -> Self:
         self.output += content
@@ -108,7 +124,7 @@ class _DecodingStream:
                 break
             string = self.output[:pos].decode('utf-8', errors='replace')
             self.output = self.output[pos + 1 :]
-            self.logger(string)
+            self.log_func(string)
             self.string += string
             self.string += '\n'
         return self
@@ -260,8 +276,8 @@ class MockShell:
         **kwargs: Any,
     ) -> Generator[tuple[str, str]]:
         """
-        Spawn a command in the shell. The first call to `next` will start
-        executing it (returns nothing). The second call to `next` will finish
+        Spawn a command in the shell. The first call to ``next`` will start
+        executing it (returns nothing). The second call to ``next`` will finish
         the command returning its standard outputs.
         """
 
