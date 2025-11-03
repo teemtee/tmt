@@ -92,11 +92,14 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
 
         if self._is_url:
             add(PackageAsFileArtifactInfo(_raw_artifact=self._source))
-        # Everything else is treated as a local file/directory/glob
+        # Everything else is treated as a glob pattern
         elif matched_files := glob.glob(self._source):
             for matched_file in sorted(matched_files):
                 f = tmt.utils.Path(matched_file)
-                if f.is_file():
+                if f.is_dir():  # find all .rpm files within it
+                    for rpm_file in sorted(f.glob("*.rpm")):
+                        add(PackageAsFileArtifactInfo(_raw_artifact=str(rpm_file)))
+                elif f.is_file():
                     add(PackageAsFileArtifactInfo(_raw_artifact=str(f)))
         else:
             self.logger.warning(f"No files matched pattern: '{self._source}'.")
