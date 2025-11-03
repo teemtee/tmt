@@ -519,10 +519,10 @@ def read(
                 encoding='utf-8',
                 stdout=subprocess.DEVNULL,
             )
-        except FileNotFoundError as err:
+        except FileNotFoundError as error:
             raise ConvertError(
                 f"Install tmt+test-convert to convert metadata from {filename}."
-            ) from err
+            ) from error
         except subprocess.CalledProcessError as error:
             raise ConvertError("Failed to convert metadata using 'make testinfo.desc'.") from error
 

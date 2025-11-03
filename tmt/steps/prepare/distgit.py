@@ -220,8 +220,8 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
 
         try:
             spec_name = next(Path(source_dir).glob('*.spec')).name
-        except StopIteration as exc:
-            raise tmt.utils.PrepareError(f"No '*.spec' file found in '{source_dir}'") from exc
+        except StopIteration:
+            raise tmt.utils.PrepareError(f"No '*.spec' file found in '{source_dir}'") from None
 
         content_before = set(source_dir.iterdir())
 

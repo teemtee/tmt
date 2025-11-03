@@ -4820,8 +4820,8 @@ def _load_schema(schema_filepath: Path) -> Schema:
     try:
         return cast(Schema, yaml_to_dict(schema_filepath.read_text(encoding='utf-8')))
 
-    except Exception as exc:
-        raise FileError(f"Failed to load schema file {schema_filepath}.") from exc
+    except Exception as error:
+        raise FileError(f"Failed to load schema file {schema_filepath}.") from error
 
 
 @functools.cache
@@ -4864,8 +4864,8 @@ def load_schema_store() -> SchemaStore:
 
             store[schema['$id']] = schema
 
-    except Exception as exc:
-        raise FileError("Failed to discover schema files.") from exc
+    except Exception as error:
+        raise FileError("Failed to discover schema files.") from error
 
     if '/schemas/plan' not in store:
         raise FileError('Failed to discover schema for plans')
@@ -5311,10 +5311,10 @@ def normalize_pattern_list(
                 try:
                     patterns.append(re.compile(raw_pattern))
 
-                except Exception as exc:
+                except Exception as error:
                     raise NormalizationError(
                         f'{key_address}[{i}]', raw_pattern, 'a regular expression'
-                    ) from exc
+                    ) from error
 
             elif isinstance(raw_pattern, re.Pattern):
                 patterns.append(raw_pattern)

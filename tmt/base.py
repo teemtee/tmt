@@ -4863,14 +4863,16 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
             try:
                 plan.go()
 
-            except Exception as exc:
+            except Exception as error:
                 if self.opt('on-plan-error') == 'quit':
-                    raise tmt.utils.GeneralError('plan failed.') from exc
+                    raise tmt.utils.GeneralError('plan failed.') from error
 
-                crashed_plans.append((plan, exc))
+                crashed_plans.append((plan, error))
 
         if crashed_plans:
-            raise tmt.utils.GeneralError('plan failed', causes=[exc for _, exc in crashed_plans])
+            raise tmt.utils.GeneralError(
+                'plan failed', causes=[error for _, error in crashed_plans]
+            )
 
         # Update the last run id at the very end
         # (override possible runs created during execution)

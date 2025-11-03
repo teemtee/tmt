@@ -388,15 +388,15 @@ class GuestContainer(tmt.Guest):
 
         try:
             return self._run_guest_command(Command('podman') + command, silent=silent, **kwargs)
-        except tmt.utils.RunError as err:
+        except tmt.utils.RunError as error:
             if (
-                "File 'podman' not found." in err.message
-                or "File 'ansible-playbook' not found." in err.message
+                "File 'podman' not found." in error.message
+                or "File 'ansible-playbook' not found." in error.message
             ):
                 raise tmt.utils.ProvisionError(
                     "Install 'tmt+provision-container' to provision using this method."
-                ) from err
-            raise err
+                ) from error
+            raise error
 
     def execute(
         self,

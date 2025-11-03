@@ -48,7 +48,7 @@ def generate_test_runner_guest_matrix(app: "Sphinx") -> None:
         ]
 
     except re.error as error:
-        raise GeneralError("Invalid 'unsupported' pattern.") from error
+        raise GeneralError(f"Invalid 'unsupported' pattern '{error.pattern}'.") from error
 
     try:
         unknown_environments: list[Pattern[str]] = [
@@ -56,7 +56,7 @@ def generate_test_runner_guest_matrix(app: "Sphinx") -> None:
         ]
 
     except re.error as error:
-        raise GeneralError("Invalid 'unknown' pattern.") from error
+        raise GeneralError(f"Invalid 'unknown' pattern '{error.pattern}'.") from error
 
     try:
         notes: dict[Pattern[str], Any] = {
@@ -64,7 +64,7 @@ def generate_test_runner_guest_matrix(app: "Sphinx") -> None:
         }
 
     except re.error as error:
-        raise GeneralError("Invalid 'notes' pattern.") from error
+        raise GeneralError(f"Invalid 'notes' pattern '{error.pattern}'.") from error
 
     matrix: dict[str, list[tuple[str, str]]] = {}
 
