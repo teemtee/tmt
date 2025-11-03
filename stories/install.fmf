@@ -1,9 +1,7 @@
 story: As a Fedora user I want to easily install tmt on my system.
-
 link:
   - implemented-by: /tmt.spec
   - documented-by: /docs/guide.rst
-
 /minimal:
     summary: Minimal tmt installation with core features only
     description: |
@@ -28,11 +26,14 @@ link:
             If you are used to install packages without optional
             dependencies, ansible features might not be working as
             they are a weak dependency of the minimal package.
-
     example: dnf install tmt
     link+:
       - verified-by: /plans/install/minimal
-
+      - verified-by: /tests/link/basic
+    id: a6f42ac6-da93-47ce-8cd6-6b76708bfee3
+    extra-polarion: RHELCOCKPIT-710
+    extra-polarion-subsystemteam: rhel-cockpit
+    extra-polarion-casecomponent: cockpit
 /all:
     summary: Install tmt with all available plugins and dependencies
     example: dnf install tmt+all

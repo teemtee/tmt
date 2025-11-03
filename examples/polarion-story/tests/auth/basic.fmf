@@ -1,0 +1,7 @@
+summary: Basic authentication test
+test: echo "Testing basic authentication"
+duration: 5m
+tag:
+  - authentication
+  - basic
+

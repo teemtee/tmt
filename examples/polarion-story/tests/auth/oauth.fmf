@@ -1,0 +1,7 @@
+summary: OAuth authentication test
+test: echo "Testing OAuth authentication"
+duration: 5m
+tag:
+  - authentication
+  - oauth
+

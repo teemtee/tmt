@@ -1,0 +1,7 @@
+summary: LDAP authentication test
+test: echo "Testing LDAP authentication"
+duration: 5m
+tag:
+  - authentication
+  - ldap
+

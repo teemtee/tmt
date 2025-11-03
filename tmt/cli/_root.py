@@ -1525,6 +1525,60 @@ _story_export_default = 'yaml'
     choices=_story_export_formats,
 )
 @option(
+    '--project-id',
+    help='Use specific Polarion project ID.',
+)
+@option(
+    '--polarion-feature-id',
+    help='Polarion feature/requirement work item ID to link the story to.',
+)
+@option(
+    '--link-polarion / --no-link-polarion',
+    default=False,
+    is_flag=True,
+    help='Add Polarion link to fmf story metadata',
+)
+@option(
+    '--append-summary / --no-append-summary',
+    default=False,
+    is_flag=True,
+    help="""
+         Include story summary in the Polarion feature summary as well. By default, only
+         the repository name and story name are used.
+         """,
+)
+@option(
+    '--create',
+    is_flag=True,
+    help="Create features in Polarion if they don't exist.",
+)
+@option(
+    '--export-linked-tests / --no-export-linked-tests',
+    default=True,
+    show_default=True,
+    is_flag=True,
+    help="""
+         Automatically export test cases referenced in verified-by links to Polarion.
+         If a test case doesn't exist in Polarion, it will be created and linked to the story.
+         """,
+)
+@option(
+    '--duplicate / --no-duplicate',
+    default=False,
+    show_default=True,
+    is_flag=True,
+    help="""
+         Allow creating duplicate features in Polarion. By default, tmt searches for existing
+         features with the same fmf identifier to avoid duplicates.
+         """,
+)
+@option(
+    '-n',
+    '--dry',
+    is_flag=True,
+    help="Run in dry mode. No changes, please.",
+)
+@option(
     '-d',
     '--debug',
     is_flag=True,
@@ -1551,6 +1605,12 @@ def stories_export(
     unverified: bool,
     undocumented: bool,
     uncovered: bool,
+    project_id: Optional[str],
+    link_polarion: bool,
+    append_summary: bool,
+    create: bool,
+    dry: bool,
+    debug: bool,
     template: Optional[str],
     **kwargs: Any,
 ) -> None:

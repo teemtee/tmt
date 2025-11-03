@@ -1,4 +1,5 @@
 summary: Check basic functionality of the tmt link command
-description:
-    Make sure that `tmt test create` and `tmt link` add provided
-    target link to the test metadata.
+description: Make sure that `tmt test create` and `tmt link` add provided target
+    link to the test metadata.
+extra-polarion: RHELCOCKPIT-704
+id: 70d48ac7-5284-4b5e-b1e0-496615dca6b6
