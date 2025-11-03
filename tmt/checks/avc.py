@@ -298,7 +298,6 @@ def create_final_report(
     # `rpm -q`, because not all non-zero exit codes mean error.
     if exc is None:
         assert output is not None
-        assert isinstance(output, CommandOutput)
 
         got_ausearch = True
 
