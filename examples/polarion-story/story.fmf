@@ -1,0 +1,31 @@
+summary: User authentication feature
+story: |
+    As a system administrator, I want to be able to authenticate users
+    through multiple providers (LDAP, OAuth, local database),
+    so that I can provide flexible authentication options for my users.
+description: |
+    This feature enables multi-provider authentication for the system.
+    It supports LDAP, OAuth2, and local database authentication.
+
+    The authentication system should:
+    - Support multiple providers simultaneously
+    - Allow fallback authentication
+    - Provide clear error messages
+    - Log authentication attempts
+example:
+  - tmt run --all provision --how container
+  - tmt tests show /tests/auth
+priority: must have
+tag:
+  - authentication
+  - security
+  - feature
+contact:
+  - Admin Team <admin@example.com>
+link:
+  - verified-by: /examples/polarion-story/tests/auth/basic
+  - verified-by: /examples/polarion-story/tests/auth/ldap
+  - verified-by: /examples/polarion-story/tests/auth/oauth
+  - implemented-by: /src/auth/providers.py
+id: 5fb05e6c-e5e1-4564-a6cf-6549ac1dd082
+extra-polarion: RHELCOCKPIT-723

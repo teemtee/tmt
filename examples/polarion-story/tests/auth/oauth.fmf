@@ -1,0 +1,8 @@
+summary: OAuth authentication test
+test: echo "Testing OAuth authentication"
+duration: 5m
+tag:
+  - authentication
+  - oauth
+id: ff5485fc-4cbe-4756-8b3c-c0ebd6139fe4
+extra-polarion: RHELCOCKPIT-726
