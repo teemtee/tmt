@@ -3,7 +3,7 @@ import urllib.parse
 from collections.abc import Sequence
 from functools import cached_property
 from shlex import quote
-from typing import Optional, TypedDict
+from typing import ClassVar, Optional
 
 import tmt.log
 import tmt.utils
@@ -18,11 +18,10 @@ from tmt.steps.prepare.artifact.providers import (
 from tmt.steps.provision import Guest
 
 
-class SourceInfo(TypedDict):
+@container
+class SourceInfo:
     raw: str
     is_url: bool
-    is_glob: bool
-    path: Optional[tmt.utils.Path]
 
 
 @container
@@ -65,10 +64,10 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
               - file:/tmp/*.rpm                    # Local glob
               - file:/build/specific.rpm           # Single file
               - file:https://example.com/pkg.rpm   # Remote URL
-              - file:/path/to/packages/                # Directory
+              - file:/path/to/packages/            # Directory
     """
 
-    SUPPORTED_PREFIX = "file"
+    SUPPORTED_PREFIX: ClassVar[str] = "file"
 
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
         super().__init__(raw_provider_id, logger)
@@ -77,7 +76,7 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
         if not raw_provider_id.startswith(f"{cls.SUPPORTED_PREFIX}:"):
-            raise ValueError(f"Unsupported provider id: {raw_provider_id}")
+            raise ValueError(f"Unsupported provider id: '{raw_provider_id}'.")
         return ArtifactProviderId(raw_provider_id)
 
     def _parse_source(self, raw_provider_id: str) -> SourceInfo:
@@ -86,7 +85,7 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
 
         This extracts the actual artifact source from a raw provider ID by
         removing the provider prefix (e.g. ``file:``). It determines whether the source
-        represents a URL, a glob pattern, or a local file/directory, and constructs a
+        represents a URL or a local file/directory/glob pattern, and constructs a
         :py:class:`SourceInfo` object describing these properties.
 
         :param raw_provider_id: artifact provider identifier to parse.
@@ -99,8 +98,6 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
         return SourceInfo(
             raw=source,
             is_url=parsed.scheme in ("http", "https"),
-            is_glob='*' in source,
-            path=tmt.utils.Path(source) if not parsed.scheme else None,
         )
 
     @cached_property
@@ -112,30 +109,26 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
             if info.id not in seen_ids:
                 artifacts.append(info)
                 seen_ids.add(info.id)
+            else:
+                self.logger.warning(
+                    f"Duplicate artifact '{info.id}' found; ignoring duplicate entry."
+                )
 
         src = self._source_info
 
-        if src['is_url']:
-            add(PackageAsFileArtifactInfo(_raw_artifact=src['raw']))
-
-        elif src['is_glob']:
-            if matched_files := glob.glob(src['raw']):
-                for matched_file in sorted(matched_files):
-                    f = tmt.utils.Path(matched_file)
-                    if f.is_file():
-                        add(PackageAsFileArtifactInfo(_raw_artifact=str(f)))
-            else:
-                self.logger.warning(f"No files matched the glob pattern: {src['raw']}.")
-
-        elif src["path"] and src['path'].is_file():
-            add(PackageAsFileArtifactInfo(_raw_artifact=str(src['path'])))
-
-        elif src["path"] and src['path'].is_dir():
-            for f in sorted(src['path'].glob("*.rpm")):
-                add(PackageAsFileArtifactInfo(_raw_artifact=str(f)))
+        if src.is_url:
+            add(PackageAsFileArtifactInfo(_raw_artifact=src.raw))
+        # Everything else is treated as a local file/directory/glob
+        elif matched_files := glob.glob(src.raw):
+            for matched_file in sorted(matched_files):
+                f = tmt.utils.Path(matched_file)
+                if f.is_file():
+                    add(PackageAsFileArtifactInfo(_raw_artifact=str(f)))
+        else:
+            self.logger.warning(f"No files matched pattern: '{src.raw}'.")
 
         if not artifacts:
-            self.logger.warning(f"No artifacts found for source: {src['raw']}")
+            self.logger.warning(f"No artifacts found for source: '{src.raw}'.")
 
         return artifacts
 
@@ -143,7 +136,7 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
         self, artifact: PackageAsFileArtifactInfo, guest: Guest, destination: tmt.utils.Path
     ) -> None:
         try:
-            if self._source_info['is_url']:  # Remote file, download it
+            if self._source_info.is_url:  # Remote file, download it
                 guest.execute(
                     tmt.utils.ShellScript(
                         f"curl -L --fail -o {quote(str(destination))} {quote(artifact.location)}"
@@ -152,6 +145,6 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
                 )
             else:  # Local file, push it to the guest
                 guest.push(tmt.utils.Path(artifact.location), destination)
-            self.logger.info(f"Successfully downloaded: {artifact.id}")
+            self.logger.info(f"Successfully downloaded: '{artifact.id}'.")
         except Exception as error:
-            raise DownloadError(f"Failed to download '{artifact.id}': {error}") from error
+            raise DownloadError(f"Failed to download '{artifact}'.") from error
