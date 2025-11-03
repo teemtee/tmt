@@ -4,7 +4,7 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "run=\$(mktemp -d)" 0 "Create a run directory"
-        rlRun "pushd data"
+        rlRun "pushd ../data"
     rlPhaseEnd
 
     rlPhaseStartTest
