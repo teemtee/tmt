@@ -4,11 +4,11 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "run=\$(mktemp -d)" 0 "Create a run directory"
-        rlRun "pushd data"
+        rlRun "pushd ../data"
     rlPhaseEnd
 
     rlPhaseStartTest
-        rlRun -s "TMT_SHOW_TRACEBACK=1 tmt --feeling-safe run --id $run -vvv"
+        rlRun -s "TMT_SHOW_TRACEBACK=1 tmt --feeling-safe run --id $run test --name /test/os-release -vvv"
         rlAssertGrep "NAME.*Fedora Linux" $run/plan/execute/data/guest/*/test/os-release-*/output.txt
     rlPhaseEnd
 

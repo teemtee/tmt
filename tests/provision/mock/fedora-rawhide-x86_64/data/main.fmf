@@ -7,4 +7,10 @@
   execute:
     how: tmt
 
-test: cat /etc/os-release
+/test:
+  /os-release:
+    test: cat /etc/os-release
+  /lscpu:
+    test: lscpu
+  /list-root-files:
+    test: ls -l /
