@@ -4,6 +4,7 @@ import traceback
 from typing import Any, Optional
 
 import fmf.utils
+import markdown
 from click import echo
 
 import tmt.base
@@ -48,6 +49,33 @@ def get_canonical_url(url: str) -> str:
     
     # If no canonical mapping found, return original
     return url
+
+
+def markdown_to_html(text: str) -> str:
+    """
+    Convert Markdown text to HTML for Polarion rich text fields.
+    
+    Args:
+        text: Markdown-formatted text
+        
+    Returns:
+        HTML-formatted text suitable for Polarion work items
+    """
+    if not text:
+        return text
+    
+    # Configure markdown extensions for better formatting
+    # extras: fenced-code-blocks, tables, code-friendly
+    html = markdown.markdown(
+        text,
+        extensions=[
+            'extra',           # Adds tables, fenced code blocks, etc.
+            'nl2br',           # Converts newlines to <br/>
+            'sane_lists',      # Better list handling
+        ]
+    )
+    
+    return html
 
 
 def get_test_script_link(test: tmt.base.Test) -> Optional[str]:
@@ -526,6 +554,10 @@ def get_polarion_feature(
     assert PolarionWorkItem
     assert PolarionException
 
+    # If data is a Tree node, convert to dictionary
+    if hasattr(data, 'get'):
+        data = data.get()
+    
     case_id, project_id = find_polarion_case_ids(data, preferred_project, polarion_feature_id)
     if case_id is None or project_id is None:
         return None
@@ -713,17 +745,20 @@ def export_story_to_polarion(story: tmt.base.Story) -> None:
         logger.info(f"Stored Polarion work item ID: {polarion_work_item_id}")
 
     # Description (story text + description)
+    # Convert Markdown to HTML for rich text formatting
     description = ""
     if story.story:
-        description = story.story
+        description = markdown_to_html(story.story)
     if story.description:
         if description:
             description += '<br/><br/>'
-        description += story.description
+        description += markdown_to_html(story.description)
     if story.example:
-        description += '<br/><br/>Examples:<br/>'
+        description += '<br/><br/><strong>Examples:</strong><br/>'
         for example in story.example:
-            description += f'<br/>- {example}'
+            # Examples can also contain markdown
+            example_html = markdown_to_html(example)
+            description += f'<br/>• {example_html}'
     if not dry_mode:
         assert polarion_feature  # Narrow type
         polarion_feature.description = description

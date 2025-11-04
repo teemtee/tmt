@@ -41,11 +41,45 @@ tmt stories export --how polarion --project-id YOUR_PROJECT --append-summary --c
 - Stories are exported as Polarion "requirement" work items (features)
 - All metadata fields are mapped to corresponding Polarion fields:
   - `summary` or `title` → Polarion title
-  - `story` + `description` + `example` → Polarion description
+  - `story` + `description` + `example` → Polarion description (**with Markdown to HTML conversion**)
   - `priority` → Polarion priority (must have=high, should have=medium, etc.)
   - `tag` → Polarion tags
   - `contact` → Polarion assignee
   - `enabled` → Polarion status (approved/inactive)
+
+### Markdown Support
+The `story`, `description`, and `example` fields support **Markdown formatting**, which is automatically converted to HTML for rich text display in Polarion:
+
+- **Headers**: `# H1`, `## H2`, `### H3`
+- **Bold**: `**text**` → **text**
+- **Italic**: `_text_` → _text_
+- **Lists**: Bullet (`-`) and numbered (`1.`) lists
+- **Code blocks**: ` ```python ... ``` ` with syntax highlighting
+- **Tables**: Full Markdown table syntax
+- **Links**: `[text](url)`
+- **Inline code**: `` `code` ``
+
+Example:
+```yaml
+description: |
+  # Feature Overview
+  
+  This feature provides **multi-provider authentication** with:
+  
+  ## Supported Providers
+  1. **LDAP** - Enterprise directory
+  2. **OAuth2** - Third-party auth
+  
+  | Provider | Status |
+  |----------|--------|
+  | LDAP     | ✓      |
+  | OAuth2   | ✓      |
+  
+  See the configuration example:
+  ```python
+  config = {'providers': ['ldap', 'oauth2']}
+  ```
+```
 
 ### Verified-By Links and Automatic Test Export
 - The `verified-by` links in stories are exported as "verifies" links in Polarion
