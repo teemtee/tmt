@@ -4,7 +4,8 @@ description: |
     valid and invalid ones.
     Also verify special characters are correctly escaped, and copr
     functionality.
-duration: 120m
+# TODO: Investigate making the tests faster
+duration: 180m
 tag+:
   - provision-only
   - provision-container
