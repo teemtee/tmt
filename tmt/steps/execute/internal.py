@@ -316,18 +316,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             invocation.path / tmt.steps.execute.TEST_METADATA_FILENAME
         )
 
-        # Set the restraint-compatible mode if enabled
-        environment["TMT_RESTRAINT_COMPATIBLE"] = EnvVarValue(
-            str(int(self.data.restraint_compatible))
-        )
-        if self.data.restraint_compatible:
-            environment["RSTRNT_TASKNAME"] = EnvVarValue(invocation.test.name)
-
         # Add variables from invocation contexts
         environment.update(invocation.abort.environment)
         environment.update(invocation.reboot.environment)
         environment.update(invocation.restart.environment)
         environment.update(invocation.pidfile.environment)
+        environment.update(invocation.restraint.environment)
 
         # Add variables the framework wants to expose
         environment.update(
