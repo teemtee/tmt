@@ -9,4 +9,5 @@ tag+:
   - provision-container
   - provision-local
   - provision-virtual
-duration: 30m
+# TODO: Investigate making the tests faster
+duration: 60m

@@ -10,7 +10,9 @@ rlJournalStart
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
 
         build_container_image "fedora/latest\:latest"
-        build_container_image "fedora/latest/bootc\:latest"
+        # TODO: Move this back to latest after avc issue is resolved
+        # build_container_image "fedora/latest/bootc\:latest"
+        build_container_image "fedora/42/bootc\:latest"
     rlPhaseEnd
 
     rlPhaseStartTest
