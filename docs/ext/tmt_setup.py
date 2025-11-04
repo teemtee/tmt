@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 def setup(app: "Sphinx") -> None:
-    # This is a meta extension that gatheres all of the individual extensions
+    # This is a meta extension that gathers all of the individual extensions
     # in the ext folder.
     app.setup_extension("linkcheck_cache")
     app.setup_extension("sphinx_apidoc")
