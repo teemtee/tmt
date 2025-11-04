@@ -1,0 +1,5 @@
+summary: Verify that pending test still has ids available in results.yaml
+duration: 5m
+tag+:
+  - provision-only
+  - provision-virtual

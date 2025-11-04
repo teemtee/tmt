@@ -26,7 +26,13 @@ from tmt.checks import Check, CheckEvent, CheckPlugin
 from tmt.container import container, field, simple_field
 from tmt.options import option
 from tmt.plugins import PluginRegistry
-from tmt.result import CheckResult, Result, ResultGuestData, ResultInterpret, ResultOutcome
+from tmt.result import (
+    CheckResult,
+    Result,
+    ResultGuestData,
+    ResultInterpret,
+    ResultOutcome,
+)
 from tmt.steps import Action, ActionTask, PhaseQueue, PluginTask, Step
 from tmt.steps.abort import AbortContext, AbortStep
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
@@ -1255,6 +1261,7 @@ class Execute(tmt.steps.Step):
                         serial_number=test.serial_number,
                         result=tmt.result.ResultOutcome.PENDING,
                         fmf_id=test.fmf_id,
+                        ids=test.ids,
                         guest=ResultGuestData(
                             name=guest[0],
                             role=guest[1],
