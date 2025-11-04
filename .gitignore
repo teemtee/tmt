@@ -92,3 +92,17 @@ tags
 .zed
 .cursor
 .idea
+
+# Additional patterns
+myenv/
+*.log
+default.etcd/
+dump.rdb
+packit/
+
+# Virtual environment artifacts in tmt/
+tmt/bin/
+tmt/lib/
+tmt/lib64
+tmt/include/
+tmt/pyvenv.cfg

@@ -74,40 +74,46 @@ def custom(project, work_item):
     click.echo("CUSTOM FIELDS DISCOVERY")
     click.echo("=" * 80)
     
-    # Get defined custom field keys
+    # Get custom field keys from actual work item
     try:
-        custom_keys = service.getDefinedCustomFieldKeys(project, 'WorkItem')
+        custom_keys = service.getCustomFieldKeys(wi.uri)
         
         if custom_keys:
             click.echo(f"\n✓ Found {len(custom_keys)} custom field keys:\n")
             
+            # Get values and types
             for key in sorted(custom_keys):
                 try:
-                    field_type = service.getDefinedCustomFieldType(
-                        project, 'WorkItem', key
-                    )
-                    click.echo(f"  {key:<30} | {field_type}")
-                except:
-                    click.echo(f"  {key:<30} | (type unknown)")
+                    # Get the field type
+                    field_type = str(service.getCustomFieldType(wi.uri, key))
+                    
+                    # Get current value
+                    value = service.getCustomField(wi.uri, key)
+                    
+                    # Format value
+                    if value is None:
+                        value_str = '(not set)'
+                    elif hasattr(value, 'value'):
+                        # CustomField object
+                        val = value.value
+                        if hasattr(val, 'id'):
+                            value_str = str(val.id) + " (enum)"
+                        else:
+                            value_str = str(val)[:40] if val else '(not set)'
+                    else:
+                        value_str = str(value)[:40]
+                    
+                    click.echo(f"  {key:<25} | {field_type:<15} | {value_str}")
+                except Exception as e:
+                    error_msg = str(e).replace('{', '{{').replace('}', '}}')
+                    click.echo(f"  {key:<25} | (error: {error_msg[:30]})")
         else:
             click.echo("\n⚠ No custom fields found")
     
     except Exception as e:
         click.echo(f"✗ Error: {e}")
-    
-    # Try to get current values
-    click.echo("\n" + "=" * 80)
-    click.echo("CURRENT VALUES")
-    click.echo("=" * 80 + "\n")
-    
-    if custom_keys:
-        for key in sorted(custom_keys[:20]):
-            try:
-                value = service.getCustomField(wi.uri, key)
-                value_str = str(value)[:50] if value else 'None'
-                click.echo(f"  {key:<30} = {value_str}")
-            except:
-                pass
+        import traceback
+        traceback.print_exc()
 
 
 @cli.command()
@@ -162,51 +168,70 @@ def methods(all, project, work_item):
 @click.option('--project', required=True, help='Polarion project ID')
 @click.option('--work-item', default='RHELCOCKPIT-723',
               help='Sample work item ID (default: RHELCOCKPIT-723)')
-@click.option('--field', help='Specific field to query')
+@click.option('--field', help='Specific field to query (e.g., status, priority)')
 def enums(project, work_item, field):
-    """Show enum values for fields"""
+    """Show enum fields and their current values from work item"""
     from pylero.work_item import _WorkItem
+    from pylero.enum_option_id import EnumOptionId
     
     wi = _WorkItem(project_id=project, work_item_id=work_item)
-    session = wi.session
-    service = session.tracker_client.service
     
     click.echo("=" * 80)
-    click.echo("ENUM VALUES")
+    click.echo("ENUM FIELDS IN WORK ITEM")
     click.echo("=" * 80)
     
-    # Predefined list of common enum fields
-    enum_fields = [
-        'status', 'priority', 'severity', 'resolution', 'type',
-        'planned_in', 'subsystemteam', 'casecomponent'
-    ]
+    # Discover enum fields from the work item
+    enum_fields = {}
     
-    if field:
-        enum_fields = [field]
-    
-    for enum_id in enum_fields:
-        try:
-            result = service.getAllEnumOptionIdsForId(enum_id)
-            
-            if result:
-                click.echo(f"\n📌 {enum_id.upper()}: ({len(result)} values)")
-                click.echo("-" * 60)
-                
-                for idx, val in enumerate(result[:20], 1):
-                    val_id = val.id if hasattr(val, 'id') else str(val)
-                    val_name = val.name if hasattr(val, 'name') else ''
-                    
-                    if val_name and val_name != val_id:
-                        click.echo(f"  {idx:3d}. {val_id:<40} # {val_name}")
-                    else:
-                        click.echo(f"  {idx:3d}. {val_id}")
-                
-                if len(result) > 20:
-                    click.echo(f"  ... and {len(result) - 20} more")
+    for attr in dir(wi):
+        if attr.startswith('_') or callable(getattr(wi, attr, None)):
+            continue
         
-        except Exception as e:
-            if 'not found' not in str(e).lower():
-                click.echo(f"\n✗ {enum_id}: {e}")
+        try:
+            value = getattr(wi, attr)
+            
+            # Check if it's an EnumOptionId or list of EnumOptionIds
+            if isinstance(value, EnumOptionId):
+                enum_fields[attr] = ('single', value)
+            elif isinstance(value, list) and value and isinstance(value[0], EnumOptionId):
+                enum_fields[attr] = ('list', value)
+        except:
+            pass
+    
+    # Filter by specific field if requested
+    if field:
+        if field in enum_fields:
+            enum_fields = {field: enum_fields[field]}
+        else:
+            click.echo(f"\n✗ Field '{field}' not found or not an enum field")
+            click.echo(f"\nAvailable enum fields: {', '.join(sorted(enum_fields.keys()))}")
+            return
+    
+    if not enum_fields:
+        click.echo("\n⚠ No enum fields found in work item")
+        return
+    
+    click.echo(f"\n✓ Found {len(enum_fields)} enum field(s):\n")
+    
+    for field_name, (enum_type, value) in sorted(enum_fields.items()):
+        if enum_type == 'single':
+            click.echo(f"📌 {field_name.upper()}")
+            click.echo(f"  Type: Single enum")
+            click.echo(f"  Current value: {value.id}")
+            if hasattr(value, 'name') and value.name:
+                click.echo(f"  Display name: {value.name}")
+        else:  # list
+            click.echo(f"\n📌 {field_name.upper()}")
+            click.echo(f"  Type: List enum ({len(value)} values)")
+            click.echo(f"  Current values:")
+            for idx, val in enumerate(value, 1):
+                val_id = val.id if hasattr(val, 'id') else str(val)
+                val_name = val.name if hasattr(val, 'name') and val.name else ''
+                if val_name:
+                    click.echo(f"    {idx}. {val_id} ({val_name})")
+                else:
+                    click.echo(f"    {idx}. {val_id}")
+        click.echo()
 
 
 if __name__ == '__main__':
