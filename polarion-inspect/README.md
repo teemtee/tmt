@@ -5,7 +5,7 @@ Tool for inspecting Polarion work items and discovering custom fields.
 ## Prerequisites
 
 ```bash
-pip install pylero
+pip install pylero click
 ```
 
 Configure `~/.pylero`:
