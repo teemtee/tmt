@@ -1572,18 +1572,8 @@ _story_export_default = 'yaml'
          features with the same fmf identifier to avoid duplicates.
          """,
 )
-@option(
-    '-n',
-    '--dry',
-    is_flag=True,
-    help="Run in dry mode. No changes, please.",
-)
-@option(
-    '-d',
-    '--debug',
-    is_flag=True,
-    help='Provide as much debugging details as possible.',
-)
+@dry_options
+@verbosity_options
 # TODO: move to `template` export plugin options
 @option(
     '--template',
@@ -1609,8 +1599,6 @@ def stories_export(
     link_polarion: bool,
     append_summary: bool,
     create: bool,
-    dry: bool,
-    debug: bool,
     template: Optional[str],
     **kwargs: Any,
 ) -> None:

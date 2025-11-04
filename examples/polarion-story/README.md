@@ -74,6 +74,27 @@ tmt stories export --how polarion --project-id YOUR_PROJECT --append-summary --c
    ```
 
 2. Configure Polarion credentials in `~/.pylero`:
+
+   **Option A: Token Authentication (Recommended - More Secure)**
+   ```ini
+   [webservice]
+   url=https://your-polarion-server/polarion
+   svn_repo=https://your-polarion-server/repo
+   default_project=YOUR_PROJECT
+   disable_manual_auth=False
+   token_enabled=True 
+   user=USER_NAME
+   token=your_personal_access_token
+   ```
+   
+   To generate a personal access token in Polarion:
+   - Log in to Polarion
+   - Go to your user profile (top right corner)
+   - Navigate to "Personal Access Tokens"
+   - Create a new token with appropriate permissions
+   - Copy the token and use it in the config file
+
+   **Option B: Username/Password Authentication**
    ```ini
    [webservice]
    url=https://your-polarion-server/polarion
