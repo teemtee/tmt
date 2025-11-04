@@ -108,7 +108,7 @@ extensions = [
     'tmt_setup',
 ]
 # Custom extensions
-sys.path.append(str(Path('ext').resolve()))
+sys.path.append(str((Path(__file__) / "../ext").resolve()))
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
