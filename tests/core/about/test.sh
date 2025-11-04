@@ -14,7 +14,7 @@ step.cleanup: tmt
 step.discover: fmf shell
 step.execute: tmt upgrade
 step.finish: ansible shell
-step.prepare: ansible feature install shell
+step.prepare: ansible artifact feature install shell
 step.provision: artemis beaker bootc connect container local mock virtual.testcloud
 step.report: display html junit polarion reportportal
 test.check: avc coredump dmesg internal/abort internal/guest internal/interrupt internal/invocation internal/permission internal/timeout journal watchdog
