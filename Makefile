@@ -131,6 +131,7 @@ TMT_TEST_CONTAINER_IMAGES := $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine:late
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/42:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/42/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/42/unprivileged:latest \
+							 $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/42/bootc:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/ubi/8/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/ubuntu/22.04/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/debian/12.7/upstream:latest \
@@ -259,6 +260,9 @@ $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/4
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/42/unprivileged\:latest:
 	$(call build-test-container-image,$@,fedora/42/Containerfile.unprivileged)
+
+$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/42/bootc\:latest:
+	$(call build-test-container-image,$@,fedora/42/bootc/Containerfile)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/43\:latest:
 	$(call build-test-container-image,$@,fedora/43/Containerfile)
