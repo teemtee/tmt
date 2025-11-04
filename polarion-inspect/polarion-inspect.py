@@ -58,8 +58,8 @@ def fields(project, work_item):
 
 @cli.command()
 @click.option('--project', required=True, help='Polarion project ID')
-@click.option('--work-item', default='RHELCOCKPIT-710', 
-              help='Sample work item ID (default: RHELCOCKPIT-710)')
+@click.option('--work-item', default='RHELCOCKPIT-723', 
+              help='Sample work item ID (default: RHELCOCKPIT-723)')
 def custom(project, work_item):
     """Discover custom fields for a project"""
     from pylero.work_item import _WorkItem
@@ -112,14 +112,17 @@ def custom(project, work_item):
 
 @cli.command()
 @click.option('--all', is_flag=True, help='Show all methods')
-def methods(all):
+@click.option('--project', default='RHELCockpit', help='Polarion project ID (default: RHELCockpit)')
+@click.option('--work-item', default='RHELCOCKPIT-723',
+              help='Sample work item ID (default: RHELCOCKPIT-723)')
+def methods(all, project, work_item):
     """List all available Polarion service methods"""
     from pylero.work_item import _WorkItem
     
     click.echo("Connecting to Polarion...\n")
     
     # Use a sample work item to get session
-    wi = _WorkItem(project_id='RHELCockpit', work_item_id='RHELCOCKPIT-710')
+    wi = _WorkItem(project_id=project, work_item_id=work_item)
     session = wi.session
     client = session.tracker_client
     
@@ -157,8 +160,8 @@ def methods(all):
 
 @cli.command()
 @click.option('--project', required=True, help='Polarion project ID')
-@click.option('--work-item', default='RHELCOCKPIT-710',
-              help='Sample work item ID (default: RHELCOCKPIT-710)')
+@click.option('--work-item', default='RHELCOCKPIT-723',
+              help='Sample work item ID (default: RHELCOCKPIT-723)')
 @click.option('--field', help='Specific field to query')
 def enums(project, work_item, field):
     """Show enum values for fields"""
