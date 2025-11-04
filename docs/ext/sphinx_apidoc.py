@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def sphinx_apidoc(app: "Sphinx") -> None:
     """
-    Run `shpinx-apidoc`
+    Run `sphinx-apidoc`
     """
 
     from sphinx.ext import apidoc
