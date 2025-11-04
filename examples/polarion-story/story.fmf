@@ -1,17 +1,53 @@
-summary: User authentication feature
+summary: User authentication and authorization feature
 story: |
-    As a system administrator, I want to be able to authenticate users
-    through multiple providers (LDAP, OAuth, local database),
-    so that I can provide flexible authentication options for my users.
-description: |
-    This feature enables multi-provider authentication for the system.
-    It supports LDAP, OAuth2, and local database authentication.
+    **As a** system administrator,
+    **I want to** be able to authenticate and authorize users through multiple providers:
 
-    The authentication system should:
+    - LDAP
+    - OAuth
+    - Local database
+    - SAML
+
+    **So that** I can provide flexible authentication options and _role-based access control_ for my users.
+description: |
+    # Multi-Provider Authentication System
+
+    This feature enables **multi-provider authentication** for the system with support for:
+
+    ## Supported Providers
+
+    1. **LDAP** - Enterprise directory services
+    2. **OAuth2** - Third-party authentication
+    3. **Local Database** - Standalone authentication
+    4. **SAML** - Single sign-on
+
+    ## Key Features
+
     - Support multiple providers simultaneously
-    - Allow fallback authentication
-    - Provide clear error messages
-    - Log authentication attempts
+    - Allow _fallback authentication_ with graceful degradation
+    - Provide **clear error messages** for troubleshooting
+    - Log authentication attempts for security auditing
+    - Support session management and timeouts
+    - Enable two-factor authentication (2FA)
+
+    ## Example Configuration
+
+    ```python
+    auth_config = {
+        'providers': ['ldap', 'oauth2', 'local'],
+        'session_timeout': 3600,
+        'multi_factor': True
+    }
+    ```
+
+    ## Provider Status
+
+    | Provider | Status | Priority |
+    |----------|--------|----------|
+    | LDAP     | ✓      | High     |
+    | OAuth2   | ✓      | High     |
+    | Local    | ✓      | Medium   |
+    | SAML     | Planned| Medium   |
 example:
   - tmt run --all provision --how container
   - tmt tests show /tests/auth
@@ -20,6 +56,7 @@ tag:
   - authentication
   - security
   - feature
+  - multi-factor
 contact:
   - Admin Team <admin@example.com>
 link:
@@ -28,4 +65,4 @@ link:
   - verified-by: /examples/polarion-story/tests/auth/oauth
   - implemented-by: /src/auth/providers.py
 id: 5fb05e6c-e5e1-4564-a6cf-6549ac1dd082
-extra-polarion: RHELCOCKPIT-723
+extra-polarion: RHELCOCKPIT-833
