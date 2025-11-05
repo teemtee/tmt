@@ -20,6 +20,9 @@ Non-Linux developers can now successfully run static analysis
 and type checking tools on their platforms without encountering
 Linux-specific type errors related to ``mock`` plugin.
 
+Improved handling of download file name when downloading archives,
+leading to better support for downloading large files.
+
 tmt-1.60.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
