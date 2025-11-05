@@ -17,9 +17,7 @@ Also allowing the export when ``--ignore-git-validation`` is passed.
 The ``FIPS`` and ``crb`` prepare :ref:`/plugins/prepare/feature` now
 works correctly when used across multiple plans within the same tmt run.
 
-Non-Linux developers can now successfully run static analysis
-and type checking tools on their platforms without encountering
-Linux-specific type errors related to ``mock`` plugin.
+Fixed an import issue for non-Linux users encountered in the ``mock`` plugin.
 
 Improved handling of download file name when downloading archives,
 leading to better support for downloading large files.
