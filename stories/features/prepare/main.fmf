@@ -1,3 +1,6 @@
+/:
+    select: true
+
 title: Package Preparation
 summary: Preparing packages for testing
 story:
