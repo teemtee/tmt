@@ -1,3 +1,6 @@
+/:
+    select: true
+
 story: 'As a user I want to comfortably work with tests'
 
 /ls:
@@ -52,6 +55,9 @@ story: 'As a user I want to comfortably work with tests'
       - documented-by: /docs/examples.rst#convert-tests
 
 /export:
+    /:
+        select: true
+
     story: 'As a tester I want to export test metadata.'
 
     /format:

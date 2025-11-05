@@ -1,3 +1,6 @@
+/:
+    select: true
+
 story:
     As tmt contributors we want to keep separately some older,
     postponed but still valuable ideas for possible future use.

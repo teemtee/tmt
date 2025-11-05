@@ -1,3 +1,6 @@
+/:
+    select: true
+
 title: Test Coverage
 story:
     As a tester I want to document the test coverage, so that it
@@ -42,6 +45,9 @@ story:
     priority: should have
 
 /filter:
+    /:
+        select: true
+
     /repo:
         summary:
             Filtering based on fmf identifiers

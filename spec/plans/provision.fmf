@@ -1,3 +1,6 @@
+/:
+    select: true
+
 summary: Provision a system for testing
 
 description: |

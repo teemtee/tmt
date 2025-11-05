@@ -1,3 +1,6 @@
+/:
+    select: true
+
 /discover:
     story: 'Select or adjust the discover step'
     description:
@@ -11,6 +14,9 @@
       - implemented-by: /tmt/steps/discover
 
 /provision:
+    /:
+        select: true
+
     story: 'Select or adjust the provision step'
     description:
         Describes what environment is needed for testing and
@@ -79,6 +85,9 @@
       - implemented-by: /tmt/steps/prepare
 
 /execute:
+    /:
+        select: true
+
     story: 'Select or adjust the execute step'
     description:
         Specification of the executor which should run tests.

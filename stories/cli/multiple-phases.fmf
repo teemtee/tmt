@@ -1,3 +1,6 @@
+/:
+    select: true
+
 story: |
     As a user I want to add, remove and adjust one or more step phases via command
     line.

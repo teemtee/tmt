@@ -1,6 +1,12 @@
+/:
+    select: true
+
 story: 'As a user I want to execute tests easily'
 
 /default:
+    /:
+        select: true
+
     /run:
         summary: 'Default should cover the most common use case'
         story:
@@ -58,6 +64,9 @@ story: 'As a user I want to execute tests easily'
           - documented-by: /docs/examples.rst#run
 
 /select:
+    /:
+        select: true
+
     story: 'Select multiple steps to be executed'
 
     link:
@@ -91,6 +100,9 @@ story: 'As a user I want to execute tests easily'
             - tmt run --all provision --how=container
 
 /shortcuts:
+    /:
+        select: true
+
     story: 'Provide shortcuts for common scenarios'
     /container:
         example:
@@ -103,6 +115,9 @@ story: 'As a user I want to execute tests easily'
             - tmt --mock fedora-31-x86_64 --enablerepo=updates-testing
 
 /filter:
+    /:
+        select: true
+
     /plan:
         story: 'Select plans for execution'
         example:
@@ -190,6 +205,9 @@ story: 'As a user I want to execute tests easily'
         - tmt run --last
 
 /login:
+    /:
+        select: true
+
     summary: 'Easily login into a provisioned guest'
     story:
         As a user I want to log into the provisioned guest so

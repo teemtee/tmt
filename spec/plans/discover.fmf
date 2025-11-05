@@ -1,3 +1,6 @@
+/:
+    select: true
+
 summary: Discover tests relevant for execution
 
 description: |
