@@ -10,6 +10,15 @@ tmt-1.61.0
 Pending tests are now also exported to Polarion thanks to no
 longer missing test case ids in the ``results.yaml``.
 
+Changed ``SUPPORTED_DISTRO_PATTERNS`` from a generator to a tuple,
+which enables the FIPS ``prepare`` feature to work correctly when used
+across multiple plans within the same tmt run. This eliminates failures
+where the second plan would fail because the shared generator was
+already exhausted by the first plan.
+
+Non-Linux developers can now successfully run static analysis
+and type checking tools on their platforms without encountering
+Linux-specific type errors related to ``mock`` plugin.
 
 tmt-1.60.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
