@@ -14,8 +14,8 @@ Polarion export plugin now fails properly when exporting an fmf tree that
 is not part of a git repository and when there are unsubmitted changes.
 Also allowing the export when ``--ignore-git-validation`` is passed.
 
-The ``FIPS`` and ``crb`` prepare ``feature`` now works correctly
-when used across multiple plans within the same tmt run.
+The ``FIPS`` and ``crb`` prepare :ref:`/plugins/prepare/feature` now
+works correctly when used across multiple plans within the same tmt run.
 
 Non-Linux developers can now successfully run static analysis
 and type checking tools on their platforms without encountering
