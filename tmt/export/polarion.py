@@ -198,11 +198,23 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     duplicate = test.opt('duplicate')
     link_polarion = test.opt('link_polarion')
     append_summary = test.opt('append-summary')
+    ignore_git_validation = test.opt('ignore_git_validation')
+
+    # Check git is already correct
+    valid, error_msg = tmt.utils.git.validate_git_status(test)
+    if not valid:
+        if ignore_git_validation:
+            echo(style(f"Exporting regardless '{error_msg}'.", fg='red'))
+        else:
+            raise ConvertError(
+                f"Can't export due '{error_msg}'.\n"
+                "Use --ignore-git-validation on your own risk to export regardless."
+            )
 
     polarion_case = None
     if not duplicate:
         polarion_case = get_polarion_case(test.node, project_id)
-    summary = tmt.export.nitrate.prepare_extra_summary(test, append_summary)
+    summary = tmt.export.nitrate.prepare_extra_summary(test, append_summary, ignore_git_validation)
     assert test.path is not None  # narrow type
     test_path = test.node.root / test.path.unrooted()
 
@@ -272,11 +284,14 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     echo(style('description: ', fg='green') + description)
 
     # Automation
-    assert test.fmf_id.url is not None  # narrow type
     if test.node.get('extra-task'):
         automation_script = test.node.get('extra-task')
-        automation_script += f'<br/>{test.fmf_id.url}'
+        if not ignore_git_validation and test.fmf_id.url is not None:
+            automation_script += f'<br/>{test.fmf_id.url}'
+    elif ignore_git_validation:
+        automation_script = "local"
     else:
+        assert test.fmf_id.url is not None  # narrow type
         automation_script = test.fmf_id.url
     if not dry_mode:
         assert polarion_case  # Narrow type
