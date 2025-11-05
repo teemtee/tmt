@@ -1,3 +1,6 @@
+/:
+    select: true
+
 summary: Prepare the environment for testing
 
 description: |

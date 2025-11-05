@@ -1,3 +1,6 @@
+/:
+    select: true
+
 summary: Define how tests should be executed
 
 description: |
@@ -51,6 +54,9 @@ description: |
       - verified-by: /tests/execute/exit-first
 
 /script:
+    /:
+        select: true
+
     summary: Execute shell scripts
     story: As a user I want to easily run shell script as a test.
 

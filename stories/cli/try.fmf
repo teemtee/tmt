@@ -1,3 +1,6 @@
+/:
+    select: true
+
 story:
     As a tester or developer I want an easy and comfortable way to
     run tests and experiment with various versions of the
@@ -129,6 +132,9 @@ link:
             how: tmt
 
 /option:
+    /:
+        select: true
+
     story:
         As a user I want an easy way to run common options in ``1minutetip`` and ``tmt run``
 

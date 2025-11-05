@@ -1,3 +1,6 @@
+/:
+    select: true
+
 summary: Report test results
 description:
     Report test results according to user preferences. For more information

@@ -1,3 +1,6 @@
+/:
+    select: true
+
 story:
     I want to have common core attributes used consistently
     across all metadata levels.
