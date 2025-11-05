@@ -363,18 +363,22 @@ def add_to_nitrate_runs(
                     nitrate.CaseRun(testcase=nitrate_case, testrun=testrun)
 
 
-def prepare_extra_summary(test: 'tmt.Test', append_summary: bool) -> str:
+def prepare_extra_summary(
+    test: 'tmt.Test', append_summary: bool, ignore_git_validation: bool = False
+) -> str:
     """
     extra-summary for export --create test
     """
 
-    assert test.fmf_id.url is not None  # narrow type
-
-    parsed_url = urllib.parse.urlparse(test.fmf_id.url)
-    remote_dirname = re.sub('.git$', '', Path(parsed_url.path).name)
-    if not remote_dirname:
-        raise ConvertError("Unable to find git remote url.")
-    generated = f"{remote_dirname} {test.name}"
+    generated = ""
+    if test.fmf_id.url is not None:  # narrow type
+        parsed_url = urllib.parse.urlparse(test.fmf_id.url)
+        remote_dirname = re.sub('.git$', '', Path(parsed_url.path).name)
+        if not remote_dirname and not ignore_git_validation:
+            raise ConvertError("Unable to find git remote url.")
+        if remote_dirname:
+            generated += f"{remote_dirname} "
+    generated += f"{test.name}"
     if test.summary and append_summary:
         generated += f" - {test.summary}"
     # FIXME: cast() - no issue, type-less "dispatcher" method
@@ -464,7 +468,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
                     nitrate_case = next(testcases)
             if not nitrate_case:
                 # Summary for TCMS case
-                extra_summary = prepare_extra_summary(test, append_summary)
+                extra_summary = prepare_extra_summary(test, append_summary, ignore_git_validation)
                 assert test.path is not None  # narrow type
                 category = get_category(test.node.root / test.path.unrooted())
                 if not dry_mode:
@@ -487,15 +491,16 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
     except (nitrate.NitrateError, gssapi.raw.misc.GSSError) as error:
         raise ConvertError(error)
 
-    # Check if URL is accessible, to be able to reach from nitrate
-    tmt.utils.git.check_git_url(test.fmf_id.url, test._logger)
+    if not ignore_git_validation:
+        # Check if URL is accessible, to be able to reach from nitrate
+        tmt.utils.git.check_git_url(test.fmf_id.url, test._logger)
 
     # Summary
     try:
         summary = (
             test._metadata.get('extra-summary')
             or test._metadata.get('extra-task')
-            or prepare_extra_summary(test, append_summary)
+            or prepare_extra_summary(test, append_summary, ignore_git_validation)
         )
     except ConvertError:
         summary = test.name
