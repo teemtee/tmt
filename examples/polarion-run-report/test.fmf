@@ -1,0 +1,15 @@
+summary: Simple test demonstrating Polarion report integration
+description: |
+    This test demonstrates how to use the Polarion report plugin
+    with token authentication to upload test results automatically.
+
+    The test performs a simple assertion and exits with success.
+contact: TMT Team <tmt@example.com>
+test: ./test.sh
+duration: 5m
+enabled: true
+tag:
+  - polarion
+  - example
+  - integration
+id: 158c14ea-19a1-4cad-93f7-fa567beff5aa

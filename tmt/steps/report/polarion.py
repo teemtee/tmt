@@ -1,4 +1,5 @@
 import datetime
+import html
 import os
 from typing import Optional
 
@@ -14,6 +15,7 @@ from tmt.utils import Path
 from .junit import ResultsContext, make_junit_xml
 
 DEFAULT_FILENAME = 'xunit.xml'
+DEFAULT_TEMPLATE = 'Empty'  # Default Polarion test run template
 
 
 @container
@@ -74,7 +76,7 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
         option='--template',
         metavar='TEMPLATE',
         help="""
-             Use specific test run template,
+             Use specific test run template (default: 'Empty'),
              also uses environment variable TMT_PLUGIN_REPORT_POLARION_TEMPLATE.
              """,
     )
@@ -213,7 +215,19 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
 
     In order to get quickly started create a pylero config
     file ``~/.pylero`` in your home directory with the
-    following content:
+    following content.
+
+    **Token Authentication** (recommended):
+
+    .. code-block:: ini
+
+        [webservice]
+        url=https://{your polarion web URL}/polarion
+        svn_repo=https://{your polarion web URL}/repo
+        default_project={your project name}
+        token={your personal access token}
+
+    **Password Authentication**:
 
     .. code-block:: ini
 
@@ -231,12 +245,9 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
 
     .. note::
 
-        For Polarion report to export correctly you need to
-        use password authentication, since exporting the
-        report happens through Polarion XUnit importer which
-        does not support using tokens. You can still
-        authenticate with token to only generate the report
-        using ``--no-upload`` argument.
+        Test run upload supports both token and password authentication.
+        Results are uploaded using pylero's TestRun API. An XUnit file
+        is also generated for reference.
 
     .. note::
 
@@ -262,6 +273,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             file: test.xml
             project-id: tmt
             title: tests_that_pass
+            template: Empty  # Optional: default is 'Empty'
             planned-in: RHEL-9.1.0
             pool-team: sst_tmt
     """
@@ -433,25 +445,116 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             raise tmt.utils.ReportError(f"Failed to write the output '{f_path}'.") from error
 
         if upload:
-            server_url = str(PolarionWorkItem._session._server.url)
-            polarion_import_url = (
-                f'{server_url}{"" if server_url.endswith("/") else "/"}import/xunit'
-            )
-            auth = (PolarionWorkItem._session.user_id, PolarionWorkItem._session.password)
-
-            response = post(
-                polarion_import_url,
-                auth=auth,
-                files={
-                    'file': ('xunit.xml', xml_data),
-                },
-                timeout=10,
-            )
-            self.info(f'Response code is {response.status_code} with text: {response.text}')
-        else:
-            self.info('Polarion upload can be done manually using command:')
-            self.info(
-                'curl -k -u <USER>:<PASSWORD> -X POST -F file=@<XUNIT_XML_FILE_PATH> '
-                '<POLARION_URL>/polarion/import/xunit'
-            )
+            # Use pylero API to create test run directly (supports both token and password auth)
+            from pylero.test_run import TestRun
+            
+            try:
+                # Create test run
+                template_to_use = template or DEFAULT_TEMPLATE
+                test_run = TestRun.create(
+                    project_id=project_id,
+                    template=template_to_use,
+                    title=title,
+                )
+                
+                # Set description if provided
+                if testsuites_properties.get('polarion-custom-description'):
+                    try:
+                        test_run.description = testsuites_properties['polarion-custom-description']
+                        test_run.update()
+                    except Exception as e:
+                        self.warn(f"Could not set test run description: {e}")
+                
+                # Add test records for each result
+                for result in results_context:
+                    if not result.ids or not any(result.ids.values()):
+                        continue
+                    
+                    work_item_id, test_project_id = find_polarion_case_ids(result.ids)
+                    if not work_item_id:
+                        continue
+                    
+                    # Map tmt result to Polarion result
+                    if hasattr(result.result, 'name'):
+                        result_str = result.result.name.lower()
+                    else:
+                        result_str = str(result.result).split('.')[-1].lower()
+                    
+                    result_map = {
+                        'pass': 'passed',
+                        'fail': 'failed',
+                        'error': 'failed',
+                        'info': 'passed',
+                        'warn': 'passed',
+                        'skip': 'blocked',
+                        'pending': 'blocked',
+                    }
+                    test_result = result_map.get(result_str, 'failed')
+                    
+                    # Convert duration to seconds
+                    try:
+                        duration_seconds = float(result.duration) if result.duration else 0.0
+                    except (ValueError, TypeError):
+                        duration_seconds = 0.0
+                    
+                    # Build test comment with output
+                    comment_parts = []
+                    if result.note:
+                        comment_parts.append(result.note)
+                    
+                    # Add test output/log
+                    if hasattr(result, 'log') and result.log:
+                        log_content = None
+                        
+                        if isinstance(result.log, list):
+                            for log_path in result.log:
+                                if isinstance(log_path, (str, Path)):
+                                    log_path = Path(log_path)
+                                    if not log_path.is_absolute():
+                                        log_path = self.step.plan.execute.workdir / log_path
+                                    if log_path.name == 'output.txt' and log_path.exists():
+                                        try:
+                                            log_content = log_path.read_text()
+                                            break
+                                        except Exception as e:
+                                            self.warn(f"Could not read log file {log_path}: {e}")
+                        elif isinstance(result.log, Path):
+                            try:
+                                log_content = result.log.read_text()
+                            except Exception as e:
+                                self.warn(f"Could not read log file: {e}")
+                        elif isinstance(result.log, str):
+                            log_content = result.log
+                        
+                        if log_content:
+                            if comment_parts:
+                                comment_parts.append('\n---\nTest Output:\n')
+                            escaped_content = html.escape(log_content)
+                            comment_parts.append(f'<pre>{escaped_content}</pre>')
+                    
+                    test_comment = ''.join(comment_parts)
+                    
+                    # Add test record
+                    test_run.add_test_record_by_fields(
+                        test_case_id=work_item_id,
+                        test_result=test_result,
+                        test_comment=test_comment,
+                        executed_by=PolarionWorkItem._session.user_id,
+                        executed=datetime.datetime.now(tz=datetime.timezone.utc),
+                        duration=duration_seconds,
+                    )
+                
+                self.info(f'Test run created: {test_run.test_run_id}')
+                server_url = str(PolarionWorkItem._session._server.url)
+                test_run_url = (
+                    f'{server_url}{"" if server_url.endswith("/") else "/"}'
+                    f'#/project/{project_id}/testrun?id={test_run.test_run_id}'
+                )
+                self.info(f'URL: {test_run_url}')
+                
+            except Exception as error:
+                raise tmt.utils.ReportError(
+                    f"Failed to create test run in Polarion: {error}"
+                ) from error
+        
         self.info('xUnit file saved at', f_path, 'yellow')

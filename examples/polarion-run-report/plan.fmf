@@ -1,0 +1,19 @@
+summary: Plan for testing Polarion report with token authentication
+
+discover:
+    how: fmf
+    filter: tag:polarion & tag:example
+    
+
+execute:
+    how: tmt
+
+report:
+    how: polarion
+    project-id: RHELCockpit
+    title: tmt_polarion_report_token_test
+    template: Empty  # Test run template (default: 'Empty')
+    description: Test run demonstrating Polarion report integration with token auth
+    # Upload now works with both token and password authentication!
+    upload: true
+
