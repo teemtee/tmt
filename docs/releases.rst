@@ -10,11 +10,12 @@ tmt-1.61.0
 Pending tests are now also exported to Polarion thanks to no
 longer missing test case ids in the ``results.yaml``.
 
-Changed ``SUPPORTED_DISTRO_PATTERNS`` from a generator to a tuple,
-which enables the FIPS ``prepare`` feature to work correctly when used
-across multiple plans within the same tmt run. This eliminates failures
-where the second plan would fail because the shared generator was
-already exhausted by the first plan.
+Polarion export plugin now fails properly when exporting an fmf tree that
+is not part of a git repository and when there are unsubmitted changes.
+Also allowing the export when ``--ignore-git-validation`` is passed.
+
+The ``FIPS`` and ``crb`` prepare ``feature`` now works correctly
+when used across multiple plans within the same tmt run.
 
 Non-Linux developers can now successfully run static analysis
 and type checking tools on their platforms without encountering
