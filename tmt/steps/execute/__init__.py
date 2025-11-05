@@ -1,13 +1,10 @@
 import abc
 import copy
 import functools
-import json
-import os
 import signal as _signal
 import subprocess
 import threading
 from collections.abc import Sequence
-from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 import click
@@ -26,9 +23,17 @@ from tmt.checks import Check, CheckEvent, CheckPlugin
 from tmt.container import container, field, simple_field
 from tmt.options import option
 from tmt.plugins import PluginRegistry
-from tmt.result import CheckResult, Result, ResultGuestData, ResultInterpret, ResultOutcome
+from tmt.result import (
+    CheckResult,
+    Result,
+    ResultGuestData,
+    ResultInterpret,
+    ResultOutcome,
+)
 from tmt.steps import Action, ActionTask, PhaseQueue, PluginTask, Step
-from tmt.steps.abort import AbortContext, AbortStep
+from tmt.steps.context.abort import AbortContext, AbortStep
+from tmt.steps.context.reboot import RebootContext
+from tmt.steps.context.restart import RestartContext
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.provision import Guest
 from tmt.utils import (
@@ -42,7 +47,6 @@ from tmt.utils import (
     format_duration,
     format_timestamp,
 )
-from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -144,11 +148,6 @@ class TestInvocation(HasStepWorkdir):
     #: List of exceptions encountered by the invocation.
     exceptions: list[Exception] = simple_field(default_factory=list)
 
-    #: Number of times the test has been restarted.
-    _restart_count: int = 0
-    #: Number of times the guest has been rebooted.
-    _reboot_count: int = 0
-
     @property
     def step_workdir(self) -> Path:
         return self.phase.step_workdir
@@ -216,42 +215,6 @@ class TestInvocation(HasStepWorkdir):
 
         return self.path / SUBMITTED_FILES_FILENAME
 
-    @functools.cached_property
-    def reboot_request_path(self) -> Path:
-        """
-        A path to the reboot request file
-        """
-
-        return self.test_data_path / tmt.steps.scripts.TMT_REBOOT_SCRIPT.created_file
-
-    @property
-    def soft_reboot_requested(self) -> bool:
-        """
-        If set, test requested a reboot
-        """
-
-        return self.reboot_request_path.exists()
-
-    #: If set, an asynchronous observer requested a reboot while the test was
-    #: running.
-    hard_reboot_requested: bool = False
-
-    @property
-    def reboot_requested(self) -> bool:
-        """
-        Whether a guest reboot has been requested while the test was running
-        """
-
-        return self.soft_reboot_requested or self.hard_reboot_requested
-
-    @property
-    def restart_requested(self) -> bool:
-        """
-        Whether a test restart has been requested
-        """
-
-        return self.return_code in self.test.restart_on_exit_code
-
     @property
     def is_guest_healthy(self) -> bool:
         """
@@ -264,10 +227,10 @@ class TestInvocation(HasStepWorkdir):
             performed.
         """
 
-        if self.hard_reboot_requested:
+        if self.reboot.hard_requested:
             return False
 
-        if self.restart_requested:
+        if self.restart.requested:
             return False
 
         return True
@@ -297,146 +260,43 @@ class TestInvocation(HasStepWorkdir):
         ]
 
     @functools.cached_property
+    def reboot(self) -> RebootContext:
+        """
+        Reboot context for this invocation.
+        """
+
+        return RebootContext(
+            owner_label=f"test '{self.test}'",
+            guest=self.guest,
+            path=self.test_data_path,
+            logger=self.logger,
+        )
+
+    def _is_restart_requested(self) -> bool:
+        return self.return_code in self.test.restart_on_exit_code
+
+    @functools.cached_property
+    def restart(self) -> RestartContext:
+        """
+        Restart context for this invocation.
+        """
+
+        return RestartContext(
+            owner_label=f"test '{self.test}'",
+            guest=self.guest,
+            is_requested_test=self._is_restart_requested,
+            restart_limit=self.test.restart_max_count,
+            restart_with_reboot=self.test.restart_with_reboot,
+            logger=self.logger,
+        )
+
+    @functools.cached_property
     def abort(self) -> AbortContext:
         """
         Abort context for this invocation.
         """
 
         return AbortContext(path=self.test_data_path, logger=self.logger)
-
-    def handle_restart(self) -> bool:
-        """
-        "Restart" the test if the test requested it.
-
-        .. note::
-
-            The test is not actually restarted, because running the test
-            is managed by a plugin calling this method. Instead, the
-            method performs all necessary steps before letting plugin
-            know it should run the test once again.
-
-        Check whether a test restart was needed and allowed, and update
-        the accounting info before letting the plugin know it's time to
-        run the test once again.
-
-        If requested by the test, the guest might be rebooted as well.
-
-        :return: ``True`` when the restart is to take place, ``False``
-            otherwise.
-        """
-
-        if not self.restart_requested:
-            return False
-
-        if self._restart_count >= self.test.restart_max_count:
-            self.logger.debug(
-                f"Test restart denied during test '{self.test}'"
-                f" with reboot count {self._reboot_count}"
-                f" and test restart count {self._restart_count}."
-            )
-
-            raise tmt.utils.RestartMaxAttemptsError("Maximum test restart attempts exceeded.")
-
-        if self.test.restart_with_reboot:
-            self.hard_reboot_requested = True
-
-            if not self.handle_reboot():
-                return False
-
-        else:
-            self._restart_count += 1
-
-            # Even though the reboot was not requested, it might have
-            # still happened! Imagine a test configuring autoreboot on
-            # kernel panic plus a test restart. The reboot would happen
-            # beyond tmt's control, and tmt would try to restart the
-            # test, but the guest may be still booting. Make sure it's
-            # alive.
-            if not self.guest.reconnect():
-                raise tmt.utils.ReconnectTimeoutError("Reconnect timed out.")
-
-        self.logger.debug(
-            f"Test restart during test '{self.test}'"
-            f" with reboot count {self._reboot_count}"
-            f" and test restart count {self._restart_count}."
-        )
-
-        self.guest.push()
-
-        return True
-
-    def handle_reboot(self) -> bool:
-        """
-        Reboot the guest if the test requested it.
-
-        Check for presence of a file signalling reboot request and orchestrate
-        the reboot if it was requested. Also increment the ``REBOOTCOUNT``
-        variable, reset it to zero if no reboot was requested (going forward to
-        the next test).
-
-        :return: ``True`` when the reboot has taken place, ``False`` otherwise.
-        """
-
-        if not self.reboot_requested:
-            return False
-
-        self._reboot_count += 1
-        self._restart_count += 1
-
-        self.logger.debug(
-            f"{'Hard' if self.hard_reboot_requested else 'Soft'} reboot during test '{self.test}'"
-            f" with reboot count {self._reboot_count}"
-            f" and test restart count {self._restart_count}."
-        )
-
-        rebooted = False
-
-        if self.hard_reboot_requested:
-            rebooted = self.guest.reboot(hard=True)
-
-        elif self.soft_reboot_requested:
-            # Extract custom hints from the file, and reset it.
-            reboot_data = json.loads(self.reboot_request_path.read_text())
-
-            reboot_command: Optional[ShellScript] = None
-
-            if reboot_data.get('command'):
-                with suppress(TypeError):
-                    reboot_command = ShellScript(reboot_data.get('command'))
-
-            if reboot_data.get('timeout'):
-                deadline = Deadline.from_seconds(int(reboot_data.get('timeout')))
-
-            else:
-                deadline = Deadline.from_seconds(tmt.steps.provision.REBOOT_TIMEOUT)
-
-            waiting = Waiting(deadline=deadline)
-
-            os.remove(self.reboot_request_path)
-            self.guest.push(self.test_data_path)
-
-            try:
-                rebooted = self.guest.reboot(hard=False, command=reboot_command, waiting=waiting)
-
-            except tmt.utils.RunError:
-                if reboot_command is not None:
-                    self.logger.fail(
-                        f"Failed to reboot guest using the custom command '{reboot_command}'."
-                    )
-
-                raise
-
-            except tmt.steps.provision.RebootModeNotSupportedError:
-                self.logger.warning("Guest does not support soft reboot, trying hard reboot.")
-
-                rebooted = self.guest.reboot(hard=True, waiting=waiting)
-
-        if not rebooted:
-            raise tmt.utils.RebootTimeoutError("Reboot timed out.")
-
-        self.hard_reboot_requested = False
-
-        return True
 
     def invoke_test(
         self,
@@ -1255,6 +1115,7 @@ class Execute(tmt.steps.Step):
                         serial_number=test.serial_number,
                         result=tmt.result.ResultOutcome.PENDING,
                         fmf_id=test.fmf_id,
+                        ids=test.ids,
                         guest=ResultGuestData(
                             name=guest[0],
                             role=guest[1],

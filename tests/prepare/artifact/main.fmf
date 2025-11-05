@@ -1,0 +1,11 @@
+summary: Check PrepareArtifact plugin
+# TODO: Enable the tests for other provision formats
+# TODO: Could we test provision local safely?
+tag+:
+  - provision-only
+  - provision-container
+adjust:
+  # TODO: Handle centos artifacts also
+  - when: distro != fedora
+    enabled: false
+    because: Need to dynamically handle centos/brew/epel artifacts somehow also
