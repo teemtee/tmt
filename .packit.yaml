@@ -1,13 +1,17 @@
 ---
 
-specfile_path: .distro/tmt.spec
+specfile_path: packaging/rpm/tmt.spec
 files_to_sync:
-  - src: .distro/
+  - src: packaging/rpm/
     dest: ./
     delete: true
     filters:
       - "protect .git*"
       - "protect sources"
+  - src: packaging/
+    dest: ./
+    filters:
+      - "- rpms"
   - .packit.yaml
 
 upstream_package_name: tmt
@@ -206,7 +210,7 @@ jobs:
     targets:
       - fedora-latest-stable
     identifier: downstream
-    fmf_path: .distro
+    fmf_path: packaging
 
   # Propose downstream pull requests
   - job: propose_downstream
