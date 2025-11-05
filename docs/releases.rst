@@ -14,6 +14,13 @@ Polarion export plugin now fails properly when exporting an fmf tree that
 is not part of a git repository and when there are unsubmitted changes.
 Also allowing the export when ``--ignore-git-validation`` is passed.
 
+The ``FIPS`` and ``crb`` prepare :ref:`/plugins/prepare/feature` now
+works correctly when used across multiple plans within the same tmt run.
+
+Fixed an import issue for non-Linux users encountered in the ``mock`` plugin.
+
+Improved handling of download file name when downloading archives,
+leading to better support for downloading large files.
 
 tmt-1.60.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
