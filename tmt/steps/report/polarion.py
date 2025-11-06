@@ -468,6 +468,35 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
         if upload:
             # Use pylero API to create test run directly (supports both token and password auth)
             from pylero.test_run import TestRun
+            from pylero.text import Text
+            
+            # HACK: Helper to set description field directly on SUDS object
+            # This works around pylero limitation where _obj_setter rejects Text types for custom fields
+            # See: https://github.com/RedHatQE/pylero/issues (pylero doesn't handle Text custom fields)
+            def _set_description_on_suds(test_run, text_obj):
+                """Directly set description on SUDS object, bypassing pylero validation."""
+                from pylero.custom import Custom
+                
+                # Create a Custom pylero object
+                custom_obj = Custom()
+                custom_obj.key = 'description'
+                # Set the value directly on the SUDS object to avoid pylero validation
+                custom_obj._suds_object.key = 'description'
+                custom_obj._suds_object.value = text_obj._suds_object
+                
+                # Add to the test run's SUDS customFields array directly
+                if not hasattr(test_run._suds_object, 'customFields') or not test_run._suds_object.customFields:
+                    test_run._suds_object.customFields = type('obj', (object,), {'Custom': []})()
+                
+                if not hasattr(test_run._suds_object.customFields, 'Custom'):
+                    test_run._suds_object.customFields.Custom = []
+                
+                # Check if description already exists and update it
+                existing = [cf for cf in test_run._suds_object.customFields.Custom if cf.key == 'description']
+                if existing:
+                    existing[0].value = text_obj._suds_object
+                else:
+                    test_run._suds_object.customFields.Custom.append(custom_obj._suds_object)
             
             try:
                 # Create test run
@@ -515,9 +544,20 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                             self.debug(f"Set ReportPortal launch URL: {rp_url}")
                             break
                 
+                # Set description from plan summary and description (using SUDS hack)
+                description_parts = []
+                if self.step.plan.summary:
+                    description_parts.append(f"<strong>Summary:</strong> {html.escape(self.step.plan.summary)}")
+                if self.step.plan.description:
+                    description_parts.append(f"<strong>Description:</strong><br/>{format_as_html(self.step.plan.description)}")
+                
+                if description_parts:
+                    description_html = "<br/><br/>".join(description_parts)
+                    desc_text = Text(content=description_html)
+                    _set_description_on_suds(test_run, desc_text)
+                    self.debug("Set description from plan summary and description")
+                
                 # Update test run with custom fields
-                # Note: description field is not set - it causes "type cannot be null" error
-                # Plan summary is included in the title instead
                 test_run.update()
                 
                 # Add test records for each result
