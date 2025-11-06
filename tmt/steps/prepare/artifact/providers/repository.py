@@ -4,6 +4,7 @@ Artifact provider for discovering RPMs from repository files.
 
 import re
 from collections.abc import Sequence
+from pyexpat.errors import messages
 from re import Pattern
 from typing import Optional
 from urllib.parse import unquote, urlparse
@@ -89,6 +90,7 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
     ) -> list[tmt.utils.Path]:
         # Override the default behavior: instead of downloading artifacts,
         # this method makes RPMs from the repository discoverable.
+        # TODO: Add support for src RPM's
 
         # 1. Install the repository file on the guest using info from our helper object
         self.repository = Repository.from_url(url=self.id, logger=self.logger)
@@ -107,16 +109,23 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
                 # Use the new utility function to parse the package string
                 raw_artifact = {**parse_rpm_string(pkg_string=pkg), "url": self.id}
                 self._artifact_list.append(RpmArtifactInfo(_raw_artifact=raw_artifact))
-
-            except ValueError:
+            except ValueError as error:
                 # Catches both regex failing to match (ValueError)
                 # or an explicit ValueError raised by the utility function.
-                self.logger.warning(f"Failed to parse malformed package string '{pkg}'. Skipping.")
+                tmt.utils.show_exception_as_warning(
+                    exception=error,
+                    message=f"Failed to parse malformed package string '{pkg}'. Skipping.",
+                    logger=self.logger,
+                )
                 continue
 
             except Exception as error:
                 # Catch any other unexpected errors
-                self.logger.debug(f"Unexpected error while parsing package '{pkg}': {error}.")
+                tmt.utils.show_exception_as_warning(
+                    exception=error,
+                    message=f"Unexpected error while parsing package '{pkg}': {error}.",
+                    logger=self.logger,
+                )
                 continue
 
         self.logger.debug(f"Successfully discovered '{len(self._artifact_list)}' artifacts.")
