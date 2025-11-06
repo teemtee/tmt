@@ -502,22 +502,53 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                     test_run.group_id = testsuites_properties['polarion-custom-poolteam']
                 
                 # Set custom fields for metadata
-                # Only set fields we've confirmed exist and work
+                # Only use confirmed working fields (enum types work, string types cause errors)
                 custom_field_mapping = {
-                    'polarion-custom-plannedin': 'plannedin',
-                    'polarion-custom-assignee': 'assignee',
-                    'polarion-custom-arch': 'arch',
+                    'polarion-custom-plannedin': 'plannedin',       # Test Cycle / Planned In (enum)
+                    'polarion-custom-assignee': 'assignee',         # Assignee (enum)
+                    'polarion-custom-arch': 'arch',                 # Architecture (enum)
                 }
+                # Note: build, composeid, logs cause "SimpleDeserializer" errors despite being
+                # defined in Polarion. This appears to be a Polarion/pylero limitation.
                 
                 for property_key, field_name in custom_field_mapping.items():
                     value = testsuites_properties.get(property_key)
                     if value:
-                        self.debug(f"Setting {field_name} = {value}")
-                        test_run._set_custom_field(field_name, value)
+                        try:
+                            test_run._set_custom_field(field_name, value)
+                        except Exception as e:
+                            self.warn(f"Could not set {field_name}={value}: {e}")
                 
-                # Update test run with all metadata
-                # Note: description field causes "type cannot be null" error and is not set
+                # Check if ReportPortal was used and add the launch URL
+                try:
+                    if hasattr(self.step, 'workdir'):
+                        for report in self.step.plan.report.phases():
+                            if report.how == 'reportportal' and hasattr(report.data, 'launch_url'):
+                                rp_url = report.data.launch_url
+                                if rp_url:
+                                    test_run._set_custom_field('rplaunchurl', rp_url)
+                except Exception as e:
+                    self.warn(f"Could not set ReportPortal URL: {e}")
+                
+                # Update test run with custom fields first
                 test_run.update()
+                
+                # Set description as plain text after update (causes issues if done before)
+                try:
+                    if testsuites_properties.get('polarion-custom-description'):
+                        import re
+                        # Strip HTML tags but preserve newlines
+                        html_desc = testsuites_properties['polarion-custom-description']
+                        # Replace <br/>, <br>, </p>, etc. with newlines
+                        html_desc = re.sub(r'<br\s*/?>|</p>|</div>|<hr\s*/?>', '\n', html_desc)
+                        # Remove all remaining HTML tags
+                        plain_desc = re.sub(r'<[^>]+>', '', html_desc)
+                        # Clean up multiple newlines
+                        plain_desc = re.sub(r'\n\n+', '\n\n', plain_desc)
+                        test_run.description = plain_desc.strip()
+                        test_run.update()
+                except Exception as e:
+                    self.warn(f"Could not set description: {e}")
                 
                 # Add test records for each result
                 for result in results_context:
