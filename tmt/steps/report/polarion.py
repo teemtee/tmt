@@ -324,30 +324,21 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
         # Get title from data, env, or generate from plan name
         title = self.data.title
         if not title:
-            title = os.getenv(
-                'TMT_PLUGIN_REPORT_POLARION_TITLE',
-                self.step.plan.name.rsplit('/', 1)[1]
-                + '_'
-                +
-                # Polarion server running with UTC timezone
-                datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d%H%M%S"),
-            )
-        
-        # Build description from plan summary and description
-        description_parts = []
-        if self.step.plan.summary:
-            description_parts.append(f"<strong>Summary:</strong> {html.escape(self.step.plan.summary)}")
-        if self.step.plan.description:
-            description_parts.append(f"<strong>Description:</strong><br/>{format_as_html(self.step.plan.description)}")
-        
-        # Allow explicit description to override or append
-        explicit_description = self.data.description or os.getenv('TMT_PLUGIN_REPORT_POLARION_DESCRIPTION')
-        if explicit_description:
-            if description_parts:
-                description_parts.append("<hr/>")
-            description_parts.append(format_as_html(explicit_description))
-        
-        test_run_description = "<br/>".join(description_parts) if description_parts else None
+            # If no title specified, generate from plan name and optionally include summary
+            base_title = self.step.plan.name.rsplit('/', 1)[1]
+            
+            # Add plan summary to title if available (description field doesn't work)
+            if self.step.plan.summary:
+                # Keep title concise - limit to first 100 chars of summary
+                summary_short = self.step.plan.summary[:100]
+                if len(self.step.plan.summary) > 100:
+                    summary_short += "..."
+                title = f"{base_title}: {summary_short}"
+            else:
+                title = base_title + '_' + datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
+            
+            # Also check environment variable
+            title = os.getenv('TMT_PLUGIN_REPORT_POLARION_TITLE', title)
 
         title = title.replace('-', '_')
         template = self.data.template or os.getenv('TMT_PLUGIN_REPORT_POLARION_TEMPLATE')
@@ -382,10 +373,6 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
         ]
 
         testsuites_properties: dict[str, Optional[str]] = {}
-
-        # Add test run description from plan
-        if test_run_description:
-            testsuites_properties['polarion-custom-description'] = test_run_description
 
         for tr_field in other_testrun_fields:
             param = self.get(tr_field, os.getenv(f'TMT_PLUGIN_REPORT_POLARION_{tr_field.upper()}'))
@@ -530,25 +517,10 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                 except Exception as e:
                     self.warn(f"Could not set ReportPortal URL: {e}")
                 
-                # Update test run with custom fields first
+                # Update test run with custom fields
+                # Note: description field is not set - it causes "type cannot be null" error
+                # Plan summary is included in the title instead
                 test_run.update()
-                
-                # Set description as plain text after update (causes issues if done before)
-                try:
-                    if testsuites_properties.get('polarion-custom-description'):
-                        import re
-                        # Strip HTML tags but preserve newlines
-                        html_desc = testsuites_properties['polarion-custom-description']
-                        # Replace <br/>, <br>, </p>, etc. with newlines
-                        html_desc = re.sub(r'<br\s*/?>|</p>|</div>|<hr\s*/?>', '\n', html_desc)
-                        # Remove all remaining HTML tags
-                        plain_desc = re.sub(r'<[^>]+>', '', html_desc)
-                        # Clean up multiple newlines
-                        plain_desc = re.sub(r'\n\n+', '\n\n', plain_desc)
-                        test_run.description = plain_desc.strip()
-                        test_run.update()
-                except Exception as e:
-                    self.warn(f"Could not set description: {e}")
                 
                 # Add test records for each result
                 for result in results_context:

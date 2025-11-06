@@ -18,7 +18,7 @@ execute:
 report:
     how: polarion
     project-id: RHELCockpit
-    title: tmt_polarion_report_metadata_test
+    # title: auto-generated from plan name + summary (or specify explicitly)
     template: Empty
     planned-in: RHEL-10.0.0          # Test Cycle / Release (required for tracking)
     assignee: jscotka                 # Person responsible
