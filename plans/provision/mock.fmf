@@ -1,0 +1,17 @@
+summary: Verify the mock provision plugin
+
+description: |
+    Run tests which exercise various features of the mock plugin
+    even if not directly related to the provision implementation.
+
+discover:
+    how: fmf
+    filter: 'tag:provision-mock'
+
+context+:
+    provision_how: mock
+
+environment:
+    PROVISION_HOW: mock
+
+enabled: true
