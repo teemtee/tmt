@@ -31,7 +31,7 @@ These fields are successfully set and verified:
   - ✗ Direct assignment → "type cannot be null"
   - ✗ Via `_set_custom_field()` → "value is not a valid type"
 
-**Root Cause**: Mismatch between Polarion's field definition (Text) and how pylero/SUDS handles it (EnumOptionId). This appears to be a pylero bug or Polarion API inconsistency.
+**Root Cause**: Mismatch between Polarion's field definition (Text with render type: `$testRun.fields.description.render`) and how pylero handles it. The pylero library's `_obj_setter` explicitly rejects Text SUDS objects with error "the value ... is not a valid type". This is a **pylero library limitation**.
 
 ### 2. String Fields (build, composeid, logs)
 

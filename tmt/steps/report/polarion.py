@@ -375,24 +375,24 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
 
         testsuites_properties: dict[str, Optional[str]] = {}
 
+        def normalize_arch(arch: str) -> str:
+            """Transform architecture to Polarion-compatible format."""
+            return 'x8664' if arch == 'x86_64' else arch
+
         for tr_field in other_testrun_fields:
             param = self.get(tr_field, os.getenv(f'TMT_PLUGIN_REPORT_POLARION_{tr_field.upper()}'))
             # TODO: remove the os.getenv when envvars in click work with steps in plans as well
             # as with steps on cmdline
             if param:
-                # Transform x86_64 to x8664 for Polarion compatibility
-                if tr_field == 'arch' and param == 'x86_64':
-                    param = 'x8664'
+                if tr_field == 'arch':
+                    param = normalize_arch(param)
                 testsuites_properties[f"polarion-custom-{tr_field.replace('_', '')}"] = param
 
         if use_facts:
             guests = self.step.plan.provision.ready_guests
             try:
                 testsuites_properties['polarion-custom-hostname'] = guests[0].primary_address
-                arch = guests[0].facts.arch
-                if arch == 'x86_64':
-                    arch = 'x8664'
-                testsuites_properties['polarion-custom-arch'] = arch
+                testsuites_properties['polarion-custom-arch'] = normalize_arch(guests[0].facts.arch)
             except IndexError as error:
                 raise tmt.utils.ReportError(
                     'Failed to retrieve facts from the guest environment. '
@@ -413,16 +413,13 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
 
         for result in results_context:
             if not result.ids or not any(result.ids.values()):
-                self.warn(
-                    f"Test Case '{result.name}' is not exported to Polarion, "
-                    "please run 'tmt tests export --how polarion' on it."
-                )
+                self.debug(f"Test case '{result.name}' not exported to Polarion, skipping.")
                 continue
 
             work_item_id, test_project_id = find_polarion_case_ids(result.ids)
 
             if work_item_id is None or test_project_id is None:
-                self.warn(f"Test case '{result.name}' missing or not found in Polarion.")
+                self.debug(f"Test case '{result.name}' not found in Polarion, skipping.")
                 continue
 
             if test_project_id not in project_span_ids:
@@ -475,11 +472,13 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             try:
                 # Create test run
                 template_to_use = template or DEFAULT_TEMPLATE
+                self.debug(f"Creating test run '{title}' using template '{template_to_use}'")
                 test_run = TestRun.create(
                     project_id=project_id,
                     template=template_to_use,
                     title=title,
                 )
+                self.debug(f"Created test run: {test_run.test_run_id}")
                 
                 # Reload test run to ensure it's fully initialized before setting fields
                 test_run = TestRun(project_id=project_id, test_run_id=test_run.test_run_id)
@@ -487,7 +486,9 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                 # Set test run metadata
                 # Set group_id (direct attribute)
                 if testsuites_properties.get('polarion-custom-poolteam'):
-                    test_run.group_id = testsuites_properties['polarion-custom-poolteam']
+                    pool_team = testsuites_properties['polarion-custom-poolteam']
+                    test_run.group_id = pool_team
+                    self.debug(f"Set group_id (pool-team)={pool_team}")
                 
                 # Set custom fields for metadata
                 # Only use confirmed working fields (enum types work, string types cause errors)
@@ -502,21 +503,17 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                 for property_key, field_name in custom_field_mapping.items():
                     value = testsuites_properties.get(property_key)
                     if value:
-                        try:
-                            test_run._set_custom_field(field_name, value)
-                        except Exception as e:
-                            self.warn(f"Could not set {field_name}={value}: {e}")
+                        test_run._set_custom_field(field_name, value)
+                        self.debug(f"Set custom field {field_name}={value}")
                 
                 # Check if ReportPortal was used and add the launch URL
-                try:
-                    if hasattr(self.step, 'workdir'):
-                        for report in self.step.plan.report.phases():
-                            if report.how == 'reportportal' and hasattr(report.data, 'launch_url'):
-                                rp_url = report.data.launch_url
-                                if rp_url:
-                                    test_run._set_custom_field('rplaunchurl', rp_url)
-                except Exception as e:
-                    self.warn(f"Could not set ReportPortal URL: {e}")
+                for report in self.step.plan.report.phases():
+                    if report.how == 'reportportal' and hasattr(report.data, 'launch_url'):
+                        rp_url = report.data.launch_url
+                        if rp_url:
+                            test_run._set_custom_field('rplaunchurl', rp_url)
+                            self.debug(f"Set ReportPortal launch URL: {rp_url}")
+                            break
                 
                 # Update test run with custom fields
                 # Note: description field is not set - it causes "type cannot be null" error
@@ -533,10 +530,8 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                         continue
                     
                     # Map tmt result to Polarion result
-                    if hasattr(result.result, 'name'):
-                        result_str = result.result.name.lower()
-                    else:
-                        result_str = str(result.result).split('.')[-1].lower()
+                    result_str = result.result.name.lower() if hasattr(result.result, 'name') \
+                        else str(result.result).split('.')[-1].lower()
                     
                     result_map = {
                         'pass': 'passed',
@@ -549,11 +544,20 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                     }
                     test_result = result_map.get(result_str, 'failed')
                     
-                    # Convert duration to seconds
-                    try:
-                        duration_seconds = float(result.duration) if result.duration else 0.0
-                    except (ValueError, TypeError):
-                        duration_seconds = 0.0
+                    # Convert duration to seconds (handle both float and "HH:MM:SS" format)
+                    duration_seconds = 0.0
+                    if result.duration:
+                        duration_str = str(result.duration)
+                        if ':' in duration_str:
+                            # Parse "HH:MM:SS" format
+                            parts = duration_str.split(':')
+                            if len(parts) == 3:
+                                duration_seconds = (
+                                    int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+                                )
+                        else:
+                            # Already in seconds
+                            duration_seconds = float(duration_str)
                     
                     # Build test comment with output
                     comment_parts = []
@@ -561,37 +565,35 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                         comment_parts.append(result.note)
                     
                     # Add test output/log
+                    log_content = None
                     if hasattr(result, 'log') and result.log:
-                        log_content = None
-                        
                         if isinstance(result.log, list):
+                            # Find output.txt in log list
                             for log_path in result.log:
                                 if isinstance(log_path, (str, Path)):
                                     log_path = Path(log_path)
                                     if not log_path.is_absolute():
                                         log_path = self.step.plan.execute.workdir / log_path
                                     if log_path.name == 'output.txt' and log_path.exists():
-                                        try:
-                                            log_content = log_path.read_text()
-                                            break
-                                        except Exception as e:
-                                            self.warn(f"Could not read log file {log_path}: {e}")
+                                        log_content = log_path.read_text()
+                                        break
                         elif isinstance(result.log, Path):
-                            try:
-                                log_content = result.log.read_text()
-                            except Exception as e:
-                                self.warn(f"Could not read log file: {e}")
+                            log_content = result.log.read_text()
                         elif isinstance(result.log, str):
                             log_content = result.log
-                        
-                        if log_content:
-                            if comment_parts:
-                                comment_parts.append('\n---\nTest Output:\n')
-                            comment_parts.append(format_as_html(log_content))
+                    
+                    if log_content:
+                        if comment_parts:
+                            comment_parts.append('\n---\nTest Output:\n')
+                        comment_parts.append(format_as_html(log_content))
                     
                     test_comment = ''.join(comment_parts)
                     
                     # Add test record
+                    self.debug(
+                        f"Adding test record: {work_item_id} -> {test_result} "
+                        f"(duration: {duration_seconds:.2f}s)"
+                    )
                     test_run.add_test_record_by_fields(
                         test_case_id=work_item_id,
                         test_result=test_result,
@@ -614,4 +616,4 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                     f"Failed to create test run in Polarion: {error}"
                 ) from error
         
-        self.info('xUnit file saved at', f_path, 'yellow')
+        self.verbose('xUnit file saved at', f_path, 'yellow')
