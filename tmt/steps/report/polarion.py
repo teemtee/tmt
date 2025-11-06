@@ -493,38 +493,31 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                     title=title,
                 )
                 
+                # Reload test run to ensure it's fully initialized before setting fields
+                test_run = TestRun(project_id=project_id, test_run_id=test_run.test_run_id)
+                
                 # Set test run metadata
-                # group_id is a direct attribute for pool_team
+                # Set group_id (direct attribute)
                 if testsuites_properties.get('polarion-custom-poolteam'):
                     test_run.group_id = testsuites_properties['polarion-custom-poolteam']
                 
                 # Set custom fields for metadata
+                # Only set fields we've confirmed exist and work
                 custom_field_mapping = {
-                    'polarion-custom-description': 'description',
                     'polarion-custom-plannedin': 'plannedin',
                     'polarion-custom-assignee': 'assignee',
                     'polarion-custom-arch': 'arch',
-                    'polarion-custom-platform': 'platform',
-                    'polarion-custom-build': 'build',
-                    'polarion-custom-logs': 'logs',
-                    'polarion-custom-composeid': 'composeid',
-                    'polarion-custom-sampleimage': 'sampleimage',
-                    'polarion-custom-fips': 'fips',
                 }
                 
                 for property_key, field_name in custom_field_mapping.items():
                     value = testsuites_properties.get(property_key)
                     if value:
-                        try:
-                            test_run._set_custom_field(field_name, value)
-                        except Exception as e:
-                            self.warn(f"Could not set custom field {field_name}={value}: {e}")
+                        self.debug(f"Setting {field_name} = {value}")
+                        test_run._set_custom_field(field_name, value)
                 
                 # Update test run with all metadata
-                try:
-                    test_run.update()
-                except Exception as e:
-                    self.warn(f"Could not update test run: {e}")
+                # Note: description field causes "type cannot be null" error and is not set
+                test_run.update()
                 
                 # Add test records for each result
                 for result in results_context:
