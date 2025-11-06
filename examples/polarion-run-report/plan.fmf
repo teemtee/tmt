@@ -1,9 +1,15 @@
-summary: Plan for testing Polarion report with token authentication
+summary: Plan for testing Polarion report with metadata support
+
+description: |
+    This plan demonstrates the Polarion report plugin capabilities:
+    - Token and password authentication
+    - Metadata fields (planned-in, assignee, pool-team, arch, etc.)
+    - Auto-generated description from plan summary
+    - Test output preservation with HTML formatting
 
 discover:
     how: fmf
     filter: tag:polarion & tag:example
-    
 
 execute:
     how: tmt
@@ -11,9 +17,13 @@ execute:
 report:
     how: polarion
     project-id: RHELCockpit
-    title: tmt_polarion_report_token_test
-    template: Empty  # Test run template (default: 'Empty')
-    description: Test run demonstrating Polarion report integration with token auth
-    # Upload now works with both token and password authentication!
+    title: tmt_polarion_report_metadata_test
+    template: Empty
+    planned-in: RHEL-10.0.0
+    assignee: jscotka
+    pool-team: rhel-cockpit
+    arch: x86_64
+    platform: Fedora-43
+    build: devel
     upload: true
 

@@ -208,6 +208,22 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
     )
 
 
+def format_as_html(text: str) -> str:
+    """
+    Format text as HTML with proper escaping and preformatted styling.
+    
+    Args:
+        text: Plain text to format
+        
+    Returns:
+        HTML-formatted text with proper escaping
+    """
+    if not text:
+        return ""
+    escaped = html.escape(text)
+    return f'<pre>{escaped}</pre>'
+
+
 @tmt.steps.provides_method('polarion')
 class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
     """
@@ -305,6 +321,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
         import_polarion()
         from tmt.export.polarion import PolarionWorkItem
 
+        # Get title from data, env, or generate from plan name
         title = self.data.title
         if not title:
             title = os.getenv(
@@ -315,6 +332,22 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                 # Polarion server running with UTC timezone
                 datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d%H%M%S"),
             )
+        
+        # Build description from plan summary and description
+        description_parts = []
+        if self.step.plan.summary:
+            description_parts.append(f"<strong>Summary:</strong> {html.escape(self.step.plan.summary)}")
+        if self.step.plan.description:
+            description_parts.append(f"<strong>Description:</strong><br/>{format_as_html(self.step.plan.description)}")
+        
+        # Allow explicit description to override or append
+        explicit_description = self.data.description or os.getenv('TMT_PLUGIN_REPORT_POLARION_DESCRIPTION')
+        if explicit_description:
+            if description_parts:
+                description_parts.append("<hr/>")
+            description_parts.append(format_as_html(explicit_description))
+        
+        test_run_description = "<br/>".join(description_parts) if description_parts else None
 
         title = title.replace('-', '_')
         template = self.data.template or os.getenv('TMT_PLUGIN_REPORT_POLARION_TEMPLATE')
@@ -340,7 +373,6 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             'assignee',
             'build',
             'compose_id',
-            'description',
             'fips',
             'logs',
             'planned_in',
@@ -350,6 +382,10 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
         ]
 
         testsuites_properties: dict[str, Optional[str]] = {}
+
+        # Add test run description from plan
+        if test_run_description:
+            testsuites_properties['polarion-custom-description'] = test_run_description
 
         for tr_field in other_testrun_fields:
             param = self.get(tr_field, os.getenv(f'TMT_PLUGIN_REPORT_POLARION_{tr_field.upper()}'))
@@ -457,13 +493,38 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                     title=title,
                 )
                 
-                # Set description if provided
-                if testsuites_properties.get('polarion-custom-description'):
-                    try:
-                        test_run.description = testsuites_properties['polarion-custom-description']
-                        test_run.update()
-                    except Exception as e:
-                        self.warn(f"Could not set test run description: {e}")
+                # Set test run metadata
+                # group_id is a direct attribute for pool_team
+                if testsuites_properties.get('polarion-custom-poolteam'):
+                    test_run.group_id = testsuites_properties['polarion-custom-poolteam']
+                
+                # Set custom fields for metadata
+                custom_field_mapping = {
+                    'polarion-custom-description': 'description',
+                    'polarion-custom-plannedin': 'plannedin',
+                    'polarion-custom-assignee': 'assignee',
+                    'polarion-custom-arch': 'arch',
+                    'polarion-custom-platform': 'platform',
+                    'polarion-custom-build': 'build',
+                    'polarion-custom-logs': 'logs',
+                    'polarion-custom-composeid': 'composeid',
+                    'polarion-custom-sampleimage': 'sampleimage',
+                    'polarion-custom-fips': 'fips',
+                }
+                
+                for property_key, field_name in custom_field_mapping.items():
+                    value = testsuites_properties.get(property_key)
+                    if value:
+                        try:
+                            test_run._set_custom_field(field_name, value)
+                        except Exception as e:
+                            self.warn(f"Could not set custom field {field_name}={value}: {e}")
+                
+                # Update test run with all metadata
+                try:
+                    test_run.update()
+                except Exception as e:
+                    self.warn(f"Could not update test run: {e}")
                 
                 # Add test records for each result
                 for result in results_context:
@@ -529,8 +590,7 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                         if log_content:
                             if comment_parts:
                                 comment_parts.append('\n---\nTest Output:\n')
-                            escaped_content = html.escape(log_content)
-                            comment_parts.append(f'<pre>{escaped_content}</pre>')
+                            comment_parts.append(format_as_html(log_content))
                     
                     test_comment = ''.join(comment_parts)
                     
