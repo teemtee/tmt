@@ -183,12 +183,12 @@ class DnfEngine(PackageManagerEngine):
         )
 
     def list_packages(self, repository: Repository) -> ShellScript:
-        command = self.command + Command(
-            "repoquery",
-            "--disablerepo=*",
-            *[f"--enablerepo={repo_id}" for repo_id in repository.repo_ids],
+        repo_ids = " ".join(f"--enablerepo={repo_id}" for repo_id in repository.repo_ids)
+        return ShellScript(
+            f"""
+            {self.command.to_script()} repoquery --disablerepo='*' {repo_ids}
+            """
         )
-        return command.to_script()
 
 
 # ignore[type-arg]: TypeVar in package manager registry annotations is
