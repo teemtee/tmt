@@ -325,7 +325,8 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
         title = self.data.title
         if not title:
             # If no title specified, generate from plan name and optionally include summary
-            base_title = self.step.plan.name.rsplit('/', 1)[1]
+            # Use full plan name path (e.g., /examples/polarion-run-report/plan)
+            plan_name = self.step.plan.name
             
             # Add plan summary to title if available (description field doesn't work)
             if self.step.plan.summary:
@@ -333,9 +334,9 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                 summary_short = self.step.plan.summary[:100]
                 if len(self.step.plan.summary) > 100:
                     summary_short += "..."
-                title = f"{base_title}: {summary_short}"
+                title = f"{plan_name}: {summary_short}"
             else:
-                title = base_title + '_' + datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
+                title = plan_name + '_' + datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
             
             # Also check environment variable
             title = os.getenv('TMT_PLUGIN_REPORT_POLARION_TITLE', title)
