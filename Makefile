@@ -306,7 +306,6 @@ tags:
 clean:  ## Remove all temporary files, packaging artifacts and docs
 	rm -rf $(TMP) build dist tmt.1
 	rm -rf .cache .mypy_cache .ruff_cache
-	make -C docs clean
 	find . -type f -name "*.py[co]" -delete
 	find . -type f -name "*,cover" -delete
 	find . -type d -name "__pycache__" -delete

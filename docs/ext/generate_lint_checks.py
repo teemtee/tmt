@@ -1,18 +1,16 @@
-#!/usr/bin/env python3
+"""
+Sphinx extension to generate ``spec/lint.rst`` file
+"""
 
-import sys
-import textwrap
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sphinx.application import Sphinx
 
 from tmt.base import LintableCollection, Plan, Story, Test
 from tmt.lint import Linter
 from tmt.utils import Path
 from tmt.utils.templates import render_template_file_into_file
-
-HELP = textwrap.dedent("""
-Usage: generate-lint-checks.py <TEMPLATE-PATH> <OUTPUT-PATH>
-
-Generate docs for all known lint checks.
-""").strip()
 
 
 def _sort_linters(linters: list[Linter]) -> list[Linter]:
@@ -22,14 +20,14 @@ def _sort_linters(linters: list[Linter]) -> list[Linter]:
     return sorted(linters, key=lambda x: x.id)
 
 
-def main() -> None:
-    if len(sys.argv) != 3:
-        print(HELP)
+def generate_lint_checks(app: "Sphinx") -> None:
+    """
+    Generate ``spec/lint.rst`` file
+    """
 
-        sys.exit(1)
-
-    template_filepath = Path(sys.argv[1])
-    output_filepath = Path(sys.argv[2])
+    template_filepath = Path(app.confdir / "templates/lint-checks.rst.j2")
+    output_filepath = Path(app.confdir / "spec/lint.rst")
+    (app.confdir / "spec").mkdir(exist_ok=True)
 
     linters = {
         'TEST_LINTERS': _sort_linters(Test.get_linter_registry()),
@@ -41,5 +39,5 @@ def main() -> None:
     render_template_file_into_file(template_filepath, output_filepath, **linters)
 
 
-if __name__ == '__main__':
-    main()
+def setup(app: "Sphinx"):
+    app.connect("builder-inited", generate_lint_checks)
