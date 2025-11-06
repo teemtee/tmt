@@ -69,6 +69,11 @@ INTERESTING_PACKAGES = ['audit', 'selinux-policy']
 #: Default message types to be collected by ausearch
 DEFAULT_MESSAGE_TYPES = ['AVC', 'USER_AVC', 'SELINUX_ERR']
 
+#: Compiled regex pattern to match relevant AVC denial messages
+DENIAL_PATTERN = re.compile(
+    r'^type=(?:' + '|'.join(map(re.escape, DEFAULT_MESSAGE_TYPES)) + r')\b'
+)
+
 
 SETUP_SCRIPT = jinja2.Template(
     textwrap.dedent("""
@@ -317,10 +322,7 @@ def create_final_report(
         if output.stdout:
             # ausearch returns complete audit events which could contain multiple message types.
             # Filter them to keep only message types we are interested in.
-            denial_pattern = re.compile(
-                r'^type=(?:' + '|'.join(map(re.escape, DEFAULT_MESSAGE_TYPES)) + r')\b'
-            )
-            denials = [line for line in output.stdout.splitlines() if denial_pattern.match(line)]
+            denials = [line for line in output.stdout.splitlines() if DENIAL_PATTERN.match(line)]
             if denials and check.ignore_pattern:
                 filtered_denials: list[str] = []
                 for denial in denials:
