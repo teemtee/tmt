@@ -2837,12 +2837,21 @@ class GuestSsh(Guest):
         Make sure ``rsync`` is installed on the guest.
         """
 
+        # Refresh the fact first if it's unknown. This will prevent us
+        # trying to install rsync if it's (still, or already) installed,
+        # with whatever price such an attempt comes with.
+        if self.facts.has_rsync is None:
+            self.facts.sync(self, 'has_rsync')
+
         if self.facts.has_rsync:
             return
 
         self.debug('rsync has not been confirmed on the guest, try installing it')
 
         try:
+            # Refresh package metadata to ensure packages are locatable,
+            # this is needed for example on fresh Debian installs.
+            self.package_manager.refresh_metadata()
             self.package_manager.install(Package('rsync'))
 
         except Exception as exc:
@@ -2853,6 +2862,7 @@ class GuestSsh(Guest):
                 f" connection itself."
             ) from exc
 
+        # We changed the state of the guest, refresh the fact.
         self.facts.sync(self, 'has_rsync')
 
     def push(
