@@ -1,8 +1,13 @@
-#!/usr/bin/env python3
+"""
+Sphinx extension to generate ``guide/test-runner-guest-compatibility-matrix.inc.rst`` file
+"""
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sphinx.application import Sphinx
 
 import re
-import sys
-import textwrap
 from re import Pattern
 from typing import Any
 
@@ -11,22 +16,18 @@ import tmt.steps.provision
 from tmt.utils import GeneralError, Path, yaml_to_dict
 from tmt.utils.templates import render_template_file_into_file
 
-HELP = textwrap.dedent("""
-Usage: generate-runner-guest-matrix.py <TEMPLATE-PATH> <FOO> <OUTPUT-PATH>
 
-Generate page with runner vs guest compatibility matrix.
-""").strip()
+def generate_test_runner_guest_matrix(app: "Sphinx") -> None:
+    """
+    Generate ``guide/test-runner-guest-compatibility-matrix.inc.rst`` file
+    """
 
-
-def main() -> None:
-    if len(sys.argv) != 4:
-        print(HELP)
-
-        sys.exit(1)
-
-    template_filepath = Path(sys.argv[1])
-    definitions_filepath = Path(sys.argv[2])
-    output_filepath = Path(sys.argv[3])
+    template_filepath = Path(
+        app.confdir / "templates/test-runner-guest-compatibility-matrix.inc.rst.j2"
+    )
+    definitions_filepath = Path(app.confdir / "test-runner-guest-compatibility.yaml")
+    output_filepath = Path(app.confdir / "guide/test-runner-guest-compatibility-matrix.inc.rst")
+    (app.confdir / "guide").mkdir(exist_ok=True)
 
     # We will need a logger...
     logger = tmt.Logger.create()
@@ -100,5 +101,5 @@ def main() -> None:
     )
 
 
-if __name__ == '__main__':
-    main()
+def setup(app: "Sphinx"):
+    app.connect("builder-inited", generate_test_runner_guest_matrix)

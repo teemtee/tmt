@@ -1,7 +1,7 @@
 # tmt-specific
 
 /tmp/
-docs/code/autodocs/*.rst
+docs/z_autodocs/*.rst
 docs/code/template-extensions.rst
 docs/plugins/cleanup.rst
 docs/plugins/discover.rst
