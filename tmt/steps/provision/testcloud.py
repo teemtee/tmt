@@ -231,22 +231,21 @@ def normalize_memory_size(
     if value is None:
         return None
 
-    if isinstance(value, pint.Quantity):
-        return value
+    # Handle integer inputs with default MB unit
+    if isinstance(value, int):
+        return tmt.utils.normalize_data_amount(key_address, f'{value} MB', logger)
 
+    # Handle string inputs that might be just numbers (add MB unit)
     if isinstance(value, str):
         try:
             magnitude = int(value)
-
+            return tmt.utils.normalize_data_amount(key_address, f'{magnitude} MB', logger)
         except ValueError:
-            return tmt.hardware.UNITS(value)
+            # String contains units, pass through to normalize_data_amount
+            return tmt.utils.normalize_data_amount(key_address, value, logger)
 
-        return tmt.hardware.UNITS(f'{magnitude} MB')
-
-    if isinstance(value, int):
-        return tmt.hardware.UNITS(f'{value} MB')
-
-    raise tmt.utils.NormalizationError(key_address, value, 'an integer')
+    # For pint.Quantity and other types, delegate to normalize_data_amount
+    return tmt.utils.normalize_data_amount(key_address, value, logger)
 
 
 def normalize_disk_size(key_address: str, value: Any, logger: tmt.log.Logger) -> Optional['Size']:
@@ -259,22 +258,21 @@ def normalize_disk_size(key_address: str, value: Any, logger: tmt.log.Logger) ->
     if value is None:
         return None
 
-    if isinstance(value, pint.Quantity):
-        return value
+    # Handle integer inputs with default GB unit
+    if isinstance(value, int):
+        return tmt.utils.normalize_data_amount(key_address, f'{value} GB', logger)
 
+    # Handle string inputs that might be just numbers (add GB unit)
     if isinstance(value, str):
         try:
             magnitude = int(value)
-
+            return tmt.utils.normalize_data_amount(key_address, f'{magnitude} GB', logger)
         except ValueError:
-            return tmt.hardware.UNITS(value)
+            # String contains units, pass through to normalize_data_amount
+            return tmt.utils.normalize_data_amount(key_address, value, logger)
 
-        return tmt.hardware.UNITS(f'{magnitude} GB')
-
-    if isinstance(value, int):
-        return tmt.hardware.UNITS(f'{value} GB')
-
-    raise tmt.utils.NormalizationError(key_address, value, 'an integer')
+    # For pint.Quantity and other types, delegate to normalize_data_amount
+    return tmt.utils.normalize_data_amount(key_address, value, logger)
 
 
 def _report_hw_requirement_support(constraint: tmt.hardware.Constraint) -> bool:
