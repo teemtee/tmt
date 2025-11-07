@@ -179,10 +179,7 @@ class DnfEngine(PackageManagerEngine):
     def install_repository(self, repository: Repository) -> ShellScript:
         repo_path = f"/etc/yum.repos.d/{repository.filename}"
         return ShellScript(
-            rf"""
-            {self.guest.facts.sudo_prefix} tee {repo_path} <<'EOF'
-            {repository.content}
-            EOF"""
+            f"{self.guest.facts.sudo_prefix} tee {repo_path} <<'EOF'\n{repository.content}\nEOF"
         )
 
     def list_packages(self, repository: Repository) -> ShellScript:

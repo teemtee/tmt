@@ -1,0 +1,3 @@
+summary: Test Fedora Rawhide mock container
+description:
+    A simple test to see if the provision handles multiple tests.
