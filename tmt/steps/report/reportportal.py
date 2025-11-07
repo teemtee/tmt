@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 JSON: 'TypeAlias' = Any
 DEFAULT_LOG_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('1 MB')
 DEFAULT_TRACEBACK_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('50 kB')
+MAX_LOG_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('32MB')
 
 DEFAULT_LOG_PATTERNS: list[Pattern[str]] = [
     re.compile(pattern)
@@ -80,6 +81,27 @@ def _pattern_list_env_to_default(option: str, default: list[Pattern[str]]) -> li
 
 def _size_env_to_default(option: str, default: 'Size') -> 'Size':
     return tmt.hardware.UNITS(_str_env_to_default(option, str(default)))
+
+
+def _normalize_log_size_limit(
+    key_address: str,
+    raw_value: Any,
+    logger: tmt.log.Logger,
+) -> 'Size':
+    """
+    Normalize and validate log size limit with maximum size enforcement.
+    """
+    # First, normalize the data amount using the standard function
+    normalized_size = tmt.utils.normalize_data_amount(key_address, raw_value, logger)
+
+    # Check if the normalized size exceeds the maximum allowed limit
+    if normalized_size > MAX_LOG_SIZE_LIMIT:
+        raise tmt.utils.SpecificationError(
+            f"Field '{key_address}' must be a size not exceeding the maximum limit of "
+            f"'{MAX_LOG_SIZE_LIMIT}', got '{normalized_size}' which is too large."
+        )
+
+    return normalized_size
 
 
 @container
@@ -236,8 +258,9 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         help=f"""
               Size limit in bytes for log upload to ReportPortal.
               The default limit is {DEFAULT_LOG_SIZE_LIMIT}.
+              Maximum allowed limit is {MAX_LOG_SIZE_LIMIT}.
               """,
-        normalize=tmt.utils.normalize_data_amount,
+        normalize=_normalize_log_size_limit,
         serialize=lambda limit: str(limit),
         unserialize=lambda serialized: tmt.hardware.UNITS(serialized),
     )
@@ -249,9 +272,10 @@ class ReportReportPortalData(tmt.steps.report.ReportStepData):
         help=f"""
               Size limit in bytes for traceback log upload to ReportPortal.
               The default limit is {DEFAULT_TRACEBACK_SIZE_LIMIT}.
+              Maximum allowed limit is {MAX_LOG_SIZE_LIMIT}.
               """,
         help_example_values=[str(DEFAULT_TRACEBACK_SIZE_LIMIT), '1MB'],
-        normalize=tmt.utils.normalize_data_amount,
+        normalize=_normalize_log_size_limit,
         serialize=lambda limit: str(limit),
         unserialize=lambda serialized: tmt.hardware.UNITS(serialized),
     )
