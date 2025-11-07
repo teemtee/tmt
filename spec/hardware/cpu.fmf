@@ -20,7 +20,7 @@ description: |
           # Integer or string, number of CPU threads per core.
           threads-per-core: 2|">= 2"
 
-          # Integer or string, total number of logical CPUs.
+          # Integer or string, number of logical CPUs.
           processors: 8|">= 8"
 
           # String, CPU family name.
@@ -62,8 +62,15 @@ description: |
           # Request a CPU with hyper-threading enabled.
           hyper-threading: true|false
 
-    See e.g. https://virtual-dba.com/blog/sockets-cores-and-threads/ for the
-    socket, core and thread distinction.
+    .. important::
+
+        See e.g. https://virtual-dba.com/blog/sockets-cores-and-threads/
+        for the socket, core and thread distinction. tmt defines ``sockets``,
+        ``cores`` and ``threads`` keys with precise meanings, following
+        their physical separation. ``processors`` then works with *logical*
+        CPUs, as visible to the OS as distinct CPUs. For example, Linux
+        would report "processors" via its ``/proc/cpuinfo`` file, or in
+        the output of the ``lscpu`` command.
 
     See e.g. https://www.cpu-world.com/ for information on family, model,
     stepping and corresponding names. ``/proc/cpuinfo`` and ``lscpu`` are
