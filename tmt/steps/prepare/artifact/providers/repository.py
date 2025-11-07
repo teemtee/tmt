@@ -152,7 +152,6 @@ _PKG_REGEX = re.compile(
     (?P<release>[^-]+)                  # Release (one or more non-hyphen characters)
     \.                                  # literal dot
     (?P<arch>[^.]+)                     # Arch (one or more non-dot characters)
-    $                                   # must match the whole string
     """,
     re.VERBOSE,
 )
@@ -168,7 +167,7 @@ def parse_rpm_string(pkg_string: str) -> dict[str, str]:
     """
 
     # 1. Match the package string against the regex
-    match = _PKG_REGEX.match(pkg_string)
+    match = _PKG_REGEX.fullmatch(pkg_string)
 
     if not match:
         raise ValueError(f"String '{pkg_string}' does not match N-E:V-R.A format")
