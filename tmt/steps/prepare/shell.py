@@ -1,3 +1,4 @@
+import datetime
 import threading
 from typing import Any, Optional, cast
 
@@ -6,11 +7,13 @@ import fmf.utils
 
 import tmt
 import tmt.log
+import tmt.result
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
 import tmt.utils.git
 from tmt.container import container, field
+from tmt.result import ResultOutcome
 from tmt.steps import safe_filename
 from tmt.steps.provision import DEFAULT_PULL_OPTIONS, Guest, TransferOptions
 from tmt.utils import Command, EnvVarValue, ShellScript, Stopwatch
