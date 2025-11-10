@@ -1,3 +1,4 @@
+import datetime
 import threading
 from typing import Any, Optional, cast
 
@@ -6,13 +7,15 @@ import fmf.utils
 
 import tmt
 import tmt.log
+import tmt.result
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
 import tmt.utils.git
 from tmt.container import container, field
+from tmt.result import ResultOutcome
 from tmt.steps import safe_filename
-from tmt.steps.provision import Guest, TransferOptions
+from tmt.steps.provision import DEFAULT_PULL_OPTIONS, Guest, TransferOptions
 from tmt.utils import Command, EnvVarValue, ShellScript
 
 PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'
@@ -98,6 +101,14 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
     _url_clone_lock = threading.Lock()
     _cloned_repo_path_envvar_name = 'TMT_PREPARE_SHELL_URL_REPOSITORY'
 
+    @property
+    def _preserved_workdir_members(self) -> set[str]:
+        return {
+            *super()._preserved_workdir_members,
+            # Include directories storing individual scriptlogs.
+            *{f'script-{i}' for i in range(len(self.data.script))},
+        }
+
     def go(
         self,
         *,
@@ -112,7 +123,6 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         outcome = super().go(guest=guest, environment=environment, logger=logger)
 
         environment = environment or tmt.utils.Environment()
-
         environment.update(guest.environment)
 
         # Give a short summary
@@ -122,42 +132,64 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         worktree = self.step.plan.worktree
         assert worktree is not None  # narrow type
 
-        if self.data.url:
+        def _prepare_remote_repository() -> None:
+            if not self.data.url:
+                return
+
             repo_path = self.phase_workdir / "repository"
 
             environment[self._cloned_repo_path_envvar_name] = EnvVarValue(repo_path.resolve())
 
-            if not self.is_dry_run:
-                with self._url_clone_lock:
-                    if not repo_path.exists():
-                        repo_path.parent.mkdir(parents=True, exist_ok=True)
-                        tmt.utils.git.git_clone(
-                            url=self.data.url,
-                            destination=repo_path,
-                            shallow=False,
-                            env=environment,
-                            logger=self._logger,
-                        )
+            if self.is_dry_run:
+                return
 
-                        if self.data.ref:
-                            self.info('ref', self.data.ref, 'green')
-                            self.run(
-                                Command('git', 'checkout', '-f', self.data.ref), cwd=repo_path
-                            )
+            with self._url_clone_lock:
+                if not repo_path.exists():
+                    repo_path.parent.mkdir(parents=True, exist_ok=True)
+                    tmt.utils.git.git_clone(
+                        url=self.data.url,
+                        destination=repo_path,
+                        shallow=False,
+                        env=environment,
+                        logger=self._logger,
+                    )
 
-                guest.push(
-                    source=repo_path,
-                    destination=repo_path,
-                    options=TransferOptions(
-                        protect_args=True,
-                        preserve_perms=True,
-                        chmod=0o755,
-                        recursive=True,
-                        create_destination=True,
-                    ),
+                    if self.data.ref:
+                        self.info('ref', self.data.ref, 'green')
+                        self.run(Command('git', 'checkout', '-f', self.data.ref), cwd=repo_path)
+
+            guest.push(
+                source=repo_path,
+                destination=repo_path,
+                options=TransferOptions(
+                    protect_args=True,
+                    preserve_perms=True,
+                    chmod=0o755,
+                    recursive=True,
+                    create_destination=True,
+                ),
+            )
+
+        try:
+            _prepare_remote_repository()
+
+        except Exception as exc:
+            outcome.results.append(
+                tmt.result.PhaseResult(
+                    name=f'{self.name} / remote script repository',
+                    result=ResultOutcome.ERROR,
+                    note=tmt.utils.render_exception_as_notes(exc),
                 )
+            )
 
-        if not self.is_dry_run:
+            outcome.exceptions.append(exc)
+
+            return outcome
+
+        def _prepare_topology() -> None:
+            if self.is_dry_run:
+                return
+
             topology = tmt.steps.Topology(self.step.plan.provision.ready_guests)
             topology.guest = tmt.steps.GuestTopology(guest)
 
@@ -172,28 +204,91 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 )
             )
 
-        prepare_wrapper_filename = safe_filename(PREPARE_WRAPPER_FILENAME, self, guest)
-        prepare_wrapper_path = worktree / prepare_wrapper_filename
+        try:
+            _prepare_topology()
 
-        logger.debug('prepare wrapper', prepare_wrapper_path, level=3)
-
-        # Execute each script on the guest (with default shell options)
-        for script in self.data.script:
-            logger.verbose('script', script, 'green')
-            script_with_options = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}')
-            self.write(prepare_wrapper_path, str(script_with_options), 'w')
-            if not self.is_dry_run:
-                prepare_wrapper_path.chmod(0o755)
-            guest.push(
-                source=prepare_wrapper_path,
-                destination=prepare_wrapper_path,
-                options=TransferOptions(protect_args=True, preserve_perms=True, chmod=0o755),
+        except Exception as exc:
+            outcome.results.append(
+                tmt.result.PhaseResult(
+                    name=f'{self.name} / guest topology',
+                    result=ResultOutcome.ERROR,
+                    note=tmt.utils.render_exception_as_notes(exc),
+                )
             )
-            command: ShellScript
+
+            outcome.exceptions.append(exc)
+
+            return outcome
+
+        script_queue = self.data.script[:]
+        script_index = 0
+
+        while script_queue:
+            script = script_queue.pop(0)
+
+            logger.verbose('script', script, 'green')
+
+            script_name = f'{self.name} / script #{script_index}'
+
+            script_record_dirpath = self.phase_workdir / f'script-{script_index}' / guest.safe_name
+            script_log_filepath = script_record_dirpath / 'output.txt'
+
+            script_log_filepath.parent.mkdir(parents=True, exist_ok=True)
+            script_log_filepath.touch()
+
+            timestamp = datetime.datetime.now(datetime.timezone.utc)
+
+            script_environment = environment.copy()
+
+            pull_options = DEFAULT_PULL_OPTIONS.copy()
+            pull_options.exclude.append(str(script_log_filepath))
+
+            script = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}')
+
             if guest.become and not guest.facts.is_superuser:
-                command = tmt.utils.ShellScript(f'sudo -E {prepare_wrapper_path}')
+                command = tmt.utils.ShellScript(f'sudo -E {script}')
             else:
-                command = tmt.utils.ShellScript(f'{prepare_wrapper_path}')
-            guest.execute(command=command, cwd=worktree, env=environment)
+                command = tmt.utils.ShellScript(f'{script}')
+
+            try:
+                guest.push(source=self.phase_workdir)
+
+                output = guest.execute(command=command, cwd=worktree, env=script_environment)
+
+            except tmt.utils.RunError as exc:
+                self._post_action_pull(
+                    guest=guest,
+                    path=self.phase_workdir,
+                    pull_options=pull_options,
+                    exceptions=outcome.exceptions,
+                )
+
+                return self._save_failed_run_outcome(
+                    log_filepath=script_log_filepath,
+                    label=script_name,
+                    timestamp=timestamp,
+                    command=command,
+                    exception=exc,
+                    outcome=outcome,
+                )
+
+            except Exception as exc:
+                return self._save_error_outcome(label=script_name, exception=exc, outcome=outcome)
+
+            else:
+                self._post_action_pull(
+                    guest=guest,
+                    path=self.phase_workdir,
+                    pull_options=pull_options,
+                    exceptions=outcome.exceptions,
+                )
+
+                self._save_success_outcome(
+                    log_filepath=script_log_filepath,
+                    label=script_name,
+                    timestamp=timestamp,
+                    output=output,
+                    outcome=outcome,
+                )
 
         return outcome

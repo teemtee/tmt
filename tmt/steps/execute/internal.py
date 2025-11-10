@@ -475,32 +475,22 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # rsync answer and react before calling the command.
         guest.facts.has_rsync = None
 
-        def pull_from_guest() -> None:
-            if not invocation.is_guest_healthy:
-                return
-
-            options = test.test_framework.get_pull_options(
-                invocation, DEFAULT_PULL_OPTIONS, logger
-            )
-            # Do not overwrite the captured output
-            options.exclude.append(str(invocation.path / TEST_OUTPUT_FILENAME))
-
-            try:
-                guest.pull(source=invocation.path, options=options)
-
-                # Fetch plan data content as well in order to prevent
-                # losing logs if the guest becomes later unresponsive.
-                guest.pull(source=self.step.plan.data_directory)
-
-            # Handle failing to pull test artifacts after guest becoming
-            # unresponsive. If not handled test would stay in 'pending' state.
-            # See issue https://github.com/teemtee/tmt/issues/3647.
-            except Exception as exc:
-                invocation.exceptions.append(exc)
+        pull_options = test.test_framework.get_pull_options(
+            invocation, DEFAULT_PULL_OPTIONS, logger
+        )
+        # Do not overwrite the captured output
+        pull_options.exclude.append(str(invocation.path / TEST_OUTPUT_FILENAME))
 
         # Fetch #1: we need logs and everything the test produced so we could
         # collect its results.
-        pull_from_guest()
+        self._post_action_pull(
+            guest=invocation.guest,
+            path=invocation.path,
+            reboot=invocation.reboot,
+            restart=invocation.restart,
+            pull_options=pull_options,
+            exceptions=invocation.exceptions,
+        )
 
         # Run after-test checks before extracting results
         invocation.check_results += self.run_checks_after_test(
@@ -514,7 +504,14 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Fetch #2: after-test checks might have produced remote files as well,
         # we need to fetch them too.
-        pull_from_guest()
+        self._post_action_pull(
+            guest=invocation.guest,
+            path=invocation.path,
+            reboot=invocation.reboot,
+            restart=invocation.restart,
+            pull_options=pull_options,
+            exceptions=invocation.exceptions,
+        )
 
         # Attach check results to every test result. There might be more than one,
         # and it's hard to pick the main one, who knows what custom results might
