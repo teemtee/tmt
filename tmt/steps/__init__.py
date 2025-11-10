@@ -118,7 +118,8 @@ ACTIONS: list[ActionName] = list(typing.get_args(ActionName))
 DEFAULT_LOGIN_COMMAND = 'bash'
 
 #: A default command to trigger a guest reboot when executed remotely.
-DEFAULT_REBOOT_COMMAND = tmt.utils.ShellScript('reboot')
+DEFAULT_SOFT_REBOOT_COMMAND = tmt.utils.ShellScript('reboot')
+DEFAULT_SYSTEMD_SOFT_REBOOT_COMMAND = tmt.utils.ShellScript('systemctl soft-reboot')
 
 # Step phase order
 PHASE_START = 10
@@ -2366,6 +2367,8 @@ class Reboot(Action):
             multiple=True,
             help='Reboot machine during given phase of selected step(s).',
         )
+        @option('--soft', is_flag=True, help='Soft reboot of the machine.')
+        @option('--systemd-soft', is_flag=True, help='Soft reboot of the machine.')
         @option(
             '--hard', is_flag=True, help='Hard reboot of the machine. Unsaved data may be lost.'
         )
@@ -2375,7 +2378,7 @@ class Reboot(Action):
             default=None,
             help=f"""
             A command to run on the guest to trigger the reboot.
-            Default is ``{DEFAULT_REBOOT_COMMAND}``.
+            Default is ``{DEFAULT_SOFT_REBOOT_COMMAND}``.
             """,
         )
         def reboot(context: 'tmt.cli.Context', **kwargs: Any) -> None:
@@ -2406,13 +2409,26 @@ class Reboot(Action):
         Reboot the guest(s)
         """
 
-        self.info('reboot', 'Rebooting guest', color='yellow')
         assert isinstance(self.parent, Step)
         assert hasattr(self.parent, 'plan')
         assert self.parent.plan is not None
+
+        from tmt.steps.provision import RebootMode
+
+        if self.opt('hard'):
+            mode: RebootMode = RebootMode.HARD
+
+        elif self.opt('systemd-soft'):
+            mode = RebootMode.SYSTEMD_SOFT
+
+        else:
+            mode = RebootMode.SOFT
+
+        self.info('reboot', f'Rebooting guest using {mode.value} mode.', color='yellow')
+
         for guest in self.parent.plan.provision.ready_guests:
             guest.reboot(
-                hard=self.opt('hard'),
+                mode=mode,
                 command=tmt.utils.ShellScript(self.opt('command'))
                 if self.opt('command')
                 else None,

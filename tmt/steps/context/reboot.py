@@ -1,13 +1,13 @@
 import functools
 import os
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, NoReturn, Optional
 
 import tmt.log
 import tmt.steps.provision
 import tmt.steps.scripts
 import tmt.utils
 from tmt.container import MetadataContainer, container
-from tmt.steps.provision import Guest
+from tmt.steps.provision import Guest, RebootMode
 from tmt.utils import Environment, EnvVarValue, HasEnvironment, Path, ShellScript
 from tmt.utils.wait import Deadline, Waiting
 
@@ -22,6 +22,7 @@ class RebootData(MetadataContainer):
 
     command: Optional[str] = None
     timeout: int = tmt.steps.provision.REBOOT_TIMEOUT
+    systemd_soft_reboot: bool = False
 
 
 @container
@@ -99,7 +100,6 @@ class RebootContext(HasEnvironment):
         :return: ``True`` when the reboot has taken place, ``False``
             otherwise.
         """
-
         if not self.requested:
             return False
 
@@ -124,13 +124,17 @@ class RebootContext(HasEnvironment):
         rebooted = False
 
         if self.hard_requested:
-            rebooted = self.guest.reboot(hard=True)
+            rebooted = self.guest.reboot(mode=RebootMode.HARD)
 
         elif self.soft_requested:
             # Extract custom hints from the file, and reset it.
             reboot_data = RebootData.from_json(self.request_path.read_text())
 
             reboot_command: Optional[ShellScript] = None
+            reboot_mode: RebootMode = RebootMode.SOFT
+
+            if reboot_data.systemd_soft_reboot:
+                reboot_mode = RebootMode.SYSTEMD_SOFT
 
             if reboot_data.command:
                 reboot_command = ShellScript(reboot_data.command)
@@ -140,21 +144,54 @@ class RebootContext(HasEnvironment):
             os.remove(self.request_path)
             self.guest.execute(ShellScript(f'rm -f {self.request_path}'))
 
-            try:
-                rebooted = self.guest.reboot(hard=False, command=reboot_command, waiting=waiting)
-
-            except tmt.utils.RunError:
+            def _handle_run_error(error: tmt.utils.RunError) -> NoReturn:
                 if reboot_command is not None:
                     self.logger.fail(
                         f"Failed to reboot guest using the custom command '{reboot_command}'."
                     )
 
-                raise
+                raise error
 
-            except tmt.steps.provision.RebootModeNotSupportedError:
+            def _soft_fallback() -> bool:
                 self.logger.warning("Guest does not support soft reboot, trying hard reboot.")
 
-                rebooted = self.guest.reboot(hard=True, waiting=waiting)
+                return self.guest.reboot(mode=RebootMode.HARD, waiting=waiting)
+
+            def _systemd_soft_fallback() -> bool:
+                self.logger.warning(
+                    "Guest does not support systemd soft reboot, trying regular soft reboot."
+                )
+
+                try:
+                    return self.guest.reboot(
+                        mode=RebootMode.SOFT, command=reboot_command, waiting=waiting
+                    )
+
+                except tmt.utils.RunError as error:
+                    _handle_run_error(error)
+
+                except tmt.steps.provision.RebootModeNotSupportedError:
+                    return _soft_fallback()
+
+            def _issue_reboot() -> bool:
+                try:
+                    return self.guest.reboot(
+                        mode=reboot_mode, command=reboot_command, waiting=waiting
+                    )
+
+                except tmt.utils.RunError as error:
+                    _handle_run_error(error)
+
+                except tmt.steps.provision.RebootModeNotSupportedError:
+                    if reboot_mode == RebootMode.SOFT:
+                        return _soft_fallback()
+
+                    if reboot_mode == RebootMode.SYSTEMD_SOFT:
+                        return _systemd_soft_fallback()
+
+                    raise
+
+            rebooted = _issue_reboot()
 
         if not rebooted:
             raise tmt.utils.RebootTimeoutError("Reboot timed out.")

@@ -26,6 +26,7 @@ import tmt.utils.signals
 import tmt.utils.wait
 from tmt.config.models.hardware import MrackTranslation
 from tmt.container import container, field, simple_field
+from tmt.steps.provision import RebootMode
 from tmt.utils import (
     Command,
     Path,
@@ -1703,7 +1704,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
     def reboot(
         self,
-        hard: bool = False,
+        mode: RebootMode = RebootMode.SOFT,
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
@@ -1736,19 +1737,20 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
         waiting = waiting or tmt.steps.provision.default_reboot_waiting()
 
-        if hard:
+        if mode == RebootMode.HARD:
             self.debug("Hard reboot using the reboot command 'bkr system-power --action reboot'.")
 
             reboot_script = ShellScript(f'bkr system-power --action reboot {self.primary_address}')
 
             return self.perform_reboot(
+                mode,
                 lambda: self._run_guest_command(reboot_script.to_shell_command()),
                 waiting,
-                fetch_boot_time=False,
+                fetch_boot_mark=False,
             )
 
         return super().reboot(
-            hard=False,
+            mode=mode,
             command=command,
             waiting=waiting,
         )

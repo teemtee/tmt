@@ -11,6 +11,7 @@ fi
 
 command="$1"
 timeout="$2"
+systemd_soft_reboot="$3"
 
 # Thanks to being run while holding the pidfile lock, the file exists and should
 # no go away. It should be safe to read test PID and reboot-request filepath from
@@ -24,8 +25,9 @@ mkdir -p "$(dirname "$test_reboot_file")"
 {
     printf '{'
     first=true
-    [ -n "$command" ] && { printf '"command": "%s"' "$command"; first=false; }
-    [ -n "$timeout" ] && { $first || printf ', '; printf '"timeout": %s' "$timeout"; }
+    [ -n "$command" ]             && { $first || printf ', '; printf '"command": "%s"' "$command";  first=false; }
+    [ -n "$timeout" ]             && { $first || printf ', '; printf '"timeout": %s' "$timeout";    first=false; }
+    [ -n "$systemd_soft_reboot" ] && { $first || printf ', '; printf '"systemd_soft_reboot": true'; first=false; }
     printf '}'
 } > "$test_reboot_file"
 

@@ -242,6 +242,8 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
     ``tmt-reboot`` - soft reboot the machine from inside the test. After reboot
     the execution starts from the test which rebooted the machine.
+    Use ``tmt-reboot -s`` for systemd soft-reboot which preserves the kernel
+    and hardware state while restarting userspace only.
     An environment variable ``TMT_REBOOT_COUNT`` is provided which
     the test can use to handle the reboot. The variable holds the
     number of reboots performed by the test. For more information
