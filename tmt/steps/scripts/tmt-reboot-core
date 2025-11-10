@@ -11,6 +11,7 @@ fi
 
 command="$1"
 timeout="$2"
+systemd_soft_reboot="$3"
 
 # Thanks to being run while holding the pidfile lock, the file exists and should
 # no go away. It should be safe to read test PID and reboot-request filepath from
@@ -19,7 +20,12 @@ read -r test_pid test_reboot_file < "$TMT_TEST_PIDFILE"
 
 mkdir -p "$(dirname "$test_reboot_file")"
 
-printf '{"command": "%s", "timeout": "%s"}' "$command" "$timeout" > "$test_reboot_file"
+# Set default command for systemd soft-reboot if systemd_soft_reboot is requested and no custom command
+if [[ "$systemd_soft_reboot" == "true" && -z "$command" ]]; then
+    command="systemctl soft-reboot"
+fi
+
+printf '{"command": "%s", "timeout": "%s", "systemd_soft_reboot": "%s"}' "$command" "$timeout" "$systemd_soft_reboot" > "$test_reboot_file"
 
 # Flush buffers to prevent potential data loss
 sync

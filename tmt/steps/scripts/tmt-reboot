@@ -17,13 +17,22 @@ PATH=/sbin:/usr/sbin:$PATH
 
 command=""
 timeout=""
+systemd_soft_reboot=""
 
-while getopts "c:t:e" flag; do
+while getopts "c:t:esh" flag; do
     case "${flag}" in
         c) command="${OPTARG}";;
         t) timeout="${OPTARG}";;
         e) logger -s "The '-e' option is noop as of tmt-1.58, see release docs for more information.";;
-        *) exit 1;;
+        s) systemd_soft_reboot="true";;
+        h) echo "Usage: tmt-reboot [-c COMMAND] [-t TIMEOUT] [-s] [-h]"
+           echo "  -c COMMAND  Custom reboot command to use"
+           echo "  -t TIMEOUT  Timeout in seconds"
+           echo "  -s          Use systemd soft-reboot (preserves kernel state)"
+           echo "  -h          Show this help message"
+           exit 0;;
+        *) echo "Usage: tmt-reboot [-c COMMAND] [-t TIMEOUT] [-s] [-h]"
+           exit 1;;
     esac
 done
 
@@ -47,4 +56,4 @@ if [[ -f /root/EFI_BOOT_ENTRY.TXT ]]; then
     fi
 fi
 
-flock "$TMT_TEST_PIDFILE_LOCK" tmt-reboot-core "$command" "$timeout"
+flock "$TMT_TEST_PIDFILE_LOCK" tmt-reboot-core "$command" "$timeout" "$systemd_soft_reboot"

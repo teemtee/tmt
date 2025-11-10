@@ -1084,6 +1084,7 @@ OnProcessEndCallback = Callable[
 class CommandOutput:
     stdout: Optional[str]
     stderr: Optional[str]
+    returncode: int = 0
 
 
 class ShellScript:

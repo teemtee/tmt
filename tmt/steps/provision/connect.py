@@ -5,6 +5,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
+from tmt.steps.provision import RebootMode
 from tmt.utils import Command, ShellScript
 from tmt.utils.wait import Waiting
 
@@ -79,7 +80,7 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
 
     def reboot(
         self,
-        hard: bool = False,
+        mode: RebootMode = RebootMode.SOFT,
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
@@ -117,38 +118,43 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
 
         waiting = waiting or tmt.steps.provision.default_reboot_waiting()
 
-        if hard:
+        if mode == RebootMode.HARD:
             if self.hard_reboot is None:
-                raise tmt.steps.provision.RebootModeNotSupportedError(guest=self, hard=True)
+                raise tmt.steps.provision.RebootModeNotSupportedError(guest=self, mode=mode)
 
             self.debug(f"Hard reboot using the hard reboot command '{self.hard_reboot}'.")
 
             # ignore[union-attr]: mypy still considers `self.hard_reboot` as possibly
             # being `None`, missing the explicit check above.
             return self.perform_reboot(
+                mode,
                 lambda: self._run_guest_command(self.hard_reboot.to_shell_command()),  # type: ignore[union-attr]
                 waiting,
-                fetch_boot_time=False,
+                fetch_boot_mark=False,
             )
 
         if command is not None:
             return super().reboot(
-                hard=False,
+                mode=mode,
                 command=command,
                 waiting=waiting,
             )
 
-        if self.soft_reboot is not None:
-            self.debug(f"Soft reboot using the soft reboot command '{self.soft_reboot}'.")
+        if mode == RebootMode.SOFT:
+            if self.soft_reboot is not None:
+                self.debug(f"Soft reboot using the soft reboot command '{self.soft_reboot}'.")
 
-            # ignore[union-attr]: mypy still considers `self.soft_reboot` as possibly
-            # being `None`, missing the explicit check above.
-            return self.perform_reboot(
-                lambda: self._run_guest_command(self.soft_reboot.to_shell_command()),  # type: ignore[union-attr]
-                waiting,
-            )
+                # ignore[union-attr]: mypy still considers `self.soft_reboot` as possibly
+                # being `None`, missing the explicit check above.
+                return self.perform_reboot(
+                    mode,
+                    lambda: self._run_guest_command(self.soft_reboot.to_shell_command()),  # type: ignore[union-attr]
+                    waiting,
+                )
 
-        return super().reboot(hard=False, waiting=waiting)
+            return super().reboot(mode=mode, waiting=waiting)
+
+        return super().reboot(mode=mode, waiting=waiting)
 
     def start(self) -> None:
         """
