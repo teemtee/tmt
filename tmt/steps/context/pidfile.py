@@ -13,10 +13,14 @@ kill from `tmt-reboot`, and where to save additional reboot info.
     scripts, ``finish/ansible`` playbooks, and so on.
 
 To achieve these goals, tmt uses two wrappers, the inner and the outer
-one. The inner one wraps the actual action, e.g. a test script as defined
-in test metadata, the outer one then runs the inner wrapper while
-performing the necessary setup and accounting. tmt invokes the outer
-wrapper which then invokes the inner wrapper which then invokes the action.
+one. The inner one wraps the actual action: a test script as defined
+in test metadata, ``prepare/shell`` script, or ``ansible-playbook``
+invocation. The outer one then runs the inner wrapper while
+performing the necessary setup and accounting. The inner wrapper is
+driven by user-provided inputs, while the outer contains what tmt itself
+needs to do to correctly integrate the action with tmt. tmt invokes the
+outer wrapper which then invokes the inner wrapper which then invokes
+the action.
 
 The inner wrapper exists to give tmt a single command to run to invoke
 the action. Test or ``prepare`` script may be a single command, but also
@@ -49,28 +53,27 @@ this is probably not a problem in real-life scenarios: actions that
 are to be interrupted by out-of-session reboot are expecting this
 event, and they do not finish on their own.
 
-The ssh client always allocates a tty, so test timeout handling
-works (#1387). Because the allocated tty is generally not suitable
-for test execution, the wrapper uses `|& cat` to emulate execution
-without a tty. In certain cases, where test execution with available
-tty is required (#2381), the tty can be kept on request with
-the `tty: true` test attribute.
+The ssh client always allocates a tty, so the timeout handling works
+(#1387). Because the allocated tty is generally not suitable for the
+execution of test, or scripts in general, the wrapper uses `|& cat` to
+emulate execution without a tty. In certain cases, where the execution
+of given action with available tty is required (#2381), the tty can be
+enabled in the outer script.
 
-The outer wrapper handles 3 execution modes for the test command:
+The outer wrapper handles the following 3 execution modes:
 
-* In `tmt` interactive mode, stdin and stdout are unhandled, it is expected
+* In the interactive mode, stdin and stdout are unhandled, it is expected
   user interacts with the executed command.
-
-* In non-interactive mode without a tty, stdin is fed with /dev/null (EOF)
-  and `|& cat` is used to simulate no tty available for script output.
-
-* In non-interactive mode with a tty, stdin is available to the tests
-  and simulation of tty not available for output is not run.
+* In the non-interactive mode without a tty, stdin is fed with /dev/null
+  (EOF), and `|& cat` is used to simulate the "no tty available" for the
+  running action.
+* In the non-interactive mode with a tty, stdin is available to the
+  action, and the simulation of "tty not available" for output is not
+  run.
 """
 
 import functools
 import os
-import textwrap
 from typing import Any, Optional
 
 import jinja2
@@ -90,17 +93,13 @@ TEST_PIDFILE_LOCK_FILENAME = f'{TEST_PIDFILE_FILENAME}.lock'
 TEST_PIDFILE_ROOT = Path('/var/tmp')  # noqa: S108 insecure usage of temporary dir
 
 #: A template for the inner wrapper which invokes the action script.
-INNER_WRAPPER_TEMPLATE = jinja2.Template(
-    textwrap.dedent("""
+INNER_WRAPPER_TEMPLATE = jinja2.Template("""
 {{ ACTION }}
 """)
-)
 
 #: A template for the outer wrapper which handles most of the
 #: orchestration and invokes the inner wrapper.
-OUTER_WRAPPER_TEMPLATE = jinja2.Template(
-    textwrap.dedent(
-        """
+OUTER_WRAPPER_TEMPLATE = jinja2.Template("""
 {% macro log_to_dmesg(msg) %}
     {%- if not GUEST.facts.is_superuser %}
         {%- if GUEST.become %}
@@ -180,9 +179,7 @@ _exit_code="$?"
 
 # Return the original exit code of the test script
 exit $_exit_code
-"""  # noqa: E501
-    )
-)
+""")  # noqa: E501
 
 
 def effective_pidfile_root() -> Path:
