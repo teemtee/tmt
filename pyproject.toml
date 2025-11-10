@@ -122,20 +122,6 @@ source = "vcs"
 raw-options.version_scheme = "release-branch-semver"
 raw-options.git_describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--abbrev=9", "--match", "*[0-9]*"]
 
-[tool.hatch.build.targets.sdist]
-include = [
-    "/tmt",
-    "/LICENSE",
-    "/examples",
-    "/README.rst",
-    "/tests",
-    "/packaging",
-    "/plans",
-    "/docs",
-    "/completions",
-    "/.fmf",
-    ]
-
 [tool.hatch.envs.default]
 platforms = ["linux"]
 
