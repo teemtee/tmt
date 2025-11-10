@@ -34,7 +34,6 @@ Fixed an import issue for non-Linux users encountered in the ``mock`` plugin.
 Improved handling of download file name when downloading archives,
 leading to better support for downloading large files.
 
-
 tmt-1.60.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

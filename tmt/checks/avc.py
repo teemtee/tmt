@@ -70,9 +70,7 @@ INTERESTING_PACKAGES = ['audit', 'selinux-policy']
 DEFAULT_MESSAGE_TYPES = ['AVC', 'USER_AVC', 'SELINUX_ERR']
 
 #: Compiled regex pattern to match relevant AVC denial messages
-DENIAL_PATTERN = re.compile(
-    r'^type=(?:' + '|'.join(map(re.escape, DEFAULT_MESSAGE_TYPES)) + r')\b'
-)
+DENIAL_PATTERN = re.compile(rf"^type=(?:{'|'.join(map(re.escape, DEFAULT_MESSAGE_TYPES))})\b")
 
 
 SETUP_SCRIPT = jinja2.Template(
