@@ -1,7 +1,7 @@
 story: As a Fedora user I want to easily install tmt on my system.
 
 link:
-  - implemented-by: /tmt.spec
+  - implemented-by: /packaging/rpm/tmt.spec
   - documented-by: /docs/guide.rst
 
 /minimal:

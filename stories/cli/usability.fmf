@@ -23,4 +23,5 @@ story:
     summary: Support bash completion
     example: tmt st<tab> sh<tab>
     link:
-      - implemented-by: /tmt.spec
+      - implemented-by: /packaging/rpm/tmt.spec
+      - implemented-by: /completions/bash/tmt

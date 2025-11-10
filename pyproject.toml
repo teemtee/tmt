@@ -128,7 +128,7 @@ include = [
     "/examples",
     "/README.rst",
     "/tests",
-    "/tmt.spec",
+    "/packaging",
     "/docs",
     "/completions",
     "/.fmf",

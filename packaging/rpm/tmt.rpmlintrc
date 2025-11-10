@@ -1,0 +1,5 @@
+# The detach runner is intentionally not executable
+addFilter("python3-tmt.noarch: E: non-executable-script")
+
+# Examples have .fmf used to mark metadata root
+addFilter("tmt.noarch: W: hidden-file-or-dir")

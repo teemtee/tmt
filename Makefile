@@ -60,16 +60,16 @@ tarball: clean tmp build
 
 rpm: tarball ver2spec  ## Build RPMs
 	# If the build system is missing the required dependencies, use nosrc.rpm to install them
-	rpmbuild --define '_topdir $(TMP)' -bb tmt.spec || echo 'Hint: run `make deps` to install build dependencies'
+	rpmbuild --define '_topdir $(TMP)' -bb packaging/rpm/tmt.spec || echo 'Hint: run `make deps` to install build dependencies'
 
 srpm: tarball ver2spec  ## Build SRPM
-	rpmbuild --define '_topdir $(TMP)' -bs tmt.spec
+	rpmbuild --define '_topdir $(TMP)' -bs packaging/rpm/tmt.spec
 
 _deps:  # Minimal dependencies (common for 'deps' and 'develop' targets)
 	sudo dnf install -y hatch python3-devel python3-hatch-vcs rpm-build clang beakerlib
 
 build-deps: _deps tarball ver2spec  ## Install build dependencies
-	rpmbuild --define '_topdir $(TMP)' -br tmt.spec || sudo dnf builddep -y $(TMP)/SRPMS/tmt-*buildreqs.nosrc.rpm
+	rpmbuild --define '_topdir $(TMP)' -br packaging/rpm/tmt.spec || sudo dnf builddep -y $(TMP)/SRPMS/tmt-*buildreqs.nosrc.rpm
 
 packages: rpm srpm  ## Build RPM and SRPM packages
 
@@ -77,7 +77,7 @@ version:  ## Build tmt version for packaging purposes
 	hatch version
 
 ver2spec:
-	$(shell sed -E "s/^(Version:[[:space:]]*).*/\1$$(hatch version)/" -i tmt.spec)
+	$(shell sed -E "s/^(Version:[[:space:]]*).*/\1$$(hatch version)/" -i packaging/rpm/tmt.spec)
 
 ##
 ## Containers
