@@ -413,6 +413,21 @@ class EnvVarValue(str):
         )
 
 
+class HasEnvironment(abc.ABC):
+    """
+    A class that provides :py:attr:`environment` attribute.
+    """
+
+    @property
+    @abc.abstractmethod
+    def environment(self) -> 'Environment':
+        """
+        Environment variables this object wants to expose to user commands.
+        """
+
+        raise NotImplementedError
+
+
 class Environment(dict[str, EnvVarValue]):
     """
     Represents a set of environment variables.
@@ -885,6 +900,16 @@ class Environment(dict[str, EnvVarValue]):
 
     def copy(self) -> 'Environment':
         return Environment(self)
+
+    def update(  # type: ignore[override]
+        self, *others: Union[dict[str, EnvVarValue], HasEnvironment]
+    ) -> None:
+        for other in others:
+            if isinstance(other, dict):
+                super().update(other)
+
+            else:
+                super().update(other.environment)
 
     @classmethod
     def normalize(

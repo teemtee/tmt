@@ -10,7 +10,7 @@ import tmt.steps.scripts
 import tmt.utils
 from tmt.container import container
 from tmt.steps.provision import Guest
-from tmt.utils import Environment, EnvVarValue, Path, ShellScript
+from tmt.utils import Environment, EnvVarValue, HasEnvironment, Path, ShellScript
 from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 @container
-class RebootContext:
+class RebootContext(HasEnvironment):
     """
     Tracks information about guest reboots.
     """

@@ -4,14 +4,14 @@ import tmt.log
 import tmt.utils
 from tmt.container import container
 from tmt.steps.provision import Guest
-from tmt.utils import Environment, EnvVarValue
+from tmt.utils import Environment, EnvVarValue, HasEnvironment
 
 if TYPE_CHECKING:
     from tmt.steps.context.reboot import RebootContext
 
 
 @container
-class RestartContext:
+class RestartContext(HasEnvironment):
     """
     Tracks information about restarts of an action, e.g. a test script.
     """

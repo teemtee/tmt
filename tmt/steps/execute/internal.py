@@ -295,11 +295,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         environment = extra_environment.copy()
         environment.update(
-            {
-                **invocation.guest.environment,
-                **invocation.test.environment,
-            }
+            invocation.guest.environment,
+            invocation.test.environment,
         )
+
         assert self.parent is not None
         assert isinstance(self.parent, tmt.steps.execute.Execute)
         assert self.parent.plan.my_run is not None
@@ -316,16 +315,15 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             invocation.path / tmt.steps.execute.TEST_METADATA_FILENAME
         )
 
-        # Add variables from invocation contexts
-        environment.update(invocation.abort.environment)
-        environment.update(invocation.reboot.environment)
-        environment.update(invocation.restart.environment)
-        environment.update(invocation.pidfile.environment)
-        environment.update(invocation.restraint.environment)
-
-        # Add variables the framework wants to expose
         environment.update(
-            invocation.test.test_framework.get_environment_variables(invocation, logger)
+            # Add variables from invocation contexts
+            invocation.abort,
+            invocation.reboot,
+            invocation.restart,
+            invocation.pidfile,
+            invocation.restraint,
+            # Add variables the framework wants to expose
+            invocation.test.test_framework.get_environment_variables(invocation, logger),
         )
 
         return environment
