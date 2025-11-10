@@ -11,6 +11,9 @@ The :ref:`/plugins/test-checks/avc` check now supports
 ``ignore-pattern`` key to exclude specific AVC denials
 from being reported as failures.
 
+Enhanced data size unit validation to provide early detection and
+clear error messages for invalid data size units.
+
 
 tmt-1.61.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
