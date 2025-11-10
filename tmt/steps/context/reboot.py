@@ -92,7 +92,6 @@ class RebootContext:
         :return: ``True`` when the reboot has taken place, ``False``
             otherwise.
         """
-
         if not self.requested:
             return False
 
@@ -124,6 +123,7 @@ class RebootContext:
             reboot_data = json.loads(self.request_path.read_text())
 
             reboot_command: Optional[ShellScript] = None
+            systemd_soft_reboot = reboot_data.get('systemd_soft_reboot') == 'true'
 
             if reboot_data.get('command'):
                 with suppress(TypeError):
@@ -141,7 +141,14 @@ class RebootContext:
             self.guest.execute(ShellScript(f'rm -f {self.request_path}'))
 
             try:
-                rebooted = self.guest.reboot(hard=False, command=reboot_command, waiting=waiting)
+                if systemd_soft_reboot:
+                    rebooted = self.guest.reboot_systemd_soft(
+                        command=reboot_command, waiting=waiting
+                    )
+                else:
+                    rebooted = self.guest.reboot(
+                        hard=False, command=reboot_command, waiting=waiting
+                    )
 
             except tmt.utils.RunError:
                 if reboot_command is not None:
@@ -152,9 +159,23 @@ class RebootContext:
                 raise
 
             except tmt.steps.provision.RebootModeNotSupportedError:
-                self.logger.warning("Guest does not support soft reboot, trying hard reboot.")
+                if systemd_soft_reboot:
+                    self.logger.warning(
+                        "Guest does not support systemd soft reboot, trying regular soft reboot."
+                    )
 
-                rebooted = self.guest.reboot(hard=True, waiting=waiting)
+                    try:
+                        rebooted = self.guest.reboot(
+                            hard=False, command=reboot_command, waiting=waiting
+                        )
+                    except tmt.steps.provision.RebootModeNotSupportedError:
+                        self.logger.warning(
+                            "Guest does not support soft reboot, trying hard reboot."
+                        )
+                        rebooted = self.guest.reboot(hard=True, waiting=waiting)
+                else:
+                    self.logger.warning("Guest does not support soft reboot, trying hard reboot.")
+                    rebooted = self.guest.reboot(hard=True, waiting=waiting)
 
         if not rebooted:
             raise tmt.utils.RebootTimeoutError("Reboot timed out.")

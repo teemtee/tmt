@@ -2072,6 +2072,100 @@ class Guest(
 
         raise NotImplementedError
 
+    def reboot_systemd_soft(
+        self,
+        command: Optional[Union[Command, ShellScript]] = None,
+        waiting: Optional[Waiting] = None,
+    ) -> bool:
+        """
+        Perform a systemd soft reboot, and wait for the guest to recover.
+
+        Systemd soft reboot preserves the kernel and hardware state while
+        restarting userspace. The boot ID remains the same after a soft reboot.
+
+        :param command: a command to run on the guest to trigger the
+            soft reboot. Defaults to 'systemctl soft-reboot'.
+        :param waiting: amount of time in which the guest must become available
+            again.
+        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
+        """
+
+        waiting = waiting or default_reboot_waiting()
+
+        # Default command for systemd soft reboot
+        if not command:
+            command = ShellScript('systemctl soft-reboot')
+
+        # Check if systemd soft-reboot is supported
+        try:
+            check_result = self.execute(
+                ShellScript('systemctl --help | grep -q "soft-reboot"'), silent=True
+            )
+            if check_result.returncode != 0:
+                raise tmt.steps.provision.RebootModeNotSupportedError(
+                    guest=self,
+                    hard=False,
+                    message="systemctl soft-reboot is not supported on this guest",
+                )
+        except Exception as exc:
+            raise tmt.steps.provision.RebootModeNotSupportedError(
+                guest=self, hard=False, message="Cannot check for systemctl soft-reboot support"
+            ) from exc
+
+        # Store the current boot ID to detect systemd soft reboot completion
+        try:
+            boot_id_result = self.execute(
+                ShellScript('cat /proc/sys/kernel/random/boot_id'), silent=True
+            )
+            original_boot_id = boot_id_result.stdout.strip() if boot_id_result.stdout else ""
+        except Exception:
+            self.debug("Could not get boot ID, falling back to regular soft reboot detection")
+            return self.reboot(hard=False, command=command, waiting=waiting)
+
+        self.debug(f"Triggering systemd soft reboot with command '{command}'.")
+
+        # Execute the soft reboot command
+        try:
+            self.execute(command, silent=True)
+        except tmt.utils.RunError as error:
+            # Expected behavior for reboot commands - connection drops
+            if 'Connection' not in str(error):
+                raise
+
+        # Wait for the guest to come back
+        def check_systemd_soft_reboot_completion() -> bool:
+            try:
+                # Check if we can connect
+                self.execute(Command('whoami'), silent=True)
+
+                # Verify boot ID is the same (indicating soft reboot, not hard reboot)
+                boot_id_result = self.execute(
+                    ShellScript('cat /proc/sys/kernel/random/boot_id'), silent=True
+                )
+                current_boot_id = boot_id_result.stdout.strip() if boot_id_result.stdout else ""
+
+                # For systemd soft reboot, boot ID should be the same
+                if current_boot_id == original_boot_id:
+                    self.debug("Systemd soft reboot completed successfully (boot ID unchanged).")
+                    return True
+                self.debug(
+                    f"Boot ID changed from {original_boot_id} to {current_boot_id}, "
+                    "this might indicate a hard reboot occurred instead."
+                )
+                return True  # Still accept it as the guest is back up
+
+            except Exception:
+                # More time is needed, raise the appropriate exception
+                raise tmt.utils.wait.WaitingIncompleteError from None
+
+        try:
+            waiting.wait(check_systemd_soft_reboot_completion, self._logger)
+            self.debug("Systemd soft reboot completed successfully.")
+            return True
+        except tmt.utils.wait.WaitingTimedOutError:
+            self.debug("Systemd soft reboot timed out.")
+            return False
+
     def reconnect(
         self,
         wait: Optional[Waiting] = None,
