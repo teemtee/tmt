@@ -1,90 +1,86 @@
 """
-Artifact provider for repository files.
+Artifact provider for discovering RPMs from repository files.
 """
 
-from collections.abc import Iterator, Sequence
+import re
+from collections.abc import Sequence
+from pyexpat.errors import messages
 from re import Pattern
-from shlex import quote
 from typing import Optional
 from urllib.parse import unquote, urlparse
 
 import tmt.log
-from tmt.container import container
 from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     ArtifactProviderId,
-    DownloadError,
+    Repository,
+    provides_artifact_provider,
 )
 from tmt.steps.prepare.artifact.providers.koji import RpmArtifactInfo
 from tmt.steps.provision import Guest
-from tmt.utils import GeneralError, Path, ShellScript
+from tmt.utils import GeneralError, Path
 
 
-@container
-class RepositoryFile:
-    """
-    A helper class representing a repository .repo file from a URL.
-    """
-
-    url: str
-
-    def __post_init__(self) -> None:
-        """
-        Validates the URL format upon object creation.
-        """
-        try:
-            self._parsed_url = urlparse(self.url)
-            if not self._parsed_url.scheme or not self._parsed_url.netloc:
-                raise ValueError
-        except ValueError as exc:
-            raise GeneralError(f"Invalid URL format for .repo file: '{self.url}'.") from exc
-
-    @property
-    def filename(self) -> str:
-        """A suitable filename extracted from the URL path."""
-        return unquote(Path(self._parsed_url.path).name)
-
-    def __str__(self) -> str:
-        return self.filename
-
-
+# ignore[type-arg]: TypeVar in provider registry annotations is
+# puzzling for type checkers. And not a good idea in general, probably.
+@provides_artifact_provider('repository')  # type: ignore[arg-type]
 class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
     """
-    Sets up a repository on the guest and lists the RPMs it provides.
+    Provider for making RPM artifacts from a repository discoverable without downloading them.
 
-    The artifact_id is a URL to a .repo file. This provider's main
-    purpose is to download this file and place it in '/etc/yum.repos.d/'.
+    The provider identifier should start with 'repository-url:' followed by a URL to a .repo file,
+    e.g., "repository-url:https://download.docker.com/linux/centos/docker-ce.repo".
 
-    It then lists all RPMs made available by the new repository but does
-    not download any of them.
+    The provider downloads the .repo file to the guest's ``/etc/yum.repos.d/`` directory,
+    and lists RPMs available in the defined repositories without downloading them, acting as a
+    discovery-only provider. Artifacts are all available RPM packages listed in the repository.
+
+    :param raw_provider_id: The full provider identifier, starting with 'repository-url:'.
+    :param logger: Logger instance for outputting messages.
+    :raises GeneralError: If the .repo file URL is invalid.
     """
+
+    repository: Repository
+    _artifact_list: Optional[Sequence[RpmArtifactInfo]]
 
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
         super().__init__(raw_provider_id, logger)
-        self.repo_file = RepositoryFile(url=self.id)
-        # Cache for the list of RPMs discovered in the repository
-        self._rpm_list: list[RpmArtifactInfo] = []
+        # Initialize to None to distinguish between "not run" and "run but empty"
+        self._artifact_list = None
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
-        return raw_provider_id
-
-    def _fetch_rpms(self, guest: Guest, repo_filepath: Path) -> None:
-        """
-        Query the guest to find all packages available in the new repository.
-        """
-        # TODO: This method needs to be implemented to populate self._rpm_list with RPMs
-        # from the repository. Currently using an empty list as a temporary solution.
-        self._rpm_list = []
+        prefix = 'repository-url:'
+        if not raw_provider_id.startswith(prefix):
+            raise ValueError(f"Invalid repository provider format: '{raw_provider_id}'.")
+        value = raw_provider_id[len(prefix) :]
+        if not value:
+            raise ValueError("Missing repository URL.")
+        return value
 
     @property
     def artifacts(self) -> Sequence[RpmArtifactInfo]:
-        raise NotImplementedError
+        """
+        List all RPMs discovered from the repositories.
+
+        .. note::
+
+            The :py:meth:`fetch_contents` method must be called first to populate
+            the artifact list from the guest.
+        """
+        # Check for None to see if fetch_contents() has been called
+        if self._artifact_list is None:
+            raise tmt.utils.GeneralError("Call fetch_contents first to discover artifacts.")
+        # Return the list (which is valid even if it's empty)
+        return self._artifact_list
 
     def _download_artifact(
         self, artifact: RpmArtifactInfo, guest: Guest, destination: Path
     ) -> None:
-        """This provider only sets up the repo, it does not download RPMs."""
+        """This provider only discovers repos; it does not download individual RPMs."""
+        raise AssertionError(
+            "RepositoryFileProvider does not support downloading individual RPMs."
+        )
 
     def fetch_contents(
         self,
@@ -92,35 +88,116 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         download_path: tmt.utils.Path,
         exclude_patterns: Optional[list[Pattern[str]]] = None,
     ) -> list[tmt.utils.Path]:
-        """
-        Download the .repo file to the guest, making the repository available.
-
-        This method overrides the default behavior to prevent downloading
-        individual RPMs. It installs the repository, lists the available
-        packages for discovery, and then returns.
-        """
+        # Override the default behavior: instead of downloading artifacts,
+        # this method makes RPMs from the repository discoverable.
+        # TODO: Add support for src RPM's
 
         # 1. Install the repository file on the guest using info from our helper object
-        filename = self.repo_file.filename
-        url = self.repo_file.url
-        repo_dest = Path("/etc/yum.repos.d") / filename
+        self.repository = Repository.from_url(url=self.id, logger=self.logger)
 
-        sudo = "sudo " if not guest.facts.is_superuser else ""
-        self.logger.info(f"Installing repository '{url}' to '{repo_dest}'.")
+        # Install the repository using the guest's package manager
+        guest.package_manager.install_repository(self.repository)
 
-        try:
-            # TODO: Add retry Mechanism
-            guest.execute(
-                ShellScript(f"{sudo}curl -L --fail -o {quote(str(repo_dest))} {quote(url)}"),
-                silent=True,
-            )
-        except GeneralError as error:
-            raise DownloadError(f"Failed to download repository file to '{repo_dest}'.") from error
+        # Load the artifacts using list_packages
+        package_list = guest.package_manager.list_packages(self.repository)
 
-        # 2. Populate the RPM list for discovery purposes
-        self._fetch_rpms(guest, repo_dest)
+        # Initialize the list before populating
+        self._artifact_list = []
 
-        self.logger.info("Repository setup is complete.")
-        # 3. Return list of available Artifacts
-        # TODO: Finalize contract of what needs to be returned from Artifact Repository
+        for pkg in package_list:
+            try:
+                # Use the new utility function to parse the package string
+                raw_artifact = {**parse_rpm_string(pkg_string=pkg), "url": self.id}
+                self._artifact_list.append(RpmArtifactInfo(_raw_artifact=raw_artifact))
+            except ValueError as error:
+                # Catches both regex failing to match (ValueError)
+                # or an explicit ValueError raised by the utility function.
+                tmt.utils.show_exception_as_warning(
+                    exception=error,
+                    message=f"Failed to parse malformed package string '{pkg}'. Skipping.",
+                    logger=self.logger,
+                )
+                continue
+
+            except Exception as error:
+                # Catch any other unexpected errors
+                tmt.utils.show_exception_as_warning(
+                    exception=error,
+                    message=f"Unexpected error while parsing package '{pkg}': {error}.",
+                    logger=self.logger,
+                )
+                continue
+
+        self.logger.debug(f"Successfully discovered '{len(self._artifact_list)}' artifacts.")
+
         return []
+
+
+# FIXME: Make this function more robust. The current regex-based parsing
+# is a "happy path" implementation and will fail on complex or
+# unusually-named packages. This is acceptable for now but should
+# be hardened later
+# Regex to parse N-E:V-R.A format.
+# Groups: 1:Name, 3:Epoch (optional), 4:Version, 5:Release, 6:Arch
+_PKG_REGEX = re.compile(
+    r"""
+    ^                                   # must match the whole string
+    (?P<name>[^:]+)                     # Name (one or more characters except colon)
+    -                                   # literal hyphen
+    ((?P<epoch>\d+):)?                  # optional group: epoch (one or more digits)
+                                        # followed by colon
+    (?P<version>[^-:]*\d[^-:]*)         # Version (zero or more non-hyphen/colon,
+                                        # at least one digit, zero or more non-hyphen/colon)
+    -                                   # literal hyphen
+    (?P<release>[^-]+)                  # Release (one or more non-hyphen characters)
+    \.                                  # literal dot
+    (?P<arch>[^.]+)                     # Arch (one or more non-dot characters)
+    """,
+    re.VERBOSE,
+)
+
+
+def parse_rpm_string(pkg_string: str) -> dict[str, str]:
+    """
+    Parses a full RPM package string (N-E:V-R.A) into its components.
+
+    :param pkg_string: The package string, e.g., "docker-ce-1:20.10.7-3.el8.x86_64".
+    :raises ValueError: if the package string is malformed.
+    :return: A dictionary of RPM components.
+    """
+
+    # 1. Match the package string against the regex
+    match = _PKG_REGEX.fullmatch(pkg_string)
+
+    if not match:
+        raise ValueError(f"String '{pkg_string}' does not match N-E:V-R.A format")
+
+    # 2. Extract the named parts
+    # Non-optional groups are guaranteed to be strings.
+    name = match.group('name')
+    version = match.group('version')
+    release = match.group('release')
+    arch = match.group('arch')
+
+    # Optional epoch group can be None
+    epoch = match.group('epoch')
+    if epoch is None:
+        epoch = '0'
+    # TODO: Add support for source rpms
+    # Filter out source RPMs
+    # If the architecture is 'src', this is a source package and should
+    # be skipped. Raising ValueError ensures it's caught and logged.
+    if arch == 'src':
+        raise ValueError(f"Package '{pkg_string}' is a source RPM. Skipping.")
+
+    # Reconstruct NVR (Name-Version-Release)
+    nvr = f"{name}-{version}-{release}"
+
+    return {
+        'name': name,
+        'epoch': epoch,
+        'version': version,
+        'release': release,
+        'arch': arch,
+        'nvr': nvr,
+    }
