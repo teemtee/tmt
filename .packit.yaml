@@ -153,7 +153,6 @@ jobs:
 
   # Test virtual & bootc provision plugins
   - <<: *test-base
-    <<: *internal
     <<: *require-full-tests
     identifier: provision
     tmt_plan: '/plans/provision/(bootc|virtual)'
@@ -162,6 +161,7 @@ jobs:
         - tmt:
             context:
               how: provision
+          <<: *copr-teemtee-stable
           <<: *tmt-cloud-resources
     # Temporarily running these on F42 because tests started to break due to avc on F43
     # TODO: Move revert this targets overwrite
