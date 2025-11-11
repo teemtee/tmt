@@ -877,9 +877,9 @@ class Environment(dict[str, EnvVarValue]):
 
         .. code-block:: python
 
-            >>> Environment({'FOO': EnvVarValue('bar'), 'BAZ': EnvVarValue('qu ux')}).to_shell()
+            >>> Environment({'FOO': EnvVarValue('bar'), 'BAZ': EnvVarValue('qu ux')}).to_shell_exports()
             [ShellScript("export FOO=bar"), ShellScript("export BAZ='qu ux'")]
-        """
+        """  # noqa: E501
 
         return [ShellScript(f'export {variable}') for variable in self.to_shell()]
 
