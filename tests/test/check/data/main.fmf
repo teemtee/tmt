@@ -113,10 +113,10 @@
 
     /harmless:
       test: /bin/true
-      order: 100
+      order: 30
 
     /nasty:
-      test: |
+      test: &nasty |
         set -x
         systemctl status auditd || /bin/true
         systemctl start auditd
@@ -124,6 +124,16 @@
         sudo bash -c "passwd --help &> /root/passwd.log; \
                       ls -alZ /root/passwd.log; \
                       rm -f /root/passwd.log" || /bin/true
+      order: 10
+
+    /ignored:
+      test: *nasty
+      order: 20
+      check:
+        - how: avc
+          test-method: checkpoint
+          ignore-pattern:
+            - 'type=AVC.*comm=passwd'
 
   /timestamp:
     check:
@@ -132,17 +142,20 @@
 
     /harmless:
       test: /bin/true
-      order: 100
+      order: 30
 
     /nasty:
-      test: |
-        set -x
-        systemctl status auditd || /bin/true
-        systemctl start auditd
-        sleep 10
-        sudo bash -c "passwd --help &> /root/passwd.log; \
-                      ls -alZ /root/passwd.log; \
-                      rm -f /root/passwd.log" || /bin/true
+      test: *nasty
+      order: 10
+
+    /ignored:
+      test: *nasty
+      order: 20
+      check:
+        - how: avc
+          test-method: timestamp
+          ignore-pattern:
+            - 'type=AVC.*comm=passwd'
 
 /coredump:
     check:

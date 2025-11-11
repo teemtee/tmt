@@ -1,7 +1,9 @@
 import datetime
 import enum
+import re
 import textwrap
 import time
+from re import Pattern
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import jinja2
@@ -64,6 +66,12 @@ AUSEARCH_MARK_FILENAME = 'avc-mark.txt'
 #: part of the report.
 INTERESTING_PACKAGES = ['audit', 'selinux-policy']
 
+#: Default message types to be collected by ausearch
+DEFAULT_MESSAGE_TYPES = ['AVC', 'USER_AVC', 'SELINUX_ERR']
+
+#: Compiled regex pattern to match relevant AVC denial messages
+DENIAL_PATTERN = re.compile(rf"^type=(?:{'|'.join(map(re.escape, DEFAULT_MESSAGE_TYPES))})\b")
+
 
 SETUP_SCRIPT = jinja2.Template(
     textwrap.dedent("""
@@ -73,7 +81,7 @@ export LC_ALL=C
 {% if CHECK.test_method.value == 'timestamp' %}
 echo "export AVC_SINCE=\\"$( date "+%x %H:%M:%S")\\"" > {{ MARK_FILEPATH }}
 {% else %}
-ausearch --input-logs --checkpoint {{ MARK_FILEPATH }} -m AVC -m USER_AVC -m SELINUX_ERR
+ausearch --input-logs --checkpoint {{ MARK_FILEPATH }} -m {{ MESSAGE_TYPES | join(',') }}
 {% endif %}
 
 cat {{ MARK_FILEPATH }}
@@ -88,10 +96,9 @@ export LC_ALL=C
 
 {% if CHECK.test_method.value == 'timestamp' %}
 source {{ MARK_FILEPATH }}
-ausearch -i --input-logs -m AVC -m USER_AVC -m SELINUX_ERR -ts $AVC_SINCE
+ausearch -i --input-logs -m {{ MESSAGE_TYPES | join(',') }} -ts $AVC_SINCE
 {% else %}
-cat {{ MARK_FILEPATH }}
-ausearch --input-logs --checkpoint {{ MARK_FILEPATH }} -m AVC -m USER_AVC -m SELINUX_ERR -i -ts checkpoint
+ausearch --input-logs --checkpoint {{ MARK_FILEPATH }} -m {{ MESSAGE_TYPES | join(',') }} -i -ts checkpoint
 {% endif %}
 """  # noqa: E501
     )
@@ -207,7 +214,11 @@ def create_ausearch_mark(
     report: list[str] = []
 
     script = ShellScript(
-        SETUP_SCRIPT.render(CHECK=check, MARK_FILEPATH=ausearch_mark_filepath).strip()
+        SETUP_SCRIPT.render(
+            CHECK=check,
+            MARK_FILEPATH=ausearch_mark_filepath,
+            MESSAGE_TYPES=DEFAULT_MESSAGE_TYPES,
+        ).strip()
     )
 
     output, exc = _run_script(invocation=invocation, script=script, logger=logger)
@@ -287,7 +298,11 @@ def create_final_report(
 
     # Finally, run `ausearch`, to list AVC denials from the time the test started.
     script = ShellScript(
-        TEST_SCRIPT.render(CHECK=check, MARK_FILEPATH=ausearch_mark_filepath).strip()
+        TEST_SCRIPT.render(
+            CHECK=check,
+            MARK_FILEPATH=ausearch_mark_filepath,
+            MESSAGE_TYPES=DEFAULT_MESSAGE_TYPES,
+        ).strip()
     )
 
     output, exc = _run_script(invocation=invocation, script=script, needs_sudo=True, logger=logger)
@@ -298,11 +313,40 @@ def create_final_report(
         assert output is not None
 
         got_ausearch = True
-        got_denials = True
 
-        failure = list(render_command_report(label='ausearch', output=output))
-        report += failure
-        failures.append('\n'.join(failure))
+        # Include all failures in the report, even those that would be ignored later.
+        report += list(render_command_report(label='ausearch', output=output))
+
+        if output.stdout:
+            # ausearch returns complete audit events which could contain multiple message types.
+            # Filter them to keep only message types we are interested in.
+            denials = [line for line in output.stdout.splitlines() if DENIAL_PATTERN.match(line)]
+            if denials and check.ignore_pattern:
+                filtered_denials: list[str] = []
+                for denial in denials:
+                    matching_pattern = next(
+                        (pattern for pattern in check.ignore_pattern if pattern.search(denial)),
+                        None,
+                    )
+                    if matching_pattern:
+                        logger.info(
+                            "Ignoring AVC denial due to pattern match: "
+                            f"'{matching_pattern.pattern}'"
+                        )
+                        logger.debug(f"Full ignored AVC denial: {denial}")
+                    else:
+                        filtered_denials.append(denial)
+                denials = filtered_denials
+            if denials:
+                got_denials = True
+                failures.append(
+                    '\n'.join(
+                        render_command_report(
+                            label='ausearch',
+                            output=CommandOutput(stdout='\n'.join(denials), stderr=output.stderr),
+                        )
+                    )
+                )
 
     else:
         failure = _report_failure('ausearch', exc)
@@ -360,11 +404,29 @@ class AvcCheck(Check):
         normalize=tmt.utils.normalize_int,
     )
 
+    ignore_pattern: list[Pattern[str]] = field(
+        default_factory=list,
+        help="""
+             Optional list of regular expressions to ignore in AVC denials.
+             If an AVC denial matches any of these patterns, it will be ignored
+             and not cause a failure. Any other denials will still cause the test
+             to fail. If no patterns are specified, any denial will cause a failure.
+             """,
+        metavar="PATTERN",
+        normalize=tmt.utils.normalize_pattern_list,
+        exporter=lambda patterns: [pattern.pattern for pattern in patterns],
+        serialize=lambda patterns: [pattern.pattern for pattern in patterns],
+        unserialize=lambda serialized: [re.compile(pattern) for pattern in serialized],
+    )
+
     # TODO: fix `to_spec` of `Check` to support nested serializables
     def to_spec(self) -> _RawCheck:
         spec = super().to_spec()
 
         spec['test-method'] = self.test_method.value  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
+        spec['ignore-pattern'] = [  # type: ignore[reportGeneralTypeIssues,typeddict-unknown-key,unused-ignore]
+            pattern.pattern for pattern in self.ignore_pattern
+        ]
 
         return spec
 
