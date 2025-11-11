@@ -251,11 +251,18 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
     def _rpm_url(self, rpm_meta: dict[str, str]) -> str:
         """Construct Koji RPM URL."""
+        assert self.build_info is not None
+        package_name = self.build_info["package_name"]
         name = rpm_meta["name"]
         version = rpm_meta["version"]
         release = rpm_meta["release"]
         arch = rpm_meta["arch"]
-        path = f"packages/{name}/{version}/{release}/{arch}/{name}-{version}-{release}.{arch}.rpm"
+        path = (
+            f"packages/{package_name}/"
+            f"{version}/{release}/"
+            f"{arch}/"
+            f"{name}-{version}-{release}.{arch}.rpm"
+        )
         return urljoin(self._top_url, path)
 
     def make_rpm_artifact(self, rpm_meta: dict[str, str]) -> RpmArtifactInfo:
