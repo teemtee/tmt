@@ -22,6 +22,9 @@ properties:
   name:
     type: string
 
+  summary:
+    $ref: "/schemas/core#/definitions/summary"
+
   url:
     $ref: "/schemas/common#/definitions/fmf_id/properties/url"
 
@@ -112,6 +115,15 @@ properties:
 
   adjust-tests:
     $ref: "/schemas/core#/definitions/adjust"
+
+  upgrade-path:
+    type: string
+
+  repository:
+    type: string
+
+  revision:
+    type: string
 
 required:
   - how
