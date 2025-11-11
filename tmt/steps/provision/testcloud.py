@@ -238,8 +238,9 @@ def normalize_memory_size(
     # Handle string inputs that might be just numbers (add MB unit)
     if isinstance(value, str):
         try:
-            magnitude = int(value)
-            return tmt.utils.normalize_data_amount(key_address, f'{magnitude} MB', logger)
+            if value.isdigit():
+                value = f"{value} MB"
+            return tmt.utils.normalize_data_amount(key_address, value, logger)
         except ValueError:
             # String contains units, pass through to normalize_data_amount
             return tmt.utils.normalize_data_amount(key_address, value, logger)
