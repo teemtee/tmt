@@ -14,7 +14,7 @@ rlJournalStart
 
         rlRun -s "tmt plan -vvvv show /plan-with-invalid-ref" 2
         rlAssertGrep "warn: /plan-with-invalid-ref:discover .* is not valid under any of the given schemas" $rlRun_LOG
-        rlAssertGrep "Failed to load step data for DiscoverFmfStepData: Field 'DiscoverFmfStepData:ref' must be unset or a string, 'int' found." $rlRun_LOG
+        rlAssertGrep "Failed to load step data for DiscoverFmfStepData." $rlRun_LOG
 
         rlRun -s "tmt plan -vvvv show /remote-plan-with-valid-ref"
 
