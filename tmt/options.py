@@ -268,7 +268,6 @@ FEELING_SAFE_OPTION: list[ClickOptionDecoratorType] = [
 IMPORT_BEFORE_FILTER_OPTION: list[ClickOptionDecoratorType] = [
     option(
         '--import-before-filter',
-        metavar='IMPORT_BEFORE_FILTER',
         envvar='TMT_IMPORT_BEFORE_FILTER',
         is_flag=True,
         default=False,

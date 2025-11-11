@@ -2068,7 +2068,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
     @property
     def import_before_filter(self) -> bool:
         """
-        Whether to mport all external plans before applying filters
+        Whether to import all external plans before applying filters
         """
 
         # Note: we do not really need to expose this all across, but `_get_cli_flag` does not
