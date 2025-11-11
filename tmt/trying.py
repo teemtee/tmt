@@ -293,7 +293,7 @@ class Try(tmt.utils.Common):
         # Check user config for custom default plans. Search for all
         # plans starting with the default user plan name (there might be
         # more than just one).
-        config_tree = tmt.config.Config(self._logger).fmf_tree
+        config_tree = tmt.config.Config(self._logger).tree
         if config_tree is not None:
             plan_name = re.escape(USER_PLAN_NAME)
             # cast: once fmf is properly annotated, cast() would not be needed.
