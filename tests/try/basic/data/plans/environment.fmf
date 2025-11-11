@@ -1,0 +1,10 @@
+/plan:
+    provision:
+        how: local
+
+    execute:
+        how: tmt
+
+/test:
+    test: echo "TEST_VAR=$TEST_VAR VAR2=$VAR2 VAR3=$VAR3"
+    summary: Test environment variables
