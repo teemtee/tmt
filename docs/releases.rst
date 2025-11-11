@@ -11,6 +11,11 @@ The :ref:`/plugins/test-checks/avc` check now supports
 ``ignore-pattern`` key to exclude specific AVC denials
 from being reported as failures.
 
+Introduced option ``--import-before-filter`` and equivalent environment
+variable ``TMT_IMPORT_BEFORE_FILTER`` which imports all remote plans
+before applying filters such as in ``tmt plans ls <name>``. This is
+**required** for the filtering to properly work with
+``importing: become-parent`` option.
 
 tmt-1.61.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
