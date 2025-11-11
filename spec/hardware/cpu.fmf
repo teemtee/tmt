@@ -95,7 +95,7 @@ description: |
             threads: 4
             processors: 4
             cores-per-socket: 1
-            thread-per-core: 1
+            threads-per-core: 1
 
         Another example:
 
@@ -123,8 +123,8 @@ description: |
             processors: 14
             cores-per-socket: 12
 
-        ``thread-per-core`` will be left undefined, because of the custom
-        CPU topology: only some cores support and enable hypert-hreading,
+        ``threads-per-core`` will be left undefined, because of the custom
+        CPU topology: only some cores support and enable hyper-threading,
         therefore a simple multiplier is not applicable.
 
     See e.g. https://www.cpu-world.com/ for information on family, model,
