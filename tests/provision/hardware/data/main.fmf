@@ -87,3 +87,11 @@
               - or:
                 - memory: "4 GB"
                 - memory: "5 GB"
+
+/plan/invalid-data-size:
+    discover:
+        how: shell
+    provision:
+        how: local
+        hardware:
+            memory: "32 M"  # Invalid unit - should cause early exit
