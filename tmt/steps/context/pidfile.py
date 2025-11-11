@@ -2,9 +2,9 @@
 Pidfile handling.
 
 tmt must make sure running a script must allow for multiple external
-factors: the test timeout, interactivity, reboots and `tmt-reboot`
+factors: the test timeout, interactivity, reboots and ``tmt-reboot``
 invocations. tmt must present consistent info on what is the PID to
-kill from `tmt-reboot`, and where to save additional reboot info.
+kill from ``tmt-reboot``, and where to save additional reboot info.
 
 .. note::
 
@@ -33,17 +33,17 @@ For the duration of the action, the outer wrapper creates so-called
 "pidfile". The pidfile contains outer wrapper PID and path to the
 reboot-request file corresponding to the action being run. All actions
 against the pidfile must be taken while holding the pidfile lock,
-to serialize access between the wrapper and `tmt-reboot`. The file
+to serialize access between the wrapper and ``tmt-reboot``. The file
 might be missing, that's allowed, but if it exists, it must contain
 correct info.
 
 Before quitting the outer wrapper, the pidfile is removed. There seems
-to be an apparent race condition: action quits -> `tmt-reboot` is
+to be an apparent race condition: action quits -> ``tmt-reboot`` is
 called from a parallel session, grabs a pidfile lock, inspects
 pidfile, updates reboot-request, and sends signal to designed PID
 -> wrapper grabs the lock & removes the pidfile. This leaves us
-with `tmt-reboot` sending signal to non-existent PID - which is
-reported by `tmt-reboot`, "try again later" - and reboot-request
+with ``tmt-reboot`` sending signal to non-existent PID - which is
+reported by ``tmt-reboot``, "try again later" - and reboot-request
 file signaling reboot is needed *after the action is done*.
 
 This cannot be solved without the action being involved in the reboot,
@@ -55,7 +55,7 @@ event, and they do not finish on their own.
 
 The ssh client always allocates a tty, so the timeout handling works
 (#1387). Because the allocated tty is generally not suitable for the
-execution of test, or scripts in general, the wrapper uses `|& cat` to
+execution of test, or scripts in general, the wrapper uses ``|& cat`` to
 emulate execution without a tty. In certain cases, where the execution
 of given action with available tty is required (#2381), the tty can be
 enabled in the outer script.
@@ -64,9 +64,9 @@ The outer wrapper handles the following 3 execution modes:
 
 * In the interactive mode, stdin and stdout are unhandled, it is expected
   user interacts with the executed command.
-* In the non-interactive mode without a tty, stdin is fed with /dev/null
-  (EOF), and `|& cat` is used to simulate the "no tty available" for the
-  running action.
+* In the non-interactive mode without a tty, stdin is fed with
+  ``/dev/null`` (EOF), and ``|& cat`` is used to simulate the "no tty
+  available" for the running action.
 * In the non-interactive mode with a tty, stdin is available to the
   action, and the simulation of "tty not available" for output is not
   run.
