@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 JSON: 'TypeAlias' = Any
 DEFAULT_LOG_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('1 MB')
 DEFAULT_TRACEBACK_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('50 kB')
+# https://reportportal.io/docs/log-data-in-reportportal/ImportDataToReportPortal
 MAX_LOG_SIZE_LIMIT: 'Size' = tmt.hardware.UNITS('32MB')
 
 DEFAULT_LOG_PATTERNS: list[Pattern[str]] = [
