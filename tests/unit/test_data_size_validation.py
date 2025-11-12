@@ -11,11 +11,11 @@ from tmt.utils import NormalizationError
 
 
 @pytest.mark.parametrize(
-    "size_str", ["32 MB", "500 kB", "2 MiB", "1024 B", "5 GB", "2 GiB", "1 TB", "1 TiB"]
+    "size", ["32 MB", "500 kB", "2 MiB", "1024 B", "5 GB", "2 GiB", "1 TB", "1 TiB"]
 )
-def test_valid_string_sizes(root_logger, size_str):
+def test_valid_string_sizes(root_logger, size):
     """Test that valid string size values are normalized correctly"""
-    result = tmt.utils.normalize_data_amount("test.field", size_str, root_logger)
+    result = tmt.utils.normalize_data_amount("test.field", size, root_logger)
 
     # Check that result already has bytes dimension (not converting, but checking dimension)
     assert result.dimensionality == tmt.hardware.UNITS('1 byte').dimensionality

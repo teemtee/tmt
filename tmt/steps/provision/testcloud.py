@@ -257,7 +257,7 @@ def normalize_disk_size(key_address: str, value: Any, logger: tmt.log.Logger) ->
         return tmt.utils.normalize_data_amount(key_address, f'{value} GB', logger)
 
     if isinstance(value, str):
-        if value.isdigit():
+        if int(value):
             value = f"{value} GB"
         return tmt.utils.normalize_data_amount(key_address, value, logger)
 
