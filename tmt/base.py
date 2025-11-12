@@ -3052,6 +3052,23 @@ class Plan(
 
         yield LinterOutcome.PASS, 'no empty environment files'
 
+    def lint_step_data_is_valid(self) -> LinterReturn:
+        """
+        P009: step phases have valid data
+        """
+        passed = True
+        for step in self.steps(enabled_only=False):
+            # Replicate the initialization inside step._normalize_data
+            for raw_data in step._raw_data:
+                try:
+                    step._plugin_base_class.delegate(step, raw_data=raw_data)
+                except Exception:
+                    passed = False
+                    fail_msg = f"{step} step has invalid data for phase '{raw_data['name']}'"
+                    yield LinterOutcome.FAIL, fail_msg
+        if passed:
+            yield LinterOutcome.PASS, "All step data is valid"
+
     def wake(self) -> None:
         """
         Wake up all steps
