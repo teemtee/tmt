@@ -379,15 +379,7 @@ class FmfContext(dict[str, list[str]]):
                 - ppc64
         """
 
-        normalized: FmfContext = FmfContext()
-
-        for dimension, values in spec.items():
-            if isinstance(values, list):
-                normalized[str(dimension)] = [str(v) for v in values]
-            else:
-                normalized[str(dimension)] = [str(values)]
-
-        return normalized
+        return cls.from_serialized(spec)
 
     @classmethod
     def from_spec(cls, key_address: str, spec: Any, logger: tmt.log.Logger) -> 'FmfContext':
@@ -417,6 +409,22 @@ class FmfContext(dict[str, list[str]]):
         """
 
         return dict(self)
+
+    @classmethod
+    def from_serialized(cls, spec: dict[str, Union[str, list[str]]]) -> 'FmfContext':
+        """
+        Convert from a serialized form.
+        """
+
+        context: FmfContext = FmfContext()
+
+        for dimension, values in spec.items():
+            if isinstance(values, list):
+                context[str(dimension)] = [str(v) for v in values]
+            else:
+                context[str(dimension)] = [str(values)]
+
+        return context
 
 
 #: A type of environment variable name.

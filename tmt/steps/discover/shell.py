@@ -177,6 +177,9 @@ class TestDescription(
 
         return data
 
+    def to_minimal_spec(self) -> dict[str, Any]:
+        return {key: value for key, value in self.to_spec().items() if value not in (None, [], {})}
+
 
 @container
 class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
@@ -210,11 +213,13 @@ class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
         """
 
         data = super().to_spec()
-        # ignore[typeddict-unknown-key]: the `tests` key is unknown to generic raw step data,
-        # but it's right to be here.
-        data['tests'] = [  # type: ignore[typeddict-unknown-key]
-            test.to_spec() for test in self.tests
-        ]
+        data['tests'] = [test.to_spec() for test in self.tests]
+
+        return data
+
+    def to_minimal_spec(self) -> tmt.steps._RawStepData:
+        data = super().to_minimal_spec()
+        data['tests'] = [test.to_minimal_spec() for test in self.tests]
 
         return data
 
