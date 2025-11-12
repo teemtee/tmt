@@ -253,11 +253,9 @@ def normalize_disk_size(key_address: str, value: Any, logger: tmt.log.Logger) ->
     if value is None:
         return None
 
-    # Handle integer inputs with default GB unit
     if isinstance(value, int):
         return tmt.utils.normalize_data_amount(key_address, f'{value} GB', logger)
 
-    # Handle string inputs that might be just numbers (add GB unit)
     if isinstance(value, str):
         if value.isdigit():
             value = f"{value} GB"
