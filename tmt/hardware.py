@@ -726,7 +726,7 @@ class SizeConstraint(Constraint):
         try:
             constraint.value.to('bytes')
 
-        except pint.errors.DimensionalityError as exc:
+        except pint.errors.PintError as exc:
             raise ParseError(
                 constraint_name=name,
                 raw_value=raw_value,
