@@ -2228,6 +2228,39 @@ class Plan(
 
         return next(self._test_serial_number_generator)
 
+    def create_plugin_data_instances_for_lint(self) -> None:
+        """
+        Create plugin data instances for all steps to trigger normalization.
+
+        This method is called during lint to ensure that normalization callbacks
+        are executed without creating full plugin instances. This enables
+        normalize methods to be called during linting.
+        """
+        # Access the data property of each step to trigger plugin data creation
+        # This will cause _normalize_data to be called, which creates plugin instances
+        # and their data objects, triggering normalization callbacks
+        steps = [
+            self.discover,
+            self.provision,
+            self.prepare,
+            self.execute,
+            self.report,
+            self.finish,
+            self.cleanup,
+        ]
+
+        for step in steps:
+            # Accessing step.data triggers lazy loading and normalization
+            # We catch and log any exceptions that might occur during plugin
+            # instantiation since we only care about normalization, not full plugin setup
+            try:
+                _ = step.data
+            except Exception as exc:
+                # Plugin creation might fail during lint due to missing dependencies
+                # or configuration issues, but we want to continue with normalization
+                # for other plugins that can be created successfully
+                self._logger.fail(str(exc))
+
     #
     # Plan environment and its components
     #

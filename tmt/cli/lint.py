@@ -83,6 +83,11 @@ def _lint_class(
     )
 
     for lintable in klass.from_tree(context.obj.tree):
+        # For Plan objects, create plugin data instances to trigger normalization
+        # This ensures normalize_ methods are called during lint
+        if isinstance(lintable, tmt.base.Plan):
+            lintable.create_plugin_data_instances_for_lint()
+
         valid, allowed_rulings = _apply_linters(
             lintable, linters, failed_only, enforce_checks, outcomes
         )
@@ -127,6 +132,13 @@ def _lint_collection(
     )
 
     objs: list[tmt.base.Core] = [obj for cls in klasses for obj in cls.from_tree(context.obj.tree)]
+
+    # For Plan objects, create plugin data instances to trigger normalization
+    # This ensures normalize_ methods are called during lint
+    for obj in objs:
+        if isinstance(obj, tmt.base.Plan):
+            obj.create_plugin_data_instances_for_lint()
+
     lintable = tmt.base.LintableCollection(objs)
 
     valid, allowed_rulings = _apply_linters(
