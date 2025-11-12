@@ -15,6 +15,7 @@ import tmt.utils
 import tmt.utils.git
 from tmt._compat.typing import Self
 from tmt.container import SerializableContainer, SpecBasedContainer, container, field
+from tmt.recipe import Recipe
 from tmt.steps.prepare.distgit import insert_to_prepare_step
 from tmt.utils import (
     Command,
@@ -370,7 +371,6 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         """
 
         super().go(logger=logger)
-        tests = fmf.Tree({'summary': 'tests'})
 
         testdir = self.phase_workdir / "tests"
 
@@ -405,43 +405,6 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                             "used only when fmf root is the same as git root."
                         )
                     self.run(Command("rsync", "-ar", f"{git_root}/.git", testdir))
-
-        # Check and process each defined shell test
-        for data in self.data.tests:
-            # Create data copy (we want to keep original data for save()
-            data = copy.deepcopy(data)
-            # Extract name, make sure it is present
-            # TODO: can this ever happen? With annotations, `name: str` and `test: str`, nothing
-            # should ever assign `None` there and pass the test.
-            if not data.name:
-                raise tmt.utils.SpecificationError(
-                    f"Missing test name in '{self.step.plan.name}'."
-                )
-            # Make sure that the test script is defined
-            if not data.test:
-                raise tmt.utils.SpecificationError(
-                    f"Missing test script in '{self.step.plan.name}'."
-                )
-            # Prepare path to the test working directory (tree root by default)
-            data.path = f"/tests{data.path}" if data.path else '/tests'
-            # Apply default test duration unless provided
-            if not data.duration:
-                data.duration = tmt.base.DEFAULT_TEST_DURATION_L2
-            # Add source dir path variable
-            if self.data.dist_git_source:
-                data.environment['TMT_SOURCE_DIR'] = EnvVarValue(sourcedir)
-
-            # Create a simple fmf node, with correct name. Emit only keys and values
-            # that are no longer default. Do not add `name` itself into the node,
-            # it's not a supported test key, and it's given to the node itself anyway.
-            # Note the exception for `duration` key - it's expected in the output
-            # even if it still has its default value.
-            test_fmf_keys: dict[str, Any] = {
-                key: value
-                for key, value in data.to_spec().items()
-                if key != 'name' and (key == 'duration' or value != data.default(key))
-            }
-            tests.child(data.name, test_fmf_keys)
 
         if self.data.dist_git_source:
             assert self.step.plan.my_run is not None  # narrow type
@@ -485,10 +448,10 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             except Exception as error:
                 raise tmt.utils.DiscoverError("Failed to process 'dist-git-source'.") from error
 
-        # Use a tmt.Tree to apply possible command line filters
-        self._tests = tmt.Tree(logger=self._logger, tree=tests).tests(
-            conditions=["manual is False"], sort=False
-        )
+        if self.step.plan.my_run and self.step.plan.my_run.recipe:
+            self._tests = self.discover_from_recipe(self.step.plan.my_run.recipe)
+        else:
+            self._tests = self.do_the_discovery(sourcedir=sourcedir)
 
         # Propagate `where` key and TMT_SOURCE_DIR
         for test in self._tests:
@@ -500,6 +463,60 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         if self.step.plan.my_run is not None:
             for policy in self.step.plan.my_run.policies:
                 policy.apply_to_tests(tests=self._tests, logger=self._logger)
+
+    def discover_from_recipe(self, recipe: Recipe) -> list[tmt.base.Test]:
+        assert self.step.plan.my_run is not None
+        return [
+            test_origin.test
+            for test_origin in self.step.plan.my_run.recipe_manager.tests(
+                recipe, self.step.plan.name
+            )
+            if test_origin.phase == self.name
+        ]
+
+    def do_the_discovery(self, sourcedir: Path) -> list[tmt.base.Test]:
+        tests = fmf.Tree({'summary': 'tests'})
+        # Check and process each defined shell test
+        for data in self.data.tests:
+            # Create data copy (we want to keep original data for save()
+            data = copy.deepcopy(data)
+            # Extract name, make sure it is present
+            # TODO: can this ever happen? With annotations, `name: str` and `test: str`,
+            # nothing should ever assign `None` there and pass the test.
+            if not data.name:
+                raise tmt.utils.SpecificationError(
+                    f"Missing test name in '{self.step.plan.name}'."
+                )
+            # Make sure that the test script is defined
+            if not data.test:
+                raise tmt.utils.SpecificationError(
+                    f"Missing test script in '{self.step.plan.name}'."
+                )
+            # Prepare path to the test working directory (tree root by default)
+            data.path = f"/tests{data.path}" if data.path else '/tests'
+            # Apply default test duration unless provided
+            if not data.duration:
+                data.duration = tmt.base.DEFAULT_TEST_DURATION_L2
+            # Add source dir path variable
+            if self.data.dist_git_source:
+                data.environment['TMT_SOURCE_DIR'] = EnvVarValue(sourcedir)
+
+            # Create a simple fmf node, with correct name. Emit only keys and values
+            # that are no longer default. Do not add `name` itself into the node,
+            # it's not a supported test key, and it's given to the node itself anyway.
+            # Note the exception for `duration` key - it's expected in the output
+            # even if it still has its default value.
+            test_fmf_keys: dict[str, Any] = {
+                key: value
+                for key, value in data.to_spec().items()
+                if key != 'name' and (key == 'duration' or value != data.default(key))
+            }
+            tests.child(data.name, test_fmf_keys)
+
+        # Use a tmt.Tree to apply possible command line filters
+        return tmt.Tree(logger=self._logger, tree=tests).tests(
+            conditions=["manual is False"], sort=False
+        )
 
     def tests(
         self, *, phase_name: Optional[str] = None, enabled: Optional[bool] = None
