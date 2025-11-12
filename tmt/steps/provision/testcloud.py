@@ -235,7 +235,7 @@ def normalize_memory_size(
         return tmt.utils.normalize_data_amount(key_address, f'{value} MB', logger)
 
     if isinstance(value, str):
-        if value.isdigit():
+        if value.strip().isdigit():
             value = f"{value} MB"
         return tmt.utils.normalize_data_amount(key_address, value, logger)
 
@@ -257,7 +257,7 @@ def normalize_disk_size(key_address: str, value: Any, logger: tmt.log.Logger) ->
         return tmt.utils.normalize_data_amount(key_address, f'{value} GB', logger)
 
     if isinstance(value, str):
-        if value.isdigit():
+        if value.strip().isdigit():
             value = f"{value} GB"
         return tmt.utils.normalize_data_amount(key_address, value, logger)
 
