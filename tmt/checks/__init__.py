@@ -74,8 +74,8 @@ class CheckEvent(enum.Enum):
     def from_spec(cls, spec: str) -> 'CheckEvent':
         try:
             return CheckEvent(spec)
-        except ValueError:
-            raise tmt.utils.SpecificationError(f"Invalid test check event '{spec}'.")
+        except ValueError as error:
+            raise tmt.utils.SpecificationError(f"Invalid test check event '{spec}'.") from error
 
 
 class CheckResultInterpret(enum.Enum):
@@ -87,8 +87,8 @@ class CheckResultInterpret(enum.Enum):
     def from_spec(cls, spec: str) -> 'CheckResultInterpret':
         try:
             return CheckResultInterpret(spec)
-        except ValueError as err:
-            raise ValueError(f"Invalid check result interpretation '{spec}'.") from err
+        except ValueError as error:
+            raise ValueError(f"Invalid check result interpretation '{spec}'.") from error
 
     def to_spec(self) -> str:
         return self.value

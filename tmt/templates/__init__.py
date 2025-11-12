@@ -116,8 +116,8 @@ class TemplateManager:
 
         try:
             path = self.default_templates['default']['plan']
-        except KeyError:
-            raise tmt.utils.GeneralError("Default plan template not found.")
+        except KeyError as error:
+            raise tmt.utils.GeneralError("Default plan template not found.") from error
 
         return _append_newline_if_missing(self.render_file(path, plan_name=DEFAULT_PLAN_NAME))
 

@@ -185,10 +185,10 @@ class Exportable(Generic[ExportableT], tmt.utils._CommonBase, abc.ABC):  # noqa:
         try:
             return exporter(collection, keys=keys, **kwargs)
 
-        except NotImplementedError:
+        except NotImplementedError as error:
             raise tmt.utils.GeneralError(
                 f"Export format '{format}' not supported for {cls.__name__.lower()} collection."
-            )
+            ) from error
 
 
 class ExportPlugin(abc.ABC):
@@ -337,8 +337,10 @@ def get_bz_instance() -> BugzillaInstance:
 
     try:
         import bugzilla
-    except ImportError:
-        raise tmt.utils.ConvertError("Install 'tmt+test-convert' to link test to the bugzilla.")
+    except ImportError as error:
+        raise tmt.utils.ConvertError(
+            "Install 'tmt+test-convert' to link test to the bugzilla."
+        ) from error
 
     try:
         bz_instance: BugzillaInstance = bugzilla.Bugzilla(url=BUGZILLA_XMLRPC_URL)

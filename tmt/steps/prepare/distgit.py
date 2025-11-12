@@ -221,7 +221,7 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
         try:
             spec_name = next(Path(source_dir).glob('*.spec')).name
         except StopIteration:
-            raise tmt.utils.PrepareError(f"No '*.spec' file found in '{source_dir}'")
+            raise tmt.utils.PrepareError(f"No '*.spec' file found in '{source_dir}'") from None
 
         content_before = set(source_dir.iterdir())
 
@@ -242,7 +242,9 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
                 # manpage says rpmbuild should return '11' for `-br --nodeps`
                 # but it doesn't seem to be the case on f-39
                 if error.returncode != 11:
-                    raise tmt.utils.PrepareError("Unexpected return code of `rpmbuild -br` call.")
+                    raise tmt.utils.PrepareError(
+                        "Unexpected return code of `rpmbuild -br` call."
+                    ) from error
                 stdout = error.stdout
             match = re.search(r'/SRPMS/(.*src.rpm)', stdout or '')
             if match:
@@ -264,7 +266,7 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
                 cwd=source_dir,
             )
         except tmt.utils.RunError as error:
-            raise tmt.utils.PrepareError("Unable to 'rpmbuild -bp'.", causes=[error])
+            raise tmt.utils.PrepareError("Unable to 'rpmbuild -bp'.") from error
 
         # Workaround around new rpm behavior, https://github.com/teemtee/tmt/issues/2987
         # No hardcoded name, should keep working in the future

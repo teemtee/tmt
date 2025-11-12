@@ -83,13 +83,13 @@ rlJournalStart
     testName="/test/invalid-yaml-results-file"
     rlPhaseStartTest "${testName}"
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 2 "Test provides 'results.yaml' not in YAML format"
-        rlAssertGrep "Invalid yaml syntax:" $rlRun_LOG
+        rlAssertGrep "Invalid yaml syntax" $rlRun_LOG
     rlPhaseEnd
 
     testName="/test/invalid-json-results-file"
     rlPhaseStartTest "${testName}"
         rlRun -s "${tmt_command} ${testName} 2>&1 >/dev/null" 2 "Test provides 'results.json' not in JSON format"
-        rlAssertGrep "Invalid json syntax:" $rlRun_LOG
+        rlAssertGrep "Invalid json syntax" $rlRun_LOG
     rlPhaseEnd
 
     testName="/test/wrong-yaml-content"

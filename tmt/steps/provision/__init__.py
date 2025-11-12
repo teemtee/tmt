@@ -2097,21 +2097,19 @@ class Guest(
             try:
                 self.execute(Command('whoami'), silent=True)
 
-            except tmt.utils.RunError as exc:
+            except tmt.utils.RunError as error:
                 # Detect common issues with guest access
-                if exc.stdout and 'Please login as the user' in exc.stdout:
-                    raise tmt.utils.GeneralError(
-                        f'Login to the guest failed.\n{exc.stdout}'
-                    ) from exc
+                if error.stdout and 'Please login as the user' in error.stdout:
+                    raise tmt.utils.GeneralError('Login to the guest failed.') from error
                 if (
-                    exc.stderr
-                    and f'executable file `{tmt.utils.DEFAULT_SHELL}` not found' in exc.stderr
+                    error.stderr
+                    and f'executable file `{tmt.utils.DEFAULT_SHELL}` not found' in error.stderr
                 ):
                     raise tmt.utils.GeneralError(
                         f'{tmt.utils.DEFAULT_SHELL.capitalize()} is required on the guest.'
-                    ) from exc
+                    ) from error
 
-                raise tmt.utils.wait.WaitingIncompleteError
+                raise tmt.utils.wait.WaitingIncompleteError from error
 
         try:
             wait.wait(try_whoami, self._logger)
@@ -3091,9 +3089,9 @@ class GuestSsh(Guest):
                 # Same boot time, reboot didn't happen yet, retrying
                 raise tmt.utils.wait.WaitingIncompleteError
 
-            except tmt.utils.RunError:
+            except tmt.utils.RunError as error:
                 self.debug('Failed to connect to the guest.')
-                raise tmt.utils.wait.WaitingIncompleteError
+                raise tmt.utils.wait.WaitingIncompleteError from error
 
         try:
             wait.wait(check_boot_time, self._logger)

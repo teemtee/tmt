@@ -1792,10 +1792,10 @@ class BasePlugin(
                     try:
                         data = plugin_data_class.from_spec(raw_data, step._logger)
 
-                    except Exception as exc:
+                    except Exception as error:
                         raise tmt.utils.GeneralError(
-                            f'Failed to load step data for {plugin_data_class.__name__}: {exc}'
-                        ) from exc
+                            f'Failed to load step data for {plugin_data_class.__name__}.'
+                        ) from error
 
                 assert data is not None
                 assert data.__class__ is plugin_data_class, (
@@ -2179,8 +2179,8 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
                 # Convert 'start' and 'end' aliases
                 try:
                     phase = cast(dict[str, int], {'start': PHASE_START, 'end': PHASE_END})[phase]
-                except KeyError:
-                    raise tmt.utils.GeneralError(f"Invalid phase '{phase}'.")
+                except KeyError as error:
+                    raise tmt.utils.GeneralError(f"Invalid phase '{phase}'.") from error
             # Store the phase for given step
             try:
                 phases[step_name].append(phase)

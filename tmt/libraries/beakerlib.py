@@ -144,10 +144,10 @@ class BeakerLib(Library):
                         repo = self.path.name
                         if not repo:
                             raise TypeError
-                    except TypeError:
+                    except TypeError as error:
                         raise tmt.utils.GeneralError(
                             f"Unable to parse repository name from '{self.path}'."
-                        )
+                        ) from error
             self.repo = Path(repo)
 
         # Something weird
@@ -250,10 +250,10 @@ class BeakerLib(Library):
                                 'hash',
                                 tmt.utils.git.git_hash(directory=destination, logger=self._logger),
                             )
-                        except (tmt.utils.RunError, tmt.utils.RetryError):
+                        except (tmt.utils.RunError, tmt.utils.RetryError) as error:
                             self.parent.debug(f"Repository '{self.url}' not found.")
                             self._nonexistent_url.add(self.url)
-                            raise LibraryError
+                            raise LibraryError from error
                 # If repo does exist we really have unsolvable url conflict
                 raise tmt.utils.GeneralError(
                     f"Library '{self}' with url '{self.url}' conflicts "
@@ -273,7 +273,7 @@ class BeakerLib(Library):
             # Reuse the existing metadata tree
             self.tree: fmf.Tree = library.tree
         # Fetch the library and add it to the index
-        except (KeyError, FileNotFoundError):
+        except (KeyError, FileNotFoundError) as error:
             self.parent.debug(f"Fetch library '{self}'.", level=3)
             # Prepare path, clone the repository, checkout ref
             assert self.parent.workdir
@@ -284,7 +284,7 @@ class BeakerLib(Library):
                     if self.url in self._nonexistent_url:
                         raise tmt.utils.GitUrlError(
                             f"Already know that '{self.url}' does not exist."
-                        )
+                        ) from error
                     clone_dir = self.parent.clone_dirpath / self.hostname / self.repo
                     self.source_directory = clone_dir
                     # Shallow clone to speed up testing and
@@ -303,11 +303,11 @@ class BeakerLib(Library):
                         self.default_branch = tmt.utils.git.default_branch(
                             repository=clone_dir, logger=self._logger
                         )
-                    except OSError:
+                    except OSError as error:
                         raise tmt.utils.GeneralError(
                             f"Unable to detect default branch for '{clone_dir}'. "
                             f"Is the git repository '{self.url}' empty?"
-                        )
+                        ) from error
                     # Use the default branch if no ref provided
                     if self.ref is None:
                         self.ref = self.default_branch
@@ -331,11 +331,11 @@ class BeakerLib(Library):
                             # for not fetching two distinct 'ref's. Simply put, only the same
                             # @dynamic_ref filepath can be used by other tests.
                             self.parent.run(Command('git', 'checkout', dynamic_ref), cwd=clone_dir)
-                    except tmt.utils.RunError:
+                    except tmt.utils.RunError as error:
                         # Fallback to install during the prepare step if in rpm format
                         if self.format == 'rpm':
                             self.parent.debug(f"Invalid reference '{self.ref}'.")
-                            raise LibraryError
+                            raise LibraryError from error
                         self.parent.fail(f"Reference '{self.ref}' for library '{self}' not found.")
                         raise
 
@@ -431,7 +431,7 @@ class BeakerLib(Library):
                     if not isinstance(error, tmt.utils.GitUrlError):
                         self.parent.debug(f"Repository '{self.url}' not found.")
                         self._nonexistent_url.add(self.url)
-                    raise LibraryError
+                    raise LibraryError from error
                 # Mark self.url as known to be missing
                 self._nonexistent_url.add(self.url)
                 self.parent.fail(f"Failed to fetch library '{self}' from '{self.url}'.")

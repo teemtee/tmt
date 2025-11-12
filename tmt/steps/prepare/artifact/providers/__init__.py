@@ -229,8 +229,10 @@ class Repository:
                 )
             # Store the parsed sections in our private attribute
             self.repo_ids = sections
-        except configparser.MissingSectionHeaderError:
-            raise GeneralError(f"No repository sections found in the content for '{self.name}'.")
+        except configparser.MissingSectionHeaderError as error:
+            raise GeneralError(
+                f"No repository sections found in the content for '{self.name}'."
+            ) from error
         except configparser.Error as error:
             raise GeneralError(
                 f"Failed to parse the content of repository '{self.name}'. "

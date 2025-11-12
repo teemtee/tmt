@@ -1289,8 +1289,10 @@ class Command:
         try:
             process = _spawn_process()
 
-        except FileNotFoundError as exc:
-            raise RunError(f"File '{exc.filename}' not found.", self, 127, caller=caller) from exc
+        except FileNotFoundError as error:
+            raise RunError(
+                f"File '{error.filename}' not found.", self, 127, caller=caller
+            ) from error
 
         if on_process_start:
             on_process_start(self, process, logger)
@@ -2283,16 +2285,16 @@ class Common(_CommonBase, metaclass=_CommonMeta):
                     self.workdir_root.mkdir(exist_ok=True, parents=True)
                     self.workdir_root.chmod(WORKDIR_ROOT_MODE)
                 except OSError as error:
-                    raise FileError(f"Failed to prepare workdir '{self.workdir_root}': {error}")
+                    raise FileError(f"Failed to prepare workdir '{self.workdir_root}'.") from error
             else:
                 try:
                     if stat.S_IMODE(self.workdir_root.stat().st_mode) != WORKDIR_ROOT_MODE:
                         self.workdir_root.chmod(WORKDIR_ROOT_MODE)
-                except PermissionError:
+                except PermissionError as error:
                     raise FileError(
                         f"Failed to change workdir root '{self.workdir_root}' permission to "
                         f"'{oct(WORKDIR_ROOT_MODE)}', you need to change it manually using chmod."
-                    )
+                    ) from error
 
         if id_ is None:
             # Prepare workdir_root first
@@ -2740,8 +2742,8 @@ class TracebackVerbosity(enum.Enum):
         try:
             return TracebackVerbosity(spec)
 
-        except ValueError:
-            raise SpecificationError(f"Invalid traceback verbosity '{spec}'.")
+        except ValueError as error:
+            raise SpecificationError(f"Invalid traceback verbosity '{spec}'.") from error
 
     @classmethod
     def from_env(cls) -> 'TracebackVerbosity':
@@ -3192,8 +3194,8 @@ def get_full_metadata(fmf_tree_path: Path, node_path: str) -> Any:
 
     try:
         return fmf.Tree(fmf_tree_path).find(node_path).data
-    except AttributeError:
-        raise MetadataError(f"'{node_path}' not found in the '{fmf_tree_path}' Tree.")
+    except AttributeError as error:
+        raise MetadataError(f"'{node_path}' not found in the '{fmf_tree_path}' Tree.") from error
 
 
 def filter_paths(directory: Path, searching: list[str], files_only: bool = False) -> list[Path]:
@@ -3358,7 +3360,7 @@ def yaml_to_list(data: Any, yaml_type: Optional[YamlTypType] = 'safe') -> list[A
     try:
         loaded_data = yaml.load(data)
     except ParserError as error:
-        raise GeneralError(f"Invalid yaml syntax: {error}")
+        raise GeneralError("Invalid yaml syntax.") from error
 
     if loaded_data is None:
         return []
@@ -3375,7 +3377,7 @@ def json_to_list(data: Any) -> list[Any]:
     try:
         loaded_data = json.loads(data)
     except json.decoder.JSONDecodeError as error:
-        raise GeneralError(f"Invalid json syntax: {error}")
+        raise GeneralError("Invalid json syntax.") from error
 
     if not isinstance(loaded_data, list):
         raise GeneralError(f"Expected list in json data, got '{type(loaded_data).__name__}'.")
@@ -3392,16 +3394,16 @@ def markdown_to_html(filename: Path) -> str:
 
     try:
         import markdown
-    except ImportError:
-        raise ConvertError("Install tmt+test-convert to export tests.")
+    except ImportError as error:
+        raise ConvertError("Install tmt+test-convert to export tests.") from error
 
     try:
         try:
             return markdown.markdown(filename.read_text())
-        except UnicodeError:
-            raise MetadataError(f"Unable to read '{filename}'.")
-    except OSError:
-        raise ConvertError(f"Unable to open '{filename}'.")
+        except UnicodeError as error:
+            raise MetadataError(f"Unable to read '{filename}'.") from error
+    except OSError as error:
+        raise ConvertError(f"Unable to open '{filename}'.") from error
 
 
 def shell_variables(data: Union[list[str], tuple[str, ...], dict[str, Any]]) -> list[str]:
@@ -4818,8 +4820,8 @@ def _load_schema(schema_filepath: Path) -> Schema:
     try:
         return cast(Schema, yaml_to_dict(schema_filepath.read_text(encoding='utf-8')))
 
-    except Exception as exc:
-        raise FileError(f"Failed to load schema file {schema_filepath}\n{exc}")
+    except Exception as error:
+        raise FileError(f"Failed to load schema file {schema_filepath}.") from error
 
 
 @functools.cache
@@ -4862,8 +4864,8 @@ def load_schema_store() -> SchemaStore:
 
             store[schema['$id']] = schema
 
-    except Exception as exc:
-        raise FileError(f"Failed to discover schema files\n{exc}")
+    except Exception as error:
+        raise FileError("Failed to discover schema files.") from error
 
     if '/schemas/plan' not in store:
         raise FileError('Failed to discover schema for plans')
@@ -5309,10 +5311,10 @@ def normalize_pattern_list(
                 try:
                     patterns.append(re.compile(raw_pattern))
 
-                except Exception:
+                except Exception as error:
                     raise NormalizationError(
                         f'{key_address}[{i}]', raw_pattern, 'a regular expression'
-                    )
+                    ) from error
 
             elif isinstance(raw_pattern, re.Pattern):
                 patterns.append(raw_pattern)

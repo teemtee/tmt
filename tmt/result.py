@@ -30,8 +30,10 @@ class ResultOutcome(enum.Enum):
     def from_spec(cls, spec: str) -> 'ResultOutcome':
         try:
             return ResultOutcome(spec)
-        except ValueError:
-            raise tmt.utils.SpecificationError(f"Invalid partial custom result '{spec}'.")
+        except ValueError as error:
+            raise tmt.utils.SpecificationError(
+                f"Invalid partial custom result '{spec}'."
+            ) from error
 
     @staticmethod
     def reduce(outcomes: list['ResultOutcome']) -> 'ResultOutcome':
@@ -84,8 +86,10 @@ class ResultInterpret(enum.Enum):
     def from_spec(cls, spec: str) -> 'ResultInterpret':
         try:
             return ResultInterpret(spec)
-        except ValueError:
-            raise tmt.utils.SpecificationError(f"Invalid result interpretation '{spec}'.")
+        except ValueError as error:
+            raise tmt.utils.SpecificationError(
+                f"Invalid result interpretation '{spec}'."
+            ) from error
 
     @classmethod
     def normalize(
