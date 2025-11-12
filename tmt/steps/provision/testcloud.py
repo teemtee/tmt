@@ -237,13 +237,9 @@ def normalize_memory_size(
 
     # Handle string inputs that might be just numbers (add MB unit)
     if isinstance(value, str):
-        try:
-            if value.isdigit():
-                value = f"{value} MB"
-            return tmt.utils.normalize_data_amount(key_address, value, logger)
-        except ValueError:
-            # String contains units, pass through to normalize_data_amount
-            return tmt.utils.normalize_data_amount(key_address, value, logger)
+        if value.isdigit():
+            value = f"{value} MB"
+        return tmt.utils.normalize_data_amount(key_address, value, logger)
 
     # For pint.Quantity and other types, delegate to normalize_data_amount
     return tmt.utils.normalize_data_amount(key_address, value, logger)
@@ -265,12 +261,9 @@ def normalize_disk_size(key_address: str, value: Any, logger: tmt.log.Logger) ->
 
     # Handle string inputs that might be just numbers (add GB unit)
     if isinstance(value, str):
-        try:
-            magnitude = int(value)
-            return tmt.utils.normalize_data_amount(key_address, f'{magnitude} GB', logger)
-        except ValueError:
-            # String contains units, pass through to normalize_data_amount
-            return tmt.utils.normalize_data_amount(key_address, value, logger)
+        if value.isdigit():
+            value = f"{value} GB"
+        return tmt.utils.normalize_data_amount(key_address, value, logger)
 
     # For pint.Quantity and other types, delegate to normalize_data_amount
     return tmt.utils.normalize_data_amount(key_address, value, logger)
