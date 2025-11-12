@@ -391,13 +391,11 @@ class Recipe(SerializableContainer):
 
 
 class RecipeManager(Common):
-    def __init__(self, path: Optional[Path], logger: Logger):
+    def __init__(self, logger: Logger):
         super().__init__(logger=logger)
-        self.recipe: Optional[Recipe] = None
-        if path:
-            self.recipe = Recipe.from_serialized(
-                tmt.utils.yaml_to_dict(self.read(path)), self._logger
-            )
+
+    def load(self, path: Path) -> Recipe:
+        return Recipe.from_serialized(tmt.utils.yaml_to_dict(self.read(path)), self._logger)
 
     def save(self, run: 'Run') -> None:
         recipe = Recipe(
@@ -411,11 +409,8 @@ class RecipeManager(Common):
         )
         self.write(run.run_workdir / 'recipe.yaml', tmt.utils.dict_to_yaml(recipe.to_serialized()))
 
-    def tests(self, plan_name: str) -> list[TestOrigin]:
-        if self.recipe is None:
-            return []
-
-        for plan in self.recipe.plans:
+    def tests(self, recipe: Recipe, plan_name: str) -> list[TestOrigin]:
+        for plan in recipe.plans:
             if plan.name == plan_name:
                 return [
                     TestOrigin(
@@ -427,8 +422,6 @@ class RecipeManager(Common):
 
         raise tmt.utils.GeneralError(f"Plan '{plan_name}' not found in the recipe.")
 
-    def update_tree(self, tree: fmf.Tree) -> None:
-        if self.recipe is None:
-            return
-
-        tree.update({plan.name: plan.to_spec() for plan in self.recipe.plans})
+    @staticmethod
+    def update_tree(recipe: Recipe, tree: fmf.Tree) -> None:
+        tree.update({plan.name: plan.to_spec() for plan in recipe.plans})

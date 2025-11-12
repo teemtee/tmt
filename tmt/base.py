@@ -4441,9 +4441,11 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
         self.unique_id = str(time.time()).split('.')[0]
 
         self.policies = policies or []
-        self.recipe_manager = RecipeManager(recipe_path, logger)
-        if self.recipe_manager.recipe is not None and self._tree is not None:
-            self.recipe_manager.update_tree(self._tree.tree)
+
+        self.recipe_manager = RecipeManager(logger)
+        self.recipe = self.recipe_manager.load(recipe_path) if recipe_path else None
+        if self.recipe is not None and self._tree is not None:
+            self.recipe_manager.update_tree(self.recipe, self._tree.tree)
 
     @property
     def run_workdir(self) -> Path:

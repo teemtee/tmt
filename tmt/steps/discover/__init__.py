@@ -482,7 +482,7 @@ class Discover(tmt.steps.Step):
                     test = test_origin.test
 
                     # Prefix test name and path if not loaded from a recipe
-                    if self.plan.my_run and self.plan.my_run.recipe_manager.recipe is None:
+                    if self.plan.my_run and self.plan.my_run.recipe is None:
                         test.name = f"{prefix}{test.name}"
                         test.path = Path(f"/{phase.safe_name}{test.path}")
 

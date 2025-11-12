@@ -19,6 +19,7 @@ import tmt.utils.git
 import tmt.utils.url
 from tmt.base import _RawAdjustRule
 from tmt.container import container, field
+from tmt.recipe import Recipe
 from tmt.steps.prepare.distgit import insert_to_prepare_step
 from tmt.utils import Command, Environment, EnvVarValue, Path
 
@@ -676,8 +677,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             except Exception as error:
                 raise tmt.utils.DiscoverError("Failed to process 'dist-git-source'.") from error
 
-        if self.step.plan.my_run and self.step.plan.my_run.recipe_manager.recipe:
-            self._tests = self.discover_from_recipe()
+        if self.step.plan.my_run and self.step.plan.my_run.recipe:
+            self._tests = self.discover_from_recipe(self.step.plan.my_run.recipe)
         else:
             self._tests = self.do_the_discovery(path)
 
@@ -720,11 +721,14 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         self.step.plan.discover.extract_tests_later = True
         self.info("Tests will be discovered after dist-git patching in prepare.")
 
-    def discover_from_recipe(self) -> list[tmt.base.Test]:
+    def discover_from_recipe(self, recipe: Recipe) -> list[tmt.base.Test]:
         assert self.step.plan.my_run is not None
         tests = [
             test_origin.test
-            for test_origin in self.step.plan.my_run.recipe_manager.tests(self.step.plan.name)
+            for test_origin in self.step.plan.my_run.recipe_manager.tests(
+                recipe,
+                self.step.plan.name,
+            )
             if test_origin.phase == self.name
         ]
 
