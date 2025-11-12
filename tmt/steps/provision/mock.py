@@ -108,16 +108,20 @@ class _ManagedEpollIo(io.FileIO):
 
 class _DecodingStream:
     """
-    Lazy object that collects chunks of bytes and decodes them when a
-    newline is encountered.
+    Lazy object that collects chunks of bytes and decodes them when a newline is encountered.
+    Data is added with the `+=` operator.
     """
 
-    def __init__(self, log_func: Callable[[str], None]):
-        """
-        :param log_func: Function receiving the decoded text line-by-line as
-            soon as it is available.
-        """
+    #: Function receiving the decoded text line-by-line as soon as it is available.
+    #: Whenever data is added to this object using the `+=` operator, if a new line
+    #: was encountered, the line is decoded and passed to this function.
+    log_func: Callable[[str], None]
+    #: The content of the byte buffer accumulated by adding content to this object.
+    output: bytes
+    #: The decoded ``output``.
+    string: str
 
+    def __init__(self, log_func: Callable[[str], None]):
         self.log_func: Callable[[str], None] = log_func
         self.output: bytes = b''
         self.string: str = ''
