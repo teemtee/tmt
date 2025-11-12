@@ -313,3 +313,117 @@ def test_parse_rpm_string_valid(pkg_string, expected):
 def test_parse_rpm_string_invalid(pkg_string):
     with pytest.raises(ValueError, match=r"does not match|Malformed package string"):
         parse_rpm_string(pkg_string)
+
+
+# Tests for create_repository function
+def test_create_repository_success(root_logger):
+    """Test successful repository creation from artifact directory"""
+    from tmt.steps.prepare.artifact.providers.repository import create_repository
+    from tmt.utils import CommandOutput
+
+    # Mock guest
+    mock_guest = MagicMock()
+    # Only one execute() call: directory existence check (test -d)
+    mock_guest.execute.return_value = CommandOutput(stdout="", stderr="")  # test -d succeeds
+    # Mock the package manager's create_repository_metadata_from_dir method
+    mock_guest.package_manager.create_repository_metadata_from_dir.return_value = None
+
+    artifact_dir = Path("/tmp/my-artifacts")
+
+    # Call create_repository
+    repo = create_repository(
+        artifact_dir=artifact_dir, guest=mock_guest, logger=root_logger, repo_name="my-repo"
+    )
+
+    # Verify the guest.execute was called once (for test -d)
+    assert mock_guest.execute.call_count == 1
+    # Verify the package manager method was called
+    mock_guest.package_manager.create_repository_metadata_from_dir.assert_called_once_with(
+        artifact_dir
+    )
+
+    # Verify the repository was created correctly
+    assert repo.name == "my-repo"
+    assert "my-repo" in repo.content
+    assert f"baseurl=file://{artifact_dir}" in repo.content
+    assert "priority=99" in repo.content
+    assert "enabled=1" in repo.content
+    assert "gpgcheck=0" in repo.content
+    assert repo.repo_ids == ["my-repo"]
+
+
+def test_create_repository_auto_name(root_logger):
+    """Test repository creation with automatic name derivation"""
+    from tmt.steps.prepare.artifact.providers.repository import create_repository
+    from tmt.utils import CommandOutput
+
+    # Mock guest
+    mock_guest = MagicMock()
+    mock_guest.execute.side_effect = [
+        CommandOutput(stdout="", stderr=""),  # test -d succeeds
+        CommandOutput(stdout="Repository created", stderr=""),  # createrepo_c succeeds
+    ]
+
+    artifact_dir = Path("/tmp/koji-artifacts")
+
+    # Call create_repository without repo_name
+    repo = create_repository(artifact_dir=artifact_dir, guest=mock_guest, logger=root_logger)
+
+    # Verify the name was derived from directory
+    assert repo.name == "koji-artifacts"
+    assert "koji-artifacts" in repo.content
+
+
+def test_create_repository_directory_not_exists(root_logger):
+    """Test repository creation fails when directory doesn't exist"""
+    from tmt.steps.prepare.artifact.providers.repository import create_repository
+    from tmt.utils import Command, RunError
+
+    # Mock guest
+    mock_guest = MagicMock()
+    # test -d fails (directory doesn't exist)
+    mock_guest.execute.side_effect = RunError(
+        "Directory not found", Command("test", "-d"), returncode=1
+    )
+
+    artifact_dir = Path("/tmp/nonexistent")
+
+    # Verify it raises GeneralError
+    with pytest.raises(GeneralError, match=r"Artifact directory .* does not exist on guest"):
+        create_repository(artifact_dir=artifact_dir, guest=mock_guest, logger=root_logger)
+
+
+def test_create_repository_createrepo_fails(root_logger):
+    """Test repository creation fails when createrepo_c fails"""
+    from tmt.steps.prepare.artifact.providers.repository import create_repository
+    from tmt.utils import CommandOutput
+
+    # Mock guest
+    mock_guest = MagicMock()
+    # First call succeeds (dir exists)
+    mock_guest.execute.return_value = CommandOutput(stdout="", stderr="")  # test -d succeeds
+    # Package manager method fails
+    mock_guest.package_manager.create_repository_metadata_from_dir.side_effect = GeneralError(
+        "createrepo_c failed"
+    )
+
+    artifact_dir = Path("/tmp/bad-artifacts")
+
+    # Verify it raises GeneralError
+    with pytest.raises(GeneralError, match=r"Failed to create repository metadata"):
+        create_repository(artifact_dir=artifact_dir, guest=mock_guest, logger=root_logger)
+
+
+def test_create_repository_empty_name(root_logger):
+    """Test repository creation fails with empty directory name"""
+    from tmt.steps.prepare.artifact.providers.repository import create_repository
+
+    # Mock guest
+    mock_guest = MagicMock()
+
+    # Use root path which has empty name
+    artifact_dir = Path("/")
+
+    # Verify it raises GeneralError
+    with pytest.raises(GeneralError, match=r"Could not derive repository name"):
+        create_repository(artifact_dir=artifact_dir, guest=mock_guest, logger=root_logger)

@@ -23,7 +23,7 @@ from tmt.utils import GeneralError, Path
 
 # ignore[type-arg]: TypeVar in provider registry annotations is
 # puzzling for type checkers. And not a good idea in general, probably.
-@provides_artifact_provider('repository')  # type: ignore[arg-type]
+@provides_artifact_provider('repository-url')  # type: ignore[arg-type]
 class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
     """
     Provider for making RPM artifacts from a repository discoverable without downloading them.
@@ -183,12 +183,6 @@ def parse_rpm_string(pkg_string: str) -> dict[str, str]:
     epoch = match.group('epoch')
     if epoch is None:
         epoch = '0'
-    # TODO: Add support for source rpms
-    # Filter out source RPMs
-    # If the architecture is 'src', this is a source package and should
-    # be skipped. Raising ValueError ensures it's caught and logged.
-    if arch == 'src':
-        raise ValueError(f"Package '{pkg_string}' is a source RPM. Skipping.")
 
     # Reconstruct NVR (Name-Version-Release)
     nvr = f"{name}-{version}-{release}"
@@ -201,3 +195,72 @@ def parse_rpm_string(pkg_string: str) -> dict[str, str]:
         'arch': arch,
         'nvr': nvr,
     }
+
+
+def create_repository(
+    artifact_dir: Path,
+    guest: Guest,
+    logger: tmt.log.Logger,
+    repo_name: Optional[str] = None,
+    priority: int = 99,
+) -> Repository:
+    """
+    Create AND INSTALL a local repository from a directory.
+
+    Orchestrates the process:
+    1.  Asks the guest's package manager to create metadata in the directory.
+    2.  Generates a .repo configuration file.
+    3.  Installs the new repository on the guest.
+
+    WARNING: This function hardcodes gpgcheck=0.
+    """
+
+    # --- 1. Validation ---
+    if repo_name is None:
+        repo_name = artifact_dir.name
+        if not repo_name:
+            raise GeneralError(
+                f"Could not derive repository name from directory '{artifact_dir}'."
+            )
+
+    logger.debug(f"Creating repository '{repo_name}' from '{artifact_dir}'.")
+    try:
+        guest.execute(
+            tmt.utils.Command("test", "-d", str(artifact_dir)),
+            silent=True,
+        )
+    except tmt.utils.RunError as error:
+        raise GeneralError(
+            f"Artifact directory '{artifact_dir}' does not exist on guest."
+        ) from error
+
+    # --- 2. Create Repository Metadata ---
+    logger.debug(f"Asking package manager to create metadata in '{artifact_dir}'.")
+    try:
+        # This now calls the correct method (e.g., in DnfPackageManager)
+        guest.package_manager.create_repository_metadata_from_dir(artifact_dir)
+    except (NotImplementedError, GeneralError) as error:
+        raise GeneralError(f"Failed to create repository metadata in '{artifact_dir}'") from error
+
+    # --- 3. Generate .repo File Content ---
+    repo_content = [
+        f"[{tmt.utils.sanitize_name(repo_name)}]",
+        f"name={repo_name}",
+        f"baseurl=file://{artifact_dir}",
+        "enabled=1",
+        "gpgcheck=0",  # Hardcoded to false
+        f"priority={priority}",
+    ]
+    repo_string = "\n".join(repo_content)
+    logger.debug(f"Generated .repo file content:\n{repo_string}")
+
+    # --- 4. Create and Install Repository Object ---
+    created_repository = Repository.from_content(
+        content=repo_string, name=repo_name, logger=logger
+    )
+
+    logger.debug(f"Installing repository '{created_repository.name}' on the guest.")
+
+    guest.package_manager.install_repository(created_repository)
+
+    return created_repository
