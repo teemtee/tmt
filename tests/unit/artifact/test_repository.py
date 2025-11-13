@@ -427,3 +427,269 @@ def test_create_repository_empty_name(root_logger):
     # Verify it raises GeneralError
     with pytest.raises(GeneralError, match=r"Could not derive repository name"):
         create_repository(artifact_dir=artifact_dir, guest=mock_guest, logger=root_logger)
+
+
+def test_create_repository_custom_priority(root_logger):
+    """Test repository creation with custom priority value"""
+    from tmt.steps.prepare.artifact.providers.repository import create_repository
+    from tmt.utils import CommandOutput
+
+    # Mock guest
+    mock_guest = MagicMock()
+    mock_guest.execute.return_value = CommandOutput(stdout="", stderr="")
+    mock_guest.package_manager.create_repository_metadata_from_dir.return_value = None
+
+    artifact_dir = Path("/tmp/my-artifacts")
+
+    # Call create_repository with custom priority
+    repo = create_repository(
+        artifact_dir=artifact_dir,
+        guest=mock_guest,
+        logger=root_logger,
+        repo_name="custom-repo",
+        priority=50,
+    )
+
+    # Verify the custom priority is in the content
+    assert "priority=50" in repo.content
+    assert repo.name == "custom-repo"
+
+
+def test_create_repository_special_chars_in_name(root_logger):
+    """Test repository creation sanitizes special characters in repo name"""
+    from tmt.steps.prepare.artifact.providers.repository import create_repository
+    from tmt.utils import CommandOutput
+
+    # Mock guest
+    mock_guest = MagicMock()
+    mock_guest.execute.return_value = CommandOutput(stdout="", stderr="")
+    mock_guest.package_manager.create_repository_metadata_from_dir.return_value = None
+
+    artifact_dir = Path("/tmp/my artifacts")
+
+    # Call create_repository with name containing spaces
+    repo = create_repository(
+        artifact_dir=artifact_dir,
+        guest=mock_guest,
+        logger=root_logger,
+        repo_name="my special repo!",
+    )
+
+    # Verify the name was sanitized (tmt.utils.sanitize_name should be used)
+    # The sanitized name should be in the content as the repo ID
+    # (spaces->hyphens, special chars removed)
+    assert "[my-special-repo]" in repo.content
+    # Verify the original name is preserved in the name field
+    assert repo.name == "my special repo!"
+    # Verify the sanitized version is the repo_id
+    assert repo.repo_ids == ["my-special-repo"]
+
+
+def test_create_repository_installs_on_guest(root_logger):
+    """Test that create_repository calls install_repository on the guest"""
+    from tmt.steps.prepare.artifact.providers.repository import create_repository
+    from tmt.utils import CommandOutput
+
+    # Mock guest
+    mock_guest = MagicMock()
+    mock_guest.execute.return_value = CommandOutput(stdout="", stderr="")
+    mock_guest.package_manager.create_repository_metadata_from_dir.return_value = None
+
+    artifact_dir = Path("/tmp/my-artifacts")
+
+    # Call create_repository
+    repo = create_repository(
+        artifact_dir=artifact_dir, guest=mock_guest, logger=root_logger, repo_name="test-repo"
+    )
+
+    # Verify install_repository was called
+    mock_guest.package_manager.install_repository.assert_called_once()
+    # Verify it was called with the created repository
+    installed_repo = mock_guest.package_manager.install_repository.call_args[0][0]
+    assert installed_repo.name == repo.name
+    assert installed_repo.content == repo.content
+
+
+def test_create_repository_not_implemented_error(root_logger):
+    """Test repository creation when package manager doesn't support it"""
+    from tmt.steps.prepare.artifact.providers.repository import create_repository
+    from tmt.utils import CommandOutput
+
+    # Mock guest
+    mock_guest = MagicMock()
+    mock_guest.execute.return_value = CommandOutput(stdout="", stderr="")
+    # Package manager doesn't support creating repositories
+    mock_guest.package_manager.create_repository_metadata_from_dir.side_effect = (
+        NotImplementedError("Not supported")
+    )
+
+    artifact_dir = Path("/tmp/my-artifacts")
+
+    # Verify it raises GeneralError
+    with pytest.raises(GeneralError, match=r"Failed to create repository metadata"):
+        create_repository(artifact_dir=artifact_dir, guest=mock_guest, logger=root_logger)
+
+
+# Tests for DnfEngine.create_repository_metadata_from_dir
+def test_dnf_create_repository_metadata_createrepo_already_installed(root_logger):
+    """Test DNF metadata creation when createrepo is already installed"""
+    from tmt.package_managers.dnf import DnfEngine
+    from tmt.utils import Command, CommandOutput
+
+    # Mock guest and engine
+    mock_guest = MagicMock()
+    engine = DnfEngine(guest=mock_guest, logger=root_logger)
+
+    # Mock that createrepo is found
+    mock_guest.execute.side_effect = [
+        CommandOutput(stdout="/usr/bin/createrepo\n", stderr=""),  # command -v createrepo
+        CommandOutput(stdout="Repository created", stderr=""),  # createrepo execution
+    ]
+
+    directory = Path("/tmp/packages")
+
+    # Call the method
+    engine.create_repository_metadata_from_dir(directory)
+
+    # Verify execute was called twice: once to find createrepo, once to run it
+    assert mock_guest.execute.call_count == 2
+    # Verify the second call was to run createrepo
+    second_call_args = mock_guest.execute.call_args_list[1]
+    assert str(directory) in str(second_call_args[0][0])
+
+
+def test_dnf_create_repository_metadata_createrepo_needs_install(root_logger):
+    """Test DNF metadata creation when createrepo needs to be installed"""
+    from tmt.package_managers.dnf import DnfEngine
+    from tmt.utils import Command, CommandOutput, RunError
+
+    # Mock guest and engine
+    mock_guest = MagicMock()
+    engine = DnfEngine(guest=mock_guest, logger=root_logger)
+
+    # Mock the flow: createrepo not found, install it, then find it, then run it
+    mock_guest.execute.side_effect = [
+        RunError("not found", Command("command", "-v", "createrepo"), returncode=1),  # Not found
+        CommandOutput(stdout="Installed", stderr=""),  # Installation command
+        CommandOutput(stdout="/usr/bin/createrepo\n", stderr=""),  # command -v after install
+        CommandOutput(stdout="Repository created", stderr=""),  # createrepo execution
+    ]
+
+    directory = Path("/tmp/packages")
+
+    # Call the method
+    engine.create_repository_metadata_from_dir(directory)
+
+    # Verify install was called
+    # The install method should have been called
+    assert mock_guest.execute.call_count == 4
+
+
+def test_dnf_create_repository_metadata_install_fails(root_logger):
+    """Test DNF metadata creation when createrepo installation fails"""
+    from tmt.package_managers.dnf import DnfEngine
+    from tmt.utils import Command, RunError
+
+    # Mock guest and engine
+    mock_guest = MagicMock()
+    engine = DnfEngine(guest=mock_guest, logger=root_logger)
+
+    # Mock: createrepo not found, installation fails
+    mock_guest.execute.side_effect = [
+        RunError("not found", Command("command", "-v", "createrepo"), returncode=1),  # Not found
+        RunError("install failed", Command("dnf", "install"), returncode=1),  # Install fails
+    ]
+
+    directory = Path("/tmp/packages")
+
+    # Verify it raises GeneralError
+    with pytest.raises(GeneralError, match=r"Prerequisite 'createrepo' not found"):
+        engine.create_repository_metadata_from_dir(directory)
+
+
+def test_dnf_create_repository_metadata_execution_fails(root_logger):
+    """Test DNF metadata creation when createrepo execution fails"""
+    from tmt.package_managers.dnf import DnfEngine
+    from tmt.utils import Command, CommandOutput, RunError
+
+    # Mock guest and engine
+    mock_guest = MagicMock()
+    engine = DnfEngine(guest=mock_guest, logger=root_logger)
+
+    # Mock: createrepo found but execution fails
+    mock_guest.execute.side_effect = [
+        CommandOutput(stdout="/usr/bin/createrepo\n", stderr=""),  # command -v succeeds
+        RunError("execution failed", Command("createrepo"), returncode=1),  # Execution fails
+    ]
+
+    directory = Path("/tmp/packages")
+
+    # Verify it raises GeneralError
+    with pytest.raises(GeneralError, match=r"Failed to create repository metadata"):
+        engine.create_repository_metadata_from_dir(directory)
+
+
+def test_dnf_create_repository_metadata_empty_stdout(root_logger):
+    """Test DNF metadata creation handles empty stdout from command -v"""
+    from tmt.package_managers.dnf import DnfEngine
+    from tmt.utils import CommandOutput
+
+    # Mock guest and engine
+    mock_guest = MagicMock()
+    engine = DnfEngine(guest=mock_guest, logger=root_logger)
+
+    # Mock: command -v returns empty stdout (edge case)
+    mock_guest.execute.side_effect = [
+        CommandOutput(stdout="", stderr=""),  # Empty stdout
+        CommandOutput(stdout="Repository created", stderr=""),  # createrepo execution
+    ]
+
+    directory = Path("/tmp/packages")
+
+    # Call the method - it should handle empty stdout gracefully
+    engine.create_repository_metadata_from_dir(directory)
+
+    # Verify the createrepo was still called (with empty string path)
+    assert mock_guest.execute.call_count == 2
+
+
+# Tests for base PackageManager
+def test_package_manager_base_create_repository_not_implemented(root_logger):
+    """Test that base PackageManager raises NotImplementedError"""
+    from tmt.package_managers import PackageManagerEngine
+    from tmt.utils import Command
+
+    # Create a minimal concrete implementation that doesn't override
+    # create_repository_metadata_from_dir
+    class MinimalPackageManagerEngine(PackageManagerEngine):
+        _base_command = Command('test-pm')
+
+        def install(self, *args, **kwargs):
+            return Command('echo', 'install')
+
+        def reinstall(self, *args, **kwargs):
+            return Command('echo', 'reinstall')
+
+        def install_debuginfo(self, *args, **kwargs):
+            return Command('echo', 'install-debuginfo')
+
+        def check_presence(self, *args, **kwargs):
+            return Command('echo', 'check')
+
+        def refresh_metadata(self, *args, **kwargs):
+            return Command('echo', 'refresh')
+
+        def prepare_command(self, *args, **kwargs):
+            return (Command('test-pm'), Command('--options'))
+
+    # Create a minimal mock guest
+    mock_guest = MagicMock()
+
+    # Create engine instance
+    engine = MinimalPackageManagerEngine(guest=mock_guest, logger=root_logger)
+
+    directory = Path("/tmp/packages")
+
+    # Verify it raises NotImplementedError since we didn't override the method
+    with pytest.raises(NotImplementedError):
+        engine.create_repository_metadata_from_dir(directory)

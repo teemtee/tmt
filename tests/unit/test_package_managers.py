@@ -2184,3 +2184,89 @@ def test_install_debuginfo_nonexistent_skip(
     )
 
     assert_output(expected_output, output.stdout, output.stderr)
+
+
+# Unit tests for create_repository_metadata_from_dir
+def test_package_manager_base_create_repository_not_implemented(
+    root_logger: tmt.log.Logger,
+) -> None:
+    """
+    Test that base PackageManager.create_repository_metadata_from_dir
+    raises NotImplementedError
+    """
+    from unittest.mock import MagicMock
+
+    from tmt._compat.pathlib import Path
+    from tmt.package_managers import PackageManagerEngine
+
+    # Create a minimal concrete PackageManager that doesn't override
+    # create_repository_metadata_from_dir
+    class MinimalPackageManagerEngine(PackageManagerEngine):
+        _base_command = tmt.utils.Command('test-pm')
+
+        def install(self, *args, **kwargs):
+            return tmt.utils.Command('echo', 'install')
+
+        def reinstall(self, *args, **kwargs):
+            return tmt.utils.Command('echo', 'reinstall')
+
+        def install_debuginfo(self, *args, **kwargs):
+            return tmt.utils.Command('echo', 'install-debuginfo')
+
+        def check_presence(self, *args, **kwargs):
+            return tmt.utils.Command('echo', 'check')
+
+        def refresh_metadata(self, *args, **kwargs):
+            return tmt.utils.Command('echo', 'refresh')
+
+        def prepare_command(self, *args, **kwargs):
+            return (tmt.utils.Command('test-pm'), tmt.utils.Command('--options'))
+
+    class MinimalPackageManager(tmt.package_managers.PackageManager):
+        NAME = 'test-pm'
+        _engine_class = MinimalPackageManagerEngine
+        probe_command = tmt.utils.Command('test', '-f', '/usr/bin/test-pm')
+
+        def check_presence(self, *installables):
+            return dict.fromkeys(installables, False)
+
+    # Create a mock guest
+    mock_guest = MagicMock()
+
+    # Create the minimal package manager
+    package_manager = MinimalPackageManager(guest=mock_guest, logger=root_logger)
+
+    directory = Path("/tmp/packages")
+
+    # Verify it raises NotImplementedError since the base doesn't implement it
+    with pytest.raises(NotImplementedError):
+        package_manager.create_repository_metadata_from_dir(directory)
+
+
+def test_dnf_create_repository_metadata_calls_engine(
+    root_logger: tmt.log.Logger,
+) -> None:
+    """Test that Dnf.create_repository_metadata_from_dir calls the engine method"""
+    from unittest.mock import MagicMock, patch
+
+    from tmt._compat.pathlib import Path
+
+    # Create a mock guest
+    mock_guest = MagicMock()
+
+    # Mock the DnfEngine to avoid actual initialization
+    with patch('tmt.package_managers.dnf.DnfEngine') as mock_engine_class:
+        mock_engine_instance = MagicMock()
+        mock_engine_class.return_value = mock_engine_instance
+
+        # Create DNF package manager
+        dnf_pm = tmt.package_managers.dnf.Dnf(guest=mock_guest, logger=root_logger)
+        dnf_pm.engine = mock_engine_instance
+
+        directory = Path("/tmp/packages")
+
+        # Call create_repository_metadata_from_dir
+        dnf_pm.create_repository_metadata_from_dir(directory)
+
+        # Verify the engine method was called
+        mock_engine_instance.create_repository_metadata_from_dir.assert_called_once_with(directory)
