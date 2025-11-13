@@ -1,0 +1,24 @@
+summary: Simple test demonstrating Polarion + ReportPortal integration
+description: |
+    This test demonstrates how to use both ReportPortal and Polarion report
+    plugins together. Test results are uploaded to ReportPortal first, then
+    a Polarion test run is created with a link to the ReportPortal launch.
+
+contact: TMT Team <tmt@example.com>
+test: ./test.sh
+duration: 5m
+enabled: true
+tag:
+  - polarion
+  - reportportal
+  - example
+  - integration
+id: 158c14ea-19a1-4cad-93f7-fa567beff5aa
+extra-polarion: RHELCOCKPIT-999
+extra-note: |
+    To use this test with Polarion reporting, you need to export it first:
+    tmt tests export --how polarion --project-id RHELCockpit
+    
+    Or use auto-create-testcases: true in the plan (which is already enabled
+    in this example).
+

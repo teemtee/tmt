@@ -1,0 +1,71 @@
+summary: Example plan for Polarion + ReportPortal integration with schema
+
+description: |
+    This plan demonstrates **Polarion and ReportPortal integration** with comprehensive field usage.
+    
+    ### Workflow
+    
+    1. ReportPortal uploads detailed test results with logs and screenshots
+    2. Polarion creates test run with metadata and links to ReportPortal launch
+    
+    The test run includes:
+    - **Custom fields**: plannedin, assignee, poolteam, arch, build, composeid
+    - **Schema validation**: ensures field values are valid enums
+    - **Auto-create**: missing test cases created automatically
+    
+    Use `tmt run` to execute this plan. Field names must match the schema exactly.
+
+discover:
+    how: fmf
+    filter: "tag:polarion & tag:integration & tag:reportportal"
+
+provision:
+    how: virtual
+
+execute:
+    how: tmt
+
+# FMF context dimensions
+context:
+    deployment-mode: package
+
+report:
+    # First: Report to ReportPortal with full details
+    - how: reportportal
+      project: cockpit
+      suite-per-plan: true
+      traceback-size-limit: 1 MB
+      url: https://reportportal-cockpit.apps.dno.ocp-hub.prod.psi.redhat.com
+      token: --
+      upload: false  # Set to true when you have valid credentials
+    
+    # Second: Create Polarion test run with comprehensive metadata
+    # NOTE: Field names must match your Polarion project's Test Run configuration
+    - how: polarion
+      upload: false                      # Set to true when you have valid credentials
+      token-upload: true
+      auto-create-testcases: true        # Auto-create missing test cases
+      prettify: true                     # Format XML output nicely
+      include-output-log: true           # Include full test output in XML
+      project-id: RHELCockpit
+      template: Empty
+      
+      # Custom fields - must match schema field names exactly
+      plannedin: 9.7.ga                  # Test cycle/release (enum) - schema uses 'plannedin'
+      assignee: jscotka                  # Responsible person (enum)
+      poolteam: rhel-cockpit             # Team/subsystem (enum) - schema uses 'poolteam'
+      arch: x8664                       # Architecture (enum) 
+
+      build: RHEL-10.0.0-20250113.0      # Build number/identifier (string)
+      composeid: RHEL-10.0.0-20250113.0  # Compose ID (string) - schema uses 'composeid'
+      
+      scheduleTask: CTC1                 # Test cycle (enum) - schema uses camelCase 'scheduleTask'
+      platform: beaker                   # Platform (beaker, openstack, etc.)
+      
+      browser: chromium                  # Browser used for testing (enum)
+      component: cockpit                 # Component under test (multi-select field)
+      fips: true                         # FIPS mode enabled/disabled (boolean: true or false)
+      deploymentMode: image              # Deployment mode: package, image, or container (enum)
+      selinux_state: enabled             # SELinux state: enabled or disabled (enum)
+      selinux_mode: enforcing            # SELinux mode: enforcing or permissive (enum)
+      selinux_policy: targeted           # SELinux policy: targeted, minimum, or mls (enum)
