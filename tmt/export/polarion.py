@@ -28,29 +28,6 @@ RE_POLARION_URL = r'.*/polarion/#/project/.*/workitem\?id=(.*)'
 log = fmf.utils.Logging('tmt').logger
 
 
-def get_canonical_url(url: str) -> str:
-    """
-    Convert a git URL to the canonical upstream repository URL
-    
-    Handles forks and converts git URLs to canonical upstream.
-    For tmt, the canonical repository is teemtee/tmt.
-    """
-    if not url:
-        return url
-    
-    # Known canonical repositories
-    canonical_repos = {
-        'tmt': 'https://github.com/teemtee/tmt',
-    }
-    
-    # Detect if this is a tmt repository (any fork)
-    if 'tmt.git' in url or '/tmt/' in url or url.endswith('/tmt'):
-        return canonical_repos['tmt']
-    
-    # If no canonical mapping found, return original
-    return url
-
-
 def markdown_to_html(text: str) -> str:
     """
     Convert Markdown text to HTML for Polarion rich text fields.
@@ -83,56 +60,66 @@ def get_test_script_link(test: tmt.base.Test) -> Optional[str]:
     Generate a web link to the actual test script (not the metadata file)
     
     Returns a URL pointing to the test script (e.g., test.sh) instead of
-    the metadata file (main.fmf) which is what test.web_link() returns.
+    the metadata file (e.g., main.fmf) which is what test.web_link() returns.
     
-    Also normalizes URLs to use canonical upstream repository and default branch.
+    Properly handles relative paths like:
+    - ./test.sh → same directory as FMF file
+    - ../test.sh → one directory up
+    - ../../runtest.sh → two directories up
     """
     if not test.test or not test.fmf_id.url:
         return None
     
-    # Get the web link to the metadata file
-    metadata_link = test.web_link()
-    if not metadata_link:
+    # Get the actual metadata file path from node.sources (last source is most specific)
+    if not test.node.sources:
         return None
     
-    # Normalize to canonical repository
-    # Convert psss/tmt, jscotka/tmt, etc. to teemtee/tmt
-    canonical_link = metadata_link
+    metadata_file_path = Path(test.node.sources[-1])
     
-    # Replace fork repositories with canonical upstream
-    if 'github.com' in canonical_link:
-        # Extract the repository pattern and replace with canonical
-        import re
-        # Match patterns like: github.com/username/tmt
-        canonical_link = re.sub(
-            r'github\.com/[^/]+/tmt',
-            'github.com/teemtee/tmt',
-            canonical_link
-        )
-        
-        # Replace tree/branch_name with blob/main for default branch
-        # This handles local feature branches like stories_polarion
-        canonical_link = re.sub(
-            r'/tree/[^/]+/',
-            '/blob/main/',
-            canonical_link
-        )
+    # Ensure metadata_file_path is absolute by resolving it relative to FMF root
+    # node.sources can contain relative paths, so we need to make them absolute
+    if not metadata_file_path.is_absolute():
+        fmf_root = Path(test.node.root)
+        metadata_file_path = (fmf_root / metadata_file_path).resolve()
+    else:
+        metadata_file_path = metadata_file_path.resolve()
     
     # Extract the test script filename from the test field
-    # test.test is usually something like "./test.sh" or "test.sh"
-    test_script = str(test.test).lstrip('./')
+    # test.test can be a command with arguments like "./test.sh a b c --abc"
+    # We need just the command name, not the arguments
+    test_command = str(test.test).split(maxsplit=1)[0]  # Get first part (command)
     
-    # Replace main.fmf with the actual test script
-    if canonical_link.endswith('/main.fmf'):
-        return canonical_link.replace('/main.fmf', f'/{test_script}')
-    elif '/main.fmf' in canonical_link:
-        # Handle case where there might be query params or anchors
-        return canonical_link.replace('/main.fmf', f'/{test_script}')
-    else:
-        # If main.fmf is not in the URL, try to append the test script
-        # Remove trailing slash if present
-        base_link = canonical_link.rstrip('/')
-        return f'{base_link}/{test_script}'
+    # Resolve the test script path relative to the metadata file directory
+    # This handles ./, ../, ../../, etc. properly
+    # Now metadata_file_path is guaranteed to be absolute, so this resolution is safe
+    metadata_dir = metadata_file_path.parent
+    test_script_path = (metadata_dir / test_command).resolve()
+    
+    # Check if the resolved test script exists locally
+    if not test_script_path.exists():
+        # If file doesn't exist, fall back to original web_link behavior
+        return test.web_link()
+    
+    # Get the actual git repository root (not FMF root, which may be nested)
+    # FMF root is where .fmf/ directory is, git root is where .git/ directory is
+    git_root_path = tmt.utils.git.git_root(fmf_root=Path(test.node.root), logger=test._logger)
+    if not git_root_path:
+        # Not in a git repository
+        return test.web_link()
+    
+    # Calculate the relative path from git root to the test script
+    try:
+        relative_test_path = test_script_path.relative_to(git_root_path)
+    except ValueError:
+        # Test script is outside the git repository
+        return test.web_link()
+    
+    # Add fmf path if the tree is nested deeper in the git repo
+    if test.fmf_id.path:
+        relative_test_path = test.fmf_id.path / relative_test_path
+    
+    # Construct the web URL using the git utilities
+    return tmt.utils.git.web_git_url(test.fmf_id.url, test.fmf_id.ref, Path('/') / relative_test_path)
 
 
 def import_polarion() -> None:
@@ -671,85 +658,26 @@ def create_polarion_feature(summary: str, project_id: str, story_text: str) -> P
     return feature
 
 
-def export_story_to_polarion(story: tmt.base.Story) -> None:
+def _generate_story_description_html(story: tmt.base.Story) -> str:
     """
-    Export fmf story metadata to a Polarion feature/requirement
+    Generate HTML description for a Polarion story/feature
+    
+    Creates a formatted HTML description including:
+    - TMT autogeneration header with link to metadata
+    - Story text converted from Markdown
+    - Description converted from Markdown
+    - Examples list
+    
+    Args:
+        story: The story object to generate description for
+        
+    Returns:
+        HTML-formatted description string
     """
-
-    import tmt.export.nitrate
-
-    import_polarion()
-    
-    logger = story._logger
-
-    # Check command line options
-    create = story.opt('create')
-    project_id = story.opt('project_id')
-    polarion_feature_id = story.opt('polarion_feature_id')
-    duplicate = story.opt('duplicate')
-    export_linked_tests = story.opt('export_linked_tests')
-    dry_mode = story.is_dry_run
-    link_polarion = story.opt('link_polarion')
-    append_summary = story.opt('append-summary')
-
-    polarion_feature = None
-    if not duplicate:
-        polarion_feature = get_polarion_feature(story.node, project_id, polarion_feature_id)
-    
-    # Prepare summary
-    summary = tmt.export.nitrate.prepare_extra_summary(story, append_summary)
-
-    if not polarion_feature:
-        if create:
-            if not project_id:
-                raise ConvertError(
-                    "Please provide project_id so tmt knows which "
-                    "Polarion project to use for this feature."
-                )
-            if not dry_mode:
-                polarion_feature = create_polarion_feature(
-                    summary, project_id=project_id, story_text=story.story or ""
-                )
-            else:
-                echo(style(f"Feature '{summary}' created.", fg='blue'))
-            story._metadata['extra-summary'] = summary
-        else:
-            raise ConvertError(
-                f"Polarion feature id not found for '{story}'. "
-                f"(You can use --create option to enforce creating features.)"
-            )
-
-    # Title
-    if not dry_mode:
-        assert polarion_feature  # Narrow type
-        if story.title is not None and polarion_feature.title != story.title:
-            polarion_feature.title = story.title
-        elif story.summary is not None and polarion_feature.title != story.summary:
-            polarion_feature.title = story.summary
-    title = story.title or story.summary
-    if title:
-        logger.debug(f"title: {title}")
-
-    # Add id to story
-    uuid = add_uuid_if_not_defined(story.node, dry_mode, story._logger)
-    if not uuid:
-        uuid = story.node.get(ID_KEY)
-    logger.debug(f"Appended ID: {uuid}")
-    
-    # Store Polarion work item ID in extra-polarion for future lookups
-    if not dry_mode and polarion_feature:
-        assert polarion_feature  # Narrow type
-        polarion_work_item_id = str(polarion_feature.work_item_id)
-        with story.node as data:
-            data['extra-polarion'] = polarion_work_item_id
-        logger.info(f"Stored Polarion work item ID: {polarion_work_item_id}")
-
-    # Description (story text + description)
-    # Convert Markdown to HTML for rich text formatting
-    
-    # Add header indicating TMT autogeneration with link to metadata
     description = ""
     web_link = story.web_link()
+    
+    # Add header indicating TMT autogeneration with link to metadata
     if web_link:
         # Use the actual origin repository URL without any hardcoded modifications
         description = (
@@ -758,86 +686,175 @@ def export_story_to_polarion(story: tmt.base.Story) -> None:
             f'<hr/>'
         )
     
+    # Add story text
     if story.story:
         description += markdown_to_html(story.story)
+    
+    # Add description
     if story.description:
         if description and not web_link:  # Only add spacing if no header was added
             description += '<br/><br/>'
         elif description:  # Header was added
             description += '<br/>'
         description += markdown_to_html(story.description)
+    
+    # Add examples
     if story.example:
         description += '<br/><br/><strong>Examples:</strong><br/>'
         for example in story.example:
             # Examples can also contain markdown
             example_html = markdown_to_html(example)
             description += f'<br/>• {example_html}'
-    if not dry_mode:
-        assert polarion_feature  # Narrow type
-        polarion_feature.description = description
-    logger.debug(f"description: {description[:100]}{'...' if len(description) > 100 else ''}")
+    
+    return description
 
-    # Priority
-    if story.priority:
-        priority_map = {
-            'must have': 'high',
-            'should have': 'medium',
-            'could have': 'low',
-            'will not have': 'low'
-        }
-        if not dry_mode:
-            assert polarion_feature  # Narrow type
-            try:
-                polarion_feature.priority = priority_map.get(str(story.priority), 'medium')
-            except (AttributeError, PolarionException) as exc:
-                logger.debug(f"Failed to set priority: {exc}")
-        logger.debug(f"priority: {story.priority}")
 
-    # Tags
+def _set_polarion_feature_fields(
+    polarion_feature: PolarionWorkItem,
+    story: tmt.base.Story,
+    dry_mode: bool,
+    logger: tmt.log.Logger
+) -> None:
+    """
+    Set all Polarion feature/requirement fields from story metadata
+    
+    Updates the Polarion work item with metadata from the TMT story including:
+    - Title
+    - Description (HTML formatted)
+    - Priority
+    - Tags
+    - Contact/Assignee
+    - Status
+    - Custom fields
+    
+    Args:
+        polarion_feature: The Polarion work item to update
+        story: The TMT story object containing metadata
+        dry_mode: Whether in dry-run mode (don't actually update Polarion)
+        logger: Logger instance for debugging
+    """
+    # Prepare all values for logging/dry-run display
+    title = story.title or story.summary
+    description = _generate_story_description_html(story)
+    priority_map = {
+        'must have': 'high',
+        'should have': 'medium',
+        'could have': 'low',
+        'will not have': 'low'
+    }
+    priority_value = priority_map.get(str(story.priority), 'medium') if story.priority else None
+    
+    # Prepare tags
     if story.tag:
         story.tag.append('fmf-export')
-        if not dry_mode:
-            assert polarion_feature  # Narrow type
-            try:
-                polarion_feature.tags = ' '.join(story.tag)
-            except (AttributeError, PolarionException) as exc:
-                logger.debug(f"Failed to set tags: {exc}")
-        logger.debug(f"tags: {' '.join(set(story.tag))}")
-
-    # Contact
+    tags_value = ' '.join(story.tag) if story.tag else None
+    
+    # Prepare contact/assignee
+    login_name = None
     if story.contact:
         email_address = email.utils.parseaddr(story.contact[0])[1]
         login_name = email_address[: email_address.find('@')]
-        try:
-            if not dry_mode:
-                assert polarion_feature  # Narrow type
+    
+    # Prepare status
+    status_value = 'approved' if story.enabled else 'inactive'
+    
+    # Log what would be set
+    if title:
+        logger.debug(f"title: {title}")
+    logger.debug(f"description: {description[:100]}{'...' if len(description) > 100 else ''}")
+    if priority_value:
+        logger.debug(f"priority: {story.priority}")
+    if tags_value:
+        logger.debug(f"tags: {' '.join(set(story.tag))}")
+    if login_name:
+        logger.debug(f"assignee: {login_name}")
+    logger.debug(f"enabled: {story.enabled}")
+    
+    # Early return if dry mode - don't actually update Polarion
+    if dry_mode:
+        return
+    
+    # Apply all changes to Polarion (only if not dry mode)
+    try:
+        # Title
+        if story.title is not None and polarion_feature.title != story.title:
+            polarion_feature.title = story.title
+        elif story.summary is not None and polarion_feature.title != story.summary:
+            polarion_feature.title = story.summary
+        
+        # Description
+        polarion_feature.description = description
+        
+        # Priority
+        if priority_value:
+            try:
+                polarion_feature.priority = priority_value
+            except (AttributeError, PolarionException) as exc:
+                logger.debug(f"Failed to set priority: {exc}")
+        
+        # Tags
+        if tags_value:
+            try:
+                polarion_feature.tags = tags_value
+            except (AttributeError, PolarionException) as exc:
+                logger.debug(f"Failed to set tags: {exc}")
+        
+        # Contact/Assignee
+        if login_name:
+            try:
                 polarion_feature.add_assignee(login_name)
-            logger.debug(f"assignee: {login_name}")
-        except (AttributeError, PolarionException) as err:
-            logger.debug(f"Failed to set assignee: {err}")
-
-    # Status
-    if not dry_mode:
-        assert polarion_feature  # Narrow type
+            except (AttributeError, PolarionException) as err:
+                logger.debug(f"Failed to set assignee: {err}")
+        
+        # Status
         try:
-            if story.enabled:
-                polarion_feature.status = 'approved'
-            else:
-                polarion_feature.status = 'inactive'
+            polarion_feature.status = status_value
         except (AttributeError, PolarionException) as exc:
             logger.debug(f"Failed to set status: {exc}")
-    logger.debug(f"enabled: {story.enabled}")
-
-    # Custom Polarion fields from extra-polarion-* metadata
-    if not dry_mode and polarion_feature:
+        
+        # Custom Polarion fields from extra-polarion-* metadata
         logger.info('Setting custom Polarion fields')
         set_polarion_custom_fields(polarion_feature, story.node, dry_mode=False)
+        
+    except Exception as exc:
+        logger.debug(f"Failed to set some Polarion fields: {exc}")
 
+
+def _export_and_link_story_tests(
+    story: tmt.base.Story,
+    polarion_feature: Optional[PolarionWorkItem],
+    project_id: Optional[str],
+    create: bool,
+    export_linked_tests: bool,
+    dry_mode: bool,
+    append_summary: Optional[str],
+    logger: tmt.log.Logger
+) -> None:
+    """
+    Export linked test cases to Polarion and link them to the story feature
+    
+    Two-step process:
+    1. Export all linked tests to Polarion (creating them if needed)
+    2. Link the exported test cases to the Polarion feature
+    
+    Args:
+        story: The TMT story object containing test links
+        polarion_feature: The Polarion feature to link tests to
+        project_id: Polarion project ID
+        create: Whether to create missing test cases
+        export_linked_tests: Whether to export linked tests at all
+        dry_mode: Whether in dry-run mode
+        append_summary: Text to append to test summaries
+        logger: Logger instance for debugging
+    """
+    if not story.verified:
+        return
+    
     # Step 1: Export linked test cases first (if enabled)
     # This ensures all test cases exist in Polarion before we link them
     test_case_map = {}  # Map: test path -> Polarion work item ID
     
-    if story.verified and export_linked_tests:
+    if export_linked_tests:
         logger.info('Exporting linked test cases to Polarion')
         
         for link in story.verified:
@@ -926,49 +943,131 @@ def export_story_to_polarion(story: tmt.base.Story) -> None:
     
     # Step 2: Link test cases to story
     # Now that all test cases are exported, we can link them
-    if story.verified:
-        logger.info('Linking test cases to feature')
+    logger.info('Linking test cases to feature')
+    
+    # Collect all links to be made
+    links_to_create = []
+    for link in story.verified:
+        # Get the Polarion work item ID from our map
+        polarion_id = None
+        test_path = None
         
-        for link in story.verified:
-            # Get the Polarion work item ID from our map
-            polarion_id = None
-            test_path = None
-            
-            if isinstance(link.target, str):
-                test_path = link.target
-                polarion_id = test_case_map.get(link.target)
-            elif isinstance(link.target, tmt.base.FmfId):
-                test_path = link.target.name
-                polarion_id = test_case_map.get(link.target.name)
-            
-            if polarion_id:
-                try:
-                    if not dry_mode:
-                        assert polarion_feature  # Narrow type
-                        # Use "verifies" role - the test case verifies the requirement
-                        polarion_feature.add_linked_item(polarion_id, 'verifies')
-                    logger.info(f'Linked: {polarion_id} (verifies)')
-                except (AttributeError, PolarionException) as err:
-                    logger.debug(f"Failed to link test case {polarion_id}: {err}")
-                    logger.warning(f'Failed to link: {polarion_id}')
-                except Exception as err:
-                    logger.debug(f"Unexpected error linking test case {polarion_id}: {err}")
-                    logger.warning(f'Failed to link: {polarion_id}')
-            elif export_linked_tests:
-                # We tried to export but failed
-                logger.warning(f'Skipping link for {test_path} (test case not available)')
-
-    # Add web link
-    if not dry_mode and polarion_feature:
-        web_link = story.web_link()
-        if web_link:
+        if isinstance(link.target, str):
+            test_path = link.target
+            polarion_id = test_case_map.get(link.target)
+        elif isinstance(link.target, tmt.base.FmfId):
+            test_path = link.target.name
+            polarion_id = test_case_map.get(link.target.name)
+        
+        if polarion_id:
+            links_to_create.append(polarion_id)
+            logger.info(f'Linked: {polarion_id} (verifies)')
+        elif export_linked_tests:
+            # We tried to export but failed
+            logger.warning(f'Skipping link for {test_path} (test case not available)')
+    
+    # Apply all links at once (only if not dry mode)
+    if not dry_mode and polarion_feature and links_to_create:
+        for polarion_id in links_to_create:
             try:
-                add_hyperlink(polarion_feature, web_link)
+                # Use "verifies" role - the test case verifies the requirement
+                polarion_feature.add_linked_item(polarion_id, 'verifies')
             except (AttributeError, PolarionException) as err:
-                logger.debug(f"Failed to add hyperlink: {err}")
+                logger.debug(f"Failed to link test case {polarion_id}: {err}")
+                logger.warning(f'Failed to link: {polarion_id}')
+            except Exception as err:
+                logger.debug(f"Unexpected error linking test case {polarion_id}: {err}")
+                logger.warning(f'Failed to link: {polarion_id}')
 
-    if not dry_mode and link_polarion:
-        assert polarion_feature  # Narrow type
+
+def export_story_to_polarion(story: tmt.base.Story) -> None:
+    """
+    Export fmf story metadata to a Polarion feature/requirement
+    """
+
+    import tmt.export.nitrate
+
+    import_polarion()
+    
+    logger = story._logger
+
+    # Check command line options
+    create = story.opt('create')
+    project_id = story.opt('project_id')
+    polarion_feature_id = story.opt('polarion_feature_id')
+    duplicate = story.opt('duplicate')
+    export_linked_tests = story.opt('export_linked_tests')
+    dry_mode = story.is_dry_run
+    link_polarion = story.opt('link_polarion')
+    append_summary = story.opt('append-summary')
+
+    polarion_feature = None
+    if not duplicate:
+        polarion_feature = get_polarion_feature(story.node, project_id, polarion_feature_id)
+    
+    # Prepare summary
+    summary = tmt.export.nitrate.prepare_extra_summary(story, append_summary)
+
+    if not polarion_feature:
+        if create:
+            if not project_id:
+                raise ConvertError(
+                    "Please provide project_id so tmt knows which "
+                    "Polarion project to use for this feature."
+                )
+            if not dry_mode:
+                polarion_feature = create_polarion_feature(
+                    summary, project_id=project_id, story_text=story.story or ""
+                )
+            else:
+                echo(style(f"Feature '{summary}' created.", fg='blue'))
+            story._metadata['extra-summary'] = summary
+        else:
+            raise ConvertError(
+                f"Polarion feature id not found for '{story}'. "
+                f"(You can use --create option to enforce creating features.)"
+            )
+
+    # Add id to story
+    uuid = add_uuid_if_not_defined(story.node, dry_mode, story._logger)
+    if not uuid:
+        uuid = story.node.get(ID_KEY)
+    logger.debug(f"Appended ID: {uuid}")
+
+    # Set all Polarion feature fields (title, description, priority, tags, etc.)
+    if polarion_feature:
+        _set_polarion_feature_fields(polarion_feature, story, dry_mode, logger)
+
+    # Export and link test cases to the story
+    _export_and_link_story_tests(
+        story, polarion_feature, project_id, create,
+        export_linked_tests, dry_mode, append_summary, logger
+    )
+
+    # Early return if dry mode - remaining operations modify metadata and Polarion
+    if dry_mode:
+        echo(style(f"Story '{summary}' would be exported to Polarion (dry mode).", fg='magenta'))
+        return
+    
+    # All operations below only execute when not in dry mode
+    assert polarion_feature is not None  # Should exist if not dry mode
+    
+    # Store Polarion work item ID in extra-polarion for future lookups
+    polarion_work_item_id = str(polarion_feature.work_item_id)
+    with story.node as data:
+        data['extra-polarion'] = polarion_work_item_id
+    logger.info(f"Stored Polarion work item ID: {polarion_work_item_id}")
+
+    # Add web link to Polarion feature
+    web_link = story.web_link()
+    if web_link:
+        try:
+            add_hyperlink(polarion_feature, web_link)
+        except (AttributeError, PolarionException) as err:
+            logger.debug(f"Failed to add hyperlink: {err}")
+
+    # Add Polarion link back to FMF metadata
+    if link_polarion:
         with story.node as data:
             server_url = str(polarion_feature._session._server.url)
             tmt.convert.add_link(
@@ -981,14 +1080,12 @@ def export_story_to_polarion(story: tmt.base.Story) -> None:
             )
         logger.debug("Added Polarion feature link to fmf metadata")
 
-    # Update Polarion feature
-    if not dry_mode:
-        assert polarion_feature  # Narrow type
-        try:
-            polarion_feature.update()
-        except (AttributeError, PolarionException) as exc:
-            logger.debug(f"Failed to update feature: {exc}")
-            raise ConvertError(f"Failed to update Polarion feature: {exc}") from exc
+    # Update Polarion feature with all changes
+    try:
+        polarion_feature.update()
+    except (AttributeError, PolarionException) as exc:
+        logger.debug(f"Failed to update feature: {exc}")
+        raise ConvertError(f"Failed to update Polarion feature: {exc}") from exc
     
     # Final success message - keep this as user-facing output
     echo(style(f"Story '{summary}' successfully exported to Polarion.", fg='magenta'))
