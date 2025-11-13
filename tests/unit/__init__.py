@@ -221,12 +221,12 @@ CONTAINER_UBUNTU_2204 = Container(
 CONTAINER_DEBIAN_127 = Container(
     url='containers-storage:localhost/tmt/container/test/debian/12.7/upstream:latest'
 )
-CONTAINER_FEDORA_COREOS = Container(
-    url='containers-storage:localhost/tmt/container/test/fedora/coreos:stable'
-)
-CONTAINER_FEDORA_COREOS_OSTREE = Container(
-    url='containers-storage:localhost/tmt/container/test/fedora/coreos/ostree:stable'
-)
+# CONTAINER_FEDORA_COREOS = Container(
+#     url='containers-storage:localhost/tmt/container/test/fedora/coreos:stable'
+# )
+# CONTAINER_FEDORA_COREOS_OSTREE = Container(
+#     url='containers-storage:localhost/tmt/container/test/fedora/coreos/ostree:stable'
+# )
 CONTAINER_ALPINE = Container(url='containers-storage:localhost/tmt/container/test/alpine:latest')
 
 
