@@ -20,7 +20,9 @@ rlJournalStart
         rlRun -s "tmt -vv run --id $run -e RUN_ENV=value"
         rlAssertExists "$recipe" "Recipe file exists"
         replace_values
-        rlAssertEquals "Generated recipe matches expected recipe" "$(yq -S . "$recipe")" "$(yq -S . "$expected_recipe")"
+        rlRun "yq 'sort_keys(..)' \"$recipe\" > $run/actual_normalized_recipe.yaml"
+        rlRun "yq 'sort_keys(..)' \"$expected_recipe\" > $run/expected_normalized_recipe.yaml"
+        rlRun "diff $run/actual_normalized_recipe.yaml $run/expected_normalized_recipe.yaml"
     rlPhaseEnd
 
     rlPhaseStartCleanup
