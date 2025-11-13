@@ -605,7 +605,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
 
     # Environment
     if test.environment:
-        environment = ' '.join(tmt.utils.shell_variables(test.environment))
+        environment = ' '.join(test.environment.to_shell())
         if not dry_mode:
             nitrate_case.arguments = environment
         echo(style('arguments: ', fg='green') + environment)

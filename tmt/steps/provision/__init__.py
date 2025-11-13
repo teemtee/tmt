@@ -1790,19 +1790,6 @@ class Guest(
             environment.update(parent.plan.environment)
         return environment
 
-    @staticmethod
-    def _export_environment(environment: tmt.utils.Environment) -> list[ShellScript]:
-        """
-        Prepare shell export of environment variables
-        """
-
-        if not environment:
-            return []
-        return [
-            ShellScript(f'export {variable}')
-            for variable in tmt.utils.shell_variables(environment)
-        ]
-
     def _run_guest_command(
         self,
         command: Command,
@@ -2784,7 +2771,7 @@ class GuestSsh(Guest):
         # Accumulate all necessary commands - they will form a "shell" script, a single
         # string passed to SSH to execute on the remote machine.
         remote_commands: ShellScript = ShellScript.from_scripts(
-            self._export_environment(self._prepare_environment(env))
+            self._prepare_environment(env).to_shell_exports()
         )
 
         # Change to given directory on guest if cwd provided

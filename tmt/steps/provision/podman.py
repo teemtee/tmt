@@ -424,7 +424,7 @@ class GuestContainer(tmt.Guest):
 
         # Accumulate all necessary commands - they will form a "shell" script, a single
         # string passed to a shell executed inside the container.
-        script = ShellScript.from_scripts(self._export_environment(self._prepare_environment(env)))
+        script = ShellScript.from_scripts(self._prepare_environment(env).to_shell_exports())
 
         # Change to given directory on guest if cwd provided
         if cwd is not None:
