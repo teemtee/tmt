@@ -4,13 +4,7 @@
     Releases
 ======================
 
-tmt-1.62.0
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The :ref:`/plugins/test-checks/avc` check now supports
-``ignore-pattern`` key to exclude specific AVC denials
-from being reported as failures.
-
+.. include:: ./release.rst.inc
 
 tmt-1.61.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
