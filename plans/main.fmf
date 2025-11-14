@@ -2,15 +2,6 @@
 provision:
     how: local
 
-prepare+:
-  # Install jq and yq for cleaner tests, and required make
-  - how: install
-    package:
-      - jq
-      - yq
-      - make
-      - python3-pip
-
 # Use the internal executor
 execute:
     how: tmt
