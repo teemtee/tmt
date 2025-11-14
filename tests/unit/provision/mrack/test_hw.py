@@ -8,6 +8,7 @@ from tmt.hardware import (
     Hardware,
     Operator,
     _parse_cpu,
+    _parse_device,
     _parse_disk,
     _parse_hostname,
     _parse_iommu,
@@ -127,7 +128,12 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                     {},
                     {},
                     {},
-                    {},
+                    {
+                        'device': {
+                            '_description': '%Thunderbolt%',
+                            '_op': 'like',
+                        },
+                    },
                     {
                         'key_value': {
                             '_key': 'MODULE',
@@ -587,3 +593,29 @@ def test_or_constraint(root_logger: Logger) -> None:
             },
         ],
     }
+
+
+def test_device_device_name(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['device.device_name'](
+        _parse_device({'device-name': 'Genoa CCP'}), root_logger
+    )
+
+    assert result.to_mrack() == {'device': {'_op': '==', '_description': 'Genoa CCP'}}
+
+    result = _CONSTRAINT_TRANSFORMERS['device.device_name'](
+        _parse_device({'device-name': '!= Genoa CCP'}), root_logger
+    )
+
+    assert result.to_mrack() == {'device': {'_op': '!=', '_description': 'Genoa CCP'}}
+
+    result = _CONSTRAINT_TRANSFORMERS['device.device_name'](
+        _parse_device({'device-name': '~ Genoa.*'}), root_logger
+    )
+
+    assert result.to_mrack() == {'device': {'_op': 'like', '_description': 'Genoa%'}}
+
+    result = _CONSTRAINT_TRANSFORMERS['device.device_name'](
+        _parse_device({'device-name': '!~ Genoa.*'}), root_logger
+    )
+
+    assert result.to_mrack() == {'not': {'device': {'_op': 'like', '_description': 'Genoa%'}}}
