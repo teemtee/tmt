@@ -195,3 +195,105 @@ def parse_rpm_string(pkg_string: str) -> dict[str, str]:
         'arch': arch,
         'nvr': nvr,
     }
+
+
+def create_repository(
+    artifact_dir: Path,
+    guest: Guest,
+    logger: tmt.log.Logger,
+    repo_name: Optional[str] = None,
+    priority: int = 1,
+) -> Repository:
+    """
+    Create and install a local RPM repository from a directory on the guest.
+
+    This function orchestrates the complete process of creating a local RPM repository
+    from a directory containing RPM packages and installing it on the guest system.
+    The process involves:
+
+    1. Creating repository metadata in the specified directory using the guest's package manager
+    2. Generating a .repo configuration file with the repository settings
+    3. Installing the repository configuration file on the guest system
+
+
+    :param artifact_dir: Path to the directory on the guest containing RPM files.
+                         This directory must exist on the guest system.
+    :param guest: Guest instance where the repository will be created and installed.
+    :param logger: Logger instance for outputting debug and error messages.
+    :param repo_name: Name for the repository. If not provided, the directory name
+                      will be used. This name appears in the .repo file and package
+                      manager output.
+    :param priority: Repository priority (default: 1). Lower values have higher
+                     priority when multiple repositories provide the same package.
+    :return: Repository object representing the newly created and installed repository.
+    :raises GeneralError: If the artifact directory does not exist on the guest,
+                         if repository metadata creation fails, or if repository
+                         installation fails.
+
+    .. note::
+
+        The repository is created with ``gpgcheck=0`` (GPG signature checking disabled)
+        to support unsigned local packages.
+
+    Example::
+
+        # Create repository from downloaded artifacts
+        repository = create_repository(
+            artifact_dir=Path('/tmp/my-rpms'),
+            guest=my_guest,
+            logger=my_logger,
+            repo_name='my-local-repo',
+            priority=1
+        )
+
+    """
+
+    # Validation
+    if repo_name is None:
+        repo_name = artifact_dir.name
+        if not repo_name:
+            raise GeneralError(
+                f"Could not derive repository name from directory '{artifact_dir}'."
+            )
+
+    logger.debug(f"Creating repository '{repo_name}' from '{artifact_dir}'.")
+    try:
+        guest.execute(
+            tmt.utils.Command("test", "-d", str(artifact_dir)),
+            silent=True,
+        )
+    except tmt.utils.RunError as error:
+        raise GeneralError(
+            f"Artifact directory '{artifact_dir}' does not exist on guest."
+        ) from error
+
+    # Create Repository Metadata
+    logger.debug(f"Asking package manager to create metadata in '{artifact_dir}'.")
+    try:
+        # This now calls the correct method (e.g., in DnfPackageManager)
+        guest.package_manager.create_repository_metadata_from_dir(artifact_dir)
+    except (NotImplementedError, GeneralError) as error:
+        raise GeneralError(f"Failed to create repository metadata in '{artifact_dir}'") from error
+
+    # Generate .repo File Content
+    repo_content = [
+        f"[{tmt.utils.sanitize_name(repo_name)}]",
+        f"name={repo_name}",
+        f"baseurl=file://{artifact_dir}",
+        "enabled=1",
+        "gpgcheck=0",
+        f"priority={priority}",
+    ]
+    repo_string = "\n".join(repo_content)
+    logger.debug(f"Generated .repo file content:\n{repo_string}")
+
+    # Create and Install Repository Object
+    created_repository = Repository.from_content(
+        content=repo_string, name=repo_name, logger=logger
+    )
+
+    logger.debug(f"Installing repository '{created_repository.name}' on the guest.")
+
+    guest.package_manager.install_repository(created_repository)
+
+    return created_repository

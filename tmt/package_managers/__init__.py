@@ -219,6 +219,17 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
+    def create_repository_metadata_from_dir(self, directory: Path) -> None:
+        """
+        Create repository metadata for a given directory.
+
+        :param directory: The path to the directory containing packages.
+        :raises GeneralError: If metadata creation fails.
+        :raises NotImplementedError: If this package manager does not
+            support creating repositories.
+        """
+        raise NotImplementedError
+
 
 class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
     """
@@ -309,3 +320,14 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             raise GeneralError("Repository query provided no output")
 
         return stdout.strip().splitlines()
+
+    def create_repository_metadata_from_dir(self, directory: Path) -> None:
+        """
+        Create repository metadata for a given directory.
+
+        :param directory: The path to the directory containing packages.
+        :raises GeneralError: If metadata creation fails.
+        :raises NotImplementedError: If this package manager does not
+            support creating repositories.
+        """
+        raise NotImplementedError

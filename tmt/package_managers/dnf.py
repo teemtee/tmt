@@ -1,6 +1,7 @@
 import re
 from typing import TYPE_CHECKING, Any, Optional, cast
 
+from tmt._compat.pathlib import Path
 from tmt.package_managers import (
     FileSystemPath,
     Installable,
@@ -190,6 +191,38 @@ class DnfEngine(PackageManagerEngine):
             """
         )
 
+    def create_repository_metadata_from_dir(self, directory: Path) -> None:
+        """Create repository metadata using createrepo"""
+        # Find or install 'createrepo'
+        try:
+            result = self.guest.execute(Command('command', '-v', 'createrepo'), silent=True)
+            createrepo_path = (result.stdout or '').strip()
+
+        except RunError:
+            try:
+                # Get the install script and execute it
+                install_script = self.install(Package('createrepo'))
+                self.guest.execute(install_script, silent=False)
+
+                # Verify installation
+                result = self.guest.execute(Command('command', '-v', 'createrepo'), silent=True)
+                createrepo_path = (result.stdout or '').strip()
+
+            except RunError as error:
+                # If installation fails, raise the error
+                raise GeneralError(
+                    "Prerequisite 'createrepo' not found and could not be installed. "
+                    f"Original error: {error.stderr}"
+                ) from error
+
+        # Run the command to create metadata
+        try:
+            self.guest.execute(Command(createrepo_path, str(directory)), silent=False)
+        except RunError as error:
+            raise GeneralError(
+                f"Failed to create repository metadata in '{directory}': {error}"
+            ) from error
+
 
 # ignore[type-arg]: TypeVar in package manager registry annotations is
 # puzzling for type checkers. And not a good idea in general, probably.
@@ -249,6 +282,9 @@ class Dnf(PackageManager[DnfEngine]):
             results[installable] = True
 
         return results
+
+    def create_repository_metadata_from_dir(self, directory: Path) -> None:
+        return self.engine.create_repository_metadata_from_dir(directory)
 
 
 class Dnf5Engine(DnfEngine):
