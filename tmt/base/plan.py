@@ -1,3 +1,71 @@
+import enum
+import functools
+import itertools
+import re
+import shutil
+import tempfile
+from collections.abc import Iterable, Iterator
+from re import Pattern
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, Union, cast
+
+import fmf
+import fmf.context
+import fmf.utils
+from click import echo
+from fmf.utils import listed  # pyright: ignore[reportUnknownVariableType]
+from ruamel.yaml.error import MarkedYAMLError
+
+import tmt.ansible
+import tmt.export
+import tmt.lint
+import tmt.plugins.plan_shapers
+import tmt.steps
+import tmt.steps.cleanup
+import tmt.steps.discover
+import tmt.steps.execute
+import tmt.steps.finish
+import tmt.steps.prepare
+import tmt.steps.provision
+import tmt.steps.report
+import tmt.templates
+import tmt.utils
+import tmt.utils.git
+import tmt.utils.jira
+from tmt._compat.pathlib import Path
+from tmt.base.core import (
+    DEFAULT_ORDER,
+    EXTRA_KEYS_PREFIX,
+    Core,
+    FmfId,
+    Links,
+    Run,
+    Test,
+    Tree,
+    _RawAdjustRule,
+    _RawFmfId,
+    _RawLink,
+    expand_node_data,
+)
+from tmt.container import SpecBasedContainer, container, field
+from tmt.lint import LinterOutcome, LinterReturn
+from tmt.utils import (
+    Command,
+    Environment,
+    EnvVarValue,
+    FmfContext,
+    GeneralError,
+    HasEnvironment,
+    HasPlanWorkdir,
+    HasRunWorkdir,
+    style,
+    to_yaml,
+)
+
+if TYPE_CHECKING:
+    import tmt.cli
+    import tmt.log
+
+
 #: Filename associated with ``TMT_PLAN_SOURCE_SCRIPT``
 PLAN_SOURCE_SCRIPT_NAME: str = "plan-source-script.sh"
 
@@ -40,7 +108,7 @@ class RemotePlanReferenceImportScope(enum.Enum):
 
 
 @container
-class RemotePlanReference(
+class RemotePlanReference(  # pyright: ignore[reportGeneralTypeIssues]
     FmfId,
     # Repeat the SpecBasedContainer, with more fitting in/out spec type.
     SpecBasedContainer[_RemotePlanReference, _RemotePlanReference],
@@ -124,7 +192,7 @@ class RemotePlanReference(
 
         # TODO: with mandatory validation, this can go away.
         ref = raw.get('ref', None)
-        if not isinstance(ref, (type(None), str)):
+        if not isinstance(ref, (type(None), str)):  # pyright: ignore[reportUnnecessaryIsInstance]
             # TODO: deliver better key address
             raise tmt.utils.NormalizationError('ref', ref, 'unset or a string')
 
@@ -192,18 +260,18 @@ class Plan(
     _original_plan: Optional['Plan'] = field(default=None, internal=True)
     _original_plan_fmf_id: Optional[FmfId] = field(default=None, internal=True)
 
-    _imported_plan_references: list[RemotePlanReference] = field(
+    _imported_plan_references: list[RemotePlanReference] = field(  # pyright: ignore[reportUnknownVariableType]
         default_factory=list, internal=True
     )
-    _imported_plans: list['Plan'] = field(default_factory=list, internal=True)
+    _imported_plans: list['Plan'] = field(default_factory=list, internal=True)  # pyright: ignore[reportUnknownVariableType]
 
-    _derived_plans: list['Plan'] = field(default_factory=list, internal=True)
+    _derived_plans: list['Plan'] = field(default_factory=list, internal=True)  # pyright: ignore[reportUnknownVariableType]
     derived_id: Optional[int] = field(default=None, internal=True)
 
     #: Used by steps to mark invocations that have been already applied to
     #: this plan's phases. Needed to avoid the second evaluation in
     #: py:meth:`Step.wake()`.
-    _applied_cli_invocations: list['tmt.cli.CliInvocation'] = field(
+    _applied_cli_invocations: list['tmt.cli.CliInvocation'] = field(  # pyright: ignore[reportUnknownVariableType]
         default_factory=list, internal=True
     )
 
@@ -219,8 +287,8 @@ class Plan(
         self,
         *,
         node: fmf.Tree,
-        tree: Optional['Tree'] = None,
-        run: Optional['Run'] = None,
+        tree: Optional[Tree] = None,
+        run: Optional[Run] = None,
         skip_validation: bool = False,
         raise_on_validation_error: bool = False,
         inherited_fmf_context: Optional[FmfContext] = None,
@@ -253,9 +321,9 @@ class Plan(
         self._environment_from_importing = inherited_environment or Environment()
 
         # Check for possible remote plan reference first
-        reference = self.node.get(['plan', 'import'])
+        reference = self.node.get(['plan', 'import'])  # pyright: ignore[reportUnknownVariableType]
         if reference is not None:
-            self._imported_plan_references = [RemotePlanReference.from_spec(reference)]
+            self._imported_plan_references = [RemotePlanReference.from_spec(reference)]  # pyright: ignore[reportUnknownVariableType, reportArgumentType]
 
         # Save the run, prepare worktree and plan data directory
         self.my_run = run
@@ -271,43 +339,43 @@ class Plan(
 
         # Expand all environment and context variables in the node
         with self.environment.as_environ():
-            expand_node_data(node.data, self.fmf_context)
+            expand_node_data(node.data, self.fmf_context)  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
 
         # Initialize test steps
         self.discover = tmt.steps.discover.Discover(
             logger=logger.descend(logger_name='discover'),
             plan=self,
-            data=self.node.get('discover'),
+            data=self.node.get('discover'),  # pyright: ignore[reportUnknownVariableType, reportArgumentType]
         )
         self.provision = tmt.steps.provision.Provision(
             logger=logger.descend(logger_name='provision'),
             plan=self,
-            data=self.node.get('provision'),
+            data=self.node.get('provision'),  # pyright: ignore[reportUnknownVariableType, reportArgumentType]
         )
         self.prepare = tmt.steps.prepare.Prepare(
             logger=logger.descend(logger_name='prepare'),
             plan=self,
-            data=self.node.get('prepare'),
+            data=self.node.get('prepare'),  # pyright: ignore[reportUnknownVariableType, reportArgumentType]
         )
         self.execute = tmt.steps.execute.Execute(
             logger=logger.descend(logger_name='execute'),
             plan=self,
-            data=self.node.get('execute'),
+            data=self.node.get('execute'),  # pyright: ignore[reportUnknownVariableType, reportArgumentType]
         )
         self.report = tmt.steps.report.Report(
             logger=logger.descend(logger_name='report'),
             plan=self,
-            data=self.node.get('report'),
+            data=self.node.get('report'),  # pyright: ignore[reportUnknownVariableType, reportArgumentType]
         )
         self.finish = tmt.steps.finish.Finish(
             logger=logger.descend(logger_name='finish'),
             plan=self,
-            data=self.node.get('finish'),
+            data=self.node.get('finish'),  # pyright: ignore[reportUnknownVariableType, reportArgumentType]
         )
         self.cleanup = tmt.steps.cleanup.Cleanup(
             logger=logger.descend(logger_name='cleanup'),
             plan=self,
-            data=self.node.get('cleanup'),
+            data=self.node.get('cleanup'),  # pyright: ignore[reportUnknownVariableType, reportArgumentType]
         )
 
         self._update_metadata()
@@ -397,8 +465,8 @@ class Plan(
         return Environment.from_inputs(
             raw_fmf_environment_files=self.node.get("environment-file") or [],
             raw_fmf_environment=self.node.get('environment', {}),
-            file_root=Path(self.node.root) if self.node.root else None,
-            key_address=self.node.name,
+            file_root=Path(self.node.root) if self.node.root else None,  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
+            key_address=self.node.name,  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
             logger=self._logger,
         )
 
@@ -411,8 +479,8 @@ class Plan(
         return Environment.from_inputs(
             raw_cli_environment_files=self.opt('environment-file') or [],
             raw_cli_environment=self.opt('environment'),
-            file_root=Path(self.node.root) if self.node.root else None,
-            key_address=self.node.name,
+            file_root=Path(self.node.root) if self.node.root else None,  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
+            key_address=self.node.name,  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
             logger=self._logger,
         )
 
@@ -561,7 +629,7 @@ class Plan(
 
         # Prepare worktree path and detect the source tree root
         self.worktree = self.plan_workdir / 'tree'
-        tree_root = Path(self.node.root) if self.node.root else None
+        tree_root = Path(self.node.root) if self.node.root else None  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
 
         # Create an empty directory if there's no metadata tree
         if not tree_root:
@@ -686,7 +754,7 @@ class Plan(
         return to_yaml(content)
 
     @staticmethod
-    def overview(tree: 'Tree') -> None:
+    def overview(tree: Tree) -> None:
         """
         Show overview of available plans
         """
@@ -716,6 +784,7 @@ class Plan(
         # Prepare paths
         if dry is None:
             dry = Plan._opt('dry')
+        assert isinstance(dry, bool)  # Narrow type
 
         # Get plan template
         if tmt.utils.is_url(template):
@@ -908,7 +977,7 @@ class Plan(
         List raw fmf nodes for the given step
         """
 
-        _phases = self.node.get(step)
+        _phases = self.node.get(step)  # pyright: ignore[reportUnknownVariableType]
 
         if not _phases:
             return []
@@ -918,7 +987,7 @@ class Plan(
 
         return cast(list[dict[str, Any]], _phases)
 
-    def _lint_step_methods(self, step: str, plugin_class: tmt.steps.PluginClass) -> LinterReturn:
+    def _lint_step_methods(self, step: str, plugin_class: tmt.steps.PluginClass) -> LinterReturn:  # pyright: ignore[reportUnknownVariableType, reportUnknownParameterType]
         """
         P003: execute step methods must be known
         """
@@ -1105,7 +1174,7 @@ class Plan(
         P008: environment files are not empty
         """
 
-        env_files = self.node.get("environment-file") or []
+        env_files: list[Union[str, Path]] = self.node.get("environment-file") or []  # pyright: ignore[reportUnknownVariableType, reportAssignmentType]
 
         if not env_files:
             yield LinterOutcome.SKIP, 'no environment files found'
@@ -1131,7 +1200,7 @@ class Plan(
                     step._plugin_base_class.delegate(step, raw_data=raw_data)
                 except Exception:
                     passed = False
-                    fail_msg = f"{step} step has invalid data for phase '{raw_data['name']}'"
+                    fail_msg = f"{step} step has invalid data for phase '{raw_data['name']}'"  # pyright: ignore[reportTypedDictNotRequiredAccess]
                     yield LinterOutcome.FAIL, fail_msg
         if passed:
             yield LinterOutcome.PASS, "All step data is valid"
@@ -1186,7 +1255,7 @@ class Plan(
             step.setup_actions()
 
         # Check if steps are not in stand-alone mode
-        standalone = set()
+        standalone: set[str] = set()
         for step in self.steps():
             standalone_plugins = step.plugins_in_standalone_mode
             if standalone_plugins == 1:
@@ -1257,16 +1326,16 @@ class Plan(
         # really need to either rename `_extra_l2_keys`, or make sure it does contain keys and
         # not options. Which it does, now.
         for key in self._extra_l2_keys:
-            value = self.node.data.get(key)
+            value = self.node.data.get(key)  # pyright: ignore[reportUnknownArgumentType, reportUnknownVariableType]
             if value:
                 data[key] = value
 
         # Export user-defined extra- keys from the node data
-        for key in self.node.data:
+        for key in self.node.data:  # pyright: ignore[reportUnknownVariableType]
             if key.startswith(EXTRA_KEYS_PREFIX):
-                value = self.node.data.get(key)
+                value = self.node.data.get(key)  # pyright: ignore[reportUnknownArgumentType, reportUnknownVariableType]
                 if value:
-                    data[key] = value
+                    data[key] = value  # pyright: ignore[reportUnknownVariableType]
 
         data['context'] = self.fmf_context.to_spec()
 
@@ -1297,8 +1366,8 @@ class Plan(
             f"Looking for plans in '{tree.root}' matching '{reference.name_pattern}'", level=3
         )
 
-        for node in tree.prune(keys=['execute']):
-            if reference.name_pattern.match(node.name) is not None:
+        for node in tree.prune(keys=['execute']):  # pyright: ignore[reportUnknownArgumentType, reportUnknownVariableType]
+            if reference.name_pattern.match(node.name) is not None:  # pyright: ignore[reportUnknownArgumentType]
                 yield node
 
     def _resolve_import_from_git(self, reference: RemotePlanReference) -> Iterator[fmf.Tree]:
@@ -1412,7 +1481,9 @@ class Plan(
             # Construct ephemeral fmf context and environment we use to
             # adjust and expand the imported node.
             imported_fmf_context = FmfContext.from_spec(
-                node.name, node.data.get('context', {}), self._logger
+                node.name,  # pyright: ignore[reportUnknownArgumentType]
+                node.data.get('context', {}),
+                self._logger,  # pyright: ignore[reportUnknownArgumentType]
             )
 
             # For final context inheritance, respect inherit_context setting

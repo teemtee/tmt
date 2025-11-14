@@ -13,7 +13,8 @@ from tmt.utils import Common, Environment, FmfContext, Path, ShellScript
 
 if TYPE_CHECKING:
     import tmt.base.core
-    from tmt.base.core import Dependency, Plan, Run, _RawAdjustRule, _RawLinks
+    from tmt.base.core import Dependency, Run, _RawAdjustRule, _RawLinks
+    from tmt.base.plan import Plan
 
 
 # This needs to be a stand-alone function because of the import of `tmt.base`.

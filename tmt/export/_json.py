@@ -1,12 +1,13 @@
 import json
 
 import tmt.base.core
+import tmt.base.plan
 import tmt.export
 
 
 @tmt.base.core.FmfId.provides_export('json')
 @tmt.base.core.Test.provides_export('json')
-@tmt.base.core.Plan.provides_export('json')
+@tmt.base.plan.Plan.provides_export('json')
 @tmt.base.core.Story.provides_export('json')
 class JSONExporter(tmt.export.TrivialExporter):
     @classmethod

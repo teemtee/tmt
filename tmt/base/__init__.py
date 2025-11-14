@@ -10,13 +10,13 @@ from tmt.base.core import (
     DependencySimple,
     Link,
     Links,
-    Plan,
     Run,
     Status,
     Story,
     Test,
     Tree,
 )
+from tmt.base.plan import Plan
 
 __all__ = [
     "Clean",
