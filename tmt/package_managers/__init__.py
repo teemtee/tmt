@@ -330,4 +330,4 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         :raises NotImplementedError: If this package manager does not
             support creating repositories.
         """
-        raise NotImplementedError
+        return self.engine.create_repository_metadata_from_dir(directory)
