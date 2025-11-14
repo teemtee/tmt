@@ -28,6 +28,22 @@ koji: Optional[types.ModuleType] = None
 # To silence mypy
 ClientSession: Any
 
+tmt.utils.hints.register_hint(
+    'artifact-provider/koji',
+    """
+The ``koji`` Python package is required by tmt for Koji integration.
+
+To quickly test Koji presence, you can try running:
+
+    python -c 'import koji'
+
+* Users who installed tmt from PyPI should install the ``koji`` package
+  via ``pip install koji``. On Fedora/RHEL systems, ``python3-gssapi``
+  must be installed first to allow ``pip`` to build and use the required
+  GSSAPI bindings.
+""",
+)
+
 
 def import_koji(logger: tmt.log.Logger) -> None:
     """Import koji module with error handling."""
@@ -38,7 +54,7 @@ def import_koji(logger: tmt.log.Logger) -> None:
     except ImportError as error:
         from tmt.utils.hints import print_hints
 
-        print_hints('artifact-provider/koji/koji', logger=logger)
+        print_hints('artifact-provider/koji', logger=logger)
 
         raise tmt.utils.GeneralError("Could not import koji package.") from error
 
@@ -80,25 +96,6 @@ ProviderT = TypeVar(
 )  # Generic type for artifact provider subclasses
 
 
-# ignore[type-arg]: TypeVar in provider registry annotations is
-# puzzling for type checkers. And not a good idea in general, probably.
-@provides_artifact_provider(  # type: ignore[arg-type]
-    'koji',
-    hints={
-        'koji': """
-        The ``koji`` Python package is required by tmt for Koji integration.
-
-        To quickly test Koji presence, you can try running:
-
-            python -c 'import koji'
-
-        * Users who installed tmt from PyPI should install the ``koji`` package
-          via ``pip install koji``. On Fedora/RHEL systems, ``python3-gssapi``
-          must be installed first to allow ``pip`` to build and use the required
-          GSSAPI bindings.
-    """,
-    },
-)
 class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
     """
     Provider for downloading artifacts from Koji builds.
@@ -112,34 +109,6 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         provider = KojiArtifactProvider("koji.build:123456", logger)
         artifacts = provider.download_artifacts(guest, Path("/tmp"), [])
     """
-
-    _REGISTRY: ClassVar[dict[str, type['KojiArtifactProvider']]] = {}
-    SUPPORTED_PREFIXES: ClassVar[tuple[str, ...]] = ()
-
-    @classmethod
-    def _dispatch_subclass(
-        cls, raw_provider_id: str, mapping: dict[str, type[ProviderT]]
-    ) -> ProviderT:
-        for prefix, subclass in mapping.items():
-            if raw_provider_id.startswith(prefix):
-                return super().__new__(subclass)
-        raise ValueError(
-            f"Unsupported artifact ID format: '{raw_provider_id}'. "
-            f"Supported formats are: {', '.join(cls.SUPPORTED_PREFIXES)}"
-        )
-
-    def __new__(cls, raw_provider_id: str, logger: tmt.log.Logger) -> 'KojiArtifactProvider':
-        """
-        Create a specific Koji provider based on the ``raw_provider_id`` prefix.
-
-        The supported provides are:
-        :py:class:`KojiBuild`,
-        :py:class:`KojiTask`,
-        :py:class:`KojiNvr`.
-
-        :raises ValueError: If the prefix is not supported
-        """
-        return cls._dispatch_subclass(raw_provider_id, cls._REGISTRY)
 
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
         super().__init__(raw_provider_id, logger)
@@ -220,13 +189,14 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
-        for prefix in cls.SUPPORTED_PREFIXES:
-            if raw_provider_id.startswith(prefix):
-                value = raw_provider_id[len(prefix) + 1 :]
-                if not value:
-                    raise ValueError(f"Missing value in '{raw_provider_id}'.")
-                return value
-        raise ValueError(f"Unsupported artifact ID format: '{raw_provider_id}'.")
+        # TODO: Use a specific prefix from a ClassVar
+        try:
+            _, value = raw_provider_id.split(":", maxsplit=1)
+        except Exception as exc:
+            raise AssertionError(
+                f"Provider id '{raw_provider_id}' is invalid, how did we get here?"
+            ) from exc
+        return value
 
     def _download_artifact(
         self, artifact: RpmArtifactInfo, guest: Guest, destination: tmt.utils.Path
@@ -396,11 +366,3 @@ class KojiNvr(KojiArtifactProvider):
         self.logger.debug(f"Fetching RPMs for NVR '{self.id}'.")
         assert self.build_provider is not None
         return list(self.build_provider.artifacts)
-
-
-KojiArtifactProvider._REGISTRY = {
-    "koji.build": KojiBuild,
-    "koji.task": KojiTask,
-    "koji.nvr": KojiNvr,
-}
-KojiArtifactProvider.SUPPORTED_PREFIXES = tuple(KojiArtifactProvider._REGISTRY.keys())
