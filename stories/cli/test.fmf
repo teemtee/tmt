@@ -58,7 +58,7 @@ story: 'As a user I want to comfortably work with tests'
         story: 'I want to export test metadata into given format.'
         example: tmt test export --how yaml
         link:
-          - implemented-by: /tmt/base.py
+          - implemented-by: /tmt/base/core.py
 
     /nitrate:
         story: 'I want to export test metadata into nitrate.'
@@ -144,6 +144,6 @@ story: 'As a user I want to comfortably work with tests'
         - tmt test show --condition 'int(tier) < 2'
         - tmt test show --condition '"gcc" in require'
     link:
-      - implemented-by: /tmt/base.py
+      - implemented-by: /tmt/base/core.py
       - documented-by: /docs/examples.rst#filter-tests
       - verified-by: /tests/test/select

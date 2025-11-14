@@ -6,4 +6,4 @@ description:
     but that is what a well-written summary should do.
 
 link:
-  - implemented-by: /tmt/base.py
+  - implemented-by: /tmt/base/core.py
