@@ -20,7 +20,7 @@ description: |
           # Integer or string, number of CPU threads per core.
           threads-per-core: 2|">= 2"
 
-          # Integer or string, total number of logical CPUs.
+          # Integer or string, number of logical CPUs.
           processors: 8|">= 8"
 
           # String, CPU family name.
@@ -62,8 +62,70 @@ description: |
           # Request a CPU with hyper-threading enabled.
           hyper-threading: true|false
 
-    See e.g. https://virtual-dba.com/blog/sockets-cores-and-threads/ for the
-    socket, core and thread distinction.
+    .. important::
+
+        See e.g. https://virtual-dba.com/blog/sockets-cores-and-threads/
+        for the socket, core and thread distinction. tmt defines ``sockets``,
+        ``cores`` and ``threads`` keys with precise meanings, following
+        their physical separation. ``processors`` then works with *logical*
+        CPUs, as visible to the OS as distinct CPUs. For example, Linux
+        would report "processors" via its ``/proc/cpuinfo`` file, or in
+        the output of the ``lscpu`` command:
+
+        .. code-block::
+
+            $ lscpu
+            ...
+            CPU(s):                      4
+              On-line CPU(s) list:       0-3
+                ...
+                Thread(s) per core:      1
+                Core(s) per socket:      1
+                Socket(s):               4
+                ...
+                Flags:                   ...
+
+        This corresponds to the following HW requirements:
+
+        .. code-block:: yaml
+
+            hyper-threading: false
+            sockets: 4
+            cores: 4
+            threads: 4
+            processors: 4
+            cores-per-socket: 1
+            threads-per-core: 1
+
+        Another example:
+
+        .. code-block::
+
+            $ lscpu
+            ...
+            CPU(s):                      14
+              On-line CPU(s) list:       0-13
+                ...
+                Thread(s) per core:      2
+                Core(s) per socket:      12
+                Socket(s):               1
+                ...
+                Flags:                  ... ht ...
+
+        This corresponds to the following HW requirements:
+
+        .. code-block:: yaml
+
+            hyper-threading: true
+            sockets: 1
+            cores: 12
+            threads: 14
+            processors: 14
+            cores-per-socket: 12
+
+        ``threads-per-core`` will be left undefined, because of the custom
+        CPU topology: only some cores support and enable hyper-threading,
+        therefore a simple multiplier is not applicable.
 
     See e.g. https://www.cpu-world.com/ for information on family, model,
     stepping and corresponding names. ``/proc/cpuinfo`` and ``lscpu`` are
