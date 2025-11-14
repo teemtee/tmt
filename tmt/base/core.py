@@ -2,6 +2,8 @@
 Base Metadata Classes
 """
 
+# TODO: Split this definition in smaller files
+
 import collections
 import copy
 import enum
@@ -38,7 +40,6 @@ from fmf.utils import listed
 from ruamel.yaml.error import MarkedYAMLError
 
 import tmt.ansible
-import tmt.base
 import tmt.checks
 import tmt.config
 import tmt.convert
@@ -717,7 +718,7 @@ def assert_simple_dependencies(
     :param error_message: used for a raised exception.
     :param logger: used for logging.
     :raises GeneralError: when there is a dependency on the list which
-        is not a subclass of :py:class:`tmt.base.DependencySimple`.
+        is not a subclass of :py:class:`tmt.base.core.DependencySimple`.
     """
 
     non_simple_dependencies = list(
@@ -1853,7 +1854,7 @@ class LintableCollection(tmt.lint.Lintable['LintableCollection']):
     Linting rules applied to a collection of Tests, Plans or Stories
     """
 
-    def __init__(self, objs: list["tmt.base.Core"], *args: Any, **kwargs: Any) -> None:
+    def __init__(self, objs: list["Core"], *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.objs = objs
 
