@@ -70,4 +70,4 @@ story:
             tmt story ls --filter "tag:fast"
         priority: should have
         link:
-          - implemented-by: /tmt/base.py
+          - implemented-by: /tmt/base/core.py
