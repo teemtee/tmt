@@ -96,9 +96,6 @@ ProviderT = TypeVar(
 )  # Generic type for artifact provider subclasses
 
 
-# ignore[type-arg]: TypeVar in provider registry annotations is
-# puzzling for type checkers. And not a good idea in general, probably.
-@provides_artifact_provider('koji')  # type: ignore[arg-type]
 class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
     """
     Provider for downloading artifacts from Koji builds.

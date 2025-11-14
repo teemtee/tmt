@@ -17,9 +17,6 @@ from tmt.steps.prepare.artifact.providers.koji import (
 )
 
 
-# ignore[type-arg]: TypeVar in provider registry annotations is
-# puzzling for type checkers. And not a good idea in general, probably.
-@provides_artifact_provider('brew')  # type: ignore[arg-type]
 class BrewArtifactProvider(KojiArtifactProvider):
     """
     Provider for downloading artifacts from Brew builds.
