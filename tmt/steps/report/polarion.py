@@ -181,6 +181,16 @@ class ReportPolarionData(tmt.steps.report.ReportStepData):
              """,
     )
 
+    test_cycle: Optional[str] = field(
+        default=None,
+        option='--test-cycle',
+        metavar='TESTCYCLE',
+        help="""
+             Which test cycle this test run belongs to,
+             also uses environment variable TMT_PLUGIN_REPORT_POLARION_TEST_CYCLE.
+             """,
+    )
+
     fips: bool = field(
         default=False,
         option=('--fips / --no-fips'),
@@ -323,11 +333,16 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
         upload = self.get('upload', os.getenv('TMT_PLUGIN_REPORT_POLARION_UPLOAD'))
         use_facts = self.get('use-facts', os.getenv('TMT_PLUGIN_REPORT_POLARION_USE_FACTS'))
 
+        # Mapping from field names to Polarion API field names
+        polarion_field_mapping = {
+            'test_cycle': 'scheduleTask',
+        }
         other_testrun_fields = [
             'arch',
             'assignee',
             'build',
             'compose_id',
+            'test_cycle',
             'description',
             'fips',
             'logs',
@@ -347,7 +362,10 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                 # Transform x86_64 to x8664 for Polarion compatibility
                 if tr_field == 'arch' and param == 'x86_64':
                     param = 'x8664'
-                testsuites_properties[f"polarion-custom-{tr_field.replace('_', '')}"] = param
+                polarion_field_name = polarion_field_mapping.get(
+                    tr_field, tr_field.replace('_', '')
+                )
+                testsuites_properties[f"polarion-custom-{polarion_field_name}"] = param
 
         if use_facts:
             guests = self.step.plan.provision.ready_guests
