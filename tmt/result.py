@@ -15,6 +15,7 @@ from tmt.utils.themes import style
 if TYPE_CHECKING:
     import tmt.base
     import tmt.steps.execute
+    import tmt.steps.provision
 
 
 class ResultOutcome(enum.Enum):
@@ -140,6 +141,22 @@ class ResultGuestData(SerializableContainer):
     primary_address: Optional[str] = None
 
     @classmethod
+    def from_guest(cls, *, guest: 'tmt.steps.provision.Guest') -> 'ResultGuestData':
+        """
+        Create a guest data for a result from a :py:class:`Guest` instance.
+
+        A helper for extracting interesting guest data from a given guest.
+
+        :param guest: a guest instance to describe.
+        """
+
+        return ResultGuestData(
+            name=guest.name,
+            role=guest.role,
+            primary_address=guest.primary_address,
+        )
+
+    @classmethod
     def from_test_invocation(
         cls, *, invocation: 'tmt.steps.execute.TestInvocation'
     ) -> 'ResultGuestData':
@@ -152,11 +169,7 @@ class ResultGuestData(SerializableContainer):
         :param invocation: a test invocation capturing the test run and results.
         """
 
-        return ResultGuestData(
-            name=invocation.guest.name,
-            role=invocation.guest.role,
-            primary_address=invocation.guest.primary_address,
-        )
+        return cls.from_guest(guest=invocation.guest)
 
 
 # This needs to be a stand-alone function because of the import of `tmt.base`.
@@ -298,6 +311,12 @@ class PhaseResult(BaseResult):
     """
     Describes what tmt knows about result of individual phases, e.g. prepare ansible
     """
+
+    guest: ResultGuestData = field(
+        default_factory=ResultGuestData,
+        serialize=lambda value: value.to_serialized(),
+        unserialize=lambda serialized: ResultGuestData.from_serialized(serialized),
+    )
 
 
 @container
