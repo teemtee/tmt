@@ -1,3 +1,4 @@
+import datetime
 import tempfile
 from typing import Optional, Union
 
@@ -202,6 +203,8 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             )
             playbook_log_filepath = playbook_record_dirpath / 'output.txt'
 
+            timestamp = datetime.datetime.now(datetime.timezone.utc)
+
             def normalize_remote_playbook(raw_playbook: str) -> tuple[Path, AnsibleApplicable]:
                 root_path = self.step_workdir
 
@@ -262,11 +265,8 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                 )
 
             except RunError as exc:
-                self.write(
-                    playbook_log_filepath,
-                    '\n'.join(
-                        tmt.utils.render_command_report(label=playbook_name, output=exc.output)
-                    ),
+                self.write_command_report(
+                    path=playbook_log_filepath, label=playbook_name, timestamp=timestamp, exc=exc
                 )
 
                 outcome.results.append(
@@ -296,9 +296,11 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                 return outcome
 
             else:
-                self.write(
-                    playbook_log_filepath,
-                    '\n'.join(tmt.utils.render_command_report(label=playbook_name, output=output)),
+                self.write_command_report(
+                    path=playbook_log_filepath,
+                    label=playbook_name,
+                    timestamp=timestamp,
+                    output=output,
                 )
 
                 outcome.results.append(
