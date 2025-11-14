@@ -406,11 +406,17 @@ def test_fetch_contents(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tm
     # Verify artifacts property now works
     artifacts = provider.artifacts
     assert len(artifacts) == 3
-    assert artifacts[0]._raw_artifact["name"] == "docker-ce"
-    assert artifacts[0]._raw_artifact["version"] == "20.10.7"
-    assert artifacts[0]._raw_artifact["epoch"] == "1"
-    assert artifacts[0]._raw_artifact["release"] == "3.el8"
-    assert artifacts[0]._raw_artifact["arch"] == "x86_64"
+
+    # Verify all expected packages are present
+    artifact_names = {a._raw_artifact["name"] for a in artifacts}
+    assert artifact_names == {"docker-ce", "docker-ce-cli", "containerd.io"}
+
+    # Verify docker-ce artifact properties
+    docker_ce = next(a for a in artifacts if a._raw_artifact["name"] == "docker-ce")
+    assert docker_ce._raw_artifact["version"] == "20.10.7"
+    assert docker_ce._raw_artifact["epoch"] == "1"
+    assert docker_ce._raw_artifact["release"] == "3.el8"
+    assert docker_ce._raw_artifact["arch"] == "x86_64"
 
 
 def test_malformed_packages(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tmppath, caplog):
@@ -432,11 +438,10 @@ def test_malformed_packages(mock_repo_file_fetch, mock_guest_and_pm, root_logger
     artifacts_dir = tmppath / "artifacts"
     provider.fetch_contents(mock_guest, artifacts_dir)
 
-    # Verify only valid packages were added
     artifacts = provider.artifacts
     assert len(artifacts) == 2
-    assert artifacts[0]._raw_artifact["name"] == "docker-ce"
-    assert artifacts[1]._raw_artifact["name"] == "bash"
+    artifact_names = {a._raw_artifact["name"] for a in artifacts}
+    assert artifact_names == {"docker-ce", "bash"}
 
     # Check logs for warnings about invalid packages
     assert (
