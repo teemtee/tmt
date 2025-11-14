@@ -192,32 +192,35 @@ class DnfEngine(PackageManagerEngine):
         )
 
     def create_repository_metadata_from_dir(self, directory: Path) -> None:
-        """Create repository metadata using createrepo"""
-        # Find or install 'createrepo'
-        try:
-            result = self.guest.execute(Command('command', '-v', 'createrepo'), silent=True)
-            createrepo_path = (result.stdout or '').strip()
+        # TODO: Declare 'createrepo_c' via essential_requires() when repository
+        # creation is requested instead of installing it ad-hoc here.
+        # This needs support for optional/feature-specific essential requires.
+        # Tracked in https://github.com/teemtee/tmt/issues/4339
 
+        tool_name = 'createrepo_c'
+
+        createrepo_path = None
+
+        try:
+            result = self.guest.execute(Command('command', '-v', tool_name), silent=True)
+            createrepo_path = (result.stdout or '').strip() or tool_name
         except RunError:
-            try:
-                # Get the install script and execute it
-                install_script = self.install(Package('createrepo'))
-                self.guest.execute(install_script, silent=False)
+            # Install the package if not found
+            install_script = self.install(Package(tool_name))
+            self.guest.execute(install_script)
 
-                # Verify installation
-                result = self.guest.execute(Command('command', '-v', 'createrepo'), silent=True)
-                createrepo_path = (result.stdout or '').strip()
+            # Verify installation
+            result = self.guest.execute(Command('command', '-v', tool_name), silent=True)
+            createrepo_path = (result.stdout or '').strip() or tool_name
 
-            except RunError as error:
-                # If installation fails, raise the error
+            if not createrepo_path:
                 raise GeneralError(
-                    "Prerequisite 'createrepo' not found and could not be installed. "
-                    f"Original error: {error.stderr}"
-                ) from error
+                    f"Prerequisite '{tool_name}' installed but command still not found."
+                ) from None
 
-        # Run the command to create metadata
+        # Run createrepo_c on the directory
         try:
-            self.guest.execute(Command(createrepo_path, str(directory)), silent=False)
+            self.guest.execute(Command(createrepo_path, str(directory)))
         except RunError as error:
             raise GeneralError(
                 f"Failed to create repository metadata in '{directory}': {error}"
@@ -282,9 +285,6 @@ class Dnf(PackageManager[DnfEngine]):
             results[installable] = True
 
         return results
-
-    def create_repository_metadata_from_dir(self, directory: Path) -> None:
-        return self.engine.create_repository_metadata_from_dir(directory)
 
 
 class Dnf5Engine(DnfEngine):
