@@ -24,4 +24,4 @@ example:
     tier: custom
 
 link:
-  - implemented-by: /tmt/base.py
+  - implemented-by: /tmt/base/core.py

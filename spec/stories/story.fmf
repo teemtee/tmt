@@ -11,4 +11,4 @@ example: |
         so that I can achieve this and that.
 
 link:
-  - implemented-by: /tmt/base.py
+  - implemented-by: /tmt/base/core.py

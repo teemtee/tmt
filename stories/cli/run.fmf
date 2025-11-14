@@ -12,7 +12,7 @@ story: 'As a user I want to execute tests easily'
             adjusted as needed without affecting or possibly
             breaking user environment such as laptop.
         link:
-          - implemented-by: /tmt/base.py
+          - implemented-by: /tmt/base/core.py
           - documented-by: /docs/examples.rst#run
           - documented-by: /docs/guide.rst
         example: tmt run
@@ -53,7 +53,7 @@ story: 'As a user I want to execute tests easily'
                 execute:
                     how: tmt
         link:
-          - implemented-by: /tmt/base.py
+          - implemented-by: /tmt/base/core.py
           - verified-by: /tests/run/default
           - documented-by: /docs/examples.rst#run
 
@@ -61,7 +61,7 @@ story: 'As a user I want to execute tests easily'
     story: 'Select multiple steps to be executed'
 
     link:
-      - implemented-by: /tmt/base.py
+      - implemented-by: /tmt/base/core.py
       - verified-by: /tests/steps/select
       - documented-by: /docs/examples.rst#select-steps
 
@@ -110,7 +110,7 @@ story: 'As a user I want to execute tests easily'
             - tmt run plan --filter=FILTER
             - tmt run plan --condition=CONDITION
         link:
-          - implemented-by: /tmt/base.py
+          - implemented-by: /tmt/base/core.py
           - documented-by: /docs/examples.rst#select-plans
           - verified-by: /tests/plan/select
     /test:
@@ -121,7 +121,7 @@ story: 'As a user I want to execute tests easily'
             - tmt run test --condition=CONDITION
             - tmt run plan --name=NAME2 test --name=NAME1
         link:
-          - implemented-by: /tmt/base.py
+          - implemented-by: /tmt/base/core.py
           - documented-by: /docs/examples.rst#select-tests
           - verified-by: /tests/test/select
 
@@ -183,7 +183,7 @@ story: 'As a user I want to execute tests easily'
 
         Note that ``tmt`` saves last run id on each new execution.
     link:
-      - implemented-by: /tmt/base.py
+      - implemented-by: /tmt/base/core.py
       - documented-by: /docs/examples.rst#debug-tests
     example:
         - tmt run -l
