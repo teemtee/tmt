@@ -15,8 +15,10 @@ from tmt.plugins import ModuleImporter
 if TYPE_CHECKING:
     import jira
 
+    import tmt.base.plan
+
 # Test, plan or story
-TmtObject = Union['tmt.base.core.Test', 'tmt.base.core.Plan', 'tmt.base.core.Story']
+TmtObject = Union['tmt.base.core.Test', 'tmt.base.plan.Plan', 'tmt.base.core.Story']
 
 
 import_jira: ModuleImporter['jira'] = ModuleImporter(  # type: ignore[valid-type]

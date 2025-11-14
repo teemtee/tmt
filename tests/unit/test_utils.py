@@ -1684,7 +1684,7 @@ class TestJiraLink(unittest.TestCase):
         tmt.base.core.Test.create(
             names=['tmp/test'], template='shell', path=self.tmp, logger=self.logger
         )
-        tmt.base.core.Plan.create(
+        tmt.base.plan.Plan.create(
             names=['tmp/plan'], template='mini', path=self.tmp, logger=self.logger
         )
         tmt.base.core.Story.create(

@@ -1,6 +1,7 @@
 from typing import Any, Optional
 
 import tmt.base.core
+import tmt.base.plan
 import tmt.export
 import tmt.utils
 from tmt.utils import Path
@@ -8,7 +9,7 @@ from tmt.utils import Path
 
 @tmt.base.core.FmfId.provides_export('template')
 @tmt.base.core.Test.provides_export('template')
-@tmt.base.core.Plan.provides_export('template')
+@tmt.base.plan.Plan.provides_export('template')
 @tmt.base.core.Story.provides_export('template')
 class TemplateExporter(tmt.export.ExportPlugin):
     @classmethod
@@ -75,7 +76,7 @@ class TemplateExporter(tmt.export.ExportPlugin):
     @classmethod
     def export_plan_collection(
         cls,
-        plans: list[tmt.base.core.Plan],
+        plans: list[tmt.base.plan.Plan],
         keys: Optional[list[str]] = None,
         template: Optional[Path] = None,
         **kwargs: Any,

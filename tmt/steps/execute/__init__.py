@@ -51,6 +51,7 @@ from tmt.utils import (
 )
 
 if TYPE_CHECKING:
+    import tmt.base.plan
     import tmt.cli
     import tmt.result
     import tmt.steps.discover
@@ -1000,7 +1001,7 @@ class Execute(tmt.steps.Step):
     def __init__(
         self,
         *,
-        plan: "tmt.Plan",
+        plan: "tmt.base.plan.Plan",
         data: tmt.steps.RawStepDataArgument,
         logger: tmt.log.Logger,
     ) -> None:
