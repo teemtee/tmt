@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from sphinx.application import Sphinx
 
-from tmt.base import LintableCollection, Plan, Story, Test
+from tmt.base.core import LintableCollection, Plan, Story, Test
 from tmt.lint import Linter
 from tmt.utils import Path
 from tmt.utils.templates import render_template_file_into_file

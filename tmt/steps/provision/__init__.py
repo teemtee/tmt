@@ -75,7 +75,7 @@ from tmt.utils.hints import get_hint
 from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
-    import tmt.base
+    import tmt.base.core
     import tmt.cli
     from tmt._compat.typing import TypeAlias
 
@@ -419,14 +419,14 @@ DEFAULT_PULL_OPTIONS = TransferOptions(
 
 
 # Note: returns a static list, but we cannot make it a mere list,
-# because `tmt.base` needs to be imported and that creates a circular
+# because `tmt.base.core` needs to be imported and that creates a circular
 # import loop.
-def essential_ansible_requires() -> list['tmt.base.Dependency']:
+def essential_ansible_requires() -> list['tmt.base.core.Dependency']:
     """
     Return essential requirements for running Ansible modules
     """
 
-    return [tmt.base.DependencySimple('/usr/bin/python3')]
+    return [tmt.base.core.DependencySimple('/usr/bin/python3')]
 
 
 def format_guest_full_name(name: str, role: Optional[str]) -> str:
@@ -2147,7 +2147,7 @@ class Guest(
             )
 
     @classmethod
-    def essential_requires(cls) -> list['tmt.base.Dependency']:
+    def essential_requires(cls) -> list['tmt.base.core.Dependency']:
         """
         Collect all essential requirements of the guest.
 
@@ -3306,7 +3306,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
 
         return self._guest
 
-    def essential_requires(self) -> list['tmt.base.Dependency']:
+    def essential_requires(self) -> list['tmt.base.core.Dependency']:
         """
         Collect all essential requirements of the guest implementation.
 
@@ -3331,7 +3331,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
         return super().options(how) + cls._guest_class.options(how)
 
     @classmethod
-    def clean_images(cls, clean: 'tmt.base.Clean', dry: bool, workdir_root: Path) -> bool:
+    def clean_images(cls, clean: 'tmt.base.core.Clean', dry: bool, workdir_root: Path) -> bool:
         """
         Remove the images of one particular plugin
         """

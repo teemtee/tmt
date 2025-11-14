@@ -10,7 +10,7 @@ import fmf.utils
 import tmt
 import tmt.log
 import tmt.utils
-from tmt.base import Dependency, DependencyFile, DependencyFmfId, DependencySimple
+from tmt.base.core import Dependency, DependencyFile, DependencyFmfId, DependencySimple
 from tmt.utils import Path
 
 if TYPE_CHECKING:

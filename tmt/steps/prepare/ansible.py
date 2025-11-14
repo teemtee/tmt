@@ -4,7 +4,7 @@ from typing import Optional, Union
 import requests
 
 import tmt
-import tmt.base
+import tmt.base.core
 import tmt.log
 import tmt.result
 import tmt.steps
@@ -311,7 +311,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
         return outcome
 
-    def essential_requires(self) -> list[tmt.base.Dependency]:
+    def essential_requires(self) -> list[tmt.base.core.Dependency]:
         """
         Collect all essential requirements of the plugin.
 
