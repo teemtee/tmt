@@ -33,21 +33,6 @@ class BrewArtifactProvider(KojiArtifactProvider):
         artifacts = provider.fetch_contents(guest, Path("/tmp"))
     """
 
-    SUPPORTED_PREFIXES: ClassVar[tuple[str, ...]] = ()
-
-    def __new__(cls, raw_provider_id: str, logger: tmt.log.Logger) -> Any:
-        """
-        Create a specific Brew provider based on the ``raw_provider_id`` prefix.
-
-        The supported providers are:
-        :py:class:`BrewBuild`,
-        :py:class:`BrewTask`,
-        :py:class:`BrewNvr`.
-
-        :raises ValueError: If the prefix is not supported
-        """
-        return cls._dispatch_subclass(raw_provider_id, cls._REGISTRY)
-
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
         super().__init__(raw_provider_id, logger)
         self._session = self._initialize_session(
@@ -91,11 +76,3 @@ class BrewTask(BrewArtifactProvider, KojiTask):
 @provides_artifact_provider("brew.nvr")  # type: ignore[arg-type]
 class BrewNvr(BrewArtifactProvider, KojiNvr):
     pass
-
-
-BrewArtifactProvider._REGISTRY = {
-    "brew.build": BrewBuild,
-    "brew.task": BrewTask,
-    "brew.nvr": BrewNvr,
-}
-BrewArtifactProvider.SUPPORTED_PREFIXES = tuple(BrewArtifactProvider._REGISTRY.keys())

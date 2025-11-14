@@ -1,6 +1,6 @@
 import pytest
 
-from tmt.steps.prepare.artifact.providers.brew import BrewArtifactProvider
+from tmt.steps.prepare.artifact.providers.brew import BrewArtifactProvider, BrewBuild, BrewTask
 from tmt.utils import GeneralError
 
 from . import (
@@ -18,14 +18,15 @@ def mock_call_api():
         yield mock
 
 
-def test_brew_valid_build(mock_brew, mock_call_api, root_logger):
+def test_brew_valid_build(mock_brew, mock_call_api, artifact_provider):
     mock_build_api_responses(mock_call_api, MOCK_BUILD_ID, MOCK_RPMS_BREW)
-    provider = BrewArtifactProvider(f"brew.build:{MOCK_BUILD_ID}", root_logger)
+    provider = artifact_provider(f"brew.build:{MOCK_BUILD_ID}")
+    assert isinstance(provider, BrewBuild)
     assert provider.build_id == MOCK_BUILD_ID
     assert len(provider.artifacts) == 21
 
 
-def test_brew_valid_draft_build(mock_brew, mock_call_api, root_logger):
+def test_brew_valid_draft_build(mock_brew, mock_call_api, artifact_provider):
     draft_id = 3525300
     mock_rpms = [
         {
@@ -40,16 +41,18 @@ def test_brew_valid_draft_build(mock_brew, mock_call_api, root_logger):
         lambda method, *a, **kw: mock_rpms if method == "listBuildRPMs" else {"id": draft_id}
     )
 
-    provider = BrewArtifactProvider(f"brew.build:{draft_id}", root_logger)
+    provider = artifact_provider(f"brew.build:{draft_id}")
+    assert isinstance(provider, BrewBuild)
     assert len(provider.artifacts) == 2
     assert any(f"draft_{draft_id}" in a.location for a in provider.artifacts)
 
 
-def test_brew_valid_task_id_scratch_build(mock_brew, mock_call_api, root_logger):
+def test_brew_valid_task_id_scratch_build(mock_brew, mock_call_api, artifact_provider):
     task_id = 69111304
     mock_task_api_responses(mock_call_api, has_build=False)
 
-    provider = BrewArtifactProvider(f"brew.task:{task_id}", root_logger)
+    provider = artifact_provider(f"brew.task:{task_id}")
+    assert isinstance(provider, BrewTask)
     provider._top_url = "http://brew.example.com"
     tasks = list(provider._get_task_children(task_id))
 
