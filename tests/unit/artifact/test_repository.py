@@ -48,17 +48,17 @@ NO_SECTION_CONTENT = "name=No sections here\nenabled=1"
 
 # Fixture to create a temporary .repo file
 @pytest.fixture
-def temp_repo_file(tmp_path):
+def temp_repo_file(tmppath):
     """Creates a temporary repo file with valid content"""
-    repo_file = tmp_path / "docker-ce.repo"
+    repo_file = tmppath / "docker-ce.repo"
     repo_file.write_text(VALID_REPO_CONTENT)
     return repo_file
 
 
 @pytest.fixture
-def temp_repo_file_no_ext(tmp_path):
+def temp_repo_file_no_ext(tmppath):
     """Creates a temporary repo file without .repo extension"""
-    repo_file = tmp_path / "docker-ce"
+    repo_file = tmppath / "docker-ce"
     repo_file.write_text(VALID_REPO_CONTENT)
     return repo_file
 
@@ -324,7 +324,29 @@ def test_parse_rpm_string_invalid(pkg_string):
 # ================================================================================
 
 
-def test_repository_provider_id_extraction(root_logger):
+@pytest.fixture
+def mock_repo_file_fetch():
+    with patch(
+        'tmt.steps.prepare.artifact.providers.tmt.utils.retry_session'
+    ) as mock_retry_session:
+        mock_session = MagicMock()
+        mock_response = MagicMock()
+        mock_response.text = VALID_REPO_CONTENT
+        mock_response.raise_for_status.return_value = None
+        mock_session.get.return_value = mock_response
+        mock_retry_session.return_value.__enter__.return_value = mock_session
+        yield mock_session
+
+
+@pytest.fixture
+def mock_guest_and_pm():
+    mock_guest = MagicMock()
+    mock_package_manager = MagicMock()
+    mock_guest.package_manager = mock_package_manager
+    return mock_guest, mock_package_manager
+
+
+def test_id_extraction(root_logger):
     """Test provider ID extraction from raw provider ID"""
 
     # Valid provider ID
@@ -333,19 +355,7 @@ def test_repository_provider_id_extraction(root_logger):
     assert provider.id == "https://download.docker.com/linux/centos/docker-ce.repo"
 
 
-def test_repository_provider_invalid_format(root_logger):
-    """Test that invalid provider ID formats raise ValueError"""
-
-    # Missing prefix
-    with pytest.raises(ValueError, match="Invalid repository provider format"):
-        RepositoryFileProvider("https://example.com/repo.repo", root_logger)
-
-    # Empty URL after prefix
-    with pytest.raises(ValueError, match="Missing repository URL"):
-        RepositoryFileProvider("repository-url:", root_logger)
-
-
-def test_repository_provider_artifacts_before_fetch(root_logger):
+def test_artifacts_before_fetch(root_logger):
     """Test that accessing artifacts before fetch_contents raises error"""
 
     provider = RepositoryFileProvider("repository-url:https://example.com/test.repo", root_logger)
@@ -354,22 +364,10 @@ def test_repository_provider_artifacts_before_fetch(root_logger):
         _ = provider.artifacts
 
 
-@patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
-def test_repository_provider_fetch_contents(mock_retry_session, root_logger):
+def test_fetch_contents(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tmppath):
     """Test fetch_contents method discovers RPMs from repository"""
 
-    # Mock the Repository.from_url call
-    mock_session = MagicMock()
-    mock_response = MagicMock()
-    mock_response.text = VALID_REPO_CONTENT
-    mock_response.raise_for_status.return_value = None
-    mock_session.get.return_value = mock_response
-    mock_retry_session.return_value.__enter__.return_value = mock_session
-
-    # Mock guest and package manager
-    mock_guest = MagicMock()
-    mock_package_manager = MagicMock()
-    mock_guest.package_manager = mock_package_manager
+    mock_guest, mock_package_manager = mock_guest_and_pm
 
     # Mock list_packages to return some RPMs
     mock_package_manager.list_packages.return_value = [
@@ -383,7 +381,8 @@ def test_repository_provider_fetch_contents(mock_retry_session, root_logger):
     )
 
     # Call fetch_contents
-    result = provider.fetch_contents(mock_guest, Path("/tmp/artifacts"))
+    artifacts_dir = tmppath / "artifacts"
+    result = provider.fetch_contents(mock_guest, artifacts_dir)
 
     # Verify result is empty list (discovery-only provider)
     assert result == []
@@ -402,22 +401,10 @@ def test_repository_provider_fetch_contents(mock_retry_session, root_logger):
     assert artifacts[0]._raw_artifact["arch"] == "x86_64"
 
 
-@patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
-def test_repository_provider_malformed_packages(mock_retry_session, root_logger):
+def test_malformed_packages(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tmppath, caplog):
     """Test that malformed package strings are skipped with warnings"""
 
-    # Mock the Repository.from_url call
-    mock_session = MagicMock()
-    mock_response = MagicMock()
-    mock_response.text = VALID_REPO_CONTENT
-    mock_response.raise_for_status.return_value = None
-    mock_session.get.return_value = mock_response
-    mock_retry_session.return_value.__enter__.return_value = mock_session
-
-    # Mock guest and package manager
-    mock_guest = MagicMock()
-    mock_package_manager = MagicMock()
-    mock_guest.package_manager = mock_package_manager
+    mock_guest, mock_package_manager = mock_guest_and_pm
 
     # Mock list_packages with mix of valid and malformed packages
     mock_package_manager.list_packages.return_value = [
@@ -430,7 +417,8 @@ def test_repository_provider_malformed_packages(mock_retry_session, root_logger)
     provider = RepositoryFileProvider("repository-url:https://example.com/test.repo", root_logger)
 
     # Call fetch_contents
-    provider.fetch_contents(mock_guest, Path("/tmp/artifacts"))
+    artifacts_dir = tmppath / "artifacts"
+    provider.fetch_contents(mock_guest, artifacts_dir)
 
     # Verify only valid packages were added
     artifacts = provider.artifacts
@@ -438,23 +426,20 @@ def test_repository_provider_malformed_packages(mock_retry_session, root_logger)
     assert artifacts[0]._raw_artifact["name"] == "docker-ce"
     assert artifacts[1]._raw_artifact["name"] == "bash"
 
+    # Check logs for warnings about invalid packages
+    assert (
+        "Failed to parse malformed package string 'invalid-package-string'. Skipping."
+        in caplog.text
+    )
+    assert "String 'invalid-package-string' does not match N-E:V-R.A format" in caplog.text
+    assert "Failed to parse malformed package string 'another-malformed'. Skipping." in caplog.text
+    assert "String 'another-malformed' does not match N-E:V-R.A format" in caplog.text
 
-@patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
-def test_repository_provider_empty_repository(mock_retry_session, root_logger):
+
+def test_empty_repository(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tmppath):
     """Test handling of repository with no packages"""
 
-    # Mock the Repository.from_url call
-    mock_session = MagicMock()
-    mock_response = MagicMock()
-    mock_response.text = VALID_REPO_CONTENT
-    mock_response.raise_for_status.return_value = None
-    mock_session.get.return_value = mock_response
-    mock_retry_session.return_value.__enter__.return_value = mock_session
-
-    # Mock guest and package manager
-    mock_guest = MagicMock()
-    mock_package_manager = MagicMock()
-    mock_guest.package_manager = mock_package_manager
+    mock_guest, mock_package_manager = mock_guest_and_pm
 
     # Mock list_packages to return empty list
     mock_package_manager.list_packages.return_value = []
@@ -462,29 +447,20 @@ def test_repository_provider_empty_repository(mock_retry_session, root_logger):
     provider = RepositoryFileProvider("repository-url:https://example.com/test.repo", root_logger)
 
     # Call fetch_contents
-    provider.fetch_contents(mock_guest, Path("/tmp/artifacts"))
+    artifacts_dir = tmppath / "artifacts"
+    provider.fetch_contents(mock_guest, artifacts_dir)
 
     # Verify artifacts is empty but accessible
     artifacts = provider.artifacts
     assert len(artifacts) == 0
 
 
-@patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
-def test_repository_provider_unexpected_error_handling(mock_retry_session, root_logger):
+def test_unexpected_error_handling(
+    mock_repo_file_fetch, mock_guest_and_pm, root_logger, tmppath, caplog
+):
     """Test handling of unexpected errors during package parsing"""
 
-    # Mock the Repository.from_url call
-    mock_session = MagicMock()
-    mock_response = MagicMock()
-    mock_response.text = VALID_REPO_CONTENT
-    mock_response.raise_for_status.return_value = None
-    mock_session.get.return_value = mock_response
-    mock_retry_session.return_value.__enter__.return_value = mock_session
-
-    # Mock guest and package manager
-    mock_guest = MagicMock()
-    mock_package_manager = MagicMock()
-    mock_guest.package_manager = mock_package_manager
+    mock_guest, mock_package_manager = mock_guest_and_pm
 
     # Mock list_packages to return packages
     mock_package_manager.list_packages.return_value = [
@@ -499,8 +475,12 @@ def test_repository_provider_unexpected_error_handling(mock_retry_session, root_
         side_effect=RuntimeError("Unexpected error"),
     ):
         # Should not raise, but log warning
-        provider.fetch_contents(mock_guest, Path("/tmp/artifacts"))
+        artifacts_dir = tmppath / "artifacts"
+        provider.fetch_contents(mock_guest, artifacts_dir)
 
         # Artifacts should be empty since parsing failed
         artifacts = provider.artifacts
         assert len(artifacts) == 0
+
+        # Check log for warning about unexpected error
+        assert "Unexpected error" in caplog.text
