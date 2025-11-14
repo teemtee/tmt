@@ -127,6 +127,15 @@ rlJournalStart
         rlRun "../../../lcd.exp"
     rlPhaseEnd
 
+    rlPhaseStartTest "Environment Variables"
+        rlRun -s "TMT_CONFIG_DIR=$tmp ./environment.exp"
+        rlAssertGrep "Let's try.*/plans/environment" $rlRun_LOG
+        rlAssertGrep "TEST_VAR=test_value" $rlRun_LOG
+        rlAssertGrep "VAR2=value2" $rlRun_LOG
+        rlAssertGrep "VAR3=value3" $rlRun_LOG
+        rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -f config/last-run"
