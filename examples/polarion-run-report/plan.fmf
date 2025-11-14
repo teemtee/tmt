@@ -1,0 +1,43 @@
+summary: Example plan for Polarion + ReportPortal integration
+
+description: |
+    This plan demonstrates how to use both ReportPortal and Polarion reporters
+    together. The workflow is:
+    
+    1. ReportPortal: Upload detailed test results with logs and screenshots
+    2. Polarion: Create test run with metadata and link to ReportPortal launch
+    
+    The Polarion test run includes a link to the ReportPortal launch in the
+    rplaunchurl field for easy navigation between systems.
+
+discover:
+    how: fmf
+    filter: "tag:polarion & tag:integration & tag:reportportal"
+
+provision:
+    how: virtual
+
+execute:
+    how: tmt
+
+report:
+    # First: Report to ReportPortal with full details
+   
+    - how: reportportal
+      project: cockpit
+      suite-per-plan: True
+      traceback-size-limit: 1 MB
+      url: https://reportportal-cockpit.apps.dno.ocp-hub.prod.psi.redhat.com
+      token: your_token
+    
+    # Second: Create Polarion test run with ReportPortal link
+    - how: polarion
+      project-id: RHELCockpit
+      template: Empty
+      token-upload: true
+      auto-create-testcases: true  # Auto-create missing test cases
+      planned-in: RHEL-10.0.0
+      assignee: jscotka
+      pool-team: rhel-cockpit
+      arch: x86_64
+      upload: false
