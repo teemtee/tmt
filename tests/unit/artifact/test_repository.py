@@ -293,6 +293,18 @@ def test_url_no_path(root_logger):
                 "nvr": "example-1.0-1",
             },
         ),
+        # Example of src rpm
+        (
+            "example-5.1.8-6.el9.src",
+            {
+                "name": "example",
+                "epoch": "0",
+                "version": "5.1.8",
+                "release": "6.el9",
+                "arch": "src",
+                "nvr": "example-5.1.8-6.el9",
+            },
+        ),
     ],
 )
 def test_parse_rpm_string_valid(pkg_string, expected):
