@@ -275,7 +275,7 @@ def main(
 )
 @option(
     '-k',
-    '--keep',
+    '--skip-prune',
     is_flag=True,
     help="""
          Keep all files in the run workdir after testing is done (skip pruning during the finish
