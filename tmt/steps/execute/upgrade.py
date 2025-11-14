@@ -277,7 +277,7 @@ class ExecuteUpgrade(ExecuteInternal):
             self.verbose('upgrade', 'run tests on the new system', color='blue', shift=1)
             self._run_test_phase(guest, AFTER_UPGRADE_PREFIX, logger)
 
-    def _get_plan(self, upgrades_repo: Path) -> tmt.base.core.Plan:
+    def _get_plan(self, upgrades_repo: Path) -> tmt.base.Plan:
         """
         Get plan based on upgrade path
         """
@@ -286,10 +286,10 @@ class ExecuteUpgrade(ExecuteInternal):
         try:
             # We do not want to consider plan -n provided on the command line
             # in the remote repo for finding upgrade path.
-            tmt.base.core.Plan.ignore_class_options = True
+            tmt.base.Plan.ignore_class_options = True
             plans = tree.plans(names=[self.upgrade_path])
         finally:
-            tmt.base.core.Plan.ignore_class_options = False
+            tmt.base.Plan.ignore_class_options = False
 
         if len(plans) == 0:
             raise tmt.utils.ExecuteError(
@@ -368,7 +368,7 @@ class ExecuteUpgrade(ExecuteInternal):
             guest=guest, logger=self._logger
         )
 
-    def _prepare_remote_discover_data(self, plan: tmt.base.core.Plan) -> tmt.steps._RawStepData:
+    def _prepare_remote_discover_data(self, plan: tmt.base.Plan) -> tmt.steps._RawStepData:
         """
         Merge remote discover data with the local filters
         """

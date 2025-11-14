@@ -1004,7 +1004,7 @@ class Execute(tmt.steps.Step):
     def __init__(
         self,
         *,
-        plan: "tmt.Plan",
+        plan: "tmt.base.Plan",
         data: tmt.steps.RawStepDataArgument,
         logger: tmt.log.Logger,
     ) -> None:

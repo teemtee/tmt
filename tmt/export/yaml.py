@@ -5,7 +5,7 @@ import tmt.utils
 
 @tmt.base.core.FmfId.provides_export('yaml')
 @tmt.base.core.Test.provides_export('yaml')
-@tmt.base.core.Plan.provides_export('yaml')
+@tmt.base.Plan.provides_export('yaml')
 @tmt.base.core.Story.provides_export('yaml')
 class YAMLExporter(tmt.export.TrivialExporter):
     @classmethod

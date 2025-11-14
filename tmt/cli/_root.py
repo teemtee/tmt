@@ -438,7 +438,7 @@ def run_plans(context: Context, **kwargs: Any) -> None:
     Use '.' to select plans under the current working directory.
     """
 
-    tmt.base.core.Plan.store_cli_invocation(context)
+    tmt.base.Plan.store_cli_invocation(context)
 
 
 @run.command(name='tests')

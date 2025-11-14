@@ -5,7 +5,7 @@ import tmt.utils
 
 @tmt.base.core.FmfId.provides_export('dict')
 @tmt.base.core.Test.provides_export('dict')
-@tmt.base.core.Plan.provides_export('dict')
+@tmt.base.Plan.provides_export('dict')
 @tmt.base.core.Story.provides_export('dict')
 class DictExporter(tmt.export.TrivialExporter):
     @classmethod

@@ -537,7 +537,7 @@ class Discover(tmt.steps.Step):
     def __init__(
         self,
         *,
-        plan: 'tmt.base.core.Plan',
+        plan: 'tmt.base.Plan',
         data: tmt.steps.RawStepDataArgument,
         logger: tmt.log.Logger,
     ) -> None:
@@ -851,7 +851,7 @@ class Discover(tmt.steps.Step):
         if self.should_run_again and tmt.base.core.Test._opt('failed_only'):
             failed_results: list[tmt.base.core.Result] = []
             assert self.parent is not None  # narrow type
-            assert isinstance(self.parent, tmt.base.core.Plan)  # narrow type
+            assert isinstance(self.parent, tmt.base.Plan)  # narrow type
 
             # Get failed results from previous run execute
             failed_results = [

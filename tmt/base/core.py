@@ -8,15 +8,12 @@ import collections
 import copy
 import enum
 import functools
-import itertools
-import operator
 import os
 import re
 import shutil
 import sys
-import tempfile
 import time
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Sequence
 from re import Pattern
 from typing import (
     TYPE_CHECKING,
@@ -38,9 +35,9 @@ import fmf.utils
 import jsonschema
 from click import confirm, echo
 from fmf.utils import listed
-from ruamel.yaml.error import MarkedYAMLError
 
 import tmt.ansible
+import tmt.base
 import tmt.checks
 import tmt.config
 import tmt.convert
@@ -50,7 +47,6 @@ import tmt.identifier
 import tmt.lint
 import tmt.log
 import tmt.plugins
-import tmt.plugins.plan_shapers
 import tmt.policy
 import tmt.result
 import tmt.steps
@@ -82,11 +78,9 @@ from tmt.result import Result, ResultInterpret
 from tmt.utils import (
     Command,
     Environment,
-    EnvVarValue,
     FmfContext,
     GeneralError,
     HasEnvironment,
-    HasPlanWorkdir,
     HasRunWorkdir,
     Path,
     ShellScript,
@@ -325,7 +319,7 @@ class FmfId(
 
         return cast(tmt.export._RawExportedInstance, spec)
 
-    def resolve_dynamic_ref(self, git_repository: Path, plan: 'Plan') -> None:
+    def resolve_dynamic_ref(self, git_repository: Path, plan: tmt.base.Plan) -> None:
         """
         Update ``ref`` with the final value for the dynamic reference.
 
@@ -2242,7 +2236,6 @@ class Story(
 
 
 Test.discover_linters()
-Plan.discover_linters()
 Story.discover_linters()
 LintableCollection.discover_linters()
 
@@ -2554,10 +2547,12 @@ class Tree(tmt.utils.Common):
         links: Optional[list['LinkNeedle']] = None,
         excludes: Optional[list[str]] = None,
         apply_command_line: bool = True,
-    ) -> list[Plan]:
+    ) -> list[tmt.base.Plan]:
         """
         Search available plans
         """
+        from tmt.base import Plan
+
         # Handle defaults, apply possible command line options
         logger = logger or (run._logger if run is not None else self._logger)
         local_plan_keys = (keys or []) + ['execute']
@@ -2729,6 +2724,8 @@ class Tree(tmt.utils.Common):
         """
         Initialize a new tmt tree, optionally with a template
         """
+        from tmt.base import Plan
+
         path = path.resolve()
         dry = Tree._opt('dry')
 
@@ -2793,7 +2790,7 @@ class Tree(tmt.utils.Common):
             echo(f"Applying template '{template}'.")
 
         if template == 'mini':
-            tmt.Plan.create(
+            Plan.create(
                 names=['/plans/example'],
                 template='mini',
                 path=path,
@@ -2810,7 +2807,7 @@ class Tree(tmt.utils.Common):
                 dry=dry,
                 logger=logger,
             )
-            tmt.Plan.create(
+            Plan.create(
                 names=['/plans/example'],
                 template='base',
                 path=path,
@@ -2827,7 +2824,7 @@ class Tree(tmt.utils.Common):
                 dry=dry,
                 logger=logger,
             )
-            tmt.Plan.create(
+            Plan.create(
                 names=['/plans/example'],
                 template='full',
                 path=path,
@@ -2916,7 +2913,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         )
         self._workdir_path: WorkdirArgumentType = id_ or True
         self._tree: Optional[Tree] = tree
-        self._plans: Optional[list[Plan]] = None
+        self._plans: Optional[list[tmt.base.Plan]] = None
         self.remove = self.opt('remove')
         self.unique_id = str(time.time()).split('.')[0]
 
@@ -2966,6 +2963,8 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         """
         Save metadata tree, handle the default plan
         """
+        from tmt.base import Plan
+
         default_plan: dict[str, Any] = tmt.utils.yaml_to_dict(
             tmt.templates.MANAGER.render_default_plan()
         )
@@ -3067,6 +3066,8 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         clean and status only require the steps to be loaded and
         their status).
         """
+        from tmt.base import Plan
+
         self._save_tree(self._tree)
         self._workdir_load(self._workdir_path)
         try:
@@ -3099,6 +3100,8 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         """
         Load list of selected plans and enabled steps
         """
+        from tmt.base import Plan
+
         try:
             self.data = RunData.from_serialized(
                 tmt.utils.yaml_to_dict(self.read(Path('run.yaml')))
@@ -3141,7 +3144,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         self.debug(f"Remove workdir when finished: {self.remove}", level=3)
 
     @functools.cached_property
-    def plans(self) -> Sequence[Plan]:
+    def plans(self) -> Sequence[tmt.base.Plan]:
         """
         Test plans for execution
         """
@@ -3152,7 +3155,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         return self._plans
 
     @functools.cached_property
-    def plan_queue(self) -> Sequence[Plan]:
+    def plan_queue(self) -> Sequence[tmt.base.Plan]:
         """
         A list of plans remaining to be executed.
 
@@ -3164,7 +3167,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
 
         return self.plans[:]
 
-    def swap_plans(self, plan: Plan, *others: Plan) -> None:
+    def swap_plans(self, plan: tmt.base.Plan, *others: tmt.base.Plan) -> None:
         """
         Replace given plan with one or more plans.
 
@@ -3172,8 +3175,8 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         :param others: plans to put into the queue instead of ``plans``.
         """
 
-        plans = cast(list[Plan], self.plans)
-        plan_queue = cast(list[Plan], self.plan_queue)
+        plans = cast(list[tmt.base.Plan], self.plans)
+        plan_queue = cast(list[tmt.base.Plan], self.plan_queue)
 
         if plan in plan_queue:
             plan_queue.remove(plan)
@@ -3380,10 +3383,10 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         self.save()
 
         # Iterate over plans
-        crashed_plans: list[tuple[Plan, Exception]] = []
+        crashed_plans: list[tuple[tmt.base.Plan, Exception]] = []
 
         while self.plan_queue:
-            plan = cast(list[Plan], self.plan_queue).pop(0)
+            plan = cast(list[tmt.base.Plan], self.plan_queue).pop(0)
 
             try:
                 plan.go()
@@ -3416,7 +3419,9 @@ class Status(tmt.utils.Common):
     FIRST_COL_LEN = len(LONGEST_STEP) + 2
 
     @staticmethod
-    def get_overall_plan_status(plan: Plan) -> Union[Literal["done", "todo"], tmt.steps.StepName]:
+    def get_overall_plan_status(
+        plan: tmt.base.Plan,
+    ) -> Union[Literal["done", "todo"], tmt.steps.StepName]:
         """
         Examines the plan status (find the last done step)
         """
@@ -3430,7 +3435,7 @@ class Status(tmt.utils.Common):
                 return step_names[i]
         return 'todo'
 
-    def plan_matches_filters(self, plan: Plan) -> bool:
+    def plan_matches_filters(self, plan: tmt.base.Plan) -> bool:
         """
         Check if the given plan matches filters from the command line
         """
@@ -3619,7 +3624,7 @@ class Clean(tmt.utils.Common):
                 successful = False
         return successful
 
-    def _matches_how(self, plan: Plan) -> bool:
+    def _matches_how(self, plan: tmt.base.Plan) -> bool:
         """
         Check if the given plan matches options
         """
@@ -4046,7 +4051,11 @@ class Links(SpecBasedContainer[Any, list[_RawLinkRelation]]):
 
 
 def resolve_dynamic_ref(
-    *, workdir: Path, ref: Optional[str], plan: Optional[Plan] = None, logger: tmt.log.Logger
+    *,
+    workdir: Path,
+    ref: Optional[str],
+    plan: Optional[tmt.base.Plan] = None,
+    logger: tmt.log.Logger,
 ) -> Optional[str]:
     """
     Get the final value for the dynamic reference
@@ -4055,6 +4064,7 @@ def resolve_dynamic_ref(
     Plan is used for context and environment expansion to process reference.
     Common instance is used for appropriate logging.
     """
+    from tmt.base import Plan
 
     # Nothing to do if no dynamic reference provided
     if not ref or not ref.startswith("@"):

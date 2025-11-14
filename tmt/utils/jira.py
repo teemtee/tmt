@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     import jira
 
 # Test, plan or story
-TmtObject = Union['tmt.base.core.Test', 'tmt.base.core.Plan', 'tmt.base.core.Story']
+TmtObject = Union['tmt.base.core.Test', 'tmt.base.Plan', 'tmt.base.core.Story']
 
 
 import_jira: ModuleImporter['jira'] = ModuleImporter(  # type: ignore[valid-type]

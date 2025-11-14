@@ -30,7 +30,7 @@ from tmt.utils import uniq
 if TYPE_CHECKING:
     import tmt.base.core
     import tmt.cli
-    from tmt.base.core import Plan
+    from tmt.base import Plan
 
 
 @container

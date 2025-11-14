@@ -7,7 +7,7 @@ import tmt.utils
 
 @tmt.base.core.FmfId.provides_export('json')
 @tmt.base.core.Test.provides_export('json')
-@tmt.base.core.Plan.provides_export('json')
+@tmt.base.Plan.provides_export('json')
 @tmt.base.core.Story.provides_export('json')
 class JSONExporter(tmt.export.TrivialExporter):
     @classmethod

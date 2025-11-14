@@ -8,7 +8,7 @@ from tmt.utils import Path
 
 @tmt.base.core.FmfId.provides_export('template')
 @tmt.base.core.Test.provides_export('template')
-@tmt.base.core.Plan.provides_export('template')
+@tmt.base.Plan.provides_export('template')
 @tmt.base.core.Story.provides_export('template')
 class TemplateExporter(tmt.export.ExportPlugin):
     @classmethod
@@ -75,7 +75,7 @@ class TemplateExporter(tmt.export.ExportPlugin):
     @classmethod
     def export_plan_collection(
         cls,
-        plans: list[tmt.base.core.Plan],
+        plans: list[tmt.base.Plan],
         keys: Optional[list[str]] = None,
         template: Optional[Path] = None,
         **kwargs: Any,
