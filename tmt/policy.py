@@ -10,7 +10,7 @@ from tmt.utils import FieldValueSource, Path, ShellScript
 from tmt.utils.templates import render_template
 
 if TYPE_CHECKING:
-    from tmt.base import Core, Test
+    from tmt.base.core import Core, Test
 
 T = TypeVar('T')
 

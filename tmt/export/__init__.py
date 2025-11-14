@@ -36,7 +36,7 @@ from tmt.utils import Path
 from tmt.utils.themes import style
 
 if TYPE_CHECKING:
-    import tmt.base
+    import tmt.base.core
 
 TEMPLATES_DIRECTORY = tmt.utils.resource_files('export/templates')
 
@@ -198,7 +198,7 @@ class ExportPlugin(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def export_fmfid_collection(cls, fmf_ids: list['tmt.base.FmfId'], **kwargs: Any) -> str:
+    def export_fmfid_collection(cls, fmf_ids: list['tmt.base.core.FmfId'], **kwargs: Any) -> str:
         """
         Export collection of fmf ids
         """
@@ -209,7 +209,7 @@ class ExportPlugin(abc.ABC):
     @abc.abstractmethod
     def export_test_collection(
         cls,
-        tests: list['tmt.base.Test'],
+        tests: list['tmt.base.core.Test'],
         keys: Optional[list[str]] = None,
         **kwargs: Any,
     ) -> str:
@@ -223,7 +223,7 @@ class ExportPlugin(abc.ABC):
     @abc.abstractmethod
     def export_plan_collection(
         cls,
-        plans: list['tmt.base.Plan'],
+        plans: list['tmt.base.core.Plan'],
         keys: Optional[list[str]] = None,
         **kwargs: Any,
     ) -> str:
@@ -237,7 +237,7 @@ class ExportPlugin(abc.ABC):
     @abc.abstractmethod
     def export_story_collection(
         cls,
-        stories: list['tmt.base.Story'],
+        stories: list['tmt.base.core.Story'],
         keys: Optional[list[str]] = None,
         **kwargs: Any,
     ) -> str:
@@ -284,13 +284,13 @@ class TrivialExporter(ExportPlugin):
     @classmethod
     def export_fmfid_collection(
         cls,
-        fmf_ids: list['tmt.base.FmfId'],
+        fmf_ids: list['tmt.base.core.FmfId'],
         keys: Optional[list[str]] = None,
         **kwargs: Any,
     ) -> str:
         # Special case: fmf id export shall not display `ref` if it is equal
         # to the default branch.
-        exported_fmf_ids: list[tmt.base._RawFmfId] = []
+        exported_fmf_ids: list[tmt.base.core._RawFmfId] = []
 
         for fmf_id in fmf_ids:
             exported = fmf_id._export(keys=keys)
@@ -298,14 +298,14 @@ class TrivialExporter(ExportPlugin):
             if fmf_id.default_branch and fmf_id.ref == fmf_id.default_branch:
                 exported.pop('ref')
 
-            exported_fmf_ids.append(cast(tmt.base._RawFmfId, exported))
+            exported_fmf_ids.append(cast(tmt.base.core._RawFmfId, exported))
 
         return cls._export(cast(list[_RawExportedInstance], exported_fmf_ids))
 
     @classmethod
     def export_test_collection(
         cls,
-        tests: list['tmt.base.Test'],
+        tests: list['tmt.base.core.Test'],
         keys: Optional[list[str]] = None,
         **kwargs: Any,
     ) -> str:
@@ -314,7 +314,7 @@ class TrivialExporter(ExportPlugin):
     @classmethod
     def export_plan_collection(
         cls,
-        plans: list['tmt.base.Plan'],
+        plans: list['tmt.base.core.Plan'],
         keys: Optional[list[str]] = None,
         **kwargs: Any,
     ) -> str:
@@ -323,7 +323,7 @@ class TrivialExporter(ExportPlugin):
     @classmethod
     def export_story_collection(
         cls,
-        stories: list['tmt.base.Story'],
+        stories: list['tmt.base.core.Story'],
         keys: Optional[list[str]] = None,
         **kwargs: Any,
     ) -> str:
@@ -428,10 +428,10 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
     Return list of warnings, empty list if no problems found.
     """
 
-    import tmt.base
+    import tmt.base.core
 
     warnings_list = []
-    sections_headings = tmt.base.SECTIONS_HEADINGS
+    sections_headings = tmt.base.core.SECTIONS_HEADINGS
     required_headings = set(sections_headings['Step'] + sections_headings['Expect'])
     values = []
     for _ in list(sections_headings.values()):

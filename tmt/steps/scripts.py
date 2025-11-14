@@ -3,7 +3,7 @@ from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Callable, Optional
 
 import tmt
-import tmt.base
+import tmt.base.core
 import tmt.log
 import tmt.steps
 import tmt.utils

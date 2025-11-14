@@ -11,8 +11,8 @@ from tmt.steps.execute import Execute
 from tmt.utils import Common, Environment, FmfContext, Path, ShellScript
 
 if TYPE_CHECKING:
-    import tmt.base
-    from tmt.base import Dependency, Plan, Run, _RawAdjustRule
+    import tmt.base.core
+    from tmt.base.core import Dependency, Plan, Run, _RawAdjustRule
 
 
 @container
@@ -39,8 +39,8 @@ class _RecipeTest(SerializableContainer):
     restart_with_reboot: bool
     serial_number: int
     discover_phase: str
-    link: Optional['tmt.base.Links'] = field(
-        serialize=lambda value: cast(tmt.base.Links, value).to_spec() if value else []
+    link: Optional['tmt.base.core.Links'] = field(
+        serialize=lambda value: cast(tmt.base.core.Links, value).to_spec() if value else []
     )
     test: ShellScript = field(serialize=lambda value: str(value))
     path: Optional[Path] = field(
@@ -155,8 +155,8 @@ class _RecipePlan(SerializableContainer):
     tag: list[str]
     tier: Optional[str]
     adjust: Optional[list['_RawAdjustRule']]
-    link: Optional['tmt.base.Links'] = field(
-        serialize=lambda value: cast(tmt.base.Links, value).to_spec() if value else []
+    link: Optional['tmt.base.core.Links'] = field(
+        serialize=lambda value: cast(tmt.base.core.Links, value).to_spec() if value else []
     )
     environment_from_fmf: Environment = field(
         serialize=lambda environment: environment.to_fmf_spec(),

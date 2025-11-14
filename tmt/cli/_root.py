@@ -17,7 +17,7 @@ import fmf.utils
 
 import tmt
 import tmt._bootstrap
-import tmt.base
+import tmt.base.core
 import tmt.config
 import tmt.convert
 import tmt.identifier
@@ -430,7 +430,7 @@ def run_plans(context: Context, **kwargs: Any) -> None:
     Use '.' to select plans under the current working directory.
     """
 
-    tmt.base.Plan.store_cli_invocation(context)
+    tmt.base.core.Plan.store_cli_invocation(context)
 
 
 @run.command(name='tests')
@@ -479,7 +479,7 @@ def run_tests(context: Context, **kwargs: Any) -> None:
     Use '.' to select tests under the current working directory.
     """
 
-    tmt.base.Test.store_cli_invocation(context)
+    tmt.base.core.Test.store_cli_invocation(context)
 
 
 # TODO: commands is unknown, needs revisit
@@ -989,7 +989,7 @@ def tests_export(
 
     if kwargs.get('fmf_id'):
         context.obj.print(
-            tmt.base.FmfId.export_collection(
+            tmt.base.core.FmfId.export_collection(
                 collection=[test.fmf_id for test in context.obj.tree.tests()],
                 format=how,
                 template=Path(template) if template else None,
@@ -2098,7 +2098,7 @@ def link(
     for link in links:
         tmt.utils.jira.link(
             tmt_objects=tmt_objects,
-            links=tmt.base.Links(data=link),
+            links=tmt.base.core.Links(data=link),
             separate=separate,
             logger=context.obj.logger,
         )
