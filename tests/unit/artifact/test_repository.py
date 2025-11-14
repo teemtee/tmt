@@ -3,7 +3,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from tmt.steps.prepare.artifact.providers import Repository
-from tmt.steps.prepare.artifact.providers.repository import parse_rpm_string
+from tmt.steps.prepare.artifact.providers.koji import RpmArtifactInfo
+from tmt.steps.prepare.artifact.providers.repository import (
+    RepositoryFileProvider,
+    parse_rpm_string,
+)
 from tmt.utils import GeneralError, Path, requests
 
 # A valid .repo file content for testing, using Docker CE repo
@@ -313,3 +317,190 @@ def test_parse_rpm_string_valid(pkg_string, expected):
 def test_parse_rpm_string_invalid(pkg_string):
     with pytest.raises(ValueError, match=r"does not match|Malformed package string"):
         parse_rpm_string(pkg_string)
+
+
+# ================================================================================
+# Tests for RepositoryFileProvider
+# ================================================================================
+
+
+def test_repository_provider_id_extraction(root_logger):
+    """Test provider ID extraction from raw provider ID"""
+
+    # Valid provider ID
+    raw_id = "repository-url:https://download.docker.com/linux/centos/docker-ce.repo"
+    provider = RepositoryFileProvider(raw_id, root_logger)
+    assert provider.id == "https://download.docker.com/linux/centos/docker-ce.repo"
+
+
+def test_repository_provider_invalid_format(root_logger):
+    """Test that invalid provider ID formats raise ValueError"""
+
+    # Missing prefix
+    with pytest.raises(ValueError, match="Invalid repository provider format"):
+        RepositoryFileProvider("https://example.com/repo.repo", root_logger)
+
+    # Empty URL after prefix
+    with pytest.raises(ValueError, match="Missing repository URL"):
+        RepositoryFileProvider("repository-url:", root_logger)
+
+
+def test_repository_provider_artifacts_before_fetch(root_logger):
+    """Test that accessing artifacts before fetch_contents raises error"""
+
+    provider = RepositoryFileProvider("repository-url:https://example.com/test.repo", root_logger)
+
+    with pytest.raises(GeneralError, match="Call fetch_contents first"):
+        _ = provider.artifacts
+
+
+@patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
+def test_repository_provider_fetch_contents(mock_retry_session, root_logger):
+    """Test fetch_contents method discovers RPMs from repository"""
+
+    # Mock the Repository.from_url call
+    mock_session = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = VALID_REPO_CONTENT
+    mock_response.raise_for_status.return_value = None
+    mock_session.get.return_value = mock_response
+    mock_retry_session.return_value.__enter__.return_value = mock_session
+
+    # Mock guest and package manager
+    mock_guest = MagicMock()
+    mock_package_manager = MagicMock()
+    mock_guest.package_manager = mock_package_manager
+
+    # Mock list_packages to return some RPMs
+    mock_package_manager.list_packages.return_value = [
+        "docker-ce-1:20.10.7-3.el8.x86_64",
+        "docker-ce-cli-1:20.10.7-3.el8.x86_64",
+        "containerd.io-1.4.6-3.1.el8.x86_64",
+    ]
+
+    provider = RepositoryFileProvider(
+        "repository-url:https://download.docker.com/linux/centos/docker-ce.repo", root_logger
+    )
+
+    # Call fetch_contents
+    result = provider.fetch_contents(mock_guest, Path("/tmp/artifacts"))
+
+    # Verify result is empty list (discovery-only provider)
+    assert result == []
+
+    # Verify package manager methods were called
+    mock_package_manager.install_repository.assert_called_once()
+    mock_package_manager.list_packages.assert_called_once()
+
+    # Verify artifacts property now works
+    artifacts = provider.artifacts
+    assert len(artifacts) == 3
+    assert artifacts[0]._raw_artifact["name"] == "docker-ce"
+    assert artifacts[0]._raw_artifact["version"] == "20.10.7"
+    assert artifacts[0]._raw_artifact["epoch"] == "1"
+    assert artifacts[0]._raw_artifact["release"] == "3.el8"
+    assert artifacts[0]._raw_artifact["arch"] == "x86_64"
+
+
+@patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
+def test_repository_provider_malformed_packages(mock_retry_session, root_logger):
+    """Test that malformed package strings are skipped with warnings"""
+
+    # Mock the Repository.from_url call
+    mock_session = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = VALID_REPO_CONTENT
+    mock_response.raise_for_status.return_value = None
+    mock_session.get.return_value = mock_response
+    mock_retry_session.return_value.__enter__.return_value = mock_session
+
+    # Mock guest and package manager
+    mock_guest = MagicMock()
+    mock_package_manager = MagicMock()
+    mock_guest.package_manager = mock_package_manager
+
+    # Mock list_packages with mix of valid and malformed packages
+    mock_package_manager.list_packages.return_value = [
+        "docker-ce-1:20.10.7-3.el8.x86_64",  # Valid
+        "invalid-package-string",  # Invalid - no arch
+        "bash-5.1.8-6.el9.x86_64",  # Valid
+        "another-malformed",  # Invalid
+    ]
+
+    provider = RepositoryFileProvider("repository-url:https://example.com/test.repo", root_logger)
+
+    # Call fetch_contents
+    provider.fetch_contents(mock_guest, Path("/tmp/artifacts"))
+
+    # Verify only valid packages were added
+    artifacts = provider.artifacts
+    assert len(artifacts) == 2
+    assert artifacts[0]._raw_artifact["name"] == "docker-ce"
+    assert artifacts[1]._raw_artifact["name"] == "bash"
+
+
+@patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
+def test_repository_provider_empty_repository(mock_retry_session, root_logger):
+    """Test handling of repository with no packages"""
+
+    # Mock the Repository.from_url call
+    mock_session = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = VALID_REPO_CONTENT
+    mock_response.raise_for_status.return_value = None
+    mock_session.get.return_value = mock_response
+    mock_retry_session.return_value.__enter__.return_value = mock_session
+
+    # Mock guest and package manager
+    mock_guest = MagicMock()
+    mock_package_manager = MagicMock()
+    mock_guest.package_manager = mock_package_manager
+
+    # Mock list_packages to return empty list
+    mock_package_manager.list_packages.return_value = []
+
+    provider = RepositoryFileProvider("repository-url:https://example.com/test.repo", root_logger)
+
+    # Call fetch_contents
+    provider.fetch_contents(mock_guest, Path("/tmp/artifacts"))
+
+    # Verify artifacts is empty but accessible
+    artifacts = provider.artifacts
+    assert len(artifacts) == 0
+
+
+@patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
+def test_repository_provider_unexpected_error_handling(mock_retry_session, root_logger):
+    """Test handling of unexpected errors during package parsing"""
+
+    # Mock the Repository.from_url call
+    mock_session = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = VALID_REPO_CONTENT
+    mock_response.raise_for_status.return_value = None
+    mock_session.get.return_value = mock_response
+    mock_retry_session.return_value.__enter__.return_value = mock_session
+
+    # Mock guest and package manager
+    mock_guest = MagicMock()
+    mock_package_manager = MagicMock()
+    mock_guest.package_manager = mock_package_manager
+
+    # Mock list_packages to return packages
+    mock_package_manager.list_packages.return_value = [
+        "docker-ce-1:20.10.7-3.el8.x86_64",
+    ]
+
+    provider = RepositoryFileProvider("repository-url:https://example.com/test.repo", root_logger)
+
+    # Patch parse_rpm_string to raise an unexpected exception
+    with patch(
+        'tmt.steps.prepare.artifact.providers.repository.parse_rpm_string',
+        side_effect=RuntimeError("Unexpected error"),
+    ):
+        # Should not raise, but log warning
+        provider.fetch_contents(mock_guest, Path("/tmp/artifacts"))
+
+        # Artifacts should be empty since parsing failed
+        artifacts = provider.artifacts
+        assert len(artifacts) == 0

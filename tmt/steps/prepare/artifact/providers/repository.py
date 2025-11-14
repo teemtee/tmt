@@ -23,7 +23,7 @@ from tmt.utils import GeneralError, Path
 
 # ignore[type-arg]: TypeVar in provider registry annotations is
 # puzzling for type checkers. And not a good idea in general, probably.
-@provides_artifact_provider('repository')  # type: ignore[arg-type]
+@provides_artifact_provider('repository-url')  # type: ignore[arg-type]
 class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
     """
     Provider for making RPM artifacts from a repository discoverable without downloading them.
@@ -183,12 +183,6 @@ def parse_rpm_string(pkg_string: str) -> dict[str, str]:
     epoch = match.group('epoch')
     if epoch is None:
         epoch = '0'
-    # TODO: Add support for source rpms
-    # Filter out source RPMs
-    # If the architecture is 'src', this is a source package and should
-    # be skipped. Raising ValueError ensures it's caught and logged.
-    if arch == 'src':
-        raise ValueError(f"Package '{pkg_string}' is a source RPM. Skipping.")
 
     # Reconstruct NVR (Name-Version-Release)
     nvr = f"{name}-{version}-{release}"
