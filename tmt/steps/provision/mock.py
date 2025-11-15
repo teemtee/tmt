@@ -20,6 +20,12 @@ from tmt.container import container, field
 from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
 from tmt.utils.wait import Waiting
 
+MOCK_PIPE_STEM: str = 'srv/tmt-mock'
+MOCK_PIPE_STDOUT_STEM: str = f'{MOCK_PIPE_STEM}/stdout'
+MOCK_PIPE_STDERR_STEM: str = f'{MOCK_PIPE_STEM}/stderr'
+MOCK_PIPE_RETURNCODE_STEM: str = f'{MOCK_PIPE_STEM}/returncode'
+MOCK_PIPE_FILESYNC_STEM: str = f'{MOCK_PIPE_STEM}/filesync'
+
 
 @functools.cache
 def mock_config(root: Optional[str]) -> dict[str, Any]:
@@ -57,55 +63,85 @@ class ProvisionMockData(MockGuestData, tmt.steps.provision.ProvisionStepData):
     pass
 
 
+class _ManagedEpollIo(io.FileIO):
+    """
+    Context manager for file descriptors registered with epoll.
+    Wraps a ``select.epoll`` object and a file descriptor, itself wrapped as an
+    ``FileIO`` object.
+    In addition to context manager operations done by ``FileIO``, invokes
+    ``register`` upon ``__enter__`` and ``unregister`` upon ``__exit__``.
+    The object keeps track of whether it is registered.
+
+    See: https://docs.python.org/3/library/select.html#edge-and-level-trigger-polling-epoll-objects
+    """
+
+    def __init__(self, *args: Any, epoll: 'select.epoll', **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+        # `select.epoll` is not available on non-Linux platforms.
+        # The `ruff` linter complains but for no good reason, so we silence it.
+        self.epoll: 'select.epoll' = epoll  # noqa: UP037
+
+        self.registered: bool = False
+
+    def __enter__(self) -> Self:
+        super().__enter__()
+        self.epoll.register(super().fileno(), select.EPOLLIN)
+        self.registered = True
+        return self
+
+    def try_unregister(self) -> None:
+        if self.registered:
+            self.epoll.unregister(super().fileno())
+            self.registered = False
+
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_value: Optional[BaseException],
+        exc_traceback: Optional[TracebackType],
+    ) -> None:
+        self.try_unregister()
+        super().__exit__(exc_type, exc_value, exc_traceback)
+
+
+class _DecodingStream:
+    """
+    Lazy object that collects chunks of bytes and decodes them when a newline is encountered.
+    Data is added with the `+=` operator.
+    """
+
+    #: Function receiving the decoded text line-by-line as soon as it is available.
+    #: Whenever data is added to this object using the `+=` operator, if a new line
+    #: was encountered, the line is decoded and passed to this function.
+    log_func: Callable[[str], None]
+    #: The content of the byte buffer accumulated by adding content to this object.
+    output: bytes
+    #: The decoded ``output``.
+    string: str
+
+    def __init__(self, log_func: Callable[[str], None]):
+        self.log_func: Callable[[str], None] = log_func
+        self.output: bytes = b''
+        self.string: str = ''
+
+    def __iadd__(self, content: bytes) -> Self:
+        self.output += content
+        while True:
+            pos = self.output.find(b'\n')
+            if pos == -1:
+                break
+            string = self.output[:pos].decode('utf-8', errors='replace')
+            self.output = self.output[pos + 1 :]
+            self.log_func(string)
+            self.string += string
+            self.string += '\n'
+        return self
+
+
 class MockShell:
-    # Lazy object that collects chunks of bytes and decodes them when a
-    # newline is encountered
-    class Stream:
-        def __init__(self, logger: Callable[[str], None]):
-            self.logger = logger
-            self.output = b''
-            self.string = ''
-
-        def __iadd__(self, content: bytes) -> Self:
-            self.output += content
-            while True:
-                pos = self.output.find(b'\n')
-                if pos == -1:
-                    break
-                string = self.output[:pos].decode('utf-8', errors='replace')
-                self.output = self.output[pos + 1 :]
-                self.logger(string)
-                self.string += string
-                self.string += '\n'
-            return self
-
-    class ManagedEpollFd:
-        def __init__(self, epoll: 'select.epoll', fd: int) -> None:
-            self.epoll = epoll
-            self.fd: Optional[int] = fd
-
-        def __enter__(self) -> 'MockShell.ManagedEpollFd':
-            assert self.fd is not None
-            self.epoll.register(self.fd, select.EPOLLIN)
-            return self
-
-        def try_unregister(self) -> None:
-            if self.fd is not None:
-                self.epoll.unregister(self.fd)
-                self.fd = None
-
-        def __exit__(
-            self,
-            exc_type: Optional[type[BaseException]],
-            exc_value: Optional[BaseException],
-            exc_traceback: Optional[TracebackType],
-        ) -> None:
-            self.try_unregister()
-
-    def __init__(self, parent: 'GuestMock', root: Optional[str], rootdir: Optional[Path]):
+    def __init__(self, parent: 'GuestMock') -> None:
         self.parent = parent
-        self.root = root
-        self.rootdir = rootdir
         self.mock_shell: Optional[subprocess.Popen[str]] = None
 
         # `select.epoll` is not available on non-Linux platforms.
@@ -124,6 +160,36 @@ class MockShell:
             self.mock_shell.communicate()
             self.mock_shell = None
             self.parent.verbose('mock', 'Exited shell.', color='blue', level=2)
+
+    def _simple_execute(self, *commands: str) -> None:
+        """
+        Invoke commands in the mock shell without checking for errors.
+        This is done by writing the commands to the shell, ending each with
+        a newline.
+        Each command invocation causes the shell to print a newline when the
+        command has finished.
+        """
+
+        assert self.epoll is not None
+        assert self.mock_shell is not None
+        assert self.mock_shell.stdin is not None
+        assert self.mock_shell.stdout is not None
+        assert self.mock_shell.stderr is not None
+
+        self.mock_shell.stdin.write(''.join(command + '\n' for command in commands))
+        self.mock_shell.stdin.flush()
+
+        # Wait until the previous commands finished.
+        loop = len(commands)
+        while loop != 0 and self.mock_shell.poll() is None:
+            events = self.epoll.poll()
+            for fileno, _ in events:
+                if fileno == self.mock_shell_stdout_fd:
+                    loop -= 1
+                    self.mock_shell.stdout.read()
+                    break
+        for line in self.mock_shell.stderr.readlines():
+            self.parent.debug('mock', line.rstrip(), color='blue', level=2)
 
     def enter_shell(self) -> None:
         command = self.parent.mock_command_prefix.to_popen()
@@ -200,32 +266,26 @@ class MockShell:
                 f'Failed to launch mock shell: exited {mock_shell_result}.'
             )
 
+        # Prepare the tmt-mock communication pipes inside the chroot.
+        self._simple_execute(
+            f'rm -rf /{MOCK_PIPE_STEM}',
+            f'mkdir /{MOCK_PIPE_STEM}',
+            'mkfifo'
+            f' /{MOCK_PIPE_STDOUT_STEM}'
+            f' /{MOCK_PIPE_STDERR_STEM}'
+            f' /{MOCK_PIPE_RETURNCODE_STEM}'
+            f' /{MOCK_PIPE_FILESYNC_STEM}',
+            f'chmod -R a+rw /{MOCK_PIPE_STEM}',
+        )
+
         self.parent.verbose('mock', 'Shell is ready.', color='blue', level=3)
 
-        # We do not expect these commands to fail.
-        self.mock_shell.stdin.write('rm -rf /srv/tmt-mock\n')
-        self.mock_shell.stdin.write('mkdir /srv/tmt-mock\n')
-        self.mock_shell.stdin.write(
-            'mkfifo'
-            ' /srv/tmt-mock/stdout'
-            ' /srv/tmt-mock/stderr'
-            ' /srv/tmt-mock/returncode'
-            ' /srv/tmt-mock/filesync'
-            '\n'
+    def _managed_epoll_io(self, file_stem: str) -> _ManagedEpollIo:
+        assert self.epoll is not None
+        io_flags: int = os.O_RDONLY | os.O_NONBLOCK
+        return _ManagedEpollIo(
+            os.open(str(self.parent.root_path / file_stem), io_flags), epoll=self.epoll
         )
-        self.mock_shell.stdin.write('chmod a+rw /srv/tmt-mock/filesync\n')
-        self.mock_shell.stdin.flush()
-
-        # Wait until the previous commands finished.
-        loop = 4
-        while loop != 0 and self.mock_shell.poll() is None:
-            events = self.epoll.poll()
-            for fileno, _ in events:
-                if fileno == self.mock_shell_stdout_fd:
-                    loop -= 1
-                    self.mock_shell.stdout.read()
-                    break
-        self.mock_shell.stderr.read()
 
     def _spawn_command(
         self,
@@ -242,7 +302,9 @@ class MockShell:
         **kwargs: Any,
     ) -> Generator[tuple[str, str]]:
         """
-        Execute the command in a running mock shell for increased speed.
+        Spawn a command in the shell. The first call to ``next`` will start
+        executing it (returns nothing). The second call to ``next`` will finish
+        the command returning its standard outputs.
         """
 
         if self.mock_shell is None:
@@ -254,10 +316,6 @@ class MockShell:
                 f'execute: unrecognized keyword arguments: {", ".join(kwargs.keys())}.',
                 color='blue',
             )
-
-        stdout_stem = 'srv/tmt-mock/stdout'
-        stderr_stem = 'srv/tmt-mock/stderr'
-        returncode_stem = 'srv/tmt-mock/returncode'
 
         # The friendly command version would be emitted only when we were not
         # asked to be quiet.
@@ -293,23 +351,20 @@ class MockShell:
 
         shell_command_components = [
             *shell_command_components,
-            f'1>/{stdout_stem}',
-            f'2>/{stderr_stem}' if not join else '2>&1',
+            f'1>/{MOCK_PIPE_STDOUT_STEM}',
+            f'2>/{MOCK_PIPE_STDERR_STEM}' if not join else '2>&1',
             ';',
-            f'echo $?>/{returncode_stem}',
+            f'echo $?>/{MOCK_PIPE_RETURNCODE_STEM}',
         ]
 
         shell_command = ' '.join(shell_command_components) + '\n'
 
         logger.debug('mock', f'Executing shell command: {shell_command[:-1]}', color='blue')
 
-        io_flags: int = os.O_RDONLY | os.O_NONBLOCK
         with (
-            io.FileIO(os.open(str(self.parent.root_path / stdout_stem), io_flags)) as stdout_io,
-            io.FileIO(os.open(str(self.parent.root_path / stderr_stem), io_flags)) as stderr_io,
-            io.FileIO(
-                os.open(str(self.parent.root_path / returncode_stem), io_flags)
-            ) as returncode_io,
+            self._managed_epoll_io(MOCK_PIPE_STDOUT_STEM) as stdout_io,
+            self._managed_epoll_io(MOCK_PIPE_STDERR_STEM) as stderr_io,
+            self._managed_epoll_io(MOCK_PIPE_RETURNCODE_STEM) as returncode_io,
         ):
             stdout_fd = stdout_io.fileno()
             stderr_fd = stderr_io.fileno()
@@ -321,88 +376,83 @@ class MockShell:
             assert self.mock_shell.stdout is not None
             assert self.mock_shell.stderr is not None
 
-            with (
-                MockShell.ManagedEpollFd(self.epoll, stdout_fd) as stdout_epoll,
-                MockShell.ManagedEpollFd(self.epoll, stderr_fd) as stderr_epoll,
-                MockShell.ManagedEpollFd(self.epoll, returncode_fd) as returncode_epoll,
-            ):
-                self.mock_shell.stdin.write(shell_command)
-                self.mock_shell.stdin.flush()
+            self.mock_shell.stdin.write(shell_command)
+            self.mock_shell.stdin.flush()
 
-                # For command output logging, use either the given logging callback, or
-                # use the given logger & emit to verbose log.
-                # NOTE Command.run uses debug, not verbose.
-                output_logger: tmt.log.LoggingFunction = (
-                    (log or logger.verbose) if not silent else logger.verbose
+            # For command output logging, use either the given logging callback, or
+            # use the given logger & emit to verbose log.
+            # NOTE Command.run uses debug, not verbose.
+            output_logger: tmt.log.LoggingFunction = (
+                (log or logger.verbose) if not silent else logger.verbose
+            )
+
+            stream_out = _DecodingStream(
+                lambda text: output_logger('out', text, 'yellow', level=3)
+            )
+            stream_err = _DecodingStream(
+                lambda text: output_logger('err', text, 'yellow', level=3)
+            )
+            returncode = None
+
+            yield  # type: ignore[misc]
+
+            while self.mock_shell.poll() is None:
+                events = self.epoll.poll(timeout=timeout)
+
+                if len(events) == 0:
+                    # TODO
+                    # kill the process spawned inside the mock shell
+                    pass
+
+                # The command is finished when mock shell prints a newline on its
+                # stdout. We want to break loop after we handled all the other
+                # epoll events because the event ordering is not guaranteed.
+                if len(events) == 1 and events[0][0] == self.mock_shell_stdout_fd:
+                    self.mock_shell.stdout.read()
+                    break
+                for fileno, _ in events:
+                    # Whatever we sent on mock shell's input it prints on the stderr
+                    # so just discard it.
+                    if fileno == self.mock_shell_stderr_fd:
+                        self.mock_shell.stderr.read()
+                    elif fileno == stdout_fd:
+                        content = os.read(stdout_fd, 128)
+                        stream_out += content
+                        if not content:
+                            stdout_io.try_unregister()
+                    elif fileno == stderr_fd:
+                        content = os.read(stderr_fd, 128)
+                        stream_err += content
+                        if not content:
+                            stderr_io.try_unregister()
+                    elif fileno == returncode_fd:
+                        content = os.read(returncode_fd, 16)
+                        if not content:
+                            returncode_io.try_unregister()
+                        else:
+                            returncode = int(content.decode('utf-8').strip())
+
+            stdout = stream_out.string
+            stderr = stream_err.string
+
+            if returncode is None:
+                raise tmt.utils.RunError(
+                    'Invalid state when executing command '
+                    f"'{friendly_command or shell_command}'.",
+                    command,
+                    127,
+                    stdout=stdout,
+                    stderr=stderr,
                 )
-
-                stream_out = MockShell.Stream(
-                    lambda text: output_logger('out', text, 'yellow', level=3)
+            if returncode != 0:
+                raise tmt.utils.RunError(
+                    f"Command '{friendly_command or shell_command}' returned {returncode}.",
+                    command,
+                    returncode,
+                    stdout=stdout,
+                    stderr=stderr,
                 )
-                stream_err = MockShell.Stream(
-                    lambda text: output_logger('err', text, 'yellow', level=3)
-                )
-                returncode = None
-
-                yield  # type: ignore[misc]
-
-                while self.mock_shell.poll() is None:
-                    events = self.epoll.poll(timeout=timeout)
-
-                    if len(events) == 0:
-                        # TODO
-                        # kill the process spawned inside the mock shell
-                        pass
-
-                    # The command is finished when mock shell prints a newline on its
-                    # stdout. We want to break loop after we handled all the other
-                    # epoll events because the event ordering is not guaranteed.
-                    if len(events) == 1 and events[0][0] == self.mock_shell_stdout_fd:
-                        self.mock_shell.stdout.read()
-                        break
-                    for fileno, _ in events:
-                        # Whatever we sent on mock shell's input it prints on the stderr
-                        # so just discard it.
-                        if fileno == self.mock_shell_stderr_fd:
-                            self.mock_shell.stderr.read()
-                        elif fileno == stdout_fd:
-                            content = os.read(stdout_fd, 128)
-                            stream_out += content
-                            if not content:
-                                stdout_epoll.try_unregister()
-                        elif fileno == stderr_fd:
-                            content = os.read(stderr_fd, 128)
-                            stream_err += content
-                            if not content:
-                                stderr_epoll.try_unregister()
-                        elif fileno == returncode_fd:
-                            content = os.read(returncode_fd, 16)
-                            if not content:
-                                returncode_epoll.try_unregister()
-                            else:
-                                returncode = int(content.decode('utf-8').strip())
-
-                stdout = stream_out.string
-                stderr = stream_err.string
-
-                if returncode is None:
-                    raise tmt.utils.RunError(
-                        'Invalid state when executing command '
-                        f"'{friendly_command or shell_command}'.",
-                        command,
-                        127,
-                        stdout=stdout,
-                        stderr=stderr,
-                    )
-                if returncode != 0:
-                    raise tmt.utils.RunError(
-                        f"Command '{friendly_command or shell_command}' returned {returncode}.",
-                        command,
-                        returncode,
-                        stdout=stdout,
-                        stderr=stderr,
-                    )
-                yield (stdout, stderr)
+            yield (stdout, stderr)
 
     def execute(self, *args: Any, **kwargs: Any) -> tuple[str, str]:
         process = self._spawn_command(*args, **kwargs)
@@ -426,7 +476,7 @@ class GuestMock(tmt.Guest):
         if self.root is not None:
             self.mock_command_prefix += Command('-r', self.root)
         if self.rootdir is not None:
-            self.mock_command_prefix += Command('--rootdir', self.rootdir)
+            self.mock_command_prefix += Command('--rootdir', str(self.rootdir))
         root_path = (
             (self.mock_command_prefix + Command('--print-root-path'))
             .run(cwd=None, logger=self._logger)
@@ -435,7 +485,7 @@ class GuestMock(tmt.Guest):
         assert root_path is not None
         self.root_path = Path(root_path.rstrip())
 
-        self.mock_shell = MockShell(parent=self, root=self.root, rootdir=self.rootdir)
+        self.mock_shell = MockShell(parent=self)
 
     @property
     def is_ready(self) -> bool:
@@ -490,7 +540,7 @@ class GuestMock(tmt.Guest):
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
-        Execute command inside mock
+        Execute the command in a running mock shell for increased speed.
         """
 
         if self.mock_shell.mock_shell is None:
@@ -542,7 +592,7 @@ class GuestMock(tmt.Guest):
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
-        # TODO refresh shell
+        # TODO refresh shell, or is that for `reconnect`?
         self.debug(f"Doing nothing to reboot guest '{self.primary_address}'.")
         return False
 
@@ -560,10 +610,14 @@ class GuestMock(tmt.Guest):
         (self.mock_command_prefix + Command('--scrub=all')).run(cwd=None, logger=self._logger)
 
     def suspend(self) -> None:
-        self.mock_shell.exit_shell()
+        self.stop()
+
+    def start(self) -> None:
+        self.mock_shell.enter_shell()
 
     def stop(self) -> None:
         self.mock_shell.exit_shell()
+        self.run(Command('rm', '-rf', str(self.root_path / f'{MOCK_PIPE_STEM}/*')))
 
     def push(
         self,
@@ -573,7 +627,7 @@ class GuestMock(tmt.Guest):
         superuser: bool = False,
     ) -> None:
         """
-        Push content into the mock chroot via a pipe at /srv/tmt-mock/filesync.
+        Push content into the mock chroot via a pipe at /{MOCK_PIPE_FILESYNC_STEM}.
         For directories we use tar.
         For files we use cp / install.
         Compress option is ignored, it only slows down the execution.
@@ -593,7 +647,8 @@ class GuestMock(tmt.Guest):
         if source.is_dir():
             self.mock_shell.execute(Command('mkdir', '-p', str(destination)), logger=self._logger)
             p = self.mock_shell._spawn_command(
-                Command('tar', '-C', str(destination), '-xf', '/srv/tmt-mock/filesync') + excludes,
+                Command('tar', '-C', str(destination), '-xf', f'/{MOCK_PIPE_FILESYNC_STEM}')
+                + excludes,
                 logger=self._logger,
             )
             next(p)
@@ -603,7 +658,7 @@ class GuestMock(tmt.Guest):
                     '-C',
                     str(source),
                     '-cf',
-                    str(self.root_path / 'srv/tmt-mock/filesync'),
+                    str(self.root_path / f'{MOCK_PIPE_FILESYNC_STEM}'),
                     '.',
                 )
             ).run(cwd=None, logger=self._logger)
@@ -613,11 +668,11 @@ class GuestMock(tmt.Guest):
                 Command('mkdir', '-p', str(destination.parent)), logger=self._logger
             )
             p = self.mock_shell._spawn_command(
-                Command('install', '/srv/tmt-mock/filesync', str(destination)) + permissions,
+                Command('install', f'/{MOCK_PIPE_FILESYNC_STEM}', str(destination)) + permissions,
                 logger=self._logger,
             )
             next(p)
-            Command('cp', str(source), str(self.root_path / 'srv/tmt-mock/filesync')).run(
+            Command('cp', str(source), str(self.root_path / f'{MOCK_PIPE_FILESYNC_STEM}')).run(
                 cwd=None, logger=self._logger
             )
             next(p)
@@ -629,7 +684,7 @@ class GuestMock(tmt.Guest):
         options: Optional[tmt.steps.provision.TransferOptions] = None,
     ) -> None:
         """
-        Pull content from the mock chroot via a pipe at /srv/tmt-mock/filesync.
+        Pull content from the mock chroot via a pipe at /{MOCK_PIPE_FILESYNC_STEM}.
         For directories we use tar.
         For files we use cp / install.
         Compress option is ignored, it only slows down the execution.
@@ -653,7 +708,7 @@ class GuestMock(tmt.Guest):
             if options.create_destination:
                 Command('mkdir', '-p', str(destination)).run(cwd=None, logger=self._logger)
             p = self.mock_shell._spawn_command(
-                Command('tar', '-C', str(source), '-cf', '/srv/tmt-mock/filesync', '.'),
+                Command('tar', '-C', str(source), '-cf', f'/{MOCK_PIPE_FILESYNC_STEM}', '.'),
                 logger=self._logger,
             )
             next(p)
@@ -663,7 +718,7 @@ class GuestMock(tmt.Guest):
                     '-C',
                     str(destination),
                     '-xf',
-                    str(self.root_path / 'srv/tmt-mock/filesync'),
+                    str(self.root_path / f'{MOCK_PIPE_FILESYNC_STEM}'),
                 )
                 + excludes
             ).run(cwd=None, logger=self._logger)
@@ -672,17 +727,24 @@ class GuestMock(tmt.Guest):
             if options.create_destination:
                 Command('mkdir', '-p', str(destination.parent)).run(cwd=None, logger=self._logger)
             p = self.mock_shell._spawn_command(
-                Command('cp', str(source), '/srv/tmt-mock/filesync'), logger=self._logger
+                Command('cp', str(source), f'/{MOCK_PIPE_FILESYNC_STEM}'), logger=self._logger
             )
             next(p)
             (
-                Command('install', str(self.root_path / 'srv/tmt-mock/filesync'), str(destination))
+                Command(
+                    'install', str(self.root_path / f'{MOCK_PIPE_FILESYNC_STEM}'), str(destination)
+                )
                 + permissions
             ).run(cwd=None, logger=self._logger)
             next(p)
 
 
-@tmt.steps.provides_method('mock')
+@tmt.steps.provides_method(
+    'mock',
+    installation_hint="""
+        Make sure ``mock`` package is installed.
+    """,
+)
 class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
     """
     Use the mock tool for the test execution.
@@ -757,4 +819,5 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
             name=self.name,
             parent=self.step,
         )
+        self._guest.start()
         self._guest.setup()
