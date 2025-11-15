@@ -193,8 +193,9 @@ class DnfEngine(PackageManagerEngine):
 
     def create_repository_metadata_from_dir(self, directory: Path) -> None:
         # TODO: Declare 'createrepo_c' via feature-specific essential_requires()
+        # once package managers learn about essential requirements.
         # Tracked in https://github.com/teemtee/tmt/issues/4339
-        # createrepo_c is declared as an essential requirement in Guest.essential_requires()
+        # FIXME: createrepo_c is declared in PrepareArtifact.essential_requires()
 
         tool_name = 'createrepo_c'
 

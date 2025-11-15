@@ -717,5 +717,4 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         return [
             tmt.base.DependencySimple('/usr/bin/flock'),
-            tmt.base.DependencySimple('/usr/bin/createrepo_c'),
         ]
