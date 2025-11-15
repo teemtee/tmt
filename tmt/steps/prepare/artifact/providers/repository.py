@@ -220,13 +220,12 @@ def create_repository(
     2. Generating a .repo configuration file with the repository settings
     3. Installing the repository configuration file on the guest system
 
-
     :param artifact_dir: Path to the directory on the guest containing RPM files.
                          This directory must exist on the guest system.
     :param guest: Guest instance where the repository will be created and installed.
     :param logger: Logger instance for outputting debug and error messages.
     :param repo_name: Name for the repository. If not provided, a unique name
-                      will be generated using the format ``tmt-repo-{n}``. This name
+                      will be generated using the format ``tmt-repo-default-{n}``. This name
                       appears in the .repo file and package manager output.
     :param priority: Repository priority (default: 1). Lower values have higher
                      priority when multiple repositories provide the same package.
