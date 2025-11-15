@@ -192,31 +192,20 @@ class DnfEngine(PackageManagerEngine):
         )
 
     def create_repository_metadata_from_dir(self, directory: Path) -> None:
-        # TODO: Declare 'createrepo_c' via essential_requires() when repository
-        # creation is requested instead of installing it ad-hoc here.
-        # This needs support for optional/feature-specific essential requires.
+        # TODO: Declare 'createrepo_c' via feature-specific essential_requires()
         # Tracked in https://github.com/teemtee/tmt/issues/4339
+        # createrepo_c is declared as an essential requirement in Guest.essential_requires()
 
         tool_name = 'createrepo_c'
-
-        createrepo_path = None
 
         try:
             result = self.guest.execute(Command('command', '-v', tool_name), silent=True)
             createrepo_path = (result.stdout or '').strip() or tool_name
-        except RunError:
-            # Install the package if not found
-            install_script = self.install(Package(tool_name))
-            self.guest.execute(install_script)
-
-            # Verify installation
-            result = self.guest.execute(Command('command', '-v', tool_name), silent=True)
-            createrepo_path = (result.stdout or '').strip() or tool_name
-
-            if not createrepo_path:
-                raise GeneralError(
-                    f"Prerequisite '{tool_name}' installed but command still not found."
-                ) from None
+        except RunError as error:
+            raise GeneralError(
+                f"Prerequisite '{tool_name}' not found on guest. "
+                f"It should have been installed as an essential requirement."
+            ) from error
 
         # Run createrepo_c on the directory
         try:
