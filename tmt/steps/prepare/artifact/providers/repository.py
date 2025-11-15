@@ -2,6 +2,7 @@
 Artifact provider for discovering RPMs from repository files.
 """
 
+import itertools
 import re
 from collections.abc import Sequence
 from pyexpat.errors import messages
@@ -19,6 +20,9 @@ from tmt.steps.prepare.artifact.providers import (
 from tmt.steps.prepare.artifact.providers.koji import RpmArtifactInfo
 from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path
+
+# Counter for generating unique repository names in the format ``tmt-repo-{n}``.
+_REPO_NAME_COUNTER = itertools.count(0)
 
 
 # ignore[type-arg]: TypeVar in provider registry annotations is
@@ -220,9 +224,9 @@ def create_repository(
                          This directory must exist on the guest system.
     :param guest: Guest instance where the repository will be created and installed.
     :param logger: Logger instance for outputting debug and error messages.
-    :param repo_name: Name for the repository. If not provided, the directory name
-                      will be used. This name appears in the .repo file and package
-                      manager output.
+    :param repo_name: Name for the repository. If not provided, a unique name
+                      will be generated using the format ``tmt-repo-{n}``. This name
+                      appears in the .repo file and package manager output.
     :param priority: Repository priority (default: 1). Lower values have higher
                      priority when multiple repositories provide the same package.
     :return: Repository object representing the newly created and installed repository.
@@ -247,14 +251,8 @@ def create_repository(
         )
 
     """
-
-    # Validation
     if repo_name is None:
-        repo_name = artifact_dir.name
-        if not repo_name:
-            raise GeneralError(
-                f"Could not derive repository name from directory '{artifact_dir}'."
-            )
+        repo_name = f"tmt-repo-{next(_REPO_NAME_COUNTER)}"
 
     logger.debug(f"Creating repository '{repo_name}' from '{artifact_dir}'.")
     try:
