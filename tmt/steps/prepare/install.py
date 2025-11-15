@@ -7,7 +7,7 @@ import fmf
 import fmf.utils
 
 import tmt
-import tmt.base
+import tmt.base.core
 import tmt.log
 import tmt.options
 import tmt.package_managers
@@ -55,7 +55,7 @@ class InstallBase(tmt.utils.Common):
         *,
         parent: 'PrepareInstall',
         guest: Guest,
-        dependencies: list[tmt.base.DependencySimple],
+        dependencies: list[tmt.base.core.DependencySimple],
         directories: list[Path],
         exclude: list[str],
         logger: tmt.log.Logger,
@@ -80,7 +80,7 @@ class InstallBase(tmt.utils.Common):
 
     def prepare_installables(
         self,
-        dependencies: list[tmt.base.DependencySimple],
+        dependencies: list[tmt.base.core.DependencySimple],
         directories: list[Path],
     ) -> None:
         """
@@ -808,21 +808,21 @@ class InstallApk(InstallBase):
 
 @container
 class PrepareInstallData(tmt.steps.prepare.PrepareStepData):
-    package: list[tmt.base.DependencySimple] = field(
+    package: list[tmt.base.core.DependencySimple] = field(
         default_factory=list,
         option=('-p', '--package'),
         metavar='PACKAGE',
         multiple=True,
         help='Package name or path to rpm to be installed.',
         # PrepareInstall supports *simple* requirements only
-        normalize=lambda key_address, value, logger: tmt.base.assert_simple_dependencies(
-            tmt.base.normalize_require(key_address, value, logger),
+        normalize=lambda key_address, value, logger: tmt.base.core.assert_simple_dependencies(
+            tmt.base.core.normalize_require(key_address, value, logger),
             "'install' plugin support simple packages only, no fmf links are allowed",
             logger,
         ),
         serialize=lambda packages: [package.to_spec() for package in packages],
         unserialize=lambda serialized: [
-            tmt.base.DependencySimple.from_spec(package) for package in serialized
+            tmt.base.core.DependencySimple.from_spec(package) for package in serialized
         ],
     )
 

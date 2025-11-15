@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 
-from tmt.base import DependencySimple
+from tmt.base.core import DependencySimple
 from tmt.steps.prepare.install import InstallBase
 
 
