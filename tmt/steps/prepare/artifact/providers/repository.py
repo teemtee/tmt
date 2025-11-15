@@ -11,6 +11,7 @@ from typing import Optional
 from urllib.parse import unquote, urlparse
 
 import tmt.log
+from tmt.steps import DefaultNameGenerator
 from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     ArtifactProviderId,
@@ -21,8 +22,8 @@ from tmt.steps.prepare.artifact.providers.koji import RpmArtifactInfo
 from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path
 
-# Counter for generating unique repository names in the format ``tmt-repo-{n}``.
-_REPO_NAME_COUNTER = itertools.count(0)
+# # Counter for generating unique repository names in the format ``tmt-repo-default-{n}``.
+_REPO_NAME_GENERATOR = DefaultNameGenerator(known_names=[])
 
 
 # ignore[type-arg]: TypeVar in provider registry annotations is
@@ -252,7 +253,7 @@ def create_repository(
 
     """
     if repo_name is None:
-        repo_name = f"tmt-repo-{next(_REPO_NAME_COUNTER)}"
+        repo_name = f"tmt-repo-{_REPO_NAME_GENERATOR.get()}"
 
     logger.debug(f"Creating repository '{repo_name}' from '{artifact_dir}'.")
     try:
