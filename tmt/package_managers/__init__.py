@@ -224,9 +224,8 @@ class PackageManagerEngine(tmt.utils.Common):
         Create repository metadata for a given directory.
 
         :param directory: The path to the directory containing packages.
-        :raises GeneralError: If metadata creation fails.
-        :raises PrepareError: If this package manager does not
-            support creating repositories.
+        :raises PrepareError: If this package manager does not support creating
+            repositories or if metadata creation fails.
         """
         raise PrepareError("Package Manager not supported for createrepo")
 

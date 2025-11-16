@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 else:
     Repository: Any = None  # type: ignore[assignment]
 
-from tmt.utils import Command, GeneralError, RunError, ShellScript
+from tmt.utils import Command, GeneralError, PrepareError, RunError, ShellScript
 
 
 class DnfEngine(PackageManagerEngine):
@@ -195,7 +195,7 @@ class DnfEngine(PackageManagerEngine):
         try:
             self.guest.execute(Command('createrepo_c', str(directory)))
         except RunError as error:
-            raise GeneralError(f"Failed to create repository metadata in '{directory}'") from error
+            raise PrepareError(f"Failed to create repository metadata in '{directory}'") from error
 
 
 # ignore[type-arg]: TypeVar in package manager registry annotations is

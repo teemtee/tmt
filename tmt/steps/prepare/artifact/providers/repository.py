@@ -227,8 +227,8 @@ def create_repository(
     :param priority: Repository priority (default: 1). Lower values have higher
                      priority when multiple repositories provide the same package.
     :return: Repository object representing the newly created and installed repository.
-    :raises PrepareError: If the package manager does not support creating repositories.
-    :raises GeneralError: If repository metadata creation fails.
+    :raises PrepareError: If the package manager does not support creating repositories
+                          or if repository metadata creation fails.
     :raises RunError: If repository installation fails.
 
     .. note::
