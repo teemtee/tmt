@@ -192,29 +192,10 @@ class DnfEngine(PackageManagerEngine):
         )
 
     def create_repository_metadata_from_dir(self, directory: Path) -> None:
-        # TODO: Declare 'createrepo_c' via feature-specific essential_requires()
-        # once package managers learn about essential requirements.
-        # Tracked in https://github.com/teemtee/tmt/issues/4339
-        # FIXME: createrepo_c is declared in PrepareArtifact.essential_requires()
-
-        tool_name = 'createrepo_c'
-
         try:
-            result = self.guest.execute(Command('command', '-v', tool_name), silent=True)
-            createrepo_path = (result.stdout or '').strip() or tool_name
+            self.guest.execute(Command('createrepo_c', str(directory)))
         except RunError as error:
-            raise GeneralError(
-                f"Prerequisite '{tool_name}' not found on guest. "
-                f"It should have been installed as an essential requirement."
-            ) from error
-
-        # Run createrepo_c on the directory
-        try:
-            self.guest.execute(Command(createrepo_path, str(directory)))
-        except RunError as error:
-            raise GeneralError(
-                f"Failed to create repository metadata in '{directory}': {error}"
-            ) from error
+            raise GeneralError(f"Failed to create repository metadata in '{directory}'") from error
 
 
 # ignore[type-arg]: TypeVar in package manager registry annotations is
