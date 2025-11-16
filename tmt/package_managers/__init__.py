@@ -8,7 +8,7 @@ import tmt.log
 import tmt.plugins
 import tmt.utils
 from tmt.container import container, simple_field
-from tmt.utils import Command, CommandOutput, GeneralError, Path, ShellScript
+from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, ShellScript
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
@@ -225,10 +225,10 @@ class PackageManagerEngine(tmt.utils.Common):
 
         :param directory: The path to the directory containing packages.
         :raises GeneralError: If metadata creation fails.
-        :raises NotImplementedError: If this package manager does not
+        :raises PrepareError: If this package manager does not
             support creating repositories.
         """
-        raise NotImplementedError
+        raise PrepareError("Package Manager not supported for createrepo")
 
 
 class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
@@ -323,11 +323,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
     def create_repository_metadata_from_dir(self, directory: Path) -> None:
         """
-        Create repository metadata for a given directory.
-
-        :param directory: The path to the directory containing packages.
-        :raises GeneralError: If metadata creation fails.
-        :raises NotImplementedError: If this package manager does not
-            support creating repositories.
+        Wrapper of :py:meth:`PackageManagerEngine.create_repository_metadata_from_dir`.
+        See the main method for more details.
         """
         return self.engine.create_repository_metadata_from_dir(directory)

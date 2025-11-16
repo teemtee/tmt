@@ -2,13 +2,10 @@
 Artifact provider for discovering RPMs from repository files.
 """
 
-import itertools
 import re
 from collections.abc import Sequence
-from pyexpat.errors import messages
 from re import Pattern
 from typing import Optional
-from urllib.parse import unquote, urlparse
 
 import tmt.log
 from tmt.steps import DefaultNameGenerator
@@ -20,9 +17,9 @@ from tmt.steps.prepare.artifact.providers import (
 )
 from tmt.steps.prepare.artifact.providers.koji import RpmArtifactInfo
 from tmt.steps.provision import Guest
-from tmt.utils import GeneralError, Path
+from tmt.utils import GeneralError, Path, PrepareError, RunError
 
-# # Counter for generating unique repository names in the format ``tmt-repo-default-{n}``.
+# Counter for generating unique repository names in the format ``tmt-repo-default-{n}``.
 _REPO_NAME_GENERATOR = DefaultNameGenerator(known_names=[])
 
 
@@ -230,9 +227,9 @@ def create_repository(
     :param priority: Repository priority (default: 1). Lower values have higher
                      priority when multiple repositories provide the same package.
     :return: Repository object representing the newly created and installed repository.
-    :raises GeneralError: If the artifact directory does not exist on the guest,
-                         if repository metadata creation fails, or if repository
-                         installation fails.
+    :raises PrepareError: If the package manager does not support creating repositories.
+    :raises GeneralError: If repository metadata creation fails.
+    :raises RunError: If repository installation fails.
 
     .. note::
 
@@ -251,38 +248,20 @@ def create_repository(
         )
 
     """
-    if repo_name is None:
-        repo_name = f"tmt-repo-{_REPO_NAME_GENERATOR.get()}"
-
-    logger.debug(f"Creating repository '{repo_name}' from '{artifact_dir}'.")
-    try:
-        guest.execute(
-            tmt.utils.Command("test", "-d", str(artifact_dir)),
-            silent=True,
-        )
-    except tmt.utils.RunError as error:
-        raise GeneralError(
-            f"Artifact directory '{artifact_dir}' does not exist on guest."
-        ) from error
+    repo_name = repo_name or f"tmt-repo-{_REPO_NAME_GENERATOR.get()}"
 
     # Create Repository Metadata
     logger.debug(f"Asking package manager to create metadata in '{artifact_dir}'.")
-    try:
-        # This now calls the correct method (e.g., in DnfPackageManager)
-        guest.package_manager.create_repository_metadata_from_dir(artifact_dir)
-    except (NotImplementedError, GeneralError) as error:
-        raise GeneralError(f"Failed to create repository metadata in '{artifact_dir}'") from error
+    guest.package_manager.create_repository_metadata_from_dir(artifact_dir)
 
     # Generate .repo File Content
-    repo_content = [
-        f"[{tmt.utils.sanitize_name(repo_name)}]",
-        f"name={repo_name}",
-        f"baseurl=file://{artifact_dir}",
-        "enabled=1",
-        "gpgcheck=0",
-        f"priority={priority}",
-    ]
-    repo_string = "\n".join(repo_content)
+    repo_string = f"""[{tmt.utils.sanitize_name(repo_name)}]
+name={repo_name}
+baseurl=file://{artifact_dir}
+enabled=1
+gpgcheck=0
+priority={priority}"""
+
     logger.debug(f"Generated .repo file content:\n{repo_string}")
 
     # Create and Install Repository Object

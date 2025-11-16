@@ -65,15 +65,6 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         return outcome
 
     def essential_requires(self) -> list[tmt.base.Dependency]:
-        """
-        Collect all essential requirements of the plugin.
-
-        Essential requirements of a plugin are necessary for the plugin to
-        perform its basic functionality.
-
-        :returns: a list of requirements.
-        """
-
         # createrepo_c is needed to create repository metadata from downloaded artifacts
         return [
             tmt.base.DependencySimple('/usr/bin/createrepo_c'),
