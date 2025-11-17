@@ -22,7 +22,7 @@ import fmf.utils
 import jinja2
 import jinja2.exceptions
 
-from tmt.utils import GeneralError, Path, dict_to_yaml
+from tmt.utils import GeneralError, Path, to_yaml
 from tmt.utils.git import web_git_url
 
 if TYPE_CHECKING:
@@ -402,7 +402,7 @@ def _template_filter_to_yaml(  # type: ignore[reportUnusedFunction,unused-ignore
         {{ {"foo": "bar", "baz": false} | to_yaml }}
     """
 
-    return dict_to_yaml(value)
+    return to_yaml(value)
 
 
 def _template_filter_prefix(  # type: ignore[reportUnusedFunction,unused-ignore]

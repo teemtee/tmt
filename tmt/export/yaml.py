@@ -10,4 +10,4 @@ import tmt.utils
 class YAMLExporter(tmt.export.TrivialExporter):
     @classmethod
     def _export(cls, data: tmt.export._RawExported) -> str:
-        return tmt.utils.dict_to_yaml(data)
+        return tmt.utils.to_yaml(data)

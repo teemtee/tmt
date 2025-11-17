@@ -871,7 +871,7 @@ class Step(
             'status': self.status(),
             'data': [datum.to_serialized() for datum in self.data],
         }
-        self.write(Path('step.yaml'), tmt.utils.dict_to_yaml(content))
+        self.write(Path('step.yaml'), tmt.utils.to_yaml(content))
 
     def _load_results(
         self,
@@ -905,7 +905,7 @@ class Step(
         try:
             raw_results = [result.to_serialized() for result in results]
 
-            self.write(Path('results.yaml'), tmt.utils.dict_to_yaml(raw_results))
+            self.write(Path('results.yaml'), tmt.utils.to_yaml(raw_results))
 
         except Exception as exc:
             raise GeneralError('Cannot save step results.') from exc
@@ -3036,7 +3036,7 @@ class Topology(SerializableContainer):
         serialized['guest-names'] = serialized.pop('guest_names')
         serialized['role-names'] = serialized.pop('role_names')
 
-        filepath.write_text(tmt.utils.dict_to_yaml(serialized))
+        filepath.write_text(tmt.utils.to_yaml(serialized))
 
         return filepath
 

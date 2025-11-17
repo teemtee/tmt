@@ -90,8 +90,8 @@ from tmt.utils import (
     Path,
     ShellScript,
     WorkdirArgumentType,
-    dict_to_yaml,
     normalize_shell_script,
+    to_yaml,
     verdict,
 )
 from tmt.utils.themes import style
@@ -1477,7 +1477,7 @@ class Test(
         # Append link with appropriate relation
         links = Links(data=list(cast(list[_RawLink], Test._opt('link', []))))
         if links:  # Output 'links' if and only if it is not empty
-            metadata_content += dict_to_yaml({'link': links.to_spec()})
+            metadata_content += to_yaml({'link': links.to_spec()})
 
         for name in names:
             # Create directory
@@ -1718,12 +1718,12 @@ class Test(
             return
 
         filename = self.fmf_sources[-1]
-        metadata = tmt.utils.yaml_to_dict(self.read(filename))
+        metadata: dict[str, Any] = tmt.utils.yaml_to_dict(self.read(filename))
 
         metadata['adjust'] = tmt.convert.relevancy_to_adjust(
             metadata.pop('relevancy'), self._logger
         )
-        self.write(filename, tmt.utils.dict_to_yaml(metadata))
+        self.write(filename, to_yaml(metadata))
 
         yield LinterOutcome.FIXED, 'relevancy converted into adjust'
 
@@ -1818,7 +1818,7 @@ class Test(
             return
 
         filename = self.fmf_sources[-1]
-        metadata = tmt.utils.yaml_to_dict(self.read(filename))
+        metadata: dict[str, Any] = tmt.utils.yaml_to_dict(self.read(filename))
 
         if not tmt.utils.is_key_origin(self.node, 'require') and all(
             dependency in metadata.get('require', []) for dependency in missing_type
@@ -1838,7 +1838,7 @@ class Test(
 
             dependency['type'] = 'file' if dependency.get('pattern') else 'library'
 
-        self.write(filename, tmt.utils.dict_to_yaml(metadata))
+        self.write(filename, to_yaml(metadata))
 
         yield LinterOutcome.FIXED, 'added type to requirements'
 
@@ -2600,7 +2600,7 @@ class Plan(
                     #        this case is a hack to make it forget, though
                     #        there may be a better way to do this.
                     try:
-                        data = tmt.utils.yaml_to_dict(option, yaml_type='safe')
+                        data: dict[str, Any] = tmt.utils.yaml_to_dict(option, yaml_type='safe')
                         if not (data):
                             raise tmt.utils.GeneralError("Step data cannot be empty.")
                     except tmt.utils.GeneralError as error:
@@ -2616,7 +2616,7 @@ class Plan(
                 step_data = step_data[0]
             content[step] = step_data
 
-        return tmt.utils.dict_to_yaml(content)
+        return to_yaml(content)
 
     @staticmethod
     def overview(tree: 'Tree') -> None:
@@ -2666,7 +2666,7 @@ class Plan(
         # Append link with appropriate relation
         links = Links(data=list(cast(list[_RawLink], Plan._opt('link', []))))
         if links:  # Output 'links' if and only if it is not empty
-            plan_content += dict_to_yaml({'link': links.to_spec()})
+            plan_content += to_yaml({'link': links.to_spec()})
 
         for plan_name in names:
             plan_path = path / Path(plan_name).unrooted()
@@ -3749,7 +3749,7 @@ class Story(
         # Append link with appropriate relation
         links = Links(data=list(cast(list[_RawLink], Story._opt('link', []))))
         if links:  # Output 'links' if and only if it is not empty
-            story_content += dict_to_yaml({'link': links.to_spec()})
+            story_content += to_yaml({'link': links.to_spec()})
 
         for story_name in names:
             story_path = path / Path(story_name).unrooted()
@@ -4568,7 +4568,9 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         """
         Prepare metadata tree with only the default plan
         """
-        default_plan = tmt.utils.yaml_to_dict(tmt.templates.MANAGER.render_default_plan())
+        default_plan: dict[str, Any] = tmt.utils.yaml_to_dict(
+            tmt.templates.MANAGER.render_default_plan()
+        )
         # The default discover method for this case is 'shell'
         default_plan[tmt.templates.DEFAULT_PLAN_NAME]['discover']['how'] = 'shell'
         self.tree = tmt.Tree(logger=self._logger, tree=fmf.Tree(default_plan))
@@ -4578,7 +4580,9 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         """
         Save metadata tree, handle the default plan
         """
-        default_plan = tmt.utils.yaml_to_dict(tmt.templates.MANAGER.render_default_plan())
+        default_plan: dict[str, Any] = tmt.utils.yaml_to_dict(
+            tmt.templates.MANAGER.render_default_plan()
+        )
         try:
             self.tree = tree if tree else tmt.Tree(logger=self._logger, path=Path('.'))
             self.debug(f"Using tree '{self.tree.root}'.")
@@ -4666,7 +4670,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
             environment=self.environment,
             remove=self.remove,
         )
-        self.write(Path('run.yaml'), tmt.utils.dict_to_yaml(data.to_serialized()))
+        self.write(Path('run.yaml'), to_yaml(data.to_serialized()))
 
     def load_from_workdir(self) -> None:
         """
@@ -5680,7 +5684,7 @@ def resolve_dynamic_ref(
 
     # Read it, process it and get the value of the attribute 'ref'
     try:
-        data = tmt.utils.yaml_to_dict(ref_filepath.read_text(encoding='utf-8'))
+        data: dict[str, Any] = tmt.utils.yaml_to_dict(ref_filepath.read_text(encoding='utf-8'))
 
     except OSError as error:
         raise tmt.utils.FileError(f"Failed to read '{ref_filepath}'.") from error
