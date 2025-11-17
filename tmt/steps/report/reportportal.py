@@ -881,6 +881,8 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
             # The first test starts with the launch (at the worst case)
             test_start_time = launch_start_time
+            # Initialize launch_end_time to launch_start_time as fallback
+            launch_end_time = launch_start_time
 
             for result, test_origin in self.step.plan.execute.results_for_tests(
                 self.step.plan.discover.tests()
@@ -1045,10 +1047,18 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
 
             if create_suite:
                 # Finish the test suite
+                # If there were no tests executed, we need to provide a status
+                # Otherwise ReportPortal will try to derive it from children (which don't exist)
+                suite_finish_data = {"launchUuid": launch_uuid, "endTime": launch_end_time}
+                
+                # If no tests were executed, provide a default status
+                if not executed:
+                    suite_finish_data["status"] = "SKIPPED"
+                
                 response = self.rp_api_put(
                     session=session,
                     path=f"item{f'/{suite_uuid}' if suite_uuid else ''}",
-                    json={"launchUuid": launch_uuid, "endTime": launch_end_time},
+                    json=suite_finish_data,
                 )
 
             is_the_last_plan = self.step.plan == self.step.plan.my_run.plans[-1]
@@ -1069,6 +1079,19 @@ class ReportReportPortal(tmt.steps.report.ReportPlugin[ReportReportPortalData]):
             assert launch_url is not None
             self.info("url", launch_url, "magenta")
             self.data.launch_url = launch_url
+
+            # Save launch URL and ID to files so other reporters (like Polarion) can access them
+            try:
+                rp_url_file = self.step.workdir / 'reportportal_launch_url.txt'
+                rp_url_file.write_text(launch_url)
+                self.debug(f"Saved ReportPortal launch URL to: {rp_url_file}")
+                
+                # Also save launch name/ID for linking with Polarion
+                rp_name_file = self.step.workdir / 'reportportal_launch_name.txt'
+                rp_name_file.write_text(launch_name)
+                self.debug(f"Saved ReportPortal launch name to: {rp_name_file}")
+            except Exception as e:
+                self.debug(f"Could not save ReportPortal launch info to file: {e}")
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """

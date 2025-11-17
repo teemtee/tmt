@@ -43,6 +43,23 @@ properties:
   upload:
     type: boolean
 
+  token-upload:
+    type: boolean
+
+  auto-create-testcases:
+    type: boolean
+
+  schema:
+    type: string
+
+  prettify:
+    type: boolean
+
+  include-output-log:
+    type: boolean
+
+  # Custom fields (configurable via plan only, no CLI options)
+  # These are dynamically loaded from the Polarion schema
   planned-in:
     type: string
 
@@ -70,14 +87,39 @@ properties:
   compose-id:
     type: string
 
+  browser:
+    type: string
+
+  component:
+    oneOf:
+      - type: string
+      - type: array
+        items:
+          type: string
+
   fips:
     type: boolean
 
-  prettify:
-    type: boolean
+  selinux-state:
+    type: string
 
-  include-output-log:
-    type: boolean
+  selinux-mode:
+    type: string
+
+  selinux-policy:
+    type: string
+
+  deployment-mode:
+    type: string
+
+  deploymentMode:
+    type: string
+
+  schedule-task:
+    type: string
+
+  scheduleTask:
+    type: string
 
   when:
     $ref: "/schemas/common#/definitions/when"
