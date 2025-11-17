@@ -1236,7 +1236,7 @@ class GuestData(SerializableContainer):
                 printable_value = tmt.utils.format_value(value)
 
             elif isinstance(value, tmt.hardware.Hardware):
-                printable_value = tmt.utils.dict_to_yaml(value.to_spec())
+                printable_value = tmt.utils.to_yaml(value.to_spec())
 
             else:
                 printable_value = str(value)
@@ -3339,7 +3339,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
             hardware: Optional[tmt.hardware.Hardware] = self.data.hardware
 
             if hardware:
-                echo(tmt.utils.format('hardware', tmt.utils.dict_to_yaml(hardware.to_spec())))
+                echo(tmt.utils.format('hardware', tmt.utils.to_yaml(hardware.to_spec())))
 
 
 class ProvisionTask(tmt.queue.GuestlessTask[None]):
@@ -3467,7 +3467,7 @@ class Provision(tmt.steps.Step):
             layout_path = self.plan.anchor_path / self.plan.ansible.inventory.layout
 
         inventory = AnsibleInventory.generate(self.ready_guests, layout_path)
-        self.write(inventory_path, tmt.utils.dict_to_yaml(inventory))
+        self.write(inventory_path, tmt.utils.to_yaml(inventory))
 
         self.info('ansible', f"Inventory saved to '{inventory_path}'")
 
@@ -3520,7 +3520,9 @@ class Provision(tmt.steps.Step):
 
         super().load()
         try:
-            raw_guest_data = tmt.utils.yaml_to_dict(self.read(Path('guests.yaml')))
+            raw_guest_data: dict[str, dict[str, Any]] = tmt.utils.yaml_to_dict(
+                self.read(Path('guests.yaml'))
+            )
 
             self._guest_data = {
                 name: SerializableContainer.unserialize(guest_data, self._logger)
@@ -3541,7 +3543,7 @@ class Provision(tmt.steps.Step):
                 guest.name: guest.save().to_serialized() for guest in self.ready_guests
             }
 
-            self.write(Path('guests.yaml'), tmt.utils.dict_to_yaml(raw_guest_data))
+            self.write(Path('guests.yaml'), tmt.utils.to_yaml(raw_guest_data))
         except tmt.utils.FileError:
             self.debug('Failed to save provisioned guests.')
 

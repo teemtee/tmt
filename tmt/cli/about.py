@@ -66,9 +66,7 @@ def _ls(context: Context, how: str, content: Any) -> None:
         )
 
     elif how in ('json', 'yaml'):
-        context.obj.print(
-            json.dumps(content) if how == 'json' else tmt.utils.dict_to_yaml(content)
-        )
+        context.obj.print(json.dumps(content) if how == 'json' else tmt.utils.to_yaml(content))
 
 
 @about.group(invoke_without_command=True, cls=CustomGroup)

@@ -72,7 +72,7 @@ class Instruction(MetadataContainer):
                 VALUE_SOURCE=current_value_source.value,
             )
 
-            raw_new_value = tmt.utils.yaml_to_python(rendered_new_value)
+            raw_new_value = tmt.utils.from_yaml(rendered_new_value)
 
             new_value = normalize_callback('', raw_new_value, logger)
 

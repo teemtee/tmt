@@ -17,9 +17,9 @@ from tmt.utils import (
     Command,
     ProvisionError,
     ShellScript,
-    dict_to_yaml,
     normalize_string_dict,
     retry_session,
+    to_yaml,
 )
 from tmt.utils.wait import Deadline, Waiting
 
@@ -303,14 +303,14 @@ class ArtemisProvisionError(ProvisionError):
             ]
 
             if request_data is not None:
-                message_components += ['', dict_to_yaml(request_data)]
+                message_components += ['', to_yaml(request_data)]
 
             message_components += [
                 f'Response: {response.status_code} {response.reason}',
                 '',
-                dict_to_yaml(dict(response.headers)),
+                to_yaml(dict(response.headers)),
                 '',
-                dict_to_yaml(response.json()),
+                to_yaml(response.json()),
             ]
 
             message = '\n'.join(message_components)

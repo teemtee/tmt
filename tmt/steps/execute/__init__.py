@@ -588,7 +588,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             test_metadata["context"] = self.step.plan.fmf_context.to_spec()
             self.write(
                 invocation.path / TEST_METADATA_FILENAME,
-                tmt.utils.dict_to_yaml(test_metadata),
+                tmt.utils.to_yaml(test_metadata),
             )
 
             # When running again then we only keep results for tests that won't be executed again

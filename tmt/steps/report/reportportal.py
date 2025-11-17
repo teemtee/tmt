@@ -21,7 +21,9 @@ from tmt.utils import (
     catch_warnings_safe,
     format_timestamp,
     sanitize_string,
-    yaml_to_dict,
+)
+from tmt.utils import (
+    yaml_to_dict as _yaml_to_dict,
 )
 
 if TYPE_CHECKING:
@@ -41,6 +43,12 @@ DEFAULT_LOG_PATTERNS: list[Pattern[str]] = [
         r'tmt-watchdog\.txt',
     ]
 ]
+
+
+def yaml_to_dict(data: str, yaml_type: Optional[tmt.utils.YamlTypType] = None) -> dict[str, Any]:
+    d: dict[str, Any] = _yaml_to_dict(data, yaml_type=yaml_type)
+
+    return d
 
 
 def _flag_env_to_default(option: str, default: bool) -> bool:
