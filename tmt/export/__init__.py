@@ -493,10 +493,9 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
     if not required_section_exists(html_headings_from_file, 'Test', '<h1>Test'):
         return warnings_list
 
-    # Remove Optional heading #Cleanup if it's in the end of document
-    if html_headings_from_file[-1] == '<h1>Cleanup</h1>':
-        html_headings_from_file.pop()
-        # Add # Test heading to close the file
+    # Treat end-of-file as implicit Cleanup if Cleanup is missing
+    if html_headings_from_file[-1] != '<h1>Test</h1>':
+        # acts like a closing boundary
         html_headings_from_file.append(sections_headings['Test'][0])
 
     index = 0
