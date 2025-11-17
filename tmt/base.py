@@ -146,6 +146,11 @@ SECTIONS_HEADINGS = {
     'Cleanup': ['<h1>Cleanup</h1>'],
 }
 
+# Reguar expression to match a required property in a schema validation error
+SCHEMA_REQUIRED_PROPERTY_PATTERN = re.compile(
+    r"'([a-zA-Z0-9', \-]+)' is a required property",
+    flags=re.MULTILINE | re.IGNORECASE,
+)
 
 #
 # fmf id types
@@ -1130,18 +1135,39 @@ class Core(
                     f'value of "{json_path.split(".")[-1]}" is not "{match.group(2)}"',
                 )
 
-            for error, _ in errors:
+            def detect_missing_required_properties(
+                error: jsonschema.ValidationError,
+            ) -> LinterReturn:
+                match = SCHEMA_REQUIRED_PROPERTY_PATTERN.search(str(error))
+
+                if not match:
+                    return
+
+                if isinstance(error.schema, dict) and '$id' in error.schema:
+                    message = (
+                        f'"{match.group(1)}" is a required property by '
+                        f'schema {error.schema["$id"]}'
+                    )
+
+                else:
+                    message = f'"{match.group(1)}" is a required property by schema'
+
+                yield (LinterOutcome.WARN, message)
+
+            def detect_errors(error: jsonschema.ValidationError) -> LinterReturn:
                 yield from detect_unallowed_properties(error)
                 yield from detect_unallowed_properties_with_pattern(error)
                 yield from detect_enum_violations(error)
+                yield from detect_missing_required_properties(error)
+
+            for error, _ in errors:
+                yield from detect_errors(error)
 
                 # Validation errors can have "context", a list of "sub" errors encountered during
                 # validation. Interesting ones are identified & added to our error message.
                 if error.context:
                     for suberror in error.context:
-                        yield from detect_unallowed_properties(suberror)
-                        yield from detect_unallowed_properties_with_pattern(suberror)
-                        yield from detect_enum_violations(suberror)
+                        yield from detect_errors(suberror)
 
             yield LinterOutcome.FAIL, 'fmf node failed schema validation'
 
