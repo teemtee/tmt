@@ -211,7 +211,7 @@ class AnsibleInventory:
         """
         if layout_path:
             try:
-                layout = tmt.utils.yaml_to_dict(layout_path.read_text())
+                layout: dict[str, Any] = tmt.utils.yaml_to_dict(layout_path.read_text())
             except (OSError, FileNotFoundError) as error:
                 raise tmt.utils.FileError(
                     f"Inventory layout file '{layout_path}' not found"
