@@ -207,52 +207,30 @@ def create_repository(
     priority: int = 1,
 ) -> Repository:
     """
-    Create and install a local RPM repository from a directory on the guest.
+    Create a local RPM repository from a directory on the guest.
 
-    This function orchestrates the complete process of creating a local RPM repository
-    from a directory containing RPM packages and installing it on the guest system.
-    The process involves:
-
-    1. Creating repository metadata in the specified directory using the guest's package manager
-    2. Generating a .repo configuration file with the repository settings
-    3. Installing the repository configuration file on the guest system
+    Creates repository metadata and prepares a Repository object. Does not install
+    the repository on the guest system. Use install_repository() to make it visible
+    to the package manager.
 
     :param artifact_dir: Path to the directory on the guest containing RPM files.
-                         This directory must exist on the guest system.
-    :param guest: Guest instance where the repository will be created and installed.
+    :param guest: Guest instance where the repository metadata will be created.
     :param logger: Logger instance for outputting debug and error messages.
-    :param repo_name: Name for the repository. If not provided, a unique name
-                      will be generated using the format ``tmt-repo-default-{n}``. This name
-                      appears in the .repo file and package manager output.
-    :param priority: Repository priority (default: 1). Lower values have higher
-                     priority when multiple repositories provide the same package.
-    :return: Repository object representing the newly created and installed repository.
+    :param repo_name: Name for the repository. If not provided, generates a unique
+        name using the format ``tmt-repo-default-{n}``.
+    :param priority: Repository priority (default: 1). Lower values have higher priority.
+    :returns: Repository object representing the newly created repository.
     :raises PrepareError: If the package manager does not support creating repositories
-                          or if repository metadata creation fails.
-    :raises RunError: If repository installation fails.
-
-    .. note::
-
-        The repository is created with ``gpgcheck=0`` (GPG signature checking disabled)
-        to support unsigned local packages.
-
-    Example::
-
-        # Create repository from downloaded artifacts
-        repository = create_repository(
-            artifact_dir=Path('/tmp/my-rpms'),
-            guest=my_guest,
-            logger=my_logger,
-            repo_name='my-local-repo',
-            priority=1
-        )
-
+        or if metadata creation fails.
     """
     repo_name = repo_name or f"tmt-repo-{_REPO_NAME_GENERATOR.get()}"
 
     # Create Repository Metadata
-    logger.debug(f"Asking package manager to create metadata in '{artifact_dir}'.")
-    guest.package_manager.create_repository_metadata_from_dir(artifact_dir)
+    logger.debug(f"Creating metadata for '{artifact_dir}'.")
+    try:
+        guest.package_manager.create_repo(artifact_dir)
+    except RunError as error:
+        raise PrepareError(f"Failed to create repository metadata in '{artifact_dir}'") from error
 
     # Generate .repo File Content
     repo_string = f"""[{tmt.utils.sanitize_name(repo_name)}]
@@ -264,13 +242,11 @@ priority={priority}"""
 
     logger.debug(f"Generated .repo file content:\n{repo_string}")
 
-    # Create and Install Repository Object
+    # Create Repository Object
     created_repository = Repository.from_content(
         content=repo_string, name=repo_name, logger=logger
     )
 
-    logger.debug(f"Installing repository '{created_repository.name}' on the guest.")
-
-    guest.package_manager.install_repository(created_repository)
+    logger.debug(f"Created repository '{created_repository.name}' (not yet installed).")
 
     return created_repository

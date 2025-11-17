@@ -219,13 +219,13 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
-    def create_repository_metadata_from_dir(self, directory: Path) -> None:
+    def create_repo(self, directory: Path) -> ShellScript:
         """
-        Create repository metadata for a given directory.
+        Create repository metadata for package files in the given directory.
 
         :param directory: The path to the directory containing packages.
-        :raises PrepareError: If this package manager does not support creating
-            repositories or if metadata creation fails.
+        :returns: A shell script to create repository metadata.
+        :raises PrepareError: If this package manager does not support creating repositories.
         """
         raise PrepareError("Package Manager not supported for createrepo")
 
@@ -320,9 +320,8 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
         return stdout.strip().splitlines()
 
-    def create_repository_metadata_from_dir(self, directory: Path) -> None:
+    def create_repo(self, directory: Path) -> CommandOutput:
         """
-        Wrapper of :py:meth:`PackageManagerEngine.create_repository_metadata_from_dir`.
-        See the main method for more details.
+        Wrapper of :py:meth:`PackageManagerEngine.create_repo`.
         """
-        return self.engine.create_repository_metadata_from_dir(directory)
+        return self.guest.execute(self.engine.create_repo(directory))

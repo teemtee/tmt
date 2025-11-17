@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 else:
     Repository: Any = None  # type: ignore[assignment]
 
-from tmt.utils import Command, GeneralError, PrepareError, RunError, ShellScript
+from tmt.utils import Command, GeneralError, RunError, ShellScript
 
 
 class DnfEngine(PackageManagerEngine):
@@ -191,11 +191,14 @@ class DnfEngine(PackageManagerEngine):
             """
         )
 
-    def create_repository_metadata_from_dir(self, directory: Path) -> None:
-        try:
-            self.guest.execute(Command('createrepo_c', str(directory)))
-        except RunError as error:
-            raise PrepareError(f"Failed to create repository metadata in '{directory}'") from error
+    def create_repo(self, directory: Path) -> ShellScript:
+        """
+        Create repository metadata for package files in the given directory.
+
+        :param directory: The path to the directory containing RPM packages.
+        :returns: A shell script to create repository metadata.
+        """
+        return ShellScript(f"createrepo {directory}")
 
 
 # ignore[type-arg]: TypeVar in package manager registry annotations is
