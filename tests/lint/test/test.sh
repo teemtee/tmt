@@ -97,7 +97,7 @@ rlJournalStart
         rlAssertGrep "$fail 3 headings \"<h1>Cleanup</h1>\" are used" $rlRun_LOG
 
         # Step is used outside of test sections.
-        rlAssertGrep "$fail Heading \"<h2>Step</h2>\" from the section \"Step\" is used outside of Test sections. Each test should include \"# Test\", \"## Step\", \"## Expect\", (and optionally \"## Cleanup\")." $rlRun_LOG
+        rlAssertGrep "$fail Heading \"<h2>Step</h2>\" from the section \"Step\" is used outside of Test sections." $rlRun_LOG
 
         # Unexpected headings
         rlAssertGrep "$fail Headings \".*\" aren't expected in the section \"<h1>Test</h1>\"" $rlRun_LOG

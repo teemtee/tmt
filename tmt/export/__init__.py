@@ -469,9 +469,7 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
     count_html_headings(sections_headings['Cleanup'][0])
 
     warn_outside_test_section = (
-        'Heading "{}" from the section "{}" is used \noutside of Test sections. '
-        'Each test should include "# Test", "## Step", "## Expect", '
-        '(and optionally "## Cleanup").'
+        'Heading "{}" from the section "{}" is used \noutside of Test sections.'
     )
     warn_headings_not_in_pairs = (
         'The number of headings from the section "Step" - {}\ndoesn\'t equal to the '
