@@ -76,14 +76,13 @@ class _ManagedEpollIo(io.FileIO):
     See: https://docs.python.org/3/library/select.html#edge-and-level-trigger-polling-epoll-objects
     """
 
+    epoll: 'select.epoll'
+    registered: bool
+
     def __init__(self, *args: Any, epoll: 'select.epoll', **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-
-        # `select.epoll` is not available on non-Linux platforms.
-        # The `ruff` linter complains but for no good reason, so we silence it.
-        self.epoll: 'select.epoll' = epoll  # noqa: UP037
-
-        self.registered: bool = False
+        self.epoll = epoll
+        self.registered = False
 
     def __enter__(self) -> Self:
         super().__enter__()
@@ -122,9 +121,9 @@ class _DecodingStream:
     string: str
 
     def __init__(self, log_func: Callable[[str], None]):
-        self.log_func: Callable[[str], None] = log_func
-        self.output: bytes = b''
-        self.string: str = ''
+        self.log_func = log_func
+        self.output = b''
+        self.string = ''
 
     def __iadd__(self, content: bytes) -> Self:
         self.output += content
