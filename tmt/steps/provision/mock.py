@@ -15,16 +15,17 @@ import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
+from tmt._compat.pathlib import Path
 from tmt._compat.typing import Self
 from tmt.container import container, field
-from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
+from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, ShellScript
 from tmt.utils.wait import Waiting
 
-MOCK_PIPE_STEM: str = 'srv/tmt-mock'
-MOCK_PIPE_STDOUT_STEM: str = f'{MOCK_PIPE_STEM}/stdout'
-MOCK_PIPE_STDERR_STEM: str = f'{MOCK_PIPE_STEM}/stderr'
-MOCK_PIPE_RETURNCODE_STEM: str = f'{MOCK_PIPE_STEM}/returncode'
-MOCK_PIPE_FILESYNC_STEM: str = f'{MOCK_PIPE_STEM}/filesync'
+MOCK_PIPE: Path = Path('/srv/tmt-mock')
+MOCK_PIPE_STDOUT: Path = MOCK_PIPE / 'stdout'
+MOCK_PIPE_STDERR: Path = MOCK_PIPE / 'stderr'
+MOCK_PIPE_RETURNCODE: Path = MOCK_PIPE / 'returncode'
+MOCK_PIPE_FILESYNC: Path = MOCK_PIPE / 'filesync'
 
 
 @functools.cache
@@ -267,23 +268,23 @@ class MockShell:
 
         # Prepare the tmt-mock communication pipes inside the chroot.
         self._simple_execute(
-            f'rm -rf /{MOCK_PIPE_STEM}',
-            f'mkdir /{MOCK_PIPE_STEM}',
+            f'rm -rf {MOCK_PIPE}',
+            f'mkdir {MOCK_PIPE}',
             'mkfifo'
-            f' /{MOCK_PIPE_STDOUT_STEM}'
-            f' /{MOCK_PIPE_STDERR_STEM}'
-            f' /{MOCK_PIPE_RETURNCODE_STEM}'
-            f' /{MOCK_PIPE_FILESYNC_STEM}',
-            f'chmod -R a+rw /{MOCK_PIPE_STEM}',
+            f' {MOCK_PIPE_STDOUT}'
+            f' {MOCK_PIPE_STDERR}'
+            f' {MOCK_PIPE_RETURNCODE}'
+            f' {MOCK_PIPE_FILESYNC}',
+            f'chmod -R a+rw {MOCK_PIPE}',
         )
 
         self.parent.verbose('mock', 'Shell is ready.', color='blue', level=3)
 
-    def _managed_epoll_io(self, file_stem: str) -> _ManagedEpollIo:
+    def _managed_epoll_io(self, path: Path) -> _ManagedEpollIo:
         assert self.epoll is not None
         io_flags: int = os.O_RDONLY | os.O_NONBLOCK
         return _ManagedEpollIo(
-            os.open(str(self.parent.root_path / file_stem), io_flags), epoll=self.epoll
+            os.open(str(self.parent.root_path / path.unrooted()), io_flags), epoll=self.epoll
         )
 
     def _spawn_command(
@@ -350,10 +351,10 @@ class MockShell:
 
         shell_command_components = [
             *shell_command_components,
-            f'1>/{MOCK_PIPE_STDOUT_STEM}',
-            f'2>/{MOCK_PIPE_STDERR_STEM}' if not join else '2>&1',
+            f'1>{MOCK_PIPE_STDOUT}',
+            f'2>{MOCK_PIPE_STDERR}' if not join else '2>&1',
             ';',
-            f'echo $?>/{MOCK_PIPE_RETURNCODE_STEM}',
+            f'echo $?>{MOCK_PIPE_RETURNCODE}',
         ]
 
         shell_command = ' '.join(shell_command_components) + '\n'
@@ -361,9 +362,9 @@ class MockShell:
         logger.debug('mock', f'Executing shell command: {shell_command[:-1]}', color='blue')
 
         with (
-            self._managed_epoll_io(MOCK_PIPE_STDOUT_STEM) as stdout_io,
-            self._managed_epoll_io(MOCK_PIPE_STDERR_STEM) as stderr_io,
-            self._managed_epoll_io(MOCK_PIPE_RETURNCODE_STEM) as returncode_io,
+            self._managed_epoll_io(MOCK_PIPE_STDOUT) as stdout_io,
+            self._managed_epoll_io(MOCK_PIPE_STDERR) as stderr_io,
+            self._managed_epoll_io(MOCK_PIPE_RETURNCODE) as returncode_io,
         ):
             stdout_fd = stdout_io.fileno()
             stderr_fd = stderr_io.fileno()
@@ -616,7 +617,7 @@ class GuestMock(tmt.Guest):
 
     def stop(self) -> None:
         self.mock_shell.exit_shell()
-        self.run(Command('rm', '-rf', str(self.root_path / f'{MOCK_PIPE_STEM}/*')))
+        self.run(Command('rm', '-rf', str(self.root_path / MOCK_PIPE)))
 
     def push(
         self,
@@ -626,9 +627,9 @@ class GuestMock(tmt.Guest):
         superuser: bool = False,
     ) -> None:
         """
-        Push content into the mock chroot via a pipe at /{MOCK_PIPE_FILESYNC_STEM}.
+        Push content into the mock chroot via a pipe at `MOCK_PIPE_FILESYNC`.
         For directories we use tar.
-        For files we use cp / install.
+        For files we use `cp` or `install`.
         Compress option is ignored, it only slows down the execution.
         Create destination option is ignored, there were problems with workdir.
         """
@@ -646,8 +647,7 @@ class GuestMock(tmt.Guest):
         if source.is_dir():
             self.mock_shell.execute(Command('mkdir', '-p', str(destination)), logger=self._logger)
             p = self.mock_shell._spawn_command(
-                Command('tar', '-C', str(destination), '-xf', f'/{MOCK_PIPE_FILESYNC_STEM}')
-                + excludes,
+                Command('tar', '-C', str(destination), '-xf', str(MOCK_PIPE_FILESYNC)) + excludes,
                 logger=self._logger,
             )
             next(p)
@@ -657,7 +657,7 @@ class GuestMock(tmt.Guest):
                     '-C',
                     str(source),
                     '-cf',
-                    str(self.root_path / f'{MOCK_PIPE_FILESYNC_STEM}'),
+                    str(self.root_path / MOCK_PIPE_FILESYNC.unrooted()),
                     '.',
                 )
             ).run(cwd=None, logger=self._logger)
@@ -667,11 +667,11 @@ class GuestMock(tmt.Guest):
                 Command('mkdir', '-p', str(destination.parent)), logger=self._logger
             )
             p = self.mock_shell._spawn_command(
-                Command('install', f'/{MOCK_PIPE_FILESYNC_STEM}', str(destination)) + permissions,
+                Command('install', str(MOCK_PIPE_FILESYNC), str(destination)) + permissions,
                 logger=self._logger,
             )
             next(p)
-            Command('cp', str(source), str(self.root_path / f'{MOCK_PIPE_FILESYNC_STEM}')).run(
+            Command('cp', str(source), str(self.root_path / MOCK_PIPE_FILESYNC.unrooted())).run(
                 cwd=None, logger=self._logger
             )
             next(p)
@@ -683,9 +683,9 @@ class GuestMock(tmt.Guest):
         options: Optional[tmt.steps.provision.TransferOptions] = None,
     ) -> None:
         """
-        Pull content from the mock chroot via a pipe at /{MOCK_PIPE_FILESYNC_STEM}.
+        Pull content from the mock chroot via a pipe at `MOCK_PIPE_FILESYNC`.
         For directories we use tar.
-        For files we use cp / install.
+        For files we use `cp` or `install`.
         Compress option is ignored, it only slows down the execution.
         """
         # TODO chmod permissions for tar
@@ -707,7 +707,7 @@ class GuestMock(tmt.Guest):
             if options.create_destination:
                 Command('mkdir', '-p', str(destination)).run(cwd=None, logger=self._logger)
             p = self.mock_shell._spawn_command(
-                Command('tar', '-C', str(source), '-cf', f'/{MOCK_PIPE_FILESYNC_STEM}', '.'),
+                Command('tar', '-C', str(source), '-cf', str(MOCK_PIPE_FILESYNC), '.'),
                 logger=self._logger,
             )
             next(p)
@@ -717,7 +717,7 @@ class GuestMock(tmt.Guest):
                     '-C',
                     str(destination),
                     '-xf',
-                    str(self.root_path / f'{MOCK_PIPE_FILESYNC_STEM}'),
+                    str(self.root_path / MOCK_PIPE_FILESYNC.unrooted()),
                 )
                 + excludes
             ).run(cwd=None, logger=self._logger)
@@ -726,12 +726,14 @@ class GuestMock(tmt.Guest):
             if options.create_destination:
                 Command('mkdir', '-p', str(destination.parent)).run(cwd=None, logger=self._logger)
             p = self.mock_shell._spawn_command(
-                Command('cp', str(source), f'/{MOCK_PIPE_FILESYNC_STEM}'), logger=self._logger
+                Command('cp', str(source), str(MOCK_PIPE_FILESYNC)), logger=self._logger
             )
             next(p)
             (
                 Command(
-                    'install', str(self.root_path / f'{MOCK_PIPE_FILESYNC_STEM}'), str(destination)
+                    'install',
+                    str(self.root_path / MOCK_PIPE_FILESYNC.unrooted()),
+                    str(destination),
                 )
                 + permissions
             ).run(cwd=None, logger=self._logger)
