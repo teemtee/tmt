@@ -3298,7 +3298,15 @@ def _yaml(
 
     yaml = YAML(typ=yaml_type)
 
-    yaml.indent(mapping=4, sequence=4, offset=2)
+    # Setting `mapping` and `offset` may lead to a subpar-looking YAML
+    # formatting. With some settings, it's even possible to create invalid
+    # YAML, with keys incorrectly indented. Setting `sequence` only seems
+    # to produce a usable YAML (YMMV), and `sequence=2` seems to be acceptably
+    # formatted.
+    #
+    # Discussed in https://github.com/teemtee/tmt/issues/3432
+    yaml.indent(sequence=2)
+
     yaml.default_flow_style = False
     yaml.allow_unicode = True
     yaml.encoding = 'utf-8'
