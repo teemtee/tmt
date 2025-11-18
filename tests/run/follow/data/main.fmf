@@ -7,4 +7,4 @@
         how: tmt
 
 /test:
-    test: for i in {00..10}; do echo step-$i; sleep 1; done
+    test: for i in {00..20}; do echo step-$i; sleep 1; done
