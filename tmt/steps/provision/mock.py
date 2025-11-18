@@ -266,15 +266,15 @@ class MockShell:
                 f'Failed to launch mock shell: exited {mock_shell_result}.'
             )
 
+        mkfifo_cmd = 'mkfifo'
+        for path in (MOCK_PIPE_STDOUT, MOCK_PIPE_STDERR, MOCK_PIPE_RETURNCODE, MOCK_PIPE_FILESYNC):
+            mkfifo_cmd += f' {path}'
+
         # Prepare the tmt-mock communication pipes inside the chroot.
         self._simple_execute(
             f'rm -rf {MOCK_PIPE}',
             f'mkdir {MOCK_PIPE}',
-            'mkfifo'
-            f' {MOCK_PIPE_STDOUT}'
-            f' {MOCK_PIPE_STDERR}'
-            f' {MOCK_PIPE_RETURNCODE}'
-            f' {MOCK_PIPE_FILESYNC}',
+            mkfifo_cmd,
             f'chmod -R a+rw {MOCK_PIPE}',
         )
 
