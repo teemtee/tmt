@@ -116,9 +116,6 @@ properties:
   adjust-tests:
     $ref: "/schemas/core#/definitions/adjust"
 
-  upgrade-path:
-    type: string
-
   repository:
     type: string
 
