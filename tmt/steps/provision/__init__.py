@@ -3274,6 +3274,19 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
 
         return super().opt(option, default=default)
 
+    def _verify_guest(self) -> None:
+        """
+        Verify that the guest is acceptable for a Provision step.
+
+        May report the state of the guest and incidentally its facts.
+        """
+
+        assert self.guest is not None  # Narrow type
+
+        # Check if we need or can have sudo access
+        if not self.guest.facts.is_superuser and not self.guest.facts.can_sudo:
+            self.info("User does not have sudo access, we assume everything is pre-setup.")
+
     def wake(self, data: Optional[GuestData] = None) -> None:
         """
         Wake up the plugin
@@ -3291,6 +3304,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
             )
             guest.wake()
             self._guest = guest
+            self._verify_guest()
 
     # TODO: getter. Like in Java. Do we need it?
     @property

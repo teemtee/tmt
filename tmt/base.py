@@ -4475,11 +4475,16 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
     def runner(self) -> 'tmt.steps.provision.local.GuestLocal':
         import tmt.steps.provision.local
 
-        return tmt.steps.provision.local.GuestLocal(
+        guest_runner = tmt.steps.provision.local.GuestLocal(
             data=tmt.steps.provision.GuestData(primary_address='localhost', role=None),
             name='tmt runner',
             logger=self._logger,
         )
+        # Override some facts that we do not want to expose
+        # No sudo access on the runner
+        guest_runner.facts.can_sudo = False
+        guest_runner.facts.sudo_prefix = ""
+        return guest_runner
 
     def _use_default_plan(self) -> None:
         """
