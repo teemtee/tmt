@@ -26,7 +26,7 @@ rlJournalStart
         yaml='{how: "fmf"; name: "int"; url: "https://int/repo"}'
         rlRun "tmt plan create /plans/bad --template mini \
             --discover '$yaml' 2>&1 | tee output " 2
-        rlAssertGrep "Invalid yaml data" "output"
+        rlAssertGrep "Invalid YAML syntax." "output"
     rlPhaseEnd
 
     rlPhaseStartTest "Invalid step"
