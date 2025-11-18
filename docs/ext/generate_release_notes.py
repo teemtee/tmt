@@ -37,11 +37,7 @@ def generate_release_notes(app: "Sphinx") -> None:
             title = f"tmt-{release.name.removeprefix('/')}"
             doc.write(f"{title}\n{'~' * len(title)}\n\n")
             # For now we just paste in the `description` content
-            for release_note in sorted(
-                tree.stories(names=[rf"^{release.name}/.*"]),
-                key=lambda x: x.order,
-                reverse=True,
-            ):
+            for release_note in tree.stories(names=[rf"^{release.name}/.*"]):
                 doc.write(release_note.description)
                 doc.write("\n")
             doc.write("\n")
