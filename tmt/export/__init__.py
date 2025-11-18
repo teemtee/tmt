@@ -495,7 +495,10 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
 
     # If the last heading isn't Test or Cleanup, append a Test heading
     # to serve as a closing boundary for proper section detection
-    if html_headings_from_file[-1] != '<h1>Test</h1>' and html_headings_from_file[-1] != '<h1>Cleanup</h1>':
+    if (
+        html_headings_from_file[-1] != '<h1>Test</h1>'
+        and html_headings_from_file[-1] != '<h1>Cleanup</h1>'
+    ):
         # acts like a closing boundary
         html_headings_from_file.append(sections_headings['Test'][0])
 
