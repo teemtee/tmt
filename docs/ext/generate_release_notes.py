@@ -1,5 +1,5 @@
 """
-Sphinx extension to generate ``releases/releases_inc.rst`` file
+Sphinx extension to generate ``releases/releases.rst.inc`` file
 """
 # TODO: For now we manually generate the content until we have the
 #  tmt:autostory to more natively integrate it.
@@ -18,7 +18,7 @@ from tmt._compat.pathlib import Path
 
 def generate_release_notes(app: "Sphinx") -> None:
     """
-    Generate ``releases/releases_inc.rst`` file
+    Generate ``releases/releases_inc.rst.inc`` file
     """
 
     # We will need a logger...
