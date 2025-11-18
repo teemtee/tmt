@@ -29,12 +29,15 @@ MOCK_PIPE_FILESYNC: Path = MOCK_PIPE / 'filesync'
 
 
 @functools.cache
-def mock_config(root: Optional[str]) -> dict[str, Any]:
+def mock_config(root: Optional[str], logger: tmt.log.Logger) -> dict[str, Any]:
     try:
         import mockbuild.config
 
     except ImportError as error:
-        raise tmt.utils.GeneralError("Could not import mockbuild.config package.") from error
+        from tmt.utils.hints import print_hints
+
+        print_hints('provision/mock', logger=logger)
+        raise tmt.utils.ProvisionError('Could not import mockbuild.config module.') from error
 
     return cast(dict[str, Any], mockbuild.config.simple_load_config(root if root else 'default'))
 
@@ -812,7 +815,7 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
         # If this provisioning is selected, then we force the use of `mock-` package manager.
         # NOTE use a global variable instead?
         tmt.package_managers.find_package_manager(
-            f"mock-{mock_config(data.root)['package_manager']}"
+            f"mock-{mock_config(data.root, logger=self._logger)['package_manager']}"
         ).probe_command = tmt.utils.Command('/usr/bin/true')
 
         # NOTE any better ideas?
