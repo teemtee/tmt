@@ -10,6 +10,8 @@ if typing.TYPE_CHECKING:
     from sphinx.application import Sphinx
 
 
+from packaging.version import Version
+
 import tmt
 from tmt._compat.pathlib import Path
 
@@ -27,11 +29,19 @@ def generate_release_notes(app: "Sphinx") -> None:
     release_inc = app.confdir / "releases/release.rst.inc"
     with release_inc.open("w") as doc:
         # The release notes structure is /<release>/<issue|note>
-        for release in tree.stories(names=[r"^/[\d\.]+$"], whole=True):
+        for release in sorted(
+            tree.stories(names=[r"^/[\d\.]+$"], whole=True),
+            key=lambda x: Version(x.name.removeprefix("/")),
+            reverse=True,
+        ):
             title = f"tmt-{release.name.removeprefix('/')}"
             doc.write(f"{title}\n{'~' * len(title)}\n\n")
             # For now we just paste in the `description` content
-            for release_note in tree.stories(names=[rf"^{release.name}/.*"]):
+            for release_note in sorted(
+                tree.stories(names=[rf"^{release.name}/.*"]),
+                key=lambda x: x.order,
+                reverse=True,
+            ):
                 doc.write(release_note.description)
                 doc.write("\n")
             doc.write("\n")
