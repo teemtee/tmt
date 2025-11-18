@@ -11,13 +11,13 @@ The :ref:`/plugins/test-checks/avc` check now supports
 ``ignore-pattern`` key to exclude specific AVC denials
 from being reported as failures.
 
-
-tmt-1.61.0
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 The :ref:`/plugins/provision/virtual.testcloud` plugin now works
 with the ``debian`` images as well thanks to refreshing package
 metadata before trying to install ``rsync`` on the guest.
+
+
+tmt-1.61.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Pending tests are now also exported to Polarion thanks to no
 longer missing test case ids in the ``results.yaml``.
