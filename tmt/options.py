@@ -272,7 +272,11 @@ IMPORT_BEFORE_FILTER_OPTION: list[ClickOptionDecoratorType] = [
         is_flag=True,
         default=False,
         help="""
-             Import all external plans before applying filters.
+             Import all external plans before applying filters. This
+             is useful when you are using ``importing: become-parent``,
+             where it would otherwise not apply the name filter correctly.
+             Filtering by ``--filter`` and ``--condition`` are always applied
+             after import and are not affected by this option.
              """,
     )
 ]
