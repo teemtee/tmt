@@ -1937,6 +1937,7 @@ class Guest(
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
+        sourced_files: Optional[list[Path]] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         pass
@@ -1955,6 +1956,7 @@ class Guest(
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
+        sourced_files: Optional[list[Path]] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         pass
@@ -1973,6 +1975,7 @@ class Guest(
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
+        sourced_files: Optional[list[Path]] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
@@ -2749,6 +2752,7 @@ class GuestSsh(Guest):
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
+        sourced_files: Optional[list[Path]] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
@@ -2759,6 +2763,8 @@ class GuestSsh(Guest):
         :param env: if set, set these environment variables before running the command.
         :param friendly_command: nice, human-friendly representation of the command.
         """
+
+        sourced_files = sourced_files or []
 
         # Abort if guest is unavailable
         if self.primary_address is None and not self.is_dry_run:
@@ -2788,6 +2794,9 @@ class GuestSsh(Guest):
         # Change to given directory on guest if cwd provided
         if cwd:
             remote_commands += ShellScript(f'cd {quote(str(cwd))}')
+
+        for file in sourced_files:
+            remote_commands += ShellScript(f'source {quote(str(file))}')
 
         if isinstance(command, Command):
             remote_commands += command.to_script()

@@ -1,4 +1,5 @@
 import os
+import shlex
 from collections.abc import Sequence
 from typing import Any, Optional, Union
 
@@ -119,11 +120,14 @@ class GuestLocal(tmt.Guest):
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
+        sourced_files: Optional[list[Path]] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
         Execute command on localhost
         """
+
+        sourced_files = sourced_files or []
 
         # Prepare the environment (plan/cli variables override)
         environment = tmt.utils.Environment()
@@ -133,6 +137,16 @@ class GuestLocal(tmt.Guest):
 
         if tty:
             self.warn("Ignoring requested tty, not supported by the 'local' provision plugin.")
+
+        for file in sourced_files:
+            if isinstance(command, Command):
+                command = (
+                    ShellScript(f'source {shlex.quote(str(file))}').to_shell_command()
+                    + Command("&&")
+                    + command
+                )
+            else:
+                command = ShellScript(f'source {shlex.quote(str(file))}') + command
 
         actual_command = command if isinstance(command, Command) else command.to_shell_command()
 
