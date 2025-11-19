@@ -4,16 +4,7 @@
     Releases
 ======================
 
-tmt-1.62.0
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The :ref:`/plugins/test-checks/avc` check now supports
-``ignore-pattern`` key to exclude specific AVC denials
-from being reported as failures.
-
-The :ref:`/plugins/provision/virtual.testcloud` plugin now works
-with the ``debian`` images as well thanks to refreshing package
-metadata before trying to install ``rsync`` on the guest.
+.. include:: ./release.rst.inc
 
 
 tmt-1.61.0
