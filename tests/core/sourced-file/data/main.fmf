@@ -1,0 +1,42 @@
+/test:
+    test: &do-test |
+        if [[ "$(hello)" == "hi" ]]; then
+          echo "TMT_PLAN_SOURCED_FILE was not sourced?"
+          exit 1
+        fi
+
+
+/plan:
+    discover:
+        how: fmf
+    execute:
+        how: tmt
+    prepare:
+      - name: Sanity checks of initial TMT_PLAN_SOURCED_FILE
+        order: 1
+        how: shell
+        script: |
+            # Check that environment variable exists
+            if [[ -z "$TMT_PLAN_SOURCED_FILE" ]]; then
+              echo "No TMT_PLAN_SOURCED_FILE env-var"
+              exit 1
+            fi
+            # Check that the file exists
+            if [[ ! -f "$TMT_PLAN_SOURCED_FILE" ]]; then
+              echo "TMT_PLAN_SOURCED_FILE file does not exist"
+              exit 1
+            fi
+            # Check that the file is empty
+            if [[ -s "$TMT_PLAN_SOURCED_FILE" ]]; then
+              echo "TMT_PLAN_SOURCED_FILE is not empty"
+              exit 1
+            fi
+      - name: Add some content to the TMT_PLAN_SOURCED_FILE
+        how: shell
+        script: |
+            cat > $TMT_PLAN_SOURCED_FILE <<EOF
+            function hello { echo "hi"; }
+            EOF
+      - name: Check TMT_PLAN_SOURCED_FILE is available in prepare
+        how: shell
+        script: *do-test
