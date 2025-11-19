@@ -4171,7 +4171,7 @@ class Tree(tmt.utils.Common):
         importing_plans = list(
             self.tree.prune(
                 keys=remote_plan_keys,
-                names=None if self.import_before_filter else names,
+                names=None if self.import_before_name_filter else names,
                 sources=sources,
             )
         )
@@ -4204,7 +4204,7 @@ class Tree(tmt.utils.Common):
                 try:
                     plans += plan.resolve_imports()
                 except Exception as error:
-                    if self.import_before_filter:
+                    if self.import_before_name_filter:
                         # If we filter later, we can skip some resolve failures
                         # since it may be unrelated
                         tmt.utils.show_exception_as_warning(
@@ -4218,7 +4218,7 @@ class Tree(tmt.utils.Common):
                         raise
 
         # Do the name filter after the import
-        if self.import_before_filter and names:
+        if self.import_before_name_filter and names:
             plans = [plan for plan in plans if any(re.search(name, plan.name) for name in names)]
 
         return self._filters_conditions(

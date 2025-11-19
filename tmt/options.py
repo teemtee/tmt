@@ -265,10 +265,10 @@ FEELING_SAFE_OPTION: list[ClickOptionDecoratorType] = [
 ]
 
 # TODO: Maybe this should be reversed.
-IMPORT_BEFORE_FILTER_OPTION: list[ClickOptionDecoratorType] = [
+IMPORT_BEFORE_NAME_FILTER_OPTION: list[ClickOptionDecoratorType] = [
     option(
-        '--import-before-filter',
-        envvar='TMT_IMPORT_BEFORE_FILTER',
+        '--import-before-name-filter',
+        envvar='TMT_IMPORT_BEFORE_NAME_FILTER',
         is_flag=True,
         default=False,
         help="""

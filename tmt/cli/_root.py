@@ -53,7 +53,9 @@ force_dry_options = create_options_decorator(tmt.options.FORCE_DRY_OPTIONS)
 again_option = create_options_decorator(tmt.options.AGAIN_OPTION)
 fix_options = create_options_decorator(tmt.options.FIX_OPTIONS)
 feeling_safe_option = create_options_decorator(tmt.options.FEELING_SAFE_OPTION)
-import_before_filter_option = create_options_decorator(tmt.options.IMPORT_BEFORE_FILTER_OPTION)
+import_before_name_filter_option = create_options_decorator(
+    tmt.options.IMPORT_BEFORE_NAME_FILTER_OPTION
+)
 workdir_root_options = create_options_decorator(tmt.options.WORKDIR_ROOT_OPTIONS)
 filtering_options = create_options_decorator(tmt.options.FILTERING_OPTIONS)
 filtering_options_long = create_options_decorator(tmt.options.FILTERING_OPTIONS_LONG)
@@ -137,7 +139,7 @@ def _load_policies(
 )
 @verbosity_options
 @feeling_safe_option
-@import_before_filter_option
+@import_before_name_filter_option
 @option(
     '--show-time',
     is_flag=True,
