@@ -615,8 +615,10 @@ TMT_PLAN_ENVIRONMENT_FILE
     be accessible for all subsequent steps and have lower priority
     than variables specified by the ``environment`` key,
     ``environment-file`` key, or the command line. Variables inside
-    the file have to be in the format of ``NAME=VALUE`` and each
-    variable should be on a separate line.
+    the file **have to be** in the format of ``NAME=VALUE`` and each
+    variable should be on a separate line. Other content form is
+    **not** allowed, use ``TMT_PLAN_SOURCED_FILE`` instead to include
+    other bash commands.
 
     Example of the file content::
 
@@ -625,6 +627,15 @@ TMT_PLAN_ENVIRONMENT_FILE
         ANOTHER_VARIABLE=ANOTHER_VALUE
 
     .. versionadded:: 1.29
+
+TMT_PLAN_SOURCED_FILE
+    Path to the file that will be sourced in all tests, and
+    :ref:`/plugins/prepare/shell` phases. Unlike ``TMT_PLAN_ENVIRONMENT_FILE``,
+    this file can be an arbitrary contents that can be parsed by ``bash``.
+    In order to use it, populate its content in a :ref:`/spec/plans/prepare`
+    step.
+
+    .. versionadded:: 1.63
 
 TMT_VERSION
     The version of tmt.
