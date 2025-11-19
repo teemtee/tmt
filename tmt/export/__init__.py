@@ -32,7 +32,7 @@ import tmt.log
 import tmt.utils
 from tmt._compat.typing import Self
 from tmt.plugins import PluginRegistry
-from tmt.utils import Path
+from tmt.utils import Path, container
 from tmt.utils.themes import style
 
 if TYPE_CHECKING:
@@ -430,134 +430,78 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
 
     import tmt.base
 
-    warnings_list = []
     sections_headings = tmt.base.SECTIONS_HEADINGS
-    required_headings = set(sections_headings['Step'] + sections_headings['Expect'])
-    values = []
-    for _ in list(sections_headings.values()):
-        values += _
+    step_headings = set(sections_headings['Step'])
+    expect_headings = set(sections_headings['Expect'])
 
+    # Extract headings
     md_to_html = tmt.utils.markdown_to_html(md_path)
-    html_headings_from_file = [
-        i[0] for i in re.findall('(^<h[1-4]>(.+?)</h[1-4]>$)', md_to_html, re.MULTILINE)
+    headings = [
+        heading
+        for heading, _ in re.findall(r'(^<h[1-4]>(.+?)</h[1-4]>$)', md_to_html, re.MULTILINE)
     ]
 
-    # No invalid headings in the file w/o headings
-    if not html_headings_from_file:
-        invalid_headings = []
-    else:
-        # Find invalid headings in the file
-        invalid_headings = [
-            key
-            for key in set(html_headings_from_file)
-            if (key not in values) != bool(re.search(sections_headings['Test'][1], key))
-        ]
+    warnings = []
+    test_sections = []
+    current_test = None
 
-    # Remove invalid headings from html_headings_from_file
-    for index in invalid_headings:
-        warnings_list.append(f'unknown html heading "{index}" is used')
-        html_headings_from_file = [i for i in html_headings_from_file if i != index]
-
-    def count_html_headings(heading: str) -> None:
-        if html_headings_from_file.count(heading) > 1:
-            warnings_list.append(
-                f'{html_headings_from_file.count(heading)} headings "{heading}" are used'
-            )
-
-    # Warn if 2 or more # Setup or # Cleanup are used
-    count_html_headings(sections_headings['Setup'][0])
-    count_html_headings(sections_headings['Cleanup'][0])
-
-    warn_outside_test_section = (
-        'Heading "{}" from the section "{}" is used \noutside of Test sections.'
+    # Identify test-section headings
+    test_heading_pattern = re.compile(r'^<h1>(Test .*|Test)</h1>$')
+    all_valid_headings = {heading for section in sections_headings.values() for heading in section}
+    heading_to_type = dict.fromkeys(step_headings, "Step") | dict.fromkeys(
+        expect_headings, "Expect"
     )
-    warn_headings_not_in_pairs = (
-        'The number of headings from the section "Step" - {}\ndoesn\'t equal to the '
-        'number of headings from the section \n"Expect" - {} in the test section "{}"'
-    )
-    warn_required_section_is_absent = '"{}" section doesn\'t exist in the Markdown file'
-    warn_unexpected_headings = 'Headings "{}" aren\'t expected in the section "{}"'
 
-    def required_section_exists(
-        section: list[str], section_name: str, prefix: Union[str, tuple[str, ...]]
-    ) -> int:
-        res = list(filter(lambda t: t.startswith(prefix), section))
-        if not res:
-            warnings_list.append(warn_required_section_is_absent.format(section_name))
-            return 0
-        return len(res)
+    for heading in headings:
+        # Check if valid heading
+        is_valid_heading = heading in all_valid_headings
+        is_test_heading = test_heading_pattern.match(heading)
 
-    # Required sections don't exist
-    if not required_section_exists(html_headings_from_file, 'Test', '<h1>Test'):
-        return warnings_list
+        if not is_valid_heading and not is_test_heading:
+            warnings.append(f'unknown html heading "{heading}" is used')
+            continue
 
-    # If the last heading isn't Test or Cleanup, append a Test heading
-    # to serve as a closing boundary for proper section detection
-    if (
-        html_headings_from_file[-1] != '<h1>Test</h1>'
-        and html_headings_from_file[-1] != '<h1>Cleanup</h1>'
-    ):
-        # acts like a closing boundary
-        html_headings_from_file.append(sections_headings['Test'][0])
+        # Start new test section
+        if is_test_heading:
+            if current_test is not None:
+                test_sections.append(current_test)
+            current_test = {'name': heading, 'steps': [], 'expects': []}
+            continue
 
-    index = 0
-    while html_headings_from_file:
-        # # Step cannot be used outside of test sections.
-        if (
-            html_headings_from_file[index] == sections_headings['Step'][0]
-            or html_headings_from_file[index] == sections_headings['Step'][1]
-        ):
-            warnings_list.append(
-                warn_outside_test_section.format(html_headings_from_file[index], 'Step')
+        # Inside an open test section
+        if current_test is not None:
+            section_type = heading_to_type.get(heading)
+            if section_type == "Step":
+                current_test['steps'].append(heading)
+            elif section_type == "Expect":
+                current_test['expects'].append(heading)
+            continue
+
+        # Outside test section — detect orphan Step/Expect
+        section_type = heading_to_type.get(heading)
+        if section_type:
+            warnings.append(
+                f'Heading "{heading}" from "{section_type}" is used outside of Test sections'
             )
 
-        # # Expect cannot be used outside of test sections.
-        if (
-            html_headings_from_file[index] == sections_headings['Expect'][0]
-            or html_headings_from_file[index] == sections_headings['Expect'][1]
-            or html_headings_from_file[index] == sections_headings['Expect'][2]
-        ):
-            warnings_list.append(
-                warn_outside_test_section.format(html_headings_from_file[index], 'Expect')
+    # Add final test section
+    if current_test is not None:
+        test_sections.append(current_test)
+
+    # At least one test section must exist
+    if not test_sections:
+        warnings.append('"Test" section doesn\'t exist in the Markdown file')
+        return warnings
+
+    # # Step isn't in pair with # Expect
+    for test in test_sections:
+        steps_count = len(test['steps'])
+        expects_count = len(test['expects'])
+        if steps_count != expects_count:
+            warnings.append(
+                f'The number of headings from the section "Step" - {steps_count}'
+                f' doesn\'t equal to the number of headings from the section'
+                f' "Expect" - {expects_count} in the test section "{test["name"]}"'
             )
 
-        if html_headings_from_file[index].startswith('<h1>Test'):
-            test_section_name = html_headings_from_file[index]
-            try:
-                html_headings_from_file[index + 1]
-            except IndexError:
-                break
-            for i, v in enumerate(html_headings_from_file[index + 1 :]):
-                if re.search('^<h1>(Test .*|Test)</h1>$', v):
-                    test_section = html_headings_from_file[index + 1 : index + 1 + i]
-
-                    # Unexpected headings inside Test section
-                    unexpected_headings = set(test_section) - required_headings
-                    if unexpected_headings:
-                        warnings_list.append(
-                            warn_unexpected_headings.format(
-                                ', '.join(unexpected_headings), test_section_name
-                            )
-                        )
-
-                    amount_of_steps = required_section_exists(
-                        test_section, 'Step', tuple(sections_headings['Step'])
-                    )
-                    amount_of_expects = required_section_exists(
-                        test_section, 'Expect', tuple(sections_headings['Expect'])
-                    )
-
-                    # # Step isn't in pair with # Expect
-                    if amount_of_steps != amount_of_expects != 0:
-                        warnings_list.append(
-                            warn_headings_not_in_pairs.format(
-                                amount_of_steps, amount_of_expects, test_section_name
-                            )
-                        )
-                    index += i
-                    break
-
-        index += 1
-        if index >= len(html_headings_from_file) - 1:
-            break
-    return warnings_list
+    return warnings
