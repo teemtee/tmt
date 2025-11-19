@@ -32,7 +32,7 @@ import tmt.log
 import tmt.utils
 from tmt._compat.typing import Self
 from tmt.plugins import PluginRegistry
-from tmt.utils import Path, container
+from tmt.utils import Path
 from tmt.utils.themes import style
 
 if TYPE_CHECKING:
