@@ -2065,6 +2065,16 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
         return self._get_cli_flag('is_feeling_safe', 'feeling_safe', False)
 
+    @property
+    def import_before_name_filter(self) -> bool:
+        """
+        Whether to import all external plans before applying name-based filters
+        """
+
+        # Note: we do not really need to expose this all across, but `_get_cli_flag` does not
+        # support missing `key` parameter
+        return self._get_cli_flag('import_before_name_filter', 'import_before_name_filter', False)
+
     def _level(self) -> int:
         """
         Hierarchy level
