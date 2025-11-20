@@ -1,0 +1,28 @@
+summary: Basic reboot test
+
+discover:
+    how: shell
+    tests:
+        - name: Sanity test
+          test: /bin/true
+
+prepare:
+  - how: shell
+    script: |
+        for variable in TMT_REBOOT_COUNT RSTRNT_REBOOTCOUNT REBOOTCOUNT; do
+            echo "$variable=${!variable}"
+            [[ -n '${!variable}' ]] || "Reboot count variable '$variable' must be defined."
+        done
+
+        if [ "$TMT_REBOOT_COUNT" = "0" ]; then
+            echo "Before reboot: TMT_REBOOT_COUNT=$TMT_REBOOT_COUNT"
+            echo "Trigger one then!"
+
+            tmt-reboot
+
+        else
+            echo "After reboot: TMT_REBOOT_COUNT=$TMT_REBOOT_COUNT"
+        fi
+
+execute:
+    how: tmt
