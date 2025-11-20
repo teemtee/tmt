@@ -64,6 +64,10 @@ rlJournalStart
                 rlRun "distro=fedora-rawhide"
                 rlRun "package_manager=dnf5"
 
+            elif is_fedora_eln "$image"; then
+                rlRun "distro=fedora-eln"
+                rlRun "package_manager=dnf5"
+
             elif is_fedora_42 "$image"; then
                 rlRun "distro=fedora-42"
                 rlRun "package_manager=dnf5"
@@ -244,6 +248,9 @@ rlJournalStart
             elif is_fedora_rawhide "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
+            elif is_fedora_eln "$image"; then
+                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+
             elif is_fedora_42 "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
@@ -280,6 +287,9 @@ rlJournalStart
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_fedora_rawhide "$image"; then
+                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+
+            elif is_fedora_eln "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_fedora_42 "$image"; then
