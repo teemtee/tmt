@@ -8,6 +8,8 @@ files_to_sync:
     filters:
       - "protect .git*"
       - "protect sources"
+      - "protect changelog"
+      - "protect README*"
   - src: packaging/
     dest: ./
     filters:
