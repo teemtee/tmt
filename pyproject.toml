@@ -129,6 +129,7 @@ include = [
     "/README.rst",
     "/tests",
     "/packaging",
+    "/plans",
     "/docs",
     "/completions",
     "/.fmf",
