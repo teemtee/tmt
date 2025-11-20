@@ -345,6 +345,29 @@ class DataContainer:
 
         return {key: value for key, value in self.items() if value is not None}
 
+    def check_deprecated_keys(self, raw_data: dict[str, Any], logger: 'tmt.log.Logger') -> None:
+        """
+        Check for deprecated keys and emit warnings if they are used.
+
+        This method iterates through all fields in the container and checks their
+        metadata for deprecation information. If a deprecated field is present in
+        the raw data, a warning is emitted.
+        """
+
+        for field in container_fields(self):
+            _, option, _, _, metadata = container_field(self, field.name)
+
+            if metadata.deprecated is None:
+                continue
+
+            if option not in raw_data:
+                continue
+
+            logger.warning(
+                f"Field '{option}' is deprecated since {metadata.deprecated.since}"
+                f"{', ' + metadata.deprecated.hint if metadata.deprecated.hint else ''}."
+            )
+
     # This method should remain a class-method: 1. list of keys is known
     # already, therefore it's not necessary to create an instance, and
     # 2. some functionality makes use of this knowledge.
