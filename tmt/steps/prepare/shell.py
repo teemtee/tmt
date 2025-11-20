@@ -9,6 +9,8 @@ import tmt
 import tmt.log
 import tmt.result
 import tmt.steps
+import tmt.steps.context.pidfile
+import tmt.steps.context.reboot
 import tmt.steps.prepare
 import tmt.utils
 import tmt.utils.git
@@ -121,6 +123,17 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         """
 
         outcome = super().go(guest=guest, environment=environment, logger=logger)
+
+        reboot_context = tmt.steps.context.reboot.RebootContext(
+            owner_label=f'{self.step.name} / {self.name}',
+            guest=guest,
+            path=self.phase_workdir,
+            logger=logger,
+        )
+
+        pidfile_context = tmt.steps.context.pidfile.PidFileContext(
+            phase=self, guest=guest, logger=logger
+        )
 
         environment = environment or tmt.utils.Environment()
         environment.update(guest.environment)
@@ -239,16 +252,23 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             timestamp = datetime.datetime.now(datetime.timezone.utc)
 
             script_environment = environment.copy()
+            script_environment.update(reboot_context.environment)
+            script_environment.update(pidfile_context.environment)
 
             pull_options = DEFAULT_PULL_OPTIONS.copy()
             pull_options.exclude.append(str(script_log_filepath))
 
-            script = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}')
+            _, outer_wrapper_filepath = pidfile_context.create_wrappers(
+                worktree,
+                f'inner-{PREPARE_WRAPPER_FILENAME}',
+                f'outer-{PREPARE_WRAPPER_FILENAME}',
+                ACTION=tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}'),
+            )
 
             if guest.become and not guest.facts.is_superuser:
-                command = tmt.utils.ShellScript(f'sudo -E {script}')
+                command = tmt.utils.ShellScript(f'sudo -E {outer_wrapper_filepath}')
             else:
-                command = tmt.utils.ShellScript(f'{script}')
+                command = tmt.utils.ShellScript(f'{outer_wrapper_filepath}')
 
             try:
                 guest.push(source=self.phase_workdir)
@@ -259,9 +279,23 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 self._post_action_pull(
                     guest=guest,
                     path=self.phase_workdir,
+                    reboot=reboot_context,
                     pull_options=pull_options,
                     exceptions=outcome.exceptions,
                 )
+
+                if reboot_context.requested and reboot_context.handle_reboot():
+                    self.write_command_report(
+                        path=script_log_filepath,
+                        label=script_name,
+                        timestamp=timestamp,
+                        command=command,
+                        exc=exc,
+                    )
+
+                    script_queue.insert(0, script)
+
+                    continue
 
                 return self._save_failed_run_outcome(
                     log_filepath=script_log_filepath,
@@ -279,6 +313,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 self._post_action_pull(
                     guest=guest,
                     path=self.phase_workdir,
+                    reboot=reboot_context,
                     pull_options=pull_options,
                     exceptions=outcome.exceptions,
                 )
