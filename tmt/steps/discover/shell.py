@@ -15,6 +15,7 @@ import tmt.utils
 import tmt.utils.git
 from tmt._compat.typing import Self
 from tmt.container import SerializableContainer, SpecBasedContainer, container, field
+from tmt.steps import _RawStepData
 from tmt.steps.prepare.distgit import insert_to_prepare_step
 from tmt.utils import (
     Command,
@@ -23,6 +24,10 @@ from tmt.utils import (
 )
 
 T = TypeVar('T', bound='TestDescription')
+
+
+class _RawDiscoverShellData(_RawStepData):
+    tests: Optional[list[dict[str, Any]]]
 
 
 @container
@@ -207,21 +212,22 @@ class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
             """,
     )
 
-    def to_spec(self) -> tmt.steps._RawStepData:
+    def to_spec(self) -> _RawDiscoverShellData:
         """
         Convert to a form suitable for saving in a specification file
         """
 
-        data = super().to_spec()
-        data['tests'] = [test.to_spec() for test in self.tests]
+        return cast(
+            _RawDiscoverShellData,
+            {**super().to_spec(), 'tests': [test.to_spec() for test in self.tests]},
+        )
 
-        return data
-
-    def to_minimal_spec(self) -> tmt.steps._RawStepData:
-        data = super().to_minimal_spec()
-        data['tests'] = [test.to_minimal_spec() for test in self.tests]
-
-        return data
+    def to_minimal_spec(self) -> _RawDiscoverShellData:
+        spec = {**super().to_minimal_spec()}
+        tests = [test.to_minimal_spec() for test in self.tests]
+        if tests:
+            spec['tests'] = tests
+        return cast(_RawDiscoverShellData, spec)
 
 
 @tmt.steps.provides_method('shell')

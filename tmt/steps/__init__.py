@@ -362,9 +362,6 @@ class _RawStepData(TypedDict, total=False):
     summary: Optional[str]
     order: Optional[int]
 
-    # Used by DiscoverShellData
-    tests: Optional[list[dict[str, Any]]]
-
 
 RawStepDataArgument = Union[_RawStepData, list[_RawStepData]]
 
