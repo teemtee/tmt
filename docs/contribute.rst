@@ -902,7 +902,7 @@ Handle manually what did not went well:
   in any open issue.
 
 __ https://github.com/teemtee/tmt/releases/
-__ https://tmt.readthedocs.io/en/stable/releases.html
+__ https://tmt.readthedocs.io/en/stable/releases
 __ https://src.fedoraproject.org/rpms/tmt/pull-requests
 __ https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/builds/
 __ https://github.com/teemtee/tmt/actions/workflows/publish-images.yml

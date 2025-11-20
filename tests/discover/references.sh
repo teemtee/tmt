@@ -64,7 +64,7 @@ rlJournalStart
         rlAssertGrep 'commit-hash' output
         rlAssertNotGrep 'Checkout ref.*main' output
         rlAssertGrep /tests/core/docs output
-        rlAssertGrep /tests/core/env output
+        rlAssertGrep /tests/core/environment output
         rlAssertGrep /tests/core/ls output
     rlPhaseEnd
 

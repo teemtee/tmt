@@ -8,10 +8,14 @@ files_to_sync:
     filters:
       - "protect .git*"
       - "protect sources"
+      - "protect changelog"
+      - "protect README*"
+      # TODO: remove once https://github.com/fedora-ci/jenkins-pipeline-library/pull/100 is merged
+      - "protect ci.fmf"
   - src: packaging/
     dest: ./
     filters:
-      - "- rpms"
+      - "- rpm"
   - .packit.yaml
 
 upstream_package_name: tmt

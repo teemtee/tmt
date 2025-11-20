@@ -108,6 +108,7 @@ docs = [
     "docutils>=0.18.1",
     "Sphinx==8.2.3",
     "fmf>=1.7.0",
+    "sphinx-reredirects",
     ]
 
 [project.scripts]
@@ -129,6 +130,7 @@ include = [
     "/README.rst",
     "/tests",
     "/packaging",
+    "/plans",
     "/docs",
     "/completions",
     "/.fmf",
