@@ -30,14 +30,34 @@ def generate_release_notes(app: "Sphinx") -> None:
     with release_inc.open("w") as doc:
         # The release notes structure is /<release>/<issue|note>
         for release in sorted(
-            tree.stories(names=[r"^/[\d\.]+$"], whole=True),
-            key=lambda x: Version(x.name.removeprefix("/")),
+            tree.stories(names=[r"^/(?:[\d\.]+|pending)$"], whole=True),
+            key=lambda x: Version('9999')
+            if x.name == '/pending'
+            else Version(x.name.removeprefix("/")),
             reverse=True,
         ):
-            title = f"tmt-{release.name.removeprefix('/')}"
+            release_notes = tree.stories(names=[rf"^{release.name}/.*"])
+
+            if release.name == '/pending':
+                # Do not emit the "pending" pseudorelease if it has no
+                # notes. This should be the state of things after a
+                # successful release when the "pending" release notes
+                # get moved under an actual, numbered release story,
+                # and "pending" becomes empty.
+                if not release_notes:
+                    continue
+
+                title = 'pending'
+                intro = '\n.. note::\n\n    These are the release notes for the upcoming tmt release.\n\n'  # noqa: E501
+
+            else:
+                title = f"tmt-{release.name.removeprefix('/')}"
+                intro = ''
+
             doc.write(f"{title}\n{'~' * len(title)}\n\n")
+            doc.write(intro)
             # For now we just paste in the `description` content
-            for release_note in tree.stories(names=[rf"^{release.name}/.*"]):
+            for release_note in release_notes:
                 doc.write(release_note.description)
                 doc.write("\n")
             doc.write("\n")
