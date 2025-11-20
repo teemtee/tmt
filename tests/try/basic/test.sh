@@ -57,13 +57,22 @@ rlJournalStart
         rlAssertGrep "fail /tests/base/bad" $rlRun_LOG
         rlAssertGrep "pass /tests/base/good" $rlRun_LOG
         rlAssertGrep "errr /tests/base/weird" $rlRun_LOG
-        rlAssertGrep "summary: 7 tests executed" $rlRun_LOG
-        rlAssertGrep "summary: 3 tests passed, 2 tests failed and 2 errors" $rlRun_LOG
+        rlAssertGrep "summary: 8 tests executed" $rlRun_LOG
+        rlAssertGrep "summary: 4 tests passed, 2 tests failed and 2 errors" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Keep"
         rlRun -s "./keep.exp" 0 "Quit the session"
         rlAssertGrep "Run .* kept unfinished. See you soon!" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Environment Variables"
+        rlRun -s "TMT_CONFIG_DIR=$tmp ./environment.exp"
+        rlAssertGrep "Let's try.*/plans/environment" $rlRun_LOG
+        rlAssertGrep "TEST_VAR=test_value" $rlRun_LOG
+        rlAssertGrep "VAR2=value2" $rlRun_LOG
+        rlAssertGrep "VAR3=value3" $rlRun_LOG
+        rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Single Test (default plan)"
@@ -125,15 +134,6 @@ rlJournalStart
     rlPhaseStartTest "Local change directory"
         rlRun "cd tests/base/bad"
         rlRun "../../../lcd.exp"
-    rlPhaseEnd
-
-    rlPhaseStartTest "Environment Variables"
-        rlRun -s "TMT_CONFIG_DIR=$tmp ./environment.exp"
-        rlAssertGrep "Let's try.*/plans/environment" $rlRun_LOG
-        rlAssertGrep "TEST_VAR=test_value" $rlRun_LOG
-        rlAssertGrep "VAR2=value2" $rlRun_LOG
-        rlAssertGrep "VAR3=value3" $rlRun_LOG
-        rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
