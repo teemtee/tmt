@@ -1,0 +1,21 @@
+description: |
+    The :ref:`/plugins/report/polarion` report plugin now supports
+    the ``test-cycle`` key to specify which test cycle or
+    milestone a test run belongs to.
+
+    The :ref:`/plugins/provision/beaker` provision plugin now
+    supports the ``device.device_name`` hardware constraint,
+    allowing filtering by device name when requesting hardware
+    from Beaker.
+
+    The ``tmt lint`` command now provides more helpful output when
+    required properties are missing. Instead of generic validation
+    errors, it now shows specific warnings indicating which
+    required properties are missing and which schema requires
+    them.
+
+    The ``ssh-option`` key is now properly included in the schemas
+    for all provision plugins that support SSH connections. The
+    discover plugin schemas have been updated to include missing
+    keys as well. This fixes several irrelevant ``tmt lint``
+    errors.
