@@ -31,6 +31,7 @@ import tmt
 import tmt.log
 import tmt.utils
 from tmt._compat.typing import Self
+from tmt.container import container, simple_field
 from tmt.plugins import PluginRegistry
 from tmt.utils import Path
 from tmt.utils.themes import style
@@ -53,6 +54,9 @@ log = fmf.utils.Logging('tmt').logger
 # For linking bugs
 BUGZILLA_XMLRPC_URL = "https://bugzilla.redhat.com/xmlrpc.cgi"
 RE_BUGZILLA_URL = r'bugzilla.redhat.com/show_bug.cgi\?id=(\d+)'
+
+# Used to extract <h1>-<h4> headings and their text from HTML
+HEADING_PATTERN = re.compile(r'^<h([1-4])>(.+?)</h\1>$', re.MULTILINE)
 
 
 # ignore[type-arg]: bound type vars cannot be generic, and it would create a loop anyway.
@@ -330,6 +334,17 @@ class TrivialExporter(ExportPlugin):
         return cls._export([story._export(keys=keys) for story in stories])
 
 
+@container
+class TestSection:
+    """
+    A container for test section data
+    """
+
+    name: str
+    steps: list[str] = simple_field(default_factory=list)
+    expects: list[str] = simple_field(default_factory=list)
+
+
 def get_bz_instance() -> BugzillaInstance:
     """
     Import the bugzilla module and return BZ instance
@@ -431,61 +446,61 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
     import tmt.base
 
     sections_headings = tmt.base.SECTIONS_HEADINGS
-    step_headings = set(sections_headings['Step'])
-    expect_headings = set(sections_headings['Expect'])
+
+    def get_heading_section(heading: str) -> Optional[str]:
+        """Determine the section type for a heading."""
+        for section, allowed_values in sections_headings.items():
+            for value in allowed_values:
+                if isinstance(value, re.Pattern):
+                    if value.match(heading):
+                        return section
+                elif heading == value:
+                    return section
+        return None
 
     # Extract headings
     md_to_html = tmt.utils.markdown_to_html(md_path)
     headings = [
-        heading
-        for heading, _ in re.findall(r'(^<h[1-4]>(.+?)</h[1-4]>$)', md_to_html, re.MULTILINE)
+        (int(match.group(1)), match.group(0)) for match in HEADING_PATTERN.finditer(md_to_html)
     ]
-
     warnings = []
-    test_sections = []
-    current_test = None
+    test_sections: list[TestSection] = []
+    current_test: Optional[TestSection] = None
 
-    # Identify test-section headings
-    test_heading_pattern = re.compile(r'^<h1>(Test .*|Test)</h1>$')
-    all_valid_headings = {heading for section in sections_headings.values() for heading in section}
-    heading_to_type = dict.fromkeys(step_headings, "Step") | dict.fromkeys(
-        expect_headings, "Expect"
-    )
+    for level, heading in headings:
+        section_type = get_heading_section(heading)
 
-    for heading in headings:
-        # Check if valid heading
-        is_valid_heading = heading in all_valid_headings
-        is_test_heading = test_heading_pattern.match(heading)
-
-        if not is_valid_heading and not is_test_heading:
-            warnings.append(f'unknown html heading "{heading}" is used')
+        # invalid section
+        if not section_type:
+            warnings.append(f'Unknown html heading "{heading}" is used')
             continue
 
-        # Start new test section
-        if is_test_heading:
-            if current_test is not None:
+        # Start new test section on h1 heading
+        if level == 1:
+            if current_test:
                 test_sections.append(current_test)
-            current_test = {'name': heading, 'steps': [], 'expects': []}
+
+            current_test = TestSection(name=heading) if section_type == "Test" else None
             continue
 
         # Inside an open test section
-        if current_test is not None:
-            section_type = heading_to_type.get(heading)
+        if current_test:
             if section_type == "Step":
-                current_test['steps'].append(heading)
+                current_test.steps.append(heading)
             elif section_type == "Expect":
-                current_test['expects'].append(heading)
-            continue
-
+                current_test.expects.append(heading)
+            else:
+                warnings.append(
+                    f'Heading "{heading}" isn\'t expected in the section "{current_test.name}"'
+                )
         # Outside test section — detect orphan Step/Expect
-        section_type = heading_to_type.get(heading)
-        if section_type:
+        elif section_type in ("Step", "Expect"):
             warnings.append(
                 f'Heading "{heading}" from "{section_type}" is used outside of Test sections'
             )
 
     # Add final test section
-    if current_test is not None:
+    if current_test:
         test_sections.append(current_test)
 
     # At least one test section must exist
@@ -495,13 +510,13 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
 
     # # Step isn't in pair with # Expect
     for test in test_sections:
-        steps_count = len(test['steps'])
-        expects_count = len(test['expects'])
+        steps_count = len(test.steps)
+        expects_count = len(test.expects)
         if steps_count != expects_count:
             warnings.append(
                 f'The number of headings from the section "Step" - {steps_count}'
                 f' doesn\'t equal to the number of headings from the section'
-                f' "Expect" - {expects_count} in the test section "{test["name"]}"'
+                f' "Expect" - {expects_count} in the test section "{test.name}"'
             )
 
     return warnings
