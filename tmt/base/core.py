@@ -13,6 +13,7 @@ import re
 import shutil
 import sys
 import time
+import urllib.parse
 from collections.abc import Iterable, Sequence
 from re import Pattern
 from typing import (
@@ -1195,6 +1196,68 @@ class Core(
             return
 
         yield LinterOutcome.PASS, 'summary key is set and is reasonably long'
+
+    def lint_valid_links(self) -> LinterReturn:
+        """
+        C002: links must point to existing targets
+        """
+
+        if not self.link:
+            yield LinterOutcome.SKIP, 'no links set'
+            return
+
+        for link in self.link.get():
+            link_label = f"link '{link.relation}: {link.target}'"
+
+            # TODO: targeting an fmf node means we need to load the tree,
+            # possibly also cloning the repo.
+            if not isinstance(link.target, str):
+                yield (
+                    LinterOutcome.SKIP,
+                    f'{link_label} points at fmf ID which is not yet covered by the check',
+                )
+
+                continue
+
+            target_url = urllib.parse.urlparse(link.target)
+
+            if target_url.scheme:
+                with tmt.utils.retry_session(logger=self._logger) as session:
+                    response = session.head(link.target, allow_redirects=True)
+
+                if response.ok:
+                    yield LinterOutcome.PASS, f'{link_label} points at existing target'
+                    continue
+
+                yield (
+                    LinterOutcome.FAIL,
+                    f'{link_label} points at broken URL',
+                )
+                continue
+
+            if target_url.fragment:
+                yield (
+                    LinterOutcome.SKIP,
+                    f'{link_label} points at path-like target with fragment'
+                    ' which is not yet covered by the check',
+                )
+                continue
+
+            path = Path(target_url.path).unrooted()
+
+            if path.exists():
+                yield LinterOutcome.PASS, f'{link_label} points at existing target'
+                continue
+
+            tree = fmf.Tree(self.node.root)
+
+            target_nodes = list(tree.prune(names=[link.target]))
+
+            if not target_nodes:
+                yield LinterOutcome.FAIL, f'{link_label} points at missing path'
+                continue
+
+            yield LinterOutcome.PASS, f'{link_label} points at existing target'
 
     def has_link(self, needle: 'LinkNeedle') -> bool:
         """
