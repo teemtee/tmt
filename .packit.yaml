@@ -13,7 +13,7 @@ files_to_sync:
   - src: packaging/
     dest: ./
     filters:
-      - "- rpms"
+      - "- rpm"
   - .packit.yaml
 
 upstream_package_name: tmt
