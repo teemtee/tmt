@@ -104,6 +104,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autodoc.typehints',
     'sphinx_rtd_theme',
+    'sphinx_reredirects',
     # Custom extensions defined in ext
     'tmt_setup',
 ]
@@ -319,3 +320,9 @@ linkcheck_ignore = [
 
 # custom linkcheck cache variables
 linkcheck_cache_period = 1.0
+
+# -- Options for sphinx_reredirects ---------------------------------------
+
+redirects = {
+    "releases": "releases/index.html",
+}
