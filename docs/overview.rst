@@ -629,11 +629,10 @@ TMT_PLAN_ENVIRONMENT_FILE
     .. versionadded:: 1.29
 
 TMT_PLAN_SOURCED_FILE
-    Path to the file that will be sourced in all tests, and
-    :ref:`/plugins/prepare/shell` phases. Unlike ``TMT_PLAN_ENVIRONMENT_FILE``,
-    this file can be an arbitrary contents that can be parsed by ``bash``.
-    In order to use it, populate its content in a :ref:`/spec/plans/prepare`
-    step.
+    Path to the file that will be sourced in all tests, and prepare/shell phases.
+    Unlike ``TMT_PLAN_ENVIRONMENT_FILE``, this file can be an arbitrary contents
+    that can be parsed by ``bash``. In order to use it, populate its content in
+    a prepare step.
 
     .. versionadded:: 1.63
 
