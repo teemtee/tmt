@@ -14,17 +14,17 @@ rlJournalStart
 
     plan=/url/keep
     rlPhaseStartTest "$plan"
-        rlRun "tmt run --id $tmp/u_k --keep plan -n $plan" 0
+        rlRun "tmt run --id $tmp/u_k --skip-prune plan -n $plan" 0
     rlPhaseEnd
 
     plan=/local/default
     rlPhaseStartTest "$plan"
-        rlRun "tmt run --id $tmp/l_d --keep plan -n $plan" 0
+        rlRun "tmt run --id $tmp/l_d --skip-prune plan -n $plan" 0
     rlPhaseEnd
 
     plan=/local/keep
     rlPhaseStartTest "$plan"
-        rlRun "tmt run --id $tmp/l_k --keep plan -n $plan" 0
+        rlRun "tmt run --id $tmp/l_k --skip-prune plan -n $plan" 0
     rlPhaseEnd
 
     rlPhaseStartTest "git root is parent of fmf root"
@@ -33,7 +33,7 @@ rlJournalStart
         rlRun "cp $tmp/data/plan.fmf $git_repo/fmf_root"
         rlRun "pushd $git_repo && git init"
         rlRun "pushd fmf_root && tmt init"
-        rlRun -s "tmt run --id $tmp/gr --keep plan -n /local/keep" 2
+        rlRun -s "tmt run --id $tmp/gr --skip-prune plan -n /local/keep" 2
         rlAssertGrep "keep-git-metadata.*can be used only" $rlRun_LOG
     rlPhaseEnd
 

@@ -32,7 +32,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Check Keeping"
-        rlRun "tmt run --keep -i $tmp2 -a finish -ddd"
+        rlRun "tmt run --skip-prune -i $tmp2 -a finish -ddd"
         rlAssertExists $tmp2/plan/tree
         rlAssertExists $tmp2/plan/discover/default-0
         rlAssertExists $tmp2/plan/discover/default-1
