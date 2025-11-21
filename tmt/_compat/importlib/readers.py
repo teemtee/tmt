@@ -1,9 +1,8 @@
-from __future__ import annotations
-
 import os
 import pathlib
 import sys
 import typing
+from collections.abc import Iterator
 
 if sys.version_info >= (3, 12):
     from importlib.resources.abc import Traversable
@@ -14,23 +13,22 @@ else:
 
 from tmt._compat.pathlib import Path
 
-if typing.TYPE_CHECKING:
-    from collections.abc import Iterator
-
 
 class MultiplexedPath(_MultiplexedPath):
     #: Component paths that share the same namespace.
     #: Original class already defines this attribute, but we narrow-type it.
     _paths: list[Path]
 
-    def __new__(cls, *paths: Path | MultiplexedPath | Traversable) -> Path | MultiplexedPath:  # type:ignore[misc]
+    def __new__(  # type:ignore[misc]
+        cls, *paths: typing.Union[Path, "MultiplexedPath", Traversable]
+    ) -> typing.Union[Path, "MultiplexedPath"]:
         if len(paths) == 0:
             return Path()
         if len(paths) > 1 or isinstance(paths[0], _MultiplexedPath):
             return super().__new__(cls)
         return Path(paths[0])  # type:ignore[arg-type]
 
-    def __init__(self, *paths: Path | MultiplexedPath | Traversable) -> None:
+    def __init__(self, *paths: typing.Union[Path, "MultiplexedPath", Traversable]) -> None:
         super().__init__(*paths)  # type:ignore[no-untyped-call]
         # Make sure we are using tmt compat Path.
         # Other methods should preserve the type of the children Paths
@@ -58,12 +56,16 @@ class MultiplexedPath(_MultiplexedPath):
         return True
 
     # Override type-hints of the original definitions
-    def joinpath(self, *descendants: str | os.PathLike[str]) -> Path | MultiplexedPath:
+    def joinpath(
+        self, *descendants: typing.Union[str, os.PathLike[str]]
+    ) -> typing.Union[Path, "MultiplexedPath"]:
         new_path = super().joinpath(*descendants)  # type: ignore[no-untyped-call]
         assert isinstance(new_path, (Path, MultiplexedPath))
         return new_path
 
-    def __truediv__(self, child: str | os.PathLike[str]) -> Path | MultiplexedPath:
+    def __truediv__(
+        self, child: typing.Union[str, os.PathLike[str]]
+    ) -> typing.Union[Path, "MultiplexedPath"]:
         return self.joinpath(child)
 
 
