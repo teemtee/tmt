@@ -1,0 +1,5 @@
+description: |
+  The ``tmt try`` command now supports the ``--environment`` option to
+  set environment variables for guest execution. This allows you to pass
+  environment variables directly to your test runs, making it easier to
+  configure test environments on the fly without modifying test files.
