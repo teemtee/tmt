@@ -34,6 +34,8 @@ classifiers = [
     ]
 dependencies = [
     # Minimal versions based on c9s rpms
+    "importlib-metadata>=3.6.0; python_version < '3.10'",  # Backporting selectable entry_points
+    "importlib-resources; python_version < '3.12'",  # MultiplexedPath is broken on earlier versions
     "click>=8.0.3",
     "docutils>=0.16",
     "fmf>=1.7.0",
@@ -451,6 +453,9 @@ builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 "dataclasses.field".msg = "Use tmt.container.field instead."
 "click.style".msg = "Use tmt.log.style instead."
 "annotationlib".msg = "Use tmt._compat.annotationlib instead"
+"importlib.metadata.entry_points".msg = "Use tmt._compat.importlib.metadata.entry_points instead."
+"importlib.readers".msg = "Use tmt._compat.importlib.readers instead."
+"importlib.resources".msg = "Use tmt._compat.importlib.resources instead."
 
 [tool.ruff.lint.flake8-type-checking]
 runtime-evaluated-base-classes = ["tmt.config.models.BaseConfig"]
