@@ -235,7 +235,7 @@ def normalize_memory_size(
         return tmt.utils.normalize_data_amount(key_address, f'{value} MB', logger)
 
     if isinstance(value, str):
-        if value.isdigit():
+        if int(value):
             value = f"{value} MB"
         return tmt.utils.normalize_data_amount(key_address, value, logger)
 
