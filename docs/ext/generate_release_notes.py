@@ -30,14 +30,26 @@ def generate_release_notes(app: "Sphinx") -> None:
     with release_inc.open("w") as doc:
         # The release notes structure is /<release>/<issue|note>
         for release in sorted(
-            tree.stories(names=[r"^/[\d\.]+$"], whole=True),
-            key=lambda x: Version(x.name.removeprefix("/")),
+            tree.stories(names=[r"^/(?:[\d\.]+|pending)$"], whole=True),
+            key=lambda x: Version('9999')
+            if x.name == '/pending'
+            else Version(x.name.removeprefix("/")),
             reverse=True,
         ):
-            title = f"tmt-{release.name.removeprefix('/')}"
+            release_notes = tree.stories(names=[rf"^{release.name}/.*"])
+
+            if release.name == '/pending':
+                title = 'pending'
+                intro = '\n.. note::\n\n    These are the release notes for the upcoming tmt release.\n\n'  # noqa: E501
+
+            else:
+                title = f"tmt-{release.name.removeprefix('/')}"
+                intro = ''
+
             doc.write(f"{title}\n{'~' * len(title)}\n\n")
+            doc.write(intro)
             # For now we just paste in the `description` content
-            for release_note in tree.stories(names=[rf"^{release.name}/.*"]):
+            for release_note in release_notes:
                 doc.write(release_note.description)
                 doc.write("\n")
             doc.write("\n")

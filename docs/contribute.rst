@@ -670,9 +670,11 @@ irrelevant for your change.
     * [ ] include a release note
 
 The version should be mentioned in the specification and a release
-note should be included when a new essential feature is added or
-an important change is introduced so that users can easily check
-whether given functionality is already available in their package:
+note should be included, in the form of new story file under the
+``docs/releases/pending`` directory, when a new essential feature
+is added or an important change is introduced so that users can
+easily check whether given functionality is already available in
+their package:
 
 .. code-block:: rst
 
@@ -864,7 +866,17 @@ Follow the steps below to create a new major or minor release:
 
      ./scripts/list-new-contributors
 
-* Review the release notes in ``releases.rst``, update as needed
+* Review the release notes in ``docs/releases/pending``, and their HTML
+  version as well - follow the links from the ``docs/readthedocs.org:tmt``
+  GitHub check; update release notes as needed.
+* Add a versioned directory for release notes, and move the pending release
+  notes there:
+
+  .. code-block:: bash
+
+     mkdir -p docs/releases/x.y.z
+     mv docs/releases/pending/*.fmf docs/releases/x.y.z
+
 * Add a ``Release x.y.z`` commit, empty if needed: ``git commit --allow-empty -m "Release x.y.z"``
 * Create a pull request with the commit, ensure that the full test
   coverage passed and merge it
