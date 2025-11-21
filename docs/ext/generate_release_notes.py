@@ -39,14 +39,6 @@ def generate_release_notes(app: "Sphinx") -> None:
             release_notes = tree.stories(names=[rf"^{release.name}/.*"])
 
             if release.name == '/pending':
-                # Do not emit the "pending" pseudorelease if it has no
-                # notes. This should be the state of things after a
-                # successful release when the "pending" release notes
-                # get moved under an actual, numbered release story,
-                # and "pending" becomes empty.
-                if not release_notes:
-                    continue
-
                 title = 'pending'
                 intro = '\n.. note::\n\n    These are the release notes for the upcoming tmt release.\n\n'  # noqa: E501
 
