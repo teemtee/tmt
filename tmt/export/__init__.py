@@ -56,7 +56,7 @@ BUGZILLA_XMLRPC_URL = "https://bugzilla.redhat.com/xmlrpc.cgi"
 RE_BUGZILLA_URL = r'bugzilla.redhat.com/show_bug.cgi\?id=(\d+)'
 
 # Used to extract <h1>-<h4> headings and their text from HTML
-HEADING_PATTERN = re.compile(r'^<h([1-4])>(.+?)</h\1>$', re.MULTILINE)
+HEADING_PATTERN = re.compile(r'^(?P<title><h(?P<level>[1-4])>.+?</h\2>)$', re.MULTILINE)
 
 
 # ignore[type-arg]: bound type vars cannot be generic, and it would create a loop anyway.
@@ -445,11 +445,9 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
 
     import tmt.base
 
-    sections_headings = tmt.base.SECTIONS_HEADINGS
-
     def get_heading_section(heading: str) -> Optional[str]:
         """Determine the section type for a heading."""
-        for section, allowed_values in sections_headings.items():
+        for section, allowed_values in tmt.base.SECTIONS_HEADINGS.items():
             for value in allowed_values:
                 if isinstance(value, re.Pattern):
                     if value.match(heading):
@@ -461,7 +459,8 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
     # Extract headings
     md_to_html = tmt.utils.markdown_to_html(md_path)
     headings = [
-        (int(match.group(1)), match.group(0)) for match in HEADING_PATTERN.finditer(md_to_html)
+        (int(match.group('level')), match.group('title'))
+        for match in HEADING_PATTERN.finditer(md_to_html)
     ]
     warnings = []
     test_sections: list[TestSection] = []
@@ -470,17 +469,14 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
     for level, heading in headings:
         section_type = get_heading_section(heading)
 
-        # invalid section
-        if not section_type:
-            warnings.append(f'Unknown html heading "{heading}" is used')
-            continue
-
         # Start new test section on h1 heading
         if level == 1:
             if current_test:
                 test_sections.append(current_test)
 
             current_test = TestSection(name=heading) if section_type == "Test" else None
+            if current_test:
+                test_sections.append(current_test)
             continue
 
         # Inside an open test section
@@ -494,14 +490,10 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
                     f'Heading "{heading}" isn\'t expected in the section "{current_test.name}"'
                 )
         # Outside test section — detect orphan Step/Expect
-        elif section_type in ("Step", "Expect"):
+        elif section_type in {"Step", "Expect"}:
             warnings.append(
                 f'Heading "{heading}" from "{section_type}" is used outside of Test sections'
             )
-
-    # Add final test section
-    if current_test:
-        test_sections.append(current_test)
 
     # At least one test section must exist
     if not test_sections:
