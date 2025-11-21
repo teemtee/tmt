@@ -138,7 +138,7 @@ class GuestLocal(tmt.Guest):
         if tty:
             self.warn("Ignoring requested tty, not supported by the 'local' provision plugin.")
 
-        for file in sourced_files:
+        for file in reversed(sourced_files):
             if isinstance(command, Command):
                 command = (
                     ShellScript(f'source {shlex.quote(str(file))}').to_shell_command()
