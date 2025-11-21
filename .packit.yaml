@@ -218,6 +218,7 @@ jobs:
 
   # Downstream tests
   - <<: *test-base
+    <<: *require-full-tests
     targets:
       - fedora-latest-stable
     identifier: downstream
