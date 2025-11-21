@@ -24,6 +24,7 @@ from tmt.utils import (
     Path,
     PrepareError,
     RunError,
+    Stopwatch,
     normalize_string_list,
     retry_session,
 )
@@ -214,10 +215,10 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                     if not response.ok:
                         raise PrepareError(f"Failed to fetch remote playbook '{raw_playbook}'.")
 
-                except requests.RequestException as exc:
+                except requests.RequestException as error:
                     raise PrepareError(
                         f"Failed to fetch remote playbook '{raw_playbook}'."
-                    ) from exc
+                    ) from error
 
                 with tempfile.NamedTemporaryFile(
                     mode='w+b',
@@ -240,7 +241,9 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             def normalize_collection_playbook(raw_playbook: str) -> tuple[Path, AnsibleApplicable]:
                 return self.step.plan.anchor_path, AnsibleCollectionPlaybook(raw_playbook)
 
-            try:
+            def invoke_playbook(
+                playbook_record_dirpath: Path, lowercased_playbook: str
+            ) -> tmt.utils.CommandOutput:
                 playbook_record_dirpath.mkdir(parents=True, exist_ok=True)
 
                 if lowercased_playbook.startswith(('http://', 'https://')):
@@ -255,18 +258,19 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                 else:
                     playbook_root, playbook = normalize_local_playbook(lowercased_playbook)
 
-                output = guest.run_ansible_playbook(
+                return guest.run_ansible_playbook(
                     playbook,
                     playbook_root=playbook_root,
                     extra_args=self.data.extra_args,
                 )
 
-            except RunError as exc:
-                self.write(
-                    playbook_log_filepath,
-                    '\n'.join(
-                        tmt.utils.render_command_report(label=playbook_name, output=exc.output)
-                    ),
+            output, exc, timer = Stopwatch.measure(
+                invoke_playbook, playbook_record_dirpath, lowercased_playbook
+            )
+
+            if isinstance(exc, RunError):
+                self.write_command_report(
+                    path=playbook_log_filepath, label=playbook_name, timer=timer, exc=exc
                 )
 
                 outcome.results.append(
@@ -282,7 +286,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
                 return outcome
 
-            except Exception as exc:
+            if isinstance(exc, Exception):
                 outcome.results.append(
                     tmt.result.PhaseResult(
                         name=playbook_name,
@@ -295,19 +299,31 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
 
                 return outcome
 
-            else:
-                self.write(
-                    playbook_log_filepath,
-                    '\n'.join(tmt.utils.render_command_report(label=playbook_name, output=output)),
-                )
-
+            if output is None:
                 outcome.results.append(
                     tmt.result.PhaseResult(
                         name=playbook_name,
-                        result=ResultOutcome.PASS,
-                        log=[playbook_log_filepath.relative_to(self.step_workdir)],
+                        result=ResultOutcome.ERROR,
+                        note=['Command produced no output but raised no exception'],
                     )
                 )
+
+                return outcome
+
+            self.write_command_report(
+                path=playbook_log_filepath,
+                label=playbook_name,
+                timer=timer,
+                output=output,
+            )
+
+            outcome.results.append(
+                tmt.result.PhaseResult(
+                    name=playbook_name,
+                    result=ResultOutcome.PASS,
+                    log=[playbook_log_filepath.relative_to(self.step_workdir)],
+                )
+            )
 
         return outcome
 
