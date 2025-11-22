@@ -125,7 +125,12 @@ def test_maximal_constraint(root_logger: Logger) -> None:
             },
             {
                 'and': [
-                    {},
+                    {
+                        'device': {
+                            '_vendor_id': '97',
+                            '_op': '>',
+                        },
+                    },
                     {
                         'device': {
                             '_device_id': '79',
@@ -624,6 +629,32 @@ def test_device_device(root_logger: Logger) -> None:
     )
 
     assert result.to_mrack() == {'device': {'_op': '<', '_device_id': '2000'}}
+
+
+def test_device_vendor(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['device.vendor'](
+        _parse_device({'vendor': '0x10de'}), root_logger
+    )
+
+    assert result.to_mrack() == {'device': {'_op': '==', '_vendor_id': '4318'}}
+
+    result = _CONSTRAINT_TRANSFORMERS['device.vendor'](
+        _parse_device({'vendor': '!= 0x10de'}), root_logger
+    )
+
+    assert result.to_mrack() == {'device': {'_op': '!=', '_vendor_id': '4318'}}
+
+    result = _CONSTRAINT_TRANSFORMERS['device.vendor'](
+        _parse_device({'vendor': '> 4318'}), root_logger
+    )
+
+    assert result.to_mrack() == {'device': {'_op': '>', '_vendor_id': '4318'}}
+
+    result = _CONSTRAINT_TRANSFORMERS['device.vendor'](
+        _parse_device({'vendor': '< 32902'}), root_logger
+    )
+
+    assert result.to_mrack() == {'device': {'_op': '<', '_vendor_id': '32902'}}
 
 
 def test_device_device_name(root_logger: Logger) -> None:

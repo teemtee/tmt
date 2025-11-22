@@ -1,0 +1,4 @@
+description: |
+  The :ref:`/plugins/provision/beaker` plugin now supports the
+  ``device.vendor`` constraint for filtering by device vendor IDs
+  in hardware requirements.
