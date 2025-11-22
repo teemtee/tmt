@@ -211,22 +211,26 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test whether 'tmt', 'plans' and 'show' accept verbosity option"
-        rlRun -s "tmt    plans    show    /plans/full"
+        rlRun "pushd $git_root_base/tests/tree"
+
+        rlRun -s "tmt    plans    show    /plan"
         rlAssertNotGrep "fmf-id url" $rlRun_LOG
 
-        rlRun -s "tmt    plans    show -v /plans/full"
+        rlRun -s "tmt    plans    show -v /plan"
         rlAssertGrep "fmf-id url" $rlRun_LOG
 
-        rlRun -s "tmt    plans -v show    /plans/full"
+        rlRun -s "tmt    plans -v show    /plan"
         rlAssertGrep "fmf-id url" $rlRun_LOG
 
-        rlRun -s "tmt -v plans    show    /plans/full"
+        rlRun -s "tmt -v plans    show    /plan"
         rlAssertGrep "fmf-id url" $rlRun_LOG
+
+        rlRun "popd"
     rlPhaseEnd
 
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm $output"
-        rlRun "rm -rf $show_tmp $show_dir1 $show_dir2 $show_dir3"
+        rlRun "rm -rf $show_tmp $show_dir1 $show_dir2 $show_dir3 $git_root_base"
     rlPhaseEnd
 rlJournalEnd
