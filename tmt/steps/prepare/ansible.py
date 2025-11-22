@@ -12,7 +12,7 @@ import tmt.steps.prepare
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
-from tmt.result import ResultOutcome
+from tmt.result import ResultGuestData, ResultOutcome
 from tmt.steps.provision import (
     ANSIBLE_COLLECTION_PLAYBOOK_PATTERN,
     AnsibleApplicable,
@@ -275,6 +275,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                         result=ResultOutcome.FAIL,
                         note=tmt.utils.render_exception_as_notes(exc),
                         log=[playbook_log_filepath.relative_to(self.step_workdir)],
+                        guest=ResultGuestData.from_guest(guest=guest),
                     )
                 )
 
@@ -288,6 +289,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                         name=playbook_name,
                         result=ResultOutcome.ERROR,
                         note=tmt.utils.render_exception_as_notes(exc),
+                        guest=ResultGuestData.from_guest(guest=guest),
                     )
                 )
 
@@ -306,6 +308,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                         name=playbook_name,
                         result=ResultOutcome.PASS,
                         log=[playbook_log_filepath.relative_to(self.step_workdir)],
+                        guest=ResultGuestData.from_guest(guest=guest),
                     )
                 )
 
