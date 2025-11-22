@@ -22,14 +22,10 @@ class RebootData(BaseModel):
     Data structure representing reboot request details.
     """
 
-    model_config = ConfigDict(extra='forbid')  # or maybe be less strict?
+    model_config = ConfigDict(extra='forbid')
 
     command: Optional[str] = None
     timeout: int = tmt.steps.provision.REBOOT_TIMEOUT
-    # TODO: Do we need more fields here - not used in the code but exists in the documentation?
-    # hard: Optional[bool] = False
-    # tick: Optional[int] = None
-    # tick_increase: Optional[float] = None
 
 
 @container
@@ -136,9 +132,7 @@ class RebootContext(HasEnvironment):
 
         elif self.soft_requested:
             # Extract custom hints from the file, and reset it.
-            reboot_data = RebootData.model_validate_json(
-                self.request_path.read_text()
-            )  # TODO: Do we fail hard or handle more gracefully?
+            reboot_data = RebootData.model_validate_json(self.request_path.read_text())
 
             reboot_command: Optional[ShellScript] = None
 
