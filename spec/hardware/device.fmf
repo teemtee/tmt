@@ -37,4 +37,4 @@ example:
 
 link:
   - implemented-by: /tmt/steps/provision/mrack.py
-    note: "``device.vendor`` and ``device.vendor-name`` not implemented yet"
+    note: "``device.vendor-name`` not implemented yet"
