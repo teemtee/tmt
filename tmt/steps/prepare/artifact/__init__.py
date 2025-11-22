@@ -1,5 +1,6 @@
 from typing import Optional
 
+import tmt.base
 import tmt.steps
 import tmt.utils
 from tmt.container import container, field
@@ -57,3 +58,9 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             # TODO: Not using exclude_pattern yet.
             provider.fetch_contents(guest, download_path)
         return outcome
+
+    def essential_requires(self) -> list[tmt.base.Dependency]:
+        # createrepo_c is needed to create repository metadata from downloaded artifacts
+        return [
+            tmt.base.DependencySimple('/usr/bin/createrepo_c'),
+        ]

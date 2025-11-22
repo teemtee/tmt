@@ -4,12 +4,11 @@ Artifact provider for discovering RPMs from repository files.
 
 import re
 from collections.abc import Sequence
-from pyexpat.errors import messages
 from re import Pattern
 from typing import Optional
-from urllib.parse import unquote, urlparse
 
 import tmt.log
+from tmt.steps import DefaultNameGenerator
 from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     ArtifactProviderId,
@@ -18,7 +17,10 @@ from tmt.steps.prepare.artifact.providers import (
 )
 from tmt.steps.prepare.artifact.providers.koji import RpmArtifactInfo
 from tmt.steps.provision import Guest
-from tmt.utils import GeneralError, Path
+from tmt.utils import GeneralError, Path, PrepareError, RunError
+
+# Counter for generating unique repository names in the format ``tmt-repo-default-{n}``.
+_REPO_NAME_GENERATOR = DefaultNameGenerator(known_names=[])
 
 
 # ignore[type-arg]: TypeVar in provider registry annotations is
@@ -195,3 +197,80 @@ def parse_rpm_string(pkg_string: str) -> dict[str, str]:
         'arch': arch,
         'nvr': nvr,
     }
+
+
+def create_repository(
+    artifact_dir: Path,
+    guest: Guest,
+    logger: tmt.log.Logger,
+    repo_name: Optional[str] = None,
+    priority: int = 1,
+) -> Repository:
+    """
+    Create and install a local RPM repository from a directory on the guest.
+
+    This function orchestrates the complete process of creating a local RPM repository
+    from a directory containing RPM packages and installing it on the guest system.
+    The process involves:
+
+    1. Creating repository metadata in the specified directory using the guest's package manager
+    2. Generating a .repo configuration file with the repository settings
+    3. Installing the repository configuration file on the guest system
+
+    :param artifact_dir: Path to the directory on the guest containing RPM files.
+                         This directory must exist on the guest system.
+    :param guest: Guest instance where the repository will be created and installed.
+    :param logger: Logger instance for outputting debug and error messages.
+    :param repo_name: Name for the repository. If not provided, a unique name
+                      will be generated using the format ``tmt-repo-default-{n}``. This name
+                      appears in the .repo file and package manager output.
+    :param priority: Repository priority (default: 1). Lower values have higher
+                     priority when multiple repositories provide the same package.
+    :return: Repository object representing the newly created and installed repository.
+    :raises PrepareError: If the package manager does not support creating repositories.
+    :raises GeneralError: If repository metadata creation fails.
+    :raises RunError: If repository installation fails.
+
+    .. note::
+
+        The repository is created with ``gpgcheck=0`` (GPG signature checking disabled)
+        to support unsigned local packages.
+
+    Example::
+
+        # Create repository from downloaded artifacts
+        repository = create_repository(
+            artifact_dir=Path('/tmp/my-rpms'),
+            guest=my_guest,
+            logger=my_logger,
+            repo_name='my-local-repo',
+            priority=1
+        )
+
+    """
+    repo_name = repo_name or f"tmt-repo-{_REPO_NAME_GENERATOR.get()}"
+
+    # Create Repository Metadata
+    logger.debug(f"Asking package manager to create metadata in '{artifact_dir}'.")
+    guest.package_manager.create_repository_metadata_from_dir(artifact_dir)
+
+    # Generate .repo File Content
+    repo_string = f"""[{tmt.utils.sanitize_name(repo_name)}]
+name={repo_name}
+baseurl=file://{artifact_dir}
+enabled=1
+gpgcheck=0
+priority={priority}"""
+
+    logger.debug(f"Generated .repo file content:\n{repo_string}")
+
+    # Create and Install Repository Object
+    created_repository = Repository.from_content(
+        content=repo_string, name=repo_name, logger=logger
+    )
+
+    logger.debug(f"Installing repository '{created_repository.name}' on the guest.")
+
+    guest.package_manager.install_repository(created_repository)
+
+    return created_repository

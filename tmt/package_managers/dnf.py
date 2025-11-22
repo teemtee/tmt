@@ -1,6 +1,7 @@
 import re
 from typing import TYPE_CHECKING, Any, Optional, cast
 
+from tmt._compat.pathlib import Path
 from tmt.package_managers import (
     FileSystemPath,
     Installable,
@@ -189,6 +190,12 @@ class DnfEngine(PackageManagerEngine):
             {self.command.to_script()} repoquery --disablerepo='*' {repo_ids}
             """
         )
+
+    def create_repository_metadata_from_dir(self, directory: Path) -> None:
+        try:
+            self.guest.execute(Command('createrepo_c', str(directory)))
+        except RunError as error:
+            raise GeneralError(f"Failed to create repository metadata in '{directory}'") from error
 
 
 # ignore[type-arg]: TypeVar in package manager registry annotations is
