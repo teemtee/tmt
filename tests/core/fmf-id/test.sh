@@ -23,8 +23,8 @@ rlJournalStart
 
         rlRun -s "tmt test -vvvv show /test-with-valid-ref"
         rlAssertNotGrep "warn:" $rlRun_LOG
-        rlRun "grep -Pzo \"(?s)- ref: branch-or-tag-ref.*?\\s*type: library\" $rlRun_LOG > /dev/null"
-        rlRun "grep -Pzo \"(?s)- ref: 8deadbeaf8.*?\\s*type: library\" $rlRun_LOG > /dev/null"
+        rlRun "grep -Pzo \"(?s)- url:.*?\\s*ref: branch-or-tag-ref.*?\\s*type: library\" $rlRun_LOG > /dev/null"
+        rlRun "grep -Pzo \"(?s)- url:.*?\\s*ref: 8deadbeaf8.*?\\s*type: library\" $rlRun_LOG > /dev/null"
         rlAssertGrep "- some-package" $rlRun_LOG
 
         rlRun -s "tmt test -vvvv show /test-with-invalid-ref" 2

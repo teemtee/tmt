@@ -146,6 +146,12 @@ definitions:
     required:
       - type
 
+    anyOf:
+      - required:
+          - url
+      - required:
+          - path
+
     # This would have been the easy way, understandable by newer jsonschema
     # packages.
     # url: true

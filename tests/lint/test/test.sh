@@ -53,6 +53,9 @@ rlJournalStart
         rlAssertGrep "fail T001 unknown key \"serial_number\" is used" $rlRun_LOG
         rlRun -s "tmt test lint coverage" 1
         rlAssertGrep "fail T006 the 'coverage' field has been obsoleted by 'link'" $rlRun_LOG
+        rlRun -s "tmt test lint library-missing-url-path" 1
+        rlAssertGrep 'fail C000 fmf node failed schema validation' $rlRun_LOG
+        rlAssertGrep 'is not valid under any of the given schemas' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Fix"

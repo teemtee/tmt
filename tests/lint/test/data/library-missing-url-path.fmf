@@ -1,0 +1,5 @@
+summary: Library requirement missing both url and path
+test: /bin/true
+require:
+  - type: library
+    name: /some/library
