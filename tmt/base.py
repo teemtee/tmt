@@ -84,6 +84,7 @@ from tmt.utils import (
     EnvVarValue,
     FmfContext,
     GeneralError,
+    HasEnvironment,
     HasPlanWorkdir,
     HasRunWorkdir,
     Path,
@@ -1203,6 +1204,9 @@ class Core(
 
 @container(repr=False)
 class Test(
+    # TODO: `Test` does "have" environment, but it's a genuine attribute,
+    # not a property, and this interface will not work.
+    # HasEnvironment,
     Core,
     tmt.export.Exportable['Test'],
     tmt.lint.Lintable['Test'],
@@ -2070,6 +2074,7 @@ class RemotePlanReference(
 class Plan(
     HasRunWorkdir,
     HasPlanWorkdir,
+    HasEnvironment,
     Core,
     tmt.export.Exportable['Plan'],
     tmt.lint.Lintable['Plan'],
@@ -4429,7 +4434,7 @@ class RunData(SerializableContainer):
     )
 
 
-class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
+class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
     """
     Test run, a container of plans
     """
