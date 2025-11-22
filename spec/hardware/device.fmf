@@ -34,3 +34,7 @@ example:
     device:
         device-name: "~ Intel Corporation .* Thunderbolt 3"
         driver: thunderbolt
+
+link:
+  - implemented-by: /tmt/steps/provision/mrack.py
+    note: "``device.vendor`` and ``device.vendor-name`` not implemented yet"
