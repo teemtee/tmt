@@ -126,7 +126,12 @@ def test_maximal_constraint(root_logger: Logger) -> None:
             {
                 'and': [
                     {},
-                    {},
+                    {
+                        'device': {
+                            '_device_id': '79',
+                            '_op': '==',
+                        },
+                    },
                     {},
                     {
                         'device': {
@@ -593,6 +598,32 @@ def test_or_constraint(root_logger: Logger) -> None:
             },
         ],
     }
+
+
+def test_device_device(root_logger: Logger) -> None:
+    result = _CONSTRAINT_TRANSFORMERS['device.device'](
+        _parse_device({'device': '1645'}), root_logger
+    )
+
+    assert result.to_mrack() == {'device': {'_op': '==', '_device_id': '1645'}}
+
+    result = _CONSTRAINT_TRANSFORMERS['device.device'](
+        _parse_device({'device': '!= 1645'}), root_logger
+    )
+
+    assert result.to_mrack() == {'device': {'_op': '!=', '_device_id': '1645'}}
+
+    result = _CONSTRAINT_TRANSFORMERS['device.device'](
+        _parse_device({'device': '> 1000'}), root_logger
+    )
+
+    assert result.to_mrack() == {'device': {'_op': '>', '_device_id': '1000'}}
+
+    result = _CONSTRAINT_TRANSFORMERS['device.device'](
+        _parse_device({'device': '< 2000'}), root_logger
+    )
+
+    assert result.to_mrack() == {'device': {'_op': '<', '_device_id': '2000'}}
 
 
 def test_device_device_name(root_logger: Logger) -> None:
