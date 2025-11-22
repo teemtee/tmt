@@ -487,14 +487,27 @@ class GuestMock(tmt.Guest):
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
+        sourced_files: Optional[list[Path]] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
         Execute command inside mock
         """
 
+        sourced_files = sourced_files or []
+
         if self.mock_shell.mock_shell is None:
             self.mock_shell.enter_shell()
+
+        for file in reversed(sourced_files):
+            if isinstance(command, Command):
+                command = (
+                    ShellScript(f'source {shlex.quote(str(file))}').to_shell_command()
+                    + Command("&&")
+                    + command
+                )
+            else:
+                command = ShellScript(f'source {shlex.quote(str(file))}') + command
 
         actual_command = command if isinstance(command, Command) else command.to_shell_command()
         if on_process_start:
