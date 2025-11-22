@@ -1,3 +1,6 @@
+/:
+    select: true
+
 story: 'As a user I want to comfortably work with plans'
 
 /ls:

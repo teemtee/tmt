@@ -1,3 +1,6 @@
+/:
+    select: true
+
 story:
     As a tester I want to easily execute selected tests or
     selected test steps in given environment.

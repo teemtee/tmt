@@ -1,3 +1,6 @@
+/:
+    select: true
+
 story: 'As a developer I want to comfortably work with stories'
 
 /ls:
@@ -50,6 +53,9 @@ story: 'As a developer I want to comfortably work with stories'
       - documented-by: /docs/examples.rst#create-stories
 
 /coverage:
+    /:
+        select: true
+
     summary: 'Show story coverage'
     story:
         As a developer I want to easily view which stories
@@ -85,6 +91,9 @@ story: 'As a developer I want to comfortably work with stories'
             - tmt story coverage --docs
 
 /export:
+    /:
+        select: true
+
     story: 'I need to convert stories into a beautiful format'
 
     /rst:
