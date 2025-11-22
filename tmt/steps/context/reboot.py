@@ -1,5 +1,4 @@
 import functools
-import json
 import os
 from contextlib import suppress
 from typing import TYPE_CHECKING, Optional
@@ -8,6 +7,7 @@ import tmt.log
 import tmt.steps.provision
 import tmt.steps.scripts
 import tmt.utils
+from tmt._compat.pydantic import BaseModel, ConfigDict
 from tmt.container import container
 from tmt.steps.provision import Guest
 from tmt.utils import Environment, EnvVarValue, HasEnvironment, Path, ShellScript
@@ -15,6 +15,21 @@ from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
     from tmt.steps.context.restart import RestartContext
+
+
+class RebootData(BaseModel):
+    """
+    Data structure representing reboot request details.
+    """
+
+    model_config = ConfigDict(extra='forbid')  # or maybe be less strict?
+
+    command: Optional[str] = None
+    timeout: int = tmt.steps.provision.REBOOT_TIMEOUT
+    # TODO: Do we need more fields here - not used in the code but exists in the documentation?
+    # hard: Optional[bool] = False
+    # tick: Optional[int] = None
+    # tick_increase: Optional[float] = None
 
 
 @container
@@ -121,21 +136,17 @@ class RebootContext(HasEnvironment):
 
         elif self.soft_requested:
             # Extract custom hints from the file, and reset it.
-            reboot_data = json.loads(self.request_path.read_text())
+            reboot_data = RebootData.model_validate_json(
+                self.request_path.read_text()
+            )  # TODO: Do we fail hard or handle more gracefully?
 
             reboot_command: Optional[ShellScript] = None
 
-            if reboot_data.get('command'):
+            if reboot_data.command:
                 with suppress(TypeError):
-                    reboot_command = ShellScript(reboot_data.get('command'))
+                    reboot_command = ShellScript(reboot_data.command)
 
-            if reboot_data.get('timeout'):
-                deadline = Deadline.from_seconds(int(reboot_data.get('timeout')))
-
-            else:
-                deadline = Deadline.from_seconds(tmt.steps.provision.REBOOT_TIMEOUT)
-
-            waiting = Waiting(deadline=deadline)
+            waiting = Waiting(deadline=Deadline.from_seconds(reboot_data.timeout))
 
             os.remove(self.request_path)
             self.guest.execute(ShellScript(f'rm -f {self.request_path}'))
