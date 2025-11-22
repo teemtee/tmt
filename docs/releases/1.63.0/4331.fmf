@@ -1,0 +1,4 @@
+description: |
+  The :ref:`/plugins/provision/beaker` plugin now supports the
+  ``device.device`` constraint for filtering by specific device IDs
+  in hardware requirements.
