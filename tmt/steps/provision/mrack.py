@@ -956,7 +956,7 @@ def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
             if isinstance(transformed, MrackBaseHWElement):
                 transformed = transformed.to_mrack()
 
-            logger.debug('Transformed hardware', tmt.utils.dict_to_yaml(transformed))
+            logger.debug('Transformed hardware', tmt.utils.to_yaml(transformed))
 
             # Mrack does not handle well situation when the filter
             # consists of just a single filtering element, e.g. just
