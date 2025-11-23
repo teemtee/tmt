@@ -18,11 +18,16 @@ rlJournalStart
         rlRun "show_dir1=\$(mktemp -d)"
         rlRun "show_dir2=\$(mktemp -d)"
         rlRun "show_dir3=\$(mktemp -d)"
-        rlRun "export LOCAL_GIT_ROOT=$(git rev-parse --show-toplevel)"
+        rlRun "git_root_base=\$(mktemp -d)"
+        rlWaitForCmd "git clone https://github.com/teemtee/tests $git_root_base/tests" -m 5 -d 10 -t 300 || rlDie "Unable to clone tests repository"
     rlPhaseEnd
 
     rlPhaseStartTest "Show a plan with -vvv in a normal git repo"
-        rlRun -s "tmt plans show -vvv mini"
+        plan="/plan"
+        tree_path="tree"
+
+        rlRun "pushd $git_root_base/tests"
+        rlRun -s "tmt -r $tree_path plans show -vvv $plan"
         dump_fmf_id_block $rlRun_LOG > $show_tmp
         rlRun "cat $show_tmp"
         rlAssertGrep "url:" $show_tmp
@@ -30,14 +35,16 @@ rlJournalStart
         rlAssertGrep "path:" $show_tmp
         rlAssertGrep "name:" $show_tmp
         rlAssertGrep "web" $show_tmp
+        rlRun "popd"
     rlPhaseEnd
 
     rlPhaseStartTest "Show a plan with -vvv in a normal, branched git repo"
-        rlRun "cp -r \"$LOCAL_GIT_ROOT\" \"$show_dir0\""
-        # Use glob, git root dirname may be random
-        rlRun "pushd $show_dir0/*/tests/plan/show/data"
+        plan="/plan"
+        tree_path="tree"
+
+        rlRun "pushd $git_root_base/tests"
         rlRun "git checkout -b THIS_BRANCH"
-        rlRun -s "tmt plans show -vvv mini"
+        rlRun -s "tmt -r $tree_path plans show -vvv $plan"
         dump_fmf_id_block $rlRun_LOG > $show_tmp
         rlRun "cat $show_tmp"
         rlAssertGrep "url:" $show_tmp
@@ -78,15 +85,14 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Show a plan with -vvv in work tree"
-        local_repo="$show_dir3/tmt"
-        plan="/plans/sanity/with-tmt"
+        plan="/plan"
+        tree_path="tree"
         worktree="TREE"
         ref="myref"
 
-        rlWaitForCmd "git clone https://github.com/teemtee/tmt $local_repo" -m 5 -d 10 -t 300 || rlDie "Unable to clone tmt repository"
-        rlRun "pushd $local_repo"
+        rlRun "pushd $git_root_base/tests"
         # fmf id fields should be shown when under the default branch
-        rlRun -s "tmt plan show $plan -vvv"
+        rlRun -s "tmt -r $tree_path plan show $plan -vvv"
         dump_fmf_id_block $rlRun_LOG > $show_tmp
         rlRun "cat $show_tmp"
         rlAssertGrep "url:" $show_tmp
@@ -94,7 +100,7 @@ rlJournalStart
         rlAssertGrep "name:" $show_tmp
         # fmf id fields should be shown when under a different branch, too
         rlRun -s "git checkout -b another-branch"
-        rlRun -s "tmt plan show $plan -vvv"
+        rlRun -s "tmt -r  $tree_path plan show $plan -vvv"
         dump_fmf_id_block $rlRun_LOG > $show_tmp
         rlRun "cat $show_tmp"
         rlAssertGrep "url:" $show_tmp
@@ -105,8 +111,8 @@ rlJournalStart
         rlRun "git worktree add $worktree $ref"
         rlRun "popd"
 
-        rlRun "pushd $local_repo/$worktree"
-        rlRun -s "tmt plan show $plan -vvv"
+        rlRun "pushd $git_root_base/tests/$worktree"
+        rlRun -s "tmt -r $tree_path plan show $plan -vvv"
         dump_fmf_id_block $rlRun_LOG > $show_tmp
         rlRun "cat $show_tmp"
         rlAssertGrep "url:" $show_tmp
@@ -205,22 +211,26 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test whether 'tmt', 'plans' and 'show' accept verbosity option"
-        rlRun -s "tmt    plans    show    /plans/full"
+        rlRun "pushd $git_root_base/tests/tree"
+
+        rlRun -s "tmt    plans    show    /plan"
         rlAssertNotGrep "fmf-id url" $rlRun_LOG
 
-        rlRun -s "tmt    plans    show -v /plans/full"
+        rlRun -s "tmt    plans    show -v /plan"
         rlAssertGrep "fmf-id url" $rlRun_LOG
 
-        rlRun -s "tmt    plans -v show    /plans/full"
+        rlRun -s "tmt    plans -v show    /plan"
         rlAssertGrep "fmf-id url" $rlRun_LOG
 
-        rlRun -s "tmt -v plans    show    /plans/full"
+        rlRun -s "tmt -v plans    show    /plan"
         rlAssertGrep "fmf-id url" $rlRun_LOG
+
+        rlRun "popd"
     rlPhaseEnd
 
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm $output"
-        rlRun "rm -rf $show_tmp $show_dir1 $show_dir2 $show_dir3"
+        rlRun "rm -rf $show_tmp $show_dir1 $show_dir2 $show_dir3 $git_root_base"
     rlPhaseEnd
 rlJournalEnd

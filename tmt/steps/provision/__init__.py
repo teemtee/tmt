@@ -509,6 +509,7 @@ class GuestFacts(SerializableContainer):
     has_systemd: Optional[bool] = None
     has_rsync: Optional[bool] = None
     is_superuser: Optional[bool] = None
+    can_sudo: Optional[bool] = None
     sudo_prefix: Optional[str] = None
     is_ostree: Optional[bool] = None
     is_toolbox: Optional[bool] = None
@@ -781,18 +782,24 @@ class GuestFacts(SerializableContainer):
 
         return output.stdout.strip() == 'root'
 
-    def _query_sudo_prefix(self, guest: 'Guest') -> Optional[str]:
-        # Note: we cannot reuse `is_superuser` fact so we just recall the query for now
-        if self._query_is_superuser(guest):
-            return ""
+    def _query_can_sudo(self, guest: 'Guest') -> Optional[bool]:
         try:
             guest.execute(Command("sudo", "-n", "true"))
         except tmt.utils.RunError:
-            # If the user does not have sudo access assume that everything else
-            # is setup properly
-            guest.info("User does not have sudo access, we assume everything is pre-setup.")
+            # Failed non-interactive sudo, so we can't sudo
+            return False
+        # Otherwise we may use sudo
+        return True
+
+    def _query_sudo_prefix(self, guest: 'Guest') -> Optional[str]:
+        # Note: we cannot reuse `is_superuser` or `can_sudo` fact so we just recall the query
+        # functions for now
+        if self._query_is_superuser(guest):
+            # Root user does not need sudo
             return ""
-        return "sudo"
+        if self._query_can_sudo(guest):
+            return "sudo"
+        return ""
 
     def _query_is_ostree(self, guest: 'Guest') -> Optional[bool]:
         # https://github.com/vrothberg/chkconfig/commit/538dc7edf0da387169d83599fe0774ea080b4a37#diff-562b9b19cb1cd12a7343ce5c739745ebc8f363a195276ca58e926f22927238a5R1334
@@ -904,6 +911,7 @@ class GuestFacts(SerializableContainer):
             self.has_systemd = self._query_has_systemd(guest)
             self.has_rsync = self._query_has_rsync(guest)
             self.is_superuser = self._query_is_superuser(guest)
+            self.can_sudo = self._query_can_sudo(guest)
             self.sudo_prefix = self._query_sudo_prefix(guest)
             self.is_ostree = self._query_is_ostree(guest)
             self.is_toolbox = self._query_is_toolbox(guest)
@@ -1789,19 +1797,6 @@ class Guest(
             parent = cast(Provision, self.parent)
             environment.update(parent.plan.environment)
         return environment
-
-    @staticmethod
-    def _export_environment(environment: tmt.utils.Environment) -> list[ShellScript]:
-        """
-        Prepare shell export of environment variables
-        """
-
-        if not environment:
-            return []
-        return [
-            ShellScript(f'export {variable}')
-            for variable in tmt.utils.shell_variables(environment)
-        ]
 
     def _run_guest_command(
         self,
@@ -2784,7 +2779,7 @@ class GuestSsh(Guest):
         # Accumulate all necessary commands - they will form a "shell" script, a single
         # string passed to SSH to execute on the remote machine.
         remote_commands: ShellScript = ShellScript.from_scripts(
-            self._export_environment(self._prepare_environment(env))
+            self._prepare_environment(env).to_shell_exports()
         )
 
         # Change to given directory on guest if cwd provided
@@ -3279,6 +3274,19 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
 
         return super().opt(option, default=default)
 
+    def _verify_guest(self) -> None:
+        """
+        Verify that the guest is acceptable for a Provision step.
+
+        May report the state of the guest and incidentally its facts.
+        """
+
+        assert self.guest is not None  # Narrow type
+
+        # Check if we need or can have sudo access
+        if not self.guest.facts.is_superuser and not self.guest.facts.can_sudo:
+            self.info("User does not have sudo access, we assume everything is pre-setup.")
+
     def wake(self, data: Optional[GuestData] = None) -> None:
         """
         Wake up the plugin
@@ -3296,6 +3304,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
             )
             guest.wake()
             self._guest = guest
+            self._verify_guest()
 
     # TODO: getter. Like in Java. Do we need it?
     @property

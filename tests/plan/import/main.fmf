@@ -18,3 +18,7 @@
 /inheritance:
   summary: Make sure context and environment inheritance works
   test: ./inheritance.sh
+
+/plan-of-plans:
+  summary: Check nested plan features
+  test: ./plan-of-plans.sh

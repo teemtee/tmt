@@ -4,9 +4,9 @@ import tmt
 import tmt.utils
 
 logger = tmt.Logger.create()
-tree = tmt.Tree(path='data', logger=logger)
+tree = tmt.Tree(path='.', logger=logger)
 
-prefix = r'https://github.com/.*/tmt/tree/.*/tests/core/web-link/data/'
+prefix = r'https://github.com/.*/tests/tree/.*/tree/'
 
 
 def test_stories():

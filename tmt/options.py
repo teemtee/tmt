@@ -264,6 +264,23 @@ FEELING_SAFE_OPTION: list[ClickOptionDecoratorType] = [
     )
 ]
 
+# TODO: Maybe this should be reversed.
+IMPORT_BEFORE_NAME_FILTER_OPTION: list[ClickOptionDecoratorType] = [
+    option(
+        '--import-before-name-filter',
+        envvar='TMT_IMPORT_BEFORE_NAME_FILTER',
+        is_flag=True,
+        default=False,
+        help="""
+             Import all external plans before applying filters. This
+             is useful when you are using ``importing: become-parent``,
+             where it would otherwise not apply the name filter correctly.
+             Filtering by ``--filter`` and ``--condition`` are always applied
+             after import and are not affected by this option.
+             """,
+    )
+]
+
 # Fix action
 FIX_OPTIONS: list[ClickOptionDecoratorType] = [
     option('-F', '--fix', is_flag=True, help='Attempt to fix all discovered issues.')

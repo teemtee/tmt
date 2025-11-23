@@ -89,16 +89,16 @@ rlJournalStart
 
     rlPhaseStartTest "Test whether 'tmt', 'stories' and 'show' accept verbosity option"
         rlRun -s "tmt    stories    show    /stories/full"
-        rlAssertNotGrep "fmf-id url" $rlRun_LOG
+        rlAssertNotGrep "fmf-id" $rlRun_LOG
 
         rlRun -s "tmt    stories    show -v /stories/full"
-        rlAssertGrep "fmf-id url" $rlRun_LOG
+        rlAssertGrep "fmf-id" $rlRun_LOG
 
         rlRun -s "tmt    stories -v show    /stories/full"
-        rlAssertGrep "fmf-id url" $rlRun_LOG
+        rlAssertGrep "fmf-id" $rlRun_LOG
 
         rlRun -s "tmt -v stories    show    /stories/full"
-        rlAssertGrep "fmf-id url" $rlRun_LOG
+        rlAssertGrep "fmf-id" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

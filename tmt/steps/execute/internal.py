@@ -33,27 +33,6 @@ from tmt.utils import (
 )
 from tmt.utils.themes import style
 
-TEST_PIDFILE_FILENAME = 'tmt-test.pid'
-TEST_PIDFILE_LOCK_FILENAME = f'{TEST_PIDFILE_FILENAME}.lock'
-
-#: The default directory for storing test pid file.
-TEST_PIDFILE_ROOT = Path('/var/tmp')  # noqa: S108 insecure usage of temporary dir
-
-
-def effective_pidfile_root() -> Path:
-    """
-    Find out what the actual pidfile directory is.
-
-    If ``TMT_TEST_PIDFILE_ROOT`` variable is set, it is used. Otherwise,
-    :py:const:`TEST_PIDFILE_ROOT` is picked.
-    """
-
-    if 'TMT_TEST_PIDFILE_ROOT' in os.environ:
-        return Path(os.environ['TMT_TEST_PIDFILE_ROOT'])
-
-    return TEST_PIDFILE_ROOT
-
-
 #
 # Shell wrappers for the test script.
 #
@@ -138,102 +117,9 @@ TEST_INNER_WRAPPER_FILENAME_TEMPLATE = 'tmt-test-wrapper-inner.sh-{{ INVOCATION.
 #:    seems to be a good idea to prevent accidental reuse in general.
 TEST_OUTER_WRAPPER_FILENAME_TEMPLATE = 'tmt-test-wrapper-outer.sh-{{ INVOCATION.test.pathless_safe_name }}-{{ INVOCATION.test.serial_number }}'  # noqa: E501
 
-#: A template for the inner test wrapper which invokes the test script.
-TEST_INNER_WRAPPER_TEMPLATE = jinja2.Template(
-    textwrap.dedent("""
-{{ INVOCATION.test.test_framework.get_test_command(INVOCATION, LOGGER) }}
-""")
-)
+TEST_BEFORE_MESSAGE_TEMPLATE = "Running test '{{ INVOCATION.test.safe_name }}' (serial number {{ INVOCATION.test.serial_number }}) with reboot count {{ INVOCATION.reboot.reboot_counter }} and test restart count {{ INVOCATION.restart.restart_counter }}. (Be aware the test name is sanitized!)"  # noqa: E501
 
-#: A template for the outer test wrapper which handles most of the
-#: orchestration and invokes the inner wrapper.
-TEST_OUTER_WRAPPER_TEMPLATE = jinja2.Template(
-    textwrap.dedent(
-        """
-{% macro log_to_dmesg(msg) %}
-    {%- if not INVOCATION.guest.facts.is_superuser %}
-        {%- if INVOCATION.guest.become %}
-# Logging test into kernel log
-sudo bash -c "echo \\\"{{ msg }}\\\" > /dev/kmsg"
-        {%- else %}
-# Not logging into kernel log: not a superuser, 'become' not enabled
-# echo \"{{ msg }}\" > /dev/kmsg
-        {%- endif %}
-    {%- else %}
-# Logging test into kernel log
-echo "{{ msg }}" > /dev/kmsg
-    {%- endif %}
-{% endmacro %}
-
-{% macro enter() %}
-# Updating the tmt test pid file
-mkdir -p "$(dirname $TMT_TEST_PIDFILE_LOCK)"
-flock "$TMT_TEST_PIDFILE_LOCK" -c "echo '${test_pid} ${TMT_REBOOT_REQUEST}' > ${TMT_TEST_PIDFILE}" || exit 122
-
-{{
-    log_to_dmesg(
-      "Running test '%s' (serial number %d) with reboot count %d and test restart count %d. (Be aware the test name is sanitized!)"
-      | format(INVOCATION.test.safe_name, INVOCATION.test.serial_number, INVOCATION.reboot.reboot_counter, INVOCATION.restart.restart_counter)
-    )
-}}
-{%- endmacro %}
-
-{% macro exit() %}
-{{
-    log_to_dmesg(
-        "Leaving test '%s' (serial number %d). (Be aware the test name is sanitized!)"
-        | format(INVOCATION.test.safe_name, INVOCATION.test.serial_number)
-    )
-}}
-
-# Updating the tmt test pid file
-mkdir -p "$(dirname $TMT_TEST_PIDFILE_LOCK)"
-flock "$TMT_TEST_PIDFILE_LOCK" -c "rm -f ${TMT_TEST_PIDFILE}" || exit 123
-{%- endmacro %}
-
-# Make sure guest scripts path is searched by shell
-if ! grep -q "{{ INVOCATION.guest.scripts_path }}" <<< "${PATH}"; then
-    export PATH={{ INVOCATION.guest.scripts_path }}:${PATH}
-fi
-
-[ ! -z "$TMT_DEBUG" ] && set -x
-
-test_pid="$$"
-
-{% if INVOCATION.phase.data.interactive %}
-{{ enter() }}
-
-{{ TEST_COMMAND }}
-_exit_code="$?"
-
-{{ exit() }}
-
-{% elif INVOCATION.test.tty %}
-set -o pipefail
-
-{{ enter() }}
-
-{{ TEST_COMMAND }} 2>&1
-_exit_code="$?"
-
-{{ exit () }}
-
-{% else %}
-set -o pipefail
-
-{{ enter() }}
-
-{{ TEST_COMMAND }} </dev/null |& cat
-_exit_code="$?"
-
-{{ exit () }}
-{% endif %}
-
-# Return the original exit code of the test script
-exit $_exit_code
-"""  # noqa: E501
-    )
-)
+TEST_AFTER_MESSAGE_TEMPLATE = "Leaving test '{{ INVOCATION.test.safe_name }}' (serial number {{ INVOCATION.test.serial_number }}). (Be aware the test name is sanitized!)"  # noqa: E501
 
 
 class UpdatableMessage(tmt.utils.UpdatableMessage):
@@ -418,12 +304,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         assert isinstance(self.parent, tmt.steps.execute.Execute)
         assert self.parent.plan.my_run is not None
 
-        environment['TMT_TEST_PIDFILE'] = EnvVarValue(
-            effective_pidfile_root() / TEST_PIDFILE_FILENAME
-        )
-        environment['TMT_TEST_PIDFILE_LOCK'] = EnvVarValue(
-            effective_pidfile_root() / TEST_PIDFILE_LOCK_FILENAME
-        )
         environment["TMT_TEST_NAME"] = EnvVarValue(invocation.test.name)
         environment["TMT_TEST_INVOCATION_PATH"] = EnvVarValue(invocation.path)
         environment["TMT_TEST_DATA"] = EnvVarValue(invocation.test_data_path)
@@ -436,17 +316,12 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             invocation.path / tmt.steps.execute.TEST_METADATA_FILENAME
         )
 
-        # Set the restraint-compatible mode if enabled
-        environment["TMT_RESTRAINT_COMPATIBLE"] = EnvVarValue(
-            str(int(self.data.restraint_compatible))
-        )
-        if self.data.restraint_compatible:
-            environment["RSTRNT_TASKNAME"] = EnvVarValue(invocation.test.name)
-
         # Add variables from invocation contexts
         environment.update(invocation.abort.environment)
         environment.update(invocation.reboot.environment)
         environment.update(invocation.restart.environment)
+        environment.update(invocation.pidfile.environment)
+        environment.update(invocation.restraint.environment)
 
         # Add variables the framework wants to expose
         environment.update(
@@ -509,46 +384,16 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             invocation=invocation, extra_environment=extra_environment, logger=logger
         )
 
-        def _prepare_test_wrapper(
-            label: str, filename_template: str, template: jinja2.Template, **variables: Any
-        ) -> Path:
-            # tmt wrapper filenames *must* be "unique" - the plugin might be handling
-            # the same `discover` phase for different guests at the same time, and
-            # must keep them isolated. The wrapper scripts, while being prepared, are
-            # a shared global state, and we must prevent race conditions.
-            test_wrapper_filename = safe_filename(
-                filename_template, self, guest, INVOCATION=invocation
-            )
-
-            test_wrapper_filepath = workdir / test_wrapper_filename
-            logger.debug(f'test {label} wrapper', test_wrapper_filepath)
-
-            test_wrapper = ShellScript(
-                template.render(LOGGER=logger, INVOCATION=invocation, **variables).strip()
-            )
-            self.debug(f'Test {label} wrapper', test_wrapper, level=3)
-
-            self.write(test_wrapper_filepath, str(test_wrapper), 'w')
-            test_wrapper_filepath.chmod(0o755)
-            guest.push(
-                source=test_wrapper_filepath,
-                destination=test_wrapper_filepath,
-                options=TransferOptions(protect_args=True, preserve_perms=True, chmod=0o755),
-            )
-
-            return test_wrapper_filepath
-
-        # The inner test wrapper envelops the test script...
-        test_inner_wrapper_filepath = _prepare_test_wrapper(
-            'inner', TEST_INNER_WRAPPER_FILENAME_TEMPLATE, TEST_INNER_WRAPPER_TEMPLATE
-        )
-
-        # ... and it's a command the outer plugin invoke execute.
-        test_outer_wrapper_filepath = _prepare_test_wrapper(
-            'outer',
+        _, test_outer_wrapper_filepath = invocation.pidfile.create_wrappers(
+            workdir,
+            TEST_INNER_WRAPPER_FILENAME_TEMPLATE,
             TEST_OUTER_WRAPPER_FILENAME_TEMPLATE,
-            TEST_OUTER_WRAPPER_TEMPLATE,
-            TEST_COMMAND=ShellScript(f'./{test_inner_wrapper_filepath.name}'),
+            before_message_template=TEST_BEFORE_MESSAGE_TEMPLATE,
+            after_message_template=TEST_AFTER_MESSAGE_TEMPLATE,
+            INVOCATION=invocation,
+            ACTION=invocation.test.test_framework.get_test_command(invocation, logger),
+            WITH_TTY=invocation.test.tty,
+            WITH_INTERACTIVE=self.data.interactive,
         )
 
         # Create topology files

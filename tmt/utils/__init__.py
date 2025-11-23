@@ -859,6 +859,30 @@ class Environment(dict[str, EnvVarValue]):
 
         return {key: str(value) for key, value in self.items()}
 
+    def to_shell(self) -> list[str]:
+        """
+        Convert to a form accepted by shell commands.
+
+        .. code-block:: python
+
+            >>> Environment({'FOO': EnvVarValue('bar'), 'BAZ': EnvVarValue('qu ux')}).to_shell()
+            ['FOO=bar', "BAZ='qu ux'"]
+        """
+
+        return [f"{key}={shlex.quote(str(value))}" for key, value in self.items()]
+
+    def to_shell_exports(self) -> list['ShellScript']:
+        """
+        Convert to a sequence of ``export`` shell commands.
+
+        .. code-block:: python
+
+            >>> Environment({'FOO': EnvVarValue('bar'), 'BAZ': EnvVarValue('qu ux')}).to_shell_exports()
+            [ShellScript("export FOO=bar"), ShellScript("export BAZ='qu ux'")]
+        """  # noqa: E501
+
+        return [ShellScript(f'export {variable}') for variable in self.to_shell()]
+
     def copy(self) -> 'Environment':
         return Environment(self)
 
@@ -902,7 +926,7 @@ class Environment(dict[str, EnvVarValue]):
 
         environ_backup = os.environ.copy()
         os.environ.clear()
-        os.environ.update(self)
+        os.environ.update(self.to_environ())
         try:
             yield
         finally:
@@ -2040,6 +2064,16 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         """
 
         return self._get_cli_flag('is_feeling_safe', 'feeling_safe', False)
+
+    @property
+    def import_before_name_filter(self) -> bool:
+        """
+        Whether to import all external plans before applying name-based filters
+        """
+
+        # Note: we do not really need to expose this all across, but `_get_cli_flag` does not
+        # support missing `key` parameter
+        return self._get_cli_flag('import_before_name_filter', 'import_before_name_filter', False)
 
     def _level(self) -> int:
         """
@@ -3404,28 +3438,6 @@ def markdown_to_html(filename: Path) -> str:
             raise MetadataError(f"Unable to read '{filename}'.") from error
     except OSError as error:
         raise ConvertError(f"Unable to open '{filename}'.") from error
-
-
-def shell_variables(data: Union[list[str], tuple[str, ...], dict[str, Any]]) -> list[str]:
-    """
-    Prepare variables to be consumed by shell
-
-    Convert dictionary or list/tuple of key=value pairs to list of
-    key=value pairs where value is quoted with shlex.quote().
-    """
-
-    # Convert from list/tuple
-    if isinstance(data, (list, tuple)):
-        converted_data = []
-        for item in data:
-            splitted_item = item.split('=')
-            key = splitted_item[0]
-            value = shlex.quote('='.join(splitted_item[1:]))
-            converted_data.append(f'{key}={value}')
-        return converted_data
-
-    # Convert from dictionary
-    return [f"{key}={shlex.quote(str(value))}" for key, value in data.items()]
 
 
 def duration_to_seconds(duration: str, injected_default: Optional[str] = None) -> int:

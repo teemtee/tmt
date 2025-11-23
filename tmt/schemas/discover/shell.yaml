@@ -22,6 +22,9 @@ properties:
   name:
     type: string
 
+  summary:
+    $ref: "/schemas/core#/definitions/summary"
+
   url:
     type: string
 

@@ -70,6 +70,9 @@ properties:
   compose-id:
     type: string
 
+  test-cycle:
+    type: string
+
   fips:
     type: boolean
 

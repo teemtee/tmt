@@ -1,0 +1,4 @@
+description: |
+  The :ref:`/plugins/test-checks/avc` check now supports
+  ``ignore-pattern`` key to exclude specific AVC denials
+  from being reported as failures.

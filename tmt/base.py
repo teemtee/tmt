@@ -146,6 +146,11 @@ SECTIONS_HEADINGS = {
     'Cleanup': ['<h1>Cleanup</h1>'],
 }
 
+# Reguar expression to match a required property in a schema validation error
+SCHEMA_REQUIRED_PROPERTY_PATTERN = re.compile(
+    r"'([a-zA-Z0-9', \-]+)' is a required property",
+    flags=re.MULTILINE | re.IGNORECASE,
+)
 
 #
 # fmf id types
@@ -1130,18 +1135,39 @@ class Core(
                     f'value of "{json_path.split(".")[-1]}" is not "{match.group(2)}"',
                 )
 
-            for error, _ in errors:
+            def detect_missing_required_properties(
+                error: jsonschema.ValidationError,
+            ) -> LinterReturn:
+                match = SCHEMA_REQUIRED_PROPERTY_PATTERN.search(str(error))
+
+                if not match:
+                    return
+
+                if isinstance(error.schema, dict) and '$id' in error.schema:
+                    message = (
+                        f'"{match.group(1)}" is a required property by '
+                        f'schema {error.schema["$id"]}'
+                    )
+
+                else:
+                    message = f'"{match.group(1)}" is a required property by schema'
+
+                yield (LinterOutcome.WARN, message)
+
+            def detect_errors(error: jsonschema.ValidationError) -> LinterReturn:
                 yield from detect_unallowed_properties(error)
                 yield from detect_unallowed_properties_with_pattern(error)
                 yield from detect_enum_violations(error)
+                yield from detect_missing_required_properties(error)
+
+            for error, _ in errors:
+                yield from detect_errors(error)
 
                 # Validation errors can have "context", a list of "sub" errors encountered during
                 # validation. Interesting ones are identified & added to our error message.
                 if error.context:
                     for suberror in error.context:
-                        yield from detect_unallowed_properties(suberror)
-                        yield from detect_unallowed_properties_with_pattern(suberror)
-                        yield from detect_enum_violations(suberror)
+                        yield from detect_errors(suberror)
 
             yield LinterOutcome.FAIL, 'fmf node failed schema validation'
 
@@ -4143,7 +4169,11 @@ class Tree(tmt.utils.Common):
         # Build the list, convert to objects, sort and filter
         local_plans = list(self.tree.prune(keys=local_plan_keys, names=names, sources=sources))
         importing_plans = list(
-            self.tree.prune(keys=remote_plan_keys, names=names, sources=sources)
+            self.tree.prune(
+                keys=remote_plan_keys,
+                names=None if self.import_before_name_filter else names,
+                sources=sources,
+            )
         )
 
         for plan in importing_plans:
@@ -4168,7 +4198,28 @@ class Tree(tmt.utils.Common):
         ]
 
         if not Plan._opt('shallow'):
-            plans = functools.reduce(operator.iadd, (plan.resolve_imports() for plan in plans), [])
+            unresolved_plans = plans
+            plans = []
+            for plan in unresolved_plans:
+                try:
+                    plans += plan.resolve_imports()
+                except Exception as error:
+                    if self.import_before_name_filter:
+                        # If we filter later, we can skip some resolve failures
+                        # since it may be unrelated
+                        tmt.utils.show_exception_as_warning(
+                            message=f"Failed to import plan '{plan.name}'",
+                            exception=error,
+                            logger=logger,
+                        )
+                    else:
+                        # Otherwise the filter was already applied and the resolve failure
+                        # is an error
+                        raise
+
+        # Do the name filter after the import
+        if self.import_before_name_filter and names:
+            plans = [plan for plan in plans if any(re.search(name, plan.name) for name in names)]
 
         return self._filters_conditions(
             nodes=sorted(plans, key=lambda plan: plan.order),
@@ -4449,11 +4500,16 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
     def runner(self) -> 'tmt.steps.provision.local.GuestLocal':
         import tmt.steps.provision.local
 
-        return tmt.steps.provision.local.GuestLocal(
+        guest_runner = tmt.steps.provision.local.GuestLocal(
             data=tmt.steps.provision.GuestData(primary_address='localhost', role=None),
             name='tmt runner',
             logger=self._logger,
         )
+        # Override some facts that we do not want to expose
+        # No sudo access on the runner
+        guest_runner.facts.can_sudo = False
+        guest_runner.facts.sudo_prefix = ""
+        return guest_runner
 
     def _use_default_plan(self) -> None:
         """

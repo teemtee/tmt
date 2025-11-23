@@ -839,7 +839,7 @@ Issues:
 https://github.com/teemtee/tmt/issues
 
 Releases:
-https://tmt.readthedocs.io/en/stable/releases.html
+https://tmt.readthedocs.io/en/stable/releases
 
 Copr:
 https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/

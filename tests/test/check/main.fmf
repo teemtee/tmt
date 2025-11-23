@@ -1,5 +1,6 @@
 summary: Test test checks
 tier: 2
+duration: 20m
 
 /dmesg:
     test: ./test-dmesg.sh
@@ -32,7 +33,6 @@ tier: 2
 
 /watchdog:
     test: ./test-watchdog.sh
-    duration: 15m
     tag+:
       - provision-only
       - provision-container

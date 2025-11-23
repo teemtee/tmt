@@ -20,4 +20,4 @@ example: |
 
 link:
   - implemented-by: /tmt/base.py
-  - verified-by: /tests/core/env
+  - verified-by: /tests/core/environment

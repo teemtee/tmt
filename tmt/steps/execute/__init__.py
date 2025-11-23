@@ -32,8 +32,10 @@ from tmt.result import (
 )
 from tmt.steps import Action, ActionTask, PhaseQueue, PluginTask, Step
 from tmt.steps.context.abort import AbortContext, AbortStep
+from tmt.steps.context.pidfile import PidFileContext
 from tmt.steps.context.reboot import RebootContext
 from tmt.steps.context.restart import RestartContext
+from tmt.steps.context.restraint import RestraintContext
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
 from tmt.steps.provision import Guest
 from tmt.utils import (
@@ -297,6 +299,26 @@ class TestInvocation(HasStepWorkdir):
         """
 
         return AbortContext(path=self.test_data_path, logger=self.logger)
+
+    @functools.cached_property
+    def pidfile(self) -> PidFileContext:
+        """
+        Pidfile context for this invocation.
+        """
+
+        return PidFileContext(phase=self.phase, guest=self.guest, logger=self.logger)
+
+    @functools.cached_property
+    def restraint(self) -> RestraintContext:
+        """
+        Restraint context for this invocation.
+        """
+
+        return RestraintContext(
+            enabled=self.phase.data.restraint_compatible,
+            taskname=self.test.name,
+            logger=self.logger,
+        )
 
     def invoke_test(
         self,

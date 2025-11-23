@@ -198,6 +198,19 @@ class MrackHWKeyValue(MrackHWElement):
         self.attributes = {'_key': name, '_op': operator, '_value': value}
 
 
+@container(init=False)
+class MrackHWDeviceElement(MrackHWElement):
+    """
+    An element for device with op and description attributes
+    """
+
+    def __init__(self, operator: str, description: str) -> None:
+        super().__init__('device')
+
+        # Use underscore prefix for attributes in mrack
+        self.attributes = {'_op': operator, '_description': description}
+
+
 BeakerizedConstraint = Union[MrackBaseHWElement, dict[str, Any]]
 
 
@@ -546,6 +559,28 @@ def _transform_device_driver(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
     return _transform_driver_helper("MODULE", constraint, logger)
+
+
+@transforms
+def _transform_device_device_name(
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
+    """
+    Transform device.device-name constraint to Beaker's Devices/Description filter.
+
+    This maps to Beaker's Devices/Description field which allows filtering by
+    device description/name, for example 'Genoa CCP' device.
+    """
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator, constraint.value
+    )
+
+    device_element = MrackHWDeviceElement(beaker_operator, actual_value)
+
+    if negate:
+        return MrackHWNotGroup(children=[device_element])
+
+    return device_element
 
 
 @transforms
