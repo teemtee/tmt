@@ -13,7 +13,7 @@ description: |
     Unlike ``TMT_PLAN_ENVIRONMENT_FILE``, this feature
     is not available for arbitrary phases. Only
     :ref:`/plugins/prepare/shell` and tests use this
-    file.
+    file, for now.
 
 example: |
     prepare:
