@@ -449,8 +449,10 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
         """Determine the section type for a heading."""
         for section, allowed_values in tmt.base.SECTIONS_HEADINGS.items():
             for value in allowed_values:
-                if isinstance(value, re.Pattern):
-                    if value.match(heading):
+                # FIXME: Compiled regex at runtime
+                if value.startswith('<h') and '.*' in value:
+                    pattern = re.compile(value)
+                    if pattern.match(heading):
                         return section
                 elif heading == value:
                     return section
