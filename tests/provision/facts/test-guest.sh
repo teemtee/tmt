@@ -27,11 +27,10 @@ rlJournalStart
 
             package_manager="dnf\|yum"
 
-            grep "selinuxfs" /proc/filesystems &> /dev/null
-            if [ $? -eq 1 ]; then
-                selinux="no"
-            else
+            if [ -e "/sys/fs/selinux/enforce" ]; then
                 selinux="yes"
+            else
+                selinux="no"
             fi
 
             if [ "$(whoami)" != "root" ]; then
@@ -55,11 +54,10 @@ rlJournalStart
             kernel="$(uname -r)"
             package_manager="dnf"
 
-            grep "selinuxfs" /proc/filesystems &> /dev/null
-            if [ $? -eq 1 ]; then
-                selinux="no"
-            else
+            if [ -e "/sys/fs/selinux/enforce" ]; then
                 selinux="yes"
+            else
+                selinux="no"
             fi
 
             is_superuser="yes"
