@@ -1,13 +1,12 @@
 import functools
 import os
-from contextlib import suppress
 from typing import TYPE_CHECKING, Optional
 
 import tmt.log
 import tmt.steps.provision
 import tmt.steps.scripts
 import tmt.utils
-from tmt._compat.pydantic import BaseModel, ConfigDict
+from tmt._compat.pydantic import PYDANTIC_V1, BaseModel, ConfigDict
 from tmt.container import container
 from tmt.steps.provision import Guest
 from tmt.utils import Environment, EnvVarValue, HasEnvironment, Path, ShellScript
@@ -22,7 +21,12 @@ class RebootData(BaseModel):
     Data structure representing reboot request details.
     """
 
-    model_config = ConfigDict(extra='forbid')
+    if PYDANTIC_V1:
+
+        class Config:
+            extra = 'forbid'
+    else:
+        model_config = ConfigDict(extra='forbid')
 
     command: Optional[str] = None
     timeout: int = tmt.steps.provision.REBOOT_TIMEOUT
@@ -137,8 +141,7 @@ class RebootContext(HasEnvironment):
             reboot_command: Optional[ShellScript] = None
 
             if reboot_data.command:
-                with suppress(TypeError):
-                    reboot_command = ShellScript(reboot_data.command)
+                reboot_command = ShellScript(reboot_data.command)
 
             waiting = Waiting(deadline=Deadline.from_seconds(reboot_data.timeout))
 
