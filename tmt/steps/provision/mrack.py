@@ -198,16 +198,15 @@ class MrackHWKeyValue(MrackHWElement):
         self.attributes = {'_key': name, '_op': operator, '_value': value}
 
 
-@container(init=False)
 class MrackHWDeviceElement(MrackHWElement):
     """
-    An element for device with op and description attributes
+    An element for device with op and value attributes
     """
 
-    def __init__(self, **attrs: str) -> None:
+    def __init__(self, operator: str, value: str, attribute_name: str = 'value') -> None:
         super().__init__('device')
 
-        self.attributes = {f"_{key}": value for key, value in attrs.items()}
+        self.attributes = {'_op': operator, f'_{attribute_name}': value}
 
 
 BeakerizedConstraint = Union[MrackBaseHWElement, dict[str, Any]]
@@ -575,7 +574,7 @@ def _transform_device_device(
     )
 
     # Create device element with device_id attribute
-    device_element = MrackHWDeviceElement(op=beaker_operator, device_id=actual_value)
+    device_element = MrackHWDeviceElement(beaker_operator, actual_value, 'device_id')
 
     if negate:
         return MrackHWNotGroup(children=[device_element])
@@ -597,7 +596,7 @@ def _transform_device_device_name(
         constraint.operator, constraint.value
     )
 
-    device_element = MrackHWDeviceElement(op=beaker_operator, description=actual_value)
+    device_element = MrackHWDeviceElement(beaker_operator, actual_value, 'description')
 
     if negate:
         return MrackHWNotGroup(children=[device_element])
