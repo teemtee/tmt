@@ -1304,6 +1304,9 @@ class Guest(
     # original phase.
     # tmt.utils.HasPhaseWorkdir,
     tmt.utils.HasGuestWorkdir,
+    # TODO: `Guest` does "have" environment, but it's a genuine attribute,
+    # not a property, and this interface will not work.
+    # tmt.utils.HasEnvironment,
     tmt.utils.Common,
 ):
     """
