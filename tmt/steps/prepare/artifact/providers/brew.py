@@ -17,9 +17,6 @@ from tmt.steps.prepare.artifact.providers.koji import (
 )
 
 
-# ignore[type-arg]: TypeVar in provider registry annotations is
-# puzzling for type checkers. And not a good idea in general, probably.
-@provides_artifact_provider('brew')  # type: ignore[arg-type]
 class BrewArtifactProvider(KojiArtifactProvider):
     """
     Provider for downloading artifacts from Brew builds.
@@ -35,21 +32,6 @@ class BrewArtifactProvider(KojiArtifactProvider):
         provider = BrewArtifactProvider("brew.build:123456", logger)
         artifacts = provider.fetch_contents(guest, Path("/tmp"))
     """
-
-    SUPPORTED_PREFIXES: ClassVar[tuple[str, ...]] = ()
-
-    def __new__(cls, raw_provider_id: str, logger: tmt.log.Logger) -> Any:
-        """
-        Create a specific Brew provider based on the ``raw_provider_id`` prefix.
-
-        The supported providers are:
-        :py:class:`BrewBuild`,
-        :py:class:`BrewTask`,
-        :py:class:`BrewNvr`.
-
-        :raises ValueError: If the prefix is not supported
-        """
-        return cls._dispatch_subclass(raw_provider_id, cls._REGISTRY)
 
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
         super().__init__(raw_provider_id, logger)
@@ -94,11 +76,3 @@ class BrewTask(BrewArtifactProvider, KojiTask):
 @provides_artifact_provider("brew.nvr")  # type: ignore[arg-type]
 class BrewNvr(BrewArtifactProvider, KojiNvr):
     pass
-
-
-BrewArtifactProvider._REGISTRY = {
-    "brew.build": BrewBuild,
-    "brew.task": BrewTask,
-    "brew.nvr": BrewNvr,
-}
-BrewArtifactProvider.SUPPORTED_PREFIXES = tuple(BrewArtifactProvider._REGISTRY.keys())
