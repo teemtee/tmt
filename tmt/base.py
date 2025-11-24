@@ -139,11 +139,15 @@ EXTRA_KEYS_PREFIX = 'extra-'
 EXTRA_RESULT_IDENTIFICATION_KEYS = ['extra-nitrate', 'extra-task']
 
 SECTIONS_HEADINGS = {
-    'Setup': ['<h1>Setup</h1>'],
-    'Test': ['<h1>Test</h1>', '<h1>Test .*</h1>'],
-    'Step': ['<h2>Step</h2>', '<h2>Test Step</h2>'],
-    'Expect': ['<h2>Expect</h2>', '<h2>Result</h2>', '<h2>Expected Result</h2>'],
-    'Cleanup': ['<h1>Cleanup</h1>'],
+    'Setup': [re.compile(r'^<h1>Setup</h1>$')],
+    'Test': [re.compile(r'^<h1>Test</h1>$'), re.compile(r'^<h1>Test .*</h1>$')],
+    'Step': [re.compile(r'^<h2>Step</h2>$'), re.compile(r'^<h2>Test Step</h2>$')],
+    'Expect': [
+        re.compile(r'^<h2>Expect</h2>$'),
+        re.compile(r'^<h2>Result</h2>$'),
+        re.compile(r'^<h2>Expected Result</h2>$'),
+    ],
+    'Cleanup': [re.compile(r'^<h1>Cleanup</h1>$')],
 }
 
 # Reguar expression to match a required property in a schema validation error
