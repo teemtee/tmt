@@ -203,8 +203,8 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
             concatenate_headings_content(
                 (
                     tmt.base.SECTIONS_HEADINGS['Expect'][0],
-                    tmt.base.SECTIONS_HEADINGS['Result'][0],
-                    tmt.base.SECTIONS_HEADINGS['Expected Result'][0],
+                    tmt.base.SECTIONS_HEADINGS['Expect'][1],
+                    tmt.base.SECTIONS_HEADINGS['Expect'][2],
                 )
             )
         )
