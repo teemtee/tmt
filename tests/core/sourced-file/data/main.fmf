@@ -1,6 +1,6 @@
 /test:
     test: &do-test |
-        if [[ "$(hello)" == "hi" ]]; then
+        if [[ "$(hello)" != "hi" ]]; then
           echo "TMT_PLAN_SOURCED_FILE was not sourced?"
           exit 1
         fi
@@ -36,7 +36,9 @@
         script: |
             cat > $TMT_PLAN_SOURCED_FILE <<EOF
             function hello { echo "hi"; }
+            export -f hello
             EOF
       - name: Check TMT_PLAN_SOURCED_FILE is available in prepare
         how: shell
+        order: 100
         script: *do-test
