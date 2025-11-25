@@ -198,6 +198,7 @@ class MrackHWKeyValue(MrackHWElement):
         self.attributes = {'_key': name, '_op': operator, '_value': value}
 
 
+@container(init=False)
 class MrackHWDeviceElement(MrackHWElement):
     """
     An element for device with op and value attributes
@@ -574,7 +575,9 @@ def _transform_device_device(
     )
 
     # Create device element with device_id attribute
-    device_element = MrackHWDeviceElement(beaker_operator, actual_value, 'device_id')
+    device_element = MrackHWDeviceElement(
+        beaker_operator, actual_value, attribute_name='device_id'
+    )
 
     if negate:
         return MrackHWNotGroup(children=[device_element])
@@ -596,7 +599,9 @@ def _transform_device_device_name(
         constraint.operator, constraint.value
     )
 
-    device_element = MrackHWDeviceElement(beaker_operator, actual_value, 'description')
+    device_element = MrackHWDeviceElement(
+        beaker_operator, actual_value, attribute_name='description'
+    )
 
     if negate:
         return MrackHWNotGroup(children=[device_element])
