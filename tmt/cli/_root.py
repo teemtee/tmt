@@ -1849,11 +1849,11 @@ def clean_runs(
     help='Run id(name or directory path) to stop the guest of. Can be specified multiple times.',
 )
 @option(
-    '-k',
-    '--keep',
+    '-p',
+    '--preserve',
     type=int,
     default=None,
-    help='The number of latest guests to keep, clean the rest.',
+    help='The number of latest guests to preserve, clean the rest.',
 )
 @option(
     '-h',
@@ -1868,7 +1868,7 @@ def clean_guests(
     workdir_root: Optional[Path],
     last: bool,
     id_: tuple[str, ...],
-    keep: Optional[int],
+    preserve: Optional[int],
     **kwargs: Any,
 ) -> None:
     """
@@ -1894,7 +1894,7 @@ def clean_guests(
     context.obj.clean_partials["guests"].append(
         lambda: clean_obj.guests(
             (context.parent and context.parent.params.get('id_', [])) or id_,
-            (context.parent and context.parent.params.get('keep', [])) or keep,
+            (context.parent and context.parent.params.get('preserve', [])) or preserve,
         )
     )
 
