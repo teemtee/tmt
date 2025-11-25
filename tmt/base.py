@@ -153,6 +153,9 @@ SCHEMA_REQUIRED_PROPERTY_PATTERN = re.compile(
     flags=re.MULTILINE | re.IGNORECASE,
 )
 
+#: Filename associated with ``TMT_PLAN_SOURCE_SCRIPT``
+PLAN_SOURCE_SCRIPT_NAME: str = "plan-source-script.sh"
+
 #
 # fmf id types
 #
@@ -2083,9 +2086,6 @@ class Plan(
     Plan object (L2 Metadata)
     """
 
-    #: Filename associated with ``TMT_PLAN_SOURCE_SCRIPT``
-    PLAN_SOURCE_SCRIPT_NAME: ClassVar[str] = "plan-source-script.sh"
-
     # `environment` and `environment-file` are NOT promoted to instance variables.
     context: FmfContext = field(
         default_factory=FmfContext,
@@ -2554,7 +2554,7 @@ class Plan(
     def plan_source_script(self) -> Path:
         assert self.data_directory is not None  # narrow type
 
-        plan_sourced_file_path = self.data_directory / self.PLAN_SOURCE_SCRIPT_NAME
+        plan_sourced_file_path = self.data_directory / PLAN_SOURCE_SCRIPT_NAME
         plan_sourced_file_path.touch(exist_ok=True)
 
         self.debug(f"Create the environment file '{plan_sourced_file_path}'.", level=2)
