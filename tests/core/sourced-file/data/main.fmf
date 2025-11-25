@@ -42,3 +42,7 @@
         how: shell
         order: 100
         script: *do-test
+    finish:
+      - name: Check TMT_PLAN_SOURCED_FILE is available in finish
+        how: shell
+        script: *do-test
