@@ -33,6 +33,17 @@ rlJournalStart
         rlAssertNotGrep "warn -> fail C000 fmf node failed schema validation" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Check early exit on data size validation errors"
+        rlRun -s "tmt run plan --name /plan/invalid-data-size" 2 "TMT should exit early on invalid data size"
+
+        # Verify that TMT exits early and doesn't enter discover phase
+        rlAssertNotGrep "discover" $rlRun_LOG
+        rlAssertNotGrep "how: shell" $rlRun_LOG
+
+        # Verify that the validation error is reported
+        rlAssertGrep "Invalid unit: expected a data size unit" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $run" 0 "Remove run directory"
