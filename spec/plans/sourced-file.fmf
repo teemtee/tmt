@@ -3,7 +3,7 @@ story: >
     of every test.
 
 description: |
-    Tmt will bash source the file exposed at
+    tmt will bash source the file exposed at
     ``TMT_PLAN_SOURCED_FILE`` at the beginning of every
     :ref:`/plugins/prepare/shell`, :ref:`/plugins/finish/shell`
     phases and every test.
