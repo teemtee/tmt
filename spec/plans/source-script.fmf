@@ -30,3 +30,7 @@ example: |
         script: |
             module list
             mpirun -n 2 /usr/bin/hostname
+
+link:
+  - implemented-by: /tmt/base.py
+  - verified-by: /tests/core/source-script
