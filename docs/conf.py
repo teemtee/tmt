@@ -103,6 +103,7 @@ sys.path.insert(0, os.path.abspath('../'))
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autodoc.typehints',
+    'sphinx.ext.todo',
     'sphinx_rtd_theme',
     'sphinx_reredirects',
     # Custom extensions defined in ext
@@ -327,3 +328,6 @@ redirects = {
     "releases": "releases/index.html",
     "code/autodocs": "z_autodocs/",
 }
+
+# -- Options for sphinx.ext.todo ------------------------------------------
+todo_include_todos = True
