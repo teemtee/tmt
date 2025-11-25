@@ -405,7 +405,7 @@ class TestInvocation(HasStepWorkdir):
                     on_process_end=_reset_process,
                     test_session=True,
                     friendly_command=str(self.test.test),
-                    sourced_files=[self.phase.step.plan.plan_sourced_file],
+                    sourced_files=[self.phase.step.plan.plan_source_script],
                 )
 
                 self.return_code = tmt.utils.ProcessExitCodes.SUCCESS

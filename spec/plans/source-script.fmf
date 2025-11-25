@@ -4,7 +4,7 @@ story: >
 
 description: |
     tmt will bash source the file exposed at
-    ``TMT_PLAN_SOURCED_FILE`` at the beginning of every
+    ``TMT_PLAN_SOURCE_SCRIPT`` at the beginning of every
     :ref:`/plugins/prepare/shell`, :ref:`/plugins/finish/shell`
     phases and every test.
     Initially, this file is empty, but you can write to
@@ -18,10 +18,10 @@ description: |
 
 example: |
     prepare:
-        name: Populate the contents of TMT_PLAN_SOURCED_FILE
+        name: Populate the contents of TMT_PLAN_SOURCE_SCRIPT
         how: shell
         script: |
-            cat >> $TMT_PLAN_SOURCED_FILE <<EOF
+            cat >> $TMT_PLAN_SOURCE_SCRIPT <<EOF
             source /etc/profile.d/modules.sh
             module load mpi/openmpi-$(arch)
             EOF

@@ -13,7 +13,7 @@ rlJournalStart
         # All tests are included in the tmt plan/test itself
         rlRun -s "tmt run --id $run -a provision --how=${PROVISION_HOW}" 0 "Run tests"
         # Make sure the file is still there
-        rlAssertExists $run/plan/data/plan-sourced-file.sh
+        rlAssertExists $run/plan/data/plan-source-script.sh
     rlPhaseEnd
 
     rlPhaseStartCleanup
