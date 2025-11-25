@@ -6,8 +6,7 @@ import tmt.log
 import tmt.steps.provision
 import tmt.steps.scripts
 import tmt.utils
-from tmt._compat.pydantic import PYDANTIC_V1, BaseModel, ConfigDict
-from tmt.container import container
+from tmt.container import MetadataContainer, container
 from tmt.steps.provision import Guest
 from tmt.utils import Environment, EnvVarValue, HasEnvironment, Path, ShellScript
 from tmt.utils.wait import Deadline, Waiting
@@ -16,17 +15,10 @@ if TYPE_CHECKING:
     from tmt.steps.context.restart import RestartContext
 
 
-class RebootData(BaseModel):
+class RebootData(MetadataContainer):
     """
     Data structure representing reboot request details.
     """
-
-    if PYDANTIC_V1:
-
-        class Config:
-            extra = 'forbid'
-    else:
-        model_config = ConfigDict(extra='forbid')
 
     command: Optional[str] = None
     timeout: int = tmt.steps.provision.REBOOT_TIMEOUT
@@ -136,7 +128,7 @@ class RebootContext(HasEnvironment):
 
         elif self.soft_requested:
             # Extract custom hints from the file, and reset it.
-            reboot_data = RebootData.model_validate_json(self.request_path.read_text())
+            reboot_data = RebootData.from_json(self.request_path.read_text())
 
             reboot_command: Optional[ShellScript] = None
 
