@@ -10,7 +10,7 @@ import click
 import tmt.steps.provision
 import tmt.trying
 from tmt.cli import Context, pass_context
-from tmt.cli._root import force_dry_options, main, verbosity_options
+from tmt.cli._root import environment_options, force_dry_options, main, verbosity_options
 from tmt.options import option
 
 
@@ -79,6 +79,7 @@ from tmt.options import option
     default=False,
     help="Just provision the guest and ask what to do next.",
 )
+@environment_options
 @verbosity_options
 @force_dry_options
 def try_command(context: Context, **kwargs: Any) -> None:
