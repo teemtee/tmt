@@ -710,7 +710,7 @@ class SizeConstraint(Constraint):
         allowed_operators: Optional[list[Operator]] = None,
         default_unit: Optional[Any] = 'bytes',
     ) -> 'SizeConstraint':
-        return cast(
+        constraint = cast(
             SizeConstraint,
             cls._from_specification(
                 name,
@@ -721,6 +721,19 @@ class SizeConstraint(Constraint):
                 default_unit=default_unit,
             ),
         )
+        # Validate that the unit is compatible with the expected dimensionality
+        # For size constraints (like memory, disk size), validate conversion to bytes
+        try:
+            constraint.value.to('bytes')
+
+        except pint.errors.PintError as exc:
+            raise ParseError(
+                constraint_name=name,
+                raw_value=raw_value,
+                message="Invalid unit: expected a data size unit (e.g., MB, MiB, GB)",
+            ) from exc
+
+        return constraint
 
 
 class FlagConstraint(Constraint):
