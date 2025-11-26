@@ -441,7 +441,8 @@ location:
 .. code-block:: yaml
 
     require:
-      - url: https://github.com/beakerlib/openssl
+      - type: library
+        url: https://github.com/beakerlib/openssl
         name: /certgen
 
 See the :ref:`/spec/tests/require` attribute specification for
