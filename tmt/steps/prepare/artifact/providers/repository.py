@@ -228,7 +228,7 @@ def create_repository(
     # Create Repository Metadata
     logger.debug(f"Creating metadata for '{artifact_dir}'.")
     try:
-        guest.package_manager.create_repo(artifact_dir)
+        guest.package_manager.create_repository(artifact_dir)
     except RunError as error:
         raise PrepareError(f"Failed to create repository metadata in '{artifact_dir}'") from error
 

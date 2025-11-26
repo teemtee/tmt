@@ -67,5 +67,5 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     def essential_requires(self) -> list[tmt.base.Dependency]:
         # createrepo is needed to create repository metadata from downloaded artifacts
         return [
-            tmt.base.DependencySimple('/usr/bin/createrepo_c'),
+            tmt.base.DependencySimple('/usr/bin/createrepo'),
         ]

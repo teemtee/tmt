@@ -219,7 +219,7 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
-    def create_repo(self, directory: Path) -> ShellScript:
+    def create_repository(self, directory: Path) -> ShellScript:
         """
         Create repository metadata for package files in the given directory.
 
@@ -227,7 +227,7 @@ class PackageManagerEngine(tmt.utils.Common):
         :returns: A shell script to create repository metadata.
         :raises PrepareError: If this package manager does not support creating repositories.
         """
-        raise PrepareError("Package Manager not supported for createrepo")
+        raise PrepareError("Package Manager not supported for create_repository")
 
 
 class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
@@ -320,8 +320,8 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
         return stdout.strip().splitlines()
 
-    def create_repo(self, directory: Path) -> CommandOutput:
+    def create_repository(self, directory: Path) -> CommandOutput:
         """
-        Wrapper of :py:meth:`PackageManagerEngine.create_repo`.
+        Wrapper of :py:meth:`PackageManagerEngine.create_repository`.
         """
-        return self.guest.execute(self.engine.create_repo(directory))
+        return self.guest.execute(self.engine.create_repository(directory))

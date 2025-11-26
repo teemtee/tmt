@@ -191,7 +191,7 @@ class DnfEngine(PackageManagerEngine):
             """
         )
 
-    def create_repo(self, directory: Path) -> ShellScript:
+    def create_repository(self, directory: Path) -> ShellScript:
         """
         Create repository metadata for package files in the given directory.
 
