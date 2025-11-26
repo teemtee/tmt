@@ -738,7 +738,7 @@ class GuestFacts(SerializableContainer):
 
     def _query_has_selinux(self, guest: 'Guest') -> Optional[bool]:
         """
-        Detect whether guest has SELinux enabled.
+        Detect whether guest has SELinux and it is enabled.
 
         For detection ``/sys/fs/selinux/enforce`` is used. This file exists
         only when SELinux is actually available and mounted (regardless of

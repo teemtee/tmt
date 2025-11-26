@@ -53,12 +53,7 @@ rlJournalStart
             distro="Fedora Linux [[:digit:]][[:digit:]] (Container Image)"
             kernel="$(uname -r)"
             package_manager="dnf"
-
-            if [ -e "/sys/fs/selinux/enforce" ]; then
-                selinux="yes"
-            else
-                selinux="no"
-            fi
+            selinux="no"
 
             is_superuser="yes"
             bfu_is_superuser="no"
