@@ -6,7 +6,7 @@ rlJournalStart
         rlRun 'pushd data'
         rlRun 'set -o pipefail'
         # Copy vars.yaml from env/data
-        rlRun 'cp ../../env/data/vars.yaml .'
+        rlRun 'cp ../../environment/data/vars.yaml .'
         # Start local server
         python3 ../../../utils/http_server.py &
         server_pid=$!

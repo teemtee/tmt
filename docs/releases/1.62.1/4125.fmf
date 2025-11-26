@@ -1,0 +1,4 @@
+description: |
+  The :ref:`/plugins/provision/virtual.testcloud` plugin now works
+  with the ``debian`` images as well thanks to refreshing package
+  metadata before trying to install ``rsync`` on the guest.

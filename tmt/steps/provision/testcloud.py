@@ -231,22 +231,16 @@ def normalize_memory_size(
     if value is None:
         return None
 
-    if isinstance(value, pint.Quantity):
-        return value
+    if isinstance(value, int):
+        return tmt.utils.normalize_data_amount(key_address, f'{value} MB', logger)
 
     if isinstance(value, str):
-        try:
-            magnitude = int(value)
+        if value.strip().isdigit():
+            value = f"{value} MB"
+        return tmt.utils.normalize_data_amount(key_address, value, logger)
 
-        except ValueError:
-            return tmt.hardware.UNITS(value)
-
-        return tmt.hardware.UNITS(f'{magnitude} MB')
-
-    if isinstance(value, int):
-        return tmt.hardware.UNITS(f'{value} MB')
-
-    raise tmt.utils.NormalizationError(key_address, value, 'an integer')
+    # For pint.Quantity and other types, delegate to normalize_data_amount
+    return tmt.utils.normalize_data_amount(key_address, value, logger)
 
 
 def normalize_disk_size(key_address: str, value: Any, logger: tmt.log.Logger) -> Optional['Size']:
@@ -259,22 +253,16 @@ def normalize_disk_size(key_address: str, value: Any, logger: tmt.log.Logger) ->
     if value is None:
         return None
 
-    if isinstance(value, pint.Quantity):
-        return value
+    if isinstance(value, int):
+        return tmt.utils.normalize_data_amount(key_address, f'{value} GB', logger)
 
     if isinstance(value, str):
-        try:
-            magnitude = int(value)
+        if value.isdigit():
+            value = f"{value} GB"
+        return tmt.utils.normalize_data_amount(key_address, value, logger)
 
-        except ValueError:
-            return tmt.hardware.UNITS(value)
-
-        return tmt.hardware.UNITS(f'{magnitude} GB')
-
-    if isinstance(value, int):
-        return tmt.hardware.UNITS(f'{value} GB')
-
-    raise tmt.utils.NormalizationError(key_address, value, 'an integer')
+    # For pint.Quantity and other types, delegate to normalize_data_amount
+    return tmt.utils.normalize_data_amount(key_address, value, logger)
 
 
 def _report_hw_requirement_support(constraint: tmt.hardware.Constraint) -> bool:

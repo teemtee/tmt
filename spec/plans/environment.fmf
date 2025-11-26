@@ -44,4 +44,4 @@ example:
 link:
   - implemented-by: /tmt/base.py
   - implemented-by: /tmt/steps/discover
-  - verified-by: /tests/core/env
+  - verified-by: /tests/core/environment

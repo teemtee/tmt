@@ -4,7 +4,7 @@ import tmt.log
 import tmt.steps.scripts
 import tmt.utils
 from tmt.container import container
-from tmt.utils import Environment, Path
+from tmt.utils import Environment, HasEnvironment, Path
 
 
 class AbortStep(tmt.utils.GeneralError):
@@ -14,7 +14,7 @@ class AbortStep(tmt.utils.GeneralError):
 
 
 @container
-class AbortContext:
+class AbortContext(HasEnvironment):
     """
     Provides API for handling a phase-requested abort of a step.
     """

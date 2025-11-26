@@ -20,11 +20,11 @@ jobs:
     steps:
 
       # Check out the repo
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         if: ${{ github.event_name == 'release' }}
         with:
           persist-credentials: false
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         if: ${{ github.event_name == 'workflow_dispatch' }}
         with:
           ref: ${{ github.event.inputs.ref }}

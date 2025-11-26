@@ -25,3 +25,4 @@ def setup(app: "Sphinx") -> None:
     app.setup_extension("generate_template_extensions")
     app.setup_extension("generate_stories")
     app.setup_extension("generate_plugins")
+    app.setup_extension("generate_release_notes")

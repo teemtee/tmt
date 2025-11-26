@@ -108,6 +108,7 @@ docs = [
     "docutils>=0.18.1",
     "Sphinx==8.2.3",
     "fmf>=1.7.0",
+    "sphinx-reredirects",
     ]
 
 [project.scripts]
@@ -120,19 +121,6 @@ Homepage = "https://github.com/teemtee/tmt"
 source = "vcs"
 raw-options.version_scheme = "release-branch-semver"
 raw-options.git_describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--abbrev=9", "--match", "*[0-9]*"]
-
-[tool.hatch.build.targets.sdist]
-include = [
-    "/tmt",
-    "/LICENSE",
-    "/examples",
-    "/README.rst",
-    "/tests",
-    "/packaging",
-    "/docs",
-    "/completions",
-    "/.fmf",
-    ]
 
 [tool.hatch.envs.default]
 platforms = ["linux"]

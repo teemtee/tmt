@@ -466,11 +466,12 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
     for level, heading in headings:
         section_type = get_heading_section(heading)
 
+        # Ignore unknown headings
+        if not section_type:
+            warnings.append(f'unknown html heading "{heading}" is used')
+
         # Start new test section on h1 heading
         if level == 1:
-            if current_test:
-                test_sections.append(current_test)
-
             current_test = TestSection(name=heading) if section_type == "Test" else None
             if current_test:
                 test_sections.append(current_test)
@@ -489,7 +490,8 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
         # Outside test section — detect orphan Step/Expect
         elif section_type in {"Step", "Expect"}:
             warnings.append(
-                f'Heading "{heading}" from "{section_type}" is used outside of Test sections'
+                f'Heading "{heading}" from the section "{section_type}" is '
+                f'used outside of Test sections.'
             )
 
     # At least one test section must exist

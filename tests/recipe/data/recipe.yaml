@@ -138,6 +138,7 @@ plans:
                 has-systemd:
                 has-rsync:
                 is-superuser:
+                can-sudo:
                 sudo-prefix:
                 is-ostree:
                 is-toolbox:

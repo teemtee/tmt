@@ -84,6 +84,7 @@ from tmt.utils import (
     EnvVarValue,
     FmfContext,
     GeneralError,
+    HasEnvironment,
     HasPlanWorkdir,
     HasRunWorkdir,
     Path,
@@ -1207,6 +1208,9 @@ class Core(
 
 @container(repr=False)
 class Test(
+    # TODO: `Test` does "have" environment, but it's a genuine attribute,
+    # not a property, and this interface will not work.
+    # HasEnvironment,
     Core,
     tmt.export.Exportable['Test'],
     tmt.lint.Lintable['Test'],
@@ -2074,6 +2078,7 @@ class RemotePlanReference(
 class Plan(
     HasRunWorkdir,
     HasPlanWorkdir,
+    HasEnvironment,
     Core,
     tmt.export.Exportable['Plan'],
     tmt.lint.Lintable['Plan'],
@@ -4173,7 +4178,11 @@ class Tree(tmt.utils.Common):
         # Build the list, convert to objects, sort and filter
         local_plans = list(self.tree.prune(keys=local_plan_keys, names=names, sources=sources))
         importing_plans = list(
-            self.tree.prune(keys=remote_plan_keys, names=names, sources=sources)
+            self.tree.prune(
+                keys=remote_plan_keys,
+                names=None if self.import_before_name_filter else names,
+                sources=sources,
+            )
         )
 
         for plan in importing_plans:
@@ -4198,7 +4207,28 @@ class Tree(tmt.utils.Common):
         ]
 
         if not Plan._opt('shallow'):
-            plans = functools.reduce(operator.iadd, (plan.resolve_imports() for plan in plans), [])
+            unresolved_plans = plans
+            plans = []
+            for plan in unresolved_plans:
+                try:
+                    plans += plan.resolve_imports()
+                except Exception as error:
+                    if self.import_before_name_filter:
+                        # If we filter later, we can skip some resolve failures
+                        # since it may be unrelated
+                        tmt.utils.show_exception_as_warning(
+                            message=f"Failed to import plan '{plan.name}'",
+                            exception=error,
+                            logger=logger,
+                        )
+                    else:
+                        # Otherwise the filter was already applied and the resolve failure
+                        # is an error
+                        raise
+
+        # Do the name filter after the import
+        if self.import_before_name_filter and names:
+            plans = [plan for plan in plans if any(re.search(name, plan.name) for name in names)]
 
         return self._filters_conditions(
             nodes=sorted(plans, key=lambda plan: plan.order),
@@ -4408,7 +4438,7 @@ class RunData(SerializableContainer):
     )
 
 
-class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
+class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
     """
     Test run, a container of plans
     """
@@ -4479,11 +4509,16 @@ class Run(tmt.utils.HasRunWorkdir, tmt.utils.Common):
     def runner(self) -> 'tmt.steps.provision.local.GuestLocal':
         import tmt.steps.provision.local
 
-        return tmt.steps.provision.local.GuestLocal(
+        guest_runner = tmt.steps.provision.local.GuestLocal(
             data=tmt.steps.provision.GuestData(primary_address='localhost', role=None),
             name='tmt runner',
             logger=self._logger,
         )
+        # Override some facts that we do not want to expose
+        # No sudo access on the runner
+        guest_runner.facts.can_sudo = False
+        guest_runner.facts.sudo_prefix = ""
+        return guest_runner
 
     def _use_default_plan(self) -> None:
         """

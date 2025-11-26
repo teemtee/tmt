@@ -2,11 +2,11 @@ from typing import Optional
 
 import tmt.log
 from tmt.container import container
-from tmt.utils import Environment, EnvVarValue
+from tmt.utils import Environment, EnvVarValue, HasEnvironment
 
 
 @container
-class RestraintContext:
+class RestraintContext(HasEnvironment):
     """
     Provides restraint-related context for execution.
     """
