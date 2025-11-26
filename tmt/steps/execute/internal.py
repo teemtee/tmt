@@ -560,7 +560,11 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         test_invocations = self.prepare_tests(guest, logger)
 
         # Push workdir to guest and execute tests
-        guest.push()
+        # Skip push if this is an interactive execute-only action from tmt try
+        if not self._tmt_try_no_push:
+            guest.push()
+        else:
+            logger.debug("Skipping guest.push() to preserve manual changes from tmt try login.")
         # We cannot use enumerate here due to continue in the code
         index = 0
 

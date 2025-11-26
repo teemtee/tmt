@@ -529,6 +529,8 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
     ) -> None:
         super().__init__(logger=logger, step=step, data=data, workdir=workdir)
         self._results: list[tmt.Result] = []
+        # Flag to indicate if this is a tmt try execute action that should not push files
+        self._tmt_try_no_push = False
         if tmt.steps.Login._opt('test'):
             self._login_after_test = tmt.steps.Login(logger=logger, step=self.step, order=90)
 

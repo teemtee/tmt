@@ -27,6 +27,7 @@ import tmt.templates
 import tmt.utils
 from tmt import Plan
 from tmt.base import RunData
+from tmt.steps import Phase
 from tmt.steps.prepare import PreparePlugin
 from tmt.utils import Command, GeneralError, MetadataError, Path
 from tmt.utils.themes import style
@@ -567,7 +568,21 @@ class Try(tmt.utils.Common):
         Run tests using the specified executor
         """
 
-        plan.execute.go(force=True)
+        # Set a flag to indicate this is an interactive execute-only operation
+        # that should not push files to the guest (preserving manual changes)
+        phases_to_reset: list[Phase] = []
+        for phase in plan.execute.phases():
+            # Set the flag for execute plugins that support it
+            if hasattr(phase, '_tmt_try_no_push'):
+                setattr(phase, '_tmt_try_no_push', True)  # noqa: B010
+                phases_to_reset.append(phase)
+
+        try:
+            plan.execute.go(force=True)
+        finally:
+            # Reset the flag to ensure future test actions work correctly
+            for phase in phases_to_reset:
+                setattr(phase, '_tmt_try_no_push', False)  # noqa: B010
 
     @Action("report", shortcut="r", order=9, group=2)
     def action_report(self, plan: Plan) -> None:

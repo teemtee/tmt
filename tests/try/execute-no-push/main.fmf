@@ -1,0 +1,13 @@
+summary: Test that execute action preserves manual changes made during login
+description: |
+    Verifies that the 'execute' action in tmt try doesn't overwrite
+    manual changes made to test files on the guest. This addresses
+    GitHub issue #4046 where the execute action would rediscover
+    and push files from host, overwriting guest modifications.
+
+    The test includes comprehensive verification of all interactive actions:
+    - test (t): Should always push fresh code from host
+    - execute (e): Should preserve manual guest modifications
+duration: 5m
+require+: [expect]
+tag: [provision-container]
