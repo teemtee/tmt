@@ -5,7 +5,8 @@ story: >
 description: |
     tmt will bash source the file exposed at
     ``TMT_PLAN_SOURCE_SCRIPT`` at the beginning of every
-    :ref:`/plugins/prepare/shell`, :ref:`/plugins/finish/shell`
+    :ref:`prepare shell</plugins/prepare/shell>`,
+    :ref:`finish shell</plugins/finish/shell>`
     phases and every test.
     Initially, this file is empty, but you can write to
     this file some content which will be executed in
@@ -13,7 +14,8 @@ description: |
 
     Unlike ``TMT_PLAN_ENVIRONMENT_FILE``, this feature
     is not available for arbitrary phases. Only
-    :ref:`/plugins/prepare/shell`, :ref:`/plugins/finish/shell`
+    :ref:`prepare shell</plugins/prepare/shell>`,
+    :ref:`finish shell</plugins/finish/shell>`
     and tests use this file, for now.
 
 example: |

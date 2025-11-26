@@ -1,6 +1,7 @@
 description: |
-  Introduced :ref:`/spec/plans/source-script` feature.
+  Introduced the :ref:`/spec/plans/source-script` feature.
   You can edit the file exposed as ``TMT_PLAN_SOURCE_SCRIPT``
   and have its content sourced at the beginning of every
-  :ref:`/plugins/prepare/shell` and :ref:`/plugins/finish/shell`
+  :ref:`prepare shell</plugins/prepare/shell>` and
+  :ref:`finish shell</plugins/finish/shell>`
   phases and test executions.
