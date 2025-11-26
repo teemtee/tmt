@@ -80,6 +80,8 @@ if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
 
 
+T = TypeVar('T')
+
 #: How many seconds to wait for a connection to succeed after guest boot.
 #: This is the default value tmt would use unless told otherwise.
 DEFAULT_CONNECT_TIMEOUT = 2 * 60
@@ -494,7 +496,6 @@ class BootMark:
         raise NotImplementedError
 
     @classmethod
-    @abc.abstractclassmethod
     def _check(cls, guest: 'Guest', current: Optional[str]) -> None:
         """
         Read the new boot mark, and compare it with the current one.
@@ -507,45 +508,38 @@ class BootMark:
             is not updated yet.
         """
 
+        try:
+            new_boot_mark = cls._fetch(guest)
+
+            if new_boot_mark != current:
+                # When the mark changes, we are done with the reboot
+                return
+
+            # Same boot mark, reboot didn't happen yet, retrying
+            raise tmt.utils.wait.WaitingIncompleteError
+
+        except tmt.utils.RunError as error:
+            guest.debug('Failed to fetch boot mark.')
+
+            raise tmt.utils.wait.WaitingIncompleteError from error
+
         raise NotImplementedError
 
 
-class BootMarkBootId(BootMark):
+class BootMarkSoftRebootCount(BootMark):
     """
-    Use boot ID as a boot mark.
+    Use soft reboot count a boot mark.
     """
 
     @classmethod
     def _fetch(cls, guest: 'Guest') -> str:
         stdout = guest.execute(
-            Command('cat', '/proc/sys/kernel/random/boot_id'), silent=True
+            Command('systemctl', 'show', '--value', '--property', 'SoftRebootsCount'), silent=True
         ).stdout
 
         assert stdout
 
         return stdout.strip()
-
-    @classmethod
-    def _check(cls, guest: 'Guest', current: Optional[str]) -> None:
-        try:
-            new_boot_mark = cls._fetch(guest)
-
-            if new_boot_mark == current:
-                # For systemd soft reboot, boot ID should be the same
-                return
-
-            guest.warn(
-                f'Boot ID changed from {current} to {new_boot_mark}, '
-                'this might indicate a hard reboot occurred instead.'
-            )
-
-            # Still accept it as the guest is back up
-            return
-
-        except tmt.utils.RunError as error:
-            guest.debug('Failed to connect to the guest.')
-
-            raise tmt.utils.wait.WaitingIncompleteError from error
 
 
 class BootMarkBootTime(BootMark):
@@ -565,26 +559,6 @@ class BootMarkBootTime(BootMark):
             raise tmt.utils.ProvisionError('Failed to retrieve boot time from guest')
 
         return match.group(1)
-
-    @classmethod
-    def _check(cls, guest: 'Guest', current: Optional[str]) -> None:
-        try:
-            new_boot_mark = cls._fetch(guest)
-
-            if new_boot_mark != current:
-                # Different boot time and we are reconnected
-                return
-
-            # Same boot time, reboot didn't happen yet, retrying
-            raise tmt.utils.wait.WaitingIncompleteError
-
-        except tmt.utils.RunError as error:
-            guest.debug('Failed to connect to the guest.')
-
-            raise tmt.utils.wait.WaitingIncompleteError from error
-
-
-T = TypeVar('T')
 
 
 class GuestCapability(enum.Enum):
@@ -2202,7 +2176,7 @@ class Guest(
             if not self.facts.systemd_soft_reboot:
                 raise tmt.steps.provision.RebootModeNotSupportedError(guest=self, mode=mode)
 
-            boot_mark: type[BootMark] = BootMarkBootId
+            boot_mark: type[BootMark] = BootMarkSoftRebootCount
 
         elif mode in {RebootMode.SOFT, RebootMode.HARD}:
             boot_mark = BootMarkBootTime
