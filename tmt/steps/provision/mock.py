@@ -773,7 +773,7 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
         This plugin requires the ``--feeling-safe`` option or
         the ``TMT_FEELING_SAFE=1`` environment variable defined.
         While it is roughly as safe as ``container`` provisioning,
-        the plugin still bind-mounts the test directory.
+        it has access to local filesystem.
 
     Using the plugin:
 
@@ -781,11 +781,11 @@ class ProvisionMock(tmt.steps.provision.ProvisionPlugin[ProvisionMockData]):
 
         provision:
             how: mock
-            config: fedora-rawhide-x86_64
+            root: fedora-rawhide-x86_64
 
     .. code-block:: shell
 
-        provision --how mock --config fedora-rawhide-x86_64
+        provision --how mock --root fedora-rawhide-x86_64
 
     .. note::
 
