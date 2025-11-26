@@ -75,13 +75,14 @@ description for Expected Result 1-2
 ## Step
 description for step 2-1
 
-# Cleanup
-
 ## Result
 description for result 2-1
 
 ## Step
 description for step 2-2
+
+<!-- Testing for multiple cleanups -->
+# Cleanup
 
 # Cleanup
 Optionally remove temporary directory created in the first step
