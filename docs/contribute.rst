@@ -878,9 +878,8 @@ Follow the steps below to create a new major or minor release:
      mv docs/releases/pending/*.fmf docs/releases/x.y.z
 
 * Add a ``Release x.y.z`` commit, empty if needed: ``git commit --allow-empty -m "Release x.y.z"``
-* Create a pull request with the commit, ensure that the full test
+* Create a `pull request`__ with the commit, ensure that the full test
   coverage passed and merge it
-* Move the ``fedora`` branch to point to the new release
 * Tag the commit with ``x.y.z``, push tags ``git push --tags``
 
 .. note::
@@ -900,7 +899,9 @@ Create a new `github release`__ based on the tag above
 
 Finally, if everything went well:
 
-* Close the corresponding release milestone
+* Use the bulk edit in the `milestone view`__ to set the milestone
+  for all issues and pull requests included in the sprint
+* Close the corresponding `release milestone`__
 * Once the non development `copr build`__ is completed, run the
   `publish-images`__ workflow to build fresh container image.
 
@@ -908,14 +909,17 @@ Handle manually what did not went well:
 
 * If the automation triggered by publishing the new github release
   was not successful, publish the fresh code to the `pypi`__
-  repository manually using ``make wheel && make upload``
+  repository manually using ``hatch build && twine upload``
 * If there was a problem with creating Fedora pull requests, you
   can trigger them manually using ``/packit propose-downstream``
   in any open issue.
 
+__ https://github.com/teemtee/tmt/compare/release?expand=1&template=release.md
 __ https://github.com/teemtee/tmt/releases/
 __ https://tmt.readthedocs.io/en/stable/releases
 __ https://src.fedoraproject.org/rpms/tmt/pull-requests
+__ https://github.com/orgs/teemtee/projects/1/views/19
+__ https://github.com/teemtee/tmt/milestones
 __ https://copr.fedorainfracloud.org/coprs/g/teemtee/stable/builds/
 __ https://github.com/teemtee/tmt/actions/workflows/publish-images.yml
 __ https://pypi.org/project/tmt/
