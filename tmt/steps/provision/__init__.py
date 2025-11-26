@@ -478,6 +478,17 @@ class GuestCapability(enum.Enum):
     SYSLOG_ACTION_READ_CLEAR = 'syslog-action-read-clear'
 
 
+class RebootMode(enum.Enum):
+    """
+    Different reboot detection modes
+    """
+
+    #: Standard reboot detection using boot time from /proc/stat
+    BOOT_TIME = 'boot_time'
+    #: Systemd soft reboot detection using boot ID from /proc/sys/kernel/random/boot_id
+    SYSTEMD_SOFT = 'systemd_soft'
+
+
 @container
 class GuestFacts(SerializableContainer):
     """
@@ -2112,59 +2123,15 @@ class Guest(
                 guest=self, hard=False, message="Cannot check for systemctl soft-reboot support"
             ) from exc
 
-        # Store the current boot ID to detect systemd soft reboot completion
-        try:
-            boot_id_result = self.execute(
-                ShellScript('cat /proc/sys/kernel/random/boot_id'), silent=True
-            )
-            original_boot_id = boot_id_result.stdout.strip() if boot_id_result.stdout else ""
-        except Exception:
-            self.debug("Could not get boot ID, falling back to regular soft reboot detection")
-            return self.reboot(hard=False, command=command, waiting=waiting)
-
         self.debug(f"Triggering systemd soft reboot with command '{command}'.")
 
-        # Execute the soft reboot command
-        try:
-            self.execute(command, silent=True)
-        except tmt.utils.RunError as error:
-            # Expected behavior for reboot commands - connection drops
-            if 'Connection' not in str(error):
-                raise
-
-        # Wait for the guest to come back
-        def check_systemd_soft_reboot_completion() -> bool:
-            try:
-                # Check if we can connect
-                self.execute(Command('whoami'), silent=True)
-
-                # Verify boot ID is the same (indicating soft reboot, not hard reboot)
-                boot_id_result = self.execute(
-                    ShellScript('cat /proc/sys/kernel/random/boot_id'), silent=True
-                )
-                current_boot_id = boot_id_result.stdout.strip() if boot_id_result.stdout else ""
-
-                # For systemd soft reboot, boot ID should be the same
-                if current_boot_id == original_boot_id:
-                    self.debug("Systemd soft reboot completed successfully (boot ID unchanged).")
-                    return True
-                self.debug(
-                    f"Boot ID changed from {original_boot_id} to {current_boot_id}, "
-                    "this might indicate a hard reboot occurred instead."
-                )
-                return True  # Still accept it as the guest is back up
-
-            except Exception:
-                # More time is needed, raise the appropriate exception
-                raise tmt.utils.wait.WaitingIncompleteError from None
-
-        try:
-            waiting.wait(check_systemd_soft_reboot_completion, self._logger)
-            self.debug("Systemd soft reboot completed successfully.")
-            return True
-        except tmt.utils.wait.WaitingTimedOutError:
-            self.debug("Systemd soft reboot timed out.")
-            return False
+        # Use generalized perform_reboot with systemd soft reboot mode
+        return self.perform_reboot(
+            lambda: self.execute(command, silent=True),
+            waiting,
+            mode=RebootMode.SYSTEMD_SOFT,
+            fetch_reboot_marker=True,
+        )
 
     def reconnect(
         self,
@@ -3110,7 +3077,8 @@ class GuestSsh(Guest):
         self,
         action: Callable[[], Any],
         wait: Waiting,
-        fetch_boot_time: bool = True,
+        mode: RebootMode = RebootMode.BOOT_TIME,
+        fetch_reboot_marker: bool = True,
     ) -> bool:
         """
         Perform the actual reboot and wait for the guest to recover.
@@ -3121,15 +3089,11 @@ class GuestSsh(Guest):
         :py:meth:`perform_reboot` with the right ``action`` callable.
 
         :param action: a callable which will trigger the requested reboot.
-        :param timeout: amount of time in which the guest must become available
-            again.
-        :param tick: how many seconds to wait between two consecutive attempts
-            of contacting the guest.
-        :param tick_increase: a multiplier applied to ``tick`` after every
-            attempt.
-        :param fetch_boot_time: if set, the current boot time of the
-            guest would be read first, and used for testing whether the
-            reboot has been performed. This will require communication
+        :param wait: waiting configuration for guest recovery.
+        :param mode: reboot detection mode to use.
+        :param fetch_reboot_marker: if set, the current reboot marker
+            (boot time or boot ID) would be read first, and used for testing
+            whether the reboot has been performed. This will require communication
             with the guest, therefore it is recommended to use ``False``
             with hard reboot of unhealthy guests.
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
@@ -3150,7 +3114,26 @@ class GuestSsh(Guest):
 
             return int(match.group(1))
 
-        current_boot_time = get_boot_time() if fetch_boot_time else 0
+        def get_boot_id() -> str:
+            """
+            Reads boot ID from /proc/sys/kernel/random/boot_id
+            """
+
+            result = self.execute(ShellScript('cat /proc/sys/kernel/random/boot_id'), silent=True)
+            return result.stdout.strip() if result.stdout else ""
+
+        # Get the current reboot marker based on mode
+        current_marker: Union[int, str] = 0
+        if fetch_reboot_marker:
+            if mode == RebootMode.BOOT_TIME:
+                current_marker = get_boot_time()
+            elif mode == RebootMode.SYSTEMD_SOFT:
+                try:
+                    current_marker = get_boot_id()
+                except Exception:
+                    self.debug("Could not get boot ID, falling back to boot time detection")
+                    mode = RebootMode.BOOT_TIME
+                    current_marker = get_boot_time()
 
         self.debug(f"Triggering reboot with '{action}'.")
 
@@ -3165,25 +3148,41 @@ class GuestSsh(Guest):
             else:
                 raise
 
-        # Wait until we get new boot time, connection will drop and will be
-        # unreachable for some time
-        def check_boot_time() -> None:
+        # Wait until reboot marker changes (or stays the same for systemd soft reboot)
+        def check_reboot_completion() -> None:
             try:
-                new_boot_time = get_boot_time()
+                # Check if we can connect
+                self.execute(Command('whoami'), silent=True)
 
-                if new_boot_time != current_boot_time:
-                    # Different boot time and we are reconnected
-                    return
+                # Get new marker based on mode
+                if mode == RebootMode.BOOT_TIME:
+                    new_marker = get_boot_time()
+                    if new_marker != current_marker:
+                        # Different boot time and we are reconnected
+                        return
+                    # Same boot time, reboot didn't happen yet, retrying
+                    raise tmt.utils.wait.WaitingIncompleteError
 
-                # Same boot time, reboot didn't happen yet, retrying
-                raise tmt.utils.wait.WaitingIncompleteError
+                if mode == RebootMode.SYSTEMD_SOFT:
+                    new_marker = get_boot_id()
+                    # For systemd soft reboot, boot ID should stay the same
+                    if new_marker == current_marker:
+                        self.debug(
+                            "Systemd soft reboot completed successfully (boot ID unchanged)."
+                        )
+                        return
+                    self.debug(
+                        f"Boot ID changed from {current_marker} to {new_marker}, "
+                        "this might indicate a hard reboot occurred instead."
+                    )
+                    return  # Still accept it as the guest is back up
 
             except tmt.utils.RunError as error:
                 self.debug('Failed to connect to the guest.')
                 raise tmt.utils.wait.WaitingIncompleteError from error
 
         try:
-            wait.wait(check_boot_time, self._logger)
+            wait.wait(check_reboot_completion, self._logger)
 
         except tmt.utils.wait.WaitingTimedOutError:
             self.debug("Connection to guest failed after reboot.")
