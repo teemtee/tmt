@@ -21,10 +21,13 @@ mkdir -p "$(dirname "$test_reboot_file")"
 
 # Build reboot-request JSON, including only non-empty command/timeout to satisfy
 # strict Pydantic validation.
-jq -n --arg cmd "$command" --argjson timeout "${timeout:-null}" '
-  {command: $cmd, timeout: $timeout}
-  | with_entries(select(.value != null and .value != ""))
-' > "$test_reboot_file"
+{
+    printf '{'
+    first=true
+    [ -n "$command" ] && { printf '"command": "%s"' "$command"; first=false; }
+    [ -n "$timeout" ] && { $first || printf ', '; printf '"timeout": %s' "$timeout"; }
+    printf '}'
+} > "$test_reboot_file"
 
 # Flush buffers to prevent potential data loss
 sync
