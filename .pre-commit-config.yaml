@@ -253,3 +253,17 @@ repos:
           - 'py:class,py:attr,py:func,py:meth,py:exc,py:mod,py:const,py:data,py:member,ref'
           - '--rst-directives'
           - 'versionadded,versionchanged'
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.9.12
+    hooks:
+      # Keep pyproject.toml and uv.lock in sync
+      - id: uv-lock
+      # Keep pylock.toml in sync
+      - id: uv-export
+        args:
+          - "--frozen"
+          - "--format=pylock.toml"
+          - "--output-file=pylock.toml"
+          - "--all-extras"
+          - "--quiet"
