@@ -869,6 +869,18 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
             # Add test records for each result
             self._add_test_records_to_run(test_run, results_context, project_id)
             
+            # Update test run to commit test records before attaching files
+            test_run.update()
+            self.debug("Test run updated with all test records")
+            
+            # Reload test run from Polarion to get fresh state with committed records
+            from pylero.test_run import TestRun
+            test_run = TestRun(project_id=project_id, test_run_id=test_run.test_run_id)
+            self.debug(f"Reloaded test run {test_run.test_run_id} from Polarion")
+            
+            # Now attach files to test records (after test run is committed and reloaded)
+            self._attach_test_data_files(test_run, results_context, project_id)
+            
             server_url = str(PolarionWorkItem._session._server.url)
             test_run_url = (
                 f'{server_url}{"" if server_url.endswith("/") else "/"}'
@@ -999,6 +1011,69 @@ class ReportPolarion(tmt.steps.report.ReportPlugin[ReportPolarionData]):
                 executed=datetime.datetime.now(tz=datetime.timezone.utc),
                 duration=duration_seconds,
             )
+
+    def _attach_test_data_files(
+        self,
+        test_run: Any,
+        results_context: ResultsContext,
+        project_id: str,
+    ) -> None:
+        """
+        Attach test data files to test records in Polarion.
+        
+        This method attaches all files from each test's TMT_TEST_DATA directory
+        to its corresponding test record in Polarion. It must be called AFTER
+        the test run has been committed (test_run.update()).
+        
+        Args:
+            test_run: Polarion TestRun object (already committed)
+            results_context: Test results containing data_path
+            project_id: Polarion project ID
+        """
+        from tmt.export.polarion import PolarionWorkItem, find_polarion_case_ids
+        
+        for result in results_context:
+            if not result.ids or not any(result.ids.values()):
+                continue
+            
+            work_item_id, test_project_id = find_polarion_case_ids(result.ids)
+            if not work_item_id:
+                continue
+            
+            # Attach test data files to this specific test record
+            if result.data_path:
+                # Resolve the absolute path to the test data directory
+                data_dir = result.data_path
+                if not data_dir.is_absolute():
+                    data_dir = self.step.plan.execute.workdir / data_dir
+                
+                if data_dir.exists() and data_dir.is_dir():
+                    # Get all files from test data directory
+                    data_files = sorted(data_dir.iterdir())
+                    if data_files:
+                        self.info(
+                            f"Attaching {len(data_files)} file(s) from {data_dir.name}/ "
+                            f"to test record {work_item_id}"
+                        )
+                        for data_file in data_files:
+                            if data_file.is_file():
+                                try:
+                                    self.debug(f"  Attaching: {data_file.name}")
+                                    test_run.add_attachment_to_test_record(
+                                        test_case_id=work_item_id,
+                                        path=str(data_file),
+                                        title=data_file.name
+                                    )
+                                    self.debug(f"  ✓ Attached: {data_file.name}")
+                                except Exception as e:
+                                    self.warn(
+                                        f"Failed to attach {data_file.name} "
+                                        f"to test record {work_item_id}: {e}"
+                                    )
+                    else:
+                        self.debug(f"No files found in test data directory: {data_dir}")
+                else:
+                    self.debug(f"Test data directory not found: {data_dir}")
 
     def _create_polarion_testcase(
         self,

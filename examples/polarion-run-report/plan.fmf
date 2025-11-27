@@ -31,15 +31,16 @@ context:
 
 report:
     # First: Report to ReportPortal with full details
-    - how: reportportal
-      project: cockpit
-      suite-per-plan: true
-      traceback-size-limit: 1 MB
-      url: https://reportportal-cockpit.apps.dno.ocp-hub.prod.psi.redhat.com
-      token: --
-      upload: false  # Set to true when you have valid credentials
+    # Temporarily disabled for testing Polarion attachments
+    #- how: reportportal
+    #  project: cockpit
+    #  suite-per-plan: true
+    #  traceback-size-limit: 1 MB
+    #  url: https://reportportal-cockpit.apps.dno.ocp-hub.prod.psi.redhat.com
+    #  token: --
+    #  upload: false  # Set to true when you have valid credentials
     
-    # Second: Create Polarion test run with comprehensive metadata
+    # Create Polarion test run with comprehensive metadata and test data attachments
     # NOTE: Field names must match your Polarion project's Test Run configuration
     - how: polarion
       upload: false                      # Set to true when you have valid credentials
