@@ -345,6 +345,17 @@ class TestSection:
     expects: list[str] = simple_field(default_factory=list)
 
 
+@container
+class MarkdownFileSection:
+    """
+    A container for all sections in a markdown file
+    """
+
+    tests: list[TestSection] = simple_field(default_factory=list)
+    setup: list[str] = simple_field(default_factory=list)
+    cleanup: list[str] = simple_field(default_factory=list)
+
+
 def get_bz_instance() -> BugzillaInstance:
     """
     Import the bugzilla module and return BZ instance
@@ -465,7 +476,7 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
         for match in HEADING_PATTERN.finditer(md_to_html)
     ]
     warnings = []
-    test_sections: list[TestSection] = []
+    file_section = MarkdownFileSection()
     current_test: Optional[TestSection] = None
 
     for level, heading in headings:
@@ -475,11 +486,17 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
         if not section_type:
             warnings.append(f'unknown html heading "{heading}" is used')
 
+        # Collect Setup/Cleanup occurrences
+        if section_type == "Setup":
+            file_section.setup.append(heading)
+        elif section_type == "Cleanup":
+            file_section.cleanup.append(heading)
+
         # Start new test section on h1 heading
         if level == 1:
             current_test = TestSection(name=heading) if section_type == "Test" else None
             if current_test:
-                test_sections.append(current_test)
+                file_section.tests.append(current_test)
             continue
 
         # Inside an open test section
@@ -499,13 +516,20 @@ def check_md_file_respects_spec(md_path: Path) -> list[str]:
                 f'used outside of Test sections.'
             )
 
+    # Warn if more than one Setup or Cleanup
+    warnings.extend(
+        f'{len(h)} headings "{h[0]}" are used'
+        for h in (file_section.setup, file_section.cleanup)
+        if len(h) > 1
+    )
+
     # At least one test section must exist
-    if not test_sections:
+    if not file_section.tests:
         warnings.append('"Test" section doesn\'t exist in the Markdown file')
         return warnings
 
     # # Step isn't in pair with # Expect
-    for test in test_sections:
+    for test in file_section.tests:
         steps_count = len(test.steps)
         expects_count = len(test.expects)
         if steps_count != expects_count:
