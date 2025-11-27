@@ -487,7 +487,7 @@ class BootMark:
     """
 
     @classmethod
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def _fetch(cls, guest: 'Guest') -> str:
         """
         Read and return the current value of the boot mark.
