@@ -586,6 +586,31 @@ def _transform_device_device(
 
 
 @transforms
+def _transform_device_vendor(
+    constraint: tmt.hardware.IntegerConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
+    """
+    Transform device.vendor constraint to Beaker's Devices/Vendor_id filter.
+
+    This maps to Beaker's Devices/Vendor_id field which allows filtering by
+    vendor ID, for example vendor_id="0x10de" for Nvidia.
+    """
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator, str(constraint.value)
+    )
+
+    # Create device element with vendor_id attribute
+    device_element = MrackHWDeviceElement(
+        beaker_operator, actual_value, attribute_name='vendor_id'
+    )
+
+    if negate:
+        return MrackHWNotGroup(children=[device_element])
+
+    return device_element
+
+
+@transforms
 def _transform_device_device_name(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
