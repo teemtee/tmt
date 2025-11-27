@@ -92,6 +92,7 @@ class RebootContext(HasEnvironment):
         :return: ``True`` when the reboot has taken place, ``False``
             otherwise.
         """
+
         if not self.requested:
             return False
 
@@ -125,7 +126,7 @@ class RebootContext(HasEnvironment):
             reboot_command: Optional[ShellScript] = None
             reboot_mode: RebootMode = RebootMode.SOFT
 
-            if reboot_data.get('systemd_soft_reboot') == 'true':
+            if reboot_data.get('systemd-soft-reboot') == 'true':
                 reboot_mode = RebootMode.SYSTEMD_SOFT
 
             if reboot_data.get('command'):
