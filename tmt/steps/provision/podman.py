@@ -411,11 +411,14 @@ class GuestContainer(tmt.Guest):
         interactive: bool = False,
         on_process_start: Optional[OnProcessStartCallback] = None,
         on_process_end: Optional[OnProcessEndCallback] = None,
+        sourced_files: Optional[list[Path]] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
         """
         Execute given commands in podman via shell
         """
+
+        sourced_files = sourced_files or []
 
         if not self.container and not self.is_dry_run:
             raise tmt.utils.ProvisionError('Could not execute without provisioned container.')
@@ -429,6 +432,9 @@ class GuestContainer(tmt.Guest):
         # Change to given directory on guest if cwd provided
         if cwd is not None:
             script += ShellScript(f'cd {quote(str(cwd))}')
+
+        for file in sourced_files:
+            script += ShellScript(f'source {quote(str(file))}')
 
         if isinstance(command, Command):
             script += command.to_script()
