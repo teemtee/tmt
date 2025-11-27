@@ -287,11 +287,16 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                 return outcome
 
             if isinstance(exc, Exception):
+                self.write_command_report(
+                    path=playbook_log_filepath, label=playbook_name, timer=timer, exc=exc
+                )
+
                 outcome.results.append(
                     tmt.result.PhaseResult(
                         name=playbook_name,
                         result=ResultOutcome.ERROR,
                         note=tmt.utils.render_exception_as_notes(exc),
+                        log=[playbook_log_filepath.relative_to(self.step_workdir)],
                     )
                 )
 
