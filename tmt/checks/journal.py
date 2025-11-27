@@ -192,22 +192,14 @@ class JournalCheck(Check):
         if exc:
             outcome = ResultOutcome.ERROR
 
+            invocation.phase.write_command_report(
+                path=path, label='journal log', timer=timer, command=script, exc=exc
+            )
+
             if isinstance(exc, tmt.utils.RunError):
                 output = exc.output
 
-                invocation.phase.write_command_report(
-                    path=path, label='journal log', timer=timer, command=script, exc=exc
-                )
-
                 failures = self._extract_failures(output.stdout or '')
-
-            else:
-                invocation.phase.write_report(
-                    path=path,
-                    label='journal log',
-                    timer=timer,
-                    body=tmt.utils.render_exception(exc),
-                )
 
         elif output:
             invocation.phase.write_command_report(

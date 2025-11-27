@@ -2856,7 +2856,7 @@ def render_command_report(
     label: Optional[str] = None,
     command: Optional[Union[ShellScript, Command]] = None,
     output: None = None,
-    exc: RunError,
+    exc: Exception,
 ) -> Iterator[str]:
     pass
 
@@ -2866,7 +2866,7 @@ def render_command_report(
     label: Optional[str] = None,
     command: Optional[Union[ShellScript, Command]] = None,
     output: Optional[CommandOutput] = None,
-    exc: Optional[RunError] = None,
+    exc: Optional[Exception] = None,
 ) -> Iterator[str]:
     """
     Format a command output for a report file.
@@ -2877,12 +2877,12 @@ def render_command_report(
 
     .. code-block::
 
-        # {{ label }}                       // When `label` was provided.
+        # {label}                       // When `label` was provided.
 
-        # {{ command }}                     // When `command` was provided.
+        # {command}                     // When `command` was provided.
 
-        # finished successfully             // When `output` was provided.
-        # exit code: {{ exc.returncode }}   // When `output` was not provided, but `exc` was.
+        # finished successfully         // When `output` was provided.
+        # exit code: {exc.returncode}   // When `output` was not provided, but `exc` was.
 
         # stdout (N lines)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2894,13 +2894,21 @@ def render_command_report(
         ...
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+    .. note::
+
+        This method is focusing on reporting of command outcomes.
+        For reports consisting of arbitrary topics see
+        :py:meth:`render_report`.
+
     :param label: a string describing the intent of the command. It is
         useful for user who reads the report file eventually.
     :param command: command that was executed.
-    :param output: if set, it contains output of the command. It has
-        higher priority than ``exc``.
-    :param exc: if set, it represents a failed command, and input stored
-        in it is rendered.
+    :param output: if set, it contains output of the command which
+        is added to the report.
+    :param exc: if set, and is an instance of :py:class:`RunError`, it
+        represents a failed command, and the recorded output is added to
+        the report. Instances of other exception classes are rendered
+        as tracebacks.
     :yields: lines of the command report.
     """
 
@@ -2912,20 +2920,25 @@ def render_command_report(
         yield f'# {command.to_element()}'
         yield ''
 
-    if exc:
+    if isinstance(exc, RunError):
         yield f'# exit code: {exc.returncode}'
         yield ''
-
-    else:
-        yield '# finished successfully'
-        yield ''
-
-    if output is not None:
-        yield from render_run_exception_streams(output, verbose=1)
+        yield from render_run_exception_streams(exc.output, verbose=1)
         yield ''
 
     elif exc is not None:
-        yield from render_run_exception_streams(exc.output, verbose=1)
+        yield '# failed to complete successfully'
+        yield ''
+        yield from render_exception(exc, traceback_verbosity=TracebackVerbosity.LOCALS)
+
+    else:
+        # Type checker cannot inferre that if `exc is None`, `output`
+        # must be a valid value.
+        assert output is not None  # narrow type
+
+        yield '# finished successfully'
+        yield ''
+        yield from render_run_exception_streams(output, verbose=1)
         yield ''
 
 
@@ -2935,32 +2948,38 @@ def render_report(
     """
     Format an arbitrary body of text for a report file.
 
-    To provide unified look of various files reporting command outputs,
+    To provide unified look of various files reporting action outcomes,
     this helper would combine its arguments and emit lines the caller
     may then write to a file. The following template is used:
 
     .. code-block::
 
-        # {{ label }}
-        # Acquired at {{ timer.start_time_formatted }}
-        # Finished at {{ timer.end_time_formatted }}
-        # Duration {{ timer.duration }}
+        # {label}
+        # Started at {timer.start_time_formatted}, finished at {timer.end_time_formatted} ({timer.duration})
 
-        {{ body }}  // When `body` was provided.
+        {body}  // When `body` was provided.
+
+    .. note::
+
+        This method is focusing on reporting of arbitrary topics.
+        For reports of command output see see
+        :py:meth:`render_command_report`.
 
     :param label: a string describing the intent of the command. It is
         useful for user who reads the report file eventually.
-    :param timestamp: a timestamp marking the moment the report is
-        attributed to.
+    :param timer: a stopwatch providing timing-related info about
+        the reported actions.
     :param report: if provided, represents a sequence of lines to emit
         into the report file.
     :yields: lines of the report.
-    """
+    """  # noqa: E501
 
     yield f'# {label}'
-    yield f'# Acquired at {timer.start_time_formatted}'
-    yield f'# Finished at {timer.end_time_formatted}'
-    yield f'# Duration {timer.duration}'
+    yield (
+        f'# Started at {timer.start_time_formatted},'
+        f' finished at {timer.end_time_formatted}'
+        f' ({timer.duration})'
+    )
     yield ''
 
     if report is not None:
