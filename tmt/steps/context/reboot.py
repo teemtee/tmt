@@ -100,6 +100,7 @@ class RebootContext(HasEnvironment):
         :return: ``True`` when the reboot has taken place, ``False``
             otherwise.
         """
+
         if not self.requested:
             return False
 

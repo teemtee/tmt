@@ -27,7 +27,7 @@ mkdir -p "$(dirname "$test_reboot_file")"
     first=true
     [ -n "$command" ]             && { $first || printf ', '; printf '"command": "%s"' "$command";  first=false; }
     [ -n "$timeout" ]             && { $first || printf ', '; printf '"timeout": %s' "$timeout";    first=false; }
-    [ -n "$systemd_soft_reboot" ] && { $first || printf ', '; printf '"systemd_soft_reboot": true'; first=false; }
+    [ -n "$systemd_soft_reboot" ] && { $first || printf ', '; printf '"systemd-soft-reboot": true'; first=false; }
     printf '}'
 } > "$test_reboot_file"
 
