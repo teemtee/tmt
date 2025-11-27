@@ -964,8 +964,6 @@ class MetadataContainer(BaseModel):
             return cls.model_validate(tmt.utils.yaml_to_dict(yaml))
 
         except ValidationError as error:
-            import tmt.utils
-
             raise tmt.utils.SpecificationError("Invalid metadata in YAML data.") from error
 
     @classmethod
@@ -976,6 +974,4 @@ class MetadataContainer(BaseModel):
             return cls.model_validate_json(json_data)
 
         except ValidationError as error:
-            import tmt.utils
-
             raise tmt.utils.SpecificationError("Invalid metadata in JSON data.") from error
