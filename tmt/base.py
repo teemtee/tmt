@@ -139,16 +139,24 @@ EXTRA_KEYS_PREFIX = 'extra-'
 # Extra keys used for identification in Result class
 EXTRA_RESULT_IDENTIFICATION_KEYS = ['extra-nitrate', 'extra-task']
 
+
+def patterns(tag: str, *texts: str) -> list[Pattern[str]]:
+    """
+    Generate list of compiled regex patterns for given tag and texts
+
+    :param tag: name of HTML tag
+    :param texts: list of text patterns to match
+    :return: list of compiled regex patterns
+    """
+    return [re.compile(rf'<\s*{tag}\s*>\s*{text}\s*<\s*/\s*{tag}\s*>') for text in texts]
+
+
 SECTIONS_HEADINGS = {
-    'Setup': [re.compile(r'^<h1>Setup</h1>$')],
-    'Test': [re.compile(r'^<h1>Test</h1>$'), re.compile(r'^<h1>Test .*</h1>$')],
-    'Step': [re.compile(r'^<h2>Step</h2>$'), re.compile(r'^<h2>Test Step</h2>$')],
-    'Expect': [
-        re.compile(r'^<h2>Expect</h2>$'),
-        re.compile(r'^<h2>Result</h2>$'),
-        re.compile(r'^<h2>Expected Result</h2>$'),
-    ],
-    'Cleanup': [re.compile(r'^<h1>Cleanup</h1>$')],
+    'Setup': patterns('h1', 'Setup'),
+    'Test': patterns('h1', 'Test', r'Test\s+.*'),
+    'Step': patterns('h2', 'Step', r'Test\s+Step'),
+    'Expect': patterns('h2', 'Expect', 'Result', r'Expected\s+Result'),
+    'Cleanup': patterns('h1', 'Cleanup'),
 }
 
 # Reguar expression to match a required property in a schema validation error
