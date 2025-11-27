@@ -201,14 +201,13 @@ class MrackHWKeyValue(MrackHWElement):
 @container(init=False)
 class MrackHWDeviceElement(MrackHWElement):
     """
-    An element for device with op and description attributes
+    An element for device with op and value attributes
     """
 
-    def __init__(self, operator: str, description: str) -> None:
+    def __init__(self, operator: str, value: str, attribute_name: str = 'value') -> None:
         super().__init__('device')
 
-        # Use underscore prefix for attributes in mrack
-        self.attributes = {'_op': operator, '_description': description}
+        self.attributes = {'_op': operator, f'_{attribute_name}': value}
 
 
 BeakerizedConstraint = Union[MrackBaseHWElement, dict[str, Any]]
@@ -562,6 +561,31 @@ def _transform_device_driver(
 
 
 @transforms
+def _transform_device_device(
+    constraint: tmt.hardware.IntegerConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
+    """
+    Transform device.device constraint to Beaker's Devices/Device_id filter.
+
+    This maps to Beaker's Devices/Device_id field which allows filtering by
+    device ID, for example device_id="1645".
+    """
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator, str(constraint.value)
+    )
+
+    # Create device element with device_id attribute
+    device_element = MrackHWDeviceElement(
+        beaker_operator, actual_value, attribute_name='device_id'
+    )
+
+    if negate:
+        return MrackHWNotGroup(children=[device_element])
+
+    return device_element
+
+
+@transforms
 def _transform_device_device_name(
     constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
 ) -> MrackBaseHWElement:
@@ -575,7 +599,9 @@ def _transform_device_device_name(
         constraint.operator, constraint.value
     )
 
-    device_element = MrackHWDeviceElement(beaker_operator, actual_value)
+    device_element = MrackHWDeviceElement(
+        beaker_operator, actual_value, attribute_name='description'
+    )
 
     if negate:
         return MrackHWNotGroup(children=[device_element])
