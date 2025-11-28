@@ -31,7 +31,10 @@ fi
 step "Get the latest changes from main..."
 git fetch
 git checkout release
-git merge origin/main
+if ! git merge origin/main; then
+    echo "Merge conflicts detected. Please resolve them manually."
+    exit 1
+fi
 
 # Prepare the release notes directories
 git_root=$(git rev-parse --show-toplevel)
@@ -52,7 +55,10 @@ mv "${pending_dir}"/*.fmf "${target_dir}"
 # Commit the changes
 step "Commit the changes..."
 git add "$notes_dir"
-git commit -m "Release ${version}"
+if ! git commit -m "Release ${version}"; then
+    echo "Failed to commit changes."
+    exit 1
+fi
 
 # Push the changes
 step "Push the changes..."
