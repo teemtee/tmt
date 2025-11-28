@@ -1,0 +1,3 @@
+description: |
+  The ``tmt-reboot`` command now produces strictly valid reboot-request data by
+  dropping empty ``command`` and ``timeout`` values.
