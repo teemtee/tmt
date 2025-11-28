@@ -3,7 +3,7 @@ import os
 import re
 import types
 import urllib.parse
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import suppress
 from functools import cache
 from typing import (
@@ -51,10 +51,14 @@ DEFAULT_PRODUCT: Any = None
 
 SectionsReturnType = tuple[str, str, str, str]
 HeadingsType = list[list[Union[int, str]]]
-SectionsHeadingsType = dict[str, HeadingsType]
+SectionsHeadingsType = dict[re.Pattern[str], HeadingsType]
+SectionsMappingType = dict[re.Pattern[str], str]
 
 # TODO: why this exists?
 log = fmf.utils.Logging('tmt').logger
+
+# Pattern to match any heading from h1 to h4
+HEADING_PATTERN = re.compile(r'^<h[1-4]>.+?</h[1-4]>$', re.MULTILINE)
 
 
 def import_nitrate() -> Nitrate:
@@ -126,9 +130,13 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
     import tmt.base
 
     sections_headings: SectionsHeadingsType = {
-        heading: []
-        for heading_list in tmt.base.SECTIONS_HEADINGS.values()
-        for heading in heading_list
+        pattern: [] for patterns in tmt.base.SECTIONS_HEADINGS.values() for pattern in patterns
+    }
+
+    section_mapping: SectionsMappingType = {  # This exists to avoid inspecting the regex string
+        pattern: section
+        for section, patterns_list in tmt.base.SECTIONS_HEADINGS.items()
+        for pattern in patterns_list
     }
 
     html = tmt.utils.markdown_to_html(test_md)
@@ -137,35 +145,40 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
     for key in sections_headings:
         result: HeadingsType = []
         i = 0
-        while html_splitlines:
+        while i < len(html_splitlines):
             try:
-                if re.search("^" + key + "$", html_splitlines[i]):
+                line = html_splitlines[i]
+
+                if key.match(line):
                     html_content = ''
-                    if key.startswith('<h1>Test'):
-                        html_content = (
-                            html_splitlines[i].replace('<h1>', '<b>').replace('</h1>', '</b>')
-                        )
+
+                    if section_mapping[key] == 'Test':
+                        html_content = line.replace('<h1>', '<b>').replace('</h1>', '</b>')
+
                     for j in range(i + 1, len(html_splitlines)):
-                        if re.search("^<h[1-4]>(.+?)</h[1-4]>$", html_splitlines[j]):
+                        next_line = html_splitlines[j]
+                        if HEADING_PATTERN.match(next_line):
                             result.append([i, html_content])
-                            i = j - 1
+                            i = j - 1  # Move i to just before the next heading
                             break
-                        html_content += html_splitlines[j] + "\n"
-                        # Check end of the file
+
+                        html_content += next_line + "\n"
+
+                        # Handle end of file
                         if j + 1 == len(html_splitlines):
                             result.append([i, html_content])
+                            i = j  # Move to end of file
+                            break
             except IndexError:
-                sections_headings[key] = result
                 break
             i += 1
-            if i >= len(html_splitlines):
-                sections_headings[key] = result
-                break
 
-    def concatenate_headings_content(headings: tuple[str, ...]) -> HeadingsType:
+        sections_headings[key] = result
+
+    def concatenate_headings_content(headings: Sequence[re.Pattern[str]]) -> HeadingsType:
         content = []
-        for v in headings:
-            content += sections_headings[v]
+        for pattern in headings:
+            content += sections_headings[pattern]
         return content
 
     def enumerate_content(content: HeadingsType) -> HeadingsType:
@@ -176,32 +189,28 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
 
         return content
 
-    sorted_test = sorted(concatenate_headings_content(('<h1>Test</h1>', '<h1>Test .*</h1>')))
+    sorted_test = sorted(concatenate_headings_content(tmt.base.SECTIONS_HEADINGS['Test']))
 
     sorted_step = sorted(
-        enumerate_content(concatenate_headings_content(('<h2>Step</h2>', '<h2>Test Step</h2>')))
+        enumerate_content(concatenate_headings_content(tmt.base.SECTIONS_HEADINGS['Step']))
         + sorted_test
     )
     step = ''.join([f"{v[1]}" for v in sorted_step])
 
     sorted_expect = sorted(
-        enumerate_content(
-            concatenate_headings_content(
-                ('<h2>Expect</h2>', '<h2>Result</h2>', '<h2>Expected Result</h2>')
-            )
-        )
+        enumerate_content(concatenate_headings_content(tmt.base.SECTIONS_HEADINGS['Expect']))
         + sorted_test
     )
     expect = ''.join([f"{v[1]}" for v in sorted_expect])
 
-    def check_section_exists(text: str) -> str:
+    def check_section_exists(pattern: re.Pattern[str]) -> str:
         try:
-            return str(sections_headings[text][0][1])
-        except (IndexError, KeyError):
+            return str(sections_headings[pattern][0][1])
+        except IndexError:
             return ''
 
-    setup = check_section_exists('<h1>Setup</h1>')
-    cleanup = check_section_exists('<h1>Cleanup</h1>')
+    setup = check_section_exists(tmt.base.SECTIONS_HEADINGS['Setup'][0])
+    cleanup = check_section_exists(tmt.base.SECTIONS_HEADINGS['Cleanup'][0])
 
     return step, expect, setup, cleanup
 
