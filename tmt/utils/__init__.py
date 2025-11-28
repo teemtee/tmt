@@ -5595,14 +5595,13 @@ def normalize_data_amount(
     logger: tmt.log.Logger,
 ) -> 'Size':
     from pint import Quantity
-    from pint.errors import PintError
 
     if isinstance(raw_value, Quantity):
         # Validate existing quantity can be converted to bytes
         try:
             raw_value.to('bytes')
             return raw_value
-        except PintError as exc:
+        except Exception as exc:
             raise NormalizationError(
                 key_address, raw_value, 'a valid data quantity (e.g., 1MB, 32MiB, 100KiB)'
             ) from exc
@@ -5615,7 +5614,7 @@ def normalize_data_amount(
             # Check unit compatibility by converting to bytes
             quantity.to('bytes')
             return quantity
-        except PintError as exc:
+        except Exception as exc:
             raise NormalizationError(
                 key_address, raw_value, 'a valid data quantity (e.g., 1MB, 32MiB, 100KiB)'
             ) from exc
