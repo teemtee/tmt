@@ -27,11 +27,10 @@ rlJournalStart
 
             package_manager="dnf\|yum"
 
-            grep "selinuxfs" /proc/filesystems &> /dev/null
-            if [ $? -eq 1 ]; then
-                selinux="no"
-            else
+            if [ -e "/sys/fs/selinux/enforce" ]; then
                 selinux="yes"
+            else
+                selinux="no"
             fi
 
             if [ "$(whoami)" != "root" ]; then
@@ -54,13 +53,7 @@ rlJournalStart
             distro="Fedora Linux [[:digit:]][[:digit:]] (Container Image)"
             kernel="$(uname -r)"
             package_manager="dnf"
-
-            grep "selinuxfs" /proc/filesystems &> /dev/null
-            if [ $? -eq 1 ]; then
-                selinux="no"
-            else
-                selinux="yes"
-            fi
+            selinux="no"
 
             is_superuser="yes"
             bfu_is_superuser="no"
