@@ -15,7 +15,7 @@ from tmt.steps.prepare.artifact.providers import (
     DownloadError,
     provides_artifact_provider,
 )
-from tmt.steps.provision import Guest
+from tmt.steps.provision import Guest, TransferOptions
 
 
 @container
@@ -121,7 +121,17 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
                     silent=True,
                 )
             else:  # Local file, push it to the guest
-                guest.push(tmt.utils.Path(artifact.location), destination)
+                # Use non-recursive transfer options for single files
+                # to avoid podman cp adding '/.' suffix to file paths
+                file_transfer_options = TransferOptions(
+                    protect_args=True,
+                    relative=False,
+                    recursive=False,
+                    compress=True,
+                )
+                guest.push(
+                    tmt.utils.Path(artifact.location), destination, options=file_transfer_options
+                )
             self.logger.info(f"Successfully downloaded: '{artifact.id}'.")
         except Exception as error:
             raise DownloadError(f"Failed to download '{artifact}'.") from error

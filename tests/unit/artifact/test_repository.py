@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -367,13 +368,15 @@ def test_id_extraction(root_logger):
     assert provider.id == "https://download.docker.com/linux/centos/docker-ce.repo"
 
 
-def test_artifacts_before_fetch(root_logger):
-    """Test that accessing artifacts before fetch_contents raises error"""
+def test_artifacts_returns_empty_list(root_logger):
+    """Test that artifacts property returns empty list for repository providers"""
 
     provider = RepositoryFileProvider("repository-url:https://example.com/test.repo", root_logger)
 
-    with pytest.raises(GeneralError, match="Call fetch_contents first"):
-        _ = provider.artifacts
+    # Repository providers always return empty list - packages come from remote repos
+    artifacts = provider.artifacts
+    assert artifacts == []
+    assert isinstance(artifacts, Sequence)
 
 
 def test_fetch_contents(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tmppath):
@@ -392,6 +395,13 @@ def test_fetch_contents(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tm
         "repository-url:https://download.docker.com/linux/centos/docker-ce.repo", root_logger
     )
 
+    # Initialize the repository first (this is what contribute_to_shared_repo does)
+    provider.contribute_to_shared_repo(
+        guest=mock_guest,
+        download_path=tmppath / "download",
+        shared_repo_dir=tmppath / "shared",
+    )
+
     # Call fetch_contents
     artifacts_dir = tmppath / "artifacts"
     result = provider.fetch_contents(mock_guest, artifacts_dir)
@@ -400,23 +410,15 @@ def test_fetch_contents(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tm
     assert result == []
 
     # Verify package manager methods were called
+    # install_repository is called once in _discover_packages (called from fetch_contents)
+    # contribute_to_shared_repo just creates the Repository object, doesn't install it
     mock_package_manager.install_repository.assert_called_once()
     mock_package_manager.list_packages.assert_called_once()
 
-    # Verify artifacts property now works
+    # Repository providers always return empty list from artifacts property
+    # The actual packages are available via the installed repository
     artifacts = provider.artifacts
-    assert len(artifacts) == 3
-
-    # Verify all expected packages are present
-    artifact_names = {a._raw_artifact["name"] for a in artifacts}
-    assert artifact_names == {"docker-ce", "docker-ce-cli", "containerd.io"}
-
-    # Verify docker-ce artifact properties
-    docker_ce = next(a for a in artifacts if a._raw_artifact["name"] == "docker-ce")
-    assert docker_ce._raw_artifact["version"] == "20.10.7"
-    assert docker_ce._raw_artifact["epoch"] == "1"
-    assert docker_ce._raw_artifact["release"] == "3.el8"
-    assert docker_ce._raw_artifact["arch"] == "x86_64"
+    assert artifacts == []
 
 
 def test_malformed_packages(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tmppath, caplog):
@@ -434,14 +436,20 @@ def test_malformed_packages(mock_repo_file_fetch, mock_guest_and_pm, root_logger
 
     provider = RepositoryFileProvider("repository-url:https://example.com/test.repo", root_logger)
 
+    # Initialize the repository first
+    provider.contribute_to_shared_repo(
+        guest=mock_guest,
+        download_path=tmppath / "download",
+        shared_repo_dir=tmppath / "shared",
+    )
+
     # Call fetch_contents
     artifacts_dir = tmppath / "artifacts"
     provider.fetch_contents(mock_guest, artifacts_dir)
 
+    # Repository providers always return empty list - packages are in the remote repo
     artifacts = provider.artifacts
-    assert len(artifacts) == 2
-    artifact_names = {a._raw_artifact["name"] for a in artifacts}
-    assert artifact_names == {"docker-ce", "bash"}
+    assert artifacts == []
 
     # Check logs for warnings about invalid packages
     assert (
@@ -451,6 +459,9 @@ def test_malformed_packages(mock_repo_file_fetch, mock_guest_and_pm, root_logger
     assert "String 'invalid-package-string' does not match N-E:V-R.A format" in caplog.text
     assert "Failed to parse malformed package string 'another-malformed'. Skipping." in caplog.text
     assert "String 'another-malformed' does not match N-E:V-R.A format" in caplog.text
+
+    # Verify that the valid packages were counted (check debug log)
+    assert "Successfully discovered '2' packages" in caplog.text
 
 
 def test_empty_repository(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tmppath):
@@ -463,13 +474,20 @@ def test_empty_repository(mock_repo_file_fetch, mock_guest_and_pm, root_logger, 
 
     provider = RepositoryFileProvider("repository-url:https://example.com/test.repo", root_logger)
 
+    # Initialize the repository first
+    provider.contribute_to_shared_repo(
+        guest=mock_guest,
+        download_path=tmppath / "download",
+        shared_repo_dir=tmppath / "shared",
+    )
+
     # Call fetch_contents
     artifacts_dir = tmppath / "artifacts"
     provider.fetch_contents(mock_guest, artifacts_dir)
 
-    # Verify artifacts is empty but accessible
+    # Repository providers always return empty list
     artifacts = provider.artifacts
-    assert len(artifacts) == 0
+    assert artifacts == []
 
 
 def test_unexpected_error_handling(
@@ -486,6 +504,13 @@ def test_unexpected_error_handling(
 
     provider = RepositoryFileProvider("repository-url:https://example.com/test.repo", root_logger)
 
+    # Initialize the repository first
+    provider.contribute_to_shared_repo(
+        guest=mock_guest,
+        download_path=tmppath / "download",
+        shared_repo_dir=tmppath / "shared",
+    )
+
     # Patch parse_rpm_string to raise an unexpected exception
     with patch(
         'tmt.steps.prepare.artifact.providers.repository.parse_rpm_string',
@@ -495,9 +520,12 @@ def test_unexpected_error_handling(
         artifacts_dir = tmppath / "artifacts"
         provider.fetch_contents(mock_guest, artifacts_dir)
 
-        # Artifacts should be empty since parsing failed
+        # Repository providers always return empty list
         artifacts = provider.artifacts
-        assert len(artifacts) == 0
+        assert artifacts == []
 
         # Check log for warning about unexpected error
         assert "Unexpected error" in caplog.text
+
+        # Verify package count is 0 due to parsing failure
+        assert "Successfully discovered '0' packages" in caplog.text
