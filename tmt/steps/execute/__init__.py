@@ -519,6 +519,10 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
     #: If set, plugin should run tests only from this discover phase.
     discover_phase: Optional[str] = None
 
+    #: Flag to indicate whether :py:meth:`Guest.push` should be invoked before each tests.
+    #: As it will overwrite remote content, some scenarios, namely ``tmt try``, need to avoid it.
+    skip_guest_push: bool = False
+
     def __init__(
         self,
         *,
@@ -529,8 +533,6 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
     ) -> None:
         super().__init__(logger=logger, step=step, data=data, workdir=workdir)
         self._results: list[tmt.Result] = []
-        # Flag to indicate if this is a tmt try execute action that should not push files
-        self._tmt_try_no_push = False
         if tmt.steps.Login._opt('test'):
             self._login_after_test = tmt.steps.Login(logger=logger, step=self.step, order=90)
 

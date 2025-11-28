@@ -7,7 +7,7 @@ import os
 import re
 import shlex
 import textwrap
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from itertools import groupby
 from typing import Any, Callable, ClassVar, Optional, Union, cast
 
@@ -27,7 +27,7 @@ import tmt.templates
 import tmt.utils
 from tmt import Plan
 from tmt.base import RunData
-from tmt.steps import Phase
+from tmt.steps.execute import ExecutePlugin
 from tmt.steps.prepare import PreparePlugin
 from tmt.utils import Command, GeneralError, MetadataError, Path
 from tmt.utils.themes import style
@@ -570,19 +570,20 @@ class Try(tmt.utils.Common):
 
         # Set a flag to indicate this is an interactive execute-only operation
         # that should not push files to the guest (preserving manual changes)
-        phases_to_reset: list[Phase] = []
-        for phase in plan.execute.phases():
-            # Set the flag for execute plugins that support it
-            if hasattr(phase, '_tmt_try_no_push'):
-                setattr(phase, '_tmt_try_no_push', True)  # noqa: B010
-                phases_to_reset.append(phase)
+        phases_to_reset: list[tuple[ExecutePlugin[Any], bool]] = []
+        for phase in cast(
+            Iterable[ExecutePlugin[Any]], plan.execute.phases(classes=(ExecutePlugin,))
+        ):
+            original_value = phase.skip_guest_push
+            phase.skip_guest_push = True
+            phases_to_reset.append((phase, original_value))
 
         try:
             plan.execute.go(force=True)
         finally:
             # Reset the flag to ensure future test actions work correctly
-            for phase in phases_to_reset:
-                setattr(phase, '_tmt_try_no_push', False)  # noqa: B010
+            for phase, original_value in phases_to_reset:
+                phase.skip_guest_push = original_value
 
     @Action("report", shortcut="r", order=9, group=2)
     def action_report(self, plan: Plan) -> None:
