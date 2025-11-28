@@ -198,6 +198,52 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
             if not any(pattern.search(artifact.id) for pattern in exclude_patterns):
                 yield artifact
 
+    def get_repositories(self) -> list['Repository']:
+        """
+        Return a list of Repository objects that this provider manages.
+
+        Repository-based providers (like repository-url) should override this
+        to return their Repository objects. File-based providers return an
+        empty list since they contribute files to the shared repository instead.
+
+        :returns: list of Repository objects to be installed on the guest.
+        """
+        return []
+
+    def contribute_to_shared_repo(
+        self,
+        guest: Guest,
+        download_path: Path,
+        shared_repo_dir: Path,
+        exclude_patterns: Optional[list[Pattern[str]]] = None,
+    ) -> None:
+        """
+        Contribute artifacts to the shared repository.
+
+        This is the main interface for providers to contribute their artifacts
+        to the shared repository. The default implementation:
+        1. Downloads artifacts to download_path using fetch_contents
+        2. Copies them to shared_repo_dir
+
+        Providers that handle repositories differently (like repository-url)
+        should override this method.
+
+        :param guest: the guest on which the artifacts should be downloaded.
+        :param download_path: path into which the artifacts should be downloaded.
+        :param shared_repo_dir: path to the shared repository directory where
+            artifacts should be contributed.
+        :param exclude_patterns: if set, artifacts whose names match any
+            of the given regular expressions would not be downloaded.
+        """
+        # Download artifacts to the provider-specific download path
+        downloaded_paths = self.fetch_contents(guest, download_path, exclude_patterns)
+
+        # If we downloaded anything, copy it to the shared repository
+        if downloaded_paths:
+            guest.execute(
+                ShellScript(f"cp -r {quote(str(download_path))}/. {quote(str(shared_repo_dir))}")
+            )
+
 
 @container
 class Repository:

@@ -371,7 +371,13 @@ def test_artifacts_before_fetch(root_logger):
 
     provider = RepositoryFileProvider("repository-url:https://example.com/test.repo", root_logger)
 
-    with pytest.raises(GeneralError, match="Call fetch_contents first"):
+    with pytest.raises(
+        GeneralError,
+        match=(
+            r"Artifacts not yet discovered. Call fetch_contents\(\) "
+            r"or contribute_to_shared_repo\(\) first."
+        ),
+    ):
         _ = provider.artifacts
 
 
@@ -500,3 +506,34 @@ def test_unexpected_error_handling(
 
         # Check log for warning about unexpected error
         assert "Unexpected error" in caplog.text
+
+
+def test_contribute_to_shared_repo(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tmppath):
+    """Test that contribute_to_shared_repo delegates to fetch_contents"""
+
+    mock_guest, mock_package_manager = mock_guest_and_pm
+
+    # Mock list_packages to return some RPMs
+    mock_package_manager.list_packages.return_value = [
+        "docker-ce-1:20.10.7-3.el8.x86_64",
+        "docker-ce-cli-1:20.10.7-3.el8.x86_64",
+    ]
+
+    provider = RepositoryFileProvider(
+        "repository-url:https://download.docker.com/linux/centos/docker-ce.repo", root_logger
+    )
+
+    # Call contribute_to_shared_repo
+    artifacts_dir = tmppath / "artifacts"
+    shared_repo_dir = tmppath / "shared"
+    provider.contribute_to_shared_repo(mock_guest, artifacts_dir, shared_repo_dir)
+
+    # Verify package manager methods were called (proving delegation to fetch_contents worked)
+    mock_package_manager.install_repository.assert_called_once()
+    mock_package_manager.list_packages.assert_called_once()
+
+    # Verify artifacts were discovered
+    artifacts = provider.artifacts
+    assert len(artifacts) == 2
+    artifact_names = {a._raw_artifact["name"] for a in artifacts}
+    assert artifact_names == {"docker-ce", "docker-ce-cli"}

@@ -7,9 +7,14 @@ from tmt.container import container, field
 from tmt.log import Logger
 from tmt.steps import PluginOutcome
 from tmt.steps.prepare import PreparePlugin, PrepareStepData
-from tmt.steps.prepare.artifact.providers import _PROVIDER_REGISTRY, ArtifactInfo, ArtifactProvider
+from tmt.steps.prepare.artifact.providers import (
+    _PROVIDER_REGISTRY,
+    ArtifactInfo,
+    ArtifactProvider,
+)
+from tmt.steps.prepare.artifact.providers.repository import create_repository
 from tmt.steps.provision import Guest
-from tmt.utils import Environment
+from tmt.utils import Environment, Path
 
 
 @container
@@ -70,16 +75,80 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         logger: Logger,
     ) -> PluginOutcome:
         outcome = super().go(guest=guest, environment=environment, logger=logger)
-        # TODO: Get and handle repositories
-        # TODO: Create the local repository
+
+        # Prepare a shared directory on the guest for aggregating artifacts.
+        shared_repo_dir = self.plan_workdir / 'artifact-shared-repo'
+
+        # Ensure the shared repository directory exists on the guest.
+        guest.execute(
+            tmt.utils.ShellScript(f"mkdir -p {tmt.utils.quote(str(shared_repo_dir))}"),
+            silent=True,
+        )
+
+        # Initialize all providers and have them contribute to the shared repo
+        providers: list[ArtifactProvider[ArtifactInfo]] = []
         for raw_provider_id in self.data.provide:
-            provider_class = get_artifact_provider(raw_provider_id)
-            provider_id_sanitized = tmt.utils.sanitize_name(raw_provider_id, allow_slash=False)
-            logger = self._logger.descend(raw_provider_id)
-            provider = provider_class(raw_provider_id, logger=logger)
-            download_path = self.plan_workdir / "artifacts" / provider_id_sanitized
-            # TODO: Not using exclude_pattern yet.
-            provider.fetch_contents(guest, download_path)
+            try:
+                provider_class = get_artifact_provider(raw_provider_id)
+
+                # Sanitize the provider ID to use as a directory name
+                provider_id_sanitized = tmt.utils.sanitize_name(raw_provider_id, allow_slash=False)
+                provider_logger = self._logger.descend(raw_provider_id)
+                provider = provider_class(raw_provider_id, logger=provider_logger)
+                providers.append(provider)
+
+                # Define a unique download path for this provider's artifacts
+                download_path = self.plan_workdir / "artifacts" / provider_id_sanitized
+
+                # Have the provider contribute to the shared repository
+                provider.contribute_to_shared_repo(
+                    guest=guest,
+                    download_path=download_path,
+                    shared_repo_dir=shared_repo_dir,
+                )
+
+            except tmt.utils.PrepareError:
+                raise
+
+            except Exception as error:
+                raise tmt.utils.PrepareError(
+                    f"Failed to initialize or use artifact provider '{raw_provider_id}'."
+                ) from error
+
+        # Create or update the shared repository.
+        # This aggregates all local artifacts from file-based providers.
+        # If this prepare step runs multiple times in the same plan, artifacts
+        # accumulate in the same directory and createrepo updates the metadata.
+        shared_repository = create_repository(
+            artifact_dir=shared_repo_dir,
+            guest=guest,
+            logger=logger,
+            repo_name="tmt-artifact-shared",
+        )
+
+        # Collect repository count from providers for reporting
+        # Note: Provider repositories are already installed by providers during
+        # contribute_to_shared_repo(), so we don't need to install them again here.
+        provider_repository_count = sum(len(provider.get_repositories()) for provider in providers)
+
+        # Install the shared repository (skip if already exists)
+        shared_repo_file = Path("/etc/yum.repos.d") / shared_repository.filename
+        try:
+            guest.execute(tmt.utils.ShellScript(f"test -f {shared_repo_file}"), silent=True)
+            logger.debug(
+                f"Repository '{shared_repository.name}' already exists, metadata updated."
+            )
+        except Exception:
+            guest.package_manager.install_repository(shared_repository)
+            logger.debug(f"Installed repository '{shared_repository.name}'.")
+
+        # Report configuration summary
+        total_repositories = 1 + provider_repository_count
+        logger.info(
+            f"Configured artifact preparation with {len(self.data.provide)} provider(s) "
+            f"and {total_repositories} repository(ies)."
+        )
+
         return outcome
 
     def essential_requires(self) -> list[tmt.base.Dependency]:
