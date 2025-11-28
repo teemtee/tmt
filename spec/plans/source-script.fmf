@@ -1,0 +1,38 @@
+story: >
+    As a tester I want to source a file at the beginning
+    of every test.
+
+description: |
+    tmt will bash source the file exposed at
+    ``TMT_PLAN_SOURCE_SCRIPT`` at the beginning of every
+    :ref:`prepare shell</plugins/prepare/shell>`,
+    :ref:`finish shell</plugins/finish/shell>`
+    phases and every test.
+    Initially, this file is empty, but you can write to
+    this file some content which will be executed in
+    the subsequent steps that use this file.
+
+    Unlike ``TMT_PLAN_ENVIRONMENT_FILE``, this feature
+    is not available for arbitrary phases. Only
+    :ref:`prepare shell</plugins/prepare/shell>`,
+    :ref:`finish shell</plugins/finish/shell>`
+    and tests use this file, for now.
+
+example: |
+    prepare:
+        name: Populate the contents of TMT_PLAN_SOURCE_SCRIPT
+        how: shell
+        script: |
+            cat >> $TMT_PLAN_SOURCE_SCRIPT <<EOF
+            source /etc/profile.d/modules.sh
+            module load mpi/openmpi-$(arch)
+            EOF
+    execute:
+        how: tmt
+        script: |
+            module list
+            mpirun -n 2 /usr/bin/hostname
+
+link:
+  - implemented-by: /tmt/base.py
+  - verified-by: /tests/core/source-script
