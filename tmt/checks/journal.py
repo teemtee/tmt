@@ -1,4 +1,3 @@
-import datetime
 import re
 from re import Pattern
 from typing import TYPE_CHECKING, Optional
@@ -8,7 +7,7 @@ import tmt.utils
 from tmt.checks import Check, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
 from tmt.result import CheckResult, ResultOutcome, save_failures
-from tmt.utils import Path, ShellScript, format_timestamp, render_command_report
+from tmt.utils import Path, ShellScript, Stopwatch
 from tmt.utils.hints import hints_as_notes
 
 if TYPE_CHECKING:
@@ -165,7 +164,6 @@ class JournalCheck(Check):
     ) -> tuple[ResultOutcome, list[Path]]:
         assert invocation.start_time is not None  # narrow type
 
-        timestamp = format_timestamp(datetime.datetime.now(datetime.timezone.utc))
         path = invocation.check_files_path / TEST_POST_JOURNAL_FILENAME
 
         # Build journalctl command
@@ -186,24 +184,32 @@ class JournalCheck(Check):
             f"{invocation.guest.facts.sudo_prefix} journalctl {' '.join(options)}"
         )
 
-        try:
-            outcome = ResultOutcome.PASS
-            output = invocation.guest.execute(script, silent=True)
+        outcome = ResultOutcome.PASS
+        failures: list[str] = []
 
-        except tmt.utils.RunError as exc:
+        output, exc, timer = Stopwatch.measure(invocation.guest.execute, script, silent=True)
+
+        if exc:
             outcome = ResultOutcome.ERROR
-            output = exc.output
 
-        failures = self._extract_failures(output.stdout or '')
+            invocation.phase.write_command_report(
+                path=path, label='journal log', timer=timer, command=script, exc=exc
+            )
+
+            if isinstance(exc, tmt.utils.RunError):
+                output = exc.output
+
+                failures = self._extract_failures(output.stdout or '')
+
+        elif output:
+            invocation.phase.write_command_report(
+                path=path, label='journal log', timer=timer, command=script, output=output
+            )
+
+            failures = self._extract_failures(output.stdout or '')
+
         if failures and outcome == ResultOutcome.PASS:
             outcome = ResultOutcome.FAIL
-
-        # Use render_command_report but with append mode for multiple reports
-        report_content = list(render_command_report(label='journal log', output=output))
-
-        # Add timestamp header and append to file like original implementation
-        full_report = [f'# Reported at {timestamp}', *report_content]
-        invocation.phase.write(path, '\n'.join(full_report), mode='a')
 
         log_paths = [
             path.relative_to(invocation.phase.step_workdir),
