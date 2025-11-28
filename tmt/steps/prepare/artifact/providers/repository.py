@@ -4,12 +4,11 @@ Artifact provider for discovering RPMs from repository files.
 
 import re
 from collections.abc import Sequence
-from pyexpat.errors import messages
 from re import Pattern
 from typing import Optional
-from urllib.parse import unquote, urlparse
 
 import tmt.log
+from tmt.steps import DefaultNameGenerator
 from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     ArtifactProviderId,
@@ -18,7 +17,10 @@ from tmt.steps.prepare.artifact.providers import (
 )
 from tmt.steps.prepare.artifact.providers.koji import RpmArtifactInfo
 from tmt.steps.provision import Guest
-from tmt.utils import GeneralError, Path
+from tmt.utils import GeneralError, Path, PrepareError, RunError
+
+# Counter for generating unique repository names in the format ``tmt-repo-default-{n}``.
+_REPO_NAME_GENERATOR = DefaultNameGenerator(known_names=[])
 
 
 # ignore[type-arg]: TypeVar in provider registry annotations is
@@ -195,3 +197,56 @@ def parse_rpm_string(pkg_string: str) -> dict[str, str]:
         'arch': arch,
         'nvr': nvr,
     }
+
+
+def create_repository(
+    artifact_dir: Path,
+    guest: Guest,
+    logger: tmt.log.Logger,
+    repo_name: Optional[str] = None,
+    priority: int = 1,
+) -> Repository:
+    """
+    Create a local RPM repository from a directory on the guest.
+
+    Creates repository metadata and prepares a Repository object. Does not install
+    the repository on the guest system. Use install_repository() to make it visible
+    to the package manager.
+
+    :param artifact_dir: Path to the directory on the guest containing RPM files.
+    :param guest: Guest instance where the repository metadata will be created.
+    :param logger: Logger instance for outputting debug and error messages.
+    :param repo_name: Name for the repository. If not provided, generates a unique
+        name using the format ``tmt-repo-default-{n}``.
+    :param priority: Repository priority (default: 1). Lower values have higher priority.
+    :returns: Repository object representing the newly created repository.
+    :raises PrepareError: If the package manager does not support creating repositories
+        or if metadata creation fails.
+    """
+    repo_name = repo_name or f"tmt-repo-{_REPO_NAME_GENERATOR.get()}"
+
+    # Create Repository Metadata
+    logger.debug(f"Creating metadata for '{artifact_dir}'.")
+    try:
+        guest.package_manager.create_repository(artifact_dir)
+    except RunError as error:
+        raise PrepareError(f"Failed to create repository metadata in '{artifact_dir}'") from error
+
+    # Generate .repo File Content
+    repo_string = f"""[{tmt.utils.sanitize_name(repo_name)}]
+name={repo_name}
+baseurl=file://{artifact_dir}
+enabled=1
+gpgcheck=0
+priority={priority}"""
+
+    logger.debug(f"Generated .repo file content:\n{repo_string}")
+
+    # Create Repository Object
+    created_repository = Repository.from_content(
+        content=repo_string, name=repo_name, logger=logger
+    )
+
+    logger.debug(f"Created repository '{created_repository.name}' (not yet installed).")
+
+    return created_repository
