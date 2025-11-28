@@ -1,0 +1,63 @@
+#!/bin/bash
+
+help="
+Start a new release
+~~~~~~~~~~~~~~~~~~~
+
+Perform the first couple steps needed for starting a new tmt
+release. Creates the release directory, moves the release notes
+there and prepares the 'release' branch for the pull request.
+
+Use the full version format as the first parameter, for example:
+
+    $0 1.23.0
+
+Before running the script, make sure there is at least one release
+note included in the 'docs/release/pending' directory.
+"
+
+step() {
+    printf "\n\033[32m%s\033[0m\n" "$1"
+}
+
+version="$1"
+
+if [ -z "$version" ]; then
+    printf "%s\n" "$help"
+    exit 1
+fi
+
+# Make sure the release branch is up-to-date
+step "Get the latest changes from main..."
+git fetch
+git checkout release
+git merge origin/main
+
+# Prepare the release notes directories
+git_root=$(git rev-parse --show-toplevel)
+notes_dir="${git_root}/docs/releases"
+pending_dir="${notes_dir}/pending"
+target_dir="${notes_dir}/$version"
+
+# Check the release notes and move them
+step "Move the release notes..."
+if ! ls "${pending_dir}"/*.fmf ; then
+    echo "No release note found in '${pending_dir}'."
+    echo "Please, add at least one."
+    exit 1
+fi
+mkdir -p "$target_dir"
+mv "${pending_dir}"/*.fmf "${target_dir}"
+
+# Commit the changes
+step "Commit the changes..."
+git add "$notes_dir"
+git commit -m "Release ${version}"
+
+# Push the changes
+step "Push the changes..."
+git push origin --set-upstream release
+
+# Pull request link
+step "Create the release pull request using the following link:"
+printf "https://github.com/teemtee/tmt/compare/release?expand=1&template=release.md\n\n"
