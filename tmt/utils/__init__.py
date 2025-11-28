@@ -2913,32 +2913,31 @@ def render_command_report(
     """
 
     if label:
-        yield f'# {label}'
-        yield ''
+        yield f'# --- {label}'
 
     if command:
-        yield f'# {command.to_element()}'
-        yield ''
+        yield f'# Command: {command.to_element()}'
 
     if isinstance(exc, RunError):
-        yield f'# exit code: {exc.returncode}'
+        yield f'# Exit code: {exc.returncode}'
         yield ''
         yield from render_run_exception_streams(exc.output, verbose=1)
         yield ''
 
     elif exc is not None:
-        yield '# failed to complete successfully'
+        yield '# Failed to complete successfully'
         yield ''
         yield from render_exception(exc, traceback_verbosity=TracebackVerbosity.LOCALS)
+        yield ''
 
-    else:
-        # Type checker cannot inferre that if `exc is None`, `output`
-        # must be a valid value.
-        assert output is not None  # narrow type
-
-        yield '# finished successfully'
+    elif output is not None:
+        yield '# Finished successfully'
         yield ''
         yield from render_run_exception_streams(output, verbose=1)
+        yield ''
+
+    else:
+        yield '# Finished successfully'
         yield ''
 
 
@@ -2974,13 +2973,12 @@ def render_report(
     :yields: lines of the report.
     """  # noqa: E501
 
-    yield f'# {label}'
+    yield f'# --- {label}'
     yield (
         f'# Started at {timer.start_time_formatted},'
         f' finished at {timer.end_time_formatted}'
         f' ({timer.duration})'
     )
-    yield ''
 
     if report is not None:
         yield from report

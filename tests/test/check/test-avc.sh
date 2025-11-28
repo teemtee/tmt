@@ -35,8 +35,8 @@ rlJournalStart
             assert_check_result "avc as an after-test should pass" "pass" "after-test" "/avc/$method/harmless"
 
             rlAssertGrep "<no matches>" "$avc_log"
-            rlAssertGrep "# mark" "$avc_log"
-            rlAssertGrep "# ausearch" "$avc_log"
+            rlAssertGrep "# --- mark" "$avc_log"
+            rlAssertGrep "# --- ausearch" "$avc_log"
         rlPhaseEnd
 
         rlPhaseStartTest "Test ignore-pattern key with $PROVISION_HOW ($method method)"
@@ -53,8 +53,8 @@ rlJournalStart
             # AVC denial should still be present in the log
             rlAssertGrep "avc:  denied" "$avc_log"
             rlAssertGrep "path=/root/passwd.log" "$avc_log"
-            rlAssertGrep "# mark" "$avc_log"
-            rlAssertGrep "# ausearch" "$avc_log"
+            rlAssertGrep "# --- mark" "$avc_log"
+            rlAssertGrep "# --- ausearch" "$avc_log"
         rlPhaseEnd
 
         rlPhaseStartTest "Test nasty AVC check with $PROVISION_HOW ($method method)"
@@ -70,8 +70,8 @@ rlJournalStart
 
             rlAssertGrep "avc:  denied" "$avc_log"
             rlAssertGrep "path=/root/passwd.log" "$avc_log"
-            rlAssertGrep "# mark" "$avc_log"
-            rlAssertGrep "# ausearch" "$avc_log"
+            rlAssertGrep "# --- mark" "$avc_log"
+            rlAssertGrep "# --- ausearch" "$avc_log"
         rlPhaseEnd
     done
 
