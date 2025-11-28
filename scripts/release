@@ -13,7 +13,7 @@ Use the full version format as the first parameter, for example:
     $0 1.23.0
 
 Before running the script, make sure there is at least one release
-note included in the 'docs/release/pending' directory.
+note included in the 'docs/releases/pending' directory.
 "
 
 step() {
