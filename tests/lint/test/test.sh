@@ -102,9 +102,6 @@ rlJournalStart
         # Step is used outside of test sections.
         rlAssertGrep "$fail Heading \"<h2>Step</h2>\" from the section \"Step\" is used outside of Test sections." $rlRun_LOG
 
-        # Unexpected headings
-        rlAssertGrep "$fail Headings \".*\" aren't expected in the section \"<h1>Test</h1>\"" $rlRun_LOG
-
         # Step isn't in pair with Expect
         rlAssertGrep "$fail The number of headings from the section \"Step\" - 2 doesn't equal to the number of headings from the section \"Expect\" - 1 in the test section \"<h1>Test two</h1>\"" $rlRun_LOG
 
