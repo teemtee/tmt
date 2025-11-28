@@ -1,4 +1,12 @@
 summary: Check PrepareArtifact plugin
+description: |
+    Test coverage for all artifact provider types:
+    - koji provider (fetch from Koji build ID)
+    - file provider (local RPM file)
+    - repository-url provider (remote .repo file)
+    - All providers combined in a single prepare step
+test: ./test.sh
+duration: 20m
 # TODO: Enable the tests for other provision formats
 # TODO: Could we test provision local safely?
 tag+:

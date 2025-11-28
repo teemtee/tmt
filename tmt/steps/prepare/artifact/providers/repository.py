@@ -4,6 +4,7 @@ Artifact provider for discovering RPMs from repository files.
 
 import re
 from collections.abc import Sequence
+from functools import cached_property
 from re import Pattern
 from typing import Optional
 
@@ -43,12 +44,9 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
     """
 
     repository: Repository
-    _artifact_list: Optional[Sequence[RpmArtifactInfo]]
 
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
         super().__init__(raw_provider_id, logger)
-        # Initialize to None to distinguish between "not run" and "run but empty"
-        self._artifact_list = None
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
@@ -60,21 +58,24 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
             raise ValueError("Missing repository URL.")
         return value
 
-    @property
+    @cached_property
     def artifacts(self) -> Sequence[RpmArtifactInfo]:
         """
         List all RPMs discovered from the repositories.
 
-        .. note::
+        For repository-url providers, artifacts are discovered dynamically when
+        fetch_contents() is called during the prepare step. This property returns
+        an empty list as a placeholder, since the actual packages are made available
+        through the repository system rather than being downloaded as individual files.
 
-            The :py:meth:`fetch_contents` method must be called first to populate
-            the artifact list from the guest.
+        The actual artifact discovery happens in _discover_packages() which is called
+        from fetch_contents() during the workflow execution.
+
+        :returns: empty list (artifacts are discovered at runtime via repository).
         """
-        # Check for None to see if fetch_contents() has been called
-        if self._artifact_list is None:
-            raise tmt.utils.GeneralError("Call fetch_contents first to discover artifacts.")
-        # Return the list (which is valid even if it's empty)
-        return self._artifact_list
+        # Repository providers don't enumerate artifacts upfront since they come
+        # from remote repositories. Return empty list to satisfy the interface.
+        return []
 
     def _download_artifact(
         self, artifact: RpmArtifactInfo, guest: Guest, destination: Path
@@ -84,33 +85,53 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
             "RepositoryFileProvider does not support downloading individual RPMs."
         )
 
-    def fetch_contents(
+    def _discover_packages(
         self,
         guest: Guest,
-        download_path: tmt.utils.Path,
         exclude_patterns: Optional[list[Pattern[str]]] = None,
-    ) -> list[tmt.utils.Path]:
-        # Override the default behavior: instead of downloading artifacts,
-        # this method makes RPMs from the repository discoverable.
+    ) -> int:
+        """
+        Discover packages available in the repository for logging purposes.
+
+        This method installs the repository to query available packages and returns
+        the count for informational logging. The repository will remain installed.
+
+        :param guest: the guest on which to discover packages.
+        :param exclude_patterns: if set, artifacts whose names match any
+            of the given regular expressions would be excluded.
+        :returns: number of packages discovered.
+        """
         # TODO: Add support for src RPM's
 
-        # 1. Install the repository file on the guest using info from our helper object
-        self.repository = Repository.from_url(url=self.id, logger=self.logger)
+        # Ensure repository is initialized
+        if not hasattr(self, 'repository') or self.repository is None:
+            raise GeneralError("Repository not initialized. Call contribute_to_shared_repo first.")
 
-        # Install the repository using the guest's package manager
+        # Install the repository using the guest's package manager to query it
         guest.package_manager.install_repository(self.repository)
 
         # Load the artifacts using list_packages
         package_list = guest.package_manager.list_packages(self.repository)
 
-        # Initialize the list before populating
-        self._artifact_list = []
+        # Count packages for logging
+        package_count = 0
 
         for pkg in package_list:
             try:
                 # Use the new utility function to parse the package string
                 raw_artifact = {**parse_rpm_string(pkg_string=pkg), "url": self.id}
-                self._artifact_list.append(RpmArtifactInfo(_raw_artifact=raw_artifact))
+                artifact = RpmArtifactInfo(_raw_artifact=raw_artifact)
+
+                # Apply exclude patterns
+                if exclude_patterns and any(
+                    pattern.search(artifact.id) for pattern in exclude_patterns
+                ):
+                    self.logger.debug(
+                        f"Excluding artifact '{artifact.id}' based on exclude patterns."
+                    )
+                    continue
+
+                package_count += 1
             except ValueError as error:
                 # Catches both regex failing to match (ValueError)
                 # or an explicit ValueError raised by the utility function.
@@ -130,9 +151,69 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
                 )
                 continue
 
-        self.logger.debug(f"Successfully discovered '{len(self._artifact_list)}' artifacts.")
+        self.logger.debug(
+            f"Successfully discovered '{package_count}' packages "
+            f"in repository '{self.repository.name}'."
+        )
+        return package_count
 
+    def fetch_contents(
+        self,
+        guest: Guest,
+        download_path: tmt.utils.Path,
+        exclude_patterns: Optional[list[Pattern[str]]] = None,
+    ) -> list[tmt.utils.Path]:
+        """
+        Discover packages from the repository without downloading them.
+
+        This method overrides the default behavior - instead of downloading artifacts,
+        it discovers what packages are available in the repository.
+
+        :param guest: the guest on which to discover packages.
+        :param download_path: unused for this provider.
+        :param exclude_patterns: if set, artifacts whose names match any
+            of the given regular expressions would be excluded.
+        :returns: empty list (no files are downloaded).
+        """
+        self._discover_packages(guest, exclude_patterns)
         return []
+
+    def get_repositories(self) -> list[Repository]:
+        """
+        Return the repository object managed by this provider.
+
+        :returns: list containing the repository to be installed.
+        """
+        if not hasattr(self, 'repository') or self.repository is None:
+            raise tmt.utils.GeneralError(
+                "Repository not initialized. Call contribute_to_shared_repo first."
+            )
+        return [self.repository]
+
+    def contribute_to_shared_repo(
+        self,
+        guest: Guest,
+        download_path: Path,
+        shared_repo_dir: Path,
+        exclude_patterns: Optional[list[Pattern[str]]] = None,
+    ) -> None:
+        """
+        Prepare the repository for installation.
+
+        This provider fetches repository files from URLs and prepares them for
+        installation. It does not contribute artifacts to the shared repository
+        since it works with remote repositories. The repository will be installed
+        later via get_repositories().
+
+        :param guest: the guest on which the repository will be installed.
+        :param download_path: unused for this provider.
+        :param shared_repo_dir: unused for this provider.
+        :param exclude_patterns: unused for this provider.
+        """
+        # Fetch the repository from URL (only if not already initialized)
+        if not hasattr(self, 'repository') or self.repository is None:
+            self.repository = Repository.from_url(url=self.id, logger=self.logger)
+            self.logger.debug(f"Prepared repository '{self.repository.name}' for installation.")
 
 
 # FIXME: Make this function more robust. The current regex-based parsing
@@ -209,9 +290,9 @@ def create_repository(
     """
     Create a local RPM repository from a directory on the guest.
 
-    Creates repository metadata and prepares a Repository object. Does not install
-    the repository on the guest system. Use install_repository() to make it visible
-    to the package manager.
+    Creates the directory if needed, creates repository metadata, and prepares
+    a Repository object. Does not install the repository on the guest system.
+    Use install_repository() to make it visible to the package manager.
 
     :param artifact_dir: Path to the directory on the guest containing RPM files.
     :param guest: Guest instance where the repository metadata will be created.
@@ -223,7 +304,15 @@ def create_repository(
     :raises PrepareError: If the package manager does not support creating repositories
         or if metadata creation fails.
     """
+    from shlex import quote
+
     repo_name = repo_name or f"tmt-repo-{_REPO_NAME_GENERATOR.get()}"
+
+    # Create the repository directory on the guest
+    guest.execute(
+        tmt.utils.ShellScript(f"mkdir -p {quote(str(artifact_dir))}"),
+        silent=True,
+    )
 
     # Create Repository Metadata
     logger.debug(f"Creating metadata for '{artifact_dir}'.")
