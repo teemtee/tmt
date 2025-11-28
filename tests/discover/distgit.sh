@@ -550,6 +550,41 @@ EOF
         rlRun "rm -rf $tmp"
         rlRun "rm -rf $WORKDIR"
     rlPhaseEnd
+
+    rlPhaseStartTest "dist-git-type: local"
+        rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
+        rlRun 'pushd $tmp'
+
+        echo "SHA512 (no-tmt-2.tgz) = 1234" > sources
+        rlRun "git init && tmt init"
+
+        cat <<EOF > plans.fmf
+discover:
+    how: shell
+    tests:
+    -   name: source is there
+        test: ls \$TMT_SOURCE_DIR/no-tmt-2.tgz
+    dist-git-source: true
+    dist-git-type: local
+    dist-git-download-only: true
+provision:
+    how: local
+execute:
+    how: tmt
+EOF
+
+        sed -e '/^BuildArch:/aSource0: no-tmt-2.tgz' $TEST_DIR/data/demo.spec > demo.spec
+        sed -e 's/package-src/no-tmt-2/' -i demo.spec
+
+        cp $SERVER_DIR/no-tmt-2.tgz .
+
+        WORKDIR=/var/tmp/tmt/XXX
+        rlRun "tmt run -vvv --id $WORKDIR --scratch"
+
+        rlRun "popd"
+        rlRun "rm -rf $tmp"
+        rlRun "rm -rf $WORKDIR"
+    rlPhaseEnd
 fi # END of "just in local" test block
 
     # TODO - incorporate into existing tests ...
