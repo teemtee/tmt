@@ -1,7 +1,12 @@
+/:
+    select: true
+
 story:
     As a user I want to type as little as possible.
 
 /abbreviation:
+    /:
+        select: true
 
     /commands:
         summary: Allow command abbreviation

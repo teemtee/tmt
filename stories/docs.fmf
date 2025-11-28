@@ -1,3 +1,6 @@
+/:
+    select: true
+
 story:
     As a command line user I want to have all essential
     documentation at hand.

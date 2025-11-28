@@ -1,3 +1,6 @@
+/:
+    select: true
+
 story:
     As a developer I want to define application features and track
     which have been already implemented, verified and documented.
