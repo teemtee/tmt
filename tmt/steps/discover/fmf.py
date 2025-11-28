@@ -275,11 +275,19 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
     )
 
     # Upgrade plan path so the plan is not pruned
-    upgrade_path: Optional[str] = None
+    upgrade_path: Optional[str] = field(default=None, internal=True)
 
     # Legacy fields
-    repository: Optional[str] = None
-    revision: Optional[str] = None
+    repository: Optional[str] = field(
+        default=None,
+        option='--repository',
+        deprecated=tmt.options.Deprecated(since="1.63", hint="use 'url' instead"),
+    )
+    revision: Optional[str] = field(
+        default=None,
+        option='--revision',
+        deprecated=tmt.options.Deprecated(since="1.63", hint="use 'ref' instead"),
+    )
 
     def post_normalization(
         self,
