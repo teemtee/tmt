@@ -8,7 +8,7 @@ import tmt.log
 import tmt.plugins
 import tmt.utils
 from tmt.container import container, simple_field
-from tmt.utils import Command, CommandOutput, GeneralError, Path, ShellScript
+from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, ShellScript
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
@@ -219,6 +219,16 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
+    def create_repository(self, directory: Path) -> ShellScript:
+        """
+        Create repository metadata for package files in the given directory.
+
+        :param directory: The path to the directory containing packages.
+        :returns: A shell script to create repository metadata.
+        :raises PrepareError: If this package manager does not support creating repositories.
+        """
+        raise PrepareError("Package Manager not supported for create_repository")
+
 
 class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
     """
@@ -309,3 +319,9 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             raise GeneralError("Repository query provided no output")
 
         return stdout.strip().splitlines()
+
+    def create_repository(self, directory: Path) -> CommandOutput:
+        """
+        Wrapper of :py:meth:`PackageManagerEngine.create_repository`.
+        """
+        return self.guest.execute(self.engine.create_repository(directory))

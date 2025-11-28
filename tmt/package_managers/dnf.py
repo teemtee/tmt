@@ -1,6 +1,7 @@
 import re
 from typing import TYPE_CHECKING, Any, Optional, cast
 
+from tmt._compat.pathlib import Path
 from tmt.package_managers import (
     FileSystemPath,
     Installable,
@@ -189,6 +190,15 @@ class DnfEngine(PackageManagerEngine):
             {self.command.to_script()} repoquery --disablerepo='*' {repo_ids}
             """
         )
+
+    def create_repository(self, directory: Path) -> ShellScript:
+        """
+        Create repository metadata for package files in the given directory.
+
+        :param directory: The path to the directory containing RPM packages.
+        :returns: A shell script to create repository metadata.
+        """
+        return ShellScript(f"createrepo {directory}")
 
 
 # ignore[type-arg]: TypeVar in package manager registry annotations is
