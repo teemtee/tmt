@@ -53,6 +53,9 @@ rlJournalStart
         rlAssertGrep "fail T001 unknown key \"serial_number\" is used" $rlRun_LOG
         rlRun -s "tmt test lint coverage" 1
         rlAssertGrep "fail T006 the 'coverage' field has been obsoleted by 'link'" $rlRun_LOG
+        rlRun -s "tmt test lint library-missing-url-path" 1
+        rlAssertGrep 'fail C000 fmf node failed schema validation' $rlRun_LOG
+        rlAssertGrep 'is not valid under any of the given schemas' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Fix"
@@ -91,6 +94,10 @@ rlJournalStart
         rlAssertGrep "$fail unknown html heading \"<h2>Test</h2>\" is used" $rlRun_LOG
         rlAssertGrep "$fail unknown html heading "<h2>Unknown heading end</h2>" is used" $rlRun_LOG
         rlAssertGrep "$fail unknown html heading "<h3>Unknown heading begin</h3>" is used" $rlRun_LOG
+
+        # Warn if 2 or more # Setup or # Cleanup are used
+        rlAssertGrep "$fail 2 headings \"<h1>Setup</h1>\" are used" $rlRun_LOG
+        rlAssertGrep "$fail 3 headings \"<h1>Cleanup</h1>\" are used" $rlRun_LOG
 
         # Step is used outside of test sections.
         rlAssertGrep "$fail Heading \"<h2>Step</h2>\" from the section \"Step\" is used outside of Test sections." $rlRun_LOG

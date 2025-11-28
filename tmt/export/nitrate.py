@@ -3,7 +3,7 @@ import os
 import re
 import types
 import urllib.parse
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import suppress
 from functools import cache
 from typing import (
@@ -52,6 +52,7 @@ DEFAULT_PRODUCT: Any = None
 SectionsReturnType = tuple[str, str, str, str]
 HeadingsType = list[list[Union[int, str]]]
 SectionsHeadingsType = dict[re.Pattern[str], HeadingsType]
+SectionsMappingType = dict[re.Pattern[str], str]
 
 # TODO: why this exists?
 log = fmf.utils.Logging('tmt').logger
@@ -132,6 +133,12 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
         pattern: [] for patterns in tmt.base.SECTIONS_HEADINGS.values() for pattern in patterns
     }
 
+    section_mapping: SectionsMappingType = {  # This exists to avoid inspecting the regex string
+        pattern: section
+        for section, patterns_list in tmt.base.SECTIONS_HEADINGS.items()
+        for pattern in patterns_list
+    }
+
     html = tmt.utils.markdown_to_html(test_md)
     html_splitlines = html.splitlines()
 
@@ -145,7 +152,7 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
                 if key.match(line):
                     html_content = ''
 
-                    if key.pattern.startswith("^<h1>Test"):
+                    if section_mapping[key] == 'Test':
                         html_content = line.replace('<h1>', '<b>').replace('</h1>', '</b>')
 
                     for j in range(i + 1, len(html_splitlines)):
@@ -168,7 +175,7 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
 
         sections_headings[key] = result
 
-    def concatenate_headings_content(headings: tuple[re.Pattern[str], ...]) -> HeadingsType:
+    def concatenate_headings_content(headings: Sequence[re.Pattern[str]]) -> HeadingsType:
         content = []
         for pattern in headings:
             content += sections_headings[pattern]
@@ -182,32 +189,16 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
 
         return content
 
-    sorted_test = sorted(
-        concatenate_headings_content(
-            (tmt.base.SECTIONS_HEADINGS['Test'][0], tmt.base.SECTIONS_HEADINGS['Test'][1])
-        )
-    )
+    sorted_test = sorted(concatenate_headings_content(tmt.base.SECTIONS_HEADINGS['Test']))
 
     sorted_step = sorted(
-        enumerate_content(
-            concatenate_headings_content(
-                (tmt.base.SECTIONS_HEADINGS['Step'][0], tmt.base.SECTIONS_HEADINGS['Step'][1])
-            )
-        )
+        enumerate_content(concatenate_headings_content(tmt.base.SECTIONS_HEADINGS['Step']))
         + sorted_test
     )
     step = ''.join([f"{v[1]}" for v in sorted_step])
 
     sorted_expect = sorted(
-        enumerate_content(
-            concatenate_headings_content(
-                (
-                    tmt.base.SECTIONS_HEADINGS['Expect'][0],
-                    tmt.base.SECTIONS_HEADINGS['Expect'][1],
-                    tmt.base.SECTIONS_HEADINGS['Expect'][2],
-                )
-            )
-        )
+        enumerate_content(concatenate_headings_content(tmt.base.SECTIONS_HEADINGS['Expect']))
         + sorted_test
     )
     expect = ''.join([f"{v[1]}" for v in sorted_expect])

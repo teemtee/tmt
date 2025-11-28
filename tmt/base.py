@@ -140,7 +140,7 @@ EXTRA_KEYS_PREFIX = 'extra-'
 EXTRA_RESULT_IDENTIFICATION_KEYS = ['extra-nitrate', 'extra-task']
 
 
-def patterns(tag: str, *texts: str) -> list[Pattern[str]]:
+def _compile_section_heading_patterns(tag: str, *texts: str) -> list[Pattern[str]]:
     """
     Generate list of compiled regex patterns for given tag and texts
 
@@ -152,11 +152,11 @@ def patterns(tag: str, *texts: str) -> list[Pattern[str]]:
 
 
 SECTIONS_HEADINGS = {
-    'Setup': patterns('h1', 'Setup'),
-    'Test': patterns('h1', 'Test', r'Test\s+.*'),
-    'Step': patterns('h2', 'Step', r'Test\s+Step'),
-    'Expect': patterns('h2', 'Expect', 'Result', r'Expected\s+Result'),
-    'Cleanup': patterns('h1', 'Cleanup'),
+    'Setup': _compile_section_heading_patterns('h1', 'Setup'),
+    'Test': _compile_section_heading_patterns('h1', 'Test', r'Test\s+.*'),
+    'Step': _compile_section_heading_patterns('h2', 'Step', r'Test\s+Step'),
+    'Expect': _compile_section_heading_patterns('h2', 'Expect', 'Result', r'Expected\s+Result'),
+    'Cleanup': _compile_section_heading_patterns('h1', 'Cleanup'),
 }
 
 # Reguar expression to match a required property in a schema validation error
