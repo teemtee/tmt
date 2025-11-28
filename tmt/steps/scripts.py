@@ -18,8 +18,8 @@ from tmt.utils.templates import render_template_file
 if TYPE_CHECKING:
     import tmt.steps.provision
 
-#: Scripts source directory
-SCRIPTS_SRC_DIR = tmt.utils.resource_files('steps/scripts')
+#: Scripts source resource. Use `tmt.utils.resource_files` to access them.
+SCRIPTS_RESOURCE = 'steps/scripts'
 
 #: The default scripts destination directory
 DEFAULT_SCRIPTS_DEST_DIR = Path("/usr/local/bin")
@@ -66,7 +66,13 @@ class Script:
     enabled: Callable[['tmt.steps.provision.Guest'], bool]
 
     def __enter__(self) -> Path:
-        return SCRIPTS_SRC_DIR / self.source_filename
+        scripts_dir = tmt.utils.resource_files(
+            SCRIPTS_RESOURCE,
+            logger=tmt.log.Logger.get_bootstrap_logger(),
+        )
+        script_file = scripts_dir / self.source_filename
+        assert isinstance(script_file, Path)  # narrow type
+        return script_file
 
     def __exit__(self, *args: object) -> None:
         pass
@@ -100,11 +106,12 @@ class ScriptTemplate(Script):
 
     def __enter__(self) -> Path:
         with NamedTemporaryFile(mode='w', delete=False) as rendered_script:
-            rendered_script.write(
-                render_template_file(
-                    SCRIPTS_SRC_DIR / f"{self.source_filename}.j2", None, **self.context
-                )
+            template_file = tmt.utils.resource_files(
+                f"{SCRIPTS_RESOURCE}/{self.source_filename}.j2",
+                logger=tmt.log.Logger.get_bootstrap_logger(),
+                assert_file=True,
             )
+            rendered_script.write(render_template_file(template_file, None, **self.context))
 
         self._rendered_script_path = Path(rendered_script.name)
 

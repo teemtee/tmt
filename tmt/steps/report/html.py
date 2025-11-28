@@ -12,7 +12,7 @@ import tmt.utils.templates
 from tmt.container import container, field
 from tmt.utils import Path
 
-HTML_TEMPLATE_PATH = tmt.utils.resource_files('steps/report/html/template.html.j2')
+HTML_TEMPLATE_RESOURCE = 'steps/report/html/template.html.j2'
 DEFAULT_NAME = 'index.html'
 
 DEFAULT_FILENAME = 'index.html'
@@ -133,7 +133,11 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
         try:
             filepath.write_text(
                 tmt.utils.templates.render_template_file(
-                    HTML_TEMPLATE_PATH,
+                    tmt.utils.resource_files(
+                        HTML_TEMPLATE_RESOURCE,
+                        logger=logger or self._logger,
+                        assert_file=True,
+                    ),
                     environment,
                     results=self.step.plan.execute.results(),
                     base_dir=self.step.plan.execute.step_workdir,

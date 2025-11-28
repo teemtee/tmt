@@ -20,8 +20,14 @@ class TemplateExporter(tmt.export.ExportPlugin):
         keys: Optional[list[str]] = None,
         **variables: Any,
     ) -> str:
+        template_filepath = template_filepath or tmt.utils.resource_files(
+            f"{tmt.export.TEMPLATES_RESOURCE}/{default_template_filename}",
+            logger=tmt.log.Logger.get_bootstrap_logger(),
+            assert_file=True,
+        )
+        assert isinstance(template_filepath, Path)  # Narrow type
         return tmt.utils.templates.render_template_file(
-            template_filepath or tmt.export.TEMPLATES_DIRECTORY / default_template_filename,
+            template_filepath,
             KEYS=keys,
             **variables,
         )
