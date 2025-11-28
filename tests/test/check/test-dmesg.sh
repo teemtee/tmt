@@ -122,11 +122,11 @@ Saving of the kernel ring buffer was skipped because of missing privileges."
 
             rlLogInfo "$(cat $dump_before)"
             rlAssertEquals "There should be 3 reports before the test" \
-                           "$(grep 'Acquired at' $dump_before | wc -l)" "3"
+                           "$(grep 'Started at' $dump_before | wc -l)" "3"
 
             rlLogInfo "$(cat $dump_after)"
             rlAssertEquals "There should be 3 reports after the test" \
-                           "$(grep 'Acquired at' $dump_after | wc -l)" "3"
+                           "$(grep 'Started at' $dump_after | wc -l)" "3"
         rlPhaseEnd
     fi
 
