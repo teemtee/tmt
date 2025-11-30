@@ -253,7 +253,7 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
 
     .. warning::
 
-        ``hard-reboot``, ``systemd-soft-reboot`, and ``soft-reboot``
+        ``hard-reboot``, ``systemd-soft-reboot``, and ``soft-reboot``
         commands are executed on the runner, not on the guest.
     """
 
