@@ -262,23 +262,15 @@ class GuestContainer(tmt.Guest):
 
         .. note::
 
-           Custom reboot command can be used only in combination with a
-           soft reboot. If both ``hard`` and ``command`` are set, a hard
-           reboot will be requested, and ``command`` will be ignored.
+           However, only :py:attr:`RebootMode.HARD` mode is supported by
+           the plugin, other modes or a custom reboot command will result
+           in an exception.
 
-           However, only hard reboots are supported by this guest class,
-           soft reboot and/or custom reboot command will result in an
-           exception.
-
-        :param mode: which reboot mode should be performed.
+        :param mode: which boot mode to perform.
         :param command: a command to run on the guest to trigger the
-            reboot. If ``hard`` is also set, ``command`` is ignored.
-        :param timeout: amount of time in which the guest must become available
-            again.
-        :param tick: how many seconds to wait between two consecutive attempts
-            of contacting the guest.
-        :param tick_increase: a multiplier applied to ``tick`` after every
-            attempt.
+            reboot. Only usable when mode is not
+            :py:attr:`RebootMode.HARD`.
+        :param waiting: deadline for the reboot.
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 

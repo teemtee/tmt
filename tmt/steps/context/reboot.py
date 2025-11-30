@@ -7,7 +7,7 @@ import tmt.steps.provision
 import tmt.steps.scripts
 import tmt.utils
 from tmt.container import MetadataContainer, container
-from tmt.steps.provision import Guest, RebootMode
+from tmt.steps.provision import Guest, RebootMode, SoftRebootModes
 from tmt.utils import Environment, EnvVarValue, HasEnvironment, Path, ShellScript
 from tmt.utils.wait import Deadline, Waiting
 
@@ -132,7 +132,7 @@ class RebootContext(HasEnvironment):
             reboot_data = RebootData.from_json(self.request_path.read_text())
 
             reboot_command: Optional[ShellScript] = None
-            reboot_mode: RebootMode = RebootMode.SOFT
+            reboot_mode: SoftRebootModes = RebootMode.SOFT
 
             if reboot_data.systemd_soft_reboot:
                 reboot_mode = RebootMode.SYSTEMD_SOFT

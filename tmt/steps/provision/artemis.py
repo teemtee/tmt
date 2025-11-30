@@ -683,20 +683,6 @@ class GuestArtemis(tmt.GuestSsh):
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
-        """
-        Reboot the guest, and wait for the guest to recover.
-
-        :param mode: which reboot mode should be performed.
-        :param command: a command to run on the guest to trigger the reboot.
-        :param timeout: amount of time in which the guest must become available
-            again.
-        :param tick: how many seconds to wait between two consecutive attempts
-            of contacting the guest.
-        :param tick_increase: a multiplier applied to ``tick`` after every
-            attempt.
-        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
-        """
-
         waiting = waiting or tmt.steps.provision.default_reboot_waiting()
 
         if mode == RebootMode.HARD:
@@ -716,7 +702,6 @@ class GuestArtemis(tmt.GuestSsh):
                 mode,
                 trigger_reboot,
                 waiting,
-                fetch_boot_mark=False,
             )
 
         return super().reboot(

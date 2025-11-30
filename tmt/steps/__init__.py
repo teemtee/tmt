@@ -2368,7 +2368,7 @@ class Reboot(Action):
             help='Reboot machine during given phase of selected step(s).',
         )
         @option('--soft', is_flag=True, help='Soft reboot of the machine.')
-        @option('--systemd-soft', is_flag=True, help='Soft reboot of the machine.')
+        @option('--systemd-soft', is_flag=True, help='Systemd soft reboot of the machine.')
         @option(
             '--hard', is_flag=True, help='Hard reboot of the machine. Unsaved data may be lost.'
         )
@@ -2415,8 +2415,11 @@ class Reboot(Action):
 
         from tmt.steps.provision import RebootMode
 
+        command = tmt.utils.ShellScript(self.opt('command')) if self.opt('command') else None
+
         if self.opt('hard'):
             mode: RebootMode = RebootMode.HARD
+            command = None
 
         elif self.opt('systemd-soft'):
             mode = RebootMode.SYSTEMD_SOFT
@@ -2426,13 +2429,14 @@ class Reboot(Action):
 
         self.info('reboot', f'Rebooting guest using {mode.value} mode.', color='yellow')
 
-        for guest in self.parent.plan.provision.ready_guests:
-            guest.reboot(
-                mode=mode,
-                command=tmt.utils.ShellScript(self.opt('command'))
-                if self.opt('command')
-                else None,
-            )
+        if mode == RebootMode.HARD:
+            for guest in self.parent.plan.provision.ready_guests:
+                guest.reboot(mode=mode)
+
+        else:
+            for guest in self.parent.plan.provision.ready_guests:
+                guest.reboot(mode=mode, command=command)
+
         self.info('reboot', 'Reboot finished', color='yellow')
 
 

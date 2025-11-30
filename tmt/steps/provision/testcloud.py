@@ -1198,33 +1198,12 @@ class GuestTestcloud(tmt.GuestSsh):
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
-        """
-        Reboot the guest, and wait for the guest to recover.
-
-        .. note::
-
-           Custom reboot command can be used only in combination with a
-           soft reboot. If both ``hard`` and ``command`` are set, a hard
-           reboot will be requested, and ``command`` will be ignored.
-
-        :param mode: which reboot mode should be performed.
-        :param command: a command to run on the guest to trigger the
-            reboot. If ``hard`` is also set, ``command`` is ignored.
-        :param timeout: amount of time in which the guest must become available
-            again.
-        :param tick: how many seconds to wait between two consecutive attempts
-            of contacting the guest.
-        :param tick_increase: a multiplier applied to ``tick`` after every
-            attempt.
-        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
-        """
+        if self._instance is None:
+            raise tmt.utils.ProvisionError("No instance initialized.")
 
         waiting = waiting or tmt.steps.provision.default_reboot_waiting()
 
         if mode == RebootMode.HARD:
-            if self._instance is None:
-                raise tmt.utils.ProvisionError("No instance initialized.")
-
             self.debug("Hard reboot using the testcloud API.")
 
             # ignore[union-attr]: mypy still considers `self._instance` as possibly
@@ -1233,7 +1212,6 @@ class GuestTestcloud(tmt.GuestSsh):
                 mode,
                 lambda: self._instance.reboot(soft=False),  # type: ignore[union-attr]
                 waiting,
-                fetch_boot_mark=False,
             )
 
         if command:

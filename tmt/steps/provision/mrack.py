@@ -1711,27 +1711,15 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         """
         Reboot the guest, and wait for the guest to recover.
 
-        .. note::
+        Plugin will use ``bkr system-power`` command to trigger to
+        perform the :py:attr:`RebootMode.HARD` reboot. Unlike ``command``,
+        this command would be executed on the runner, **not** on the guest.
 
-           Custom reboot command can be used only in combination with a
-           soft reboot. If both ``hard`` and ``command`` are set, a hard
-           reboot will be requested, and ``command`` will be ignored.
-
-        :param hard: if set, force the reboot. This may result in a loss
-            of data. The default of ``False`` will attempt a graceful
-            reboot.
-
-            Plugin will use ``bkr system-power`` command to trigger the
-            hard reboot. Unlike ``command``, this command would be
-            executed on the runner, **not** on the guest.
+        :param mode: which boot mode to perform.
         :param command: a command to run on the guest to trigger the
-            reboot. If ``hard`` is also set, ``command`` is ignored.
-        :param timeout: amount of time in which the guest must become available
-            again.
-        :param tick: how many seconds to wait between two consecutive attempts
-            of contacting the guest.
-        :param tick_increase: a multiplier applied to ``tick`` after every
-            attempt.
+            reboot. Only usable when mode is not
+            :py:attr:`RebootMode.HARD`.
+        :param waiting: deadline for the reboot.
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
@@ -1746,7 +1734,6 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                 mode,
                 lambda: self._run_guest_command(reboot_script.to_shell_command()),
                 waiting,
-                fetch_boot_mark=False,
             )
 
         return super().reboot(
