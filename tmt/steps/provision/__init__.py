@@ -3218,7 +3218,6 @@ class GuestSsh(Guest):
     ) -> bool:
         pass
 
-    @abc.abstractmethod
     def reboot(
         self,
         mode: RebootMode = RebootMode.SOFT,
