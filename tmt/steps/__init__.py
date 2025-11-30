@@ -2143,9 +2143,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         Combines :py:func:`tmt.utils.render_report` and
         :py:func:`tmt.utils.render_command_report` to create a report
         for a given command, its output, and possibly its failure. The
-        report is then written into a file that is created if it did not
-        exist, or added at the end of of the file if it did existed
-        already.
+        report is then appended to the given file.
 
         .. note::
 
@@ -2172,7 +2170,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
 
                 self.write_report(..., body=body)
 
-        :param path: a file to write into.
+        :param path: the report file to write into.
         :param label: see :py:func:`tmt.utils.render_report`.
         :param timer: see :py:func:`tmt.utils.render_report`.
         :param command: see :py:func:`tmt.utils.render_command_report`.
@@ -2212,9 +2210,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         Format and write an arbitrary body of text into a report file.
 
         Uses :py:func:`tmt.utils.render_report` to create a report with
-        a given content. The report is then written into a file that is
-        created if it did not exist, or added at the end of of the file
-        if it did existed already.
+        a given content. The report is then appended to the given file.
 
         .. note::
 
@@ -2224,7 +2220,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
             :py:func:`tmt.utils.render_command_report` and
             :py:meth:`write_command_report`.
 
-        :param path: a file to write into.
+        :param path: the report file to write into.
         :param label: see :py:func:`tmt.utils.render_report`.
         :param timer: see :py:func:`tmt.utils.render_report`.
         :param body: see :py:func:`tmt.utils.render_report`.
