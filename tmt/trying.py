@@ -12,6 +12,7 @@ from itertools import groupby
 from typing import Any, Callable, ClassVar, Optional, Union, cast
 
 import fmf
+import fmf.context
 import fmf.utils
 
 import tmt
@@ -303,6 +304,13 @@ class Try(tmt.utils.Common):
                 for user_plan in user_plans:
                     plan_dict: dict[str, Any] = {user_plan.name: user_plan.data}
                     self.tree.tree.update(plan_dict)
+                # Since the tree was already adjusted and we jusr added plans,
+                # the tree needs to be re-adjusted.
+                self.tree.tree.adjust(
+                    fmf.context.Context(**self.tree.fmf_context),
+                    case_sensitive=False,
+                    decision_callback=tmt.base.create_adjust_callback(self._logger),
+                )
                 self.debug("Use the default user plan config.")
                 return self.tree.plans(names=[f"^{plan_name}"], run=run)
 
