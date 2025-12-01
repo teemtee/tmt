@@ -26,10 +26,19 @@ properties:
     $ref: "/schemas/core#/definitions/summary"
 
   url:
+    $ref: "/schemas/common#/definitions/fmf_id/properties/url"
+
+  url-content-type:
     type: string
+    enum:
+      - git
+      - archive
 
   ref:
-    type: string
+    $ref: "/schemas/common#/definitions/fmf_id/properties/ref"
+
+  path:
+    $ref: "/schemas/common#/definitions/fmf_id/properties/path"
 
   dist-git-source:
     $ref: "/schemas/common#/definitions/dist-git-source"

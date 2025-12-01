@@ -195,23 +195,6 @@ class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
         ],
     )
 
-    url: Optional[str] = field(
-        option="--url",
-        metavar='REPOSITORY',
-        default=None,
-        help="URL of the git repository with tests to be fetched.",
-    )
-
-    ref: Optional[str] = field(
-        option="--ref",
-        metavar='REVISION',
-        default=None,
-        help="""
-            Branch, tag or commit specifying the desired git revision.
-            Defaults to the remote repository's default branch.
-            """,
-    )
-
     keep_git_metadata: bool = field(
         option="--keep-git-metadata",
         is_flag=True,
@@ -310,96 +293,28 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         if self.data.tests:
             click.echo(tmt.utils.format('tests', [test.name for test in self.data.tests]))
 
-    def fetch_remote_repository(
-        self,
-        url: Optional[str],
-        ref: Optional[str],
-        testdir: Path,
-        keep_git_metadata: bool = False,
-    ) -> None:
-        """
-        Fetch remote git repo from given url to testdir
-        """
-
-        # Nothing to do if no url provided
-        if not url:
-            return
-
-        # Clone first - it might clone dist git
-        self.info('url', url, 'green')
-        tmt.utils.git.git_clone(
-            url=url,
-            destination=testdir,
-            shallow=ref is None,
-            env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
-            logger=self._logger,
-        )
-
-        # Resolve possible dynamic references
-        try:
-            ref = tmt.base.resolve_dynamic_ref(
-                logger=self._logger, workdir=testdir, ref=ref, plan=self.step.plan
-            )
-        except tmt.utils.FileError as error:
-            raise tmt.utils.DiscoverError("Could not resolve dynamic reference") from error
-
-        # Checkout revision if requested
-        if ref:
-            self.info('ref', ref, 'green')
-            self.debug(f"Checkout ref '{ref}'.")
-            self.run(Command('git', 'checkout', '-f', ref), cwd=testdir)
-
-        # Log where HEAD leads to
-        self.verbose(
-            'commit-hash', tmt.utils.git.git_hash(directory=testdir, logger=self._logger), 'green'
-        )
-
-        # Remove .git so that it's not copied to the SUT
-        # if 'keep-git-metadata' option is not specified
-        if not keep_git_metadata:
-            shutil.rmtree(testdir / '.git')
-
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(
+        self, *, path: Optional[Path] = None, logger: Optional[tmt.log.Logger] = None
+    ) -> list['tmt.base.Test']:
         """
         Discover available tests
         """
 
-        super().go(logger=logger)
+        super().go(path=path, logger=logger)
         tests = fmf.Tree({'summary': 'tests'})
-
-        testdir = self.phase_workdir / "tests"
 
         self.log_import_plan_details()
 
         # dist-git related
         sourcedir = self.phase_workdir / 'source'
 
-        # Fetch remote repository related
-
         # Git metadata are necessary for dist_git_source
         keep_git_metadata = True if self.data.dist_git_source else self.data.keep_git_metadata
 
-        if self.data.url:
-            self.fetch_remote_repository(self.data.url, self.data.ref, testdir, keep_git_metadata)
-        else:
-            # Symlink tests directory to the plan work tree
-            assert self.step.plan.worktree  # narrow type
-
-            relative_path = self.step.plan.worktree.relative_to(self.phase_workdir)
-            testdir.symlink_to(relative_path)
-
-            if keep_git_metadata:
-                # Copy .git which is excluded when worktree is initialized
-                tree_root = Path(self.step.plan.node.root)
-                # If exists, git_root can be only the same or parent of fmf_root
-                git_root = tmt.utils.git.git_root(fmf_root=tree_root, logger=self._logger)
-                if git_root:
-                    if git_root != tree_root:
-                        raise tmt.utils.DiscoverError(
-                            "The 'keep-git-metadata' option can be "
-                            "used only when fmf root is the same as git root."
-                        )
-                    self.run(Command("rsync", "-ar", f"{git_root}/.git", testdir))
+        # Remove .git so that it's not copied to the SUT
+        # if 'keep-git-metadata' option is not specified
+        if not keep_git_metadata:
+            shutil.rmtree(self.test_dir / '.git', ignore_errors=True)
 
         # Check and process each defined shell test
         for data in self.data.tests:
@@ -442,20 +357,14 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             assert self.step.plan.my_run is not None  # narrow type
             assert self.step.plan.my_run.tree is not None  # narrow type
             assert self.step.plan.my_run.tree.root is not None  # narrow type
-            try:
-                run_result = self.run(
-                    Command("git", "rev-parse", "--show-toplevel"),
-                    cwd=testdir if self.data.url else self.step.plan.my_run.tree.root,
-                    ignore_dry=True,
-                )
-                assert run_result.stdout is not None
-                git_root = Path(run_result.stdout.strip('\n'))
-            except tmt.utils.RunError as error:
-                assert self.step.plan.my_run is not None  # narrow type
-                assert self.step.plan.my_run.tree is not None  # narrow type
+            git_root = tmt.utils.git.git_root(
+                fmf_root=self.test_dir if self.data.url else self.step.plan.my_run.tree.root,
+                logger=self._logger,
+            )
+            if not git_root:
                 raise tmt.utils.DiscoverError(
                     f"Directory '{self.step.plan.my_run.tree.root}' is not a git repository."
-                ) from error
+                )
             try:
                 self.download_distgit_source(
                     distgit_dir=git_root,
@@ -491,10 +400,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             if self.data.dist_git_source:
                 test.environment['TMT_SOURCE_DIR'] = EnvVarValue(sourcedir)
 
-        # Apply tmt run policy
-        if self.step.plan.my_run is not None:
-            for policy in self.step.plan.my_run.policies:
-                policy.apply_to_tests(tests=self._tests, logger=self._logger)
+        return self._tests
 
     def tests(
         self, *, phase_name: Optional[str] = None, enabled: Optional[bool] = None

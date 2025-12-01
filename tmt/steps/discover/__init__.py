@@ -1,6 +1,8 @@
 import abc
+import contextlib
+import shutil
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, cast
 
 import click
 from fmf.utils import listed
@@ -16,10 +18,36 @@ if TYPE_CHECKING:
 import tmt.base
 import tmt.steps
 import tmt.utils
+import tmt.utils.filesystem
+import tmt.utils.git
+import tmt.utils.url
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
-from tmt.utils import GeneralError, Path
+from tmt.utils import Command, Environment, EnvVarValue, GeneralError, Path
+
+# Options which require .git to be present for their functionality
+_REQUIRES_GIT = (
+    "ref",
+    "modified_url",
+    "modified_only",
+    "fmf_id",
+    "sync_repo",
+)
+
+
+def normalize_ref(
+    key_address: str,
+    value: Optional[Any],
+    logger: tmt.log.Logger,
+) -> Optional[str]:
+    if value is None:
+        return None
+
+    if isinstance(value, str):
+        return value
+
+    raise tmt.utils.NormalizationError(key_address, value, 'unset or a string')
 
 
 @container
@@ -37,6 +65,59 @@ class TestOrigin:
 
 @container
 class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
+    url: Optional[str] = field(
+        default=cast(Optional[str], None),
+        option=('-u', '--url'),
+        metavar='URL',
+        help="""
+            External URL containing the metadata tree.
+            Current git repository used by default.
+            See ``url-content-type`` key for details on what content is accepted.
+            """,
+    )
+
+    url_content_type: Literal["git", "archive"] = field(
+        default="git",
+        option="--url-content-type",
+        help="""
+            How to handle the ``url`` key.
+            """,
+        choices=("git", "archive"),
+    )
+
+    ref: Optional[str] = field(
+        default=cast(Optional[str], None),
+        option=('-r', '--ref'),
+        metavar='REVISION',
+        help="""
+            Branch, tag or commit specifying the desired git
+            revision. Defaults to the remote repository's default
+            branch if ``url`` was set or to the current ``HEAD``
+            of the current repository.
+
+            Additionally, one can set ``ref`` dynamically.
+            This is possible using a special file in tmt format
+            stored in the *default* branch of a tests repository.
+            This special file should contain rules assigning attribute ``ref``
+            in an *adjust* block, for example depending on a test run context.
+
+            Dynamic ``ref`` assignment is enabled whenever a test plan
+            reference has the format ``ref: @FILEPATH``.
+            """,
+        normalize=normalize_ref,
+    )
+
+    path: Optional[str] = field(
+        default=cast(Optional[str], None),
+        option=('-p', '--path'),
+        metavar='ROOT',
+        help="""
+            Path to the metadata tree root. Must be relative to
+            the git repository root if ``url`` was provided, absolute
+            local filesystem path otherwise. By default ``.`` is used.
+            """,
+    )
+
     dist_git_source: bool = field(
         default=False,
         option='--dist-git-source',
@@ -108,7 +189,7 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
 DiscoverStepDataT = TypeVar('DiscoverStepDataT', bound=DiscoverStepData)
 
 
-class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
+class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, list['tmt.base.Test']]):
     """
     Common parent of discover plugins
     """
@@ -119,6 +200,10 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
 
     # Methods ("how: ..." implementations) registered for the same step.
     _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry('step.discover')
+
+    @property
+    def test_dir(self) -> Path:
+        return self.phase_workdir / 'tests'
 
     @classmethod
     def base_command(
@@ -145,12 +230,15 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
 
         return discover
 
-    def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
+    def go(
+        self, *, path: Optional[Path] = None, logger: Optional[tmt.log.Logger] = None
+    ) -> list['tmt.base.Test']:
         """
         Perform actions shared among plugins when beginning their tasks
         """
 
         self.go_prolog(logger or self._logger)
+        return []
 
     @abc.abstractmethod
     def tests(
@@ -441,6 +529,255 @@ class Discover(tmt.steps.Step):
         for test_origin in self.tests(enabled=True):
             self.verbose(test_origin.test.name, color='red', shift=2)
 
+    def _fetch_remote_repository(
+        self,
+        url: str,
+        shallow: bool,
+        test_dir: Path,
+        phase_workdir: Path,
+        url_content_type: Literal["git", "archive"] = "git",
+    ) -> None:
+        """
+        Fetch remote git repo from given url to test_dir.
+
+        :param url: URL of the remote repository.
+        :param shallow: Whether to perform a shallow clone.
+        :param test_dir: Path to the directory where the repository should be cloned.
+        :param phase_workdir: Path to the phase working directory.
+        :param url_content_type: Type of the content at the URL ("git" or "archive").
+        """
+        self.info('url', url, 'green')
+        if url_content_type == "git":
+            self.debug(f"Clone '{url}' to '{test_dir}'.")
+            tmt.utils.git.git_clone(
+                url=url,
+                destination=test_dir,
+                shallow=shallow,
+                env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
+                logger=self._logger,
+            )
+        elif url_content_type == "archive":
+            archive_path = tmt.utils.url.download(url, phase_workdir, logger=self._logger)
+            self.debug(f"Extracting archive to '{test_dir}'.")
+            shutil.unpack_archive(archive_path, test_dir)
+        else:
+            raise ValueError(f"url-content-type has unsupported value: {url_content_type}")
+
+    def _fetch_local_repository(
+        self,
+        path: Optional[Path],
+        test_dir: Path,
+        requires_git: bool,
+        dist_git_source: bool,
+        dist_git_merge: bool,
+    ) -> Optional[Path]:
+        """
+        Fetch local repository from given path to test_dir.
+
+        :param path: Path to the local repository.
+        :param test_dir: Path to the directory where the repository should be copied.
+        :param requires_git: Whether the operation requires a git repository.
+        :param dist_git_source: Whether to handle DistGit sources.
+        :param dist_git_merge: Whether to merge DistGit sources into the test directory.
+        :returns: Path to the root of the metadata tree within the copied repository.
+        """
+        if path is not None:
+            fmf_root: Path = path
+            # Path for distgit sources cannot be checked until
+            # they are extracted
+            if not path.is_dir() and not dist_git_source:
+                raise tmt.utils.DiscoverError(f"Provided path '{path}' is not a directory.")
+        elif self.plan.fmf_root is not None:
+            fmf_root = self.plan.fmf_root
+        elif self.plan.worktree is not None:
+            fmf_root = self.plan.worktree
+        else:
+            raise tmt.utils.DiscoverError("No metadata found in the current directory.")
+
+        if dist_git_source:
+            # Ensure we're in a git repo when extracting dist-git sources
+            if self.plan.fmf_root is None:
+                raise tmt.utils.DiscoverError(
+                    "DistGit source extraction requires a git repository."
+                )
+            git_root = tmt.utils.git.git_root(fmf_root=self.plan.fmf_root, logger=self._logger)
+            if not git_root:
+                raise tmt.utils.DiscoverError(f"{self.plan.fmf_root} is not a git repository.")
+        else:
+            # Check git repository root (use fmf root if not found)
+            git_root = tmt.utils.git.git_root(fmf_root=fmf_root, logger=self._logger)
+            if not git_root:
+                self.debug(f"Git root not found, using '{fmf_root}.'")
+                git_root = fmf_root
+            # Set path to relative path from the git root to fmf root
+            path = fmf_root.resolve().relative_to(
+                git_root.resolve() if requires_git else fmf_root.resolve()
+            )
+
+        # Copy the git/fmf root directory to test_dir
+        # (for dist-git case only when merge explicitly requested)
+        directory = git_root if requires_git else fmf_root
+        self.info('directory', directory, 'green')
+        if not dist_git_source or dist_git_merge:
+            self.debug(f"Copy '{directory}' to '{test_dir}'.")
+            if not self.is_dry_run:
+                tmt.utils.filesystem.copy_tree(directory, test_dir, self._logger)
+
+        return path
+
+    def _fetch_repository(self, phase: DiscoverPlugin[DiscoverStepData]) -> Optional[Path]:
+        """
+        Fetch repository according to phase configuration.
+
+        :param phase: Discover phase instance.
+        :returns: Path to the root of the metadata tree within the fetched repository.
+        """
+        path = Path(phase.data.path) if phase.data.path else None
+        if phase.data.url is not None:
+            self._fetch_remote_repository(
+                url=phase.data.url,
+                shallow=phase.data.ref is None,
+                test_dir=phase.test_dir,
+                phase_workdir=phase.phase_workdir,
+                url_content_type=phase.data.url_content_type,
+            )
+            return path
+        return self._fetch_local_repository(
+            path=path,
+            test_dir=phase.test_dir,
+            requires_git=any(getattr(phase.data, key, None) for key in _REQUIRES_GIT),
+            dist_git_source=bool(phase.get('dist-git-source', False)),
+            dist_git_merge=bool(phase.get('dist-git-merge', False)),
+        )
+
+    def _checkout_ref(self, phase: DiscoverPlugin[DiscoverStepData]) -> None:
+        """
+        Resolve dynamic reference and perform checkout based on phase configuration
+        """
+        # Prepare path of the dynamic reference
+        try:
+            ref = tmt.base.resolve_dynamic_ref(
+                logger=self._logger,
+                workdir=phase.test_dir,
+                ref=phase.data.ref,
+                plan=self.plan,
+            )
+        except tmt.utils.FileError as error:
+            raise tmt.utils.DiscoverError("Could not resolve dynamic reference") from error
+
+        if ref:
+            self.info('ref', ref, 'green')
+            self.debug(f"Checkout ref '{ref}'.")
+            self.run(Command('git', 'checkout', '-f', ref), cwd=phase.test_dir)
+
+        # Show current commit hash if inside a git repository
+        if phase.test_dir.is_dir():
+            with contextlib.suppress(tmt.utils.RunError, AttributeError):
+                self.verbose(
+                    'commit-hash',
+                    tmt.utils.git.git_hash(directory=phase.test_dir, logger=self._logger),
+                    'green',
+                )
+
+    def _prune_tree(
+        self,
+        phase: DiscoverPlugin[DiscoverStepData],
+        tests: list['tmt.base.Test'],
+        clone_dir: Path,
+        path: Optional[Path],
+    ) -> None:
+        """
+        Prune test directory to include only discovered tests and required metadata.
+
+        :param phase: Discover phase instance.
+        :param tests: List of discovered tests.
+        :param clone_dir: Path to the temporary clone directory.
+        :param path: Original path used for discovery.
+        """
+        if path is None or path.resolve() == Path.cwd().resolve():
+            path = Path('')
+
+        tree_path = phase.test_dir / path.unrooted()
+        clone_tree_path = clone_dir / path.unrooted()
+
+        # Save fmf metadata
+        for file_path in tmt.utils.filter_paths(tree_path, [r'\.fmf']):
+            tmt.utils.filesystem.copy_tree(
+                file_path,
+                clone_tree_path / file_path.relative_to(tree_path),
+                self._logger,
+            )
+
+        # Save upgrade plan
+        upgrade_path = phase.get('upgrade-path')
+        if upgrade_path:
+            upgrade_path = f"{upgrade_path.lstrip('/')}.fmf"
+            (clone_tree_path / upgrade_path).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(tree_path / upgrade_path, clone_tree_path / upgrade_path)
+            shutil.copymode(tree_path / upgrade_path, clone_tree_path / upgrade_path)
+
+        for test in tests:
+            # Save only current test data
+            assert test.path is not None  # narrow type
+            relative_test_path = test.path.unrooted()
+            tmt.utils.filesystem.copy_tree(
+                tree_path / relative_test_path,
+                clone_tree_path / relative_test_path,
+                self._logger,
+            )
+
+            # Copy all parent main.fmf files
+            parent_dir = relative_test_path
+            while parent_dir.resolve() != Path.cwd().resolve():
+                parent_dir = parent_dir.parent
+                if (tree_path / parent_dir / 'main.fmf').exists():
+                    # Ensure parent directory exists
+                    (clone_tree_path / parent_dir).mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(
+                        tree_path / parent_dir / 'main.fmf',
+                        clone_tree_path / parent_dir / 'main.fmf',
+                    )
+
+        # Clean phase.test_dir and copy back only required tests and files from clone_dir
+        # This is to have correct paths in tests
+        shutil.rmtree(phase.test_dir, ignore_errors=True)
+        tmt.utils.filesystem.copy_tree(clone_dir, phase.test_dir, self._logger)
+
+        if phase.clone_dirpath.exists():
+            shutil.rmtree(phase.clone_dirpath, ignore_errors=True)
+
+    def _install_libraries(self, tests: list['tmt.base.Test'], source: Path, target: Path) -> None:
+        """
+        Install required libraries for discovered tests.
+
+        :param tests: List of discovered tests.
+        :param source: Source directory of the tests.
+        :param target: Target directory where libraries should be installed.
+        """
+        import tmt.libraries
+
+        for test in tests:
+            if test.require or test.recommend:
+                test.require, test.recommend, _ = tmt.libraries.dependencies(
+                    original_require=test.require,
+                    original_recommend=test.recommend,
+                    parent=self,
+                    logger=self._logger,
+                    source_location=source,
+                    target_location=target,
+                )
+
+    def _apply_policies(self, tests: list['tmt.base.Test']) -> None:
+        """
+        Apply policies to discovered tests.
+
+        :param tests: List of discovered tests.
+        """
+
+        if self.plan.my_run is not None:
+            for policy in self.plan.my_run.policies:
+                policy.apply_to_tests(tests=tests, logger=self._logger)
+
     def go(self, force: bool = False) -> None:
         """
         Discover all tests
@@ -464,8 +801,20 @@ class Discover(tmt.steps.Step):
                 if not phase.enabled_by_when:
                     continue
 
+                path = self._fetch_repository(phase)
+                self._checkout_ref(phase)
+
                 # Go and discover tests
-                phase.go()
+                tests = phase.go(path=path)
+
+                if phase.get('prune', False):
+                    clone_dir = phase.clone_dirpath / 'tests'
+                    self._install_libraries(tests, phase.test_dir, clone_dir)
+                    self._prune_tree(phase, tests, clone_dir, path)
+                else:
+                    self._install_libraries(tests, phase.test_dir, phase.test_dir)
+
+                self._apply_policies(tests)
 
                 self._tests[phase.name] = []
 
