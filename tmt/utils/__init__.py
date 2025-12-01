@@ -5976,6 +5976,8 @@ def resource_files(
       or entry-point's root.
     :param package: primary package in which to search for the file/directory.
     :param logger: logger to report plugin import failures
+    :param assert_file: makes sure the return value is a file (raising
+      FileNotFoundError otherwise)
     :returns: a (maybe multiplexed) path to the requested file or directory.
     """
 
