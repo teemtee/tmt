@@ -1,0 +1,62 @@
+# Remote plans to be imported - these would normally be in a separate repo
+# For testing purposes, we use plans within the same tree
+
+# A basic remote plan with minimal report step
+/remote-plan:
+    summary: Remote plan with basic reporting
+    execute:
+        how: shell
+        script: echo "Remote plan executed"
+    report:
+        how: display
+
+# A remote plan with no report step
+/remote-plan-no-report:
+    summary: Remote plan without any report step
+    execute:
+        how: shell
+        script: echo "Remote plan without report executed"
+
+# Local plans that import the remote plans
+
+/inherit-report-only:
+    summary: Local plan that inherits report step only
+    report:
+        how: junit
+        file: /tmp/results.xml
+    plan:
+        import:
+            url: https://github.com/teemtee/tests
+            name: /remote-plan-no-report
+            inherit-context: false
+            inherit-environment: false
+            adjust-report: true
+            adjust-finish: false
+
+/inherit-and-merge-report:
+    summary: Local plan that merges with existing remote report step
+    report:
+        how: junit
+        file: /tmp/local-results.xml
+    plan:
+        import:
+            url: https://github.com/teemtee/tests
+            name: /remote-plan
+            inherit-context: false
+            inherit-environment: false
+            adjust-report: true
+            adjust-finish: false
+
+/no-step-inheritance:
+    summary: Local plan with no step inheritance (control test)
+    report:
+        how: junit
+        file: /tmp/control-results.xml
+    plan:
+        import:
+            url: https://github.com/teemtee/tests
+            name: /remote-plan
+            inherit-context: false
+            inherit-environment: false
+            adjust-report: false
+            adjust-finish: false
