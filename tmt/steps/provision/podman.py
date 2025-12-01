@@ -163,8 +163,8 @@ class GuestContainer(tmt.Guest):
         Returns the network arguments to be used in podman run command.
         """
 
-        run_id = self._tmt_name().split('-')[1]
-        self.network = f"tmt-{run_id}-network"
+        # Use the full container name to ensure network uniqueness across parallel runs
+        self.network = f"{self._tmt_name()}-network"
 
         try:
             self.podman(
