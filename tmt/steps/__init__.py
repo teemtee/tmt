@@ -2367,19 +2367,45 @@ class Reboot(Action):
             multiple=True,
             help='Reboot machine during given phase of selected step(s).',
         )
-        @option('--soft', is_flag=True, help='Soft reboot of the machine.')
-        @option('--systemd-soft', is_flag=True, help='Systemd soft reboot of the machine.')
         @option(
-            '--hard', is_flag=True, help='Hard reboot of the machine. Unsaved data may be lost.'
+            '--soft',
+            is_flag=True,
+            help=f"""
+                 Perform a soft reboot of the guest.
+                 ``{DEFAULT_SOFT_REBOOT_COMMAND}`` is executed on the
+                 guest, unless ``command`` is set to be used instead.
+                 """,
+        )
+        @option(
+            '--systemd-soft',
+            is_flag=True,
+            help=f"""
+                 Perform a systemd soft-reboot of the guest userspace.
+                 ``{DEFAULT_SYSTEMD_SOFT_REBOOT_COMMAND}`` is executed
+                 on the guest, unless ``command`` is set to be used
+                 instead.
+                 """,
+        )
+        @option(
+            '--hard',
+            is_flag=True,
+            help="""
+                 Perform a hard reboot of the guest (power off/on-like
+                 event). A hard reboot may be unsupported by the
+                 corresponding ``provision`` plugin, in such a case,
+                 ``reboot`` will fail with an error.
+                 """,
         )
         @option(
             '--command',
             type=str,
             default=None,
-            help=f"""
-            A command to run on the guest to trigger the reboot.
-            Default is ``{DEFAULT_SOFT_REBOOT_COMMAND}``.
-            """,
+            help="""
+                 A command to run on the guest to trigger the reboot.
+                 Applied only with the ``soft`` and ``systemd-soft``
+                 reboot modes, as ``hard`` mode reboot does not involve
+                 any commands executed on the guest.
+                 """,
         )
         def reboot(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             """
