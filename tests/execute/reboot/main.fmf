@@ -46,3 +46,10 @@ tier: 4
     tag+:
       - provision-only
       - provision-virtual
+
+/systemd-soft-reboot:
+    summary: Verify that systemd soft-reboot works
+    test: ./systemd-soft-reboot.sh
+    tag+:
+      - provision-only
+      - provision-virtual
