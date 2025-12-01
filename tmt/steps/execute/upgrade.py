@@ -11,8 +11,8 @@ import tmt.steps.execute
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field, key_to_option
-from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
-from tmt.steps.discover.fmf import DiscoverFmf, DiscoverFmfStepData, normalize_ref
+from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData, normalize_ref
+from tmt.steps.discover.fmf import DiscoverFmf, DiscoverFmfStepData
 from tmt.steps.execute import ExecutePlugin
 from tmt.steps.execute.internal import ExecuteInternal, ExecuteInternalData
 from tmt.steps.prepare import PreparePlugin
@@ -413,14 +413,14 @@ class ExecuteUpgrade(ExecuteInternal):
             assert self._discover_upgrade is not None
             if self.upgrade_path:
                 # Create a fake discover from the data in the upgrade path
-                plan = self._get_plan(self._discover_upgrade.testdir)
+                plan = self._get_plan(self._discover_upgrade.test_dir)
                 data = self._prepare_remote_discover_data(plan)
                 # Unset `url` because we don't want discover step to perform clone. Instead,
                 # we want it to reuse existing, already cloned path.
                 # ignore[typeddict-unknown-key]: data is _RwStepData, we do not have more detailed
                 # type for raw step data of internal/upgrade plugins, it would be pretty verbose.
                 data['url'] = None  # type: ignore[typeddict-unknown-key]
-                data['path'] = self._discover_upgrade.testdir  # type:ignore[typeddict-unknown-key]
+                data['path'] = self._discover_upgrade.test_dir  # type:ignore[typeddict-unknown-key]
                 # FIXME: cast() - https://github.com/teemtee/tmt/issues/1599
                 self._discover_upgrade = cast(
                     DiscoverFmf, DiscoverPlugin.delegate(self.step, raw_data=data)
