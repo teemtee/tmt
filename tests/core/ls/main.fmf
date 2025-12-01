@@ -2,3 +2,4 @@ summary: List available stories, plans and tests
 description:
     Make sure that 'tmt stories ls', 'tmt tests ls'
     and 'tmt plans ls' work as expected.
+tier: 1

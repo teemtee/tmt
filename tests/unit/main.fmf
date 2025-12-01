@@ -43,11 +43,9 @@ require+:
 
     /basic:
         summary: Basic unit tests (development packages)
-        tier: 0
 
     /extended:
         summary: Extended unit tests (development packages)
-        tier: 2
         duration: 1h
 
         environment+: &extended_environment
@@ -71,11 +69,9 @@ require+:
 
     /basic:
         summary: Basic unit tests (system packages)
-        tier: 0
 
     /extended:
         summary: Extended unit tests (system packages)
-        tier: 2
         duration: 1h
 
         environment+: *extended_environment

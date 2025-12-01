@@ -5,3 +5,4 @@ description:
     provided as command line options (including variables loaded
     from a YAML file) override all. Ensure that environment
     variables have the desired effect.
+tier: 1
