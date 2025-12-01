@@ -12,6 +12,7 @@ from itertools import groupby
 from typing import Any, Callable, ClassVar, Optional, Union, cast
 
 import fmf
+import fmf.context
 import fmf.utils
 
 import tmt
@@ -300,7 +301,15 @@ class Try(tmt.utils.Common):
             # pyright isn't able to infer the type.
             user_plans = list(cast(Iterator[fmf.Tree], config_tree.prune(names=[f"^{plan_name}"])))
             if user_plans:
+                # Since the tree without user plans was already adjusted, we need to adjust
+                # each user plan in separation and merge them to the main tree.
                 for user_plan in user_plans:
+                    user_plan.adjust(
+                        fmf.context.Context(**self.tree.fmf_context),
+                        case_sensitive=False,
+                        decision_callback=tmt.base.create_adjust_callback(self._logger),
+                        additional_rules=self.tree._additional_rules,
+                    )
                     plan_dict: dict[str, Any] = {user_plan.name: user_plan.data}
                     self.tree.tree.update(plan_dict)
                 self.debug("Use the default user plan config.")
