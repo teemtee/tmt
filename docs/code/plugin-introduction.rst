@@ -16,7 +16,7 @@ provided in the ``TMT_PLUGINS`` environment variable and from
    Consider adding a static type checker (e.g. ``mypy``) in your
    plugin's CI using the ``main`` branch of ``tmt``.
 
-.. versionadded:: 1.62
+.. versionadded:: 1.63
    You can use ``tmt.resources`` entry point to inject resource
    files to be used for tmt, e.g. schemas or templates. See
    :ref:`additional-resources` for more details.
