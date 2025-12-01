@@ -857,9 +857,10 @@ Regular
 ------------------------------------------------------------------
 
 Make sure there is at least one release note prepared in the
-``docs/releases/pending`` directory and start a new release using
-the ``release`` script. Provide the full version as the parameter,
-for example:
+``docs/releases/pending`` directory. If there is none, create at
+least a short summary in ``docs/releases/pending/changes.fmf``.
+Start a new release using the ``release`` script. Provide the full
+version as the parameter, for example:
 
   .. code-block:: bash
 
