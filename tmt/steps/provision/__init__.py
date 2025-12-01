@@ -738,17 +738,17 @@ class GuestFacts(SerializableContainer):
 
     def _query_has_selinux(self, guest: 'Guest') -> Optional[bool]:
         """
-        Detect whether guest uses SELinux.
+        Detect whether guest has SELinux and it is enabled.
 
-        For detection ``/proc/filesystems`` is used, see ``man 5 filesystems`` for details.
+        For detection ``/sys/fs/selinux/enforce`` is used. This file exists
+        only when SELinux is actually available and mounted (regardless of
+        enforcing/permissive mode).
         """
-
-        output = self._execute(guest, Command('cat', '/proc/filesystems'))
-
-        if output is None or output.stdout is None:
-            return None
-
-        return 'selinux' in output.stdout
+        try:
+            guest.execute(Command('test', '-e', '/sys/fs/selinux/enforce'), silent=True)
+            return True
+        except tmt.utils.RunError:
+            return False
 
     def _query_has_systemd(self, guest: 'Guest') -> Optional[bool]:
         """
