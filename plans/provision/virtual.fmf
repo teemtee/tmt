@@ -71,6 +71,11 @@ adjust+:
 /execute:
     discover+:
         test: "^/tests/execute"
+        exclude: "^/tests/execute/upgrade"
+
+/upgrade:
+    discover+:
+        test: "^/tests/execute/upgrade"
 
 /the-rest:
     discover+:
