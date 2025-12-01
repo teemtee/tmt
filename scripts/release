@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 help="
 Start a new release
 ~~~~~~~~~~~~~~~~~~~
