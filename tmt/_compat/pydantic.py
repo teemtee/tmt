@@ -30,6 +30,15 @@ if PYDANTIC_V1:
                 )
             return cls.parse_obj(obj)
 
+        @classmethod
+        def model_validate_json(cls, json_data: str, **kwargs: Any) -> Self:  # type: ignore[override]
+            if kwargs:
+                raise NotImplementedError(
+                    "Backport of model_validate_json to parse_raw does not include kwargs."
+                )
+
+            return cls.parse_raw(json_data, content_type="application/json")
+
         def model_dump(self, **kwargs: Any) -> dict[str, Any]:
             return self.dict(**kwargs)
 
