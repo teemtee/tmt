@@ -64,12 +64,8 @@ rlJournalStart
                 rlRun "distro=fedora-rawhide"
                 rlRun "package_manager=dnf5"
 
-            elif is_fedora_42 "$image"; then
-                rlRun "distro=fedora-42"
-                rlRun "package_manager=dnf5"
-
-            elif is_fedora_41 "$image"; then
-                rlRun "distro=fedora-41"
+            elif is_fedora_43 "$image"; then
+                rlRun "distro=fedora-43"
                 rlRun "package_manager=dnf5"
 
             elif is_centos_stream_9 "$image"; then
@@ -161,7 +157,7 @@ rlJournalStart
             fi
         rlPhaseEnd
 
-        if [ "$PROVISION_HOW" = "container" ] && rlIsFedora 41 && is_fedora_41 "$image"; then
+        if [ "$PROVISION_HOW" = "container" ] && rlIsFedora 43 && is_fedora_43 "$image"; then
             rlPhaseStartTest "$phase_prefix Install downloaded packages from current directory (plan)"
                 fetch_downloaded_packages "$image"
 
@@ -244,10 +240,7 @@ rlJournalStart
             elif is_fedora_rawhide "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_fedora_42 "$image"; then
-                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
-
-            elif is_fedora_41 "$image"; then
+            elif is_fedora_43 "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ubuntu "$image" || is_debian "$image"; then
@@ -282,10 +275,7 @@ rlJournalStart
             elif is_fedora_rawhide "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
-            elif is_fedora_42 "$image"; then
-                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
-
-            elif is_fedora_41 "$image"; then
+            elif is_fedora_43 "$image"; then
                 rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ubuntu "$image" || is_debian "$image"; then
