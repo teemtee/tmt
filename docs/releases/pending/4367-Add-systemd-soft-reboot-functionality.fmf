@@ -1,0 +1,9 @@
+description: |
+  Systemd `soft-reboot`__, a userspace-only reboot which does not reset
+  kernel state, is now supported by tmt when supported by the
+  guest: systemd must be in control, and boot ID must be available.
+  tmt would use the ``systemctl soft-reboot`` command to trigger the
+  reboot. Both ``tmt-reboot`` script and ``reboot`` phase support it,
+  via ``tmt-reboot -s`` command and ``systemd-soft`` key, respectively.
+
+  __ https://www.freedesktop.org/software/systemd/man/latest/systemd-soft-reboot.service.html
