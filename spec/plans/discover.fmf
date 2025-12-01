@@ -57,7 +57,7 @@ description: |
         are directly in ``TMT_SOURCE_DIR``.
 
         To run the plan without uploading source files to the lookaside
-        the type ``local`` can be used. Sources has to be listed in the ``source``
+        the type ``local`` can be used. Sources have to be listed in the ``source``
         file and present in the same directory as the ``spec`` file.
 
         The :ref:`/plugins/discover/fmf` plugin supports

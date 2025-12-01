@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     import tmt.base
 
 
-FILE_PROTOCOL = 'file://'
+FILE_SCHEMA = 'file://'
 
 
 @container
@@ -653,7 +653,7 @@ class LocalDistGit(DistGitHandler):
 
     usage_name = "local"
     re_source = re.compile(r"^(\w+) \(([^)]+)\) = ([0-9a-fA-F]+)$")
-    lookaside_server = FILE_PROTOCOL
+    lookaside_server = FILE_SCHEMA
     uri = "{cwd}/{filename}"
 
     def its_me(self, remotes: list[str]) -> bool:
@@ -720,9 +720,9 @@ def distgit_download(
 
     for url, source_name in handler.url_and_name(distgit_dir):
         target_dir.mkdir(exist_ok=True, parents=True)
-        if url.startswith(FILE_PROTOCOL):
+        if url.startswith(FILE_SCHEMA):
             # Cannot use copy_tree src is a file, not a dir
-            shutil.copy(url[len(FILE_PROTOCOL) :], target_dir / source_name)
+            shutil.copy(url[len(FILE_SCHEMA) :], target_dir / source_name)
         else:
             tmt.utils.url.download(url, target_dir / source_name, logger=logger)
 
