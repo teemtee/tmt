@@ -325,4 +325,5 @@ linkcheck_cache_period = 1.0
 
 redirects = {
     "releases": "releases/index.html",
+    "code/autodocs": "z_autodocs/",
 }
