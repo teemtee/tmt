@@ -169,6 +169,24 @@ properties:
           inherit-environment:
             type: boolean
 
+          adjust-discover:
+            type: boolean
+
+          adjust-prepare:
+            type: boolean
+
+          adjust-execute:
+            type: boolean
+
+          adjust-finish:
+            type: boolean
+
+          adjust-report:
+            type: boolean
+
+          adjust-cleanup:
+            type: boolean
+
         required:
           - url
           - name

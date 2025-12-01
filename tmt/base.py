@@ -1948,6 +1948,12 @@ class _RemotePlanReference(_RawFmfId):
     scope: Optional[str]
     inherit_context: Optional[bool]
     inherit_environment: Optional[bool]
+    adjust_discover: Optional[bool]
+    adjust_prepare: Optional[bool]
+    adjust_execute: Optional[bool]
+    adjust_finish: Optional[bool]
+    adjust_report: Optional[bool]
+    adjust_cleanup: Optional[bool]
 
 
 class RemotePlanReferenceImporting(enum.Enum):
@@ -1991,12 +1997,24 @@ class RemotePlanReference(
         'scope',
         'inherit-context',
         'inherit-environment',
+        'adjust-discover',
+        'adjust-prepare',
+        'adjust-execute',
+        'adjust-finish',
+        'adjust-report',
+        'adjust-cleanup',
     ]
 
     importing: RemotePlanReferenceImporting = RemotePlanReferenceImporting.REPLACE
     scope: RemotePlanReferenceImportScope = RemotePlanReferenceImportScope.FIRST_PLAN_ONLY
     inherit_context: bool = True
     inherit_environment: bool = True
+    adjust_discover: bool = False
+    adjust_prepare: bool = False
+    adjust_execute: bool = False
+    adjust_finish: bool = False
+    adjust_report: bool = False
+    adjust_cleanup: bool = False
 
     @functools.cached_property
     def name_pattern(self) -> Pattern[str]:
@@ -2081,6 +2099,12 @@ class RemotePlanReference(
         )
         reference.inherit_context = bool(raw.get('inherit-context', True))
         reference.inherit_environment = bool(raw.get('inherit-environment', True))
+        reference.adjust_discover = bool(raw.get('adjust-discover', False))
+        reference.adjust_prepare = bool(raw.get('adjust-prepare', False))
+        reference.adjust_execute = bool(raw.get('adjust-execute', False))
+        reference.adjust_finish = bool(raw.get('adjust-finish', False))
+        reference.adjust_report = bool(raw.get('adjust-report', False))
+        reference.adjust_cleanup = bool(raw.get('adjust-cleanup', False))
 
         return reference
 
@@ -3361,6 +3385,16 @@ class Plan(
                     {**imported_fmf_context, **self._noninheritable_fmf_context}
                 )
 
+            # Merge step configurations from the importing plan for all steps
+            for step_name in ['discover', 'prepare', 'execute', 'finish', 'report', 'cleanup']:
+                adjust_attr = f'adjust_{step_name}'
+                if (
+                    hasattr(reference, adjust_attr)
+                    and getattr(reference, adjust_attr)
+                    and self.node.get(step_name)
+                ):
+                    self._merge_step_configurations(node, step_name)
+
             # Adjust the imported tree, to let any `adjust` rules defined in it take
             # action.
             node.adjust(fmf.context.Context(**alteration_fmf_context), case_sensitive=False)
@@ -3561,6 +3595,37 @@ class Plan(
             return True
 
         return False
+
+    def _merge_step_configurations(self, node: fmf.Tree, step: str) -> None:
+        """
+        Merge step configurations from this plan into the imported node.
+
+        :param node: The imported fmf node to modify
+        :param step: The step name (e.g., 'report', 'finish')
+        """
+        local_step_data = self.node.get(step)
+        remote_step_data = node.data.get(step)
+
+        if local_step_data is None:
+            return
+
+        # Normalize both local and remote step data to lists
+        if not isinstance(local_step_data, list):
+            local_step_data = [local_step_data]
+
+        if remote_step_data is None:
+            # If remote plan has no step configuration, use the local one
+            node.data[step] = local_step_data
+        else:
+            # If remote plan has step configuration, append local configuration
+            if not isinstance(remote_step_data, list):
+                remote_step_data = [remote_step_data]
+
+            # Merge by appending local step configurations to remote ones
+            merged_steps = remote_step_data + local_step_data
+            node.data[step] = merged_steps
+
+        self.debug(f"Merged {step} step configuration from importing plan.", level=3)
 
     # TODO: Make the str type-hint more narrow
     def add_phase(self, step: Union[str, tmt.steps.Step], phase: tmt.steps.Phase) -> None:
