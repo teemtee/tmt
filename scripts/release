@@ -31,7 +31,7 @@ fi
 step "Get the latest changes from main..."
 git fetch
 git checkout release
-if ! git merge origin/main; then
+if ! git merge --ff-only origin/main; then
     echo "Merge conflicts detected. Please resolve them manually."
     exit 1
 fi

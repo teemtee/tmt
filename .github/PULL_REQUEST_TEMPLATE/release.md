@@ -3,13 +3,14 @@
 
 - [ ] Review the release notes content and update the text as needed
 - [ ] Write release notes for any essential changes which were missed
-- [ ] Verify the rendering using `make docs` or the ``docs/readthedocs.org:tmt`` check
+- [ ] Verify the rendering locally using `make docs` or the `docs/readthedocs.org:tmt` GitHub action check
 - [ ] Use `./scripts/list-new-contributors` to identify new contributors, update `docs/overview.rst` accordingly
 - [ ] Commit and push all release notes and contributor changes
 - [ ] Make sure that the full test coverage has been successfully executed
 
 ### Tag, release, downstream
 
+- [ ] After the release PR is merged, checkout `main` branch and `git pull`. *Make sure you have the release commit*
 - [ ] Tag the commit with `x.y.z`, push tags using `git push --tags`
 - [ ] Create a new [github release](https://github.com/teemtee/tmt/releases/) based on the tag above
 - [ ] Mention the most important changes in the release name, do not include version
