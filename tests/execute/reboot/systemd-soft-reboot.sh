@@ -4,7 +4,8 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-virtual}"
-        rlRun "run=\$(mktemp -d)" 0 "Create run directory"
+        # We need /var/tmp, the rundir must survive reboot.
+        rlRun "run=\$(mktemp -d -p /var/tmp)" 0 "Create run directory"
         rlRun "set -o pipefail"
         rlRun "pushd systemd-soft-reboot"
     rlPhaseEnd
