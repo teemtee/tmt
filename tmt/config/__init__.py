@@ -132,9 +132,9 @@ class Config:
         theme_config = self._parse_config_subtree('/theme', ThemeConfig)
 
         if theme_config is None:
-            return ThemeConfig.get_default_theme()
+            return ThemeConfig.get_default_theme(logger=self.logger)
 
-        return theme_config.get_active_theme()
+        return theme_config.get_active_theme(logger=self.logger)
 
     @property
     def hardware(self) -> Optional[HardwareConfig]:

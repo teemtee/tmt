@@ -9,7 +9,6 @@ import dataclasses
 import datetime
 import enum
 import functools
-import importlib.resources
 import io
 import json
 import os
@@ -69,7 +68,9 @@ from ruamel.yaml.representer import Representer
 from urllib3.response import HTTPResponse
 
 import tmt.log
+from tmt._compat import importlib
 from tmt._compat.annotationlib import Format, get_annotations
+from tmt._compat.importlib.readers import MultiplexedPath
 from tmt._compat.pathlib import Path
 from tmt._compat.typing import ParamSpec
 from tmt.container import container
@@ -4851,10 +4852,13 @@ def _load_schema(schema_filepath: Path) -> Schema:
     A helper returning the raw loaded schema.
     """
 
-    if not schema_filepath.is_absolute():
-        schema_filepath = resource_files('schemas') / schema_filepath
-
     try:
+        if not schema_filepath.is_absolute():
+            schema_filepath = resource_files(
+                f'schemas/{schema_filepath}',
+                logger=tmt.log.Logger.get_bootstrap_logger(),
+                assert_file=True,
+            )
         return cast(Schema, yaml_to_dict(schema_filepath.read_text(encoding='utf-8')))
 
     except Exception as error:
@@ -4889,7 +4893,7 @@ def load_schema_store() -> SchemaStore:
     """
 
     store: SchemaStore = {}
-    schema_dirpath = resource_files('schemas')
+    schema_dirpath = resource_files('schemas', logger=tmt.log.Logger.get_bootstrap_logger())
 
     try:
         for filepath in schema_dirpath.glob('**/*ml'):
@@ -5892,22 +5896,97 @@ def is_key_origin(node: fmf.Tree, key: str) -> bool:
     return origin is not None and node.name == origin.name
 
 
-def resource_files(path: Union[str, Path], package: Union[str, ModuleType] = "tmt") -> Path:
+# TODO: Move this in a dedicated module
+@functools.cache
+def _get_resource_files_search_path(
+    package: Union[str, ModuleType], logger: tmt.log.Logger
+) -> Union[Path, MultiplexedPath]:
+    """
+    Helper (cached) function for :py:func:`resource_files`.
+
+    :param package: primary package in which to search for the file/directory.
+    :param logger: logger to report plugin import failures
+    :returns: the search path for resource files
+    """
+
+    package_path = MultiplexedPath(importlib.resources.files(package))
+
+    # Additional resource files can be imported from entry-point
+    entry_point_name = 'tmt.resources'
+
+    entry_point_group = importlib.metadata.entry_points(group=entry_point_name)
+
+    final_paths = [package_path]
+    for ep in entry_point_group:
+        try:
+            ep_module = ep.load()
+            ep_path = MultiplexedPath(importlib.resources.files(ep_module))
+            final_paths.append(ep_path)
+        except ModuleNotFoundError:
+            logger.warning(f"Failed to load plugin resources: {ep}")
+        except Exception as err:
+            # Other exceptions are rather weird
+            logger.warning(f"Unexpected failure in parsing: {ep}\n{err}")
+    return MultiplexedPath(*final_paths)
+
+
+@overload
+def resource_files(
+    path: Union[str, Path],
+    package: Union[str, ModuleType] = "tmt",
+    *,
+    logger: tmt.log.Logger,
+    assert_file: Literal[True],
+) -> Path: ...
+
+
+@overload
+def resource_files(
+    path: Union[str, Path],
+    package: Union[str, ModuleType] = "tmt",
+    *,
+    logger: tmt.log.Logger,
+    assert_file: Literal[False] = False,
+) -> Union[Path, MultiplexedPath]: ...
+
+
+def resource_files(
+    path: Union[str, Path],
+    package: Union[str, ModuleType] = "tmt",
+    *,
+    logger: tmt.log.Logger,
+    assert_file: bool = False,
+) -> Union[Path, MultiplexedPath]:
     """
     Helper function to get path of package file or directory.
 
     A thin wrapper for :py:func:`importlib.resources.files`:
-    ``files()`` returns ``Traversable`` object, though in our use-case
-    it should always produce a :py:class:`pathlib.PosixPath` object.
-    Converting it to :py:class:`tmt.utils.Path` instance should be
-    safe and stick to the "``Path`` only!" rule in tmt's code base.
+    ``files()`` returns ``Traversable`` object that can be either a
+    :py:class:`pathlib.PosixPath` or a :py:class:`importlib.reader.MultiplexedPath`.
 
-    :param path: file or directory path to retrieve, relative to the ``package`` root.
-    :param package: package in which to search for the file/directory.
-    :returns: an absolute path to the requested file or directory.
+    These are instead converted to :py:class:`tmt._compat.pathlib.Path` or
+    :py:class:`tmt._compat.importlib.readers.MultiplexedPath` (which in turn converts
+    its child paths to :py:class:`tmt._compat.pathlib.Path`). This preserves the
+    "``Path`` only!" rule in tmt's code base.
+
+    The search paths are merged from the ``package`` files and any entry-point in the
+    group ``tmt.resources`` which has the same path structure.
+
+    :param path: file or directory path to retrieve, relative to the ``package``
+      or entry-point's root.
+    :param package: primary package in which to search for the file/directory.
+    :param logger: logger to report plugin import failures
+    :param assert_file: makes sure the return value is a file (raising
+      FileNotFoundError otherwise)
+    :returns: a (maybe multiplexed) path to the requested file or directory.
     """
 
-    return Path(importlib.resources.files(package)) / path  # type: ignore[arg-type]
+    search_path = _get_resource_files_search_path(package, logger)
+    resource_path = search_path / path
+    if assert_file and not resource_path.is_file():
+        raise FileNotFoundError(f"Resource {path} not found")
+    assert isinstance(resource_path, (Path, MultiplexedPath))
+    return resource_path
 
 
 class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):

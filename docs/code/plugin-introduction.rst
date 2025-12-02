@@ -16,6 +16,11 @@ provided in the ``TMT_PLUGINS`` environment variable and from
    Consider adding a static type checker (e.g. ``mypy``) in your
    plugin's CI using the ``main`` branch of ``tmt``.
 
+.. versionadded:: 1.63
+   You can use ``tmt.resources`` entry point to inject resource
+   files to be used for tmt, e.g. schemas or templates. See
+   :ref:`additional-resources` for more details.
+
 
 Inheritance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,3 +67,48 @@ features which cannot be covered by generic ssh implementation of
 the ``Guest`` class.
 
 __ https://github.com/teemtee/tmt/tree/main/examples/plugins
+
+.. _additional-resources:
+
+Additional resource files
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In order to make resource files available to the base ``tmt``
+execution, you need to point a ``tmt.resources`` entry point to the
+root python package where the resource files are located from, e.g.
+with in the ``examples/plugins``:
+
+.. code-block:: toml
+   :caption: pyproject.toml
+   :emphasize-lines: 5,6
+
+   [project.entry-points."tmt.plugin"]
+   ProvisionExample = "example.provision:ProvisionExample"
+   DiscoverExample = "example.discover:DiscoverExample"
+
+   [project.entry-points."tmt.resources"]
+   ResourcesExample = "example"
+
+you can, for example, add a json schema file for the plugins
+implemented above by including the schema files under a ``schemas``
+folder:
+
+.. code-block:: shell
+
+   $ tree ./example
+   ./example
+   ├── __init__.py
+   ├── discover.py
+   ├── provision.py
+   └── schemas
+       ├── discover
+       │   └── example.yaml
+       └── provision
+           └── example.yaml
+
+.. note::
+
+   Both the entry-point entries as well as any resource file
+   under the ``tmt.resources`` path **must** have unique names.
+   Consider namespacing all relevant entries with the name of the
+   project or an unambiguous derivative of it.

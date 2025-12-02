@@ -12,6 +12,7 @@ import tmt.result
 import tmt.steps
 import tmt.steps.report
 import tmt.utils
+from tmt._compat.importlib.readers import MultiplexedPath
 from tmt.container import container, field
 from tmt.result import ResultOutcome
 from tmt.utils import Path
@@ -28,7 +29,7 @@ DEFAULT_FLAVOR_NAME = 'default'
 CUSTOM_FLAVOR_NAME = 'custom'
 
 # Relative path to tmt junit template directory.
-DEFAULT_TEMPLATE_DIR = Path('steps/report/junit/templates/')
+DEFAULT_TEMPLATE_RESOURCE = 'steps/report/junit/templates'
 
 
 @overload
@@ -282,15 +283,24 @@ def make_junit_xml(
     # Prepare the template environment
     environment = default_template_environment()
 
-    template_path = template_path or tmt.utils.resource_files(
-        DEFAULT_TEMPLATE_DIR / Path(f'{flavor}.xml.j2')
-    )
+    try:
+        template_path = template_path or tmt.utils.resource_files(
+            f'{DEFAULT_TEMPLATE_RESOURCE}/{flavor}.xml.j2',
+            logger=phase._logger,
+            assert_file=True,
+        )
+    except FileNotFoundError as exc:
+        raise tmt.utils.GeneralError(f"Could not open template '{flavor}.xml.j2'.") from exc
 
     # Use a FileSystemLoader for a non-custom flavor
     if flavor != CUSTOM_FLAVOR_NAME:
-        environment.loader = FileSystemLoader(
-            searchpath=tmt.utils.resource_files(DEFAULT_TEMPLATE_DIR)
-        )
+        # TODO: Relax Loader requirement to be Path type, see PackageLoader implementation
+        #   (missing entry-point handling there)
+        searchpath = tmt.utils.resource_files(DEFAULT_TEMPLATE_RESOURCE, logger=phase._logger)
+        if isinstance(searchpath, MultiplexedPath):
+            phase.warn(f"Multiplexed {DEFAULT_TEMPLATE_RESOURCE} not supported")
+            searchpath = searchpath._paths[0]
+        environment.loader = FileSystemLoader(searchpath=searchpath)
 
     def _read_log_filter(log: Path) -> str:
         """
@@ -363,9 +373,14 @@ def make_junit_xml(
 
     # The schema check must be done only for a non-custom JUnit flavors
     if flavor != CUSTOM_FLAVOR_NAME:
-        xsd_schema_path = Path(
-            tmt.utils.resource_files(Path(f'steps/report/junit/schemas/{flavor}.xsd'))
-        )
+        try:
+            xsd_schema_path = tmt.utils.resource_files(
+                f'steps/report/junit/schemas/{flavor}.xsd',
+                logger=phase._logger,
+                assert_file=True,
+            )
+        except FileNotFoundError as exc:
+            raise tmt.utils.GeneralError(f"Junit schema '{flavor}.xsd' not found") from exc
 
         schema_root: XMLElement = etree.XML(xsd_schema_path.read_bytes())
         xml_parser_kwargs['schema'] = etree.XMLSchema(schema_root)

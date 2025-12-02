@@ -1,11 +1,12 @@
 import functools
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import tmt
 import tmt.config
 import tmt.log
 import tmt.utils
 import tmt.utils.templates
+from tmt._compat.importlib.readers import MultiplexedPath
 from tmt.utils import Path
 
 DEFAULT_CUSTOM_TEMPLATES_PATH = tmt.config.effective_config_dir() / 'templates'
@@ -32,20 +33,25 @@ def _combine(default: TemplatesType, custom: TemplatesType) -> TemplatesType:
     return result
 
 
-def _get_template_file_paths(path: Path) -> dict[str, Path]:
+def _get_template_file_paths(path: Union[Path, MultiplexedPath]) -> dict[str, Path]:
     """
     Get a dictionary of template names and their file paths.
     :param path: Path to the directory to search for templates.
     """
 
-    return {
-        file.name.removesuffix(TEMPLATE_FILE_SUFFIX): file
-        for file in path.iterdir()
-        if file.is_file() and file.suffix == TEMPLATE_FILE_SUFFIX
-    }
+    templates: dict[str, Path] = {}
+    file: Union[Path, MultiplexedPath]
+    for file in path.iterdir():  # pyright: ignore[reportAssignmentType, reportUnknownVariableType]
+        if not file.is_file():
+            continue
+        assert isinstance(file, Path)  # Narrow type
+        if file.suffix != TEMPLATE_FILE_SUFFIX:
+            continue
+        templates[file.name.removesuffix(TEMPLATE_FILE_SUFFIX)] = file
+    return templates
 
 
-def _get_templates(root_dir: Path) -> TemplatesType:
+def _get_templates(root_dir: Union[Path, MultiplexedPath]) -> TemplatesType:
     """
     Get all templates in given root directory.
     :param root_dir: Path to the directory to search for templates.
@@ -95,7 +101,10 @@ class TemplateManager:
         Return all default templates.
         """
 
-        templates_dir = tmt.utils.resource_files('templates/')
+        templates_dir = tmt.utils.resource_files(
+            'templates/',
+            logger=tmt.log.Logger.get_bootstrap_logger(),
+        )
         templates = _get_templates(templates_dir)
         if not templates:
             raise tmt.utils.GeneralError(f"Could not find default templates in '{templates_dir}'.")
