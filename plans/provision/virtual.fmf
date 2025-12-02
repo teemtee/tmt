@@ -67,6 +67,11 @@ adjust+:
 /prepare:
     discover+:
         test: "^/tests/prepare"
+        exclude: "^/tests/prepare/install"
+
+/install:
+    discover+:
+        test: "^/tests/prepare/install"
 
 /execute:
     discover+:
