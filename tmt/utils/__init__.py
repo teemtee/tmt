@@ -2957,7 +2957,7 @@ def render_report(
 
     .. code-block::
 
-        # {label}
+        # --- {label}
         # Started at {timer.start_time_formatted}, finished at {timer.end_time_formatted} ({timer.duration})
 
         {body}  // When `body` was provided.
