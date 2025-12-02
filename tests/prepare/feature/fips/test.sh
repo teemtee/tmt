@@ -29,7 +29,7 @@ rlJournalStart
             rlRun -s "tmt -vvv run -a plan --name /plans/fips/enabled provision --how virtual --image fedora-coreos" 2
             rlAssertGrep "FIPS prepare feature is not supported on ostree or container systems." $rlRun_LOG
             rlRun -s "tmt -vvv run -a plan --name /fips/enabled provision --how virtual --image fedora-rawhide" 2
-            rlAssertGrep "FIPS prepare feature is supported on RHEL/CentOS-Stream 8, 9 or 10." $rlRun_LOG
+            rlAssertGrep "FIPS prepare feature is supported on RHEL 7 and RHEL/CentOS-Stream 8, 9 or 10." $rlRun_LOG
         fi
     rlPhaseEnd
 
