@@ -29,6 +29,11 @@ rlJournalStart
         for plan in "local" "remote"; do
             phase_prefix="$(test_phase_prefix $image) [/$plan]"
 
+            # No need to exercise the 'remote' plan across all supported images
+            if [ "$plan" == "remote" ] && ! is_fedora_43 "$image"; then
+                continue
+            fi
+
             rlPhaseStartTest "$phase_prefix Test Ansible playbook"
                 if is_fedora_coreos "$image"; then
                         rlLogInfo "Skipping because of https://github.com/teemtee/tmt/issues/2884: tmt cannot run tests on Fedora CoreOS containers"

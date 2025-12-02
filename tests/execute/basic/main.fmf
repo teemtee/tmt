@@ -1,11 +1,8 @@
 summary: Check that test status is correctly reported
 duration: 20m
+tier: 1
 tag+:
   - beakerlib
   - provision-connect
   - provision-container
   - provision-virtual
-
-  # TODO remove once https://github.com/teemtee/tmt/issues/1853
-  # is fixed so that the local provision is exercised as well.
-  - provision-only
