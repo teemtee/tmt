@@ -11,7 +11,7 @@ rlJournalStart
           # TODO: Handle centos artifacts also
           rlDie "Skipping because non-fedora test is not implemented"
         fi
-        rlRun "fedora_release=$(rlGetDistroRelease)"
+        rlRun "fedora_release=43"
         build_container_image "fedora/${fedora_release}:latest"
     rlPhaseEnd
 
