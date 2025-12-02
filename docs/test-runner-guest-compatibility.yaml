@@ -6,9 +6,8 @@ environments:
   - CentOS Stream 8
   - CentOS Stream 9
   - CentOS Stream 10
-  - Fedora 39
-  - Fedora 40
-  - Fedora 41
+  - Fedora 42
+  - Fedora 43
   - Fedora Rawhide
   - Alpine 3
   - Debian 12
