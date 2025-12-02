@@ -532,8 +532,6 @@ class BootMark(abc.ABC):
 
             raise tmt.utils.wait.WaitingIncompleteError from error
 
-        raise NotImplementedError
-
 
 class BootMarkSystemdSoftRebootCount(BootMark):
     """

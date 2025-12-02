@@ -1231,9 +1231,6 @@ class GuestTestcloud(tmt.GuestSsh):
         if mode == RebootMode.SOFT:
             self.debug("Soft reboot using the testcloud API.")
 
-            if self._instance is None:
-                raise tmt.utils.ProvisionError("No instance initialized.")
-
             # ignore[union-attr]: mypy still considers `self._instance` as possibly
             # being `None`, missing the explicit check above.
             return self.perform_reboot(
