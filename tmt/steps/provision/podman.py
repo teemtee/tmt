@@ -9,7 +9,13 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
-from tmt.steps.provision import DEFAULT_PUSH_OPTIONS, GuestCapability, RebootMode, TransferOptions
+from tmt.steps.provision import (
+    DEFAULT_PUSH_OPTIONS,
+    GuestCapability,
+    Provision,
+    RebootMode,
+    TransferOptions,
+)
 from tmt.utils import (
     Command,
     OnProcessEndCallback,
@@ -161,10 +167,31 @@ class GuestContainer(tmt.Guest):
         Will look for existing network using the tmt workdir name,
         or will create that network if it doesn't exist.
         Returns the network arguments to be used in podman run command.
+
+        For multi-guest provisions, all guests share the same network to enable
+        communication between them.
         """
 
-        # Use the full container name to ensure network uniqueness across parallel runs
-        self.network = f"{self._tmt_name()}-network"
+        # Use provision-level network name to allow multi-guest communication
+        # while avoiding collisions across different test runs
+        if self.parent:
+            # Cast the parent to Provision to satisfy type checkers
+            provision_step = cast(Provision, self.parent)
+
+            # Access the run ID via the plan and my_run
+            if provision_step.plan.my_run and provision_step.plan.my_run.workdir:
+                run_id = provision_step.plan.my_run.workdir.name
+            else:
+                raise tmt.utils.GeneralError("Cannot create network: run workdir is not available")
+        else:
+            raise tmt.utils.GeneralError(
+                "Cannot create network: provision step parent is not available"
+            )
+
+        # Use more characters from run_id and add process ID to reduce collision risk
+        # while maintaining some correlation with workdir for debugging
+        network_suffix = f"{run_id[-8:]}-{os.getpid()}"
+        self.network = f"tmt-{network_suffix}-network"
 
         try:
             self.podman(
