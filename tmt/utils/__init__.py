@@ -2877,12 +2877,16 @@ def render_command_report(
 
     .. code-block::
 
-        # {label}                       // When `label` was provided.
+        # --- {label}                      // When `label` was provided.
 
-        # {command}                     // When `command` was provided.
+        # Command: {command}               // When `command` was provided.
 
-        # finished successfully         // When `output` was provided.
-        # exit code: {exc.returncode}   // When `output` was not provided, but `exc` was.
+        # Exit code: {exc.returncode}      // When `output` was not provided, but `RunError` was.
+        # Failed to complete successfully  // When `output` was not provided, but `exc` was.
+        # Finished successfully            // When `output` was provided, but `exc` wasn't.
+
+        // Both stdout and stderr are included if either `RunError` or
+        // `output` were provided.
 
         # stdout (N lines)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
