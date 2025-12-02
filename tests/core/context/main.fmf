@@ -1,3 +1,4 @@
 summary: Verify that context dimension values are case-insensitive
 description:
     Perform a basic check using 'tmt plan show'.
+tier: 1

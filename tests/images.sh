@@ -22,8 +22,7 @@ TEST_CONTAINER_IMAGES="${TEST_CONTAINER_IMAGES:-$TEST_IMAGE_PREFIX/alpine:latest
 $TEST_IMAGE_PREFIX/centos/7/upstream:latest
 $TEST_IMAGE_PREFIX/centos/stream9/upstream:latest
 $TEST_IMAGE_PREFIX/centos/stream10/upstream:latest
-$TEST_IMAGE_PREFIX/fedora/41/upstream:latest
-$TEST_IMAGE_PREFIX/fedora/42/upstream:latest
+$TEST_IMAGE_PREFIX/fedora/43/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/rawhide/upstream:latest
 $TEST_IMAGE_PREFIX/ubi/8/upstream:latest
 $TEST_IMAGE_PREFIX/ubuntu/22.04/upstream:latest
@@ -36,8 +35,7 @@ $TEST_IMAGE_PREFIX/debian/12.7/upstream:latest}"
 # TODO: enable centos-7 again with modified repo files
 TEST_VIRTUAL_IMAGES="${TEST_VIRTUAL_IMAGES:-centos-stream-9
 centos-stream-10
-fedora-41
-fedora-42
+fedora-43
 fedora-rawhide
 fedora-coreos}"
 
@@ -49,16 +47,16 @@ function is_fedora_rawhide () {
     return 1
 }
 
-function is_fedora_41 () {
-    [[ "$1" =~ ^.*fedora/41[:/].* ]] && return 0
-    [[ "$1" = "fedora-41" ]] && return 0
+function is_fedora_42 () {
+    [[ "$1" =~ ^.*fedora/42[:/].* ]] && return 0
+    [[ "$1" = "fedora-42" ]] && return 0
 
     return 1
 }
 
-function is_fedora_42 () {
-    [[ "$1" =~ ^.*fedora/42[:/].* ]] && return 0
-    [[ "$1" = "fedora-42" ]] && return 0
+function is_fedora_43 () {
+    [[ "$1" =~ ^.*fedora/43[:/].* ]] && return 0
+    [[ "$1" = "fedora-43" ]] && return 0
 
     return 1
 }
