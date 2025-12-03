@@ -7,7 +7,7 @@ import fmf.utils
 import tmt
 import tmt.log
 import tmt.utils
-from tmt.base import DependencyFile
+from tmt.base.core import DependencyFile
 from tmt.utils import Path
 
 from . import Library

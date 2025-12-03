@@ -1,18 +1,18 @@
 from typing import Any, Optional
 
-import tmt.base
+import tmt.base.core
 import tmt.export
 import tmt.export.template
 import tmt.utils
 from tmt.utils import Path
 
 
-@tmt.base.Story.provides_export('rst')
+@tmt.base.core.Story.provides_export('rst')
 class RestructuredExporter(tmt.export.ExportPlugin):
     @classmethod
     def export_story(
         cls,
-        story: tmt.base.Story,
+        story: tmt.base.core.Story,
         keys: Optional[list[str]] = None,
         template: Optional[Path] = None,
         include_title: bool = True,
@@ -28,7 +28,7 @@ class RestructuredExporter(tmt.export.ExportPlugin):
     @classmethod
     def export_story_collection(
         cls,
-        stories: list[tmt.base.Story],
+        stories: list[tmt.base.core.Story],
         keys: Optional[list[str]] = None,
         template: Optional[Path] = None,
         include_title: bool = True,

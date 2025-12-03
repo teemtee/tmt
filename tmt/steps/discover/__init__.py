@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     import tmt.options
     import tmt.steps
 
-import tmt.base
+import tmt.base.core
 import tmt.steps
 import tmt.utils
 from tmt.options import option
@@ -70,7 +70,7 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
         help="Install package build dependencies according to the specfile.",
     )
 
-    dist_git_require: list['tmt.base.DependencySimple'] = field(
+    dist_git_require: list['tmt.base.core.DependencySimple'] = field(
         default_factory=list,
         option="--dist-git-require",
         metavar='PACKAGE',
@@ -80,14 +80,14 @@ class DiscoverStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
             The ``rpm-build`` package itself is installed automatically.
             """,
         # *simple* requirements only
-        normalize=lambda key_address, value, logger: tmt.base.assert_simple_dependencies(
-            tmt.base.normalize_require(key_address, value, logger),
+        normalize=lambda key_address, value, logger: tmt.base.core.assert_simple_dependencies(
+            tmt.base.core.normalize_require(key_address, value, logger),
             "'dist_git_require' can be simple packages only",
             logger,
         ),
         serialize=lambda packages: [package.to_spec() for package in packages],
         unserialize=lambda serialized: [
-            tmt.base.DependencySimple.from_spec(package) for package in serialized
+            tmt.base.core.DependencySimple.from_spec(package) for package in serialized
         ],
     )
 
@@ -237,7 +237,7 @@ class Discover(tmt.steps.Step):
     def __init__(
         self,
         *,
-        plan: 'tmt.base.Plan',
+        plan: 'tmt.base.core.Plan',
         data: tmt.steps.RawStepDataArgument,
         logger: tmt.log.Logger,
     ) -> None:
@@ -391,7 +391,8 @@ class Discover(tmt.steps.Step):
         # Check the execute step for possible custom duration limit
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1540
         duration = cast(
-            str, getattr(self.plan.execute.data[0], 'duration', tmt.base.DEFAULT_TEST_DURATION_L2)
+            str,
+            getattr(self.plan.execute.data[0], 'duration', tmt.base.core.DEFAULT_TEST_DURATION_L2),
         )
 
         # Prepare the list of tests
@@ -518,10 +519,10 @@ class Discover(tmt.steps.Step):
                 click.echo(''.join(export_fmf_ids), nl=False)
             return
 
-        if self.should_run_again and tmt.base.Test._opt('failed_only'):
-            failed_results: list[tmt.base.Result] = []
+        if self.should_run_again and tmt.base.core.Test._opt('failed_only'):
+            failed_results: list[tmt.base.core.Result] = []
             assert self.parent is not None  # narrow type
-            assert isinstance(self.parent, tmt.base.Plan)  # narrow type
+            assert isinstance(self.parent, tmt.base.core.Plan)  # narrow type
 
             # Get failed results from previous run execute
             failed_results = [

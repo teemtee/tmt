@@ -41,4 +41,4 @@ example:
         component: dash
 
 link:
-  - implemented-by: /tmt/base.py
+  - implemented-by: /tmt/base/core.py

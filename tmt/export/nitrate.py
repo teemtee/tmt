@@ -26,7 +26,7 @@ from tmt.utils.structured_field import StructuredField
 from tmt.utils.themes import style
 
 if TYPE_CHECKING:
-    import tmt.base
+    import tmt.base.core
 
 
 NITRATE_TRACKER_ID = 69  # ID of nitrate in RH's bugzilla
@@ -87,7 +87,7 @@ def _nitrate_find_fmf_testcases(test: 'tmt.Test') -> Iterator[Any]:
     All component general plans are explored for possible duplicates.
     """
 
-    import tmt.base
+    import tmt.base.core
 
     assert nitrate
     for component in test.component:
@@ -95,8 +95,11 @@ def _nitrate_find_fmf_testcases(test: 'tmt.Test') -> Iterator[Any]:
             for testcase in find_general_plan(component).testcases:
                 struct_field = StructuredField(testcase.notes)
                 try:
-                    fmf_id = tmt.base.FmfId.from_spec(
-                        cast(tmt.base._RawFmfId, tmt.utils.yaml_to_dict(struct_field.get('fmf')))
+                    fmf_id = tmt.base.core.FmfId.from_spec(
+                        cast(
+                            tmt.base.core._RawFmfId,
+                            tmt.utils.yaml_to_dict(struct_field.get('fmf')),
+                        )
                     )
                     if fmf_id == test.fmf_id:
                         echo(
@@ -123,11 +126,11 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
     as html strings.
     """
 
-    import tmt.base
+    import tmt.base.core
 
     sections_headings: SectionsHeadingsType = {
         heading: []
-        for heading_list in tmt.base.SECTIONS_HEADINGS.values()
+        for heading_list in tmt.base.core.SECTIONS_HEADINGS.values()
         for heading in heading_list
     }
 
@@ -250,7 +253,7 @@ def enabled_somewhere(test: 'tmt.Test') -> bool:
     return False
 
 
-def enabled_for_environment(test: 'tmt.base.Test', tcms_notes: str) -> bool:
+def enabled_for_environment(test: 'tmt.base.core.Test', tcms_notes: str) -> bool:
     """
     Check whether test is enabled for specified environment
     """
@@ -421,7 +424,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
     Export fmf metadata to nitrate test cases
     """
 
-    import tmt.base
+    import tmt.base.core
 
     import_nitrate()
     assert nitrate
@@ -670,7 +673,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
     verifies_bug_ids = []
     if test.link:
         for link in test.link.get('verifies'):
-            if isinstance(link.target, tmt.base.FmfId):
+            if isinstance(link.target, tmt.base.core.FmfId):
                 log.debug(f"Will not look for bugzila URL in fmf id '{link.target}'.")
                 continue
 
@@ -708,11 +711,11 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
         tmt.export.bz_set_coverage(verifies_bug_ids, nitrate_case.id, NITRATE_TRACKER_ID)
 
 
-@tmt.base.Test.provides_export('nitrate')
+@tmt.base.core.Test.provides_export('nitrate')
 class NitrateExporter(tmt.export.ExportPlugin):
     @classmethod
     def export_test_collection(
-        cls, tests: list[tmt.base.Test], keys: Optional[list[str]] = None, **kwargs: Any
+        cls, tests: list[tmt.base.core.Test], keys: Optional[list[str]] = None, **kwargs: Any
     ) -> str:
         for test in tests:
             export_to_nitrate(test)

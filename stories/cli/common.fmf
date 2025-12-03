@@ -49,7 +49,7 @@ story:
         - tmt story export --how rst
     link:
       - implemented-by: /tmt/cli
-      - implemented-by: /tmt/base.py
+      - implemented-by: /tmt/base/core.py
       - documented-by: /tmt/cli
 
 /debug:

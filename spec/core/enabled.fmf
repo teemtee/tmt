@@ -28,6 +28,6 @@ example: |
     tmt tests ls --filter enabled:true
 
 link:
-  - implemented-by: /tmt/base.py
+  - implemented-by: /tmt/base/core.py
   - verified-by: /tests/test/select
   - verified-by: /tests/core/enabled

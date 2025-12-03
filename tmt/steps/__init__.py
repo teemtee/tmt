@@ -68,12 +68,12 @@ from tmt.utils import (
 from tmt.utils.templates import render_template
 
 if TYPE_CHECKING:
-    import tmt.base
+    import tmt.base.core
     import tmt.cli
     import tmt.plugins
     import tmt.steps.discover
     import tmt.steps.execute
-    from tmt.base import Plan
+    from tmt.base.core import Plan
     from tmt.result import BaseResult, PhaseResult
     from tmt.steps.provision import Guest
 
@@ -94,9 +94,9 @@ _PLUGIN_CLASS_NAME_TO_STEP_PATTERN = re.compile(r'tmt.steps.([a-z]+)')
 #
 
 #: The default order of any object.
-# TODO: this is a duplication of tmt.base.DEFAULT_ORDER. Unfortunately, tmt.base
+# TODO: this is a duplication of tmt.base.core.DEFAULT_ORDER. Unfortunately, tmt.base.core
 # imports tmt.steps, not the other way around.
-# `PHASE_ORDER_DEFAULT = tmt.base.DEFAULT_ORDER` would be way better.
+# `PHASE_ORDER_DEFAULT = tmt.base.core.DEFAULT_ORDER` would be way better.
 PHASE_ORDER_DEFAULT = 50
 #: Installation of essential plugin and check requirements.
 PHASE_ORDER_PREPARE_INSTALL_ESSENTIAL_REQUIRES = 30
@@ -1881,7 +1881,7 @@ class BasePlugin(
         """
 
         # Avoid circular imports
-        import tmt.base
+        import tmt.base.core
 
         # Show empty config with default method only in verbose mode
         if self.data.is_bare and not self.verbosity_level:
@@ -2035,7 +2035,7 @@ class BasePlugin(
         # Include order in verbose mode
         logger.verbose('order', self.order, 'magenta', level=3)
 
-    def essential_requires(self) -> list['tmt.base.Dependency']:
+    def essential_requires(self) -> list['tmt.base.core.Dependency']:
         """
         Collect all essential requirements of the plugin.
 
@@ -2397,7 +2397,7 @@ class Login(Action):
         if force or self._enabled_by_results(self.parent.plan.execute.results()):
             self._login()
 
-    def _enabled_by_results(self, results: list['tmt.base.Result']) -> bool:
+    def _enabled_by_results(self, results: list['tmt.base.core.Result']) -> bool:
         """
         Verify possible test result condition
         """
@@ -2482,7 +2482,7 @@ class Login(Action):
 
     def after_test(
         self,
-        results: list['tmt.base.Result'],
+        results: list['tmt.base.core.Result'],
         cwd: Optional[Path] = None,
         env: Optional[tmt.utils.Environment] = None,
     ) -> None:

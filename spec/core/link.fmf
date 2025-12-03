@@ -111,4 +111,4 @@ example: |
             name: /stories/select/filter/regexp
         note: Need to get the regexp filter working first.
 link:
-  - implemented-by: /tmt/base.py
+  - implemented-by: /tmt/base/core.py
