@@ -43,14 +43,9 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     """
     Prepare artifacts on the guest.
 
-    This plugin allows you to download artifacts (like RPMs) from various sources
-    (like Koji, Brew, or local files) and make them available on the guest
-    as a local repository.
-
     .. note::
 
-       The downloaded artifacts are aggregated into a shared repository
-       on the guest, and the repository is configured in the package manager.
+       This is a draft plugin to be implemented
     """
 
     _data_class = PrepareArtifactData
