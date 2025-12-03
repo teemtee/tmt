@@ -29,7 +29,7 @@ jobs:
           activate-environment: true
 
       - name: Install tmt[docs]
-        run: uv sync --locked --extra docs
+        run: uv sync --frozen --extra docs
 
       - name: Run sphinx html builder
         run: sphinx-build -b html docs/ docs/_build -W
