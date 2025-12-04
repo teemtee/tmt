@@ -100,7 +100,7 @@ Provides:       tmt-provision-bootc == %{version}-%{release}
 Requires:       tmt == %{version}-%{release}
 Requires:       tmt+provision-virtual == %{version}-%{release}
 Requires:       podman
-Recommends:     podman-machine
+Requires:       podman-machine
 
 %description -n tmt+provision-bootc %_metapackage_description
 
