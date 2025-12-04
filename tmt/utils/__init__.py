@@ -5597,12 +5597,27 @@ def normalize_data_amount(
     from pint import Quantity
 
     if isinstance(raw_value, Quantity):
-        return raw_value
+        # Validate existing quantity can be converted to bytes
+        try:
+            raw_value.to('bytes')
+            return raw_value
+        except Exception as exc:
+            raise NormalizationError(
+                key_address, raw_value, 'a valid data quantity (e.g., 1MB, 32MiB, 100KiB)'
+            ) from exc
 
     if isinstance(raw_value, str):
         import tmt.hardware
 
-        return tmt.hardware.UNITS(raw_value)
+        try:
+            quantity = tmt.hardware.UNITS(raw_value)
+            # Check unit compatibility by converting to bytes
+            quantity.to('bytes')
+            return quantity
+        except Exception as exc:
+            raise NormalizationError(
+                key_address, raw_value, 'a valid data quantity (e.g., 1MB, 32MiB, 100KiB)'
+            ) from exc
 
     raise NormalizationError(key_address, raw_value, 'a quantity or a string')
 
