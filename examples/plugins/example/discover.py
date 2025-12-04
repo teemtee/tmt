@@ -1,9 +1,20 @@
 import tmt
 import tmt.steps
 import tmt.steps.discover
+from tmt.container import container, field
 
 # See the online documentation for more details about writing plugins
 # https://tmt.readthedocs.io/en/stable/plugins.html
+
+
+@container
+class DiscoverExampleData(tmt.steps.discover.DiscoverStepData):
+    path: str = field(
+        default=".",
+        option=('-p', '--path'),
+        metavar='ROOT',
+        help='Path to the metadata tree root.',
+    )
 
 
 @tmt.steps.provides_method('example')
@@ -15,6 +26,8 @@ class DiscoverExample(tmt.steps.discover.DiscoverPlugin):
     in the --help message. It is recommended to include a couple
     of configuration examples as well.
     """
+
+    _data_class = DiscoverExampleData
 
     def show(self):
         """
@@ -53,7 +66,7 @@ class DiscoverExample(tmt.steps.discover.DiscoverPlugin):
         print("Code should prepare environment for tests.")
 
         # Discover available tests
-        self._tests = tmt.Tree(logger=self._logger, path=".").tests()
+        self._tests = tmt.Tree(logger=self._logger, path=self.data.path).tests()
 
     def tests(self):
         """

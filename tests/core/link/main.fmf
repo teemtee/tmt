@@ -3,3 +3,4 @@ description:
     Check that the 'tmt story show', 'tmt plan show' and 'tmt
     test show' correctly display links. Verify that 'tmt story
     coverage' gives reasonable results.
+tier: 1

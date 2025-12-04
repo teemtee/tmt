@@ -39,7 +39,7 @@ from tmt.utils.themes import style
 if TYPE_CHECKING:
     import tmt.base
 
-TEMPLATES_DIRECTORY = tmt.utils.resource_files('export/templates')
+TEMPLATES_RESOURCE = 'export/templates'
 
 bugzilla: Optional[types.ModuleType] = None
 

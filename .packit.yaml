@@ -152,7 +152,7 @@ jobs:
     <<: *require-core-tests
     targets: *latest-targets
     identifier: core
-    tmt_plan: '/plans/features/(core|basic)'
+    tmt_plan: '/plans/features/core'
 
   # Test full
   - <<: *test-base

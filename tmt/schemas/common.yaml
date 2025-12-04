@@ -171,6 +171,7 @@ definitions:
       - centos
       - fedora
       - rhel
+      - local
 
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#dist-git-source
   dist-git-download-only:

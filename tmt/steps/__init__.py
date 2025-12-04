@@ -4,6 +4,7 @@ Step Classes
 
 import abc
 import collections
+import datetime
 import functools
 import itertools
 import re
@@ -55,6 +56,8 @@ from tmt.container import (
 from tmt.options import option
 from tmt.utils import (
     DEFAULT_NAME,
+    Command,
+    CommandOutput,
     Environment,
     EnvVarValue,
     GeneralError,
@@ -64,6 +67,8 @@ from tmt.utils import (
     HasStepWorkdir,
     Path,
     RunError,
+    ShellScript,
+    Stopwatch,
 )
 from tmt.utils.templates import render_template
 
@@ -2095,6 +2100,140 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
     """
     Common parent of all step plugins that do work against a particular guest
     """
+
+    @overload
+    def write_command_report(
+        self,
+        *,
+        path: Path,
+        label: str,
+        timer: Stopwatch,
+        command: Optional[Union[Command, ShellScript]] = None,
+        output: CommandOutput,
+        exc: None = None,
+    ) -> None:
+        pass
+
+    @overload
+    def write_command_report(
+        self,
+        *,
+        path: Path,
+        label: str,
+        timer: Stopwatch,
+        command: Optional[Union[Command, ShellScript]] = None,
+        output: None = None,
+        exc: Exception,
+    ) -> None:
+        pass
+
+    def write_command_report(
+        self,
+        *,
+        path: Path,
+        label: str,
+        timer: Stopwatch,
+        command: Optional[Union[Command, ShellScript]] = None,
+        output: Optional[CommandOutput] = None,
+        exc: Optional[Exception] = None,
+    ) -> None:
+        """
+        Create a report for a given command outcome.
+
+        Combines :py:func:`tmt.utils.render_report` and
+        :py:func:`tmt.utils.render_command_report` to create a report
+        for a given command, its output, and possibly its failure. The
+        report is then appended to the given file.
+
+        .. note::
+
+            This method is focusing on reporting of command outcomes.
+            It provides standardized header, fields, and formatting.
+            For reports consisting of other topics see
+            :py:func:`tmt.utils.render_report` and :py:meth:`write_report`.
+
+        .. note::
+
+            This method is designed for reporting an action of a single
+            command. If you need to report an action consisting of
+            multiple commands, build the body of the report by calling
+            :py:func:`tmt.utils.render_command_report` for individual
+            commands, and use :py:meth:`write_report` to finish the
+            report.
+
+            .. code-block:: python
+
+                body: list[str] = []
+
+                for command in commands:
+                    body.extend(render_command_report(...))
+
+                self.write_report(..., body=body)
+
+        :param path: the report file to write into.
+        :param label: see :py:func:`tmt.utils.render_report`.
+        :param timer: see :py:func:`tmt.utils.render_report`.
+        :param command: see :py:func:`tmt.utils.render_command_report`.
+        :param output: see :py:func:`tmt.utils.render_command_report`.
+        :param exc: see :py:func:`tmt.utils.render_command_report`.
+        """
+
+        def _render_outcome_report() -> Iterator[str]:
+            yield from tmt.utils.render_report(
+                label=label,
+                timer=timer,
+            )
+
+            if output is not None:
+                yield from tmt.utils.render_command_report(
+                    command=command,
+                    output=output,
+                )
+
+            elif exc is not None:
+                yield from tmt.utils.render_command_report(command=command, exc=exc)
+
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.touch()
+
+        self.write(path, '\n'.join(_render_outcome_report()), mode='a')
+
+    def write_report(
+        self,
+        *,
+        path: Path,
+        label: str,
+        timer: Stopwatch,
+        body: Optional[Iterable[str]] = None,
+    ) -> None:
+        """
+        Format and write an arbitrary body of text into a report file.
+
+        Uses :py:func:`tmt.utils.render_report` to create a report with
+        a given content. The report is then appended to the given file.
+
+        .. note::
+
+            This method is focusing on reporting of arbitrary actions.
+            It provides standardized header, fields, and formatting.
+            For reports of command outcomes see
+            :py:func:`tmt.utils.render_command_report` and
+            :py:meth:`write_command_report`.
+
+        :param path: the report file to write into.
+        :param label: see :py:func:`tmt.utils.render_report`.
+        :param timer: see :py:func:`tmt.utils.render_report`.
+        :param body: see :py:func:`tmt.utils.render_report`.
+        """
+
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.touch()
+
+        self.write(
+            path,
+            '\n'.join(tmt.utils.render_report(label=label, timer=timer, report=body)),
+            mode='a',
+        )
 
     @abc.abstractmethod
     def go(

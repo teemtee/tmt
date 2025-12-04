@@ -1,3 +1,10 @@
 summary: Test Fedora Rawhide mock container
 description:
     A simple test to see if the provision handles multiple tests.
+
+adjust+:
+  - when: distro == fedora-rawhide
+    check:
+      - how: avc
+        result: xfail
+    because: https://bugzilla.redhat.com/show_bug.cgi?id=2415701

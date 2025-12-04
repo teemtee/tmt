@@ -194,11 +194,11 @@ def assert_not_log(
 CONTAINER_FEDORA_RAWHIDE = Container(
     url='containers-storage:localhost/tmt/container/test/fedora/rawhide/upstream:latest'
 )
+CONTAINER_FEDORA_43 = Container(
+    url='containers-storage:localhost/tmt/container/test/fedora/43/upstream:latest'
+)
 CONTAINER_FEDORA_42 = Container(
     url='containers-storage:localhost/tmt/container/test/fedora/42/upstream:latest'
-)
-CONTAINER_FEDORA_41 = Container(
-    url='containers-storage:localhost/tmt/container/test/fedora/41/upstream:latest'
 )
 CONTAINER_CENTOS_STREAM_10 = Container(
     url='containers-storage:localhost/tmt/container/test/centos/stream10/upstream:latest'

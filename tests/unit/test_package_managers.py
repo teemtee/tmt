@@ -44,8 +44,8 @@ from . import (  # noqa: E402
     CONTAINER_CENTOS_STREAM_9,
     CONTAINER_CENTOS_STREAM_10,
     CONTAINER_DEBIAN_127,
-    CONTAINER_FEDORA_41,
     CONTAINER_FEDORA_42,
+    CONTAINER_FEDORA_43,
     # CONTAINER_FEDORA_COREOS,
     # CONTAINER_FEDORA_COREOS_OSTREE,
     CONTAINER_FEDORA_RAWHIDE,
@@ -76,8 +76,8 @@ def has_legacy_dnf(container: ContainerData) -> bool:
 
     return container.image_url_or_id not in (
         CONTAINER_FEDORA_RAWHIDE.url,
+        CONTAINER_FEDORA_43.url,
         CONTAINER_FEDORA_42.url,
-        CONTAINER_FEDORA_41.url,
         # CONTAINER_FEDORA_COREOS.url,
         # CONTAINER_FEDORA_COREOS_OSTREE.url,
     )
@@ -90,8 +90,8 @@ def has_dnf5_preinstalled(container: ContainerData) -> bool:
 
     return container.image_url_or_id in (
         CONTAINER_FEDORA_RAWHIDE.url,
+        CONTAINER_FEDORA_43.url,
         CONTAINER_FEDORA_42.url,
-        CONTAINER_FEDORA_41.url,
         # CONTAINER_FEDORA_COREOS.url,
         # CONTAINER_FEDORA_COREOS_OSTREE.url,
     )
@@ -124,8 +124,8 @@ def assert_output(
 CONTAINER_BASE_MATRIX = [
     # Fedora
     (CONTAINER_FEDORA_RAWHIDE, PACKAGE_MANAGER_DNF5),
-    (CONTAINER_FEDORA_41, PACKAGE_MANAGER_DNF5),
     (CONTAINER_FEDORA_42, PACKAGE_MANAGER_DNF5),
+    (CONTAINER_FEDORA_43, PACKAGE_MANAGER_DNF5),
     # CentOS Stream
     (CONTAINER_CENTOS_STREAM_10, PACKAGE_MANAGER_DNF),
     (CONTAINER_CENTOS_STREAM_9, PACKAGE_MANAGER_DNF),

@@ -1764,11 +1764,9 @@ def test_render_command_report_output():
                 ),
             )
         )
-        == f"""## foo
-
-# /bar/baz
-
-# exit code: finished successfully
+        == f"""# --- foo
+# Command: /bar/baz
+# Finished successfully
 
 # stdout (1 lines)
 # {delimiter}
@@ -1779,6 +1777,7 @@ This is some stdout
 # {delimiter}
 This is some stderr
 # {delimiter}
+
 """
     )
 
@@ -1800,11 +1799,9 @@ def test_render_command_report_exception():
                 ),
             )
         )
-        == f"""## foo
-
-# /bar/baz
-
-# exit code: 1
+        == f"""# --- foo
+# Command: /bar/baz
+# Exit code: 1
 
 # stdout (1 lines)
 # {delimiter}
@@ -1815,6 +1812,7 @@ This is some stdout
 # {delimiter}
 This is some stderr
 # {delimiter}
+
 """
     )
 
@@ -1823,6 +1821,7 @@ def test_render_command_report_minimal():
     print(list(tmt.utils.render_command_report(label='foo')))
     assert (
         '\n'.join(tmt.utils.render_command_report(label='foo'))
-        == """## foo
+        == """# --- foo
+# Finished successfully
 """
     )

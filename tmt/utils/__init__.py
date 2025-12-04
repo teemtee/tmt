@@ -9,7 +9,6 @@ import dataclasses
 import datetime
 import enum
 import functools
-import importlib.resources
 import io
 import json
 import os
@@ -69,7 +68,9 @@ from ruamel.yaml.representer import Representer
 from urllib3.response import HTTPResponse
 
 import tmt.log
+from tmt._compat import importlib
 from tmt._compat.annotationlib import Format, get_annotations
+from tmt._compat.importlib.readers import MultiplexedPath
 from tmt._compat.pathlib import Path
 from tmt._compat.typing import ParamSpec
 from tmt.container import container
@@ -2841,7 +2842,7 @@ def render_run_exception_streams(
 @overload
 def render_command_report(
     *,
-    label: str,
+    label: Optional[str] = None,
     command: Optional[Union[ShellScript, Command]] = None,
     output: CommandOutput,
     exc: None = None,
@@ -2852,21 +2853,20 @@ def render_command_report(
 @overload
 def render_command_report(
     *,
-    label: str,
+    label: Optional[str] = None,
     command: Optional[Union[ShellScript, Command]] = None,
     output: None = None,
-    exc: RunError,
+    exc: Exception,
 ) -> Iterator[str]:
     pass
 
 
 def render_command_report(
     *,
-    label: str,
+    label: Optional[str] = None,
     command: Optional[Union[ShellScript, Command]] = None,
     output: Optional[CommandOutput] = None,
-    exc: Optional[RunError] = None,
-    comment_sign: str = '#',
+    exc: Optional[Exception] = None,
 ) -> Iterator[str]:
     """
     Format a command output for a report file.
@@ -2877,11 +2877,16 @@ def render_command_report(
 
     .. code-block::
 
-        ## ${label}
+        # --- {label}                      // When `label` was provided.
 
-        # ${command}
+        # Command: {command}               // When `command` was provided.
 
-        # exit code ${exit_code}
+        # Exit code: {exc.returncode}      // When `output` was not provided, but `RunError` was.
+        # Failed to complete successfully  // When `output` was not provided, but `exc` was.
+        # Finished successfully            // When `output` was provided, but `exc` wasn't.
+
+        // Both stdout and stderr are included if either `RunError` or
+        // `output` were provided.
 
         # stdout (N lines)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2893,33 +2898,94 @@ def render_command_report(
         ...
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+    .. note::
+
+        This method is focusing on reporting of command outcomes.
+        For reports consisting of arbitrary topics see
+        :py:meth:`render_report`.
+
     :param label: a string describing the intent of the command. It is
         useful for user who reads the report file eventually.
     :param command: command that was executed.
-    :param output: if set, it contains output of the command. It has
-        higher priority than ``exc``.
-    :param exc: if set, it represents a failed command, and input stored
-        in it is rendered.
-    :param comment_sign: a character to mark lines with comments that
-        document the report.
+    :param output: if set, it contains output of the command which
+        is added to the report.
+    :param exc: if set, and is an instance of :py:class:`RunError`, it
+        represents a failed command, and the recorded output is added to
+        the report. Instances of other exception classes are rendered
+        as tracebacks.
+    :yields: lines of the command report.
     """
 
-    yield f'{comment_sign}{comment_sign} {label}'
-    yield ''
+    if label:
+        yield f'# --- {label}'
 
     if command:
-        yield f'{comment_sign} {command.to_element()}'
-        yield ''
+        yield f'# Command: {command.to_element()}'
 
-    if output is not None:
-        yield f'{comment_sign} exit code: finished successfully'
-        yield ''
-        yield from render_run_exception_streams(output, verbose=1)
-
-    elif exc is not None:
-        yield f'{comment_sign} exit code: {exc.returncode}'
+    if isinstance(exc, RunError):
+        yield f'# Exit code: {exc.returncode}'
         yield ''
         yield from render_run_exception_streams(exc.output, verbose=1)
+        yield ''
+
+    elif exc is not None:
+        yield '# Failed to complete successfully'
+        yield ''
+        yield from render_exception(exc, traceback_verbosity=TracebackVerbosity.LOCALS)
+        yield ''
+
+    elif output is not None:
+        yield '# Finished successfully'
+        yield ''
+        yield from render_run_exception_streams(output, verbose=1)
+        yield ''
+
+    else:
+        yield '# Finished successfully'
+        yield ''
+
+
+def render_report(
+    *, label: str, timer: 'Stopwatch', report: Optional[Iterable[str]] = None
+) -> Iterator[str]:
+    """
+    Format an arbitrary body of text for a report file.
+
+    To provide unified look of various files reporting action outcomes,
+    this helper would combine its arguments and emit lines the caller
+    may then write to a file. The following template is used:
+
+    .. code-block::
+
+        # --- {label}
+        # Started at {timer.start_time_formatted}, finished at {timer.end_time_formatted} ({timer.duration})
+
+        {body}  // When `body` was provided.
+
+    .. note::
+
+        This method is focusing on reporting of arbitrary topics.
+        For reports of command output see see
+        :py:meth:`render_command_report`.
+
+    :param label: a string describing the intent of the command. It is
+        useful for user who reads the report file eventually.
+    :param timer: a stopwatch providing timing-related info about
+        the reported actions.
+    :param report: if provided, represents a sequence of lines to emit
+        into the report file.
+    :yields: lines of the report.
+    """  # noqa: E501
+
+    yield f'# --- {label}'
+    yield (
+        f'# Started at {timer.start_time_formatted},'
+        f' finished at {timer.end_time_formatted}'
+        f' ({timer.duration})'
+    )
+
+    if report is not None:
+        yield from report
 
 
 def render_run_exception(exception: RunError) -> Iterator[str]:
@@ -4851,10 +4917,13 @@ def _load_schema(schema_filepath: Path) -> Schema:
     A helper returning the raw loaded schema.
     """
 
-    if not schema_filepath.is_absolute():
-        schema_filepath = resource_files('schemas') / schema_filepath
-
     try:
+        if not schema_filepath.is_absolute():
+            schema_filepath = resource_files(
+                f'schemas/{schema_filepath}',
+                logger=tmt.log.Logger.get_bootstrap_logger(),
+                assert_file=True,
+            )
         return cast(Schema, yaml_to_dict(schema_filepath.read_text(encoding='utf-8')))
 
     except Exception as error:
@@ -4889,7 +4958,7 @@ def load_schema_store() -> SchemaStore:
     """
 
     store: SchemaStore = {}
-    schema_dirpath = resource_files('schemas')
+    schema_dirpath = resource_files('schemas', logger=tmt.log.Logger.get_bootstrap_logger())
 
     try:
         for filepath in schema_dirpath.glob('**/*ml'):
@@ -5593,12 +5662,27 @@ def normalize_data_amount(
     from pint import Quantity
 
     if isinstance(raw_value, Quantity):
-        return raw_value
+        # Validate existing quantity can be converted to bytes
+        try:
+            raw_value.to('bytes')
+            return raw_value
+        except Exception as exc:
+            raise NormalizationError(
+                key_address, raw_value, 'a valid data quantity (e.g., 1MB, 32MiB, 100KiB)'
+            ) from exc
 
     if isinstance(raw_value, str):
         import tmt.hardware
 
-        return tmt.hardware.UNITS(raw_value)
+        try:
+            quantity = tmt.hardware.UNITS(raw_value)
+            # Check unit compatibility by converting to bytes
+            quantity.to('bytes')
+            return quantity
+        except Exception as exc:
+            raise NormalizationError(
+                key_address, raw_value, 'a valid data quantity (e.g., 1MB, 32MiB, 100KiB)'
+            ) from exc
 
     raise NormalizationError(key_address, raw_value, 'a quantity or a string')
 
@@ -5892,22 +5976,97 @@ def is_key_origin(node: fmf.Tree, key: str) -> bool:
     return origin is not None and node.name == origin.name
 
 
-def resource_files(path: Union[str, Path], package: Union[str, ModuleType] = "tmt") -> Path:
+# TODO: Move this in a dedicated module
+@functools.cache
+def _get_resource_files_search_path(
+    package: Union[str, ModuleType], logger: tmt.log.Logger
+) -> Union[Path, MultiplexedPath]:
+    """
+    Helper (cached) function for :py:func:`resource_files`.
+
+    :param package: primary package in which to search for the file/directory.
+    :param logger: logger to report plugin import failures
+    :returns: the search path for resource files
+    """
+
+    package_path = MultiplexedPath(importlib.resources.files(package))
+
+    # Additional resource files can be imported from entry-point
+    entry_point_name = 'tmt.resources'
+
+    entry_point_group = importlib.metadata.entry_points(group=entry_point_name)
+
+    final_paths = [package_path]
+    for ep in entry_point_group:
+        try:
+            ep_module = ep.load()
+            ep_path = MultiplexedPath(importlib.resources.files(ep_module))
+            final_paths.append(ep_path)
+        except ModuleNotFoundError:
+            logger.warning(f"Failed to load plugin resources: {ep}")
+        except Exception as err:
+            # Other exceptions are rather weird
+            logger.warning(f"Unexpected failure in parsing: {ep}\n{err}")
+    return MultiplexedPath(*final_paths)
+
+
+@overload
+def resource_files(
+    path: Union[str, Path],
+    package: Union[str, ModuleType] = "tmt",
+    *,
+    logger: tmt.log.Logger,
+    assert_file: Literal[True],
+) -> Path: ...
+
+
+@overload
+def resource_files(
+    path: Union[str, Path],
+    package: Union[str, ModuleType] = "tmt",
+    *,
+    logger: tmt.log.Logger,
+    assert_file: Literal[False] = False,
+) -> Union[Path, MultiplexedPath]: ...
+
+
+def resource_files(
+    path: Union[str, Path],
+    package: Union[str, ModuleType] = "tmt",
+    *,
+    logger: tmt.log.Logger,
+    assert_file: bool = False,
+) -> Union[Path, MultiplexedPath]:
     """
     Helper function to get path of package file or directory.
 
     A thin wrapper for :py:func:`importlib.resources.files`:
-    ``files()`` returns ``Traversable`` object, though in our use-case
-    it should always produce a :py:class:`pathlib.PosixPath` object.
-    Converting it to :py:class:`tmt.utils.Path` instance should be
-    safe and stick to the "``Path`` only!" rule in tmt's code base.
+    ``files()`` returns ``Traversable`` object that can be either a
+    :py:class:`pathlib.PosixPath` or a :py:class:`importlib.reader.MultiplexedPath`.
 
-    :param path: file or directory path to retrieve, relative to the ``package`` root.
-    :param package: package in which to search for the file/directory.
-    :returns: an absolute path to the requested file or directory.
+    These are instead converted to :py:class:`tmt._compat.pathlib.Path` or
+    :py:class:`tmt._compat.importlib.readers.MultiplexedPath` (which in turn converts
+    its child paths to :py:class:`tmt._compat.pathlib.Path`). This preserves the
+    "``Path`` only!" rule in tmt's code base.
+
+    The search paths are merged from the ``package`` files and any entry-point in the
+    group ``tmt.resources`` which has the same path structure.
+
+    :param path: file or directory path to retrieve, relative to the ``package``
+      or entry-point's root.
+    :param package: primary package in which to search for the file/directory.
+    :param logger: logger to report plugin import failures
+    :param assert_file: makes sure the return value is a file (raising
+      FileNotFoundError otherwise)
+    :returns: a (maybe multiplexed) path to the requested file or directory.
     """
 
-    return Path(importlib.resources.files(package)) / path  # type: ignore[arg-type]
+    search_path = _get_resource_files_search_path(package, logger)
+    resource_path = search_path / path
+    if assert_file and not resource_path.is_file():
+        raise FileNotFoundError(f"Resource {path} not found")
+    assert isinstance(resource_path, (Path, MultiplexedPath))
+    return resource_path
 
 
 class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
@@ -5928,6 +6087,36 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
     @property
     def duration(self) -> datetime.timedelta:
         return self.end_time - self.start_time
+
+    @property
+    def start_time_formatted(self) -> str:
+        return format_timestamp(self.start_time)
+
+    @property
+    def end_time_formatted(self) -> str:
+        return format_timestamp(self.end_time)
+
+    @classmethod
+    def measure(
+        cls, fn: Callable[P, T], *args: P.args, **kwargs: P.kwargs
+    ) -> tuple[Optional[T], Optional[Exception], 'Stopwatch']:
+        """
+        Run a function while the stopwatch is running.
+
+        :param fn: a function to call. It will be invoked with all
+            positional and keyword arguments given to ``measure()``.
+        :returns: a tuple of three items: the return value of ``fn``,
+            ``None``, and the stopwatch instance on success, or ``None``,
+            the raised exception, and the stopwatch instance when ``fn``
+            raised an exception.
+        """
+
+        with cls() as timer:
+            try:
+                return (fn(*args, **kwargs), None, timer)
+
+            except Exception as exc:
+                return (None, exc, timer)
 
 
 def format_timestamp(timestamp: datetime.datetime) -> str:
