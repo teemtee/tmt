@@ -26,6 +26,7 @@ import tmt.utils.signals
 import tmt.utils.wait
 from tmt.config.models.hardware import MrackTranslation
 from tmt.container import container, field, simple_field
+from tmt.steps.provision import RebootMode
 from tmt.utils import (
     Command,
     Path,
@@ -1703,52 +1704,40 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
     def reboot(
         self,
-        hard: bool = False,
+        mode: RebootMode = RebootMode.SOFT,
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
 
-        .. note::
+        Plugin will use ``bkr system-power`` command to trigger to
+        perform the :py:attr:`RebootMode.HARD` reboot. Unlike ``command``,
+        this command would be executed on the runner, **not** on the guest.
 
-           Custom reboot command can be used only in combination with a
-           soft reboot. If both ``hard`` and ``command`` are set, a hard
-           reboot will be requested, and ``command`` will be ignored.
-
-        :param hard: if set, force the reboot. This may result in a loss
-            of data. The default of ``False`` will attempt a graceful
-            reboot.
-
-            Plugin will use ``bkr system-power`` command to trigger the
-            hard reboot. Unlike ``command``, this command would be
-            executed on the runner, **not** on the guest.
+        :param mode: which boot mode to perform.
         :param command: a command to run on the guest to trigger the
-            reboot. If ``hard`` is also set, ``command`` is ignored.
-        :param timeout: amount of time in which the guest must become available
-            again.
-        :param tick: how many seconds to wait between two consecutive attempts
-            of contacting the guest.
-        :param tick_increase: a multiplier applied to ``tick`` after every
-            attempt.
+            reboot. Only usable when mode is not
+            :py:attr:`RebootMode.HARD`.
+        :param waiting: deadline for the reboot.
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
         waiting = waiting or tmt.steps.provision.default_reboot_waiting()
 
-        if hard:
+        if mode == RebootMode.HARD:
             self.debug("Hard reboot using the reboot command 'bkr system-power --action reboot'.")
 
             reboot_script = ShellScript(f'bkr system-power --action reboot {self.primary_address}')
 
             return self.perform_reboot(
+                mode,
                 lambda: self._run_guest_command(reboot_script.to_shell_command()),
                 waiting,
-                fetch_boot_time=False,
             )
 
         return super().reboot(
-            hard=False,
+            mode=mode,
             command=command,
             waiting=waiting,
         )

@@ -9,7 +9,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
-from tmt.steps.provision import DEFAULT_PUSH_OPTIONS, GuestCapability, TransferOptions
+from tmt.steps.provision import DEFAULT_PUSH_OPTIONS, GuestCapability, RebootMode, TransferOptions
 from tmt.utils import (
     Command,
     OnProcessEndCallback,
@@ -253,7 +253,7 @@ class GuestContainer(tmt.Guest):
 
     def reboot(
         self,
-        hard: bool = False,
+        mode: RebootMode = RebootMode.SOFT,
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
@@ -262,29 +262,19 @@ class GuestContainer(tmt.Guest):
 
         .. note::
 
-           Custom reboot command can be used only in combination with a
-           soft reboot. If both ``hard`` and ``command`` are set, a hard
-           reboot will be requested, and ``command`` will be ignored.
+           However, only :py:attr:`RebootMode.HARD` mode is supported by
+           the plugin, other modes or a custom reboot command will result
+           in an exception.
 
-           However, only hard reboots are supported by this guest class,
-           soft reboot and/or custom reboot command will result in an
-           exception.
-
-        :param hard: if set, force the reboot. This may result in a loss
-            of data. The default of ``False`` will attempt a graceful
-            reboot.
+        :param mode: which boot mode to perform.
         :param command: a command to run on the guest to trigger the
-            reboot. If ``hard`` is also set, ``command`` is ignored.
-        :param timeout: amount of time in which the guest must become available
-            again.
-        :param tick: how many seconds to wait between two consecutive attempts
-            of contacting the guest.
-        :param tick_increase: a multiplier applied to ``tick`` after every
-            attempt.
+            reboot. Only usable when mode is not
+            :py:attr:`RebootMode.HARD`.
+        :param waiting: deadline for the reboot.
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
-        if hard:
+        if mode == RebootMode.HARD:
             if self.container is None:
                 raise tmt.utils.ProvisionError("No container initialized.")
 
@@ -304,8 +294,10 @@ class GuestContainer(tmt.Guest):
             )
 
         raise tmt.steps.provision.RebootModeNotSupportedError(
-            f"Guest '{self.multihost_name}' does not support soft reboot."
-            " Containers can only be stopped and started again (hard reboot)."
+            f"Guest '{self.multihost_name}' does not support {mode.value} reboot."
+            " Containers can only be stopped and started again (hard reboot).",
+            guest=self,
+            mode=mode,
         )
 
     def _run_ansible(

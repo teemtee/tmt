@@ -1,0 +1,7 @@
+summary: Basic systemd soft-reboot test
+
+discover:
+    how: fmf
+
+execute:
+    how: tmt

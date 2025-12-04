@@ -17,6 +17,7 @@ import tmt.steps.provision
 import tmt.utils
 from tmt._compat.typing import Self
 from tmt.container import container, field
+from tmt.steps.provision import RebootMode
 from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
 from tmt.utils.wait import Waiting
 
@@ -551,7 +552,7 @@ class GuestMock(tmt.Guest):
 
     def reboot(
         self,
-        hard: bool = False,
+        mode: RebootMode = RebootMode.SOFT,
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:

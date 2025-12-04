@@ -13,6 +13,7 @@ import tmt.utils
 import tmt.utils.signals
 import tmt.utils.wait
 from tmt.container import container, field
+from tmt.steps.provision import RebootMode
 from tmt.utils import (
     Command,
     ProvisionError,
@@ -678,28 +679,13 @@ class GuestArtemis(tmt.GuestSsh):
 
     def reboot(
         self,
-        hard: bool = False,
+        mode: RebootMode = RebootMode.SOFT,
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
-        """
-        Reboot the guest, and wait for the guest to recover.
-
-        :param hard: if set, force the reboot. This may result in a loss of
-            data. The default of ``False`` will attempt a graceful reboot.
-        :param command: a command to run on the guest to trigger the reboot.
-        :param timeout: amount of time in which the guest must become available
-            again.
-        :param tick: how many seconds to wait between two consecutive attempts
-            of contacting the guest.
-        :param tick_increase: a multiplier applied to ``tick`` after every
-            attempt.
-        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
-        """
-
         waiting = waiting or tmt.steps.provision.default_reboot_waiting()
 
-        if hard:
+        if mode == RebootMode.HARD:
             if self.guestname is None:
                 raise ArtemisProvisionError("Cannot reboot - guest does not exist")
 
@@ -713,13 +699,13 @@ class GuestArtemis(tmt.GuestSsh):
                     raise ArtemisProvisionError('Failed to reboot guest', response=response)
 
             return self.perform_reboot(
+                mode,
                 trigger_reboot,
                 waiting,
-                fetch_boot_time=False,
             )
 
         return super().reboot(
-            hard=False,
+            mode=mode,
             command=command,
             waiting=waiting,
         )

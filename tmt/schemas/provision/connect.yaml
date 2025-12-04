@@ -57,6 +57,9 @@ properties:
   soft-reboot:
     type: string
 
+  systemd-soft-reboot:
+    type: string
+
   hard-reboot:
     type: string
 
