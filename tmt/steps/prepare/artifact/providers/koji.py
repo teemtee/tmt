@@ -14,6 +14,7 @@ import tmt.log
 import tmt.utils
 import tmt.utils.hints
 from tmt.container import container
+from tmt.steps.prepare.artifact import RpmArtifactInfo
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
@@ -57,24 +58,6 @@ def import_koji(logger: tmt.log.Logger) -> None:
         print_hints('artifact-provider/koji', logger=logger)
 
         raise tmt.utils.GeneralError("Could not import koji package.") from error
-
-
-@container
-class RpmArtifactInfo(ArtifactInfo):
-    """
-    Represents a single RPM package.
-    """
-
-    _raw_artifact: dict[str, str]
-
-    @property
-    def id(self) -> str:
-        """A koji rpm identifier"""
-        return f"{self._raw_artifact['nvr']}.{self._raw_artifact['arch']}.rpm"
-
-    @property
-    def location(self) -> str:
-        return self._raw_artifact['url']
 
 
 @container
