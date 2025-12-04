@@ -56,6 +56,10 @@ description: |
         order ``60``. All created files and directories by this command
         are directly in ``TMT_SOURCE_DIR``.
 
+        To run the plan without uploading source files to the lookaside
+        the type ``local`` can be used. Sources have to be listed in the ``source``
+        file and present in the same directory as the ``spec`` file.
+
         The :ref:`/plugins/discover/fmf` plugin supports
         additional dist-git options, see its documentation for
         details.
@@ -99,6 +103,13 @@ description: |
                     make test
                 require:
                   - rpm-build
+      - |
+        # Source file wasn't uploaded to look aside yet, but exists next
+        # to the spec file.
+        discover:
+          how: shell
+          dist-git-source: true
+          dist-git-type: local
 
     link:
       - implemented-by: /tmt/steps/discover/fmf.py
