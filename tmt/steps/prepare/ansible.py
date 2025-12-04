@@ -1,3 +1,4 @@
+import datetime
 import tempfile
 from typing import Optional, Union
 
@@ -200,6 +201,8 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                 self.phase_workdir / f'playbook-{playbook_index}' / guest.safe_name
             )
             playbook_log_filepath = playbook_record_dirpath / 'output.txt'
+
+            timestamp = datetime.datetime.now(datetime.timezone.utc)
 
             def normalize_remote_playbook(raw_playbook: str) -> tuple[Path, AnsibleApplicable]:
                 root_path = self.step_workdir

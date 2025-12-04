@@ -2988,6 +2988,40 @@ def render_report(
         yield from report
 
 
+def render_report(
+    *, label: str, timestamp: datetime.datetime, report: Optional[Iterable[str]] = None
+) -> Iterator[str]:
+    """
+    Format an arbitrary body of text for a report file.
+
+    To provide unified look of various files reporting command outputs,
+    this helper would combine its arguments and emit lines the caller
+    may then write to a file. The following template is used:
+
+    .. code-block::
+
+        # {{ label }}
+        # Acquired at {{ timestamp }}
+
+        {{ body }}  // When `body` was provided.
+
+    :param label: a string describing the intent of the command. It is
+        useful for user who reads the report file eventually.
+    :param timestamp: a timestamp marking the moment the report is
+        attributed to.
+    :param report: if provided, represents a sequence of lines to emit
+        into the report file.
+    :yields: lines of the report.
+    """
+
+    yield f'# {label}'
+    yield f'# Acquired at {format_timestamp(timestamp)}'
+    yield ''
+
+    if report is not None:
+        yield from report
+
+
 def render_run_exception(exception: RunError) -> Iterator[str]:
     """
     Render detailed output upon command execution errors for printing
