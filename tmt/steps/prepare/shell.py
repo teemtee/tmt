@@ -201,12 +201,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 label=f'{self.name} / guest topology', exception=exc, outcome=outcome
             )
 
-        script_queue = self.data.script[:]
-        script_index = 0
-
-        while script_queue:
-            script = script_queue.pop(0)
-
+        for script_index, script in enumerate(self.data.script):
             logger.verbose('script', script, 'green')
 
             script_name = f'{self.name} / script #{script_index}'
