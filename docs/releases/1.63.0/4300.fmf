@@ -1,0 +1,4 @@
+description: |
+  The :ref:`/plugins/report/reportportal` plugin now enforces a
+  maximum size limit of 32MB for log uploads, as required by
+  `ReportPortal <https://reportportal.io/docs/log-data-in-reportportal/ImportDataToReportPortal/>`_.
