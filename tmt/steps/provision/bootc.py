@@ -377,6 +377,31 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         ).run(cwd=self.phase_workdir, stream_output=True, logger=self._logger)
         self._rootless = output.stdout == "true\n"
 
+    def _validate_bootc_image(self, container_image: str) -> None:
+        """
+        Validate that the container image is a bootc image by checking containers.bootc label
+        """
+        self._logger.debug(f"Validating that {container_image} is a bootc image.")
+
+        output = tmt.utils.Command(
+            "podman",
+            "inspect",
+            "--format",
+            '{{index .Config.Labels "containers.bootc"}}',
+            container_image,
+        ).run(
+            cwd=self.phase_workdir,
+            stream_output=True,
+            logger=self._logger,
+            env=PODMAN_ENV if self._rootless else None,
+        )
+
+        if output.stdout is None or output.stdout.strip() != "1":
+            raise tmt.utils.ProvisionError(
+                f"Container image '{container_image}' is probably not a bootc image. "
+                f"The 'containers.bootc' label must be set to '1'."
+            )
+
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
         Provision the bootc instance
@@ -403,6 +428,9 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
         if not self.is_dry_run:
             # Use provided container image
             if data.container_image is not None:
+                # Validate that the provided image is a bootc image
+                self._validate_bootc_image(data.container_image)
+
                 containerimage = data.container_image
                 if data.add_tmt_dependencies:
                     containerimage = self._build_derived_image(data.container_image)
