@@ -1,0 +1,4 @@
+description: |
+  The :ref:`/plugins/provision/beaker` plugin now supports
+  :ref:`device.device</spec/hardware/device>` and
+  :ref:`device.vendor</spec/hardware/device>` HW requirements.
