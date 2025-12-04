@@ -4,7 +4,7 @@ from tmt.steps.prepare.artifact.providers.brew import BrewArtifactProvider, Brew
 from tmt.utils import GeneralError
 
 from . import (
-    MOCK_BUILD_ID,
+    MOCK_BUILD_ID_KOJI_BREW,
     MOCK_RPMS_BREW,
     mock_build_api_responses,
     mock_call_api_for,
@@ -19,10 +19,10 @@ def mock_call_api():
 
 
 def test_brew_valid_build(mock_brew, mock_call_api, artifact_provider):
-    mock_build_api_responses(mock_call_api, MOCK_BUILD_ID, MOCK_RPMS_BREW)
-    provider = artifact_provider(f"brew.build:{MOCK_BUILD_ID}")
+    mock_build_api_responses(BrewArtifactProvider, mock_call_api, MOCK_RPMS_BREW)
+    provider = artifact_provider(f"brew.build:{MOCK_BUILD_ID_KOJI_BREW}")
     assert isinstance(provider, BrewBuild)
-    assert provider.build_id == MOCK_BUILD_ID
+    assert provider.build_id == MOCK_BUILD_ID_KOJI_BREW
     assert len(provider.artifacts) == 21
 
 
