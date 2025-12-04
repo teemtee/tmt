@@ -5,4 +5,7 @@ tag+:
   - provision-container
   - provision-local
   - provision-virtual
-  - provision-mock
+
+  # TODO Disable for now under the mock provision plan because of
+  # https://bugzilla.redhat.com/show_bug.cgi?id=2415701
+  #- provision-mock

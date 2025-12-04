@@ -45,6 +45,13 @@ duration: 20m
       - provision-container
       - provision-virtual
 
+    adjust+:
+      - when: distro == fedora-rawhide
+        check:
+          - how: avc
+            result: xfail
+        because: https://bugzilla.redhat.com/show_bug.cgi?id=2418343
+
 /internal:
     test: ./test-internal.sh
     tag+:
