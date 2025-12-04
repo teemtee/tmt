@@ -2,8 +2,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tmt.steps.prepare.artifact.providers.copr_build import CoprBuildArtifactProvider
-
 MOCK_BUILD_ID_KOJI_BREW = 2829512
 MOCK_BUILD_ID_COPR = 9820798
 
@@ -64,12 +62,6 @@ def mock_copr_build_api_responses(mock_session, mock_rpms=None):
     mock_session.build_proxy = mock_build_proxy
     mock_session.build_chroot_proxy = mock_build_chroot_proxy
     return mock_session
-
-
-def mock_build_api_responses(provider_class, mock_call_api, mock_rpms=None):
-    if provider_class == CoprBuildArtifactProvider:
-        return mock_copr_build_api_responses(mock_call_api)
-    return mock_koji_brew_build_api_responses(mock_call_api, mock_rpms)
 
 
 def mock_task_api_responses(mock_call_api, mock_rpms=None, has_build=True):
