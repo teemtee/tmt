@@ -24,7 +24,7 @@ import tmt.steps.provision
 import tmt.utils
 import tmt.utils.wait
 from tmt.container import container, field
-from tmt.steps.provision import CONNECT_TIMEOUT, default_connect_waiting
+from tmt.steps.provision import CONNECT_TIMEOUT, RebootMode, default_connect_waiting
 from tmt.utils import (
     Command,
     Path,
@@ -1194,67 +1194,52 @@ class GuestTestcloud(tmt.GuestSsh):
 
     def reboot(
         self,
-        hard: bool = False,
+        mode: RebootMode = RebootMode.SOFT,
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
-        """
-        Reboot the guest, and wait for the guest to recover.
-
-        .. note::
-
-           Custom reboot command can be used only in combination with a
-           soft reboot. If both ``hard`` and ``command`` are set, a hard
-           reboot will be requested, and ``command`` will be ignored.
-
-        :param hard: if set, force the reboot. This may result in a loss
-            of data. The default of ``False`` will attempt a graceful
-            reboot.
-        :param command: a command to run on the guest to trigger the
-            reboot. If ``hard`` is also set, ``command`` is ignored.
-        :param timeout: amount of time in which the guest must become available
-            again.
-        :param tick: how many seconds to wait between two consecutive attempts
-            of contacting the guest.
-        :param tick_increase: a multiplier applied to ``tick`` after every
-            attempt.
-        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
-        """
+        if self._instance is None:
+            raise tmt.utils.ProvisionError("No instance initialized.")
 
         waiting = waiting or tmt.steps.provision.default_reboot_waiting()
 
-        if hard:
-            if self._instance is None:
-                raise tmt.utils.ProvisionError("No instance initialized.")
-
+        if mode == RebootMode.HARD:
             self.debug("Hard reboot using the testcloud API.")
 
             # ignore[union-attr]: mypy still considers `self._instance` as possibly
             # being `None`, missing the explicit check above.
             return self.perform_reboot(
+                mode,
                 lambda: self._instance.reboot(soft=False),  # type: ignore[union-attr]
                 waiting,
-                fetch_boot_time=False,
             )
 
         if command:
             return super().reboot(
-                hard=False,
+                mode=mode,
                 command=command,
                 waiting=waiting,
             )
 
-        self.debug("Soft reboot using the testcloud API.")
+        if mode == RebootMode.SYSTEMD_SOFT:
+            return super().reboot(
+                mode=mode,
+                command=command,
+                waiting=waiting,
+            )
 
-        if self._instance is None:
-            raise tmt.utils.ProvisionError("No instance initialized.")
+        if mode == RebootMode.SOFT:
+            self.debug("Soft reboot using the testcloud API.")
 
-        # ignore[union-attr]: mypy still considers `self._instance` as possibly
-        # being `None`, missing the explicit check above.
-        return self.perform_reboot(
-            lambda: self._instance.reboot(soft=True),  # type: ignore[union-attr]
-            waiting,
-        )
+            # ignore[union-attr]: mypy still considers `self._instance` as possibly
+            # being `None`, missing the explicit check above.
+            return self.perform_reboot(
+                mode,
+                lambda: self._instance.reboot(soft=True),  # type: ignore[union-attr]
+                waiting,
+            )
+
+        raise tmt.steps.provision.RebootModeNotSupportedError(guest=self, mode=mode)
 
 
 @tmt.steps.provides_method(

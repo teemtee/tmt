@@ -137,6 +137,7 @@ plans:
                 bootc-builder:
                 has-selinux:
                 has-systemd:
+                systemd-soft-reboot:
                 has-rsync:
                 is-superuser:
                 can-sudo:

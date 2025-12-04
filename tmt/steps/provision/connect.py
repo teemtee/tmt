@@ -5,6 +5,7 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
+from tmt.steps.provision import RebootMode
 from tmt.utils import Command, ShellScript
 from tmt.utils.wait import Waiting
 
@@ -31,6 +32,18 @@ class ConnectGuestData(tmt.steps.provision.GuestSshData):
         help="""
              If specified, the command, executed on the runner, would be used
              for soft reboot of the guest.
+             """,
+        normalize=tmt.utils.normalize_shell_script,
+        serialize=lambda value: str(value) if isinstance(value, ShellScript) else None,
+        unserialize=lambda serialized: None if serialized is None else ShellScript(serialized),
+    )
+    systemd_soft_reboot: Optional[ShellScript] = field(
+        default=None,
+        option='--systemd-soft-reboot',
+        metavar='COMMAND',
+        help="""
+             If specified, the command, executed on the runner, would be used
+             for systemd soft-reboot of the guest.
              """,
         normalize=tmt.utils.normalize_shell_script,
         serialize=lambda value: str(value) if isinstance(value, ShellScript) else None,
@@ -75,80 +88,85 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
     _data_class = ConnectGuestData
 
     soft_reboot: Optional[ShellScript]
+    systemd_soft_reboot: Optional[ShellScript]
     hard_reboot: Optional[ShellScript]
 
     def reboot(
         self,
-        hard: bool = False,
+        mode: RebootMode = RebootMode.SOFT,
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
 
-        .. note::
+        Plugin will use special commands if specified via ``soft-reboot``,
+        ``systemd-soft-reboot``, and ``hard-reboot`` keys to perform the
+        :py:attr:`RebootMode.SOFT`, :py:attr:`RebootMode.SYSTEMD_SOFT`,
+        and :py:attr:`RebootMode.HARD` reboot modes, respectively.
 
-           Custom reboot command can be used only in combination with a
-           soft reboot. If both ``hard`` and ``command`` are set, a hard
-           reboot will be requested, and ``command`` will be ignored.
+        .. warning::
 
-        :param hard: if set, force the reboot. This may result in a loss of
-            data. The default of ``False`` will attempt a graceful reboot.
+            Unlike ``command``, these commands would be executed on
+            the runner, **not** on the guest.
 
-            Plugin will use :py:attr:`ConnectGuestData.hard_reboot`,
-            set via ``hard-reboot`` key. Unlike ``command``, this command
-            would be executed on the runner, **not** on the guest.
+        :param mode: which boot mode to perform.
         :param command: a command to run on the guest to trigger the
-            reboot. If ``hard`` is also set, ``command`` is ignored.
-
-            If not set, plugin would try to use
-            :py:attr:`ConnectGuestData.soft_reboot`, set via
-            ``soft-reboot`` key. Unlike ``command``,
-            this command would be executed on the runner, **not** on the
-            guest.
-        :param timeout: amount of time in which the guest must become available
-            again.
-        :param tick: how many seconds to wait between two consecutive attempts
-            of contacting the guest.
-        :param tick_increase: a multiplier applied to ``tick`` after every
-            attempt.
+            reboot. Only usable when mode is not
+            :py:attr:`RebootMode.HARD`.
+        :param waiting: deadline for the reboot.
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
         waiting = waiting or tmt.steps.provision.default_reboot_waiting()
 
-        if hard:
+        if mode == RebootMode.HARD:
             if self.hard_reboot is None:
-                raise tmt.steps.provision.RebootModeNotSupportedError(guest=self, hard=True)
+                raise tmt.steps.provision.RebootModeNotSupportedError(guest=self, mode=mode)
 
             self.debug(f"Hard reboot using the hard reboot command '{self.hard_reboot}'.")
 
             # ignore[union-attr]: mypy still considers `self.hard_reboot` as possibly
             # being `None`, missing the explicit check above.
             return self.perform_reboot(
+                mode,
                 lambda: self._run_guest_command(self.hard_reboot.to_shell_command()),  # type: ignore[union-attr]
                 waiting,
-                fetch_boot_time=False,
             )
 
         if command is not None:
             return super().reboot(
-                hard=False,
+                mode=mode,
                 command=command,
                 waiting=waiting,
             )
 
-        if self.soft_reboot is not None:
+        if mode == RebootMode.SOFT and self.soft_reboot is not None:
             self.debug(f"Soft reboot using the soft reboot command '{self.soft_reboot}'.")
 
             # ignore[union-attr]: mypy still considers `self.soft_reboot` as possibly
             # being `None`, missing the explicit check above.
             return self.perform_reboot(
+                mode,
                 lambda: self._run_guest_command(self.soft_reboot.to_shell_command()),  # type: ignore[union-attr]
                 waiting,
             )
 
-        return super().reboot(hard=False, waiting=waiting)
+        if mode == RebootMode.SYSTEMD_SOFT and self.systemd_soft_reboot is not None:
+            self.debug(
+                "Systemd soft-reboot using the systemd"
+                f" soft-reboot command '{self.systemd_soft_reboot}'."
+            )
+
+            # ignore[union-attr]: mypy still considers `self.systemd_soft_reboot` as possibly
+            # being `None`, missing the explicit check above.
+            return self.perform_reboot(
+                mode,
+                lambda: self._run_guest_command(self.systemd_soft_reboot.to_shell_command()),  # type: ignore[union-attr]
+                waiting,
+            )
+
+        return super().reboot(mode=mode, waiting=waiting)
 
     def start(self) -> None:
         """
@@ -211,31 +229,32 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
             how: connect
             guest: host.example.org
 
-
-
     To support hard reboot of a guest, ``hard-reboot`` must be set to
     an executable command or script. Without this key set, hard reboot
     will remain unsupported and result in an error. In comparison,
-    ``soft-reboot`` is optional, but if set, the given command will be
-    preferred over the default soft reboot command, ``reboot``:
+    ``soft-reboot`` and ``systemd-soft-reboot`` are optional, but if set,
+    the given commands will be preferred over the default soft and systemd
+    soft-reboot commands:
 
     .. code-block:: yaml
 
         provision:
           how: connect
           hard-reboot: virsh reboot my-example-vm
+          systemd-soft-reboot: ssh root@my-example-vm 'systemd soft-reboot'
           soft-reboot: ssh root@my-example-vm 'shutdown -r now'
 
     .. code-block:: shell
 
         provision --how connect \\
                   --hard-reboot="virsh reboot my-example-vm" \\
+                  --systemd-soft-reboot="ssh root@my-example-vm 'systemd soft-reboot'"
                   --soft-reboot="ssh root@my-example-vm 'shutdown -r now'"
 
     .. warning::
 
-        Both ``hard-reboot`` and ``soft-reboot`` commands are executed
-        on the runner, not on the guest.
+        ``hard-reboot``, ``systemd-soft-reboot``, and ``soft-reboot``
+        commands are executed on the runner, not on the guest.
     """
 
     _data_class = ProvisionConnectData
@@ -257,9 +276,12 @@ class ProvisionConnect(tmt.steps.provision.ProvisionPlugin[ProvisionConnectData]
         if not self.data.guest:
             raise tmt.utils.SpecificationError('Provide a host name or an ip address to connect.')
 
-        if (self.data.soft_reboot or self.data.hard_reboot) and not self.is_feeling_safe:
+        if (
+            any((self.data.soft_reboot, self.data.systemd_soft_reboot, self.data.hard_reboot))
+            and not self.is_feeling_safe
+        ):
             raise tmt.utils.GeneralError(
-                "Custom soft and hard reboot commands are allowed "
+                "Custom soft, systemd soft, and hard reboot commands are allowed "
                 "only with the '--feeling-safe' option."
             )
 

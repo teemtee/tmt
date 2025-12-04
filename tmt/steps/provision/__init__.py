@@ -80,6 +80,8 @@ if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
 
 
+T = TypeVar('T')
+
 #: How many seconds to wait for a connection to succeed after guest boot.
 #: This is the default value tmt would use unless told otherwise.
 DEFAULT_CONNECT_TIMEOUT = 2 * 60
@@ -440,6 +442,27 @@ def format_guest_full_name(name: str, role: Optional[str]) -> str:
     return f'{name} ({role})'
 
 
+class RebootMode(enum.Enum):
+    #: A software-invoked reboot of the guest. ``reboot`` or
+    #: ``shutdown -r now`` kind of reboot.
+    SOFT = 'soft'
+
+    #: A software-invoked reboot of the guest userspace.
+    #: ``systemd soft-reboot`` kind of reboot.
+    #:
+    #: See https://www.freedesktop.org/software/systemd/man/latest/systemd-soft-reboot.service.html
+    #: for systemd documentation on soft-reboot.
+    SYSTEMD_SOFT = 'systemd-soft'
+
+    #: A hardware-invoked reboot of the guest. Power off/power on
+    #: kind of reboot.
+    HARD = 'hard'
+
+
+SoftRebootModes = Literal[RebootMode.SOFT, RebootMode.SYSTEMD_SOFT]
+HardRebootModes = Literal[RebootMode.HARD]
+
+
 class RebootModeNotSupportedError(ProvisionError):
     """A requested reboot mode is not supported by the guest"""
 
@@ -447,7 +470,7 @@ class RebootModeNotSupportedError(ProvisionError):
         self,
         message: Optional[str] = None,
         guest: Optional['Guest'] = None,
-        hard: bool = False,
+        mode: RebootMode = RebootMode.SOFT,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -455,15 +478,94 @@ class RebootModeNotSupportedError(ProvisionError):
             pass
 
         elif guest is not None:
-            message = f"Guest '{guest.multihost_name}' does not support {'hard' if hard else 'soft'} reboot."  # noqa: E501
+            message = f"Guest '{guest.multihost_name}' does not support {mode.value} reboot."
 
         else:
-            message = f"Guest does not support {'hard' if hard else 'soft'} reboot."
+            message = f"Guest does not support {mode.value} reboot."
 
         super().__init__(message, *args, **kwargs)
 
 
-T = TypeVar('T')
+class BootMark(abc.ABC):
+    """
+    Fetch and compare "boot mark"
+
+    A "boot mark" is a piece of information identifying a particular
+    guest boot, and it changes after a reboot. It is used to detect
+    whether a reboot has already happened or not.
+    """
+
+    @classmethod
+    @abc.abstractmethod
+    def fetch(cls, guest: 'Guest') -> str:
+        """
+        Read and return the current value of the boot mark.
+        """
+
+        raise NotImplementedError
+
+    @classmethod
+    def check(cls, guest: 'Guest', current: Optional[str]) -> None:
+        """
+        Read the new boot mark, and compare it with the current one.
+
+        Intended to be called as :py:func:`tmt.utils.wait.wait`
+        callback.
+
+        :raises tmt.utils.wait.WaitingIncompleteError: when the guest
+            is not yet ready after a reboot, e.g. because the boot mark
+            is not updated yet.
+        """
+
+        try:
+            new_boot_mark = cls.fetch(guest)
+
+            if new_boot_mark != current:
+                # When the mark changes, we are done with the reboot
+                return
+
+            # Same boot mark, reboot didn't happen yet, retrying
+            raise tmt.utils.wait.WaitingIncompleteError
+
+        except tmt.utils.RunError as error:
+            guest.debug('Failed to fetch boot mark.')
+
+            raise tmt.utils.wait.WaitingIncompleteError from error
+
+
+class BootMarkSystemdSoftRebootCount(BootMark):
+    """
+    Use soft reboot count a boot mark.
+    """
+
+    @classmethod
+    def fetch(cls, guest: 'Guest') -> str:
+        stdout = guest.execute(
+            Command('systemctl', 'show', '--value', '--property', 'SoftRebootsCount'), silent=True
+        ).stdout
+
+        assert stdout
+
+        return stdout.strip()
+
+
+class BootMarkBootTime(BootMark):
+    """
+    Use boot time as a boot mark.
+    """
+
+    @classmethod
+    def fetch(cls, guest: 'Guest') -> str:
+        stdout = guest.execute(Command("cat", "/proc/stat")).stdout
+
+        assert stdout
+
+        match = STAT_BTIME_PATTERN.search(stdout)
+
+        if match is None:
+            raise tmt.utils.ProvisionError('Failed to retrieve boot time from guest')
+
+        return match.group(1)
 
 
 class GuestCapability(enum.Enum):
@@ -515,6 +617,7 @@ class GuestFacts(SerializableContainer):
     is_toolbox: Optional[bool] = None
     toolbox_container_name: Optional[str] = None
     is_container: Optional[bool] = None
+    systemd_soft_reboot: Optional[bool] = None
 
     #: Various Linux capabilities and whether they are permitted to
     #: commands executed on this guest.
@@ -761,6 +864,17 @@ class GuestFacts(SerializableContainer):
         except tmt.utils.RunError:
             return False
 
+    def _query_systemd_soft_reboot(self, guest: 'Guest') -> Optional[bool]:
+        output = self._execute(
+            guest,
+            (
+                ShellScript('systemctl --help | grep -q "soft-reboot"')
+                & ShellScript('cat /proc/sys/kernel/random/boot_id')
+            ).to_shell_command(),
+        )
+
+        return output is not None and output.stdout is not None
+
     def _query_has_rsync(self, guest: 'Guest') -> Optional[bool]:
         """
         Detect whether ``rsync`` is available.
@@ -909,6 +1023,7 @@ class GuestFacts(SerializableContainer):
             self.bootc_builder = self._query_bootc_builder(guest)
             self.has_selinux = self._query_has_selinux(guest)
             self.has_systemd = self._query_has_systemd(guest)
+            self.systemd_soft_reboot = self._query_systemd_soft_reboot(guest)
             self.has_rsync = self._query_has_rsync(guest)
             self.is_superuser = self._query_is_superuser(guest)
             self.can_sudo = self._query_can_sudo(guest)
@@ -944,6 +1059,11 @@ class GuestFacts(SerializableContainer):
         )
         yield 'has_selinux', 'selinux', 'yes' if self.has_selinux else 'no'
         yield 'has_systemd', 'systemd', 'yes' if self.has_systemd else 'no'
+        yield (
+            'systemd_soft_reboot',
+            'systemd soft-reboot',
+            'yes' if self.systemd_soft_reboot else 'no',
+        )
         yield 'has_rsync', 'rsync', 'yes' if self.has_rsync else 'no'
         yield 'is_superuser', 'is superuser', 'yes' if self.is_superuser else 'no'
         yield 'is_container', 'is_container', 'yes' if self.is_container else 'no'
@@ -2028,10 +2148,76 @@ class Guest(
 
         raise NotImplementedError
 
+    def perform_reboot(
+        self,
+        mode: RebootMode,
+        action: Callable[[], Any],
+        wait: Waiting,
+    ) -> bool:
+        """
+        Perform the actual reboot and wait for the guest to recover.
+
+        This is the core implementation of the common task of triggering
+        a reboot and waiting for the guest to recover. :py:meth:`reboot`
+        is the public API of guest classes, and feeds
+        :py:meth:`perform_reboot` with the right ``action`` callable.
+
+        .. note::
+
+            :py:meth:`perform_reboot` should be used by ``provision``
+            plugins only, when they decide what action they need to take
+            to take to perform the desired reboot of the guest. Other
+            code should use :py:meth:`Guest.reboot` instead.
+
+        :param mode: which boot mode to perform.
+        :param action: a callable which will trigger the requested reboot.
+        :param waiting: deadline for the reboot.
+        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
+        """
+
+        if mode == RebootMode.SYSTEMD_SOFT:
+            if not self.facts.systemd_soft_reboot:
+                raise tmt.steps.provision.RebootModeNotSupportedError(guest=self, mode=mode)
+
+            boot_mark: type[BootMark] = BootMarkSystemdSoftRebootCount
+
+        elif mode in {RebootMode.SOFT, RebootMode.HARD}:
+            boot_mark = BootMarkBootTime
+
+        else:
+            raise tmt.steps.provision.RebootModeNotSupportedError(guest=self, mode=mode)
+
+        current_boot_mark = boot_mark.fetch(self) if mode != RebootMode.HARD else None
+
+        self.debug(f"Triggering {mode.value} reboot with '{action}'.")
+
+        try:
+            action()
+
+        except tmt.utils.RunError as error:
+            # Connection can be closed by the remote host even before the
+            # reboot command is completed. Let's ignore such errors.
+            if error.returncode == 255:
+                self.debug("Seems the connection was closed too fast, ignoring.")
+            else:
+                raise
+
+        # Wait until we get new boot mark, connection will drop and will be
+        # unreachable for some time
+        try:
+            wait.wait(lambda: boot_mark.check(self, current_boot_mark), self._logger)
+
+        except tmt.utils.wait.WaitingTimedOutError:
+            self.debug("Connection to guest failed after reboot.")
+            return False
+
+        self.debug("Connection to guest succeeded after reboot.")
+        return True
+
     @overload
     def reboot(
         self,
-        hard: Literal[True] = True,
+        mode: HardRebootModes = RebootMode.HARD,
         command: None = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
@@ -2040,7 +2226,7 @@ class Guest(
     @overload
     def reboot(
         self,
-        hard: Literal[False] = False,
+        mode: SoftRebootModes = RebootMode.SOFT,
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
@@ -2049,30 +2235,18 @@ class Guest(
     @abc.abstractmethod
     def reboot(
         self,
-        hard: bool = False,
+        mode: RebootMode = RebootMode.SOFT,
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
         """
         Reboot the guest, and wait for the guest to recover.
 
-        .. note::
-
-           Custom reboot command can be used only in combination with a
-           soft reboot. If both ``hard`` and ``command`` are set, a hard
-           reboot will be requested, and ``command`` will be ignored.
-
-        :param hard: if set, force the reboot. This may result in a loss
-            of data. The default of ``False`` will attempt a graceful
-            reboot.
+        :param mode: which boot mode to perform.
         :param command: a command to run on the guest to trigger the
-            reboot. If ``hard`` is also set, ``command`` is ignored.
-        :param timeout: amount of time in which the guest must become available
-            again.
-        :param tick: how many seconds to wait between two consecutive attempts
-            of contacting the guest.
-        :param tick_increase: a multiplier applied to ``tick`` after every
-            attempt.
+            reboot. Only usable when mode is not
+            :py:attr:`RebootMode.HARD`.
+        :param waiting: deadline for the reboot.
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
@@ -3024,96 +3198,10 @@ class GuestSsh(Guest):
 
         self.suspend()
 
-    def perform_reboot(
-        self,
-        action: Callable[[], Any],
-        wait: Waiting,
-        fetch_boot_time: bool = True,
-    ) -> bool:
-        """
-        Perform the actual reboot and wait for the guest to recover.
-
-        This is the core implementation of the common task of triggering
-        a reboot and waiting for the guest to recover. :py:meth:`reboot`
-        is the public API of guest classes, and feeds
-        :py:meth:`perform_reboot` with the right ``action`` callable.
-
-        :param action: a callable which will trigger the requested reboot.
-        :param timeout: amount of time in which the guest must become available
-            again.
-        :param tick: how many seconds to wait between two consecutive attempts
-            of contacting the guest.
-        :param tick_increase: a multiplier applied to ``tick`` after every
-            attempt.
-        :param fetch_boot_time: if set, the current boot time of the
-            guest would be read first, and used for testing whether the
-            reboot has been performed. This will require communication
-            with the guest, therefore it is recommended to use ``False``
-            with hard reboot of unhealthy guests.
-        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
-        """
-
-        def get_boot_time() -> int:
-            """
-            Reads btime from /proc/stat
-            """
-
-            stdout = self.execute(Command("cat", "/proc/stat")).stdout
-            assert stdout
-
-            match = STAT_BTIME_PATTERN.search(stdout)
-
-            if match is None:
-                raise tmt.utils.ProvisionError('Failed to retrieve boot time from guest')
-
-            return int(match.group(1))
-
-        current_boot_time = get_boot_time() if fetch_boot_time else 0
-
-        self.debug(f"Triggering reboot with '{action}'.")
-
-        try:
-            action()
-
-        except tmt.utils.RunError as error:
-            # Connection can be closed by the remote host even before the
-            # reboot command is completed. Let's ignore such errors.
-            if error.returncode == 255:
-                self.debug("Seems the connection was closed too fast, ignoring.")
-            else:
-                raise
-
-        # Wait until we get new boot time, connection will drop and will be
-        # unreachable for some time
-        def check_boot_time() -> None:
-            try:
-                new_boot_time = get_boot_time()
-
-                if new_boot_time != current_boot_time:
-                    # Different boot time and we are reconnected
-                    return
-
-                # Same boot time, reboot didn't happen yet, retrying
-                raise tmt.utils.wait.WaitingIncompleteError
-
-            except tmt.utils.RunError as error:
-                self.debug('Failed to connect to the guest.')
-                raise tmt.utils.wait.WaitingIncompleteError from error
-
-        try:
-            wait.wait(check_boot_time, self._logger)
-
-        except tmt.utils.wait.WaitingTimedOutError:
-            self.debug("Connection to guest failed after reboot.")
-            return False
-
-        self.debug("Connection to guest succeeded after reboot.")
-        return True
-
     @overload
     def reboot(
         self,
-        hard: Literal[True] = True,
+        mode: HardRebootModes = RebootMode.HARD,
         command: None = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
@@ -3122,7 +3210,7 @@ class GuestSsh(Guest):
     @overload
     def reboot(
         self,
-        hard: Literal[False] = False,
+        mode: SoftRebootModes = RebootMode.SOFT,
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
@@ -3130,39 +3218,20 @@ class GuestSsh(Guest):
 
     def reboot(
         self,
-        hard: bool = False,
+        mode: RebootMode = RebootMode.SOFT,
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
-        """
-        Reboot the guest, and wait for the guest to recover.
+        if mode == RebootMode.SYSTEMD_SOFT:
+            default_reboot_command = tmt.steps.DEFAULT_SYSTEMD_SOFT_REBOOT_COMMAND
 
-        .. note::
+        elif mode == RebootMode.SOFT:
+            default_reboot_command = tmt.steps.DEFAULT_SOFT_REBOOT_COMMAND
 
-           Custom reboot command can be used only in combination with a
-           soft reboot. If both ``hard`` and ``command`` are set, a hard
-           reboot will be requested, and ``command`` will be ignored.
-
-        :param hard: if set, force the reboot. This may result in a loss
-            of data. The default of ``False`` will attempt a graceful
-            reboot.
-        :param command: a command to run on the guest to trigger the
-            reboot. If ``hard`` is also set, ``command`` is ignored.
-        :param timeout: amount of time in which the guest must become available
-            again.
-        :param tick: how many seconds to wait between two consecutive attempts
-            of contacting the guest.
-        :param tick_increase: a multiplier applied to ``tick`` after every
-            attempt.
-        :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
-        """
-
-        if hard:
+        else:
             raise tmt.utils.ProvisionError(
                 f"Guest '{self.multihost_name}' does not support hard reboot."
             )
-
-        default_reboot_command = tmt.steps.DEFAULT_REBOOT_COMMAND
 
         if self.become:
             default_reboot_command = ShellScript(
@@ -3172,9 +3241,9 @@ class GuestSsh(Guest):
         command = command or default_reboot_command
         waiting = waiting or default_reboot_waiting()
 
-        self.debug(f"Soft reboot using command '{command}'.")
+        self.debug(f"{mode.name.capitalize()} reboot using command '{command}'.")
 
-        return self.perform_reboot(lambda: self.execute(command), waiting)
+        return self.perform_reboot(mode, lambda: self.execute(command), waiting)
 
     def remove(self) -> None:
         """
