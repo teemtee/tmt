@@ -11,8 +11,8 @@ from tmt.utils import GeneralError
 from . import (
     MOCK_BUILD_ID_KOJI_BREW,
     MOCK_RPMS_KOJI,
-    mock_build_api_responses,
     mock_call_api_for,
+    mock_koji_brew_build_api_responses,
     mock_task_api_responses,
 )
 
@@ -24,7 +24,7 @@ def mock_call_api():
 
 
 def test_koji_valid_build(mock_koji, mock_call_api, artifact_provider):
-    mock_build_api_responses(KojiArtifactProvider, mock_call_api, MOCK_RPMS_KOJI)
+    mock_koji_brew_build_api_responses(mock_call_api, MOCK_RPMS_KOJI)
     provider = artifact_provider(f"koji.build:{MOCK_BUILD_ID_KOJI_BREW}")
     assert isinstance(provider, KojiBuild)
     assert provider.build_id == MOCK_BUILD_ID_KOJI_BREW
@@ -32,7 +32,7 @@ def test_koji_valid_build(mock_koji, mock_call_api, artifact_provider):
 
 
 def test_koji_valid_nvr(mock_koji, mock_call_api, artifact_provider):
-    mock_build_api_responses(KojiArtifactProvider, mock_call_api, MOCK_RPMS_KOJI)
+    mock_koji_brew_build_api_responses(mock_call_api, MOCK_RPMS_KOJI)
     provider = artifact_provider("koji.nvr:tmt-1.58.0-1.fc43")
     assert isinstance(provider, KojiNvr)
     assert provider.build_id == MOCK_BUILD_ID_KOJI_BREW
