@@ -78,7 +78,9 @@ provision-virtual = [
     "testcloud>=0.11.7",
     ]
 provision-container = []
-provision-bootc = []
+provision-bootc = [
+    "tmt[provision-virtual]",
+]
 report-junit = [
     # Required to support XML parsing and checking the XSD schemas.
     "lxml>=4.6.5",
