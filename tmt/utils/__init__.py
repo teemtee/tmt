@@ -139,6 +139,26 @@ def configure_constant(default: int, envvar: str) -> int:
         ) from exc
 
 
+def configure_float_constant(default: float, envvar: str) -> float:
+    """
+    Deduce the float value of global constant.
+
+    :param default: the default value of the constant.
+    :param envvar: name of the optional environment variable which would
+        override the default value.
+    :returns: value extracted from the environment variable, or the
+        given default value if the variable did not exist.
+    """
+
+    try:
+        return float(os.environ.get(envvar, default))
+
+    except ValueError as exc:
+        raise tmt.utils.GeneralError(
+            f"Could not parse '{envvar}={os.environ[envvar]}' as float."
+        ) from exc
+
+
 def configure_bool_constant(default: bool, envvar: str) -> bool:
     """
     Deduce the bool value of global constant.
@@ -246,8 +266,15 @@ DEFAULT_SHELL = "/bin/bash"
 SHELL_OPTIONS = 'set -eo pipefail'
 
 # Defaults for HTTP/HTTPS retries and timeouts (see `retry_session()`).
-DEFAULT_RETRY_SESSION_RETRIES: int = 3
-DEFAULT_RETRY_SESSION_BACKOFF_FACTOR: float = 0.1
+DEFAULT_RETRY_SESSION_RETRIES: int = 9
+RETRY_SESSION_RETRIES: int = configure_constant(
+    DEFAULT_RETRY_SESSION_RETRIES, 'TMT_RETRY_SESSION_RETRIES'
+)
+
+DEFAULT_RETRY_SESSION_BACKOFF_FACTOR: float = 1
+RETRY_SESSION_BACKOFF_FACTOR: float = configure_float_constant(
+    DEFAULT_RETRY_SESSION_BACKOFF_FACTOR, 'TMT_RETRY_SESSION_BACKOFF_FACTOR'
+)
 
 # Defaults for HTTP/HTTPS retries for getting environment file
 # Retry with exponential backoff, maximum duration ~511 seconds
@@ -4570,8 +4597,8 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
     @staticmethod
     def create(
         *,
-        retries: int = DEFAULT_RETRY_SESSION_RETRIES,
-        backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
+        retries: int = RETRY_SESSION_RETRIES,
+        backoff_factor: float = RETRY_SESSION_BACKOFF_FACTOR,
         allowed_methods: Optional[tuple[str, ...]] = None,
         status_forcelist: tuple[int, ...] = DEFAULT_RETRIABLE_HTTP_CODES,
         timeout: Optional[int] = None,
@@ -4616,8 +4643,8 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
     def __init__(
         self,
         *,
-        retries: int = DEFAULT_RETRY_SESSION_RETRIES,
-        backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
+        retries: int = RETRY_SESSION_RETRIES,
+        backoff_factor: float = RETRY_SESSION_BACKOFF_FACTOR,
         allowed_methods: Optional[tuple[str, ...]] = None,
         status_forcelist: tuple[int, ...] = DEFAULT_RETRIABLE_HTTP_CODES,
         timeout: Optional[int] = None,
