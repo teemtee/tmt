@@ -5064,7 +5064,7 @@ def _prenormalize_fmf_node(node: fmf.Tree, schema_name: str, logger: tmt.log.Log
             raise GeneralError(
                 f'Possible step {step_name} implementation '
                 f'{step_module_name}.{step_class_name} is not a subclass '
-                f'of tmt.steps.Step class.'
+                'of tmt.steps.Step class.'
             )
         step['how'] = step_class.DEFAULT_HOW
 

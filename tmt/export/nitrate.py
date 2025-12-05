@@ -420,7 +420,7 @@ def find_general_plan(component: str) -> NitrateTestPlan:
         raise nitrate.NitrateError(f"No general test plan found for '{component}'.")
     # Multiple general plans are fishy -> raise error
     if len(found) != 1:
-        nitrate.NitrateError("Multiple general test plans found for '{component}' component.")
+        nitrate.NitrateError(f"Multiple general test plans found for '{component}' component.")
     # Finally return the one and only General plan
     return found[0]
 
