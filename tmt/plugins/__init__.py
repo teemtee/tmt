@@ -235,7 +235,7 @@ def _import(
         imported = cast(ModuleT, importlib.import_module(module))
 
     except ImportError as exc:
-        raise tmt.utils.GeneralError("Failed to import the '{module}' module.") from exc
+        raise tmt.utils.GeneralError(f"Failed to import the '{module}' module.") from exc
 
     if module not in sys.modules:
         raise tmt.utils.GeneralError(f"Module '{module}' imported but not accessible.")
