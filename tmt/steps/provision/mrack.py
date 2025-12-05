@@ -899,6 +899,22 @@ def _transform_system_vendor_name(
     return MrackHWGroup('system', children=[MrackHWBinOp('vendor', beaker_operator, actual_value)])
 
 
+@transforms
+def _transform_system_type(
+    constraint: tmt.hardware.TextConstraint, logger: tmt.log.Logger
+) -> MrackBaseHWElement:
+    beaker_operator, actual_value, negate = operator_to_beaker_op(
+        constraint.operator, str(constraint.value)
+    )
+
+    if negate:
+        return MrackHWNotGroup(
+            children=[MrackHWBinOp('system_type', beaker_operator, actual_value)]
+        )
+
+    return MrackHWBinOp('system_type', beaker_operator, actual_value)
+
+
 def constraint_to_beaker_filter(
     constraint: tmt.hardware.BaseConstraint, logger: tmt.log.Logger
 ) -> BeakerizedConstraint:
