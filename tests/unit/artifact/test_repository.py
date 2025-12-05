@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from tmt.steps.prepare.artifact.providers import Repository
-from tmt.steps.prepare.artifact.providers.koji import RpmArtifactInfo
 from tmt.steps.prepare.artifact.providers.repository import (
     RepositoryFileProvider,
     parse_rpm_string,

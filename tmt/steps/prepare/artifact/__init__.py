@@ -24,6 +24,24 @@ class PrepareArtifactData(PrepareStepData):
     )
 
 
+@container
+class RpmArtifactInfo(ArtifactInfo):
+    """
+    Represents a single RPM package.
+    """
+
+    _raw_artifact: dict[str, str]
+
+    @property
+    def id(self) -> str:
+        """RPM identifier"""
+        return f"{self._raw_artifact['nvr']}.{self._raw_artifact['arch']}.rpm"
+
+    @property
+    def location(self) -> str:
+        return self._raw_artifact['url']
+
+
 def get_artifact_provider(provider_id: str) -> type[ArtifactProvider[ArtifactInfo]]:
     provider_type = provider_id.split(':')[0]
     provider_class = _PROVIDER_REGISTRY.get_plugin(provider_type)
