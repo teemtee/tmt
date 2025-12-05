@@ -4,8 +4,14 @@
 rlJournalStart
     rlPhaseStartTest "Test artifact installation on Fedora"
         rlRun "rpm -q make" 0 "Check that make is installed"
+
+        # Explicitly check that 'make' comes from our shared artifact repo.
+        # This regex matches both "From repo" (dnf4) and "From repository" (dnf5)
         rlRun -s "dnf info --installed make"
-        # TODO: Fix the grep check with the appropriate repository source
-        rlAssertGrep "^From repository\s*:\s*.*$" $rlRun_LOG
+        rlAssertGrep "From repo.*: tmt-artifact-shared" $rlRun_LOG
+
+        # Check if the artifact repository is enabled and active in the system
+        rlRun -s "dnf repo info tmt-artifact-shared"
+        rlAssertGrep "Status.*: enabled" $rlRun_LOG
     rlPhaseEnd
 rlJournalEnd
