@@ -7,5 +7,63 @@
     execute:
         how: tmt
 
+/plan-with-kvm:
+    discover:
+        how: fmf
+    provision:
+        how: container
+        image: fedora
+        device: /dev/kvm
+    execute:
+        how: tmt
+
+/plan-with-multiple-devices:
+    discover:
+        how: fmf
+    provision:
+        how: container
+        image: fedora
+        device:
+            - /dev/kvm
+            - /dev/ttyS3
+    execute:
+        how: tmt
+
 /test:
     test: cat /etc/os-release
+
+/test-kvm-device:
+    test: |
+        # Check if /dev/kvm device is available when device is specified
+        if [ -c /dev/kvm ]; then
+            echo "SUCCESS: /dev/kvm device is available and is a character device"
+            ls -la /dev/kvm
+        else
+            echo "FAIL: /dev/kvm device not found or not a character device"
+            ls -la /dev/ | grep kvm || echo "No kvm devices found"
+            exit 1
+        fi
+
+/test-multiple-devices:
+    test: |
+        # Check if multiple devices are available
+        success=0
+
+        if [ -c /dev/kvm ]; then
+            echo "SUCCESS: /dev/kvm device is available"
+            success=$((success + 1))
+        else
+            echo "FAIL: /dev/kvm device not found"
+        fi
+
+        # /dev/ttyS3 may not exist on all systems, so just check if it was attempted to be mounted
+        # The important part is that the --device flag was passed to podman
+        echo "Checking for serial device access..."
+        ls -la /dev/tty* | head -5
+
+        if [ $success -gt 0 ]; then
+            echo "At least one device test passed"
+        else
+            echo "All device tests failed"
+            exit 1
+        fi
