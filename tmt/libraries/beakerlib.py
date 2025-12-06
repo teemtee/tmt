@@ -27,6 +27,11 @@ LIBRARY_REGEXP = re.compile(r'^library\(([^/]+)(/[^)]+)\)$')
 DEFAULT_REPOSITORY_TEMPLATE = 'https://github.com/beakerlib/{repository}'
 DEFAULT_DESTINATION = 'libs'
 
+# Additional beakerlib libraries repository (from environment variable)
+ADDITIONAL_LIBRARIES_REPOSITORY_TEMPLATE = tmt.utils.Environment().get(
+    'ADDITIONAL_LIBRARIES_REPOSITORY_TEMPLATE', ''
+)
+
 # List of git forges for which the .git suffix should be stripped
 STRIP_SUFFIX_FORGES = [
     'https://github.com',
@@ -92,6 +97,12 @@ class BeakerLib(Library):
             self.repo = Path(matched.groups()[0])
             self.name = matched.groups()[1]
             self.url: Optional[str] = DEFAULT_REPOSITORY_TEMPLATE.format(repository=self.repo)
+            # Store alternative URLs to try if the default fails
+            self._alternative_urls: list[str] = []
+            if ADDITIONAL_LIBRARIES_REPOSITORY_TEMPLATE:
+                self._alternative_urls.append(
+                    ADDITIONAL_LIBRARIES_REPOSITORY_TEMPLATE.format(repository=self.repo)
+                )
             self.path: Optional[Path] = None
             self.ref: Optional[str] = None
             self.dest: Path = Path(DEFAULT_DESTINATION)
@@ -110,6 +121,8 @@ class BeakerLib(Library):
             self.format = 'fmf'
             self.url = identifier.url
             self.path = identifier.path
+            # No alternative URLs for fmf format
+            self._alternative_urls: list[str] = []
             if not self.url and not self.path:
                 raise tmt.utils.SpecificationError(
                     "Need 'url' or 'path' to fetch a beakerlib library."
@@ -431,6 +444,175 @@ class BeakerLib(Library):
                     if not isinstance(error, tmt.utils.GitUrlError):
                         self.parent.debug(f"Repository '{self.url}' not found.")
                         self._nonexistent_url.add(self.url)
+                    # Try alternative URLs before falling back to RPM install
+                    if self._alternative_urls:
+                        for alt_url in self._alternative_urls:
+                            try:
+                                self.parent.debug(
+                                    f"Trying alternative repository '{alt_url}'.", level=3
+                                )
+                                # Clone repo with disabled prompt to ignore missing/private repos
+                                clone_dir = self.parent.clone_dirpath / self.hostname / self.repo
+                                self.source_directory = clone_dir
+                                # Shallow clone to speed up testing and
+                                # minimize data transfers if ref is not provided
+                                if not clone_dir.exists():
+                                    tmt.utils.git.git_clone(
+                                        url=alt_url,
+                                        destination=clone_dir,
+                                        shallow=self.ref is None,
+                                        env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
+                                        logger=self._logger,
+                                    )
+
+                                # Detect the default branch from the origin
+                                try:
+                                    self.default_branch = tmt.utils.git.default_branch(
+                                        repository=clone_dir, logger=self._logger
+                                    )
+                                except OSError as os_error:
+                                    raise tmt.utils.GeneralError(
+                                        f"Unable to detect default branch for '{clone_dir}'. "
+                                        f"Is the git repository '{alt_url}' empty?"
+                                    ) from os_error
+                                # Use the default branch if no ref provided
+                                if self.ref is None:
+                                    self.ref = self.default_branch
+                                # Apply the dynamic reference if provided
+                                try:
+                                    if hasattr(self.parent.parent, 'plan'):
+                                        plan = cast(Discover, self.parent.parent).plan
+                                    else:
+                                        plan = None
+                                    dynamic_ref = tmt.base.resolve_dynamic_ref(
+                                        workdir=clone_dir, ref=self.ref, plan=plan, logger=self._logger
+                                    )
+                                except tmt.utils.FileError as file_error:
+                                    raise tmt.utils.DiscoverError(
+                                        f"Failed to resolve dynamic ref of '{self.ref}'."
+                                    ) from file_error
+                                # Check out the requested branch
+                                try:
+                                    if dynamic_ref is not None:
+                                        # We won't change self.ref directly since we want to preserve a check
+                                        # for not fetching two distinct 'ref's. Simply put, only the same
+                                        # @dynamic_ref filepath can be used by other tests.
+                                        self.parent.run(
+                                            Command('git', 'checkout', dynamic_ref), cwd=clone_dir
+                                        )
+                                except tmt.utils.RunError as ref_error:
+                                    self.parent.debug(f"Invalid reference '{self.ref}'.")
+                                    raise LibraryError from ref_error
+
+                                # Log what HEAD really is
+                                self.parent.verbose(
+                                    'commit-hash',
+                                    tmt.utils.git.git_hash(directory=clone_dir, logger=self._logger),
+                                    'green',
+                                )
+
+                                # Copy only the required library
+                                library_path = clone_dir / str(self.fmf_node_path).strip('/')
+                                local_library_path = directory / str(self.fmf_node_path).strip('/')
+                                if not library_path.exists():
+                                    self.parent.debug(
+                                        f"Failed to find library {self} at {alt_url}"
+                                    )
+                                    raise LibraryError
+                                self.parent.debug(f"Library {self} is copied into {directory}")
+                                tmt.utils.filesystem.copy_tree(
+                                    library_path, local_library_path, self._logger
+                                )
+
+                                fake_library_id = (
+                                    self.identifier
+                                    if isinstance(self.identifier, DependencyFmfId)
+                                    else FmfId(url=alt_url, ref=self.ref, path=self.path, name=self.name)
+                                )
+
+                                self.parent.verbose(
+                                    'using remote git library',
+                                    cast(dict[str, str], fake_library_id.to_minimal_dict()),
+                                    'green',
+                                    level=3,
+                                )
+
+                                # Remove metadata file(s) and create one with full data
+                                # Node with library might not exist, provide usable error message
+                                try:
+                                    self._merge_metadata(library_path, local_library_path)
+                                except tmt.utils.MetadataError as metadata_error:
+                                    fmf_id = ', '.join(
+                                        [
+                                            s
+                                            for s in [
+                                                f'name: {self.name}' if self.name else None,
+                                                f'url: {alt_url}' if alt_url else None,
+                                                f'ref: {self.ref}' if self.ref else None,
+                                                f'path: {self.path}' if self.path else None,
+                                            ]
+                                            if s is not None
+                                        ]
+                                    )
+                                    raise tmt.utils.SpecificationError(
+                                        f"Library with {fmf_id=} doesn't exist."
+                                    ) from metadata_error
+
+                                # Copy fmf metadata
+                                tmt.utils.filesystem.copy_tree(
+                                    clone_dir / '.fmf',
+                                    directory / '.fmf',
+                                    self._logger,
+                                )
+                                if self.path:
+                                    tmt.utils.filesystem.copy_tree(
+                                        clone_dir / self.path.unrooted() / '.fmf',
+                                        directory / self.path.unrooted() / '.fmf',
+                                        self._logger,
+                                    )
+
+                                # Update url to the successful alternative
+                                self.url = alt_url
+                                # Initialize metadata tree, add self into the library index
+                                tree_path = (
+                                    str(directory / self.path.unrooted())
+                                    if (self.url and self.path)
+                                    else str(directory)
+                                )
+                                self.tree = fmf.Tree(tree_path)
+                                self._library_cache[str(self)] = self
+
+                                # Get the library node, check require and recommend
+                                library_node = cast(
+                                    Optional[fmf.Tree], self.tree.find(self.name)
+                                )
+                                if not library_node:
+                                    self.parent.debug(
+                                        f"Library '{self.name.lstrip('/')}' not found in the "
+                                        f"'{self.url}' repo."
+                                    )
+                                    raise LibraryError
+                                self.require = tmt.base.normalize_require(
+                                    f'{self.name}:require',
+                                    cast(Optional['_RawDependency'], library_node.get('require', [])),
+                                    self.parent._logger,
+                                )
+                                self.recommend = tmt.base.normalize_require(
+                                    f'{self.name}:recommend',
+                                    cast(
+                                        Optional['_RawDependency'],
+                                        library_node.get('recommend', []),
+                                    ),
+                                    self.parent._logger,
+                                )
+                                # Successfully fetched from alternative URL
+                                return
+                            except (tmt.utils.RunError, tmt.utils.RetryError, LibraryError):
+                                self.parent.debug(
+                                    f"Alternative repository '{alt_url}' not usable.", level=3
+                                )
+                                self._nonexistent_url.add(alt_url)
+                                continue
                     raise LibraryError from error
                 # Mark self.url as known to be missing
                 self._nonexistent_url.add(self.url)
