@@ -1,3 +1,6 @@
+/:
+    select: true
+
 story: As a Fedora user I want to easily install tmt on my system.
 
 link:
