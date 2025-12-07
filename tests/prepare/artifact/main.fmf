@@ -1,19 +1,8 @@
 summary: Check PrepareArtifact plugin
 description: |
-    Test coverage for all artifact provider types:
-    - koji provider (fetch from Koji build ID)
-    - file provider (local RPM file)
-    - repository-url provider (remote .repo file)
-    - All providers combined in a single prepare step
-test: ./test.sh
-duration: 20m
-# TODO: Enable the tests for other provision formats
-# TODO: Could we test provision local safely?
-tag+:
-  - provision-only
-  - provision-container
-adjust:
-  # TODO: Handle centos artifacts also
-  - when: distro != fedora
-    enabled: false
-    because: Need to dynamically handle centos/brew/epel artifacts somehow also
+    Test coverage for all artifact provider types.
+    Each provider is tested separately in its own subdirectory:
+    - koji: Tests koji.build provider (fetch from Koji build ID)
+    - file: Tests file provider (local RPM file)
+    - repository-url: Tests repository-url provider (remote .repo file)
+    - combined: Tests all providers working together in a single prepare step

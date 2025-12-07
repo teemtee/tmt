@@ -2,11 +2,15 @@
 Artifact provider for discovering RPMs from repository files.
 """
 
+import configparser
 import re
 from collections.abc import Sequence
 from functools import cached_property
+from io import StringIO
 from re import Pattern
+from shlex import quote
 from typing import Optional
+from urllib.parse import urlparse
 
 import tmt.log
 from tmt.steps import DefaultNameGenerator
@@ -190,6 +194,32 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
             )
         return [self.repository]
 
+    def _add_priority_to_repo_content(self, content: str, priority: int = 1) -> str:
+        """
+        Add or update priority setting in repository configuration.
+
+        This ensures the repository takes precedence over system repositories
+        when installing packages. Lower priority values have higher precedence.
+
+        :param content: The original .repo file content.
+        :param priority: The priority value to set (default: 1).
+        :returns: Modified content with priority setting added to all sections.
+        """
+        config = configparser.ConfigParser()
+        try:
+            config.read_string(content)
+        except configparser.Error as error:
+            raise GeneralError(f"Failed to parse repository content: {error}") from error
+
+        # Add priority to all repository sections
+        for section in config.sections():
+            config.set(section, 'priority', str(priority))
+
+        # Write the modified configuration to a string
+        output = StringIO()
+        config.write(output)
+        return output.getvalue()
+
     def contribute_to_shared_repo(
         self,
         guest: Guest,
@@ -206,13 +236,58 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         later via get_repositories().
 
         :param guest: the guest on which the repository will be installed.
-        :param download_path: unused for this provider.
+        :param download_path: used for storing repository files from file:// URLs.
         :param shared_repo_dir: unused for this provider.
         :param exclude_patterns: unused for this provider.
         """
         # Fetch the repository from URL (only if not already initialized)
         if not hasattr(self, 'repository') or self.repository is None:
-            self.repository = Repository.from_url(url=self.id, logger=self.logger)
+            # Check if the URL is a file:// URL
+            parsed_url = urlparse(self.id)
+            if parsed_url.scheme == 'file':
+                # For file:// URLs, we need to:
+                # 1. Read the file from the host filesystem
+                # 2. Copy it to the guest via guest.push
+                # 3. Create a Repository from the guest's copy
+
+                host_file_path = Path(parsed_url.path)
+
+                # Read the content from the host
+                try:
+                    content = host_file_path.read_text()
+                except OSError as error:
+                    raise GeneralError(
+                        f"Failed to read repository file '{host_file_path}' from host."
+                    ) from error
+
+                # Derive repository name from the file path
+                repo_name = host_file_path.name.removesuffix('.repo')
+                if not repo_name:
+                    raise GeneralError(
+                        f"Could not derive repository name from path '{host_file_path}'."
+                    )
+
+                # Add priority=1 to the repository configuration to ensure it takes
+                # precedence over system repositories. This is important when the
+                # repository-url provider is used to test specific packages.
+                content = self._add_priority_to_repo_content(content, priority=1)
+
+                # Create Repository object with the content
+                self.repository = Repository.from_content(
+                    content=content, name=repo_name, logger=self.logger
+                )
+            else:
+                # Use from_url for http:// and https:// URLs
+                self.repository = Repository.from_url(url=self.id, logger=self.logger)
+
+                # Add priority to ensure the repository takes precedence
+                self.repository = Repository.from_content(
+                    content=self._add_priority_to_repo_content(
+                        self.repository.content, priority=1
+                    ),
+                    name=self.repository.name,
+                    logger=self.logger,
+                )
             self.logger.debug(f"Prepared repository '{self.repository.name}' for installation.")
 
 
@@ -304,7 +379,6 @@ def create_repository(
     :raises PrepareError: If the package manager does not support creating repositories
         or if metadata creation fails.
     """
-    from shlex import quote
 
     repo_name = repo_name or f"tmt-repo-{_REPO_NAME_GENERATOR.get()}"
 

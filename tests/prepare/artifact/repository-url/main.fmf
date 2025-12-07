@@ -1,0 +1,13 @@
+summary: Test PrepareArtifact repository-url provider
+description: |
+    Test the repository-url provider for PrepareArtifact plugin.
+    Downloads and installs .repo files to enable remote repositories.
+test: ./test.sh
+duration: 10m
+tag+:
+  - provision-only
+  - provision-container
+adjust:
+  - when: distro != fedora
+    enabled: false
+    because: Need to dynamically handle centos/brew/epel artifacts somehow also
