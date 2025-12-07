@@ -3,29 +3,25 @@
 
 rlJournalStart
     rlPhaseStartTest "Test artifact installation on Fedora"
-        # When testing repository-url provider, packages may come from the
-        # external repository instead of tmt-artifact-shared
-        if [ -n "$TEST_REPO_NAME" ]; then
-            # Repository-url provider test: check make comes from the test repo
-            rlRun "rpm -q make" 0 "Check that make is installed"
-            rlRun -s "dnf info --installed make"
-            rlAssertGrep "From repo.*: $TEST_REPO_NAME" $rlRun_LOG
+        rlLog "Verifying repositories: ${REPO_LIST:-tmt-artifact-shared}"
+        rlLog "Verifying artifacts: ${ARTIFACT_LIST:-make}"
 
-            # Verify the test repository is enabled
+        rlRun "rpm -q make" 0 "Check that make is installed"
+
+        rlRun -s "dnf info --installed make"
+        rlAssertGrep "From repo.*: tmt-artifact-shared" $rlRun_LOG
+        rlLog "make comes from expected repository: tmt-artifact-shared"
+
+        rlRun -s "dnf repo info tmt-artifact-shared"
+        rlAssertGrep "Status.*: enabled" $rlRun_LOG
+
+        if [ -n "$TEST_REPO_NAME" ]; then
             rlRun -s "dnf repo info $TEST_REPO_NAME"
             rlAssertGrep "Status.*: enabled" $rlRun_LOG
-        else
-            # Standard provider test (koji/file): check make comes from tmt-artifact-shared
-            rlRun "rpm -q make" 0 "Check that make is installed"
+            rlLog "Repository $TEST_REPO_NAME is enabled and available"
 
-            # Explicitly check that 'make' comes from our shared artifact repo.
-            # This regex matches both "From repo" (dnf4) and "From repository" (dnf5)
-            rlRun -s "dnf info --installed make"
-            rlAssertGrep "From repo.*: tmt-artifact-shared" $rlRun_LOG
-
-            # Check if the artifact repository is enabled and active in the system
-            rlRun -s "dnf repo info tmt-artifact-shared"
-            rlAssertGrep "Status.*: enabled" $rlRun_LOG
+            rlRun -s "dnf list --available --repo=$TEST_REPO_NAME | head -20"
+            rlLog "Available packages from $TEST_REPO_NAME repository"
         fi
     rlPhaseEnd
 rlJournalEnd

@@ -36,22 +36,16 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test all providers together"
-        rlRun "cat > $test_dir/test-fedora.repo << EOF
-[test-fedora]
-name=Test Fedora Repository
-baseurl=https://download.fedoraproject.org/pub/fedora/linux/releases/$fedora_release/Everything/\\\$basearch/os/
-enabled=1
-gpgcheck=0
-EOF"
-        rlRun "repo_url=file://$test_dir/test-fedora.repo"
-
         rlRun "tmt run -i $run --scratch -av \
+            --environment TEST_REPO_NAME=docker-ce-stable \
+            --environment ARTIFACT_LIST=make \
+            --environment REPO_LIST=tmt-artifact-shared,docker-ce-stable \
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/fedora/${fedora_release}:latest \
             prepare --insert --how artifact \
                 --provide koji.build:$make_buildid \
                 --provide file:$rpm_file \
-                --provide repository-url:$repo_url" \
-            0 "Test all providers together (koji + file + repository-url)"
+                --provide repository-url:https://download.docker.com/linux/fedora/docker-ce.repo" \
+            0 "Test the providers together (koji + file + repository-url)"
     rlPhaseEnd
 
     rlPhaseStartCleanup
