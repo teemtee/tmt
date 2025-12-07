@@ -1,9 +1,0 @@
-framework: beakerlib
-/require:
-  summary: Check package installation via require
-  require:
-    - make
-  test: ./test_require.sh "$REPO_LIST" "$ARTIFACT_LIST"
-  environment:
-    REPO_LIST: tmt-artifact-shared
-    ARTIFACT_LIST: make

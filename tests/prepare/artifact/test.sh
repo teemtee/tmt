@@ -35,24 +35,7 @@ rlJournalStart
         rlLog "Using RPM file: $rpm_file"
     rlPhaseEnd
 
-    rlPhaseStartTest "Test koji provider"
-        rlRun "tmt run -i $run --scratch -av \
-            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/fedora/${fedora_release}:latest \
-            prepare --insert --how artifact --provide koji.build:$make_buildid" \
-            0 "Test koji.build provider"
-    rlPhaseEnd
-
-    rlPhaseStartTest "Test file provider"
-        rlRun "tmt run -i $run --scratch -av \
-            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/fedora/${fedora_release}:latest \
-            prepare --insert --how artifact --provide file:$rpm_file" \
-            0 "Test file provider with local RPM"
-    rlPhaseEnd
-
-    rlPhaseStartTest "Test repository-url provider"
-        # Use Fedora base repository which contains the make package
-        # This allows us to test repository-url provider alone while still
-        # having make available for the require test
+    rlPhaseStartTest "Test all providers together"
         rlRun "cat > $test_dir/test-fedora.repo << EOF
 [test-fedora]
 name=Test Fedora Repository
@@ -61,22 +44,14 @@ enabled=1
 gpgcheck=0
 EOF"
         rlRun "repo_url=file://$test_dir/test-fedora.repo"
-        rlRun "tmt run -i $run --scratch -av \
-            --environment TEST_REPO_NAME=test-fedora \
-            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/fedora/${fedora_release}:latest \
-            prepare --insert --how artifact \
-                --provide repository-url:$repo_url" \
-            0 "Test repository-url provider"
-    rlPhaseEnd
 
-    rlPhaseStartTest "Test all providers together"
         rlRun "tmt run -i $run --scratch -av \
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/fedora/${fedora_release}:latest \
             prepare --insert --how artifact \
                 --provide koji.build:$make_buildid \
                 --provide file:$rpm_file \
                 --provide repository-url:$repo_url" \
-            0 "Test multiple providers together (koji + file + repository-url)"
+            0 "Test all providers together (koji + file + repository-url)"
     rlPhaseEnd
 
     rlPhaseStartCleanup

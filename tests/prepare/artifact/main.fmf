@@ -1,8 +1,5 @@
 summary: Check PrepareArtifact plugin
 description: |
-    Test coverage for all artifact provider types.
-    Each provider is tested separately in its own subdirectory:
-    - koji: Tests koji.build provider (fetch from Koji build ID)
-    - file: Tests file provider (local RPM file)
-    - repository-url: Tests repository-url provider (remote .repo file)
-    - combined: Tests all providers working together in a single prepare step
+    Test coverage for all artifact provider types together.
+    Tests koji.build, file, and repository-url providers
+    working together in a single prepare step.
