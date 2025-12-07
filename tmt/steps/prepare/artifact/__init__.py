@@ -59,15 +59,17 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     ) -> PluginOutcome:
         outcome = super().go(guest=guest, environment=environment, logger=logger)
 
-        # Validate plan workdir exists
-        if not self.plan_workdir:
-            raise tmt.utils.PrepareError("Plan workdir is not available for artifact preparation.")
-
-        # 1. Prepare a shared directory on the guest for aggregating artifacts.
-        # This directory will be created by create_repository.
+        # Prepare a shared directory on the guest for aggregating artifacts.
         shared_repo_dir = self.plan_workdir / 'artifact-shared-repo'
 
-        # 2. Initialize all providers and have them contribute to the shared repo
+        # Ensure the shared repository directory exists on the guest.
+        # This directory is needed for copying artifacts to create the shared repository.
+        guest.execute(
+            tmt.utils.ShellScript(f"mkdir -p {tmt.utils.quote(str(shared_repo_dir))}"),
+            silent=True,
+        )
+
+        # Initialize all providers and have them contribute to the shared repo
         providers: list[ArtifactProvider[ArtifactInfo]] = []
         for raw_provider_id in self.data.provide:
             try:
@@ -93,7 +95,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                 )
 
             except tmt.utils.PrepareError:
-                # Re-raise PrepareError as-is (already properly formatted)
+                # Re-raise PrepareError as-is
                 raise
 
             except Exception as error:
@@ -105,7 +107,6 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         # This aggregates all local artifacts from file-based providers.
         # If this prepare step runs multiple times in the same plan, artifacts
         # accumulate in the same directory and createrepo updates the metadata.
-        # create_repository will create the directory, run createrepo, and generate .repo content
         shared_repository = create_repository(
             artifact_dir=shared_repo_dir,
             guest=guest,

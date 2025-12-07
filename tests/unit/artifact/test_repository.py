@@ -368,12 +368,12 @@ def test_id_extraction(root_logger):
     assert provider.id == "https://download.docker.com/linux/centos/docker-ce.repo"
 
 
-def test_artifacts_returns_empty_list(root_logger):
-    """Test that artifacts property returns empty list for repository providers"""
+def test_artifacts_returns_empty_list_before_discovery(root_logger):
+    """Test that artifacts property returns empty list before package discovery"""
 
     provider = RepositoryFileProvider("repository-url:https://example.com/test.repo", root_logger)
 
-    # Repository providers always return empty list - packages come from remote repos
+    # Before discovery, artifacts should be empty
     artifacts = provider.artifacts
     assert artifacts == []
     assert isinstance(artifacts, Sequence)
@@ -406,19 +406,24 @@ def test_fetch_contents(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tm
     artifacts_dir = tmppath / "artifacts"
     result = provider.fetch_contents(mock_guest, artifacts_dir)
 
-    # Verify result is empty list (discovery-only provider)
+    # Verify result is empty list (discovery-only provider, no files downloaded)
     assert result == []
 
     # Verify package manager methods were called
-    # install_repository is called once in _discover_packages (called from fetch_contents)
-    # contribute_to_shared_repo just creates the Repository object, doesn't install it
-    mock_package_manager.install_repository.assert_called_once()
-    mock_package_manager.list_packages.assert_called_once()
+    # install_repository is called twice: once in contribute_to_shared_repo, once in fetch_contents
+    assert mock_package_manager.install_repository.call_count == 2
+    assert mock_package_manager.list_packages.call_count == 2
 
-    # Repository providers always return empty list from artifacts property
-    # The actual packages are available via the installed repository
+    # After discovery, artifacts should contain the discovered packages
     artifacts = provider.artifacts
-    assert artifacts == []
+    assert len(artifacts) == 3
+    assert all(isinstance(artifact, RpmArtifactInfo) for artifact in artifacts)
+
+    # Verify artifact IDs (note: nvr doesn't include epoch)
+    artifact_ids = [artifact.id for artifact in artifacts]
+    assert "docker-ce-20.10.7-3.el8.x86_64.rpm" in artifact_ids
+    assert "docker-ce-cli-20.10.7-3.el8.x86_64.rpm" in artifact_ids
+    assert "containerd.io-1.4.6-3.1.el8.x86_64.rpm" in artifact_ids
 
 
 def test_malformed_packages(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tmppath, caplog):
@@ -447,9 +452,14 @@ def test_malformed_packages(mock_repo_file_fetch, mock_guest_and_pm, root_logger
     artifacts_dir = tmppath / "artifacts"
     provider.fetch_contents(mock_guest, artifacts_dir)
 
-    # Repository providers always return empty list - packages are in the remote repo
+    # After discovery, artifacts should contain only the valid packages (malformed ones skipped)
     artifacts = provider.artifacts
-    assert artifacts == []
+    assert len(artifacts) == 2
+
+    # Verify the valid artifacts were discovered (note: nvr doesn't include epoch)
+    artifact_ids = [artifact.id for artifact in artifacts]
+    assert "docker-ce-20.10.7-3.el8.x86_64.rpm" in artifact_ids
+    assert "bash-5.1.8-6.el9.x86_64.rpm" in artifact_ids
 
     # Check logs for warnings about invalid packages
     assert (
@@ -520,7 +530,7 @@ def test_unexpected_error_handling(
         artifacts_dir = tmppath / "artifacts"
         provider.fetch_contents(mock_guest, artifacts_dir)
 
-        # Repository providers always return empty list
+        # Artifacts should be empty due to parsing failure
         artifacts = provider.artifacts
         assert artifacts == []
 
