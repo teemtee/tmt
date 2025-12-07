@@ -100,7 +100,12 @@ Provides:       tmt-provision-bootc == %{version}-%{release}
 Requires:       tmt == %{version}-%{release}
 Requires:       tmt+provision-virtual == %{version}-%{release}
 Requires:       podman
-Recommends:     podman-machine
+# podman-machine is not present on epel9 for some reason. Should probably
+# skip the whole sub-package, but that would need a more thorough impact
+# check. For now we at least allow this to be installed and fail at runtime.
+%if 0%{?fedora} || 0%{?epel} > 9
+Requires:       podman-machine
+%endif
 
 %description -n tmt+provision-bootc %_metapackage_description
 
