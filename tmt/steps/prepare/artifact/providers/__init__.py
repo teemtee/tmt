@@ -240,8 +240,6 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
 
         # If we downloaded anything, copy it to the shared repository
         if downloaded_paths:
-            from shlex import quote
-
             guest.execute(
                 ShellScript(f"cp -r {quote(str(download_path))}/. {quote(str(shared_repo_dir))}")
             )
