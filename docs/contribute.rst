@@ -818,7 +818,6 @@ The team works in biweekly sprints with the following schedule:
 * Sprint day 0, Thursday ... retrospective & planning meeting
 * Sprint day 3, Tuesday ... hacking session, progress check
 * Sprint day 4, Wednesday ... issue triage
-* Sprint day 6, Friday ... all must have items should be done
 * Sprint day 8, Tuesday ... hacking session, pre-release sync
 * Sprint day 9, Wednesday ... issue triage, new version released
 
@@ -829,11 +828,19 @@ sprint. Any **additional items** which pop up during the sprint:
 * Are proposed to the team and discussed together
 * Release lead is consulted and approves the inclusion
 
+Tentative suggestions for the `next sprint`__ can be added by
+anybody. Those will be reviewed and dropped or approved in the
+planning meeting.
+
 Team members sync daily in the chat about the progress and
 blocking issues. The progress is tracked in the `current sprint`__
-board. Tentative suggestions for the `next sprint`__ can be added
-by anybody. Those will be reviewed and dropped or approved in the
-planning meeting.
+board. Everyone should regularly review comments in their pull
+requests, ideally check them daily and address any comments.
+
+Each sprint can include maximum of 3 issues or pull requests
+marked with the ``must`` priority on which the team is focused.
+These issues have to be completed during the sprint and included
+in the release.
 
 See the `triage`__ project for the current status of the issue
 triage and the `backlog`__ for the list of approved and
@@ -916,17 +923,24 @@ the ``main`` branch by the proposed deadline. Here's a couple of
 recommendations which could help you to make the release process
 smooth and timely:
 
-* continually watch `the issues & pull requests`__ and gently push
-  them forward if any of them seems to get stuck
-* bring attention especially to those with the high priority, the
-  ``must`` issues and pull requests should be finished
-  ideally one week before the release deadline
+* dedicate **each and every day** a time for this orchestration,
+  it is an essential part of this role which helps the whole team
+  to finish the sprint successfully
+* continually watch `the issues & pull requests`__ and gently
+  **push them forward** if any of them seems to get stuck, if
+  needed, the "gently" part from the previous sentence can be
+  dropped :)
+* bring attention especially to those with the **high priority**,
+  the ``must`` issues and pull requests should be ideally finished
+  or at least ready for review on the second Friday (day 6)
+* investigate any **infrastructure issues** blocking the pull
+  request testing, file tickets, escalate if necessary
 * regularly check the pull request progress and highlight those
-  which are waiting for feedback on the review sessions
+  which are waiting for feedback on the **review sessions**
 * if there is anything not clear and needs discussion bring it to
   the chat or raise the topic on the weekly sessions
-* do not hesitate to contact assignees directly, e.g. on the chat,
-  if there is no update for a longer time, consider also
+* do not hesitate to **contact assignees** directly, e.g. on the
+  chat, if there is no update for a longer time, consider also
   reassigning the issue to another contributor if necessary
 * if there are pull requests `ready for merging but not included in
   the release`__, it might make sense to squeeze them in, to make the
