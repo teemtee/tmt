@@ -43,19 +43,9 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
     """
 
     repository: Repository
-    _artifact_list: Optional[Sequence[RpmArtifactInfo]]
 
     def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
         super().__init__(raw_provider_id, logger)
-        # Initialize to None to distinguish between "not run" and "run but empty"
-        self._artifact_list = None
-        # Initialize the repository from the URL
-        self.logger.info(f"Initializing repository provider with URL: {self.id}")
-        self.repository = Repository.from_url(url=self.id, logger=self.logger)
-        self.logger.info(
-            f"Repository initialized: {self.repository.name} "
-            f"(repo IDs: {', '.join(self.repository.repo_ids)})"
-        )
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
@@ -69,19 +59,10 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
 
     @property
     def artifacts(self) -> Sequence[RpmArtifactInfo]:
-        """
-        List all RPMs discovered from the repositories.
-
-        .. note::
-
-            The :py:meth:`fetch_contents` method must be called first to populate
-            the artifact list from the guest.
-        """
-        # Check for None to see if fetch_contents() has been called
-        if self._artifact_list is None:
-            raise tmt.utils.GeneralError("Call fetch_contents first to discover artifacts.")
-        # Return the list (which is valid even if it's empty)
-        return self._artifact_list
+        # Repository provider does not enumerate individual artifacts.
+        # The repository is installed and packages are available through the package manager.
+        # There is no need to download individual artifact files.
+        return []
 
     def _download_artifact(
         self, artifact: RpmArtifactInfo, guest: Guest, destination: Path
@@ -97,58 +78,31 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         download_path: tmt.utils.Path,
         exclude_patterns: Optional[list[Pattern[str]]] = None,
     ) -> list[tmt.utils.Path]:
-        # Override the default behavior: instead of downloading artifacts,
-        # this method makes RPMs from the repository discoverable.
+        # Fetches and initializes the repository from the URL.
+        # Repository provider does not download individual artifacts. Instead, it fetches
+        # the repository file which will be installed via get_repositories(). Packages are
+        # then available through the package manager.
+        # It returns an Empty list, as no individual artifact files are downloaded.
 
-        # Note: Repository installation is handled by PrepareArtifact after collecting
-        # all repositories from all providers. This ensures centralized control.
-
-        # The repository must be installed before we can list packages.
-        # At this point, PrepareArtifact should have already installed it.
-
-        # Load the artifacts using list_packages
-        package_list = guest.package_manager.list_packages(self.repository)
-
-        # Initialize the list before populating
-        self._artifact_list = []
-
-        for pkg in package_list:
-            try:
-                # Use the new utility function to parse the package string
-                raw_artifact = {**parse_rpm_string(pkg_string=pkg), "url": self.id}
-                self._artifact_list.append(RpmArtifactInfo(_raw_artifact=raw_artifact))
-            except ValueError as error:
-                # Catches both regex failing to match (ValueError)
-                # or an explicit ValueError raised by the utility function.
-                tmt.utils.show_exception_as_warning(
-                    exception=error,
-                    message=f"Failed to parse malformed package string '{pkg}'. Skipping.",
-                    logger=self.logger,
-                )
-                continue
-
-            except Exception as error:
-                # Catch any other unexpected errors
-                tmt.utils.show_exception_as_warning(
-                    exception=error,
-                    message=f"Unexpected error while parsing package '{pkg}': {error}.",
-                    logger=self.logger,
-                )
-                continue
-
-        self.logger.debug(f"Successfully discovered '{len(self._artifact_list)}' artifacts.")
-
+        self.logger.info(f"Initializing repository provider with URL: {self.id}")
+        # TODO: This should not be using Repository.from_url
+        self.repository = Repository.from_url(url=self.id, logger=self.logger)
+        self.logger.info(
+            f"Repository initialized: {self.repository.name} "
+            f"(repo IDs: {', '.join(self.repository.repo_ids)})"
+        )
         return []
 
     def contribute_to_shared_repo(
         self,
         guest: Guest,
-        download_path: Path,
+        source_path: Path,
         shared_repo_dir: Path,
         exclude_patterns: Optional[list[Pattern[str]]] = None,
     ) -> None:
-        # Repository discovery happens after installation by PrepareArtifact.
-        # We don't call fetch_contents here as it requires the repository to be installed first.
+        # Repository provider does not contribute files to the shared repository.
+        # Repository providers manage external repositories that are installed separately.
+        # They don't download individual artifact files that need to be added to the shared repo.
         pass
 
     def get_repositories(self) -> list[Repository]:
@@ -189,7 +143,7 @@ def parse_rpm_string(pkg_string: str) -> dict[str, str]:
 
     :param pkg_string: The package string, e.g., "docker-ce-1:20.10.7-3.el8.x86_64".
     :raises ValueError: if the package string is malformed.
-    :returns: A dictionary of RPM components.
+    :return: A dictionary of RPM components.
     """
 
     # 1. Match the package string against the regex
@@ -279,9 +233,6 @@ priority={priority}"""
         content=repo_string, name=repo_name, logger=logger
     )
 
-    logger.info(
-        f"Successfully created repository '{created_repository.name}' "
-        f"(repo IDs: {', '.join(created_repository.repo_ids)}) - ready for installation"
-    )
+    logger.info(f"Successfully created repository '{created_repository.name}' ")
 
     return created_repository

@@ -26,7 +26,7 @@ class MockProvider(ArtifactProvider[MockArtifactInfo]):
         destination.write_text("ok")
 
     def contribute_to_shared_repo(
-        self, guest, download_path, shared_repo_dir, exclude_patterns=None
+        self, guest, source_path, shared_repo_dir, exclude_patterns=None
     ):
         pass
 
