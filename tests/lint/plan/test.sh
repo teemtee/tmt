@@ -74,6 +74,9 @@ rlJournalStart
 
         rlRun -s "$tmt plan lint empty_env_file" 1
         rlAssertGrep "fail P008 the environment file '.*/tests/lint/plan/data/empty_env' is empty" $rlRun_LOG
+
+        rlRun -s "$tmt plan lint /invalid-plugins" 1
+        rlAssertGrep "fail P009 provision step has invalid data for phase 'default-0'" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "P007: step phases require existing guests and roles"
