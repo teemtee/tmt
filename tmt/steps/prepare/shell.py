@@ -201,6 +201,19 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 label=f'{self.name} / guest topology', exception=exc, outcome=outcome
             )
 
+        def _invoke_script(
+            command: ShellScript,
+            environment: tmt.utils.Environment,
+        ) -> tmt.utils.CommandOutput:
+            guest.push(source=self.phase_workdir)
+
+            return guest.execute(
+                command=command,
+                cwd=worktree,
+                env=environment,
+                sourced_files=[self.step.plan.plan_source_script],
+            )
+
         for script_index, script in enumerate(self.data.script):
             logger.verbose('script', script, 'green')
 
@@ -224,28 +237,16 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             else:
                 command = tmt.utils.ShellScript(f'{script}')
 
-            def _invoke_script(
-                command: ShellScript,
-                environment: tmt.utils.Environment,
-            ) -> tmt.utils.CommandOutput:
-                guest.push(source=self.phase_workdir)
-
-                return guest.execute(
-                    command=command,
-                    cwd=worktree,
-                    env=environment,
-                    sourced_files=[self.step.plan.plan_source_script],
-                )
-
             output, error, timer = Stopwatch.measure(_invoke_script, command, script_environment)
 
-            if isinstance(error, tmt.utils.RunError):
-                self._post_action_pull(
-                    guest=guest,
-                    path=self.phase_workdir,
-                    pull_options=pull_options,
-                    exceptions=outcome.exceptions,
-                )
+            if error is not None:
+                if isinstance(error, tmt.utils.RunError):
+                    self._post_action_pull(
+                        guest=guest,
+                        path=self.phase_workdir,
+                        pull_options=pull_options,
+                        exceptions=outcome.exceptions,
+                    )
 
                 return self._save_failed_run_outcome(
                     log_filepath=script_log_filepath,
@@ -254,11 +255,6 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                     command=command,
                     exception=error,
                     outcome=outcome,
-                )
-
-            if isinstance(error, Exception):
-                return self._save_error_outcome(
-                    label=script_name, exception=error, outcome=outcome
                 )
 
             if output is None:

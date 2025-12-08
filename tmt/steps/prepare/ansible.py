@@ -21,7 +21,6 @@ from tmt.utils import (
     ENVFILE_RETRY_SESSION_RETRIES,
     Path,
     PrepareError,
-    RunError,
     Stopwatch,
     normalize_string_list,
     retry_session,
@@ -266,18 +265,11 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                 invoke_playbook, playbook_record_dirpath, lowercased_playbook
             )
 
-            if isinstance(exc, RunError):
+            if exc is not None:
                 return self._save_failed_run_outcome(
                     log_filepath=playbook_log_filepath,
                     label=playbook_name,
                     timer=timer,
-                    exception=exc,
-                    outcome=outcome,
-                )
-
-            if isinstance(exc, Exception):
-                return self._save_error_outcome(
-                    label=playbook_name,
                     exception=exc,
                     outcome=outcome,
                 )

@@ -2229,6 +2229,15 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         :param body: see :py:func:`tmt.utils.render_report`.
         """
 
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.touch()
+
+        self.write(
+            path,
+            '\n'.join(tmt.utils.render_report(label=label, timer=timer, report=body)),
+            mode='a',
+        )
+
     def _post_action_pull(
         self,
         *,
@@ -2295,17 +2304,16 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         Save a successful result of a command-based phase.
 
         Write a command report (via :py:meth:`write_command_report`),
-        and add new :py:attr:`ResultOutcome.PASS` result. The result
-        will point to ``log_filepath`` as its log.
+        and add new :py:attr:`ResultOutcome.PASS` result.
 
-        :param log_filepath: a file to write into.
-        :param label: a string describing the intent of the command. It
-            is useful for user who reads the report file eventually.
-        :param timestamp: a timestamp marking the moment the report is
-            attributed to.
-        :param command: if provided, the command that was executed.
-            It will be included in the report.
-        :param output: contains output of the command.
+        :param log_filepath: see ``path`` parameter of
+            :py:func:`write_command_report`. It is also attached to the
+            newly created result as its log.
+        :param label: see :py:func:`write_command_report`. It is also
+            used as the name of the newly created result.
+        :param timer: see :py:func:`write_command_report`.
+        :param command: see :py:func:`write_command_report`.
+        :param output: see :py:func:`write_command_report`.
         :param outcome: plugin outcome to attach new result to.
         :returns: plugin outcome provided as argument, ``outcome``.
         """
@@ -2335,9 +2343,32 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         label: str,
         timer: Stopwatch,
         command: Optional[Union[Command, ShellScript]] = None,
-        exception: RunError,
+        exception: Exception,
         outcome: PluginOutcome,
     ) -> PluginOutcome:
+        """
+        Save a failed result of a command-based phase.
+
+        Write a command report (via :py:meth:`write_command_report`),
+        and add new result into ``outcome``.
+
+        If the ``exception`` is a :py:class:`tmt.utils.RunError` instance,
+        a :py:attr:`ResultOutcome.FAIL` will be created, as a "failed but
+        reportable" outcome. For other exception classes, a
+        :py:attr:`ResultOutcome.ERROR` result will created.
+
+        :param log_filepath: see ``path`` parameter of
+            :py:func:`write_command_report`. It is also attached to the
+            newly created result as its log.
+        :param label: see :py:func:`write_command_report`. It is also
+            used as the name of the newly created result.
+        :param timer: see :py:func:`write_command_report`.
+        :param command: see :py:func:`write_command_report`.
+        :param output: see :py:func:`write_command_report`.
+        :param outcome: plugin outcome to attach new result to.
+        :returns: plugin outcome provided as argument, ``outcome``.
+        """
+
         self.write_command_report(
             path=log_filepath,
             label=label,
@@ -2346,14 +2377,24 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
             exc=exception,
         )
 
-        outcome.results.append(
-            tmt.result.PhaseResult(
-                name=label,
-                result=ResultOutcome.FAIL,
-                note=tmt.utils.render_exception_as_notes(exception),
-                log=[log_filepath.relative_to(self.step_workdir)],
+        if isinstance(exception, RunError):
+            outcome.results.append(
+                tmt.result.PhaseResult(
+                    name=label,
+                    result=ResultOutcome.FAIL,
+                    note=tmt.utils.render_exception_as_notes(exception),
+                    log=[log_filepath.relative_to(self.step_workdir)],
+                )
             )
-        )
+
+        else:
+            outcome.results.append(
+                tmt.result.PhaseResult(
+                    name=label,
+                    result=ResultOutcome.ERROR,
+                    note=tmt.utils.render_exception_as_notes(exception),
+                )
+            )
 
         outcome.exceptions.append(exception)
 
@@ -2389,6 +2430,18 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         note: Optional[str] = None,
         outcome: PluginOutcome,
     ) -> PluginOutcome:
+        """
+        Save an error result of a phase.
+
+        Creates new :py:attr:`ResultOutcome.ERROR` result.
+
+        :param label: Used as the name of the newly created result.
+        :param exception: If set, it is attached as note to the newly
+            created result.
+        :param note: If set, it is attached to the newly created result.
+        :returns: plugin outcome provided as argument, ``outcome``.
+        """
+
         if exception is not None:
             outcome.results.append(
                 tmt.result.PhaseResult(
