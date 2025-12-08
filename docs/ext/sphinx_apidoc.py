@@ -25,6 +25,9 @@ def sphinx_apidoc(app: "Sphinx") -> None:
     # call sphinx-apidoc
     # TODO: Clean the folder before running sphinx-apidoc
     logger.info("Running sphinx-apidoc")
+    # `z_autodocs` naming is chosen to ensure these files are rendered last,
+    # avoiding tmt import issues due to the different handling of annotations.
+    # https://github.com/sphinx-doc/sphinx/issues/14010
     autodocs_path = conf_dir / "z_autodocs"
     autodocs_path.mkdir(exist_ok=True)
     apidoc.main(
