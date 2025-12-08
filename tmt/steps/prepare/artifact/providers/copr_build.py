@@ -59,8 +59,8 @@ def import_copr(logger: tmt.log.Logger) -> None:
         raise tmt.utils.GeneralError("Could not import copr package.") from error
 
 
-@provides_artifact_provider("copr.build")
-class CoprBuildArtifactProvider(ArtifactProvider[ArtifactInfo]):
+@provides_artifact_provider("copr.build")  # type: ignore[arg-type]
+class CoprBuildArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
     """
     Provider for downloading artifacts from Copr builds.
 
