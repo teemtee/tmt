@@ -37,9 +37,6 @@ properties:
   ref:
     $ref: "/schemas/common#/definitions/fmf_id/properties/ref"
 
-  path:
-    $ref: "/schemas/common#/definitions/fmf_id/properties/path"
-
   dist-git-source:
     $ref: "/schemas/common#/definitions/dist-git-source"
 

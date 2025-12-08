@@ -18,8 +18,6 @@ from tmt.container import SerializableContainer, SpecBasedContainer, container, 
 from tmt.steps.prepare.distgit import insert_to_prepare_step
 from tmt.utils import (
     Command,
-    Environment,
-    EnvVarValue,
     Path,
     ShellScript,
 )
@@ -293,9 +291,31 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         if self.data.tests:
             click.echo(tmt.utils.format('tests', [test.name for test in self.data.tests]))
 
-    def go(
-        self, *, path: Optional[Path] = None, logger: Optional[tmt.log.Logger] = None
-    ) -> list['tmt.base.Test']:
+    def _fetch_local_repository(self, path: Optional[Path]) -> Optional[Path]:
+        assert self.step.plan.worktree  # narrow type
+
+        # Symlink tests directory to the plan work tree
+        relative_path = self.step.plan.worktree.relative_to(self.phase_workdir)
+        self.test_dir.symlink_to(relative_path)
+
+        # Git metadata are necessary for dist_git_source
+        keep_git_metadata = True if self.data.dist_git_source else self.data.keep_git_metadata
+        if keep_git_metadata and self.step.plan.fmf_root:
+            # Copy .git which is excluded when worktree is initialized
+            # If exists, git_root can be only the same or parent of fmf_root
+            git_root = tmt.utils.git.git_root(
+                fmf_root=self.step.plan.fmf_root, logger=self._logger
+            )
+            if git_root:
+                if git_root != self.step.plan.fmf_root:
+                    raise tmt.utils.DiscoverError(
+                        "The 'keep-git-metadata' option can be "
+                        "used only when fmf root is the same as git root."
+                    )
+                self.run(Command("rsync", "-ar", f"{git_root}/.git", self.test_dir))
+        return None
+
+    def go(self, *, path: Optional[Path] = None, logger: Optional[tmt.log.Logger] = None) -> None:
         """
         Discover available tests
         """
@@ -305,15 +325,22 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
 
         self.log_import_plan_details()
 
-        # dist-git related
-        sourcedir = self.phase_workdir / 'source'
-
         # Git metadata are necessary for dist_git_source
         keep_git_metadata = True if self.data.dist_git_source else self.data.keep_git_metadata
 
-        # Remove .git so that it's not copied to the SUT
-        # if 'keep-git-metadata' option is not specified
-        if not keep_git_metadata:
+        if keep_git_metadata:
+            if self.step.plan.fmf_root:
+                # If exists, git_root can be only the same or parent of fmf_root
+                git_root = tmt.utils.git.git_root(
+                    fmf_root=self.step.plan.fmf_root, logger=self._logger
+                )
+                if git_root and git_root != self.step.plan.fmf_root:
+                    raise tmt.utils.DiscoverError(
+                        "The 'keep-git-metadata' option can be "
+                        "used only when fmf root is the same as git root."
+                    )
+        else:
+            # Remove .git so that it's not copied to the SUT
             shutil.rmtree(self.test_dir / '.git', ignore_errors=True)
 
         # Check and process each defined shell test
@@ -332,14 +359,9 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                 raise tmt.utils.SpecificationError(
                     f"Missing test script in '{self.step.plan.name}'."
                 )
-            # Prepare path to the test working directory (tree root by default)
-            data.path = f"/tests{data.path}" if data.path else '/tests'
             # Apply default test duration unless provided
             if not data.duration:
                 data.duration = tmt.base.DEFAULT_TEST_DURATION_L2
-            # Add source dir path variable
-            if self.data.dist_git_source:
-                data.environment['TMT_SOURCE_DIR'] = EnvVarValue(sourcedir)
 
             # Create a simple fmf node, with correct name. Emit only keys and values
             # that are no longer default. Do not add `name` itself into the node,
@@ -368,12 +390,12 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             try:
                 self.download_distgit_source(
                     distgit_dir=git_root,
-                    target_dir=sourcedir,
+                    target_dir=self.source_dir,
                     handler_name=self.data.dist_git_type,
                 )
                 # Copy rest of files so TMT_SOURCE_DIR has patches, sources and spec file
-                # FIXME 'worktree' could be used as sourcedir when 'url' is not set
-                shutil.copytree(git_root, sourcedir, symlinks=True, dirs_exist_ok=True)
+                # FIXME 'worktree' could be used as source_dir when 'url' is not set
+                shutil.copytree(git_root, self.source_dir, symlinks=True, dirs_exist_ok=True)
 
                 if self.data.dist_git_download_only:
                     self.debug("Do not extract sources as 'download_only' is set.")
@@ -383,7 +405,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                         self.warn("Sources will not be extracted, prepare step is not enabled.")
                     insert_to_prepare_step(
                         discover_plugin=self,
-                        sourcedir=sourcedir,
+                        sourcedir=self.source_dir,
                     )
 
             except Exception as error:
@@ -393,14 +415,6 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         self._tests = tmt.Tree(logger=self._logger, tree=tests).tests(
             conditions=["manual is False"], sort=False
         )
-
-        # Propagate `where` key and TMT_SOURCE_DIR
-        for test in self._tests:
-            test.where = cast(tmt.steps.discover.DiscoverStepData, self.data).where
-            if self.data.dist_git_source:
-                test.environment['TMT_SOURCE_DIR'] = EnvVarValue(sourcedir)
-
-        return self._tests
 
     def tests(
         self, *, phase_name: Optional[str] = None, enabled: Optional[bool] = None

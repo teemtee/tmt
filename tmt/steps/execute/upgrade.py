@@ -335,7 +335,25 @@ class ExecuteUpgrade(ExecuteInternal):
 
         try:
             self._discover_upgrade.wake()
-            self._discover_upgrade.go()
+
+            path = self._discover_upgrade.fetch_source()
+            self._discover_upgrade.checkout_ref()
+
+            self._discover_upgrade.go(path=path, logger=self._logger)
+
+            if self._discover_upgrade.get('prune', False):
+                clone_dir = self._discover_upgrade.clone_dirpath / 'tests'
+                self._discover_upgrade.install_libraries(
+                    self._discover_upgrade.test_dir, clone_dir
+                )
+                self._discover_upgrade.prune_tree(clone_dir, path)
+            else:
+                self._discover_upgrade.install_libraries(
+                    self._discover_upgrade.test_dir, self._discover_upgrade.test_dir
+                )
+
+            self._discover_upgrade.adjust_test_attributes(path)
+            self._discover_upgrade.apply_policies()
 
         finally:
             tmt.base.Test.ignore_class_options = False
