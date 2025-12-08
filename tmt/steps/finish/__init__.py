@@ -214,7 +214,7 @@ class Finish(tmt.steps.Step):
                             name=outcome.phase.name,
                             result=ResultOutcome.ERROR,
                             note=['Plugin raised an unhandled exception.'],
-                            guest=ResultGuestData.from_guest(guest=guest),
+                            guest=ResultGuestData.from_guest(guest=outcome.guest),
                         )
                     )
 
