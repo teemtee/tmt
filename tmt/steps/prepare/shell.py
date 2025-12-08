@@ -235,7 +235,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             if guest.become and not guest.facts.is_superuser:
                 command = tmt.utils.ShellScript(f'sudo -E {script}')
             else:
-                command = tmt.utils.ShellScript(f'{script}')
+                command = script
 
             output, error, timer = Stopwatch.measure(_invoke_script, command, script_environment)
 
