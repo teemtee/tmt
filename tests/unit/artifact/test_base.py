@@ -25,6 +25,11 @@ class MockProvider(ArtifactProvider[MockArtifactInfo]):
     def _download_artifact(self, artifact, guest, destination):
         destination.write_text("ok")
 
+    def contribute_to_shared_repo(
+        self, guest, download_path, shared_repo_dir, exclude_patterns=None
+    ):
+        pass
+
 
 def test_filter_artifacts(root_logger):
     provider = MockProvider("mock:123", root_logger)
