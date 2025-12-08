@@ -204,11 +204,10 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         """
         return []
 
-    @abstractmethod
     def contribute_to_shared_repo(
         self,
         guest: Guest,
-        download_path: Path,
+        source_path: Path,
         shared_repo_dir: Path,
         exclude_patterns: Optional[list[Pattern[str]]] = None,
     ) -> None:
@@ -220,13 +219,13 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         implement their specific contribution logic.
 
         :param guest: the guest on which the artifacts should be downloaded.
-        :param download_path: path into which the artifacts should be downloaded.
+        :param source_path: path where the artifacts are located (source for contribution).
         :param shared_repo_dir: path to the shared repository directory where
             artifacts should be contributed.
         :param exclude_patterns: if set, artifacts whose names match any
             of the given regular expressions would not be downloaded.
         """
-        # Providers must override this method to implement their contribution logic.
+        pass
 
 
 @container

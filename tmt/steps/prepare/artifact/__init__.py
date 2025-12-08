@@ -103,18 +103,15 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                 # Define a unique download path for this provider's artifacts
                 download_path = self.plan_workdir / "artifacts" / provider_id_sanitized
 
-                # For providers that manage repositories, skip download/contribution here.
-                # They will discover packages after repository installation.
-                if not provider.get_repositories():
-                    # First, fetch the contents (download artifacts)
-                    provider.fetch_contents(guest, download_path)
+                # First, fetch the contents (download artifacts)
+                provider.fetch_contents(guest, download_path)
 
-                    # Then, have the provider contribute to the shared repository
-                    provider.contribute_to_shared_repo(
-                        guest=guest,
-                        download_path=download_path,
-                        shared_repo_dir=shared_repo_dir,
-                    )
+                # Then, have the provider contribute to the shared repository
+                provider.contribute_to_shared_repo(
+                    guest=guest,
+                    source_path=download_path,
+                    shared_repo_dir=shared_repo_dir,
+                )
 
             except tmt.utils.PrepareError:
                 raise
@@ -141,12 +138,6 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         for repo in repositories:
             guest.package_manager.install_repository(repo)
             logger.debug(f"Installed repository '{repo.name}'.")
-
-        # Now that repositories are installed, discover packages from repository providers
-        for provider in providers:
-            # Only call fetch_contents for repository-based providers that need package discovery
-            if provider.get_repositories():
-                provider.fetch_contents(guest, tmt.utils.Path(''))
 
         # Report configuration summary
         logger.info(
