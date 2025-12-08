@@ -1,6 +1,6 @@
 description: |
   The :ref:`/plugins/discover/shell` discover plugin now supports
-  the ``path`` and ``url-content-type`` keys, which are handled
-  in the same way as in the :ref:`/plugins/discover/fmf` discover
-  plugin. The plugin now also correctly installs test dependencies
+  the ``url-content-type`` key, which is handled in the same way
+  as in the :ref:`/plugins/discover/fmf` discover plugin.
+  The plugin now also correctly installs test dependencies
   specified in the ``require`` and ``recommend`` keys.
