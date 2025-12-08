@@ -11,10 +11,11 @@ from tmt.steps.prepare.artifact.providers import (
     _PROVIDER_REGISTRY,
     ArtifactInfo,
     ArtifactProvider,
+    Repository,
 )
 from tmt.steps.prepare.artifact.providers.repository import create_repository
 from tmt.steps.provision import Guest
-from tmt.utils import Environment, Path
+from tmt.utils import Environment
 
 
 @container
@@ -80,9 +81,11 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         shared_repo_dir = self.plan_workdir / 'artifact-shared-repo'
 
         # Ensure the shared repository directory exists on the guest.
-        guest.execute(
-            tmt.utils.ShellScript(f"mkdir -p {tmt.utils.quote(str(shared_repo_dir))}"),
-            silent=True,
+        shared_repository = create_repository(
+            artifact_dir=shared_repo_dir,
+            guest=guest,
+            logger=logger,
+            repo_name="tmt-artifact-shared",
         )
 
         # Initialize all providers and have them contribute to the shared repo
@@ -100,12 +103,18 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                 # Define a unique download path for this provider's artifacts
                 download_path = self.plan_workdir / "artifacts" / provider_id_sanitized
 
-                # Have the provider contribute to the shared repository
-                provider.contribute_to_shared_repo(
-                    guest=guest,
-                    download_path=download_path,
-                    shared_repo_dir=shared_repo_dir,
-                )
+                # For providers that manage repositories, skip download/contribution here.
+                # They will discover packages after repository installation.
+                if not provider.get_repositories():
+                    # First, fetch the contents (download artifacts)
+                    provider.fetch_contents(guest, download_path)
+
+                    # Then, have the provider contribute to the shared repository
+                    provider.contribute_to_shared_repo(
+                        guest=guest,
+                        download_path=download_path,
+                        shared_repo_dir=shared_repo_dir,
+                    )
 
             except tmt.utils.PrepareError:
                 raise
@@ -119,34 +128,30 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         # This aggregates all local artifacts from file-based providers.
         # If this prepare step runs multiple times in the same plan, artifacts
         # accumulate in the same directory and createrepo updates the metadata.
-        shared_repository = create_repository(
-            artifact_dir=shared_repo_dir,
-            guest=guest,
-            logger=logger,
-            repo_name="tmt-artifact-shared",
-        )
 
-        # Collect repository count from providers for reporting
-        # Note: Provider repositories are already installed by providers during
-        # contribute_to_shared_repo(), so we don't need to install them again here.
-        provider_repository_count = sum(len(provider.get_repositories()) for provider in providers)
+        guest.package_manager.create_repository(shared_repo_dir)
 
-        # Install the shared repository (skip if already exists)
-        shared_repo_file = Path("/etc/yum.repos.d") / shared_repository.filename
-        try:
-            guest.execute(tmt.utils.ShellScript(f"test -f {shared_repo_file}"), silent=True)
-            logger.debug(
-                f"Repository '{shared_repository.name}' already exists, metadata updated."
-            )
-        except Exception:
-            guest.package_manager.install_repository(shared_repository)
-            logger.debug(f"Installed repository '{shared_repository.name}'.")
+        # Collect all repositories (shared repository + provider repositories)
+        repositories: list[Repository] = [shared_repository]
+        for provider in providers:
+            repositories.extend(provider.get_repositories())
+
+        # Install all repositories centrally
+        # This ensures consistent handling across all providers
+        for repo in repositories:
+            guest.package_manager.install_repository(repo)
+            logger.debug(f"Installed repository '{repo.name}'.")
+
+        # Now that repositories are installed, discover packages from repository providers
+        for provider in providers:
+            # Only call fetch_contents for repository-based providers that need package discovery
+            if provider.get_repositories():
+                provider.fetch_contents(guest, tmt.utils.Path(''))
 
         # Report configuration summary
-        total_repositories = 1 + provider_repository_count
         logger.info(
             f"Configured artifact preparation with {len(self.data.provide)} provider(s) "
-            f"and {total_repositories} repository(ies)."
+            f"and {len(repositories)} repository(ies)."
         )
 
         return outcome

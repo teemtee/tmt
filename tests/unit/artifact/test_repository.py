@@ -366,17 +366,14 @@ def test_id_extraction(root_logger):
     assert provider.id == "https://download.docker.com/linux/centos/docker-ce.repo"
 
 
-def test_artifacts_before_fetch(root_logger):
+def test_artifacts_before_fetch(mock_repo_file_fetch, root_logger):
     """Test that accessing artifacts before fetch_contents raises error"""
 
     provider = RepositoryFileProvider("repository-url:https://example.com/test.repo", root_logger)
 
     with pytest.raises(
         GeneralError,
-        match=(
-            r"Artifacts not yet discovered. Call fetch_contents\(\) "
-            r"or contribute_to_shared_repo\(\) first."
-        ),
+        match=r"Call fetch_contents",
     ):
         _ = provider.artifacts
 
@@ -398,14 +395,14 @@ def test_fetch_contents(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tm
     )
 
     # Call fetch_contents
+    # Note: fetch_contents expects the repository to already be installed by PrepareArtifact
     artifacts_dir = tmppath / "artifacts"
     result = provider.fetch_contents(mock_guest, artifacts_dir)
 
     # Verify result is empty list (discovery-only provider)
     assert result == []
 
-    # Verify package manager methods were called
-    mock_package_manager.install_repository.assert_called_once()
+    # Verify list_packages was called (to discover packages from the already-installed repo)
     mock_package_manager.list_packages.assert_called_once()
 
     # Verify artifacts property now works
@@ -509,7 +506,7 @@ def test_unexpected_error_handling(
 
 
 def test_contribute_to_shared_repo(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tmppath):
-    """Test that contribute_to_shared_repo delegates to fetch_contents"""
+    """Test that contribute_to_shared_repo does nothing for repository providers"""
 
     mock_guest, mock_package_manager = mock_guest_and_pm
 
@@ -524,16 +521,16 @@ def test_contribute_to_shared_repo(mock_repo_file_fetch, mock_guest_and_pm, root
     )
 
     # Call contribute_to_shared_repo
+    # Repository providers don't contribute files to the shared repo,
+    # they just provide Repository objects via get_repositories()
     artifacts_dir = tmppath / "artifacts"
     shared_repo_dir = tmppath / "shared"
     provider.contribute_to_shared_repo(mock_guest, artifacts_dir, shared_repo_dir)
 
-    # Verify package manager methods were called (proving delegation to fetch_contents worked)
-    mock_package_manager.install_repository.assert_called_once()
-    mock_package_manager.list_packages.assert_called_once()
+    # Verify no package manager methods were called (since contribute_to_shared_repo is a no-op)
+    mock_package_manager.install_repository.assert_not_called()
+    mock_package_manager.list_packages.assert_not_called()
 
-    # Verify artifacts were discovered
-    artifacts = provider.artifacts
-    assert len(artifacts) == 2
-    artifact_names = {a._raw_artifact["name"] for a in artifacts}
-    assert artifact_names == {"docker-ce", "docker-ce-cli"}
+    # Verify artifacts were not discovered yet (fetch_contents hasn't been called)
+    with pytest.raises(GeneralError, match=r"Call fetch_contents"):
+        _ = provider.artifacts
