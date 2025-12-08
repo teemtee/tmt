@@ -1,3 +1,6 @@
+/:
+    select: true
+
 story:
     As a user I want to store configuration so that I don't have
     to always provide my preferred default options on the command
