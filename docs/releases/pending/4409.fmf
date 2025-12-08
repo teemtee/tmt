@@ -1,0 +1,3 @@
+description: |
+  Introduced lint rule ``P009`` which checks if the step data is valid overall,
+  which now covers failures due to data normalizations.
