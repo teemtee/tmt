@@ -1,0 +1,7 @@
+provision:
+    # This part would fail due to normalization
+    how: local
+    hardware:
+        memory: "32 M"
+execute:
+    how: tmt
