@@ -200,16 +200,11 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
 
     def get_repositories(self) -> list['Repository']:
         """
-        Return a list of Repository objects that this provider manages.
-
-        Repository-based providers (like repository-url) should override this
-        to return their Repository objects. File-based providers return an
-        empty list since they contribute files to the shared repository instead.
-
-        :returns: list of Repository objects to be installed on the guest.
+        Return a list of :py:class:`Repository` that this provider manages.
         """
         return []
 
+    @abstractmethod
     def contribute_to_shared_repo(
         self,
         guest: Guest,
@@ -221,12 +216,8 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         Contribute artifacts to the shared repository.
 
         This is the main interface for providers to contribute their artifacts
-        to the shared repository. The default implementation:
-        1. Downloads artifacts to download_path using fetch_contents
-        2. Copies them to shared_repo_dir
-
-        Providers that handle repositories differently (like repository-url)
-        should override this method.
+        to the shared repository. Providers should override this method to
+        implement their specific contribution logic.
 
         :param guest: the guest on which the artifacts should be downloaded.
         :param download_path: path into which the artifacts should be downloaded.
@@ -235,14 +226,7 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         :param exclude_patterns: if set, artifacts whose names match any
             of the given regular expressions would not be downloaded.
         """
-        # Download artifacts to the provider-specific download path
-        downloaded_paths = self.fetch_contents(guest, download_path, exclude_patterns)
-
-        # If we downloaded anything, copy it to the shared repository
-        if downloaded_paths:
-            guest.execute(
-                ShellScript(f"cp -r {quote(str(download_path))}/. {quote(str(shared_repo_dir))}")
-            )
+        # Providers must override this method to implement their contribution logic.
 
 
 @container
