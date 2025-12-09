@@ -9,13 +9,13 @@ from typing import Optional
 
 import tmt.log
 from tmt.steps import DefaultNameGenerator
+from tmt.steps.prepare.artifact import RpmArtifactInfo
 from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     ArtifactProviderId,
     Repository,
     provides_artifact_provider,
 )
-from tmt.steps.prepare.artifact.providers.koji import RpmArtifactInfo
 from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path, PrepareError, RunError
 

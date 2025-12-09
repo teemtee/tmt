@@ -67,6 +67,7 @@ export-polarion = [
     ]
 prepare-artifact = [
     "koji>=1.35.0",
+    "copr>=2.4",
     ]
 provision-beaker = [
     "mrack>=1.25.0",
