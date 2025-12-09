@@ -4471,6 +4471,9 @@ class RunData(SerializableContainer):
     # but stores as a List[str] in run.yaml...
     steps: list[str]
     remove: bool
+
+    #: Stores the environment supplied via CLI. It is saved for the
+    #: future invocations of ``tmt`` with the same workdir.
     environment: Environment = field(
         default_factory=Environment,
         serialize=lambda environment: environment.to_fmf_spec(),
@@ -4487,6 +4490,8 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
 
     #: Run policies to apply to tests, plans and stories.
     policies: list[tmt.policy.Policy]
+
+    data: Optional[RunData] = None
 
     def __init__(
         self,
@@ -4528,8 +4533,6 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         self._workdir_path: WorkdirArgumentType = id_ or True
         self._tree: Optional[Tree] = tree
         self._plans: Optional[list[Plan]] = None
-        self._environment_from_workdir: Environment = Environment()
-        self._environment_from_options: Optional[Environment] = None
         self.remove = self.opt('remove')
         self.unique_id = str(time.time()).split('.')[0]
 
@@ -4603,25 +4606,50 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
             self._use_default_plan()
 
     @property
+    def _environment_from_workdir(self) -> Environment:
+        """
+        Environment variables saved in the workdir.
+        """
+
+        assert self.data is not None  # narrow type
+
+        return self.data.environment.copy()
+
+    @property
+    def _environment_from_cli(self) -> Environment:
+        """
+        Environment variables from ``--environment`` and ``--environment-file`` options.
+        """
+
+        assert self.tree is not None  # narrow type
+
+        return tmt.utils.Environment.from_inputs(
+            raw_cli_environment_files=self.opt('environment-file') or [],
+            raw_cli_environment=self.opt('environment'),
+            file_root=Path(self.tree.root) if self.tree.root else None,
+            logger=self._logger,
+        )
+
+    @property
     def environment(self) -> Environment:
         """
-        Return environment combined from wake up and command line
+        Environment variables of the run.
+
+        Contains all environment variables collected from multiple
+        sources (in the following order):
+
+        * run's environment, saved from the previous runs in the same
+          workdir,
+        * run's environment, ``--environment`` and ``--environment-file``
+          options.
         """
-        # Gather environment variables from options only once
-        if self._environment_from_options is None:
-            assert self.tree is not None  # narrow type
 
-            self._environment_from_options = tmt.utils.Environment.from_inputs(
-                raw_cli_environment_files=self.opt('environment-file') or [],
-                raw_cli_environment=self.opt('environment'),
-                file_root=Path(self.tree.root) if self.tree.root else None,
-                logger=self._logger,
-            )
-
-        # Combine workdir and command line
-        combined = self._environment_from_workdir.copy()
-        combined.update(self._environment_from_options)
-        return combined
+        return Environment(
+            {
+                **self._environment_from_workdir,
+                **self._environment_from_cli,
+            }
+        )
 
     def save(self) -> None:
         """
@@ -4633,7 +4661,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
             root=str(self.tree.root) if self.tree.root else None,
             plans=[plan.name for plan in self._plans] if self._plans is not None else None,
             steps=list(self._cli_context_object.steps),
-            environment=self.environment,
+            environment=self._environment_from_cli,
             remove=self.remove,
         )
         self.write(Path('run.yaml'), tmt.utils.dict_to_yaml(data.to_serialized()))
@@ -4654,7 +4682,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         except tmt.utils.FileError:
             self.debug('Run data not found.')
             return
-        self._environment_from_workdir = data.environment
+
         assert self._cli_context_object is not None  # narrow type
         self._cli_context_object.steps = set(data.steps)
 
@@ -4678,7 +4706,9 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         Load list of selected plans and enabled steps
         """
         try:
-            data = RunData.from_serialized(tmt.utils.yaml_to_dict(self.read(Path('run.yaml'))))
+            self.data = RunData.from_serialized(
+                tmt.utils.yaml_to_dict(self.read(Path('run.yaml')))
+            )
         except tmt.utils.FileError:
             self.debug('Run data not found.')
             return
@@ -4686,8 +4716,8 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         # If run id was given and root was not explicitly specified,
         # create a new Tree from the root in run.yaml
         if self._workdir and not self.opt('root'):
-            if data.root:
-                self._save_tree(tmt.Tree(logger=self._logger.descend(), path=Path(data.root)))
+            if self.data.root:
+                self._save_tree(tmt.Tree(logger=self._logger.descend(), path=Path(self.data.root)))
             else:
                 # The run was used without any metadata, default plan
                 # was used, load it
@@ -4698,10 +4728,10 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         if not any(Plan._opt(option) for option in plan_options):
             assert self.tree is not None  # narrow type
 
-            if data.plans is None:
+            if self.data.plans is None:
                 plan_names = []
             else:
-                plan_names = [f"^{re.escape(plan_name)}$" for plan_name in data.plans]
+                plan_names = [f"^{re.escape(plan_name)}$" for plan_name in self.data.plans]
 
             self._plans = self.tree.plans(run=self, names=plan_names)
 
@@ -4710,14 +4740,10 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         selected = any(self.opt(option) for option in step_options)
         assert self._cli_context_object is not None  # narrow type
         if not selected and not self._cli_context_object.steps:
-            self._cli_context_object.steps = set(data.steps)
-
-        # Store loaded environment
-        self._environment_from_workdir = data.environment
-        self.debug(f"Loaded environment: '{self._environment_from_workdir}'.", level=3)
+            self._cli_context_object.steps = set(self.data.steps)
 
         # If the remove was enabled, restore it, option overrides
-        self.remove = self.remove or data.remove
+        self.remove = self.remove or self.data.remove
         self.debug(f"Remove workdir when finished: {self.remove}", level=3)
 
     @functools.cached_property
