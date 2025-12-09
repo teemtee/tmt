@@ -12,6 +12,33 @@ Environment precedence
 
 .. todo::
 
+    AFAICT, the rough order of precedence, as of now, is something like the following:
+
+    * ``provision[].environment``
+    * ``test[].environment``
+    * "plan environment"
+        * ``$TMT_PLAN_ENVIRONMENT_FILE``
+        * plan ``environment-file`` key
+        * plan ``environment`` key
+        * importing plan "native" environment
+            * importing plan ``environment-file`` key
+            * importing plan ``environment`` key
+            * importing plan importing plan ...
+        * run environment saved in the workdir (``--environment`` and ``--environment-file`` from previous invocations)
+        * ``tmt run --environment``
+        * ``tmt run --environment-file``
+        * plan intrinsic variables: ``TMT_VERSION``, ``TMT_TREE``, ...
+    * plugin intrinsic variables
+        * abort context
+        * reboot context
+        * restart context
+        * pidfile context
+        * restraint context
+        * test framework
+        * ...
+
+.. todo::
+
     .. code-block::
 
         # Asorted list of environment sources
@@ -47,7 +74,7 @@ Environment precedence
     * plan environment file, ``$TMT_PLAN_ENVIRONMENT_FILE``
     * plan ``environment-file`` key  (```plan: environment and environment-file fmf keys`` source)
     * plan ``environment`` key  (```plan: environment and environment-file fmf keys`` source)
-    * importing plan "native" environment  (``importing plan: environment fmf key of the importing plan`` source)
+    * importing plan "native" environment (``importing plan: environment fmf key of the importing plan`` source)
         * ``environment-file`` key
         * ``environment`` key
         * importing plan's "native" environment
@@ -77,6 +104,12 @@ Environment precedence
     Document order of precedence for ``environment`` key and
     ``environment`` CLI option in case of ``provision`` phases
 
+.. important::
+
+    The following is the draft of how things should be. It is incomplete,
+    and it does contain several notes, but this is what would document
+    the precedence.
+
 Listing environment variable sources in their order of precedence, from
 the least preferred to the strongest ones.
 
@@ -87,25 +120,38 @@ As set via :ref:`environment </plugins/provision/common-keys>` key of
 individual ``provision`` phases. Applies to user commands executed on
 the given guest.
 
+.. todo::
+
+    "Applies" is a strong word, we need to fix plugins that do not do
+    this but should, like ``shell`` - and document those that will not
+    expose the environment, like ``ansible``.
+
 2. User-provided test-specific environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 As set via :ref:`environment </spec/tests/environment>` key of individual
 tests.
 
-3. User-provided plan-specific environment
+X. User-provided plan-specific environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. important::
+.. todo::
 
-    See the TODO above, plan environment seems to be injected into
-    individual test environment mappings, efefctively placing them here.
+    Plan environment consists of several inputs, and it is injected into
+    individual test environment mappings, efefctively placing all of them
+    there with on this level.
 
-4. Variables set by tmt, run, plan, steps, and plugins
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Last. Variables set by tmt, run, plan, steps, and plugins
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 These are the strongest sources, always overriding any preexisting
 variables.
+
+.. note::
+
+    The variables here are not ordered by their order of precedence, as
+    they do appear sharing the same level to the user code. Individual
+    sources contribute their distinct subsets of variables.
 
 * For all steps
     * ``TMT_TREE``
