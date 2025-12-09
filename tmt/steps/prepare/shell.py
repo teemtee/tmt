@@ -230,12 +230,12 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             pull_options = DEFAULT_PULL_OPTIONS.copy()
             pull_options.exclude.append(str(script_log_filepath))
 
-            script = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}')
-
             if guest.become and not guest.facts.is_superuser:
-                command = tmt.utils.ShellScript(f'sudo -E {script}')
+                command = tmt.utils.ShellScript(f'{guest.facts.sudo_prefix} {script}')
             else:
                 command = script
+
+            command = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {command}')
 
             output, error, timer = Stopwatch.measure(_invoke_script, command, script_environment)
 
