@@ -818,6 +818,8 @@ The team works in biweekly sprints with the following schedule:
 * Sprint day 0, Thursday ... retrospective & planning meeting
 * Sprint day 3, Tuesday ... hacking session, progress check
 * Sprint day 4, Wednesday ... issue triage
+* Sprint day 6, Friday ... the ``must`` items are ideally done,
+  or at least ready for review
 * Sprint day 8, Tuesday ... hacking session, pre-release sync
 * Sprint day 9, Wednesday ... issue triage, new version released
 
