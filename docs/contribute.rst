@@ -828,12 +828,13 @@ sprint. Any **additional items** which pop up during the sprint:
 * Are proposed to the team and discussed together
 * Release lead is consulted and approves the inclusion
 
-Tentative suggestions for the `next sprint`__ can be added by
+Tentative suggestions for the `next sprint`_ can be added by
 anybody. Those will be reviewed and dropped or approved in the
-planning meeting.
+planning meeting as well as items which were not finished in the
+previous sprint.
 
 Team members sync daily in the chat about the progress and
-blocking issues. The progress is tracked in the `current sprint`__
+blocking issues. The progress is tracked in the `current sprint`_
 board. Everyone should regularly review comments in their pull
 requests, ideally check them daily and address any comments.
 
@@ -842,14 +843,14 @@ marked with the ``must`` priority on which the team is focused.
 These issues have to be completed during the sprint and included
 in the release.
 
-See the `triage`__ project for the current status of the issue
-triage and the `backlog`__ for the list of approved and
+See the `triage project`_ for the current status of the issue
+triage and the `backlog`_ for the list of approved and
 prioritized issues.
 
-__ https://github.com/orgs/teemtee/projects/1/views/3
-__ https://github.com/orgs/teemtee/projects/1/views/11
-__ https://github.com/orgs/teemtee/projects/10
-__ https://github.com/orgs/teemtee/projects/1/views/1
+.. _current sprint: https://github.com/orgs/teemtee/projects/1/views/3
+.. _next sprint: https://github.com/orgs/teemtee/projects/1/views/11
+.. _triage project: https://github.com/orgs/teemtee/projects/10
+.. _backlog: https://github.com/orgs/teemtee/projects/1/views/1
 
 
 Release
@@ -923,9 +924,9 @@ the ``main`` branch by the proposed deadline. Here's a couple of
 recommendations which could help you to make the release process
 smooth and timely:
 
-* dedicate **each and every day** a time for this orchestration,
-  it is an essential part of this role which helps the whole team
-  to finish the sprint successfully
+* dedicate time **each day** for this orchestration, it is an
+  essential part of this role which helps the whole team to finish
+  the sprint successfully
 * continually watch `the issues & pull requests`__ and gently
   **push them forward** if any of them seems to get stuck, if
   needed, the "gently" part from the previous sentence can be
@@ -934,7 +935,8 @@ smooth and timely:
   the ``must`` issues and pull requests should be ideally finished
   or at least ready for review on the second Friday (day 6)
 * investigate any **infrastructure issues** blocking the pull
-  request testing, file tickets, escalate if necessary
+  request testing, file tickets, escalate if necessary, identify
+  flaky tests and adjust them as needed
 * regularly check the pull request progress and highlight those
   which are waiting for feedback on the **review sessions**
 * if there is anything not clear and needs discussion bring it to
