@@ -1,0 +1,9 @@
+#!/usr/bin/expect -f
+# Run in verbose mode with context set and quit
+
+set test_context [lindex $argv 0]
+
+spawn tmt -v -c test-context=$test_context try
+expect "What do we do next?"
+send -- "q\r"
+expect eof
