@@ -5,7 +5,6 @@ import pytest
 from tmt.steps.prepare.artifact.providers import Repository
 from tmt.steps.prepare.artifact.providers.repository import (
     RepositoryFileProvider,
-    create_repository,
     parse_rpm_string,
 )
 from tmt.utils import GeneralError, Path, PrepareError, RunError, requests
@@ -386,7 +385,7 @@ def test_fetch_contents(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tm
         "repository-url:https://download.docker.com/linux/centos/docker-ce.repo", root_logger
     )
 
-    # Call fetch_contents - it should be a no-op
+    # Call fetch_contents
     artifacts_dir = tmppath / "artifacts"
     result = provider.fetch_contents(mock_guest, artifacts_dir)
 

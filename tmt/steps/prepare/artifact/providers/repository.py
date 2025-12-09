@@ -106,10 +106,7 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         pass
 
     def get_repositories(self) -> list[Repository]:
-        self.logger.info(
-            f"Providing repository '{self.repository.name}' for installation "
-            f"(repo IDs: {', '.join(self.repository.repo_ids)})"
-        )
+        self.logger.info(f"Providing repository '{self.repository.name}' for installation ")
         return [self.repository]
 
 

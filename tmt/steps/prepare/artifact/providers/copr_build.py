@@ -21,6 +21,7 @@ from tmt.steps.prepare.artifact.providers import (
     provides_artifact_provider,
 )
 from tmt.steps.provision import Guest
+from tmt.utils import ShellScript
 
 if TYPE_CHECKING:
     from munch import Munch
@@ -182,3 +183,15 @@ class CoprBuildArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
     def artifacts(self) -> Sequence[RpmArtifactInfo]:
         self.logger.debug(f"Fetching RPMs for build '{self.build_id}' in chroot '{self.chroot}'.")
         return [self.make_rpm_artifact(rpm_meta) for rpm_meta in self.build_packages]
+
+    def contribute_to_shared_repo(
+        self,
+        guest: Guest,
+        source_path: tmt.utils.Path,
+        shared_repo_dir: tmt.utils.Path,
+        exclude_patterns: Optional[list[tmt.utils.Pattern[str]]] = None,
+    ) -> None:
+        guest.execute(
+            ShellScript(f"cp {quote(str(source_path))}/*.rpm {quote(str(shared_repo_dir))}")
+        )
+        self.logger.info(f"Contributed artifacts from '{source_path}' to '{shared_repo_dir}'.")

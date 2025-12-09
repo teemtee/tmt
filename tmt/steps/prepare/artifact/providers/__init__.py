@@ -218,12 +218,12 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         to the shared repository. Providers should override this method to
         implement their specific contribution logic.
 
-        :param guest: the guest on which the artifacts should be downloaded.
+        :param guest: the guest to run the commands on.
         :param source_path: path where the artifacts are located (source for contribution).
         :param shared_repo_dir: path to the shared repository directory where
             artifacts should be contributed.
         :param exclude_patterns: if set, artifacts whose names match any
-            of the given regular expressions would not be downloaded.
+            of the given regular expressions would not be contributed.
         """
         pass
 

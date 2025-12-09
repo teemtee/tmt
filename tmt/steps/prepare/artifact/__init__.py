@@ -13,7 +13,6 @@ from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     Repository,
 )
-from tmt.steps.prepare.artifact.providers.repository import create_repository
 from tmt.steps.provision import Guest
 from tmt.utils import Environment
 
@@ -75,6 +74,8 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         environment: Optional[Environment] = None,
         logger: Logger,
     ) -> PluginOutcome:
+        from tmt.steps.prepare.artifact.providers.repository import create_repository
+
         outcome = super().go(guest=guest, environment=environment, logger=logger)
 
         # Prepare a shared directory on the guest for aggregating artifacts.
