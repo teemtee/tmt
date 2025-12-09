@@ -270,6 +270,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                     log_filepath=playbook_log_filepath,
                     label=playbook_name,
                     timer=timer,
+                    guest=guest,
                     exception=exc,
                     outcome=outcome,
                 )
@@ -278,6 +279,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                 return self._save_error_outcome(
                     label=playbook_name,
                     note='Command produced no output but raised no exception',
+                    guest=guest,
                     outcome=outcome,
                 )
 
@@ -285,6 +287,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                 log_filepath=playbook_log_filepath,
                 label=playbook_name,
                 timer=timer,
+                guest=guest,
                 output=output,
                 outcome=outcome,
             )

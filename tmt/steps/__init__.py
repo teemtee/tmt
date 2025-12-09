@@ -2296,6 +2296,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         log_filepath: Path,
         label: str,
         timer: Stopwatch,
+        guest: 'Guest',
         command: Optional[Union[Command, ShellScript]] = None,
         output: CommandOutput,
         outcome: PluginOutcome,
@@ -2312,11 +2313,15 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         :param label: see :py:func:`write_command_report`. It is also
             used as the name of the newly created result.
         :param timer: see :py:func:`write_command_report`.
+        :param guest: the guest on which the phase ran. It is attached
+            to the result.
         :param command: see :py:func:`write_command_report`.
         :param output: see :py:func:`write_command_report`.
         :param outcome: plugin outcome to attach new result to.
         :returns: plugin outcome provided as argument, ``outcome``.
         """
+
+        from tmt.result import PhaseResult, ResultGuestData
 
         self.write_command_report(
             path=log_filepath,
@@ -2327,10 +2332,11 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         )
 
         outcome.results.append(
-            tmt.result.PhaseResult(
+            PhaseResult(
                 name=label,
                 result=ResultOutcome.PASS,
                 log=[log_filepath.relative_to(self.step_workdir)],
+                guest=ResultGuestData.from_guest(guest=guest),
             )
         )
 
@@ -2342,6 +2348,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         log_filepath: Path,
         label: str,
         timer: Stopwatch,
+        guest: 'Guest',
         command: Optional[Union[Command, ShellScript]] = None,
         exception: Exception,
         outcome: PluginOutcome,
@@ -2363,11 +2370,15 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         :param label: see :py:func:`write_command_report`. It is also
             used as the name of the newly created result.
         :param timer: see :py:func:`write_command_report`.
+        :param guest: the guest on which the phase ran. It is attached
+            to the result.
         :param command: see :py:func:`write_command_report`.
         :param output: see :py:func:`write_command_report`.
         :param outcome: plugin outcome to attach new result to.
         :returns: plugin outcome provided as argument, ``outcome``.
         """
+
+        from tmt.result import PhaseResult, ResultGuestData
 
         self.write_command_report(
             path=log_filepath,
@@ -2379,20 +2390,22 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
 
         if isinstance(exception, RunError):
             outcome.results.append(
-                tmt.result.PhaseResult(
+                PhaseResult(
                     name=label,
                     result=ResultOutcome.FAIL,
                     note=tmt.utils.render_exception_as_notes(exception),
                     log=[log_filepath.relative_to(self.step_workdir)],
+                    guest=ResultGuestData.from_guest(guest=guest),
                 )
             )
 
         else:
             outcome.results.append(
-                tmt.result.PhaseResult(
+                PhaseResult(
                     name=label,
                     result=ResultOutcome.ERROR,
                     note=tmt.utils.render_exception_as_notes(exception),
+                    guest=ResultGuestData.from_guest(guest=guest),
                 )
             )
 
@@ -2407,6 +2420,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         label: str,
         exception: Exception,
         note: None = None,
+        guest: 'Guest',
         outcome: PluginOutcome,
     ) -> PluginOutcome:
         pass
@@ -2418,6 +2432,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         label: str,
         exception: None = None,
         note: str,
+        guest: 'Guest',
         outcome: PluginOutcome,
     ) -> PluginOutcome:
         pass
@@ -2428,6 +2443,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         label: str,
         exception: Optional[Exception] = None,
         note: Optional[str] = None,
+        guest: 'Guest',
         outcome: PluginOutcome,
     ) -> PluginOutcome:
         """
@@ -2439,15 +2455,20 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         :param exception: If set, it is attached as note to the newly
             created result.
         :param note: If set, it is attached to the newly created result.
+        :param guest: the guest on which the phase ran. It is attached
+            to the result.
         :returns: plugin outcome provided as argument, ``outcome``.
         """
 
+        from tmt.result import PhaseResult, ResultGuestData
+
         if exception is not None:
             outcome.results.append(
-                tmt.result.PhaseResult(
+                PhaseResult(
                     name=label,
                     result=ResultOutcome.ERROR,
                     note=tmt.utils.render_exception_as_notes(exception),
+                    guest=ResultGuestData.from_guest(guest=guest),
                 )
             )
 
@@ -2455,10 +2476,11 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
 
         elif note is not None:
             outcome.results.append(
-                tmt.result.PhaseResult(
+                PhaseResult(
                     name=label,
                     result=ResultOutcome.ERROR,
                     note=[note],
+                    guest=ResultGuestData.from_guest(guest=guest),
                 )
             )
 

@@ -172,7 +172,10 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
         except Exception as exc:
             return self._save_error_outcome(
-                label=f'{self.name} / remote script repository', exception=exc, outcome=outcome
+                label=f'{self.name} / remote script repository',
+                guest=guest,
+                exception=exc,
+                outcome=outcome,
             )
 
         def _prepare_topology() -> None:
@@ -198,7 +201,10 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
         except Exception as exc:
             return self._save_error_outcome(
-                label=f'{self.name} / guest topology', exception=exc, outcome=outcome
+                label=f'{self.name} / guest topology',
+                guest=guest,
+                exception=exc,
+                outcome=outcome,
             )
 
         def _invoke_script(
@@ -252,6 +258,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                     log_filepath=script_log_filepath,
                     label=script_name,
                     timer=timer,
+                    guest=guest,
                     command=command,
                     exception=error,
                     outcome=outcome,
@@ -261,6 +268,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 return self._save_error_outcome(
                     label=script_name,
                     note='Command produced no output but raised no exception',
+                    guest=guest,
                     outcome=outcome,
                 )
 
@@ -275,6 +283,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 log_filepath=script_log_filepath,
                 label=script_name,
                 timer=timer,
+                guest=guest,
                 output=output,
                 outcome=outcome,
             )
