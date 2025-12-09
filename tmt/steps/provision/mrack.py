@@ -1661,7 +1661,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                 self.collect_log(GuestLogBeaker(log_name, self, url), hint=f'following {url}')
 
             if state in {"Error, Aborted", "Cancelled"}:
-                raise ProvisionError('Failed to create, provisioning failed.')
+                raise ProvisionError("Failed to create, provisioning failed with state '{state}'.")
 
             if state == 'Reserved':
                 self.setup_logs(self._logger)
@@ -1905,5 +1905,5 @@ class GuestLogBeaker(tmt.steps.provision.GuestLog):
     def update(self, filepath: Path, logger: tmt.log.Logger) -> None:
         # PLR1704: "Redefining argument with the local name ..." - acceptable,
         # it serves the same purpose, it's the same type, and it's not mutable.
-        with self.swapfile(filepath, logger) as filepath:  # noqa: PLR1704
+        with self.staging_file(filepath, logger) as filepath:  # noqa: PLR1704
             tmt.utils.url.download(self.url, filepath, logger=logger)

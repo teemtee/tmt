@@ -1381,6 +1381,20 @@ class GuestLog(abc.ABC):
     """
     Represents a single guest log.
 
+    Guest logs are files collected by tmt, containing a wide variety
+    of information about the guest and its behavior. They are not tied
+    to a particular phase or test, instead they document what was
+    happening on the guest while tmt was running its phases.
+
+    The actual set of available guest logs, and the way of their
+    acquisition, depends entirely on the plugin providing the guest and
+    its backing infrastructure. Some plugins may simply inspect local
+    files or services, some plugins need to communicate with a hypervisor
+    powering the guest, and so on.
+
+    Eventually, guest logs are stored on the runner, as a collection of
+    files, for user to review if needed.
+
     Log life cycle
     ^^^^^^^^^^^^^^
 
@@ -1449,7 +1463,7 @@ class GuestLog(abc.ABC):
         pass
 
     @contextlib.contextmanager
-    def swapfile(self, final_filepath: Path, logger: tmt.log.Logger) -> Iterator[Path]:
+    def staging_file(self, final_filepath: Path, logger: tmt.log.Logger) -> Iterator[Path]:
         """
         Provide a temporary file to be swapped with the final filepath.
 
@@ -1469,7 +1483,7 @@ class GuestLog(abc.ABC):
 
         try:
             logger.debug(
-                f"Store '{self.name}' log in the swapfile '{temporary_filepath}'.", level=3
+                f"Store '{self.name}' log in the staging file '{temporary_filepath}'.", level=3
             )
 
             yield temporary_filepath
@@ -1480,7 +1494,7 @@ class GuestLog(abc.ABC):
         else:
             if temporary_filepath.exists():
                 logger.debug(
-                    f"Promoting the log swapfile '{temporary_filepath}' into '{final_filepath}'.",
+                    f"Promoting the staging file '{temporary_filepath}' into '{final_filepath}'.",
                     level=3,
                 )
 

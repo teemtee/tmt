@@ -4,6 +4,7 @@ import itertools
 import os
 import platform
 import re
+import shlex
 import shutil
 import tempfile
 import threading
@@ -1502,8 +1503,13 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
     def update(self, filepath: Path, logger: tmt.log.Logger) -> None:
         # PLR1704: "Redefining argument with the local name ..." - acceptable,
         # it serves the same purpose, it's the same type, and it's not mutable.
-        with self.swapfile(filepath, logger) as filepath:  # noqa: PLR1704
+        with self.staging_file(filepath, logger) as filepath:  # noqa: PLR1704
+            # We cannot use simple "cp" as we are dealing with symlinks,
+            # we need the content of the file, not the file it points to.
+            src = shlex.quote(str(self.testcloud_symlink_path))
+            dst = shlex.quote(str(filepath))
+
             self.guest._run_guest_command(
-                ShellScript(f'cat {self.testcloud_symlink_path} > {filepath}').to_shell_command(),
+                ShellScript(f'cat {src} > {dst}').to_shell_command(),
                 silent=True,
             )

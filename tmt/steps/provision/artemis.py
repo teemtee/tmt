@@ -870,7 +870,7 @@ class GuestLogArtemis(tmt.steps.provision.GuestLog):
 
         # PLR1704: "Redefining argument with the local name ..." - acceptable,
         # it serves the same purpose, it's the same type, and it's not mutable.
-        with self.swapfile(filepath, logger) as filepath:  # noqa: PLR1704
+        with self.staging_file(filepath, logger) as filepath:  # noqa: PLR1704
             if log_data['state'] == 'unsupported':
                 filepath.write_text(f'# Guest log {self.name} is not supported by the guest.')
 
