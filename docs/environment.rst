@@ -39,6 +39,32 @@ Environment precedence
 
 .. todo::
 
+    This should be the desired order of precedence:
+
+    * ``test[].environment``
+    * plan ``environment-file`` key
+    * plan ``environment`` key
+    * importing plan "native" environment
+        * importing plan ``environment-file`` key
+        * importing plan ``environment`` key
+        * importing plan importing plan ...
+    * ``provision[].environment``
+    * ``$TMT_PLAN_ENVIRONMENT_FILE``
+    * run environment saved in the workdir (``--environment-file`` and ``--environment`` from previous invocations)
+    * ``tmt run --environment-file``
+    * ``tmt run --environment``
+    * plugin intrinsic variables
+        * abort context
+        * reboot context
+        * restart context
+        * pidfile context
+        * restraint context
+        * test framework
+        * plan intrinsic variables: ``TMT_VERSION``, ``TMT_TREE``, ...
+        * ...
+
+.. todo::
+
     .. code-block::
 
         # Asorted list of environment sources
@@ -103,6 +129,10 @@ Environment precedence
 
     Document order of precedence for ``environment`` key and
     ``environment`` CLI option in case of ``provision`` phases
+
+.. todo::
+
+    Send out an announcement.
 
 .. important::
 
