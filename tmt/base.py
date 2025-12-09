@@ -4611,7 +4611,8 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         Environment variables saved in the workdir.
         """
 
-        assert self.data is not None  # narrow type
+        if self.data is None:
+            return Environment()
 
         return self.data.environment.copy()
 
