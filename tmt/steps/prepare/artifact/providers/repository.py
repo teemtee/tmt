@@ -93,18 +93,6 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
         )
         return []
 
-    def contribute_to_shared_repo(
-        self,
-        guest: Guest,
-        source_path: Path,
-        shared_repo_dir: Path,
-        exclude_patterns: Optional[list[Pattern[str]]] = None,
-    ) -> None:
-        # Repository provider does not contribute files to the shared repository.
-        # Repository providers manage external repositories that are installed separately.
-        # They don't download individual artifact files that need to be added to the shared repo.
-        pass
-
     def get_repositories(self) -> list[Repository]:
         self.logger.info(f"Providing repository '{self.repository.name}' for installation ")
         return [self.repository]
