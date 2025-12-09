@@ -14,7 +14,7 @@ import tmt.utils
 from tmt.container import container, simple_field
 from tmt.options import option
 from tmt.plugins import PluginRegistry
-from tmt.result import PhaseResult, ResultOutcome
+from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
 from tmt.steps import (
     Action,
     PhaseQueue,
@@ -153,6 +153,8 @@ class Prepare(tmt.steps.Step):
 
     _plugin_base_class = PreparePlugin
 
+    results: list[PhaseResult]
+
     @property
     def _preserved_workdir_members(self) -> set[str]:
         """
@@ -173,7 +175,19 @@ class Prepare(tmt.steps.Step):
         """
 
         super().__init__(plan=plan, data=data, logger=logger)
+
+        self.results = []
         self.preparations_applied = 0
+
+    def load(self) -> None:
+        super().load()
+
+        self.results = self._load_results(PhaseResult, allow_missing=True)
+
+    def save(self) -> None:
+        super().save()
+
+        self._save_results(self.results)
 
     def wake(self) -> None:
         """
@@ -427,7 +441,7 @@ class Prepare(tmt.steps.Step):
                     ],
                 )
 
-        results: list[PhaseResult] = []
+        self.results: list[PhaseResult] = []
         exceptions: list[Exception] = []
 
         def _record_exception(
@@ -450,13 +464,16 @@ class Prepare(tmt.steps.Step):
             # usable results, otherwise it would not have ended with
             # an exception...
             if outcome.exc:
+                assert outcome.guest is not None  # narrow type
+
                 _record_exception(outcome, outcome.exc)
 
-                results.append(
+                self.results.append(
                     PhaseResult(
                         name=outcome.phase.name,
                         result=ResultOutcome.ERROR,
                         note=['Plugin raised an unhandled exception.'],
+                        guest=ResultGuestData.from_guest(guest=outcome.guest),
                     )
                 )
 
@@ -468,7 +485,7 @@ class Prepare(tmt.steps.Step):
             # log them and save them, but do not emit any special result.
             # Plugin was alive till the very end, and returned results.
             if outcome.result:
-                results += outcome.result.results
+                self.results += outcome.result.results
 
                 if outcome.result.exceptions:
                     for exc in outcome.result.exceptions:
@@ -478,7 +495,7 @@ class Prepare(tmt.steps.Step):
 
             self.preparations_applied += 1
 
-        self._save_results(results)
+        self._save_results(self.results)
 
         if exceptions:
             # TODO: needs a better message...
