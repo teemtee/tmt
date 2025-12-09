@@ -50,9 +50,17 @@ Environment precedence
         * importing plan importing plan ...
     * ``provision[].environment``
     * ``$TMT_PLAN_ENVIRONMENT_FILE``
-    * run environment saved in the workdir (``--environment-file`` and ``--environment`` from previous invocations)
-    * ``tmt run --environment-file``
-    * ``tmt run --environment``
+    * command-line input:
+        * ``tmt run``
+            * run environment saved in the workdir (``--environment-file`` and ``--environment`` from previous invocations)
+            * ``tmt run --environment-file``
+            * ``tmt run --environment``
+        * ``tmt * export``
+            * ``tmt * export --environment-file``
+            * ``tmt * export --environment``
+        * ``tmt try``
+            * ``tmt try --environment-file``
+            * ``tmt try --environment``
     * plugin intrinsic variables
         * abort context
         * reboot context
