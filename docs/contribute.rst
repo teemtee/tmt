@@ -949,5 +949,17 @@ smooth and timely:
   development more fluent, just make sure they do not slow down
   important issues
 
+Here’s a sprint progress template you can use for inspiration when
+sharing daily updates in the team chat:
+
+.. code-block:: markdown
+
+   :review: Sprint Progress Update
+     - [Your assigned tasks](https://github.com/orgs/teemtee/projects/1/views/5)
+     - Finished yesterday: XXX (0%)
+     - {GitHub username}'s  [XXX](https://github.com/teemtee/tmt/pull/XXX) ({priority}): {status}
+       - {some notes}
+       - {@ping to checkup}
+
 __ https://github.com/orgs/teemtee/projects/1/views/3
 __ https://github.com/orgs/teemtee/projects/1/views/14
