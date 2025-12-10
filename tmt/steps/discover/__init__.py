@@ -350,6 +350,11 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         """
         Resolve dynamic reference and perform checkout based on phase configuration
         """
+        # Check if we are in a git repository
+        if not tmt.utils.git.git_root(fmf_root=self.test_dir, logger=self._logger):
+            self.debug('Not a git repository, skipping ref checkout.')
+            return
+
         # Prepare path of the dynamic reference
         try:
             ref = tmt.base.resolve_dynamic_ref(
@@ -541,6 +546,29 @@ class Discover(tmt.steps.Step):
             ]
         return tests
 
+    @staticmethod
+    def discover_tests(
+        phase: DiscoverPlugin[DiscoverStepData], logger: Optional[tmt.log.Logger] = None
+    ) -> None:
+        """
+        Discover tests using the given phase.
+        """
+        path = phase.fetch_source()
+        phase.checkout_ref()
+
+        # Go and discover tests
+        phase.go(path=path, logger=logger)
+
+        if phase.get('prune', False):
+            clone_dir = phase.clone_dirpath / 'tests'
+            phase.install_libraries(phase.test_dir, clone_dir)
+            phase.prune_tree(clone_dir, path)
+        else:
+            phase.install_libraries(phase.test_dir, phase.test_dir)
+
+        phase.adjust_test_attributes(path)
+        phase.apply_policies()
+
     def load(self) -> None:
         """
         Load step data from the workdir
@@ -725,21 +753,7 @@ class Discover(tmt.steps.Step):
                 if not phase.enabled_by_when:
                     continue
 
-                path = phase.fetch_source()
-                phase.checkout_ref()
-
-                # Go and discover tests
-                phase.go(path=path)
-
-                if phase.get('prune', False):
-                    clone_dir = phase.clone_dirpath / 'tests'
-                    phase.install_libraries(phase.test_dir, clone_dir)
-                    phase.prune_tree(clone_dir, path)
-                else:
-                    phase.install_libraries(phase.test_dir, phase.test_dir)
-
-                phase.adjust_test_attributes(path)
-                phase.apply_policies()
+                self.discover_tests(phase)
 
                 self._tests[phase.name] = []
 
