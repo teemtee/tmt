@@ -68,8 +68,8 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     _data_class = PrepareArtifactData
 
     # Shared repository configuration
-    SHARED_REPO_DIR_NAME: str = 'artifact-shared-repo'
-    SHARED_REPO_NAME: str = 'tmt-artifact-shared'
+    SHARED_REPO_DIR_NAME: typing.ClassVar[str] = 'artifact-shared-repo'
+    SHARED_REPO_NAME: typing.Classvar[str] = 'tmt-artifact-shared'
 
     def go(
         self,
