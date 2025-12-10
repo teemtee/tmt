@@ -1506,10 +1506,4 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
         with self.staging_file(filepath, logger) as filepath:  # noqa: PLR1704
             # We cannot use simple "cp" as we are dealing with symlinks,
             # we need the content of the file, not the file it points to.
-            src = shlex.quote(str(self.testcloud_symlink_path))
-            dst = shlex.quote(str(filepath))
-
-            self.guest._run_guest_command(
-                ShellScript(f'cat {src} > {dst}').to_shell_command(),
-                silent=True,
-            )
+            shutil.copyfile(self.testcloud_symlink_path, filepath, follow_symlinks=True)
