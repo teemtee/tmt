@@ -12,6 +12,7 @@ import tmt.steps.scripts
 import tmt.utils
 from tmt.container import container
 from tmt.guest import RebootMode, TransferOptions
+from tmt.steps import Step
 from tmt.steps.provision import Provision
 from tmt.utils import (
     Command,
@@ -46,7 +47,7 @@ class GuestLocal(tmt.Guest):
 
         # TODO: For now we ignore the 'TMT_SCRIPTS_DIR' variable.
         # To be fixed in https://github.com/teemtee/tmt/issues/4081
-        assert isinstance(self.parent, Provision)
+        assert isinstance(self.parent, Step)
         return self.parent.run_workdir.absolute() / tmt.steps.scripts.SCRIPTS_DIR_NAME
 
     @property
