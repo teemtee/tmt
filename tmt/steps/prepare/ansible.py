@@ -20,7 +20,7 @@ from tmt.steps.provision import (
     Guest,
 )
 from tmt.utils import (
-    ENVFILE_RETRY_SESSION_RETRIES,
+    RETRY_SESSION_RETRIES,
     Path,
     PrepareError,
     RunError,
@@ -207,9 +207,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                 root_path = self.step_workdir
 
                 try:
-                    with retry_session(
-                        retries=ENVFILE_RETRY_SESSION_RETRIES, logger=logger
-                    ) as session:
+                    with retry_session(retries=RETRY_SESSION_RETRIES, logger=logger) as session:
                         response = session.get(raw_playbook)
 
                     if not response.ok:
