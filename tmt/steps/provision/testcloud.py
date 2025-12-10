@@ -1501,9 +1501,7 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
             )
 
     def update(self, filepath: Path, logger: tmt.log.Logger) -> None:
-        # PLR1704: "Redefining argument with the local name ..." - acceptable,
-        # it serves the same purpose, it's the same type, and it's not mutable.
-        with self.staging_file(filepath, logger) as filepath:  # noqa: PLR1704
+        with self.staging_file(filepath, logger) as staging_filepath:
             # We cannot use simple "cp" as we are dealing with symlinks,
             # we need the content of the file, not the file it points to.
-            shutil.copyfile(self.testcloud_symlink_path, filepath, follow_symlinks=True)
+            shutil.copyfile(self.testcloud_symlink_path, staging_filepath, follow_symlinks=True)

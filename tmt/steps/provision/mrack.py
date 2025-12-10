@@ -1660,7 +1660,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
 
                 self.collect_log(GuestLogBeaker(log_name, self, url), hint=f'following {url}')
 
-            if state in {"Error, Aborted", "Cancelled"}:
+            if state in {"Error", "Aborted", "Cancelled"}:
                 raise ProvisionError(
                     f"Failed to create, provisioning failed with state '{state}'."
                 )
