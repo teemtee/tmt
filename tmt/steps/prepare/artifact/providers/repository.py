@@ -192,7 +192,7 @@ def create_repository(
 
     # Ensure the artifact directory exists
     guest.execute(
-        tmt.utils.ShellScript(f"mkdir -p {tmt.utils.quote(str(artifact_dir))}"),
+        tmt.utils.Command('mkdir', '-p', artifact_dir),
         silent=True,
     )
 

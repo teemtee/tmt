@@ -14,7 +14,7 @@ from tmt.steps.prepare.artifact.providers import (
     Repository,
 )
 from tmt.steps.provision import Guest
-from tmt.utils import Environment
+from tmt.utils import Environment, Path
 
 
 @container
@@ -67,6 +67,10 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
     _data_class = PrepareArtifactData
 
+    # Shared repository configuration
+    SHARED_REPO_DIR_NAME: str = 'artifact-shared-repo'
+    SHARED_REPO_NAME: str = 'tmt-artifact-shared'
+
     def go(
         self,
         *,
@@ -79,14 +83,14 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         outcome = super().go(guest=guest, environment=environment, logger=logger)
 
         # Prepare a shared directory on the guest for aggregating artifacts.
-        shared_repo_dir = self.plan_workdir / 'artifact-shared-repo'
+        shared_repo_dir: Path = self.plan_workdir / self.SHARED_REPO_DIR_NAME
 
         # Ensure the shared repository directory exists on the guest.
         shared_repository = create_repository(
             artifact_dir=shared_repo_dir,
             guest=guest,
             logger=logger,
-            repo_name="tmt-artifact-shared",
+            repo_name=self.SHARED_REPO_NAME,
         )
 
         # Initialize all providers and have them contribute to the shared repo
