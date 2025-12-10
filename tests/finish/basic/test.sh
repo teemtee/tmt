@@ -21,10 +21,18 @@ rlJournalStart
 
     rlPhaseStartTest "Verify prepare and finish step save results"
         rlRun "tmt run -i $tmp --scratch provision prepare finish"
+
         rlAssertExists "$tmp/prepare/results.yaml"
-        rlAssertEquals "Prepare results exists and it's empty" "$(cat $tmp/prepare/results.yaml)" "[]"
+        rlLogInfo "Content of $tmp/prepare/results.yaml:\n$(cat $tmp/prepare/results.yaml)"
+        rlAssertEquals "Finish results exists" \
+            "$(yq '[sort_by(.name) | .[] | "\(.name):\(.result)"] | join(" ")' $tmp/prepare/results.yaml)" \
+            "default-0 / script #0:pass"
+
         rlAssertExists "$tmp/finish/results.yaml"
-        rlAssertEquals "Finish results exists and it's empty" "$(cat $tmp/finish/results.yaml)" "[]"
+        rlLogInfo "Content of $tmp/finish/results.yaml:\n$(cat $tmp/finish/results.yaml)"
+        rlAssertEquals "Finish results exists" \
+            "$(yq '[sort_by(.name) | .[] | "\(.name):\(.result)"] | join(" ")' $tmp/finish/results.yaml)" \
+            "default-0 / script #0:pass"
     rlPhaseEnd
 
     rlPhaseStartCleanup

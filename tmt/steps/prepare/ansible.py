@@ -6,13 +6,11 @@ import requests
 import tmt
 import tmt.base
 import tmt.log
-import tmt.result
 import tmt.steps
 import tmt.steps.prepare
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
-from tmt.result import ResultGuestData, ResultOutcome
 from tmt.steps.provision import (
     ANSIBLE_COLLECTION_PLAYBOOK_PATTERN,
     AnsibleApplicable,
@@ -23,7 +21,6 @@ from tmt.utils import (
     ENVFILE_RETRY_SESSION_RETRIES,
     Path,
     PrepareError,
-    RunError,
     Stopwatch,
     normalize_string_list,
     retry_session,
@@ -268,70 +265,31 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
                 invoke_playbook, playbook_record_dirpath, lowercased_playbook
             )
 
-            if isinstance(exc, RunError):
-                self.write_command_report(
-                    path=playbook_log_filepath, label=playbook_name, timer=timer, exc=exc
+            if exc is not None:
+                return self._save_failed_run_outcome(
+                    log_filepath=playbook_log_filepath,
+                    label=playbook_name,
+                    timer=timer,
+                    guest=guest,
+                    exception=exc,
+                    outcome=outcome,
                 )
-
-                outcome.results.append(
-                    tmt.result.PhaseResult(
-                        name=playbook_name,
-                        result=ResultOutcome.FAIL,
-                        note=tmt.utils.render_exception_as_notes(exc),
-                        log=[playbook_log_filepath.relative_to(self.step_workdir)],
-                        guest=ResultGuestData.from_guest(guest=guest),
-                    )
-                )
-
-                outcome.exceptions.append(exc)
-
-                return outcome
-
-            if isinstance(exc, Exception):
-                self.write_command_report(
-                    path=playbook_log_filepath, label=playbook_name, timer=timer, exc=exc
-                )
-
-                outcome.results.append(
-                    tmt.result.PhaseResult(
-                        name=playbook_name,
-                        result=ResultOutcome.ERROR,
-                        note=tmt.utils.render_exception_as_notes(exc),
-                        log=[playbook_log_filepath.relative_to(self.step_workdir)],
-                        guest=ResultGuestData.from_guest(guest=guest),
-                    )
-                )
-
-                outcome.exceptions.append(exc)
-
-                return outcome
 
             if output is None:
-                outcome.results.append(
-                    tmt.result.PhaseResult(
-                        name=playbook_name,
-                        result=ResultOutcome.ERROR,
-                        note=['Command produced no output but raised no exception'],
-                        guest=ResultGuestData.from_guest(guest=guest),
-                    )
+                return self._save_error_outcome(
+                    label=playbook_name,
+                    note='Command produced no output but raised no exception',
+                    guest=guest,
+                    outcome=outcome,
                 )
 
-                return outcome
-
-            self.write_command_report(
-                path=playbook_log_filepath,
+            self._save_success_outcome(
+                log_filepath=playbook_log_filepath,
                 label=playbook_name,
                 timer=timer,
+                guest=guest,
                 output=output,
-            )
-
-            outcome.results.append(
-                tmt.result.PhaseResult(
-                    name=playbook_name,
-                    result=ResultOutcome.PASS,
-                    log=[playbook_log_filepath.relative_to(self.step_workdir)],
-                    guest=ResultGuestData.from_guest(guest=guest),
-                )
+                outcome=outcome,
             )
 
         return outcome

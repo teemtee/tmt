@@ -39,6 +39,7 @@ import tmt.export
 import tmt.log
 import tmt.options
 import tmt.queue
+import tmt.steps.context
 import tmt.utils
 import tmt.utils.rest
 from tmt._compat.typing import Self, TypeGuard
@@ -54,6 +55,7 @@ from tmt.container import (
     simple_field,
 )
 from tmt.options import option
+from tmt.result import ResultOutcome
 from tmt.utils import (
     DEFAULT_NAME,
     Command,
@@ -80,7 +82,7 @@ if TYPE_CHECKING:
     import tmt.steps.execute
     from tmt.base import Plan
     from tmt.result import BaseResult, PhaseResult
-    from tmt.steps.provision import Guest
+    from tmt.steps.provision import Guest, TransferOptions
 
 
 DEFAULT_ALLOWED_HOW_PATTERN: Pattern[str] = re.compile(r'.*')
@@ -2235,6 +2237,254 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
             '\n'.join(tmt.utils.render_report(label=label, timer=timer, report=body)),
             mode='a',
         )
+
+    def _post_action_pull(
+        self,
+        *,
+        guest: 'Guest',
+        path: Path,
+        reboot: Optional['tmt.steps.context.reboot.RebootContext'] = None,
+        restart: Optional['tmt.steps.context.restart.RestartContext'] = None,
+        pull_options: 'TransferOptions',
+        exceptions: list[Exception],
+    ) -> None:
+        """
+        Pull from the guest after a user-driven action.
+
+        A helper for fetching a path from a guest after something user
+        wanted to run finished. After a test, ``prepare`` script, or a
+        ``finish`` Ansible playbook complete, we need to pull from the
+        guest.
+
+        When the guest is not healthy, as diagnosed by
+        :py:func:`is_guest_healthy`, nothing is pulled from the guest,
+        and method turns into a no-op.
+
+        :param guest: a guest to pull from.
+        :param path: a path to pull.
+        :param reboot: if set, it is used for checking whether the guest
+            is healthy, by calling :py:func:`is_guest_healthy`.
+        :param restart: if set, it is used for checking whether the
+            guest is healthy, by calling :py:func:`is_guest_healthy`.
+        :param pull_options: transfer options to use when pulling from
+            the guest.
+        :param exceptions: if the pulling operation raises an exception,
+            it is appended to this list.
+        """
+
+        from tmt.steps.context import is_guest_healthy
+
+        if not is_guest_healthy(reboot, restart):
+            return
+
+        try:
+            guest.pull(source=path, options=pull_options)
+
+            # Fetch plan data content as well in order to prevent
+            # losing logs if the guest becomes later unresponsive.
+            guest.pull(source=self.step.plan.data_directory)
+
+        # Handle failing to pull artifacts after guest becoming
+        # unresponsive. If not handled test would stay in 'pending' state.
+        # See issue https://github.com/teemtee/tmt/issues/3647.
+        except Exception as exc:
+            exceptions.append(exc)
+
+    def _save_success_outcome(
+        self,
+        *,
+        log_filepath: Path,
+        label: str,
+        timer: Stopwatch,
+        guest: 'Guest',
+        command: Optional[Union[Command, ShellScript]] = None,
+        output: CommandOutput,
+        outcome: PluginOutcome,
+    ) -> PluginOutcome:
+        """
+        Save a successful result of a command-based phase.
+
+        Write a command report (via :py:meth:`write_command_report`),
+        and add new :py:attr:`ResultOutcome.PASS` result.
+
+        :param log_filepath: see ``path`` parameter of
+            :py:func:`write_command_report`. It is also attached to the
+            newly created result as its log.
+        :param label: see :py:func:`write_command_report`. It is also
+            used as the name of the newly created result.
+        :param timer: see :py:func:`write_command_report`.
+        :param guest: the guest on which the phase ran. It is attached
+            to the result.
+        :param command: see :py:func:`write_command_report`.
+        :param output: see :py:func:`write_command_report`.
+        :param outcome: plugin outcome to attach new result to.
+        :returns: plugin outcome provided as argument, ``outcome``.
+        """
+
+        from tmt.result import PhaseResult, ResultGuestData
+
+        self.write_command_report(
+            path=log_filepath,
+            label=label,
+            timer=timer,
+            command=command,
+            output=output,
+        )
+
+        outcome.results.append(
+            PhaseResult(
+                name=label,
+                result=ResultOutcome.PASS,
+                log=[log_filepath.relative_to(self.step_workdir)],
+                guest=ResultGuestData.from_guest(guest=guest),
+            )
+        )
+
+        return outcome
+
+    def _save_failed_run_outcome(
+        self,
+        *,
+        log_filepath: Path,
+        label: str,
+        timer: Stopwatch,
+        guest: 'Guest',
+        command: Optional[Union[Command, ShellScript]] = None,
+        exception: Exception,
+        outcome: PluginOutcome,
+    ) -> PluginOutcome:
+        """
+        Save a failed result of a command-based phase.
+
+        Write a command report (via :py:meth:`write_command_report`),
+        and add new result into ``outcome``.
+
+        If the ``exception`` is a :py:class:`tmt.utils.RunError` instance,
+        a :py:attr:`ResultOutcome.FAIL` will be created, as a "failed but
+        reportable" outcome. For other exception classes, a
+        :py:attr:`ResultOutcome.ERROR` result will created.
+
+        :param log_filepath: see ``path`` parameter of
+            :py:func:`write_command_report`. It is also attached to the
+            newly created result as its log.
+        :param label: see :py:func:`write_command_report`. It is also
+            used as the name of the newly created result.
+        :param timer: see :py:func:`write_command_report`.
+        :param guest: the guest on which the phase ran. It is attached
+            to the result.
+        :param command: see :py:func:`write_command_report`.
+        :param output: see :py:func:`write_command_report`.
+        :param outcome: plugin outcome to attach new result to.
+        :returns: plugin outcome provided as argument, ``outcome``.
+        """
+
+        from tmt.result import PhaseResult, ResultGuestData
+
+        self.write_command_report(
+            path=log_filepath,
+            label=label,
+            timer=timer,
+            command=command,
+            exc=exception,
+        )
+
+        if isinstance(exception, RunError):
+            outcome.results.append(
+                PhaseResult(
+                    name=label,
+                    result=ResultOutcome.FAIL,
+                    note=tmt.utils.render_exception_as_notes(exception),
+                    log=[log_filepath.relative_to(self.step_workdir)],
+                    guest=ResultGuestData.from_guest(guest=guest),
+                )
+            )
+
+        else:
+            outcome.results.append(
+                PhaseResult(
+                    name=label,
+                    result=ResultOutcome.ERROR,
+                    note=tmt.utils.render_exception_as_notes(exception),
+                    guest=ResultGuestData.from_guest(guest=guest),
+                )
+            )
+
+        outcome.exceptions.append(exception)
+
+        return outcome
+
+    @overload
+    def _save_error_outcome(
+        self,
+        *,
+        label: str,
+        exception: Exception,
+        note: None = None,
+        guest: 'Guest',
+        outcome: PluginOutcome,
+    ) -> PluginOutcome:
+        pass
+
+    @overload
+    def _save_error_outcome(
+        self,
+        *,
+        label: str,
+        exception: None = None,
+        note: str,
+        guest: 'Guest',
+        outcome: PluginOutcome,
+    ) -> PluginOutcome:
+        pass
+
+    def _save_error_outcome(
+        self,
+        *,
+        label: str,
+        exception: Optional[Exception] = None,
+        note: Optional[str] = None,
+        guest: 'Guest',
+        outcome: PluginOutcome,
+    ) -> PluginOutcome:
+        """
+        Save an error result of a phase.
+
+        Creates new :py:attr:`ResultOutcome.ERROR` result.
+
+        :param label: Used as the name of the newly created result.
+        :param exception: If set, it is attached as note to the newly
+            created result.
+        :param note: If set, it is attached to the newly created result.
+        :param guest: the guest on which the phase ran. It is attached
+            to the result.
+        :returns: plugin outcome provided as argument, ``outcome``.
+        """
+
+        from tmt.result import PhaseResult, ResultGuestData
+
+        if exception is not None:
+            outcome.results.append(
+                PhaseResult(
+                    name=label,
+                    result=ResultOutcome.ERROR,
+                    note=tmt.utils.render_exception_as_notes(exception),
+                    guest=ResultGuestData.from_guest(guest=guest),
+                )
+            )
+
+            outcome.exceptions.append(exception)
+
+        elif note is not None:
+            outcome.results.append(
+                PhaseResult(
+                    name=label,
+                    result=ResultOutcome.ERROR,
+                    note=[note],
+                    guest=ResultGuestData.from_guest(guest=guest),
+                )
+            )
+
+        return outcome
 
     @abc.abstractmethod
     def go(

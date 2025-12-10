@@ -57,7 +57,10 @@ rlJournalStart
             rlAssertExists "$results_file"
             rlAssertEquals "finish produced expected result" \
                            "$(yq '.[] | "\(.name):\(.result):\(.log[0])"' $results_file)" \
-                           "Ansible we want to test / playbook.yml:pass:Ansible-we-want-to-test/playbook-0/default-0/output.txt"
+                           "State before is valid (no file) / script #0:pass:State-before-is-valid-no-file/script-0/default-0/output.txt
+Ansible we want to test / playbook.yml:pass:Ansible-we-want-to-test/playbook-0/default-0/output.txt
+State after is as expected (file created) / script #0:pass:State-after-is-as-expected-file-created/script-0/default-0/output.txt
+Create a file that is pulled during the finish stage / script #0:pass:Create-a-file-that-is-pulled-during-the-finish-stage/script-0/default-0/output.txt"
 
             # After the local provision remove the test file
             if [[ $PROVISION_HOW == local ]]; then
