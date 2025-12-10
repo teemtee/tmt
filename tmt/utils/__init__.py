@@ -6101,6 +6101,10 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
     def end_time_formatted(self) -> str:
         return format_timestamp(self.end_time)
 
+    @property
+    def duration_formatted(self) -> str:
+        return format_duration(self.duration)
+
     @classmethod
     def measure(
         cls, fn: Callable[P, T], *args: P.args, **kwargs: P.kwargs
