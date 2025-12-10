@@ -11,7 +11,7 @@ prepare:
     script: |
         for variable in TMT_REBOOT_COUNT RSTRNT_REBOOTCOUNT REBOOTCOUNT; do
             echo "$variable=${!variable}"
-            [[ -n '${!variable}' ]] || "Reboot count variable '$variable' must be defined."
+            [[ -n "${!variable}" ]] || { echo "Reboot count variable '$variable' must be defined." >&2; exit 1; }
         done
 
         if [ "$TMT_REBOOT_COUNT" = "0" ]; then
