@@ -238,7 +238,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         script_count = len(script_queue)
 
         while script_queue:
-            script_index = script_count - len(script_queue) + 1
+            script_index = script_count - len(script_queue)
             script = original_script = script_queue.pop(0)
 
             logger.verbose('script', script, 'green')
