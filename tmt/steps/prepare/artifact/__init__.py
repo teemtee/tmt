@@ -1,3 +1,4 @@
+import typing
 from typing import Optional
 
 import tmt.base
@@ -69,7 +70,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
     # Shared repository configuration
     SHARED_REPO_DIR_NAME: typing.ClassVar[str] = 'artifact-shared-repo'
-    SHARED_REPO_NAME: typing.Classvar[str] = 'tmt-artifact-shared'
+    SHARED_REPO_NAME: typing.ClassVar[str] = 'tmt-artifact-shared'
 
     def go(
         self,
