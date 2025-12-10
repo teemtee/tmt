@@ -9,7 +9,7 @@ import tmt.steps
 from tmt.container import container
 from tmt.options import option
 from tmt.plugins import PluginRegistry
-from tmt.result import PhaseResult, ResultOutcome
+from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
 from tmt.steps import (
     Action,
     Method,
@@ -205,6 +205,8 @@ class Finish(tmt.steps.Step):
                 # usable results, otherwise it would not have ended with
                 # an exception...
                 if outcome.exc:
+                    assert outcome.guest is not None  # narrow type
+
                     _record_exception(outcome, outcome.exc)
 
                     results.append(
@@ -212,6 +214,7 @@ class Finish(tmt.steps.Step):
                             name=outcome.phase.name,
                             result=ResultOutcome.ERROR,
                             note=['Plugin raised an unhandled exception.'],
+                            guest=ResultGuestData.from_guest(guest=outcome.guest),
                         )
                     )
 
