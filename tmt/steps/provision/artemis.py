@@ -868,17 +868,17 @@ class GuestLogArtemis(tmt.steps.provision.GuestLog):
 
         log_data = response.json()
 
-        # PLR1704: "Redefining argument with the local name ..." - acceptable,
-        # it serves the same purpose, it's the same type, and it's not mutable.
-        with self.staging_file(filepath, logger) as filepath:  # noqa: PLR1704
+        with self.staging_file(filepath, logger) as staging_filepath:
             if log_data['state'] == 'unsupported':
-                filepath.write_text(f'# Guest log {self.name} is not supported by the guest.')
+                staging_filepath.write_text(
+                    f'# Guest log {self.name} is not supported by the guest.'
+                )
 
             elif log_data['state'] == 'pending':
-                filepath.write_text(f'# Guest log {self.name} is not available yet.')
+                staging_filepath.write_text(f'# Guest log {self.name} is not available yet.')
 
             elif log_data['state'] == 'error':
-                filepath.write_text(f'# Guest log {self.name} is failed to deliver.')
+                staging_filepath.write_text(f'# Guest log {self.name} is failed to deliver.')
 
             elif self.name.endswith(':dump/url'):
                 url = log_data.get('url')
@@ -886,16 +886,16 @@ class GuestLogArtemis(tmt.steps.provision.GuestLog):
                 if url is None:
                     raise GuestLogError("Failed to fetch, URL is empty.", self)
 
-                tmt.utils.url.download(url, filepath, logger=logger)
+                tmt.utils.url.download(url, staging_filepath, logger=logger)
 
             elif self.name.endswith(':dump/blob'):
                 blobs = cast(list[GuestLogBlobType], log_data.get('blobs', []))
 
                 if not blobs:
-                    logger.debug(self.name, 'no guest log blobs yet')
+                    staging_filepath.append_text(f'# Guest log {self.name} has no content yet.')
 
                 else:
                     for blob in sorted(blobs, key=lambda blob: blob['ctime']):
-                        filepath.append_text(f"# {blob['ctime']}")
-                        filepath.append_text(blob['content'])
-                        filepath.append_text('\n')
+                        staging_filepath.append_text(f"# {blob['ctime']}")
+                        staging_filepath.append_text(blob['content'])
+                        staging_filepath.append_text('\n')

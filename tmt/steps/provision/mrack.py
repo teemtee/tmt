@@ -1905,7 +1905,5 @@ class GuestLogBeaker(tmt.steps.provision.GuestLog):
     url: str
 
     def update(self, filepath: Path, logger: tmt.log.Logger) -> None:
-        # PLR1704: "Redefining argument with the local name ..." - acceptable,
-        # it serves the same purpose, it's the same type, and it's not mutable.
-        with self.staging_file(filepath, logger) as filepath:  # noqa: PLR1704
-            tmt.utils.url.download(self.url, filepath, logger=logger)
+        with self.staging_file(filepath, logger) as staging_filepath:
+            tmt.utils.url.download(self.url, staging_filepath, logger=logger)
