@@ -108,7 +108,7 @@ all = [
     ]
 # Needed for readthedocs and man page build. Not being packaged in rpm.
 docs = [
-    "renku-sphinx-theme==0.5.0",
+    "renku-sphinx-theme==0.5.1",
     "readthedocs-sphinx-ext",
     "docutils>=0.18.1",
     "Sphinx==9.0.4",
