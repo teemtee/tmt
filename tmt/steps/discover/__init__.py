@@ -350,6 +350,10 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         """
         Resolve dynamic reference and perform checkout based on phase configuration
         """
+        if not self.test_dir.exists():
+            self.debug('Test directory does not exist, skipping ref checkout.')
+            return
+
         # Check if we are in a git repository
         if not tmt.utils.git.git_root(fmf_root=self.test_dir, logger=self._logger):
             self.debug('Not a git repository, skipping ref checkout.')
