@@ -1,0 +1,3 @@
+description: |
+  The ``bootc`` package manager now validates bootc status JSON structure
+  using Pydantic models derived from the official schema (https://bootc-dev.github.io/bootc/host-v1.schema.json).
