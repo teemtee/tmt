@@ -111,7 +111,7 @@ docs = [
     "renku-sphinx-theme==0.5.0",
     "readthedocs-sphinx-ext",
     "docutils>=0.18.1",
-    "Sphinx==8.2.3",
+    "Sphinx==9.0.4",
     "fmf>=1.7.0",
     "sphinx-reredirects",
     ]
