@@ -4472,8 +4472,9 @@ class RunData(SerializableContainer):
     steps: list[str]
     remove: bool
 
-    #: Stores the environment supplied via CLI. It is saved for the
-    #: future invocations of ``tmt`` with the same workdir.
+    #: Stores the environment supplied via CLI over all uses of this
+    #: workdir. CLI options provided to subsequent ``tmt run``
+    #: invocations are added into this set.
     environment: Environment = field(
         default_factory=Environment,
         serialize=lambda environment: environment.to_fmf_spec(),
@@ -4662,7 +4663,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
             root=str(self.tree.root) if self.tree.root else None,
             plans=[plan.name for plan in self._plans] if self._plans is not None else None,
             steps=list(self._cli_context_object.steps),
-            environment=self._environment_from_cli,
+            environment=self.environment,
             remove=self.remove,
         )
         self.write(Path('run.yaml'), tmt.utils.dict_to_yaml(data.to_serialized()))
@@ -4679,13 +4680,15 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         self._save_tree(self._tree)
         self._workdir_load(self._workdir_path)
         try:
-            data = RunData.from_serialized(tmt.utils.yaml_to_dict(self.read(Path('run.yaml'))))
+            self.data = RunData.from_serialized(
+                tmt.utils.yaml_to_dict(self.read(Path('run.yaml')))
+            )
         except tmt.utils.FileError:
             self.debug('Run data not found.')
             return
 
         assert self._cli_context_object is not None  # narrow type
-        self._cli_context_object.steps = set(data.steps)
+        self._cli_context_object.steps = set(self.data.steps)
 
         self._plans = []
 
@@ -4696,7 +4699,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         # plan's name.
         dummy_parent = fmf.Tree({'summary': 'unused'})
 
-        for plan in data.plans or []:
+        for plan in self.data.plans or []:
             node = fmf.Tree({'execute': None}, name=plan, parent=dummy_parent)
             self._plans.append(
                 Plan(node=node, logger=self._logger.descend(), run=self, skip_validation=True)
