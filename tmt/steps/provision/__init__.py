@@ -1066,7 +1066,6 @@ class GuestFacts(SerializableContainer):
         yield _flag('has_systemd', 'systemd')
         yield _flag('systemd_soft_reboot', 'systemd soft-reboot')
         yield _flag('has_rsync', 'rsync')
-        yield _flag('is_ostree', 'is ostree')
         yield _flag('is_superuser', 'is superuser')
         yield _flag('can_sudo', 'can sudo')
 
