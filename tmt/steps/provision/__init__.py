@@ -1366,6 +1366,9 @@ class GuestData(SerializableContainer):
             elif isinstance(value, tmt.hardware.Hardware):
                 printable_value = tmt.utils.dict_to_yaml(value.to_spec())
 
+            elif isinstance(value, tmt.ansible.GuestAnsible):
+                printable_value = tmt.utils.dict_to_yaml(cast(dict[str, Any], value.to_spec()))
+
             else:
                 printable_value = str(value)
 
