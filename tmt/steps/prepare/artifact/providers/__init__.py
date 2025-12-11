@@ -198,6 +198,35 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
             if not any(pattern.search(artifact.id) for pattern in exclude_patterns):
                 yield artifact
 
+    def get_repositories(self) -> list['Repository']:
+        """
+        Return a list of :py:class:`Repository` that this provider manages.
+        """
+        return []
+
+    def contribute_to_shared_repo(
+        self,
+        guest: Guest,
+        source_path: Path,
+        shared_repo_dir: Path,
+        exclude_patterns: Optional[list[Pattern[str]]] = None,
+    ) -> None:
+        """
+        Contribute artifacts to the shared repository.
+
+        This is the main interface for providers to contribute their artifacts
+        to the shared repository. Providers should override this method to
+        implement their specific contribution logic.
+
+        :param guest: the guest to run the commands on.
+        :param source_path: path where the artifacts are located (source for contribution).
+        :param shared_repo_dir: path to the shared repository directory where
+            artifacts should be contributed.
+        :param exclude_patterns: if set, artifacts whose names match any
+            of the given regular expressions would not be contributed.
+        """
+        pass
+
 
 @container
 class Repository:

@@ -16,6 +16,7 @@ from tmt.steps.prepare.artifact.providers import (
     provides_artifact_provider,
 )
 from tmt.steps.provision import Guest
+from tmt.utils import ShellScript
 
 
 @container
@@ -125,3 +126,15 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
             self.logger.info(f"Successfully downloaded: '{artifact.id}'.")
         except Exception as error:
             raise DownloadError(f"Failed to download '{artifact}'.") from error
+
+    def contribute_to_shared_repo(
+        self,
+        guest: Guest,
+        source_path: tmt.utils.Path,
+        shared_repo_dir: tmt.utils.Path,
+        exclude_patterns: Optional[list[tmt.utils.Pattern[str]]] = None,
+    ) -> None:
+        guest.execute(
+            ShellScript(f"cp {quote(str(source_path))}/*.rpm {quote(str(shared_repo_dir))}")
+        )
+        self.logger.info(f"Contributed artifacts from '{source_path}' to '{shared_repo_dir}'.")

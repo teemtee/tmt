@@ -28,11 +28,19 @@ rlJournalStart
         # The build ID should be in square brackets of the first line:
         # BUILD: make-4.4.1-10.fc42 [2625600]
         if [[ ! "$(head -1 $rlRun_LOG)" =~ ^BUILD:[[:space:]]*[^[:space:]]+[[:space:]]*\[([[:digit:]]+)\] ]]; then
-            rlDie "BuilID regex failed"
+            rlDie "Build ID regex failed"
         fi
-        rlRun "make_buildid=${BASH_REMATCH[1]}" 0 "Get the package NVR"
+        rlRun "make_buildid=${BASH_REMATCH[1]}" 0 "Get the build ID"
+        rlLog "Using koji build ID: $make_buildid"
+        rlLog "Using repository URL: https://download.docker.com/linux/fedora/docker-ce.repo"
+
         # TODO: Handle VM, local and other provision also
-        rlRun "tmt run -i $run --scratch -av provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/fedora/${fedora_release}:latest prepare --insert --how artifact --provide koji.build:$make_buildid"
+        # Run all phases including execute to test that make gets installed via require
+        rlRun "tmt run -i $run --scratch -vvv --all \
+            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/fedora/${fedora_release}:latest \
+            prepare --insert --how artifact \
+               --provide koji.build:$make_buildid \
+               --provide repository-url:https://download.docker.com/linux/fedora/docker-ce.repo" 0 "Run tmt with artifact providers"
     rlPhaseEnd
 
     rlPhaseStartCleanup
