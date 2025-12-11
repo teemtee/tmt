@@ -40,7 +40,7 @@ jobs:
           path: docs/_build/linkcheck_cache.json
           key: linkcheck
 
-      - name: Run sphinx html builder
+      - name: Run sphinx linkcheck
         run: sphinx-build -b linkcheck docs/ docs/_build
 
       # TODO: Move this to its own extra/group
