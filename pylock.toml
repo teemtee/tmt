@@ -491,6 +491,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/d8/53/6f443c9a4a8358a93
 wheels = [{ url = "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl", upload-time = 2022-10-25T02:36:20Z, size = 25335, hashes = { sha256 = "4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6" } }]
 
 [[packages]]
+name = "copr"
+version = "2.4"
+index = "https://pypi.org/simple"
+sdist = { url = "https://files.pythonhosted.org/packages/ab/68/27365572d9b31eed6bab23359988f520512b46a6529eddc58d6447d741eb/copr-2.4.tar.gz", upload-time = 2025-09-30T16:14:19Z, size = 62052, hashes = { sha256 = "fab11ad28be093cb2f99d2763f0c8605b62613d9aedf7d6ecd2bb7be763c0e18" } }
+
+[[packages]]
 name = "cryptography"
 version = "46.0.3"
 index = "https://pypi.org/simple"
@@ -1343,6 +1349,13 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/27/77/cfa5461d1d2651d6fc24216c92b4a21d4e385a41c46e0d9f3b070675167b/multidict-6.7.0-cp39-cp39-win_arm64.whl", upload-time = 2025-10-06T14:52:27Z, size = 43118, hashes = { sha256 = "6bdce131e14b04fd34a809b6380dbfd826065c3e2fe8a50dbae659fa0c390546" } },
     { url = "https://files.pythonhosted.org/packages/b7/da/7d22601b625e241d4f23ef1ebff8acfc60da633c9e7e7922e24d10f592b3/multidict-6.7.0-py3-none-any.whl", upload-time = 2025-10-06T14:52:29Z, size = 12317, hashes = { sha256 = "394fc5c42a333c9ffc3e421a4c85e08580d990e08b99f6bf35b4132114c5dcb3" } },
 ]
+
+[[packages]]
+name = "munch"
+version = "4.0.0"
+index = "https://pypi.org/simple"
+sdist = { url = "https://files.pythonhosted.org/packages/e7/2b/45098135b5f9f13221820d90f9e0516e11a2a0f55012c13b081d202b782a/munch-4.0.0.tar.gz", upload-time = 2023-07-01T09:49:35Z, size = 19089, hashes = { sha256 = "542cb151461263216a4e37c3fd9afc425feeaf38aaa3025cd2a981fadb422235" } }
+wheels = [{ url = "https://files.pythonhosted.org/packages/56/b3/7c69b37f03260a061883bec0e7b05be7117c1b1c85f5212c72c8c2bc3c8c/munch-4.0.0-py2.py3-none-any.whl", upload-time = 2023-07-01T09:49:34Z, size = 9950, hashes = { sha256 = "71033c45db9fb677a0b7eb517a4ce70ae09258490e419b0e7f00d1e386ecb1b4" } }]
 
 [[packages]]
 name = "nitrate"

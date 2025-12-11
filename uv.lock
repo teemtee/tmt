@@ -638,6 +638,20 @@ wheels = [
 ]
 
 [[package]]
+name = "copr"
+version = "2.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "filelock", version = "3.19.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "filelock", version = "3.20.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "munch" },
+    { name = "requests" },
+    { name = "requests-toolbelt" },
+    { name = "setuptools" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ab/68/27365572d9b31eed6bab23359988f520512b46a6529eddc58d6447d741eb/copr-2.4.tar.gz", hash = "sha256:fab11ad28be093cb2f99d2763f0c8605b62613d9aedf7d6ecd2bb7be763c0e18", size = 62052, upload-time = "2025-09-30T16:14:19.216Z" }
+
+[[package]]
 name = "cryptography"
 version = "46.0.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1698,6 +1712,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/af/01/547ffe9c2faec91c26965c152f3fea6cff068b6037401f61d310cc861ff4/multidict-6.7.0-cp39-cp39-win_amd64.whl", hash = "sha256:7e73299c99939f089dd9b2120a04a516b95cdf8c1cd2b18c53ebf0de80b1f18f", size = 46193, upload-time = "2025-10-06T14:52:26.101Z" },
     { url = "https://files.pythonhosted.org/packages/27/77/cfa5461d1d2651d6fc24216c92b4a21d4e385a41c46e0d9f3b070675167b/multidict-6.7.0-cp39-cp39-win_arm64.whl", hash = "sha256:6bdce131e14b04fd34a809b6380dbfd826065c3e2fe8a50dbae659fa0c390546", size = 43118, upload-time = "2025-10-06T14:52:27.876Z" },
     { url = "https://files.pythonhosted.org/packages/b7/da/7d22601b625e241d4f23ef1ebff8acfc60da633c9e7e7922e24d10f592b3/multidict-6.7.0-py3-none-any.whl", hash = "sha256:394fc5c42a333c9ffc3e421a4c85e08580d990e08b99f6bf35b4132114c5dcb3", size = 12317, upload-time = "2025-10-06T14:52:29.272Z" },
+]
+
+[[package]]
+name = "munch"
+version = "4.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e7/2b/45098135b5f9f13221820d90f9e0516e11a2a0f55012c13b081d202b782a/munch-4.0.0.tar.gz", hash = "sha256:542cb151461263216a4e37c3fd9afc425feeaf38aaa3025cd2a981fadb422235", size = 19089, upload-time = "2023-07-01T09:49:35.98Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/56/b3/7c69b37f03260a061883bec0e7b05be7117c1b1c85f5212c72c8c2bc3c8c/munch-4.0.0-py2.py3-none-any.whl", hash = "sha256:71033c45db9fb677a0b7eb517a4ce70ae09258490e419b0e7f00d1e386ecb1b4", size = 9950, upload-time = "2023-07-01T09:49:34.472Z" },
 ]
 
 [[package]]
@@ -3430,6 +3453,7 @@ dependencies = [
 
 [package.optional-dependencies]
 all = [
+    { name = "copr" },
     { name = "html2text" },
     { name = "jira", version = "3.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "jira", version = "3.10.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
@@ -3468,10 +3492,14 @@ link-jira = [
     { name = "jira", version = "3.10.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
 ]
 prepare-artifact = [
+    { name = "copr" },
     { name = "koji" },
 ]
 provision-beaker = [
     { name = "mrack" },
+]
+provision-bootc = [
+    { name = "testcloud" },
 ]
 provision-virtual = [
     { name = "testcloud" },
@@ -3495,6 +3523,8 @@ test-convert = [
 requires-dist = [
     { name = "ansible-core", marker = "extra == 'ansible'", specifier = ">=2.14.18" },
     { name = "click", specifier = ">=8.0.3" },
+    { name = "copr", marker = "extra == 'all'", specifier = ">=2.4" },
+    { name = "copr", marker = "extra == 'prepare-artifact'", specifier = ">=2.4" },
     { name = "docutils", specifier = ">=0.16" },
     { name = "docutils", marker = "extra == 'docs'", specifier = ">=0.18.1" },
     { name = "fmf", specifier = ">=1.7.0" },
@@ -3534,6 +3564,7 @@ requires-dist = [
     { name = "sphinx", marker = "extra == 'docs'" },
     { name = "sphinx-reredirects", marker = "extra == 'docs'" },
     { name = "testcloud", marker = "extra == 'all'", specifier = ">=0.11.7" },
+    { name = "testcloud", marker = "extra == 'provision-bootc'", specifier = ">=0.11.7" },
     { name = "testcloud", marker = "extra == 'provision-virtual'", specifier = ">=0.11.7" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'", specifier = ">=4" },
     { name = "urllib3", specifier = ">=1.26.5,<3.0" },
