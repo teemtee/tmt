@@ -9,7 +9,7 @@ from tmt.steps.provision import Guest
 
 SUPPORTED_DISTRO_PATTERNS = tuple(
     re.compile(pattern)
-    for pattern in (r'Red Hat Enterprise Linux (8|9|10)', r'CentOS Stream (8|9|10)')
+    for pattern in (r'Red Hat Enterprise Linux .*(7|8|9|10)', r'CentOS Stream (8|9|10)')
 )
 
 
@@ -47,6 +47,6 @@ class Fips(ToggleableFeature):
             and any(pattern.match(guest.facts.distro) for pattern in SUPPORTED_DISTRO_PATTERNS)
         ):
             raise tmt.utils.GeneralError(
-                'FIPS prepare feature is supported on RHEL/CentOS-Stream 8, 9 or 10.'
+                'FIPS prepare feature is supported on RHEL 7 and RHEL/CentOS-Stream 8, 9 or 10.'
             )
         cls._run_playbook('enable', 'fips-enable.yaml', guest, logger)
