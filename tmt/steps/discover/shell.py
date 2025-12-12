@@ -379,14 +379,13 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
             assert self.step.plan.my_run is not None  # narrow type
             assert self.step.plan.my_run.tree is not None  # narrow type
             assert self.step.plan.my_run.tree.root is not None  # narrow type
+            fmf_root = self.test_dir if self.data.url else self.step.plan.my_run.tree.root
             git_root = tmt.utils.git.git_root(
-                fmf_root=self.test_dir if self.data.url else self.step.plan.my_run.tree.root,
+                fmf_root=fmf_root,
                 logger=self._logger,
             )
             if not git_root:
-                raise tmt.utils.DiscoverError(
-                    f"Directory '{self.step.plan.my_run.tree.root}' is not a git repository."
-                )
+                raise tmt.utils.DiscoverError(f"Directory '{fmf_root}' is not a git repository.")
             try:
                 self.download_distgit_source(
                     distgit_dir=git_root,
