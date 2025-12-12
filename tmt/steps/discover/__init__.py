@@ -575,6 +575,23 @@ class Discover(tmt.steps.Step):
         phase.adjust_test_attributes(path)
         phase.apply_policies()
 
+    @property
+    def dependencies_to_tests(self) -> dict[str, list[str]]:
+        """
+        Dictionary mapping dependencies to tests.
+        """
+
+        dependencies_to_tests: dict[str, list[str]] = {}
+
+        for test_origin in self.tests(enabled=True):
+            test = test_origin.test
+            test_name = test.name
+            # Collect all dependencies (required + recommended)
+            for dependency in [*test.require, *test.recommend]:
+                dependencies_to_tests.setdefault(str(dependency), []).append(test_name)
+
+        return dependencies_to_tests
+
     def load(self) -> None:
         """
         Load step data from the workdir
