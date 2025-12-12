@@ -75,6 +75,12 @@ class BeakerLib(Library):
         parent: Optional[tmt.utils.Common] = None,
         logger: tmt.log.Logger,
     ) -> None:
+        from tmt.steps.discover import (
+            DiscoverPlugin,
+            DiscoverStepData,
+        )
+        from tmt.steps.discover.fmf import DiscoverFmfStepData
+
         super().__init__(parent=parent, logger=logger)
 
         # Default branch is detected from the origin after cloning
@@ -111,9 +117,27 @@ class BeakerLib(Library):
             self.url = identifier.url
             self.path = identifier.path
             if not self.url and not self.path:
-                raise tmt.utils.SpecificationError(
-                    "Need 'url' or 'path' to fetch a beakerlib library."
-                )
+                # If not explicit url or path is given we take the test's tree as the
+                # repo. We also require a nick to be specified to figure out the intended
+                # name of the repo used in `rlImport`.
+                if not identifier.nick:
+                    raise tmt.utils.SpecificationError(
+                        "Need either 'url' to fetch a remote beakerlib library, "
+                        "or 'path' to use a local filesystem library, "
+                        "or 'nick' to use the discovered tmt tree as the library."
+                    )
+                assert isinstance(self.parent, DiscoverPlugin)  # narrow type
+                assert isinstance(self.parent.data, DiscoverStepData)  # narrow type
+                fmf_path = "."
+                # When using `path` with `url`, it behaves differently from local `path`
+                # TODO: Remove this special handling when DiscoverFmf is more consistent
+                if (
+                    isinstance(self.parent.data, DiscoverFmfStepData)
+                    and self.parent.data.url
+                    and self.parent.data.path
+                ):
+                    fmf_path = self.parent.data.path
+                self.path = self.parent.test_dir / fmf_path
             # Strip the '.git' suffix from url for known forges
             if self.url:
                 for forge in STRIP_SUFFIX_FORGES:
