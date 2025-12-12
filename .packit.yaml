@@ -129,6 +129,10 @@ _:
     # TODO: Move revert this targets overwrite
     targets:
       - fedora-42
+      # FIXME: This is just to test selinux issue reported
+      #  https://github.com/teemtee/tmt/issues/4414
+      - fedora-43
+      - fedora-rawhide
 
 jobs:
   # Build released bits to stable
