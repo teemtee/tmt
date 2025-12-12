@@ -75,6 +75,10 @@ class BeakerLib(Library):
         parent: Optional[tmt.utils.Common] = None,
         logger: tmt.log.Logger,
     ) -> None:
+        from tmt.steps.discover.fmf import (
+            DiscoverFmf,  # pyright: ignore[reportUnknownVariableType]
+        )
+
         super().__init__(parent=parent, logger=logger)
 
         # Default branch is detected from the origin after cloning
@@ -111,9 +115,11 @@ class BeakerLib(Library):
             self.url = identifier.url
             self.path = identifier.path
             if not self.url and not self.path:
-                raise tmt.utils.SpecificationError(
-                    "Need 'url' or 'path' to fetch a beakerlib library."
-                )
+                # Default the path to TMT_TREE for the cases where the beakerlib library is
+                # next to the tmt metadata.
+                # FIXME: it seems self.parent is always a `DiscoverFmf`?
+                assert isinstance(self.parent, DiscoverFmf)
+                self.path = self.parent.step.plan.worktree
             # Strip the '.git' suffix from url for known forges
             if self.url:
                 for forge in STRIP_SUFFIX_FORGES:
