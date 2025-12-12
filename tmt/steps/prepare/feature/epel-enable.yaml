@@ -29,12 +29,12 @@
   tasks:
     - name: Enable EPEL repos on RHEL 7
       when:
-        - ansible_distribution == "RedHat"
-        - ansible_distribution_major_version | int == 7
+        - ansible_facts["distribution"] == "RedHat"
+        - ansible_facts["distribution_major_version"] | int == 7
       block:
         - name: Install package 'epel-release'
           ansible.builtin.dnf:
-            name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"  # yamllint disable rule:line-length
+            name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_facts['distribution_major_version'] }}.noarch.rpm"  # yamllint disable rule:line-length
             disable_gpg_check: true
             state: present
 
@@ -50,37 +50,37 @@
 
     - name: Enable EPEL and EPEL-Next repos on RHEL 8 and later
       when:
-        - ansible_distribution == "RedHat"
-        - ansible_distribution_major_version | int >= 8
+        - ansible_facts["distribution"] == "RedHat"
+        - ansible_facts["distribution_major_version"] | int >= 8
       block:
         - name: Install package 'epel-release'
           ansible.builtin.dnf:
-            name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"  # yamllint disable rule:line-length
+            name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_facts['distribution_major_version'] }}.noarch.rpm"  # yamllint disable rule:line-length
             disable_gpg_check: true
             state: present
-          when: ansible_distribution_major_version | int >= 9
+          when: ansible_facts["distribution_major_version"] | int >= 9
 
         - name: Install package 'epel-release'
           ansible.builtin.shell: |
             set -e
             if ! rpm -q epel-release; then
-              rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm
+              rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_facts['distribution_major_version'] }}.noarch.rpm
               echo "CHANGED"
             fi
           # The dnf python module is not available with python3.9 installed on the host, do not use ansible.builtin.dnf module
-          when: ansible_distribution_major_version | int == 8
+          when: ansible_facts["distribution_major_version"] | int == 8
           register: output
           changed_when: "'CHANGED' in output.stdout"
 
 
         - name: Install package 'epel-next-release'
           ansible.builtin.dnf:
-            name: "https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"  # yamllint disable rule:line-length
+            name: "https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-{{ ansible_facts['distribution_major_version'] }}.noarch.rpm"  # yamllint disable rule:line-length
             disable_gpg_check: true
             state: present
           # EPEL Next is available for CentOS Stream 9
           # Enable for Stream 10 once epel-next is available
-          when: ansible_distribution_major_version | int == 9
+          when: ansible_facts["distribution_major_version"] | int == 9
 
         - name: Install 'dnf config-manager'
           ansible.builtin.command: dnf -y install 'dnf-command(config-manager)'
@@ -98,7 +98,7 @@
           changed_when: output.rc != 0
           # EPEL Next is available for CentOS Stream 9
           # Enable for Stream 10 once epel-next is available
-          when: ansible_distribution_major_version | int == 9
+          when: ansible_facts["distribution_major_version"] | int == 9
 
         - name: Enable the crb repository
           ansible.builtin.command: crb enable
@@ -110,8 +110,8 @@
 
     - name: Enable EPEL repos on CentOS 7
       when:
-        - ansible_distribution == "CentOS"
-        - ansible_distribution_major_version | int == 7
+        - ansible_facts["distribution"] == "CentOS"
+        - ansible_facts["distribution_major_version"] | int == 7
       block:
         - name: Install package 'epel-release'
           ansible.builtin.dnf:
@@ -130,8 +130,8 @@
 
     - name: Enable EPEL and EPEL-Next repos on CentOS Stream 8 and later
       when:
-        - ansible_distribution == "CentOS"
-        - ansible_distribution_major_version | int >= 8
+        - ansible_facts["distribution"] == "CentOS"
+        - ansible_facts["distribution_major_version"] | int >= 8
       block:
         - name: Install package 'epel-release'
           ansible.builtin.dnf:
@@ -144,7 +144,7 @@
             state: present
           # EPEL Next is available for CentOS Stream 9
           # Enable for Stream 10 once epel-next is available
-          when: ansible_distribution_major_version | int == 9
+          when: ansible_facts["distribution_major_version"] | int == 9
 
         - name: Install 'dnf config-manager'
           ansible.builtin.command: dnf -y install 'dnf-command(config-manager)'
@@ -162,7 +162,7 @@
           changed_when: output.rc != 0
           # EPEL Next is available for CentOS Stream 9
           # Enable for Stream 10 once epel-next is available
-          when: ansible_distribution_major_version | int == 9
+          when: ansible_facts["distribution_major_version"] | int == 9
 
         - name: Enable the crb repository
           ansible.builtin.command: crb enable
