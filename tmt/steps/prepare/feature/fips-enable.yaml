@@ -53,13 +53,13 @@
           - dracut-fips
         state: present
       when:
-        - ansible_distribution_major_version | int < 10
-        - ansible_distribution_major_version | int != 8
+        - ansible_facts["distribution_major_version"] | int < 10
+        - ansible_facts["distribution_major_version"] | int != 8
 
     - name: Install crypto-policies-scripts, dracut-fips and grubby on RHEL8
       ansible.builtin.command: "dnf install -y crypto-policies-scripts dracut-fips grubby"
       when:
-        - ansible_distribution_major_version | int == 8
+        - ansible_facts["distribution_major_version"] | int == 8
       register: output
       changed_when: output.rc == 0
 
@@ -67,10 +67,10 @@
       ansible.builtin.dnf:
         name: grubby
         state: present
-      when: ansible_distribution_major_version | int != 8
+      when: ansible_facts["distribution_major_version"] | int != 8
 
     - name: Modify bootloader
-      when: ansible_distribution_major_version | int == 10
+      when: ansible_facts["distribution_major_version"] | int == 10
       block:
 
         - name: Add parameters fips and boot (if applicable)
@@ -98,13 +98,13 @@
           ansible.builtin.command: zipl
           register: output
           changed_when: output.rc == 0
-          when: ansible_architecture == "s390x"
+          when: ansible_facts["architecture"] == "s390x"
 
     - name: Enable FIPS Policy
       ansible.builtin.command: update-crypto-policies --set FIPS
       register: output
       changed_when: "'is not sufficient for' in output.stderr"
-      when: ansible_distribution_major_version | int == 10
+      when: ansible_facts["distribution_major_version"] | int == 10
 
     - name: Enable FIPS mode
       ansible.builtin.command: fips-mode-setup --enable
@@ -112,7 +112,7 @@
         FIPS_MODE_SETUP_SKIP_WARNING: "1"
       register: output
       changed_when: output.rc == 0
-      when: ansible_distribution_major_version | int < 10
+      when: ansible_facts["distribution_major_version"] | int < 10
 
     - name: Reboot
       ansible.builtin.reboot:
@@ -124,12 +124,12 @@
     - name: Userspace is running in FIPS mode
       ansible.builtin.command: test -e /etc/system-fips
       changed_when: false
-      when: ansible_distribution_major_version | int < 10
+      when: ansible_facts["distribution_major_version"] | int < 10
 
     - name: FIPS mode is reported by fips-mode-setup
       ansible.builtin.command: fips-mode-setup --is-enabled
       changed_when: false
-      when: ansible_distribution_major_version | int < 10
+      when: ansible_facts["distribution_major_version"] | int < 10
 
     - name: Check that FIPS policy is enabled
       ansible.builtin.shell: test "$(update-crypto-policies --show)" == "FIPS"

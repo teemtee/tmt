@@ -2,7 +2,7 @@
 - name: Setup server
   hosts: all
   vars:
-    version: "{{ ansible_distribution_version }}"
+    version: "{{ ansible_facts['distribution_version'] }}"
   tasks:
     - name: Task redis
       ansible.builtin.import_tasks: tasks/redis.yml
