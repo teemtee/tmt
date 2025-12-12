@@ -99,6 +99,15 @@ class PodmanGuestData(tmt.steps.provision.GuestData):
         normalize=tmt.utils.normalize_int,
     )
 
+    device: list[str] = field(
+        default_factory=list,
+        option='--device',
+        multiple=True,
+        metavar='DEVICE',
+        help='Device to expose to the container (e.g., /dev/kvm, /dev/ttyS3). '
+        'Can be specified multiple times.',
+    )
+
 
 @container
 class ProvisionPodmanData(PodmanGuestData, tmt.steps.provision.ProvisionStepData):
@@ -120,6 +129,7 @@ class GuestContainer(tmt.Guest):
     pull_attempts: int
     pull_interval: int
     stop_time: int
+    device: list[str]
     logger: tmt.log.Logger
 
     @property
@@ -229,6 +239,10 @@ class GuestContainer(tmt.Guest):
         additional_args = []
 
         additional_args.extend(self._setup_network())
+
+        # Add device access if requested
+        for device_path in self.device:
+            additional_args.extend(['--device=' + device_path])
 
         # Run the container
         self.debug(f"Start container '{self.image}'.")
@@ -599,10 +613,33 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
             user: tester
             become: true
 
+    .. code-block:: yaml
+
+        # Expose devices to the container (e.g., for KVM acceleration)
+        provision:
+            how: container
+            image: fedora:latest
+            device: /dev/kvm
+
+    .. code-block:: yaml
+
+        # Expose multiple devices to the container
+        provision:
+            how: container
+            image: fedora:latest
+            device:
+                - /dev/kvm
+                - /dev/ttyS3
+                - /dev/drm_dp_aux5
+
     In order to always pull the fresh container image use ``pull: true``.
 
     In order to run the container with different user as the default ``root``,
     use ``user: USER``.
+
+    Use ``device`` to expose host devices to the container. This is useful
+    for cases like KVM acceleration (``device: /dev/kvm``) or accessing
+    serial devices. Multiple devices can be specified as a list.
 
     Container-backed guests do not support soft reboots or custom reboot
     commands. Soft reboot or ``tmt-reboot -c ...`` will result in an
