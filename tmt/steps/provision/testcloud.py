@@ -4,6 +4,7 @@ import itertools
 import os
 import platform
 import re
+import shlex
 import shutil
 import tempfile
 import threading
@@ -27,6 +28,7 @@ from tmt.container import container, field
 from tmt.steps.provision import CONNECT_TIMEOUT, RebootMode, default_connect_waiting
 from tmt.utils import (
     Command,
+    GuestLogError,
     Path,
     ProvisionError,
     ShellScript,
@@ -986,11 +988,13 @@ class GuestTestcloud(tmt.GuestSsh):
         assert self.logdir is not None  # Narrow type
         console_log = ConsoleLog(
             name=CONSOLE_LOG_FILE,
-            testcloud_symlink_path=self.logdir / CONSOLE_LOG_FILE,
+            testcloud_symlink_path=self.logdir / f'{CONSOLE_LOG_FILE}.link',
             guest=self,
         )
-        console_log.prepare(logger=self._logger)
-        self.guest_logs.append(console_log)
+
+        self.collect_log(console_log, hint=f'following {console_log.testcloud_symlink_path}')
+
+        self.setup_logs(self._logger)
 
         # Prepare config
         self.prepare_config()
@@ -1140,7 +1144,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Boot the virtual machine
         self.info('progress', 'booting...', 'cyan')
-        self.verbose("console", console_log.testcloud_symlink_path, level=2, color="cyan")
+        self.verbose("console log", self.logdir / CONSOLE_LOG_FILE, level=2, color="cyan")
         assert libvirt is not None
 
         try:
@@ -1450,22 +1454,17 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
 
 @container
 class ConsoleLog(tmt.steps.provision.GuestLog):
-    # Path where testcloud will create the symlink to the console log
+    #: Path where :py:mod:`testcloud`` will create the symlink to the
+    #: console log. This is the log path as known to tmt.
     testcloud_symlink_path: Path
 
-    # Temporary directory for storing the console log content
+    #: Temporary directory for storing the console log content.
     exchange_directory: Optional[Path] = None
 
-    def prepare(self, logger: tmt.log.Logger) -> None:
-        """
-        Prepare temporary directory for the console log.
-
-        Special directory is needed for console logs with the right
-        selinux context so that virtlogd is able to write there.
-        """
-
+    def setup(self, logger: tmt.log.Logger) -> None:
+        # Prepare the exchange directory for testcloud/tmt console log transport.
         self.exchange_directory = Path(tempfile.mkdtemp(prefix="testcloud-"))
-        logger.debug(f"Created console log directory '{self.exchange_directory}'.", level=3)
+        logger.debug(f"Created log exchange directory '{self.exchange_directory}'.", level=3)
 
         self.exchange_directory.chmod(0o755)
 
@@ -1473,49 +1472,36 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
         assert self.guest.parent.plan.my_run is not None  # narrow type
 
         if self.guest.parent.plan.my_run.runner.facts.has_selinux:
+            logger.debug(
+                f"Fix the selinux context of log exchange directory '{self.exchange_directory}'.",
+                level=3,
+            )
+
             self.guest._run_guest_command(
                 Command("chcon", "--type", "virt_log_t", self.exchange_directory), silent=True
             )
 
-    def cleanup(self, logger: tmt.log.Logger) -> None:
-        """
-        Remove the temporary directory.
-        """
-
+    def teardown(self, logger: tmt.log.Logger) -> None:
         if self.exchange_directory is None:
             return
 
         try:
-            logger.debug(f"Remove console log directory '{self.exchange_directory}'.", level=3)
+            logger.debug(f"Remove log exchange directory '{self.exchange_directory}'.", level=3)
+
             shutil.rmtree(self.exchange_directory)
             self.exchange_directory = None
 
-        except OSError as error:
-            logger.warning(
-                f"Failed to remove console log directory '{self.exchange_directory}': {error}"
-            )
-
-    def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
-        """
-        Read the content of the symlink target prepared by testcloud.
-        """
-
-        text = None
-
-        try:
-            logger.debug(
-                f"Read the console log content from '{self.testcloud_symlink_path}'.", level=3
-            )
-            text = self.testcloud_symlink_path.read_text(errors="ignore")
+            self.testcloud_symlink_path.unlink(missing_ok=True)
 
         except OSError as error:
             tmt.utils.show_exception_as_warning(
                 exception=error,
-                message='Failed to read the console log.',
-                logger=self.guest._logger,
+                message=f"Failed to remove log exchange directory '{self.exchange_directory}'.",
+                logger=logger,
             )
 
-        self.testcloud_symlink_path.unlink()
-        self.cleanup(logger)
-
-        return text
+    def update(self, filepath: Path, logger: tmt.log.Logger) -> None:
+        with self.staging_file(filepath, logger) as staging_filepath:
+            # We cannot use simple "cp" as we are dealing with symlinks,
+            # we need the content of the file, not the file it points to.
+            shutil.copyfile(self.testcloud_symlink_path, staging_filepath, follow_symlinks=True)

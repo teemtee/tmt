@@ -2,6 +2,7 @@ import abc
 import ast
 import contextlib
 import dataclasses
+import datetime
 import enum
 import functools
 import hashlib
@@ -9,6 +10,7 @@ import os
 import re
 import secrets
 import shlex
+import shutil
 import signal as _signal
 import string
 import subprocess
@@ -61,6 +63,7 @@ from tmt.package_managers import (
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue, PushTask, sync_with_guests
 from tmt.utils import (
+    OUTPUT_WIDTH,
     Command,
     GeneralError,
     OnProcessEndCallback,
@@ -70,6 +73,7 @@ from tmt.utils import (
     ShellScript,
     configure_constant,
     effective_workdir_root,
+    format_timestamp,
 )
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Deadline, Waiting
@@ -1374,45 +1378,138 @@ class GuestData(SerializableContainer):
 
 @container
 class GuestLog(abc.ABC):
-    # Log file name
+    """
+    Represents a single guest log.
+
+    Guest logs are files collected by tmt, containing a wide variety
+    of information about the guest and its behavior. They are not tied
+    to a particular phase or test, instead they document what was
+    happening on the guest while tmt was running its phases.
+
+    The actual set of available guest logs, and the way of their
+    acquisition, depends entirely on the plugin providing the guest and
+    its backing infrastructure. Some plugins may simply inspect local
+    files or services, some plugins need to communicate with a hypervisor
+    powering the guest, and so on.
+
+    Eventually, guest logs are stored on the runner, as a collection of
+    files, for user to review if needed.
+
+    Log life cycle
+    ^^^^^^^^^^^^^^
+
+    * ``GuestLog`` instances shall be created by plugin once possible
+      in the context of the guest and its implementation, and added to
+      the :py:attr:`Guest.guest_logs` list. Generally, it should be
+      possible to fetch content of the log.
+    * Once :py:attr:`Guest.guest_logs` is populated, the plugin shall
+      invoke :py:meth:`Guest.setup_logs`. This method is responsible
+      for invoking :py:meth:`setup` of all registered logs.
+    * After this point, tmt may start collecting logs by invoking their
+      :py:meth:`update` methods. It is allowed for the log to not be
+      available yet, the log may be empty, other issues shall raise an
+      exception.
+    * The ``cleanup`` step will collect logs one more time.
+    * The ``cleanup`` step will invoke :py:meth:`Guest.teardown_logs`,
+      which will invoke :py:meth:`teardown` methods of all registered
+      logs.
+    * After this point, logs will not be collected anymore.
+    """
+
+    #: Name of the guest log.
     name: str
 
-    # Linked guest
+    #: Guest whose log this instance represents.
     guest: "Guest"
 
-    @abc.abstractmethod
-    def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
+    @functools.cached_property
+    def filename(self) -> str:
         """
-        Fetch and return content of a log.
+        A filename to use when storing the log.
 
-        :returns: content of the log, or ``None`` if the log cannot be retrieved.
+        By default, the name of the log is used.
         """
-        raise NotImplementedError
 
-    def store(self, logger: tmt.log.Logger, path: Path, logname: Optional[str] = None) -> None:
+        return self.name
+
+    # B027: "... is an empty method in an abstract base class, but has
+    # no abstract decorator" - expected, it's a default implementation
+    # provided for subclasses. It is acceptable to do nothing.
+    def setup(self, logger: tmt.log.Logger) -> None:  # noqa: B027
         """
-        Save log content to a file.
+        Prepare for collecting the log.
+
+        It is left for plugins to setup the needed infrastructure,
+        make API calls, etc.
 
         :param logger: logger to use for logging.
-        :param path: a path to save into, could be a directory
-            or a file path.
-        :param logname: name of the log, if not set, ``path``
-            is supposed to be a file path.
         """
-        log_content = self.fetch(logger)
-        if log_content:
-            # if path is file path
-            if not path.is_dir():
-                path.write_text(log_content)
-            # if path is a directory
-            elif logname:
-                (path / logname).write_text(log_content)
-            else:
-                raise tmt.utils.GeneralError(
-                    'Log path is a directory but log name is not defined.'
-                )
+
+        pass
+
+    # B027: "... is an empty method in an abstract base class, but has
+    # no abstract decorator" - expected, it's a default implementation
+    # provided for subclasses. It is acceptable to do nothing.
+    def teardown(self, logger: tmt.log.Logger) -> None:  # noqa: B027
+        """
+        Finalize the collection of the log.
+
+        It is left for plugins to tear down and remove what is no longer
+        needed once the log stops being collected.
+
+        :param logger: logger to use for logging.
+        """
+
+        pass
+
+    @contextlib.contextmanager
+    def staging_file(self, final_filepath: Path, logger: tmt.log.Logger) -> Iterator[Path]:
+        """
+        Provide a temporary file to be swapped with the final filepath.
+
+        Instead of writing directly into the final log filepath, log
+        update should write its new content into a temporary file which,
+        should everything go well, would replace the existing content
+        in an atomic move. That way the existing content would not be
+        compromised or broken by a failed update.
+
+        :param final_filepath: the desired final filepath, the temporary
+            file would replace this filepath on success.
+        :param logger: logger to use for logging.
+        """
+
+        temporary_filepath = Path(f'{final_filepath}.new')
+        temporary_filepath.unlink(missing_ok=True)
+
+        try:
+            logger.debug(
+                f"Store '{self.name}' log in the staging file '{temporary_filepath}'.", level=3
+            )
+
+            yield temporary_filepath
+
+        except Exception as exc:
+            raise exc
+
         else:
-            logger.warning(f'Failed to fetch log: {self.name}')
+            if temporary_filepath.exists():
+                logger.debug(
+                    f"Promoting the staging file '{temporary_filepath}' into '{final_filepath}'.",
+                    level=3,
+                )
+
+                shutil.move(temporary_filepath, final_filepath)
+
+    @abc.abstractmethod
+    def update(self, filepath: Path, logger: tmt.log.Logger) -> None:
+        """
+        Fetch the up-to-date content of the log, and save it into a file.
+
+        :param filepath: a file to save into.
+        :param logger: logger to use for logging.
+        """
+
+        raise NotImplementedError
 
 
 class Guest(
@@ -1480,6 +1577,9 @@ class Guest(
     # Flag to indicate localhost guest, requires special handling
     localhost = False
 
+    #: Guest logs active and available for collection.
+    guest_logs: list[GuestLog]
+
     # TODO: do we need this list? Can whatever code is using it use _data_class directly?
     # List of supported keys
     # (used for import/export to/from attributes during load and save)
@@ -1498,7 +1598,8 @@ class Guest(
         """
         Initialize guest data
         """
-        self.guest_logs: list[GuestLog] = []
+
+        self.guest_logs = []
 
         super().__init__(logger=logger, parent=parent, name=name)
         self.load(data)
@@ -2350,28 +2451,77 @@ class Guest(
 
         return dirpath
 
-    def fetch_logs(
+    def collect_log(self, log: GuestLog, hint: Optional[str] = None) -> None:
+        """
+        Register a guest log for (later) collection.
+
+        :param log: guest log to collect and save.
+        :param hint: if set, it would be included in the logging message
+            emitted by this function.
+        """
+
+        message_components: list[str] = [f"Adding '{log.name}' guest log"]
+
+        if hint:
+            message_components.append(hint)
+
+        self._logger.debug(f"{', '.join(message_components)}.", level=3)
+
+        self.guest_logs.append(log)
+
+    def setup_logs(self, logger: tmt.log.Logger) -> None:
+        """
+        Notify all registered logs their collection will begin.
+        """
+
+        for log in self.guest_logs:
+            log.setup(logger)
+
+    def teardown_logs(self, logger: tmt.log.Logger) -> None:
+        """
+        Notify all registered logs their collection will no longer continue.
+        """
+
+        for log in self.guest_logs:
+            log.teardown(logger)
+
+    def update_logs(
         self,
         logger: tmt.log.Logger,
         dirpath: Optional[Path] = None,
         guest_logs: Optional[list[GuestLog]] = None,
     ) -> None:
         """
-        Get log content and save it to a directory.
+        Fetch the up-to-date content of guest logs, and update saved files.
 
         :param logger: logger to use for logging.
-        :param dirpath: a directory to save into. If not set, :py:attr:`logdir`,
-            or current working directory will be used.
-        :param guest_logs: optional list of :py:attr:`GuestLog`. If not set,
-            all guest logs from :py:attr:`Guest.guest_logs` would be collected.
+        :param dirpath: a directory to save into. If not set,
+            :py:attr:`logdir`, or current working directory will be used.
+        :param guest_logs: optional list of :py:attr:`GuestLog`. If not
+            set, all guest logs from :py:attr:`Guest.guest_logs` would be
+            updated.
         """
 
         guest_logs = guest_logs or self.guest_logs
-
         dirpath = dirpath or self.logdir or Path.cwd()
+
         dirpath.mkdir(parents=True, exist_ok=True)
+
         for log in guest_logs:
-            log.store(logger, dirpath, log.name)
+            log_filepath = dirpath / log.filename
+
+            try:
+                log.update(log_filepath, logger)
+
+            except Exception as exc:
+                tmt.utils.show_exception_as_warning(
+                    exception=exc,
+                    message=f"Failed to update guest log '{log.name}'.",
+                    logger=logger,
+                )
+
+            else:
+                logger.info(log.name, str(log_filepath))
 
     def _construct_mkdtemp_command(
         self,

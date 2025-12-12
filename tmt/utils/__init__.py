@@ -84,6 +84,7 @@ if TYPE_CHECKING:
     import tmt.utils.themes
     from tmt._compat.typing import ParamSpec, Self, TypeAlias
     from tmt.hardware import Size
+    from tmt.steps.provision import GuestLog
 
 
 def sanitize_string(text: str) -> str:
@@ -2736,6 +2737,11 @@ class ProvisionError(GeneralError):
     """
     Provision step error
     """
+
+
+class GuestLogError(ProvisionError):
+    def __init__(self, message: str, log: 'GuestLog') -> None:
+        super().__init__(f'{log.name}: {message}')
 
 
 class PrepareError(GeneralError):

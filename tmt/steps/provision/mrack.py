@@ -23,15 +23,18 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 import tmt.utils.signals
+import tmt.utils.url
 import tmt.utils.wait
 from tmt.config.models.hardware import MrackTranslation
 from tmt.container import container, field, simple_field
 from tmt.steps.provision import RebootMode
 from tmt.utils import (
     Command,
+    GuestLogError,
     Path,
     ProvisionError,
     ShellScript,
+    UpdatableMessage,
 )
 from tmt.utils.templates import render_template
 from tmt.utils.wait import Deadline, Waiting
@@ -1640,11 +1643,6 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
             nonlocal previous_state
             response = self.api.inspect()
 
-            if response["status"] == "Aborted":
-                raise ProvisionError(
-                    f"Failed to create, unhandled API response '{response['status']}'."
-                )
-
             current = cast(GuestInspectType, response)
             state = current["status"]
             state_color = GUEST_STATE_COLORS.get(state, GUEST_STATE_COLOR_DEFAULT)
@@ -1654,21 +1652,22 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                 self.info('status', state, color=state_color)
                 previous_state = state
 
-            if state in {"Error, Aborted", "Cancelled"}:
-                raise ProvisionError('Failed to create, provisioning failed.')
+            registered_logs = [log.name for log in self.guest_logs]
+
+            for log_name, url in response.get('logs', {}).items():
+                if log_name in registered_logs:
+                    continue
+
+                self.collect_log(GuestLogBeaker(log_name, self, url), hint=f'following {url}')
+
+            if state in {"Error", "Aborted", "Cancelled"}:
+                raise ProvisionError(
+                    f"Failed to create, provisioning failed with state '{state}'."
+                )
 
             if state == 'Reserved':
-                for key in response.get('logs', []):
-                    self.guest_logs.append(
-                        GuestLogBeaker(key.replace('.log', ''), self, response["logs"][key])
-                    )
-                # console.log contains dmesg, and accessible even when the system is dead.
-                if response.get('logs', []).get('console.log'):
-                    self.guest_logs.append(
-                        GuestLogBeaker('dmesg', self, response.get('logs').get('console.log'))
-                    )
-                else:
-                    self.warn('No console.log available.')
+                self.setup_logs(self._logger)
+
                 return current
 
             raise tmt.utils.wait.WaitingIncompleteError
@@ -1905,19 +1904,6 @@ class GuestLogBeaker(tmt.steps.provision.GuestLog):
     guest: GuestBeaker
     url: str
 
-    def fetch(self, logger: tmt.log.Logger) -> Optional[str]:
-        """
-        Fetch and return content of a log.
-
-        :returns: content of the log, or ``None`` if the log cannot be retrieved.
-        """
-        try:
-            return tmt.utils.get_url_content(self.url, logger)
-        except Exception as error:
-            tmt.utils.show_exception_as_warning(
-                exception=error,
-                message=f"Failed to fetch '{self.url}' log.",
-                logger=self.guest._logger,
-            )
-
-            return None
+    def update(self, filepath: Path, logger: tmt.log.Logger) -> None:
+        with self.staging_file(filepath, logger) as staging_filepath:
+            tmt.utils.url.download(self.url, staging_filepath, logger=logger)
