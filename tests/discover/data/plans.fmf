@@ -63,6 +63,16 @@ execute:
                   branch: fedora
               discover+:
                   ref: "@tests/discover/data/dynamic-ref.fmf"
+    /archive-url:
+        summary: Test url-type archive
+        discover:
+            how: shell
+            url: https://github.com/teemtee/tests/archive/refs/heads/main.tar.gz
+            url-content-type: archive
+            tests:
+              - name: directory is there
+                test: test -d tests
+                path: /tests-main
 
 /fmf:
     /url:
