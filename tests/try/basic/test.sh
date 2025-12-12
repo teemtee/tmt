@@ -21,6 +21,19 @@ rlJournalStart
         rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Adjusted User Plan"
+        rlRun -s "TMT_CONFIG_DIR=$config ./adjusted.exp 'off'"
+        rlAssertGrep "Let's try.*/user/plan" $rlRun_LOG
+        rlAssertGrep "custom-prepare" $rlRun_LOG
+        rlAssertNotGrep "adjusted-prepare" $rlRun_LOG
+        rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
+        rlRun -s "TMT_CONFIG_DIR=$config ./adjusted.exp 'on'"
+        rlAssertGrep "Let's try.*/user/plan" $rlRun_LOG
+        rlAssertGrep "custom-prepare" $rlRun_LOG
+        rlAssertGrep "adjusted-prepare" $rlRun_LOG
+        rlAssertGrep "Run .* successfully finished. Bye for now!" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartTest "Local Plan"
         rlRun -s "./plan.exp"
         rlAssertGrep "Let's try.*/plans/basic" $rlRun_LOG

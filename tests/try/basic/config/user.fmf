@@ -4,7 +4,13 @@
     provision:
         how: local
     prepare:
-        how: shell
-        script: echo custom-prepare
+        - how: shell
+          script: echo custom-prepare
     execute:
         how: tmt
+
+    adjust:
+        prepare+:
+            - how: shell
+              script: echo adjusted-prepare
+        when: test-context == on
