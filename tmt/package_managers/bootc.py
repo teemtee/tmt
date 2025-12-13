@@ -26,12 +26,14 @@ LOCALHOST_BOOTC_IMAGE_PREFIX = "localhost/tmt"
 class BootcMetadataContainer(MetadataContainer):
     """
     Metadata container for bootc images.
-    Derived from https://bootc-dev.github.io/bootc/host-v1.schema.json.
+    References the official bootc host v1 JSON schema(https://bootc-dev.github.io/bootc/host-v1.schema.json).
+    This is a minimal version only including relevant fields for tmt.
     """
 
     if PYDANTIC_V1:
 
         class Config(MetadataContainer.Config):
+            # Allow unknown fields to support schema extensions and newer bootc versions
             extra = "allow"
     else:
         model_config = ConfigDict(extra="allow")
