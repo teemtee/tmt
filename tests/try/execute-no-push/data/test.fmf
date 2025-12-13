@@ -1,0 +1,2 @@
+summary: Simple test script that outputs identifying string
+test: ./test.sh
