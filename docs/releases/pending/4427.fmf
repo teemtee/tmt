@@ -1,0 +1,6 @@
+description: |
+  Beakerlib libraries can now be referenced without a ``url`` or ``path`` key.
+  In that case the ``name`` is relative to the discovered test's tmt tree.
+  The ``nick`` key **must** be set in this situation, matching what the
+  consuming scripts are using in ``rlImport``, or the name of the repo or
+  equivalent.
