@@ -1,0 +1,11 @@
+summary: Test koji.build artifact provider
+description: |
+    Test koji.build artifact provider which makes packages from Koji
+    builds available using build IDs.
+tag+:
+  - provision-only
+  - provision-container
+adjust:
+  - when: distro != fedora
+    enabled: false
+    because: Koji provider currently only supports Fedora packages
