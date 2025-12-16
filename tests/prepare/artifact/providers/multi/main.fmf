@@ -1,0 +1,11 @@
+summary: Test multiple artifact providers
+description: |
+    Test using multiple artifact providers together in a single
+    prepare step.
+tag+:
+  - provision-only
+  - provision-container
+adjust:
+  - when: distro != fedora
+    enabled: false
+    because: Test uses Fedora-specific providers
