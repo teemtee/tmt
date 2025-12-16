@@ -1,3 +1,11 @@
+# On RHEL 7 FIPS is enabled as follows:
+#
+# 1. Install dracut-fips and grubby.
+# 2. Add fips=1 and boot= (if needed) to bootloader kernel arguments
+# 3. Reboot.
+#
+# https://access.redhat.com/solutions/137833
+#
 # On RHEL/CentosStream 8 and 9 FIPS is enabled as follows:
 #
 # 1. Install crypto-policies-scripts, dracut-fips and grubby
@@ -41,36 +49,42 @@
         or 'CentOS Stream release 8' in release_out.stdout
       changed_when: false
 
-- name: Enable FIPS mode on RHEL/CentosStream 8, 9 or 10
+- name: Enable FIPS mode on RHEL 7 or RHEL/CentosStream  8, 9 or 10
   hosts: all
 
   tasks:
 
-    - name: Install crypto-policies-scripts and dracut-fips
+    - name: Disable prelink
+      ansible.builtin.shell: |
+        if rpm -q prelink; then
+          sed -i '/^PRELINKING/s,yes,no,' /etc/sysconfig/prelink
+          prelink -uav
+        fi
+      register: output
+      changed_when: '"package prelink is not installed" not in output.stdout'
+
+    - name: Install dracut-fips and grubby on RHEL7
+      ansible.builtin.command: yum install -y dracut-fips grubby # noqa: command-instead-of-module
+      register: output
+      changed_when: output.rc == 0
+      when: ansible_distribution_major_version | int == 7
+
+    - name: Install crypto-policies-scripts, dracut-fips and grubby on RHEL8 and RHEL9
       ansible.builtin.dnf:
         name:
           - crypto-policies-scripts
           - dracut-fips
+          - grubby
         state: present
-      when:
-        - ansible_distribution_major_version | int < 10
-        - ansible_distribution_major_version | int != 8
-
-    - name: Install crypto-policies-scripts, dracut-fips and grubby on RHEL8
-      ansible.builtin.command: "dnf install -y crypto-policies-scripts dracut-fips grubby"
-      when:
-        - ansible_distribution_major_version | int == 8
-      register: output
-      changed_when: output.rc == 0
+      when: ansible_distribution_major_version | int in [8, 9]
 
     - name: Install grubby
       ansible.builtin.dnf:
         name: grubby
         state: present
-      when: ansible_distribution_major_version | int != 8
+      when: ansible_distribution_major_version | int == 10
 
     - name: Modify bootloader
-      when: ansible_distribution_major_version | int == 10
       block:
 
         - name: Add parameters fips and boot (if applicable)
@@ -107,12 +121,12 @@
       when: ansible_distribution_major_version | int == 10
 
     - name: Enable FIPS mode
-      ansible.builtin.command: fips-mode-setup --enable
+      ansible.builtin.command: fips-mode-setup --enable --no-bootcfg
       environment:
         FIPS_MODE_SETUP_SKIP_WARNING: "1"
       register: output
       changed_when: output.rc == 0
-      when: ansible_distribution_major_version | int < 10
+      when: ansible_distribution_major_version | int in [8, 9]
 
     - name: Reboot
       ansible.builtin.reboot:
@@ -129,8 +143,9 @@
     - name: FIPS mode is reported by fips-mode-setup
       ansible.builtin.command: fips-mode-setup --is-enabled
       changed_when: false
-      when: ansible_distribution_major_version | int < 10
+      when: ansible_distribution_major_version | int in [8, 9]
 
     - name: Check that FIPS policy is enabled
       ansible.builtin.shell: test "$(update-crypto-policies --show)" == "FIPS"
       changed_when: false
+      when: ansible_distribution_major_version | int > 7
