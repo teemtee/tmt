@@ -1,0 +1,19 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: container
+    prepare:
+        how: artifact
+        provide:
+          - koji.build:make
+          - repository-url:https://download.docker.com/linux/fedora/docker-ce.repo
+    execute:
+        how: tmt
+
+/test:
+    test: ./test.sh
+    duration: 5m
+    summary: Install and verify packages from multiple artifact providers
+    require:
+      - make

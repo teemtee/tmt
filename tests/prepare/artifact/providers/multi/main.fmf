@@ -1,0 +1,23 @@
+summary: Example test for using multiple artifact providers
+description: |
+    Demonstrates how to use multiple artifact providers together
+    in a single prepare step.
+
+    Example usage:
+        prepare:
+          - how: artifact
+            provide:
+              - koji.build:2625600
+              - repository-url:https://example.com/repo.repo
+
+    This test shows:
+    - How to combine different provider types
+    - Multiple --provide arguments in one prepare step
+    - Packages from different sources work together
+tag+:
+  - provision-only
+  - provision-container
+adjust:
+  - when: distro != fedora
+    enabled: false
+    because: Test uses Fedora-specific providers
