@@ -1,0 +1,8 @@
+{
+  "configValidationError": true,
+  "onboarding": false,
+  "platform": "github",
+  "repositories": [
+    "teemtee/tmt"
+  ]
+}
