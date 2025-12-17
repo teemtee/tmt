@@ -922,9 +922,10 @@ class GuestFacts(SerializableContainer):
             ``is_container`` - will be synced.
         """
 
-        collection_script = self._create_collection_script(*(facts or self._facts().keys()))
-
-        output = guest.execute(collection_script.to_shell_command(), silent=True)
+        output = guest.execute(
+            self._create_collection_script(*(facts or self._facts().keys())).to_shell_command(),
+            silent=True,
+        )
 
         if not output.stdout:
             return
@@ -1083,10 +1084,10 @@ class GuestFacts(SerializableContainer):
             if grep -q '^name=' /run/.containerenv; then
                 grep '^name=' /run/.containerenv | sed 's/^name=\\"\\(.*\\)\\"$/\\1/'
             else
-                echo ''
+                echo 'unknown'
             fi
         else
-            echo ''
+            echo 'unknown'
         fi
         """
     )
@@ -2021,12 +2022,15 @@ class Guest(
         if not self.is_ready:
             return
 
+        self.info('guest facts')
+        facts_logger = self._logger.descend()
+
         for key, key_formatted, value_formatted in self.facts.format():
             if key in GUEST_FACTS_INFO_FIELDS:
-                self.info(key_formatted, value_formatted, color='green')
+                facts_logger.info(key_formatted, value_formatted, color='green')
 
             elif key in GUEST_FACTS_VERBOSE_FIELDS:
-                self.verbose(key_formatted, value_formatted, color='green')
+                facts_logger.verbose(key_formatted, value_formatted, color='green')
 
     def _ansible_verbosity(self) -> list[str]:
         """
