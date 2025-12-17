@@ -15,6 +15,7 @@ from sphinx.util.nodes import make_refnode
 import tmt
 import tmt.log
 
+from .plugin import AutoPluginDirective
 from .story import AutoStoryDirective, StoryDirective, StoryIndex
 
 if typing.TYPE_CHECKING:
@@ -45,6 +46,7 @@ class TmtDomain(Domain):
         "story": XRefRole(),
     }
     directives = {
+        "autoplugin": AutoPluginDirective,
         "autostory": AutoStoryDirective,
         "story": StoryDirective,
     }
