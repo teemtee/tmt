@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tmt.steps.prepare.artifact.providers import Repository
+from tmt.steps.prepare.artifact.providers import DEFAULT_REPOSITORY_PRIORITY, Repository
 from tmt.steps.prepare.artifact.providers.repository import (
     RepositoryFileProvider,
     parse_rpm_string,
@@ -68,7 +68,7 @@ def test_init_from_content(root_logger):
         name="from-content", content=VALID_REPO_CONTENT, logger=root_logger
     )
     assert repo.name == "from-content"
-    assert repo.content == VALID_REPO_CONTENT
+    assert 'priority' in repo.content.lower()
     assert repo.repo_ids == EXPECTED_REPO_IDS
     assert repo.filename == "from-content.repo"
 
@@ -77,7 +77,7 @@ def test_init_from_file(temp_repo_file, root_logger):
     """Test successful initialization from a local file path"""
     repo = Repository.from_file_path(file_path=temp_repo_file, logger=root_logger)
     assert repo.name == "docker-ce"
-    assert repo.content == VALID_REPO_CONTENT
+    assert 'priority' in repo.content.lower()
     assert repo.repo_ids == EXPECTED_REPO_IDS
 
 
@@ -95,7 +95,7 @@ def test_init_from_url(mock_retry_session, root_logger):
     repo = Repository.from_url(url=repo_url, logger=root_logger)
 
     assert repo.name == "docker-ce"
-    assert repo.content == VALID_REPO_CONTENT
+    assert 'priority' in repo.content.lower()
     assert repo.repo_ids == EXPECTED_REPO_IDS
     mock_session.get.assert_called_once_with(repo_url)
 
@@ -443,5 +443,108 @@ def test_get_repositories(mock_repo_file_fetch, mock_guest_and_pm, root_logger, 
     assert len(repositories) == 1
     assert isinstance(repositories[0], Repository)
     assert repositories[0].name == "docker-ce"
-    assert repositories[0].content == VALID_REPO_CONTENT
+    # Content should have priority augmented
+    assert 'priority' in repositories[0].content
     assert repositories[0].repo_ids == EXPECTED_REPO_IDS
+
+
+# ================================================================================
+# Tests for priority augmentation
+# ================================================================================
+
+
+def test_priority_augmentation_missing(root_logger):
+    """Test that default priority is added when missing"""
+    content_without_priority = """
+[test-repo]
+name=Test Repository
+baseurl=https://example.com/repo
+enabled=1
+gpgcheck=0
+"""
+    augmented = Repository._augment_priority(content_without_priority, root_logger)
+
+    # Verify priority was added
+    assert (
+        f'priority = {DEFAULT_REPOSITORY_PRIORITY}' in augmented
+        or f'priority={DEFAULT_REPOSITORY_PRIORITY}' in augmented
+    )
+    assert '[test-repo]' in augmented
+
+
+def test_priority_augmentation_already_present(root_logger):
+    """Test that existing priority is not modified"""
+    content_with_priority = """
+[test-repo]
+name=Test Repository
+baseurl=https://example.com/repo
+enabled=1
+gpgcheck=0
+priority=10
+"""
+    augmented = Repository._augment_priority(content_with_priority, root_logger)
+
+    # Verify original content is returned when priority already exists
+    assert 'priority' in augmented.lower()
+    # Should not have priority=50 since it already has priority=10
+    assert 'priority = 10' in augmented or 'priority=10' in augmented
+
+
+def test_priority_augmentation_multiple_sections(root_logger):
+    """Test that priority is added to all sections that are missing it"""
+    content_mixed = """
+[repo-with-priority]
+name=Repo With Priority
+baseurl=https://example.com/repo1
+priority=20
+
+[repo-without-priority]
+name=Repo Without Priority
+baseurl=https://example.com/repo2
+enabled=1
+"""
+    augmented = Repository._augment_priority(content_mixed, root_logger)
+
+    # Verify both sections are present
+    assert '[repo-with-priority]' in augmented
+    assert '[repo-without-priority]' in augmented
+
+    # Parse to verify priorities
+    import configparser
+
+    config = configparser.ConfigParser()
+    config.read_string(augmented)
+
+    # First section should keep its original priority
+    assert config.get('repo-with-priority', 'priority') == '20'
+    # Second section should have augmented priority
+    assert config.get('repo-without-priority', 'priority') == str(DEFAULT_REPOSITORY_PRIORITY)
+
+
+@patch('tmt.steps.prepare.artifact.providers.tmt.utils.retry_session')
+def test_from_url_priority_augmentation(mock_retry_session, root_logger):
+    """Test that from_url augments priority when fetching from URL"""
+    content_without_priority = """
+[fetched-repo]
+name=Fetched Repository
+baseurl=https://example.com/repo
+enabled=1
+"""
+    mock_session = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = content_without_priority
+    mock_response.raise_for_status.return_value = None
+    mock_session.get.return_value = mock_response
+    mock_retry_session.return_value.__enter__.return_value = mock_session
+
+    repo = Repository.from_url(url="https://example.com/test.repo", logger=root_logger)
+
+    # Verify priority was added to the content
+    assert 'priority' in repo.content.lower()
+
+    # Parse to verify the priority value
+    import configparser
+
+    config = configparser.ConfigParser()
+    config.read_string(repo.content)
+    assert config.get('fetched-repo', 'priority') == str(DEFAULT_REPOSITORY_PRIORITY)
