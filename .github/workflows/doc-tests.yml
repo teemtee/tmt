@@ -11,43 +11,46 @@ permissions:
 
 jobs:
   doc-test:
-    name: Sphinx Documentation Tests
+    name: Sphinx Tests (${{ matrix.builder }})
     runs-on: ubuntu-latest
     if: "!contains(github.event.pull_request.labels.*.name, 'ci | skip')"
+    strategy:
+      fail-fast: false
+      matrix:
+        builder: [ linkcheck, html ]
+        include:
+          # Run default html builder with warnings as error
+          - builder: html
+            args: -W
 
     steps:
       - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
       - uses: actions/setup-python@v6
         with:
           python-version: 3.x
-
       - uses: astral-sh/setup-uv@v7
         with:
           activate-environment: true
-
       - name: Install tmt[docs]
         run: uv sync --frozen --extra docs
-
-      - name: Run sphinx html builder
-        run: sphinx-build -b html docs/ docs/_build -W
 
       - name: Cache linkcheck results
         uses: actions/cache@v5
         with:
           path: docs/_build/linkcheck_cache.json
           key: linkcheck
+        if: ${{ matrix.builder == 'linkcheck' }}
 
-      - name: Run sphinx linkcheck
-        run: sphinx-build -b linkcheck docs/ docs/_build
+      - name: Run sphinx builder ${{ matrix.builder }}
+        run: sphinx-build -b ${{ matrix.builder }} ${{ matrix.args }} docs/ docs/_build
 
       # TODO: Move this to its own extra/group
       - name: Install other test dependencies
         run: uv pip install sphinx-lint
+        if: ${{ matrix.builder == 'html' }}
 
       # TODO: enable all checks
       # https://github.com/sphinx-contrib/sphinx-lint/issues/74
       - name: Run Sphinx ReST linter
-        run: sphinx-lint --ignore=.venv
+        run: sphinx-lint --ignore=docs/_build docs tmt tests
+        if: ${{ matrix.builder == 'html' }}
