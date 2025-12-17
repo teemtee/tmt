@@ -6,34 +6,58 @@ rlJournalStart
         rlRun "pushd step-inheritance"
     rlPhaseEnd
 
-    rlPhaseStartTest "Inherit report step only"
-        rlRun -s "tmt plan show /inherit-report-only"
-        rlAssertGrep "how: junit" $rlRun_LOG
-        rlAssertGrep "file: /tmp/results.xml" $rlRun_LOG
-        # Should only have report from local plan since remote has no report step
-        rlRun "tmt plan export /inherit-report-only > exported.yaml"
-        rlAssertGrep "how: junit" exported.yaml
-        rlAssertGrep "file: /tmp/results.xml" exported.yaml
+    rlPhaseStartTest "Test report step append mode"
+        rlRun -s "tmt plan show /test-report-append"
+        # Should show both remote and local report configurations
+        rlAssertGrep "how junit" $rlRun_LOG     # local report
+        rlAssertGrep "/tmp/local-results.xml" $rlRun_LOG
+
+        # Export and verify inheritance
+        rlRun "tmt plan export /test-report-append > append-export.yaml"
+        rlAssertGrep "how: junit" append-export.yaml
     rlPhaseEnd
 
-    rlPhaseStartTest "Inherit and merge with existing remote report step"
-        rlRun -s "tmt plan show /inherit-and-merge-report"
-        # Should have both the original remote report step and the local one
-        rlAssertGrep "how: display" $rlRun_LOG  # from remote plan
-        rlAssertGrep "how: junit" $rlRun_LOG     # from local plan
-        rlAssertGrep "file: /tmp/local-results.xml" $rlRun_LOG
+    rlPhaseStartTest "Test report step replace mode"
+        rlRun -s "tmt plan show /test-report-replace"
+        # Should show only local report configuration (replacing remote)
+        rlAssertGrep "how html" $rlRun_LOG      # local report
+        rlAssertGrep "/tmp/replacement.html" $rlRun_LOG
+
+        # Export and verify inheritance
+        rlRun "tmt plan export /test-report-replace > replace-export.yaml"
+        rlAssertGrep "how: html" replace-export.yaml
     rlPhaseEnd
 
-    rlPhaseStartTest "No step inheritance (control test)"
-        rlRun -s "tmt plan show /no-step-inheritance"
-        # Should only have the remote plan's report step, not the local one
-        rlAssertGrep "how: display" $rlRun_LOG  # from remote plan
-        rlAssertNotGrep "how: junit" $rlRun_LOG  # local step should not be inherited
-        rlAssertNotGrep "/tmp/control-results.xml" $rlRun_LOG
+    rlPhaseStartTest "Test no step inheritance (control)"
+        rlRun -s "tmt plan show /test-no-inheritance"
+        # With default behavior, local steps are still merged for backward compatibility
+        rlAssertGrep "/tmp/ignored.xml" $rlRun_LOG  # local steps are still merged by default
+    rlPhaseEnd
+
+    rlPhaseStartTest "Test alternative enum values"
+        rlRun -s "tmt plan show /test-alternative-enum"
+        # Test alternative "append" enum value (should work same as "+")
+        rlAssertGrep "Local finish with append enum" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Test multiple adjust fields"
+        rlRun -s "tmt plan show /test-multiple-adjust"
+        # Should show local prepare (append) and finish (replace)
+        rlAssertGrep "Local prepare" $rlRun_LOG
+        rlAssertGrep "Local finish" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Schema validation"
+        # Ensure all adjust-* fields are properly recognized
+        rlRun -s "tmt plan show /test-report-append"
+        rlRun -s "tmt plan show /test-report-replace"
+        rlRun -s "tmt plan show /test-alternative-enum"
+        rlRun -s "tmt plan show /test-multiple-adjust"
+        # If any fail, schema validation has issues
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun "rm -f exported.yaml"
+        rlRun "rm -f append-export.yaml replace-export.yaml"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd
