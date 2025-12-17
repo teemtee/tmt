@@ -782,7 +782,13 @@ class package_manager_guest_fact(guest_fact[Optional['tmt.package_managers.Guest
 
             return '\n'.join(probes)
 
-        super().__init__(_snippet_creator, lambda output: output)
+        def _extract(output: str) -> Optional['tmt.package_managers.GuestPackageManager']:
+            if not output:
+                return None
+
+            return output.splitlines()[0]
+
+        super().__init__(_snippet_creator, _extract)
 
 
 @container
