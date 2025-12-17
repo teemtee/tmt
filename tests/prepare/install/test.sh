@@ -36,11 +36,13 @@ rlJournalStart
 
         if [ "$PROVISION_HOW" = "container" ]; then
             rlRun "IMAGES='$TEST_CONTAINER_IMAGES'"
+            rlRun "SECONDARY_IMAGES='$TEST_CONTAINER_IMAGES_SECONDARY'"
 
             build_container_images
 
         elif [ "$PROVISION_HOW" = "virtual" ]; then
             rlRun "IMAGES='$TEST_VIRTUAL_IMAGES'"
+            rlRun "SECONDARY_IMAGES='$TEST_VIRTUAL_IMAGES_SECONDARY'"
 
         else
             rlRun "IMAGES="
@@ -62,6 +64,10 @@ rlJournalStart
 
             if is_fedora_rawhide "$image"; then
                 rlRun "distro=fedora-rawhide"
+                rlRun "package_manager=dnf5"
+
+            elif is_fedora_42 "$image"; then
+                rlRun "distro=fedora-42"
                 rlRun "package_manager=dnf5"
 
             elif is_fedora_43 "$image"; then
@@ -139,6 +145,11 @@ rlJournalStart
                 rlAssertGrep "summary: 2 preparations applied" $rlRun_LOG
             fi
         rlPhaseEnd
+
+        # Here the basic functionality check ends for the secondary distros.
+        if [[ "$SECONDARY_IMAGES" =~ "$image" ]]; then
+            continue
+        fi
 
         rlPhaseStartTest "$phase_prefix Install existing packages (CLI)"
             if is_ubi "$image"; then

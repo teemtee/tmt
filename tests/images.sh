@@ -22,11 +22,17 @@ TEST_CONTAINER_IMAGES="${TEST_CONTAINER_IMAGES:-$TEST_IMAGE_PREFIX/alpine:latest
 $TEST_IMAGE_PREFIX/centos/7/upstream:latest
 $TEST_IMAGE_PREFIX/centos/stream9/upstream:latest
 $TEST_IMAGE_PREFIX/centos/stream10/upstream:latest
+$TEST_IMAGE_PREFIX/fedora/42/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/43/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/rawhide/upstream:latest
 $TEST_IMAGE_PREFIX/ubi/8/upstream:latest
 $TEST_IMAGE_PREFIX/ubuntu/22.04/upstream:latest
 $TEST_IMAGE_PREFIX/debian/12.7/upstream:latest}"
+
+# For the following images we do not exercise all possible feature
+# combinations, just make sure the basic functionality works.
+TEST_CONTAINER_IMAGES_SECONDARY="${TEST_CONTAINER_IMAGES_SECONDARY:-$TEST_IMAGE_PREFIX/fedora/42/upstream:latest}"
+
 
 # Basic set of virtual images to test on.
 #
@@ -35,9 +41,14 @@ $TEST_IMAGE_PREFIX/debian/12.7/upstream:latest}"
 # TODO: enable centos-7 again with modified repo files
 TEST_VIRTUAL_IMAGES="${TEST_VIRTUAL_IMAGES:-centos-stream-9
 centos-stream-10
+fedora-42
 fedora-43
 fedora-rawhide
 fedora-coreos}"
+
+# For the following images we do not exercise all possible feature
+# combinations, just make sure the basic functionality works.
+TEST_VIRTUAL_IMAGES_SECONDARY="${TEST_VIRTUAL_IMAGES_SECONDARY:-fedora-42}"
 
 # A couple of "is image this?" helpers, to simplify conditions.
 function is_fedora_rawhide () {
