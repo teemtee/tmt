@@ -1,62 +1,75 @@
-# Remote plans to be imported - these would normally be in a separate repo
-# For testing purposes, we use plans within the same tree
+# Test step inheritance with adjust-* fields
 
-# A basic remote plan with minimal report step
-/remote-plan:
-    summary: Remote plan with basic reporting
-    execute:
-        how: shell
-        script: echo "Remote plan executed"
-    report:
-        how: display
-
-# A remote plan with no report step
-/remote-plan-no-report:
-    summary: Remote plan without any report step
-    execute:
-        how: shell
-        script: echo "Remote plan without report executed"
-
-# Local plans that import the remote plans
-
-/inherit-report-only:
-    summary: Local plan that inherits report step only
-    report:
-        how: junit
-        file: /tmp/results.xml
-    plan:
-        import:
-            url: https://github.com/teemtee/tests
-            name: /remote-plan-no-report
-            inherit-context: false
-            inherit-environment: false
-            adjust-report: true
-            adjust-finish: false
-
-/inherit-and-merge-report:
-    summary: Local plan that merges with existing remote report step
+# Test append mode for report step
+/test-report-append:
+    summary: Test report step inheritance in append mode
     report:
         how: junit
         file: /tmp/local-results.xml
     plan:
         import:
             url: https://github.com/teemtee/tests
-            name: /remote-plan
+            name: /plans/remote
             inherit-context: false
             inherit-environment: false
-            adjust-report: true
-            adjust-finish: false
+            adjust-report: "+"
 
-/no-step-inheritance:
-    summary: Local plan with no step inheritance (control test)
+# Test replace mode for report step
+/test-report-replace:
+    summary: Test report step inheritance in replace mode
     report:
-        how: junit
-        file: /tmp/control-results.xml
+        how: html
+        file: /tmp/replacement.html
     plan:
         import:
             url: https://github.com/teemtee/tests
-            name: /remote-plan
+            name: /plans/remote
             inherit-context: false
             inherit-environment: false
-            adjust-report: false
-            adjust-finish: false
+            adjust-report: "="
+
+# Test no step inheritance (control)
+/test-no-inheritance:
+    summary: Test plan with no step inheritance
+    report:
+        how: junit
+        file: /tmp/ignored.xml
+    plan:
+        import:
+            url: https://github.com/teemtee/tests
+            name: /plans/remote
+            inherit-context: false
+            inherit-environment: false
+            # No adjust-* fields, but local steps are still merged for backward compatibility
+
+# Test alternative enum values
+/test-alternative-enum:
+    summary: Test alternative enum values (append/replace)
+    finish:
+        how: shell
+        script: echo "Local finish with append enum"
+    plan:
+        import:
+            url: https://github.com/teemtee/tests
+            name: /plans/remote
+            inherit-context: false
+            inherit-environment: false
+            adjust-finish: "append"  # same as "+"
+
+# Test multiple adjust fields
+/test-multiple-adjust:
+    summary: Test multiple adjust fields
+    prepare:
+        how: shell
+        script: echo "Local prepare"
+    finish:
+        how: shell
+        script: echo "Local finish"
+    plan:
+        import:
+            url: https://github.com/teemtee/tests
+            name: /plans/remote
+            inherit-context: false
+            inherit-environment: false
+            adjust-prepare: "+"
+            adjust-finish: "="
