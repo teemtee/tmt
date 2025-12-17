@@ -4909,7 +4909,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
 
         log = functools.partial(logger.debug, color='green', level=3)
 
-        log('tmt runner')
+        log('tmt runner facts')
 
         for _, key_formatted, value_formatted in self.runner.facts.format():
             log(key_formatted, value_formatted, shift=1)
