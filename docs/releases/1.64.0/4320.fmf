@@ -1,0 +1,2 @@
+description: |
+  The guest data is now saved in the ``results.yaml`` for each phase execution.

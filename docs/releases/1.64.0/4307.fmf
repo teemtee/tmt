@@ -1,0 +1,4 @@
+description: |
+  The :ref:`prepare shell</plugins/prepare/shell>` and
+  :ref:`finish shell</plugins/finish/shell>` plugins now produce results in the
+  ``results.yaml`` file of the step.
