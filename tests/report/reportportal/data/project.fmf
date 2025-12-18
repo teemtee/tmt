@@ -22,4 +22,4 @@ adjust:
 
     report:
         how: reportportal
-        project: tcornell_personal
+        project: test_tmt
