@@ -297,6 +297,6 @@ def test_save_failures(tmppath: Path, root_logger) -> None:
 
     read_yaml = (tmppath / 'data/failures.yaml').read_text()
 
-    assert tmt.utils.yaml_to_python(read_yaml) == ['foo', _GOOD_STRING, 'bar']
-    assert tmt.utils.yaml_to_python(read_yaml, yaml_type='safe') == ['foo', _GOOD_STRING, 'bar']
+    assert tmt.utils.from_yaml(read_yaml) == ['foo', _GOOD_STRING, 'bar']
+    assert tmt.utils.from_yaml(read_yaml, yaml_type='safe') == ['foo', _GOOD_STRING, 'bar']
     assert tmt.utils.yaml_to_list(read_yaml) == ['foo', _GOOD_STRING, 'bar']

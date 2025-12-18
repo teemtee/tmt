@@ -376,10 +376,10 @@ def test_parse_maximal_constraint() -> None:
     assert hw.constraint is not None
 
     print(hw.to_spec())
-    print(tmt.utils.dict_to_yaml(hw.constraint.to_spec()))
+    print(tmt.utils.to_yaml(hw.constraint.to_spec()))
     print(textwrap.dedent(hw_spec_out))
 
-    assert tmt.utils.dict_to_yaml(hw.constraint.to_spec()) == textwrap.dedent(hw_spec_out).lstrip()
+    assert tmt.utils.to_yaml(hw.constraint.to_spec()) == textwrap.dedent(hw_spec_out).lstrip()
 
 
 def test_parse_or_constraint() -> None:
@@ -394,7 +394,7 @@ def test_parse_or_constraint() -> None:
     """
 
     hw = parse_hw(OR_HARDWARE_REQUIREMENTS)
-    assert tmt.utils.dict_to_yaml(hw.constraint.to_spec()) == textwrap.dedent(hw_spec_out).lstrip()
+    assert tmt.utils.to_yaml(hw.constraint.to_spec()) == textwrap.dedent(hw_spec_out).lstrip()
 
 
 def test_report_support(
