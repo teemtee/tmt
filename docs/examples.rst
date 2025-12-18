@@ -10,7 +10,7 @@ You can obtain detailed list of available options for each command
 by invoking it with ``--help``. In order to control the verbosity
 of the output use ``--verbose`` and ``--quiet``. To display
 implementation details for debugging use the ``--debug`` option.
-See :ref:`/stories/cli/common` options for details.
+See :tmt:story:`/stories/cli/common` options for details.
 
 Simply run ``tmt`` to get started with exploring your working
 directory:
@@ -388,7 +388,7 @@ Those changes have to be committed and pushed manually.
 
 To include nitrate test case in general plans use ``--general``.
 Set of general plans to which the test case will be linked is
-detected from the :ref:`/spec/tests/component`. Any additional
+detected from the :tmt:story:`/spec/tests/component`. Any additional
 general plan will be removed.
 
 For newly created nitrate test case it can be useful to add it
@@ -397,7 +397,7 @@ done using the ``--link-runs`` option.
 
 Use the ``--bugzilla`` option together with ``--how nitrate`` or
 ``--how polarion`` to link bugs marked as ``verifies``
-in the :ref:`/spec/core/link` attribute with the corresponding
+in the :tmt:story:`/spec/core/link` attribute with the corresponding
 Nitrate/Polarion test case.
 
 Almost all important attributes should be pulled from fmf metadata
@@ -423,8 +423,8 @@ BeakerLib Libraries
 In order to prevent unnecessary test code duplication it makes
 sense to use a test library which implements frequently repeated
 actions. Currently beakerlib libraries are supported. They can be
-defined in the :ref:`/spec/tests/require` attribute and are
-fetched during the :ref:`/spec/plans/discover` step.
+defined in the :tmt:story:`/spec/tests/require` attribute and are
+fetched during the :tmt:story:`/spec/plans/discover` step.
 
 Use the short backward-compatible syntax to fetch libraries from
 the `default repository`__:
@@ -445,7 +445,7 @@ location:
         url: https://github.com/beakerlib/openssl
         name: /certgen
 
-See the :ref:`/spec/tests/require` attribute specification for
+See the :tmt:story:`/spec/tests/require` attribute specification for
 detailed description of the syntax and available keys.
 
 
@@ -511,7 +511,7 @@ Multiple Configs
 
 Step can contain multiple configurations. In this case provide
 each config with a unique name. Applying ansible playbook and
-executing custom script in a single :ref:`/spec/plans/prepare`
+executing custom script in a single :tmt:story:`/spec/plans/prepare`
 step could look like this:
 
 .. code-block:: yaml
@@ -526,7 +526,7 @@ step could look like this:
 
 Another common use case which can be easily covered by multiple
 configs can be fetching tests from multiple repositories during
-the :ref:`/spec/plans/discover` step:
+the :tmt:story:`/spec/plans/discover` step:
 
 .. code-block:: yaml
 
@@ -563,7 +563,7 @@ package then could be done in the following way:
         how: install
         package: python3-pytest
 
-Eventually, use :ref:`/spec/core/adjust` to extend the step
+Eventually, use :tmt:story:`/spec/core/adjust` to extend the step
 conditionally:
 
 .. code-block:: yaml
@@ -585,7 +585,7 @@ It is possible to parametrize plans using environment variables and
 context. This may be useful to reduce duplication, for example in
 CI systems.
 
-For :ref:`/spec/plans/environment` variables the syntax is
+For :tmt:story:`/spec/plans/environment` variables the syntax is
 standard, both ``$var`` and ``${var}`` may be used. The values of
 variables are taken from the ``--environment`` command line option
 and the ``environment`` plan attribute. If a variable is defined
@@ -616,7 +616,7 @@ step and would select more tests than required in the case the test names are no
 
     $ tmt run -e PICK_TMT='^/tests/core/ls$' -e PICK_FMF='^/tests/(unit|basic/ls)$'
 
-For :ref:`context</spec/context>` parametrization the syntax is
+For :tmt:story:`context</spec/context>` parametrization the syntax is
 ``$@dimension`` or ``$@{dimension}``. The values are set according
 to the defined context specified using ``--context`` command line
 option and the ``context`` plan attribute:
@@ -640,7 +640,7 @@ Dynamic ``ref`` Evaluation
 
 When using test branching for test maintenance it becomes handy to
 be able to set :ref:`ref</plugins/discover/fmf>` dynamically
-depending on the provided :ref:`/spec/context`. This is possible
+depending on the provided :tmt:story:`/spec/context`. This is possible
 using a special file in tmt format stored in a default branch of a
 tests repository. That special file should contain rules assigning
 attribute ``ref`` in an ``adjust`` block depending on the context.
@@ -825,9 +825,9 @@ steps for all discovered test plans are executed:
         finish
             summary: 0 tasks completed
 
-Even if there are no :ref:`/spec/plans` defined it is still
+Even if there are no :tmt:story:`/spec/plans` defined it is still
 possible to execute tests and custom scripts. See the default
-:ref:`/stories/cli/run/default/plan` story for details.
+:tmt:story:`/stories/cli/run/default/plan` story for details.
 
 Dry run mode is enabled with the ``--dry`` option:
 
@@ -1328,7 +1328,7 @@ as well? It might save you some typing:
 
     tmt run pro log fin
 
-See the :ref:`/stories/cli/run/login` user stories for more
+See the :tmt:story:`/stories/cli/run/login` user stories for more
 details and examples.
 
 

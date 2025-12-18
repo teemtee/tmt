@@ -3,7 +3,7 @@ story: |
     for the guest on which the tests will be executed.
 
 description: |
-    As part of the :ref:`/spec/plans/provision` step it is
+    As part of the :tmt:story:`/spec/plans/provision` step it is
     possible to use the ``hardware`` key to specify additional
     requirements for the testing environment. This provides a
     generic and an extensible way to write down essential hardware
@@ -19,9 +19,9 @@ description: |
 
     Individual requirements are provided as a simple ``key:
     value`` pairs, for example the minimum amount of
-    :ref:`/spec/hardware/memory`, or the related information is
+    :tmt:story:`/spec/hardware/memory`, or the related information is
     grouped under a common parent, for example ``cores`` or
-    ``model`` under the :ref:`/spec/hardware/cpu` key.
+    ``model`` under the :tmt:story:`/spec/hardware/cpu` key.
 
     Comparison operators
     --------------------
@@ -35,16 +35,16 @@ description: |
 
         Only ``=``, ``!=``, ``>``, ``>=``, ``<`` and ``<=`` operators are
         accepted for requirements that accept numeric values, e.g.
-        :ref:`cpu.cores </spec/hardware/cpu>` or
-        :ref:`tpm.version </spec/hardware/tpm>`.
+        :tmt:story:`cpu.cores </spec/hardware/cpu>` or
+        :tmt:story:`tpm.version </spec/hardware/tpm>`.
 
         Only ``=`` and ``!=`` operators are accepted for flag-like requirements,
-        e.g. :ref:`virtualization.is-virtualized </spec/hardware/virtualization>`.
+        e.g. :tmt:story:`virtualization.is-virtualized </spec/hardware/virtualization>`.
 
         Only ``=``, ``!=``, ``~`` and ``!~`` operators are accepted for
         requirements that accept string values, e.g.
-        :ref:`cpu.model-name </spec/hardware/cpu>` or
-        :ref:`virtualization.hypervisor </spec/hardware/virtualization>`.
+        :tmt:story:`cpu.model-name </spec/hardware/cpu>` or
+        :tmt:story:`virtualization.hypervisor </spec/hardware/virtualization>`.
 
     .. note::
 
@@ -71,8 +71,8 @@ description: |
     ------
 
     Regular expressions can be used for selected fields such as
-    the :ref:`/spec/hardware/cpu` model name or
-    :ref:`/spec/hardware/hostname`. Use ``~`` for positive and
+    the :tmt:story:`/spec/hardware/cpu` model name or
+    :tmt:story:`/spec/hardware/hostname`. Use ``~`` for positive and
     ``!~`` for negative regular expressions at the beginning of
     the string. Any leading or trailing white space from the
     search string is removed.

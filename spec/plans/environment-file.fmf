@@ -1,7 +1,7 @@
 summary: Environment variables from files
 
 description:
-    In addition to the :ref:`/spec/plans/environment` key it is
+    In addition to the :tmt:story:`/spec/plans/environment` key it is
     also possible to provide environment variables in a file.
     Supported formats are dotenv/shell with ``KEY=VALUE`` pairs
     and ``yaml``. Full `url` can be used to fetch variables from a

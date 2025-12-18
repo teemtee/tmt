@@ -8,7 +8,7 @@ story:
 
 description: |
     In some cases the configuration stored in a plan can be quite
-    large, for example the :ref:`/spec/plans/prepare` step can
+    large, for example the :tmt:story:`/spec/plans/prepare` step can
     define complex scripts to set up the guest for testing. Using
     a reference to a remote plan makes it possible to reuse the
     same config on multiple places without the need to duplicate

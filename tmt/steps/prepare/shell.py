@@ -67,7 +67,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
     Prepare guest using shell (Bash) scripts.
 
     Default shell options are applied to the script, see the
-    :ref:`/spec/tests/test` key specification for more
+    :tmt:story:`/spec/tests/test` key specification for more
     details.
 
     .. code-block:: yaml

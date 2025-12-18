@@ -81,8 +81,8 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
     The goal is to make sure these exact artifacts are being used
     when requested in one of the
-    :ref:`test require </spec/tests/require>`,
-    :ref:`test recommend </spec/tests/recommend>`, or
+    :tmt:story:`test require </spec/tests/require>`,
+    :tmt:story:`test recommend </spec/tests/recommend>`, or
     :ref:`prepare install </plugins/prepare/install>`. Exact NVR
     *should not* be used in those requests, instead this plugin
     will take care of disambiguating the requested package based

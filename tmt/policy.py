@@ -269,7 +269,7 @@ class Policy(MetadataContainer):
     A tmt run policy.
 
     A collection of instructions telling tmt how to modify test keys.
-    See :ref:`/spec/policy` for more details.
+    See :tmt:story:`/spec/policy` for more details.
     """
 
     # The name will be overwritten by the code loading policies

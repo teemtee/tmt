@@ -41,11 +41,11 @@ contributors. It describes the overall sprint process, the key
 sync points and provides links to progress tracking boards.
 
 tmt now supports automatic generation of Ansible inventory files
-during the provision phase. The new :ref:`/spec/plans/ansible`
+during the provision phase. The new :tmt:story:`/spec/plans/ansible`
 configuration allows users to define custom inventory layouts and
 organize provisioned guests into Ansible groups with host-specific
-variables. See the :ref:`plan ansible </spec/plans/ansible>` and
-:ref:`provision ansible </spec/plans/provision/ansible>` keys for
+variables. See the :tmt:story:`plan ansible </spec/plans/ansible>` and
+:tmt:story:`provision ansible </spec/plans/provision/ansible>` keys for
 configuration details.
 
 The :ref:`/plugins/report/reportportal` report plugin now supports
@@ -53,10 +53,10 @@ a new ``auto-analysis`` key. This key allows users to enable
 immediate auto-analysis of failed tests reported to ReportPortal.
 
 User generated content in the ``TMT_PLAN_DATA`` directory is now
-correctly preserved when the :ref:`/stories/cli/run/login` action
+correctly preserved when the :tmt:story:`/stories/cli/run/login` action
 is used to log into the guest.
 
-The :ref:`system.type</spec/hardware/system>` HW requirement is now
+The :tmt:story:`system.type</spec/hardware/system>` HW requirement is now
 recognized by tmt.
 
 Beakerlib output from phases is now saved in files with more predictable
@@ -78,10 +78,10 @@ image was not already present on the guest.
 SSH key placement and non-root ``sudo`` have been fixed in the
 :ref:`/plugins/provision/virtual.testcloud` guests.
 
-:ref:`/spec/policy` examples were updated to demonstrate the use of
+:tmt:story:`/spec/policy` examples were updated to demonstrate the use of
 ``to_yaml`` filter with complex objects, which preserves them correctly.
 
-The implementation of the :ref:`boot.method</spec/hardware/boot>` HW
+The implementation of the :tmt:story:`boot.method</spec/hardware/boot>` HW
 requirement changes to support instance types which offer multiple boot
 methods at the same time. Plugin is then free to choose the right one,
 given the HW requirements. Current strict implementation would prevent
@@ -104,7 +104,7 @@ Currently the change is planned for January 2027. See the
 details.
 
 The :ref:`/plugins/provision/beaker` provision plugin gains
-support for :ref:`beaker.panic-watchdog</spec/hardware/beaker>`
+support for :tmt:story:`beaker.panic-watchdog</spec/hardware/beaker>`
 hardware requirement. If enabled, beaker-watchdog will return the
 host to beaker when a kernel panic is detected. By default this
 option is disabled so tmt can keep control over the Beaker
@@ -130,7 +130,7 @@ Test dependencies are now switched to using the packaged ``yq``
 instead of the Python-based version, improving compatibility and
 reducing dependency management complexity.
 
-Fixed hardware :ref:`/spec/hardware/device` schema to properly
+Fixed hardware :tmt:story:`/spec/hardware/device` schema to properly
 handle single device specifications, resolving schema validation
 issues.
 
@@ -169,15 +169,15 @@ tmt-1.58.0
 The ``tmt-reboot`` command was changed to handle special EFI
 handling for Beaker systems only. The ``-e`` option is ignored and
 has no effect now. We are keeping it for backwards compatibility
-only. See the :ref:`/stories/features/reboot` section for updated
+only. See the :tmt:story:`/stories/features/reboot` section for updated
 usage details.
 
-The :ref:`tmt try</stories/cli/try>` command's interactive session
+The :tmt:story:`tmt try</stories/cli/try>` command's interactive session
 now includes a new ``lcd`` option to switch directories,
 making it easy to select and run a different test or set of tests.
 
 At the end of each run, tmt now generates a ``recipe.yaml``
-file based on the :ref:`/spec/recipe` specification. Loading
+file based on the :tmt:story:`/spec/recipe` specification. Loading
 recipes is not yet supported.
 
 :ref:`/plugins/execute` no longer require ``awk`` to be installed
@@ -236,24 +236,24 @@ The :ref:`/plugins/provision/beaker` provision plugin now supports
 provisioning in parallel, and therefore provisioning for multihost plans
 with `beaker` plugin will be faster.
 
-Git URLs of :ref:`imported plans</spec/plans/import>` are now treated in
+Git URLs of :tmt:story:`imported plans</spec/plans/import>` are now treated in
 the same way as URLs of remote tests, enabling the use of credentials
 when cloning imported plan repositories.
 
 The :ref:`/plugins/provision/beaker` provision plugin now supports
-:ref:`device.driver</spec/hardware/device>` HW requirement.
+:tmt:story:`device.driver</spec/hardware/device>` HW requirement.
 
 
 tmt-1.56.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :ref:`tmt try</stories/cli/try>` command's interactive
+The :tmt:story:`tmt try</stories/cli/try>` command's interactive
 session now includes a new ``h`` option to run shell commands
 directly on the host (not on provisioned guests). Users can exit
 cleanly by typing ``\q``, pressing Ctrl-C, or pressing Ctrl-D,
 and failed commands are reported with clear error messages.
 
-The :ref:`/spec/plans/provision` step now detects and reports
+The :tmt:story:`/spec/plans/provision` step now detects and reports
 unreachable guests after provisioning. This prevents silent
 failures when a guest fails to become accessible via SSH.
 
@@ -272,7 +272,7 @@ unnecessary operations.
 
 As the first step towards implementing support for executing a
 subset of tests based on reported results, the first draft of the
-:ref:`/spec/recipe` specification was created to gather initial
+:tmt:story:`/spec/recipe` specification was created to gather initial
 feedback on the proposed approach.
 
 To comply with Functional Safety certification requirements,
@@ -334,17 +334,17 @@ The prepare :ref:`/plugins/prepare/shell` plugin now supports
 ``url`` and ``ref`` options, so preparation scripts can be fetched
 directly from remote git repositories.
 
-A new :ref:`/spec/plans/cleanup` step has been introduced which
+A new :tmt:story:`/spec/plans/cleanup` step has been introduced which
 takes care of removing guests and pruning of the workdir. This
-was previously handled by the :ref:`/spec/plans/finish` step and
+was previously handled by the :tmt:story:`/spec/plans/finish` step and
 has been extracted into a dedicated step in order to allow running
 finishing tasks without necessarily stopping all guests as well.
 This will allow future extensions of the :ref:`/plugins/finish`.
 
 Specification for the new ansible inventory feature has been
-outlined. It defines the plan :ref:`/spec/plans/ansible` key which
+outlined. It defines the plan :tmt:story:`/spec/plans/ansible` key which
 can be used to define a custom inventory layout and the provision
-:ref:`/spec/plans/provision/ansible` key for defining ansible
+:tmt:story:`/spec/plans/provision/ansible` key for defining ansible
 groups and variables for individual guests.
 
 Robustness of the FIPS mode implementation was enhanced by moving
@@ -368,7 +368,7 @@ The :ref:`/plugins/report/html` report plugin now supports the
 The :ref:`organize-data` chapter of the Guide has been extended
 with the :ref:`adjust-metadata` section describing how to
 conditionally modify various attributes of tests, plans,
-or stories based on the current :ref:`/spec/context`.
+or stories based on the current :tmt:story:`/spec/context`.
 
 A regression in the ``tmt run --environment @file.yaml`` option
 handling has been fixed so that environment files can be again
@@ -381,7 +381,7 @@ tmt-1.52.0
 The new key ``include`` can now be used for selecting tests in the
 :ref:`/plugins/discover/fmf` discover plugin. It allows to provide
 a list of regular expressions matching test names similar to the
-``test`` key but preserves the original :ref:`/spec/core/order` of
+``test`` key but preserves the original :tmt:story:`/spec/core/order` of
 the test and prevents duplicate execution of a single test.
 
 A public instance of the tmt web service has been deployed to
@@ -390,7 +390,7 @@ https://tmt.testing-farm.io/ and can be used together with the
 plans.
 
 Files submitted during a test via
-:ref:`tmt-file-submit</stories/features/report-log>` or BeakerLib's
+:tmt:story:`tmt-file-submit</stories/features/report-log>` or BeakerLib's
 ``rlFileSubmit`` are now a part of main test result as logs.
 
 The ``--environment`` option now properly supports dotenv files as
@@ -409,7 +409,7 @@ Improvements have been made to prevent tmt scripts (``tmt-reboot``,
 ``tmt-abort``, ``tmt-file-submit``, ``tmt-report-result``) from being
 executed outside of their intended test execution context.
 
-The application of :ref:`policies </spec/policy>` is now more visible
+The application of :tmt:story:`policies </spec/policy>` is now more visible
 in the log output. When a policy is applied, tmt will report this
 even without the policy log topic enabled, making it easier to
 understand when policies are affecting test execution.
@@ -434,11 +434,11 @@ maintain test code and share it across repositories.
 When interrupted, tmt is now able to interrupt the current test as well,
 it will no longer wait for it to complete.
 
-:ref:`Policies </spec/policy>` can now be specified by either a file
+:tmt:story:`Policies </spec/policy>` can now be specified by either a file
 path, or by name, and policy root directory can be defined to limit the
 scope of where tmt would look for policy files.
 
-While :ref:`importing a remote plan</spec/plans/import>`, users can now
+While :tmt:story:`importing a remote plan</spec/plans/import>`, users can now
 configure if the context and environment variables from the importing
 plan should be propagated to the imported plan. This behavior can be
 controlled by the new ``inherit-context`` and ``inherit-environment``
@@ -451,12 +451,12 @@ tmt-1.50.0
 It is now possible to use ``extra-*`` metadata keys in tests, plans
 and stories for arbitrary user-defined data, within the limits of
 what YAML allows. These keys are always ignored by ``tmt lint``.
-See the :ref:`/spec/core/extra` key specification for details and
+See the :tmt:story:`/spec/core/extra` key specification for details and
 examples.
 
 Added ``--dry`` option for the :ref:`/plugins/provision/bootc` plugin.
 
-Added a specification for :ref:`policies </spec/policy>` that allow CI
+Added a specification for :tmt:story:`policies </spec/policy>` that allow CI
 system and CI workflow maintainers to modify tests and plans to include
 mandatory checks and phases as required by their testing process.
 
@@ -475,13 +475,13 @@ only if that specific check fails.
 
 Previously the ``tmt link`` command only supported links with the
 ``verifies`` relation, now it is possible to :ref:`link-issues`
-for all available :ref:`/spec/core/link` relations.
+for all available :tmt:story:`/spec/core/link` relations.
 
 
 tmt-1.49.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :ref:`import of remote plans</spec/plans/import>` support has
+The :tmt:story:`import of remote plans</spec/plans/import>` support has
 been extended to allow import of multiple plans. New keys,
 ``scope`` and ``importing``, allow users to control which plans to
 import and how to connect them with the importing plans.
@@ -533,7 +533,7 @@ new ``file`` key, allowing users to specify a custom output path for
 the generated HTML report.
 
 When using ``and``/``or`` groups in combination with
-:ref:`hardware requirements </spec/hardware>`, ``tmt`` will now emit
+:tmt:story:`hardware requirements </spec/hardware>`, ``tmt`` will now emit
 a warning to alert users about potential ambiguity in how these
 constraints are applied.
 
@@ -622,7 +622,7 @@ restraint compatibility features. Please, update your plans with
 ``restraint-compatibility: true`` as soon as possible if your
 tests depend on the restraint features.
 
-A new :ref:`system.management-controller</spec/hardware/system>`
+A new :tmt:story:`system.management-controller</spec/hardware/system>`
 hardware property has been proposed to allow specifying the desired
 system management interface (e.g., IPMI) when provisioning hardware.
 While not yet implemented, this feature aims to support more precise
@@ -634,7 +634,7 @@ tmt-1.45.0
 
 FIPS mode can now be enabled for RHEL or CentosStream 8, 9 or 10
 by a prepare step feature ``fips``. Moreover, the ``tmt try``
-command now supports the new :ref:`/stories/cli/try/option/fips`
+command now supports the new :tmt:story:`/stories/cli/try/option/fips`
 option backed by the :ref:`/plugins/prepare/feature` plugin.
 
 New option ``--build-disk-image-only`` is now supported by the
@@ -651,11 +651,11 @@ load the respective plans only instead of all available plans to
 save disk space and speed up the execution.
 
 Aborted tests and tests that failed when
-:ref:`/spec/plans/execute/exit-first` was enabled did not skip all
+:tmt:story:`/spec/plans/execute/exit-first` was enabled did not skip all
 remaining tests, only tests from the current ``discover`` phase.
 Plans with multiple ``discover`` phases would start ``execute``
 step for remaining ``discover`` phases. This is now fixed, aborted
-test and :ref:`/spec/plans/execute/exit-first` will skip **all**
+test and :tmt:story:`/spec/plans/execute/exit-first` will skip **all**
 remaining tests.
 
 Added support for translating hardware constraints using a config
@@ -671,7 +671,7 @@ directory and respects the structure of the original repository.
 This ensures that the test attributes have correct paths.
 
 The latest ``fmf`` package is now required to ensure that the
-``deployment-mode`` context :ref:`/spec/context/dimension` is
+``deployment-mode`` context :tmt:story:`/spec/context/dimension` is
 fully supported.
 
 The default :ref:`/plugins/provision/ssh-options` used for
@@ -685,7 +685,7 @@ The ``results.yaml`` file is now populated with test results
 right after the ``discover`` step is finished and the file is
 continuously updated during test execution to provide the latest
 results. This change also adds a new ``pending`` result outcome
-to the :ref:`/spec/results` specification for tests that were
+to the :tmt:story:`/spec/results` specification for tests that were
 discovered but not yet executed.
 
 Execute tmt option ``--ignore-duration`` makes tmt to execute
@@ -727,9 +727,9 @@ tmt-1.42.1
 The ``tmt show`` command now prints in verbose mode manual test
 instructions as well.
 
-A new context :ref:`/spec/context/dimension` ``deployment-mode``
+A new context :tmt:story:`/spec/context/dimension` ``deployment-mode``
 has been added to the specification. It can be used to
-:ref:`/spec/core/adjust` test and plan metadata for the
+:tmt:story:`/spec/core/adjust` test and plan metadata for the
 ``package`` or ``image`` mode context.
 
 The ``ansible-core`` package is now a recommended dependency package
@@ -738,9 +738,9 @@ for tmt. It is used by plugins that use Ansible under the hood,
 :ref:`finish/ansible</plugins/finish/ansible>`,
 and :ref:`prepare/feature</plugins/prepare/feature>`.
 
-A new core attribute :ref:`/spec/core/author` has been implemented
+A new core attribute :tmt:story:`/spec/core/author` has been implemented
 for tracking the original author of the test, plan or story. In
-contrast to the :ref:`/spec/core/contact` key, this field is not
+contrast to the :tmt:story:`/spec/core/contact` key, this field is not
 supposed to be updated and can be useful when trying to track down
 the original author for consultation.
 
@@ -755,7 +755,7 @@ using the ``namespace.collection.playbook`` notation.
 Added ``--dry`` option for the ``beaker`` provision plugin. When
 used it prints the Beaker Job XML without submitting it.
 
-:ref:`Results specification documentation</spec/results>` has now
+:tmt:story:`Results specification documentation</spec/results>` has now
 a dedicated place in the specification for improved discoverability.
 
 The ``rpm-ostree`` package installation now includes the
@@ -770,7 +770,7 @@ prints local variables in every frame, shorterning long values. See
 Fixed an issue where ``execute`` step incorrectly attempted to run
 disabled ``discover`` phases.
 
-Pre-defined order values of :ref:`prepare phases</spec/plans/prepare>`
+Pre-defined order values of :tmt:story:`prepare phases</spec/plans/prepare>`
 were documented.
 
 
@@ -800,14 +800,14 @@ support for submitting jobs on behalf of a group through the
 ``beaker-job-group`` key. The submitting user must be a member of
 the given job group.
 
-The ``note`` field of tmt :ref:`/spec/results` changes from
+The ``note`` field of tmt :tmt:story:`/spec/results` changes from
 a string to a list of strings, to better accommodate multiple notes.
 
 The ``Node`` alias for the ``Core`` class has been dropped as it
 has been deprecated a long time ago.
 
 Previously when the test run was interrupted in the middle of the
-test execution the :ref:`/spec/plans/report` step would be skipped
+test execution the :tmt:story:`/spec/plans/report` step would be skipped
 and no results would be reported. Now the report step is performed
 always so that users can access results of those tests which were
 successfully executed.
@@ -823,7 +823,7 @@ tmt-1.40.0
 The execution of individual step configurations can be controlled
 using the new :ref:`when<when-config>` key. Enable and disable
 selected step phase easily with the same syntax as used for the
-context :ref:`/spec/core/adjust` rules.
+context :tmt:story:`/spec/core/adjust` rules.
 
 When the ``login`` command is used to enter an interactive session
 on the guest, for example during a ``tmt try`` session, the
@@ -867,16 +867,16 @@ tmt-1.39.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :ref:`/plugins/provision/beaker` provision plugin gains
-support for :ref:`system.model-name</spec/hardware/system>`,
-:ref:`system.vendor-name</spec/hardware/system>`,
-:ref:`cpu.family</spec/hardware/system>` and
-:ref:`cpu.frequency</spec/hardware/cpu>` hardware requirements.
+support for :tmt:story:`system.model-name</spec/hardware/system>`,
+:tmt:story:`system.vendor-name</spec/hardware/system>`,
+:tmt:story:`cpu.family</spec/hardware/system>` and
+:tmt:story:`cpu.frequency</spec/hardware/cpu>` hardware requirements.
 
 The ``tmt lint`` command now reports a failure if empty
 environment files are found.
 
 The ``tmt try`` command now supports the new
-:ref:`/stories/cli/try/option/arch` option.
+:tmt:story:`/stories/cli/try/option/arch` option.
 
 As a tech preview, a new :ref:`/plugins/provision/bootc` provision
 plugin has been implemented. It takes a container image as input,
@@ -898,7 +898,7 @@ tmt-1.38.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Test checks affect the overall test result by default. The
-:ref:`/spec/tests/check` specification now supports a new
+:tmt:story:`/spec/tests/check` specification now supports a new
 ``result`` key for individual checks. This attribute allows users
 to control how the result of each check affects the overall test
 result. Please note that tests, which were previously passing
@@ -909,7 +909,7 @@ In order to prevent dangerous commands to be unintentionally run
 on user's system, the :ref:`/plugins/provision/local` provision
 plugin now requires to be executed with the ``--feeling-safe``
 option or with the environment variable ``TMT_FEELING_SAFE`` set
-to ``True``. See the :ref:`/stories/features/feeling-safe` section
+to ``True``. See the :tmt:story:`/stories/features/feeling-safe` section
 for more details and motivation behind this change.
 
 The beakerlib test framework tests now generate tmt subresults.
@@ -933,7 +933,7 @@ reduced from all subresults outcomes. If ``tmt-report-result`` is
 not called during the test, the shell test framework behavior
 remains the same - the test script exit code still has an impact
 on the main test result. See also
-:ref:`/stories/features/report-result`.
+:tmt:story:`/stories/features/report-result`.
 
 Support for RHEL-like operating systems in `Image Mode`__ has been
 added. The destination directory of the scripts added by ``tmt``
@@ -955,7 +955,7 @@ using the ``--link`` option. See the :ref:`link-issues` section
 for example usage.
 
 The :ref:`/plugins/provision/beaker` provision plugin gains support
-for :ref:`cpu.stepping</spec/hardware/cpu>` hardware requirement.
+for :tmt:story:`cpu.stepping</spec/hardware/cpu>` hardware requirement.
 
 The :ref:`/plugins/report/junit` report plugin now removes all
 invalid XML characters from the final JUnit XML.
@@ -980,9 +980,9 @@ linked with newly created and existing tests and plans. See the
 :ref:`link-issues` section for details about the configuration.
 
 The ``tmt try`` command now supports the new
-:ref:`/stories/cli/try/option/epel` option backed by the
+:tmt:story:`/stories/cli/try/option/epel` option backed by the
 :ref:`prepare/feature</plugins/prepare/feature>` plugin and the
-new :ref:`/stories/cli/try/option/install` option backed by the
+new :tmt:story:`/stories/cli/try/option/install` option backed by the
 :ref:`prepare/feature</plugins/prepare/install>` plugin.
 
 In verbose mode, the ``discover`` step now prints information
@@ -990,12 +990,12 @@ about the beakerlib libraries which were fetched for the test
 execution. Use ``tmt run discover -vvv`` to see the details.
 
 The :ref:`/plugins/provision/beaker` provision plugin now newly
-supports providing a custom :ref:`/spec/plans/provision/kickstart`
+supports providing a custom :tmt:story:`/spec/plans/provision/kickstart`
 configuration.
 
-The new key :ref:`/spec/hardware/iommu` allowing to provision a
+The new key :tmt:story:`/spec/hardware/iommu` allowing to provision a
 guest with the `Input–output memory management unit` has been
-added into the :ref:`/spec/hardware` specification and implemented
+added into the :tmt:story:`/spec/hardware` specification and implemented
 in the :ref:`/plugins/provision/beaker` provision plugin.
 
 The :ref:`/plugins/report/junit` report plugin now validates all
@@ -1027,12 +1027,12 @@ committish reference, either branch, tag, git-describe, or if all
 fails the commit hash.  You may encounter this in the verbose log
 of ``tmt tests show`` or plan/test imports.
 
-:ref:`Result specification</spec/results>` now defines
+:tmt:story:`Result specification</spec/results>` now defines
 ``original-result`` key holding the original outcome of a test,
 subtest or test checks. The effective outcome, stored in
 ``result`` key, is computed from the original outcome, and it is
-affected by inputs like :ref:`test result
-interpretation</spec/tests/result>` or :ref:`test
+affected by inputs like :tmt:story:`test result
+interpretation</spec/tests/result>` or :tmt:story:`test
 checks</spec/tests/check>`.
 
 The values in the generated ``tmt-report-results.yaml`` file are
@@ -1056,8 +1056,8 @@ unavoidable UNIX socket path limit of 104 (or 108) characters.
 tmt-1.36.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-tmt will now emit a warning when :ref:`custom test results</spec/tests/result>`
-file does not follow the :ref:`result specification</spec/results>`.
+tmt will now emit a warning when :tmt:story:`custom test results</spec/tests/result>`
+file does not follow the :tmt:story:`result specification</spec/results>`.
 
 We have started to use ``warnings.deprecated`` to advertise upcoming
 API deprecations.
@@ -1094,8 +1094,8 @@ Change of Polarion field to store tmt id. Now using 'tmt ID' field,
 specifically created for this purpose instead of 'Test Case ID' field.
 
 The :ref:`/plugins/provision/beaker` provision plugin gains
-support for :ref:`cpu.vendor-name</spec/hardware/cpu>` and
-:ref:`beaker.pool</spec/hardware/beaker>` hardware requirements.
+support for :tmt:story:`cpu.vendor-name</spec/hardware/cpu>` and
+:tmt:story:`beaker.pool</spec/hardware/beaker>` hardware requirements.
 
 The linting of tests, plans and stories has been extended by detecting
 duplicate ids.
@@ -1103,7 +1103,7 @@ duplicate ids.
 Test directories pruning now works correctly for nested fmf trees
 and there is also a test for it.
 
-The test key :ref:`/spec/tests/result` now supports new value
+The test key :tmt:story:`/spec/tests/result` now supports new value
 ``restraint`` which allows to treat each execution of the
 ``tmt-report-result``, ``rstrnt-report-result`` and
 ``rhts-report-result`` commands as an independent test for which a
@@ -1122,7 +1122,7 @@ cleaning ``guests``, ``runs`` or ``images``.
 tmt-1.34.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :ref:`/spec/tests/duration` now supports multiplication.
+The :tmt:story:`/spec/tests/duration` now supports multiplication.
 
 Added option ``--failed-only`` to the ``tmt run tests`` subcommand,
 enabling rerunning failed tests from previous runs.
@@ -1134,15 +1134,15 @@ launch description also into the suite description when the
 The :ref:`virtual</plugins/provision/virtual.testcloud>` provision
 plugin gains support for adding multiple disks to guests, by adding
 the corresponding ``disk[N].size``
-:ref:`HW requirements</spec/hardware/disk>`.
+:tmt:story:`HW requirements</spec/hardware/disk>`.
 
 
 tmt-1.33.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :ref:`/plugins/provision/beaker` provision plugin gains
-support for :ref:`cpu.cores</spec/hardware/cpu>` and
-:ref:`virtualization.hypervisor</spec/hardware/virtualization>`
+support for :tmt:story:`cpu.cores</spec/hardware/cpu>` and
+:tmt:story:`virtualization.hypervisor</spec/hardware/virtualization>`
 hardware requirements.
 
 It is now possible to set SSH options for all connections spawned by tmt
@@ -1160,7 +1160,7 @@ command, by setting its ``failure-pattern`` key.
 Tests can now define their exit codes that would cause the test to be
 restarted. Besides the ``TMT_REBOOT_COUNT`` environment variable, tmt
 now exposes new variable called ``TMT_TEST_RESTART_COUNT`` to track
-restarts of a said test. See :ref:`/spec/tests/restart` for details.
+restarts of a said test. See :tmt:story:`/spec/tests/restart` for details.
 
 Requirements of the :ref:`/plugins/execute/upgrade` execute
 plugin tasks are now correctly installed before the upgrade is
@@ -1179,13 +1179,13 @@ guest is ``ostree-booted`` but has the dnf installed.
 tmt-1.32.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The hardware specification for :ref:`/spec/hardware/disk` has been
+The hardware specification for :tmt:story:`/spec/hardware/disk` has been
 extended with the new keys ``driver`` and ``model-name``. Users
 can provision Beaker guests with a given disk model or driver using
 the :ref:`/plugins/provision/beaker` provision plugin.
 
 The :ref:`virtual</plugins/provision/virtual.testcloud>` provision plugin
-gains support for :ref:`TPM hardware requirement</spec/hardware/tpm>`.
+gains support for :tmt:story:`TPM hardware requirement</spec/hardware/tpm>`.
 It is limited to TPM 2.0 for now, the future release of `testcloud`__,
 the library behind ``virtual`` plugin, will extend the support to more
 versions.
@@ -1214,10 +1214,10 @@ to :ref:`command-variables`. It can be used to provide a link for
 detailed test artifacts for report plugins to pick.
 
 :ref:`Beaker</plugins/provision/beaker>` provision plugin gains
-support for :ref:`System z cryptographic adapter</spec/hardware/zcrypt>`
+support for :tmt:story:`System z cryptographic adapter</spec/hardware/zcrypt>`
 HW requirement.
 
-The :ref:`/spec/plans/discover/dist-git-source` apply patches now using
+The :tmt:story:`/spec/plans/discover/dist-git-source` apply patches now using
 ``rpmbuild -bp`` command. This is done on provisioned guest during
 the ``prepare`` step, before required packages are installed.
 It is possible to install build requires automatically with
@@ -1230,7 +1230,7 @@ __ https://pagure.io/testcloud/
 tmt-1.31.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :ref:`/spec/plans/provision` step is now able to perform
+The :tmt:story:`/spec/plans/provision` step is now able to perform
 **provisioning of multiple guests in parallel**. This can
 considerably shorten the time needed for guest provisioning in
 multihost plans. However, whether the parallel provisioning would
@@ -1244,15 +1244,15 @@ of now, only :ref:`/plugins/provision/artemis`,
 other plugins would gracefully fall back to the pre-1.31 behavior,
 provisioning in sequence.
 
-The :ref:`/spec/plans/prepare` step now installs test requirements
+The :tmt:story:`/spec/plans/prepare` step now installs test requirements
 only on guests on which the said tests would run. Tests can be
 directed to subset of guests with a
-:ref:`/spec/plans/discover/where` key, but, until 1.31, tmt would
+:tmt:story:`/spec/plans/discover/where` key, but, until 1.31, tmt would
 install all requirements of a given test on all guests, even on
 those on which the said test would never run.  This approach
 consumed resources needlessly and might be a issue for tests with
 conflicting requirements. Since 1.31, handling of
-:ref:`/spec/tests/require` and :ref:`/spec/tests/recommend`
+:tmt:story:`/spec/tests/require` and :tmt:story:`/spec/tests/recommend`
 affects only guests the test would be scheduled on.
 
 New option ``--again`` can be used to execute an already completed
@@ -1263,7 +1263,7 @@ New environment variable ``TMT_REBOOT_TIMEOUT`` has been added to
 :ref:`command-variables`. It can be used to set a custom reboot
 timeout. The default timeout was increased to 10 minutes.
 
-New hardware specification key :ref:`/spec/hardware/zcrypt` has
+New hardware specification key :tmt:story:`/spec/hardware/zcrypt` has
 been defined. It will be used for selecting guests with the given
 `System z cryptographic adapter`.
 
@@ -1271,7 +1271,7 @@ A prepare step plugin :ref:`/plugins/prepare/feature` has been
 implemented. As the first supported feature, ``epel`` repositories
 can now be enabled using a concise configuration.
 
-The report plugin :ref:`/spec/plans/report` has received new options.
+The report plugin :tmt:story:`/spec/plans/report` has received new options.
 Namely option ``--launch-per-plan`` for creating a new launch per each
 plan, option ``--suite-per-plan`` for mapping a suite per each plan,
 all enclosed in one launch (launch uuid is stored in run of the first
@@ -1289,12 +1289,12 @@ the uniform form ``TMT_PLUGIN_REPORT_REPORTPORTAL_${option}``.
 tmt-1.30.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The new :ref:`tmt try</stories/cli/try>` command provides an
+The new :tmt:story:`tmt try</stories/cli/try>` command provides an
 interactive session which allows to easily run tests and
 experiment with the provisioned guest. The functionality might
 still change. This is the very first proof of concept included in
 the release as a **tech preview** to gather early feedback and
-finalize the outlined design. Give it a :ref:`/stories/cli/try`
+finalize the outlined design. Give it a :tmt:story:`/stories/cli/try`
 and let us know what you think! :)
 
 Now it's possible to use :ref:`custom_templates` when creating new
@@ -1303,8 +1303,8 @@ up the initial phase of the test creation by easily applying test
 metadata and test script skeletons tailored to your individual
 needs.
 
-The :ref:`/spec/core/contact` key has been moved from the
-:ref:`/spec/tests` specification to the :ref:`/spec/core`
+The :tmt:story:`/spec/core/contact` key has been moved from the
+:tmt:story:`/spec/tests` specification to the :tmt:story:`/spec/core`
 attributes so now it can be used with plans and stories as well.
 
 The :ref:`/plugins/provision/container` provision plugin
@@ -1322,12 +1322,12 @@ The :ref:`/plugins/report/polarion` report now supports the
 ``fips`` field to store information about whether the FIPS mode
 was enabled or disabled on the guest during the test execution.
 
-The ``name`` field of the :ref:`/spec/tests/check` specification
+The ``name`` field of the :tmt:story:`/spec/tests/check` specification
 has been renamed to ``how``, to be more aligned with how plugins
 are selected for step phases and export formats.
 
-A new :ref:`/spec/tests/tty` boolean attribute was added to the
-:ref:`/spec/tests` specification. Tests can now control if they
+A new :tmt:story:`/spec/tests/tty` boolean attribute was added to the
+:tmt:story:`/spec/tests` specification. Tests can now control if they
 want to keep tty enabled. The default value of the attribute is
 ``false``, in sync with the previous default behaviour.
 
@@ -1343,7 +1343,7 @@ Test directories can be pruned with the ``prune`` option usable in
 the :ref:`/plugins/discover/fmf` plugin. When enabled, only
 test's path and required files will be kept.
 
-The :ref:`/spec/plans/discover/dist-git-source` option
+The :tmt:story:`/spec/plans/discover/dist-git-source` option
 ``download-only`` skips extraction of downloaded sources. All
 source files are now downloaded regardless this option.
 
@@ -1356,19 +1356,19 @@ the :ref:`step-variables` section for details.
 When the ``tmt-report-result`` command is used it sets the test
 result exclusively. The framework is not consulted any more. This
 means that the test script exit code does not have any effect on
-the test result. See also :ref:`/stories/features/report-result`.
+the test result. See also :tmt:story:`/stories/features/report-result`.
 
 The ``tmt-reboot`` command is now usable outside of the test
-process. See the :ref:`/stories/features/reboot` section for usage
+process. See the :tmt:story:`/stories/features/reboot` section for usage
 details.
 
-The :ref:`/spec/plans/provision` step methods gain the ``become``
+The :tmt:story:`/spec/plans/provision` step methods gain the ``become``
 option which allows to use a user account and execute
 ``prepare``, ``execute`` and ``finish`` steps using ``sudo -E``
 when necessary.
 
 The :ref:`/plugins/report/html` report plugin now shows
-:ref:`/spec/tests/check` results so that it's possible to inspect
+:tmt:story:`/spec/tests/check` results so that it's possible to inspect
 detected AVC denials directly from the report.
 
 See the `full changelog`__ for more details.
@@ -1379,22 +1379,22 @@ __ https://github.com/teemtee/tmt/releases/tag/1.29.0
 tmt-1.28.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The new :ref:`/stories/cli/multiple phases/update-missing` option
+The new :tmt:story:`/stories/cli/multiple-phases/update-missing` option
 can be used to update step phase fields only when not set in the
 ``fmf`` files. In this way it's possible to easily fill the gaps
 in the plans, for example provide the default distro image.
 
 The :ref:`/plugins/report/html` report plugin now shows
-provided :ref:`/spec/plans/context` and link to the test ``data``
+provided :tmt:story:`/spec/plans/context` and link to the test ``data``
 directory so that additional logs can be easily checked.
 
-The **avc** :ref:`/spec/tests/check` allows to detect avc denials
+The **avc** :tmt:story:`/spec/tests/check` allows to detect avc denials
 which appear during the test execution.
 
 A new ``skip`` custom result outcome has been added to the
-:ref:`/spec/results` specification.
+:tmt:story:`/spec/results` specification.
 
-All context :ref:`/spec/context/dimension` values are now handled
+All context :tmt:story:`/spec/context/dimension` values are now handled
 in a case insensitive way.
 
 See the `full changelog`__ for more details.

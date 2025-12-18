@@ -51,7 +51,7 @@ class FinishAnsible(
               - https://foo.bar/rhel9-final-touches.yml
 
     The playbook path should be relative to the metadata tree root. Use
-    the :ref:`/spec/core/order` attribute to select in which order
+    the :tmt:story:`/spec/core/order` attribute to select in which order
     finishing tasks should happen if there are multiple configs. Default
     order is ``50``.
     """

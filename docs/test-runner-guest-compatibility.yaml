@@ -43,7 +43,7 @@ notes:
   - pattern: '.*? \+ (Alpine|Debian|Ubuntu)'
     title: Beakerlib not packaged for Linux distributions outside of Fedora family
     text: >
-      Tests using the :ref:`beakerlib</spec/tests/framework>` framework
+      Tests using the :tmt:story:`beakerlib</spec/tests/framework>` framework
       will not work because it requires ``beakerlib`` package that can
       be installed from repositories available on the guest. At this
       moment, ``beakerlib`` is available as RPM packages, and it is not

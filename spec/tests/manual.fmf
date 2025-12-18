@@ -12,7 +12,7 @@ description: |
     interaction.
 
     It's value must be a ``boolean``. The default value is
-    ``false``. When set to ``true``, the :ref:`/spec/tests/test`
+    ``false``. When set to ``true``, the :tmt:story:`/spec/tests/test`
     attribute must point to a Markdown document following the
     `CommonMark`__ specification.
 

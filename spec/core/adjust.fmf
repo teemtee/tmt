@@ -15,7 +15,7 @@ description: |
 
     .. note::
         The context currently has to be specified explicitly, see
-        the :ref:`/spec/context` documentation for details. In the
+        the :tmt:story:`/spec/context` documentation for details. In the
         future, **tmt** will detect (at least some of) the needed
         information from the environment.
 
@@ -27,7 +27,7 @@ description: |
     when
         The condition to be evaluated in order to decide if the
         metadata should be merged. In the expression, you can use
-        any defined context :ref:`/spec/context/dimension`. See
+        any defined context :tmt:story:`/spec/context/dimension`. See
         the full `condition syntax`__ for details about supported
         operators. This is a **required** key.
 

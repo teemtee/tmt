@@ -19,7 +19,7 @@ The First Steps
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Installing the main package with the core functionality is quite
-straightforward. No worry, the :ref:`/stories/install/minimal`
+straightforward. No worry, the :tmt:story:`/stories/install/minimal`
 package has just a few dependencies:
 
 .. code-block:: shell
@@ -86,7 +86,7 @@ dependencies here:
     tmt run -a provision -h virtual
 
 Don't care about the disk space? Simply install ``tmt+all`` and
-you'll get :ref:`/stories/install/all` available functionality at
+you'll get :tmt:story:`/stories/install/all` available functionality at
 hand. Check the help to list all supported provision methods:
 
 .. code-block:: shell
@@ -165,12 +165,12 @@ started:
 
     tmt init -t mini
 
-:ref:`/spec/plans` are used to enable testing and group relevant
-tests together. They describe how to :ref:`/spec/plans/discover`
-tests for execution, how to :ref:`/spec/plans/provision` the
-environment, how to :ref:`/spec/plans/prepare` it for testing, how
-to :ref:`/spec/plans/execute` tests, :ref:`/spec/plans/report`
-results and finally how to :ref:`/spec/plans/finish` the test job.
+:tmt:story:`/spec/plans` are used to enable testing and group relevant
+tests together. They describe how to :tmt:story:`/spec/plans/discover`
+tests for execution, how to :tmt:story:`/spec/plans/provision` the
+environment, how to :tmt:story:`/spec/plans/prepare` it for testing, how
+to :tmt:story:`/spec/plans/execute` tests, :tmt:story:`/spec/plans/report`
+results and finally how to :tmt:story:`/spec/plans/finish` the test job.
 
 Here's an example of a slightly more complex plan which changes
 the default provision method to container to speed up the testing
@@ -215,13 +215,13 @@ well. The plan will look like this:
     execute:
         how: tmt
 
-:ref:`/spec/tests`, identified by the required key ``test``,
+:tmt:story:`/spec/tests`, identified by the required key ``test``,
 define attributes which are closely related to individual test
-cases such as the :ref:`/spec/tests/test` script,
-:ref:`/spec/tests/framework`, directory :ref:`/spec/tests/path`
+cases such as the :tmt:story:`/spec/tests/test` script,
+:tmt:story:`/spec/tests/framework`, directory :tmt:story:`/spec/tests/path`
 where the test should be executed, maximum test
-:ref:`/spec/tests/duration` or packages
-:ref:`required</spec/tests/require>` to run the test. Here's an
+:tmt:story:`/spec/tests/duration` or packages
+:tmt:story:`required</spec/tests/require>` to run the test. Here's an
 example of test metadata:
 
 .. code-block:: yaml
@@ -253,7 +253,7 @@ Stories
 
 It's always good to start with a "why". Or, even better, with a
 story which can describe more context behind the motivation.
-:ref:`/spec/stories` can be used to track implementation, test and
+:tmt:story:`/spec/stories` can be used to track implementation, test and
 documentation coverage for individual features or requirements.
 Thanks to this you can track everything in one place, including
 the project implementation progress. Stories are identified by the
@@ -284,11 +284,11 @@ Core
 ------------------------------------------------------------------
 
 Finally, there are certain metadata keys which can be used across
-all levels. :ref:`/spec/core` attributes cover general metadata
-such as :ref:`/spec/core/summary` or :ref:`/spec/core/description`
-for describing the content, the :ref:`/spec/core/enabled`
+all levels. :tmt:story:`/spec/core` attributes cover general metadata
+such as :tmt:story:`/spec/core/summary` or :tmt:story:`/spec/core/description`
+for describing the content, the :tmt:story:`/spec/core/enabled`
 attribute for disabling and enabling tests, plans and stories and
-the :ref:`/spec/core/link` key which can be used for tracking
+the :tmt:story:`/spec/core/link` key which can be used for tracking
 relations between objects.
 
 Here's how the story above could be extended with the core
@@ -304,9 +304,9 @@ attributes ``description`` and ``link``:
       - documented-by: /tmt/cli.py
       - verified-by: /tests/core/dry
 
-Last but not least, the core attribute :ref:`/spec/core/adjust`
+Last but not least, the core attribute :tmt:story:`/spec/core/adjust`
 provides a flexible way to adjust metadata based on the
-:ref:`/spec/context`. But this is rather a large topic, so let's
+:tmt:story:`/spec/context`. But this is rather a large topic, so let's
 keep it for another time.
 
 
@@ -315,8 +315,8 @@ keep it for another time.
 Organize Data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In the previous chapter we've learned what :ref:`/spec/tests`,
-:ref:`/spec/plans` and :ref:`/spec/stories` are used for. Now the
+In the previous chapter we've learned what :tmt:story:`/spec/tests`,
+:tmt:story:`/spec/plans` and :tmt:story:`/spec/stories` are used for. Now the
 time has come to learn how to efficiently organize them in your
 repository. First we'll describe how to easily :ref:`create` new
 tests, plans and stories, how to use :ref:`lint` to verify that
@@ -997,7 +997,7 @@ above the config would look like this:
             test: echo second test on level $LEVEL
 
 See also the :ref:`parametrize-plans` section for examples how to
-use :ref:`/spec/context` for parametrizing metadata.
+use :tmt:story:`/spec/context` for parametrizing metadata.
 
 
 .. _adjust-metadata:
@@ -1008,10 +1008,10 @@ Adjust Metadata
 Sometimes metadata needs to be adjusted based on the context.
 For example, the user might want to enable a test only for a
 specific architecture or skip a plan when running in a container.
-The core attribute :ref:`/spec/core/adjust` provides a flexible
+The core attribute :tmt:story:`/spec/core/adjust` provides a flexible
 way to achieve this. It allows to modify various attributes of
 the tests, plans, or stories depending on the current
-:ref:`/spec/context`.
+:tmt:story:`/spec/context`.
 
 This feature helps with creating adaptable and reusable metadata,
 reducing the need for multiple versions of similar configurations.
@@ -1095,12 +1095,12 @@ Conditional step configuration
 
 Sometimes, the plan is expected to cover a broad set of environments;
 however, some step configurations may not be applicable everywhere.
-While :ref:`/spec/core/adjust` can be used to construct the plan
+While :tmt:story:`/spec/core/adjust` can be used to construct the plan
 in this way, it soon becomes difficult to read.
 
 Using the ``when`` key makes it easier to restrict a step configuration
 to run only if any of the specified rules matches.
-The syntax is the same as in ``adjust`` and :ref:`/spec/context`.
+The syntax is the same as in ``adjust`` and :tmt:story:`/spec/context`.
 
 .. code-block:: yaml
 
@@ -1133,11 +1133,11 @@ The ``prepare``, ``execute``, and ``finish`` steps are able to run a
 given task (test, preparation script, ansible playbook, etc.) on
 several guests at once. Tasks are assigned to provisioned guests by
 matching the ``where`` key from
-:ref:`discover</spec/plans/discover/where>`,
-:ref:`prepare</spec/plans/prepare/where>` and
-:ref:`finish</spec/plans/finish/where>`
+:tmt:story:`discover</spec/plans/discover/where>`,
+:tmt:story:`prepare</spec/plans/prepare/where>` and
+:tmt:story:`finish</spec/plans/finish/where>`
 phases with corresponding guests by their
-:ref:`key and role keys</spec/plans/provision/multihost>`.
+:tmt:story:`key and role keys</spec/plans/provision/multihost>`.
 Essentially, plan author tells tmt on which guest(s) a test or
 script should run by listing guest name(s) or guest role(s).
 
@@ -1178,13 +1178,13 @@ be running on ``server`` when ``/tests/C`` is already completed on
 
 tmt exposes information about guests and roles to all three steps in
 the form of files tests and scripts can parse or import.
-See the :ref:`/spec/plans/guest-topology` for details. Information
+See the :tmt:story:`/spec/plans/guest-topology` for details. Information
 from these files can be then used to contact other guests, connect
 to their services, synchronization, etc.
 
 tmt fully supports one test being executed multiple times. This is
 especially visible in the format of results, see
-:ref:`/spec/results`. Every test is assigned a "serial
+:tmt:story:`/spec/results`. Every test is assigned a "serial
 number", if the same test appears in multiple discover phases, each
 instance would be given a different serial number. The serial number
 and the guest from which a result comes from are then saved for each

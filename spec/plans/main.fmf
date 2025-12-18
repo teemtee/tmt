@@ -12,19 +12,19 @@ description: |
     Each of the six steps mentioned above supports multiple
     implementations.  The default methods are listed below.
 
-     * :ref:`/spec/plans/discover`: shell
-     * :ref:`/spec/plans/provision`: virtual
-     * :ref:`/spec/plans/prepare`: shell
-     * :ref:`/spec/plans/execute`: tmt
-     * :ref:`/spec/plans/report`: display
-     * :ref:`/spec/plans/finish`: shell
+     * :tmt:story:`/spec/plans/discover`: shell
+     * :tmt:story:`/spec/plans/provision`: virtual
+     * :tmt:story:`/spec/plans/prepare`: shell
+     * :tmt:story:`/spec/plans/execute`: tmt
+     * :tmt:story:`/spec/plans/report`: display
+     * :tmt:story:`/spec/plans/finish`: shell
 
     Thanks to clearly separated test steps it is possible to run
     only selected steps, for example ``tmt run discover`` to see
     which tests would be executed.
 
     In addition to the attributes defined here, plans also support
-    common :ref:`/spec/core` attributes which are shared across
+    common :tmt:story:`/spec/core` attributes which are shared across
     all metadata levels.
 
 example: |

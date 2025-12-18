@@ -86,8 +86,8 @@ When creating release notes for tmt, use the milestone name as input (e.g., "1.6
    ```yaml
    description: |
      The :ref:`/plugins/provision/beaker` plugin now supports
-     :ref:`device.device</spec/hardware/device>` and
-     :ref:`device.vendor</spec/hardware/device>` HW requirements.
+     :tmt:story:`device.device</spec/hardware/device>` and
+     :tmt:story:`device.vendor</spec/hardware/device>` HW requirements.
    ```
 
    *Lint rule addition* (PR #4409):

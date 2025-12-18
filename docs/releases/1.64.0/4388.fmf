@@ -1,4 +1,4 @@
 description: |
-  The context :ref:`/spec/core/adjust` rules are now also applied
-  on the :ref:`user plans</stories/cli/try/config>` used by the
+  The context :tmt:story:`/spec/core/adjust` rules are now also applied
+  on the :tmt:story:`user plans</stories/cli/try/config>` used by the
   ``tmt try`` command.
