@@ -1,0 +1,25 @@
+discover:
+    how: fmf
+provision:
+    how: container
+execute:
+    how: tmt
+
+enabled: false
+adjust:
+  - enabled: true
+    when: project is defined
+    because: we do not want test.sh to use this plan file
+
+/missing-project:
+    summary: Test tmt linter
+
+    report:
+        how: reportportal
+
+/has-project:
+    summary: Test tmt linter
+
+    report:
+        how: reportportal
+        project: tcornell_personal
