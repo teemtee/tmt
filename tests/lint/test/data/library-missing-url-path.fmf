@@ -1,4 +1,4 @@
-summary: Library requirement missing both url and path
+summary: Library requirement missing all of url, path and nick
 test: /bin/true
 require:
   - type: library

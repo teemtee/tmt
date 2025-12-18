@@ -49,6 +49,12 @@ description: |
     __ https://github.com/beakerlib/
     __ https://fmf.readthedocs.io/en/latest/concept.html#identifiers
 
+    .. versionadded:: X.XX
+       As a special handling when using ``type: library``, if both
+       ``url`` and ``path`` is omitted, the current test's tree is
+       used as the repo of the library. The ``nick`` key **must**
+       be set in this case
+
 example:
   - |
     # Require a single package
@@ -74,6 +80,13 @@ example:
       - type: library
         url: https://github.com/beakerlib/openssl
         name: /certgen
+
+  - |
+    # Library from the current tmt tree
+    require:
+      - type: library
+        name: /certgen
+        nick: openssl
 
   - |
     # Library from the local filesystem

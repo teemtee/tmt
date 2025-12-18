@@ -516,6 +516,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         "sync_repo",
     )
 
+    testdir: Path
+
     @property
     def is_in_standalone_mode(self) -> bool:
         """

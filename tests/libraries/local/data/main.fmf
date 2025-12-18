@@ -1,6 +1,7 @@
 /plan:
     discover:
         how: fmf
+        test: ^/test
     provision:
         how: container
     execute:
@@ -10,6 +11,6 @@
     test: ./test.sh
     framework: beakerlib
     require:
-      - path: PATH
-        name: /file
+      - name: /file
         type: library
+        path: PATH
