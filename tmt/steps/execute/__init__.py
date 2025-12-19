@@ -320,6 +320,16 @@ class TestInvocation(HasStepWorkdir):
             logger=self.logger,
         )
 
+    @functools.cached_property
+    def deadline(self) -> tmt.utils.wait.Deadline:
+        """
+        Test duration represented as a deadline.
+        """
+
+        return tmt.utils.wait.Deadline.from_seconds(
+            tmt.utils.duration_to_seconds(self.test.duration, tmt.base.DEFAULT_TEST_DURATION_L1)
+        )
+
     def invoke_test(
         self,
         command: ShellScript,
@@ -328,7 +338,7 @@ class TestInvocation(HasStepWorkdir):
         env: tmt.utils.Environment,
         log: tmt.log.LoggingFunction,
         interactive: bool,
-        timeout: Optional[int],
+        deadline: Optional[tmt.utils.wait.Deadline],
     ) -> tmt.utils.CommandOutput:
         """
         Start the command which represents the test in this invocation.
@@ -340,8 +350,8 @@ class TestInvocation(HasStepWorkdir):
         :param interactive: if set, the command would be executed in an interactive
             manner, i.e. with stdout and stdout connected to terminal for live
             interaction with user.
-        :param timeout: if set, command would be interrupted, if still running,
-            after this many seconds.
+        :param deadline: if set, command would be interrupted, if still running,
+            after reaching this deadline.
         :param log: a logging function to use for logging of command output. By
             default, ``logger.debug`` is used.
         :returns: command output.
@@ -387,6 +397,8 @@ class TestInvocation(HasStepWorkdir):
 
                 if self.on_interrupt_callback_token is not None:
                     tmt.utils.signals.remove_callback(self.on_interrupt_callback_token)
+
+        timeout = int(deadline.time_left.total_seconds()) if deadline is not None else None
 
         with Stopwatch() as timer:
             self.start_time = format_timestamp(timer.start_time)
