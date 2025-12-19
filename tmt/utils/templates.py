@@ -5,9 +5,11 @@ Package provides primitives for Jinja2 template rendering, plus our
 custom filters.
 """
 
+import difflib
 import re
 import shlex
 import textwrap
+from collections.abc import Iterable
 from re import Match
 from typing import (
     TYPE_CHECKING,
@@ -561,3 +563,50 @@ def render_template_file_into_file(
     )
 
     output_filepath.append_text('\n')
+
+
+def render_diff(
+    template: str,
+    left: Any,
+    right: Any,
+    **variables: Any,
+) -> str:
+    """
+    Render a template showing diff between two data structures.
+
+    Both objects are turned into their YAML representation, and then
+    both representations are compared for lines missing and added:
+
+    * lines unique to the ``left`` object will be prefixed with a
+      ``-`` string, and "negatively" colorized (red by default).
+    * lines unique to the ``right`` object will be prefixed with a
+      ``+`` string, and "positively" colorized (green by default).
+
+    :param template: template to render. Variable ``DIFF`` will contain
+        colorized lines of the diff.
+    :param left: object on the left side of the comparison.
+    :param right: object on the right side of the comparison
+    """
+
+    from tmt.utils.themes import style
+
+    def _render_diff() -> Iterable[str]:
+        """
+        Compare two objects and render "missing" and "added" lines.
+        """
+
+        for line in difflib.ndiff(
+            dict_to_yaml(left).splitlines(), dict_to_yaml(right).splitlines()
+        ):
+            # See https://docs.python.org/3/library/difflib.html#difflib.Differ for "markers"
+            # at beginnings of lines
+
+            # '- ' - unique in "before"
+            if line.startswith('- '):
+                yield style(line, fg='red')
+
+            # '+ ' - unique in "after"
+            elif line.startswith('+ '):
+                yield style(line, fg='green')
+
+    return render_template(template, DIFF=_render_diff(), **variables)
