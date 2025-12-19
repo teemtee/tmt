@@ -435,6 +435,7 @@ class StepData(
         """
         Called after normalization, useful for tweaking normalized data
         """
+        self.check_deprecated_keys(cast(dict[str, Any], raw_data), logger)
 
     # ignore[override]: expected, we need to accept one extra parameter, `logger`.
     @classmethod
