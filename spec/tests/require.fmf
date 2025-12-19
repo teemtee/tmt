@@ -15,7 +15,7 @@ description: |
 
     For tests shared across multiple components or product
     versions where required packages have different names it is
-    recommended to use the :ref:`/spec/plans/prepare` step
+    recommended to use the :tmt:story:`/spec/plans/prepare` step
     configuration to specify required packages for each component
     or product version individually.
 
@@ -29,7 +29,7 @@ description: |
     and define list of paths relative to the fmf root directory.
     These can be regular expressions to match multiple files or
     directories or just a single file or directory name. By
-    default everything under test :ref:`/spec/tests/path` is
+    default everything under test :tmt:story:`/spec/tests/path` is
     copied over to the system.
 
     By default, fetched repositories are stored in the discover

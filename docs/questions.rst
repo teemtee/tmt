@@ -57,8 +57,8 @@ once ``pip install`` succeeds.
 
 On the other hand - when tmt is used to execute tests on
 provisioned guest it depends if the plan will try to install any
-packages (either by test :ref:`/spec/tests/require`,
-:ref:`/spec/tests/recommend` or using prepare
+packages (either by test :tmt:story:`/spec/tests/require`,
+:tmt:story:`/spec/tests/recommend` or using prepare
 :ref:`/plugins/prepare/install` plugin) it will fail as tmt
 currently doesn't work with other package management tools. This
 can be worked around by installing the test dependencies (as well
@@ -180,10 +180,10 @@ For backward-compatibility ``tmt`` provides selected commands
 of the `restraint`__ framework so that existing tests can be more
 easily migrated. Currently the following scripts are supported:
 
-* ``rhts-abort`` and ``rstrnt-abort`` — :ref:`/stories/features/abort`
-* ``rhts-reboot`` and ``rstrnt-reboot`` — :ref:`/stories/features/reboot`
-* ``rhts-submit-log`` and ``rstrnt-report-log`` — :ref:`/stories/features/report-log`
-* ``rhts-report-result`` and ``rstrnt-report-result`` — :ref:`/stories/features/report-result`
+* ``rhts-abort`` and ``rstrnt-abort`` — :tmt:story:`/stories/features/abort`
+* ``rhts-reboot`` and ``rstrnt-reboot`` — :tmt:story:`/stories/features/reboot`
+* ``rhts-submit-log`` and ``rstrnt-report-log`` — :tmt:story:`/stories/features/report-log`
+* ``rhts-report-result`` and ``rstrnt-report-result`` — :tmt:story:`/stories/features/report-result`
 
 Note that these scripts cover only the common use cases and some
 of their irrelevant options, such as ``--server`` used for the
@@ -241,7 +241,7 @@ environment variables to get the information about the guests
 involved in the multihost testing. In order to provide these
 variables to all tests in a tmt plan it is possible to use the
 ``TMT_PLAN_ENVIRONMENT_FILE`` variable and set them based on the
-:ref:`/spec/plans/guest-topology`. The example below demonstrates
+:tmt:story:`/spec/plans/guest-topology`. The example below demonstrates
 the usage on a simple tmt plan:
 
 .. code-block:: yaml
@@ -276,7 +276,7 @@ When exporting ``tmt`` test metadata using ``tmt tests export`` to
 other test case management systems, a unique ``id`` is created in
 order to provide a persistent way to identify the test even if it
 is renamed, moved across the directory structure or into a
-different repository. See the :ref:`/spec/core/id` key
+different repository. See the :tmt:story:`/spec/core/id` key
 specification for more details.
 
 
@@ -533,7 +533,7 @@ tmt example plan (L2 metadata):
         how: shell
         dist-git-source: true
 
-See the :ref:`/spec/plans/discover/dist-git-source` documentation for
+See the :tmt:story:`/spec/plans/discover/dist-git-source` documentation for
 more details.
 
 
@@ -568,7 +568,7 @@ tmt example plan (L2 metadata):
                 - size: ">10GiB"
                 - size: ">10GiB"
 
-See the :ref:`/spec/hardware/disk` and :ref:`/spec/hardware/network`
+See the :tmt:story:`/spec/hardware/disk` and :tmt:story:`/spec/hardware/network`
 documentation for more details about these hardware specifications
 in tmt plans.
 

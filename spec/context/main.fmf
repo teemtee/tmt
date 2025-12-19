@@ -6,7 +6,7 @@ story:
 
 description: |
     This specification defines all standard context dimensions
-    which can be used together with the :ref:`/spec/core/adjust`
+    which can be used together with the :tmt:story:`/spec/core/adjust`
     attribute to modify object metadata for particular context.
     For a detailed description of the concept itself see the fmf
     `context`__ documentation.
@@ -14,10 +14,10 @@ description: |
     The context is usually defined from the command line using the
     ``--context`` option. All dimensions are optional. It is
     possible to define your own dimensions to describe the
-    context, just make sure the :ref:`/spec/context/dimension`
+    context, just make sure the :tmt:story:`/spec/context/dimension`
     name does not conflict with reserved names.
 
-    Each plan can also provide its own :ref:`/spec/plans/context`.
+    Each plan can also provide its own :tmt:story:`/spec/plans/context`.
     The context definition provided directly on the command line
     overrides defined dimensions. All context dimension values are
     handled in case-insensitive way.

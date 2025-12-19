@@ -1,5 +1,5 @@
 description: |
-  Introduced the :ref:`/spec/plans/source-script` feature.
+  Introduced the :tmt:story:`/spec/plans/source-script` feature.
   You can edit the file exposed as ``TMT_PLAN_SOURCE_SCRIPT``
   and have its content sourced at the beginning of every
   :ref:`prepare shell</plugins/prepare/shell>` and
