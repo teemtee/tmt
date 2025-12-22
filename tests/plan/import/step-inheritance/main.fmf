@@ -3,30 +3,30 @@
 # Test append mode for report step
 /test-report-append:
     summary: Test report step inheritance in append mode
-    report:
-        how: junit
-        file: /tmp/local-results.xml
     plan:
         import:
             url: https://github.com/teemtee/tests
             name: /plans/remote
             inherit-context: false
             inherit-environment: false
-            adjust-report: "+"
+            adjust-plans:
+                report+:
+                    how: junit
+                    file: /tmp/local-results.xml
 
 # Test replace mode for report step
 /test-report-replace:
     summary: Test report step inheritance in replace mode
-    report:
-        how: html
-        file: /tmp/replacement.html
     plan:
         import:
             url: https://github.com/teemtee/tests
             name: /plans/remote
             inherit-context: false
             inherit-environment: false
-            adjust-report: "="
+            adjust-plans:
+                report:
+                    how: html
+                    file: /tmp/replacement.html
 
 # Test no step inheritance (control)
 /test-no-inheritance:
@@ -40,36 +40,35 @@
             name: /plans/remote
             inherit-context: false
             inherit-environment: false
-            # No adjust-* fields, but local steps are still merged for backward compatibility
+            # No adjust-plans fields, but local steps are still merged for backward compatibility
 
 # Test alternative enum values
 /test-alternative-enum:
     summary: Test alternative enum values (append/replace)
-    finish:
-        how: shell
-        script: echo "Local finish with append enum"
     plan:
         import:
             url: https://github.com/teemtee/tests
             name: /plans/remote
             inherit-context: false
             inherit-environment: false
-            adjust-finish: "append"  # same as "+"
+            adjust-plans:
+                finish+:  # append mode
+                    how: shell
+                    script: echo "Local finish with append enum"
 
 # Test multiple adjust fields
 /test-multiple-adjust:
     summary: Test multiple adjust fields
-    prepare:
-        how: shell
-        script: echo "Local prepare"
-    finish:
-        how: shell
-        script: echo "Local finish"
     plan:
         import:
             url: https://github.com/teemtee/tests
             name: /plans/remote
             inherit-context: false
             inherit-environment: false
-            adjust-prepare: "+"
-            adjust-finish: "="
+            adjust-plans:
+                prepare+:
+                    how: shell
+                    script: echo "Local prepare"
+                finish:
+                    how: shell
+                    script: echo "Local finish"
