@@ -172,6 +172,9 @@ properties:
           inherit-environment:
             type: boolean
 
+          adjust-plans:
+            $ref: "/schemas/core#/definitions/adjust"
+
         required:
           - url
           - name
