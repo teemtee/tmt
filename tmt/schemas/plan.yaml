@@ -108,19 +108,6 @@ properties:
   # for details.
   report: true
 
-  # Step inheritance operators (similar to adjust-tests)
-  "discover+": true
-  "discover=": true
-  "prepare+": true
-  "prepare=": true
-  "execute+": true
-  "execute=": true
-  "finish+": true
-  "finish=": true
-  "report+": true
-  "report=": true
-  "cleanup+": true
-  "cleanup=": true
 
   # https://tmt.readthedocs.io/en/stable/spec/core.html#summary
   summary:
@@ -183,29 +170,8 @@ properties:
           inherit-environment:
             type: boolean
 
-          adjust-discover:
-            type: string
-            enum: ["+", "append", "=", "replace"]
-
-          adjust-prepare:
-            type: string
-            enum: ["+", "append", "=", "replace"]
-
-          adjust-execute:
-            type: string
-            enum: ["+", "append", "=", "replace"]
-
-          adjust-finish:
-            type: string
-            enum: ["+", "append", "=", "replace"]
-
-          adjust-report:
-            type: string
-            enum: ["+", "append", "=", "replace"]
-
-          adjust-cleanup:
-            type: string
-            enum: ["+", "append", "=", "replace"]
+          adjust-plans:
+            $ref: "/schemas/core#/definitions/adjust"
 
         required:
           - url

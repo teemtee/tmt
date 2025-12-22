@@ -1948,12 +1948,7 @@ class _RemotePlanReference(_RawFmfId):
     scope: Optional[str]
     inherit_context: Optional[bool]
     inherit_environment: Optional[bool]
-    adjust_discover: Optional[str]
-    adjust_prepare: Optional[str]
-    adjust_execute: Optional[str]
-    adjust_finish: Optional[str]
-    adjust_report: Optional[str]
-    adjust_cleanup: Optional[str]
+    adjust_plans: Optional[Any]
 
 
 class RemotePlanReferenceImporting(enum.Enum):
@@ -1997,24 +1992,14 @@ class RemotePlanReference(
         'scope',
         'inherit-context',
         'inherit-environment',
-        'adjust-discover',
-        'adjust-prepare',
-        'adjust-execute',
-        'adjust-finish',
-        'adjust-report',
-        'adjust-cleanup',
+        'adjust-plans',
     ]
 
     importing: RemotePlanReferenceImporting = RemotePlanReferenceImporting.REPLACE
     scope: RemotePlanReferenceImportScope = RemotePlanReferenceImportScope.FIRST_PLAN_ONLY
     inherit_context: bool = True
     inherit_environment: bool = True
-    adjust_discover: Optional[str] = None
-    adjust_prepare: Optional[str] = None
-    adjust_execute: Optional[str] = None
-    adjust_finish: Optional[str] = None
-    adjust_report: Optional[str] = None
-    adjust_cleanup: Optional[str] = None
+    adjust_plans: Optional[Any] = None
 
     @functools.cached_property
     def name_pattern(self) -> Pattern[str]:
@@ -2099,12 +2084,7 @@ class RemotePlanReference(
         )
         reference.inherit_context = bool(raw.get('inherit-context', True))
         reference.inherit_environment = bool(raw.get('inherit-environment', True))
-        reference.adjust_discover = cast(Optional[str], raw.get('adjust-discover', None))
-        reference.adjust_prepare = cast(Optional[str], raw.get('adjust-prepare', None))
-        reference.adjust_execute = cast(Optional[str], raw.get('adjust-execute', None))
-        reference.adjust_finish = cast(Optional[str], raw.get('adjust-finish', None))
-        reference.adjust_report = cast(Optional[str], raw.get('adjust-report', None))
-        reference.adjust_cleanup = cast(Optional[str], raw.get('adjust-cleanup', None))
+        reference.adjust_plans = raw.get('adjust-plans', None)
 
         return reference
 
@@ -3254,6 +3234,16 @@ class Plan(
             f"Looking for plans in '{tree.root}' matching '{reference.name_pattern}'", level=3
         )
 
+        # Apply adjust-plans rules if specified, similar to adjust-tests
+        if hasattr(reference, 'adjust_plans') and reference.adjust_plans is not None:
+            tmt_tree = tmt.Tree(
+                logger=self._logger,
+                path=tree.root,
+                fmf_context=self.fmf_context,
+                additional_rules=reference.adjust_plans,
+            )
+            tree = tmt_tree.tree
+
         for node in tree.prune(keys=['execute']):
             if reference.name_pattern.match(node.name) is not None:
                 yield node
@@ -3385,19 +3375,15 @@ class Plan(
                     {**imported_fmf_context, **self._noninheritable_fmf_context}
                 )
 
-            # Merge step configurations from the importing plan for all steps
-            for step_name in ['discover', 'prepare', 'execute', 'finish', 'report', 'cleanup']:
-                adjust_attr = f'adjust_{step_name}'
-                if (
-                    hasattr(reference, adjust_attr)
-                    and getattr(reference, adjust_attr) is not None
-                    and self.node.get(step_name)
-                ):
-                    adjust_mode = getattr(reference, adjust_attr)
-                    self._merge_step_configurations(node, step_name, adjust_mode)
+            # Step inheritance is now handled by adjust-plans rules via additional_rules
+            # in the Tree constructor, similar to how adjust-tests works
 
-            # Handle direct step inheritance with + and = operators (similar to adjust-tests)
-            self._process_step_inheritance_with_operators(node)
+            # For backward compatibility: if no adjust-plans is specified but local steps exist,
+            # merge them as before
+            if not (hasattr(reference, 'adjust_plans') and reference.adjust_plans is not None):
+                for step_name in ['discover', 'prepare', 'execute', 'finish', 'report', 'cleanup']:
+                    if self.node.get(step_name):
+                        self._merge_step_configurations(node, step_name)
 
             # Adjust the imported tree, to let any `adjust` rules defined in it take
             # action.
@@ -3600,15 +3586,12 @@ class Plan(
 
         return False
 
-    def _merge_step_configurations(
-        self, node: fmf.Tree, step: str, adjust_mode: str = '+'
-    ) -> None:
+    def _merge_step_configurations(self, node: fmf.Tree, step: str) -> None:
         """
         Merge step configurations from this plan into the imported node.
 
         :param node: The imported fmf node to modify
         :param step: The step name (e.g., 'report', 'finish')
-        :param adjust_mode: The merge mode - '+' to append, '=' to replace (default: '+')
         """
         local_step_data = self.node.get(step)
         remote_step_data = node.data.get(step)
@@ -3616,124 +3599,23 @@ class Plan(
         if local_step_data is None:
             return
 
-        # Handle different merge modes
-        if adjust_mode in ('=', 'replace'):
-            # Replace: Use only the local step configuration
+        # Normalize both local and remote step data to lists
+        if not isinstance(local_step_data, list):
+            local_step_data = [local_step_data]
+
+        if remote_step_data is None:
+            # If remote plan has no step configuration, use the local one
             node.data[step] = local_step_data
-        elif adjust_mode in ('+', 'append'):
-            # Append: Add local configuration to remote configuration
-
-            # Normalize both local and remote step data to lists
-            if not isinstance(local_step_data, list):
-                local_step_data = [local_step_data]
-
-            if remote_step_data is None:
-                # If remote plan has no step configuration, use the local one
-                node.data[step] = local_step_data
-            else:
-                # If remote plan has step configuration, append local configuration
-                if not isinstance(remote_step_data, list):
-                    remote_step_data = [remote_step_data]
-
-                # Merge by appending local step configurations to remote ones
-                merged_steps = remote_step_data + local_step_data
-                node.data[step] = merged_steps
         else:
-            # Default behavior (backwards compatibility): append
-            if not isinstance(local_step_data, list):
-                local_step_data = [local_step_data]
+            # If remote plan has step configuration, append local configuration
+            if not isinstance(remote_step_data, list):
+                remote_step_data = [remote_step_data]
 
-            if remote_step_data is None:
-                node.data[step] = local_step_data
-            else:
-                if not isinstance(remote_step_data, list):
-                    remote_step_data = [remote_step_data]
-                merged_steps = remote_step_data + local_step_data
-                node.data[step] = merged_steps
+            # Merge by appending local step configurations to remote ones
+            merged_steps = remote_step_data + local_step_data
+            node.data[step] = merged_steps
 
         self.debug(f"Merged {step} step configuration from importing plan.", level=3)
-
-    def _process_step_inheritance_with_operators(self, node: fmf.Tree) -> None:
-        """
-        Process step inheritance using + and = operators similar to adjust-tests.
-
-        This allows syntax like:
-        - report+: [steps]  # append to imported plan's report steps
-        - report=: [steps]  # replace imported plan's report steps
-        - report: [steps]   # default behavior (append for backwards compatibility)
-
-        :param node: The imported fmf node to modify
-        """
-        step_names = ['discover', 'prepare', 'execute', 'finish', 'report', 'cleanup']
-
-        for base_step_name in step_names:
-            # Check for step+ (append operator)
-            step_plus_key = f'{base_step_name}+'
-            step_equals_key = f'{base_step_name}='
-            plain_step_key = base_step_name
-
-            # Handle step+ (explicit append)
-            if step_plus_key in self.node.data:
-                local_step_data = self.node.data[step_plus_key]
-                self._apply_step_inheritance(node, base_step_name, local_step_data, '+')
-                self.debug(f"Applied {step_plus_key} with append mode.", level=3)
-
-            # Handle step= (explicit replace)
-            elif step_equals_key in self.node.data:
-                local_step_data = self.node.data[step_equals_key]
-                self._apply_step_inheritance(node, base_step_name, local_step_data, '=')
-                self.debug(f"Applied {step_equals_key} with replace mode.", level=3)
-
-            # Handle plain step (default append for backwards compatibility)
-            elif plain_step_key in self.node.data:
-                # Only process if not already handled by adjust_{step} mechanism above
-                adjust_attr = f'adjust_{base_step_name}'
-                already_handled = hasattr(self, '_imported_plan_references') and any(
-                    hasattr(ref, adjust_attr) and getattr(ref, adjust_attr) is not None
-                    for ref in getattr(self, '_imported_plan_references', [])
-                )
-
-                if not already_handled:
-                    local_step_data = self.node.data[plain_step_key]
-                    self._apply_step_inheritance(node, base_step_name, local_step_data, '+')
-                    self.debug(f"Applied {plain_step_key} with default append mode.", level=3)
-
-    def _apply_step_inheritance(
-        self, node: fmf.Tree, step_name: str, local_step_data: Any, mode: str
-    ) -> None:
-        """
-        Apply step inheritance by merging local step data into the imported node.
-
-        :param node: The imported fmf node to modify
-        :param step_name: The step name (e.g., 'report', 'finish')
-        :param local_step_data: Step configuration from the importing plan
-        :param mode: The merge mode - '+' to append, '=' to replace
-        """
-        remote_step_data = node.data.get(step_name)
-
-        if mode in ('=', 'replace'):
-            # Replace: Use only the local step configuration
-            node.data[step_name] = local_step_data
-        elif mode in ('+', 'append'):
-            # Append: Add local configuration to remote configuration
-
-            # Normalize both local and remote step data to lists
-            if not isinstance(local_step_data, list):
-                local_step_data = [local_step_data]
-
-            if remote_step_data is None:
-                # If remote plan has no step configuration, use the local one
-                node.data[step_name] = local_step_data
-            else:
-                # If remote plan has step configuration, append local configuration
-                if not isinstance(remote_step_data, list):
-                    remote_step_data = [remote_step_data]
-
-                # Merge by appending local step configurations to remote ones
-                merged_steps = remote_step_data + local_step_data
-                node.data[step_name] = merged_steps
-
-        self.debug(f"Applied step inheritance for {step_name} in {mode} mode.", level=3)
 
     # TODO: Make the str type-hint more narrow
     def add_phase(self, step: Union[str, tmt.steps.Step], phase: tmt.steps.Phase) -> None:
