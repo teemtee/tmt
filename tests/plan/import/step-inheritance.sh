@@ -30,8 +30,8 @@ rlJournalStart
 
     rlPhaseStartTest "Test no step inheritance (control)"
         rlRun -s "tmt plan show /test-no-inheritance"
-        # With default behavior, local steps are still merged for backward compatibility
-        rlAssertGrep "/tmp/ignored.xml" $rlRun_LOG  # local steps are still merged by default
+        # Should show only remote plan configuration without local step inheritance
+        rlAssertNotGrep "/tmp/ignored.xml" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Test alternative enum values"
@@ -42,18 +42,14 @@ rlJournalStart
 
     rlPhaseStartTest "Test multiple adjust fields"
         rlRun -s "tmt plan show /test-multiple-adjust"
-        # Should show local prepare (append) and finish (replace)
+        # Should show local finish (append) and report (replace)
         rlAssertGrep "Local prepare" $rlRun_LOG
-        rlAssertGrep "Local finish" $rlRun_LOG
+        rlAssertGrep "/tmp/local-finish.xml" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Schema validation"
-        # Ensure all adjust-* fields are properly recognized
-        rlRun -s "tmt plan show /test-report-append"
-        rlRun -s "tmt plan show /test-report-replace"
-        rlRun -s "tmt plan show /test-alternative-enum"
-        rlRun -s "tmt plan show /test-multiple-adjust"
-        # If any fail, schema validation has issues
+        # Ensure all adjust-plans configurations pass schema validation
+        rlRun "tmt lint"
     rlPhaseEnd
 
     rlPhaseStartCleanup
