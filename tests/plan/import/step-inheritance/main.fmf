@@ -31,16 +31,13 @@
 # Test no step inheritance (control)
 /test-no-inheritance:
     summary: Test plan with no step inheritance
-    report:
-        how: junit
-        file: /tmp/ignored.xml
     plan:
         import:
             url: https://github.com/teemtee/tests
             name: /plans/remote
             inherit-context: false
             inherit-environment: false
-            # No adjust-plans fields, but local steps are still merged for backward compatibility
+            # No adjust-plans fields, so only remote plan steps are used
 
 # Test alternative enum values
 /test-alternative-enum:
@@ -66,9 +63,10 @@
             inherit-context: false
             inherit-environment: false
             adjust-plans:
-                prepare+:
+                finish+:
+                    name: local-additional-finish
                     how: shell
                     script: echo "Local prepare"
-                finish:
-                    how: shell
-                    script: echo "Local finish"
+                report:
+                    how: junit
+                    file: /tmp/local-finish.xml

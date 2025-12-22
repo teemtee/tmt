@@ -3235,7 +3235,7 @@ class Plan(
         )
 
         # Apply adjust-plans rules if specified, similar to adjust-tests
-        if hasattr(reference, 'adjust_plans') and reference.adjust_plans is not None:
+        if reference.adjust_plans:
             tmt_tree = tmt.Tree(
                 logger=self._logger,
                 path=tree.root,
@@ -3377,13 +3377,6 @@ class Plan(
 
             # Step inheritance is now handled by adjust-plans rules via additional_rules
             # in the Tree constructor, similar to how adjust-tests works
-
-            # For backward compatibility: if no adjust-plans is specified but local steps exist,
-            # merge them as before
-            if not (hasattr(reference, 'adjust_plans') and reference.adjust_plans is not None):
-                for step_name in ['discover', 'prepare', 'execute', 'finish', 'report', 'cleanup']:
-                    if self.node.get(step_name):
-                        self._merge_step_configurations(node, step_name)
 
             # Adjust the imported tree, to let any `adjust` rules defined in it take
             # action.
@@ -3585,37 +3578,6 @@ class Plan(
             return True
 
         return False
-
-    def _merge_step_configurations(self, node: fmf.Tree, step: str) -> None:
-        """
-        Merge step configurations from this plan into the imported node.
-
-        :param node: The imported fmf node to modify
-        :param step: The step name (e.g., 'report', 'finish')
-        """
-        local_step_data = self.node.get(step)
-        remote_step_data = node.data.get(step)
-
-        if local_step_data is None:
-            return
-
-        # Normalize both local and remote step data to lists
-        if not isinstance(local_step_data, list):
-            local_step_data = [local_step_data]
-
-        if remote_step_data is None:
-            # If remote plan has no step configuration, use the local one
-            node.data[step] = local_step_data
-        else:
-            # If remote plan has step configuration, append local configuration
-            if not isinstance(remote_step_data, list):
-                remote_step_data = [remote_step_data]
-
-            # Merge by appending local step configurations to remote ones
-            merged_steps = remote_step_data + local_step_data
-            node.data[step] = merged_steps
-
-        self.debug(f"Merged {step} step configuration from importing plan.", level=3)
 
     # TODO: Make the str type-hint more narrow
     def add_phase(self, step: Union[str, tmt.steps.Step], phase: tmt.steps.Phase) -> None:
