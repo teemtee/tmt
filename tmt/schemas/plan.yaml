@@ -108,7 +108,6 @@ properties:
   # for details.
   report: true
 
-
   # https://tmt.readthedocs.io/en/stable/spec/core.html#summary
   summary:
     $ref: "/schemas/core#/definitions/summary"
