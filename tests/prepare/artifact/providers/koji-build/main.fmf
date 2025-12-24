@@ -1,0 +1,24 @@
+summary: Example test for koji.build artifact provider
+description: |
+    Demonstrates how to use the koji.build artifact provider.
+
+    The koji.build provider fetches RPM packages from Koji build system
+    using build IDs.
+
+    Example usage:
+        prepare:
+          - how: artifact
+            provide:
+              - koji.build:2625600
+
+    This test shows:
+    - How to get a build ID from koji
+    - How to use --provide koji.build:<build_id>
+    - How to verify the package is installed from the artifact repository
+tag+:
+  - provision-only
+  - provision-container
+adjust:
+  - when: distro != fedora
+    enabled: false
+    because: Koji provider currently only supports Fedora packages
