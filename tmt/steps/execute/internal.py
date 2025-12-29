@@ -394,7 +394,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             if logger.verbosity_level >= 1:
                 logger.verbose(
                     'duration limit',
-                    f"{deadline.time_left.total_seconds():d} seconds",
+                    f"{deadline.time_left.total_seconds():.2f} seconds",
                     color="yellow",
                     shift=1 if self.verbosity_level < 2 else 2,
                     level=1,
