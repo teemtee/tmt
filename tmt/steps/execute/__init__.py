@@ -1,6 +1,7 @@
 import abc
 import copy
 import functools
+import itertools
 import signal as _signal
 import subprocess
 import threading
@@ -41,6 +42,9 @@ from tmt.steps.provision import Guest
 from tmt.utils import (
     Command,
     CommandOutput,
+    Environment,
+    EnvVarValue,
+    HasEnvironment,
     HasStepWorkdir,
     Path,
     ShellScript,
@@ -110,7 +114,7 @@ ExecuteStepDataT = TypeVar('ExecuteStepDataT', bound=ExecuteStepData)
 
 
 @container
-class TestInvocation(HasStepWorkdir):
+class TestInvocation(HasStepWorkdir, HasEnvironment):
     """
     A bundle describing one test invocation.
 
@@ -318,12 +322,47 @@ class TestInvocation(HasStepWorkdir):
             logger=self.logger,
         )
 
+    @property
+    def environment(self) -> Environment:
+        environment = Environment()
+
+        environment.update(
+            self.guest.environment,
+            self.test.environment,
+        )
+
+        environment["TMT_TEST_NAME"] = EnvVarValue(self.test.name)
+        environment["TMT_TEST_INVOCATION_PATH"] = EnvVarValue(self.path)
+        environment["TMT_TEST_DATA"] = EnvVarValue(self.test_data_path)
+        environment["TMT_TEST_SUBMITTED_FILES"] = EnvVarValue(self.submission_log_path)
+        environment['TMT_TEST_SERIAL_NUMBER'] = EnvVarValue(str(self.test.serial_number))
+        environment["TMT_TEST_METADATA"] = EnvVarValue(self.path / TEST_METADATA_FILENAME)
+
+        assert isinstance(self.phase.parent, Execute)
+        assert self.phase.parent.plan.my_run is not None
+
+        environment['TMT_TEST_ITERATION_ID'] = EnvVarValue(
+            f"{self.phase.parent.plan.my_run.unique_id}-{self.test.serial_number}"
+        )
+
+        environment.update(
+            # Add variables from invocation contexts
+            self.abort,
+            self.reboot,
+            self.restart,
+            self.pidfile,
+            self.restraint,
+            # Add variables the framework wants to expose
+            self.test.test_framework.get_environment_variables(self, self.logger),
+        )
+
+        return environment
+
     def invoke_test(
         self,
         command: ShellScript,
         *,
         cwd: Path,
-        env: tmt.utils.Environment,
         log: tmt.log.LoggingFunction,
         interactive: bool,
         timeout: Optional[int],
@@ -333,8 +372,6 @@ class TestInvocation(HasStepWorkdir):
 
         :param cwd: if set, command would be executed in the given directory,
             otherwise the current working directory is used.
-        :param env: environment variables to combine with the current environment
-            before running the command.
         :param interactive: if set, the command would be executed in an interactive
             manner, i.e. with stdout and stdout connected to terminal for live
             interaction with user.
@@ -393,7 +430,7 @@ class TestInvocation(HasStepWorkdir):
                 output = self.guest.execute(
                     command,
                     cwd=cwd,
-                    env=env,
+                    env=self.environment,
                     join=True,
                     interactive=interactive,
                     tty=self.test.tty,
@@ -903,7 +940,6 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         event: CheckEvent,
         invocation: TestInvocation,
         checks: Sequence[Check],
-        environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         results: list[CheckResult] = []
@@ -911,7 +947,10 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         for check in checks:
             with Stopwatch() as timer:
                 check_results = check.go(
-                    event=event, invocation=invocation, environment=environment, logger=logger
+                    event=event,
+                    invocation=invocation,
+                    environment=invocation.environment,
+                    logger=logger,
                 )
 
             for result in check_results:
@@ -929,14 +968,12 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         self,
         *,
         invocation: TestInvocation,
-        environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         return self._run_checks_for_test(
             event=CheckEvent.BEFORE_TEST,
             invocation=invocation,
             checks=invocation.test.check,
-            environment=environment,
             logger=logger,
         )
 
@@ -944,14 +981,12 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         self,
         *,
         invocation: TestInvocation,
-        environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         return self._run_checks_for_test(
             event=CheckEvent.AFTER_TEST,
             invocation=invocation,
             checks=invocation.test.check,
-            environment=environment,
             logger=logger,
         )
 
@@ -959,14 +994,12 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         self,
         *,
         invocation: TestInvocation,
-        environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[CheckResult]:
         return self._run_checks_for_test(
             event=CheckEvent.AFTER_TEST,
             invocation=invocation,
             checks=CheckPlugin.internal_checks(logger),
-            environment=environment,
             logger=logger,
         )
 
