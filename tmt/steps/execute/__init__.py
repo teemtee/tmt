@@ -128,6 +128,20 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
     test: 'tmt.base.Test'
     guest: Guest
 
+    #: Environment variables for this invocation.
+    #:
+    #: .. note::
+    #:
+    #:    We need to present environment as a single, updateable
+    #:    :py:class:`Environment` instance. Unfortunately, ``@property``
+    #:    would return new instance every time, and
+    #:    :py:func:`functools.cached_property` would needed to be
+    #:    "manually" invalidated so we could refresh the dynamic portion
+    #:    of the environment. Therefore this instance to hold the
+    #:    environment, and the :py:attr:`environment` property to
+    #:    include the up-to-date values.
+    _environment: Optional[Environment] = None
+
     #: Process running the test. What binary it is depends on the guest
     #: implementation and the test, it may be, for example, a shell process,
     #: SSH process, or a ``podman`` process.
@@ -324,26 +338,30 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
 
     @property
     def environment(self) -> Environment:
-        environment = Environment()
+        if self._environment is None:
+            environment = Environment()
 
-        environment.update(
-            self.guest.environment,
-            self.test.environment,
-        )
+            environment.update(
+                self.guest.environment,
+                self.test.environment,
+            )
 
-        environment["TMT_TEST_NAME"] = EnvVarValue(self.test.name)
-        environment["TMT_TEST_INVOCATION_PATH"] = EnvVarValue(self.path)
-        environment["TMT_TEST_DATA"] = EnvVarValue(self.test_data_path)
-        environment["TMT_TEST_SUBMITTED_FILES"] = EnvVarValue(self.submission_log_path)
-        environment['TMT_TEST_SERIAL_NUMBER'] = EnvVarValue(str(self.test.serial_number))
-        environment["TMT_TEST_METADATA"] = EnvVarValue(self.path / TEST_METADATA_FILENAME)
+            environment["TMT_TEST_NAME"] = EnvVarValue(self.test.name)
+            environment["TMT_TEST_INVOCATION_PATH"] = EnvVarValue(self.path)
+            environment["TMT_TEST_DATA"] = EnvVarValue(self.test_data_path)
+            environment["TMT_TEST_SUBMITTED_FILES"] = EnvVarValue(self.submission_log_path)
+            environment['TMT_TEST_SERIAL_NUMBER'] = EnvVarValue(str(self.test.serial_number))
+            environment["TMT_TEST_METADATA"] = EnvVarValue(self.path / TEST_METADATA_FILENAME)
 
-        assert isinstance(self.phase.parent, Execute)
-        assert self.phase.parent.plan.my_run is not None
+            assert isinstance(self.phase.parent, Execute)
+            assert self.phase.parent.plan.my_run is not None
 
-        environment['TMT_TEST_ITERATION_ID'] = EnvVarValue(
-            f"{self.phase.parent.plan.my_run.unique_id}-{self.test.serial_number}"
-        )
+            environment['TMT_TEST_ITERATION_ID'] = EnvVarValue(
+                f"{self.phase.parent.plan.my_run.unique_id}-{self.test.serial_number}"
+            )
+
+        else:
+            environment = self._environment
 
         environment.update(
             # Add variables from invocation contexts
@@ -355,6 +373,8 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
             # Add variables the framework wants to expose
             self.test.test_framework.get_environment_variables(self, self.logger),
         )
+
+        self._environment = environment
 
         return environment
 
