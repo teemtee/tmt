@@ -378,6 +378,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
 
         return environment
 
+<<<<<<< HEAD
     def invoke_check(self, event: CheckEvent, check: Check) -> list[CheckResult]:
         with Stopwatch() as timer:
             results = check.go(
@@ -410,6 +411,8 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
     def invoke_internal_checks(self) -> list[CheckResult]:
         return self.invoke_checks(CheckEvent.AFTER_TEST, CheckPlugin.internal_checks(self.logger))
 
+=======
+>>>>>>> 9b129e80 (Attach test environment to its invocation)
     def invoke_test(
         self,
         command: ShellScript,
@@ -986,6 +989,78 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
         raise NotImplementedError
 
+<<<<<<< HEAD
+=======
+    def _run_checks_for_test(
+        self,
+        *,
+        event: CheckEvent,
+        invocation: TestInvocation,
+        checks: Sequence[Check],
+        logger: tmt.log.Logger,
+    ) -> list[CheckResult]:
+        results: list[CheckResult] = []
+
+        for check in checks:
+            with Stopwatch() as timer:
+                check_results = check.go(
+                    event=event,
+                    invocation=invocation,
+                    environment=invocation.environment,
+                    logger=logger,
+                )
+
+            for result in check_results:
+                result.event = event
+
+                result.start_time = timer.start_time_formatted
+                result.end_time = timer.end_time_formatted
+                result.duration = timer.duration_formatted
+
+            results += check_results
+
+        return results
+
+    def run_checks_before_test(
+        self,
+        *,
+        invocation: TestInvocation,
+        logger: tmt.log.Logger,
+    ) -> list[CheckResult]:
+        return self._run_checks_for_test(
+            event=CheckEvent.BEFORE_TEST,
+            invocation=invocation,
+            checks=invocation.test.check,
+            logger=logger,
+        )
+
+    def run_checks_after_test(
+        self,
+        *,
+        invocation: TestInvocation,
+        logger: tmt.log.Logger,
+    ) -> list[CheckResult]:
+        return self._run_checks_for_test(
+            event=CheckEvent.AFTER_TEST,
+            invocation=invocation,
+            checks=invocation.test.check,
+            logger=logger,
+        )
+
+    def run_internal_checks(
+        self,
+        *,
+        invocation: TestInvocation,
+        logger: tmt.log.Logger,
+    ) -> list[CheckResult]:
+        return self._run_checks_for_test(
+            event=CheckEvent.AFTER_TEST,
+            invocation=invocation,
+            checks=CheckPlugin.internal_checks(logger),
+            logger=logger,
+        )
+
+>>>>>>> 9b129e80 (Attach test environment to its invocation)
 
 class Execute(tmt.steps.Step):
     """
