@@ -282,54 +282,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         super().__init__(**kwargs)
         self._previous_progress_message = ""
 
-    def _test_environment(
-        self,
-        *,
-        invocation: TestInvocation,
-        extra_environment: Optional[Environment] = None,
-        logger: tmt.log.Logger,
-    ) -> Environment:
-        """
-        Return test environment
-        """
-
-        extra_environment = extra_environment or Environment()
-
-        environment = extra_environment.copy()
-        environment.update(
-            invocation.guest.environment,
-            invocation.test.environment,
-        )
-
-        assert self.parent is not None
-        assert isinstance(self.parent, tmt.steps.execute.Execute)
-        assert self.parent.plan.my_run is not None
-
-        environment["TMT_TEST_NAME"] = EnvVarValue(invocation.test.name)
-        environment["TMT_TEST_INVOCATION_PATH"] = EnvVarValue(invocation.path)
-        environment["TMT_TEST_DATA"] = EnvVarValue(invocation.test_data_path)
-        environment["TMT_TEST_SUBMITTED_FILES"] = EnvVarValue(invocation.submission_log_path)
-        environment['TMT_TEST_SERIAL_NUMBER'] = EnvVarValue(str(invocation.test.serial_number))
-        environment['TMT_TEST_ITERATION_ID'] = EnvVarValue(
-            f"{self.parent.plan.my_run.unique_id}-{invocation.test.serial_number}"
-        )
-        environment["TMT_TEST_METADATA"] = EnvVarValue(
-            invocation.path / tmt.steps.execute.TEST_METADATA_FILENAME
-        )
-
-        environment.update(
-            # Add variables from invocation contexts
-            invocation.abort,
-            invocation.reboot,
-            invocation.restart,
-            invocation.pidfile,
-            invocation.restraint,
-            # Add variables the framework wants to expose
-            invocation.test.test_framework.get_environment_variables(invocation, logger),
-        )
-
-        return environment
-
     def _test_output_logger(
         self,
         key: str,
@@ -349,7 +301,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         self,
         *,
         invocation: TestInvocation,
-        extra_environment: Optional[Environment] = None,
         logger: tmt.log.Logger,
     ) -> list[Result]:
         """
@@ -380,10 +331,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         logger.debug(f"Use workdir '{workdir}'.", level=3)
 
         # Create data directory, prepare test environment
-        environment = self._test_environment(
-            invocation=invocation, extra_environment=extra_environment, logger=logger
-        )
-
         _, test_outer_wrapper_filepath = invocation.pidfile.create_wrappers(
             workdir,
             TEST_INNER_WRAPPER_FILENAME_TEMPLATE,
@@ -400,7 +347,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         topology = tmt.steps.Topology(self.step.plan.provision.ready_guests)
         topology.guest = tmt.steps.GuestTopology(guest)
 
-        environment.update(topology.push(dirpath=invocation.path, guest=guest, logger=logger))
+        invocation.environment.update(
+            topology.push(dirpath=invocation.path, guest=guest, logger=logger)
+        )
 
         # Prepare the actual remote command
         remote_command: ShellScript
@@ -424,7 +373,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
         # to use some reusable decorator.
         invocation.check_results = self.run_checks_before_test(
-            invocation=invocation, environment=environment, logger=logger
+            invocation=invocation, logger=logger
         )
 
         # Pick the proper timeout for the test
@@ -459,7 +408,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         output = invocation.invoke_test(
             remote_command,
             cwd=workdir,
-            env=environment,
             interactive=self.data.interactive,
             log=_test_output_logger,
             timeout=timeout,
@@ -494,7 +442,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Run after-test checks before extracting results
         invocation.check_results += self.run_checks_after_test(
-            invocation=invocation, environment=environment, logger=logger
+            invocation=invocation, logger=logger
         )
 
         # Extract test results and store them in the invocation. Note
@@ -558,6 +506,10 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         # Prepare tests, check options
         test_invocations = self.prepare_tests(guest, logger)
 
+        if extra_environment:
+            for invocation in test_invocations:
+                invocation.environment.update(extra_environment)
+
         # Push workdir to guest and execute tests
         guest.push()
         # We cannot use enumerate here due to continue in the code
@@ -581,9 +533,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 progress_bar.update(progress, test.name)
                 logger.verbose('test', test.summary or test.name, color='cyan', shift=1, level=2)
 
-                self.execute(
-                    invocation=invocation, extra_environment=extra_environment, logger=logger
-                )
+                self.execute(invocation=invocation, logger=logger)
 
                 assert invocation.real_duration is not None  # narrow type
                 duration = style(invocation.real_duration, fg='cyan')
@@ -644,9 +594,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 # Execute internal checks
                 invocation.check_results += self.run_internal_checks(
                     invocation=invocation,
-                    environment=self._test_environment(
-                        invocation=invocation, extra_environment=extra_environment, logger=logger
-                    ),
                     logger=logger,
                 )
 
@@ -678,13 +625,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     else:
                         cwd = self.discover.workdir / test.path.unrooted()
                     self._login_after_test.after_test(
-                        invocation.results,
-                        cwd=cwd,
-                        env=self._test_environment(
-                            invocation=invocation,
-                            extra_environment=extra_environment,
-                            logger=logger,
-                        ),
+                        invocation.results, cwd=cwd, env=invocation.environment
                     )
 
         # Pull artifacts created in the plan data directory
