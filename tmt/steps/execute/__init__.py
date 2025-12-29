@@ -339,11 +339,16 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
     @property
     def environment(self) -> Environment:
         if self._environment is None:
+            # narrow type
+            parent = cast(Execute, self.phase.parent)
+            assert isinstance(parent, Execute)
+
             environment = Environment()
 
             environment.update(
                 self.guest.environment,
                 self.test.environment,
+                parent.plan.environment,
             )
 
             environment["TMT_TEST_NAME"] = EnvVarValue(self.test.name)
@@ -353,11 +358,12 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
             environment['TMT_TEST_SERIAL_NUMBER'] = EnvVarValue(str(self.test.serial_number))
             environment["TMT_TEST_METADATA"] = EnvVarValue(self.path / TEST_METADATA_FILENAME)
 
-            assert isinstance(self.phase.parent, Execute)
-            assert self.phase.parent.plan.my_run is not None
+            # narrow type
+            run = cast(tmt.base.Run, parent.plan.my_run)
+            assert run is not None
 
             environment['TMT_TEST_ITERATION_ID'] = EnvVarValue(
-                f"{self.phase.parent.plan.my_run.unique_id}-{self.test.serial_number}"
+                f"{run.unique_id}-{self.test.serial_number}"
             )
 
         else:
@@ -378,7 +384,6 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
 
         return environment
 
-<<<<<<< HEAD
     def invoke_check(self, event: CheckEvent, check: Check) -> list[CheckResult]:
         with Stopwatch() as timer:
             results = check.go(
@@ -411,8 +416,6 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
     def invoke_internal_checks(self) -> list[CheckResult]:
         return self.invoke_checks(CheckEvent.AFTER_TEST, CheckPlugin.internal_checks(self.logger))
 
-=======
->>>>>>> 9b129e80 (Attach test environment to its invocation)
     def invoke_test(
         self,
         command: ShellScript,
@@ -989,78 +992,6 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
         raise NotImplementedError
 
-<<<<<<< HEAD
-=======
-    def _run_checks_for_test(
-        self,
-        *,
-        event: CheckEvent,
-        invocation: TestInvocation,
-        checks: Sequence[Check],
-        logger: tmt.log.Logger,
-    ) -> list[CheckResult]:
-        results: list[CheckResult] = []
-
-        for check in checks:
-            with Stopwatch() as timer:
-                check_results = check.go(
-                    event=event,
-                    invocation=invocation,
-                    environment=invocation.environment,
-                    logger=logger,
-                )
-
-            for result in check_results:
-                result.event = event
-
-                result.start_time = timer.start_time_formatted
-                result.end_time = timer.end_time_formatted
-                result.duration = timer.duration_formatted
-
-            results += check_results
-
-        return results
-
-    def run_checks_before_test(
-        self,
-        *,
-        invocation: TestInvocation,
-        logger: tmt.log.Logger,
-    ) -> list[CheckResult]:
-        return self._run_checks_for_test(
-            event=CheckEvent.BEFORE_TEST,
-            invocation=invocation,
-            checks=invocation.test.check,
-            logger=logger,
-        )
-
-    def run_checks_after_test(
-        self,
-        *,
-        invocation: TestInvocation,
-        logger: tmt.log.Logger,
-    ) -> list[CheckResult]:
-        return self._run_checks_for_test(
-            event=CheckEvent.AFTER_TEST,
-            invocation=invocation,
-            checks=invocation.test.check,
-            logger=logger,
-        )
-
-    def run_internal_checks(
-        self,
-        *,
-        invocation: TestInvocation,
-        logger: tmt.log.Logger,
-    ) -> list[CheckResult]:
-        return self._run_checks_for_test(
-            event=CheckEvent.AFTER_TEST,
-            invocation=invocation,
-            checks=CheckPlugin.internal_checks(logger),
-            logger=logger,
-        )
-
->>>>>>> 9b129e80 (Attach test environment to its invocation)
 
 class Execute(tmt.steps.Step):
     """
