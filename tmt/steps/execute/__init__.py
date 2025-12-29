@@ -1,6 +1,7 @@
 import abc
 import copy
 import functools
+import itertools
 import signal as _signal
 import subprocess
 import threading
@@ -376,6 +377,38 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
         self._environment = environment
 
         return environment
+
+    def invoke_check(self, event: CheckEvent, check: Check) -> list[CheckResult]:
+        with Stopwatch() as timer:
+            results = check.go(
+                event=event,
+                invocation=self,
+                environment=self.environment,
+                logger=self.logger,
+            )
+
+        for result in results:
+            result.event = event
+
+            result.start_time = timer.start_time_formatted
+            result.end_time = timer.end_time_formatted
+            result.duration = timer.duration_formatted
+
+        return results
+
+    def invoke_checks(self, event: CheckEvent, checks: Sequence[Check]) -> list[CheckResult]:
+        return list(
+            itertools.chain.from_iterable(self.invoke_check(event, check) for check in checks)
+        )
+
+    def invoke_checks_before_test(self) -> list[CheckResult]:
+        return self.invoke_checks(CheckEvent.BEFORE_TEST, self.test.check)
+
+    def invoke_checks_after_test(self) -> list[CheckResult]:
+        return self.invoke_checks(CheckEvent.AFTER_TEST, self.test.check)
+
+    def invoke_internal_checks(self) -> list[CheckResult]:
+        return self.invoke_checks(CheckEvent.AFTER_TEST, CheckPlugin.internal_checks(self.logger))
 
     def invoke_test(
         self,
@@ -952,75 +985,6 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         """
 
         raise NotImplementedError
-
-    def _run_checks_for_test(
-        self,
-        *,
-        event: CheckEvent,
-        invocation: TestInvocation,
-        checks: Sequence[Check],
-        logger: tmt.log.Logger,
-    ) -> list[CheckResult]:
-        results: list[CheckResult] = []
-
-        for check in checks:
-            with Stopwatch() as timer:
-                check_results = check.go(
-                    event=event,
-                    invocation=invocation,
-                    environment=invocation.environment,
-                    logger=logger,
-                )
-
-            for result in check_results:
-                result.event = event
-
-                result.start_time = timer.start_time_formatted
-                result.end_time = timer.end_time_formatted
-                result.duration = timer.duration_formatted
-
-            results += check_results
-
-        return results
-
-    def run_checks_before_test(
-        self,
-        *,
-        invocation: TestInvocation,
-        logger: tmt.log.Logger,
-    ) -> list[CheckResult]:
-        return self._run_checks_for_test(
-            event=CheckEvent.BEFORE_TEST,
-            invocation=invocation,
-            checks=invocation.test.check,
-            logger=logger,
-        )
-
-    def run_checks_after_test(
-        self,
-        *,
-        invocation: TestInvocation,
-        logger: tmt.log.Logger,
-    ) -> list[CheckResult]:
-        return self._run_checks_for_test(
-            event=CheckEvent.AFTER_TEST,
-            invocation=invocation,
-            checks=invocation.test.check,
-            logger=logger,
-        )
-
-    def run_internal_checks(
-        self,
-        *,
-        invocation: TestInvocation,
-        logger: tmt.log.Logger,
-    ) -> list[CheckResult]:
-        return self._run_checks_for_test(
-            event=CheckEvent.AFTER_TEST,
-            invocation=invocation,
-            checks=CheckPlugin.internal_checks(logger),
-            logger=logger,
-        )
 
 
 class Execute(tmt.steps.Step):

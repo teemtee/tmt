@@ -372,9 +372,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,
         # to use some reusable decorator.
-        invocation.check_results = self.run_checks_before_test(
-            invocation=invocation, logger=logger
-        )
+        invocation.check_results = invocation.invoke_checks_before_test()
 
         # Pick the proper timeout for the test
         timeout: Optional[int]
@@ -441,9 +439,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         )
 
         # Run after-test checks before extracting results
-        invocation.check_results += self.run_checks_after_test(
-            invocation=invocation, logger=logger
-        )
+        invocation.check_results += invocation.invoke_checks_after_test()
 
         # Extract test results and store them in the invocation. Note
         # that these results will be overwritten with a fresh set of
@@ -592,10 +588,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     invocation.exceptions.append(interrupt_exception)
 
                 # Execute internal checks
-                invocation.check_results += self.run_internal_checks(
-                    invocation=invocation,
-                    logger=logger,
-                )
+                invocation.check_results += invocation.invoke_internal_checks()
 
                 self._results.extend(invocation.results)
                 self.step.plan.execute.update_results(self.results())
