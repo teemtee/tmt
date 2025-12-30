@@ -18,7 +18,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.19.0"
+    rev: "v1.19.1"
     hooks:
       - id: mypy
         language: python # Required for Renovate additional_dependencies
@@ -122,7 +122,7 @@ repos:
           - "types-lxml"
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.35.0"
+    rev: "0.36.0"
     hooks:
       - id: check-metaschema
         name: "Check JSON schemas validity"
@@ -147,7 +147,7 @@ repos:
           )$
 
   - repo: https://github.com/ansible-community/ansible-lint.git
-    rev: v25.12.0
+    rev: v25.12.2
     hooks:
       - id: ansible-lint
         language: python # Required for Renovate additional_dependencies
@@ -164,7 +164,7 @@ repos:
           # in order to be parsed by ansible-lint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.14.8
+    rev: v0.14.10
     hooks:
       - id: ruff-check
         args:
@@ -173,7 +173,7 @@ repos:
       - id: ruff-format
 
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.63.0
+    rev: 1.64.0
     hooks:
       - id: tmt-lint
         language: python # Required for Renovate additional_dependencies
@@ -255,7 +255,7 @@ repos:
           - 'versionadded,versionchanged'
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.9.12
+    rev: 0.9.21
     hooks:
       # Keep pyproject.toml and uv.lock in sync
       - id: uv-lock
