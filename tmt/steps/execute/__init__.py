@@ -46,8 +46,6 @@ from tmt.utils import (
     ShellScript,
     Stopwatch,
     configure_bool_constant,
-    format_duration,
-    format_timestamp,
 )
 
 if TYPE_CHECKING:
@@ -389,7 +387,7 @@ class TestInvocation(HasStepWorkdir):
                     tmt.utils.signals.remove_callback(self.on_interrupt_callback_token)
 
         with Stopwatch() as timer:
-            self.start_time = format_timestamp(timer.start_time)
+            self.start_time = timer.start_time_formatted
 
             try:
                 output = self.guest.execute(
@@ -423,8 +421,8 @@ class TestInvocation(HasStepWorkdir):
                 elif tmt.utils.ProcessExitCodes.is_pidfile(self.return_code):
                     self.logger.warning('Test failed to manage its pidfile.')
 
-        self.end_time = format_timestamp(timer.end_time)
-        self.real_duration = format_duration(timer.duration)
+        self.end_time = timer.end_time_formatted
+        self.real_duration = timer.duration_formatted
 
         return output
 
@@ -919,9 +917,9 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             for result in check_results:
                 result.event = event
 
-                result.start_time = format_timestamp(timer.start_time)
-                result.end_time = format_timestamp(timer.end_time)
-                result.duration = format_duration(timer.duration)
+                result.start_time = timer.start_time_formatted
+                result.end_time = timer.end_time_formatted
+                result.duration = timer.duration_formatted
 
             results += check_results
 
