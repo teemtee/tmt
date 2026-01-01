@@ -378,13 +378,14 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         deadline: Optional[tmt.utils.wait.Deadline]
 
         if self.data.interactive:
-            if test.duration:
-                logger.warning('Ignoring requested duration, not supported in interactive mode.')
+            logger.warning('Ignoring requested duration, not supported in interactive mode.')
+            logger.info('duration limit', 'unlimited')
 
             deadline = None
 
         elif self.data.ignore_duration:
             logger.debug("Test duration is not effective due to ignore-duration option.")
+            logger.info('duration limit', 'unlimited')
 
             deadline = None
 
