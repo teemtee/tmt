@@ -1,0 +1,24 @@
+summary: Example test for repository-url artifact provider
+description: |
+    Demonstrates how to use the repository-url artifact provider.
+
+    The repository-url provider configures external package repositories
+    from .repo files or direct URLs.
+
+    Example usage:
+        prepare:
+          - how: artifact
+            provide:
+              - repository-url:https://example.com/repo/myrepo.repo
+
+    This test shows:
+    - How to configure an external repository
+    - How packages from that repository can be installed
+    - Works with both .repo files and direct repository URLs
+tag+:
+  - provision-only
+  - provision-container
+adjust:
+  - when: distro != fedora
+    enabled: false
+    because: Test uses Fedora-specific repository
