@@ -393,7 +393,7 @@ class Try(tmt.utils.Common):
             environment=self.environment,
             remove=self.opt('remove'),
         )
-        self.write(Path('run.yaml'), tmt.utils.dict_to_yaml(data.to_serialized()))
+        self.write(Path('run.yaml'), tmt.utils.to_yaml(data.to_serialized()))
 
     def choose_action(self) -> 'Action':
         """

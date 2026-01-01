@@ -256,6 +256,4 @@ class RecipeBuilder(Common):
             ),
             plans=[_RecipePlan.from_plan(plan) for plan in run.plans],
         )
-        self.write(
-            run.run_workdir / 'recipe.yaml', tmt.utils.dict_to_yaml(self.recipe.to_serialized())
-        )
+        self.write(run.run_workdir / 'recipe.yaml', tmt.utils.to_yaml(self.recipe.to_serialized()))
