@@ -33,7 +33,7 @@ rlJournalStart
                         rlRun -s "tmt $context --log-topic=command-events run --scratch -vfi $tmp -a provision -h $PROVISION_HOW execute -h $execute_method $interactive test --name long" 0
 
                         rlAssertGrep "warn: Ignoring requested duration, not supported in interactive mode." $rlRun_LOG
-                        rlAssertGrep "duration limit: None" $tmp/log.txt
+                        rlAssertGrep "duration limit: unlimited" $tmp/log.txt
                     fi
 
                     rlAssertNotGrep "00:02:.. errr /test/long/beakerlib (timeout)" $rlRun_LOG
@@ -88,7 +88,7 @@ rlJournalStart
         rlAssertGrep "duration limit: 10 seconds" $tmp/log.txt
 
         rlRun -s "tmt -v --context slow-arch=yes run --scratch -i $tmp --all execute --ignore-duration plan --name adjust-tests" 0 "Verify --ignore-duration"
-        rlAssertGrep "duration limit: None" $tmp/log.txt
+        rlAssertGrep "duration limit: unlimited" $tmp/log.txt
     rlPhaseEnd
 
     rlPhaseStartCleanup
