@@ -330,7 +330,7 @@ def make_junit_xml(
 
         return failures
 
-    environment.filters.update(
+    cast(dict[str, Callable[..., Any]], environment.filters).update(
         {
             'read_log': _read_log_filter,
             'duration_to_seconds': _duration_to_seconds_filter,
