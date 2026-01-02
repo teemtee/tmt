@@ -4,6 +4,7 @@ Abstract base class for artifact providers.
 
 import configparser
 import functools
+import io
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
 from functools import cached_property
@@ -19,6 +20,10 @@ from tmt.container import container, simple_field
 from tmt.plugins import PluginRegistry
 from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path, ShellScript, retry
+
+#: Default priority for repositories when priority is not specified.
+#: Lower values have higher priority in package managers.
+DEFAULT_REPOSITORY_PRIORITY = 50
 
 
 class DownloadError(tmt.utils.GeneralError):
@@ -268,6 +273,41 @@ class Repository:
                 "The .repo file may be malformed."
             ) from error
 
+    @staticmethod
+    def _augment_priority(content: str, logger: tmt.log.Logger) -> str:
+        """
+        Augment repository content with default priority if it's missing in any section.
+
+        :param content: The .repo file content to process.
+        :param logger: Logger instance for outputting messages.
+        :returns: The augmented content with priority added where missing.
+        """
+        config = configparser.ConfigParser()
+        try:
+            config.read_string(content)
+        except configparser.Error:
+            logger.debug("Failed to parse repository content for priority augmentation")
+            return content
+
+        # Add default priority to sections that don't have it
+        modified = False
+        for repo_section in config.sections():
+            if not config.has_option(repo_section, 'priority'):
+                config.set(repo_section, 'priority', str(DEFAULT_REPOSITORY_PRIORITY))
+                modified = True
+                logger.debug(
+                    f"Added priority={DEFAULT_REPOSITORY_PRIORITY} to section '{repo_section}'"
+                )
+
+        # Return original content if unchanged to preserve formatting
+        if not modified:
+            return content
+
+        # Write modified config back to string
+        output = io.StringIO()
+        config.write(output)
+        return output.getvalue()
+
     @classmethod
     def from_url(
         cls, url: str, logger: tmt.log.Logger, name: Optional[str] = None
@@ -297,6 +337,9 @@ class Repository:
             if not name:
                 raise GeneralError(f"Could not derive repository name from URL '{url}'.")
 
+        # Augment priority if missing
+        content = cls._augment_priority(content, logger)
+
         return cls(name=name, content=content)
 
     @classmethod
@@ -325,6 +368,9 @@ class Repository:
                     f"Could not derive repository name from file path '{file_path}'."
                 )
 
+        # Augment priority if missing
+        content = cls._augment_priority(content, logger)
+
         return cls(name=name, content=content)
 
     @classmethod
@@ -340,6 +386,10 @@ class Repository:
         """
         if not name:
             raise GeneralError("Repository name cannot be empty.")
+
+        # Augment priority if missing
+        content = cls._augment_priority(content, logger)
+
         return cls(name=name, content=content)
 
     @property
