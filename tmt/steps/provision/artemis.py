@@ -720,8 +720,8 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
     Reserve a machine using the Artemis service.
     Users can specify many requirements, mostly regarding the
     desired OS, RAM, disk size and more. Most of the HW specifications
-    defined in the :ref:`/spec/hardware` are supported. Including the
-    :ref:`/spec/plans/provision/kickstart`.
+    defined in the :tmt:story:`/spec/hardware` are supported. Including the
+    :tmt:story:`/spec/plans/provision/kickstart`.
 
     Artemis takes machines from AWS, OpenStack, Beaker or Azure.
     By default, Artemis handles the selection of a cloud provider

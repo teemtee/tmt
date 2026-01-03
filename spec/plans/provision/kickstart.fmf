@@ -3,7 +3,7 @@ story:
     using the kickstart script.
 
 description: |
-    As part of the :ref:`/spec/plans/provision` step it is possible to
+    As part of the :tmt:story:`/spec/plans/provision` step it is possible to
     use the ``kickstart`` key to specify additional requirements for the
     installation of a guest. It is possible to specify a kickstart
     script that will for example specify specific partitioning.

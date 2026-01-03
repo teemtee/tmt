@@ -11,7 +11,7 @@ description: |
            - distro2
              ...
 
-    See the context :ref:`/spec/context/dimension` definitions for
+    See the context :tmt:story:`/spec/context/dimension` definitions for
     the list of supported values of the ``distro`` items.
 
 example:

@@ -120,7 +120,7 @@ description: |
     summary: Execute tests on selected guests
 
     description: |
-        In the :ref:`/spec/plans/provision/multihost` scenarios it
+        In the :tmt:story:`/spec/plans/provision/multihost` scenarios it
         is often necessary to execute test code on selected guests
         only or execute different test code on individual guests.
         The ``where`` key allows to select guests where the tests
@@ -166,7 +166,7 @@ description: |
     description: |
         Using the ``when`` key makes it easier to restrict a step configuration
         to run only if any of the specified rules matches.
-        The syntax is the same as in ``adjust`` and :ref:`/spec/context`.
+        The syntax is the same as in ``adjust`` and :tmt:story:`/spec/context`.
 
         Values can be single string with the rule or list of rules.
     example: |
