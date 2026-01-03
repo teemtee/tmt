@@ -385,6 +385,17 @@ definitions:
     additionalProperties: false
     minProperties: 1
 
+  # HW requirements: `aws` block
+  aws:
+    type: object
+
+    properties:
+      instance-type:
+        type: string
+
+    additionalProperties: false
+    minProperties: 1
+
   # HW requirements: `zcrypt` block
   zcrypt:
     type: object
@@ -478,6 +489,9 @@ definitions:
 
       tpm:
         "$ref": "#/definitions/tpm"
+
+      aws:
+        "$ref": "#/definitions/aws"
 
       zcrypt:
         "$ref": "#/definitions/zcrypt"
