@@ -11,7 +11,7 @@ rlJournalStart
         rlRun "pushd data"
     rlPhaseEnd
 
-    rlPhaseStartTest "Basic archive tests"
+    rlPhaseStartTest "Basic archive tests (fmf)"
         plan="/plans/fmf/archive-url"
         rlRun -s "tmt run -i $run discover plans -n $plan"
         rlAssertGrep "2 tests selected" $rlRun_LOG
@@ -19,6 +19,17 @@ rlJournalStart
         step_workdir="$plan_path/discover/default-0"
         rlAssertExists "$step_workdir/tests-main.tar.gz" 0 "Check that the archive is present"
         rlAssertExists "$step_workdir/tests/tests-main" 0 "Check that the extracted archive is present"
+        rlAssertExists "$step_workdir/tests/tests-main/scripts/random_file.sh" 0 "Check that there is a script in the extracted archive"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Basic archive tests (shell)"
+        plan="/plans/shell/archive-url"
+        rlRun -s "tmt run -i $run discover plans -n $plan"
+        plan_path="$run$plan"
+        step_workdir="$plan_path/discover/default-0"
+        rlAssertExists "$step_workdir/tests-main.tar.gz" 0 "Check that the archive is present"
+        rlAssertExists "$step_workdir/tests/tests-main" 0 "Check that the extracted archive is present"
+        rlAssertExists "$step_workdir/tests/tests-main/scripts/random_file.sh" 0 "Check that there is a script in the extracted archive"
     rlPhaseEnd
 
     rlPhaseStartCleanup
