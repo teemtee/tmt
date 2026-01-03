@@ -317,6 +317,12 @@ linkcheck_ignore = [
     # Stack Overflow uses captcha and these links are not essential
     r'https://stackoverflow.com.*',
 ]
+linkcheck_request_headers = {
+    "*": {
+        "Accept": "text/html",
+        "User-Agent": "sphinx/linkcheck",
+    }
+}
 
 # custom linkcheck cache variables
 linkcheck_cache_period = 1.0
