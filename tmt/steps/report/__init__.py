@@ -35,36 +35,6 @@ class ReportPlugin(tmt.steps.GuestlessPlugin[ReportStepDataT, None]):
     # Methods ("how: ..." implementations) registered for the same step.
     _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry('step.report')
 
-    @classmethod
-    def base_command(
-        cls,
-        usage: str,
-        method_class: Optional[type[click.Command]] = None,
-    ) -> click.Command:
-        """
-        Create base click command (common for all report plugins)
-        """
-
-        # Prepare general usage message for the step
-        if method_class:
-            usage = Report.usage(method_overview=usage)
-
-        # Create the command
-        @click.command(cls=method_class, help=usage)
-        @click.pass_context
-        @option(
-            '-h',
-            '--how',
-            metavar='METHOD',
-            help='Use specified method for results reporting.',
-        )
-        @tmt.steps.PHASE_OPTIONS
-        def report(context: 'tmt.cli.Context', **kwargs: Any) -> None:
-            context.obj.steps.add('report')
-            Report.store_cli_invocation(context)
-
-        return report
-
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
         Perform actions shared among plugins when beginning their tasks
@@ -145,3 +115,7 @@ class Report(tmt.steps.Step):
         self.summary()
         self.status('done')
         self.save()
+
+
+# Establish the "plugin class -> step class" link.
+ReportPlugin._step_class = Report

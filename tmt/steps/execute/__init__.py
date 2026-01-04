@@ -619,30 +619,6 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         if tmt.steps.Login._opt('test'):
             self._login_after_test = tmt.steps.Login(logger=logger, step=self.step, order=90)
 
-    @classmethod
-    def base_command(
-        cls,
-        usage: str,
-        method_class: Optional[type[click.Command]] = None,
-    ) -> click.Command:
-        """
-        Create base click command (common for all execute plugins)
-        """
-
-        # Prepare general usage message for the step
-        if method_class:
-            usage = Execute.usage(method_overview=usage)
-
-        # Create the command
-        @click.command(cls=method_class, help=usage)
-        @click.pass_context
-        @option('-h', '--how', metavar='METHOD', help='Use specified method for test execution.')
-        def execute(context: 'tmt.cli.Context', **kwargs: Any) -> None:
-            context.obj.steps.add('execute')
-            Execute.store_cli_invocation(context)
-
-        return execute
-
     def go(
         self,
         *,
@@ -1327,3 +1303,7 @@ class Execute(tmt.steps.Step):
                 raise tmt.utils.ExecuteError(
                     f"Required test '{result.name}' on guest '{result.guest.name}' was skipped."
                 )
+
+
+# Establish the "plugin class -> step class" link.
+ExecutePlugin._step_class = Execute

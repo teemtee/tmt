@@ -1366,7 +1366,7 @@ class Step(
 
         # Do not prune plugin workdirs, each plugin decides what should
         # be pruned from the workdir and what should be kept there
-        plugins = self.phases(classes=BasePlugin)  # type: ignore[type-abstract]
+        plugins = self.phases(classes=BasePlugin)
         for plugin in plugins:
             if plugin.workdir is not None:
                 preserved_members = {*preserved_members, plugin.workdir.name}
@@ -1552,6 +1552,21 @@ class BasePlugin(
 
     data: StepDataT
 
+    #: Point back to the :py:class:`Step` subclass implementing the step
+    #: which owns this family of plugins.
+    #:
+    #: .. note::
+    #:
+    #:    This "backlink" is initialized at the end of Python modules
+    #:    holding the respective step implementations. Each ``Step``
+    #:    subclass points at the base class of its plugin family, via
+    #:    simple class-level attribute, and it would be impossible to
+    #:    establish the same kind of link in the opposite direction.
+    #:    When the plugin base class is defined, the step class does not
+    #:    even exist yet. Therefore this link is set after both classes,
+    #:    step and its plugin base, are finalized.
+    _step_class: type[Step]
+
     @classmethod
     def get_step_name(cls) -> str:
         match = _PLUGIN_CLASS_NAME_TO_STEP_PATTERN.match(cls.__module__)
@@ -1633,17 +1648,43 @@ class BasePlugin(
         return self.pathless_safe_name
 
     @classmethod
-    @abc.abstractmethod
     def base_command(
         cls,
         usage: str,
         method_class: Optional[type[click.Command]] = None,
     ) -> click.Command:
         """
-        Create base click command (common for all step plugins)
+        Create base :py:mod:`click` command for plugins of the step.
         """
 
-        raise NotImplementedError
+        step_name = cls._step_class.__name__.lower()
+
+        # Prepare general usage message for the step
+        if method_class:
+            usage = cls._step_class.usage(method_overview=usage)
+
+        # Create the command
+        @click.command(cls=method_class, help=usage, name=step_name)
+        @click.pass_context
+        @option(
+            '-h',
+            '--how',
+            # Cannot use `choices=...` because we want to allow values
+            # that are not on the list *as long as they are clearly
+            # matching values on the list*. For example, `virtual` is
+            # absolutely acceptable as long as some `virtual.*` plugin
+            # is available.
+            metavar='|'.join(
+                sorted([method.name for method in cls._supported_methods.iter_plugins()])
+            ),
+            help=f'Use specified method for {step_name} phase.',
+        )
+        @tmt.steps.PHASE_OPTIONS
+        def base_command(context: 'tmt.cli.Context', **kwargs: Any) -> None:
+            context.obj.steps.add(step_name)
+            cls._step_class.store_cli_invocation(context)
+
+        return base_command
 
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
