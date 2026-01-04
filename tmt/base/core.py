@@ -2900,7 +2900,7 @@ class Plan(
 
         yield from self._lint_step_methods(
             'execute',
-            tmt.steps.execute.ExecutePlugin,  # type: ignore[type-abstract]
+            tmt.steps.execute.ExecutePlugin,
         )
 
     def lint_discover_unknown_method(self) -> LinterReturn:
@@ -2910,7 +2910,7 @@ class Plan(
 
         yield from self._lint_step_methods(
             'discover',
-            tmt.steps.discover.DiscoverPlugin,  # type: ignore[type-abstract]
+            tmt.steps.discover.DiscoverPlugin,
         )
 
     def lint_fmf_remote_ids_valid(self) -> LinterReturn:
