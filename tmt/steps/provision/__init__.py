@@ -767,11 +767,7 @@ class package_manager_guest_fact(guest_fact[Optional['tmt.package_managers.Guest
                     continue
 
                 probes.append(
-                    textwrap.dedent(
-                        f"""
-                        ({package_manager_class.probe_command.to_element()}) 1>&2 && echo '{package_manager_class.NAME}'
-                        """  # noqa: E501
-                    ).strip()
+                    f"({package_manager_class.probe_command.to_element()}) 1>&2 && echo '{package_manager_class.NAME}'"  # noqa: E501
                 )
 
             return '\n'.join(probes)
@@ -873,7 +869,9 @@ class GuestFacts(SerializableContainer):
             if fact not in facts:
                 continue
 
-            scripts.append(f'echo ">>> {fact}"\n{snippet}\necho "<<<"')
+            # The extra `echo` is there to enforce at least one empty line
+            # in the output.
+            scripts.append(f'echo ">>> {fact}"\n{snippet}\necho\necho "<<<"\n')
 
         return ShellScript('\n\n'.join(scripts))
 
