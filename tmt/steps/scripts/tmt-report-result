@@ -65,7 +65,7 @@ copy_outputfile_to_data_dir () {
     # make sure the directory exists.
     if ! mkdir -p "$finalOutputDir"; then
         echo "tmt-report-result: failed to create the output directory $finalOutputDir"
-        echo "tmt-report-result: this may happen when the test created a file/directory named by the test phase"
+        echo "tmt-report-result: this may happen when the test created a file/directory named after a test phase"
 
         exit 1
     fi
