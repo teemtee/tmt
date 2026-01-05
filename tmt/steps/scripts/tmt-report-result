@@ -23,6 +23,8 @@ die() { echo "$*" >&2; exit 2; }  # complain to STDERR and exit with error
 needs_arg() { if [ -z "$OPTARG" ]; then die "No arg for --$OPT option"; fi; }
 
 write_report_file () {
+    echo "tmt-report-result: adding to the result file $REPORT_RESULT_OUTPUTFILE"
+
     echo "  - name: \"${TESTNAME}\"" >> "$REPORT_RESULT_OUTPUTFILE"
     echo "    result: \"${TESTRESULT}\"" >> "$REPORT_RESULT_OUTPUTFILE"
     if [ -n "${outputFile}" ]; then
@@ -58,8 +60,15 @@ copy_outputfile_to_data_dir () {
     # Construct the final outputfile.
     relativeFinalOutputFile="${fileprefix}/${filename}"
     finalOutputFile="${TMT_TEST_DATA}/${relativeFinalOutputFile}"
+    finalOutputDir="$(dirname "$finalOutputFile")"
+    echo "tmt-report-result: saving $TESTNAME output $outputFile into $finalOutputFile"
     # make sure the directory exists.
-    mkdir -p "$(dirname "$finalOutputFile")"
+    if ! mkdir -p "$finalOutputDir"; then
+        echo "tmt-report-result: failed to create the output directory $finalOutputDir"
+        echo "tmt-report-result: this may happen when the test created a file/directory named after a test phase"
+
+        exit 1
+    fi
     # Copy or append (if the file was already created) outputfile to data dir.
     cat "$outputFile" >> "$finalOutputFile"
     # Make sure that the log file is readable for guest.pull()
