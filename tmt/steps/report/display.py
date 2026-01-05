@@ -306,10 +306,12 @@ class ResultRenderer:
 @tmt.steps.provides_method('display')
 class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
     """
-    Show test results on the terminal.
+    Show results on the terminal.
 
-    Give a concise summary of test results directly on the terminal.
-    Allows to select the desired level of verbosity.
+    Give a concise summary of results produced by tests and ``prepare``
+    phases, directly on the terminal.
+
+    Allows to select the desired level of verbosity:
 
     .. code-block:: yaml
 
