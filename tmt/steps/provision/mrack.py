@@ -1013,14 +1013,7 @@ def import_and_load_mrack_deps(mrack_log: str, logger: tmt.log.Logger) -> None:
 
             logger.debug('Transformed hardware', tmt.utils.dict_to_yaml(transformed))
 
-            # Mrack does not handle well situation when the filter
-            # consists of just a single filtering element, e.g. just
-            # `hostname`. In that case, the element is converted into
-            # XML element incorrectly. Therefore wrapping our filter
-            # with `<and/>` group, even if it has just a single child,
-            # it works around the problem.
-            # See https://github.com/teemtee/tmt/issues/3442
-            return {'hostRequires': MrackHWAndGroup(children=[transformed]).to_mrack()}
+            return {'hostRequires': transformed}
 
         def _requires_panic_watchdog(self, constraint: tmt.hardware.BaseConstraint) -> bool:
             """
@@ -1337,6 +1330,10 @@ class CreateJobParameters:
             # see kickstart if it was just metadata.
             if kickstart:
                 data['beaker']['ks_append'] = kickstart
+
+        if self.beaker_job_owner:
+            data['beaker']['beaker_job_owner'] = self.beaker_job_owner
+
         if self.public_key:
             data['beaker']['pubkeys'] = self.public_key
         if self.beaker_job_group:
