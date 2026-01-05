@@ -3532,7 +3532,7 @@ def from_yaml(data: str, *, yaml_type: Optional[YamlTypType] = None) -> Any:
         raise GeneralError('Invalid YAML syntax.') from error
 
 
-def yaml_to_dict(data: str, *, yaml_type: Optional[YamlTypType] = None) -> dict[T, S]:
+def yaml_to_dict(data: str, *, yaml_type: Optional[YamlTypType] = None) -> dict[Any, Any]:
     """
     Convert a YAML content into a Python dictionary.
 
@@ -3558,7 +3558,7 @@ def yaml_to_dict(data: str, *, yaml_type: Optional[YamlTypType] = None) -> dict[
     return loaded_data
 
 
-def yaml_to_list(data: str, *, yaml_type: Optional[YamlTypType] = 'safe') -> list[T]:
+def yaml_to_list(data: str, *, yaml_type: Optional[YamlTypType] = 'safe') -> list[Any]:
     """
     Convert a YAML content into a Python list.
 
