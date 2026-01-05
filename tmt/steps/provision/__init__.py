@@ -902,7 +902,10 @@ class GuestFacts(SerializableContainer):
                 current_fact = line[4:]
 
             elif line.startswith('<<<'):
-                assert current_fact
+                if current_fact is None:
+                    raise GeneralError(
+                        "Malformed fact probe output: closing marker '<<<' without opening marker"
+                    )
 
                 facts[current_fact] = self._facts()[current_fact].extract(
                     '\n'.join(current_fact_content)
