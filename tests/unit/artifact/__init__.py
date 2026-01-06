@@ -4,6 +4,7 @@ import pytest
 
 MOCK_BUILD_ID_KOJI_BREW = 2829512
 MOCK_BUILD_ID_COPR = 9820798
+MOCK_BUILD_ID_PULP = 9975054
 
 MOCK_RPMS_KOJI = [
     {"name": f"pkg{i}", "version": "1.0", "release": "1.fc43", "arch": "x86_64"} for i in range(13)
@@ -27,6 +28,10 @@ MOCK_RPMS_COPR = {
     }
 }
 
+MOCK_RPMS_PULP = [
+    {"name": f"pkg{i}", "version": "1.0", "release": "1.fc41", "arch": "x86_64"} for i in range(14)
+]
+
 
 def mock_koji_brew_build_api_responses(mock_call_api, mock_rpms=None):
     """Mock API responses for koji/brew builds."""
@@ -43,24 +48,31 @@ def mock_koji_brew_build_api_responses(mock_call_api, mock_rpms=None):
     mock_call_api.side_effect = mock_api
 
 
-def mock_copr_build_api_responses(mock_session, mock_rpms=None):
+def mock_copr_build_api_responses(mock_session, mock_rpms=None, storage="copr"):
     if mock_rpms is None:
         mock_rpms = MOCK_RPMS_COPR
 
     mock_build_proxy = MagicMock()
     mock_build_proxy.get_built_packages.return_value = mock_rpms
-    mock_build_proxy.get.return_value = {
-        "id": MOCK_BUILD_ID_COPR,
-        "source_package": {"name": "tmt"},
-    }
+    mock_build_proxy.get.return_value = MagicMock(
+        id=MOCK_BUILD_ID_COPR,
+        source_package={"name": "tmt"},
+        ownername="mock-owner",
+        projectname="mock-project",
+        repo_url="http://copr.example.com/repo/",
+    )
 
     mock_build_chroot_proxy = MagicMock()
     mock_build_chroot_proxy.get.return_value = MagicMock(
         result_url="http://copr.example.com/build/"
     )
 
+    mock_project_proxy = MagicMock()
+    mock_project_proxy.get.return_value = MagicMock(storage=storage)
+
     mock_session.build_proxy = mock_build_proxy
     mock_session.build_chroot_proxy = mock_build_chroot_proxy
+    mock_session.project_proxy = mock_project_proxy
     return mock_session
 
 
