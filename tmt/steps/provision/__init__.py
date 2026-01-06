@@ -1048,29 +1048,30 @@ class GuestFacts(SerializableContainer):
             of its value.
         """
 
-        yield 'arch', 'arch', self.arch or 'unknown'
-        yield 'distro', 'distro', self.distro or 'unknown'
-        yield 'kernel_release', 'kernel', self.kernel_release or 'unknown'
-        yield (
-            'package_manager',
-            'package manager',
-            self.package_manager if self.package_manager else 'unknown',
-        )
-        yield (
-            'bootc builder',
-            'bootc builder',
-            self.bootc_builder if self.bootc_builder else 'unknown',
-        )
-        yield 'has_selinux', 'selinux', 'yes' if self.has_selinux else 'no'
-        yield 'has_systemd', 'systemd', 'yes' if self.has_systemd else 'no'
-        yield (
-            'systemd_soft_reboot',
-            'systemd soft-reboot',
-            'yes' if self.systemd_soft_reboot else 'no',
-        )
-        yield 'has_rsync', 'rsync', 'yes' if self.has_rsync else 'no'
-        yield 'is_superuser', 'is superuser', 'yes' if self.is_superuser else 'no'
-        yield 'is_container', 'is_container', 'yes' if self.is_container else 'no'
+        def _value(field: str, label: str) -> tuple[str, str, str]:
+            v = getattr(self, field)
+
+            return field, label, v if v else 'unknown'
+
+        def _flag(field: str, label: str) -> tuple[str, str, str]:
+            v = getattr(self, field)
+
+            return field, label, 'yes' if v else 'no'
+
+        yield _value('arch', 'arch')
+        yield _value('distro', 'distro')
+        yield _value('kernel_release', 'kernel')
+        yield _value('package_manager', 'package manager')
+        yield _value('bootc_builder', 'bootc builder')
+        yield _flag('is_container', 'is container')
+        yield _flag('is_ostree', 'is ostree')
+        yield _flag('is_toolbox', 'is toolbox')
+        yield _flag('has_selinux', 'selinux')
+        yield _flag('has_systemd', 'systemd')
+        yield _flag('systemd_soft_reboot', 'systemd soft-reboot')
+        yield _flag('has_rsync', 'rsync')
+        yield _flag('is_superuser', 'is superuser')
+        yield _flag('can_sudo', 'can sudo')
 
 
 GUEST_FACTS_INFO_FIELDS: list[str] = ['arch', 'distro']
