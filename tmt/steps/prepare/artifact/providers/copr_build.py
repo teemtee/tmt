@@ -183,7 +183,7 @@ class CoprBuildArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
         :returns: list of package dictionaries containing NEVRA info.
         """
-        results_url = urljoin(self.result_url.rstrip("/") + "/", "results.json")
+        results_url = urljoin(self.result_url + "/", "results.json")
         self.logger.debug(f"Fetching results.json from '{results_url}'.")
         try:
             with tmt.utils.retry_session(logger=self.logger) as session:
@@ -220,11 +220,15 @@ class CoprBuildArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
 
         if self.is_pulp:
             assert self.build_info is not None
-            base_url = f"{self.build_info.repo_url}/{self.chroot}/Packages/{filename[0]}"
+            base_url = urljoin(
+                f"{self.build_info.repo_url}/",
+                f"{self.chroot}/Packages/{filename[0]}",
+            )
+
         else:
             base_url = self.result_url.rstrip("/")
 
-        artifact._raw_artifact["url"] = f"{base_url}/{filename}"
+        artifact._raw_artifact["url"] = urljoin(base_url + "/", filename)
         return artifact
 
     @cached_property
