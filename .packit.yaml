@@ -172,11 +172,11 @@ jobs:
 
   # Test provision plugins
   - <<: *internal-provision
-    identifier: 'provision:bootc'
+    identifier: provision-bootc
     tmt_plan: /plans/provision/bootc
 
   - <<: *internal-provision
-    identifier: 'provision:virtual'
+    identifier: provision-virtual
     tmt_plan: /plans/provision/virtual
 
   # Test internal plugins
