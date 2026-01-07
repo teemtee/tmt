@@ -15,6 +15,7 @@ rlJournalStart
         # Helper script actions should not appear in the verbose output
         rlAssertNotGrep "mkdir -p /usr/local/bin" $rlRun_LOG
         rlAssertNotGrep "rsync.*--version" $rlRun_LOG
+        rlAssertNotGrep "cmd: sudo -n true" $rlRun_LOG
     rlPhaseEnd
 
     # TODO Move verbosity level checks from /tests/execute/basic here
