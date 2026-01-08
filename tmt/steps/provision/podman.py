@@ -164,7 +164,7 @@ class GuestContainer(tmt.Guest):
     def _setup_network(self) -> list[str]:
         """
         Set up the desired network.
-        Will look for existing network using the tmt workdir name,
+        Creates a unique network name based on the run ID and plan name,
         or will create that network if it doesn't exist.
         Returns the network arguments to be used in podman run command.
 
@@ -178,20 +178,19 @@ class GuestContainer(tmt.Guest):
             # Cast the parent to Provision to satisfy type checkers
             provision_step = cast(Provision, self.parent)
 
-            # Access the run ID via the plan and my_run
-            if provision_step.plan.my_run and provision_step.plan.my_run.workdir:
-                run_id = provision_step.plan.my_run.workdir.name
-            else:
-                raise tmt.utils.GeneralError("Cannot create network: run workdir is not available")
+            run_id = provision_step.run_workdir.name
+            # Get plan name for unique network naming across multiple plans
+            plan_name = provision_step.plan.name
         else:
             raise tmt.utils.GeneralError(
                 "Cannot create network: provision step parent is not available"
             )
 
-        # Use more characters from run_id and add process ID to reduce collision risk
-        # while maintaining some correlation with workdir for debugging
-        network_suffix = f"{run_id[-8:]}-{os.getpid()}"
-        self.network = f"tmt-{network_suffix}-network"
+        # Use full run_id and plan name to ensure uniqueness across multiple plans
+        # running simultaneously while maintaining good debugging information
+        # Replace path separators and other problematic characters with dashes
+        safe_plan_name = plan_name.replace('/', '-').replace('_', '-').lstrip('-')
+        self.network = f"tmt-{run_id}-{safe_plan_name}-network"
 
         try:
             self.podman(
