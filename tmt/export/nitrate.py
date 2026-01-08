@@ -100,14 +100,11 @@ def _nitrate_find_fmf_testcases(test: 'tmt.Test') -> Iterator[Any]:
                 struct_field = StructuredField(testcase.notes)
                 try:
                     fmf_field = struct_field.get('fmf')
+                    if isinstance(fmf_field, list):
+                        fmf_field = '\n'.join(fmf_field)
 
                     fmf_id = tmt.base.FmfId.from_spec(
-                        cast(
-                            tmt.base._RawFmfId,
-                            tmt.utils.yaml_to_dict(
-                                fmf_field if isinstance(fmf_field, str) else '\n'.join(fmf_field)
-                            ),
-                        )
+                        cast(tmt.base._RawFmfId, tmt.utils.yaml_to_dict(fmf_field))
                     )
                     if fmf_id == test.fmf_id:
                         echo(

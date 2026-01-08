@@ -3361,7 +3361,8 @@ def filter_paths(directory: Path, searching: list[str], files_only: bool = False
 
 
 #: Which type of YAML loader/dumper implementation to use when creating
-#: a YAML loader/dumper instance. See :py:class:`YAML` for details.
+#: a YAML loader/dumper instance. See :py:class:`!ruamel.yaml.YAML` for
+#: details.
 YamlTypType = Literal['rt', 'safe', 'unsafe', 'base']
 
 
@@ -3428,6 +3429,75 @@ def _yaml(
     return yaml
 
 
+def _sanitize_yaml_string(s: str) -> str:
+    """
+    Convert multiline strings, sanitize invalid characters.
+
+    Prevents saving non-printable characters a YAML parser might later
+    reject - see https://github.com/teemtee/tmt/issues/3805.
+
+    Based on :py:meth:`!ruamel.yaml.scalarstring.walk_tree` which does
+    not support any other test than "is this character in that string?".
+    """
+
+    pattern = ruamel.yaml.reader.Reader.NON_PRINTABLE
+
+    if '\n' in s:
+        s = ruamel.yaml.scalarstring.preserve_literal(s)
+
+    return ''.join(rf'#{{{ord(c):x}}}' if pattern.match(c) else c for c in s)
+
+
+def _sanitize_yaml_tree(value: Any, sort_keys: bool) -> Any:
+    """
+    Convert multiline strings, sanitize invalid characters.
+
+    Prevents saving non-printable characters a YAML parser might later
+    reject - see https://github.com/teemtee/tmt/issues/3805.
+
+    Based on :py:meth:`!ruamel.yaml.scalarstring.walk_tree` which does
+    not support any other test than "is this character in that string?".
+
+    :param sort_keys: if set, sort mapping keys.
+    """
+
+    from collections.abc import MutableMapping, MutableSequence
+
+    if isinstance(value, MutableMapping):
+        if sort_keys:
+            # Sort the data https://stackoverflow.com/a/40227545
+            sorted_value = CommentedMap()
+
+            for key in sorted(value):
+                sorted_value[key] = value[key]
+
+            value = sorted_value
+
+        for k, v in value.items():
+            if isinstance(v, str):
+                value[k] = _sanitize_yaml_string(v)
+
+            else:
+                value[k] = _sanitize_yaml_tree(v, sort_keys)
+
+        return value
+
+    if isinstance(value, MutableSequence):
+        for k, v in enumerate(value):
+            if isinstance(v, str):
+                value[k] = _sanitize_yaml_string(v)
+
+            else:
+                value[k] = _sanitize_yaml_tree(v, sort_keys)
+
+        return value
+
+    if isinstance(value, str):
+        return _sanitize_yaml_string(value)
+
+    return value
+
+
 def to_yaml(
     data: Any,
     *,
@@ -3454,61 +3524,7 @@ def to_yaml(
 
     output = io.StringIO()
 
-    # Convert multiline strings, sanitize invalid characters. Based on
-    # `scalarstring.walk_tree()` which does not support any other test
-    # than "is this character in that string?"
-    # Prevents saving non-printable characters a YAML parser might later
-    # reject - see https://github.com/teemtee/tmt/issues/3805
-    def _sanitize_yaml_string(s: str) -> str:
-        pattern = ruamel.yaml.reader.Reader.NON_PRINTABLE
-
-        if '\n' in s:
-            s = ruamel.yaml.scalarstring.preserve_literal(s)
-
-        return ''.join(rf'#{{{ord(c):x}}}' if pattern.match(c) else c for c in s)
-
-    def walk_tree(value: Any) -> Any:
-        from collections.abc import MutableMapping, MutableSequence
-
-        if isinstance(value, MutableMapping):
-            for k, v in value.items():
-                if isinstance(v, str):
-                    value[k] = _sanitize_yaml_string(v)
-
-                else:
-                    value[k] = walk_tree(v)
-
-            return value
-
-        if isinstance(value, MutableSequence):
-            for k, v in enumerate(value):
-                if isinstance(v, str):
-                    value[k] = _sanitize_yaml_string(v)
-
-                else:
-                    value[k] = walk_tree(v)
-
-            return value
-
-        if isinstance(value, str):
-            return _sanitize_yaml_string(value)
-
-        return value
-
-    data = walk_tree(data)
-
-    if isinstance(data, dict) and sort:
-        # Sort the data https://stackoverflow.com/a/40227545
-        sorted_data = CommentedMap()
-
-        for key in sorted(data):
-            # ignore[literal-required]: `data` may be either a generic
-            # dictionary, or _RawFmfId which allows only a limited set
-            # of keys. That spooks mypy, but we do not add any keys,
-            # therefore we will not escape TypedDict constraints.
-            sorted_data[key] = data[key]
-
-        data = sorted_data
+    data = _sanitize_yaml_tree(data, sort)
 
     yaml.dump(data, output)
 
