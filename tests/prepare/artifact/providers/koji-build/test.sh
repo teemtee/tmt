@@ -19,6 +19,9 @@ rlJournalStart
 
         # Get koji build ID for make
         make_build_id=$(get_koji_build_id "make" "f${fedora_release}")
+        if [ -z "$make_build_id" ]; then
+            rlDie "Failed to get koji build ID for make"
+        fi
     rlPhaseEnd
 
     rlPhaseStartTest "Test koji.build provider"
