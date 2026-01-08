@@ -1,0 +1,3 @@
+description: |
+    Irrelevant and confusing `sudo -n true` messages polluting the verbose
+    output of ``tmt run`` and ``tmt try`` commands have been removed.

@@ -902,7 +902,7 @@ class GuestFacts(SerializableContainer):
 
     def _query_can_sudo(self, guest: 'Guest') -> Optional[bool]:
         try:
-            guest.execute(Command("sudo", "-n", "true"))
+            guest.execute(Command("sudo", "-n", "true"), silent=True)
         except tmt.utils.RunError:
             # Failed non-interactive sudo, so we can't sudo
             return False
