@@ -179,18 +179,16 @@ class GuestContainer(tmt.Guest):
             provision_step = cast(Provision, self.parent)
 
             run_id = provision_step.run_workdir.name
-            # Get plan name for unique network naming across multiple plans
-            plan_name = provision_step.plan.name
+            # Use pathless_safe_name for unique network naming across multiple plans
+            plan_safe_name = provision_step.plan.pathless_safe_name
         else:
             raise tmt.utils.GeneralError(
                 "Cannot create network: provision step parent is not available"
             )
 
-        # Use full run_id and plan name to ensure uniqueness across multiple plans
+        # Use run_id and plan's safe name to ensure uniqueness across multiple plans
         # running simultaneously while maintaining good debugging information
-        # Replace path separators and other problematic characters with dashes
-        safe_plan_name = plan_name.replace('/', '-').replace('_', '-').lstrip('-')
-        self.network = f"tmt-{run_id}-{safe_plan_name}-network"
+        self.network = f"tmt-{run_id}-{plan_safe_name}-network"
 
         try:
             self.podman(
