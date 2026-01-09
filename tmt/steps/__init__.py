@@ -1064,13 +1064,11 @@ class Step(
                 continue
 
             # Since the environment variable names are upper-cased only, plugin and field names
-            # require a bit of character manipulation. Note that the field name does not need the
-            # `_` -> `-` swap: fmf keys use `-`, Python fields and Click option names use `_` we
-            # already have.
+            # require a bit of character manipulation.
             plugin_name: str = match.group(2).lower().replace('_', '-')
-            param_name: str = match.group(3).lower()
+            option_name: str = key_to_option(match.group(3).lower())
 
-            environment_invocations[plugin_name][param_name] = (envvar_name, envvar_value)
+            environment_invocations[plugin_name][option_name] = (envvar_name, envvar_value)
 
         name_generator = DefaultNameGenerator.from_raw_phases(raw_data)
 
@@ -1142,10 +1140,88 @@ class Step(
             self.plan._applied_cli_invocations.append(invocation)
 
         # A bit of logging before we start messing with step data
-        for i, raw_datum in enumerate(raw_data):
-            debug2(f'raw step datum #{i}', str(raw_datum))
+        def _log_raw_data(stage: str, raw_data: list[_RawStepData]) -> None:
+            debug2(f'stage {stage}')
 
-        # The first pass, apply CLI invocations that can be applied
+            for i, raw_datum in enumerate(raw_data):
+                debug3(f'raw step datum #{i}', str(raw_datum))
+
+        how: Optional[str]
+
+        _log_raw_data('before', raw_data)
+
+        # First pass, apply environment variables
+        for i, (how, plugin_environment) in enumerate(environment_invocations.items()):
+            debug2(f'environment invocation #{i}', f'{how}: {plugin_environment}')
+
+            original_environment_variable_names = [
+                envvar_name for (envvar_name, _) in plugin_environment.values()
+            ]
+
+            # We do not want to invent our custom parsers. Instead, we need to reach the Click
+            # command of our plugin, because that command already knows how to handle its input.
+            # This requires a bit of traversal. Get the right plugin class, then its command, and
+            # then its parameters.
+            plugin_class = self._plugin_base_class._supported_methods.get_plugin(how)
+
+            if plugin_class is None:
+                self.warn(
+                    f"Found environment variables for plugin '{self.step_name}/{how}',"
+                    " but the plugin was not found. The following environment variables"
+                    " will have no effect:"
+                )
+
+                self.warn(fmf.utils.listed(original_environment_variable_names))
+
+                continue
+
+            plugin_command = plugin_class.class_.command()
+            plugin_context = plugin_command.make_context(info_name=None, args=[])
+
+            # Apparently, Click does not offer a mapping between option names and their
+            # `click.Parameter` descriptions. We shall build our own then, we will need it.
+            plugin_params = {param.name: param for param in plugin_command.params}
+
+            # Now, traverse all raw data, skip those for different plugins, and update the suitable
+            # ones with values coming from the environment variables.
+            for j, raw_datum in enumerate(raw_data):
+                debug3(f'raw step datum #{j}', str(raw_datum))
+
+                compatible_raw_data = [
+                    raw_datum for raw_datum in raw_data if raw_datum.get('how') == how
+                ]
+
+                if not compatible_raw_data:
+                    self.warn(
+                        f"Found environment variables for plugin '{self.step_name}/{how}',"
+                        f" but the plugin is not used by the plan '{self.plan.name}'. The"
+                        " following environment variables will have no effect:"
+                    )
+
+                    self.warn(fmf.utils.listed(original_environment_variable_names))
+
+                    continue
+
+                for option_name, (envvar_name, envvar_value) in plugin_environment.items():
+                    debug4('raw environment variable', f'{envvar_name}={envvar_value}')
+
+                    param_name = option_to_key(option_name)
+
+                    plugin_param = plugin_params.get(param_name)
+
+                    if plugin_param is None:
+                        raise GeneralError(
+                            f"Failed to find the '{param_name.replace('_', '-')}' key"
+                            f" of the '{self.step_name}/{how}' plugin."
+                        )
+
+                    raw_datum[key_to_option(param_name)] = plugin_param.type_cast_value(  # type: ignore[literal-required]
+                        plugin_context, str(envvar_value)
+                    )
+
+        _log_raw_data('after environment invocations', raw_data)
+
+        # Second pass, apply CLI invocations that can be applied
         for i, invocation in enumerate(self.__class__.cli_invocations):
             debug2(f'invocation #{i}', str(invocation.options))
 
@@ -1153,7 +1229,7 @@ class Step(
                 debug3('already applied')
                 continue
 
-            how: Optional[str] = invocation.options.get('how')
+            how = cast(Optional[str], invocation.options.get('how'))
 
             if how is None:
                 debug3('how-less phase (postponed)')
@@ -1229,7 +1305,9 @@ class Step(
 
                 postponed_invocations.append(invocation)
 
-        # The second pass, evaluate postponed CLI invocations
+        _log_raw_data('after targeted CLI invocations', raw_data)
+
+        # Third pass, evaluate postponed CLI invocations
         for i, invocation in enumerate(postponed_invocations):
             debug2(f'postponed invocation #{i}', str(invocation.options))
 
@@ -1240,7 +1318,7 @@ class Step(
             # preferred image name without specifying the provision
             # method, thus the 'how' key can be unset and we respect the
             # provision method specified in the plan.
-            how = invocation.options.get('how')
+            how = cast(Optional[str], invocation.options.get('how'))
 
             for j, raw_datum in enumerate(raw_data):
                 debug2(f'raw step datum #{j}', str(raw_datum))
@@ -1289,76 +1367,8 @@ class Step(
 
             raw_data = pruned_raw_data
 
-        # Third pass, apply environment variables
-        for i, (how, plugin_environment) in enumerate(environment_invocations.items()):
-            debug2(f'environment invocation #{i}', f'{how}: {plugin_environment}')
-
-            original_environment_variable_names = [
-                envvar_name for (envvar_name, _) in plugin_environment.values()
-            ]
-
-            # We do not want to invent our custom parsers. Instead, we need to reach the Click
-            # command of our plugin, because that command already knows how to handle its input.
-            # This requires a bit of traversal. Get the right plugin class, then its command, and
-            # then its parameters.
-            plugin_class = self._plugin_base_class._supported_methods.get_plugin(how)
-
-            if plugin_class is None:
-                self.warn(
-                    f"Found environment variables for plugin '{self.step_name}/{how}',"
-                    " but the plugin was not found. The following environment variables"
-                    " will have no effect:"
-                )
-
-                self.warn(fmf.utils.listed(original_environment_variable_names))
-
-                continue
-
-            plugin_command = plugin_class.class_.command()
-            plugin_context = plugin_command.make_context(info_name=None, args=[])
-
-            # Apparently, Click does not offer a mapping between option names and their
-            # `click.Parameter` descriptions. We shall build our own then, we will need it.
-            plugin_params = {param.name: param for param in plugin_command.params}
-
-            # Now, traverse all raw data, skip those for different plugins, and update the suitable
-            # ones with values coming from the environment variables.
-            for j, raw_datum in enumerate(raw_data):
-                debug3(f'raw step datum #{j}', str(raw_datum))
-
-                compatible_raw_data = [
-                    raw_datum for raw_datum in raw_data if raw_datum.get('how') == how
-                ]
-
-                if not compatible_raw_data:
-                    self.warn(
-                        f"Found environment variables for plugin '{self.step_name}/{how}',"
-                        f" but the plugin is not used by the plan '{self.plan.name}'. The"
-                        " following environment variables will have no effect:"
-                    )
-
-                    self.warn(fmf.utils.listed(original_environment_variable_names))
-
-                    continue
-
-                for param_name, (envvar_name, envvar_value) in plugin_environment.items():
-                    debug4('raw environment variable', f'{envvar_name}={envvar_value}')
-
-                    plugin_param = plugin_params.get(param_name)
-
-                    if plugin_param is None:
-                        raise GeneralError(
-                            f"Failed to find the key '{param_name.replace('_', '-')}'"
-                            " of the '{self.step_name}/{how}' plugin."
-                        )
-
-                    raw_datum[param_name] = plugin_param.type_cast_value(  # type: ignore[literal-required]
-                        plugin_context, str(envvar_value)
-                    )
-
         # And bit of logging after re're done with CLI invocations
-        for i, raw_datum in enumerate(raw_data):
-            debug2(f'updated raw step datum #{i}', str(raw_datum))
+        _log_raw_data('after general CLI invocations', raw_data)
 
         raw_data = self._set_default_names(raw_data)
         return self._set_default_how(raw_data)
