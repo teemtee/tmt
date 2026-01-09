@@ -1,0 +1,8 @@
+description: |
+  tmt now correctly applies :ref:`/overview/plugin-variables` even when
+  plugin is not mentioned on the command line. This has been a limit
+  imposed by tmt implementation, where only phases of plugins explicitly
+  mentioned were modified by environment. For example, ``tmt run report
+  -h html`` would ignore every ``TMT_PLUGIN_REPORT_*`` environment
+  variable except those for the ``html`` plugin, ``TMT_PLUGIN_REPORT_HTML_*``.
+  This limitation has been removed.
