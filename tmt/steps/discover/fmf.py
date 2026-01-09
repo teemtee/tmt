@@ -468,7 +468,12 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             return True
         return super().is_in_standalone_mode
 
-    def _fetch_local_repository(self, path: Optional[Path]) -> Optional[Path]:
+    def _fetch_remote_source(self, url: str) -> Optional[Path]:
+        super()._fetch_remote_source(url)
+        return Path(self.data.path) if self.data.path else None
+
+    def _fetch_local_repository(self) -> Optional[Path]:
+        path = Path(self.data.path) if self.data.path else None
         if path is not None:
             fmf_root: Optional[Path] = path
         else:

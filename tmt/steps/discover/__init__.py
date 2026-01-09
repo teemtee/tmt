@@ -295,11 +295,12 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         Discover tests after dist-git applied patches
         """
 
-    def _fetch_remote_source(self, url: str) -> None:
+    def _fetch_remote_source(self, url: str) -> Optional[Path]:
         """
         Fetch a remote git repository or archive from the given url to test_dir.
 
         :param url: URL of the remote source.
+        :returns: Potential path to the metadata tree root within the fetched source.
         """
         self.info('url', url, 'green')
         if self.data.url_content_type == "git":
@@ -319,12 +320,12 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             raise ValueError(
                 f"url-content-type has unsupported value: {self.data.url_content_type}"
             )
+        return None
 
-    def _fetch_local_repository(self, path: Optional[Path]) -> Optional[Path]:
+    def _fetch_local_repository(self) -> Optional[Path]:
         """
         Fetch local repository.
 
-        :param path: Potential path to the local repository.
         :returns: Path to the root of the metadata tree within the copied repository.
         """
         raise NotImplementedError
@@ -335,11 +336,10 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
 
         :returns: Path to the root of the metadata tree within the fetched source.
         """
-        path = Path(self.get('path')) if self.get('path', None) else None
         if self.data.url is None:
-            path = self._fetch_local_repository(path=path)
+            path = self._fetch_local_repository()
         else:
-            self._fetch_remote_source(url=self.data.url)
+            path = self._fetch_remote_source(url=self.data.url)
 
         if path is None or path.resolve() == Path.cwd().resolve():
             return Path('')

@@ -291,7 +291,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         if self.data.tests:
             click.echo(tmt.utils.format('tests', [test.name for test in self.data.tests]))
 
-    def _fetch_local_repository(self, path: Optional[Path]) -> Optional[Path]:
+    def _fetch_local_repository(self) -> Optional[Path]:
         assert self.step.plan.worktree  # narrow type
 
         # Symlink tests directory to the plan work tree
