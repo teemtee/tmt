@@ -1,4 +1,5 @@
 import re
+from collections.abc import Iterator
 from typing import Optional, Union
 
 import tmt.utils
@@ -77,6 +78,13 @@ exit 0
 exit $?
 {% endif %}
 """  # noqa: E501
+
+
+# Compiled regex patterns for APT error messages
+_UNABLE_TO_LOCATE_PATTERN = re.compile(r'Unable to locate package\s+([^\s]+)', re.IGNORECASE)
+_E_UNABLE_TO_LOCATE_PATTERN = re.compile(
+    r'E:\s+Unable to locate package\s+([^\s]+)', re.IGNORECASE
+)
 
 
 class AptEngine(PackageManagerEngine):
@@ -281,3 +289,11 @@ class Apt(PackageManager[AptEngine]):
         options: Optional[Options] = None,
     ) -> CommandOutput:
         raise tmt.utils.GeneralError("There is no support for debuginfo packages in apt.")
+
+    def extract_package_name_from_package_manager_output(self, output: str) -> Iterator[str]:
+        """
+        Extract failed package names from APT error output.
+        """
+        for pattern in [_UNABLE_TO_LOCATE_PATTERN, _E_UNABLE_TO_LOCATE_PATTERN]:
+            for match in pattern.finditer(output):
+                yield match.group(1)

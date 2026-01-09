@@ -1,4 +1,5 @@
 import re
+from collections.abc import Iterator
 from typing import Optional, Union
 
 import tmt.utils
@@ -32,6 +33,11 @@ PACKAGE_PATH: dict[FileSystemPath, str] = {
     # an installable path.
     FileSystemPath('/usr/bin/dos2unix'): 'dos2unix',
 }
+
+
+# Compiled regex patterns for APK error messages
+_UNABLE_TO_LOCATE_PATTERN = re.compile(r'unable to locate package\s+([^\s]+)', re.IGNORECASE)
+_NO_SUCH_PACKAGE_PATTERN = re.compile(r'ERROR:\s+([^\s:]+):\s+No such package', re.IGNORECASE)
 
 
 class ApkEngine(PackageManagerEngine):
@@ -189,3 +195,11 @@ class Apk(PackageManager[ApkEngine]):
         options: Optional[Options] = None,
     ) -> CommandOutput:
         raise tmt.utils.GeneralError("There is no support for debuginfo packages in apk.")
+
+    def extract_package_name_from_package_manager_output(self, output: str) -> Iterator[str]:
+        """
+        Extract failed package names from APK error output.
+        """
+        for pattern in [_UNABLE_TO_LOCATE_PATTERN, _NO_SUCH_PACKAGE_PATTERN]:
+            for match in pattern.finditer(output):
+                yield match.group(1)

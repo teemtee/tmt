@@ -1,4 +1,5 @@
 import re
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Optional, cast
 
 from tmt._compat.pathlib import Path
@@ -201,6 +202,13 @@ class DnfEngine(PackageManagerEngine):
         return ShellScript(f"createrepo {directory}")
 
 
+# Compiled regex patterns for DNF/YUM error messages
+_NO_PACKAGE_PROVIDES_PATTERN = re.compile(r'no package provides\s+([^\s\n]+)', re.IGNORECASE)
+_UNABLE_TO_FIND_MATCH_PATTERN = re.compile(r'Unable to find a match:\s+([^\s\n]+)', re.IGNORECASE)
+_NO_MATCH_FOR_ARGUMENT_PATTERN = re.compile(r'No match for argument:\s+([^\s\n]+)', re.IGNORECASE)
+_NO_PACKAGE_AVAILABLE_PATTERN = re.compile(r'No package\s+([^\s\n]+)\s+available', re.IGNORECASE)
+
+
 # ignore[type-arg]: TypeVar in package manager registry annotations is
 # puzzling for type checkers. And not a good idea in general, probably.
 @provides_package_manager('dnf')  # type: ignore[arg-type]
@@ -259,6 +267,19 @@ class Dnf(PackageManager[DnfEngine]):
             results[installable] = True
 
         return results
+
+    def extract_package_name_from_package_manager_output(self, output: str) -> Iterator[str]:
+        """
+        Extract failed package names from DNF/YUM error output.
+        """
+        for pattern in [
+            _NO_PACKAGE_PROVIDES_PATTERN,
+            _UNABLE_TO_FIND_MATCH_PATTERN,
+            _NO_MATCH_FOR_ARGUMENT_PATTERN,
+            _NO_PACKAGE_AVAILABLE_PATTERN,
+        ]:
+            for match in pattern.finditer(output):
+                yield match.group(1)
 
 
 class Dnf5Engine(DnfEngine):
