@@ -50,6 +50,8 @@ class InstallBase(tmt.utils.Common):
 
     package_directory: Path
 
+    install_outputs: list[tmt.utils.CommandOutput]
+
     def __init__(
         self,
         *,
@@ -74,6 +76,7 @@ class InstallBase(tmt.utils.Common):
         self.exclude = [Package(package) for package in exclude]
 
         self.skip_missing = bool(parent.get('missing') == 'skip')
+        self.install_outputs = []
 
         # Prepare package lists and installation command
         self.prepare_installables(dependencies, directories)
@@ -345,26 +348,28 @@ class InstallDnf(InstallBase, Copr):
         Install packages stored on a remote URL
         """
 
-        self.guest.package_manager.install(
+        output = self.guest.package_manager.install(
             *self.list_installables("remote package", *self.remote_packages),
             options=Options(
                 excluded_packages=self.exclude,
                 skip_missing=self.skip_missing,
             ),
         )
+        self.install_outputs.append(output)
 
     def install_from_repository(self) -> None:
         """
         Install packages from a repository
         """
 
-        self.guest.package_manager.install(
+        output = self.guest.package_manager.install(
             *self.list_installables("package", *self.packages),
             options=Options(
                 excluded_packages=self.exclude,
                 skip_missing=self.skip_missing,
             ),
         )
+        self.install_outputs.append(output)
 
     def install_debuginfo(self) -> None:
         """
@@ -517,12 +522,13 @@ class InstallApt(InstallBase):
             PackagePath(self.package_directory / filename) for filename in self.local_packages
         ]
 
-        self.guest.package_manager.install(
+        output = self.guest.package_manager.install(
             *self.list_installables('local packages', *filelist),
             options=Options(
                 excluded_packages=self.exclude, skip_missing=self.skip_missing, check_first=False
             ),
         )
+        self.install_outputs.append(output)
 
         summary = fmf.utils.listed([str(path) for path in self.local_packages], 'local package')
         self.info('total', f"{summary} installed", 'green')
@@ -532,26 +538,28 @@ class InstallApt(InstallBase):
         Install packages stored on a remote URL
         """
 
-        self.guest.package_manager.install(
+        output = self.guest.package_manager.install(
             *self.list_installables("remote package", *self.remote_packages),
             options=Options(
                 excluded_packages=self.exclude,
                 skip_missing=self.skip_missing,
             ),
         )
+        self.install_outputs.append(output)
 
     def install_from_repository(self) -> None:
         """
         Install packages from a repository
         """
 
-        self.guest.package_manager.install(
+        output = self.guest.package_manager.install(
             *self.list_installables("package", *self.packages),
             options=Options(
                 excluded_packages=self.exclude,
                 skip_missing=self.skip_missing,
             ),
         )
+        self.install_outputs.append(output)
 
     def install_debuginfo(self) -> None:
         """
@@ -687,13 +695,14 @@ class InstallBootc(InstallBase):
 class InstallMock(InstallBase):
     # TODO this really looks like it should be a subclass of InstallDnf
     def install_from_repository(self) -> None:
-        self.guest.package_manager.install(
+        output = self.guest.package_manager.install(
             *self.list_installables("package", *self.packages),
             options=Options(
                 excluded_packages=self.exclude,
                 skip_missing=self.skip_missing,
             ),
         )
+        self.install_outputs.append(output)
 
     def install_local(self) -> None:
         from tmt.steps.provision.mock import GuestMock
@@ -714,7 +723,7 @@ class InstallMock(InstallBase):
             for filename in self.local_packages
         ]
 
-        self.guest.package_manager.install(
+        output = self.guest.package_manager.install(
             *filelist,
             options=Options(
                 excluded_packages=self.exclude,
@@ -722,6 +731,7 @@ class InstallMock(InstallBase):
                 check_first=False,
             ),
         )
+        self.install_outputs.append(output)
 
         self.guest.package_manager.reinstall(
             *filelist,
@@ -736,13 +746,14 @@ class InstallMock(InstallBase):
         self.info('total', f"{summary} installed", 'green')
 
     def install_from_url(self) -> None:
-        self.guest.package_manager.install(
+        output = self.guest.package_manager.install(
             *self.list_installables("remote package", *self.remote_packages),
             options=Options(
                 excluded_packages=self.exclude,
                 skip_missing=self.skip_missing,
             ),
         )
+        self.install_outputs.append(output)
 
 
 class InstallApk(InstallBase):
@@ -759,7 +770,7 @@ class InstallApk(InstallBase):
             PackagePath(self.package_directory / filename) for filename in self.local_packages
         ]
 
-        self.guest.package_manager.install(
+        output = self.guest.package_manager.install(
             *self.list_installables('local packages', *filelist),
             options=Options(
                 excluded_packages=self.exclude,
@@ -768,6 +779,7 @@ class InstallApk(InstallBase):
                 check_first=False,
             ),
         )
+        self.install_outputs.append(output)
 
         summary = fmf.utils.listed([str(path) for path in self.local_packages], 'local package')
         self.info('total', f"{summary} installed", 'green')
@@ -787,13 +799,14 @@ class InstallApk(InstallBase):
         Install packages from a repository
         """
 
-        self.guest.package_manager.install(
+        output = self.guest.package_manager.install(
             *self.list_installables("package", *self.packages),
             options=Options(
                 excluded_packages=self.exclude,
                 skip_missing=self.skip_missing,
             ),
         )
+        self.install_outputs.append(output)
 
     def install_debuginfo(self) -> None:
         """
@@ -950,6 +963,85 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
 
     _data_class = PrepareInstallData
 
+    def _extract_failed_packages_from_outputs(
+        self, outputs: list[tmt.utils.CommandOutput], guest: 'Guest'
+    ) -> set[str]:
+        """
+        Extract package names from installation outputs.
+
+        Returns a set of package names that failed to install.
+        """
+        import itertools
+
+        def _extract_from_output(output: tmt.utils.CommandOutput) -> Iterator[str]:
+            if output.stderr:
+                yield from guest.package_manager.extract_package_name_from_package_manager_output(
+                    output.stderr
+                )
+
+            if output.stdout:
+                yield from guest.package_manager.extract_package_name_from_package_manager_output(
+                    output.stdout
+                )
+
+        return set(
+            itertools.chain.from_iterable(_extract_from_output(output) for output in outputs)
+        )
+
+    def _show_failed_packages_with_tests(self, failed_packages: set[str]) -> None:
+        """
+        Show failed packages and which tests require them.
+        """
+        # Get test dependencies from discover step
+        required_dependencies_to_tests, recommended_dependencies_to_tests = (
+            self.step.plan.discover.dependencies_to_tests
+        )
+
+        failed_required_packages: dict[str, list[str]] = {}
+        failed_recommended_packages: dict[str, list[str]] = {}
+        failed_unattributed_packages: set[str] = set()
+
+        for failed_package in failed_packages:
+            if tests := required_dependencies_to_tests.get(failed_package):
+                failed_required_packages[failed_package] = sorted(tests)
+
+            elif tests := recommended_dependencies_to_tests.get(failed_package):
+                failed_recommended_packages[failed_package] = sorted(tests)
+
+            else:
+                failed_unattributed_packages.add(failed_package)
+
+        self.info('')
+
+        if failed_required_packages:
+            self.info('Required packages failed to install, aborting:', color='red', shift=1)
+            for pkg, tests in failed_required_packages.items():
+                self.info(
+                    pkg,
+                    f'required by: {", ".join(tests)}',
+                    color='red',
+                    shift=2,
+                )
+
+        if failed_recommended_packages:
+            self.info(
+                'Recommended packages failed to install, continuing regardless:',
+                color='yellow',
+                shift=1,
+            )
+            for pkg, tests in failed_recommended_packages.items():
+                self.info(
+                    pkg,
+                    f'recommended by: {", ".join(tests)}',
+                    color='yellow',
+                    shift=2,
+                )
+
+        if failed_unattributed_packages:
+            self.info('Other failed packages:', color='red', shift=1)
+            for pkg in sorted(failed_unattributed_packages):
+                self.info(pkg, color='red', shift=2)
+
     def go(
         self,
         *,
@@ -1067,6 +1159,24 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             installer.enable_copr(self.data.copr)
 
         # ... and install packages.
-        installer.install()
+        try:
+            installer.install()
+        except Exception as exc:
+            # Extract and show failed packages if this is a RunError
+            # Convert exception to CommandOutput and use the unified extraction method
+            if isinstance(exc, tmt.utils.RunError):
+                failed_packages = self._extract_failed_packages_from_outputs([exc.output], guest)
+                if failed_packages:
+                    self._show_failed_packages_with_tests(failed_packages)
+            raise
+
+        # For recommended packages (skip_missing=True), check output even if no exception
+        # was raised, since --skip-broken makes the command succeed but packages still fail
+        if installer.skip_missing:
+            failed_packages = self._extract_failed_packages_from_outputs(
+                installer.install_outputs, guest
+            )
+            if failed_packages:
+                self._show_failed_packages_with_tests(failed_packages)
 
         return outcome

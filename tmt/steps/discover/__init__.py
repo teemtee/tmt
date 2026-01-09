@@ -576,21 +576,24 @@ class Discover(tmt.steps.Step):
         phase.apply_policies()
 
     @property
-    def dependencies_to_tests(self) -> dict[str, list[str]]:
+    def dependencies_to_tests(self) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
         """
-        Dictionary mapping dependencies to tests.
+        A tuple containing two dictionaries mapping dependencies to tests (required & recommended)
         """
 
-        dependencies_to_tests: dict[str, list[str]] = {}
+        required_dependencies_to_tests: dict[str, list[str]] = {}
+        recommended_dependencies_to_tests: dict[str, list[str]] = {}
 
         for test_origin in self.tests(enabled=True):
             test = test_origin.test
             test_name = test.name
-            # Collect all dependencies (required + recommended)
-            for dependency in [*test.require, *test.recommend]:
-                dependencies_to_tests.setdefault(str(dependency), []).append(test_name)
+            # Collect dependencies separately for required and recommended
+            for dependency in test.require:
+                required_dependencies_to_tests.setdefault(str(dependency), []).append(test_name)
+            for dependency in test.recommend:
+                recommended_dependencies_to_tests.setdefault(str(dependency), []).append(test_name)
 
-        return dependencies_to_tests
+        return required_dependencies_to_tests, recommended_dependencies_to_tests
 
     def load(self) -> None:
         """

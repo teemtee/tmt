@@ -221,61 +221,6 @@ class Prepare(tmt.steps.Step):
         preparations = fmf.utils.listed(self.preparations_applied, 'preparation')
         self.info('summary', f'{preparations} applied', 'green', shift=1)
 
-    def _extract_failed_packages(self, exceptions: list[Exception]) -> set[str]:
-        """
-        Extract package names from installation exceptions.
-
-        Returns a list of package names that failed to install.
-        """
-
-        failed_packages: set[str] = set()
-        import re
-
-        for exc in exceptions:
-            # Extract failed packages from RunError stderr/stdout
-            if isinstance(exc, tmt.utils.RunError):
-                error_text = ''
-                if exc.stderr:
-                    error_text += exc.stderr + '\n'
-                if exc.stdout:
-                    error_text += exc.stdout
-
-                if error_text:
-                    # dnf, dnf5, yum, apt, apk specific patterns
-                    patterns = [
-                        r'no package provides\s+([^\s\n]+)',
-                        r'Unable to find a match:\s+([^\s\n]+)',
-                        r'No match for argument:\s+([^\s\n]+)',
-                        r'No package\s+([^\s\n]+)\s+available',
-                        r'Unable to locate package\s+([^\s]+)',
-                        r'E:\s+Unable to locate package\s+([^\s]+)',
-                    ]
-
-                    for pattern in patterns:
-                        matches = re.findall(pattern, error_text, re.IGNORECASE)
-                        failed_packages.update(matches)
-
-        return failed_packages
-
-    def _show_failed_packages_with_tests(self, failed_packages: set[str]) -> None:
-        """
-        Show failed packages and which tests require them.
-        """
-
-        # Get test dependencies from discover step
-        dependencies_to_tests = self.plan.discover.dependencies_to_tests
-
-        # Show failed packages with their associated tests
-        self.info('')
-        self.info('failed packages', '', 'red', shift=1)
-
-        for failed_package in failed_packages:
-            matching_tests = []
-            if failed_package in dependencies_to_tests:
-                matching_tests = dependencies_to_tests[failed_package]
-            sorted_matching_tests = ', '.join(sorted(matching_tests))
-            self.info(failed_package, f'required by {sorted_matching_tests}', color='red', shift=2)
-
     def go(self, force: bool = False) -> None:
         """
         Prepare the guests
@@ -553,9 +498,7 @@ class Prepare(tmt.steps.Step):
         self._save_results(self.results)
 
         if exceptions:
-            failed_packages = self._extract_failed_packages(exceptions)
-            if failed_packages:
-                self._show_failed_packages_with_tests(failed_packages)
+            # TODO: needs a better message...
             raise tmt.utils.PrepareError(
                 'prepare step failed',
                 causes=exceptions,

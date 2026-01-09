@@ -270,6 +270,16 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
         raise NotImplementedError
 
+    def extract_package_name_from_package_manager_output(self, output: str) -> Iterator[str]:
+        """
+        Extract failed package names from package manager error output.
+
+        :param output: Error output (stdout or stderr) from the package manager.
+        :returns: An iterator of package names that failed to install.
+        """
+
+        raise NotImplementedError
+
     def install(
         self,
         *installables: Installable,
