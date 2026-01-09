@@ -60,6 +60,7 @@ from tmt.utils import (
     Command,
     CommandOutput,
     Environment,
+    EnvVarName,
     EnvVarValue,
     GeneralError,
     HasPhaseWorkdir,
@@ -129,6 +130,11 @@ TEST_TOPOLOGY_FILENAME_BASE = 'tmt-test-topology'
 
 CODE_BLOCK_REGEXP = re.compile(r"^\s*\.\. code-block::.*$\n", re.MULTILINE)
 
+#: A regular expression to cut the special, plugin-specific environment
+#: variable names into their components: step, plugin, and option names.
+PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN = re.compile(
+    r'TMT_PLUGIN_(?P<step>[A-Z]+)_(?P<plugin>[A-Z]+)_(?P<option>[A-Z_]+)'
+)
 
 PHASE_OPTIONS = tmt.options.create_options_decorator(
     [
@@ -1035,6 +1041,37 @@ class Step(
         # and we will get back to them once we're done with those we can apply immediately.
         postponed_invocations: list[tmt.cli.CliInvocation] = []
 
+        # A container of all plugin-specific environment variables. Here we collect all
+        # plugin-specific environment variables, and separate them into buckets per plugin. Note
+        # that we do not care about *phases* - there is no way to apply environment variable to
+        # one specific phase, they are very strong and affect all phases spawned from the same
+        # plugin, i.e. with the same `how`.
+        environment_invocations: dict[str, dict[str, tuple[EnvVarName, EnvVarValue]]] = (
+            collections.defaultdict(dict)
+        )
+
+        for envvar_name, envvar_value in Environment.from_environ().items():
+            # Skip all environment variables not matching the special pattern...
+            match = PLUGIN_ENVIRONMENT_VARIABLE_NAME_PATTERN.match(envvar_name)
+
+            if not match:
+                continue
+
+            # ... or for different step. Neither of these groups is interesting here and now.
+            step_name = match.group(1).lower()
+
+            if step_name != self.step_name:
+                continue
+
+            # Since the environment variable names are upper-cased only, plugin and field names
+            # require a bit of character manipulation. Note that the field name does not need the
+            # `_` -> `-` swap: fmf keys use `-`, Python fields and Click option names use `_` we
+            # already have.
+            plugin_name: str = match.group(2).lower().replace('_', '-')
+            param_name: str = match.group(3).lower()
+
+            environment_invocations[plugin_name][param_name] = (envvar_name, envvar_value)
+
         name_generator = DefaultNameGenerator.from_raw_phases(raw_data)
 
         def _ensure_name(raw_datum: _RawStepData) -> _RawStepData:
@@ -1251,6 +1288,73 @@ class Step(
                 pruned_raw_data.append(raw_datum)
 
             raw_data = pruned_raw_data
+
+        # Third pass, apply environment variables
+        for i, (how, plugin_environment) in enumerate(environment_invocations.items()):
+            debug2(f'environment invocation #{i}', f'{how}: {plugin_environment}')
+
+            original_environment_variable_names = [
+                envvar_name for (envvar_name, _) in plugin_environment.values()
+            ]
+
+            # We do not want to invent our custom parsers. Instead, we need to reach the Click
+            # command of our plugin, because that command already knows how to handle its input.
+            # This requires a bit of traversal. Get the right plugin class, then its command, and
+            # then its parameters.
+            plugin_class = self._plugin_base_class._supported_methods.get_plugin(how)
+
+            if plugin_class is None:
+                self.warn(
+                    f"Found environment variables for plugin '{self.step_name}/{how}',"
+                    " but the plugin was not found. The following environment variables"
+                    " will have no effect:"
+                )
+
+                self.warn(fmf.utils.listed(original_environment_variable_names))
+
+                continue
+
+            plugin_command = plugin_class.class_.command()
+            plugin_context = plugin_command.make_context(info_name=None, args=[])
+
+            # Apparently, Click does not offer a mapping between option names and their
+            # `click.Parameter` descriptions. We shall build our own then, we will need it.
+            plugin_params = {param.name: param for param in plugin_command.params}
+
+            # Now, traverse all raw data, skip those for different plugins, and update the suitable
+            # ones with values coming from the environment variables.
+            for j, raw_datum in enumerate(raw_data):
+                debug3(f'raw step datum #{j}', str(raw_datum))
+
+                compatible_raw_data = [
+                    raw_datum for raw_datum in raw_data if raw_datum.get('how') == how
+                ]
+
+                if not compatible_raw_data:
+                    self.warn(
+                        f"Found environment variables for plugin '{self.step_name}/{how}',"
+                        f" but the plugin is not used by the plan '{self.plan.name}'. The"
+                        " following environment variables will have no effect:"
+                    )
+
+                    self.warn(fmf.utils.listed(original_environment_variable_names))
+
+                    continue
+
+                for param_name, (envvar_name, envvar_value) in plugin_environment.items():
+                    debug4('raw environment variable', f'{envvar_name}={envvar_value}')
+
+                    plugin_param = plugin_params.get(param_name)
+
+                    if plugin_param is None:
+                        raise GeneralError(
+                            f"Failed to find the key '{param_name.replace('_', '-')}'"
+                            " of the '{self.step_name}/{how}' plugin."
+                        )
+
+                    raw_datum[param_name] = plugin_param.type_cast_value(  # type: ignore[literal-required]
+                        plugin_context, str(envvar_value)
+                    )
 
         # And bit of logging after re're done with CLI invocations
         for i, raw_datum in enumerate(raw_data):
