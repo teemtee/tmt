@@ -1182,25 +1182,25 @@ class Step(
             # `click.Parameter` descriptions. We shall build our own then, we will need it.
             plugin_params = {param.name: param for param in plugin_command.params}
 
-            # Now, traverse all raw data, skip those for different plugins, and update the suitable
+            # Now, traverse the raw data, skip those for different plugins, and update the suitable
             # ones with values coming from the environment variables.
-            for j, raw_datum in enumerate(raw_data):
+            compatible_raw_data = [
+                raw_datum for raw_datum in raw_data if raw_datum.get('how') == how
+            ]
+
+            if not compatible_raw_data:
+                self.warn(
+                    f"Found environment variables for plugin '{self.step_name}/{how}',"
+                    f" but the plugin is not used by the plan '{self.plan.name}'. The"
+                    " following environment variables will have no effect:"
+                )
+
+                self.warn(fmf.utils.listed(original_environment_variable_names))
+
+                continue
+
+            for j, raw_datum in enumerate(compatible_raw_data):
                 debug3(f'raw step datum #{j}', str(raw_datum))
-
-                compatible_raw_data = [
-                    raw_datum for raw_datum in raw_data if raw_datum.get('how') == how
-                ]
-
-                if not compatible_raw_data:
-                    self.warn(
-                        f"Found environment variables for plugin '{self.step_name}/{how}',"
-                        f" but the plugin is not used by the plan '{self.plan.name}'. The"
-                        " following environment variables will have no effect:"
-                    )
-
-                    self.warn(fmf.utils.listed(original_environment_variable_names))
-
-                    continue
 
                 for option_name, (envvar_name, envvar_value) in plugin_environment.items():
                     debug4('raw environment variable', f'{envvar_name}={envvar_value}')
