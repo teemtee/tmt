@@ -1,7 +1,6 @@
 import abc
 import copy
 import functools
-import itertools
 import signal as _signal
 import subprocess
 import threading
