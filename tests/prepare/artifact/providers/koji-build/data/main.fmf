@@ -3,6 +3,10 @@
         how: fmf
     provision:
         how: container
+    prepare:
+      - how: artifact
+        provide:
+          - koji.build:2761810
     execute:
         how: tmt
 
