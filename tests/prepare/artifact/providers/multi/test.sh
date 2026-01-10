@@ -15,7 +15,8 @@ rlJournalStart
         fi
 
         fedora_release=43
-        build_container_image "fedora/${fedora_release}:latest"
+        image_name="fedora/${fedora_release}:latest"
+        build_container_image "$image_name"
 
         # Get koji build ID for make
         make_build_id=$(get_koji_build_id "make" "f${fedora_release}")
@@ -26,7 +27,7 @@ rlJournalStart
 
     rlPhaseStartTest "Test multiple providers"
         rlRun "tmt run -i $run --scratch -vv --all \
-            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/fedora/${fedora_release}:latest \
+            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
             prepare --how artifact \
                 --provide koji.build:$make_build_id \
                 --provide repository-url:https://download.docker.com/linux/fedora/docker-ce.repo" 0 "Run with multiple providers"
