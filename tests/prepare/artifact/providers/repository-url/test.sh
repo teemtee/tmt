@@ -14,12 +14,13 @@ rlJournalStart
         fi
 
         fedora_release=43
-        build_container_image "fedora/${fedora_release}:latest"
+        image_name="fedora/${fedora_release}:latest"
+        build_container_image "$image_name"
     rlPhaseEnd
 
     rlPhaseStartTest "Test repository-url provider"
         rlRun "tmt run -i $run --scratch -vv --all \
-            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/fedora/${fedora_release}:latest" 0 "Run with repository-url provider"
+            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name" 0 "Run with repository-url provider"
 
         rlAssertGrep "docker-ce-cli" "$run/log.txt"
     rlPhaseEnd
