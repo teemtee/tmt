@@ -63,28 +63,108 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
     .. note::
 
-       This is a draft plugin to be implemented
+       This is a tech preview feature.
 
     This step downloads and makes available a given artifact
-    on the guests. Currently the artifacts supported are:
+    on the guests. The artifacts are downloaded and a local
+    repository is created so they can be installed during the
+    test execution.
 
-    * Koji builds:
-      * prefix: ``koji.build``
-      * id: Koji build ID
+    Currently the following artifact providers are supported:
 
-    * Koji tasks (scratch builds):
-      * prefix: ``koji.task``
-      * id: Koji task ID
+    **Koji**
 
-    * Koji nvr:
-      * prefix: ``koji.nvr``
-      * id: package nvr
+    Builds from the `Fedora Koji <https://koji.fedoraproject.org>`__ build system.
+
+    * ``koji.build:<build-id>`` - Koji build by build ID
+    * ``koji.task:<task-id>`` - Koji task (including scratch builds)
+    * ``koji.nvr:<nvr>`` - Koji build by NVR (name-version-release)
+
+    Example usage:
 
     .. code-block:: yaml
 
         prepare:
             how: artifact
-            provision: koji.build:123456
+            provide:
+              - koji.build:123456
+              - koji.task:654321
+              - koji.nvr:openssl-3.2.6-2.fc42
+
+    **Brew** (Red Hat internal)
+
+    Builds from the `Red Hat Brew <https://brewweb.engineering.redhat.com>`__
+    build system.
+
+    * ``brew.build:<build-id>`` - Brew build by build ID
+    * ``brew.task:<task-id>`` - Brew task (including scratch builds)
+    * ``brew.nvr:<nvr>`` - Brew build by NVR
+
+    Example usage:
+
+    .. code-block:: yaml
+
+        prepare:
+            how: artifact
+            provide:
+              - brew.build:123456
+              - brew.task:654321
+              - brew.nvr:openssl-3.2.6-2.el10
+
+    **Copr**
+
+    Builds from the `Fedora Copr <https://copr.fedorainfracloud.org>`__
+    build system.
+
+    * ``copr.build:<build-id>:<chroot>`` - Copr build by ID and chroot
+
+    Example usage:
+
+    .. code-block:: yaml
+
+        prepare:
+            how: artifact
+            provide:
+              - copr.build:1784470:fedora-43-x86_64
+
+    **File**
+
+    RPMs from local files or remote URLs.
+
+    * ``file:<path>`` - Local RPM file(s) specified via path or a glob pattern
+    * ``file:<url>`` - Remote RPM file URL (http/https)
+    * ``file:<directory>`` - All RPMs from a local directory
+
+    Example usage:
+
+    .. code-block:: yaml
+
+        prepare:
+            how: artifact
+            provide:
+              - file:/tmp/my-package.rpm
+              - file:/tmp/rpms/*.rpm
+              - file:/tmp/rpms
+
+    **Repository**
+
+    Remote yum repositories.
+
+    * ``repository-url:<url>`` - URL to a ``.repo`` file
+
+    .. note::
+
+        The ``repository-url`` provider only adds the yum repository to the
+        guest system, and does not download the RPMs from the repository.
+
+    Example usage:
+
+    .. code-block:: yaml
+
+        prepare:
+            how: artifact
+            provide:
+              - repository-url:https://my-site/asdf.repo
     """
 
     _data_class = PrepareArtifactData
