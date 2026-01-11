@@ -985,16 +985,11 @@ class GuestTestcloud(tmt.GuestSsh):
             return
 
         # Prepare the console log
-        assert self.logdir is not None  # Narrow type
-        console_log = ConsoleLog(
-            name=CONSOLE_LOG_FILE,
-            testcloud_symlink_path=self.logdir / f'{CONSOLE_LOG_FILE}.link',
-            guest=self,
-        )
+        console_log = ConsoleLog(name=CONSOLE_LOG_FILE, guest=self)
 
-        self.collect_log(console_log, hint=f'following {console_log.testcloud_symlink_path}')
+        self.collect_log(console_log, hint=f'following {console_log.filepath}')
 
-        self.setup_logs(self._logger)
+        self.setup_logs(logger=self._logger)
 
         # Prepare config
         self.prepare_config()
@@ -1050,7 +1045,7 @@ class GuestTestcloud(tmt.GuestSsh):
 
         # Prepare DomainConfiguration object before Instance object
         self._domain = DomainConfiguration(self.instance_name)
-        self._domain.console_log_file = console_log.testcloud_symlink_path
+        self._domain.console_log_file = console_log.filepath
 
         # Prepare Workarounds object
         self._workarounds = Workarounds(defaults=True)
@@ -1454,14 +1449,10 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
 
 @container
 class ConsoleLog(tmt.steps.provision.GuestLog):
-    #: Path where :py:mod:`testcloud`` will create the symlink to the
-    #: console log. This is the log path as known to tmt.
-    testcloud_symlink_path: Path
-
     #: Temporary directory for storing the console log content.
     exchange_directory: Optional[Path] = None
 
-    def setup(self, logger: tmt.log.Logger) -> None:
+    def setup(self, *, logger: tmt.log.Logger) -> None:
         # Prepare the exchange directory for testcloud/tmt console log transport.
         self.exchange_directory = Path(tempfile.mkdtemp(prefix="testcloud-"))
         logger.debug(f"Created log exchange directory '{self.exchange_directory}'.", level=3)
@@ -1481,7 +1472,7 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
                 Command("chcon", "--type", "virt_log_t", self.exchange_directory), silent=True
             )
 
-    def teardown(self, logger: tmt.log.Logger) -> None:
+    def teardown(self, *, logger: tmt.log.Logger) -> None:
         if self.exchange_directory is None:
             return
 
@@ -1491,8 +1482,6 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
             shutil.rmtree(self.exchange_directory)
             self.exchange_directory = None
 
-            self.testcloud_symlink_path.unlink(missing_ok=True)
-
         except OSError as error:
             tmt.utils.show_exception_as_warning(
                 exception=error,
@@ -1500,8 +1489,21 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
                 logger=logger,
             )
 
-    def update(self, filepath: Path, logger: tmt.log.Logger) -> None:
-        with self.staging_file(filepath, logger) as staging_filepath:
-            # We cannot use simple "cp" as we are dealing with symlinks,
-            # we need the content of the file, not the file it points to.
-            shutil.copyfile(self.testcloud_symlink_path, staging_filepath, follow_symlinks=True)
+    def update(self, *, final: bool = False, logger: tmt.log.Logger) -> None:
+        # Our filepath is a symlink to the actual log, we can't mess
+        # with it. And we do not need to do anything to update it,
+        # unless it's the final update, then we need to turn it into
+        # a regular file.
+
+        if final:
+            # The final update copy *the content* of the console log,
+            # symlink or not, and save it as a regular file.
+            with self.staging_file(self.filepath, logger) as staging_filepath:
+                # We cannot use simple "cp" as we are dealing with symlinks,
+                # we need the content of the file, not the file it points to.
+                shutil.copyfile(self.filepath, staging_filepath, follow_symlinks=True)
+
+        # Nothing to do to update our filepath, it's a symlink to
+        # the real log, it's up-to-date all the time.
+        else:
+            pass
