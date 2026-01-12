@@ -165,7 +165,7 @@ class GuestContainer(tmt.Guest):
         """
         Set up the desired network.
         Creates a unique network name based on the run ID and plan name,
-        or will create that network if it doesn't exist.
+        and creates that network if it doesn't exist.
         Returns the network arguments to be used in podman run command.
 
         For multi-guest provisions, all guests share the same network to enable
@@ -175,12 +175,12 @@ class GuestContainer(tmt.Guest):
         # Use provision-level network name to allow multi-guest communication
         # while avoiding collisions across different test runs
         if self.parent:
-            # Cast the parent to Provision to satisfy type checkers
-            provision_step = cast(Provision, self.parent)
+            if not isinstance(self.parent, Provision):
+                raise tmt.utils.GeneralError("Unexpected parent for provision step")
+            run_id = self.parent.run_workdir.name
 
-            run_id = provision_step.run_workdir.name
             # Use pathless_safe_name for unique network naming across multiple plans
-            plan_safe_name = provision_step.plan.pathless_safe_name
+            plan_safe_name = self.parent.plan.pathless_safe_name
         else:
             raise tmt.utils.GeneralError(
                 "Cannot create network: provision step parent is not available"

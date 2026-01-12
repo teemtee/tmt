@@ -1,12 +1,13 @@
 import os
 import re
 from typing import Any, Optional, Union
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock, patch
 
 import _pytest.logging
 import pytest
 from pytest_container.container import ContainerData
 
+import tmt
 from tmt.log import Logger, LoggingFunction
 from tmt.steps.provision import (
     AnsibleApplicable,
@@ -17,11 +18,12 @@ from tmt.steps.provision import (
     Provision,
     TransferOptions,
 )
-from tmt.steps.provision.podman import GuestContainer
+from tmt.steps.provision.podman import GuestContainer, PodmanGuestData
 from tmt.utils import (
     Command,
     CommandOutput,
     Environment,
+    GeneralError,
     OnProcessEndCallback,
     OnProcessStartCallback,
     Path,
@@ -193,3 +195,103 @@ def test_mkdtemp(
         guest.execute(ShellScript(f'ls -al {path}'))
 
     assert re.match(r'(?i).*?No such file or directory.*', exc_context.value.stderr or '')
+
+
+class TestPodmanNetworkSetup:
+    """Tests for GuestContainer._setup_network() method"""
+
+    def test_setup_network_success(self, root_logger: Logger) -> None:
+        """Test successful network creation"""
+        # Create mock provision step with proper attributes
+        mock_provision = Mock(spec=Provision)
+        mock_provision.run_workdir.name = 'test-run-123'
+        mock_provision.plan = Mock()
+        mock_provision.plan.pathless_safe_name = 'test-plan'
+
+        # Create GuestContainer instance
+        guest_data = PodmanGuestData(image='fedora:latest')
+        guest = GuestContainer(
+            logger=root_logger, data=guest_data, name='test-container', parent=mock_provision
+        )
+
+        # Mock the podman method
+        guest.podman = Mock(return_value=CommandOutput(stdout='', stderr=''))
+
+        # Call _setup_network
+        result = guest._setup_network()
+
+        # Verify network name is set correctly
+        assert guest.network == 'tmt-test-run-123-test-plan-network'
+
+        # Verify podman network create was called
+        guest.podman.assert_called_once()
+        call_args = guest.podman.call_args
+        assert call_args is not None
+        args, kwargs = call_args
+        assert len(args) == 1
+        assert args[0]._command == ['network', 'create', 'tmt-test-run-123-test-plan-network']
+        assert kwargs == {'message': "Create network 'tmt-test-run-123-test-plan-network'."}
+
+        # Verify return value
+        assert result == ['--network', 'tmt-test-run-123-test-plan-network']
+
+    def test_setup_network_multi_guest_same_provision(self, root_logger: Logger) -> None:
+        """Test multi-guest scenario where all guests share the same network"""
+        # Create shared provision step
+        mock_provision = Mock(spec=Provision)
+        mock_provision.run_workdir.name = 'shared-run-123'
+        mock_provision.plan = Mock()
+        mock_provision.plan.pathless_safe_name = 'shared-plan'
+
+        # Create multiple guests for the same provision step
+        guests = []
+        for i in range(3):
+            guest_data = PodmanGuestData(image='fedora:latest')
+            guest = GuestContainer(
+                logger=root_logger, data=guest_data, name=f'guest-{i}', parent=mock_provision
+            )
+            guests.append(guest)
+
+        # Mock podman calls - first succeeds, others get "already exists"
+        guests[0].podman = Mock(return_value=CommandOutput(stdout='', stderr=''))
+
+        for guest in guests[1:]:
+            run_error = RunError(
+                'Network creation failed',
+                Command('network', 'create', 'test-network'),
+                1,
+                stdout='',
+                stderr='Error: network already exists',
+            )
+            guest.podman = Mock(side_effect=run_error)
+            guest.debug = Mock()
+
+        # Setup networks for all guests
+        results = []
+        for guest in guests:
+            result = guest._setup_network()
+            results.append(result)
+
+        # Verify all guests use the same network name
+        expected_network = 'tmt-shared-run-123-shared-plan-network'
+        for guest in guests:
+            assert guest.network == expected_network
+
+        # Verify all guests return the same network arguments
+        expected_args = ['--network', expected_network]
+        for result in results:
+            assert result == expected_args
+
+        # Verify first guest creates the network
+        call_args = guests[0].podman.call_args
+        assert call_args is not None
+        args, kwargs = call_args
+        assert len(args) == 1
+        assert args[0]._command == ['network', 'create', expected_network]
+        assert kwargs == {'message': f"Create network '{expected_network}'."}
+
+        # Verify subsequent guests handle "already exists" gracefully
+        for guest in guests[1:]:
+            guest.debug.assert_called_once_with(
+                f"Network '{expected_network}' already exists.", level=3
+            )
