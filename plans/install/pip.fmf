@@ -1,7 +1,7 @@
 summary: Verify that the pip install works
 prepare:
   - summary: Remove any rpm packages if present
-    script: rpm -q tmt && dnf remove -y tmt* || true
+    script: rpm -q tmt && dnf remove -y 'tmt*' || true
   - summary: Prepare the virtual environment
     script: python3 -m venv /tmp/venv && /tmp/venv/bin/pip install --upgrade pip
     order: 80
