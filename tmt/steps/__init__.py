@@ -2464,6 +2464,8 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         Creates new :py:attr:`ResultOutcome.ERROR` result.
 
         :param label: Used as the name of the newly created result.
+        :param timer: a stopwatch providing timing-related info about
+            the reported action.
         :param exception: If set, it is attached as note to the newly
             created result.
         :param note: If set, it is attached to the newly created result.
