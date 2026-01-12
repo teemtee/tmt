@@ -167,14 +167,14 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 ),
             )
 
-        try:
-            _prepare_remote_repository()
+        _, error, timer = Stopwatch.measure(_prepare_remote_repository)
 
-        except Exception as exc:
+        if error is not None:
             return self._save_error_outcome(
                 label=f'{self.name} / remote script repository',
+                timer=timer,
                 guest=guest,
-                exception=exc,
+                exception=error,
                 outcome=outcome,
             )
 
@@ -196,14 +196,14 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 )
             )
 
-        try:
-            _prepare_topology()
+        _, error, timer = Stopwatch.measure(_prepare_topology)
 
-        except Exception as exc:
+        if error is not None:
             return self._save_error_outcome(
                 label=f'{self.name} / guest topology',
+                timer=timer,
                 guest=guest,
-                exception=exc,
+                exception=error,
                 outcome=outcome,
             )
 
@@ -269,6 +269,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             if output is None:
                 return self._save_error_outcome(
                     label=script_name,
+                    timer=timer,
                     note='Command produced no output but raised no exception',
                     guest=guest,
                     outcome=outcome,

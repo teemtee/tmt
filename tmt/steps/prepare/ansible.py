@@ -278,6 +278,7 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
             if output is None:
                 return self._save_error_outcome(
                     label=playbook_name,
+                    timer=timer,
                     note='Command produced no output but raised no exception',
                     guest=guest,
                     outcome=outcome,

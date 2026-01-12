@@ -2337,6 +2337,9 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
                 result=ResultOutcome.PASS,
                 log=[log_filepath.relative_to(self.step_workdir)],
                 guest=ResultGuestData.from_guest(guest=guest),
+                start_time=timer.start_time_formatted,
+                end_time=timer.end_time_formatted,
+                duration=timer.duration_formatted,
             )
         )
 
@@ -2396,6 +2399,9 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
                     note=tmt.utils.render_exception_as_notes(exception),
                     log=[log_filepath.relative_to(self.step_workdir)],
                     guest=ResultGuestData.from_guest(guest=guest),
+                    start_time=timer.start_time_formatted,
+                    end_time=timer.end_time_formatted,
+                    duration=timer.duration_formatted,
                 )
             )
 
@@ -2406,6 +2412,9 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
                     result=ResultOutcome.ERROR,
                     note=tmt.utils.render_exception_as_notes(exception),
                     guest=ResultGuestData.from_guest(guest=guest),
+                    start_time=timer.start_time_formatted,
+                    end_time=timer.end_time_formatted,
+                    duration=timer.duration_formatted,
                 )
             )
 
@@ -2418,6 +2427,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         self,
         *,
         label: str,
+        timer: Stopwatch,
         exception: Exception,
         note: None = None,
         guest: 'Guest',
@@ -2430,6 +2440,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         self,
         *,
         label: str,
+        timer: Stopwatch,
         exception: None = None,
         note: str,
         guest: 'Guest',
@@ -2441,6 +2452,7 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         self,
         *,
         label: str,
+        timer: Stopwatch,
         exception: Optional[Exception] = None,
         note: Optional[str] = None,
         guest: 'Guest',
@@ -2452,6 +2464,8 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
         Creates new :py:attr:`ResultOutcome.ERROR` result.
 
         :param label: Used as the name of the newly created result.
+        :param timer: a stopwatch providing timing-related info about
+            the reported action.
         :param exception: If set, it is attached as note to the newly
             created result.
         :param note: If set, it is attached to the newly created result.
@@ -2469,6 +2483,9 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
                     result=ResultOutcome.ERROR,
                     note=tmt.utils.render_exception_as_notes(exception),
                     guest=ResultGuestData.from_guest(guest=guest),
+                    start_time=timer.start_time_formatted,
+                    end_time=timer.end_time_formatted,
+                    duration=timer.duration_formatted,
                 )
             )
 
@@ -2481,6 +2498,9 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
                     result=ResultOutcome.ERROR,
                     note=[note],
                     guest=ResultGuestData.from_guest(guest=guest),
+                    start_time=timer.start_time_formatted,
+                    end_time=timer.end_time_formatted,
+                    duration=timer.duration_formatted,
                 )
             )
 
