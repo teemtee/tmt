@@ -174,21 +174,19 @@ class GuestContainer(tmt.Guest):
 
         # Use provision-level network name to allow multi-guest communication
         # while avoiding collisions across different test runs
-        if self.parent:
-            if not isinstance(self.parent, Provision):
-                raise tmt.utils.GeneralError("Unexpected parent for provision step")
-            run_id = self.parent.run_workdir.name
-
-            # Use pathless_safe_name for unique network naming across multiple plans
-            plan_safe_name = self.parent.plan.pathless_safe_name
-        else:
+        if not self.parent:
             raise tmt.utils.GeneralError(
                 "Cannot create network: provision step parent is not available"
             )
 
+        if not isinstance(self.parent, Provision):
+            raise tmt.utils.GeneralError("Unexpected parent for provision step")
+
         # Use run_id and plan's safe name to ensure uniqueness across multiple plans
         # running simultaneously while maintaining good debugging information
-        self.network = f"tmt-{run_id}-{plan_safe_name}-network"
+        self.network = (
+            f"tmt-{self.parent.run_workdir.name}-{self.parent.plan.pathless_safe_name}-network"
+        )
 
         try:
             self.podman(
