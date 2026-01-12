@@ -25,19 +25,19 @@ _REPO_NAME_GENERATOR = DefaultNameGenerator(known_names=[])
 
 # ignore[type-arg]: TypeVar in provider registry annotations is
 # puzzling for type checkers. And not a good idea in general, probably.
-@provides_artifact_provider('repository-url')  # type: ignore[arg-type]
+@provides_artifact_provider('repository-file')  # type: ignore[arg-type]
 class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
     """
     Provider for making RPM artifacts from a repository discoverable without downloading them.
 
-    The provider identifier should start with 'repository-url:' followed by a URL to a .repo file,
-    e.g., "repository-url:https://download.docker.com/linux/centos/docker-ce.repo".
+    The provider identifier should start with 'repository-file:' followed by a URL to a .repo file,
+    e.g., "repository-file:https://download.docker.com/linux/centos/docker-ce.repo".
 
     The provider downloads the .repo file to the guest's ``/etc/yum.repos.d/`` directory,
     and lists RPMs available in the defined repositories without downloading them, acting as a
     discovery-only provider. Artifacts are all available RPM packages listed in the repository.
 
-    :param raw_provider_id: The full provider identifier, starting with 'repository-url:'.
+    :param raw_provider_id: The full provider identifier, starting with 'repository-file:'.
     :param logger: Logger instance for outputting messages.
     :raises GeneralError: If the .repo file URL is invalid.
     """
@@ -49,7 +49,7 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
-        prefix = 'repository-url:'
+        prefix = 'repository-file:'
         if not raw_provider_id.startswith(prefix):
             raise ValueError(f"Invalid repository provider format: '{raw_provider_id}'.")
         value = raw_provider_id[len(prefix) :]

@@ -40,7 +40,7 @@ rlJournalStart
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/fedora/${fedora_release}:latest \
             prepare --insert --how artifact \
                --provide koji.build:$make_buildid \
-               --provide repository-url:https://download.docker.com/linux/fedora/docker-ce.repo" 0 "Run tmt with artifact providers"
+               --provide repository-file:https://download.docker.com/linux/fedora/docker-ce.repo" 0 "Run tmt with artifact providers"
     rlPhaseEnd
 
     rlPhaseStartCleanup
