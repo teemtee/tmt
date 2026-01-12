@@ -31,7 +31,7 @@ rlJournalStart
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
             prepare --how artifact \
                 --provide koji.build:$make_build_id \
-                --provide repository-url:https://download.docker.com/linux/fedora/docker-ce.repo" 0 "Run with multiple providers"
+                --provide repository-file:https://download.docker.com/linux/fedora/docker-ce.repo" 0 "Run with multiple providers"
 
         rlAssertGrep "make" "$run/log.txt"
         rlAssertGrep "docker-ce-cli" "$run/log.txt"
