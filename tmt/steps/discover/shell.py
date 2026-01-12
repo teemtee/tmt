@@ -291,6 +291,14 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         if self.data.tests:
             click.echo(tmt.utils.format('tests', [test.name for test in self.data.tests]))
 
+    def checkout_ref(self) -> None:
+        super().checkout_ref()
+
+        keep_git_metadata = True if self.data.dist_git_source else self.data.keep_git_metadata
+        if not keep_git_metadata:
+            # Remove .git so that it's not copied to the SUT
+            shutil.rmtree(self.test_dir / '.git', ignore_errors=True)
+
     def _fetch_local_repository(self) -> Optional[Path]:
         assert self.step.plan.worktree  # narrow type
 
@@ -324,24 +332,6 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
         tests = fmf.Tree({'summary': 'tests'})
 
         self.log_import_plan_details()
-
-        # Git metadata are necessary for dist_git_source
-        keep_git_metadata = True if self.data.dist_git_source else self.data.keep_git_metadata
-
-        if keep_git_metadata:
-            if self.step.plan.fmf_root:
-                # If exists, git_root can be only the same or parent of fmf_root
-                git_root = tmt.utils.git.git_root(
-                    fmf_root=self.step.plan.fmf_root, logger=self._logger
-                )
-                if git_root and git_root != self.step.plan.fmf_root:
-                    raise tmt.utils.DiscoverError(
-                        "The 'keep-git-metadata' option can be "
-                        "used only when fmf root is the same as git root."
-                    )
-        else:
-            # Remove .git so that it's not copied to the SUT
-            shutil.rmtree(self.test_dir / '.git', ignore_errors=True)
 
         # Check and process each defined shell test
         for data in self.data.tests:
