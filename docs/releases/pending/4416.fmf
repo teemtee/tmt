@@ -1,0 +1,7 @@
+description: |
+  Test :ref:`/spec/tests/duration` is now measured and enforced across
+  all test restarts and guest reboots. With previous tmt versions,
+  a guest reboot or test restart cleared the duration timer, and every
+  test invocation was therefore given full budget. This could lead to
+  tests running forever. From this release, tmt measures the duration
+  for the test as a whole, no matter how many times it was invoked.

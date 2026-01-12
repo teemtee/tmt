@@ -18,6 +18,14 @@ description: |
 
     Must be a ``string``. The default value is ``5m``.
 
+    .. note::
+
+       Test duration is measured and enforced for all its invocations
+       combined. Every time a test is invoked, after a
+       :ref:`/spec/tests/restart` or guest reboot, it gets only the
+       remainder of its ``duration`` limit. Limit is not refreshed by
+       these events.
+
     .. versionadded:: 1.34
         Multiplication
 
