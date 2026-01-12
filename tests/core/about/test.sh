@@ -8,7 +8,7 @@ export.story: dict json rst template yaml
 export.test: dict json nitrate polarion template yaml
 package_managers: apk apt bootc dnf dnf5 mock-dnf mock-dnf5 mock-yum rpm-ostree yum
 plan_shapers: max-tests repeat
-prepare.artifact.providers: brew.build brew.nvr brew.task copr.build file koji.build koji.nvr koji.task repository-url
+prepare.artifact.providers: brew.build brew.nvr brew.task copr.build file koji.build koji.nvr koji.task repository-file
 prepare.feature: crb epel fips profile
 step.cleanup: tmt
 step.discover: fmf shell
