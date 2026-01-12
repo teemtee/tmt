@@ -9,6 +9,7 @@ rlJournalStart
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
         rlRun "pushd data"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
+        rlRun "run2=\$(mktemp -d)" 0 "Create second run directory"
 
         if ! rlIsFedora; then
             rlDie "Test requires Fedora"
@@ -25,7 +26,7 @@ rlJournalStart
         fi
     rlPhaseEnd
 
-    rlPhaseStartTest "Test multiple providers"
+    rlPhaseStartTest "Test multiple providers with command-line override"
         rlRun "tmt run -i $run --scratch -vv --all \
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
             prepare --how artifact \
@@ -36,8 +37,16 @@ rlJournalStart
         rlAssertGrep "docker-ce-cli" "$run/log.txt"
     rlPhaseEnd
 
+    rlPhaseStartTest "Test multiple providers from plan file"
+        rlRun "tmt run -i $run2 --scratch -vv --all \
+            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name" 0 "Run with multiple providers from plan file only"
+
+        rlAssertGrep "make" "$run2/log.txt"
+        rlAssertGrep "docker-ce-cli" "$run2/log.txt"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
-        rlRun "rm -rf $run"
+        rlRun "rm -rf $run $run2"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd

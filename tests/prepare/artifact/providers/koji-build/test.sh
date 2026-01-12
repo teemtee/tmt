@@ -9,6 +9,7 @@ rlJournalStart
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
         rlRun "pushd data"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
+        rlRun "run2=\$(mktemp -d)" 0 "Create second run directory"
 
         if ! rlIsFedora; then
             rlDie "Test requires Fedora"
@@ -25,7 +26,7 @@ rlJournalStart
         fi
     rlPhaseEnd
 
-    rlPhaseStartTest "Test koji.build provider"
+    rlPhaseStartTest "Test koji.build provider with command-line override"
         rlRun "tmt run -i $run --scratch -vv --all \
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
             prepare --how artifact --provide koji.build:$make_build_id" 0 "Run with koji.build provider"
@@ -33,8 +34,15 @@ rlJournalStart
         rlAssertGrep "tmt-artifact-shared" "$run/log.txt"
     rlPhaseEnd
 
+    rlPhaseStartTest "Test koji.build provider from plan file"
+        rlRun "tmt run -i $run2 --scratch -vv --all \
+            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name" 0 "Run with koji.build provider from plan file only"
+
+        rlAssertGrep "tmt-artifact-shared" "$run2/log.txt"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
-        rlRun "rm -rf $run"
+        rlRun "rm -rf $run $run2"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd
