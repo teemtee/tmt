@@ -6,7 +6,7 @@
     prepare:
         how: artifact
         provide:
-          - repository-url:https://download.docker.com/linux/fedora/docker-ce.repo
+          - repository-file:https://download.docker.com/linux/fedora/docker-ce.repo
     execute:
         how: tmt
 

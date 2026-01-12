@@ -1,5 +1,5 @@
 #!/bin/bash
-# Example test for repository-url artifact provider
+# Example test for repository-file artifact provider
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ../../../../images.sh || exit 1
 
@@ -19,17 +19,17 @@ rlJournalStart
         build_container_image "$image_name"
     rlPhaseEnd
 
-    rlPhaseStartTest "Test repository-url provider with command-line override"
+    rlPhaseStartTest "Test repository-file provider with command-line override"
         rlRun "tmt run -i $run --scratch -vv --all \
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
-            prepare --how artifact --provide repository-url:https://download.docker.com/linux/fedora/docker-ce.repo" 0 "Run with repository-url provider"
+            prepare --how artifact --provide repository-file:https://download.docker.com/linux/fedora/docker-ce.repo" 0 "Run with repository-file provider"
 
         rlAssertGrep "docker-ce-cli" "$run/log.txt"
     rlPhaseEnd
 
-    rlPhaseStartTest "Test repository-url provider from plan file"
+    rlPhaseStartTest "Test repository-file provider from plan file"
         rlRun "tmt run -i $run2 --scratch -vv --all \
-            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name" 0 "Run with repository-url provider from plan file only"
+            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name" 0 "Run with repository-file provider from plan file only"
 
         rlAssertGrep "docker-ce-cli" "$run2/log.txt"
     rlPhaseEnd
