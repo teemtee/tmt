@@ -47,6 +47,7 @@ from tmt.utils import (
     HasEnvironment,
     HasStepWorkdir,
     Path,
+    ProcessExitCodes,
     ShellScript,
     Stopwatch,
     configure_bool_constant,
@@ -489,6 +490,12 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
                 if self.on_interrupt_callback_token is not None:
                     tmt.utils.signals.remove_callback(self.on_interrupt_callback_token)
 
+        # Do *not* refresh deadline's perception of `now`. The deadline
+        # has been either initialized before the first invocation of the
+        # test, or it has been refreshed after the last invocation - in
+        # any case, its "now" is set, and if we refresh it now, we
+        # basically count time spent by tmt itself before and after the
+        # invocation against test's deadline.
         timeout = int(deadline.time_left.total_seconds()) if deadline is not None else None
 
         with Stopwatch() as timer:
@@ -520,14 +527,21 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
 
                 self.return_code = error.returncode
 
-                if self.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
-                    self.logger.debug(f"Test duration '{self.test.duration}' exceeded.")
-
-                elif tmt.utils.ProcessExitCodes.is_pidfile(self.return_code):
-                    self.logger.warning('Test failed to manage its pidfile.')
-
         self.end_time = timer.end_time_formatted
         self.real_duration = timer.duration_formatted
+
+        # Now refresh the deadline - if there is still time remaining,
+        # next invocation should have it available.
+        if deadline:
+            with deadline:
+                if deadline.is_due:
+                    self.return_code = ProcessExitCodes.TIMEOUT
+
+        if self.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
+            self.logger.debug(f"Test duration '{self.test.duration}' exceeded.")
+
+        elif tmt.utils.ProcessExitCodes.is_pidfile(self.return_code):
+            self.logger.warning('Test failed to manage its pidfile.')
 
         return output
 
