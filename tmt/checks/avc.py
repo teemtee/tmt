@@ -382,11 +382,11 @@ class AvcCheck(Check):
     ignore_pattern: list[Pattern[str]] = field(
         default_factory=lambda: DEFAULT_IGNORE_PATTERNS[:],
         help="""
-             Optional list of regular expressions to ignore in AVC
-             denials. If an AVC denial matches any of these patterns,
-             it will be ignored and not cause a failure. Any other
-             denials will still cause the test to fail. By default,
-             informative messages about policy reload are ignored.
+             Optional list of regular expressions to ignore in AVC denials.
+             If an AVC denial matches any of these patterns, it will be ignored
+             and not cause a failure. Any other denials will still cause the test
+             to fail. By default, informative messages about policy reload are
+             ignored.
              """,
         metavar="PATTERN",
         normalize=tmt.utils.normalize_pattern_list,
