@@ -25,6 +25,7 @@ $TEST_IMAGE_PREFIX/centos/stream10/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/42/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/43/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/rawhide/upstream:latest
+$TEST_IMAGE_PREFIX/fedora/eln:latest
 $TEST_IMAGE_PREFIX/ubi/8/upstream:latest
 $TEST_IMAGE_PREFIX/ubuntu/22.04/upstream:latest
 $TEST_IMAGE_PREFIX/debian/12.7/upstream:latest}"
@@ -54,6 +55,13 @@ TEST_VIRTUAL_IMAGES_SECONDARY="${TEST_VIRTUAL_IMAGES_SECONDARY:-fedora-42}"
 function is_fedora_rawhide () {
     [[ "$1" =~ ^.*fedora/rawhide[:/].* ]] && return 0
     [[ "$1" = "fedora-rawhide" ]] && return 0
+
+    return 1
+}
+
+function is_fedora_eln () {
+    [[ "$1" =~ ^.*fedora/eln[:/].* ]] && return 0
+    [[ "$1" = "fedora-eln" ]] && return 0
 
     return 1
 }
