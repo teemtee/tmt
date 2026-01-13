@@ -30,7 +30,7 @@ rlJournalStart
     rlPhaseStartTest "Old yaml"
         rlRun -s "tmt test lint old-yaml" 1
         rlAssertGrep "warn: /old-yaml:enabled - 'yes' is not of type 'boolean'" $rlRun_LOG
-        rlAssertGrep 'fail C000 fmf node failed schema validation' $rlRun_LOG
+        rlAssertGrep 'warn C000 fmf node failed schema validation' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Bad"
@@ -61,7 +61,7 @@ rlJournalStart
     rlPhaseStartTest "Fix"
         # With --fix relevancy should be converted
         rlRun -s "tmt test lint --fix relevancy" 1
-        rlAssertGrep 'fail C000 fmf node failed schema validation' $rlRun_LOG
+        rlAssertGrep 'warn C000 fmf node failed schema validation' $rlRun_LOG
         rlAssertGrep 'fix  T005 relevancy converted into adjust' $rlRun_LOG
         # Re-run after --fix fixed the plan
         rlRun -s "tmt test lint --fix relevancy" 0
