@@ -42,10 +42,10 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
     :raises GeneralError: If the .repo file URL is invalid.
     """
 
-    # FIXME: this docstring will need refactoring when the documentation of PrepareArtifact
-    # is made dynamic
-
     repository: Repository
+
+    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
+        super().__init__(raw_provider_id, logger)
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
