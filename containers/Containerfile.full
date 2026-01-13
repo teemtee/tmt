@@ -5,13 +5,16 @@ RUN set -ex && \
     sed -i '/tsflags=nodocs/d' /etc/dnf/dnf.conf && \
     echo "Set disable_coredump false" >> /etc/sudo.conf && \
     # Install necessary packages
-    dnf install -y dnf-plugins-core && \
+    dnf install -y dnf-plugins-core tini && \
     dnf copr enable -y @teemtee/stable && \
     dnf install -y tmt+all beakerlib && \
     dnf autoremove -y && \
     dnf clean all && \
     # Prepare a directory for experimenting
     mkdir /tmt
+
+# Use tini as init to properly handle signals and reap zombie processes
+ENTRYPOINT ["/usr/bin/tini", "--"]
 
 # Prepare files for experimenting
 COPY .fmf /tmt/.fmf
