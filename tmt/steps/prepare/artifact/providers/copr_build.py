@@ -74,7 +74,6 @@ class CoprBuildArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         prepare:
           - summary: copr build artifacts
             how: artifact
-            stage: prepare
             provide:
               - copr.build:1784470:fedora-32-x86_64
     """
