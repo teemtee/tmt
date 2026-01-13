@@ -14,6 +14,7 @@ from tmt.steps.prepare.artifact import RpmArtifactInfo
 from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     ArtifactProviderId,
+    UnsupportedOperationError,
     provides_artifact_provider,
 )
 from tmt.steps.provision import Guest
@@ -74,7 +75,7 @@ class CoprRepositoryProvider(ArtifactProvider[RpmArtifactInfo]):
         self, artifact: RpmArtifactInfo, guest: Guest, destination: Path
     ) -> None:
         """This provider only enables repositories; it does not download individual RPMs."""
-        raise AssertionError(
+        raise UnsupportedOperationError(
             "CoprRepositoryProvider does not support downloading individual RPMs."
         )
 
