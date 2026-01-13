@@ -531,10 +531,15 @@ TMT_RETRY_SESSION_RETRIES
 TMT_RETRY_SESSION_BACKOFF_FACTOR
     The exponential backoff factor for retrying HTTP/HTTPS requests.
     The wait time between retries is calculated as
-    ``{backoff_factor} * (2 ** (retry_number - 1))`` seconds, with no
-    maximum cap applied. For example, with a backoff factor of 2.0 and
-    8 retries, the delays are: 2s, 4s, 8s, 16s, 32s, 64s, 128s, 256s.
-    By default, the backoff factor is 2.0.
+    ``{backoff_factor} * (2 ** (retry_number - 1))`` seconds, up to
+    ``TMT_RETRY_SESSION_BACKOFF_MAX``. For example, with a backoff
+    factor of 2.0, 8 retries and a maximum backoff of 120s, the delays
+    are: 2s, 4s, 8s, 16s, 32s, 64s, 120s, 120s. By default, the backoff
+    factor is 2.0.
+
+TMT_RETRY_SESSION_BACKOFF_MAX
+    The maximum retry wait time between retrying HTTP/HTTPS requests.
+    By default, the maximum is 120s.
 
 TMT_SCRIPTS_DIR
     Destination directory for storing ``tmt`` scripts on the guest.

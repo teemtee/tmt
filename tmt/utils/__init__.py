@@ -276,6 +276,11 @@ RETRY_SESSION_BACKOFF_FACTOR: float = configure_float_constant(
     DEFAULT_RETRY_SESSION_BACKOFF_FACTOR, 'TMT_RETRY_SESSION_BACKOFF_FACTOR'
 )
 
+DEFAULT_RETRY_SESSION_BACKOFF_MAX: float = 120
+RETRY_SESSION_BACKOFF_MAX: float = configure_float_constant(
+    DEFAULT_RETRY_SESSION_BACKOFF_MAX, 'TMT_RETRY_SESSION_BACKOFF_MAX'
+)
+
 # Defaults for HTTP/HTTPS codes that are considered retriable
 DEFAULT_RETRIABLE_HTTP_CODES: tuple[int, ...] = (
     403,  # Forbidden (but Github uses it for rate limiting)
@@ -647,7 +652,7 @@ class Environment(dict[str, EnvVarValue]):
             session = retry_session.create(
                 retries=RETRY_SESSION_RETRIES,
                 backoff_factor=RETRY_SESSION_BACKOFF_FACTOR,
-                backoff_max=None,
+                backoff_max=RETRY_SESSION_BACKOFF_MAX,
                 allowed_methods=('GET',),
                 logger=logger,
             )
@@ -4595,7 +4600,7 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
         *,
         retries: int = RETRY_SESSION_RETRIES,
         backoff_factor: float = RETRY_SESSION_BACKOFF_FACTOR,
-        backoff_max: Optional[int] = None,
+        backoff_max: float = RETRY_SESSION_BACKOFF_MAX,
         allowed_methods: Optional[tuple[str, ...]] = None,
         status_forcelist: tuple[int, ...] = DEFAULT_RETRIABLE_HTTP_CODES,
         timeout: Optional[int] = None,
@@ -4644,7 +4649,7 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
         *,
         retries: int = RETRY_SESSION_RETRIES,
         backoff_factor: float = RETRY_SESSION_BACKOFF_FACTOR,
-        backoff_max: Optional[int] = None,
+        backoff_max: float = RETRY_SESSION_BACKOFF_MAX,
         allowed_methods: Optional[tuple[str, ...]] = None,
         status_forcelist: tuple[int, ...] = DEFAULT_RETRIABLE_HTTP_CODES,
         timeout: Optional[int] = None,
