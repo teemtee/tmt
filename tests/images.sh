@@ -45,8 +45,7 @@ centos-stream-10
 fedora-42
 fedora-43
 fedora-rawhide
-fedora-coreos
-fedora-eln}"
+fedora-coreos}"
 
 # For the following images we do not exercise all possible feature
 # combinations, just make sure the basic functionality works.
