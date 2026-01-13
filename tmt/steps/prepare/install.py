@@ -1,3 +1,4 @@
+import itertools
 import re
 import shutil
 from collections.abc import Iterator
@@ -971,7 +972,6 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
 
         Returns a set of package names that failed to install.
         """
-        import itertools
 
         def _extract_from_output(output: tmt.utils.CommandOutput) -> Iterator[str]:
             if output.stderr:
