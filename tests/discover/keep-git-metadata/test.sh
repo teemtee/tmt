@@ -37,6 +37,16 @@ rlJournalStart
         rlAssertGrep "keep-git-metadata.*can be used only" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "git root is parent of fmf root while remote url is specified"
+        rlRun "git_repo=\$(mktemp -d)"
+        rlRun "mkdir $git_repo/fmf_root"
+        rlRun "cp $tmp/data/plan.fmf $git_repo/fmf_root"
+        rlRun "pushd $git_repo && git init"
+        rlRun "pushd fmf_root && tmt init"
+        rlRun -s "tmt run plan -n /url/keep"
+        rlAssertNotGrep "keep-git-metadata.*can be used only" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd && popd && popd"
         rlRun "rm -rf $tmp $git_repo" 0 "Remove run directory"
