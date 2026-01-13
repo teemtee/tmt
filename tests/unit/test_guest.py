@@ -295,3 +295,41 @@ class TestPodmanNetworkSetup:
             guest.debug.assert_called_once_with(
                 f"Network '{expected_network}' already exists.", level=3
             )
+
+    def test_setup_network_with_custom_prefix(self, root_logger: Logger) -> None:
+        """Test network creation with custom prefix for collision avoidance"""
+        # Create mock provision step with proper attributes
+        mock_provision = Mock(spec=Provision)
+        mock_provision.run_workdir.name = 'test-run-123'
+        mock_provision.plan = Mock()
+        mock_provision.plan.pathless_safe_name = 'test-plan'
+
+        # Create GuestContainer instance with custom network name prefix
+        guest_data = PodmanGuestData(
+            image='fedora:latest', container_network_prefix='tf-pipeline-456'
+        )
+        guest = GuestContainer(
+            logger=root_logger, data=guest_data, name='test-container', parent=mock_provision
+        )
+
+        # Mock the podman method
+        guest.podman = Mock(return_value=CommandOutput(stdout='', stderr=''))
+
+        # Call _setup_network
+        result = guest._setup_network()
+
+        # Verify network name includes the custom prefix
+        expected_network = 'tf-pipeline-456-tmt-test-run-123-test-plan-network'
+        assert guest.network == expected_network
+
+        # Verify podman network create was called with prefixed name
+        guest.podman.assert_called_once()
+        call_args = guest.podman.call_args
+        assert call_args is not None
+        args, kwargs = call_args
+        assert len(args) == 1
+        assert args[0]._command == ['network', 'create', expected_network]
+        assert kwargs == {'message': f"Create network '{expected_network}'."}
+
+        # Verify return value includes prefixed network name
+        assert result == ['--network', expected_network]

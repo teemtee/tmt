@@ -72,6 +72,14 @@ class PodmanGuestData(tmt.steps.provision.GuestData):
         internal=True,
     )
 
+    container_network_prefix: Optional[str] = field(
+        default=None,
+        option='--container-network-prefix',
+        metavar='PREFIX',
+        help='Custom prefix for container network names to avoid collisions across multiple runs.',
+        envvar='TMT_CONTAINER_NETWORK_PREFIX',
+    )
+
     pull_attempts: int = field(
         default=DEFAULT_PULL_ATTEMPTS,
         option='--pull-attempts',
@@ -126,6 +134,7 @@ class GuestContainer(tmt.Guest):
     pull_attempts: int
     pull_interval: int
     stop_time: int
+    container_network_prefix: Optional[str]
     logger: tmt.log.Logger
 
     @property
@@ -184,8 +193,14 @@ class GuestContainer(tmt.Guest):
 
         # Use run_id and plan's safe name to ensure uniqueness across multiple plans
         # running simultaneously while maintaining good debugging information
+        # Include custom prefix if provided for additional collision avoidance
+        prefix = ""
+        if self.container_network_prefix:
+            prefix = f"{self.container_network_prefix}-"
+
         self.network = (
-            f"tmt-{self.parent.run_workdir.name}-{self.parent.plan.pathless_safe_name}-network"
+            f"{prefix}tmt-{self.parent.run_workdir.name}-"
+            f"{self.parent.plan.pathless_safe_name}-network"
         )
 
         try:
