@@ -65,12 +65,20 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
        This is a tech preview feature.
 
-    This step downloads and makes available a given artifact
-    on the guests. The artifacts are downloaded and a local
-    repository is created so they can be installed during the
-    test execution.
+    This plugin makes a given artifact available on the guest.
+    This can consist of downloading the artifacts and creating
+    a preferred repository on the guest.
 
-    Currently the following artifact providers are supported:
+    The goal is to make sure these exact artifacts are being used
+    when requested in one of the
+    :ref:`test require </spec/tests/require>`,
+    :ref:`test recommend </spec/tests/recommend>`, or
+    :ref:`prepare install </plugins/prepare/install>`. Exact NVR
+    *should not* be used in those requests, instead this plugin
+    will take care of disambiguating the requested package based
+    on the provided artifacts.
+
+    Currently, the following artifact providers are supported:
 
     **Koji**
 
@@ -93,8 +101,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
     **Brew** (Red Hat internal)
 
-    Builds from the `Red Hat Brew <https://brewweb.engineering.redhat.com>`__
-    build system.
+    Builds from the Red Hat Brew build system.
 
     * ``brew.build:<build-id>`` - Brew build by build ID
     * ``brew.task:<task-id>`` - Brew task (including scratch builds)
@@ -132,8 +139,8 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     RPMs from local files or remote URLs.
 
     * ``file:<path>`` - Local RPM file(s) specified via path or a glob pattern
-    * ``file:<url>`` - Remote RPM file URL (http/https)
     * ``file:<directory>`` - All RPMs from a local directory
+    * ``file:<url>`` - Remote RPM file URL (http/https)
 
     Example usage:
 
@@ -145,16 +152,17 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
               - file:/tmp/my-package.rpm
               - file:/tmp/rpms/*.rpm
               - file:/tmp/rpms
+              - file:https://example.com/my-package.rpm
 
     **Repository**
 
-    Remote yum repositories.
+    Remote dnf repositories.
 
-    * ``repository-url:<url>`` - URL to a ``.repo`` file
+    * ``repository-file:<url>`` - URL to a ``.repo`` file
 
     .. note::
 
-        The ``repository-url`` provider only adds the yum repository to the
+        The ``repository-file`` provider only adds the dnf repository to the
         guest system, and does not download the RPMs from the repository.
 
     Example usage:
@@ -164,7 +172,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         prepare:
             how: artifact
             provide:
-              - repository-url:https://my-site/asdf.repo
+              - repository-file:https://example.com/my-repo.repo
     """
 
     _data_class = PrepareArtifactData
