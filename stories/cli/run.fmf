@@ -133,7 +133,7 @@ story: 'As a user I want to execute tests easily'
         - tmt run --id ID execute
         - tmt run --id ID execute
     link:
-      - implemented-by: /tmp/base.py
+      - implemented-by: /tmt/base.py
       - documented-by: /docs/examples.rst#debug-tests
 
 /debug:
