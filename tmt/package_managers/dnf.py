@@ -1,5 +1,4 @@
 import re
-from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Optional, cast
 
 from tmt._compat.pathlib import Path
@@ -217,6 +216,13 @@ class Dnf(PackageManager[DnfEngine]):
 
     _engine_class = DnfEngine
 
+    _PACKAGE_NAME_IN_PM_OUTPUT_PATTERNS = [
+        _NO_PACKAGE_PROVIDES_PATTERN,
+        _UNABLE_TO_FIND_MATCH_PATTERN,
+        _NO_MATCH_FOR_ARGUMENT_PATTERN,
+        _NO_PACKAGE_AVAILABLE_PATTERN,
+    ]
+
     bootc_builder = True
 
     probe_command = ShellScript(
@@ -267,19 +273,6 @@ class Dnf(PackageManager[DnfEngine]):
             results[installable] = True
 
         return results
-
-    def extract_package_name_from_package_manager_output(self, output: str) -> Iterator[str]:
-        """
-        Extract failed package names from DNF/YUM error output.
-        """
-        for pattern in [
-            _NO_PACKAGE_PROVIDES_PATTERN,
-            _UNABLE_TO_FIND_MATCH_PATTERN,
-            _NO_MATCH_FOR_ARGUMENT_PATTERN,
-            _NO_PACKAGE_AVAILABLE_PATTERN,
-        ]:
-            for match in pattern.finditer(output):
-                yield match.group(1)
 
 
 class Dnf5Engine(DnfEngine):
