@@ -1,0 +1,6 @@
+description: |
+  The :ref:`/plugins/report/display` report plugin will now display
+  results of :ref:`/plugins/prepare` phases as well as test results.
+  Not all ``prepare`` plugins produce usable results yet, therefore
+  the given picture may be incomplete, but :ref:`/plugins/prepare/ansible`
+  and :ref:`/plugins/prepare/shell` are supported already.

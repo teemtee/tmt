@@ -143,6 +143,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             with self._url_clone_lock:
                 if not repo_path.exists():
                     repo_path.parent.mkdir(parents=True, exist_ok=True)
+
                     tmt.utils.git.git_clone(
                         url=self.data.url,
                         destination=repo_path,

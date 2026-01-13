@@ -26,7 +26,7 @@ run()
     orig=$3 # original result
     ret=$4  # tmt return code
 
-    if [ -z "${orig}" ]; then extra_lines=2; else extra_lines=3; fi
+    if [ -z "${orig}" ]; then extra_lines=4; else extra_lines=5; fi
 
     rlRun -s "tmt run -a --scratch --id \${run} test --name ${tn} provision --how local report -v 2>&1 >/dev/null | grep report -A$extra_lines" \
         ${ret} "Result: ${res}, Test name: ${tn}, Original result: '${orig}', tmt return code: ${ret}"

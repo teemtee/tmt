@@ -1,5 +1,5 @@
 from collections.abc import Iterable, Iterator
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import tmt
 import tmt.log
@@ -10,6 +10,7 @@ from tmt.result import (
     RESULT_OUTCOME_COLORS,
     BaseResult,
     CheckResult,
+    PhaseResult,
     Result,
     ResultOutcome,
     SubResult,
@@ -44,6 +45,9 @@ DEFAULT_NOTE_TEMPLATE = """
       {{ line }}
 {% endfor %}
 """
+
+
+RenderableResult = Union[Result, PhaseResult]
 
 
 @container
@@ -240,7 +244,7 @@ class ResultRenderer:
         for result in results:
             yield from self.render_subresult(result)
 
-    def render_result(self, result: Result) -> Iterator[str]:
+    def render_result(self, result: RenderableResult) -> Iterator[str]:
         """
         Render a single test result.
         """
@@ -267,13 +271,14 @@ class ResultRenderer:
         elif self.verbosity > 1:
             yield from self._indent(1, self.render_logs_info(result))
 
-        yield from self._indent(
-            1, self.render_check_results(result.check, self.result_check_header_template)
-        )
+        if isinstance(result, Result):
+            yield from self._indent(
+                1, self.render_check_results(result.check, self.result_check_header_template)
+            )
 
-        yield from self._indent(1, self.render_subresults(result.subresult))
+            yield from self._indent(1, self.render_subresults(result.subresult))
 
-    def render_results(self, results: Iterable[Result]) -> Iterator[str]:
+    def render_results(self, results: Iterable[RenderableResult]) -> Iterator[str]:
         """
         Render test results.
         """
@@ -281,7 +286,7 @@ class ResultRenderer:
         for result in results:
             yield from self.render_result(result)
 
-    def print_result(self, result: Result) -> None:
+    def print_result(self, result: RenderableResult) -> None:
         """
         Print out a single rendered test result.
         """
@@ -289,7 +294,7 @@ class ResultRenderer:
         for line in self.render_result(result):
             self.logger.verbose(line, shift=self.shift)
 
-    def print_results(self, results: Iterable[Result]) -> None:
+    def print_results(self, results: Iterable[RenderableResult]) -> None:
         """
         Print out rendered test results.
         """
@@ -301,10 +306,12 @@ class ResultRenderer:
 @tmt.steps.provides_method('display')
 class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
     """
-    Show test results on the terminal.
+    Show results on the terminal.
 
-    Give a concise summary of test results directly on the terminal.
-    Allows to select the desired level of verbosity.
+    Give a concise summary of results produced by tests and ``prepare``
+    phases, directly on the terminal.
+
+    Allows to select the desired level of verbosity:
 
     .. code-block:: yaml
 
@@ -316,15 +323,48 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
 
     _data_class = ReportDisplayData
 
+    def _print_step_results(
+        self,
+        step: tmt.steps.Step,
+        # TODO: we can't use `step.results` because some steps do have
+        # `results`, sure, but some have `_results` and `results()` getter...
+        # That will be sorted out later.
+        results: Iterable[RenderableResult],
+        display_guest: bool,
+        logger: tmt.log.Logger,
+    ) -> None:
+        """
+        Print results of one step.
+
+        :param step: step whose results shall be printed out.
+        :param results: collection of results to print out.
+        :param display_guest: if set, output will mention from which
+            guest each result comes from.
+        :param logger: logger to use for logging.
+        """
+
+        logger.info(step.step_name, color='blue')
+
+        ResultRenderer(
+            basepath=step.step_workdir,
+            logger=logger,
+            shift=1,
+            verbosity=self.verbosity_level,
+            display_guest=display_guest,
+        ).print_results(results)
+
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
         Discover available tests
         """
 
         super().go(logger=logger)
+
         # Show individual test results only in verbose mode
         if not self.verbosity_level:
             return
+
+        logger = logger or self._logger
 
         if self.data.display_guest == 'always':
             display_guest = True
@@ -337,10 +377,16 @@ class ReportDisplay(tmt.steps.report.ReportPlugin[ReportDisplayData]):
 
             display_guest = len(seen_guests) > 1
 
-        ResultRenderer(
-            basepath=self.step.plan.execute.step_workdir,
-            logger=self._logger,
-            shift=1,
-            verbosity=self.verbosity_level,
-            display_guest=display_guest,
-        ).print_results(self.step.plan.execute.results())
+        self._print_step_results(
+            self.step.plan.prepare,
+            self.step.plan.prepare.results,
+            display_guest,
+            logger,
+        )
+
+        self._print_step_results(
+            self.step.plan.execute,
+            self.step.plan.execute.results(),
+            display_guest,
+            logger,
+        )
