@@ -21,6 +21,7 @@ from tmt.utils import GeneralError, Path, PrepareError, RunError
 
 #: Default priority for repositories when priority is not specified.
 #: Lower values have higher priority in package managers.
+#: See https://dnf.readthedocs.io/en/latest/conf_ref.html#repo-options
 DEFAULT_REPOSITORY_PRIORITY = 50
 
 # Counter for generating unique repository names in the format ``tmt-repo-default-{n}``.
