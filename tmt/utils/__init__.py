@@ -650,9 +650,6 @@ class Environment(dict[str, EnvVarValue]):
         if filename.startswith("http"):
             # Create retry session for longer retries, see #1229
             session = retry_session.create(
-                retries=RETRY_SESSION_RETRIES,
-                backoff_factor=RETRY_SESSION_BACKOFF_FACTOR,
-                backoff_max=RETRY_SESSION_BACKOFF_MAX,
                 allowed_methods=('GET',),
                 logger=logger,
             )
