@@ -18,8 +18,6 @@ from tmt.steps.prepare.artifact.providers import (
 from tmt.steps.prepare.artifact.providers.repository import _REPO_NAME_GENERATOR
 from tmt.steps.provision import Guest
 
-# TODO: Implement repository priority support using https://github.com/teemtee/tmt/pull/4454
-
 
 # ignore[type-arg]: TypeVar in provider registry annotations is
 # puzzling for type checkers. And not a good idea in general, probably.
@@ -40,6 +38,9 @@ class RepositoryUrlProvider(ArtifactProvider[RpmArtifactInfo]):
     :param logger: Logger instance for outputting messages.
     :raises ValueError: If the provider identifier format is invalid or the baseurl is missing.
     """
+
+    # FIXME: This docstring will need refactoring when the documentation of PrepareArtifact
+    #        is made dynamic.
 
     repository: Repository
 
@@ -87,11 +88,13 @@ class RepositoryUrlProvider(ArtifactProvider[RpmArtifactInfo]):
         self.logger.info(f"Setting up repository from baseurl: {baseurl} (name: {repo_name})")
 
         # Generate .repo file content
+        # TODO: Use DEFAULT_REPOSITORY_PRIORITY from repository.py once it's available.
         repo_content = f"""[{tmt.utils.sanitize_name(repo_name)}]
 name={repo_name}
 baseurl={baseurl}
 enabled=1
-gpgcheck=0"""
+gpgcheck=0
+priority=50"""
 
         self.logger.debug(f"Generated .repo file content:\n{repo_content}")
 
