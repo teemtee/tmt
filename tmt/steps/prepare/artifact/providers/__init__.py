@@ -27,6 +27,12 @@ class DownloadError(tmt.utils.GeneralError):
     """
 
 
+class UnsupportedOperationError(RuntimeError):
+    """
+    Raised when an operation is intentionally unsupported by a provider.
+    """
+
+
 @container
 class ArtifactInfo(ABC):
     """
