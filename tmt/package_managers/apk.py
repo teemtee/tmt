@@ -1,5 +1,4 @@
 import re
-from collections.abc import Iterator
 from typing import Optional, Union
 
 import tmt.utils
@@ -161,6 +160,8 @@ class Apk(PackageManager[ApkEngine]):
 
     _engine_class = ApkEngine
 
+    _PACKAGE_NAME_IN_PM_OUTPUT_PATTERNS = [_UNABLE_TO_LOCATE_PATTERN, _NO_SUCH_PACKAGE_PATTERN]
+
     probe_command = Command('apk', '--version')
 
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
@@ -195,11 +196,3 @@ class Apk(PackageManager[ApkEngine]):
         options: Optional[Options] = None,
     ) -> CommandOutput:
         raise tmt.utils.GeneralError("There is no support for debuginfo packages in apk.")
-
-    def extract_package_name_from_package_manager_output(self, output: str) -> Iterator[str]:
-        """
-        Extract failed package names from APK error output.
-        """
-        for pattern in [_UNABLE_TO_LOCATE_PATTERN, _NO_SUCH_PACKAGE_PATTERN]:
-            for match in pattern.finditer(output):
-                yield match.group(1)
