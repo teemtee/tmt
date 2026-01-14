@@ -1,0 +1,4 @@
+description: |
+    The :ref:`/plugins/provision/beaker` plugin removes the ``job_owner``
+    workaround and now correctly handles hardware requirements natively.
+    This change requires mrack version 1.21.0 or later.
