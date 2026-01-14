@@ -630,7 +630,7 @@ class Discover(tmt.steps.Step):
         A set of members of the step workdir that should not be removed.
         """
 
-        return {*super()._preserved_workdir_members, 'tests.yaml'}
+        return {*super()._preserved_workdir_members, f'tests{tmt.utils.STATE_FILENAME_SUFFIX}'}
 
     @property
     def required_tests(self) -> list[TestOrigin]:
@@ -722,7 +722,7 @@ class Discover(tmt.steps.Step):
 
         try:
             raw_test_data: list[tmt.export._RawExportedInstance] = tmt.utils.yaml_to_list(
-                self.read(Path('tests.yaml'))
+                self.read_state('tests')
             )
 
             self._tests = {}
@@ -782,7 +782,7 @@ class Discover(tmt.steps.Step):
 
                 raw_test_data.append(exported_test)
 
-        self.write(Path('tests.yaml'), tmt.utils.to_yaml(raw_test_data))
+        self.write_state('tests', raw_test_data)
 
     def _discover_from_execute(self) -> None:
         """
