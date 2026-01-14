@@ -14,3 +14,8 @@ adjust:
     because:
         we don't want to run the avc check for local testing as it
         needs root and we're executing tests under a regular user
+  - when: provision_how == virtual
+    duration+: "*2"
+    because: >
+      Virtual provision have started to be quite slow, will investigate
+      what caused the slowdown with the test /tests/execute/unresponsive
