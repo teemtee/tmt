@@ -2,10 +2,3 @@ summary: Test repository-file artifact provider
 description: |
     Test repository-file artifact provider which configures external
     package repositories from .repo files or URLs.
-tag+:
-  - provision-only
-  - provision-container
-adjust:
-  - when: distro != fedora
-    enabled: false
-    because: Test uses Fedora-specific repository

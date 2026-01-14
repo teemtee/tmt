@@ -1,8 +1,14 @@
 #!/bin/bash
 set -ex
 
-# Verify make is installed from koji.build
+# Verify make is installed
 rpm -q make
 
-# Verify docker-ce-cli is installed from the configured repository
+# Verify make came from the tmt-artifact-shared repository
+dnf info --installed make | grep -q tmt-artifact-shared
+
+# Verify docker-ce-cli is installed
 rpm -q docker-ce-cli
+
+# Verify docker-ce-cli came from the docker-ce repository
+dnf info --installed docker-ce-cli | grep -q docker-ce

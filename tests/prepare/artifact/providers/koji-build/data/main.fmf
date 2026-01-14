@@ -6,7 +6,9 @@
     prepare:
       - how: artifact
         provide:
-          - koji.build:2761810
+          # DUMMY_KOJI_BUILD_ID placeholder - replace with actual koji build ID
+          # Example: koji.build:2761810
+          - koji.build:DUMMY_KOJI_BUILD_ID
     execute:
         how: tmt
 

@@ -6,7 +6,9 @@
     prepare:
       - how: artifact
         provide:
-          - koji.build:2761810
+          # DUMMY_KOJI_BUILD_ID placeholder - replace with actual koji build ID
+          # Example: koji.build:2761810
+          - koji.build:DUMMY_KOJI_BUILD_ID
           - repository-file:https://download.docker.com/linux/fedora/docker-ce.repo
     execute:
         how: tmt
