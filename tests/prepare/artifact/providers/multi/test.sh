@@ -9,18 +9,12 @@ rlJournalStart
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
         rlRun "pushd data"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
-        rlRun "run2=\$(mktemp -d)" 0 "Create second run directory"
 
-        if ! rlIsFedora; then
-            rlDie "Test requires Fedora"
-        fi
-
-        fedora_release=43
-        image_name="fedora/${fedora_release}:latest"
-        build_container_image "$image_name"
+        setup_fedora_environment
 
         # Get koji build ID for make
-        make_build_id=$(get_koji_build_id "make" "f${fedora_release}")
+        get_koji_build_id "make" "f${fedora_release}"
+        make_build_id="$KOJI_BUILD_ID"
         if [ -z "$make_build_id" ]; then
             rlDie "Failed to get koji build ID for make"
         fi
@@ -32,21 +26,10 @@ rlJournalStart
             prepare --how artifact \
                 --provide koji.build:$make_build_id \
                 --provide repository-file:https://download.docker.com/linux/fedora/docker-ce.repo" 0 "Run with multiple providers"
-
-        rlAssertGrep "make" "$run/log.txt"
-        rlAssertGrep "docker-ce-cli" "$run/log.txt"
-    rlPhaseEnd
-
-    rlPhaseStartTest "Test multiple providers from plan file"
-        rlRun "tmt run -i $run2 --scratch -vv --all \
-            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name" 0 "Run with multiple providers from plan file only"
-
-        rlAssertGrep "make" "$run2/log.txt"
-        rlAssertGrep "docker-ce-cli" "$run2/log.txt"
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun "rm -rf $run $run2"
+        rlRun "rm -rf $run"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd

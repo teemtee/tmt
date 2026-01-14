@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ex
 
-# Verify make is installed from koji.build
+# Verify make is installed
 rpm -q make
 
 # Verify it came from the tmt-artifact-shared repository
