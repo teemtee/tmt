@@ -1,6 +1,5 @@
 """``tmt about`` implementation"""
 
-import json
 import re
 from typing import Any
 
@@ -73,7 +72,9 @@ def _ls(context: Context, how: str, content: Any) -> None:
         )
 
     elif how in ('json', 'yaml'):
-        context.obj.print(json.dumps(content) if how == 'json' else tmt.utils.to_yaml(content))
+        context.obj.print(
+            tmt.utils.to_json(content) if how == 'json' else tmt.utils.to_yaml(content)
+        )
 
 
 @about.group(invoke_without_command=True, cls=CustomGroup)

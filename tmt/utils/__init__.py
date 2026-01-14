@@ -2309,47 +2309,111 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             logger=self._logger,
         )
 
-    def read(self, path: Path, level: int = 2) -> str:
+    def read_file(self, filepath: Path, debug_level: int = 2) -> str:
         """
-        Read a file from the workdir
+        Read a file from the workdir of this object.
+
+        :param filepath: file to read. It will be treated as relative to
+            :py:attr:`workdir`.
+        :param debug_level: a level of ``debug`` verbosity to use when
+            logging the operation.
+        :returns: content of the file.
         """
 
         if self.workdir:
-            path = self.workdir / path
-        self.debug(f"Read file '{path}'.", level=level)
+            filepath = self.workdir / filepath
+
+        self.debug(f"Read file '{filepath}'.", level=debug_level)
+
         try:
-            return path.read_text(encoding='utf-8', errors='replace')
+            return filepath.read_text(encoding='utf-8', errors='replace')
 
         except OSError as error:
-            raise FileError(f"Failed to read from '{path}'.") from error
+            raise FileError(f"Failed to read from '{filepath}'.") from error
 
-    def write(
+    def write_file(
         self,
-        path: Path,
+        filepath: Path,
         data: str,
         mode: WriteMode = 'w',
-        level: int = 2,
+        debug_level: int = 2,
     ) -> None:
         """
-        Write a file to the workdir
+        Write into a file in the workdir of this object.
+
+        :param filepath: file to modify. It will be treated as relative to
+            :py:attr:`workdir`.
+        :param data: content to write into the file.
+        :param mode: whether the file should be open for writing, ``w``,
+            or for appending, ``a``.
+        :param debug_level: a level of ``debug`` verbosity to use when
+            logging the operation.
         """
 
         if self.workdir:
-            path = self.workdir / path
-        action = 'Append to' if mode == 'a' else 'Write'
-        self.debug(f"{action} file '{path}'.", level=level)
-        # Dry mode
+            filepath = self.workdir / filepath
+
+        self.debug(
+            f"{'Append to' if mode == 'a' else 'Write'} file '{filepath}'.", level=debug_level
+        )
+
         if self.is_dry_run:
             return
+
         try:
             if mode == 'a':
-                path.append_text(data, encoding='utf-8', errors='replace')
+                filepath.append_text(data, encoding='utf-8', errors='replace')
 
             else:
-                path.write_text(data, encoding='utf-8', errors='replace')
+                filepath.write_text(data, encoding='utf-8', errors='replace')
 
         except OSError as error:
-            raise FileError(f"Failed to write into '{path}' file.") from error
+            raise FileError(f"Failed to write into '{filepath}'.") from error
+
+    # TODO: too many of these in the code, let's get rid of them later.
+    read = read_file
+    write = write_file
+
+    def read_state(self, name: str) -> Any:
+        """
+        Read a state from the workdir of this object.
+
+        State is stored in a file in the workdir, using the state ``name``
+        to construct the file name.
+
+        .. important::
+
+            This method performs no deserialization, it is the
+            responsibility of the caller to turn loaded structure,
+            consisting of built-in-like types, into objects of desired
+            classes, e.g. by the power of
+            :py:meth:`tmt.container.SerializableContainer.deserialize`.
+
+        :param name: name of the state info to read.
+        :returns: stored state as Python data structure.
+        """
+
+        return from_state(self.read_file(Path(f'{name}{STATE_FILENAME_SUFFIX}')))
+
+    def write_state(self, name: str, data: Any) -> None:
+        """
+        Write a state into the workdir of this object.
+
+        State is stored in a file in the workdir, using the state ``name``
+        to construct the file name.
+
+        .. important::
+
+            This method performs no serialization, it is the
+            responsibility of the caller to turn internal objects into
+            built-in-like Python types, e.g. by the power of
+            :py:meth:`tmt.container.SerializableContainer.serialize`.
+
+        :param name: name of the state info to write.
+        :param data: content to save.
+        """
+
+        return self.write_file(Path(f'{name}{STATE_FILENAME_SUFFIX}'), to_state(data))
 
     def _workdir_init(self, id_: WorkdirArgumentType = None) -> None:
         """
@@ -3397,11 +3461,19 @@ def filter_paths(directory: Path, searching: list[str], files_only: bool = False
 YamlTypType = Literal['rt', 'safe', 'unsafe', 'base']
 
 
+# Custom representers of various classes tmt puts into data structures.
+# TODO: it would be nice if this could be pluggable, dynamic, or owned
+# by 3rd party library, but for now we can get away with static mappings
+# for different formats.
 def _yaml_represent_path(representer: Representer, path: Path) -> Any:
     return representer.represent_scalar('tag:yaml.org,2002:str', str(path))
 
 
-#: Custom representers for common classes tmt puts into data structures.
+def _json_represent_path(path: Path) -> Any:
+    return str(path)
+
+
+#: Custom representers of various classes for YAML output.
 _YAML_REPRESENTERS: dict[Any, Callable[[Representer, Any], Any]] = {
     # Various path-like classes.
     pathlib.Path: _yaml_represent_path,  # noqa: TID251
@@ -3412,6 +3484,18 @@ _YAML_REPRESENTERS: dict[Any, Callable[[Representer, Any], Any]] = {
     Environment: lambda representer, environment: representer.represent_mapping(
         'tag:yaml.org,2002:map', environment.to_fmf_spec()
     ),
+}
+
+
+#: Custom representers of various classes for JSON output.
+_JSON_REPRESENTERS: dict[Any, Callable[[Any], Any]] = {
+    # Various path-like classes.
+    pathlib.Path: _json_represent_path,  # noqa: TID251
+    pathlib.PosixPath: _json_represent_path,  # noqa: TID251
+    Path: _json_represent_path,
+    # Environment representation, which is basically nothing but
+    # a key:value mapping.
+    Environment: lambda environment: environment.to_fmf_spec(),
 }
 
 
@@ -3628,19 +3712,89 @@ def yaml_to_list(data: str, *, yaml_type: Optional[YamlTypType] = 'safe') -> lis
     return loaded_data
 
 
-def json_to_list(data: Any) -> list[Any]:
+def _custom_json_encoder(obj: Any) -> Any:
+    for klass, representer in _JSON_REPRESENTERS.items():
+        if isinstance(obj, klass):
+            return representer(obj)
+
+    raise TypeError(f'Cannot serialize object of {type(obj)}')
+
+
+def to_json(
+    data: Any,
+    *,
+    sort: bool = False,
+) -> str:
     """
-    Convert json into list
+    Convert a Python data structure into its JSON representation.
+
+    :param data: Python data structure to convert into JSON.
+    :param sort: if set, sort dictionary keys in the JSON output.
+    :returns: a JSON representation of ``data``.
+    """
+
+    return json.dumps(data, sort_keys=sort, default=_custom_json_encoder)
+
+
+def from_json(data: str) -> Any:
+    """
+    Convert a JSON content into the corresponding Python data structures.
+
+    :param data: JSON content to convert into Python data structures.
+    :returns: Python representation of ``data`` JSON content.
     """
 
     try:
-        loaded_data = json.loads(data)
-    except json.decoder.JSONDecodeError as error:
-        raise GeneralError("Invalid json syntax.") from error
+        return json.loads(data)
+
+    except json.JSONDecodeError as error:
+        raise GeneralError('Invalid JSON syntax.') from error
+
+
+def json_to_list(data: str) -> list[T]:
+    """
+    Convert a JSON content into a Python list.
+
+    :param data: JSON content to convert into Python list.
+    :returns: Python representation of ``data`` JSON content. If the JSON
+        contains no data, empty list is returned.
+    :raises GeneralError: when the JSON content does not represent a list.
+    """
+
+    loaded_data = from_json(data)
+
+    if loaded_data is None:
+        return []
 
     if not isinstance(loaded_data, list):
-        raise GeneralError(f"Expected list in json data, got '{type(loaded_data).__name__}'.")
+        raise GeneralError(f"Expected list in JSON data, got '{type(loaded_data).__name__}'.")
+
     return loaded_data
+
+
+#: Format conversions tmt can use for storing and reading its on-disk
+#: state information. It is a mapping between format name and three
+#: items, a file suffix for files holding the state, and Python-to-format
+#: and format-to-Python converters.
+_STATE_FORMATS: dict[
+    str,
+    tuple[
+        str,
+        Callable[[Any], str],
+        Callable[[str], Any],
+    ],
+] = {
+    'json': ('.json', to_json, from_json),
+    'yaml': ('.yaml', to_yaml, from_yaml),
+}
+
+try:
+    STATE_FILENAME_SUFFIX, to_state, from_state = _STATE_FORMATS[
+        os.environ.get('TMT_STATE_FORMAT', 'yaml').lower()
+    ]
+
+except Exception as exc:
+    raise GeneralError("Unknown format of tmt state files.") from exc
 
 
 def markdown_to_html(filename: Path) -> str:
@@ -4671,7 +4825,7 @@ class RetryStrategy(urllib3.util.retry.Retry):
         # Handle other 403 cases
         elif 'X-GitHub-Request-Id' in headers:
             try:
-                error_msg = json.loads(response.data.decode('utf-8')).get('message', '').lower()
+                error_msg = from_json(response.data.decode('utf-8')).get('message', '').lower()
                 if self.logger:
                     self.logger.warning(f"GitHub API error: {error_msg}")
             except (ValueError, AttributeError) as e:
