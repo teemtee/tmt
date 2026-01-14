@@ -174,7 +174,7 @@ class Beakerlib(TestFramework):
         beakerlib_results_filepath = invocation.path / 'TestResults'
 
         try:
-            beakerlib_results = invocation.phase.read(beakerlib_results_filepath, level=3)
+            beakerlib_results = invocation.phase.read(beakerlib_results_filepath, debug_level=3)
         except tmt.utils.FileError:
             logger.debug(f"Unable to read '{beakerlib_results_filepath}'.", level=3)
             note.append('beakerlib: TestResults FileError')
