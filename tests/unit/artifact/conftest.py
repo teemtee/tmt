@@ -53,3 +53,9 @@ def artifact_provider(root_logger):
         return provider_class(provider_id, logger=root_logger)
 
     return get_provider
+
+
+@pytest.fixture
+def mock_copr_class():
+    with patch('tmt.steps.prepare.install.Copr') as mock_copr:
+        yield mock_copr
