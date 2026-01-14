@@ -72,12 +72,14 @@ class PodmanGuestData(tmt.steps.provision.GuestData):
         internal=True,
     )
 
-    container_network_prefix: Optional[str] = field(
+    network_prefix: Optional[str] = field(
         default=None,
-        option='--container-network-prefix',
+        option='--network-prefix',
         metavar='PREFIX',
-        help='Custom prefix for container network names to avoid collisions across multiple runs.',
-        envvar='TMT_CONTAINER_NETWORK_PREFIX',
+        help="""
+             Custom prefix for container network names to avoid collisions
+             between multiple simultaneous tmt invocations.
+             """,
     )
 
     pull_attempts: int = field(
@@ -134,7 +136,7 @@ class GuestContainer(tmt.Guest):
     pull_attempts: int
     pull_interval: int
     stop_time: int
-    container_network_prefix: Optional[str]
+    network_prefix: Optional[str]
     logger: tmt.log.Logger
 
     @property
@@ -177,30 +179,27 @@ class GuestContainer(tmt.Guest):
         and creates that network if it doesn't exist.
         Returns the network arguments to be used in podman run command.
 
-        For multi-guest provisions, all guests share the same network to enable
-        communication between them.
+        All container guests in a single plan will share the same network,
+        to allow communication between them.
         """
 
-        # Use provision-level network name to allow multi-guest communication
+        # Use provision-level network name to allow communication between containers
         # while avoiding collisions across different test runs
-        if not self.parent:
-            raise tmt.utils.GeneralError(
-                "Cannot create network: provision step parent is not available"
-            )
-
-        if not isinstance(self.parent, Provision):
-            raise tmt.utils.GeneralError("Unexpected parent for provision step")
+        # narrow type
+        assert self.parent is not None
+        assert isinstance(self.parent, Provision)
 
         # Use run_id and plan's safe name to ensure uniqueness across multiple plans
         # running simultaneously while maintaining good debugging information
         # Include custom prefix if provided for additional collision avoidance
         prefix = ""
-        if self.container_network_prefix:
-            prefix = f"{self.container_network_prefix}-"
+        if self.network_prefix:
+            prefix = f"{self.network_prefix}"
 
-        self.network = (
-            f"{prefix}tmt-{self.parent.run_workdir.name}-"
-            f"{self.parent.plan.pathless_safe_name}-network"
+        self.network = "{prefix}tmt-{run_name}-{plan_name}-network".format(  # noqa: UP032
+            prefix=prefix,
+            run_name=self.parent.run_workdir.name,
+            plan_name=self.parent.plan.pathless_safe_name,
         )
 
         try:
