@@ -409,9 +409,7 @@ class Provision(tmt.steps.Step):
 
         super().load()
         try:
-            raw_guest_data: dict[str, dict[str, Any]] = tmt.utils.yaml_to_dict(
-                self.read_state('guests')
-            )
+            raw_guest_data: dict[str, dict[str, Any]] = self.read_state('guests')
 
             self._guest_data = {
                 name: SerializableContainer.unserialize(guest_data, self._logger)

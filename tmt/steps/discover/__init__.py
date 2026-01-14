@@ -722,9 +722,7 @@ class Discover(tmt.steps.Step):
             super().load()
 
         try:
-            raw_test_data: list[tmt.export._RawExportedInstance] = tmt.utils.yaml_to_list(
-                self.read_state('tests')
-            )
+            raw_test_data: list[tmt.export._RawExportedInstance] = self.read_state('tests')
 
             self._tests = {}
 
