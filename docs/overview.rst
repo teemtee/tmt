@@ -523,6 +523,24 @@ TMT_REBOOT_TIMEOUT
     How many seconds to wait for a connection to succeed after
     guest reboot. By default, it is 10 minutes.
 
+TMT_RETRY_SESSION_RETRIES
+    The number of retries for HTTP/HTTPS requests when encountering
+    retriable errors (such as 503 Service Unavailable). By default,
+    8 retries are attempted.
+
+TMT_RETRY_SESSION_BACKOFF_FACTOR
+    The exponential backoff factor for retrying HTTP/HTTPS requests.
+    The wait time between retries is calculated as
+    ``{backoff_factor} * (2 ** (retry_number - 1))`` seconds, up to
+    ``TMT_RETRY_SESSION_BACKOFF_MAX``. For example, with a backoff
+    factor of 2.0, 8 retries and a maximum backoff of 120s, the delays
+    are: 2s, 4s, 8s, 16s, 32s, 64s, 120s, 120s. By default, the backoff
+    factor is 2.0.
+
+TMT_RETRY_SESSION_BACKOFF_MAX
+    The maximum retry wait time between retrying HTTP/HTTPS requests.
+    By default, the maximum is 120s.
+
 TMT_SCRIPTS_DIR
     Destination directory for storing ``tmt`` scripts on the guest.
     By default ``/usr/local/bin`` is used, except for guests using

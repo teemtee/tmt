@@ -139,6 +139,26 @@ def configure_constant(default: int, envvar: str) -> int:
         ) from exc
 
 
+def configure_float_constant(default: float, envvar: str) -> float:
+    """
+    Deduce the float value of global constant.
+
+    :param default: the default value of the constant.
+    :param envvar: name of the optional environment variable which would
+        override the default value.
+    :returns: value extracted from the environment variable, or the
+        given default value if the variable did not exist.
+    """
+
+    try:
+        return float(os.environ.get(envvar, default))
+
+    except ValueError as exc:
+        raise tmt.utils.GeneralError(
+            f"Could not parse '{envvar}={os.environ[envvar]}' as float."
+        ) from exc
+
+
 def configure_bool_constant(default: bool, envvar: str) -> bool:
     """
     Deduce the bool value of global constant.
@@ -246,13 +266,20 @@ DEFAULT_SHELL = "/bin/bash"
 SHELL_OPTIONS = 'set -eo pipefail'
 
 # Defaults for HTTP/HTTPS retries and timeouts (see `retry_session()`).
-DEFAULT_RETRY_SESSION_RETRIES: int = 3
-DEFAULT_RETRY_SESSION_BACKOFF_FACTOR: float = 0.1
+DEFAULT_RETRY_SESSION_RETRIES: int = 8
+RETRY_SESSION_RETRIES: int = configure_constant(
+    DEFAULT_RETRY_SESSION_RETRIES, 'TMT_RETRY_SESSION_RETRIES'
+)
 
-# Defaults for HTTP/HTTPS retries for getting environment file
-# Retry with exponential backoff, maximum duration ~511 seconds
-ENVFILE_RETRY_SESSION_RETRIES: int = 10
-ENVFILE_RETRY_SESSION_BACKOFF_FACTOR: float = 1
+DEFAULT_RETRY_SESSION_BACKOFF_FACTOR: float = 2
+RETRY_SESSION_BACKOFF_FACTOR: float = configure_float_constant(
+    DEFAULT_RETRY_SESSION_BACKOFF_FACTOR, 'TMT_RETRY_SESSION_BACKOFF_FACTOR'
+)
+
+DEFAULT_RETRY_SESSION_BACKOFF_MAX: float = 120
+RETRY_SESSION_BACKOFF_MAX: float = configure_float_constant(
+    DEFAULT_RETRY_SESSION_BACKOFF_MAX, 'TMT_RETRY_SESSION_BACKOFF_MAX'
+)
 
 # Defaults for HTTP/HTTPS codes that are considered retriable
 DEFAULT_RETRIABLE_HTTP_CODES: tuple[int, ...] = (
@@ -623,8 +650,6 @@ class Environment(dict[str, EnvVarValue]):
         if filename.startswith("http"):
             # Create retry session for longer retries, see #1229
             session = retry_session.create(
-                retries=ENVFILE_RETRY_SESSION_RETRIES,
-                backoff_factor=ENVFILE_RETRY_SESSION_BACKOFF_FACTOR,
                 allowed_methods=('GET',),
                 logger=logger,
             )
@@ -4402,18 +4427,30 @@ class TimeoutHTTPAdapter(requests.adapters.HTTPAdapter):
 class RetryStrategy(urllib3.util.retry.Retry):
     logger: tmt.log.Logger
 
+    def _urllib3_2_compatibility(self, kwargs: dict[str, Any]) -> None:
+        """
+        Compatibility layer to support urllib3 < 2.0.0 (epel9, epel10)
+        """
+        # This could be made into a _compat if the logic becomes too complicated
+        if hasattr(self, "BACKOFF_MAX"):
+            # backoff_max kwarg was not recognized until 2.0.0, instead it used `BACKOFF_MAX`
+            backoff_max = kwargs.pop("backoff_max")
+            self.BACKOFF_MAX = backoff_max
+
     # Note: the signature is different than the one of `super().__init__()`.
     # This is on purpose, so we can add mandatory `logger` parameter, without
     # a default value (most likely `None`). But it looks we are fairly safe
     # because `super().__init__()` accepts no positional arguments, for quite
     # some time already, so, effectively, the signatures are equivalent.
     def __init__(self, *, logger: tmt.log.Logger, **kwargs: Any) -> None:
+        self._urllib3_2_compatibility(kwargs)
         super().__init__(**kwargs)
         self.logger = logger
 
     def new(self, **kw: Any) -> 'Self':
         if 'logger' in kw:
             kw.pop('logger')
+        self._urllib3_2_compatibility(kw)
 
         return super().new(logger=self.logger, **kw)
 
@@ -4570,8 +4607,9 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
     @staticmethod
     def create(
         *,
-        retries: int = DEFAULT_RETRY_SESSION_RETRIES,
-        backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
+        retries: int = RETRY_SESSION_RETRIES,
+        backoff_factor: float = RETRY_SESSION_BACKOFF_FACTOR,
+        backoff_max: float = RETRY_SESSION_BACKOFF_MAX,
         allowed_methods: Optional[tuple[str, ...]] = None,
         status_forcelist: tuple[int, ...] = DEFAULT_RETRIABLE_HTTP_CODES,
         timeout: Optional[int] = None,
@@ -4588,6 +4626,7 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
                 status_forcelist=status_forcelist,
                 method_whitelist=allowed_methods,
                 backoff_factor=backoff_factor,
+                backoff_max=backoff_max,
                 logger=logger,
             )
 
@@ -4597,6 +4636,7 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
                 status_forcelist=status_forcelist,
                 allowed_methods=allowed_methods,
                 backoff_factor=backoff_factor,
+                backoff_max=backoff_max,
                 logger=logger,
             )
 
@@ -4616,8 +4656,9 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
     def __init__(
         self,
         *,
-        retries: int = DEFAULT_RETRY_SESSION_RETRIES,
-        backoff_factor: float = DEFAULT_RETRY_SESSION_BACKOFF_FACTOR,
+        retries: int = RETRY_SESSION_RETRIES,
+        backoff_factor: float = RETRY_SESSION_BACKOFF_FACTOR,
+        backoff_max: float = RETRY_SESSION_BACKOFF_MAX,
         allowed_methods: Optional[tuple[str, ...]] = None,
         status_forcelist: tuple[int, ...] = DEFAULT_RETRIABLE_HTTP_CODES,
         timeout: Optional[int] = None,
@@ -4625,6 +4666,7 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
     ) -> None:
         self.retries = retries
         self.backoff_factor = backoff_factor
+        self.backoff_max = backoff_max
         self.allowed_methods = allowed_methods
         self.status_forcelist = status_forcelist
         self.timeout = timeout
@@ -4634,6 +4676,7 @@ class retry_session(contextlib.AbstractContextManager):  # type: ignore[type-arg
         return self.create(
             retries=self.retries,
             backoff_factor=self.backoff_factor,
+            backoff_max=self.backoff_max,
             allowed_methods=self.allowed_methods,
             status_forcelist=self.status_forcelist,
             timeout=self.timeout,
