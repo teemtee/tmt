@@ -222,7 +222,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             )
 
         def _invoke_script(
-            command: Command,
+            command: ShellScript,
             environment: tmt.utils.Environment,
         ) -> tmt.utils.CommandOutput:
             guest.push(source=self.phase_workdir)
@@ -272,7 +272,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
             output, error, timer = Stopwatch.measure(
                 _invoke_script,
-                Command(outer_wrapper_filepath),
+                ShellScript(str(outer_wrapper_filepath)),
                 script_environment,
             )
 
