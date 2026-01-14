@@ -1,5 +1,5 @@
 description: |
-    Fixed race condition in podman network creation when multiple TMT runs execute
+    Fixed race condition in podman network creation when multiple tmt runs execute
     simultaneously. Container network names now include both run workdir and plan
     name for better uniqueness (``tmt-{run_workdir_name}-{plan_safe_name}-network``).
 
