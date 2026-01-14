@@ -822,8 +822,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
             test.name = f"{prefix}{test.name}"
             test.path = Path(f"/{self.safe_name}{test.path}")
-            # Update test environment with plan environment
-            test.environment.update(self.step.plan.environment)
+
             self.step.plan.discover._tests[self.name].append(test)
             test.serial_number = self.step.plan.draw_test_serial_number(test)
         self.step.save()

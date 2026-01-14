@@ -776,8 +776,7 @@ class Discover(tmt.steps.Step):
 
                     test.name = f"{prefix}{test.name}"
                     test.path = Path(f"/{phase.safe_name}{test.path}")
-                    # Update test environment with plan environment
-                    test.environment.update(self.plan.environment)
+
                     self._tests[phase.name].append(test)
 
             else:
