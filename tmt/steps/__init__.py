@@ -852,7 +852,7 @@ class Step(
         """
 
         try:
-            raw_step_data: dict[Any, Any] = tmt.utils.yaml_to_dict(self.read_state('step'))
+            raw_step_data: dict[Any, Any] = self.read_state('step')
 
         except tmt.utils.GeneralError:
             self.debug('Step data not found.', level=2)
@@ -892,7 +892,7 @@ class Step(
         """
 
         try:
-            raw_results: list[Any] = tmt.utils.yaml_to_list(self.read_state('results'))
+            raw_results: list[Any] = self.read_state('results')
 
             return [result_class.from_serialized(raw_result) for raw_result in raw_results]
 
