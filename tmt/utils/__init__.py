@@ -4427,18 +4427,30 @@ class TimeoutHTTPAdapter(requests.adapters.HTTPAdapter):
 class RetryStrategy(urllib3.util.retry.Retry):
     logger: tmt.log.Logger
 
+    def _urllib3_2_compatibility(self, kwargs: dict[str, Any]) -> None:
+        """
+        Compatibility layer to support urllib3 < 2.0.0 (epel9, epel10)
+        """
+        # This could be made into a _compat if the logic becomes too complicated
+        if hasattr(self, "BACKOFF_MAX"):
+            # backoff_max kwarg was not recognized until 2.0.0, instead it used `BACKOFF_MAX`
+            backoff_max = kwargs.pop("backoff_max")
+            self.BACKOFF_MAX = backoff_max
+
     # Note: the signature is different than the one of `super().__init__()`.
     # This is on purpose, so we can add mandatory `logger` parameter, without
     # a default value (most likely `None`). But it looks we are fairly safe
     # because `super().__init__()` accepts no positional arguments, for quite
     # some time already, so, effectively, the signatures are equivalent.
     def __init__(self, *, logger: tmt.log.Logger, **kwargs: Any) -> None:
+        self._urllib3_2_compatibility(kwargs)
         super().__init__(**kwargs)
         self.logger = logger
 
     def new(self, **kw: Any) -> 'Self':
         if 'logger' in kw:
             kw.pop('logger')
+        self._urllib3_2_compatibility(kw)
 
         return super().new(logger=self.logger, **kw)
 
