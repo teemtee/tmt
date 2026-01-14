@@ -318,7 +318,8 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             shutil.unpack_archive(archive_path, self.test_dir)
         else:
             raise ValueError(
-                f"url-content-type has unsupported value: {self.data.url_content_type}"
+                f"url-content-type has unsupported value: '{self.data.url_content_type}'. "
+                "Only 'git' and 'archive' are supported."
             )
         return None
 
