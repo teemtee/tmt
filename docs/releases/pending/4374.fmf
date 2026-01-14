@@ -3,8 +3,8 @@ description: |
     simultaneously. Container network names now include both run workdir and plan
     name for better uniqueness (``tmt-{run_workdir_name}-{plan_safe_name}-network``).
 
-    Added new ``--network-prefix`` option to the container provision plugin
-    allowing users to specify custom prefixes for network names to avoid
-    collisions across multiple simultaneous TMT invocations. The option can also
-    be configured via the ``TMT_PLUGIN_PROVISION_CONTAINER_NETWORK_PREFIX``
+    Added new ``--network-prefix`` key to the :ref:`/plugins/provision/container`
+    provision plugin, allowing users to specify custom prefixes for network names
+    to avoid collisions across multiple simultaneous tmt invocations. The key can
+    also be configured via the ``TMT_PLUGIN_PROVISION_CONTAINER_NETWORK_PREFIX``
     environment variable.
