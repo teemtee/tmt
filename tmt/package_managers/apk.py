@@ -34,6 +34,11 @@ PACKAGE_PATH: dict[FileSystemPath, str] = {
 }
 
 
+# Compiled regex patterns for APK error messages
+_UNABLE_TO_LOCATE_PATTERN = re.compile(r'unable to locate package\s+([^\s]+)', re.IGNORECASE)
+_NO_SUCH_PACKAGE_PATTERN = re.compile(r'ERROR:\s+([^\s:]+):\s+No such package', re.IGNORECASE)
+
+
 class ApkEngine(PackageManagerEngine):
     install_command = Command('add')
 
@@ -154,6 +159,8 @@ class Apk(PackageManager[ApkEngine]):
     NAME = 'apk'
 
     _engine_class = ApkEngine
+
+    _PACKAGE_NAME_IN_PM_OUTPUT_PATTERNS = [_UNABLE_TO_LOCATE_PATTERN, _NO_SUCH_PACKAGE_PATTERN]
 
     probe_command = Command('apk', '--version')
 

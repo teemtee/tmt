@@ -1,4 +1,5 @@
 import abc
+from collections import defaultdict
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
@@ -279,6 +280,26 @@ class Discover(tmt.steps.Step):
                 if test_origin.test.name in required_test_names
             ]
         return tests
+
+    @property
+    def dependencies_to_tests(self) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
+        """
+        A tuple containing two dictionaries mapping dependencies to tests (required & recommended)
+        """
+
+        required_dependencies_to_tests: dict[str, list[str]] = defaultdict(list)
+        recommended_dependencies_to_tests: dict[str, list[str]] = defaultdict(list)
+
+        for test_origin in self.tests(enabled=True):
+            test = test_origin.test
+            test_name = test.name
+            # Collect dependencies separately for required and recommended
+            for dependency in test.require:
+                required_dependencies_to_tests[str(dependency)].append(test_name)
+            for dependency in test.recommend:
+                recommended_dependencies_to_tests[(str(dependency))].append(test_name)
+
+        return required_dependencies_to_tests, recommended_dependencies_to_tests
 
     def load(self) -> None:
         """
