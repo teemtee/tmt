@@ -339,11 +339,18 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
     @property
     def environment(self) -> Environment:
         if self._environment is None:
+            # narrow type
+            assert isinstance(self.phase.parent, Execute)
+
+            # narrow type
+            assert isinstance(self.phase.parent.plan.my_run, tmt.base.Run)
+
             environment = Environment()
 
             environment.update(
                 self.guest.environment,
                 self.test.environment,
+                self.phase.parent.plan.environment,
             )
 
             environment["TMT_TEST_NAME"] = EnvVarValue(self.test.name)
@@ -352,9 +359,6 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
             environment["TMT_TEST_SUBMITTED_FILES"] = EnvVarValue(self.submission_log_path)
             environment['TMT_TEST_SERIAL_NUMBER'] = EnvVarValue(str(self.test.serial_number))
             environment["TMT_TEST_METADATA"] = EnvVarValue(self.path / TEST_METADATA_FILENAME)
-
-            assert isinstance(self.phase.parent, Execute)
-            assert self.phase.parent.plan.my_run is not None
 
             environment['TMT_TEST_ITERATION_ID'] = EnvVarValue(
                 f"{self.phase.parent.plan.my_run.unique_id}-{self.test.serial_number}"
