@@ -40,6 +40,7 @@ from typing import (
     Callable,
     Generic,
     Literal,
+    NewType,
     Optional,
     TextIO,
     TypeVar,
@@ -305,6 +306,7 @@ GIT_CLONE_INTERVAL: int = configure_constant(DEFAULT_GIT_CLONE_INTERVAL, 'TMT_GI
 
 # Stand-in variables for generic use.
 T = TypeVar('T')
+S = TypeVar('S')
 P = ParamSpec('P')
 
 
@@ -3383,22 +3385,57 @@ def filter_paths(directory: Path, searching: list[str], files_only: bool = False
     return [Path(path) for path in set(found_paths)]  # return all matching unique paths as Path's
 
 
-def dict_to_yaml(
-    data: Union[dict[str, Any], list[Any], 'tmt.base._RawFmfId'],
+#: Which type of YAML loader/dumper implementation to use when creating
+#: a YAML loader/dumper instance. See :py:class:`!ruamel.yaml.YAML` for
+#: details.
+YamlTypType = Literal['rt', 'safe', 'unsafe', 'base']
+
+
+def _yaml_represent_path(representer: Representer, path: Path) -> Any:
+    return representer.represent_scalar('tag:yaml.org,2002:str', str(path))
+
+
+#: Custom representers for common classes tmt puts into data structures.
+_YAML_REPRESENTERS: dict[Any, Callable[[Representer, Any], Any]] = {
+    # Various path-like classes.
+    pathlib.Path: _yaml_represent_path,  # noqa: TID251
+    pathlib.PosixPath: _yaml_represent_path,  # noqa: TID251
+    Path: _yaml_represent_path,
+    # Environment representation, which is basically nothing but
+    # a key:value mapping.
+    Environment: lambda representer, environment: representer.represent_mapping(
+        'tag:yaml.org,2002:map', environment.to_fmf_spec()
+    ),
+}
+
+
+def _yaml(
+    *,
+    yaml_type: Optional[YamlTypType] = None,
     width: Optional[int] = None,
-    sort: bool = False,
     start: bool = False,
-) -> str:
+) -> YAML:
     """
-    Convert dictionary into yaml
+    Create a YAML loader/dumper instance.
+
+    A wrapper over :py:class:`YAML` enforcing our formatting and custom
+    representation of various types.
+
+    :param yaml_type: which implementation of the loader/dumper to use.
+        See :py:class:`YAML` for details.
+    :param width: if set, enforce this as the maximal length of lines.
+    :param start: if set, a document start marker, ``---``, would be
+        emitted before each dumped object.
+    :returns: a loader/dumper instance.
     """
 
-    output = io.StringIO()
-    yaml = YAML()
+    yaml = YAML(typ=yaml_type)
+
     yaml.indent(mapping=4, sequence=4, offset=2)
     yaml.default_flow_style = False
     yaml.allow_unicode = True
     yaml.encoding = 'utf-8'
+
     # ignore[assignment]: ruamel bug workaround, see stackoverflow.com/questions/58083562,
     # sourceforge.net/p/ruamel-yaml/tickets/322/
     #
@@ -3411,117 +3448,177 @@ def dict_to_yaml(
     yaml.explicit_start = cast(None, start)  # # type: ignore[assignment]
 
     # For simpler dumping of well-known classes
-    def _represent_path(representer: Representer, data: Path) -> Any:
-        return representer.represent_scalar('tag:yaml.org,2002:str', str(data))
+    for klass, representer in _YAML_REPRESENTERS.items():
+        yaml.representer.add_representer(klass, representer)
 
-    yaml.representer.add_representer(pathlib.Path, _represent_path)  # noqa: TID251
-    yaml.representer.add_representer(pathlib.PosixPath, _represent_path)  # noqa: TID251
-    yaml.representer.add_representer(Path, _represent_path)
+    return yaml
 
-    def _represent_environment(representer: Representer, data: Environment) -> Any:
-        return representer.represent_mapping('tag:yaml.org,2002:map', data.to_fmf_spec())
 
-    yaml.representer.add_representer(Environment, _represent_environment)
+def _sanitize_yaml_string(s: str) -> str:
+    """
+    Convert multiline strings, sanitize invalid characters.
 
-    # Convert multiline strings, sanitize invalid characters. Based on
-    # `scalarstring.walk_tree()` which does not support any other test
-    # than "is this character in that string?"
-    # Prevents saving non-printable characters a YAML parser might later
-    # reject - see https://github.com/teemtee/tmt/issues/3805
-    def _sanitize_yaml_string(s: str) -> str:
-        pattern = ruamel.yaml.reader.Reader.NON_PRINTABLE
+    Prevents saving non-printable characters a YAML parser might later
+    reject - see https://github.com/teemtee/tmt/issues/3805.
 
-        if '\n' in s:
-            s = ruamel.yaml.scalarstring.preserve_literal(s)
+    Based on :py:meth:`!ruamel.yaml.scalarstring.walk_tree` which does
+    not support any other test than "is this character in that string?".
+    """
 
-        return ''.join(rf'#{{{ord(c):x}}}' if pattern.match(c) else c for c in s)
+    pattern = ruamel.yaml.reader.Reader.NON_PRINTABLE
 
-    def walk_tree(value: Any) -> Any:
-        from collections.abc import MutableMapping, MutableSequence
+    if '\n' in s:
+        s = ruamel.yaml.scalarstring.preserve_literal(s)
 
-        if isinstance(value, MutableMapping):
-            for k, v in value.items():
-                if isinstance(v, str):
-                    value[k] = _sanitize_yaml_string(v)
+    return ''.join(rf'#{{{ord(c):x}}}' if pattern.match(c) else c for c in s)
 
-                else:
-                    value[k] = walk_tree(v)
 
-            return value
+def _sanitize_yaml_tree(value: Any, sort_keys: bool) -> Any:
+    """
+    Convert multiline strings, sanitize invalid characters.
 
-        if isinstance(value, MutableSequence):
-            for k, v in enumerate(value):
-                if isinstance(v, str):
-                    value[k] = _sanitize_yaml_string(v)
+    Prevents saving non-printable characters a YAML parser might later
+    reject - see https://github.com/teemtee/tmt/issues/3805.
 
-                else:
-                    value[k] = walk_tree(v)
+    Based on :py:meth:`!ruamel.yaml.scalarstring.walk_tree` which does
+    not support any other test than "is this character in that string?".
 
-            return value
+    :param sort_keys: if set, sort mapping keys.
+    """
 
-        if isinstance(value, str):
-            return _sanitize_yaml_string(value)
+    from collections.abc import MutableMapping, MutableSequence
+
+    if isinstance(value, MutableMapping):
+        if sort_keys:
+            # Sort the data https://stackoverflow.com/a/40227545
+            sorted_value = CommentedMap()
+
+            for key in sorted(value):
+                sorted_value[key] = value[key]
+
+            value = sorted_value
+
+        for k, v in value.items():
+            if isinstance(v, str):
+                value[k] = _sanitize_yaml_string(v)
+
+            else:
+                value[k] = _sanitize_yaml_tree(v, sort_keys)
 
         return value
 
-    data = walk_tree(data)
+    if isinstance(value, MutableSequence):
+        for k, v in enumerate(value):
+            if isinstance(v, str):
+                value[k] = _sanitize_yaml_string(v)
 
-    if sort:
-        # Sort the data https://stackoverflow.com/a/40227545
-        sorted_data = CommentedMap()
-        for key in sorted(data):
-            # ignore[literal-required]: `data` may be either a generic
-            # dictionary, or _RawFmfId which allows only a limited set
-            # of keys. That spooks mypy, but we do not add any keys,
-            # therefore we will not escape TypedDict constraints.
-            sorted_data[key] = data[key]  # type: ignore[literal-required]
-        data = sorted_data
+            else:
+                value[k] = _sanitize_yaml_tree(v, sort_keys)
+
+        return value
+
+    if isinstance(value, str):
+        return _sanitize_yaml_string(value)
+
+    return value
+
+
+def to_yaml(
+    data: Any,
+    *,
+    yaml_type: Optional[YamlTypType] = None,
+    width: Optional[int] = None,
+    sort: bool = False,
+    start: bool = False,
+) -> str:
+    """
+    Convert a Python data structure into its YAML representation.
+
+    :param data: Python data structure to convert into YAML.
+    :param yaml_type: which implementation of the loader/dumper to use.
+        See :py:class:`YAML` for details.
+    :param width: if set, enforce this as the maximal length of lines.
+    :param sort: if set, and if ``data`` is a dictionary, sort its keys
+        in the YAML output.
+    :param start: if set, a document start marker, ``---``, would be
+        emitted before the dumped object.
+    :returns: a YAML representation of ``data``.
+    """
+
+    yaml = _yaml(yaml_type=yaml_type, width=width, start=start)
+
+    output = io.StringIO()
+
+    data = _sanitize_yaml_tree(data, sort)
+
     yaml.dump(data, output)
+
     return output.getvalue()
 
 
-YamlTypType = Literal['rt', 'safe', 'unsafe', 'base']
-
-
-def yaml_to_python(data: Any, yaml_type: Optional[YamlTypType] = None) -> Any:
+def from_yaml(data: str, *, yaml_type: Optional[YamlTypType] = None) -> Any:
     """
-    Convert YAML into Python data types.
-    """
+    Convert a YAML content into the corresponding Python data structures.
 
-    return YAML(typ=yaml_type).load(data)
-
-
-def yaml_to_dict(data: Any, yaml_type: Optional[YamlTypType] = None) -> dict[Any, Any]:
-    """
-    Convert yaml into dictionary
+    :param data: YAML content to convert into Python data structures.
+    :param yaml_type: which implementation of the loader/dumper to use.
+        See :py:class:`YAML` for details.
+    :returns: Python representation of ``data`` YAML content.
     """
 
-    yaml = YAML(typ=yaml_type)
-    loaded_data = yaml.load(data)
+    try:
+        return _yaml(yaml_type=yaml_type).load(data)
+
+    except ParserError as error:
+        raise GeneralError('Invalid YAML syntax.') from error
+
+
+def yaml_to_dict(data: str, *, yaml_type: Optional[YamlTypType] = None) -> dict[Any, Any]:
+    """
+    Convert a YAML content into a Python dictionary.
+
+    :param data: YAML content to convert into Python dictionary.
+    :param yaml_type: which implementation of the loader/dumper to use.
+        See :py:class:`YAML` for details.
+    :returns: Python representation of ``data`` YAML content. If the YAML
+        contains no data, empty dictionary is returned.
+    :raises GeneralError: when the YAML content does not represent
+        a dictionary.
+    """
+
+    loaded_data = from_yaml(data, yaml_type=yaml_type)
+
     if loaded_data is None:
         return {}
+
     if not isinstance(loaded_data, dict):
         raise GeneralError(
-            f"Expected dictionary in yaml data, got '{type(loaded_data).__name__}'."
+            f"Expected dictionary in YAML data, got '{type(loaded_data).__name__}'."
         )
+
     return loaded_data
 
 
-def yaml_to_list(data: Any, yaml_type: Optional[YamlTypType] = 'safe') -> list[Any]:
+def yaml_to_list(data: str, *, yaml_type: Optional[YamlTypType] = 'safe') -> list[Any]:
     """
-    Convert yaml into list
+    Convert a YAML content into a Python list.
+
+    :param data: YAML content to convert into Python list.
+    :param yaml_type: which implementation of the loader/dumper to use.
+        See :py:class:`YAML` for details.
+    :returns: Python representation of ``data`` YAML content. If the YAML
+        contains no data, empty list is returned.
+    :raises GeneralError: when the YAML content does not represent a list.
     """
 
-    yaml = YAML(typ=yaml_type)
-    try:
-        loaded_data = yaml.load(data)
-    except ParserError as error:
-        raise GeneralError("Invalid yaml syntax.") from error
+    loaded_data = from_yaml(data, yaml_type=yaml_type)
 
     if loaded_data is None:
         return []
+
     if not isinstance(loaded_data, list):
-        raise GeneralError(f"Expected list in yaml data, got '{type(loaded_data).__name__}'.")
+        raise GeneralError(f"Expected list in YAML data, got '{type(loaded_data).__name__}'.")
+
     return loaded_data
 
 

@@ -99,8 +99,12 @@ def _nitrate_find_fmf_testcases(test: 'tmt.Test') -> Iterator[Any]:
             for testcase in find_general_plan(component).testcases:
                 struct_field = StructuredField(testcase.notes)
                 try:
+                    fmf_field = struct_field.get('fmf')
+                    if isinstance(fmf_field, list):
+                        fmf_field = '\n'.join(fmf_field)
+
                     fmf_id = tmt.base.FmfId.from_spec(
-                        cast(tmt.base._RawFmfId, tmt.utils.yaml_to_dict(struct_field.get('fmf')))
+                        cast(tmt.base._RawFmfId, tmt.utils.yaml_to_dict(fmf_field))
                     )
                     if fmf_id == test.fmf_id:
                         echo(
@@ -647,7 +651,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
             echo(style(section + ': ', fg='green') + attribute.strip())
 
     # fmf identifier
-    fmf_id = tmt.utils.dict_to_yaml(test.fmf_id.to_minimal_spec())
+    fmf_id = tmt.utils.to_yaml(test.fmf_id.to_minimal_spec())
     struct_field.set('fmf', fmf_id)
     echo(style('fmf id:\n', fg='green') + fmf_id.strip())
 

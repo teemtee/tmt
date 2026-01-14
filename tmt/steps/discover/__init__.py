@@ -12,6 +12,7 @@ from tmt.container import container, field, key_to_option
 
 if TYPE_CHECKING:
     import tmt.cli
+    import tmt.export
     import tmt.options
     import tmt.steps
 
@@ -585,7 +586,9 @@ class Discover(tmt.steps.Step):
             super().load()
 
         try:
-            raw_test_data = tmt.utils.yaml_to_list(self.read(Path('tests.yaml')))
+            raw_test_data: list[tmt.export._RawExportedInstance] = tmt.utils.yaml_to_list(
+                self.read(Path('tests.yaml'))
+            )
 
             self._tests = {}
 
@@ -644,7 +647,7 @@ class Discover(tmt.steps.Step):
 
                 raw_test_data.append(exported_test)
 
-        self.write(Path('tests.yaml'), tmt.utils.dict_to_yaml(raw_test_data))
+        self.write(Path('tests.yaml'), tmt.utils.to_yaml(raw_test_data))
 
     def _discover_from_execute(self) -> None:
         """
@@ -805,7 +808,7 @@ class Discover(tmt.steps.Step):
                     if fmf_id.default_branch and fmf_id.ref == fmf_id.default_branch:
                         exported.pop('ref')
 
-                    export_fmf_ids.append(tmt.utils.dict_to_yaml(exported, start=True))
+                    export_fmf_ids.append(tmt.utils.to_yaml(exported, start=True))
 
                 click.echo(''.join(export_fmf_ids), nl=False)
             return
