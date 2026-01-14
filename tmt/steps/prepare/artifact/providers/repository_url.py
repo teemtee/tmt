@@ -68,6 +68,7 @@ class RepositoryUrlProvider(ArtifactProvider[RpmArtifactInfo]):
         self, artifact: RpmArtifactInfo, guest: Guest, destination: tmt.utils.Path
     ) -> None:
         """This provider only discovers repos; it does not download individual RPMs."""
+        # FIXME: Change this to UnsupportedOperationError once its available
         raise AssertionError("RepositoryUrlProvider does not support downloading individual RPMs.")
 
     def fetch_contents(
