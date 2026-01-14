@@ -1,6 +1,6 @@
 import os
 from shlex import quote
-from typing import Any, Optional, Union, cast
+from typing import Any, ClassVar, Optional, Union, cast
 
 import tmt
 import tmt.base
@@ -127,6 +127,7 @@ class GuestContainer(tmt.Guest):
     """
 
     _data_class = PodmanGuestData
+    NETWORK_NAME_FORMAT: ClassVar[str] = "{prefix}tmt-{run_name}-{plan_name}-network"
 
     image: Optional[str]
     container: Optional[str]
@@ -185,19 +186,13 @@ class GuestContainer(tmt.Guest):
 
         # Use provision-level network name to allow communication between containers
         # while avoiding collisions across different test runs
-        # narrow type
-        assert self.parent is not None
-        assert isinstance(self.parent, Provision)
+        assert isinstance(self.parent, Provision)  # narrow type
 
         # Use run_id and plan's safe name to ensure uniqueness across multiple plans
         # running simultaneously while maintaining good debugging information
         # Include custom prefix if provided for additional collision avoidance
-        prefix = ""
-        if self.network_prefix:
-            prefix = f"{self.network_prefix}"
-
-        self.network = "{prefix}tmt-{run_name}-{plan_name}-network".format(  # noqa: UP032
-            prefix=prefix,
+        self.network = self.NETWORK_NAME_FORMAT.format(
+            prefix=self.network_prefix or '',
             run_name=self.parent.run_workdir.name,
             plan_name=self.parent.plan.pathless_safe_name,
         )
