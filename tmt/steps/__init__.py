@@ -610,7 +610,7 @@ class Step(
         A set of members of the step workdir that should not be removed during pruning.
         """
 
-        return {'step.yaml'}
+        return {f'step{tmt.utils.STATE_FILENAME_SUFFIX}'}
 
     def _check_duplicate_names(self, raw_data: list[_RawStepData]) -> None:
         """
@@ -855,7 +855,7 @@ class Step(
         """
 
         try:
-            raw_step_data: dict[Any, Any] = tmt.utils.yaml_to_dict(self.read(Path('step.yaml')))
+            raw_step_data: dict[Any, Any] = tmt.utils.yaml_to_dict(self.read_state('step'))
 
         except tmt.utils.GeneralError:
             self.debug('Step data not found.', level=2)
@@ -883,7 +883,7 @@ class Step(
             'status': self.status(),
             'data': [datum.to_serialized() for datum in self.data],
         }
-        self.write(Path('step.yaml'), tmt.utils.to_yaml(content))
+        self.write_state('step', content)
 
     def _load_results(
         self,
@@ -895,7 +895,7 @@ class Step(
         """
 
         try:
-            raw_results: list[Any] = tmt.utils.yaml_to_list(self.read(Path('results.yaml')))
+            raw_results: list[Any] = tmt.utils.yaml_to_list(self.read_state('results'))
 
             return [result_class.from_serialized(raw_result) for raw_result in raw_results]
 
@@ -917,7 +917,7 @@ class Step(
         try:
             raw_results = [result.to_serialized() for result in results]
 
-            self.write(Path('results.yaml'), tmt.utils.to_yaml(raw_results))
+            self.write_state('results', raw_results)
 
         except Exception as exc:
             raise GeneralError('Cannot save step results.') from exc
