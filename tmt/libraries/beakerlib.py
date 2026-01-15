@@ -1,6 +1,6 @@
 import re
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Literal, Optional, Union, cast
+from typing import TYPE_CHECKING, Literal, Optional, cast
 
 import fmf
 
@@ -10,7 +10,7 @@ import tmt.log
 import tmt.utils
 import tmt.utils.filesystem
 import tmt.utils.git
-from tmt.base import Dependency, DependencyFmfId, DependencySimple, FmfId
+from tmt.base import Dependency, DependencyFmfId, DependencySimple
 from tmt.container import container, simple_field
 from tmt.convert import write
 from tmt.steps.discover import Discover
@@ -54,7 +54,7 @@ class BeakerLib(Library):
     workdir or into 'destination' if provided in the identifier.
     """
 
-    identifier: Union[DependencySimple, DependencyFmfId]  # pyright: ignore[reportIncompatibleVariableOverride]
+    identifier: DependencyFmfId  # pyright: ignore[reportIncompatibleVariableOverride]
     format: Literal['rpm', 'fmf']  # pyright: ignore[reportIncompatibleVariableOverride]
 
     #: Target folder into which the library repo is cloned
@@ -132,7 +132,6 @@ class BeakerLib(Library):
             ),
             parent=parent,
             logger=logger,
-            _original_identifier=identifier,
             _format="rpm",
         )
 
@@ -143,17 +142,13 @@ class BeakerLib(Library):
         identifier: DependencyFmfId,
         parent: tmt.utils.Common,
         logger: tmt.log.Logger,
-        _original_identifier: Optional[Union[DependencySimple, DependencyFmfId]] = None,
         _format: Optional[Literal['rpm', 'fmf']] = None,
     ) -> "BeakerLib":
         """
         Constructor for BeakerLib library defined in an external git repository
         """
         assert identifier.url  # narrow type
-        parent.debug(
-            f"Detected library '{(_original_identifier or identifier).to_minimal_spec()}'.",
-            level=3,
-        )
+        parent.debug(f"Detected library '{identifier.to_minimal_spec()}'.", level=3)
 
         # Strip the '.git' suffix from url for known forges
         url = identifier.url
@@ -169,7 +164,7 @@ class BeakerLib(Library):
         return BeakerLib(
             parent=parent,
             _logger=logger,
-            identifier=_original_identifier or identifier,
+            identifier=identifier,
             format=_format or "fmf",
             repo=Path(repo),
             name=identifier.name or '/',
@@ -343,15 +338,9 @@ class BeakerLib(Library):
         self.parent.debug(f"Library {self} is copied into {directory}")
         tmt.utils.filesystem.copy_tree(library_path, local_library_path, self._logger)
 
-        fake_library_id = (
-            self.identifier
-            if isinstance(self.identifier, DependencyFmfId)
-            else FmfId(url=self.url, ref=self.ref, path=self.path, name=self.name)
-        )
-
         self.parent.verbose(
             'using remote git library',
-            cast(dict[str, str], fake_library_id.to_minimal_dict()),
+            cast(dict[str, str], self.identifier.to_minimal_dict()),
             'green',
             level=3,
         )
