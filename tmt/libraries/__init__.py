@@ -11,6 +11,7 @@ import tmt
 import tmt.log
 import tmt.utils
 from tmt.base import Dependency, DependencyFile, DependencyFmfId, DependencySimple
+from tmt.container import container
 from tmt.utils import Path
 
 # A beakerlib identifier type, can be a string or a fmf id (with extra beakerlib keys)
@@ -26,6 +27,7 @@ class LibraryError(Exception):
     """
 
 
+@container(init=False)
 class Library:
     """
     General library class

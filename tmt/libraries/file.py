@@ -8,11 +8,13 @@ import tmt
 import tmt.log
 import tmt.utils
 from tmt.base import DependencyFile
+from tmt.container import container
 from tmt.utils import Path
 
 from . import Library
 
 
+@container(init=False)
 class File(Library):
     """
     Required files
