@@ -44,8 +44,8 @@ class RepositoryUrlProvider(ArtifactProvider[RpmArtifactInfo]):
 
     repository: Repository
 
-    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
-        super().__init__(raw_provider_id, logger)
+    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger, priority: int):
+        super().__init__(raw_provider_id, logger, priority)
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
@@ -89,13 +89,12 @@ class RepositoryUrlProvider(ArtifactProvider[RpmArtifactInfo]):
         self.logger.info(f"Setting up repository from baseurl: {baseurl} (name: {repo_name})")
 
         # Generate .repo file content
-        # TODO: Use DEFAULT_REPOSITORY_PRIORITY from repository.py once it's available.
         repo_content = f"""[{tmt.utils.sanitize_name(repo_name)}]
 name={repo_name}
 baseurl={baseurl}
 enabled=1
 gpgcheck=0
-priority=50"""
+priority={self.priority}"""
 
         self.logger.debug(f"Generated .repo file content:\n{repo_content}")
 

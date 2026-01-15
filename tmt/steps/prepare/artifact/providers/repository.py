@@ -19,11 +19,6 @@ from tmt.steps.prepare.artifact.providers import (
 from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path, PrepareError, RunError
 
-#: Default priority for repositories when priority is not specified.
-#: Lower values have higher priority in package managers.
-#: See https://dnf.readthedocs.io/en/latest/conf_ref.html#repo-options
-DEFAULT_REPOSITORY_PRIORITY = 50
-
 # Counter for generating unique repository names in the format ``tmt-repo-default-{n}``.
 _REPO_NAME_GENERATOR = DefaultNameGenerator(known_names=[])
 
@@ -49,8 +44,8 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
 
     repository: Repository
 
-    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
-        super().__init__(raw_provider_id, logger)
+    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger, priority: int):
+        super().__init__(raw_provider_id, logger, priority)
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
@@ -171,8 +166,8 @@ def create_repository(
     artifact_dir: Path,
     guest: Guest,
     logger: tmt.log.Logger,
+    priority: int,
     repo_name: Optional[str] = None,
-    priority: int = DEFAULT_REPOSITORY_PRIORITY,
 ) -> Repository:
     """
     Create a local RPM repository from a directory on the guest.
@@ -186,8 +181,7 @@ def create_repository(
     :param logger: Logger instance for outputting debug and error messages.
     :param repo_name: Name for the repository. If not provided, generates a unique
         name using the format ``tmt-repo-default-{n}``.
-    :param priority: Repository priority (default: DEFAULT_REPOSITORY_PRIORITY).
-        Lower values have higher priority.
+    :param priority: Repository priority. Lower values have higher priority.
     :returns: Repository object representing the newly created repository.
     :raises PrepareError: If the package manager does not support creating repositories
         or if metadata creation fails.
