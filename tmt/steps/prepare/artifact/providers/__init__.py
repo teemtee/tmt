@@ -83,8 +83,13 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
     #: repository, and so on.
     id: ArtifactProviderId
 
-    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
+    #: Repository priority for providers that create repositories.
+    #: Lower values have higher priority in package managers.
+    priority: int
+
+    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger, priority: int):
         self.logger = logger
+        self.priority = priority
 
         self.id = self._extract_provider_id(raw_provider_id)
 

@@ -94,8 +94,8 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         artifacts = provider.download_artifacts(guest, Path("/tmp"), [])
     """
 
-    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
-        super().__init__(raw_provider_id, logger)
+    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger, priority: int):
+        super().__init__(raw_provider_id, logger, priority)
         self._session = self._initialize_session()
 
     @cached_property
@@ -165,7 +165,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         """Create a build provider instance if build_id is available."""
         if self.build_id is None:
             return None
-        return build_cls(f"{prefix}:{self.build_id}", self.logger)
+        return build_cls(f"{prefix}:{self.build_id}", self.logger, self.priority)
 
     @cached_property
     def build_provider(self) -> Optional['KojiBuild']:

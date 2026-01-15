@@ -29,6 +29,16 @@ class PrepareArtifactData(PrepareStepData):
         normalize=tmt.utils.normalize_string_list,
     )
 
+    priority: int = field(
+        default=50,
+        option='--priority',
+        metavar='PRIORITY',
+        help="""
+            Priority for artifact repositories. Lower values mean higher priority
+            in package managers. Default: 50.
+            """,
+    )
+
 
 @container
 class RpmArtifactInfo(ArtifactInfo):
@@ -201,6 +211,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             guest=guest,
             logger=logger,
             repo_name=self.SHARED_REPO_NAME,
+            priority=self.data.priority,
         )
 
         # Initialize all providers and have them contribute to the shared repo
@@ -212,7 +223,9 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                 # Sanitize the provider ID to use as a directory name
                 provider_id_sanitized = tmt.utils.sanitize_name(raw_provider_id, allow_slash=False)
                 provider_logger = self._logger.descend(raw_provider_id)
-                provider = provider_class(raw_provider_id, logger=provider_logger)
+                provider = provider_class(
+                    raw_provider_id, logger=provider_logger, priority=self.data.priority
+                )
                 providers.append(provider)
 
                 # Define a unique download path for this provider's artifacts
