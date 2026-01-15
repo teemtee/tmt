@@ -45,6 +45,7 @@ setup_fedora_environment() {
 get_koji_build_id() {
     local package="$1"
     local tag="$2"
+    unset KOJI_BUILD_ID  # Clear any previous value
 
     # Get the latest tagged build for the package
     # Output format: "make-4.4.1-10.fc42    f42    releng"
