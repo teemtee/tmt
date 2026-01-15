@@ -40,6 +40,17 @@ class Library:
     Used as parent for specific libraries like beakerlib and file
     """
 
+    #: Optional 'parent' object inheriting from tmt.utils.Common can be
+    #: provided in order to share the cache of already fetched libraries.
+    parent: tmt.utils.Common
+    _logger: tmt.log.Logger
+    identifier: Dependency
+    format: str
+    #: Library prefix (git repository name or nick if provided)
+    repo: Path
+    #: Library suffix (folder containing the library code)
+    name: str
+
     def __init__(
         self,
         *,
@@ -52,12 +63,7 @@ class Library:
 
         # Use an empty common class if parent not provided (for logging, cache)
         self.parent = parent or tmt.utils.Common(logger=logger, workdir=True)
-        self._logger: tmt.log.Logger = logger
-
-        self.identifier: Dependency
-        self.format: str
-        self.repo: Path
-        self.name: str
+        self._logger = logger
 
     @property
     def hostname(self) -> str:
