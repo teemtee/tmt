@@ -10,8 +10,8 @@ import tmt.log
 import tmt.utils
 import tmt.utils.filesystem
 import tmt.utils.git
-from tmt.base import DependencyFmfId, DependencySimple, FmfId
-from tmt.container import container
+from tmt.base import Dependency, DependencyFmfId, DependencySimple, FmfId
+from tmt.container import container, simple_field
 from tmt.convert import write
 from tmt.steps.discover import Discover
 from tmt.utils import Command, Environment, EnvVarValue, Path
@@ -19,7 +19,7 @@ from tmt.utils import Command, Environment, EnvVarValue, Path
 from . import Library, LibraryError
 
 if TYPE_CHECKING:
-    from tmt.base import Dependency, _RawDependency
+    from tmt.base import _RawDependency
 
 # Regular expressions for beakerlib libraries
 LIBRARY_REGEXP = re.compile(r'^library\(([^/]+)(/[^)]+)\)$')
@@ -41,7 +41,7 @@ class CommonWithLibraryCache(tmt.utils.Common):
     _nonexistent_url: set[str]
 
 
-@container(init=False)
+@container
 class BeakerLib(Library):
     """
     A beakerlib library
@@ -54,115 +54,153 @@ class BeakerLib(Library):
     workdir or into 'destination' if provided in the identifier.
     """
 
-    identifier: Union[DependencySimple, DependencyFmfId]
-    format: Literal['rpm', 'fmf']
+    identifier: Union[DependencySimple, DependencyFmfId]  # pyright: ignore[reportIncompatibleVariableOverride]
+    format: Literal['rpm', 'fmf']  # pyright: ignore[reportIncompatibleVariableOverride]
 
     #: Full git repository url
-    url: Optional[str]
+    url: Optional[str] = None
     #: Git revision (branch, tag or commit)
-    ref: Optional[str]
-    path: Optional[Path]
+    ref: Optional[str] = None
+    path: Optional[Path] = None
     #: Target folder into which the library repo is cloned
-    dest: Path
+    dest: Path = Path(DEFAULT_DESTINATION)
 
     #: List of required packages
-    require: list["Dependency"]
+    require: list[Dependency] = simple_field(default_factory=list)  # pyright: ignore[reportUnknownVariableType]
     #: List of recommended packages
-    recommend: list["Dependency"]
+    recommend: list[Dependency] = simple_field(default_factory=list)  # pyright: ignore[reportUnknownVariableType]
     #: Fmf tree holding library metadata
-    tree: fmf.Tree
+    tree: fmf.Tree = simple_field(init=False)
 
-    source_directory: Path
+    source_directory: Path = simple_field(init=False)
     default_branch: Optional[str] = None
 
-    def __init__(
-        self,
-        *,
-        identifier: Union[DependencySimple, DependencyFmfId],
-        parent: Optional[tmt.utils.Common] = None,
-        logger: tmt.log.Logger,
-    ) -> None:
-        super().__init__(parent=parent, logger=logger)
-
-        # Default branch is detected from the origin after cloning
-        self.default_branch = None
-
-        # The 'library(repo/lib)' format
-        if isinstance(identifier, DependencySimple):
-            identifier = DependencySimple(identifier.strip())
-            self.identifier = identifier
-            matched = LIBRARY_REGEXP.search(identifier)
-            if not matched:
-                raise LibraryError
-            self.parent.debug(f"Detected library '{identifier.to_minimal_spec()}'.", level=3)
-            self.format = 'rpm'
-            self.repo = Path(matched.groups()[0])
-            self.name = matched.groups()[1]
-            self.url = DEFAULT_REPOSITORY_TEMPLATE.format(repository=self.repo)
-            self.path = None
-            self.ref = None
-            self.dest = Path(DEFAULT_DESTINATION)
-
-        # The fmf identifier
-        #
-        # ignore[reportUnnecessaryIsInstance]: pyright is correct, the test is not
-        # needed given the fact `identifier` is a union of two types, and one was
-        # ruled out above. But we would like to check possible violations in runtime,
-        # therefore an `else` with an exception.
-        # ignore[unused-ignore]: silencing mypy's complaint about silencing
-        # pyright's warning :)
-        elif isinstance(identifier, DependencyFmfId):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
-            self.identifier = identifier  # pyright: ignore[reportIncompatibleVariableOverride]
-            self.parent.debug(f"Detected library '{identifier.to_minimal_spec()}'.", level=3)
-            self.format = 'fmf'  # pyright: ignore[reportIncompatibleVariableOverride]
-            self.url = identifier.url
-            self.path = identifier.path
-            if not self.url and not self.path:
-                raise tmt.utils.SpecificationError(
-                    "Need 'url' or 'path' to fetch a beakerlib library."
-                )
-            # Strip the '.git' suffix from url for known forges
-            if self.url:
-                for forge in STRIP_SUFFIX_FORGES:
-                    if self.url.startswith(forge) and self.url.endswith('.git'):
-                        self.url = self.url.rstrip('.git')
-            self.ref = identifier.ref
-            self.dest = identifier.destination or Path(DEFAULT_DESTINATION.lstrip('/'))
-            self.name = identifier.name or '/'
-            if not self.name.startswith('/'):
-                raise tmt.utils.SpecificationError(
-                    f"Library name '{self.name}' does not start with a '/'."
-                )
-
-            # Use provided repository nick name or parse it from the url/path
-            repo = identifier.nick
-            if not repo:
-                if self.url:
-                    repo_search = re.search(r'/([^/]+?)(/|\.git)?$', self.url)
-                    if not repo_search:
-                        raise tmt.utils.GeneralError(
-                            f"Unable to parse repository name from '{self.url}'."
-                        )
-                    repo = repo_search.group(1)
-                else:
-                    # Either url or path must be defined
-                    assert self.path is not None
-                    try:
-                        repo = self.path.name
-                        if not repo:
-                            raise TypeError
-                    except TypeError as error:
-                        raise tmt.utils.GeneralError(
-                            f"Unable to parse repository name from '{self.path}'."
-                        ) from error
-            self.repo = Path(repo)
-
-        # Something weird
-        else:
-            raise LibraryError
-
+    def __post_init__(self) -> None:
         # Set default source directory, used for files required by a library
         self.source_directory: Path = self.path or self.fmf_node_path
+        # Sanity checks
+        if not self.name.startswith('/'):
+            raise tmt.utils.SpecificationError(
+                f"Library name '{self.name}' does not start with a '/'."
+            )
+
+    @classmethod
+    def from_identifier(
+        cls,
+        *,
+        identifier: Dependency,
+        parent: Optional[tmt.utils.Common] = None,
+        logger: tmt.log.Logger,
+        source_location: Optional[Path] = None,
+        target_location: Optional[Path] = None,
+    ) -> Library:
+        assert parent is not None  # narrow type
+
+        if isinstance(identifier, DependencySimple):
+            return cls._from_simple(identifier=identifier, parent=parent, logger=logger)
+
+        assert isinstance(identifier, DependencyFmfId)  # narrow type
+        if identifier.url:
+            return cls._from_url(identifier=identifier, parent=parent, logger=logger)
+
+        if identifier.path:
+            return cls._from_path(identifier=identifier, parent=parent, logger=logger)
+
+        raise tmt.utils.SpecificationError("Need 'url' or 'path' to fetch a beakerlib library.")
+
+    @classmethod
+    def _from_simple(
+        cls,
+        *,
+        identifier: DependencySimple,
+        parent: tmt.utils.Common,
+        logger: tmt.log.Logger,
+    ) -> "BeakerLib":
+        """
+        Constructor for BeakerLib library defined as ``library(repo/lib)``.
+        """
+        identifier = DependencySimple(identifier.strip())
+        matched = LIBRARY_REGEXP.search(identifier)
+        if not matched:
+            raise LibraryError
+        parent.debug(f"Detected library '{identifier.to_minimal_spec()}'.", level=3)
+        repo = Path(matched.groups()[0])
+        name = matched.groups()[1]
+        return BeakerLib(
+            parent=parent,
+            _logger=logger,
+            identifier=identifier,
+            format="rpm",
+            repo=repo,
+            name=name,
+            url=DEFAULT_REPOSITORY_TEMPLATE.format(repository=repo),
+        )
+
+    @classmethod
+    def _from_url(
+        cls,
+        *,
+        identifier: DependencyFmfId,
+        parent: tmt.utils.Common,
+        logger: tmt.log.Logger,
+    ) -> "BeakerLib":
+        """
+        Constructor for BeakerLib library defined in an external git repository
+        """
+        assert identifier.url  # narrow type
+        parent.debug(f"Detected library '{identifier.to_minimal_spec()}'.", level=3)
+
+        # Strip the '.git' suffix from url for known forges
+        url = identifier.url
+        for forge in STRIP_SUFFIX_FORGES:
+            if url.startswith(forge) and url.endswith('.git'):
+                url = url.rstrip('.git')
+        repo = identifier.nick
+        if not repo:
+            repo_search = re.search(r'/([^/]+?)(/|\.git)?$', url)
+            if not repo_search:
+                raise tmt.utils.GeneralError(f"Unable to parse repository name from '{url}'.")
+            repo = repo_search.group(1)
+        return BeakerLib(
+            parent=parent,
+            _logger=logger,
+            identifier=identifier,
+            format="fmf",
+            repo=Path(repo),
+            name=identifier.name or '/',
+            url=url,
+            ref=identifier.ref,
+            path=identifier.path,
+            dest=identifier.destination or Path(DEFAULT_DESTINATION),
+        )
+
+    @classmethod
+    def _from_path(
+        cls,
+        *,
+        identifier: DependencyFmfId,
+        parent: tmt.utils.Common,
+        logger: tmt.log.Logger,
+    ) -> "BeakerLib":
+        assert identifier.path  # narrow type
+        path = identifier.path
+
+        repo = identifier.nick
+        if not repo:
+            repo = path.name
+            if not repo:
+                raise tmt.utils.GeneralError(f"Unable to parse repository name from '{path}'.")
+
+        return BeakerLib(
+            parent=parent,
+            _logger=logger,
+            identifier=identifier,
+            format="fmf",
+            repo=Path(repo),
+            name=identifier.name or '/',
+            path=identifier.path,
+            dest=identifier.destination or Path(DEFAULT_DESTINATION),
+        )
 
     @property
     def hostname(self) -> str:

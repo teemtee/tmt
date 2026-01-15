@@ -28,7 +28,7 @@ class LibraryError(Exception):
     """
 
 
-@container(init=False)
+@container
 class Library(abc.ABC):
     """
     General library class
@@ -46,20 +46,6 @@ class Library(abc.ABC):
     repo: Path
     #: Library suffix (folder containing the library code)
     name: str
-
-    def __init__(
-        self,
-        *,
-        parent: Optional[tmt.utils.Common] = None,
-        logger: tmt.log.Logger,
-    ) -> None:
-        """
-        Process the library identifier and fetch the library
-        """
-
-        # Use an empty common class if parent not provided (for logging, cache)
-        self.parent = parent or tmt.utils.Common(logger=logger, workdir=True)
-        self._logger = logger
 
     @classmethod
     def from_identifier(
@@ -79,10 +65,17 @@ class Library(abc.ABC):
         from .beakerlib import BeakerLib
         from .file import File
 
-        library: Library
+        # Use an empty common class if parent not provided (for logging, cache)
+        # TODO: This should not be needed because parent is always DiscoverPlugin,
+        #  see callers of `dependencies`
+        parent = parent or tmt.utils.Common(logger=logger, workdir=True)
 
         if isinstance(identifier, (DependencySimple, DependencyFmfId)):
-            library = BeakerLib(identifier=identifier, parent=parent, logger=logger)
+            library = BeakerLib.from_identifier(
+                identifier=identifier,
+                parent=parent,
+                logger=logger,
+            )
 
         # File import
         #
@@ -95,7 +88,7 @@ class Library(abc.ABC):
         elif isinstance(identifier, DependencyFile):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
             assert source_location is not None
             assert target_location is not None  # narrow type
-            library = File(
+            library = File.from_identifier(
                 identifier=identifier,
                 parent=parent,
                 logger=logger,

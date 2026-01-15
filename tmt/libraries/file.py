@@ -7,14 +7,14 @@ import fmf.utils
 import tmt
 import tmt.log
 import tmt.utils
-from tmt.base import DependencyFile
+from tmt.base import Dependency, DependencyFile
 from tmt.container import container
 from tmt.utils import Path
 
 from . import Library
 
 
-@container(init=False)
+@container
 class File(Library):
     """
     Required files
@@ -24,32 +24,39 @@ class File(Library):
     https://tmt.readthedocs.io/en/latest/spec/tests.html#require
     """
 
-    identifier: DependencyFile
-    format: Literal['file']
+    identifier: DependencyFile  # pyright: ignore[reportIncompatibleVariableOverride]
+    format: Literal['file']  # pyright: ignore[reportIncompatibleVariableOverride]
 
     #: Filename paths and regexes which need to be copied
     pattern: list[str]
     source_location: Path
     target_location: Path
 
-    def __init__(
-        self,
+    @classmethod
+    def from_identifier(
+        cls,
         *,
-        identifier: DependencyFile,
+        identifier: Dependency,
         parent: Optional[tmt.utils.Common] = None,
         logger: tmt.log.Logger,
-        source_location: Path,
-        target_location: Path,
-    ) -> None:
-        super().__init__(parent=parent, logger=logger)
-
-        self.identifier = identifier  # pyright: ignore[reportIncompatibleVariableOverride]
-        self.format = 'file'  # pyright: ignore[reportIncompatibleVariableOverride]
-        self.repo = Path(target_location.name)
-        self.name = "/files"
-        self.pattern = identifier.pattern if hasattr(identifier, 'pattern') else []
-        self.source_location = source_location
-        self.target_location = target_location
+        source_location: Optional[Path] = None,
+        target_location: Optional[Path] = None,
+    ) -> Library:
+        assert parent is not None  # narrow type
+        assert isinstance(identifier, DependencyFile)  # narrow type
+        assert source_location is not None  # narrow type
+        assert target_location is not None  # narrow type
+        return File(
+            parent=parent,
+            _logger=logger,
+            identifier=identifier,
+            format="file",
+            repo=Path(target_location.name),
+            name="/files",
+            pattern=identifier.pattern if hasattr(identifier, 'pattern') else [],
+            source_location=source_location,
+            target_location=target_location,
+        )
 
     def fetch(self) -> None:
         patterns = fmf.utils.listed(self.pattern, quote="'")
