@@ -57,13 +57,13 @@ class BeakerLib(Library):
     identifier: Union[DependencySimple, DependencyFmfId]  # pyright: ignore[reportIncompatibleVariableOverride]
     format: Literal['rpm', 'fmf']  # pyright: ignore[reportIncompatibleVariableOverride]
 
+    #: Target folder into which the library repo is cloned
+    dest: Path
     #: Full git repository url
     url: Optional[str] = None
     #: Git revision (branch, tag or commit)
     ref: Optional[str] = None
     path: Optional[Path] = None
-    #: Target folder into which the library repo is cloned
-    dest: Path = Path(DEFAULT_DESTINATION)
 
     #: List of required packages
     require: list[Dependency] = simple_field(default_factory=list)  # pyright: ignore[reportUnknownVariableType]
@@ -123,17 +123,17 @@ class BeakerLib(Library):
         matched = LIBRARY_REGEXP.search(identifier)
         if not matched:
             raise LibraryError
-        parent.debug(f"Detected library '{identifier.to_minimal_spec()}'.", level=3)
-        repo = Path(matched.groups()[0])
+        repo = matched.groups()[0]
         name = matched.groups()[1]
-        return BeakerLib(
+        return BeakerLib._from_url(
+            identifier=DependencyFmfId(
+                url=DEFAULT_REPOSITORY_TEMPLATE.format(repository=str(repo)),
+                name=name,
+            ),
             parent=parent,
-            _logger=logger,
-            identifier=identifier,
-            format="rpm",
-            repo=repo,
-            name=name,
-            url=DEFAULT_REPOSITORY_TEMPLATE.format(repository=repo),
+            logger=logger,
+            _original_identifier=identifier,
+            _format="rpm",
         )
 
     @classmethod
@@ -143,12 +143,17 @@ class BeakerLib(Library):
         identifier: DependencyFmfId,
         parent: tmt.utils.Common,
         logger: tmt.log.Logger,
+        _original_identifier: Optional[Union[DependencySimple, DependencyFmfId]] = None,
+        _format: Optional[Literal['rpm', 'fmf']] = None,
     ) -> "BeakerLib":
         """
         Constructor for BeakerLib library defined in an external git repository
         """
         assert identifier.url  # narrow type
-        parent.debug(f"Detected library '{identifier.to_minimal_spec()}'.", level=3)
+        parent.debug(
+            f"Detected library '{(_original_identifier or identifier).to_minimal_spec()}'.",
+            level=3,
+        )
 
         # Strip the '.git' suffix from url for known forges
         url = identifier.url
@@ -164,8 +169,8 @@ class BeakerLib(Library):
         return BeakerLib(
             parent=parent,
             _logger=logger,
-            identifier=identifier,
-            format="fmf",
+            identifier=_original_identifier or identifier,
+            format=_format or "fmf",
             repo=Path(repo),
             name=identifier.name or '/',
             url=url,
