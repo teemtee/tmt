@@ -1,6 +1,6 @@
 import re
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Optional, Union, cast
+from typing import TYPE_CHECKING, Literal, Optional, Union, cast
 
 import fmf
 
@@ -18,7 +18,7 @@ from tmt.utils import Command, Environment, EnvVarValue, Path
 from . import Library, LibraryError
 
 if TYPE_CHECKING:
-    from tmt.base import _RawDependency
+    from tmt.base import Dependency, _RawDependency
 
 # Regular expressions for beakerlib libraries
 LIBRARY_REGEXP = re.compile(r'^library\(([^/]+)(/[^)]+)\)$')
@@ -48,25 +48,30 @@ class BeakerLib(Library):
     based on provided library identifier described in detail here:
     https://tmt.readthedocs.io/en/latest/spec/tests.html#require
 
-    Optional 'parent' object inheriting from tmt.utils.Common can be
-    provided in order to share the cache of already fetched libraries.
-
-    The following attributes are available in the object:
-
-    repo ........ library prefix (git repository name or nick if provided)
-    name ........ library suffix (folder containing the library code)
-
-    url ......... full git repository url
-    ref ......... git revision (branch, tag or commit)
-    dest ........ target folder into which the library repo is cloned
-
-    tree ........ fmf tree holding library metadata
-    require ..... list of required packages
-    recommend ... list of recommended packages
-
     Libraries are fetched into the 'libs' directory under parent's
     workdir or into 'destination' if provided in the identifier.
     """
+
+    identifier: Union[DependencySimple, DependencyFmfId]
+    format: Literal['rpm', 'fmf']
+
+    #: Full git repository url
+    url: Optional[str]
+    #: Git revision (branch, tag or commit)
+    ref: Optional[str]
+    path: Optional[Path]
+    #: Target folder into which the library repo is cloned
+    dest: Path
+
+    #: List of required packages
+    require: list["Dependency"]
+    #: List of recommended packages
+    recommend: list["Dependency"]
+    #: Fmf tree holding library metadata
+    tree: fmf.Tree
+
+    source_directory: Path
+    default_branch: Optional[str] = None
 
     def __init__(
         self,
@@ -78,7 +83,7 @@ class BeakerLib(Library):
         super().__init__(parent=parent, logger=logger)
 
         # Default branch is detected from the origin after cloning
-        self.default_branch: Optional[str] = None
+        self.default_branch = None
 
         # The 'library(repo/lib)' format
         if isinstance(identifier, DependencySimple):
@@ -91,10 +96,10 @@ class BeakerLib(Library):
             self.format = 'rpm'
             self.repo = Path(matched.groups()[0])
             self.name = matched.groups()[1]
-            self.url: Optional[str] = DEFAULT_REPOSITORY_TEMPLATE.format(repository=self.repo)
-            self.path: Optional[Path] = None
-            self.ref: Optional[str] = None
-            self.dest: Path = Path(DEFAULT_DESTINATION)
+            self.url = DEFAULT_REPOSITORY_TEMPLATE.format(repository=self.repo)
+            self.path = None
+            self.ref = None
+            self.dest = Path(DEFAULT_DESTINATION)
 
         # The fmf identifier
         #
@@ -105,9 +110,9 @@ class BeakerLib(Library):
         # ignore[unused-ignore]: silencing mypy's complaint about silencing
         # pyright's warning :)
         elif isinstance(identifier, DependencyFmfId):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
-            self.identifier = identifier
+            self.identifier = identifier  # pyright: ignore[reportIncompatibleVariableOverride]
             self.parent.debug(f"Detected library '{identifier.to_minimal_spec()}'.", level=3)
-            self.format = 'fmf'
+            self.format = 'fmf'  # pyright: ignore[reportIncompatibleVariableOverride]
             self.url = identifier.url
             self.path = identifier.path
             if not self.url and not self.path:

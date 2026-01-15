@@ -1,5 +1,5 @@
 import shutil
-from typing import Optional
+from typing import Literal, Optional
 
 import fmf
 import fmf.utils
@@ -20,15 +20,15 @@ class File(Library):
     Takes care of copying required files for specific test or library,
     more details here:
     https://tmt.readthedocs.io/en/latest/spec/tests.html#require
-
-    Optional 'parent' object inheriting from tmt.utils.Common can be
-    provided in order to share the cache of already fetched libraries.
-
-    The following attributes are available in the object:
-
-    repo ........ library prefix (git repository name or nick if provided)
-    pattern ..... filename paths and regexes which need to be copied
     """
+
+    identifier: DependencyFile
+    format: Literal['file']
+
+    #: Filename paths and regexes which need to be copied
+    pattern: list[str]
+    source_location: Path
+    target_location: Path
 
     def __init__(
         self,
@@ -41,13 +41,13 @@ class File(Library):
     ) -> None:
         super().__init__(parent=parent, logger=logger)
 
-        self.identifier = identifier
-        self.format = 'file'
+        self.identifier = identifier  # pyright: ignore[reportIncompatibleVariableOverride]
+        self.format = 'file'  # pyright: ignore[reportIncompatibleVariableOverride]
         self.repo = Path(target_location.name)
         self.name = "/files"
-        self.pattern: list[str] = identifier.pattern if hasattr(identifier, 'pattern') else []
-        self.source_location: Path = source_location
-        self.target_location: Path = target_location
+        self.pattern = identifier.pattern if hasattr(identifier, 'pattern') else []
+        self.source_location = source_location
+        self.target_location = target_location
 
     def fetch(self) -> None:
         """
