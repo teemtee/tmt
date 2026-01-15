@@ -216,6 +216,151 @@ class BeakerLib(Library):
             quiet=True,
         )
 
+    def _fetch_from_url(self, directory: Path) -> None:
+        """
+        Fetch the library from git url
+        """
+        assert self.url  # narrow type
+        if self.url in self._nonexistent_url:
+            raise tmt.utils.GitUrlError(f"Already know that '{self.url}' does not exist.")
+        clone_dir = self.parent.clone_dirpath / self.hostname / self.repo
+        self.source_directory = clone_dir
+        # Shallow clone to speed up testing and
+        # minimize data transfers if ref is not provided
+        if not clone_dir.exists():
+            tmt.utils.git.git_clone(
+                url=self.url,
+                destination=clone_dir,
+                shallow=self.ref is None,
+                env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
+                logger=self._logger,
+            )
+
+        # Detect the default branch from the origin
+        try:
+            self.default_branch = tmt.utils.git.default_branch(
+                repository=clone_dir, logger=self._logger
+            )
+        except OSError as error:
+            raise tmt.utils.GeneralError(
+                f"Unable to detect default branch for '{clone_dir}'. "
+                f"Is the git repository '{self.url}' empty?"
+            ) from error
+        # Use the default branch if no ref provided
+        if self.ref is None:
+            self.ref = self.default_branch
+        # Apply the dynamic reference if provided
+        try:
+            if hasattr(self.parent.parent, 'plan'):
+                plan = cast(Discover, self.parent.parent).plan
+            else:
+                plan = None
+            dynamic_ref = tmt.base.resolve_dynamic_ref(
+                workdir=clone_dir, ref=self.ref, plan=plan, logger=self._logger
+            )
+        except tmt.utils.FileError as error:
+            raise tmt.utils.DiscoverError(
+                f"Failed to resolve dynamic ref of '{self.ref}'."
+            ) from error
+        # Check out the requested branch
+        try:
+            if dynamic_ref is not None:
+                # We won't change self.ref directly since we want to preserve a check
+                # for not fetching two distinct 'ref's. Simply put, only the same
+                # @dynamic_ref filepath can be used by other tests.
+                self.parent.run(Command('git', 'checkout', dynamic_ref), cwd=clone_dir)
+        except tmt.utils.RunError as error:
+            # Fallback to install during the prepare step if in rpm format
+            if self.format == 'rpm':
+                self.parent.debug(f"Invalid reference '{self.ref}'.")
+                raise LibraryError from error
+            self.parent.fail(f"Reference '{self.ref}' for library '{self}' not found.")
+            raise
+
+        # Log what HEAD really is
+        self.parent.verbose(
+            'commit-hash',
+            tmt.utils.git.git_hash(directory=clone_dir, logger=self._logger),
+            'green',
+        )
+
+        # Copy only the required library
+        library_path: Path = clone_dir / str(self.fmf_node_path).strip('/')
+        local_library_path: Path = directory / str(self.fmf_node_path).strip('/')
+        if not library_path.exists():
+            self.parent.debug(f"Failed to find library {self} at {self.url}")
+            raise LibraryError
+        self.parent.debug(f"Library {self} is copied into {directory}")
+        tmt.utils.filesystem.copy_tree(library_path, local_library_path, self._logger)
+
+        fake_library_id = (
+            self.identifier
+            if isinstance(self.identifier, DependencyFmfId)
+            else FmfId(url=self.url, ref=self.ref, path=self.path, name=self.name)
+        )
+
+        self.parent.verbose(
+            'using remote git library',
+            cast(dict[str, str], fake_library_id.to_minimal_dict()),
+            'green',
+            level=3,
+        )
+
+        # Remove metadata file(s) and create one with full data
+        # Node with library might not exist, provide usable error message
+        try:
+            self._merge_metadata(library_path, local_library_path)
+        except tmt.utils.MetadataError as error:
+            fmf_id = ', '.join(
+                [
+                    s
+                    for s in [
+                        f'name: {self.name}' if self.name else None,
+                        f'url: {self.url}' if self.url else None,
+                        f'ref: {self.ref}' if self.ref else None,
+                        f'path: {self.path}' if self.path else None,
+                    ]
+                    if s is not None
+                ]
+            )
+            raise tmt.utils.SpecificationError(f"Library with {fmf_id=} doesn't exist.") from error
+
+        # Copy fmf metadata
+        tmt.utils.filesystem.copy_tree(
+            clone_dir / '.fmf',
+            directory / '.fmf',
+            self._logger,
+        )
+        if self.path:
+            tmt.utils.filesystem.copy_tree(
+                clone_dir / self.path.unrooted() / '.fmf',
+                directory / self.path.unrooted() / '.fmf',
+                self._logger,
+            )
+
+    def _fetch_from_path(self, directory: Path) -> None:
+        """
+        Fetch the library from local path
+        """
+        assert self.path  # narrow type
+        library_path = self.fmf_node_path
+        local_library_path = directory / self.name.strip('/')
+        if not library_path.exists():
+            self.parent.debug(f"Failed to find library {self} at {self.path}")
+            raise LibraryError
+
+        self.parent.debug(f"Copy local library '{self.fmf_node_path}' to '{directory}'.", level=3)
+        # Copy only the required library
+        tmt.utils.filesystem.copy_tree(library_path, local_library_path, self._logger)
+        # Remove metadata file(s) and create one with full data
+        self._merge_metadata(library_path, local_library_path)
+        # Copy fmf metadata
+        tmt.utils.filesystem.copy_tree(
+            self.path / '.fmf',
+            directory / '.fmf',
+            self._logger,
+        )
+
     def fetch(self) -> None:
         """
         Fetch the library (unless already fetched)
@@ -273,7 +418,7 @@ class BeakerLib(Library):
             # Reuse the existing metadata tree
             self.tree: fmf.Tree = library.tree
         # Fetch the library and add it to the index
-        except (KeyError, FileNotFoundError) as error:
+        except (KeyError, FileNotFoundError):
             self.parent.debug(f"Fetch library '{self}'.", level=3)
             # Prepare path, clone the repository, checkout ref
             assert self.parent.workdir
@@ -281,148 +426,9 @@ class BeakerLib(Library):
             # Clone repo with disabled prompt to ignore missing/private repos
             try:
                 if self.url:
-                    if self.url in self._nonexistent_url:
-                        raise tmt.utils.GitUrlError(
-                            f"Already know that '{self.url}' does not exist."
-                        ) from error
-                    clone_dir = self.parent.clone_dirpath / self.hostname / self.repo
-                    self.source_directory = clone_dir
-                    # Shallow clone to speed up testing and
-                    # minimize data transfers if ref is not provided
-                    if not clone_dir.exists():
-                        tmt.utils.git.git_clone(
-                            url=self.url,
-                            destination=clone_dir,
-                            shallow=self.ref is None,
-                            env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
-                            logger=self._logger,
-                        )
-
-                    # Detect the default branch from the origin
-                    try:
-                        self.default_branch = tmt.utils.git.default_branch(
-                            repository=clone_dir, logger=self._logger
-                        )
-                    except OSError as error:
-                        raise tmt.utils.GeneralError(
-                            f"Unable to detect default branch for '{clone_dir}'. "
-                            f"Is the git repository '{self.url}' empty?"
-                        ) from error
-                    # Use the default branch if no ref provided
-                    if self.ref is None:
-                        self.ref = self.default_branch
-                    # Apply the dynamic reference if provided
-                    try:
-                        if hasattr(self.parent.parent, 'plan'):
-                            plan = cast(Discover, self.parent.parent).plan
-                        else:
-                            plan = None
-                        dynamic_ref = tmt.base.resolve_dynamic_ref(
-                            workdir=clone_dir, ref=self.ref, plan=plan, logger=self._logger
-                        )
-                    except tmt.utils.FileError as error:
-                        raise tmt.utils.DiscoverError(
-                            f"Failed to resolve dynamic ref of '{self.ref}'."
-                        ) from error
-                    # Check out the requested branch
-                    try:
-                        if dynamic_ref is not None:
-                            # We won't change self.ref directly since we want to preserve a check
-                            # for not fetching two distinct 'ref's. Simply put, only the same
-                            # @dynamic_ref filepath can be used by other tests.
-                            self.parent.run(Command('git', 'checkout', dynamic_ref), cwd=clone_dir)
-                    except tmt.utils.RunError as error:
-                        # Fallback to install during the prepare step if in rpm format
-                        if self.format == 'rpm':
-                            self.parent.debug(f"Invalid reference '{self.ref}'.")
-                            raise LibraryError from error
-                        self.parent.fail(f"Reference '{self.ref}' for library '{self}' not found.")
-                        raise
-
-                    # Log what HEAD really is
-                    self.parent.verbose(
-                        'commit-hash',
-                        tmt.utils.git.git_hash(directory=clone_dir, logger=self._logger),
-                        'green',
-                    )
-
-                    # Copy only the required library
-                    library_path: Path = clone_dir / str(self.fmf_node_path).strip('/')
-                    local_library_path: Path = directory / str(self.fmf_node_path).strip('/')
-                    if not library_path.exists():
-                        self.parent.debug(f"Failed to find library {self} at {self.url}")
-                        raise LibraryError
-                    self.parent.debug(f"Library {self} is copied into {directory}")
-                    tmt.utils.filesystem.copy_tree(library_path, local_library_path, self._logger)
-
-                    fake_library_id = (
-                        self.identifier
-                        if isinstance(self.identifier, DependencyFmfId)
-                        else FmfId(url=self.url, ref=self.ref, path=self.path, name=self.name)
-                    )
-
-                    self.parent.verbose(
-                        'using remote git library',
-                        cast(dict[str, str], fake_library_id.to_minimal_dict()),
-                        'green',
-                        level=3,
-                    )
-
-                    # Remove metadata file(s) and create one with full data
-                    # Node with library might not exist, provide usable error message
-                    try:
-                        self._merge_metadata(library_path, local_library_path)
-                    except tmt.utils.MetadataError as error:
-                        fmf_id = ', '.join(
-                            [
-                                s
-                                for s in [
-                                    f'name: {self.name}' if self.name else None,
-                                    f'url: {self.url}' if self.url else None,
-                                    f'ref: {self.ref}' if self.ref else None,
-                                    f'path: {self.path}' if self.path else None,
-                                ]
-                                if s is not None
-                            ]
-                        )
-                        raise tmt.utils.SpecificationError(
-                            f"Library with {fmf_id=} doesn't exist."
-                        ) from error
-
-                    # Copy fmf metadata
-                    tmt.utils.filesystem.copy_tree(
-                        clone_dir / '.fmf',
-                        directory / '.fmf',
-                        self._logger,
-                    )
-                    if self.path:
-                        tmt.utils.filesystem.copy_tree(
-                            clone_dir / self.path.unrooted() / '.fmf',
-                            directory / self.path.unrooted() / '.fmf',
-                            self._logger,
-                        )
+                    self._fetch_from_url(directory)
                 else:
-                    # Either url or path must be defined
-                    assert self.path is not None
-                    library_path = self.fmf_node_path
-                    local_library_path = directory / self.name.strip('/')
-                    if not library_path.exists():
-                        self.parent.debug(f"Failed to find library {self} at {self.path}")
-                        raise LibraryError
-
-                    self.parent.debug(
-                        f"Copy local library '{self.fmf_node_path}' to '{directory}'.", level=3
-                    )
-                    # Copy only the required library
-                    tmt.utils.filesystem.copy_tree(library_path, local_library_path, self._logger)
-                    # Remove metadata file(s) and create one with full data
-                    self._merge_metadata(library_path, local_library_path)
-                    # Copy fmf metadata
-                    tmt.utils.filesystem.copy_tree(
-                        self.path / '.fmf',
-                        directory / '.fmf',
-                        self._logger,
-                    )
+                    self._fetch_from_path(directory)
             except (tmt.utils.RunError, tmt.utils.RetryError, tmt.utils.GitUrlError) as error:
                 assert self.url is not None
                 # Fallback to install during the prepare step if in rpm format
