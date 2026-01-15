@@ -1,6 +1,6 @@
 import os
 from shlex import quote
-from typing import Any, Optional, Union, cast
+from typing import Any, ClassVar, Optional, Union, cast
 
 import tmt
 import tmt.base
@@ -9,7 +9,13 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
-from tmt.steps.provision import DEFAULT_PUSH_OPTIONS, GuestCapability, RebootMode, TransferOptions
+from tmt.steps.provision import (
+    DEFAULT_PUSH_OPTIONS,
+    GuestCapability,
+    Provision,
+    RebootMode,
+    TransferOptions,
+)
 from tmt.utils import (
     Command,
     OnProcessEndCallback,
@@ -66,6 +72,16 @@ class PodmanGuestData(tmt.steps.provision.GuestData):
         internal=True,
     )
 
+    network_prefix: Optional[str] = field(
+        default=None,
+        option='--network-prefix',
+        metavar='PREFIX',
+        help="""
+             Custom prefix for container network names to avoid collisions
+             between multiple simultaneous tmt invocations.
+             """,
+    )
+
     pull_attempts: int = field(
         default=DEFAULT_PULL_ATTEMPTS,
         option='--pull-attempts',
@@ -111,6 +127,7 @@ class GuestContainer(tmt.Guest):
     """
 
     _data_class = PodmanGuestData
+    NETWORK_NAME_FORMAT: ClassVar[str] = "{prefix}tmt-{run_name}-{plan_name}-network"
 
     image: Optional[str]
     container: Optional[str]
@@ -120,6 +137,7 @@ class GuestContainer(tmt.Guest):
     pull_attempts: int
     pull_interval: int
     stop_time: int
+    network_prefix: Optional[str]
     logger: tmt.log.Logger
 
     @property
@@ -158,13 +176,26 @@ class GuestContainer(tmt.Guest):
     def _setup_network(self) -> list[str]:
         """
         Set up the desired network.
-        Will look for existing network using the tmt workdir name,
-        or will create that network if it doesn't exist.
+        Creates a unique network name based on the run ID and plan name,
+        and creates that network if it doesn't exist.
         Returns the network arguments to be used in podman run command.
+
+        All container guests in a single plan will share the same network,
+        to allow communication between them.
         """
 
-        run_id = self._tmt_name().split('-')[1]
-        self.network = f"tmt-{run_id}-network"
+        # Use provision-level network name to allow communication between containers
+        # while avoiding collisions across different test runs
+        assert isinstance(self.parent, Provision)  # narrow type
+
+        # Use run_id and plan's safe name to ensure uniqueness across multiple plans
+        # running simultaneously while maintaining good debugging information
+        # Include custom prefix if provided for additional collision avoidance
+        self.network = self.NETWORK_NAME_FORMAT.format(
+            prefix=self.network_prefix or '',
+            run_name=self.parent.run_workdir.name,
+            plan_name=self.parent.plan.pathless_safe_name,
+        )
 
         try:
             self.podman(
