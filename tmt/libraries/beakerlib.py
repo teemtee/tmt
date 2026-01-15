@@ -11,6 +11,7 @@ import tmt.utils
 import tmt.utils.filesystem
 import tmt.utils.git
 from tmt.base import DependencyFmfId, DependencySimple, FmfId
+from tmt.container import container
 from tmt.convert import write
 from tmt.steps.discover import Discover
 from tmt.utils import Command, Environment, EnvVarValue, Path
@@ -40,6 +41,7 @@ class CommonWithLibraryCache(tmt.utils.Common):
     _nonexistent_url: set[str]
 
 
+@container(init=False)
 class BeakerLib(Library):
     """
     A beakerlib library
