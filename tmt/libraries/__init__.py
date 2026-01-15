@@ -106,7 +106,7 @@ class Library(abc.ABC):
         except fmf.utils.RootError as exc:
             if isinstance(library, BeakerLib):
                 raise tmt.utils.SpecificationError(
-                    f"Repository '{library.url}' does not contain fmf metadata."
+                    f"Repository '{library.identifier}' does not contain fmf metadata."
                 ) from exc
             raise exc
 
