@@ -1,0 +1,4 @@
+description: |
+    The :ref:`/plugins/prepare/artifact` plugin now sets a higher
+    priority for the shared artifact repository, ensuring that packages
+    from test artifacts take precedence over system repositories.

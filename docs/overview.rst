@@ -918,7 +918,7 @@ Koscielniak, Han Han, Luigi Pellecchia, Siteshwar Vashisht,
 Chris Kyrouac, Xiaofeng Wang, Coiby Xu, Michal Pospíšil, Wayne
 Sun, Evgeni Vakhonin, Mike Stowell, Therese Cornell, Mingyu Shi,
 Conor Tull, Athrey Vinay, David Pascual, Vaibhav D. Aren, Qin
-Yuan, Thiébaud Weksteen and Nisha Saini.
+Yuan, Thiébaud Weksteen, Nisha Saini and Yaakov Selkowitz.
 
 
 Copyright

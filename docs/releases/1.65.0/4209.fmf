@@ -1,0 +1,6 @@
+description: |
+    The :ref:`/plugins/prepare/artifact` plugin documentation has been
+    added as the plugin is now available as a tech preview. The plugin
+    provides a unified way to prepare test artifacts on the guests
+    from various sources such as koji builds, copr builds, repositories,
+    etc.

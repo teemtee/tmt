@@ -1,0 +1,4 @@
+description: |
+    The ``tmt-report-result`` helper script now includes additional
+    logging to help with debugging when file conflicts occur during
+    phase result creation.

@@ -1,0 +1,7 @@
+description: |
+    The retry session configuration has been improved to better handle
+    transient HTTP errors such as ``503`` responses from services like
+    ReportPortal. Default retries increased from ``3`` to ``10``
+    and backoff factor from ``0.1`` to ``1``. New environment variables
+    ``TMT_RETRY_SESSION_RETRIES`` and ``TMT_RETRY_SESSION_BACKOFF_FACTOR``
+    allow users to override these defaults.
