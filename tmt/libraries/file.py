@@ -52,10 +52,6 @@ class File(Library):
         self.target_location = target_location
 
     def fetch(self) -> None:
-        """
-        Copy the files over to target location
-        """
-
         patterns = fmf.utils.listed(self.pattern, quote="'")
         self.parent.debug(
             f"Searching for patterns {patterns} in directory '{self.source_location}."
