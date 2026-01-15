@@ -369,10 +369,6 @@ class BeakerLib(Library):
         )
 
     def fetch(self) -> None:
-        """
-        Fetch the library (unless already fetched)
-        """
-
         # Check if the library was already fetched
         try:
             library = self._library_cache[str(self)]

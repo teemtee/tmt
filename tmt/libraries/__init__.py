@@ -2,6 +2,7 @@
 Handle libraries
 """
 
+import abc
 from typing import Optional
 
 import fmf
@@ -28,7 +29,7 @@ class LibraryError(Exception):
 
 
 @container(init=False)
-class Library:
+class Library(abc.ABC):
     """
     General library class
 
@@ -140,6 +141,13 @@ class Library:
         """
 
         return f"{self.repo}{self.name}"
+
+    @abc.abstractmethod
+    def fetch(self) -> None:
+        """
+        Fetch the library from the source in the identifier.
+        """
+        raise NotImplementedError
 
 
 def dependencies(
