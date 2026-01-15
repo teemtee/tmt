@@ -125,15 +125,17 @@ class BeakerLib(Library):
             raise LibraryError
         repo = matched.groups()[0]
         name = matched.groups()[1]
-        return BeakerLib._from_url(
+        library = BeakerLib._from_url(
             identifier=DependencyFmfId(
                 url=DEFAULT_REPOSITORY_TEMPLATE.format(repository=str(repo)),
                 name=name,
             ),
             parent=parent,
             logger=logger,
-            _format="rpm",
         )
+        # TODO: Drop support for rpm format handling?
+        library.format = "rpm"
+        return library
 
     @classmethod
     def _from_url(
@@ -142,7 +144,6 @@ class BeakerLib(Library):
         identifier: DependencyFmfId,
         parent: tmt.utils.Common,
         logger: tmt.log.Logger,
-        _format: Optional[Literal['rpm', 'fmf']] = None,
     ) -> "BeakerLib":
         """
         Constructor for BeakerLib library defined in an external git repository
@@ -165,7 +166,7 @@ class BeakerLib(Library):
             parent=parent,
             _logger=logger,
             identifier=identifier,
-            format=_format or "fmf",
+            format="fmf",
             repo=Path(repo),
             name=identifier.name or '/',
             url=url,
