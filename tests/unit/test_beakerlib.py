@@ -138,9 +138,10 @@ def test_mark_nonexistent_url(root_logger, monkeypatch):
     Check url existence just one time
     """
 
+    non_existent_url = 'https://github.com/beakerlib/THISDOESNTEXIST'
     parent = tmt.utils.Common(logger=root_logger, workdir=True)
     identifier = tmt.base.core.DependencyFmfId(
-        url='https://github.com/beakerlib/THISDOESNTEXIST',
+        url=non_existent_url,
         name='/',
     )
     with pytest.raises(tmt.utils.GeneralError):
@@ -148,8 +149,10 @@ def test_mark_nonexistent_url(root_logger, monkeypatch):
             logger=root_logger, identifier=identifier, parent=parent
         ).fetch()
     # Second time there shouldn't be an attempt to clone...
+    assert non_existent_url in tmt.utils.git.NON_EXISTING_GIT_URL
+    # TODO: Try to narrow to check for the git clone specifically
     monkeypatch.setattr(
-        "tmt.utils.git.git_clone", MagicMock(side_effect=RuntimeError('Should not be called'))
+        "tmt.utils.Command.run", MagicMock(side_effect=RuntimeError('Should not be called'))
     )
     with pytest.raises(tmt.utils.GeneralError):
         tmt.libraries.beakerlib.BeakerLibFromUrl.from_identifier(
