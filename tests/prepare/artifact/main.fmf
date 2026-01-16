@@ -3,9 +3,6 @@ summary: Check PrepareArtifact plugin
 # TODO: Could we test provision local safely?
 test: ./test.sh
 
-/:
-  select: true
-
 tag+:
   - provision-only
   - provision-container

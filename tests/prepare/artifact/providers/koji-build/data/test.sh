@@ -5,4 +5,4 @@ set -ex
 rpm -q make
 
 # Verify it came from the tmt-artifact-shared repository
-dnf info --installed make | grep -q tmt-artifact-shared
+dnf info --installed make | grep -eq "From repository:\s*tmt-artifact-shared"
