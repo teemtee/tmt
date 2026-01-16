@@ -32,7 +32,7 @@ class MockProvider(ArtifactProvider[MockArtifactInfo]):
 
 
 def test_filter_artifacts(root_logger):
-    provider = MockProvider("mock:123", root_logger)
+    provider = MockProvider("mock:123", priority=50, logger=root_logger)
 
     artifacts = list(provider._filter_artifacts([re.compile("mock")]))
     assert artifacts == []
@@ -40,7 +40,7 @@ def test_filter_artifacts(root_logger):
 
 def test_download_artifacts(tmp_path, root_logger):
     guest = MagicMock()
-    provider = MockProvider("mock:123", root_logger)
+    provider = MockProvider("mock:123", priority=50, logger=root_logger)
 
     paths = provider.fetch_contents(guest, tmp_path, [])
 

@@ -64,8 +64,8 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
 
     SUPPORTED_PREFIX: ClassVar[str] = "file"
 
-    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger, priority: int):
-        super().__init__(raw_provider_id, logger, priority)
+    def __init__(self, raw_provider_id: str, priority: int, logger: tmt.log.Logger):
+        super().__init__(raw_provider_id, priority, logger)
         source = raw_provider_id[len(f"{self.SUPPORTED_PREFIX}:") :]
         parsed = urllib.parse.urlparse(source)
         self._source = source
