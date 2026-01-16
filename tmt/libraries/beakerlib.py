@@ -192,13 +192,6 @@ class BeakerLib(Library):
             return self.path / self.name.strip('/')
         return super().fmf_node_path
 
-    def __str__(self) -> str:
-        """
-        Use repo/name for string representation
-        """
-
-        return f"{self.repo}{self.name[self.name.rindex('/') :]}"
-
     def _merge_metadata(self, library_path: Path, local_library_path: Path) -> None:
         """
         Merge all inherited metadata into one metadata file
