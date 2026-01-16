@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from tmt.steps.prepare import install
 from tmt.steps.prepare.artifact import get_artifact_provider
 from tmt.steps.prepare.artifact.providers import koji as koji_module
 from tmt.steps.prepare.artifact.providers.brew import BrewArtifactProvider
@@ -56,6 +57,13 @@ def artifact_provider(root_logger):
 
 
 @pytest.fixture
-def mock_copr_class():
-    with patch('tmt.steps.prepare.install.Copr') as mock_copr:
-        yield mock_copr
+def mock_installer(monkeypatch):
+    installer = MagicMock(spec=install.Copr)
+    installer_class = MagicMock(return_value=installer)
+
+    monkeypatch.setattr(
+        'tmt.steps.prepare.install.get_installer_class',
+        lambda _pm: installer_class,
+    )
+
+    return installer

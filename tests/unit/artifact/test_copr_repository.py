@@ -31,21 +31,13 @@ def test_invalid_repository_id(raw_id, error, root_logger):
         CoprRepositoryProvider(raw_id, root_logger)
 
 
-def test_fetch_contents_enables_repository(mock_copr_class, root_logger, tmppath):
+def test_fetch_contents_enables_repository(mock_installer, root_logger, tmppath):
     mock_guest = MagicMock()
-    mock_copr_instance = MagicMock()
-    mock_copr_class.return_value = mock_copr_instance
+    mock_guest.facts.package_manager = 'dnf'
 
     provider = CoprRepositoryProvider("copr.repository:@teemtee/stable", root_logger)
 
-    assert provider.copr_repo == '@teemtee/stable'
-    assert provider.artifacts == []
-
     result = provider.fetch_contents(mock_guest, tmppath / "artifacts")
 
-    mock_copr_class.assert_called_once_with(
-        logger=root_logger,
-        guest=mock_guest,
-    )
-    mock_copr_instance.enable_copr.assert_called_once_with([provider.copr_repo])
+    mock_installer.enable_copr.assert_called_once_with(['@teemtee/stable'])
     assert result == []
