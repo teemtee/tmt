@@ -1,0 +1,3 @@
+description: |
+    The official tmt container images now include ``tini`` as an init
+    process to properly handle signals and reap zombie processes.

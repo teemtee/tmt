@@ -284,6 +284,13 @@ easily inside a container::
     podman run -it --rm quay.io/teemtee/tmt bash
     podman run -it --rm quay.io/teemtee/tmt-all bash
 
+The official tmt container images include `tini <https://github.com/krallin/tini>`_
+as an init process to properly handle signals and reap zombie processes.
+If you are using a custom container image without a built-in init, use
+the ``--init`` flag to prevent zombie processes::
+
+    podman run --init -it --rm your-custom-image bash
+
 .. _pip_install:
 
 When installing using ``pip`` you might need to install additional
