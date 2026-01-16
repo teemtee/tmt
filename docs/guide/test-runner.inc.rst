@@ -57,7 +57,7 @@ ansible collections`__ are available on the test runner and can be
 used in user playbooks.
 
 __ https://docs.testing-farm.io/
-__ https://api.testing-farm.io/redoc
+__ https://api.testing-farm.io
 __ https://docs.testing-farm.io/Testing%20Farm/0.1/cli.html
 __ https://docs.testing-farm.io/Testing%20Farm/0.1/onboarding.html
 __ https://docs.testing-farm.io/Testing%20Farm/0.1/test-environment.html#_composes
