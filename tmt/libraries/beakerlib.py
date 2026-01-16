@@ -36,10 +36,6 @@ STRIP_SUFFIX_FORGES = [
 ]
 
 
-class CommonWithLibraryCache(tmt.utils.Common):
-    _nonexistent_url: set[str]
-
-
 @container
 class BeakerLib(Library):
     """
@@ -202,14 +198,6 @@ class BeakerLib(Library):
 
         return f"{self.repo}{self.name[self.name.rindex('/') :]}"
 
-    @property
-    def _nonexistent_url(self) -> set[str]:
-        # Set of url we tried to clone but didn't succeed
-        if not hasattr(self.parent, '_nonexistent_url'):
-            cast(CommonWithLibraryCache, self.parent)._nonexistent_url = set()
-
-        return cast(CommonWithLibraryCache, self.parent)._nonexistent_url
-
     def _merge_metadata(self, library_path: Path, local_library_path: Path) -> None:
         """
         Merge all inherited metadata into one metadata file
@@ -254,10 +242,8 @@ class BeakerLib(Library):
                 # Print this message only for the first attempt
                 if not isinstance(error, tmt.utils.GitUrlError):
                     self.parent.debug(f"Repository '{self.url}' not found.")
-                    self._nonexistent_url.add(self.url)
                 raise LibraryError from error
             # Mark self.url as known to be missing
-            self._nonexistent_url.add(self.url)
             self.parent.fail(f"Failed to fetch library '{self}' from '{self.url}'.")
             raise
 
@@ -360,8 +346,6 @@ class BeakerLibFromUrl(BeakerLib):
         )
 
     def _do_fetch(self, directory: Path) -> None:
-        if self.url in self._nonexistent_url:
-            raise tmt.utils.GitUrlError(f"Already know that '{self.url}' does not exist.")
         # FIXME: The clone_dir MUST be made unique to the library or at least url+ref
         clone_dir = self.parent.clone_dirpath / self.hostname / self.repo
         self.source_directory = clone_dir
