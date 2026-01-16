@@ -1,4 +1,5 @@
 import abc
+import hashlib
 import re
 from typing import TYPE_CHECKING, ClassVar, Literal, Optional, cast
 
@@ -294,17 +295,10 @@ class BeakerLibFromUrl(BeakerLib):
     #: Path under the git repository pointing to the fmf root
     path: Optional[Path] = None
 
-    @property
-    def hostname(self) -> str:
-        """
-        Get hostname from url or default to local
-        """
-
-        if self.url:
-            matched = re.match(r'(?:git|http|https|ssh)(?:@|://)(.*?)[/:]', self.url)
-            if matched:
-                return matched.group(1)
-        return super().hostname
+    #: Cache of git cloned repos. The keys are the absolute paths of the git
+    #: clones already processed, and the values are the libraries that did the
+    #: git clone
+    _git_clone_cache: ClassVar[dict[Path, "BeakerLib"]] = {}
 
     @classmethod
     def from_identifier(
@@ -346,12 +340,17 @@ class BeakerLibFromUrl(BeakerLib):
         )
 
     def _do_fetch(self, directory: Path) -> None:
-        # FIXME: The clone_dir MUST be made unique to the library or at least url+ref
-        clone_dir = self.parent.clone_dirpath / self.hostname / self.repo
-        self.source_directory = clone_dir
-        # Shallow clone to speed up testing and
-        # minimize data transfers if ref is not provided
-        if not clone_dir.exists():
+        # TODO: Move this to a proper cache
+        repo_unique_id = hashlib.sha256(usedforsecurity=False)
+        repo_unique_id.update(self.url.encode())
+        repo_unique_name = f"{self.repo}_{repo_unique_id.hexdigest()[:8]}"
+        clone_dir = self.parent.clone_dirpath / repo_unique_name
+        if cached_library := self._git_clone_cache.get(clone_dir):
+            self.parent.debug(
+                f"Repo '{self.identifier}' was already cloned from '{cached_library}'.", level=3
+            )
+        else:
+            self.parent.debug(f"Cloning '{self.identifier}' for '{self}'.", level=3)
             tmt.utils.git.git_clone(
                 url=self.url,
                 destination=clone_dir,
@@ -359,6 +358,8 @@ class BeakerLibFromUrl(BeakerLib):
                 env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
                 logger=self._logger,
             )
+            self._git_clone_cache[clone_dir] = self
+        self.source_directory = clone_dir
 
         # Detect the default branch from the origin
         try:
@@ -409,8 +410,8 @@ class BeakerLibFromUrl(BeakerLib):
         )
 
         # Copy only the required library
-        library_path: Path = clone_dir / str(self.fmf_node_path).strip('/')
-        local_library_path: Path = directory / str(self.fmf_node_path).strip('/')
+        library_path: Path = clone_dir / self.fmf_node_path.unrooted()
+        local_library_path: Path = directory / self.fmf_node_path.unrooted()
         if not library_path.exists():
             self.parent.debug(f"Failed to find library {self} at {self.url}")
             raise LibraryError

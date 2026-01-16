@@ -118,14 +118,6 @@ class Library(abc.ABC):
         return library
 
     @property
-    def hostname(self) -> str:
-        """
-        Get hostname from url or default to local
-        """
-
-        return 'local'
-
-    @property
     def fmf_node_path(self) -> Path:
         """
         Path to fmf node
