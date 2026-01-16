@@ -9,18 +9,14 @@ rlJournalStart
         rlRun "pushd data"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
 
-        setup_fedora_environment
+        setup_distro_environment
 
         # Get koji build ID for make using common function
         get_koji_build_id "make" "f${fedora_release}"
-        make_build_id="$KOJI_BUILD_ID"
-        if [ -z "$make_build_id" ]; then
-            rlDie "Failed to get koji build ID for make"
-        fi
     rlPhaseEnd
 
     rlPhaseStartTest "Test artifact installation on Fedora"
-        rlLog "Using koji build ID: $make_build_id"
+        rlLog "Using koji build ID: $KOJI_BUILD_ID"
         rlLog "Using repository URL: https://download.docker.com/linux/fedora/docker-ce.repo"
 
         # TODO: Handle VM, local and other provision also
@@ -28,7 +24,7 @@ rlJournalStart
         rlRun "tmt run -i $run --scratch -vvv --all \
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
             prepare --insert --how artifact \
-               --provide koji.build:$make_build_id \
+               --provide koji.build:$KOJI_BUILD_ID \
                --provide repository-file:https://download.docker.com/linux/fedora/docker-ce.repo" 0 "Run tmt with artifact providers"
     rlPhaseEnd
 

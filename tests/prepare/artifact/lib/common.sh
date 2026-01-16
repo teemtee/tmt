@@ -1,22 +1,25 @@
 #!/bin/bash
 # Common helper functions for artifact provider tests
 
-# Setup Fedora test environment
+# Setup distro test environment
 #
-# This function checks if running on Fedora, sets up the fedora_release
+# This function checks the distro, sets up the release version
 # and image_name variables, and builds the container image.
 #
 # Sets the following global variables:
 #   fedora_release - The Fedora release version (e.g., "43")
 #   image_name - The container image name (e.g., "fedora/43:latest")
 #
-# Usage: setup_fedora_environment
+# Usage: setup_distro_environment
 #
-setup_fedora_environment() {
+# TODO: Add CentOS/RHEL support when needed
+#
+setup_distro_environment() {
     if ! rlIsFedora; then
         rlDie "Test requires Fedora"
     fi
 
+    # TODO: Temporary hardcoded release - should be taken from function input
     fedora_release=43
     image_name="fedora/${fedora_release}:latest"
     build_container_image "$image_name"
@@ -35,8 +38,7 @@ setup_fedora_environment() {
 # Sets:
 #   KOJI_BUILD_ID - the build ID on success
 #
-# Returns:
-#   0 on success, 1 on failure
+# On failure, calls rlDie to abort the test.
 #
 # Note: This function uses rlRun for logging. The build ID is stored
 # in the KOJI_BUILD_ID global variable (not printed to stdout) to
@@ -53,8 +55,7 @@ get_koji_build_id() {
 
     # The NVR should be the first word in the last line
     if [[ ! "$(tail -1 $rlRun_LOG)" =~ ^([^[:space:]]+) ]]; then
-        rlLogWarning "Package NVR regex failed for '$package' tag '$tag'"
-        return 1
+        rlDie "Failed to get koji build ID: NVR regex failed for '$package' tag '$tag'"
     fi
     local nvr="${BASH_REMATCH[1]}"
     rlLogInfo "Found NVR: $nvr"
@@ -65,8 +66,7 @@ get_koji_build_id() {
 
     # The build ID should be in square brackets of the first line
     if [[ ! "$(head -1 $rlRun_LOG)" =~ ^BUILD:[[:space:]]*[^[:space:]]+[[:space:]]*\[([[:digit:]]+)\] ]]; then
-        rlLogWarning "Build ID regex failed for NVR '$nvr'"
-        return 1
+        rlDie "Failed to get koji build ID: Build ID regex failed for NVR '$nvr'"
     fi
     KOJI_BUILD_ID="${BASH_REMATCH[1]}"
     rlLogInfo "Found build ID: $KOJI_BUILD_ID"

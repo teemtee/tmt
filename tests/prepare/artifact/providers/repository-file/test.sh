@@ -10,7 +10,7 @@ rlJournalStart
         rlRun "pushd data"
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
 
-        setup_fedora_environment
+        setup_distro_environment
     rlPhaseEnd
 
     rlPhaseStartTest "Test repository-file provider with command-line override"
