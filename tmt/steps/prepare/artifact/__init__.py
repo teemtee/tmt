@@ -224,7 +224,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                 provider_id_sanitized = tmt.utils.sanitize_name(raw_provider_id, allow_slash=False)
                 provider_logger = self._logger.descend(raw_provider_id)
                 provider = provider_class(
-                    raw_provider_id, logger=provider_logger, priority=self.data.priority
+                    raw_provider_id, priority=self.data.priority, logger=provider_logger
                 )
                 providers.append(provider)
 

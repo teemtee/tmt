@@ -44,8 +44,8 @@ class RepositoryUrlProvider(ArtifactProvider[RpmArtifactInfo]):
 
     repository: Repository
 
-    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger, priority: int):
-        super().__init__(raw_provider_id, logger, priority)
+    def __init__(self, raw_provider_id: str, priority: int, logger: tmt.log.Logger):
+        super().__init__(raw_provider_id, priority, logger)
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:

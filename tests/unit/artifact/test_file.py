@@ -22,7 +22,9 @@ def test_file_artifact_provider_patterns(root_logger, tmp_path, pattern, expecte
     for name in expected_names:
         (tmp_path / name).touch()
 
-    provider = PackageAsFileArtifactProvider(f"file:{tmp_path}/{pattern}", root_logger)
+    provider = PackageAsFileArtifactProvider(
+        f"file:{tmp_path}/{pattern}", priority=50, logger=root_logger
+    )
     artifacts = provider.artifacts
 
     assert len(artifacts) == len(expected_names)
@@ -37,7 +39,9 @@ def test_file_artifact_provider_deduplicates_globs(root_logger, tmp_path, caplog
         subdir.mkdir()
         (subdir / "baz.rpm").touch()
 
-    provider = PackageAsFileArtifactProvider(f"file:{tmp_path}/*/baz.rpm", root_logger)
+    provider = PackageAsFileArtifactProvider(
+        f"file:{tmp_path}/*/baz.rpm", priority=50, logger=root_logger
+    )
     artifacts = provider.artifacts
 
     assert len(artifacts) == 1
@@ -49,12 +53,16 @@ def test_download_artifact(root_logger, tmp_path):
     # Test file download
     test_file = tmp_path / "foo.rpm"
     test_file.touch()
-    file_provider = PackageAsFileArtifactProvider(f"file:{test_file}", root_logger)
+    file_provider = PackageAsFileArtifactProvider(
+        f"file:{test_file}", priority=50, logger=root_logger
+    )
     guest = MagicMock()
     file_provider._download_artifact(file_provider.artifacts[0], guest, Path("/remote/foo.rpm"))
     guest.push.assert_called_once()
 
     # Test URL download
-    url_provider = PackageAsFileArtifactProvider("file:https://example.com/foo.rpm", root_logger)
+    url_provider = PackageAsFileArtifactProvider(
+        "file:https://example.com/foo.rpm", priority=50, logger=root_logger
+    )
     url_provider._download_artifact(url_provider.artifacts[0], guest, Path("/remote/foo.rpm"))
     guest.execute.assert_called_once()

@@ -33,8 +33,8 @@ class BrewArtifactProvider(KojiArtifactProvider):
         artifacts = provider.fetch_contents(guest, Path("/tmp"))
     """
 
-    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger, priority: int):
-        super().__init__(raw_provider_id, logger, priority)
+    def __init__(self, raw_provider_id: str, priority: int, logger: tmt.log.Logger):
+        super().__init__(raw_provider_id, priority, logger)
         self._session = self._initialize_session(
             api_url="https://brewhub.engineering.redhat.com/brewhub",
             top_url="https://download.eng.bos.redhat.com/brew",

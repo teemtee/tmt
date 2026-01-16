@@ -78,8 +78,8 @@ class CoprBuildArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
               - copr.build:1784470:fedora-32-x86_64
     """
 
-    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger, priority: int):
-        super().__init__(raw_provider_id, logger, priority)
+    def __init__(self, raw_provider_id: str, priority: int, logger: tmt.log.Logger):
+        super().__init__(raw_provider_id, priority, logger)
         self._session = self._initialize_session()
         try:
             build_id_str, chroot = self.id.split(":", 1)

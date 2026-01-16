@@ -48,9 +48,9 @@ def mock_brew(mock_koji):
 
 @pytest.fixture
 def artifact_provider(root_logger):
-    def get_provider(provider_id: str):
+    def get_provider(provider_id: str, priority: int = 50):
         provider_class = get_artifact_provider(provider_id)
-        return provider_class(provider_id, logger=root_logger)
+        return provider_class(provider_id, priority=priority, logger=root_logger)
 
     return get_provider
 
