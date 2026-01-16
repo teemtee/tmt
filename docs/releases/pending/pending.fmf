@@ -1,0 +1,11 @@
+/git_clone:
+  description: |
+    Failing git clone operations will not be retried if it previously failed
+    for the same url.
+
+/beakerlib:
+  description: |
+    Beakerlib library dependencies are now allowed to have colliding
+    repositories as long as the ``name`` differs. If both the ``repo`` and
+    ``name`` part collide, the earlier definition is preferred and will be used
+    in the test.
