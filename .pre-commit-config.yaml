@@ -58,7 +58,7 @@ repos:
           # frozen.
           - "types-Markdown"
           # prevent conflict between types-requests and urllib3
-          - "types-requests<2.32.4.20250914; python_version < '3.10'"
+          - "types-requests<2.32.4.20260108; python_version < '3.10'"
           - "types-requests; python_version >= '3.10'"
           - "types-setuptools"
           - "types-jsonschema"
@@ -71,7 +71,7 @@ repos:
         pass_filenames: false
 
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.407
+    rev: v1.1.408
     hooks:
       - id: pyright
         language: python # Required for Renovate additional_dependencies
@@ -111,7 +111,7 @@ repos:
           # frozen.
           - "types-Markdown"
           # prevent conflict between types-requests and urllib3
-          - "types-requests<2.32.4.20250914; python_version < '3.10'"
+          - "types-requests<2.32.4.20260108; python_version < '3.10'"
           - "types-requests; python_version >= '3.10'"
           - "types-setuptools"
           - "types-jsonschema"
@@ -129,7 +129,7 @@ repos:
         files: ^tmt/schemas/.*\.yaml
 
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.37.1
+    rev: v1.38.0
     hooks:
       - id: yamllint
         files: >
@@ -147,7 +147,7 @@ repos:
           )$
 
   - repo: https://github.com/ansible-community/ansible-lint.git
-    rev: v25.12.2
+    rev: v26.1.1
     hooks:
       - id: ansible-lint
         language: python # Required for Renovate additional_dependencies
@@ -164,7 +164,7 @@ repos:
           # in order to be parsed by ansible-lint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.14.10
+    rev: v0.14.13
     hooks:
       - id: ruff-check
         args:
@@ -173,7 +173,7 @@ repos:
       - id: ruff-format
 
   - repo: https://github.com/teemtee/tmt.git
-    rev: 1.64.0
+    rev: 1.65.0
     hooks:
       - id: tmt-lint
         language: python # Required for Renovate additional_dependencies
@@ -255,7 +255,7 @@ repos:
           - 'versionadded,versionchanged'
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.9.21
+    rev: 0.9.26
     hooks:
       # Keep pyproject.toml and uv.lock in sync
       - id: uv-lock
