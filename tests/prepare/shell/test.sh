@@ -27,6 +27,20 @@ rlJournalStart
         rlAssertGrep "third" "$rlRun_LOG" # check for the finish script
     rlPhaseEnd
 
+    rlPhaseStartTest "Reboot"
+        rlRun -s "tmt -vvv run -a provision --how=$PROVISION_HOW plan -n '/reboot'"
+
+        rlAssertGrep "out: TMT_REBOOT_COUNT=0" $rlRun_LOG
+        rlAssertGrep "out: RSTRNT_REBOOTCOUNT=0" $rlRun_LOG
+        rlAssertGrep "out: REBOOTCOUNT=0" $rlRun_LOG
+        rlAssertGrep "out: Before reboot: TMT_REBOOT_COUNT=0" $rlRun_LOG
+        rlAssertGrep "out: Trigger one then!" $rlRun_LOG
+        rlAssertGrep "out: TMT_REBOOT_COUNT=1" $rlRun_LOG
+        rlAssertGrep "out: RSTRNT_REBOOTCOUNT=1" $rlRun_LOG
+        rlAssertGrep "out: REBOOTCOUNT=1" $rlRun_LOG
+        rlAssertGrep "out: After reboot: TMT_REBOOT_COUNT=1" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
     rlPhaseEnd
