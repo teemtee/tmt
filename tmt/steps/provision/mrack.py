@@ -1663,7 +1663,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
                 )
 
             if state == 'Reserved':
-                self.setup_logs(self._logger)
+                self.setup_logs(logger=self._logger)
 
                 return current
 
@@ -1901,6 +1901,6 @@ class GuestLogBeaker(tmt.steps.provision.GuestLog):
     guest: GuestBeaker
     url: str
 
-    def update(self, filepath: Path, logger: tmt.log.Logger) -> None:
-        with self.staging_file(filepath, logger) as staging_filepath:
+    def update(self, *, final: bool = False, logger: tmt.log.Logger) -> None:
+        with self.staging_file(self.filepath, logger) as staging_filepath:
             tmt.utils.url.download(self.url, staging_filepath, logger=logger)
