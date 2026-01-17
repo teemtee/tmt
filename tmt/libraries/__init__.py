@@ -2,7 +2,8 @@
 Handle libraries
 """
 
-from typing import TYPE_CHECKING, Optional, Union
+import abc
+from typing import Optional
 
 import fmf
 import fmf.utils
@@ -11,20 +12,14 @@ import tmt
 import tmt.log
 import tmt.utils
 from tmt.base import Dependency, DependencyFile, DependencyFmfId, DependencySimple
+from tmt.container import container
 from tmt.utils import Path
-
-if TYPE_CHECKING:
-    from tmt.libraries.beakerlib import BeakerLib
-    from tmt.libraries.file import File
 
 # A beakerlib identifier type, can be a string or a fmf id (with extra beakerlib keys)
 ImportedIdentifiersType = Optional[list[Dependency]]
 
-# A Library type, can be Beakerlib or File
-LibraryType = Union['BeakerLib', 'File']
-
 # A type for Beakerlib dependencies
-LibraryDependenciesType = tuple[list[Dependency], list[Dependency], list['LibraryType']]
+LibraryDependenciesType = tuple[list[Dependency], list[Dependency], list['Library']]
 
 
 class LibraryError(Exception):
@@ -33,39 +28,89 @@ class LibraryError(Exception):
     """
 
 
-class Library:
+@container
+class Library(abc.ABC):
     """
     General library class
 
     Used as parent for specific libraries like beakerlib and file
     """
 
-    def __init__(
-        self,
+    #: Optional 'parent' object inheriting from tmt.utils.Common can be
+    #: provided in order to share the cache of already fetched libraries.
+    parent: tmt.utils.Common
+    _logger: tmt.log.Logger
+    identifier: Dependency
+    format: str
+    #: Library prefix (git repository name or nick if provided)
+    repo: Path
+    #: Library suffix (folder containing the library code)
+    name: str
+
+    @classmethod
+    def from_identifier(
+        cls,
         *,
+        identifier: Dependency,
         parent: Optional[tmt.utils.Common] = None,
         logger: tmt.log.Logger,
-    ) -> None:
+        source_location: Optional[Path] = None,
+        target_location: Optional[Path] = None,
+    ) -> "Library":
         """
-        Process the library identifier and fetch the library
+        Factory function to get correct library instance
         """
+        # TODO: Remove the need for `source_location` and `target_location`?
+
+        from .beakerlib import BeakerLib
+        from .file import File
 
         # Use an empty common class if parent not provided (for logging, cache)
-        self.parent = parent or tmt.utils.Common(logger=logger, workdir=True)
-        self._logger: tmt.log.Logger = logger
+        # TODO: This should not be needed because parent is always DiscoverPlugin,
+        #  see callers of `dependencies`
+        parent = parent or tmt.utils.Common(logger=logger, workdir=True)
 
-        self.identifier: Dependency
-        self.format: str
-        self.repo: Path
-        self.name: str
+        if isinstance(identifier, (DependencySimple, DependencyFmfId)):
+            library = BeakerLib.from_identifier(
+                identifier=identifier,
+                parent=parent,
+                logger=logger,
+            )
 
-    @property
-    def hostname(self) -> str:
-        """
-        Get hostname from url or default to local
-        """
+        # File import
+        #
+        # ignore[reportUnnecessaryIsInstance]: pyright is correct, the test is not
+        # needed given the fact `Dependency` is a union of three types, and two were
+        # ruled out above. But we would like to check possible violations in runtime,
+        # therefore an `else` with an exception.
+        # ignore[unused-ignore]: silencing mypy's complaint about silencing
+        # pyright's warning :)
+        elif isinstance(identifier, DependencyFile):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
+            assert source_location is not None
+            assert target_location is not None  # narrow type
+            library = File.from_identifier(
+                identifier=identifier,
+                parent=parent,
+                logger=logger,
+                source_location=source_location,
+                target_location=target_location,
+            )
 
-        return 'local'
+        # Something weird
+        else:
+            raise LibraryError
+
+        # Fetch the library
+        try:
+            library.fetch()
+        except fmf.utils.RootError as exc:
+            if isinstance(library, BeakerLib):
+                raise tmt.utils.SpecificationError(
+                    f"Repository '{library.identifier}' does not contain fmf metadata."
+                ) from exc
+            raise exc
+
+        return library
 
     @property
     def fmf_node_path(self) -> Path:
@@ -82,59 +127,12 @@ class Library:
 
         return f"{self.repo}{self.name}"
 
-
-def library_factory(
-    *,
-    identifier: Dependency,
-    parent: Optional[tmt.utils.Common] = None,
-    logger: tmt.log.Logger,
-    source_location: Optional[Path] = None,
-    target_location: Optional[Path] = None,
-) -> LibraryType:
-    """
-    Factory function to get correct library instance
-    """
-
-    from .beakerlib import BeakerLib
-    from .file import File
-
-    if isinstance(identifier, (DependencySimple, DependencyFmfId)):
-        library: LibraryType = BeakerLib(identifier=identifier, parent=parent, logger=logger)
-
-    # File import
-    #
-    # ignore[reportUnnecessaryIsInstance]: pyright is correct, the test is not
-    # needed given the fact `Dependency` is a union of three types, and two were
-    # ruled out above. But we would like to check possible violations in runtime,
-    # therefore an `else` with an exception.
-    # ignore[unused-ignore]: silencing mypy's complaint about silencing
-    # pyright's warning :)
-    elif isinstance(identifier, DependencyFile):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
-        assert source_location is not None
-        assert target_location is not None  # narrow type
-        library = File(
-            identifier=identifier,
-            parent=parent,
-            logger=logger,
-            source_location=source_location,
-            target_location=target_location,
-        )
-
-    # Something weird
-    else:
-        raise LibraryError
-
-    # Fetch the library
-    try:
-        library.fetch()
-    except fmf.utils.RootError as exc:
-        if isinstance(library, BeakerLib):
-            raise tmt.utils.SpecificationError(
-                f"Repository '{library.url}' does not contain fmf metadata."
-            ) from exc
-        raise exc
-
-    return library
+    @abc.abstractmethod
+    def fetch(self) -> None:
+        """
+        Fetch the library from the source in the identifier.
+        """
+        raise NotImplementedError
 
 
 def dependencies(
@@ -164,7 +162,7 @@ def dependencies(
     processed_require: set[Dependency] = set()
     processed_recommend: set[Dependency] = set()
     imported_lib_ids = imported_lib_ids or []
-    gathered_libraries: list[LibraryType] = []
+    gathered_libraries: list[Library] = []
     original_require = original_require or []
     original_recommend = original_recommend or []
 
@@ -178,7 +176,7 @@ def dependencies(
     for dependency in filter(already_fetched, to_fetch):
         # Library require/recommend
         try:
-            library = library_factory(
+            library = Library.from_identifier(
                 logger=logger,
                 identifier=dependency,
                 parent=parent,
