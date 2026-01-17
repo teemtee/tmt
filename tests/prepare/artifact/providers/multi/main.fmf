@@ -1,0 +1,4 @@
+summary: Test multiple artifact providers
+description: |
+    Test using multiple artifact providers together in a single
+    prepare step.

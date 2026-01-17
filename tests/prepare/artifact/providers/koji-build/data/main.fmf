@@ -1,0 +1,20 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: container
+    prepare:
+      - how: artifact
+        provide:
+          # DUMMY_KOJI_BUILD_ID placeholder - replace with actual koji build ID
+          # Example: koji.build:2761810
+          - koji.build:DUMMY_KOJI_BUILD_ID
+    execute:
+        how: tmt
+
+/test:
+    test: ./test.sh
+    duration: 5m
+    summary: Verify package from koji build
+    require:
+      - make
