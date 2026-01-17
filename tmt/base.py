@@ -1185,7 +1185,7 @@ class Core(
                     for suberror in error.context:
                         yield from detect_errors(suberror)
 
-            yield LinterOutcome.FAIL, 'fmf node failed schema validation'
+            yield LinterOutcome.WARN, 'fmf node failed schema validation'
 
             return
 

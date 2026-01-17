@@ -62,7 +62,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Check --fix for tests"
-        rlRun -s "tmt lint --fix fix" 1 "Fix the test"
+        rlRun -s "tmt lint --fix fix" 0 "Fix the test"
         rlAssertGrep 'relevancy converted into adjust' $rlRun_LOG
         rlRun -s "tmt lint fix" 0 "Should pass after fix"
     rlPhaseEnd
