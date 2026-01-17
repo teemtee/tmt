@@ -163,7 +163,7 @@ description: |
     info
         Test finished but only produced an informational
         message. Represents a soft pass, used for tests
-        with the :ref:`/spec/tests/result` attribute set
+        with the :tmt:story:`/spec/tests/result` attribute set
         to ``info``. Automation must treat this as a
         passed test.
 
@@ -197,7 +197,7 @@ description: |
     key. Custom result files may omit all other keys, although tmt plugins
     will strive to provide as many keys as possible.
 
-    When importing the :ref:`custom results file </spec/tests/result>`, each
+    When importing the :tmt:story:`custom results file </spec/tests/result>`, each
     test name referenced in the file by the ``name`` key would be prefixed by
     the original test name. A special case, ``name: /``, sets the result for
     the original test itself.
@@ -237,7 +237,7 @@ description: |
     outcomes and their interpretation and effects:
 
     * Test outcome is interpreted according to
-      :py:ref:`/spec/tests/result`. It is not yet planned for test check
+      :tmt:story:`/spec/tests/result`. It is not yet planned for test check
       outcomes be interpreted. It is not yet planned for subresult
       outcomes to be interpreted.
     * Test checks and subresults do not influence the effective test

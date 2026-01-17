@@ -3,7 +3,7 @@ summary: Finishing tasks
 description:
     Additional actions to be performed after the test execution
     has been completed. Counterpart of the
-    :ref:`/spec/plans/prepare` step, useful for various cleanup
+    :tmt:story:`/spec/plans/prepare` step, useful for various cleanup
     actions. For more information about available options see the
     :ref:`/plugins/finish` section.
 
@@ -19,7 +19,7 @@ link:
 /where:
     summary: Perform finishing tasks on selected guests
     description: |
-        In the :ref:`/spec/plans/provision/multihost` scenarios it
+        In the :tmt:story:`/spec/plans/provision/multihost` scenarios it
         is often necessary to perform different completion tasks
         on individual guests. The ``where`` key allows to select
         guests where the finishing tasks should be applied by
@@ -42,7 +42,7 @@ link:
     description: |
         Using the ``when`` key makes it easier to restrict a step configuration
         to run only if any of the specified rules matches.
-        The syntax is the same as in ``adjust`` and :ref:`/spec/context`.
+        The syntax is the same as in ``adjust`` and :tmt:story:`/spec/context`.
 
         Values can be single string with the rule or list of rules.
     example: |

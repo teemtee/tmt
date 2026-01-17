@@ -7,14 +7,14 @@ story:
 description: |
     Define the default context values for all tests executed under
     the given plan. Can be overridden by context provided directly
-    on the command line. See the :ref:`/spec/context` definition
+    on the command line. See the :tmt:story:`/spec/context` definition
     for the full list of supported context dimensions. Must be a
     ``dictionary``.
 
     .. note::
 
         The context dimensions which are defined in the plan are
-        not evaluated when the :ref:`/spec/core/adjust` rules are
+        not evaluated when the :tmt:story:`/spec/core/adjust` rules are
         applied to the plan itself. Use the command line option
         ``--context`` to provide the desired context instead.
 

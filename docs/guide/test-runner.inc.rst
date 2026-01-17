@@ -28,7 +28,7 @@ execute test faster in a container. To execute tests directly on
 the test runner use the :ref:`/plugins/provision/local` provision
 plugin. This can be much faster but also dangerous, be sure that
 you trust the project before executing tests on your system. See
-also the :ref:`/stories/features/feeling-safe` section.
+also the :tmt:story:`/stories/features/feeling-safe` section.
 
 
 .. _testing-farm:
