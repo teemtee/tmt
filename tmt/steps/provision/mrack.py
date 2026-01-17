@@ -1074,7 +1074,7 @@ ostreecontainer --url {host.bootc_image_url}
 %pre
 #!/bin/sh
 cat > /etc/ostree/auth.json <<EOF
-{json.dumps(host.bootc_credentials)}
+{tmt.utils.to_json(host.bootc_credentials)}
 EOF
 %end
 """
