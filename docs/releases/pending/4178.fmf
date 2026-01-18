@@ -1,0 +1,6 @@
+description: |
+    The ``tmt lint`` command no longer fails with an
+    exit code 1 when any schema validation warnings are emitted,
+    it now emits a warn with an exit code 0. This reverts the
+    behavior added in tmt-1.55.0, until a better solution can
+    be implemented.

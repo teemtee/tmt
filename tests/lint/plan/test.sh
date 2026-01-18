@@ -43,7 +43,7 @@ rlJournalStart
         rlAssertGrep "warn C000 value of \"how\" is not \"fmf\"" $rlRun_LOG
         rlAssertGrep "warn C000 value of \"how\" is not \"tmt\"" $rlRun_LOG
         rlAssertGrep "warn C000 value of \"how\" is not \"upgrade\"" $rlRun_LOG
-        rlAssertGrep "fail C000 fmf node failed schema validation" $rlRun_LOG
+        rlAssertGrep "warn C000 fmf node failed schema validation" $rlRun_LOG
         rlAssertGrep "fail P003 unknown execute method \"somehow\" in \"default-0\"" $rlRun_LOG
         rlAssertGrep "fail P004 unknown discover method \"somehow\" in \"default-0\"" $rlRun_LOG
 
@@ -62,13 +62,13 @@ rlJournalStart
         rlAssertGrep "fail P005 remote fmf id in \"b\" is invalid, repo 'http://invalid-url' cannot be cloned" $rlRun_LOG
 
         rlRun -s "$tmt plan lint invalid_attr" 1
-        rlAssertGrep "fail C000 fmf node failed schema validation" $rlRun_LOG
+        rlAssertGrep "warn C000 fmf node failed schema validation" $rlRun_LOG
         rlAssertGrep "warn C001 summary key is missing" $rlRun_LOG
         rlAssertGrep "fail P001 unknown key \"discove\" is used" $rlRun_LOG
         rlAssertGrep "fail P001 unknown key \"environmen\" is used" $rlRun_LOG
         rlAssertGrep "fail P001 unknown key \"summaryABCDEF\" is used" $rlRun_LOG
 
-        rlRun -s "$tmt plan lint invalid-plugin-key" 1
+        rlRun -s "$tmt plan lint invalid-plugin-key" 0
         rlAssertGrep 'warn C000 key "wrong" not recognized by schema$' $rlRun_LOG
         rlAssertGrep 'warn C000 key "wrong" not recognized by schema /schemas/prepare/feature' $rlRun_LOG
 
@@ -96,8 +96,9 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Lint of missing required property"
-        rlRun -s "$tmt plan lint missing_required" 1
+        rlRun -s "$tmt plan lint missing_required" 0
         rlAssertGrep "warn C000 \"project-id\" is a required property by schema /schemas/report/polarion" "$rlRun_LOG"
+        rlAssertGrep "warn C000 fmf node failed schema validation" "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartTest "Lint of duplicate ids"
