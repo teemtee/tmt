@@ -7,7 +7,17 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Login enabled after tests"
+        # With login -t, login should only happen after each test (4 tests = 4 logins)
+        # No login in finish step unless --step finish is explicitly specified
         rlRun -s "tmt run -a plan -n /fmf-tests login -t -c true" 1
+        rlAssertEquals "There should 4 occurrences of login" $(grep "Starting interactive" $rlRun_LOG | wc -l) "4"
+        rlAssertNotGrep "Skipping interactive" $rlRun_LOG
+        rlAssertGrep "Starting interactive" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Login enabled after tests and in finish with explicit --step"
+        # With login -t --step finish, login should happen after each test AND in finish
+        rlRun -s "tmt run -a plan -n /fmf-tests login -t -c true --step finish" 1
         rlAssertEquals "There should 5 occurrences of login" $(grep "Starting interactive" $rlRun_LOG | wc -l) "5"
         rlAssertNotGrep "Skipping interactive" $rlRun_LOG
         rlAssertGrep "Starting interactive" $rlRun_LOG

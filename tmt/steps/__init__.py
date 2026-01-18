@@ -2849,6 +2849,12 @@ class Login(Action):
         Login to the guest(s)
         """
 
+        # If --test is specified and --step was not explicitly provided,
+        # skip the login since after_test() handles it during test execution.
+        # User can still request login in finish by explicitly using --step.
+        if self.opt('test') and not self.opt('step'):
+            return
+
         if force or self._enabled_by_results(self.parent.plan.execute.results()):
             self._login()
 
