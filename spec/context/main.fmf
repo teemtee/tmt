@@ -8,8 +8,8 @@ description: |
     This specification defines all standard context dimensions
     which can be used together with the :ref:`/spec/core/adjust`
     attribute to modify object metadata for particular context.
-    For a detailed description of the concept itself see the fmf
-    `context`__ documentation.
+    For a detailed description of the concept itself see the `fmf
+    context`_ documentation.
 
     The context can be defined either on the command line using
     the ``--context`` or the ``-c`` options or under the plan
@@ -24,7 +24,7 @@ description: |
     sure the :ref:`/spec/context/dimension` name does not conflict
     with reserved names.
 
-    __ https://fmf.readthedocs.io/en/latest/context.html
+    .. _fmf context: https://fmf.readthedocs.io/en/stable/context.html
 
     .. note::
 
