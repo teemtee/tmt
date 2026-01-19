@@ -1,7 +1,6 @@
 summary: Check PrepareArtifact plugin
 # TODO: Enable the tests for other provision formats
 # TODO: Could we test provision local safely?
-test: ./test.sh
 
 tag+:
   - provision-only
