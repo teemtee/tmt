@@ -1,7 +1,7 @@
 import re
 import shutil
 from collections.abc import Iterator
-from typing import Any, Literal, Optional, TypeVar, Union, cast
+from typing import Any, Callable, Literal, Optional, TypeVar, Union, cast
 
 import fmf
 import fmf.utils
@@ -24,6 +24,7 @@ from tmt.package_managers import (
     PackageUrl,
 )
 from tmt.package_managers.bootc import Bootc, BootcEngine
+from tmt.plugins import PluginRegistry
 from tmt.steps.provision import Guest
 from tmt.utils import Command, Path, ShellScript
 
@@ -32,6 +33,14 @@ COPR_REPO_PATTERN = re.compile(r'^(@)?([^/]+)/([^/]+)$')
 
 
 T = TypeVar('T')
+
+InstallerClass = type['InstallBase']
+
+_INSTALLER_PLUGIN_REGISTRY: PluginRegistry[InstallerClass] = PluginRegistry('prepare.install')
+
+provides_installer: Callable[[str], Callable[[InstallerClass], InstallerClass]] = (
+    _INSTALLER_PLUGIN_REGISTRY.create_decorator()
+)
 
 
 class InstallBase(tmt.utils.Common):
@@ -54,12 +63,12 @@ class InstallBase(tmt.utils.Common):
     def __init__(
         self,
         *,
-        guest: Guest,
-        logger: tmt.log.Logger,
         parent: Optional['PrepareInstall'] = None,
+        guest: Guest,
         dependencies: Optional[list[tmt.base.DependencySimple]] = None,
         directories: Optional[list[Path]] = None,
         exclude: Optional[list[str]] = None,
+        logger: tmt.log.Logger,
         **kwargs: Any,
     ) -> None:
         """
@@ -307,6 +316,7 @@ class Copr(tmt.utils.Common):
                 )
 
 
+@provides_installer('dnf')
 class InstallDnf(InstallBase, Copr):
     """
     Install packages using dnf
@@ -395,6 +405,7 @@ class InstallDnf(InstallBase, Copr):
             )
 
 
+@provides_installer('dnf5')
 class InstallDnf5(InstallDnf):
     """
     Install packages using dnf5
@@ -403,6 +414,7 @@ class InstallDnf5(InstallDnf):
     copr_plugin = "dnf5-command(copr)"
 
 
+@provides_installer('yum')
 class InstallYum(InstallDnf):
     """
     Install packages using yum
@@ -411,6 +423,7 @@ class InstallYum(InstallDnf):
     copr_plugin = "yum-plugin-copr"
 
 
+@provides_installer('rpm-ostree')
 class InstallRpmOstree(InstallBase, Copr):
     """
     Install packages using rpm-ostree
@@ -431,10 +444,10 @@ class InstallRpmOstree(InstallBase, Copr):
         # the `InstallDnf5` & swap guest's package manager for `dnf5`
         # for a moment.
         self.guest.facts.package_manager = 'dnf5'
-        copr_installer = InstallDnf5(
+        installer = InstallDnf5(
             guest=self.guest, logger=self._logger, parent=cast('PrepareInstall', self.parent)
         )
-        copr_installer.enable_copr(repositories)
+        installer.enable_copr(repositories)
         self.guest.facts.package_manager = 'rpm-ostree'
 
     def sort_packages(self) -> None:
@@ -503,6 +516,7 @@ class InstallRpmOstree(InstallBase, Copr):
             )
 
 
+@provides_installer('apt')
 class InstallApt(InstallBase):
     """
     Install packages using apt
@@ -576,6 +590,7 @@ class InstallApt(InstallBase):
             )
 
 
+@provides_installer('bootc')
 class InstallBootc(InstallBase):
     """Install packages using bootc container image mode"""
 
@@ -684,6 +699,7 @@ class InstallBootc(InstallBase):
         cast(Bootc, self.guest.package_manager).build_container()
 
 
+@provides_installer('mock')
 class InstallMock(InstallBase):
     # TODO this really looks like it should be a subclass of InstallDnf
     def install_from_repository(self) -> None:
@@ -745,6 +761,7 @@ class InstallMock(InstallBase):
         )
 
 
+@provides_installer('apk')
 class InstallApk(InstallBase):
     """
     Install packages using apk
@@ -990,21 +1007,10 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         return outcome
 
 
-_INSTALLER_REGISTRY: dict[str, type[InstallBase]] = {
-    'bootc': InstallBootc,
-    'rpm-ostree': InstallRpmOstree,
-    'dnf5': InstallDnf5,
-    'dnf': InstallDnf,
-    'yum': InstallYum,
-    'apt': InstallApt,
-    'apk': InstallApk,
-}
-
-
 def get_installer_class(package_manager: str) -> type[InstallBase]:
     """Get the appropriate installer class for the package manager."""
-    if package_manager in _INSTALLER_REGISTRY:
-        return _INSTALLER_REGISTRY[package_manager]
+    if installer_class := _INSTALLER_PLUGIN_REGISTRY.get_plugin(package_manager):
+        return installer_class
 
     if package_manager.startswith('mock-'):
         return InstallMock

@@ -33,7 +33,9 @@ def test_invalid_repository_id(raw_id, error, root_logger):
 
 def test_fetch_contents_enables_repository(mock_installer, root_logger, tmppath):
     mock_guest = MagicMock()
-    mock_guest.facts.package_manager = 'dnf'
+    mock_pm = MagicMock()
+    mock_pm.NAME = "dnf"
+    mock_guest.package_manager = mock_pm
 
     provider = CoprRepositoryProvider("copr.repository:@teemtee/stable", root_logger)
 
