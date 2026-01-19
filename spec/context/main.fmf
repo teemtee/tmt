@@ -11,26 +11,67 @@ description: |
     For a detailed description of the concept itself see the fmf
     `context`__ documentation.
 
-    The context is usually defined from the command line using the
-    ``--context`` option. All dimensions are optional. It is
-    possible to define your own dimensions to describe the
-    context, just make sure the :ref:`/spec/context/dimension`
-    name does not conflict with reserved names.
+    The context can be defined either on the command line using
+    the ``--context`` or the ``-c`` options or under the plan
+    :ref:`/spec/plans/context` key which can be used to adjust all
+    tests included in that particular plan. The context definition
+    provided on the command line overrides context defined in the
+    plan.
 
-    Each plan can also provide its own :ref:`/spec/plans/context`.
-    The context definition provided directly on the command line
-    overrides defined dimensions. All context dimension values are
-    handled in case-insensitive way.
+    All context dimensions are optional and all context dimension
+    values are handled in case-insensitive way. It is possible to
+    define your own dimensions to describe the context, just make
+    sure the :ref:`/spec/context/dimension` name does not conflict
+    with reserved names.
 
     __ https://fmf.readthedocs.io/en/latest/context.html
 
-example: |
+    .. note::
+
+        There is no support for detecting context from other
+        command line options or from the provisioned environment.
+        Always make sure the needed context dimensions are
+        explicitly provided either on the command line or in the
+        plan.
+
+        Because of the chicken-and-egg problem (plan definitions,
+        including the ``provision`` step, can be modified using
+        adjust rules as well) there is no plan to implement
+        context autodetection from the provisioned environment.
+
+example:
+  - |
+    # Full option name
     tmt --context distro=fedora-33 run
     tmt --context product=rhscl run
     tmt --context trigger=code run
 
+  - |
+    # Short version
     tmt -c distro=fedora test show
     tmt -c distro=fedora plan show
+
+  - |
+    # Provide multiple context dimensions
+    tmt --context distro=fedora-33 --context trigger=commit run
+
+  - |
+    # Provide multiple context dimension values
+    tmt --context distro=fedora-33,fedora-34 run
+
+  - |
+    # Read context from a file
+    tmt --context @ci.yaml run
+
+  - |
+    # When context is not defined, adjust rules checking for the
+    # specific distro version will not be applied
+    tmt run --all provision --how virtual --image fedora-44
+
+  - |
+    # Define both provision image and the distro context dimension
+    # if you need test or plan adjust rules to be applied
+    tmt --context distro=fedora-44 run --all provision --how virtual --image fedora-44
 
 link:
   - implemented-by: /tmt/base.py
