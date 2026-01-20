@@ -423,6 +423,16 @@ class StepData(
 
         return cast(_RawStepData, {key_to_option(key): value for key, value in self.items()})
 
+    def to_minimal_spec(self) -> _RawStepData:
+        return cast(
+            _RawStepData,
+            {
+                key_to_option(key): value
+                for key, value in self.items()
+                if value not in (None, [], {})
+            },
+        )
+
     @classmethod
     def pre_normalization(cls, raw_data: _RawStepData, logger: tmt.log.Logger) -> None:
         """
@@ -468,7 +478,7 @@ class RawWhereableStepData(TypedDict, total=False):
 
 
 @container
-class WhereableStepData:
+class WhereableStepData(SerializableContainer):
     """
     Keys shared by step data that may be limited to a particular guest.
 
