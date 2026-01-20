@@ -12,8 +12,8 @@ from tmt.steps.prepare.artifact.providers.copr_repository import CoprRepositoryP
         ("copr.repository:@teemtee/stable", "@teemtee/stable"),
     ],
 )
-def test_valid_repository_id(raw_id, expected, root_logger):
-    provider = CoprRepositoryProvider(raw_id, priority=50, logger=root_logger)
+def test_valid_repository_id(raw_id, expected, artifact_provider):
+    provider = artifact_provider(raw_id)
     assert provider.copr_repo == expected
 
 
@@ -28,17 +28,15 @@ def test_valid_repository_id(raw_id, expected, root_logger):
 )
 def test_invalid_repository_id(raw_id, error, root_logger):
     with pytest.raises(ValueError, match=error):
-        CoprRepositoryProvider(raw_id, priority=50, logger=root_logger)
+        CoprRepositoryProvider(raw_id, repository_priority=50, logger=root_logger)
 
 
-def test_fetch_contents_enables_repository(mock_copr_class, root_logger, tmppath):
+def test_fetch_contents_enables_repository(mock_copr_class, artifact_provider, tmppath):
     mock_guest = MagicMock()
     mock_copr_instance = MagicMock()
     mock_copr_class.return_value = mock_copr_instance
 
-    provider = CoprRepositoryProvider(
-        "copr.repository:@teemtee/stable", priority=50, logger=root_logger
-    )
+    provider = artifact_provider("copr.repository:@teemtee/stable")
 
     assert provider.copr_repo == '@teemtee/stable'
     assert provider.artifacts == []
@@ -46,7 +44,7 @@ def test_fetch_contents_enables_repository(mock_copr_class, root_logger, tmppath
     result = provider.fetch_contents(mock_guest, tmppath / "artifacts")
 
     mock_copr_class.assert_called_once_with(
-        logger=root_logger,
+        logger=provider.logger,
         guest=mock_guest,
     )
     mock_copr_instance.enable_copr.assert_called_once_with([provider.copr_repo])
