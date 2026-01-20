@@ -24,7 +24,7 @@ description: |
            # Bytes are assumed when no unit is specified.
          - physical-sector-size: 4096|">= 4096"
 
-    The :ref:`/spec/plans/guest-topology` may include the following
+    The :tmt:story:`/spec/plans/guest-topology` may include the following
     fields in its description of the actual guest hardware:
 
     .. code-block::

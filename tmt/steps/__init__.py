@@ -107,9 +107,9 @@ _PLUGIN_CLASS_NAME_TO_STEP_PATTERN = re.compile(r'tmt.steps.([a-z]+)')
 PHASE_ORDER_DEFAULT = 50
 #: Installation of essential plugin and check requirements.
 PHASE_ORDER_PREPARE_INSTALL_ESSENTIAL_REQUIRES = 30
-#: Installation of packages :ref:`required</spec/tests/require>` by tests.
+#: Installation of packages :tmt:story:`required</spec/tests/require>` by tests.
 PHASE_ORDER_PREPARE_INSTALL_REQUIRES = 70
-#: Installation of packages :ref:`recommended</spec/tests/recommend>` by tests.
+#: Installation of packages :tmt:story:`recommended</spec/tests/recommend>` by tests.
 PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS = 75
 
 # Supported steps and actions

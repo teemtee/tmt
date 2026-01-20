@@ -27,10 +27,10 @@ description: |
           The default order of any object.
 
       70
-          Installation of packages :ref:`required</spec/tests/require>` by tests.
+          Installation of packages :tmt:story:`required</spec/tests/require>` by tests.
 
       75
-          Installation of packages :ref:`recommended</spec/tests/recommend>` by tests.
+          Installation of packages :tmt:story:`recommended</spec/tests/recommend>` by tests.
 
       .. note::
 
@@ -69,7 +69,7 @@ link:
 /where:
     summary: Apply preparation on selected guests
     description: |
-        In the :ref:`/spec/plans/provision/multihost` scenarios it
+        In the :tmt:story:`/spec/plans/provision/multihost` scenarios it
         is often necessary to perform different preparation tasks on
         individual guests. The ``where`` key allows to select guests
         where the preparation should be applied by providing their
@@ -101,7 +101,7 @@ link:
     description: |
         Using the ``when`` key makes it easier to restrict a step configuration
         to run only if any of the specified rules matches.
-        The syntax is the same as in ``adjust`` and :ref:`/spec/context`.
+        The syntax is the same as in ``adjust`` and :tmt:story:`/spec/context`.
 
         Values can be single string with the rule or list of rules.
     example: |

@@ -27,7 +27,7 @@ supported by plugins bundled with tmt.
     {% endfor %}
 
 {% for requirement, plugins in MATRIX.items() %}
-   * - :ref:`{{ requirement }}{# djlint:off #}</spec/hardware/{# djlint:on H025 #}{{ requirement }}>`
+   * - :tmt:story:`{{ requirement }}{# djlint:off #}</spec/hardware/{# djlint:on H025 #}{{ requirement }}>`
     {% for plugin, (enabled, note_id) in plugins.items() %}
         {% if enabled %}
      - ✅{% if note_id %} [{{ note_id }}]_{% endif %}
