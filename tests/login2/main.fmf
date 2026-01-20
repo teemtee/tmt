@@ -1,0 +1,321 @@
+# Base scenarios - default behavior without -t flag
+
+/b-01-default:
+    summary: B-01 Default login (no options)
+    test: ./b-01-default.sh
+    tag: [login, base]
+
+/b-02-when-fail:
+    summary: B-02 Login --when fail
+    test: ./b-02-when-fail.sh
+    tag: [login, base, when]
+
+/b-03-when-error:
+    summary: B-03 Login --when error
+    test: ./b-03-when-error.sh
+    tag: [login, base, when]
+
+/b-04-when-pass:
+    summary: B-04 Login --when pass
+    test: ./b-04-when-pass.sh
+    tag: [login, base, when]
+
+/b-05-when-warn:
+    summary: B-05 Login --when warn
+    test: ./b-05-when-warn.sh
+    tag: [login, base, when]
+
+/b-06-step-execute:
+    summary: B-06 Login --step execute
+    test: ./b-06-step-execute.sh
+    tag: [login, base, step]
+
+/b-07-step-finish:
+    summary: B-07 Login --step finish
+    test: ./b-07-step-finish.sh
+    tag: [login, base, step]
+
+/b-08-step-prepare:
+    summary: B-08 Login --step prepare
+    test: ./b-08-step-prepare.sh
+    tag: [login, base, step]
+
+/b-09-when-fail-step-execute:
+    summary: B-09 Login --when fail --step execute
+    test: ./b-09-when-fail-step-execute.sh
+    tag: [login, base, when, step]
+
+/b-10-when-error-step-execute:
+    summary: B-10 Login --when error --step execute
+    test: ./b-10-when-error-step-execute.sh
+    tag: [login, base, when, step]
+
+/b-11-when-pass-step-execute:
+    summary: B-11 Login --when pass --step execute
+    test: ./b-11-when-pass-step-execute.sh
+    tag: [login, base, when, step]
+
+/b-12-step-discover:
+    summary: B-12 Login --step discover
+    test: ./b-12-step-discover.sh
+    tag: [login, base, step]
+
+/b-13-step-provision:
+    summary: B-13 Login --step provision
+    test: ./b-13-step-provision.sh
+    tag: [login, base, step]
+
+/b-14-step-report:
+    summary: B-14 Login --step report
+    test: ./b-14-step-report.sh
+    tag: [login, base, step]
+
+/b-15-when-info:
+    summary: B-15 Login --when info
+    test: ./b-15-when-info.sh
+    tag: [login, base, when]
+
+# Test mode scenarios - with -t flag
+
+/t-01-test-mode:
+    summary: T-01 Login -t (test mode, per-test)
+    test: ./t-01-test-mode.sh
+    tag: [login, test-mode]
+
+/t-02-test-mode-when-fail:
+    summary: T-02 Login -t --when fail
+    test: ./t-02-test-mode-when-fail.sh
+    tag: [login, test-mode, when]
+
+/t-03-test-mode-when-error:
+    summary: T-03 Login -t --when error
+    test: ./t-03-test-mode-when-error.sh
+    tag: [login, test-mode, when]
+
+/t-04-test-mode-when-pass:
+    summary: T-04 Login -t --when pass
+    test: ./t-04-test-mode-when-pass.sh
+    tag: [login, test-mode, when]
+
+/t-05-test-mode-step-finish:
+    summary: T-05 Login -t --step finish (override)
+    test: ./t-05-test-mode-step-finish.sh
+    tag: [login, test-mode, step]
+
+/t-06-test-mode-step-prepare:
+    summary: T-06 Login -t --step prepare (override)
+    test: ./t-06-test-mode-step-prepare.sh
+    tag: [login, test-mode, step]
+
+/t-07-test-mode-when-warn:
+    summary: T-07 Login -t --when warn
+    test: ./t-07-test-mode-when-warn.sh
+    tag: [login, test-mode, when]
+
+/t-08-test-mode-when-info:
+    summary: T-08 Login -t --when info
+    test: ./t-08-test-mode-when-info.sh
+    tag: [login, test-mode, when]
+
+/t-09-test-mode-step-provision:
+    summary: T-09 Login -t --step provision (override)
+    test: ./t-09-test-mode-step-provision.sh
+    tag: [login, test-mode, step]
+
+/t-10-test-mode-step-discover:
+    summary: T-10 Login -t --step discover (override)
+    test: ./t-10-test-mode-step-discover.sh
+    tag: [login, test-mode, step]
+
+/t-11-test-mode-step-report:
+    summary: T-11 Login -t --step report (override)
+    test: ./t-11-test-mode-step-report.sh
+    tag: [login, test-mode, step]
+
+/t-12-test-mode-step-execute:
+    summary: T-12 Login -t --step execute (redundant)
+    test: ./t-12-test-mode-step-execute.sh
+    tag: [login, test-mode, step]
+
+# Combined scenarios
+
+/c-01-test-mode-when-fail-step-finish:
+    summary: C-01 Login -t --when fail --step finish
+    test: ./c-01-test-mode-when-fail-step-finish.sh
+    tag: [login, combined]
+
+/c-02-test-mode-step-execute-finish:
+    summary: C-02 Login -t --step execute --step finish
+    test: ./c-02-test-mode-step-execute-finish.sh
+    tag: [login, combined]
+
+/c-03-when-fail-error:
+    summary: C-03 Login --when fail --when error
+    test: ./c-03-when-fail-error.sh
+    tag: [login, combined]
+
+/c-04-test-mode-when-fail-error:
+    summary: C-04 Login -t --when fail --when error
+    test: ./c-04-test-mode-when-fail-error.sh
+    tag: [login, combined]
+
+/c-05-test-mode-when-error-step-finish:
+    summary: C-05 Login -t --when error --step finish
+    test: ./c-05-test-mode-when-error-step-finish.sh
+    tag: [login, combined]
+
+/c-06-test-mode-step-prepare-finish:
+    summary: C-06 Login -t --step prepare --step finish
+    test: ./c-06-test-mode-step-prepare-finish.sh
+    tag: [login, combined]
+
+/c-07-test-mode-when-fail-step-execute-finish:
+    summary: C-07 Login -t --when fail --step execute --step finish
+    test: ./c-07-test-mode-when-fail-step-execute-finish.sh
+    tag: [login, combined]
+
+/c-08-when-pass-fail:
+    summary: C-08 Login --when pass --when fail
+    test: ./c-08-when-pass-fail.sh
+    tag: [login, combined]
+
+/c-09-when-fail-step-finish:
+    summary: C-09 Login --when fail --step finish
+    test: ./c-09-when-fail-step-finish.sh
+    tag: [login, combined]
+
+/c-10-test-mode-when-pass-fail:
+    summary: C-10 Login -t --when pass --when fail
+    test: ./c-10-test-mode-when-pass-fail.sh
+    tag: [login, combined]
+
+# Multiple conditions
+
+/m-01-when-fail-error:
+    summary: M-01 Login --when fail --when error
+    test: ./m-01-when-fail-error.sh
+    tag: [login, multiple]
+
+/m-02-when-fail-warn:
+    summary: M-02 Login --when fail --when warn
+    test: ./m-02-when-fail-warn.sh
+    tag: [login, multiple]
+
+/m-03-test-mode-when-fail-error:
+    summary: M-03 Login -t --when fail --when error
+    test: ./m-03-test-mode-when-fail-error.sh
+    tag: [login, multiple, test-mode]
+
+/m-04-when-error-warn:
+    summary: M-04 Login --when error --when warn
+    test: ./m-04-when-error-warn.sh
+    tag: [login, multiple]
+
+/m-05-test-mode-when-fail-warn:
+    summary: M-05 Login -t --when fail --when warn
+    test: ./m-05-test-mode-when-fail-warn.sh
+    tag: [login, multiple, test-mode]
+
+/m-06-when-pass-fail-error:
+    summary: M-06 Login --when pass --when fail --when error
+    test: ./m-06-when-pass-fail-error.sh
+    tag: [login, multiple]
+
+/m-07-test-mode-when-pass-fail:
+    summary: M-07 Login -t --when pass --when fail
+    test: ./m-07-test-mode-when-pass-fail.sh
+    tag: [login, multiple, test-mode]
+
+/m-08-test-mode-when-fail-error-step-finish:
+    summary: M-08 Login -t --when fail --when error --step finish
+    test: ./m-08-test-mode-when-fail-error-step-finish.sh
+    tag: [login, multiple, test-mode]
+
+# Edge cases
+
+/e-01-test-mode-all-pass:
+    summary: E-01 Login -t --when fail (all tests pass)
+    test: ./e-01-test-mode-all-pass.sh
+    tag: [login, edge]
+
+/e-02-test-mode-when-fail-all-fail:
+    summary: E-02 Login -t --when fail (all tests fail)
+    test: ./e-02-test-mode-when-fail-all-fail.sh
+    tag: [login, edge]
+
+/e-03-when-fail-step-prepare:
+    summary: E-03 Login --when fail --step prepare (invalid combo)
+    test: ./e-03-when-fail-step-prepare.sh
+    tag: [login, edge]
+
+/e-04-test-mode-step-execute:
+    summary: E-04 Login -t --step execute (redundant)
+    test: ./e-04-test-mode-step-execute.sh
+    tag: [login, edge]
+
+/e-05-test-mode-when-pass-all-pass:
+    summary: E-05 Login -t --when pass (all tests pass)
+    test: ./e-05-test-mode-when-pass-all-pass.sh
+    tag: [login, edge]
+
+/e-06-test-mode-no-tests:
+    summary: E-06 Login -t with no tests discovered
+    test: ./e-06-test-mode-no-tests.sh
+    tag: [login, edge]
+
+/e-07-when-fail-no-tests:
+    summary: E-07 Login --when fail with no tests discovered
+    test: ./e-07-when-fail-no-tests.sh
+    tag: [login, edge]
+
+/e-08-when-fail-all-pass:
+    summary: E-08 Login --when fail (all tests pass)
+    test: ./e-08-when-fail-all-pass.sh
+    tag: [login, edge]
+
+/e-09-test-mode-step-provision:
+    summary: E-09 Login -t --step provision (override)
+    test: ./e-09-test-mode-step-provision.sh
+    tag: [login, edge]
+
+/e-10-test-mode-step-discover:
+    summary: E-10 Login -t --step discover (override)
+    test: ./e-10-test-mode-step-discover.sh
+    tag: [login, edge]
+
+/e-11-test-mode-step-report:
+    summary: E-11 Login -t --step report (override)
+    test: ./e-11-test-mode-step-report.sh
+    tag: [login, edge]
+
+/e-12-test-mode-when-fail-all-fail:
+    summary: E-12 Login -t --when fail (all tests fail)
+    test: ./e-12-test-mode-when-fail-all-fail.sh
+    tag: [login, edge]
+
+# Result variations
+
+/r-01-result-pass:
+    summary: R-01 Result type - pass
+    test: ./r-01-result-pass.sh
+    tag: [login, result]
+
+/r-02-result-fail:
+    summary: R-02 Result type - fail
+    test: ./r-02-result-fail.sh
+    tag: [login, result]
+
+/r-03-result-error:
+    summary: R-03 Result type - error
+    test: ./r-03-result-error.sh
+    tag: [login, result]
+
+/r-04-result-warn:
+    summary: R-04 Result type - warn
+    test: ./r-04-result-warn.sh
+    tag: [login, result]
+
+/r-05-result-info:
+    summary: R-05 Result type - info
+    test: ./r-05-result-info.sh
+    tag: [login, result]
