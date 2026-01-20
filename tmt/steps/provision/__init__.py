@@ -2443,7 +2443,7 @@ class Guest(
 
         return []
 
-    @property
+    @functools.cached_property
     def logdir(self) -> Path:
         """
         Path to store logs
@@ -2474,24 +2474,20 @@ class Guest(
 
         self.guest_logs.append(log)
 
-    def setup_logs(self, *, dirpath: Optional[Path] = None, logger: tmt.log.Logger) -> None:
+    def setup_logs(self, *, logger: tmt.log.Logger) -> None:
         """
         Notify all registered logs their collection will begin.
 
-        :param dirpath: a directory to save into. If not set,
-            :py:attr:`logdir`, or current working directory will be used.
         :param logger: logger to use for logging.
         """
 
         for log in self.guest_logs:
             log.setup(logger=logger)
 
-    def teardown_logs(self, *, dirpath: Optional[Path] = None, logger: tmt.log.Logger) -> None:
+    def teardown_logs(self, *, logger: tmt.log.Logger) -> None:
         """
         Notify all registered logs their collection will no longer continue.
 
-        :param dirpath: a directory to save into. If not set,
-            :py:attr:`logdir`, or current working directory will be used.
         :param logger: logger to use for logging.
         """
 
