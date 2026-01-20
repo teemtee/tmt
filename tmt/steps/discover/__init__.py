@@ -483,6 +483,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         Adjust test attributes such as path, where condition, and environment
 
         :param path: Original path used for discovery.
+        :param loaded_from_recipe: Whether the tests were loaded from a recipe.
         """
         for test_origin in self.tests():
             test = test_origin.test
@@ -497,6 +498,26 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
 
             if bool(self.get('dist-git-source', False)):
                 test.environment['TMT_SOURCE_DIR'] = EnvVarValue(self.source_dir)
+
+            # Prefix test name and path if not loaded from a recipe
+            prefix = f'/{self.name}' if len(self.step.phases()) > 1 else ''
+            test.name = f"{prefix}{test.name}"
+            test.path = Path(f"/{self.safe_name}{test.path}")
+
+    def discover_from_recipe(self, logger: Optional[tmt.log.Logger] = None) -> None:
+        self.go_prolog(logger or self._logger)
+
+        assert self.step.plan.my_run is not None
+        assert self.step.plan.my_run.recipe is not None
+
+        self._tests = [
+            test_origin.test
+            for test_origin in self.step.plan.my_run.recipe_manager.tests(
+                self.step.plan.my_run.recipe,
+                self.step.plan.name,
+            )
+            if test_origin.phase == self.name
+        ]
 
 
 class Discover(tmt.steps.Step):
@@ -562,8 +583,15 @@ class Discover(tmt.steps.Step):
         path = phase.fetch_source()
         phase.checkout_ref()
 
+        loaded_from_recipe = (
+            phase.step.plan.my_run is not None and phase.step.plan.my_run.recipe is not None
+        )
+
         # Go and discover tests
-        phase.go(path=path, logger=logger)
+        if loaded_from_recipe:
+            phase.discover_from_recipe(logger=logger)
+        else:
+            phase.go(path=path, logger=logger)
 
         if phase.get('prune', False):
             clone_dir = phase.clone_dirpath / 'tests'
@@ -572,7 +600,9 @@ class Discover(tmt.steps.Step):
         else:
             phase.install_libraries(phase.test_dir, phase.test_dir)
 
-        phase.adjust_test_attributes(path)
+        if not loaded_from_recipe:
+            phase.adjust_test_attributes(path)
+
         phase.apply_policies()
 
     def load(self) -> None:
@@ -763,7 +793,9 @@ class Discover(tmt.steps.Step):
 
                 self.discover_tests(phase)
 
-                self._tests[phase.name] = []
+                self._tests[phase.name] = [
+                    test_origin.test for test_origin in phase.tests(enabled=True)
+                ]
 
                 # Prefix test name only if multiple plugins configured
                 prefix = f'/{phase.name}' if len(self.phases()) > 1 else ''
@@ -772,15 +804,6 @@ class Discover(tmt.steps.Step):
                     f"{prefix}{test_name}"
                     for test_name in cast(DiscoverStepData, phase.data).require_test
                 ]
-
-                # Check discovered tests, modify test name/path
-                for test_origin in phase.tests(enabled=True):
-                    test = test_origin.test
-
-                    test.name = f"{prefix}{test.name}"
-                    test.path = Path(f"/{phase.safe_name}{test.path}")
-
-                    self._tests[phase.name].append(test)
 
             else:
                 raise GeneralError(f'Unexpected phase in discover step: {phase}')

@@ -1,1 +1,7 @@
-summary: Verify recipe generation works as expected
+/generation:
+    summary: Verify recipe generation works as expected
+    test: ./generation.sh
+
+/loading:
+    summary: Verify recipe loading works as expected
+    test: ./loading.sh
