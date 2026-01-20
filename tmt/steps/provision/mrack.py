@@ -1901,6 +1901,6 @@ class GuestLogBeaker(tmt.steps.provision.GuestLog):
     guest: GuestBeaker
     url: str
 
-    def update(self, *, final: bool = False, logger: tmt.log.Logger) -> None:
+    def update(self, *, logger: tmt.log.Logger) -> None:
         with self.staging_file(self.filepath, logger) as staging_filepath:
             tmt.utils.url.download(self.url, staging_filepath, logger=logger)

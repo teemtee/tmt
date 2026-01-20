@@ -851,7 +851,7 @@ class GuestLogArtemis(tmt.steps.provision.GuestLog):
 
         logger.info(f'{self.name} log', 'requested', 'green')
 
-    def update(self, *, final: bool = False, logger: tmt.log.Logger) -> None:
+    def update(self, *, logger: tmt.log.Logger) -> None:
         if self.guest.guestname is None:
             raise GuestLogError("Failed to fetch, guestname is not known yet.", self)
 

@@ -44,7 +44,7 @@ class CleanupInternal(tmt.steps.cleanup.CleanupPlugin[CleanupInternalData]):
         if guest.is_ready:
             logger.debug(f"Fetch logs from guest '{guest.name}'.")
 
-            guest.update_logs(final=True, logger=logger)
+            guest.update_logs(logger=logger)
 
             guest.teardown_logs(logger=logger)
 

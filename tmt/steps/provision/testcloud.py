@@ -1476,6 +1476,21 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
         if self.exchange_directory is None:
             return
 
+        # Replace the console symlink with the source file, in place.
+        try:
+            with self.staging_file(self.filepath, logger) as staging_filepath:
+                # We cannot use simple "cp" as we are dealing with symlinks,
+                # we need the content of the file, not the file it points to.
+                shutil.copyfile(self.filepath, staging_filepath, follow_symlinks=True)
+
+        except Exception as error:
+            tmt.utils.show_exception_as_warning(
+                exception=error,
+                message="Failed to save console log.",
+                logger=logger,
+            )
+
+        # And remove the exchange directory.
         try:
             logger.debug(f"Remove log exchange directory '{self.exchange_directory}'.", level=3)
 
@@ -1489,21 +1504,7 @@ class ConsoleLog(tmt.steps.provision.GuestLog):
                 logger=logger,
             )
 
-    def update(self, *, final: bool = False, logger: tmt.log.Logger) -> None:
-        # Our filepath is a symlink to the actual log, we can't mess
-        # with it. And we do not need to do anything to update it,
-        # unless it's the final update, then we need to turn it into
-        # a regular file.
-
-        if final:
-            # The final update copy *the content* of the console log,
-            # symlink or not, and save it as a regular file.
-            with self.staging_file(self.filepath, logger) as staging_filepath:
-                # We cannot use simple "cp" as we are dealing with symlinks,
-                # we need the content of the file, not the file it points to.
-                shutil.copyfile(self.filepath, staging_filepath, follow_symlinks=True)
-
+    def update(self, *, logger: tmt.log.Logger) -> None:
         # Nothing to do to update our filepath, it's a symlink to
         # the real log, it's up-to-date all the time.
-        else:
-            pass
+        pass

@@ -1510,12 +1510,10 @@ class GuestLog(abc.ABC):
                 shutil.move(temporary_filepath, final_filepath)
 
     @abc.abstractmethod
-    def update(self, *, final: bool = False, logger: tmt.log.Logger) -> None:
+    def update(self, *, logger: tmt.log.Logger) -> None:
         """
         Fetch the up-to-date content of the log, and save it into a file.
 
-        :param final: if set, this is the last attempt to update the log
-            before the guest cleanup.
         :param logger: logger to use for logging.
         """
 
@@ -2503,20 +2501,17 @@ class Guest(
     def update_logs(
         self,
         *,
-        final: bool = False,
         logger: tmt.log.Logger,
     ) -> None:
         """
         Fetch the up-to-date content of guest logs, and update saved files.
 
-        :param final: if set, this is the last attempt to update the log
-            before the guest cleanup.
         :param logger: logger to use for logging.
         """
 
         for log in self.guest_logs:
             try:
-                log.update(final=final, logger=logger)
+                log.update(logger=logger)
 
             except Exception as exc:
                 tmt.utils.show_exception_as_warning(
