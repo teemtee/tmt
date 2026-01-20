@@ -1,0 +1,18 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: container
+    prepare:
+        how: artifact
+        provide:
+          - repository-file:https://download.docker.com/linux/fedora/docker-ce.repo
+    execute:
+        how: tmt
+
+/test:
+    test: ./test.sh
+    duration: 5m
+    summary: Verify docker-ce-cli from repository
+    require:
+      - docker-ce-cli
