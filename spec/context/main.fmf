@@ -69,6 +69,11 @@ example:
     tmt run --all provision --how virtual --image fedora-44
 
   - |
+    # Distro images are not detected from the context value,
+    # default image will be used when not explicitly specified
+    tmt --context distro=fedora-44 run --all provision --how container
+
+  - |
     # Define both provision image and the distro context dimension
     # if you need test or plan adjust rules to be applied
     tmt --context distro=fedora-44 run --all provision --how virtual --image fedora-44
