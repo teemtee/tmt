@@ -7,8 +7,8 @@ description: |
     .. note::
 
         As of now, the specification focuses and applies to
-        :ref:`test metadata</spec/tests>` only. In the future, we plan
-        to support plans and stories as well.
+        :ref:`test</spec/tests>` and :ref:`plan</spec/tests>` metadata
+        only. In the future, we plan to support stories as well.
 
     tmt policies offer a powerful and flexible way to dynamically
     modify test metadata using templates. Instead of maintaining multiple

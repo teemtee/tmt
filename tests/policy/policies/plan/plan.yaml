@@ -1,0 +1,45 @@
+---
+
+plan-policy:
+  # Can we reset a step completely?
+  - discover: |
+      []
+
+  # Can we add custom phases while keeping the current ones?
+  - prepare: |
+      {#
+        If no prepare phase has been defined for this plan, inject
+        the profile feature.
+      #}
+      {% if not VALUE %}
+      - how: feature
+        profile: rhel-ci
+        order: 17
+
+      {#
+        Otherwise, include all phases and add the profile feature.
+      #}
+      {% else %}
+      - how: feature
+        profile: rhel-ci
+        order: 17
+
+        {% for phase in VALUE %}
+      - {{ phase | to_yaml | indent(2, first=False) }}
+        {% endfor %}
+      {% endif %}
+
+  # A trivial fields should be updatable too.
+  - contact: |
+      {% if not VALUE %}
+      - xyzzy
+
+      {% else %}
+          {% for contact in VALUE %}
+              {% if contact == 'bar' %}
+      - baz
+              {% else %}
+      - {{ contact }}
+              {% endif %}
+          {% endfor %}
+      {% endif %}

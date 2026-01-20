@@ -1217,11 +1217,15 @@ _plan_export_default = 'yaml'
     help="Path to a template to use for rendering the export. Used with '--how=template' only.",
 )
 @environment_options
+@policy_options
 def plans_export(
     context: Context,
     how: str,
     format: str,
     template: Optional[str],
+    policy_file: Optional[Path],
+    policy_name: Optional[str],
+    policy_root: Optional[Path],
     **kwargs: Any,
 ) -> None:
     """
@@ -1238,9 +1242,16 @@ def plans_export(
 
         how = format
 
+    plans = context.obj.tree.plans()
+
+    policies = _load_policies(policy_name, policy_file, policy_root)
+
+    for policy in policies:
+        policy.apply_to_plans(plans=plans, logger=context.obj.logger)
+
     context.obj.print(
         tmt.Plan.export_collection(
-            collection=context.obj.tree.plans(),
+            collection=plans,
             format=how,
             template=Path(template) if template else None,
         )
