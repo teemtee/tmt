@@ -224,9 +224,8 @@ class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
 
     def to_minimal_spec(self) -> _RawDiscoverShellData:
         spec = {**super().to_minimal_spec()}
-        tests = [test.to_minimal_spec() for test in self.tests]
-        if tests:
-            spec['tests'] = tests
+        if self.tests:
+            spec['tests'] = [test.to_minimal_spec() for test in self.tests]
         return cast(_RawDiscoverShellData, spec)
 
 

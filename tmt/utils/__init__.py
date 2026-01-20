@@ -419,17 +419,12 @@ class FmfContext(dict[str, list[str]]):
         return dict(self)
 
     @classmethod
-    def from_serialized(cls, spec: dict[str, list[str]]) -> 'FmfContext':
+    def from_serialized(cls, serialized: dict[str, list[str]]) -> 'FmfContext':
         """
         Convert from a serialized form.
         """
 
-        return FmfContext(
-            {
-                str(dimension): [str(value) for value in values]
-                for dimension, values in spec.items()
-            }
-        )
+        return FmfContext(serialized)
 
 
 #: A type of environment variable name.
