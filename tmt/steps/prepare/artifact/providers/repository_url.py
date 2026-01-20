@@ -44,8 +44,8 @@ class RepositoryUrlProvider(ArtifactProvider[RpmArtifactInfo]):
 
     repository: Repository
 
-    def __init__(self, raw_provider_id: str, priority: int, logger: tmt.log.Logger):
-        super().__init__(raw_provider_id, priority, logger)
+    def __init__(self, raw_provider_id: str, repository_priority: int, logger: tmt.log.Logger):
+        super().__init__(raw_provider_id, repository_priority, logger)
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
@@ -94,7 +94,7 @@ name={repo_name}
 baseurl={baseurl}
 enabled=1
 gpgcheck=0
-priority={self.priority}"""
+priority={self.repository_priority}"""
 
         self.logger.debug(f"Generated .repo file content:\n{repo_content}")
 

@@ -44,8 +44,8 @@ class RepositoryFileProvider(ArtifactProvider[RpmArtifactInfo]):
 
     repository: Repository
 
-    def __init__(self, raw_provider_id: str, priority: int, logger: tmt.log.Logger):
-        super().__init__(raw_provider_id, priority, logger)
+    def __init__(self, raw_provider_id: str, repository_priority: int, logger: tmt.log.Logger):
+        super().__init__(raw_provider_id, repository_priority, logger)
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:

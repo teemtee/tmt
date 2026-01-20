@@ -29,13 +29,14 @@ class PrepareArtifactData(PrepareStepData):
         normalize=tmt.utils.normalize_string_list,
     )
 
-    priority: int = field(
+    default_repository_priority: int = field(
         default=50,
-        option='--priority',
+        option='--default-repository-priority',
         metavar='PRIORITY',
         help="""
-            Priority for artifact repositories. Lower values mean higher priority
-            in package managers. Default: 50.
+            Default priority for created artifact repositories. Lower values mean
+            higher priority in package managers. Default: 50. Also uses environment
+            variable ``TMT_PLUGIN_PREPARE_ARTIFACT_DEFAULT_REPOSITORY_PRIORITY``.
             """,
     )
 
@@ -211,7 +212,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             guest=guest,
             logger=logger,
             repo_name=self.SHARED_REPO_NAME,
-            priority=self.data.priority,
+            priority=self.data.default_repository_priority,
         )
 
         # Initialize all providers and have them contribute to the shared repo
@@ -224,7 +225,9 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                 provider_id_sanitized = tmt.utils.sanitize_name(raw_provider_id, allow_slash=False)
                 provider_logger = self._logger.descend(raw_provider_id)
                 provider = provider_class(
-                    raw_provider_id, priority=self.data.priority, logger=provider_logger
+                    raw_provider_id,
+                    repository_priority=self.data.default_repository_priority,
+                    logger=provider_logger,
                 )
                 providers.append(provider)
 
