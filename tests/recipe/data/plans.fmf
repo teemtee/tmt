@@ -1,0 +1,25 @@
+provision:
+    how: local
+execute:
+    how: tmt
+environment:
+    PLAN_ENV: plan_value
+
+/simple:
+    summary: A simple plan
+    discover:
+      - name: discover-fmf
+        how: fmf
+      - name: discover-shell
+        how: shell
+        tests:
+          - name: /shell-test
+            test: /bin/true
+
+/remote:
+    summary: A remote plan
+    discover:
+        how: fmf
+        url: https://github.com/teemtee/tmt
+        path: /tests/execute/basic/data
+        test: good

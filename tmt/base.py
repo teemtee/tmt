@@ -76,7 +76,7 @@ from tmt.container import (
     field,
 )
 from tmt.lint import LinterOutcome, LinterReturn
-from tmt.recipe import RecipeBuilder
+from tmt.recipe import RecipeManager
 from tmt.result import Result, ResultInterpret
 from tmt.utils import (
     Command,
@@ -1305,6 +1305,14 @@ class Test(
         internal=True,
         default_factory=tmt.utils.Environment,
     )
+    _original_require: list[Dependency] = field(
+        internal=True,
+        default_factory=list,
+    )
+    _original_recommend: list[Dependency] = field(
+        internal=True,
+        default_factory=list,
+    )
 
     _KEYS_SHOW_ORDER = [
         # Basic test information
@@ -1421,6 +1429,8 @@ class Test(
         self._update_metadata()
         # TODO: refactor the code so it does not modify the test environment
         self._original_fmf_environment = self.environment.copy()
+        self._original_require = self.require.copy()
+        self._original_recommend = self.recommend.copy()
 
     @staticmethod
     def overview(tree: 'Tree') -> None:
@@ -4536,6 +4546,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         parent: Optional[tmt.utils.Common] = None,
         workdir_root: Optional[Path] = None,
         policies: Optional[list[tmt.policy.Policy]] = None,
+        recipe_path: Optional[Path] = None,
         logger: tmt.log.Logger,
     ) -> None:
         """
@@ -4571,7 +4582,10 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         self.unique_id = str(time.time()).split('.')[0]
 
         self.policies = policies or []
-        self.recipe_builder = RecipeBuilder(logger)
+        self.recipe_manager = RecipeManager(logger)
+        self.recipe = self.recipe_manager.load(recipe_path) if recipe_path else None
+        if self.recipe is not None and self._tree is not None:
+            self.recipe_manager.update_tree(self.recipe, self._tree.tree)
 
     @property
     def run_workdir(self) -> Path:
@@ -4835,7 +4849,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         """
         # Save recipe
         if not self.is_dry_run:
-            self.recipe_builder.save(self)
+            self.recipe_manager.save(self)
 
         # We get interesting results only if execute or prepare step is enabled
         execute = self.plans[0].execute

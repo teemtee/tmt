@@ -1,0 +1,8 @@
+description: |
+  tmt can now load recipes using the ``tmt run --recipe`` command.
+  Currently, only discover phases and tests are supported, and they
+  will override any existing discover phases in the plan. For this
+  to work, the current run must already include a plan with the same
+  name as the one defined in the recipe, which tmt will update
+  by replacing its discover phases. Note that recipe loading is still
+  experimental and may change in future releases.

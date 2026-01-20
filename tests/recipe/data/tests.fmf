@@ -3,4 +3,4 @@ test: /bin/true
 /first:
     summary: First test
     environment:
-        TEST_ENV: value
+        TEST_ENV: test_value
