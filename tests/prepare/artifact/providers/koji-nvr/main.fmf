@@ -1,0 +1,4 @@
+summary: Test koji.nvr artifact provider
+description: |
+    Test koji.nvr artifact provider which makes packages from Koji
+    builds available using NVR (Name-Version-Release).
