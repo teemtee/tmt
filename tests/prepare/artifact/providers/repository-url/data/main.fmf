@@ -1,0 +1,18 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: container
+    prepare:
+        how: artifact
+        provide:
+          - repository-url:https://packages.microsoft.com/yumrepos/vscode/
+    execute:
+        how: tmt
+
+/test:
+    test: ./test.sh
+    duration: 5m
+    summary: Verify code from repository
+    require:
+      - code

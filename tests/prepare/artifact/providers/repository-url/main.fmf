@@ -1,0 +1,5 @@
+summary: Test repository-url artifact provider
+description: |
+    Test repository-url artifact provider which configures external
+    package repositories from a baseurl. Uses Microsoft VSCode repository
+    as the test case. Also tests repository priority configuration.
