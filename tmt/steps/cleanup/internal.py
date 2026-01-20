@@ -44,9 +44,9 @@ class CleanupInternal(tmt.steps.cleanup.CleanupPlugin[CleanupInternalData]):
         if guest.is_ready:
             logger.debug(f"Fetch logs from guest '{guest.name}'.")
 
-            guest.update_logs(logger)
+            guest.update_logs(logger=logger)
 
-            guest.teardown_logs(logger)
+            guest.teardown_logs(logger=logger)
 
         # Stop the guest and remove it
         logger.debug(f"Stop and remove guest '{guest.name}'.")

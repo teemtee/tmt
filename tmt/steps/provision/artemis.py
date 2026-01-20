@@ -597,7 +597,7 @@ class GuestArtemis(tmt.GuestSsh):
         for log_type in self.log_type:
             self.collect_log(GuestLogArtemis(name=log_type, guest=self))
 
-        self.setup_logs(self._logger)
+        self.setup_logs(logger=self._logger)
 
         def get_new_state() -> GuestInspectType:
             nonlocal previous_state
@@ -836,7 +836,7 @@ class GuestLogArtemis(tmt.steps.provision.GuestLog):
     def filename(self) -> str:
         return self.name.replace(':', '-').replace('/', '-')
 
-    def setup(self, logger: tmt.log.Logger) -> None:
+    def setup(self, *, logger: tmt.log.Logger) -> None:
         if self.guest.guestname is None:
             raise GuestLogError("Failed to initialize, guestname is not known yet.", self)
 
@@ -851,7 +851,7 @@ class GuestLogArtemis(tmt.steps.provision.GuestLog):
 
         logger.info(f'{self.name} log', 'requested', 'green')
 
-    def update(self, filepath: Path, logger: tmt.log.Logger) -> None:
+    def update(self, *, logger: tmt.log.Logger) -> None:
         if self.guest.guestname is None:
             raise GuestLogError("Failed to fetch, guestname is not known yet.", self)
 
@@ -868,7 +868,7 @@ class GuestLogArtemis(tmt.steps.provision.GuestLog):
 
         log_data = response.json()
 
-        with self.staging_file(filepath, logger) as staging_filepath:
+        with self.staging_file(self.filepath, logger) as staging_filepath:
             if log_data['state'] == 'unsupported':
                 staging_filepath.write_text(
                     f'# Guest log {self.name} is not supported by the guest.'
