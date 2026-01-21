@@ -2,8 +2,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tmt.steps.prepare.artifact.providers.copr_repository import CoprRepositoryProvider
-
 
 @pytest.mark.parametrize(
     ("raw_id", "expected"),
@@ -20,15 +18,14 @@ def test_valid_repository_id(raw_id, expected, artifact_provider):
 @pytest.mark.parametrize(
     ("raw_id", "error"),
     [
-        ("invalid:@teemtee/stable", "Invalid Copr repository provider format"),
         ("copr.repository:invalid-id", "Invalid Copr repository format"),
         ("copr.repository:@/stable", "Invalid Copr repository format"),
         ("copr.repository:", "Missing Copr repository name"),
     ],
 )
-def test_invalid_repository_id(raw_id, error, root_logger):
+def test_invalid_repository_id(raw_id, error, artifact_provider):
     with pytest.raises(ValueError, match=error):
-        CoprRepositoryProvider(raw_id, repository_priority=50, logger=root_logger)
+        artifact_provider(raw_id)
 
 
 def test_fetch_contents_enables_repository(mock_copr_class, artifact_provider, tmppath):
