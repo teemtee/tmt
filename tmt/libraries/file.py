@@ -29,7 +29,9 @@ class File(Library):
 
     #: Filename paths and regexes which need to be copied
     pattern: list[str]
+    #: Root source location of the tests directory of the Discover phase (``test_dir``)
     source_location: Path
+    #: Root target location where to copy the file into
     target_location: Path
 
     @classmethod

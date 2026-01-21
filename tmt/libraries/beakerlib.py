@@ -68,11 +68,12 @@ class BeakerLib(Library):
     #: Fmf tree holding library metadata
     tree: fmf.Tree = simple_field(init=False)
 
+    #: Source directory where used for files required by the library dependencies
     source_directory: Path = simple_field(init=False)
     default_branch: Optional[str] = None
 
     def __post_init__(self) -> None:
-        # Set default source directory, used for files required by a library
+        # Set default source directory
         self.source_directory: Path = self.path or self.fmf_node_path
         # Sanity checks
         if not self.name.startswith('/'):
@@ -313,6 +314,7 @@ class BeakerLibFromUrl(BeakerLib):
     url: str = ""
     #: Git revision (branch, tag or commit)
     ref: Optional[str] = None
+    #: Path under the git repository pointing to the fmf root
     path: Optional[Path] = None
 
     @property
@@ -487,6 +489,7 @@ class BeakerLibFromPath(BeakerLib):
 
     format: Literal['fmf']  # pyright: ignore[reportIncompatibleVariableOverride]
 
+    #: Absolute path on the local filesystem pointing to the library
     path: Path  # pyright: ignore[reportIncompatibleVariableOverride]
 
     @classmethod

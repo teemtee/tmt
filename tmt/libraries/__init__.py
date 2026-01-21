@@ -36,15 +36,22 @@ class Library(abc.ABC):
     Used as parent for specific libraries like beakerlib and file
     """
 
-    #: Optional 'parent' object inheriting from tmt.utils.Common can be
-    #: provided in order to share the cache of already fetched libraries.
+    # TODO: parent is actually guaranteed to be `DiscoverPlugin`, try to
+    #  narrow type it further.
+    #: The phase that requested the library as a dependency
     parent: tmt.utils.Common
     _logger: tmt.log.Logger
+    #: The original dependency requested
     identifier: Dependency
+    # TODO: Should not be needed if Beakerlib rpm format is removed
+    #: Format of the library type requested
     format: str
-    #: Library prefix (git repository name or nick if provided)
+    #: Name of the repository where the library came from
     repo: Path
-    #: Library suffix (folder containing the library code)
+    #: Fully-qualified name of the library (excluding the ``repo`` part).
+    #:
+    #: For example the name used in the ``rlImport`` command.
+    #: Must start with ``/``.
     name: str
 
     @classmethod
