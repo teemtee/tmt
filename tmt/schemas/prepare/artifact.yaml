@@ -18,7 +18,7 @@ properties:
   provide:
     $ref: "/schemas/common#/definitions/one_or_more_strings"
 
-  default_repository_priority:
+  default-repository-priority:
     type: integer
 
 required:

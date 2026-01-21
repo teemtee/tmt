@@ -35,8 +35,7 @@ class PrepareArtifactData(PrepareStepData):
         metavar='PRIORITY',
         help="""
             Default priority for created artifact repositories. Lower values mean
-            higher priority in package managers. Default: 50. Also uses environment
-            variable ``TMT_PLUGIN_PREPARE_ARTIFACT_DEFAULT_REPOSITORY_PRIORITY``.
+            higher priority in package managers.
             """,
     )
 
