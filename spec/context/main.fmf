@@ -27,12 +27,14 @@ description: |
     .. _fmf context: https://fmf.readthedocs.io/en/stable/context.html
 
     .. note::
-
-        There is no support for detecting context from other
-        command line options or from the provisioned environment.
         Always make sure the needed context dimensions are
         explicitly provided either on the command line or in the
         plan.
+
+        There is no support for detecting context from other
+        command line options or from the provisioned environment.
+        Similarly, provision options, such as distro image, are
+        not detected from the context values.
 
         Because of the chicken-and-egg problem (plan definitions,
         including the ``provision`` step, can be modified using
@@ -64,6 +66,12 @@ example:
     tmt --context @ci.yaml run
 
   - |
+    # In most use cases you want to define both distro image for
+    # the provision step and distro context dimension because
+    # context is not detected from image and vice versa.
+    tmt --context distro=fedora-44 run --all provision --how virtual --image fedora-44
+
+  - |
     # When context is not defined, adjust rules checking for the
     # specific distro version will not be applied
     tmt run --all provision --how virtual --image fedora-44
@@ -72,11 +80,6 @@ example:
     # Distro images are not detected from the context value,
     # default image will be used when not explicitly specified
     tmt --context distro=fedora-44 run --all provision --how container
-
-  - |
-    # Define both provision image and the distro context dimension
-    # if you need test or plan adjust rules to be applied
-    tmt --context distro=fedora-44 run --all provision --how virtual --image fedora-44
 
 link:
   - implemented-by: /tmt/base.py
