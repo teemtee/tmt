@@ -145,7 +145,7 @@ def test_mark_nonexistent_url(root_logger, monkeypatch):
         name='/',
     )
     with pytest.raises(tmt.utils.GeneralError):
-        tmt.libraries.beakerlib.BeakerLibUrl.from_identifier(
+        tmt.libraries.beakerlib.BeakerLibFromUrl.from_identifier(
             logger=root_logger, identifier=identifier, parent=parent
         ).fetch()
     # Second time there shouldn't be an attempt to clone...
@@ -153,7 +153,7 @@ def test_mark_nonexistent_url(root_logger, monkeypatch):
         "tmt.utils.git.git_clone", MagicMock(side_effect=RuntimeError('Should not be called'))
     )
     with pytest.raises(tmt.utils.GeneralError):
-        tmt.libraries.beakerlib.BeakerLibUrl.from_identifier(
+        tmt.libraries.beakerlib.BeakerLibFromUrl.from_identifier(
             logger=root_logger, identifier=identifier, parent=parent
         ).fetch()
     shutil.rmtree(parent.workdir)

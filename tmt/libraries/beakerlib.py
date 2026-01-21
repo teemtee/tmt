@@ -97,12 +97,12 @@ class BeakerLib(Library):
 
         assert isinstance(identifier, DependencyFmfId)  # narrow type
         if identifier.url:
-            return BeakerLibUrl.from_identifier(
+            return BeakerLibFromUrl.from_identifier(
                 identifier=identifier, parent=parent, logger=logger
             )
 
         if identifier.path:
-            return BeakerLibPath.from_identifier(
+            return BeakerLibFromPath.from_identifier(
                 identifier=identifier, parent=parent, logger=logger
             )
 
@@ -125,7 +125,7 @@ class BeakerLib(Library):
             raise LibraryError
         repo = matched.groups()[0]
         name = matched.groups()[1]
-        library = BeakerLibUrl.from_identifier(
+        library = BeakerLibFromUrl.from_identifier(
             identifier=DependencyFmfId(
                 url=DEFAULT_REPOSITORY_TEMPLATE.format(repository=str(repo)),
                 name=name,
@@ -199,8 +199,8 @@ class BeakerLib(Library):
             assert self.parent.workdir
             if not (self.parent.workdir / self.dest / self.repo).exists():
                 raise FileNotFoundError
-            if isinstance(self, BeakerLibUrl):
-                assert isinstance(library, BeakerLibUrl)
+            if isinstance(self, BeakerLibFromUrl):
+                assert isinstance(library, BeakerLibFromUrl)
                 # The url must be identical
                 if library.url != self.url:
                     # tmt guessed url so try if repo exists
@@ -257,7 +257,7 @@ class BeakerLib(Library):
             try:
                 self._do_fetch(directory)
             except (tmt.utils.RunError, tmt.utils.RetryError, tmt.utils.GitUrlError) as error:
-                assert isinstance(self, BeakerLibUrl)
+                assert isinstance(self, BeakerLibFromUrl)
                 # Fallback to install during the prepare step if in rpm format
                 if self.format == 'rpm':
                     # Print this message only for the first attempt
@@ -272,7 +272,7 @@ class BeakerLib(Library):
             # Initialize metadata tree, add self into the library index
             tree_path = (
                 str(directory / self.path.unrooted())
-                if (isinstance(self, BeakerLibUrl) and self.path)
+                if (isinstance(self, BeakerLibFromUrl) and self.path)
                 else str(directory)
             )
             self.tree = fmf.Tree(tree_path)
@@ -301,7 +301,7 @@ class BeakerLib(Library):
 
 
 @container
-class BeakerLibUrl(BeakerLib):
+class BeakerLibFromUrl(BeakerLib):
     """
     An external beakerlib library fetched from a git url.
     """
@@ -353,7 +353,7 @@ class BeakerLibUrl(BeakerLib):
             if not repo_search:
                 raise tmt.utils.GeneralError(f"Unable to parse repository name from '{url}'.")
             repo = repo_search.group(1)
-        return BeakerLibUrl(
+        return BeakerLibFromUrl(
             parent=parent,
             _logger=logger,
             identifier=identifier,
@@ -480,7 +480,7 @@ class BeakerLibUrl(BeakerLib):
 
 
 @container
-class BeakerLibPath(BeakerLib):
+class BeakerLibFromPath(BeakerLib):
     """
     A beakerlib library on the local filesystem.
     """
@@ -510,7 +510,7 @@ class BeakerLibPath(BeakerLib):
             if not repo:
                 raise tmt.utils.GeneralError(f"Unable to parse repository name from '{path}'.")
 
-        return BeakerLibPath(
+        return BeakerLibFromPath(
             parent=parent,
             _logger=logger,
             identifier=identifier,
