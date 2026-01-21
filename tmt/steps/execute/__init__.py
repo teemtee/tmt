@@ -44,6 +44,7 @@ from tmt.utils import (
     CommandOutput,
     Environment,
     EnvVarValue,
+    GeneralError,
     HasEnvironment,
     HasStepWorkdir,
     Path,
@@ -490,52 +491,61 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
                 if self.on_interrupt_callback_token is not None:
                     tmt.utils.signals.remove_callback(self.on_interrupt_callback_token)
 
-        # Do *not* refresh deadline's perception of `now`. The deadline
-        # has been either initialized before the first invocation of the
-        # test, or it has been refreshed after the last invocation - in
-        # any case, its "now" is set, and if we refresh it now, we
-        # basically count time spent by tmt itself before and after the
-        # invocation against test's deadline.
-        timeout = int(deadline.time_left.total_seconds()) if deadline is not None else None
+        def _invoke(timeout: Optional[int] = None) -> CommandOutput:
+            """
+            Actually invoke the test, and handle its immediate outcome.
+            """
 
-        with Stopwatch() as timer:
+            output, error, timer = Stopwatch.measure(
+                self.guest.execute,
+                command,
+                cwd=cwd,
+                env=self.environment,
+                join=True,
+                interactive=interactive,
+                tty=self.test.tty,
+                log=log,
+                timeout=timeout,
+                on_process_start=_save_process,
+                on_process_end=_reset_process,
+                test_session=True,
+                friendly_command=str(self.test.test),
+                sourced_files=[self.phase.step.plan.plan_source_script],
+            )
+
             self.start_time = timer.start_time_formatted
+            self.end_time = timer.end_time_formatted
+            self.real_duration = timer.duration_formatted
 
-            try:
-                output = self.guest.execute(
-                    command,
-                    cwd=cwd,
-                    env=self.environment,
-                    join=True,
-                    interactive=interactive,
-                    tty=self.test.tty,
-                    log=log,
-                    timeout=timeout,
-                    on_process_start=_save_process,
-                    on_process_end=_reset_process,
-                    test_session=True,
-                    friendly_command=str(self.test.test),
-                    sourced_files=[self.phase.step.plan.plan_source_script],
-                )
-
-                self.return_code = tmt.utils.ProcessExitCodes.SUCCESS
-
-            except tmt.utils.RunError as error:
+            if error is not None:
                 self.exceptions.append(error)
 
-                output = error.output
+                if isinstance(error, tmt.utils.RunError):
+                    output = error.output
 
-                self.return_code = error.returncode
+                    self.return_code = error.returncode
 
-        self.end_time = timer.end_time_formatted
-        self.real_duration = timer.duration_formatted
+                else:
+                    raise error
 
-        # Now refresh the deadline - if there is still time remaining,
-        # next invocation should have it available.
-        if deadline:
+            elif output is not None:
+                self.return_code = tmt.utils.ProcessExitCodes.SUCCESS
+
+            else:
+                raise GeneralError('Command produced no output but raised no exception')
+
+            return output
+
+        if deadline is None:
+            output = _invoke()
+
+        else:
             with deadline:
                 if deadline.is_due:
                     self.return_code = ProcessExitCodes.TIMEOUT
+
+                else:
+                    output = _invoke(int(deadline.time_left.total_seconds()))
 
         if self.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
             self.logger.debug(f"Test duration '{self.test.duration}' exceeded.")
