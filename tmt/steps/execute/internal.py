@@ -8,6 +8,7 @@ import tmt.steps.execute
 import tmt.utils
 import tmt.utils.signals
 import tmt.utils.themes
+import tmt.utils.wait
 from tmt.container import container, field
 from tmt.guest import DEFAULT_PULL_OPTIONS, Guest
 from tmt.result import Result, ResultOutcome
@@ -395,14 +396,14 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         deadline: Optional[tmt.utils.wait.Deadline]
 
         if self.data.interactive:
-            logger.warning('Ignoring requested duration, not supported in interactive mode.')
-            logger.info('duration limit', 'unlimited')
+            logger.warning('Test duration is not effective due to interactive mode.')
+            logger.info('duration deadline', 'none')
 
             deadline = None
 
         elif self.data.ignore_duration:
             logger.debug("Test duration is not effective due to ignore-duration option.")
-            logger.info('duration limit', 'unlimited')
+            logger.info('duration deadline', 'none')
 
             deadline = None
 
@@ -411,8 +412,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
             if logger.verbosity_level >= 1:
                 logger.verbose(
-                    'duration limit',
-                    f"{deadline.time_left.total_seconds():.0f} seconds",
+                    'duration deadline',
+                    f'{deadline.time_left.total_seconds():.0f} seconds,'
+                    f' at {deadline.due_at.strftime("%H:%M:%S %Y-%m-%d %Z")}',
                     color="yellow",
                     shift=1 if self.verbosity_level < 2 else 2,
                     level=1,
