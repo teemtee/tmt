@@ -544,6 +544,8 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
                 if deadline.is_due:
                     self.return_code = ProcessExitCodes.TIMEOUT
 
+                    output = CommandOutput(None, None)
+
                 else:
                     output = _invoke(int(deadline.time_left.total_seconds()))
 
