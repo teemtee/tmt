@@ -1,0 +1,341 @@
+run:
+    root: /path/to/fmf_root
+    remove: false
+    environment:
+        RUN_ENV: run_value
+    context: {}
+    __class__:
+        module: tmt.recipe
+        name: _RecipeRun
+plans:
+  - name: /plans/non-existent
+    summary: A non-existent plan
+    description:
+    author: []
+    contact: []
+    enabled: true
+    order: 50
+    id:
+    tag: []
+    tier:
+    adjust: []
+    link: []
+    environment-from-fmf:
+        PLAN_ENV: plan_value
+    environment-from-importing: {}
+    environment-from-cli:
+        RUN_ENV: run_value
+    environment-from-intrinsics:
+        TMT_VERSION: version
+        TMT_TREE: /run_path/plans/non-existent/tree
+        TMT_PLAN_DATA: /run_path/plans/non-existent/data
+        TMT_PLAN_ENVIRONMENT_FILE: /run_path/plans/non-existent/data/variables.env
+        TMT_PLAN_SOURCE_SCRIPT: /run_path/plans/non-existent/data/plan-source-script.sh
+    discover:
+        enabled: true
+        phases:
+          - name: discover-fmf
+            how: fmf
+            order: 50
+            when: []
+            summary:
+            where: &id001 []
+            url:
+            url-content-type: git
+            ref:
+            dist-git-source: false
+            dist-git-type:
+            dist-git-download-only: false
+            dist-git-install-builddeps: false
+            dist-git-require: []
+            require-test: []
+            path:
+            test: []
+            link: []
+            filter: []
+            include: []
+            exclude: []
+            modified-only: false
+            modified-url:
+            modified-ref:
+            dist-git-init: false
+            dist-git-remove-fmf-root: false
+            dist-git-merge: false
+            dist-git-extract:
+            sync-repo: false
+            fmf-id: false
+            prune: false
+            adjust-tests: []
+            upgrade-path:
+            repository:
+            revision:
+            __class__:
+                module: tmt.steps.discover.fmf
+                name: DiscoverFmfStepData
+          - name: discover-shell
+            how: shell
+            order: 50
+            when: []
+            summary:
+            where: &id002 []
+            url:
+            url-content-type: git
+            ref:
+            dist-git-source: false
+            dist-git-type:
+            dist-git-download-only: false
+            dist-git-install-builddeps: false
+            dist-git-require: []
+            require-test: []
+            tests:
+              - name: /shell-test
+                test: /bin/true
+                summary:
+                description:
+                enabled: true
+                order: 50
+                link:
+                id:
+                tag: []
+                tier:
+                adjust: []
+                author: []
+                contact: []
+                component: []
+                path:
+                framework:
+                manual: false
+                tty: false
+                require: []
+                recommend: []
+                environment: {}
+                check: []
+                duration: 1h
+                result: respect
+                __class__:
+                    module: tmt.steps.discover.shell
+                    name: TestDescription
+            keep-git-metadata: false
+            __class__:
+                module: tmt.steps.discover.shell
+                name: DiscoverShellData
+        tests:
+          - name: /discover-fmf/tests/first
+            summary: First test
+            description:
+            author: []
+            contact: []
+            enabled: true
+            order: 50
+            id:
+            tag: []
+            tier:
+            adjust: []
+            component: []
+            framework: shell
+            manual: false
+            tty: false
+            duration: 5m
+            where: *id001
+            restart-on-exit-code: []
+            restart-max-count: 1
+            restart-with-reboot: false
+            serial-number: 1
+            discover-phase: discover-fmf
+            link: []
+            test: /bin/true
+            path: /discover-fmf/tests
+            require: []
+            recommend: []
+            environment:
+                TEST_ENV: test_value
+            result: respect
+            check: []
+            __class__:
+                module: tmt.recipe
+                name: _RecipeTest
+          - name: /discover-shell/shell-test
+            summary:
+            description:
+            author: []
+            contact: []
+            enabled: true
+            order: 50
+            id:
+            tag: []
+            tier:
+            adjust: []
+            component: []
+            framework: shell
+            manual: false
+            tty: false
+            duration: 1h
+            where: *id002
+            restart-on-exit-code: []
+            restart-max-count: 1
+            restart-with-reboot: false
+            serial-number: 2
+            discover-phase: discover-shell
+            link: []
+            test: /bin/true
+            path: /discover-shell/tests
+            require: []
+            recommend: []
+            environment: {}
+            result: respect
+            check: []
+            __class__:
+                module: tmt.recipe
+                name: _RecipeTest
+        __class__:
+            module: tmt.recipe
+            name: _RecipeDiscoverStep
+    provision:
+        enabled: true
+        phases:
+          - name: default-0
+            how: local
+            order: 50
+            when: []
+            summary:
+            role:
+            hardware:
+            -OPTIONLESS-FIELDS:
+              - primary_address
+              - topology_address
+              - facts
+            primary-address:
+            topology-address:
+            become: false
+            facts:
+                in-sync: false
+                arch:
+                distro:
+                kernel-release:
+                package-manager:
+                bootc-builder:
+                has-selinux:
+                has-systemd:
+                has-rsync:
+                is-superuser:
+                can-sudo:
+                sudo-prefix:
+                is-ostree:
+                is-toolbox:
+                toolbox-container-name:
+                is-container:
+                systemd-soft-reboot:
+                capabilities: {}
+                os-release-content: {}
+                lsb-release-content: {}
+                __class__:
+                    module: tmt.steps.provision
+                    name: GuestFacts
+            environment: {}
+            ansible:
+                group:
+                vars: {}
+                __class__:
+                    module: tmt.ansible
+                    name: GuestAnsible
+            __class__:
+                module: tmt.steps.provision.local
+                name: ProvisionLocalData
+        __class__:
+            module: tmt.recipe
+            name: _RecipeStep
+    prepare:
+        enabled: true
+        phases:
+          - name: default-0
+            how: shell
+            order: 50
+            when: []
+            summary:
+            where: []
+            script: []
+            url:
+            ref:
+            __class__:
+                module: tmt.steps.prepare.shell
+                name: PrepareShellData
+        __class__:
+            module: tmt.recipe
+            name: _RecipeStep
+    execute:
+        enabled: true
+        phases:
+          - name: default-0
+            how: tmt
+            order: 50
+            when: []
+            summary:
+            where: []
+            duration: 1h
+            ignore-duration: false
+            exit-first: false
+            script: []
+            interactive: false
+            restraint-compatible: false
+            no-progress-bar: false
+            __class__:
+                module: tmt.steps.execute.internal
+                name: ExecuteInternalData
+        results-path: plans/non-existent/execute/results.yaml
+        __class__:
+            module: tmt.recipe
+            name: _RecipeExecuteStep
+    report:
+        enabled: true
+        phases:
+          - name: default-0
+            how: display
+            order: 50
+            when: []
+            summary:
+            display-guest: auto
+            __class__:
+                module: tmt.steps.report.display
+                name: ReportDisplayData
+        __class__:
+            module: tmt.recipe
+            name: _RecipeStep
+    finish:
+        enabled: true
+        phases:
+          - name: default-0
+            how: shell
+            order: 50
+            when: []
+            summary:
+            where: []
+            script: []
+            url:
+            ref:
+            __class__:
+                module: tmt.steps.prepare.shell
+                name: PrepareShellData
+        __class__:
+            module: tmt.recipe
+            name: _RecipeStep
+    cleanup:
+        enabled: true
+        phases:
+          - name: default-0
+            how: tmt
+            order: 50
+            when: []
+            summary:
+            __class__:
+                module: tmt.steps.cleanup.internal
+                name: CleanupInternalData
+        __class__:
+            module: tmt.recipe
+            name: _RecipeStep
+    context: {}
+    __class__:
+        module: tmt.recipe
+        name: _RecipePlan
+__class__:
+    module: tmt.recipe
+    name: Recipe

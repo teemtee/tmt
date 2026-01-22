@@ -483,7 +483,6 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         Adjust test attributes such as path, where condition, and environment
 
         :param path: Original path used for discovery.
-        :param loaded_from_recipe: Whether the tests were loaded from a recipe.
         """
         for test_origin in self.tests():
             test = test_origin.test
@@ -499,8 +498,17 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             if bool(self.get('dist-git-source', False)):
                 test.environment['TMT_SOURCE_DIR'] = EnvVarValue(self.source_dir)
 
-            # Prefix test name and path if not loaded from a recipe
-            prefix = f'/{self.name}' if len(self.step.phases()) > 1 else ''
+    def apply_phase_prefix(self) -> None:
+        """
+        Apply phase name prefix to discovered tests
+        """
+
+        # Prefix test name only if multiple plugins configured
+        prefix = f'/{self.name}' if len(self.step.phases()) > 1 else ''
+
+        for test_origin in self.tests():
+            test = test_origin.test
+
             test.name = f"{prefix}{test.name}"
             test.path = Path(f"/{self.safe_name}{test.path}")
 
@@ -575,17 +583,15 @@ class Discover(tmt.steps.Step):
 
     @staticmethod
     def discover_tests(
-        phase: DiscoverPlugin[DiscoverStepData], logger: Optional[tmt.log.Logger] = None
+        phase: DiscoverPlugin[DiscoverStepData],
+        loaded_from_recipe: bool = False,
+        logger: Optional[tmt.log.Logger] = None,
     ) -> None:
         """
         Discover tests using the given phase.
         """
         path = phase.fetch_source()
         phase.checkout_ref()
-
-        loaded_from_recipe = (
-            phase.step.plan.my_run is not None and phase.step.plan.my_run.recipe is not None
-        )
 
         # Go and discover tests
         if loaded_from_recipe:
@@ -782,6 +788,8 @@ class Discover(tmt.steps.Step):
             self.actions()
             return
 
+        loaded_from_recipe = self.plan.my_run is not None and self.plan.my_run.recipe is not None
+
         # Perform test discovery, gather discovered tests
         for phase in self.phases(classes=(Action, DiscoverPlugin)):
             if isinstance(phase, Action):
@@ -791,15 +799,16 @@ class Discover(tmt.steps.Step):
                 if not phase.enabled_by_when:
                     continue
 
-                self.discover_tests(phase)
+                self.discover_tests(phase, loaded_from_recipe=loaded_from_recipe)
+
+                if not loaded_from_recipe:
+                    phase.apply_phase_prefix()
 
                 self._tests[phase.name] = [
                     test_origin.test for test_origin in phase.tests(enabled=True)
                 ]
 
-                # Prefix test name only if multiple plugins configured
                 prefix = f'/{phase.name}' if len(self.phases()) > 1 else ''
-
                 self._required_test_names[phase.name] = [
                     f"{prefix}{test_name}"
                     for test_name in cast(DiscoverStepData, phase.data).require_test

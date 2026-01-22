@@ -25,6 +25,10 @@ rlJournalStart
         rlAssertGrep "summary: 2 tests executed" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Test recipe loading with non-existent plan"
+        rlRun -s "tmt run -vvv --scratch --id $run --recipe non-existent-plan.yaml" 2 "Plan does not exist"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $run" 0 "Remove run directory"
