@@ -20,7 +20,7 @@ rlJournalStart
                 rlPhaseStartTest "Test provision $PROVISION_HOW, execute $execute_method, $tty, $interactive short tests"
                     rlRun -s "tmt $context --log-topic=command-events run --scratch -vfi $tmp -a provision -h $PROVISION_HOW execute -h $execute_method $interactive test --name short" 0
 
-                    rlRun "grep 'duration \"29\" exceeded' $tmp/log.txt" 1
+                    rlAssertNotGrep "Maximum test time .* exceeded'" $tmp/log.txt
                 rlPhaseEnd
 
                 rlPhaseStartTest "Test provision $PROVISION_HOW, execute $execute_method, $tty, $interactive long tests"
