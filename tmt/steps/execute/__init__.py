@@ -532,7 +532,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
                 self.return_code = tmt.utils.ProcessExitCodes.SUCCESS
 
             else:
-                raise GeneralError('Command produced no output but raised no exception')
+                raise GeneralError('Command produced no output but raised no exception.')
 
             return output
 
