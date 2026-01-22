@@ -394,14 +394,15 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             deadline = invocation.deadline
 
             if logger.verbosity_level >= 1:
-                logger.verbose(
-                    'duration deadline',
-                    f'{deadline.time_left.total_seconds():.0f} seconds,'
-                    f' at {deadline.due_at.strftime("%H:%M:%S %Y-%m-%d %Z")}',
-                    color="yellow",
-                    shift=1 if self.verbosity_level < 2 else 2,
-                    level=1,
-                )
+                with deadline:
+                    logger.verbose(
+                        'duration deadline',
+                        f'{deadline.time_left.total_seconds():.0f} seconds,'
+                        f' at {deadline.due_at.strftime("%H:%M:%S %Y-%m-%d %Z")}',
+                        color="yellow",
+                        shift=1 if self.verbosity_level < 2 else 2,
+                        level=1,
+                    )
 
         # And invoke the test process.
         output = invocation.invoke_test(

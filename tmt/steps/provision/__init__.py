@@ -560,7 +560,7 @@ class BootMarkBootTime(BootMark):
 
     @classmethod
     def fetch(cls, guest: 'Guest') -> str:
-        stdout = guest.execute(Command("cat", "/proc/stat")).stdout
+        stdout = guest.execute(Command("cat", "/proc/stat"), silent=True).stdout
 
         assert stdout
 

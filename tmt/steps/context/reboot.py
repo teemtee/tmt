@@ -143,7 +143,7 @@ class RebootContext(HasEnvironment):
             waiting = Waiting(deadline=Deadline.from_seconds(reboot_data.timeout))
 
             os.remove(self.request_path)
-            self.guest.execute(ShellScript(f'rm -f {self.request_path}'))
+            self.guest.execute(ShellScript(f'rm -f {self.request_path}'), silent=True)
 
             def _handle_run_error(error: tmt.utils.RunError) -> NoReturn:
                 if reboot_command is not None:

@@ -443,8 +443,8 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
         :param interactive: if set, the command would be executed in an interactive
             manner, i.e. with stdout and stdout connected to terminal for live
             interaction with user.
-        :param deadline: if set, command would be interrupted, if still running,
-            after reaching this deadline.
+        :param deadline: if set, the test would be interrupted once reaching
+            this deadline.
         :param log: a logging function to use for logging of command output. By
             default, ``logger.debug`` is used.
         :returns: command output.
