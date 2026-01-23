@@ -1,0 +1,3 @@
+description: |
+    Adding missing skipped/error tags to :ref:`/plugins/report/junit`
+    report template and include pending state in these reports as error.
