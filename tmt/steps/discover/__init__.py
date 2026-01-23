@@ -457,6 +457,8 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         """
         import tmt.libraries
 
+        library_failures: dict[str, set[str]] = defaultdict(set)
+
         for test_origin in self.tests():
             test = test_origin.test
             if test.require or test.recommend:
@@ -468,6 +470,37 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
                     source_location=source,
                     target_location=target,
                 )
+
+                unresolved_dependencies = [
+                    dependency
+                    for dependency in (*test.require, *test.recommend)
+                    if not isinstance(dependency, tmt.base.DependencySimple)
+                ]
+
+                library_names = {
+                    (dependency.name or '/')
+                    for dependency in unresolved_dependencies
+                    if isinstance(dependency, tmt.base.DependencyFmfId)
+                }
+
+                for library_name in library_names:
+                    library_failures[library_name].add(test.name)
+
+        if library_failures:
+            # Report all failures in one go so users can fix multiple tests
+            # without rerunning tmt repeatedly.
+            lines: list[str] = []
+
+            for library_name in sorted(library_failures.keys()):
+                tests = ', '.join(f"'{name}'" for name in sorted(library_failures[library_name]))
+                lines.append(
+                    f"Failed to process beakerlib libraries ({library_name}) for test {tests}."
+                )
+
+            for line in lines:
+                self._logger.fail(line)
+
+            raise tmt.utils.DiscoverError('Failed to process beakerlib libraries.')
 
     def apply_policies(self) -> None:
         """
