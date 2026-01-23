@@ -357,32 +357,32 @@ def mock_guest_and_pm():
     return mock_guest, mock_package_manager
 
 
-def test_id_extraction(root_logger):
+def test_id_extraction(artifact_provider):
     """Test provider ID extraction from raw provider ID"""
 
     # Valid provider ID
     raw_id = "repository-file:https://download.docker.com/linux/centos/docker-ce.repo"
-    provider = RepositoryFileProvider(raw_id, root_logger)
+    provider = artifact_provider(raw_id)
     assert provider.id == "https://download.docker.com/linux/centos/docker-ce.repo"
 
 
-def test_artifacts_before_fetch(mock_repo_file_fetch, root_logger):
+def test_artifacts_before_fetch(mock_repo_file_fetch, artifact_provider):
     """Test that repository provider artifacts returns empty list"""
 
-    provider = RepositoryFileProvider("repository-file:https://example.com/test.repo", root_logger)
+    provider = artifact_provider("repository-file:https://example.com/test.repo")
 
     # Repository providers don't enumerate individual artifacts
     # They provide repositories that the package manager uses
     assert provider.artifacts == []
 
 
-def test_fetch_contents(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tmppath):
+def test_fetch_contents(mock_repo_file_fetch, mock_guest_and_pm, artifact_provider, tmppath):
     """Test that fetch_contents is a no-op for repository providers"""
 
     mock_guest, mock_package_manager = mock_guest_and_pm
 
-    provider = RepositoryFileProvider(
-        "repository-file:https://download.docker.com/linux/centos/docker-ce.repo", root_logger
+    provider = artifact_provider(
+        "repository-file:https://download.docker.com/linux/centos/docker-ce.repo"
     )
 
     # Call fetch_contents
@@ -400,13 +400,15 @@ def test_fetch_contents(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tm
     assert len(artifacts) == 0
 
 
-def test_contribute_to_shared_repo(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tmppath):
+def test_contribute_to_shared_repo(
+    mock_repo_file_fetch, mock_guest_and_pm, artifact_provider, tmppath
+):
     """Test that contribute_to_shared_repo does nothing for repository providers"""
 
     mock_guest, mock_package_manager = mock_guest_and_pm
 
-    provider = RepositoryFileProvider(
-        "repository-file:https://download.docker.com/linux/centos/docker-ce.repo", root_logger
+    provider = artifact_provider(
+        "repository-file:https://download.docker.com/linux/centos/docker-ce.repo"
     )
 
     # Call contribute_to_shared_repo
@@ -424,13 +426,13 @@ def test_contribute_to_shared_repo(mock_repo_file_fetch, mock_guest_and_pm, root
     assert provider.artifacts == []
 
 
-def test_get_repositories(mock_repo_file_fetch, mock_guest_and_pm, root_logger, tmppath):
+def test_get_repositories(mock_repo_file_fetch, mock_guest_and_pm, artifact_provider, tmppath):
     """Test that get_repositories returns the initialized repository"""
 
     mock_guest, _ = mock_guest_and_pm
 
-    provider = RepositoryFileProvider(
-        "repository-file:https://download.docker.com/linux/centos/docker-ce.repo", root_logger
+    provider = artifact_provider(
+        "repository-file:https://download.docker.com/linux/centos/docker-ce.repo"
     )
 
     # First, fetch_contents must be called to initialize the repository

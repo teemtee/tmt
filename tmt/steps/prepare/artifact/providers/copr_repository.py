@@ -43,8 +43,8 @@ class CoprRepositoryProvider(ArtifactProvider[RpmArtifactInfo]):
 
     copr_repo: str  # Parsed Copr repository name (e.g. 'packit/packit-dev')
 
-    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
-        super().__init__(raw_provider_id, logger)
+    def __init__(self, raw_provider_id: str, repository_priority: int, logger: tmt.log.Logger):
+        super().__init__(raw_provider_id, repository_priority, logger)
         self.copr_repo = self.id
 
     @classmethod

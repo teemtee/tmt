@@ -17,12 +17,12 @@ from tmt.utils import Path
         ("package-*.rpm", {f"package-{i}.rpm" for i in range(3)}),
     ],
 )
-def test_file_artifact_provider_patterns(root_logger, tmp_path, pattern, expected_names):
+def test_file_artifact_provider_patterns(tmp_path, pattern, expected_names, artifact_provider):
     # Create test files
     for name in expected_names:
         (tmp_path / name).touch()
 
-    provider = PackageAsFileArtifactProvider(f"file:{tmp_path}/{pattern}", root_logger)
+    provider = artifact_provider(f"file:{tmp_path}/{pattern}")
     artifacts = provider.artifacts
 
     assert len(artifacts) == len(expected_names)
@@ -30,14 +30,14 @@ def test_file_artifact_provider_patterns(root_logger, tmp_path, pattern, expecte
     assert all(Path(a.location).exists() for a in artifacts)
 
 
-def test_file_artifact_provider_deduplicates_globs(root_logger, tmp_path, caplog):
+def test_file_artifact_provider_deduplicates_globs(tmp_path, caplog, artifact_provider):
     # Create multiple subdirectories with identical files
     for dirname in ("foo", "bar"):
         subdir = tmp_path / dirname
         subdir.mkdir()
         (subdir / "baz.rpm").touch()
 
-    provider = PackageAsFileArtifactProvider(f"file:{tmp_path}/*/baz.rpm", root_logger)
+    provider = artifact_provider(f"file:{tmp_path}/*/baz.rpm")
     artifacts = provider.artifacts
 
     assert len(artifacts) == 1
@@ -45,16 +45,16 @@ def test_file_artifact_provider_deduplicates_globs(root_logger, tmp_path, caplog
     assert "Duplicate artifact" in caplog.text
 
 
-def test_download_artifact(root_logger, tmp_path):
+def test_download_artifact(tmp_path, artifact_provider):
     # Test file download
     test_file = tmp_path / "foo.rpm"
     test_file.touch()
-    file_provider = PackageAsFileArtifactProvider(f"file:{test_file}", root_logger)
+    file_provider = artifact_provider(f"file:{test_file}")
     guest = MagicMock()
     file_provider._download_artifact(file_provider.artifacts[0], guest, Path("/remote/foo.rpm"))
     guest.push.assert_called_once()
 
     # Test URL download
-    url_provider = PackageAsFileArtifactProvider("file:https://example.com/foo.rpm", root_logger)
+    url_provider = artifact_provider("file:https://example.com/foo.rpm")
     url_provider._download_artifact(url_provider.artifacts[0], guest, Path("/remote/foo.rpm"))
     guest.execute.assert_called_once()
