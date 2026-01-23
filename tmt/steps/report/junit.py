@@ -221,7 +221,11 @@ class ResultsContext(ImplementProperties):
         Returns results of skipped tests
         """
 
-        return [r for r in self._results if r.result in (ResultOutcome.SKIP, ResultOutcome.INFO)]
+        return [
+            r
+            for r in self._results
+            if r.result in (ResultOutcome.SKIP, ResultOutcome.INFO, ResultOutcome.PENDING)
+        ]
 
     @functools.cached_property
     def failed(self) -> list[ResultWrapper]:
