@@ -1,0 +1,18 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: container
+    prepare:
+        how: artifact
+        provide:
+          - copr.repository:mariobl/pyspread
+    execute:
+        how: tmt
+
+/test:
+    test: ./test.sh
+    duration: 5m
+    summary: Verify pyspread from copr repository
+    require:
+      - pyspread
