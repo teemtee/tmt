@@ -68,14 +68,6 @@ class TmtAutodocDirective(
                 location=self.get_location(),
             )
 
-    @cached_property
-    def tmt_domain(self) -> "TmtDomain":
-        from .domain import TmtDomain
-
-        domain = self.env.domains.get("tmt")
-        assert isinstance(domain, TmtDomain)  # narrow type
-        return domain
-
     def _get_tmt_tree(self) -> None:
         """
         Get the :py:attr:`tmt_tree` from options or config value.
