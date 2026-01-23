@@ -136,11 +136,19 @@ properties:
         additionalProperties: false
 
         properties:
-          # https://github.com/teemtee/tmt/issues/1258
-          url: true
-          ref: true
-          path: true
-          name: true
+          url:
+            # https://github.com/teemtee/tmt/issues/1258
+            type: string
+
+          ref:
+            type: string
+
+          path:
+            type: string
+
+          name:
+            type: string
+            format: regex
 
           importing:
             type: string

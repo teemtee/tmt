@@ -121,12 +121,24 @@ definitions:
     additionalProperties: false
 
     properties:
-      url: true
-      ref: true
-      path: true
-      name: true
-      nick: true
-      type: true
+      url:
+        type: string
+
+      ref:
+        type: string
+
+      path:
+        type: string
+
+      name:
+        type: string
+        pattern: "^/"
+
+      nick:
+        type: string
+
+      type:
+        $ref: "/schemas/common#/definitions/require_type"
 
     required:
       - type
@@ -243,20 +255,36 @@ definitions:
     additionalProperties: false
 
     properties:
-      url: true
-      ref: true
-      path: true
-      name: true
+      url:
+        type: string
+
+      ref:
+        type: string
+
+      path:
+        type: string
+
+      name:
+        type: string
+        pattern: "^/"
 
   # helper used by beakerlib_library and fmf_id
   fmf_id_base:
     type: object
     minProperties: 1
     properties:
-      url: true
-      ref: true
-      path: true
-      name: true
+      url:
+        type: string
+
+      ref:
+        type: string
+
+      path:
+        type: string
+
+      name:
+        type: string
+        pattern: "^/"
 
   require_file:
     type: object
