@@ -1,6 +1,7 @@
 summary: Spin and observe reboot behavior
 test: ./test.sh
 framework: beakerlib
+duration: 15m
 require:
   - procps-ng
   - psmisc
