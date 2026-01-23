@@ -1,3 +1,17 @@
+"""
+Autodoc helpers for creating sphinx objects from real tmt objects.
+
+Similar to the python's autodoc extension, the purpose of these is to convert
+the source documentation of the real tmt object and format it in an RST text to
+be consumed by the main sphinx directives describing the tmt object.
+
+Sphinx's (python) autodoc extension is tied explicitly to the python domain and
+cannot be reused for a third-party domain. Each domain **must** define their
+own autodoc directives.
+
+This module primarily provides helpers for constructing the RST documentation.
+"""
+
 import abc
 import copy
 import itertools
@@ -23,7 +37,8 @@ LIST_INDENT = 2
 #  (it would be much easier since it doesn't need to handle indents)
 class Content(StringList):
     """
-    Wrapper around ``StringList`` with helper functions for formatting rst contents.
+    Wrapper around :py:class:``docutils.statemachine.StringList`` with helper
+    functions for formatting RST contents.
     """
 
     #: Current rst content indent of the content
@@ -211,7 +226,8 @@ class Content(StringList):
 
 class AutodocDirectiveBase(SphinxDirective, abc.ABC):
     """
-    A base class for out autodoc directives.
+    Base class for :py:class:`tmt_domain.base.AutodocDirective` handling the
+    sphinx logic of rendering the content.
     """
 
     content: Content
@@ -226,7 +242,10 @@ class AutodocDirectiveBase(SphinxDirective, abc.ABC):
     @abc.abstractmethod
     def _generate_autodoc_content(self) -> None:
         """
-        Main method generating the actual contents.
+        Main method generating the actual documentation contents.
+
+        This **must** include the main directive of the documented object
+        wrapping the content to be rendered under it.
         """
         raise NotImplementedError
 

@@ -1,3 +1,15 @@
+"""
+Base definitions for the tmt sphinx domain.
+
+The base directives are split into a:
+ * :py:class:`TmtObjectDirective` describing the sphinx object being documented
+   and interacting primarily with the sphinx documenter.
+ * :py:class:`TmtAutodocDirective` constructing the contents to be used by the
+   :py:class:`TmtObjectDirective` from real tmt objects.
+
+This split is similar to the python sphinx domain workflow.
+"""
+
 import abc
 import typing
 from functools import cached_property
@@ -21,8 +33,15 @@ logger = logging.getLogger(__name__)
 
 
 class TmtDirective(SphinxDirective, abc.ABC):
+    """
+    The base for all directives under the tmt sphinx domain.
+    """
+
     @cached_property
     def tmt_domain(self) -> "TmtDomain":
+        """
+        Tmt domain object of the current sphinx project.
+        """
         from .domain import TmtDomain
 
         domain = self.env.domains.get("tmt")
@@ -36,9 +55,21 @@ class TmtObjectDirective(
     abc.ABC,
     Generic[ObjDescT],
 ):
-    pass
+    # TODO: Figure out what the ObjDescT should point to
+    # Note: Cannot always use this directive because it implies a very specific
+    # format of the output html object e.g. requiring a signature node.
+    # https://github.com/sphinx-doc/sphinx/issues/14042
+    """
+    Base directive describing a tmt object.
+
+    The documented tmt object is that of
+    :py:attr:`tmt_domain.domain.TmtDomain.objects`, and represent the abstract
+    description of the tmt object. The object being described may not represent
+    a real tmt object.
+    """
 
 
+#: Actual tmt object being documented
 TmtObjT = typing.TypeVar('TmtObjT')
 
 
@@ -48,6 +79,14 @@ class TmtAutodocDirective(
     abc.ABC,
     Generic[TmtObjT],
 ):
+    """
+    Base directive for documenting a real tmt object.
+
+    The purpose of these directives is to process the real tmt object and
+    generate its documentation in an RST format to be consumed by an equivalent
+    :py:class:`TmtObjectDirective` directive.
+    """
+
     required_arguments = 1
     option_spec = {
         "tmt_tree": directives.unchanged_required,

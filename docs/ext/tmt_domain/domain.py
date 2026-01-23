@@ -1,3 +1,7 @@
+"""
+Main definition of the ``tmt`` domain.
+"""
+
 import typing
 from collections.abc import Iterable
 from functools import cached_property
@@ -23,6 +27,15 @@ logger = logging.getLogger(__name__)
 
 
 class TmtDomain(Domain):
+    """
+    Sphinx domain for documenting and referencing tmt objects.
+
+    For more details see :ref:`tutorial-adding-domain`, and the upstream
+    implementations of :py:class`sphinx.domains.Domain`,
+    :py:class`sphinx.domains.python.PythonDomain`.
+    """
+
+    # Required attributes to setup the domain.
     name = "tmt"
     label = "Internal tmt sphinx domain"
     roles = {}
@@ -35,21 +48,55 @@ class TmtDomain(Domain):
     }
     data_version = 0
 
+    # tmt domain specific helper functions.
     @cached_property
     def tmt_logger(self) -> tmt.log.Logger:
+        """
+        Tmt logger adjusted to work with Sphinx's logger.
+        """
         # TODO: Figure out how to pass it the logger.logger and how to skip all the messages
         return tmt.log.Logger.create(quiet=True)
 
     @property
     def tmt_trees(self) -> dict["Path", tmt.Tree]:
+        """
+        Tmt trees being processed in the current sphinx project.
+
+        The keys are the paths to the root of the tmt trees, or any other
+        paths under it. Many paths can point to the same tmt tree object.
+        """
         return self.data.setdefault("tmt_trees", {})
 
     @property
     def objects(self) -> dict[str, dict[str, "IndexEntry"]]:
+        """
+        Sphinx objects being documented.
+
+        This mimics :py:attr`sphinx.domains.python.PythonDomain.objects`,
+        with an additional layer.
+
+        The outermost dict structure is:
+          * key: the type of objects documented, related to
+            :py:attr`object_types` keys
+          * value: a dict of documented objects of the given type
+
+        The inner dict structure is:
+          * key: the canonical name of the object as referenced by the roles
+          * value: the object's referencing information
+        """
         # TODO: The objects should belong to a tmt tree
         return self.data.setdefault("objects", {})
 
     def note_object(self, typ: str, name: str, entry: "IndexEntry") -> None:
+        """
+        Record a documented object's referencing information.
+
+        This mimics :py:attr`sphinx.domains.python.PythonDomain.note_object`.
+
+        :param typ: the object's type as used in :py:attr:`objects`
+        :param name: the object's canonical name as used in :py:attr:`objects`
+        :param entry: the object's referencing information
+        """
         typ_objects = self.objects.setdefault(typ, {})
         other_object = typ_objects.get(name)
         if other_object:
@@ -59,6 +106,7 @@ class TmtDomain(Domain):
             )
         typ_objects[name] = entry
 
+    # Overrides of necessary Domain methods.
     def resolve_xref(
         self,
         env: "BuildEnvironment",
