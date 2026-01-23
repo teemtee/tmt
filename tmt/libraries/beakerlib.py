@@ -29,6 +29,7 @@ LIBRARY_REGEXP = re.compile(r'^library\(([^/]+)(/[^)]+)\)$')
 DEFAULT_REPOSITORY_TEMPLATE = 'https://github.com/beakerlib/{repository}'
 DEFAULT_DESTINATION = 'libs'
 
+# TODO: This can probably be dropped? Why do we strip the .git only for some?
 # List of git forges for which the .git suffix should be stripped
 STRIP_SUFFIX_FORGES = [
     'https://github.com',
@@ -347,8 +348,8 @@ class BeakerLibFromUrl(BeakerLib):
         # Strip the '.git' suffix from url for known forges
         url = identifier.url
         for forge in STRIP_SUFFIX_FORGES:
-            if url.startswith(forge) and url.endswith('.git'):
-                url = url.rstrip('.git')
+            if url.startswith(forge):
+                url = url.removesuffix('.git')
         repo = identifier.nick
         if not repo:
             repo_search = re.search(r'/([^/]+?)(/|\.git)?$', url)
