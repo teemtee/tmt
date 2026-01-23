@@ -13,11 +13,9 @@ rlJournalStart
         setup_distro_environment
     rlPhaseEnd
 
-    rlPhaseStartTest "Test repository-url provider with command-line override"
+    rlPhaseStartTest "Test repository-url provider"
         rlRun "tmt run -i $run --scratch -vv --all \
-            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
-            prepare --how artifact \
-                --provide repository-url:https://packages.microsoft.com/yumrepos/vscode/" 0 "Run with repository-url provider"
+            provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name" 0 "Run with repository-url provider"
     rlPhaseEnd
 
     rlPhaseStartCleanup
