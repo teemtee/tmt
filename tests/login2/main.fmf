@@ -98,7 +98,7 @@
     tag: [login, test-mode, when]
 
 /t-05-test-mode-step-finish:
-    summary: T-05 Login -t --step finish (override)
+    summary: T-05 Login -t --step finish (additive)
     test: ./t-05-test-mode-step-finish.sh
     tag: [login, test-mode, step]
 
@@ -291,6 +291,21 @@
 /e-12-test-mode-when-fail-all-fail:
     summary: E-12 Login -t --when fail (all tests fail)
     test: ./e-12-test-mode-when-fail-all-fail.sh
+    tag: [login, edge]
+
+/e-13-test-mode-step-execute-finish:
+    summary: E-13 Login -t --step execute --step finish (both steps)
+    test: ./e-13-test-mode-step-execute-finish.sh
+    tag: [login, edge]
+
+/e-14-test-mode-single-test:
+    summary: E-14 Login -t with single test
+    test: ./e-14-test-mode-single-test.sh
+    tag: [login, edge]
+
+/e-15-test-mode-local-provision:
+    summary: E-15 Login -t with local provision
+    test: ./e-15-test-mode-local-provision.sh
     tag: [login, edge]
 
 # Result variations

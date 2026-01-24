@@ -3,20 +3,23 @@
 # =========================================
 #
 # WHAT THIS TESTS:
-#   Combined test mode, conditional filter, and explicit step override.
+#   Combined test mode, conditional filter, and explicit step - additive behavior.
 #
 # TEST COMMAND:
 #   tmt run -ar provision -h container login -t --when fail --step finish -c true
 #
 # EXPECTED BEHAVIOR:
-#   - With explicit `--step finish`, per-test behavior is DISABLED
-#   - Login should occur in finish step IF any test failed
-#   - NOT per-test (even though `-t` is used)
-#   - With pass + fail tests, should see 1 login in finish (not per-test)
+#   - `-t --when fail` provides per-test login after each failing test (in execute)
+#   - `--step finish` adds an additional login in finish step
+#   - Both behaviors COMBINE (additive)
+#   - With pass + fail tests, should see 2 logins:
+#     * 1 login after the failing test (in execute)
+#     * 1 login in finish step
 #
 # KEY POINT:
-#   Explicit `--step finish` overrides the `-t` per-test behavior.
-#   The `--when fail` condition is evaluated in finish step.
+#   `-t` always means per-test login in execute (filtered by --when).
+#   Explicit `--step finish` adds another login in finish.
+#   The `--when fail` condition applies to both steps.
 #
 # TEST DATA:
 #   - pass test: exits with 0

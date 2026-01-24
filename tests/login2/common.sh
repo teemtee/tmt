@@ -26,9 +26,9 @@
 #   - `login -t --when fail` only logs in after failing tests (in execute)
 #   - No duplicate login in finish step
 #
-# EXCEPTION: Explicit `--step` should override this implicit behavior:
-#   - `login -t --step finish` → login in finish step (intentional, not per-test)
-#   - `login -t --when fail --step finish` → login in finish if any test fails
+# ADDITIVE BEHAVIOR: Explicit `--step` combines with `-t`:
+#   - `login -t --step finish` → login per-test (execute) AND also at finish
+#   - `login -t --when fail --step finish` → login after failing tests (execute) AND at finish if any failed
 #
 # === Test Categories ===
 #   B-01 to B-15: Base scenarios (default behavior without -t flag)
@@ -47,7 +47,7 @@
 # 2. Test Mode (-t):
 #    - `-t` means "per-test" during execute step
 #    - Without explicit `--step execute`, `-t` should implicitly add `--step execute`
-#    - `-t` with explicit `--step finish` disables per-test behavior, logs once at end
+#    - `-t` with explicit `--step finish` is ADDITIVE: logs per-test AND at finish
 #
 # 3. When Conditions:
 #    - `--when RESULT` filters when login should occur based on test results
@@ -64,8 +64,9 @@
 #    - `report`: Guests available → Login works
 #
 # 5. Multiple Steps:
-#    - `--step execute:finish` means login in BOTH steps
-#    - Order matters: `--step execute:finish` vs `--step finish:execute`
+#    - Multiple `--step` options are ADDITIVE
+#    - `--step execute --step finish` means login in BOTH steps
+#    - Order doesn't matter for different steps
 
 # =============================================================================
 # Setup and Cleanup Functions

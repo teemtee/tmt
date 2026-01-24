@@ -9,7 +9,7 @@
 #   tmt run -ar provision -h container login -t --step execute --step finish -c true
 #
 # EXPECTED BEHAVIOR:
-#   - `--step execute:finish` means login in BOTH steps
+#   - `--step execute --step finish` means login in BOTH steps
 #   - In execute step: per-test login (because of `-t`)
 #   - In finish step: single login at end
 #   - With 2 tests: should see 3 logins total (2 per-test + 1 in finish)

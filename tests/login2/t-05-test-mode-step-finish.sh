@@ -1,23 +1,23 @@
 #!/bin/bash
-# T-05: Login -t --step finish (override)
+# T-05: Login -t --step finish (additive)
 # ========================================
 #
 # WHAT THIS TESTS:
-#   Test mode with explicit `--step finish` option override.
+#   Test mode with explicit `--step finish` option - additive behavior.
 #
 # TEST COMMAND:
 #   tmt run -ar provision -h container login -t --step finish -c true
 #
 # EXPECTED BEHAVIOR:
-#   - When explicit `--step finish` is given with `-t`, it overrides the
-#     implicit `--step execute` behavior
-#   - Login should occur ONCE in finish step (not per-test)
-#   - This is the EXCEPTION to the rule - user explicitly wants finish step
-#   - With 2 tests, should see exactly 1 login (in finish, not per-test)
+#   - `-t` provides per-test login during execute step
+#   - `--step finish` adds an additional login in finish step
+#   - Both behaviors COMBINE (additive)
+#   - With 2 tests, should see exactly 3 logins (2 per-test + 1 at finish)
 #
 # KEY POINT:
-#   Explicit `--step` ALWAYS overrides the implicit `-t` behavior.
-#   This allows intentional finish-step login when desired.
+#   `-t` always means per-test login in execute.
+#   Explicit `--step` adds additional login points.
+#   This allows both per-test debugging AND final inspection.
 #
 # TEST DATA:
 #   - 2 passing tests
@@ -35,10 +35,12 @@ rlJournalStart
         login2_create_tests 2
     rlPhaseEnd
 
-    rlPhaseStartTest "Login -t --step finish (override)"
+    rlPhaseStartTest "Login -t --step finish (additive)"
         rlRun -s "tmt run -ar provision -h container login -t --step finish -c true"
         rlAssertGrep "interactive" "$rlRun_LOG"
-        login2_assert_login_count 1
+        login2_assert_login_count 3
+        # Verify logins in both execute and finish steps
+        rlRun "grep '^    execute$' -A20 '$rlRun_LOG' | grep -c interactive" 0 "Logins in execute"
         login2_assert_login_in_step "finish"
     rlPhaseEnd
 
