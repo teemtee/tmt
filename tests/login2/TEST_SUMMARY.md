@@ -1,6 +1,6 @@
 # TMT Login Command Test Suite Summary
 
-This document describes all 62 test scenarios for the `tmt login` command, covering various combinations of options including `-t` (test mode), `--when` (conditional login), `--step` (login at specific step), and result types.
+This document describes all 65 test scenarios for the `tmt login` command, covering various combinations of options including `-t` (test mode), `--when` (conditional login), `--step` (login at specific step), and result types.
 
 ---
 
@@ -45,7 +45,7 @@ This ensures that:
 
 1. **Document all scenarios**: Create comprehensive test coverage for all possible `login` command combinations
 2. **Define expected behavior**: Establish clear rules for how each option combination should work
-3. **Create test suite**: Write 62 beakerlib tests that verify the correct behavior
+3. **Create test suite**: Write 65 beakerlib tests that verify the correct behavior
 4. **Fix the bug**: Implement the solution in PR #1933
 5. **Verify with tests**: Run the test suite to ensure the fix works and doesn't break existing functionality
 
@@ -57,9 +57,9 @@ This ensures that:
 | **Test Mode (T-01 to T-12)** | Per-test login with `-t` flag | 12 |
 | **Combined (C-01 to C-10)** | Multiple option combinations | 10 |
 | **Multiple Conditions (M-01 to M-08)** | Multiple `--when` clauses | 8 |
-| **Edge Cases (E-01 to E-12)** | Boundary conditions | 12 |
+| **Edge Cases (E-01 to E-15)** | Boundary conditions | 15 |
 | **Result Variations (R-01 to R-05)** | Different result types | 5 |
-| **Total** | | **62** |
+| **Total** | | **65** |
 
 ---
 
@@ -157,7 +157,7 @@ Tests with multiple `--when` clauses.
 
 ---
 
-## E-01 to E-12: Edge Cases
+## E-01 to E-15: Edge Cases
 
 Boundary conditions and special scenarios.
 
@@ -175,6 +175,9 @@ Boundary conditions and special scenarios.
 | **E-10** | Login -t --step discover | `login -t --step discover -c true` | Error: No guests ready during discover |
 | **E-11** | Login -t --step report | `login -t --step report -c true` | Single login in report step (not per-test) |
 | **E-12** | Login -t --when fail (all fail) | `login -t --when fail -c true` (all fail) | Login after each failing test (3 logins) |
+| **E-13** | Login -t --step execute:finish | `login -t --step execute:finish -c true` | Login in execute (per-test) AND finish steps |
+| **E-14** | Login -t with single test | `login -t -c true` (1 test) | 1 login in execute (matches Issue #1918 scenario) |
+| **E-15** | Login -t with local provision | `login -t -c true` (local provision) | Login per-test with local provision |
 
 ---
 
