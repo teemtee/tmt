@@ -1,6 +1,30 @@
 #!/bin/bash
-# B-11: Login --when pass --step execute
-# Expected: Login in execute step only if test passes
+# TEST-NAME: Login with --when pass --step execute
+# ====================
+#
+# WHAT THIS TESTS:
+#   Tests that conditional login (--when pass) works when combined with
+#   explicit step specification (--step execute), triggering login in
+#   the execute step only if tests pass.
+#
+# TEST COMMAND:
+#   tmt run -ar provision -h container login --when pass --step execute -c true
+#
+# EXPECTED BEHAVIOR:
+#   - Login should occur in the execute step (after all tests)
+#   - Login should only trigger if at least one test passes
+#   - Login should not occur in the finish step
+#
+# KEY POINT:
+#   This tests combining conditional login (--when pass) with explicit step
+#   specification, demonstrating that the condition is evaluated at the
+#   end of the specified step.
+#
+# TEST DATA:
+#   - Creates one passing test
+#
+# SEE ALSO:
+#   TEST_SUMMARY.md - Section B-11
 
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ./common.sh || exit 1

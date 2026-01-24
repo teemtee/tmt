@@ -1,6 +1,29 @@
 #!/bin/bash
-# E-04: Login -t --step execute
-# Expected: N logins (redundant but should work)
+# TEST-NAME: Edge case - test mode with explicit --step execute (redundant)
+# ====================
+#
+# WHAT THIS TESTS:
+#   Tests that explicitly specifying --step execute with -t flag is
+#   redundant but should still work correctly, resulting in per-test login.
+#
+# TEST COMMAND:
+#   tmt run -ar provision -h container login -t --step execute -c true
+#
+# EXPECTED BEHAVIOR:
+#   - Login should occur twice (once per test)
+#   - The --step execute is redundant since -t already implies execute step
+#   - Behavior should be identical to using -t alone
+#
+# KEY POINT:
+#   The -t flag implicitly adds --step execute. Explicitly specifying it
+#   should not change behavior - it's redundant but harmless. This tests
+#   that the redundancy is handled correctly.
+#
+# TEST DATA:
+#   - Creates two normal passing tests
+#
+# SEE ALSO:
+#   TEST_SUMMARY.md - Section E-04
 
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ./common.sh || exit 1

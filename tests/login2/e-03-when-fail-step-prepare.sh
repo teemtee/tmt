@@ -1,6 +1,29 @@
 #!/bin/bash
-# E-03: Login --when fail --step prepare
-# Expected: No login or error (--when with step before execute)
+# TEST-NAME: Edge case - --when with --step prepare
+# ====================
+#
+# WHAT THIS TESTS:
+#   Tests the edge case of combining conditional login (--when fail) with
+#   a step before execute (--step prepare), where test results don't exist yet.
+#
+# TEST COMMAND:
+#   tmt run -ar provision -h container login --when fail --step prepare -c true
+#
+# EXPECTED BEHAVIOR:
+#   - Behavior is undefined for --when with steps before execute
+#   - The test documents actual behavior (may change or error)
+#   - This is a future-looking scenario (prepare before results are known)
+#
+# KEY POINT:
+#   This is an edge case because --when conditions depend on test results,
+#   but prepare step occurs before tests execute. The behavior is
+#   intentionally undefined/documented for future consideration.
+#
+# TEST DATA:
+#   - Creates one failing test (prepare step is explicitly enabled)
+#
+# SEE ALSO:
+#   TEST_SUMMARY.md - Section E-03
 
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ./common.sh || exit 1

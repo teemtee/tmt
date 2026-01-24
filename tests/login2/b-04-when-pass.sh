@@ -1,6 +1,28 @@
 #!/bin/bash
-# B-04: Login --when pass
-# Expected: Login in finish only if all tests passed
+# TEST-NAME: Login with --when pass option
+# ====================
+#
+# WHAT THIS TESTS:
+#   Tests that login occurs only when all test results are pass,
+#   and the login happens in the finish step (default step behavior).
+#
+# TEST COMMAND:
+#   tmt run -ar provision -h container login --when pass -c true
+#
+# EXPECTED BEHAVIOR:
+#   - Login should occur in the finish step
+#   - Login should only trigger if at least one test passes
+#   - No login should occur if no tests pass
+#
+# KEY POINT:
+#   This tests conditional login behavior with the pass result type,
+#   using the default step (finish) since no --step is specified.
+#
+# TEST DATA:
+#   - Creates two tests that both pass
+#
+# SEE ALSO:
+#   TEST_SUMMARY.md - Section B-04
 
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ./common.sh || exit 1

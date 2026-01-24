@@ -1,6 +1,28 @@
 #!/bin/bash
-# E-05: Login -t --when pass (all tests pass)
-# Expected: Login after every test (all meet condition)
+# TEST-NAME: Edge case - test mode with all tests passing
+# ====================
+#
+# WHAT THIS TESTS:
+#   Tests that test mode (-t) with --when pass results in per-test login
+#   after every test when ALL tests pass (all meet the condition).
+#
+# TEST COMMAND:
+#   tmt run -ar provision -h container login -t --when pass -c true
+#
+# EXPECTED BEHAVIOR:
+#   - Login should occur three times in execute step (after each passing test)
+#   - Every test triggers login since all pass
+#   - Login should not occur in finish step
+#
+# KEY POINT:
+#   This tests the edge case where all tests match the --when pass condition,
+#   demonstrating that login occurs after each test when all conditions are met.
+#
+# TEST DATA:
+#   - Creates 3 passing tests
+#
+# SEE ALSO:
+#   TEST_SUMMARY.md - Section E-05
 
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ./common.sh || exit 1

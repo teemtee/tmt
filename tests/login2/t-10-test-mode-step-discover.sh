@@ -1,6 +1,29 @@
 #!/bin/bash
-# T-10: Login -t --step discover (override)
-# Expected: No guests ready for login in discover
+# TEST-NAME: Test mode with --step discover (override)
+# ====================
+#
+# WHAT THIS TESTS:
+#   Tests that explicit --step discover overrides the implicit test mode
+#   behavior, but results in an error because no guests exist during discover.
+#
+# TEST COMMAND:
+#   tmt run -ar provision -h container login -t --step discover -c true
+#
+# EXPECTED BEHAVIOR:
+#   - The command should fail with exit code 1 or 2
+#   - Error message should indicate "No guests ready for login"
+#   - The explicit --step discover overrides the -t flag's default execute step
+#
+# KEY POINT:
+#   Explicit --step discover should override the implicit --step execute
+#   that -t normally provides, but discover is not a valid step for login
+#   since guests don't exist yet.
+#
+# TEST DATA:
+#   - Creates one normal passing test
+#
+# SEE ALSO:
+#   TEST_SUMMARY.md - Section T-10
 
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ./common.sh || exit 1

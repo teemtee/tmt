@@ -1,6 +1,28 @@
 #!/bin/bash
-# T-12: Login -t --step execute (redundant)
-# Expected: N logins (same as -t alone, redundant but should work)
+# TEST-NAME: Test mode with --step execute (redundant)
+# ====================
+#
+# WHAT THIS TESTS:
+#   Tests that explicitly specifying --step execute with -t flag is
+#   redundant but should still work correctly, resulting in per-test login.
+#
+# TEST COMMAND:
+#   tmt run -ar provision -h container login -t --step execute -c true
+#
+# EXPECTED BEHAVIOR:
+#   - Login should occur twice (once per test)
+#   - The --step execute is redundant since -t already implies execute step
+#   - Behavior should be identical to using -t alone
+#
+# KEY POINT:
+#   The -t flag implicitly adds --step execute. Explicitly specifying it
+#   should not change behavior - it's redundant but harmless.
+#
+# TEST DATA:
+#   - Creates two normal passing tests
+#
+# SEE ALSO:
+#   TEST_SUMMARY.md - Section T-12
 
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ./common.sh || exit 1

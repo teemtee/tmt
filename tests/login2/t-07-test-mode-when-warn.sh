@@ -1,6 +1,30 @@
 #!/bin/bash
-# T-07: Login -t --when warn
-# Expected: Login only after warned tests, NOT in finish
+# TEST-NAME: Test mode with --when warn option
+# ====================
+#
+# WHAT THIS TESTS:
+#   Tests that test mode (-t) combined with conditional login (--when warn)
+#   results in per-test login during execute step only for tests with warnings.
+#
+# TEST COMMAND:
+#   tmt run -ar provision -h container login -t --when warn -c true
+#
+# EXPECTED BEHAVIOR:
+#   - Login should occur twice in execute step (after each warned test)
+#   - Login should not occur after the normal test
+#   - Login should not occur in finish step
+#
+# KEY POINT:
+#   The -t flag means per-test login. Combined with --when warn, it should
+#   login only after tests that have warnings. This verifies conditional
+#   filtering works correctly for warn results.
+#
+# TEST DATA:
+#   - Creates two tests with warnings
+#   - Creates one normal passing test
+#
+# SEE ALSO:
+#   TEST_SUMMARY.md - Section T-07
 
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ./common.sh || exit 1

@@ -1,6 +1,30 @@
 #!/bin/bash
-# E-11: Login -t --step report (override)
-# Expected: Login in report step, NOT per-test in execute
+# TEST-NAME: Edge case - test mode with --step report (override)
+# ====================
+#
+# WHAT THIS TESTS:
+#   Tests that explicit --step report overrides the implicit test mode
+#   behavior, resulting in a single login during report step instead of
+#   per-test login during execute.
+#
+# TEST COMMAND:
+#   tmt run -ar provision -h container login -t --step report -c true
+#
+# EXPECTED BEHAVIOR:
+#   - Login should occur once during report step
+#   - Login should NOT be per-test during execute
+#   - The explicit --step report overrides the -t flag's default execute step
+#
+# KEY POINT:
+#   Explicit --step specification should override the implicit --step execute
+#   that -t normally provides. This tests that override behavior works for
+#   the report step.
+#
+# TEST DATA:
+#   - Creates two normal passing tests (report step must be enabled)
+#
+# SEE ALSO:
+#   TEST_SUMMARY.md - Section E-11
 
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ./common.sh || exit 1

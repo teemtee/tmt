@@ -1,6 +1,28 @@
 #!/bin/bash
-# E-12: Login -t --when fail (all tests fail)
-# Expected: Login after every test (all meet condition)
+# TEST-NAME: Edge case - test mode with all tests failing
+# ====================
+#
+# WHAT THIS TESTS:
+#   Tests that test mode (-t) with --when fail results in per-test login
+#   after every test when ALL tests fail (all meet the condition).
+#
+# TEST COMMAND:
+#   tmt run -ar provision -h container login -t --when fail -c true
+#
+# EXPECTED BEHAVIOR:
+#   - Login should occur three times in execute step (after each failing test)
+#   - Every test triggers login since all fail
+#   - Login should not occur in finish step
+#
+# KEY POINT:
+#   This tests the edge case where all tests match the --when fail condition,
+#   demonstrating that login occurs after each test when all conditions are met.
+#
+# TEST DATA:
+#   - Creates 3 failing tests
+#
+# SEE ALSO:
+#   TEST_SUMMARY.md - Section E-12
 
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ./common.sh || exit 1

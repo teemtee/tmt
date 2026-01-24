@@ -1,6 +1,31 @@
 #!/bin/bash
-# B-10: Login --when error --step execute
-# Expected: Login in execute step only if test errors
+# TEST-NAME: Login with --when error --step execute
+# ====================
+#
+# WHAT THIS TESTS:
+#   Tests that conditional login (--when error) works when combined with
+#   explicit step specification (--step execute), triggering login in
+#   the execute step only if tests have errors.
+#
+# TEST COMMAND:
+#   tmt run -ar provision -h container login --when error --step execute -c true
+#
+# EXPECTED BEHAVIOR:
+#   - Login should occur in the execute step (after all tests)
+#   - Login should only trigger if at least one test has an error result
+#   - Login should not occur in the finish step
+#
+# KEY POINT:
+#   This tests combining conditional login (--when error) with explicit step
+#   specification, demonstrating that the condition is evaluated at the
+#   end of the specified step.
+#
+# TEST DATA:
+#   - Creates one normal passing test
+#   - Creates one test that errors
+#
+# SEE ALSO:
+#   TEST_SUMMARY.md - Section B-10
 
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ./common.sh || exit 1

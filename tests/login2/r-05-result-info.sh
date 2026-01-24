@@ -1,6 +1,30 @@
 #!/bin/bash
-# R-05: Result type - info
-# Demonstrates info result type behavior
+# TEST-NAME: Result type variation - info
+# ====================
+#
+# WHAT THIS TESTS:
+#   Tests that the --when info condition correctly identifies and triggers
+#   login based on test results with the info type (tests with info messages).
+#
+# TEST COMMAND:
+#   tmt run -ar provision -h container login --when info -c true
+#
+# EXPECTED BEHAVIOR:
+#   - Login should occur in finish step
+#   - Login should trigger because at least one test has info messages
+#   - The info result type is properly detected and acted upon
+#
+# KEY POINT:
+#   This tests the info result type specifically, demonstrating that
+#   --when conditions properly identify and respond to tests that produce
+#   informational messages (typically stderr output with "info:" prefix).
+#
+# TEST DATA:
+#   - Creates one normal passing test
+#   - Creates two tests with info messages
+#
+# SEE ALSO:
+#   TEST_SUMMARY.md - Section R-05
 
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ./common.sh || exit 1

@@ -1,6 +1,31 @@
 #!/bin/bash
-# C-07: Login -t --when fail --step execute --step finish
-# Expected: Login after each failed test (execute) + in finish
+# TEST-NAME: Test mode with --when fail and multiple steps
+# ====================
+#
+# WHAT THIS TESTS:
+#   Tests the complex combination of test mode (-t), conditional login
+#   (--when fail), and multiple step specifications (--step execute and
+#   --step finish), resulting in per-test login AND finish step login.
+#
+# TEST COMMAND:
+#   tmt run -ar provision -h container login -t --when fail --step execute --step finish -c true
+#
+# EXPECTED BEHAVIOR:
+#   - Login should occur twice total
+#   - Once in execute step (after the failing test)
+#   - Once in finish step (due to explicit --step finish)
+#
+# KEY POINT:
+#   This tests a complex scenario where -t with --when fail provides
+#   per-test login for failures in execute, AND explicit --step finish
+#   adds an additional login in finish. Both behaviors coexist.
+#
+# TEST DATA:
+#   - Creates one passing test
+#   - Creates one failing test
+#
+# SEE ALSO:
+#   TEST_SUMMARY.md - Section C-07
 
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 . ./common.sh || exit 1
