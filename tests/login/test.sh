@@ -8,7 +8,7 @@ rlJournalStart
 
     rlPhaseStartTest "Login enabled after tests"
         rlRun -s "tmt run -a plan -n /fmf-tests login -t -c true" 1
-        rlAssertEquals "There should 5 occurrences of login" $(grep "Starting interactive" $rlRun_LOG | wc -l) "5"
+        rlAssertEquals "There should be 4 occurrences of login" $(grep "Starting interactive" $rlRun_LOG | wc -l) "4"
         rlAssertNotGrep "Skipping interactive" $rlRun_LOG
         rlAssertGrep "Starting interactive" $rlRun_LOG
     rlPhaseEnd
@@ -17,6 +17,20 @@ rlJournalStart
         rlRun -s "tmt run -a plan -n /fmf-tests login -t -c true -s provision -s prepare" 1
         rlAssertEquals "There should 6 occurrences of login" $(grep "Starting interactive" $rlRun_LOG | wc -l) "6"
         rlAssertNotGrep "Skipping interactive" $rlRun_LOG
+        rlAssertGrep "Starting interactive" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Login -t with --step finish (additive behavior)"
+        rlRun -s "tmt run -a plan -n /fmf-tests login -t -c true -s finish" 1
+        # Should be 5 logins: 4 per-test (from -t) + 1 at finish (from --step finish)
+        rlAssertEquals "There should be 5 occurrences of login" $(grep "Starting interactive" $rlRun_LOG | wc -l) "5"
+        rlAssertNotGrep "Skipping interactive" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Login -t with --when fail (per-test conditional)"
+        rlRun -s "tmt run -a plan -n /fmf-tests login -t -c true -w fail" 1
+        # Should be 1 login: only after the failing test
+        rlAssertEquals "There should be 1 occurrence of login" $(grep "Starting interactive" $rlRun_LOG | wc -l) "1"
         rlAssertGrep "Starting interactive" $rlRun_LOG
     rlPhaseEnd
 
