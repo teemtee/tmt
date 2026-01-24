@@ -3,50 +3,16 @@
 # Demonstrates info result type behavior
 
 . /usr/share/beakerlib/beakerlib.sh || exit 1
+. ./common.sh || exit 1
 
 rlJournalStart
     rlPhaseStartSetup
-        rlRun "tmp=\$(mktemp -d)" 0 "Creating tmp directory"
-        rlRun "pushd $tmp"
-        rlRun "set -o pipefail"
-        rlRun "tmt init -t mini"
-        rm -f plans/example.fmf
-
-        cat > plan.fmf << 'EOF'
-execute:
-    how: tmt
-discover:
-    how: fmf
-provision:
-    how: container
-EOF
-
-        mkdir -p tests
-        cat > tests/normal.fmf << 'EOF'
-test: true
-EOF
-        cat > tests/normal.sh << 'EOF'
-true
-EOF
-        chmod +x tests/normal.sh
-
-        cat > tests/info1.fmf << 'EOF'
-test: echo "info: message"; true
-EOF
-        cat > tests/info1.sh << 'EOF'
-echo "info: This is an info message" >&2
-true
-EOF
-        chmod +x tests/info1.sh
-
-        cat > tests/info2.fmf << 'EOF'
-test: echo "info: message2"; true
-EOF
-        cat > tests/info2.sh << 'EOF'
-echo "info: More info" >&2
-true
-EOF
-        chmod +x tests/info2.sh
+        login2_setup
+        login2_create_plan
+        login2_create_normal_test
+        # Create two info tests
+        login2_create_test "info1" "echo \"info: This is an info message\" >&2; true" "test: echo \"info: message\"; true"
+        login2_create_test "info2" "echo \"info: More info\" >&2; true" "test: echo \"info: message2\"; true"
     rlPhaseEnd
 
     rlPhaseStartTest "Result type - info"
@@ -55,7 +21,6 @@ EOF
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun "popd"
-        rlRun "rm -r $tmp" 0 "Removing tmp directory"
+        login2_cleanup
     rlPhaseEnd
 rlJournalEnd

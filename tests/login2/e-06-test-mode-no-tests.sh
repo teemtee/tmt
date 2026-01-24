@@ -3,25 +3,12 @@
 # Expected: No login (no tests = no logins)
 
 . /usr/share/beakerlib/beakerlib.sh || exit 1
+. ./common.sh || exit 1
 
 rlJournalStart
     rlPhaseStartSetup
-        rlRun "tmp=\$(mktemp -d)" 0 "Creating tmp directory"
-        rlRun "pushd $tmp"
-        rlRun "set -o pipefail"
-        rlRun "tmt init -t mini"
-        rm -f plans/example.fmf
-
-        cat > plan.fmf << 'EOF'
-execute:
-    how: tmt
-discover:
-    how: fmf
-    test:
-    - "/nonexistent/path/*"
-provision:
-    how: container
-EOF
+        login2_setup
+        login2_create_plan_no_tests
     rlPhaseEnd
 
     rlPhaseStartTest "Login -t with no tests discovered"
@@ -29,7 +16,6 @@ EOF
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun "popd"
-        rlRun "rm -r $tmp" 0 "Removing tmp directory"
+        login2_cleanup
     rlPhaseEnd
 rlJournalEnd
