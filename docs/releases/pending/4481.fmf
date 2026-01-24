@@ -1,0 +1,6 @@
+description: |
+  Improved documentation for ``tmt run login --test`` option.
+  The help text now clearly explains that per-test login mode
+  disables the default step-level login unless ``--step`` is also
+  specified. Added guidance on combining ``--test`` with ``--when``
+  for conditional per-test login.

@@ -2561,8 +2561,20 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
         Parse options and store phase order
         """
 
-        phases = {}
+        phases: dict[str, list[int]] = {}
         options: list[str] = cls._opt('step', default=[])
+
+        # When `-t` (test mode) is used without explicit `--step`,
+        # return empty phases to prevent the default "last enabled step" behavior.
+        #
+        # Without this check, test mode would log in twice:
+        # 1. After each test (handled by after_test() for per-test login)
+        # 2. At the end of the last enabled step (default behavior)
+        #
+        # Users who want both per-test login AND step-level login can
+        # explicitly specify the step using `--step <step>`.
+        if not options and cls._opt('test'):
+            return phases
 
         # Use the end of the last enabled step if no --step given
         if not options:
@@ -2808,7 +2820,9 @@ class Login(Action):
             '-t',
             '--test',
             is_flag=True,
-            help='Log into the guest after each executed test in the execute phase.',
+            help='Log into the guest after each test (per-test mode). '
+            'Disables default step-level login unless combined with --step. '
+            'Use --when <result> for conditional login (e.g. --when fail).',
         )
         def login(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             """
@@ -2818,6 +2832,9 @@ class Login(Action):
             enabled step. When used together with the --last option the
             last completed step is selected. Use one or more --step
             options to select a different step instead.
+
+            Use --test (-t) for per-test login mode instead of the default
+            step-level login. Combine with --step to enable both modes.
 
             Optional phase can be provided to specify the exact phase of
             the step when the shell should be provided. The following
@@ -2860,16 +2877,6 @@ class Login(Action):
         Login to the guest(s)
         """
 
-        # Skip to log into the guest if option '--test' is specified as it is unnecessary to log
-        # into the guest more than one time. But we should support two cases in the following:
-        # a) -t --when <result>: As tmt user I want to login to the guest with the same environment
-        #        as the test immediately after that test finishes with RESULT so I can investigate
-        #        why if finished in such result (e.g. --when fail to see why test fails)
-        # b) -t --when <result> --step <step>: As a tmt user I want to investiage test result in
-        #        execute step but I want to login to the guest in other steps than execute as well
-        if self.opt('test') and not self.opt('when') and not self.opt('step'):
-            return
-
         if force or self._enabled_by_results(self.parent.plan.execute.results()):
             self._login()
 
@@ -2906,6 +2913,15 @@ class Login(Action):
         """
         Run the interactive command
         """
+
+        # Check for guestless steps where login should not be allowed
+        step_name = self.parent.name if self.parent else "unknown"
+        guestless_steps = ['discover']
+        if step_name in guestless_steps:
+            self.info(
+                'login', f'Login not allowed in {step_name} step (guestless)', color='yellow'
+            )
+            return
 
         # Nothing to do if there are no guests ready for login
         if not self.parent.plan.provision.ready_guests:
