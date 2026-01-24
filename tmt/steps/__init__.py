@@ -2561,8 +2561,14 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
         Parse options and store phase order
         """
 
-        phases = {}
+        phases: dict[str, list[int]] = {}
         options: list[str] = cls._opt('step', default=[])
+
+        # When `-t` (test mode) is used without explicit `--step`,
+        # return empty phases to prevent the default "last enabled step"
+        # behavior. Per-test login is handled separately by _login_after_test.
+        if not options and cls._opt('test'):
+            return phases
 
         # Use the end of the last enabled step if no --step given
         if not options:
@@ -2896,6 +2902,15 @@ class Login(Action):
         """
         Run the interactive command
         """
+
+        # Check for guestless steps where login should not be allowed
+        step_name = self.parent.name if self.parent else "unknown"
+        guestless_steps = ['discover', 'cleanup']
+        if step_name in guestless_steps:
+            self.info(
+                'login', f'Login not allowed in {step_name} step (guestless)', color='yellow'
+            )
+            return
 
         # Nothing to do if there are no guests ready for login
         if not self.parent.plan.provision.ready_guests:

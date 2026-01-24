@@ -21,7 +21,7 @@ rlJournalStart
         rlRun "grep '^    finish$' -A4 '$rlRun_LOG' | grep -i interactive"
     rlPhaseEnd
 
-    for step in discover provision prepare execute report finish; do
+    for step in discover provision prepare execute report finish cleanup; do
         rlPhaseStartTest "Selected step ($step)"
             rlRun -s "$tmt login -c true -s $step"
 
@@ -32,7 +32,10 @@ rlJournalStart
             elif [ "$step" = "execute" ]; then
                 rlRun "grep '^    $step$' -A9 '$rlRun_LOG' | grep -i interactive"
             elif [ "$step" = "discover" ]; then
-                rlRun "grep '^    $step$' -A9 '$rlRun_LOG' | grep -i 'No guests ready for login'"
+                rlRun "grep '^    $step$' -A9 '$rlRun_LOG' | grep -i 'Login not allowed in discover step'"
+            elif [ "$step" = "cleanup" ]; then
+                # Cleanup step does not run login actions at all (guestless step)
+                rlRun "! grep '^    $step$' -A5 '$rlRun_LOG' | grep -i 'Starting interactive'"
             else
                 rlRun "grep '^    $step$' -A5 '$rlRun_LOG' | grep -i interactive"
             fi
@@ -45,7 +48,9 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Last run"
-        rlRun "tmt run -a provision -h local"
+        # Run only discover and provision, so provision is the last completed step
+        # (cleanup would be the last step if we used -a, and login is not allowed there)
+        rlRun "tmt run provision -h local"
         rlRun -s "tmt run -rl login -c true"
         rlAssertGrep "interactive" "$rlRun_LOG"
     rlPhaseEnd
