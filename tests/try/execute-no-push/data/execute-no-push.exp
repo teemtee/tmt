@@ -1,0 +1,44 @@
+#!/usr/bin/expect -f
+# Test script for GitHub issue #4046: Execute action should not push data to guest
+# This simulates the workflow:
+# 1. Start tmt try
+# 2. Login to guest (l)
+# 3. Modify test script on guest
+# 4. Exit login
+# 5. Execute tests (e) - should run modified version, not original
+# 6. Quit (q)
+
+set timeout 60
+
+# Start tmt try with container provision
+spawn tmt try fedora@container
+
+# Wait for initial menu
+expect "What do we do next?"
+
+# Login to guest first
+send -- "l\r"
+expect "# "
+
+# Modify the test script to output our modified identifier
+send -- "cat > test.sh << 'EOF'\r#!/bin/bash\recho \"MODIFIED_ON_GUEST\"\recho \"This test was modified on the guest\"\rEOF\r"
+expect "# "
+
+# Exit the login session
+send -- "exit\r"
+expect "What do we do next?"
+
+# Execute tests - this should run the modified version without push
+send -- "e\r"
+expect "summary:"
+
+# Execute tests - this should run the modified version without push
+send -- "t\r"
+expect "summary:"
+
+# Wait for test completion and menu
+expect "What do we do next?"
+
+# Quit the session
+send -- "q\r"
+expect eof
