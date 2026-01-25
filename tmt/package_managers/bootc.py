@@ -11,14 +11,7 @@ from tmt.package_managers import (
     PackageManagerEngine,
     provides_package_manager,
 )
-from tmt.utils import (
-    Command,
-    CommandOutput,
-    GeneralError,
-    Path,
-    RunError,
-    ShellScript,
-)
+from tmt.utils import Command, CommandOutput, GeneralError, Path, RunError, ShellScript, from_json
 
 LOCALHOST_BOOTC_IMAGE_PREFIX = "localhost/tmt"
 
@@ -73,7 +66,7 @@ class BootcEngine(PackageManagerEngine):
             raise tmt.utils.PrepareError("Failed to get current bootc status: empty output.")
 
         try:
-            image_status = json.loads(output.stdout)
+            image_status = from_json(output.stdout)
         except json.JSONDecodeError as error:
             raise tmt.utils.PrepareError("Failed to parse bootc status JSON.") from error
 
