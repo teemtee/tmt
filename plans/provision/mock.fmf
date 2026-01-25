@@ -13,5 +13,3 @@ context+:
 
 environment:
     PROVISION_HOW: mock
-
-enabled: true
