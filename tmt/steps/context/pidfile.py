@@ -252,8 +252,7 @@ class PidFileContext(HasEnvironment):
         wrapper = ShellScript(template.render(GUEST=self.guest, **variables).strip())
         self.logger.debug(f'{label} wrapper', wrapper, level=3)
 
-        self.phase.write(wrapper_filepath, str(wrapper), 'w')
-        wrapper_filepath.chmod(0o755)
+        self.phase.write(wrapper_filepath, str(wrapper), mode='w', permissions=0o755)
         self.guest.push(
             source=wrapper_filepath,
             destination=wrapper_filepath,
