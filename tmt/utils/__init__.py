@@ -2334,6 +2334,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         path: Path,
         data: str,
         mode: WriteMode = 'w',
+        permissions: Optional[int] = None,
         level: int = 2,
     ) -> None:
         """
@@ -2353,6 +2354,9 @@ class Common(_CommonBase, metaclass=_CommonMeta):
 
             else:
                 path.write_text(data, encoding='utf-8', errors='replace')
+
+            if permissions is not None:
+                path.chmod(permissions)
 
         except OSError as error:
             raise FileError(f"Failed to write into '{path}' file.") from error
