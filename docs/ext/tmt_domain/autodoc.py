@@ -142,7 +142,7 @@ class Content(StringList):
 
         .. code-block:: rst
 
-           .. directive_name:: arg_1, arg_2
+           .. directive_name:: arg_1 arg_2
               kwarg_1:
               kwarg_2: value
 
@@ -168,7 +168,7 @@ class Content(StringList):
         # TODO: add some meaningful source like using inspect to get the caller's source
         # Add the directive header
         self.append(
-            f".. {name}:: {', '.join(directive_args)}".rstrip(),
+            f".. {name}:: {' '.join(directive_args)}".rstrip(),
             source=source,
             offset=get_offset(),
         )
