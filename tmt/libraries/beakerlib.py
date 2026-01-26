@@ -176,6 +176,7 @@ class BeakerLib(Library):
             fmf_path = parent.data.path
         path = parent.test_dir / fmf_path
         identifier.path = path
+        parent.debug(f"Resolving library '{identifier.nick}' to discovered tests: {path}")
 
         return BeakerLibFromPath.from_identifier(
             identifier=identifier,
