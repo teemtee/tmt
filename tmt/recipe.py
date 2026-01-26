@@ -114,7 +114,7 @@ class _RecipeTest(SerializableContainer):
             tty=test_origin.test.tty,
             require=test_origin.test._original_require,
             recommend=test_origin.test._original_recommend,
-            environment=test_origin.test._original_fmf_environment,
+            environment=test_origin.test.environment,
             duration=test_origin.test.duration,
             result=test_origin.test.result,
             where=test_origin.test.where,

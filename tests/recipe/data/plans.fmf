@@ -1,5 +1,5 @@
 provision:
-    how: local
+    how: container
 execute:
     how: tmt
 environment:
@@ -20,6 +20,5 @@ environment:
     summary: A remote plan
     discover:
         how: fmf
-        url: https://github.com/teemtee/tmt
-        path: /tests/execute/basic/data
-        test: good
+        url: https://github.com/teemtee/tests
+        test: /tests/one

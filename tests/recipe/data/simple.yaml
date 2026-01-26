@@ -132,7 +132,7 @@ plans:
             tier:
             adjust: []
             component: []
-            framework: shell
+            framework: beakerlib
             manual: false
             tty: false
             duration: 5m
@@ -143,9 +143,12 @@ plans:
             serial-number: 1
             discover-phase: discover-fmf
             link: []
-            test: /bin/true
+            test: ./test.sh
             path: /discover-fmf/tests
-            require: []
+            require:
+              - url: https://github.com/beakerlib/test
+                name: /very/deep/file
+                type: library
             recommend: []
             environment:
                 TEST_ENV: test_value
@@ -194,7 +197,7 @@ plans:
         enabled: true
         phases:
           - name: default-0
-            how: local
+            how: container
             order: 50
             when: []
             summary:
@@ -238,9 +241,18 @@ plans:
                 __class__:
                     module: tmt.ansible
                     name: GuestAnsible
+            image: fedora
+            user: root
+            force-pull: false
+            container:
+            network:
+            network-prefix:
+            pull-attempts: 5
+            pull-interval: 5
+            stop-time: 1
             __class__:
-                module: tmt.steps.provision.local
-                name: ProvisionLocalData
+                module: tmt.steps.provision.podman
+                name: ProvisionPodmanData
         __class__:
             module: tmt.recipe
             name: _RecipeStep
