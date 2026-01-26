@@ -1301,10 +1301,6 @@ class Test(
 
     serial_number: int = field(default=0, internal=True)
 
-    _original_fmf_environment: tmt.utils.Environment = field(
-        internal=True,
-        default_factory=tmt.utils.Environment,
-    )
     _original_require: list[Dependency] = field(
         internal=True,
         default_factory=list,
@@ -1427,8 +1423,6 @@ class Test(
             )
 
         self._update_metadata()
-        # TODO: refactor the code so it does not modify the test environment
-        self._original_fmf_environment = self.environment.copy()
         self._original_require = self.require.copy()
         self._original_recommend = self.recommend.copy()
 

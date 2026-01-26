@@ -40,7 +40,7 @@ plans:
             when: []
             summary:
             where: &id001 []
-            url: https://github.com/teemtee/tmt
+            url: https://github.com/teemtee/tests
             url-content-type: git
             ref:
             dist-git-source: false
@@ -49,9 +49,9 @@ plans:
             dist-git-install-builddeps: false
             dist-git-require: []
             require-test: []
-            path: /tests/execute/basic/data
+            path:
             test:
-              - good
+              - /tests/one
             link: []
             filter: []
             include: []
@@ -74,48 +74,16 @@ plans:
                 module: tmt.steps.discover.fmf
                 name: DiscoverFmfStepData
         tests:
-          - name: /test/beakerlib/good
-            summary: Passing test
+          - name: /tests/one
+            summary: Remote test one
             description:
             author: []
             contact: []
             enabled: true
             order: 50
             id:
-            tag: []
-            tier:
-            adjust: []
-            component: []
-            framework: beakerlib
-            manual: false
-            tty: false
-            duration: 5m
-            where: *id001
-            restart-on-exit-code: []
-            restart-max-count: 1
-            restart-with-reboot: false
-            serial-number: 1
-            discover-phase: default-0
-            link: []
-            test: ./good.sh
-            path: /default-0/tests/tests/execute/basic/data
-            require: []
-            recommend: []
-            environment: {}
-            result: respect
-            check: []
-            __class__:
-                module: tmt.recipe
-                name: _RecipeTest
-          - name: /test/shell/good
-            summary: Passing test
-            description:
-            author: []
-            contact: []
-            enabled: true
-            order: 50
-            id:
-            tag: []
+            tag:
+              - remote
             tier:
             adjust: []
             component: []
@@ -127,14 +95,14 @@ plans:
             restart-on-exit-code: []
             restart-max-count: 1
             restart-with-reboot: false
-            serial-number: 2
+            serial-number: 1
             discover-phase: default-0
             link: []
-            test: 'true'
-            path: /default-0/tests/tests/execute/basic/data
+            test: echo one
+            path: /default-0/tests/tests
             require: []
             recommend: []
-            environment: {}
+            environment: { }
             result: respect
             check: []
             __class__:
@@ -147,7 +115,7 @@ plans:
         enabled: true
         phases:
           - name: default-0
-            how: local
+            how: container
             order: 50
             when: []
             summary:
@@ -192,9 +160,18 @@ plans:
                 __class__:
                     module: tmt.ansible
                     name: GuestAnsible
+            image: fedora
+            user: root
+            force-pull: false
+            container:
+            network:
+            network-prefix:
+            pull-attempts: 5
+            pull-interval: 5
+            stop-time: 1
             __class__:
-                module: tmt.steps.provision.local
-                name: ProvisionLocalData
+                module: tmt.steps.provision.podman
+                name: ProvisionPodmanData
         __class__:
             module: tmt.recipe
             name: _RecipeStep

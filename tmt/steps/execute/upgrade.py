@@ -337,8 +337,6 @@ class ExecuteUpgrade(ExecuteInternal):
             self._discover_upgrade.wake()
             self.step.plan.discover.discover_tests(
                 cast(DiscoverPlugin[DiscoverStepData], self._discover_upgrade),
-                loaded_from_recipe=self.step.plan.my_run is not None
-                and self.step.plan.my_run.recipe is not None,
                 logger=self._logger,
             )
 
