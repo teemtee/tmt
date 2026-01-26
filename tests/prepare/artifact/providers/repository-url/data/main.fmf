@@ -1,0 +1,18 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: container
+    prepare:
+        how: artifact
+        provide:
+          - repository-url:https://download.docker.com/linux/fedora/43/x86_64/stable/
+    execute:
+        how: tmt
+
+/test:
+    test: ./test.sh
+    duration: 5m
+    summary: Verify code from repository
+    require:
+      - docker-ce-cli
