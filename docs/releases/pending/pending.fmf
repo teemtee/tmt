@@ -5,7 +5,6 @@
 
 /beakerlib:
   description: |
-    Beakerlib library dependencies are now allowed to have colliding
-    repositories as long as the ``name`` differs. If both the ``repo`` and
-    ``name`` part collide, the earlier definition is preferred and will be used
-    in the test.
+    Fixed a bug in beakerlib libraries that did not allow multiple libraries
+    with the same ``repo`` but different ``name`` if the last part of the
+    ``name`` was conflicting.
