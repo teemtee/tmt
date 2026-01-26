@@ -199,7 +199,7 @@ def effective_pidfile_root() -> Path:
 @container
 class PidFileContext(HasEnvironment):
     #: Phase owning this context.
-    phase: tmt.steps.Phase
+    phase: tmt.steps.BasePlugin[Any, Any]
 
     #: Guest on which the action runs.
     guest: Guest
