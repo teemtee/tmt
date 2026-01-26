@@ -59,7 +59,8 @@ class Content(StringList):
         Prepend all the necessary indent and possibly the list symbol.
         """
         if self.needs_list_symbol:
-            # Indent the line and add the list symbol
+            # Indent the line and add the list symbol (replacing the last 2
+            # indentation characters)
             self.needs_list_symbol = False
             return " " * (self.indent - 2) + "* " + orig
         if not orig.strip():
@@ -137,6 +138,19 @@ class Content(StringList):
         Add the directive header and start appending its content.
 
         This handles the rst indentation of the directive content introduced.
+        For example this can generate:
+
+        .. code-block:: rst
+
+           .. directive_name:: arg_1, arg_2
+              kwarg_1:
+              kwarg_2: value
+
+              some_content
+
+        where ``directive_name``, ``arg_*``, ``kwarg_*`` are taken from
+        ``name``, ``directive_args``, ``directive_kwargs`` parameters
+        respectively.
 
         :param name: directive name
         :param directive_args: directive's parameters
@@ -158,13 +172,16 @@ class Content(StringList):
             source=source,
             offset=get_offset(),
         )
+        # Increase the indent for both content and directive options
         self.indent += RST_DIRECTIVE_INDENT
+        # Add the directive options
         for key, value in directive_kwargs.items():
             self.append(
                 f":{key}: {value or ''}".rstrip(),
                 source=source,
                 offset=get_offset(),
             )
+        # Make sure there is a blank line before the content
         self.append(
             "",
             source=source,
@@ -172,7 +189,7 @@ class Content(StringList):
         )
         # Start adding other contents
         yield self
-        # exit the directive
+        # Exit the directive
         self.append(
             "",
             source=source,
@@ -191,6 +208,14 @@ class Content(StringList):
         """
         Start a new list context.
 
+        This handles the rst indentation of a bulleted list, for example
+
+        .. code-block:: rst
+
+           * one multi-line item
+             making sure it is still indented
+           * another item
+
         Use :py:meth:`new_item` to add start a new list item.
 
         :param source: the source name that owns the lines written here
@@ -202,11 +227,13 @@ class Content(StringList):
                 return next(offset_count)
             return 0
 
+        # Start the list context, including the content for the first list item
         self.needs_list_symbol = True
         self.list_layer += 1
         self.indent += LIST_INDENT
+        # Start adding content to the list items
         yield self
-        # exit the directive
+        # Exit the list context
         self.append("", source=source, offset=get_offset())
         self.indent -= LIST_INDENT
         self.list_layer -= 1
@@ -216,6 +243,16 @@ class Content(StringList):
     def new_item(self) -> None:
         """
         Start adding the contents of a new item.
+
+        If the previous list item had no content, this is effectively a no-op.
+        For example, you can use this as
+
+        .. code-block:: python
+
+           with content.new_list():
+               for item_content in list_of_text:
+                   content.new_item()
+                   content.append(item_content, source="")
 
         Must be called within a :py:meth:`list` context.
         """
