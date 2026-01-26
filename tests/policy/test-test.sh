@@ -4,7 +4,7 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
-        rlRun "pushd data"
+        rlRun "pushd data/test"
     rlPhaseEnd
 
     rlPhaseStartTest "Sanity"
@@ -14,10 +14,10 @@ rlJournalStart
             local filter="$3"
             local expected="$4"
 
-            rlRun -s "tmt -vv test export --policy-file ../policies/test/$1 $plan"
-            rlAssertGrep "Apply tmt policy '../policies/test/$1' to tests." $rlRun_LOG
+            rlRun -s "tmt -vv test export --policy-file ../../policies/test/$1 $plan"
+            rlAssertGrep "Apply tmt policy '../../policies/test/$1' to tests." $rlRun_LOG
 
-            rlRun -s "tmt -vv test export --policy-file ../policies/test/$1 $plan 2> /dev/null | yq -o json '.[] | $filter' | jq -cSr"
+            rlRun -s "tmt -vv test export --policy-file ../../policies/test/$1 $plan 2> /dev/null | yq -o json '.[] | $filter' | jq -cSr"
 
             rlAssertEquals \
                 "Verify that $(echo "$filter" | cut -d' ' -f1) key is modified" \
@@ -48,8 +48,8 @@ rlJournalStart
             local plan="$2"
             local expected="$3"
 
-            rlRun    "tmt -vv test export --policy-file ../policies/test/duration.yaml $plan"
-            rlRun -s "tmt -vv test export --policy-file ../policies/test/duration.yaml $plan 2> /dev/null | yq -o json '.[] | .duration' | jq -cSr"
+            rlRun    "tmt -vv test export --policy-file ../../policies/test/duration.yaml $plan"
+            rlRun -s "tmt -vv test export --policy-file ../../policies/test/duration.yaml $plan 2> /dev/null | yq -o json '.[] | .duration' | jq -cSr"
 
             rlAssertEquals \
                 "$message" \
@@ -77,10 +77,10 @@ rlJournalStart
         }
 
         # Test command-line option...
-        run_test "--policy-file ../policies/test/test.yaml" ""
+        run_test "--policy-file ../../policies/test/test.yaml" ""
 
         # ... and test also the envvar.
-        run_test ""                                         "TMT_POLICY_FILE=../policies/test/test.yaml"
+        run_test ""                                         "TMT_POLICY_FILE=../../policies/test/test.yaml"
     rlPhaseEnd
 
     rlPhaseStartTest "Policy root"
@@ -122,21 +122,21 @@ rlJournalStart
             rlAssertGrep "$expected_error" $rlRun_LOG
         }
 
-        run_test /tmp        ../policies/test/test.yaml ""             2 "Policy '/tmp/../policies/test/test.yaml' does not reside under policy root '/tmp'."
+        run_test /tmp        ../../policies/test/test.yaml ""             2 "Policy '/tmp/../../policies/test/test.yaml' does not reside under policy root '/tmp'."
         run_test /tmp        test.yaml                  ""             2 "Policy '/tmp/test.yaml' not found."
         run_test /tmp        ""                         test/test      2 "Policy 'test/test' does not point to a file."
-        run_test ../policies ""                         does-not-exist 2 "Policy 'does-not-exist' does not point to a file."
+        run_test ../../policies ""                         does-not-exist 2 "Policy 'does-not-exist' does not point to a file."
         run_test ""          ""                         test/test      2 "Policy can be loaded by its name only when '--policy-root' is specified."
         run_test ""          test/test.yaml             ""             2 "Policy 'test/test.yaml' not found."
-        run_test ../policies test/test.yaml             test/test      2 "Options '--policy-name' and '--policy-file' are mutually exclusive."
+        run_test ../../policies test/test.yaml             test/test      2 "Options '--policy-name' and '--policy-file' are mutually exclusive."
 
-        run_test ../policies ""                         test/test      0 "content: Spiked test."
-        run_test ../policies test/test.yaml             ""             0 "content: Spiked test."
-        run_test ""          ../policies/test/test.yaml ""             0 "content: Spiked test."
+        run_test ../../policies ""                         test/test      0 "content: Spiked test."
+        run_test ../../policies test/test.yaml             ""             0 "content: Spiked test."
+        run_test ""          ../../policies/test/test.yaml ""             0 "content: Spiked test."
     rlPhaseEnd
 
     rlPhaseStartTest "Invalid keys"
-        rlRun -s "tmt -vv test export --policy-file ../policies/test/invalid.yaml /basic" 2
+        rlRun -s "tmt -vv test export --policy-file ../../policies/test/invalid.yaml /basic" 2
         rlAssertGrep "Could not find field 'script' in class '/basic'." $rlRun_LOG
     rlPhaseEnd
 
