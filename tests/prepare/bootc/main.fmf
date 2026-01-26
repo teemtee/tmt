@@ -1,0 +1,14 @@
+summary: Test prepare/shell step on bootc guests
+description: |
+    Verify that prepare/shell commands are collected and executed
+    via Containerfile build on bootc guests. Commands with
+    make_changes=True should be collected and applied via image
+    rebuild and reboot.
+link:
+  - verifies: https://github.com/teemtee/tmt/issues/4495
+tag+:
+  - provision-only
+  - provision-virtual
+require:
+  - tmt+provision-virtual
+duration: 2h
