@@ -43,12 +43,58 @@ When creating release notes for tmt, use the milestone name as input (e.g., "1.6
      Use ``code`` for inline code and :ref:`/path/to/doc` for references.
    ```
 
-   **Example** (from PR #4307):
+   **Examples** (from existing release notes):
+
+   *Simple feature addition* (PR #4320):
    ```yaml
    description: |
-     The :ref:`prepare shell</plugins/prepare/shell>` and
-     :ref:`finish shell</plugins/finish/shell>` plugins now produce results in the
-     ``results.yaml`` file of the step.
+     The guest data is now saved in the ``results.yaml`` for each phase execution.
+   ```
+
+   *Bug fix with context* (PR #4125):
+   ```yaml
+   description: |
+     The :ref:`/plugins/provision/virtual.testcloud` plugin now works
+     with the ``debian`` images as well thanks to refreshing package
+     metadata before trying to install ``rsync`` on the guest.
+   ```
+
+   *New command-line option* (PR #4231):
+   ```yaml
+   description: |
+     Introduced option ``--import-before-name-filter`` and equivalent
+     environment variable ``TMT_IMPORT_BEFORE_NAME_FILTER`` which imports
+     all remote plans before applying filters such as in
+     ``tmt plans ls <name>``. This is **required** for the filtering to
+     properly work with ``importing: become-parent`` option.
+   ```
+
+   *Feature with external documentation link* (PR #4367):
+   ```yaml
+   description: |
+     Systemd `soft-reboot`__, a userspace-only reboot which does not reset
+     kernel state, is now supported by tmt when supported by the
+     guest: systemd must be in control, and boot ID must be available.
+     tmt would use the ``systemctl soft-reboot`` command to trigger the
+     reboot. Both ``tmt-reboot`` script and ``reboot`` phase support it,
+     via ``tmt-reboot -s`` command and ``systemd-soft`` key, respectively.
+
+     __ https://www.freedesktop.org/software/systemd/man/latest/systemd-soft-reboot.service.html
+   ```
+
+   *Plugin enhancement with spec references* (PR #4331-4332):
+   ```yaml
+   description: |
+     The :ref:`/plugins/provision/beaker` plugin now supports
+     :ref:`device.device</spec/hardware/device>` and
+     :ref:`device.vendor</spec/hardware/device>` HW requirements.
+   ```
+
+   *Lint rule addition* (PR #4409):
+   ```yaml
+   description: |
+     Introduced lint rule ``P009`` which checks if the step data is valid overall,
+     which now covers failures due to data normalizations.
    ```
 
 6. **Move pending entries**: Check if any release notes exist in `docs/releases/pending/` for PRs in this milestone:
