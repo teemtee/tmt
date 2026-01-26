@@ -124,6 +124,10 @@ class BootcEngine(PackageManagerEngine):
         return image_status.image.image
 
     def _get_base_containerfile_directives(self) -> list[str]:
+        # In dry run mode, use a placeholder image
+        if self.guest.is_dry_run:
+            return ['FROM dry-run-bootc-image:latest']
+
         bootc_image = self._get_current_bootc_image()
 
         if bootc_image.startswith(LOCALHOST_BOOTC_IMAGE_PREFIX):
@@ -222,6 +226,10 @@ class Bootc(PackageManager[BootcEngine]):
         return results
 
     def build_container(self) -> None:
+        # Skip in dry run mode
+        if self.guest.is_dry_run:
+            return
+
         if not self.engine.containerfile_directives:
             self.debug("No Containerfile directives to build container image, skipping build.")
             return
@@ -251,10 +259,10 @@ class Bootc(PackageManager[BootcEngine]):
                         f'  ( podman pull {base_image} || podman pull containers-storage:{base_image} )'  # noqa: E501
                         f'  || bootc image copy-to-storage --target {base_image}'
                         ')"'
-                    )
+                    ),
                 )
                 self.guest.execute(
-                    ShellScript(f'cat <<EOF > {containerfile_path!s} \n{containerfile} \nEOF')
+                    ShellScript(f'cat <<EOF > {containerfile_path!s} \n{containerfile} \nEOF'),
                 )
 
                 self.debug(f"containerfile content: {containerfile}")
@@ -266,7 +274,7 @@ class Bootc(PackageManager[BootcEngine]):
                 self.guest.execute(
                     ShellScript(
                         f'{self.guest.facts.sudo_prefix} podman build -t {image_tag} -f {containerfile_path} {self.guest.step_workdir}'  # noqa: E501
-                    )
+                    ),
                 )
 
                 # Switch to the new image for next boot

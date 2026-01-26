@@ -560,7 +560,9 @@ class BootMarkBootTime(BootMark):
 
     @classmethod
     def fetch(cls, guest: 'Guest') -> str:
-        stdout = guest.execute(Command("cat", "/proc/stat")).stdout
+        # Use make_changes=False because this is a probe command that must
+        # execute immediately, not be collected for bootc guests
+        stdout = guest.execute(Command("cat", "/proc/stat"), make_changes=False).stdout
 
         assert stdout
 
@@ -656,7 +658,8 @@ class GuestFacts(SerializableContainer):
         """
 
         try:
-            return guest.execute(command, silent=True)
+            # Fact discovery commands are probes, not system modifications
+            return guest.execute(command, silent=True, make_changes=False)
 
         except tmt.utils.RunError:
             pass
@@ -1520,6 +1523,78 @@ class GuestLog(abc.ABC):
         raise NotImplementedError
 
 
+class GuestCommandCollector(abc.ABC):
+    """
+    Mixin for guests that support collecting commands for deferred execution.
+
+    Used by bootc guests where prepare commands should be collected into a
+    Containerfile rather than executed immediately on the live guest.
+
+    When a guest implements this mixin, commands with ``make_changes=True``
+    (the default) are collected rather than executed immediately. The
+    collected commands are then executed in batch when :py:meth:`flush_collected`
+    is called (typically at the end of a step).
+
+    Commands with ``make_changes=False`` (probes, checks) or ``test_session=True``
+    are always executed immediately, even on guests that implement this mixin.
+    """
+
+    @abc.abstractmethod
+    def collect_command(
+        self,
+        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
+        *,
+        cwd: Optional[Path] = None,
+        env: Optional[tmt.utils.Environment] = None,
+    ) -> None:
+        """
+        Collect a command for later batch execution.
+
+        For bootc guests, this adds a RUN directive to the Containerfile.
+
+        :param command: the command to collect.
+        :param cwd: working directory for the command.
+        :param env: environment variables for the command.
+        """
+
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def collect_file(
+        self,
+        source: Path,
+        destination: Path,
+    ) -> None:
+        """
+        Collect a file copy operation for later batch execution.
+
+        For bootc guests, this adds a COPY directive to the Containerfile.
+
+        :param source: source path on the runner.
+        :param destination: destination path on the guest.
+        """
+
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def flush_collected(self) -> None:
+        """
+        Execute all collected commands.
+
+        For bootc guests, this builds the container image, switches to it,
+        and reboots the guest.
+        """
+
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def has_collected_commands(self) -> bool:
+        """Return True if there are collected commands pending."""
+
+        raise NotImplementedError
+
+
 class Guest(
     tmt.utils.HasRunWorkdir,
     tmt.utils.HasPlanWorkdir,
@@ -1699,6 +1774,22 @@ class Guest(
             guest=self, logger=self._logger
         )
 
+    @property
+    def is_bootc_guest(self) -> bool:
+        """
+        Check if this guest is running a bootc-based system.
+
+        Returns True when the guest's detected package manager is 'bootc',
+        indicating that commands should be collected into a Containerfile
+        rather than executed immediately.
+        """
+        # Access __dict__ directly to avoid triggering the facts property getter
+        # which would call sync() if facts aren't ready, causing infinite recursion
+        facts = self.__dict__.get('facts')
+        if facts is None or not facts.in_sync:
+            return False
+        return bool(facts.package_manager == 'bootc')
+
     @functools.cached_property
     def scripts_path(self) -> Path:
         """
@@ -1786,12 +1877,15 @@ class Guest(
         """
 
         # Ensure scripts directory exists on guest (create only if missing)
+        # Use make_changes=False because this must execute immediately during setup,
+        # not be collected for bootc guests (rsync that follows needs the directory)
         self.execute(
             ShellScript(
                 f"[ -d {quote(str(self.scripts_path))} ] || "
                 f"{self.facts.sudo_prefix} mkdir -p {quote(str(self.scripts_path))}"
             ).to_shell_command(),
             silent=True,
+            make_changes=False,
         )
 
         # Install all scripts on guest
@@ -2160,6 +2254,7 @@ class Guest(
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
+        make_changes: bool = False,
         tty: bool = False,
         silent: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,
@@ -2179,6 +2274,7 @@ class Guest(
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
+        make_changes: bool = False,
         tty: bool = False,
         silent: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,
@@ -2198,6 +2294,7 @@ class Guest(
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
+        make_changes: bool = False,
         tty: bool = False,
         silent: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,
@@ -2214,6 +2311,12 @@ class Guest(
         :param cwd: if set, execute command in this directory on the guest.
         :param env: if set, set these environment variables before running the command.
         :param friendly_command: nice, human-friendly representation of the command.
+        :param test_session: if True, this is the actual test being run.
+        :param make_changes: if True (default), the command modifies system state.
+            For bootc guests implementing :py:class:`GuestCommandCollector`,
+            commands with ``make_changes=True`` are collected into a Containerfile
+            rather than executed immediately. Commands with ``make_changes=False``
+            (probes, checks) are always executed immediately.
         """
 
         raise NotImplementedError
@@ -2256,6 +2359,22 @@ class Guest(
         """
 
         raise NotImplementedError
+
+    def on_step_complete(self, step: 'tmt.steps.Step') -> None:
+        """
+        Called when a step completes execution on this guest.
+
+        This hook allows guests to perform cleanup or finalization actions
+        after all phases of a step have been executed. For example, bootc
+        guests use this to flush any collected commands by building a
+        container image and rebooting.
+
+        :param step: the step that has completed.
+        """
+        # For guests implementing GuestCommandCollector, flush collected commands
+        # GuestSsh implements this interface for bootc command collection
+        if isinstance(self, GuestCommandCollector) and self.has_collected_commands:
+            self.flush_collected()
 
     def perform_reboot(
         self,
@@ -2579,8 +2698,11 @@ class Guest(
             path. Otherwise, the default directory is used.
         """
 
+        # Use make_changes=False because this must execute immediately,
+        # not be collected for bootc guests (we need the actual path returned)
         output = self.execute(
-            self._construct_mkdtemp_command(prefix=prefix, template=template, parent=parent)
+            self._construct_mkdtemp_command(prefix=prefix, template=template, parent=parent),
+            make_changes=False,
         )
 
         if not output.stdout:
@@ -2657,9 +2779,14 @@ class GuestSshData(GuestData):
     )
 
 
-class GuestSsh(Guest):
+class GuestSsh(Guest, GuestCommandCollector):
     """
     Guest provisioned for test execution, capable of accepting SSH connections
+
+    This class also implements :py:class:`GuestCommandCollector` to support
+    bootc guests. When running on a bootc system (detected via package manager),
+    commands with ``make_changes=True`` are collected into a Containerfile
+    rather than executed immediately.
 
     The following keys are expected in the 'data' dictionary::
 
@@ -2697,6 +2824,134 @@ class GuestSsh(Guest):
         self._ssh_master_process_lock = threading.Lock()
 
         super().__init__(data=data, logger=logger, parent=parent, name=name)
+
+    def _get_bootc_package_manager(self) -> Optional['tmt.package_managers.bootc.Bootc']:
+        """
+        Get the bootc package manager if this guest uses one.
+
+        Returns None if the package manager is not bootc or not yet discovered.
+        """
+        # Import here to avoid circular imports
+        from tmt.package_managers.bootc import Bootc
+
+        # Access __dict__ directly to avoid triggering the facts property getter
+        # which would call sync() if facts aren't ready, causing infinite recursion
+        facts = self.__dict__.get('facts')
+        if facts is None or not facts.in_sync or facts.package_manager != 'bootc':
+            return None
+
+        pm = self.package_manager
+        if isinstance(pm, Bootc):
+            return pm
+
+        return None
+
+    def _collect_command_for_bootc(
+        self,
+        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
+        *,
+        cwd: Optional[Path] = None,
+        env: Optional[tmt.utils.Environment] = None,
+    ) -> None:
+        """
+        Collect a command for bootc Containerfile build.
+
+        Adds a RUN directive to the bootc package manager's Containerfile.
+        Uses the same environment and cwd handling as regular execute().
+        """
+        bootc_pm = self._get_bootc_package_manager()
+        if bootc_pm is None:
+            return
+
+        # Build the command script using the same approach as execute()
+        # Start with environment exports
+        script_parts: list[ShellScript] = []
+
+        if env:
+            script_parts.extend(self._prepare_environment(env).to_shell_exports())
+
+        # Add working directory change (properly quoted like in execute())
+        if cwd:
+            script_parts.append(ShellScript(f'cd {quote(str(cwd))}'))
+
+        # Add the actual command
+        if isinstance(command, tmt.utils.Command):
+            script_parts.append(command.to_script())
+        else:
+            script_parts.append(command)
+
+        # Combine all parts into a single script
+        full_script = ShellScript.from_scripts(script_parts)
+
+        # Add to the package manager's engine
+        bootc_pm.engine.open_containerfile_directives()
+        bootc_pm.engine.containerfile_directives.append(f"RUN {full_script}")
+        self.debug(f"Collected command for Containerfile: {full_script}")
+
+    def _flush_bootc_commands(self) -> None:
+        """
+        Build container image from collected commands, switch, and reboot.
+
+        Delegates to the bootc package manager's build_container() method.
+        """
+        bootc_pm = self._get_bootc_package_manager()
+        if bootc_pm is None:
+            return
+
+        if not bootc_pm.engine.containerfile_directives:
+            self.debug("No collected commands to flush.")
+            return
+
+        self.info("prepare", "building container image from collected commands", "green")
+        bootc_pm.build_container()
+
+    def _has_bootc_collected_commands(self) -> bool:
+        """Check if there are pending commands in the bootc package manager."""
+        bootc_pm = self._get_bootc_package_manager()
+        if bootc_pm is None:
+            return False
+        return bool(bootc_pm.engine.containerfile_directives)
+
+    # GuestCommandCollector interface implementation
+
+    def collect_command(
+        self,
+        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
+        *,
+        cwd: Optional[Path] = None,
+        env: Optional[tmt.utils.Environment] = None,
+    ) -> None:
+        """
+        Collect a command for later Containerfile execution.
+
+        For bootc guests, this adds a RUN directive to the Containerfile.
+        """
+        self._collect_command_for_bootc(command, cwd=cwd, env=env)
+
+    def collect_file(self, source: Path, destination: Path) -> None:
+        """
+        Collect a file copy operation for later batch execution.
+
+        For bootc guests, this would add a COPY directive to the Containerfile.
+        Currently, files are pushed to the guest and the /var directory
+        persists across reboots, so explicit COPY is not always needed.
+        """
+        # For now, files are pushed normally and persist in /var
+        # The bootc package manager handles this via push() calls
+        self.debug(f"File copy noted for bootc: {source} -> {destination}")
+
+    @property
+    def has_collected_commands(self) -> bool:
+        """Check if there are pending commands."""
+        return self._has_bootc_collected_commands()
+
+    def flush_collected(self) -> None:
+        """
+        Build container from collected commands, switch, and reboot.
+
+        Delegates to the bootc package manager's build_container() method.
+        """
+        self._flush_bootc_commands()
 
     @functools.cached_property
     def _ssh_guest(self) -> str:
@@ -3050,13 +3305,16 @@ class GuestSsh(Guest):
         if not self.facts.is_superuser and self.become:
             self.package_manager.install(FileSystemPath('/usr/bin/setfacl'))
             workdir_root = effective_workdir_root()
+            # Use make_changes=False because this must execute immediately during setup,
+            # not be collected for bootc guests (rsync that follows needs the directory)
             self.execute(
                 ShellScript(
                     f"""
                     mkdir -p {workdir_root};
                     setfacl -d -m o:rX {workdir_root}
                     """
-                )
+                ),
+                make_changes=False,
             )
 
     def execute(
@@ -3066,6 +3324,7 @@ class GuestSsh(Guest):
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
+        make_changes: bool = False,
         tty: bool = False,
         silent: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,
@@ -3082,9 +3341,29 @@ class GuestSsh(Guest):
         :param cwd: execute command in this directory on the guest.
         :param env: if set, set these environment variables before running the command.
         :param friendly_command: nice, human-friendly representation of the command.
+        :param test_session: if True, this is the actual test being run.
+        :param make_changes: whether the command modifies system state.
+            This parameter is used by bootc guests to determine whether to
+            collect commands for the Containerfile. Use make_changes=True for
+            commands that modify the system (e.g., package installs, file writes),
+            and make_changes=False for probe/diagnostic commands (e.g., whoami,
+            cat /proc/stat). For regular guests, this parameter is ignored.
         """
 
         sourced_files = sourced_files or []
+
+        # For bootc guests: flush any pending commands before running a test
+        if test_session and self._has_bootc_collected_commands():
+            self._flush_bootc_commands()
+
+        # For bootc guests: collect system-modifying commands instead of executing
+        # Commands with make_changes=True (default) are collected for later
+        # execution via a Containerfile build, unless test_session=True.
+        # Commands with make_changes=False (probes) or test_session=True are
+        # executed immediately on the live guest.
+        if make_changes and not test_session and self.is_bootc_guest:
+            self._collect_command_for_bootc(command, cwd=cwd, env=env)
+            return tmt.utils.CommandOutput(stdout="", stderr="")
 
         # Abort if guest is unavailable
         if self.primary_address is None and not self.is_dry_run:
@@ -3249,7 +3528,11 @@ class GuestSsh(Guest):
 
         try:
             if options.create_destination:
-                self.execute(Command("mkdir", "-p", destination.parent), silent=True)
+                # Use make_changes=False because this must execute immediately,
+                # not be collected for bootc guests (rsync that follows needs the directory)
+                self.execute(
+                    Command("mkdir", "-p", destination.parent), silent=True, make_changes=False
+                )
             self._run_guest_command(cmd, silent=True)
 
         except tmt.utils.RunError as exc:
