@@ -37,7 +37,7 @@ LIST_INDENT = 2
 #  (it would be much easier since it doesn't need to handle indents)
 class Content(StringList):
     """
-    Wrapper around :py:class:``docutils.statemachine.StringList`` with helper
+    Wrapper around :py:class:`docutils.statemachine.StringList` with helper
     functions for formatting RST contents.
     """
 

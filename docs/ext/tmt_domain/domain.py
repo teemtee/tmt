@@ -7,9 +7,9 @@ from collections.abc import Iterable
 from functools import cached_property
 
 from docutils import nodes
-from sphinx.domains import Domain, ObjType
+from sphinx.domains import Domain
 from sphinx.util import logging
-from sphinx.util.nodes import find_pending_xref_condition, make_refnode
+from sphinx.util.nodes import make_refnode
 
 import tmt
 import tmt.log
