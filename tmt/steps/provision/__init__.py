@@ -362,14 +362,14 @@ class Provision(tmt.steps.Step):
         self,
         *,
         plan: 'tmt.Plan',
-        data: tmt.steps.RawStepDataArgument,
+        raw_data: list[tmt.steps._RawStepData],
         logger: tmt.log.Logger,
     ) -> None:
         """
         Initialize provision step data
         """
 
-        super().__init__(plan=plan, data=data, logger=logger)
+        super().__init__(plan=plan, raw_data=raw_data, logger=logger)
 
         self.guests = []
         self._guest_data: dict[str, tmt.guest.GuestData] = {}
