@@ -108,7 +108,7 @@ class BeakerLib(Library):
                 identifier=identifier, parent=parent, logger=logger
             )
 
-        raise tmt.utils.SpecificationError("Need 'url' or 'path' to fetch a beakerlib library.")
+        return cls._from_discover_plugin(identifier=identifier, parent=parent, logger=logger)
 
     @classmethod
     def _from_simple(
@@ -138,6 +138,51 @@ class BeakerLib(Library):
         # TODO: Drop support for rpm format handling?
         library.format = "rpm"
         return library
+
+    @classmethod
+    def _from_discover_plugin(
+        cls,
+        *,
+        identifier: DependencyFmfId,
+        parent: tmt.utils.Common,
+        logger: tmt.log.Logger,
+    ) -> Library:
+        """
+        Constructor for Beakerlib library from the current DiscoverPlugin.
+        """
+        from tmt.steps.discover import (
+            DiscoverPlugin,
+            DiscoverStepData,
+        )
+        from tmt.steps.discover.fmf import DiscoverFmfStepData
+
+        assert not identifier.url
+        assert not identifier.path
+
+        if not identifier.nick:
+            raise tmt.utils.SpecificationError(
+                "Need either 'url' to fetch a remote beakerlib library, "
+                "or 'path' to use a local filesystem library, "
+                "or 'nick' to use the discovered tmt tree as the library."
+            )
+
+        assert isinstance(parent, DiscoverPlugin)  # narrow type
+        assert isinstance(parent.data, DiscoverStepData)  # narrow type
+
+        fmf_path = "."
+        # When using `path` with `url`, it behaves differently from local `path`
+        # TODO: Remove this special handling when DiscoverFmf is more consistent
+        if isinstance(parent.data, DiscoverFmfStepData) and parent.data.url and parent.data.path:
+            fmf_path = parent.data.path
+        path = parent.test_dir / fmf_path
+        identifier.path = path
+        parent.debug(f"Resolving library '{identifier.nick}' to discovered tests: {path}")
+
+        return BeakerLibFromPath.from_identifier(
+            identifier=identifier,
+            parent=parent,  # pyright: ignore[reportUnknownArgumentType]
+            logger=logger,
+        )
 
     @property
     def fmf_node_path(self) -> Path:
