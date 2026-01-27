@@ -31,7 +31,7 @@ class TmtDomain(Domain):
     Sphinx domain for documenting and referencing tmt objects.
 
     For more details see :ref:`tutorial-adding-domain`, and the upstream
-    implementations of :py:class`sphinx.domains.Domain`,
+    implementations of :py:class:`sphinx.domains.Domain`,
     :py:class`sphinx.domains.python.PythonDomain`.
     """
 
@@ -72,7 +72,7 @@ class TmtDomain(Domain):
         """
         Sphinx objects being documented.
 
-        This mimics :py:attr`sphinx.domains.python.PythonDomain.objects`,
+        This mimics :py:attr:`sphinx.domains.python.PythonDomain.objects`,
         with an additional layer.
 
         The outermost dict structure is:
@@ -180,7 +180,7 @@ class TmtDomain(Domain):
                     self.objects[typ][obj_name] = obj
         # Merge tmt trees
         for path, tree in otherdata["tmt_trees"].items():
-            # tmt trees are not linked to specific documents so just merge wathereve we have
+            # tmt trees are not linked to specific documents so just merge whatever we have
             if path not in self.tmt_trees:
                 # TODO: Should handle duplicates better here
                 self.tmt_trees[path] = tree
