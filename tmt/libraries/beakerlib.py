@@ -225,12 +225,15 @@ class BeakerLib(Library):
         local_repo_path = self.parent.workdir / self.dest / self.repo
         local_library_path = local_repo_path / self.fmf_node_path
         if cached_library := self._library_cache.get(local_library_path):
-            # TODO: Allow conflicting libraries from dependencies
-            # TODO: consider nullifying the require/recommend lists to avoid circular loops
-            raise tmt.utils.GeneralError(
-                f"Library '{self._show_ref()}' conflicts with previously fetched "
-                f"'{cached_library._show_ref()}'."
+            # Use the already cached library as the source
+            self.parent.debug(
+                f"Reusing previously fetched library '{self}' from {cached_library._show_ref()}",
+                level=3,
             )
+            self.tree = cached_library.tree
+            self.require = []
+            self.recommend = []
+            return
 
         # Otherwise do the actual fetch and finalize the library
         self.parent.debug(f"Fetch library '{self}'.", level=3)
