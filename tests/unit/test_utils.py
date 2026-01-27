@@ -770,7 +770,7 @@ def test_command_run_without_streaming(root_logger: Logger, caplog) -> None:
         cwd=Path.cwd(), stream_output=True, logger=root_logger
     )
 
-    assert_log(caplog, message=MATCH('out: drwx.+? mnt'))
+    assert_log(caplog, message=MATCH('stdout: drwx.+? mnt'))
 
     caplog.clear()
 
@@ -778,7 +778,7 @@ def test_command_run_without_streaming(root_logger: Logger, caplog) -> None:
         cwd=Path.cwd(), stream_output=False, logger=root_logger
     )
 
-    assert_not_log(caplog, message=MATCH('out: drwx.+? mnt'))
+    assert_not_log(caplog, message=MATCH('stdout: drwx.+? mnt'))
 
     caplog.clear()
 
@@ -787,8 +787,8 @@ def test_command_run_without_streaming(root_logger: Logger, caplog) -> None:
             cwd=Path.cwd(), stream_output=False, logger=root_logger
         )
 
-    assert_log(caplog, message=MATCH('out: drwx.+? mnt'))
-    assert_log(caplog, message=MATCH("err: ls: cannot access '/does/not/exist'"))
+    assert_log(caplog, message=MATCH('stdout: drwx.+? mnt'))
+    assert_log(caplog, message=MATCH("stderr: ls: cannot access '/does/not/exist'"))
 
 
 def test_get_distgit_handler():

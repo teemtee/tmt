@@ -1386,7 +1386,7 @@ class Command:
         if not interactive:
             # Create and start stream loggers
             stdout_logger = StreamLogger(
-                'out',
+                'stdout',
                 stream=process.stdout,
                 logger=output_logger,
                 click_context=click.get_current_context(silent=True),
@@ -1394,11 +1394,11 @@ class Command:
             )
 
             if join:
-                stderr_logger: StreamLogger = UnusedStreamLogger('err')
+                stderr_logger: StreamLogger = UnusedStreamLogger('stderr')
 
             else:
                 stderr_logger = StreamLogger(
-                    'err',
+                    'stderr',
                     stream=process.stderr,
                     logger=output_logger,
                     click_context=click.get_current_context(silent=True),
@@ -1484,11 +1484,11 @@ class Command:
             if not stream_output:
                 if stdout is not None:
                     for line in stdout.splitlines():
-                        output_logger('out', value=line, color='yellow', level=3)
+                        output_logger('stdout', value=line, color='yellow', level=3)
 
                 if stderr is not None:
                     for line in stderr.splitlines():
-                        output_logger('err', value=line, color='yellow', level=3)
+                        output_logger('stderr', value=line, color='yellow', level=3)
 
             raise RunError(
                 f"Command '{friendly_command or str(self)}' returned {process.returncode}.",

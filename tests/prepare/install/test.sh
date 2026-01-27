@@ -240,35 +240,35 @@ rlJournalStart
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
             if is_centos_7 "$image"; then
-                rlAssertGrep "out: no package provides tree-but-spelled-wrong" $rlRun_LOG
+                rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ostree "$image"; then
                 if [ "$PROVISION_HOW" = "virtual" ]; then
-                    rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                    rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
                 else
-                    rlAssertGrep "err: error: Packages not found: tree-but-spelled-wrong" $rlRun_LOG
+                    rlAssertGrep "stderr: error: Packages not found: tree-but-spelled-wrong" $rlRun_LOG
                 fi
 
             elif is_fedora_coreos "$image"; then
-                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_fedora_rawhide "$image"; then
-                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_fedora_eln "$image"; then
-                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_fedora_43 "$image"; then
-                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ubuntu "$image" || is_debian "$image"; then
-                rlAssertGrep "err: E: Unable to locate package tree-but-spelled-wrong" $rlRun_LOG
+                rlAssertGrep "stderr: E: Unable to locate package tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_alpine "$image"; then
-                rlAssertGrep "err:   tree-but-spelled-wrong (no such package)" $rlRun_LOG
+                rlAssertGrep "stderr:   tree-but-spelled-wrong (no such package)" $rlRun_LOG
 
             else
-                rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
+                rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
             fi
         rlPhaseEnd
 
@@ -278,35 +278,35 @@ rlJournalStart
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
             if is_centos_7 "$image"; then
-                rlAssertGrep "out: no package provides tree-but-spelled-wrong" $rlRun_LOG
+                rlAssertGrep "stdout: no package provides tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ostree "$image"; then
                 if [ "$PROVISION_HOW" = "virtual" ]; then
-                    rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                    rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
                 else
-                    rlAssertGrep "err: error: Packages not found: tree-but-spelled-wrong" $rlRun_LOG
+                    rlAssertGrep "stderr: error: Packages not found: tree-but-spelled-wrong" $rlRun_LOG
                 fi
 
             elif is_fedora_coreos "$image"; then
-                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_fedora_rawhide "$image"; then
-                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_fedora_eln "$image"; then
-                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_fedora_43 "$image"; then
-                rlAssertGrep "err: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+                rlAssertGrep "stderr: No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_ubuntu "$image" || is_debian "$image"; then
-                rlAssertGrep "err: E: Unable to locate package tree-but-spelled-wrong" $rlRun_LOG
+                rlAssertGrep "stderr: E: Unable to locate package tree-but-spelled-wrong" $rlRun_LOG
 
             elif is_alpine "$image"; then
-                rlAssertGrep "err:   tree-but-spelled-wrong (no such package)" $rlRun_LOG
+                rlAssertGrep "stderr:   tree-but-spelled-wrong (no such package)" $rlRun_LOG
 
             else
-                rlAssertGrep "err: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
+                rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
             fi
         rlPhaseEnd
 
