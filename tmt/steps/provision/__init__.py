@@ -2922,7 +2922,7 @@ class GuestSsh(Guest, GuestCommandCollector):
         env: Optional[tmt.utils.Environment] = None,
     ) -> None:
         """
-        Collect a command for later Containerfile execution.
+        Collect a command for later container image building.
 
         For bootc guests, this adds a RUN directive to the Containerfile.
         """
