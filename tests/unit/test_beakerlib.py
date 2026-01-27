@@ -10,12 +10,12 @@ from tmt.utils import Path
 
 
 @pytest.mark.web
-def test_basic(root_logger):
+def test_basic(root_logger, tmppath):
     """
     Fetch a beakerlib library with/without providing a parent
     """
 
-    parent = tmt.utils.Common(logger=root_logger, workdir=True)
+    parent = tmt.utils.Common(logger=root_logger, workdir=tmppath)
     library_with_parent = tmt.libraries.Library.from_identifier(
         logger=root_logger,
         identifier=tmt.base.core.DependencySimple('library(openssl/certgen)'),
@@ -66,12 +66,12 @@ def test_require_from_fmf(url, name, default_branch, root_logger):
 
 
 @pytest.mark.web
-def test_invalid_url_conflict(root_logger):
+def test_invalid_url_conflict(root_logger, tmppath):
     """
     Saner check if url mismatched for translated library
     """
 
-    parent = tmt.utils.Common(logger=root_logger, workdir=True)
+    parent = tmt.utils.Common(logger=root_logger, workdir=tmppath)
     # Fetch to cache 'tmt' repo
     tmt.libraries.Library.from_identifier(
         logger=root_logger,
@@ -89,16 +89,15 @@ def test_invalid_url_conflict(root_logger):
         tmt.libraries.Library.from_identifier(
             logger=root_logger, identifier='library(tmt/foo)', parent=parent
         )
-    shutil.rmtree(parent.workdir)
 
 
 @pytest.mark.web
-def test_dependencies(root_logger):
+def test_dependencies(root_logger, tmppath):
     """
     Check requires for possible libraries
     """
 
-    parent = tmt.utils.Common(logger=root_logger, workdir=True)
+    parent = tmt.utils.Common(logger=root_logger, workdir=tmppath)
     requires, recommends, libraries = tmt.libraries.dependencies(
         original_require=[
             tmt.base.core.DependencySimple('library(httpd/http)'),
@@ -129,17 +128,16 @@ def test_dependencies(root_logger):
     )
     assert libraries[1].repo == Path('openssl')
     assert libraries[1].name == '/certgen'
-    shutil.rmtree(parent.workdir)
 
 
 @pytest.mark.web
-def test_mark_nonexistent_url(root_logger, monkeypatch):
+def test_mark_nonexistent_url(root_logger, monkeypatch, tmppath):
     """
     Check url existence just one time
     """
 
     non_existent_url = 'https://github.com/beakerlib/THISDOESNTEXIST'
-    parent = tmt.utils.Common(logger=root_logger, workdir=True)
+    parent = tmt.utils.Common(logger=root_logger, workdir=tmppath)
     identifier = tmt.base.core.DependencyFmfId(
         url=non_existent_url,
         name='/',
