@@ -271,9 +271,11 @@ class Bootc(PackageManager[BootcEngine]):
 
                 assert self.guest.parent is not None
 
+                # Mount run_workdir so scripts have access to tmt files during build.
+                # Use :Z for SELinux private label.
                 self.guest.execute(
                     ShellScript(
-                        f'{self.guest.facts.sudo_prefix} podman build -t {image_tag} -f {containerfile_path} {self.guest.step_workdir}'  # noqa: E501
+                        f'{self.guest.facts.sudo_prefix} podman build -v {self.guest.run_workdir}:{self.guest.run_workdir}:Z -t {image_tag} -f {containerfile_path} {self.guest.run_workdir}'  # noqa: E501
                     ),
                 )
 
