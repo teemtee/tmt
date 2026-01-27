@@ -4,6 +4,7 @@ from typing import Optional
 import tmt.base
 import tmt.steps
 import tmt.utils
+from tmt._compat.typing import Self
 from tmt.container import container, field
 from tmt.log import Logger
 from tmt.steps import PluginOutcome
@@ -41,6 +42,28 @@ class PrepareArtifactData(PrepareStepData):
 
 
 @container
+class NVR:
+    """
+    Represents a RPM package NVR (Name-Version-Release).
+    """
+
+    name: str
+    version: str
+    release: str
+
+    @classmethod
+    def from_rpm_meta(cls, rpm_meta: dict[str, str]) -> Self:
+        return cls(
+            name=rpm_meta["name"],
+            version=rpm_meta["version"],
+            release=rpm_meta["release"],
+        )
+
+    def __str__(self) -> str:
+        return f"{self.name}-{self.version}-{self.release}"
+
+
+@container
 class RpmArtifactInfo(ArtifactInfo):
     """
     Represents a single RPM package.
@@ -56,6 +79,10 @@ class RpmArtifactInfo(ArtifactInfo):
     @property
     def location(self) -> str:
         return self._raw_artifact['url']
+
+    @property
+    def nvr(self) -> NVR:
+        return NVR.from_rpm_meta(self._raw_artifact)
 
 
 def get_artifact_provider(provider_id: str) -> type[ArtifactProvider[ArtifactInfo]]:
