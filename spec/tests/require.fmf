@@ -90,7 +90,11 @@ example:
         name: /certgen
 
   - |
-    # Library from the current tmt tree
+    # The following would take the `certgen` library from the top
+    # level directory of the discovered `fmf` tree (the parent discover
+    #  phase that imports the current test) and place it as
+    # `libs/openssl/certgen` so that it could be imported using
+    # `rlImport openssl/certgen`:
     require:
       - type: library
         name: /certgen
