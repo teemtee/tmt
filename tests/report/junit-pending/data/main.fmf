@@ -1,0 +1,18 @@
+/test:
+    test: shutdown -h now && sleep 60
+    duration: 5s
+    /1-passed:
+        test: 'true'
+        id: 86ef8a3d-bb6c-4c6e-86bb-1751ab8da302
+    /2-error:
+        id: 2af20892-8474-4cf9-ba8c-b9bd1cca5078
+    /3-pending:
+        id: 5435a332-3b68-4bd4-a614-ac5b605ae346
+    /4-no-id-pending:
+        extra-nitrate: TC#0118999
+        extra-task: /fire/!/fire
+/plan:
+    discover:
+        how: fmf
+    execute:
+        how: tmt
