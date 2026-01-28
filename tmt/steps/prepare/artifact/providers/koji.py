@@ -14,7 +14,7 @@ import tmt.log
 import tmt.utils
 import tmt.utils.hints
 from tmt.container import container
-from tmt.steps.prepare.artifact import RpmArtifactInfo
+from tmt.steps.prepare.artifact import NVRA, RpmArtifactInfo, RpmMeta
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
@@ -70,6 +70,10 @@ class ScratchRpmArtifactInfo(RpmArtifactInfo):
     @property
     def id(self) -> str:
         return f"{self._raw_artifact['filename']}"
+
+    @cached_property
+    def nvra(self) -> NVRA:
+        return NVRA.from_filename(self._raw_artifact["filename"])
 
 
 BuildT = TypeVar(
@@ -215,27 +219,16 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         )
         self.logger.info(f"Contributed artifacts from '{source_path}' to '{shared_repo_dir}'.")
 
-    def _rpm_url(self, rpm_meta: dict[str, str]) -> str:
-        """Construct Koji RPM URL."""
-        assert self.build_info is not None
-        package_name = self.build_info["package_name"]
-        name = rpm_meta["name"]
-        version = rpm_meta["version"]
-        release = rpm_meta["release"]
-        arch = rpm_meta["arch"]
-        path = (
-            f"packages/{package_name}/"
-            f"{version}/{release}/"
-            f"{arch}/"
-            f"{name}-{version}-{release}.{arch}.rpm"
-        )
-        return urljoin(self._top_url, path)
-
-    def make_rpm_artifact(self, rpm_meta: dict[str, str]) -> RpmArtifactInfo:
+    def make_rpm_artifact(self, rpm_meta: RpmMeta) -> RpmArtifactInfo:
         """
         Create a normal build RPM artifact from metadata returned by listBuildRPMs.
         """
-        return RpmArtifactInfo(_raw_artifact={**rpm_meta, "url": self._rpm_url(rpm_meta)})
+        assert self.build_info is not None
+        package_name = self.build_info["package_name"]
+        nvra = NVRA.from_rpm_meta(rpm_meta)
+        path = f"packages/{package_name}/{nvra.version}/{nvra.release}/{nvra.arch}/{nvra}.rpm"
+
+        return RpmArtifactInfo(_raw_artifact={**rpm_meta, "url": urljoin(self._top_url, path)})
 
 
 @provides_artifact_provider("koji.task")  # type: ignore[arg-type]
