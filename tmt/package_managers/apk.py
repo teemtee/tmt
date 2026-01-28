@@ -155,6 +155,12 @@ class Apk(PackageManager[ApkEngine]):
 
     _engine_class = ApkEngine
 
+    # Compiled regex patterns for APK error messages
+    _UNABLE_TO_LOCATE_PATTERN = re.compile(r'unable to locate package\s+([^\s]+)', re.IGNORECASE)
+    _NO_SUCH_PACKAGE_PATTERN = re.compile(r'ERROR:\s+([^\s:]+):\s+No such package', re.IGNORECASE)
+
+    _FAILED_PACKAGE_INSTALLATION_PATTERNS = [_UNABLE_TO_LOCATE_PATTERN, _NO_SUCH_PACKAGE_PATTERN]
+
     probe_command = Command('apk', '--version')
 
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
