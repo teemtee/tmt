@@ -2312,7 +2312,11 @@ class Guest(
         :param env: if set, set these environment variables before running the command.
         :param friendly_command: nice, human-friendly representation of the command.
         :param test_session: if True, this is the actual test being run.
-        :param make_changes: if True (default), the command modifies system state.
+        :param make_changes: if True, the command modifies system state.
+            For bootc guests implementing :py:class:`GuestCommandCollector`,
+            commands with ``make_changes=True`` are collected into a Containerfile
+            rather than executed immediately. Commands with ``make_changes=False``
+            (default, probes/checks) are always executed immediately.
             For bootc guests implementing :py:class:`GuestCommandCollector`,
             commands with ``make_changes=True`` are collected into a Containerfile
             rather than executed immediately. Commands with ``make_changes=False``
