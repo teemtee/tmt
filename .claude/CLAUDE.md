@@ -164,7 +164,9 @@ For read-only access to public repositories, `public_repo`, `read:org`, and `rea
 ### Claude Code
 
 ```bash
-claude mcp add github -- podman run -e GITHUB_PERSONAL_ACCESS_TOKEN=<your-token> --rm -i ghcr.io/github/github-mcp-server
+# create a file secretfile with value of your GitHub personal access token
+podman secret create github_token secretfile
+claude mcp add github -- podman run --secret=github_token,type=env,target=GITHUB_PERSONAL_ACCESS_TOKEN --rm -i ghcr.io/github/github-mcp-server
 ```
 
 Verify with:
