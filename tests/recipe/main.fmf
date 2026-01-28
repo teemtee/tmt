@@ -1,1 +1,12 @@
-summary: Verify recipe generation works as expected
+duration: 25m
+tag+: [beakerlib]
+require+:
+  - tmt+provision-container
+
+/generate:
+    summary: Verify recipe generation works as expected
+    test: ./generate.sh
+
+/load:
+    summary: Verify recipe loading works as expected
+    test: ./load.sh
