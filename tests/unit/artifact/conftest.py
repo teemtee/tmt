@@ -22,13 +22,15 @@ def mock_koji(mock_pathinfo):
     mock_koji = MagicMock()
     mock_koji.PathInfo.return_value = mock_pathinfo
 
+    mock_session = MagicMock()
+
+    def mock_initialize_session(self, api_url=None, top_url=None):
+        self._top_url = top_url or "http://koji.example.com/"
+        self._api_url = api_url or "http://koji.example.com/kojihub"
+        return mock_session
+
     with (
-        patch.object(KojiArtifactProvider, "_initialize_session", return_value=MagicMock()),
-        patch.object(
-            KojiArtifactProvider,
-            "_rpm_url",
-            side_effect=lambda rpm: f"http://koji.example.com/{rpm['name']}.rpm",
-        ),
+        patch.object(KojiArtifactProvider, "_initialize_session", mock_initialize_session),
         patch.object(koji_module, "koji", mock_koji),
     ):
         yield mock_koji
