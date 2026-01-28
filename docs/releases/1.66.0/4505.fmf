@@ -1,0 +1,4 @@
+description: |
+  :ref:`/plugins/prepare/artifact` plugin gains new key, ``default-repository-priority``,
+  for setting priority of package repositories created by the plugin
+  when the repositories do not have the priority set already by user.
