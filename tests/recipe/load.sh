@@ -26,10 +26,10 @@ rlJournalStart
 
     rlPhaseStartTest "Test recipe loading with non-existent plan"
         rlRun "temp=\$(mktemp -d)" 0 "Create temporary directory"
-        rlRun "cp -r .fmf plans.fmf tests.fmf simple.yaml $temp"
+        rlRun "cp -r .fmf simple.yaml $temp"
         rlRun "pushd $temp"
         rlRun -s "tmt run -vvv --scratch --id $run --recipe simple.yaml" 2 "Remote plan is not in the recipe"
-        rlAssertGrep "Plan '/plans/remote' not found in the recipe" $rlRun_LOG
+        rlAssertGrep "Plan '/default/plan' not found in the recipe" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
