@@ -71,3 +71,39 @@ get_koji_build_id() {
     KOJI_BUILD_ID="${BASH_REMATCH[1]}"
     rlLogInfo "Found build ID: $KOJI_BUILD_ID"
 }
+
+# Get koji NVR from package name (fetch latest for tag)
+#
+# Usage:
+#   get_koji_nvr "make" "f43"
+#   echo "$KOJI_NVR"
+#
+# Arguments:
+#   $1 - package name (e.g., "make")
+#   $2 - koji tag (e.g., "f43")
+#
+# Sets:
+#   KOJI_NVR - the NVR on success
+#
+# On failure, calls rlDie to abort the test.
+#
+# Note: This function uses rlRun for logging. The NVR is stored
+# in the KOJI_NVR global variable (not printed to stdout) to
+# avoid capturing rlRun output when using command substitution.
+#
+get_koji_nvr() {
+    local package="$1"
+    local tag="$2"
+    unset KOJI_NVR  # Clear any previous value
+
+    # Get the latest tagged build for the package
+    # Output format: "make-4.4.1-10.fc42    f42    releng"
+    rlRun -s "koji list-tagged --latest $tag $package" 0 "Get the latest $package build"
+
+    # The NVR should be the first word in the last line
+    if [[ ! "$(tail -1 $rlRun_LOG)" =~ ^([^[:space:]]+) ]]; then
+        rlDie "Failed to get koji NVR: NVR regex failed for '$package' tag '$tag'"
+    fi
+    KOJI_NVR="${BASH_REMATCH[1]}"
+    rlLogInfo "Found NVR: $KOJI_NVR"
+}
