@@ -1,0 +1,5 @@
+description: |
+  A regression was introduced into :ref:`virtual</plugins/provision/virtual.testcloud>`
+  provision plugin in recent guest log refactoring, and console log path
+  shown to user was invalid. This bug is now fixed, together with improved
+  implementation of ``virtual`` guest log collection.

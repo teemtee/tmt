@@ -1,0 +1,4 @@
+description: |
+  The ``repository`` and ``revision`` keys of :ref:`/plugins/discover/fmf`
+  plugin are now deprecated. Users should switch to ``url`` and ``ref``
+  keys, respectively.
