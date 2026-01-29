@@ -26,7 +26,7 @@ rlJournalStart
         rlRun -s "tmt run -vv --all --id $run --verbose --scratch \
             provision --how container --image $TEST_IMAGE_PREFIX/alpine:latest \
             execute --how tmt --script whoami" 0
-        rlAssertGrep "out: root" $rlRun_LOG
+        rlAssertGrep "stdout: root" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
