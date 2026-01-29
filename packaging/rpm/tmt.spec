@@ -137,15 +137,17 @@ Provides:       tmt-all == %{version}-%{release}
 %if 0%{?fedora} < 40
 Obsoletes:      tmt-all < %{version}-%{release}
 %endif
-Requires:       tmt+test-convert == %{version}-%{release}
 Requires:       tmt+export-polarion == %{version}-%{release}
-Requires:       tmt+provision-container == %{version}-%{release}
-Requires:       tmt+provision-virtual == %{version}-%{release}
+Requires:       tmt+link-jira == %{version}-%{release}
+Requires:       tmt+prepare-artifact == %{version}-%{release}
 Requires:       tmt+provision-beaker == %{version}-%{release}
+Requires:       tmt+provision-bootc == %{version}-%{release}
+Requires:       tmt+provision-container == %{version}-%{release}
+Requires:       tmt+provision-mock == %{version}-%{release}
+Requires:       tmt+provision-virtual == %{version}-%{release}
 Requires:       tmt+report-junit == %{version}-%{release}
 Requires:       tmt+report-polarion == %{version}-%{release}
-Requires:       tmt+prepare-artifact == %{version}-%{release}
-Requires:       tmt+provision-mock == %{version}-%{release}
+Requires:       tmt+test-convert == %{version}-%{release}
 
 %description -n tmt+all
 All extra dependencies of the Test Management Tool. Install this
