@@ -1948,6 +1948,7 @@ class _RemotePlanReference(_RawFmfId):
     scope: Optional[str]
     inherit_context: Optional[bool]
     inherit_environment: Optional[bool]
+    adjust_plans: Optional[Any]
 
 
 class RemotePlanReferenceImporting(enum.Enum):
@@ -1991,12 +1992,14 @@ class RemotePlanReference(
         'scope',
         'inherit-context',
         'inherit-environment',
+        'adjust-plans',
     ]
 
     importing: RemotePlanReferenceImporting = RemotePlanReferenceImporting.REPLACE
     scope: RemotePlanReferenceImportScope = RemotePlanReferenceImportScope.FIRST_PLAN_ONLY
     inherit_context: bool = True
     inherit_environment: bool = True
+    adjust_plans: Optional[Any] = None
 
     @functools.cached_property
     def name_pattern(self) -> Pattern[str]:
@@ -2081,6 +2084,7 @@ class RemotePlanReference(
         )
         reference.inherit_context = bool(raw.get('inherit-context', True))
         reference.inherit_environment = bool(raw.get('inherit-environment', True))
+        reference.adjust_plans = raw.get('adjust-plans', None)
 
         return reference
 
@@ -3223,6 +3227,16 @@ class Plan(
             f"Looking for plans in '{tree.root}' matching '{reference.name_pattern}'", level=3
         )
 
+        # Apply adjust-plans rules if specified, similar to adjust-tests
+        if reference.adjust_plans:
+            tmt_tree = tmt.Tree(
+                logger=self._logger,
+                path=tree.root,
+                fmf_context=self.fmf_context,
+                additional_rules=reference.adjust_plans,
+            )
+            tree = tmt_tree.tree
+
         for node in tree.prune(keys=['execute']):
             if reference.name_pattern.match(node.name) is not None:
                 yield node
@@ -3353,6 +3367,9 @@ class Plan(
                 alteration_fmf_context = FmfContext(
                     {**imported_fmf_context, **self._noninheritable_fmf_context}
                 )
+
+            # Step inheritance is now handled by adjust-plans rules via additional_rules
+            # in the Tree constructor, similar to how adjust-tests works
 
             # Adjust the imported tree, to let any `adjust` rules defined in it take
             # action.
