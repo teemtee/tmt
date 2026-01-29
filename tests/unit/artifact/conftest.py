@@ -22,12 +22,10 @@ def mock_koji(mock_pathinfo):
     mock_koji = MagicMock()
     mock_koji.PathInfo.return_value = mock_pathinfo
 
-    mock_session = MagicMock()
-
     def mock_initialize_session(self, api_url=None, top_url=None):
         self._top_url = top_url or "http://koji.example.com/"
         self._api_url = api_url or "http://koji.example.com/kojihub"
-        return mock_session
+        return MagicMock()
 
     with (
         patch.object(KojiArtifactProvider, "_initialize_session", mock_initialize_session),
@@ -38,14 +36,12 @@ def mock_koji(mock_pathinfo):
 
 @pytest.fixture
 def mock_brew(mock_koji):
-    with (
-        patch.object(BrewArtifactProvider, "_initialize_session", return_value=MagicMock()),
-        patch.object(
-            BrewArtifactProvider,
-            "_rpm_url",
-            side_effect=lambda rpm: f"http://brew.example.com/{rpm['name']}.rpm",
-        ),
-    ):
+    def mock_initialize_session(self, api_url=None, top_url=None):
+        self._top_url = top_url or "http://brew.example.com/"
+        self._api_url = api_url or "http://brew.example.com/brewhub"
+        return MagicMock()
+
+    with patch.object(BrewArtifactProvider, "_initialize_session", mock_initialize_session):
         yield mock_koji
 
 

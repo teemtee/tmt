@@ -46,7 +46,7 @@ class PrepareArtifactData(PrepareStepData):
 @container(frozen=True)
 class NVRA:
     """
-    Represents a RPM package NVRA (Name-Version-Release-Architecture).
+    Represents a RPM package NVRA (Name-Version-Release.Architecture).
     """
 
     name: str
