@@ -30,7 +30,7 @@ rlJournalStart
                     cmd+="plan --name $plan test --name $test "
                     cmd+="2>&1 | tee $output"
                     rlRun "$cmd"
-                    rlAssertGrep 'out: Smoke test for yaml' $output
+                    rlAssertGrep 'stdout: Smoke test for yaml' $output
                     if [[ $image == "$TEST_IMAGE_PREFIX/ubi/8/upstream:latest" ]]; then
                         rlAssertGrep 'python3-yaml' $output
                         rlAssertNotGrep 'PyYAML' $output

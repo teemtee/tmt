@@ -16,7 +16,7 @@ rlJournalStart
             rlAssertGrep "package: 1 package requested" $rlRun_LOG
             rlAssertGrep "/usr/bin/flock" $rlRun_LOG
             rlAssertGrep "cmd: rpm -q --whatprovides /usr/bin/flock" $rlRun_LOG
-            rlAssertGrep "out: util-linux-core" $rlRun_LOG
+            rlAssertGrep "stdout: util-linux-core" $rlRun_LOG
             rlAssertNotGrep "Trying to pull quay.io/testing-farm/centos-bootc:stream10" $rlRun_LOG
             rlRun "rm -rf $run" 0 "Remove run directory"
         rlPhaseEnd

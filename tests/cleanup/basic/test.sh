@@ -9,9 +9,9 @@ rlJournalStart
 
     rlPhaseStartTest
         rlRun -s "tmt run -vvv --id $run" 2 "Run failed during report step"
-        rlAssertGrep "out: Prepare step executed" $rlRun_LOG
+        rlAssertGrep "stdout: Prepare step executed" $rlRun_LOG
         rlRun -s "yq -e '.status == \"done\"' $run/plan/cleanup/step.yaml" 0 "Cleanup step was executed"
-        rlAssertNotGrep "out: Finish step executed" $rlRun_LOG
+        rlAssertNotGrep "stdout: Finish step executed" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

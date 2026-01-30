@@ -69,13 +69,13 @@ rlJournalStart
         client2_hostname="$(yq '."client-2" | .container' $run/plans/provision/guests.yaml)"
         server_hostname="$(yq '."server" | .container' $run/plans/provision/guests.yaml)"
 
-        rlRun "client1_topology_yaml=$(grep -Po '(?<=^\[client-1 \(client\)\]             out: TMT_TOPOLOGY_YAML=).*' $rlRun_LOG)"
-        rlRun "client2_topology_yaml=$(grep -Po '(?<=^\[client-2 \(client\)\]             out: TMT_TOPOLOGY_YAML=).*' $rlRun_LOG)"
-        rlRun "server_topology_yaml=$(grep -Po '(?<=^            out: TMT_TOPOLOGY_YAML=).*' $rlRun_LOG)"
+        rlRun "client1_topology_yaml=$(grep -Po '(?<=^\[client-1 \(client\)\]             stdout: TMT_TOPOLOGY_YAML=).*' $rlRun_LOG)"
+        rlRun "client2_topology_yaml=$(grep -Po '(?<=^\[client-2 \(client\)\]             stdout: TMT_TOPOLOGY_YAML=).*' $rlRun_LOG)"
+        rlRun "server_topology_yaml=$(grep -Po '(?<=^            stdout: TMT_TOPOLOGY_YAML=).*' $rlRun_LOG)"
 
-        rlRun "client1_topology_sh=$(grep -Po '(?<=^\[client-1 \(client\)\]             out: TMT_TOPOLOGY_BASH=).*' $rlRun_LOG)"
-        rlRun "client2_topology_sh=$(grep -Po '(?<=^\[client-2 \(client\)\]             out: TMT_TOPOLOGY_BASH=).*' $rlRun_LOG)"
-        rlRun "server_topology_sh=$(grep -Po '(?<=^            out: TMT_TOPOLOGY_BASH=).*' $rlRun_LOG)"
+        rlRun "client1_topology_sh=$(grep -Po '(?<=^\[client-1 \(client\)\]             stdout: TMT_TOPOLOGY_BASH=).*' $rlRun_LOG)"
+        rlRun "client2_topology_sh=$(grep -Po '(?<=^\[client-2 \(client\)\]             stdout: TMT_TOPOLOGY_BASH=).*' $rlRun_LOG)"
+        rlRun "server_topology_sh=$(grep -Po '(?<=^            stdout: TMT_TOPOLOGY_BASH=).*' $rlRun_LOG)"
 
         check_current_topology "$client1_topology_yaml" "client-1" "client" "$client1_hostname"
         check_current_topology "$client2_topology_yaml" "client-2" "client" "$client2_hostname"
@@ -111,13 +111,13 @@ rlJournalStart
         client2_hostname="$(yq '."client-2" | .container' $run/plans/provision/guests.yaml)"
         server_hostname="$(yq '."server" | .container' $run/plans/provision/guests.yaml)"
 
-        rlRun "client1_topology_yaml=$(grep -Po '(?<=^\[client-1 \(client\)\]                 out: TMT_TOPOLOGY_YAML=).*B-2.*' $rlRun_LOG)"
-        rlRun "client2_topology_yaml=$(grep -Po '(?<=^\[client-2 \(client\)\]                 out: TMT_TOPOLOGY_YAML=).*B-2.*' $rlRun_LOG)"
-        rlRun "server_topology_yaml=$(grep -Po '(?<=^\[server \(server\)\]                   out: TMT_TOPOLOGY_YAML=).*B-2.*' $rlRun_LOG)"
+        rlRun "client1_topology_yaml=$(grep -Po '(?<=^\[client-1 \(client\)\]                 stdout: TMT_TOPOLOGY_YAML=).*B-2.*' $rlRun_LOG)"
+        rlRun "client2_topology_yaml=$(grep -Po '(?<=^\[client-2 \(client\)\]                 stdout: TMT_TOPOLOGY_YAML=).*B-2.*' $rlRun_LOG)"
+        rlRun "server_topology_yaml=$(grep -Po '(?<=^\[server \(server\)\]                   stdout: TMT_TOPOLOGY_YAML=).*B-2.*' $rlRun_LOG)"
 
-        rlRun "client1_topology_sh=$(grep -Po '(?<=^\[client-1 \(client\)\]                 out: TMT_TOPOLOGY_BASH=).*B-2.*' $rlRun_LOG)"
-        rlRun "client2_topology_sh=$(grep -Po '(?<=^\[client-2 \(client\)\]                 out: TMT_TOPOLOGY_BASH=).*B-2.*' $rlRun_LOG)"
-        rlRun "server_topology_sh=$(grep -Po '(?<=^\[server \(server\)\]                   out: TMT_TOPOLOGY_BASH=).*B-2.*' $rlRun_LOG)"
+        rlRun "client1_topology_sh=$(grep -Po '(?<=^\[client-1 \(client\)\]                 stdout: TMT_TOPOLOGY_BASH=).*B-2.*' $rlRun_LOG)"
+        rlRun "client2_topology_sh=$(grep -Po '(?<=^\[client-2 \(client\)\]                 stdout: TMT_TOPOLOGY_BASH=).*B-2.*' $rlRun_LOG)"
+        rlRun "server_topology_sh=$(grep -Po '(?<=^\[server \(server\)\]                   stdout: TMT_TOPOLOGY_BASH=).*B-2.*' $rlRun_LOG)"
 
         check_current_topology "$client1_topology_yaml" "client-1" "client" "$client1_hostname"
         check_current_topology "$client2_topology_yaml" "client-2" "client" "$client2_hostname"
