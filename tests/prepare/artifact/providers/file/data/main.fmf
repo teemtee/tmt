@@ -3,13 +3,6 @@
         how: fmf
     provision:
         how: container
-    prepare:
-      - how: artifact
-        provide:
-          # Remote URL (cowsay) - placeholder, overridden by outer test
-          - file:https://kojipkgs.fedoraproject.org/packages/cowsay/3.8.4/3.fc43/noarch/cowsay-3.8.4-3.fc43.noarch.rpm
-          # Local file (figlet) - placeholder, overridden by outer test
-          - file:/tmp/figlet.rpm
     execute:
         how: tmt
 
@@ -20,5 +13,5 @@
     require:
       - cowsay
       - figlet
-      - jq
-      - nano
+      - boxes
+      - fortune-mod
