@@ -28,7 +28,7 @@ def test_invalid_repository_id(raw_id, error, artifact_provider):
         artifact_provider(raw_id)
 
 
-def test_fetch_contents_enables_repository(mock_installer, root_logger, tmppath):
+def test_fetch_contents_enables_repository(mock_installer, artifact_provider, tmppath):
     mock_guest = MagicMock()
     mock_pm = MagicMock()
     mock_pm.NAME = "dnf"
