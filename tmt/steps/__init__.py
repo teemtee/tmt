@@ -2820,9 +2820,10 @@ class Login(Action):
             '-t',
             '--test',
             is_flag=True,
-            help='Log into the guest after each test (per-test mode). '
-            'Disables default step-level login unless combined with --step. '
-            'Use --when <result> for conditional login (e.g. --when fail).',
+            help="""
+                 Log into the guest after each test (per-test mode). Disables default step-level
+                 login unless combined with --step.
+                 """,
         )
         def login(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             """
@@ -2914,13 +2915,9 @@ class Login(Action):
         Run the interactive command
         """
 
-        # Check for guestless steps where login should not be allowed
-        step_name = self.parent.name if self.parent else "unknown"
-        guestless_steps = ['discover']
-        if step_name in guestless_steps:
-            self.info(
-                'login', f'Login not allowed in {step_name} step (guestless)', color='yellow'
-            )
+        # Discover step runs before provision, so no guests exist yet
+        if self.parent.name == 'discover':
+            self.warn("Login not possible in discover step (no guests provisioned yet).")
             return
 
         # Nothing to do if there are no guests ready for login

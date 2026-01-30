@@ -32,7 +32,7 @@ rlJournalStart
             elif [ "$step" = "execute" ]; then
                 rlRun "grep '^    $step$' -A9 '$rlRun_LOG' | grep -i interactive"
             elif [ "$step" = "discover" ]; then
-                rlRun "grep '^    $step$' -A9 '$rlRun_LOG' | grep -i 'Login not allowed in discover step'"
+                rlRun "grep '^    $step$' -A9 '$rlRun_LOG' | grep -i 'Login not possible in discover step'"
             else
                 rlRun "grep '^    $step$' -A5 '$rlRun_LOG' | grep -i interactive"
             fi
@@ -45,7 +45,6 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Last run"
-        # Run all steps, cleanup will be the last completed step
         rlRun "tmt run -a provision -h local"
         rlRun -s "tmt run -rl login -c true"
         rlAssertGrep "interactive" "$rlRun_LOG"
