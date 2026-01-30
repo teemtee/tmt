@@ -17,7 +17,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test koji.nvr provider"
-        rlRun "tmt run -i $run --scratch -vv --all \
+        rlRun "tmt run -i $run --scratch -vvv --all \
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
             prepare --how artifact --provide koji.nvr:$KOJI_NVR" 0 "Run with koji.nvr provider"
     rlPhaseEnd

@@ -3,12 +3,6 @@
         how: fmf
     provision:
         how: container
-    prepare:
-      - how: artifact
-        provide:
-          # DUMMY_KOJI_NVR placeholder - replace with actual koji NVR
-          # Example: koji.nvr:make-4.4.1-10.fc43
-          - koji.nvr:DUMMY_KOJI_NVR
     execute:
         how: tmt
 
