@@ -1,9 +1,10 @@
 import typing
-from typing import Optional
+from functools import cached_property
 
 import tmt.base
 import tmt.steps
 import tmt.utils
+from tmt._compat.typing import Self, TypeAlias
 from tmt.container import container, field
 from tmt.log import Logger
 from tmt.steps import PluginOutcome
@@ -16,6 +17,8 @@ from tmt.steps.prepare.artifact.providers import (
 )
 from tmt.steps.provision import Guest
 from tmt.utils import Environment, Path
+
+RpmMeta: TypeAlias = dict[str, str]
 
 
 @container
@@ -40,22 +43,59 @@ class PrepareArtifactData(PrepareStepData):
     )
 
 
+@container(frozen=True)
+class NVRA:
+    """
+    Represents a RPM package NVRA (Name-Version-Release.Architecture).
+    """
+
+    name: str
+    version: str
+    release: str
+    arch: str
+
+    @classmethod
+    def from_rpm_meta(cls, rpm_meta: RpmMeta) -> Self:
+        return cls(
+            name=rpm_meta["name"],
+            version=rpm_meta["version"],
+            release=rpm_meta["release"],
+            arch=rpm_meta["arch"],
+        )
+
+    @classmethod
+    def from_filename(cls, filename: str) -> Self:
+        base = filename.removesuffix(".rpm")
+        nvr_part, *arch_parts = base.rsplit(".", 1)
+        arch = arch_parts[0] if arch_parts else "noarch"
+        name, version, release = nvr_part.rsplit("-", 2)
+
+        return cls(name=name, version=version, release=release, arch=arch)
+
+    def __str__(self) -> str:
+        return f"{self.name}-{self.version}-{self.release}.{self.arch}"
+
+
 @container
 class RpmArtifactInfo(ArtifactInfo):
     """
     Represents a single RPM package.
     """
 
-    _raw_artifact: dict[str, str]
+    _raw_artifact: RpmMeta
 
     @property
     def id(self) -> str:
         """RPM identifier"""
-        return f"{self._raw_artifact['nvr']}.{self._raw_artifact['arch']}.rpm"
+        return f"{self.nvra}.rpm"
 
     @property
     def location(self) -> str:
         return self._raw_artifact['url']
+
+    @cached_property
+    def nvra(self) -> NVRA:
+        return NVRA.from_rpm_meta(self._raw_artifact)
 
 
 def get_artifact_provider(provider_id: str) -> type[ArtifactProvider[ArtifactInfo]]:
@@ -195,7 +235,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         self,
         *,
         guest: Guest,
-        environment: Optional[Environment] = None,
+        environment: typing.Optional[Environment] = None,
         logger: Logger,
     ) -> PluginOutcome:
         from tmt.steps.prepare.artifact.providers.repository import create_repository

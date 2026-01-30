@@ -42,7 +42,7 @@ def mock_koji_brew_build_api_responses(mock_call_api, mock_rpms=None):
         if method == "listBuildRPMs":
             return mock_rpms
         if method == "getBuild":
-            return {"id": MOCK_BUILD_ID_KOJI_BREW}
+            return {"id": MOCK_BUILD_ID_KOJI_BREW, "package_name": "test-package"}
         return None
 
     mock_call_api.side_effect = mock_api
@@ -86,11 +86,13 @@ def mock_task_api_responses(mock_call_api, mock_rpms=None, has_build=True):
             return [{"build_id": MOCK_BUILD_ID_KOJI_BREW}] if has_build else []
         if method == "listBuildRPMs":
             return mock_rpms
+        if method == "getBuild":
+            return {"id": MOCK_BUILD_ID_KOJI_BREW, "package_name": "test-package"}
         if method == "getTaskDescendents":
             task_id = args[0] if args else kwargs.get('taskID')
             return {str(task_id): None, str(task_id + 1): None}
         if method == "listTaskOutput":
-            return ["foo.rpm", "bar.rpm"]
+            return ["foo-1.0-1.fc43.x86_64.rpm", "bar-2.0-1.fc43.x86_64.rpm"]
         return None
 
     mock_call_api.side_effect = mock_api
