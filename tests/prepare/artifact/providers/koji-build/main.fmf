@@ -1,0 +1,4 @@
+summary: Test koji.build artifact provider
+description: |
+    Test koji.build artifact provider which makes packages from Koji
+    builds available using build IDs.

@@ -1185,7 +1185,7 @@ class Core(
                     for suberror in error.context:
                         yield from detect_errors(suberror)
 
-            yield LinterOutcome.FAIL, 'fmf node failed schema validation'
+            yield LinterOutcome.WARN, 'fmf node failed schema validation'
 
             return
 
@@ -3193,6 +3193,13 @@ class Plan(
             value = self.node.data.get(key)
             if value:
                 data[key] = value
+
+        # Export user-defined extra- keys from the node data
+        for key in self.node.data:
+            if key.startswith(EXTRA_KEYS_PREFIX):
+                value = self.node.data.get(key)
+                if value:
+                    data[key] = value
 
         data['context'] = self.fmf_context.to_spec()
 

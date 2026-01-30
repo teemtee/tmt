@@ -1,5 +1,5 @@
 import shutil
-from typing import Optional
+from typing import Literal, Optional
 
 import fmf
 import fmf.utils
@@ -7,12 +7,14 @@ import fmf.utils
 import tmt
 import tmt.log
 import tmt.utils
-from tmt.base import DependencyFile
+from tmt.base import Dependency, DependencyFile
+from tmt.container import container
 from tmt.utils import Path
 
 from . import Library
 
 
+@container
 class File(Library):
     """
     Required files
@@ -20,40 +22,45 @@ class File(Library):
     Takes care of copying required files for specific test or library,
     more details here:
     https://tmt.readthedocs.io/en/latest/spec/tests.html#require
-
-    Optional 'parent' object inheriting from tmt.utils.Common can be
-    provided in order to share the cache of already fetched libraries.
-
-    The following attributes are available in the object:
-
-    repo ........ library prefix (git repository name or nick if provided)
-    pattern ..... filename paths and regexes which need to be copied
     """
 
-    def __init__(
-        self,
+    identifier: DependencyFile  # pyright: ignore[reportIncompatibleVariableOverride]
+    format: Literal['file']  # pyright: ignore[reportIncompatibleVariableOverride]
+
+    #: Filename paths and regexes which need to be copied
+    pattern: list[str]
+    #: Root source location of the tests directory of the Discover phase (``test_dir``)
+    source_location: Path
+    #: Root target location where to copy the file into
+    target_location: Path
+
+    @classmethod
+    def from_identifier(
+        cls,
         *,
-        identifier: DependencyFile,
+        identifier: Dependency,
         parent: Optional[tmt.utils.Common] = None,
         logger: tmt.log.Logger,
-        source_location: Path,
-        target_location: Path,
-    ) -> None:
-        super().__init__(parent=parent, logger=logger)
-
-        self.identifier = identifier
-        self.format = 'file'
-        self.repo = Path(target_location.name)
-        self.name = "/files"
-        self.pattern: list[str] = identifier.pattern if hasattr(identifier, 'pattern') else []
-        self.source_location: Path = source_location
-        self.target_location: Path = target_location
+        source_location: Optional[Path] = None,
+        target_location: Optional[Path] = None,
+    ) -> Library:
+        assert parent is not None  # narrow type
+        assert isinstance(identifier, DependencyFile)  # narrow type
+        assert source_location is not None  # narrow type
+        assert target_location is not None  # narrow type
+        return File(
+            parent=parent,
+            _logger=logger,
+            identifier=identifier,
+            format="file",
+            repo=Path(target_location.name),
+            name="/files",
+            pattern=identifier.pattern if hasattr(identifier, 'pattern') else [],
+            source_location=source_location,
+            target_location=target_location,
+        )
 
     def fetch(self) -> None:
-        """
-        Copy the files over to target location
-        """
-
         patterns = fmf.utils.listed(self.pattern, quote="'")
         self.parent.debug(
             f"Searching for patterns {patterns} in directory '{self.source_location}."

@@ -1433,10 +1433,18 @@ class GuestLog(abc.ABC):
 
         return self.name
 
+    @functools.cached_property
+    def filepath(self) -> Path:
+        """
+        A filepath to use when storing the log.
+        """
+
+        return self.guest.logdir / self.filename
+
     # B027: "... is an empty method in an abstract base class, but has
     # no abstract decorator" - expected, it's a default implementation
     # provided for subclasses. It is acceptable to do nothing.
-    def setup(self, logger: tmt.log.Logger) -> None:  # noqa: B027
+    def setup(self, *, logger: tmt.log.Logger) -> None:  # noqa: B027
         """
         Prepare for collecting the log.
 
@@ -1451,7 +1459,7 @@ class GuestLog(abc.ABC):
     # B027: "... is an empty method in an abstract base class, but has
     # no abstract decorator" - expected, it's a default implementation
     # provided for subclasses. It is acceptable to do nothing.
-    def teardown(self, logger: tmt.log.Logger) -> None:  # noqa: B027
+    def teardown(self, *, logger: tmt.log.Logger) -> None:  # noqa: B027
         """
         Finalize the collection of the log.
 
@@ -1502,11 +1510,10 @@ class GuestLog(abc.ABC):
                 shutil.move(temporary_filepath, final_filepath)
 
     @abc.abstractmethod
-    def update(self, filepath: Path, logger: tmt.log.Logger) -> None:
+    def update(self, *, logger: tmt.log.Logger) -> None:
         """
         Fetch the up-to-date content of the log, and save it into a file.
 
-        :param filepath: a file to save into.
         :param logger: logger to use for logging.
         """
 
@@ -2436,18 +2443,15 @@ class Guest(
 
         return []
 
-    @property
-    def logdir(self) -> Optional[Path]:
+    @functools.cached_property
+    def logdir(self) -> Path:
         """
         Path to store logs
 
         Create the directory if it does not exist yet.
         """
 
-        if not self.workdir:
-            return None
-
-        dirpath = self.workdir / 'logs'
+        dirpath = self.guest_workdir / 'logs'
         dirpath.mkdir(parents=True, exist_ok=True)
 
         return dirpath
@@ -2470,49 +2474,40 @@ class Guest(
 
         self.guest_logs.append(log)
 
-    def setup_logs(self, logger: tmt.log.Logger) -> None:
+    def setup_logs(self, *, logger: tmt.log.Logger) -> None:
         """
         Notify all registered logs their collection will begin.
+
+        :param logger: logger to use for logging.
         """
 
         for log in self.guest_logs:
-            log.setup(logger)
+            log.setup(logger=logger)
 
-    def teardown_logs(self, logger: tmt.log.Logger) -> None:
+    def teardown_logs(self, *, logger: tmt.log.Logger) -> None:
         """
         Notify all registered logs their collection will no longer continue.
+
+        :param logger: logger to use for logging.
         """
 
         for log in self.guest_logs:
-            log.teardown(logger)
+            log.teardown(logger=logger)
 
     def update_logs(
         self,
+        *,
         logger: tmt.log.Logger,
-        dirpath: Optional[Path] = None,
-        guest_logs: Optional[list[GuestLog]] = None,
     ) -> None:
         """
         Fetch the up-to-date content of guest logs, and update saved files.
 
         :param logger: logger to use for logging.
-        :param dirpath: a directory to save into. If not set,
-            :py:attr:`logdir`, or current working directory will be used.
-        :param guest_logs: optional list of :py:attr:`GuestLog`. If not
-            set, all guest logs from :py:attr:`Guest.guest_logs` would be
-            updated.
         """
 
-        guest_logs = guest_logs or self.guest_logs
-        dirpath = dirpath or self.logdir or Path.cwd()
-
-        dirpath.mkdir(parents=True, exist_ok=True)
-
-        for log in guest_logs:
-            log_filepath = dirpath / log.filename
-
+        for log in self.guest_logs:
             try:
-                log.update(log_filepath, logger)
+                log.update(logger=logger)
 
             except Exception as exc:
                 tmt.utils.show_exception_as_warning(
@@ -2522,7 +2517,7 @@ class Guest(
                 )
 
             else:
-                logger.info(log.name, str(log_filepath))
+                logger.info(log.name, str(log.filepath))
 
     def _construct_mkdtemp_command(
         self,

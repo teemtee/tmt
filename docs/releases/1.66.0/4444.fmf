@@ -1,0 +1,4 @@
+description: |
+    The :ref:`/spec/context` specification has been extended to
+    clarify that there is no support for detecting context from
+    the provisioned environment or other command line options.

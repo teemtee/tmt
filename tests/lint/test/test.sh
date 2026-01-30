@@ -28,9 +28,9 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Old yaml"
-        rlRun -s "tmt test lint old-yaml" 1
+        rlRun -s "tmt test lint old-yaml" 0
         rlAssertGrep "warn: /old-yaml:enabled - 'yes' is not of type 'boolean'" $rlRun_LOG
-        rlAssertGrep 'fail C000 fmf node failed schema validation' $rlRun_LOG
+        rlAssertGrep 'warn C000 fmf node failed schema validation' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Bad"
@@ -53,15 +53,15 @@ rlJournalStart
         rlAssertGrep "fail T001 unknown key \"serial_number\" is used" $rlRun_LOG
         rlRun -s "tmt test lint coverage" 1
         rlAssertGrep "fail T006 the 'coverage' field has been obsoleted by 'link'" $rlRun_LOG
-        rlRun -s "tmt test lint library-missing-url-path" 1
-        rlAssertGrep 'fail C000 fmf node failed schema validation' $rlRun_LOG
+        rlRun -s "tmt test lint library-missing-url-path" 0
+        rlAssertGrep 'warn C000 fmf node failed schema validation' $rlRun_LOG
         rlAssertGrep 'is not valid under any of the given schemas' $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Fix"
         # With --fix relevancy should be converted
-        rlRun -s "tmt test lint --fix relevancy" 1
-        rlAssertGrep 'fail C000 fmf node failed schema validation' $rlRun_LOG
+        rlRun -s "tmt test lint --fix relevancy" 0
+        rlAssertGrep 'warn C000 fmf node failed schema validation' $rlRun_LOG
         rlAssertGrep 'fix  T005 relevancy converted into adjust' $rlRun_LOG
         # Re-run after --fix fixed the plan
         rlRun -s "tmt test lint --fix relevancy" 0

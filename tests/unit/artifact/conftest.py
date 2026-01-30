@@ -6,6 +6,7 @@ from tmt.steps.prepare import install
 from tmt.steps.prepare.artifact import get_artifact_provider
 from tmt.steps.prepare.artifact.providers import koji as koji_module
 from tmt.steps.prepare.artifact.providers.brew import BrewArtifactProvider
+from tmt.steps.prepare.artifact.providers.copr_repository import CoprRepositoryProvider
 from tmt.steps.prepare.artifact.providers.koji import KojiArtifactProvider
 
 
@@ -49,9 +50,11 @@ def mock_brew(mock_koji):
 
 @pytest.fixture
 def artifact_provider(root_logger):
-    def get_provider(provider_id: str):
+    def get_provider(provider_id: str, repository_priority: int = 50):
         provider_class = get_artifact_provider(provider_id)
-        return provider_class(provider_id, logger=root_logger)
+        return provider_class(
+            provider_id, repository_priority=repository_priority, logger=root_logger
+        )
 
     return get_provider
 

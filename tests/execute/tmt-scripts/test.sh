@@ -22,7 +22,7 @@ rlJournalStart
         rlRun -s "tmt run -vvv -e \"PATHS='$PATHS'\" --id $run -a provision -h $PROVISION_HOW --image $IMAGE" 0 "Run the plan"
 
         for FOUND_PATH in $FOUND; do
-            rlAssertGrep "out: $FOUND_PATH" $rlRun_LOG
+            rlAssertGrep "stdout: $FOUND_PATH" $rlRun_LOG
         done
 
         for NOT_FOUND_PATH in $NOT_FOUND; do

@@ -9,6 +9,8 @@ from shlex import quote
 from typing import TYPE_CHECKING, Any, Optional
 from urllib.parse import urljoin
 
+import requests
+
 import tmt.log
 import tmt.utils
 import tmt.utils.hints
@@ -78,8 +80,8 @@ class CoprBuildArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
               - copr.build:1784470:fedora-32-x86_64
     """
 
-    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
-        super().__init__(raw_provider_id, logger)
+    def __init__(self, raw_provider_id: str, repository_priority: int, logger: tmt.log.Logger):
+        super().__init__(raw_provider_id, repository_priority, logger)
         self._session = self._initialize_session()
         try:
             build_id_str, chroot = self.id.split(":", 1)
@@ -96,6 +98,17 @@ class CoprBuildArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         :returns: the build metadata, or ``None`` if not found.
         """
         return self._session.build_proxy.get(self.build_id)
+
+    @cached_property
+    def is_pulp(self) -> bool:
+        """
+        Check if the build is stored in Pulp.
+        """
+        assert self.build_info is not None
+        project = self._session.project_proxy.get(
+            self.build_info.ownername, self.build_info.projectname
+        )
+        return project is not None and project.storage == "pulp"
 
     def _initialize_session(self) -> 'Client':
         """
@@ -164,24 +177,66 @@ class CoprBuildArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         assert isinstance(packages, list)
         return packages
 
+    def _fetch_results_json(self) -> list[dict[str, str]]:
+        """
+        Fetch results.json for Pulp builds.
+
+        :returns: list of package dictionaries containing NEVRA info.
+        """
+        results_url = urljoin(self.result_url + "/", "results.json")
+        self.logger.debug(f"Fetching results.json from '{results_url}'.")
+        try:
+            with tmt.utils.retry_session(logger=self.logger) as session:
+                response = session.get(results_url)
+                response.raise_for_status()
+                data = response.json()
+        except Exception:
+            # Idea is not to fail the whole process if results.json is missing
+            self.logger.warning(f"Failed to download: '{results_url}'.")
+            return []
+        packages = data.get("packages")
+        if not isinstance(packages, list):
+            # Again, idea is not to fail the whole process if results.json is invalid
+            self.logger.warning(
+                f"Invalid results.json format from '{results_url}', expected a list of packages."
+            )
+            return []
+        return packages
+
     def make_rpm_artifact(self, rpm_meta: dict[str, str]) -> RpmArtifactInfo:
         name = rpm_meta["name"]
         version = rpm_meta["version"]
         release = rpm_meta["release"]
+        arch = rpm_meta["arch"]
+        nvr = f"{name}-{version}-{release}"
+        filename = f"{nvr}.{arch}.rpm"
+
         artifact = RpmArtifactInfo(
             _raw_artifact={
                 **rpm_meta,
-                "nvr": f"{name}-{version}-{release}",
+                "nvr": nvr,
             }
         )
-        artifact._raw_artifact["url"] = urljoin(self.result_url + "/", artifact.id)
 
+        if self.is_pulp:
+            assert self.build_info is not None
+            base_url = urljoin(
+                f"{self.build_info.repo_url}/",
+                f"{self.chroot}/Packages/{filename[0]}",
+            )
+
+        else:
+            base_url = self.result_url.rstrip("/")
+
+        artifact._raw_artifact["url"] = urljoin(base_url + "/", filename)
         return artifact
 
     @cached_property
     def artifacts(self) -> Sequence[RpmArtifactInfo]:
         self.logger.debug(f"Fetching RPMs for build '{self.build_id}' in chroot '{self.chroot}'.")
-        return [self.make_rpm_artifact(rpm_meta) for rpm_meta in self.build_packages]
+        rpm_metas = self._fetch_results_json() if self.is_pulp else self.build_packages
+
+        return [self.make_rpm_artifact(rpm_meta) for rpm_meta in rpm_metas]
 
     def contribute_to_shared_repo(
         self,

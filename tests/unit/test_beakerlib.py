@@ -17,12 +17,12 @@ def test_basic(root_logger):
     """
 
     parent = tmt.utils.Common(logger=root_logger, workdir=True)
-    library_with_parent = tmt.libraries.library_factory(
+    library_with_parent = tmt.libraries.Library.from_identifier(
         logger=root_logger,
         identifier=tmt.base.DependencySimple('library(openssl/certgen)'),
         parent=parent,
     )
-    library_without_parent = tmt.libraries.library_factory(
+    library_without_parent = tmt.libraries.Library.from_identifier(
         logger=root_logger, identifier=tmt.base.DependencySimple('library(openssl/certgen)')
     )
 
@@ -51,7 +51,7 @@ def test_require_from_fmf(url, name, default_branch, root_logger):
     Fetch beakerlib library referenced by fmf identifier
     """
 
-    library = tmt.libraries.library_factory(
+    library = tmt.libraries.Library.from_identifier(
         logger=root_logger, identifier=tmt.base.DependencyFmfId(url=url, name=name)
     )
     assert library.format == 'fmf'
@@ -74,7 +74,7 @@ def test_invalid_url_conflict(root_logger):
 
     parent = tmt.utils.Common(logger=root_logger, workdir=True)
     # Fetch to cache 'tmt' repo
-    tmt.libraries.library_factory(
+    tmt.libraries.Library.from_identifier(
         logger=root_logger,
         identifier=tmt.base.DependencyFmfId(
             url='https://github.com/teemtee/tmt',
@@ -87,7 +87,7 @@ def test_invalid_url_conflict(root_logger):
     # however upstream (gh.com/beakerlib/tmt) repo does not exist,
     # so there can't be "already fetched" error
     with pytest.raises(tmt.libraries.LibraryError):
-        tmt.libraries.library_factory(
+        tmt.libraries.Library.from_identifier(
             logger=root_logger, identifier='library(tmt/foo)', parent=parent
         )
     shutil.rmtree(parent.workdir)
@@ -145,7 +145,7 @@ def test_mark_nonexistent_url(root_logger, monkeypatch):
         name='/',
     )
     with pytest.raises(tmt.utils.GeneralError):
-        tmt.libraries.beakerlib.BeakerLib(
+        tmt.libraries.beakerlib.BeakerLibFromUrl.from_identifier(
             logger=root_logger, identifier=identifier, parent=parent
         ).fetch()
     # Second time there shouldn't be an attempt to clone...
@@ -153,7 +153,7 @@ def test_mark_nonexistent_url(root_logger, monkeypatch):
         "tmt.utils.git.git_clone", MagicMock(side_effect=RuntimeError('Should not be called'))
     )
     with pytest.raises(tmt.utils.GeneralError):
-        tmt.libraries.beakerlib.BeakerLib(
+        tmt.libraries.beakerlib.BeakerLibFromUrl.from_identifier(
             logger=root_logger, identifier=identifier, parent=parent
         ).fetch()
     shutil.rmtree(parent.workdir)

@@ -147,10 +147,15 @@ definitions:
       - type
 
     anyOf:
+      # Remote repo case
       - required:
           - url
+      # Local filesystem case
       - required:
           - path
+      # Test's tmt tree case
+      - required:
+          - nick
 
     # This would have been the easy way, understandable by newer jsonschema
     # packages.

@@ -13,6 +13,7 @@ from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     ArtifactProviderId,
     Repository,
+    UnsupportedOperationError,
     provides_artifact_provider,
 )
 from tmt.steps.prepare.artifact.providers.repository import _REPO_NAME_GENERATOR
@@ -44,8 +45,8 @@ class RepositoryUrlProvider(ArtifactProvider[RpmArtifactInfo]):
 
     repository: Repository
 
-    def __init__(self, raw_provider_id: str, logger: tmt.log.Logger):
-        super().__init__(raw_provider_id, logger)
+    def __init__(self, raw_provider_id: str, repository_priority: int, logger: tmt.log.Logger):
+        super().__init__(raw_provider_id, repository_priority, logger)
 
     @classmethod
     def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
@@ -68,8 +69,9 @@ class RepositoryUrlProvider(ArtifactProvider[RpmArtifactInfo]):
         self, artifact: RpmArtifactInfo, guest: Guest, destination: tmt.utils.Path
     ) -> None:
         """This provider only discovers repos; it does not download individual RPMs."""
-        # FIXME: Change this to UnsupportedOperationError once its available
-        raise AssertionError("RepositoryUrlProvider does not support downloading individual RPMs.")
+        raise UnsupportedOperationError(
+            "RepositoryUrlProvider does not support downloading individual RPMs."
+        )
 
     def fetch_contents(
         self,
@@ -89,13 +91,12 @@ class RepositoryUrlProvider(ArtifactProvider[RpmArtifactInfo]):
         self.logger.info(f"Setting up repository from baseurl: {baseurl} (name: {repo_name})")
 
         # Generate .repo file content
-        # TODO: Use DEFAULT_REPOSITORY_PRIORITY from repository.py once it's available.
         repo_content = f"""[{tmt.utils.sanitize_name(repo_name)}]
 name={repo_name}
 baseurl={baseurl}
 enabled=1
 gpgcheck=0
-priority=50"""
+priority={self.repository_priority}"""
 
         self.logger.debug(f"Generated .repo file content:\n{repo_content}")
 
