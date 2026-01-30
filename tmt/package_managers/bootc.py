@@ -1,9 +1,9 @@
-import json
 import re
 import uuid
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 import tmt.utils
+from tmt.container import PYDANTIC_V1, ConfigDict, MetadataContainer
 from tmt.package_managers import (
     Installable,
     Options,
@@ -21,6 +21,42 @@ from tmt.utils import (
 )
 
 LOCALHOST_BOOTC_IMAGE_PREFIX = "localhost/tmt"
+
+
+class BootcMetadataContainer(MetadataContainer):
+    """
+    Metadata container for bootc images.
+    References the official bootc host v1 JSON schema(https://bootc-dev.github.io/bootc/host-v1.schema.json).
+    This is a minimal version only including relevant fields for tmt.
+    """
+
+    if PYDANTIC_V1:
+
+        class Config(MetadataContainer.Config):
+            # Allow unknown fields to support schema extensions and newer bootc versions
+            extra = "allow"
+    else:
+        model_config = ConfigDict(extra="allow")
+
+
+class ImageReference(BootcMetadataContainer):
+    image: str
+
+
+class ImageStatus(BootcMetadataContainer):
+    image: ImageReference
+
+
+class BootEntry(BootcMetadataContainer):
+    image: Optional[ImageStatus] = None
+
+
+class HostStatus(BootcMetadataContainer):
+    booted: Optional[BootEntry] = None
+
+
+class BootcHost(BootcMetadataContainer):
+    status: Optional[HostStatus] = None
 
 
 class BootcEngine(PackageManagerEngine):
@@ -67,38 +103,25 @@ class BootcEngine(PackageManagerEngine):
 
         command, _ = self.prepare_command()
         command += Command('status', '--json')
-        output = self.guest.execute(command, silent=True)
 
-        if not output.stdout:
+        if not (output := self.guest.execute(command, silent=True).stdout):
             raise tmt.utils.PrepareError("Failed to get current bootc status: empty output.")
 
         try:
-            image_status = json.loads(output.stdout)
-        except json.JSONDecodeError as error:
+            host = BootcHost.from_json(output)
+        except tmt.utils.SpecificationError as error:
             raise tmt.utils.PrepareError("Failed to parse bootc status JSON.") from error
 
-        if not image_status:
-            raise tmt.utils.PrepareError("Failed to get current bootc status: empty JSON.")
+        if (status := host.status) is None:
+            raise tmt.utils.PrepareError("Missing 'status' key in bootc output.")
 
-        # Extract nested information with clear error messages for each missing key
-        try:
-            booted = image_status.get('status', {}).get('booted', {})
-            if not booted:
-                raise KeyError("'booted' key")
+        if (booted := status.booted) is None:
+            raise tmt.utils.PrepareError("Missing 'booted' key in bootc status.")
 
-            image_info = booted.get('image')
-            if not image_info:
-                raise KeyError("'image' key in booted status")
+        if (image_status := booted.image) is None:
+            raise tmt.utils.PrepareError("Missing 'image' key in bootc booted entry.")
 
-            image_data = image_info.get('image', {})
-
-            base_image = cast(str, image_data.get('image', ''))
-            if not base_image:
-                raise KeyError("'image' name in image data")
-
-            return base_image
-        except KeyError as error:
-            raise tmt.utils.PrepareError("Failed to extract bootc image info.") from error
+        return image_status.image.image
 
     def _get_base_containerfile_directives(self) -> list[str]:
         bootc_image = self._get_current_bootc_image()
