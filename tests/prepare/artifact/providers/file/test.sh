@@ -16,15 +16,9 @@ rlJournalStart
 
         setup_distro_environment
 
-        # Choose a tag – change to 'rawhide' or e.g. 'f44' for newer packages if desired
-        TAG="f43"
-
         # 1. REMOTE URL (noarch)
-        COWSAY_NVR=$(koji latest-pkg "$TAG" cowsay --quiet | awk '{print $1}')
-        if [ -z "$COWSAY_NVR" ]; then
-            rlFail "Failed to find latest cowsay in tag $TAG"
-            exit 1
-        fi
+        get_koji_nvr "cowsay" "f${fedora_release}"
+        COWSAY_NVR="$KOJI_NVR"
 
         # Construct URL: Parses NVR (Name-Version-Release) and assembles Koji URL
         # Regex explanation: ^(.*)-([^-]+)-([^-]+)$ captures Name, Version, Release
@@ -33,17 +27,12 @@ rlJournalStart
         rlLog "Using cowsay URL: $REMOTE_RPM_URL"
 
         # 2. LOCAL FILE (arch-specific)
-        FIGLET_NVR=$(koji latest-pkg "$TAG" figlet --quiet | awk '{print $1}')
-        if [ -z "$FIGLET_NVR" ]; then
-            rlFail "Failed to find latest figlet in tag $TAG"
-            exit 1
-        fi
+        get_koji_nvr "figlet" "f${fedora_release}"
+        FIGLET_NVR="$KOJI_NVR"
 
-        # Construct URL using current $ARCH
-        LOCAL_RPM_URL=$(echo "$FIGLET_NVR" | sed -E "s|^(.*)-([^-]+)-([^-]+)$|https://kojipkgs.fedoraproject.org/packages/\1/\2/\3/${ARCH}/&.${ARCH}.rpm|")
-
-        rlLog "Using figlet URL: $LOCAL_RPM_URL"
-        rlRun "curl -L -o $rpm_dir/figlet.rpm $LOCAL_RPM_URL" 0 "Download figlet RPM for local test"
+        rlRun "pushd $rpm_dir && koji download-build --arch=$ARCH $FIGLET_NVR; popd" 0 "Download figlet RPM for local test"
+        LOCAL_RPM=$(ls $rpm_dir/figlet*.rpm)
+        rlAssertExists "$LOCAL_RPM"
 
         rlRun "multi_rpm_dir=$(mktemp -d)" 0 "Create directory for multiple RPMs"
         # Use $fedora_release (set by setup_distro_environment) to ensure packages
@@ -53,7 +42,7 @@ rlJournalStart
     rlPhaseStartTest "Test file provider with remote URL, local RPM, and directory with multiple RPMs"
         rlRun "tmt run -i $run --scratch -vvv --all \
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
-            prepare --how artifact --provide file:$REMOTE_RPM_URL --provide file:$rpm_dir/figlet.rpm --provide file:$multi_rpm_dir" 0 "Run with file provider (URL + local RPM + directory)"
+            prepare --how artifact --provide file:$REMOTE_RPM_URL --provide file:$LOCAL_RPM --provide file:$multi_rpm_dir" 0 "Run with file provider (URL + local RPM + directory)"
     rlPhaseEnd
 
     rlPhaseStartCleanup

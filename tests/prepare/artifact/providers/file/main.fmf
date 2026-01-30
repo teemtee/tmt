@@ -2,3 +2,6 @@ summary: Test file artifact provider
 description: |
     Test file artifact provider which makes packages from local files
     or remote URLs available for installation.
+require:
+    - koji
+    - python3-rpm
