@@ -69,14 +69,21 @@
       changed_when: output.rc == 0
       when: ansible_distribution_major_version | int == 7
 
-    - name: Install crypto-policies-scripts, dracut-fips and grubby on RHEL8 and RHEL9
+    - name: Install crypto-policies-scripts, dracut-fips and grubby on RHEL8
+      # noqa: command-instead-of-module
+      ansible.builtin.command: dnf install -y crypto-policies-scripts dracut-fips grubby
+      register: output
+      changed_when: output.rc == 0
+      when: ansible_distribution_major_version | int == 8
+
+    - name: Install crypto-policies-scripts, dracut-fips and grubby on RHEL9
       ansible.builtin.dnf:
         name:
           - crypto-policies-scripts
           - dracut-fips
           - grubby
         state: present
-      when: ansible_distribution_major_version | int in [8, 9]
+      when: ansible_distribution_major_version | int == 9
 
     - name: Install grubby
       ansible.builtin.dnf:
