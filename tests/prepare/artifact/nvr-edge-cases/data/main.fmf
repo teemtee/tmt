@@ -1,0 +1,15 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: container
+    execute:
+        how: tmt
+
+/test:
+    test: ./test.sh
+    duration: 5m
+    summary: Test file provider with NVR edge cases
+    require:
+      - jq
+      - nano
