@@ -1,3 +1,0 @@
-summary: Simple test in a separate directory
-description: Path should default to '/simple'.
-test: 'true'

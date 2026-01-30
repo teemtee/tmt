@@ -1,5 +1,0 @@
-summary: Verify the core attribute 'extra'
-description:
-    Check that any key starting with 'extra-' is ignored by
-    the linting logic and any unknown key that does not start
-    with 'extra-' triggers a linting error.

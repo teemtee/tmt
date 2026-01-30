@@ -1,6 +1,0 @@
-provision:
-    how: local
-discover:
-    how: fmf
-execute:
-    how: tmt

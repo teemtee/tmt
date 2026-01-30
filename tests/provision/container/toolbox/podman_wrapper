@@ -1,2 +1,0 @@
-#!/bin/bash
-flatpak-spawn --host podman "$@"

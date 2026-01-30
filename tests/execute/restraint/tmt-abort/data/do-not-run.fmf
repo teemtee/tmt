@@ -1,8 +1,0 @@
-summary: Should not be run
-framework: shell
-
-/1:
-  test: echo "This should not be executed either."
-
-/2:
-  test: echo "And neither should this."

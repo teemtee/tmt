@@ -1,5 +1,0 @@
-require+:
-  - tmt+provision-virtual
-tag+:
-  - provision-only
-  - provision-virtual

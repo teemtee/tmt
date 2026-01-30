@@ -1,6 +1,0 @@
-provision:
-    how: container
-discover:
-    how: fmf
-execute:
-    how: tmt

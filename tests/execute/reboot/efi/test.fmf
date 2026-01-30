@@ -1,3 +1,0 @@
-summary: Try rebooting the machine with and without efi option
-test: ./test.sh
-framework: beakerlib

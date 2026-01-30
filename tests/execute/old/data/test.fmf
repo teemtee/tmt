@@ -1,8 +1,0 @@
-summary: Verify old Makefile features
-test: ./test.sh
-framework: beakerlib
-require:
-  - library(epel/epel)
-  - library(example/file)
-  - did
-  - tree

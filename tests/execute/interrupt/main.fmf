@@ -1,5 +1,0 @@
-summary: Check that test status is correctly reported
-duration: 20m
-tag+:
-  - provision-virtual
-  - provision-only

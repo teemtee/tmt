@@ -1,1 +1,0 @@
-test: grep content $TMT_TREE/file.txt

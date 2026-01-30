@@ -1,7 +1,0 @@
-summary: Basic smoke test
-story: I want to print help message to help myself
-example:
-  - tmt --help
-  - tmt stories --help
-description: This is interesting description
-id: b48d3e9d-df2c-48a3-afbd-5882fe7c851a

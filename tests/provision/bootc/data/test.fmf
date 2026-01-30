@@ -1,4 +1,0 @@
-summary: Check that booted image matches expected pattern
-require:
-  - tree
-test: "bootc status && bootc status | grep $PATTERN"

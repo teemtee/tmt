@@ -1,4 +1,0 @@
-summary: Test tmt plans ls/show --enabled
-execute:
-    script: /bin/true
-enabled: true

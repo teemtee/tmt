@@ -1,7 +1,0 @@
-summary: Basic smoke test
-discover:
-    how: fmf
-provision:
-    how: container
-execute:
-    how: tmt

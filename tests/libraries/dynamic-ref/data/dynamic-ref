@@ -1,4 +1,0 @@
-ref: defaultbranch
-adjust:
-  when: foo is defined
-  ref: otherbranch

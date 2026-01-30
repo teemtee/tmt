@@ -1,8 +1,0 @@
-summary: Check that the reboot command works
-tag+:
-  - provision-only
-  - provision-beaker
-  - provision-virtual
-  - provision-connect
-  - provision-container
-  - provision-artemis

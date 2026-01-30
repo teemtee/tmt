@@ -1,7 +1,0 @@
-summary: Essential command line features
-discover:
-  how: fmf
-provision:
-  how: local
-execute:
-  how: tmt

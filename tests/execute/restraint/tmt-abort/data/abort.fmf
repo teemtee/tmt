@@ -1,3 +1,0 @@
-summary: Verify that the abort file is successfully generated.
-framework: beakerlib
-test: ./abort.sh

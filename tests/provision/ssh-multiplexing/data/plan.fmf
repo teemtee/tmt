@@ -1,8 +1,0 @@
-execute:
-    how: tmt
-
-discover:
-    how: shell
-    tests:
-    - name: smoke
-      test: /bin/true

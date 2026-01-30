@@ -1,5 +1,0 @@
-summary: Verify mocked Restraint rstrnt-report-result functionality.
-description:
-    Verify that the mocked rstrnt-report-result Restraint functionality
-    can be executed successfully.
-contact: Philip Daly <pdaly@redhat.com>

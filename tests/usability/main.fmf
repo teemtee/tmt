@@ -1,3 +1,0 @@
-summary: Allow command abbreviation
-description: If user writes part of a subcommand, tmt should support to match it.
-tier: 4

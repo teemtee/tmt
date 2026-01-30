@@ -1,5 +1,0 @@
-summary: Verify all required tests are executed
-duration: 30m
-tag+:
-  - provision-only
-  - provision-container

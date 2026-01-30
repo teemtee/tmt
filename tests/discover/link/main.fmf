@@ -1,5 +1,0 @@
-summary: Both single and multiple links work
-description:
-    Ensure that both a single string and a list of strings can be
-    provided in the `link` key or the `--link` option and that the
-    filter works as expected.

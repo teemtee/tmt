@@ -1,8 +1,0 @@
-summary: Check that test status is correctly reported
-duration: 20m
-tier: 1
-tag+:
-  - beakerlib
-  - provision-connect
-  - provision-container
-  - provision-virtual

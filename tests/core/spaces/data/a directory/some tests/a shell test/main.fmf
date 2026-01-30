@@ -1,3 +1,0 @@
-summary: A simple shell test with spaces
-test: ./test.sh
-framework: shell

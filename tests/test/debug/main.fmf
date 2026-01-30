@@ -1,7 +1,0 @@
-summary: Verify that test debugging works fine
-description:
-    Prepare the environment for testing using provision & prepare,
-    then debug test code using repeated discover & execute.
-tag+:
-  - provision-container
-  - provision-virtual

@@ -1,6 +1,0 @@
-summary: Make sure that correct virtual memory is displayed
-tag+:
-  - provision-only
-  - provision-virtual
-require:
-  - tmt+provision-virtual

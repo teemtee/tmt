@@ -1,7 +1,0 @@
-execute:
-  how: tmt
-
-discover:
-  - how: fmf
-    # commit, but one that looks like an integer
-    ref: 12345678

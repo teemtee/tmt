@@ -1,2 +1,0 @@
-summary: Check for xUnit output
-enabled: false # needs pylero, so just for local testing

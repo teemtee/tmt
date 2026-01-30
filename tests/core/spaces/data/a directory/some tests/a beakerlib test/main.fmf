@@ -1,3 +1,0 @@
-summary: A simple beakerlib test with spaces
-test: ./test.sh
-framework: beakerlib

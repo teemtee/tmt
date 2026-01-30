@@ -1,9 +1,0 @@
-summary: Basic plan with invalid context values
-execute:
-    how: tmt
-context:
-    foo: foo
-    bar: 1
-    baz: false
-    dud:
-      how: about

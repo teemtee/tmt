@@ -1,2 +1,0 @@
-summary: Just show the file content
-test: cat weird.txt

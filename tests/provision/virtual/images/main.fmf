@@ -1,5 +1,0 @@
-summary: Smoke test for all supported images
-description:
-    Run a simple smoke test for each supported distro image. This
-    test ensures that the essential requirements (including rsync)
-    are correctly installed for all supported distros.

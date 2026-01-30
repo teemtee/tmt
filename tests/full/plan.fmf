@@ -1,8 +1,0 @@
-discover:
-    how: fmf
-provision:
-    how: virtual
-    memory: 4000
-    disk: 40
-execute:
-    how: tmt

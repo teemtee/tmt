@@ -1,5 +1,0 @@
-summary: Check that hardware key works correctly
-tag+:
-  - provision-only
-  - provision-artemis
-  - provision-beaker

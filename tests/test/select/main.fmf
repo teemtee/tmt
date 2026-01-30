@@ -1,4 +1,0 @@
-summary: Selecting and filtering tests
-description:
-    Verify that selecting tests by name, filter & condition works
-    fine for 'tmt test ls', 'tmt test show' and 'tmt run test'.

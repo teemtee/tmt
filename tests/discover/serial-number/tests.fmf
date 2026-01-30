@@ -1,5 +1,0 @@
-/foo:
-  test: /bin/true
-
-/bar:
-  test: /bin/true

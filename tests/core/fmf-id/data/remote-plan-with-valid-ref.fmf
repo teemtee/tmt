@@ -1,9 +1,0 @@
-plan:
-    import:
-        url: https://github.com/teemtee/tests.git
-        name: '.*'
-
-        ref: main
-
-        importing: become-parent
-        scope: all-plans

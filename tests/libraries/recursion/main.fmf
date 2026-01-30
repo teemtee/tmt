@@ -1,7 +1,0 @@
-summary: Libraries can depend on each other
-description:
-    Two Libraries might depend on each other and tmt
-    should fetch them properly
-require:
-- git-core
-tier: 4

@@ -1,4 +1,0 @@
-summary: Just a basic smoke test
-test: tmt --help
-framework: shell
-tier: 0

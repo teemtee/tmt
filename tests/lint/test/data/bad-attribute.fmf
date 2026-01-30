@@ -1,5 +1,0 @@
-test: /bin/true
-requires: "typo, should be require"
-
-# Internal keys should be reported as well
-serial_number: 123

@@ -1,3 +1,0 @@
-summary: Verify that report file is generated correctly.
-framework: beakerlib
-test: ./report.sh

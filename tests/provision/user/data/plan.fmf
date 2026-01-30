@@ -1,4 +1,0 @@
-provision:
-    how: container
-execute:
-    script: id

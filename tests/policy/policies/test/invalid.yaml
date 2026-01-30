@@ -1,5 +1,0 @@
----
-
-test-policy:
-  - script: |
-      /bin/false

@@ -1,6 +1,0 @@
-summary: Make sure that virtual.testcloud works
-tag+:
-  - provision-only
-  - provision-virtual
-require:
-  - tmt+provision-virtual

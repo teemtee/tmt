@@ -1,3 +1,0 @@
-summary: Test tmt tests ls/show --disabled
-test: /bin/true
-enabled: false

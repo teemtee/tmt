@@ -1,7 +1,0 @@
-summary: Check that pruning is executed on libraries
-description:
-    Verify that only libraries which are used are copied.
-tag+:
-  - provision-virtual
-  - provision-only
-duration: 10m

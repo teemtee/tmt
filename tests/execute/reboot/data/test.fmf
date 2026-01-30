@@ -1,3 +1,0 @@
-summary: Try rebooting the machine
-test: ./test.sh
-framework: beakerlib

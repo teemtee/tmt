@@ -1,5 +1,0 @@
-summary: Check that setting a user works
-tag+:
-  - provision-only
-  - provision-container
-  - provision-virtual

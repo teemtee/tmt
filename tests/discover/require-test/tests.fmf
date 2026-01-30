@@ -1,5 +1,0 @@
-/pass:
-    test: /bin/true
-
-/fail:
-    test: /bin/false

@@ -1,7 +1,0 @@
-summary: Make sure that bootc provision method works
-tag+:
-  - provision-only
-  - provision-bootc
-require:
-  - tmt+provision-virtual
-duration: 2h

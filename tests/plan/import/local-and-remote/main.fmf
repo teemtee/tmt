@@ -1,7 +1,0 @@
-execute:
-    how: tmt
-
-plan:
-  import:
-    url: https://github.com/teemtee/tests
-    name: /plans/remote

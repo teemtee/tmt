@@ -19,7 +19,7 @@ rlJournalStart
         # Choose a tag – change to 'rawhide' or e.g. 'f44' for newer packages if desired
         TAG="f43"
 
-        # 1. REMOTE URL (noarch) ---
+        # 1. REMOTE URL (noarch)
         COWSAY_NVR=$(koji latest-pkg "$TAG" cowsay --quiet | awk '{print $1}')
         if [ -z "$COWSAY_NVR" ]; then
             rlFail "Failed to find latest cowsay in tag $TAG"
@@ -32,7 +32,7 @@ rlJournalStart
 
         rlLog "Using cowsay URL: $REMOTE_RPM_URL"
 
-        # 2. LOCAL FILE (arch-specific) ---
+        # 2. LOCAL FILE (arch-specific)
         FIGLET_NVR=$(koji latest-pkg "$TAG" figlet --quiet | awk '{print $1}')
         if [ -z "$FIGLET_NVR" ]; then
             rlFail "Failed to find latest figlet in tag $TAG"

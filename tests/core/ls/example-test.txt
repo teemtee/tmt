@@ -1,3 +1,0 @@
-/basic/smoke:
-    summary: "Basic smoke test"
-    test: tmt --help

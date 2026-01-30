@@ -1,7 +1,0 @@
-provision:
-  - name: client
-    how: container
-  - name: server
-    how: container
-execute:
-    script: echo works fine

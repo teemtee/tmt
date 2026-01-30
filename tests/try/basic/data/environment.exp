@@ -1,9 +1,0 @@
-#!/usr/bin/expect -f
-# Test environment variables
-
-spawn tmt try --plan /plans/environment --environment TEST_VAR=test_value --environment VAR2=value2 -e VAR3=value3 fedora@local
-expect "What do we do next?"
-send -- "r\r"
-expect "What do we do next?"
-send -- "q\r"
-expect eof

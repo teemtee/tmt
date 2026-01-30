@@ -1,3 +1,0 @@
-summary: Verify that log file is generated correctly.
-framework: beakerlib
-test: ./log.sh

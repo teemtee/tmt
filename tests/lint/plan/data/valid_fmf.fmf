@@ -1,7 +1,0 @@
-summary: This is a valid plan
-discover:
-    how: fmf
-    url: https://github.com/teemtee/tmt
-    ref: main
-execute:
-    how: tmt

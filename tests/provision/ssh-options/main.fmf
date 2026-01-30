@@ -1,5 +1,0 @@
-summary: Check that custom SSH options are used
-tag+:
-  - provision-only
-  - provision-connect
-  - provision-virtual

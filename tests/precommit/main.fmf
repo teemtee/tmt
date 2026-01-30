@@ -1,6 +1,0 @@
-summary: pre-commit hook tmt-test-lint is working
-require:
-- pre-commit
-- git-core
-- tmt
-tier: 4

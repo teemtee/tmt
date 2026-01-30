@@ -1,5 +1,0 @@
-summary: Initialize empty tree, test the minimal template
-description:
-    Verify initializing an empty tree and using the minimal
-    template.
-tier: 1

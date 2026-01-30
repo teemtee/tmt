@@ -1,9 +1,0 @@
-summary:
-    Basic functionality
-execute:
-    how: tmt
-link:
-  - verifies: /stories/covered
-  - verifies: /stories/verified
-  - blocks: /plans/full
-  - https://github.com/teemtee/tmt/pull/215

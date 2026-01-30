@@ -1,4 +1,0 @@
-summary: Selecting and filtering plans
-description:
-    Verify selecting plans by name and filter works as expected
-    for 'tmt plan ls', 'tmt plan show' and 'tmt run plan'.

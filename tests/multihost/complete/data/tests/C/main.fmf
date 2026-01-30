@@ -1,5 +1,0 @@
-summary: Dummy test C
-test: ../test.sh
-require:
-  - type: file
-    pattern: test.sh

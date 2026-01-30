@@ -1,9 +1,0 @@
-discover:
-    how: fmf
-    url: https://github.com/teemtee/tmt
-    path: /tests/execute/basic/data
-    test: good
-provision:
-    how: local
-execute:
-    how: tmt

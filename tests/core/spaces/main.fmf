@@ -1,7 +1,0 @@
-summary: Verify paths and names with white-space characters
-description:
-    Ensure that test execution including workdir pull and push
-    works as expected when file names and paths contain spaces.
-tag+:
-  - provision-container
-  - provision-virtual

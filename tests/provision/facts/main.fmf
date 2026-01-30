@@ -1,9 +1,0 @@
-/guest:
-    summary: Check that guest facts are discovered and reported correctly
-    test: ./test-guest.sh
-    tag+:
-      - provision-container
-
-/runner:
-    summary: Check that host facts are discovered and reported correctly
-    test: ./test-runner.sh

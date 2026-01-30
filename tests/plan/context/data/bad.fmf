@@ -1,4 +1,0 @@
-summary: Basic plan with incomplete context
-execute:
-    how: tmt
-context:

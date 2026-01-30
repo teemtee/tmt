@@ -1,5 +1,0 @@
-summary: Verify that test is marked as errored if machine becomes unresponsive.
-duration: 5m
-tag+:
-  - provision-only
-  - provision-virtual

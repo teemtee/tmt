@@ -1,3 +1,0 @@
-test: /bin/true
-extra-summary: "Some extra summary"
-enabled: yes

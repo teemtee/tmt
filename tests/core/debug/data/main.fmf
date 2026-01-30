@@ -1,8 +1,0 @@
-provision:
-    how: local
-prepare:
-    how: shell
-    script: echo 'Debug message from prepare'
-execute:
-    how: tmt
-    script: bash --help

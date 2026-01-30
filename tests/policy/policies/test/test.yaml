@@ -1,5 +1,0 @@
----
-
-test-policy:
-  - test: |
-      bash -c 'echo "Spiked test."; {{ VALUE }}'

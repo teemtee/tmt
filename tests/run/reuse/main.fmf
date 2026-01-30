@@ -1,4 +1,0 @@
-summary: Already provisioned machine can be reused if the rundir is kept
-tag+:
-  - provision-only
-  - provision-virtual

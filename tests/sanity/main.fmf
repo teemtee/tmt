@@ -1,6 +1,0 @@
-/:
-  inherit: false
-
-tag: [ sanity ]
-test: ./test.sh
-framework: beakerlib

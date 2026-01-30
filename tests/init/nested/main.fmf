@@ -1,2 +1,0 @@
-summary: Test confirmation dialogue if user initializes a tree in a nested root
-description: If user run 'tmt init ...' in a nested root, tmt should hint user to confirm.

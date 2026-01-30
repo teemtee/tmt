@@ -1,3 +1,0 @@
-require+: [tmt+provision-container]
-tier: 3
-duration: 20m

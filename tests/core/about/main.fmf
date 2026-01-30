@@ -1,4 +1,0 @@
-summary: Verify some basic output of `tmt about`
-description: |
-    Make sure `tmt about` reports some basic info about tmt: plugins
-    for now, more info in the future.

@@ -1,5 +1,0 @@
-summary: This is just a plan
-discover:
-    how: fmf
-execute:
-    how: tmt

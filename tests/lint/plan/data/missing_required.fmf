@@ -1,4 +1,0 @@
-execute:
-    how: tmt
-report:
-    how: polarion

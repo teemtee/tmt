@@ -1,7 +1,0 @@
-summary: Basic smoke test
-test: tmt --version
-link:
-  - verifies: /stories/covered
-  - verifies: /stories/verified
-  - test-script: https://github.com/teemtee/tmt/tree/main/tests/core/link/test.sh
-  - https://github.com/teemtee/tmt/pull/215

@@ -1,3 +1,0 @@
-summary: Simple upgrade test
-test: ./test.sh
-framework: beakerlib

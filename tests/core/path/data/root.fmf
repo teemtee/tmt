@@ -1,3 +1,0 @@
-summary: Test in the root directory
-description: Path should default to '/'.
-test: 'true'

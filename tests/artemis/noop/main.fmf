@@ -1,5 +1,0 @@
-summary: Dummy test to execute on remote machine
-tier: 1
-tag:
-  - provision-only
-  - provision-artemis

@@ -1,8 +1,0 @@
-summary: Simple test with custom metadata
-require:
-  - tree
-  - library(epel/epel)
-recommend: forest
-weather: nice
-test: echo good
-framework: shell
