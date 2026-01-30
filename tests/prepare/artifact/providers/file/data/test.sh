@@ -13,14 +13,14 @@ rpm -q figlet
 # Verify figlet came from the tmt-artifact-shared repository
 dnf info --installed figlet | grep -Eq "From repo(sitory)?\s*:\s*tmt-artifact-shared"
 
-# Verify jq is installed (from directory with multiple RPMs)
-rpm -q jq
+# Verify boxes is installed (from directory with multiple RPMs)
+rpm -q boxes
 
-# Verify jq came from the tmt-artifact-shared repository
-dnf info --installed jq | grep -Eq "From repo(sitory)?\s*:\s*tmt-artifact-shared"
+# Verify boxes came from the tmt-artifact-shared repository
+dnf info --installed boxes | grep -Eq "From repo(sitory)?\s*:\s*tmt-artifact-shared"
 
-# Verify nano is installed (from directory with multiple RPMs)
-rpm -q nano
+# Verify fortune-mod is installed (from directory with multiple RPMs)
+rpm -q fortune-mod
 
-# Verify nano came from the tmt-artifact-shared repository
-dnf info --installed nano | grep -Eq "From repo(sitory)?\s*:\s*tmt-artifact-shared"
+# Verify fortune-mod came from the tmt-artifact-shared repository
+dnf info --installed fortune-mod | grep -Eq "From repo(sitory)?\s*:\s*tmt-artifact-shared"
