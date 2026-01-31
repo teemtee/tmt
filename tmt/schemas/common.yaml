@@ -120,28 +120,13 @@ definitions:
 
     additionalProperties: false
 
-    # NOTE: Because of old jsonschema package on RHEL-8, we cannot use
-    # `url: true` and inherit `url` attributes from parent schema. It
-    # seems like we have to repeat properties schemas here as well.
     properties:
-      url:
-        type: string
-
-      ref:
-        type: string
-
-      path:
-        type: string
-
-      name:
-        type: string
-        pattern: "^/"
-
-      nick:
-        type: string
-
-      type:
-        $ref: "/schemas/common#/definitions/require_type"
+      url: true
+      ref: true
+      path: true
+      name: true
+      nick: true
+      type: true
 
     required:
       - type
@@ -156,14 +141,6 @@ definitions:
       # Test's tmt tree case
       - required:
           - nick
-
-    # This would have been the easy way, understandable by newer jsonschema
-    # packages.
-    # url: true
-    # ref: true
-    # path: true
-    # name: true
-    # type: true
 
   # https://tmt.readthedocs.io/en/stable/spec/plans.html#dist-git-source
   dist-git-source:
@@ -265,52 +242,21 @@ definitions:
 
     additionalProperties: false
 
-    # NOTE: Because of old jsonschema package on RHEL-8, we cannot use
-    # `url: true` and inherit `url` attributes from parent schema. It
-    # seems like we have to repeat properties schemas here as well.
     properties:
-      url:
-        type: string
-
-      ref:
-        type: string
-
-      path:
-        type: string
-
-      name:
-        type: string
-        pattern: "^/"
-
-    # This would have been the easy way, understandable by newer jsonschema
-    # packages.
-    #
-    # url: true
-    # ref: true
-    # path: true
-    # name: true
+      url: true
+      ref: true
+      path: true
+      name: true
 
   # helper used by beakerlib_library and fmf_id
-  #
-  # NOTE: when changing the following properties, thanks to old jsonschema tmt
-  # depends on in RHEL-8 lands, update also their copies in `fmf_id` and
-  # `beaker_library` definitions.
   fmf_id_base:
     type: object
     minProperties: 1
     properties:
-      url:
-        type: string
-
-      ref:
-        type: string
-
-      path:
-        type: string
-
-      name:
-        type: string
-        pattern: "^/"
+      url: true
+      ref: true
+      path: true
+      name: true
 
   require_file:
     type: object
