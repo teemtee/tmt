@@ -44,9 +44,11 @@ from tmt.utils import (
     CommandOutput,
     Environment,
     EnvVarValue,
+    GeneralError,
     HasEnvironment,
     HasStepWorkdir,
     Path,
+    ProcessExitCodes,
     ShellScript,
     Stopwatch,
     configure_bool_constant,
@@ -414,6 +416,16 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
     def invoke_internal_checks(self) -> list[CheckResult]:
         return self.invoke_checks(CheckEvent.AFTER_TEST, CheckPlugin.internal_checks(self.logger))
 
+    @functools.cached_property
+    def deadline(self) -> tmt.utils.wait.Deadline:
+        """
+        Test duration represented as a deadline.
+        """
+
+        return tmt.utils.wait.Deadline.from_seconds(
+            tmt.utils.duration_to_seconds(self.test.duration, tmt.base.DEFAULT_TEST_DURATION_L1)
+        )
+
     def invoke_test(
         self,
         command: ShellScript,
@@ -421,7 +433,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
         cwd: Path,
         log: tmt.log.LoggingFunction,
         interactive: bool,
-        timeout: Optional[int],
+        deadline: Optional[tmt.utils.wait.Deadline],
     ) -> tmt.utils.CommandOutput:
         """
         Start the command which represents the test in this invocation.
@@ -431,8 +443,8 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
         :param interactive: if set, the command would be executed in an interactive
             manner, i.e. with stdout and stdout connected to terminal for live
             interaction with user.
-        :param timeout: if set, command would be interrupted, if still running,
-            after this many seconds.
+        :param deadline: if set, the test would be interrupted once reaching
+            this deadline.
         :param log: a logging function to use for logging of command output. By
             default, ``logger.debug`` is used.
         :returns: command output.
@@ -479,43 +491,69 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
                 if self.on_interrupt_callback_token is not None:
                     tmt.utils.signals.remove_callback(self.on_interrupt_callback_token)
 
-        with Stopwatch() as timer:
+        def _invoke(timeout: Optional[int] = None) -> CommandOutput:
+            """
+            Actually invoke the test, and handle its immediate outcome.
+            """
+
+            output, error, timer = Stopwatch.measure(
+                self.guest.execute,
+                command,
+                cwd=cwd,
+                env=self.environment,
+                join=True,
+                interactive=interactive,
+                tty=self.test.tty,
+                log=log,
+                timeout=timeout,
+                on_process_start=_save_process,
+                on_process_end=_reset_process,
+                test_session=True,
+                friendly_command=str(self.test.test),
+                sourced_files=[self.phase.step.plan.plan_source_script],
+            )
+
             self.start_time = timer.start_time_formatted
+            self.end_time = timer.end_time_formatted
+            self.real_duration = timer.duration_formatted
 
-            try:
-                output = self.guest.execute(
-                    command,
-                    cwd=cwd,
-                    env=self.environment,
-                    join=True,
-                    interactive=interactive,
-                    tty=self.test.tty,
-                    log=log,
-                    timeout=timeout,
-                    on_process_start=_save_process,
-                    on_process_end=_reset_process,
-                    test_session=True,
-                    friendly_command=str(self.test.test),
-                    sourced_files=[self.phase.step.plan.plan_source_script],
-                )
-
-                self.return_code = tmt.utils.ProcessExitCodes.SUCCESS
-
-            except tmt.utils.RunError as error:
+            if error is not None:
                 self.exceptions.append(error)
 
-                output = error.output
+                if isinstance(error, tmt.utils.RunError):
+                    output = error.output
 
-                self.return_code = error.returncode
+                    self.return_code = error.returncode
 
-                if self.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
-                    self.logger.debug(f"Test duration '{self.test.duration}' exceeded.")
+                else:
+                    raise error
 
-                elif tmt.utils.ProcessExitCodes.is_pidfile(self.return_code):
-                    self.logger.warning('Test failed to manage its pidfile.')
+            elif output is not None:
+                self.return_code = tmt.utils.ProcessExitCodes.SUCCESS
 
-        self.end_time = timer.end_time_formatted
-        self.real_duration = timer.duration_formatted
+            else:
+                raise GeneralError('Command produced no output but raised no exception.')
+
+            return output
+
+        if deadline is None:
+            output = _invoke()
+
+        else:
+            with deadline:
+                if deadline.is_due:
+                    self.return_code = ProcessExitCodes.TIMEOUT
+
+                    output = CommandOutput(None, None)
+
+                else:
+                    output = _invoke(int(deadline.time_left.total_seconds()))
+
+        if self.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
+            self.logger.debug(f"Test duration '{self.test.duration}' exceeded.")
+
+        elif tmt.utils.ProcessExitCodes.is_pidfile(self.return_code):
+            self.logger.warning('Test failed to manage its pidfile.')
 
         return output
 
