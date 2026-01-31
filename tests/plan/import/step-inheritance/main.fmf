@@ -66,7 +66,7 @@
                 finish+:
                     name: local-additional-finish
                     how: shell
-                    script: echo "Local prepare"
+                    script: echo "Local finish"
                 report:
                     how: junit
                     file: /tmp/local-finish.xml

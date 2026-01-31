@@ -1948,7 +1948,7 @@ class _RemotePlanReference(_RawFmfId):
     scope: Optional[str]
     inherit_context: Optional[bool]
     inherit_environment: Optional[bool]
-    adjust_plans: Optional[Any]
+    adjust_plans: Optional[list[Any]]
 
 
 class RemotePlanReferenceImporting(enum.Enum):
@@ -1999,7 +1999,10 @@ class RemotePlanReference(
     scope: RemotePlanReferenceImportScope = RemotePlanReferenceImportScope.FIRST_PLAN_ONLY
     inherit_context: bool = True
     inherit_environment: bool = True
-    adjust_plans: Optional[Any] = None
+    adjust_plans: Optional[list[Any]] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_adjust,
+    )
 
     @functools.cached_property
     def name_pattern(self) -> Pattern[str]:
@@ -2084,7 +2087,6 @@ class RemotePlanReference(
         )
         reference.inherit_context = bool(raw.get('inherit-context', True))
         reference.inherit_environment = bool(raw.get('inherit-environment', True))
-        reference.adjust_plans = raw.get('adjust-plans', None)
 
         return reference
 

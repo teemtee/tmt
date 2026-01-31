@@ -43,7 +43,7 @@ rlJournalStart
     rlPhaseStartTest "Test multiple adjust fields"
         rlRun -s "tmt plan show /test-multiple-adjust"
         # Should show local finish (append) and report (replace)
-        rlAssertGrep "Local prepare" $rlRun_LOG
+        rlAssertGrep "Local finish" $rlRun_LOG
         rlAssertGrep "/tmp/local-finish.xml" $rlRun_LOG
     rlPhaseEnd
 
