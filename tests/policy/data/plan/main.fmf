@@ -1,0 +1,9 @@
+discover:
+  how: fmf
+
+prepare:
+  - how: shell
+    script: /bin/true
+
+execute:
+  - how: tmt
