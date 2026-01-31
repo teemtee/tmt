@@ -3319,7 +3319,9 @@ def sync_with_guests(
         ) from failed_actions[0].exc
 
 
-def safe_filename(template: str, phase: Phase, guest: 'Guest', **variables: Any) -> Path:
+def safe_filename(
+    template: str, phase: BasePlugin[Any, Any], guest: 'Guest', **variables: Any
+) -> Path:
     """
     Construct a non-conflicting filename safe for parallel tasks.
 
@@ -3347,6 +3349,9 @@ def safe_filename(template: str, phase: Phase, guest: 'Guest', **variables: Any)
        reused by different plugin executions. Adding the phase name should
        lower confusion: it would be immediately clear which phase used which
        filename, or whether a filename was or was not created by given phase.
+    4. step name is included because some plugins are usable in different
+       steps, and therefore "their" filename from, let's say ``prepare``
+       step would conflicts with the filename from the ``finish`` step.
 
     :param template: filename template. It is enhanced with ``phase``
         and ``guest`` safe name, but may use other variables provided
@@ -3357,6 +3362,6 @@ def safe_filename(template: str, phase: Phase, guest: 'Guest', **variables: Any)
         rendering the filename.
     """
 
-    template += '-{{ PHASE.safe_name }}-{{ GUEST.safe_name }}'
+    template += '-{{ PHASE.step.step_name }}-{{ PHASE.safe_name }}-{{ GUEST.safe_name }}'
 
     return Path(render_template(template, PHASE=phase, GUEST=guest, **variables))
