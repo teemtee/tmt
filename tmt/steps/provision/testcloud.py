@@ -214,6 +214,9 @@ TPM_VERSION_SUPPORTED_VERSIONS = {
     False: ['2.0', '2'],
 }
 
+#: Boot methods supported by the plugin.
+BOOT_METHOD_SUPPORTED_METHODS: tuple[str, ...] = ('bios', 'uefi')
+
 #: Image url fetch retry attempts and interval
 IMAGE_URL_FETCH_RETRY_ATTEMPTS = 5
 IMAGE_URL_FETCH_RETRY_INTERVAL = 5
@@ -305,6 +308,18 @@ def _report_hw_requirement_support(constraint: tmt.hardware.Constraint) -> bool:
         and components.child_name == 'version'
         and constraint.value in TPM_VERSION_SUPPORTED_VERSIONS[TPM_CONFIG_ALLOWS_VERSIONS]
         and constraint.operator in TPM_VERSION_ALLOWED_OPERATORS
+    ):
+        return True
+
+    if (
+        components.name == 'boot'
+        and components.child_name == 'method'
+        and constraint.value in BOOT_METHOD_SUPPORTED_METHODS
+        and constraint.operator
+        in (
+            tmt.hardware.Operator.CONTAINS,
+            tmt.hardware.Operator.NOTCONTAINS_EXCLUSIVE,
+        )
     ):
         return True
 
@@ -466,6 +481,59 @@ def _apply_hw_tpm(
 
         else:
             domain.tpm_configuration = TPMConfiguration()
+
+
+def _get_hw_boot_method(
+    hardware: Optional[tmt.hardware.Hardware],
+    logger: tmt.log.Logger,
+) -> Optional[str]:
+    """
+    Get the ``boot.method`` constraint value from hardware requirements.
+
+    :returns: The boot method value ('bios' or 'uefi') if specified, None otherwise.
+    """
+
+    if not hardware or not hardware.constraint:
+        logger.debug('boot.method', "not included because of no constraints", level=4)
+
+        return None
+
+    variant = hardware.constraint.variant()
+
+    boot_method_constraints = [
+        constraint
+        for constraint in variant
+        if isinstance(constraint, tmt.hardware.TextConstraint)
+        and constraint.expand_name().name == 'boot'
+        and constraint.expand_name().child_name == 'method'
+    ]
+
+    if not boot_method_constraints:
+        logger.debug(
+            'boot.method', "not included because of no 'boot.method' constraints", level=4
+        )
+
+        return None
+
+    for constraint in boot_method_constraints:
+        if constraint.value not in BOOT_METHOD_SUPPORTED_METHODS:
+            logger.warning(
+                f"Cannot apply hardware requirement '{constraint}', "
+                f"boot method '{constraint.value}' is not supported."
+            )
+
+            return None
+
+        boot_method = constraint.value
+
+        if constraint.operator == tmt.hardware.Operator.NOTCONTAINS_EXCLUSIVE:
+            boot_method = 'bios' if boot_method == 'uefi' else 'uefi'
+
+        logger.debug('boot.method', f"set to '{boot_method}' because of '{constraint}'", level=4)
+
+        return boot_method
+
+    return None
 
 
 def _apply_hw_disk_size(
@@ -803,7 +871,12 @@ class GuestTestcloud(tmt.GuestSsh):
             raise ProvisionError(f"The instance name '{self.instance_name}' is invalid.")
 
         self._domain = DomainConfiguration(self.instance_name)
-        self._apply_hw_arch(self._domain, self.is_kvm, self.is_legacy_os)
+        self._apply_hw_arch(
+            self._domain,
+            self.is_kvm,
+            self.is_legacy_os,
+            boot_method=_get_hw_boot_method(self.hardware, self._logger),
+        )
 
         # Is this a CoreOS?
         self._domain.coreos = self.is_coreos
@@ -948,11 +1021,19 @@ class GuestTestcloud(tmt.GuestSsh):
 
             domain.memory_size = int(constraint.value.to('kB').magnitude)
 
-    def _apply_hw_arch(self, domain: 'DomainConfiguration', kvm: bool, legacy_os: bool) -> None:
+    def _apply_hw_arch(
+        self,
+        domain: 'DomainConfiguration',
+        kvm: bool,
+        legacy_os: bool,
+        boot_method: Optional[str] = None,
+    ) -> None:
+        uefi = boot_method == 'uefi'
+
         if self.arch == "x86_64":
             domain.system_architecture = X86_64ArchitectureConfiguration(
                 kvm=kvm,
-                uefi=False,  # Configurable
+                uefi=uefi,  # Configurable
                 model="q35" if not legacy_os else "pc",
             )
         elif self.arch == "aarch64":
@@ -961,18 +1042,33 @@ class GuestTestcloud(tmt.GuestSsh):
                 uefi=True,  # Always enabled
                 model="virt",
             )
+            if boot_method and not uefi:
+                self.warn(
+                    "The aarch64 architecture requires UEFI boot, "
+                    "ignoring the specified boot method."
+                )
         elif self.arch == "ppc64le":
             domain.system_architecture = Ppc64leArchitectureConfiguration(
                 kvm=kvm,
                 uefi=False,  # Always disabled
                 model="pseries",
             )
+            if boot_method and uefi:
+                self.warn(
+                    "The ppc64le architecture does not support UEFI boot, "
+                    "ignoring the specified boot method."
+                )
         elif self.arch == "s390x":
             domain.system_architecture = S390xArchitectureConfiguration(
                 kvm=kvm,
                 uefi=False,  # Always disabled
                 model="s390-ccw-virtio",
             )
+            if boot_method and uefi:
+                self.warn(
+                    "The s390x architecture does not support UEFI boot, "
+                    "ignoring the specified boot method."
+                )
         else:
             raise tmt.utils.ProvisionError("Unknown architecture requested.")
 
@@ -1088,7 +1184,11 @@ class GuestTestcloud(tmt.GuestSsh):
         # Is this a CoreOS?
         self._domain.coreos = self.is_coreos
 
-        self._apply_hw_arch(self._domain, self.is_kvm, self.is_legacy_os)
+        boot_method = _get_hw_boot_method(self.hardware, self._logger)
+        self._apply_hw_arch(self._domain, self.is_kvm, self.is_legacy_os, boot_method=boot_method)
+
+        if boot_method:
+            self.info('boot method', boot_method, 'green')
 
         mac_address = testcloud.util.generate_mac_address()
         if f"qemu:///{self.connection}" == "qemu:///system":

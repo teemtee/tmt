@@ -14,6 +14,7 @@ from tmt.steps.provision.testcloud import (
 )
 from tmt.steps.provision.testcloud import (
     _apply_hw_tpm,
+    _get_hw_boot_method,
     import_testcloud,
 )
 
@@ -185,3 +186,21 @@ def test_tpm_unsupported_operator(
         ),
         levelno=logging.WARNING,
     )
+
+
+@pytest.mark.parametrize(
+    ('method', 'op', 'expected'),
+    [
+        ('uefi', Operator.EQ.value, 'uefi'),
+        ('bios', Operator.EQ.value, 'bios'),
+        ('uefi', Operator.NEQ.value, 'bios'),
+        ('bios', Operator.NEQ.value, 'uefi'),
+    ],
+    ids=['eq_uefi=uefi', 'eq_bios=bios', 'neq_uefi=bios', 'neq_bios=uefi'],
+)
+def test_get_hw_boot_method(root_logger: Logger, method: str, op: Operator, expected: str) -> None:
+    boot_method = _get_hw_boot_method(
+        Hardware.from_spec({'boot': {'method': f'{op} {method}'}}), root_logger
+    )
+
+    assert boot_method == expected
