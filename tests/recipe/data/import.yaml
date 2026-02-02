@@ -1,0 +1,195 @@
+run:
+    root: /path/to/fmf_root
+    remove: false
+    environment:
+        RUN_ENV: run_value
+    context: {}
+    __class__:
+        module: tmt.recipe
+        name: _RecipeRun
+plans:
+  - name: /plans/import
+    summary: A simple smoke plan for remote testing
+    description: This is just a simple smoke plan used for testing import of
+        remote plans. See the related test coverage for more details.
+    author: []
+    contact: []
+    enabled: true
+    order: 50
+    id:
+    tag: []
+    tier:
+    adjust: []
+    link:
+      - relates: https://github.com/teemtee/tmt/tree/main/tests/plan/import
+    environment-from-fmf: {}
+    environment-from-importing:
+        PLAN_ENV: plan_value
+    environment-from-cli:
+        RUN_ENV: run_value
+    environment-from-intrinsics:
+        TMT_VERSION: version
+        TMT_TREE: /run_path/plans/import/tree
+        TMT_PLAN_DATA: /run_path/plans/import/data
+        TMT_PLAN_ENVIRONMENT_FILE:
+            /run_path/plans/import/data/variables.env
+        TMT_PLAN_SOURCE_SCRIPT:
+            /run_path/plans/import/data/plan-source-script.sh
+    discover:
+        enabled: true
+        phases:
+          - name: default-0
+            how: fmf
+            order: 50
+            when: []
+            summary:
+            where: &id001 []
+            url:
+            url-content-type: git
+            ref:
+            dist-git-source: false
+            dist-git-type:
+            dist-git-download-only: false
+            dist-git-install-builddeps: false
+            dist-git-require: []
+            require-test: []
+            path:
+            test: []
+            link: []
+            filter:
+              - tag:remote
+            include: []
+            exclude: []
+            modified-only: false
+            modified-url:
+            modified-ref:
+            dist-git-init: false
+            dist-git-remove-fmf-root: false
+            dist-git-merge: false
+            dist-git-extract:
+            sync-repo: false
+            fmf-id: false
+            prune: false
+            adjust-tests: []
+            upgrade-path:
+            repository:
+            revision:
+            __class__:
+                module: tmt.steps.discover.fmf
+                name: DiscoverFmfStepData
+        tests:
+          - name: /tests/one
+            summary: Remote test one
+            description:
+            author: []
+            contact: []
+            enabled: true
+            order: 50
+            id:
+            tag:
+              - remote
+            tier:
+            adjust: []
+            component: []
+            framework: shell
+            manual: false
+            tty: false
+            duration: 5m
+            where: *id001
+            restart-on-exit-code: []
+            restart-max-count: 1
+            restart-with-reboot: false
+            serial-number: 1
+            discover-phase: default-0
+            link: []
+            test: echo one
+            path: /default-0/tests/tests
+            require: []
+            recommend: []
+            environment: {}
+            result: respect
+            check: []
+            __class__:
+                module: tmt.recipe
+                name: _RecipeTest
+          - name: /tests/two
+            summary: Remote test two
+            description:
+            author: []
+            contact: []
+            enabled: true
+            order: 50
+            id:
+            tag:
+              - remote
+            tier:
+            adjust: []
+            component: []
+            framework: shell
+            manual: false
+            tty: false
+            duration: 5m
+            where: *id001
+            restart-on-exit-code: []
+            restart-max-count: 1
+            restart-with-reboot: false
+            serial-number: 2
+            discover-phase: default-0
+            link: []
+            test: echo two
+            path: /default-0/tests/tests
+            require: []
+            recommend: []
+            environment: {}
+            result: respect
+            check: []
+            __class__:
+                module: tmt.recipe
+                name: _RecipeTest
+        __class__:
+            module: tmt.recipe
+            name: _RecipeDiscoverStep
+    provision:
+        enabled: false
+        phases: []
+        __class__:
+            module: tmt.recipe
+            name: _RecipeStep
+    prepare:
+        enabled: false
+        phases: []
+        __class__:
+            module: tmt.recipe
+            name: _RecipeStep
+    execute:
+        enabled: false
+        phases: []
+        results-path: plans/import/execute/results.yaml
+        __class__:
+            module: tmt.recipe
+            name: _RecipeExecuteStep
+    report:
+        enabled: false
+        phases: []
+        __class__:
+            module: tmt.recipe
+            name: _RecipeStep
+    finish:
+        enabled: false
+        phases: []
+        __class__:
+            module: tmt.recipe
+            name: _RecipeStep
+    cleanup:
+        enabled: false
+        phases: []
+        __class__:
+            module: tmt.recipe
+            name: _RecipeStep
+    context: {}
+    __class__:
+        module: tmt.recipe
+        name: _RecipePlan
+__class__:
+    module: tmt.recipe
+    name: Recipe

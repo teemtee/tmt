@@ -1,7 +1,5 @@
 provision:
     how: container
-execute:
-    how: tmt
 environment:
     PLAN_ENV: plan_value
 
@@ -15,6 +13,8 @@ environment:
         tests:
           - name: /shell-test
             test: /bin/true
+    execute:
+        how: tmt
 
 /remote:
     summary: A remote plan
@@ -22,3 +22,11 @@ environment:
         how: fmf
         url: https://github.com/teemtee/tests
         test: /tests/one
+    execute:
+        how: tmt
+
+/import:
+    plan:
+        import:
+            url: https://github.com/teemtee/tests
+            name: /plans/remote

@@ -24,6 +24,11 @@ rlJournalStart
         rlAssertGrep "summary: 1 test executed" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Test recipe loading of imported plan"
+        rlRun -s "tmt run -vvv --scratch --id $run --recipe import.yaml discover plan -n /plans/import"
+        rlAssertGrep "summary: 2 tests selected" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartTest "Test recipe loading with non-existent plan"
         rlRun "temp=\$(mktemp -d)" 0 "Create temporary directory"
         rlRun "cp -r .fmf simple.yaml $temp"

@@ -26,6 +26,15 @@ rlJournalStart
         rlPhaseEnd
     done
 
+    rlPhaseStartTest "Test recipe generation of an imported plan"
+        rlRun -s "tmt -vv run --scratch --id $run -e RUN_ENV=run_value discover plan -n /plans/import"
+        rlAssertExists "$recipe" "Recipe file exists"
+        replace_values
+        rlRun "yq 'sort_keys(..)' \"$recipe\" > $run/actual_normalized_recipe.yaml"
+        rlRun "yq 'sort_keys(..)' import.yaml > $run/expected_normalized_recipe.yaml"
+        rlRun "diff $run/actual_normalized_recipe.yaml $run/expected_normalized_recipe.yaml"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $run" 0 "Remove run directory"
