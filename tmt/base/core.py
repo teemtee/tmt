@@ -1158,7 +1158,32 @@ class Core(
                 # Validation errors can have "context", a list of "sub" errors encountered during
                 # validation. Interesting ones are identified & added to our error message.
                 if error.context:
-                    for suberror in error.context:
+                    # For oneOf validation (e.g., report step with multiple plugin schemas),
+                    # we only want to show errors from the schema that matches the 'how' value.
+                    relevant_suberrors: list[jsonschema.ValidationError] = []
+                    if (
+                        isinstance(error.validator, str)
+                        and error.validator == 'oneOf'
+                        and isinstance(instance := error.instance, dict)
+                        and 'how' in instance
+                    ):
+                        how_value = instance['how']
+                        # Look for errors that have a schema $id containing the how value.
+                        relevant_suberrors = [
+                            suberror
+                            for suberror in error.context
+                            if (
+                                isinstance(sub_schema := suberror.schema, dict)
+                                and '$id' in sub_schema
+                                and sub_schema['$id'].endswith(f'/{how_value}')
+                            )
+                        ]
+
+                    # No specific suberrors were identified, show them all.
+                    if not relevant_suberrors:
+                        relevant_suberrors = list(error.context)
+
+                    for suberror in relevant_suberrors:
                         yield from detect_errors(suberror)
 
             yield LinterOutcome.WARN, 'fmf node failed schema validation'
