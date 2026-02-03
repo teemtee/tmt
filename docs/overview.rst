@@ -628,11 +628,22 @@ TMT_TREE
     tmt plans are located in. Notice that it might not contain tmt
     tests if tmt plans and tests are in different git repositories.
 
+    .. warning::
+
+        Do not use ``TMT_TREE`` for storing data that needs to persist
+        between steps. There is no guarantee that data written to this
+        directory will be preserved across steps. Use ``TMT_PLAN_DATA``
+        for data that needs to persist between steps (e.g., from
+        ``prepare`` to ``execute``). For test-specific artifacts during
+        test execution, use ``TMT_TEST_DATA`` instead.
+
 TMT_PLAN_DATA
     Path to the common directory used for storing logs and other
-    artifacts related to the whole plan execution. It is pulled
-    back from the guest and available for inspection after the
-    plan is completed.
+    artifacts related to the whole plan execution. This is the
+    **recommended location** for storing any data that needs to
+    persist between steps (e.g., files generated during ``prepare``
+    that are needed during ``execute``). It is pulled back from the
+    guest and available for inspection after the plan is completed.
 
 TMT_PLAN_ENVIRONMENT_FILE
     Path to the file containing environment variables that should
@@ -688,7 +699,10 @@ TMT_TEST_DATA
     Path to the directory where test can store logs and other
     artifacts generated during its execution. These will be pulled
     back from the guest and available for inspection after the
-    test execution is finished.
+    test execution is finished. Note that this directory is
+    test-specific and not shared across tests. If you need to
+    share data between steps (e.g., from ``prepare`` to ``execute``),
+    use ``TMT_PLAN_DATA`` instead.
 
 TMT_TEST_SERIAL_NUMBER
     The serial number of running test in the whole plan. Each test
