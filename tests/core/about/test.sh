@@ -10,6 +10,7 @@ package_managers: apk apt bootc dnf dnf5 mock-dnf mock-dnf5 mock-yum rpm-ostree 
 plan_shapers: max-tests repeat
 prepare.artifact.providers: brew.build brew.nvr brew.task copr.build copr.repository file koji.build koji.nvr koji.task repository-file repository-url
 prepare.feature: crb epel fips profile
+prepare.install: apk apt bootc dnf dnf5 mock rpm-ostree yum
 step.cleanup: tmt
 step.discover: fmf shell
 step.execute: tmt upgrade

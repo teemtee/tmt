@@ -38,6 +38,7 @@ def _render_plugins_list_rest(logger: tmt.log.Logger) -> str:
         r'package_managers': 'Package manager plugins',
         r'plan_shapers': 'Plan shapers',
         r'prepare.feature': 'prepare/feature plugins',
+        r'prepare.install': 'prepare/install plugins',
         r'prepare.artifact.providers': 'prepare/artifact provider plugins',
         r'step\.([a-z]+)': '{{ MATCH.group(1).capitalize() }} step plugins',
     }
