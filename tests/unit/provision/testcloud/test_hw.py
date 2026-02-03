@@ -196,7 +196,12 @@ def test_tpm_unsupported_operator(
         ('uefi', Operator.NEQ, 'bios'),
         ('bios', Operator.NEQ, 'uefi'),
     ],
-    ids=['eq_uefi=uefi', 'eq_bios=bios', 'neq_uefi=bios', 'neq_bios=uefi'],
+    ids=[
+        "boot.method '== uefi' should result in 'uefi'",
+        "boot.method '== bios' should result in 'bios'",
+        "boot.method '!= uefi' should result in 'bios'",
+        "boot.method '!= bios' should result in 'uefi'",
+    ],
 )
 def test_get_hw_boot_method(root_logger: Logger, method: str, op: Operator, expected: str) -> None:
     boot_method = _get_hw_boot_method(

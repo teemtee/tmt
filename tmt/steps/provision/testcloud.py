@@ -1187,9 +1187,6 @@ class GuestTestcloud(tmt.GuestSsh):
         boot_method = _get_hw_boot_method(self.hardware, self._logger)
         self._apply_hw_arch(self._domain, self.is_kvm, self.is_legacy_os, boot_method=boot_method)
 
-        if boot_method:
-            self.info('boot method', boot_method, 'green')
-
         mac_address = testcloud.util.generate_mac_address()
         if f"qemu:///{self.connection}" == "qemu:///system":
             self._domain.network_configuration = SystemNetworkConfiguration(
