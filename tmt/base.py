@@ -1948,7 +1948,7 @@ class _RemotePlanReference(_RawFmfId):
     scope: Optional[str]
     inherit_context: Optional[bool]
     inherit_environment: Optional[bool]
-    adjust_plans: Optional[list[Any]]
+    adjust_plans: list[Any]
 
 
 class RemotePlanReferenceImporting(enum.Enum):
