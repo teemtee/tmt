@@ -1,7 +1,7 @@
 import re
 import shutil
 from collections.abc import Iterator
-from typing import Any, Literal, Optional, TypeVar, Union, cast
+from typing import Any, Callable, Literal, Optional, TypeVar, Union, cast
 
 import fmf
 import fmf.utils
@@ -24,13 +24,23 @@ from tmt.package_managers import (
     PackageUrl,
 )
 from tmt.package_managers.bootc import Bootc, BootcEngine
+from tmt.plugins import PluginRegistry
 from tmt.steps.provision import Guest
 from tmt.utils import Command, Path, ShellScript
 
 COPR_URL = 'https://copr.fedorainfracloud.org/coprs'
+COPR_REPO_PATTERN = re.compile(r'^(@)?([^/]+)/([^/]+)$')
 
 
 T = TypeVar('T')
+
+InstallerClass = type['InstallBase']
+
+_INSTALLER_PLUGIN_REGISTRY: PluginRegistry[InstallerClass] = PluginRegistry('prepare.install')
+
+provides_installer: Callable[[str], Callable[[InstallerClass], InstallerClass]] = (
+    _INSTALLER_PLUGIN_REGISTRY.create_decorator()
+)
 
 
 class InstallBase(tmt.utils.Common):
@@ -53,11 +63,11 @@ class InstallBase(tmt.utils.Common):
     def __init__(
         self,
         *,
-        parent: 'PrepareInstall',
+        parent: Optional['PrepareInstall'] = None,
         guest: Guest,
-        dependencies: list[tmt.base.DependencySimple],
-        directories: list[Path],
-        exclude: list[str],
+        dependencies: Optional[list[tmt.base.DependencySimple]] = None,
+        directories: Optional[list[Path]] = None,
+        exclude: Optional[list[str]] = None,
         logger: tmt.log.Logger,
         **kwargs: Any,
     ) -> None:
@@ -67,13 +77,18 @@ class InstallBase(tmt.utils.Common):
 
         super().__init__(logger=logger, parent=parent, relative_indent=0, guest=guest, **kwargs)
 
+        dependencies = dependencies or []
+        directories = directories or []
+        exclude = exclude or []
+
         if not dependencies and not directories:
             self.debug("No packages for installation found.", level=3)
 
         self.guest = guest
         self.exclude = [Package(package) for package in exclude]
 
-        self.skip_missing = bool(parent.get('missing') == 'skip')
+        if parent is not None:
+            self.skip_missing = bool(parent.get('missing') == 'skip')
 
         # Prepare package lists and installation command
         self.prepare_installables(dependencies, directories)
@@ -245,7 +260,7 @@ class Copr(tmt.utils.Common):
         """
 
         # Parse the copr repo name
-        matched = re.match("^(@)?([^/]+)/([^/]+)$", copr)
+        matched = COPR_REPO_PATTERN.match(copr)
         if not matched:
             raise tmt.utils.PrepareError(f"Invalid copr repository '{copr}'.")
         group, name, project = matched.groups()
@@ -301,6 +316,7 @@ class Copr(tmt.utils.Common):
                 )
 
 
+@provides_installer('dnf')
 class InstallDnf(InstallBase, Copr):
     """
     Install packages using dnf
@@ -389,6 +405,7 @@ class InstallDnf(InstallBase, Copr):
             )
 
 
+@provides_installer('dnf5')
 class InstallDnf5(InstallDnf):
     """
     Install packages using dnf5
@@ -397,6 +414,7 @@ class InstallDnf5(InstallDnf):
     copr_plugin = "dnf5-command(copr)"
 
 
+@provides_installer('yum')
 class InstallYum(InstallDnf):
     """
     Install packages using yum
@@ -405,6 +423,7 @@ class InstallYum(InstallDnf):
     copr_plugin = "yum-plugin-copr"
 
 
+@provides_installer('rpm-ostree')
 class InstallRpmOstree(InstallBase, Copr):
     """
     Install packages using rpm-ostree
@@ -425,16 +444,10 @@ class InstallRpmOstree(InstallBase, Copr):
         # the `InstallDnf5` & swap guest's package manager for `dnf5`
         # for a moment.
         self.guest.facts.package_manager = 'dnf5'
-        # TODO: wouldn't it be nice if we could just call copr method
-        # without populating `dependencies` & co. with dummy values.
-        InstallDnf5(
-            parent=cast('PrepareInstall', self.parent),
-            guest=self.guest,
-            dependencies=[],
-            directories=[],
-            exclude=[],
-            logger=self._logger,
-        ).enable_copr(repositories)
+        installer = InstallDnf5(
+            guest=self.guest, logger=self._logger, parent=cast('PrepareInstall', self.parent)
+        )
+        installer.enable_copr(repositories)
         self.guest.facts.package_manager = 'rpm-ostree'
 
     def sort_packages(self) -> None:
@@ -503,6 +516,7 @@ class InstallRpmOstree(InstallBase, Copr):
             )
 
 
+@provides_installer('apt')
 class InstallApt(InstallBase):
     """
     Install packages using apt
@@ -576,6 +590,7 @@ class InstallApt(InstallBase):
             )
 
 
+@provides_installer('bootc')
 class InstallBootc(InstallBase):
     """Install packages using bootc container image mode"""
 
@@ -684,6 +699,7 @@ class InstallBootc(InstallBase):
         cast(Bootc, self.guest.package_manager).build_container()
 
 
+@provides_installer('mock')
 class InstallMock(InstallBase):
     # TODO this really looks like it should be a subclass of InstallDnf
     def install_from_repository(self) -> None:
@@ -745,6 +761,7 @@ class InstallMock(InstallBase):
         )
 
 
+@provides_installer('apk')
 class InstallApk(InstallBase):
     """
     Install packages using apk
@@ -970,97 +987,15 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         if guest.facts.package_manager is None:
             raise tmt.utils.PrepareError('Unrecognized package manager.')
 
-        # Pick the right implementation
-        # TODO: it'd be nice to use a "plugin registry" and make the
-        # implementations discovered as any other plugins. Package managers are
-        # shipped as plugins, but we still need a matching *installation* class.
-        # But do we really need a class per package manager family? Maybe the
-        # code could be integrated into package manager plugins directly.
-        if guest.facts.package_manager == 'bootc':
-            installer: InstallBase = InstallBootc(
-                logger=logger,
-                parent=self,
-                dependencies=self.data.package,
-                directories=self.data.directory,
-                exclude=self.data.exclude,
-                guest=guest,
-            )
-
-        elif guest.facts.package_manager.startswith('mock-'):
-            installer = InstallMock(
-                logger=logger,
-                parent=self,
-                dependencies=self.data.package,
-                directories=self.data.directory,
-                exclude=self.data.exclude,
-                guest=guest,
-            )
-
-        elif guest.facts.package_manager == 'rpm-ostree':
-            installer = InstallRpmOstree(
-                logger=logger,
-                parent=self,
-                dependencies=self.data.package,
-                directories=self.data.directory,
-                exclude=self.data.exclude,
-                guest=guest,
-            )
-
-        elif guest.facts.package_manager == 'dnf5':
-            installer = InstallDnf5(
-                logger=logger,
-                parent=self,
-                dependencies=self.data.package,
-                directories=self.data.directory,
-                exclude=self.data.exclude,
-                guest=guest,
-            )
-
-        elif guest.facts.package_manager == 'dnf':
-            installer = InstallDnf(
-                logger=logger,
-                parent=self,
-                dependencies=self.data.package,
-                directories=self.data.directory,
-                exclude=self.data.exclude,
-                guest=guest,
-            )
-
-        elif guest.facts.package_manager == 'yum':
-            installer = InstallYum(
-                logger=logger,
-                parent=self,
-                dependencies=self.data.package,
-                directories=self.data.directory,
-                exclude=self.data.exclude,
-                guest=guest,
-            )
-
-        elif guest.facts.package_manager == 'apt':
-            installer = InstallApt(
-                logger=logger,
-                parent=self,
-                dependencies=self.data.package,
-                directories=self.data.directory,
-                exclude=self.data.exclude,
-                guest=guest,
-            )
-
-        elif guest.facts.package_manager == 'apk':
-            installer = InstallApk(
-                logger=logger,
-                parent=self,
-                dependencies=self.data.package,
-                directories=self.data.directory,
-                exclude=self.data.exclude,
-                guest=guest,
-            )
-
-        else:
-            raise tmt.utils.PrepareError(
-                f"Package manager '{guest.facts.package_manager}' "
-                "is not supported by 'prepare/install'."
-            )
+        installer_class = get_installer_class(guest.facts.package_manager)
+        installer = installer_class(
+            guest=guest,
+            logger=logger,
+            parent=self,
+            dependencies=self.data.package,
+            directories=self.data.directory,
+            exclude=self.data.exclude,
+        )
 
         # Enable copr repositories...
         if isinstance(installer, Copr):
@@ -1070,3 +1005,16 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         installer.install()
 
         return outcome
+
+
+def get_installer_class(package_manager: str) -> type[InstallBase]:
+    """Get the appropriate installer class for the package manager."""
+    if installer_class := _INSTALLER_PLUGIN_REGISTRY.get_plugin(package_manager):
+        return installer_class
+
+    if package_manager.startswith('mock-'):
+        return InstallMock
+
+    raise tmt.utils.PrepareError(
+        f"Package manager '{package_manager}' is not supported by 'prepare/install'."
+    )
