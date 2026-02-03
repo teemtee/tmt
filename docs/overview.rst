@@ -630,12 +630,12 @@ TMT_TREE
 
     .. warning::
 
-        Do not use ``TMT_TREE`` for storing data that needs to persist
-        between steps. There is no guarantee that data written to this
-        directory will be preserved across steps. Use ``TMT_PLAN_DATA``
-        for data that needs to persist between steps (e.g., from
-        ``prepare`` to ``execute``). For test-specific artifacts during
-        test execution, use ``TMT_TEST_DATA`` instead.
+        Do not use ``TMT_TREE`` to store data that must persist between steps,
+        as its contents are not guaranteed to be preserved.
+
+        Use ``TMT_PLAN_DATA`` for sharing data across steps (e.g., from
+        ``prepare`` to ``execute``) and ``TMT_TEST_DATA`` for test-specific
+        artifacts.
 
 TMT_PLAN_DATA
     Path to the common directory used for storing logs and other
