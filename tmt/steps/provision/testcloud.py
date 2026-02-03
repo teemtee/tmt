@@ -1044,8 +1044,8 @@ class GuestTestcloud(tmt.GuestSsh):
             )
             if boot_method and not uefi:
                 self.warn(
-                    "The aarch64 architecture requires UEFI boot, "
-                    "ignoring the specified boot method."
+                    "The aarch64 architecture requires 'uefi' boot, "
+                    "using 'uefi' boot method instead."
                 )
         elif self.arch == "ppc64le":
             domain.system_architecture = Ppc64leArchitectureConfiguration(
@@ -1055,8 +1055,8 @@ class GuestTestcloud(tmt.GuestSsh):
             )
             if boot_method and uefi:
                 self.warn(
-                    "The ppc64le architecture does not support UEFI boot, "
-                    "ignoring the specified boot method."
+                    "The ppc64le architecture does not support 'uefi' boot, "
+                    "using 'bios' boot method instead."
                 )
         elif self.arch == "s390x":
             domain.system_architecture = S390xArchitectureConfiguration(
@@ -1066,8 +1066,8 @@ class GuestTestcloud(tmt.GuestSsh):
             )
             if boot_method and uefi:
                 self.warn(
-                    "The s390x architecture does not support UEFI boot, "
-                    "ignoring the specified boot method."
+                    "The s390x architecture does not support 'uefi' boot, "
+                    "using 'bios' boot method instead."
                 )
         else:
             raise tmt.utils.ProvisionError("Unknown architecture requested.")
@@ -1184,8 +1184,12 @@ class GuestTestcloud(tmt.GuestSsh):
         # Is this a CoreOS?
         self._domain.coreos = self.is_coreos
 
-        boot_method = _get_hw_boot_method(self.hardware, self._logger)
-        self._apply_hw_arch(self._domain, self.is_kvm, self.is_legacy_os, boot_method=boot_method)
+        self._apply_hw_arch(
+            self._domain,
+            self.is_kvm,
+            self.is_legacy_os,
+            boot_method=_get_hw_boot_method(self.hardware, self._logger),
+        )
 
         mac_address = testcloud.util.generate_mac_address()
         if f"qemu:///{self.connection}" == "qemu:///system":
