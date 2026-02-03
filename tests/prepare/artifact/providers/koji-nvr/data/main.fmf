@@ -1,0 +1,14 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: container
+    execute:
+        how: tmt
+
+/test:
+    test: ./test.sh
+    duration: 5m
+    summary: Verify package from koji NVR
+    require:
+      - make
