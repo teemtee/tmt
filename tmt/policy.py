@@ -42,11 +42,18 @@ class Instruction(MetadataContainer):
     else:
         model_config = ConfigDict(extra="allow")
 
-    def _apply_to_trivial_key(self, obj: 'Core', key: str, logger: Logger) -> None:
+    def _apply_to_trivial_key(
+        self, obj: 'Core', key: str, template_variable_name: str, logger: Logger
+    ) -> None:
         """
         Apply the instruction to a given object.
 
+        Works with the primitive, trivial keys where values are Python
+        built-in data types: ``int``, ``bool``, or lists and dictionaries.
+
         :param obj: object to modify - a test, plan, or story.
+        :param template_variable_name: name to use for a variable
+            representing ``obj`` in the template.
         :param logger: used for logging.
         """
 
@@ -148,6 +155,12 @@ class Instruction(MetadataContainer):
                     NEW_VALUE={key: current_value_exported},
                     OLD_VALUE_SOURCE=old_value_source,
                     NEW_VALUE_SOURCE=current_value_source,
+                    # ignore[arg-type]: not sure why, but mypy sees this
+                    # as being value for one of the existing parameters
+                    # rather than kwargs.
+                    **{  # type: ignore[arg-type]
+                        template_variable_name: obj,
+                    },
                 ),
                 topic=Topic.POLICY,
             )
@@ -161,7 +174,7 @@ class Instruction(MetadataContainer):
         """
 
         for key in self.model_fields_set:
-            self._apply_to_trivial_key(obj, key, logger.clone())
+            self._apply_to_trivial_key(obj, key, 'TEST', logger.clone())
 
 
 class PlanInstruction(Instruction):
@@ -180,6 +193,11 @@ class PlanInstruction(Instruction):
         base_logger = logger
 
         for key in self.model_fields_set:
+            # With steps, we encounter not just trivial keys with built-in
+            # data types for values, but also complex, custom data types,
+            # like steps. Those require special handling as we need to
+            # carefully reset step data and force it to use the modified
+            # instead.
             if key in tmt.steps.STEPS:
                 template = getattr(self, key)
                 logger = base_logger.clone()
@@ -187,12 +205,15 @@ class PlanInstruction(Instruction):
                 step = cast(tmt.steps.Step, getattr(obj, key))
                 current_value = old_value = step.data[:]
                 current_value_exported = old_value_exported = step._raw_data[:]
-                # current_value_source = old_value_source = None
+                current_value_source = old_value_source = obj._field_value_sources.get(
+                    key, FieldValueSource.UNKNOWN
+                )
 
                 rendered_new_value = render_template(
                     template,
                     VALUE=current_value_exported,
-                    # VALUE_SOURCE=current_value_source.value,
+                    VALUE_SOURCE=current_value_source.value,
+                    PLAN=obj,
                 )
 
                 raw_new_value = tmt.utils.from_yaml(rendered_new_value)
@@ -212,20 +233,22 @@ class PlanInstruction(Instruction):
                 current_value_exported = [phase.to_spec() for phase in step.data]
 
                 if current_value_exported != old_value_exported:
+                    current_value_source = obj._field_value_sources[key] = FieldValueSource.POLICY
+
                     logger.info(
                         f"Modified '{obj.name}'",
                         render_template(
                             STEP_DIFF_TEMPLATE,
                             OLD_VALUE={key: old_value_exported},
                             NEW_VALUE={key: current_value_exported},
-                            # OLD_VALUE_SOURCE=old_value_source,
-                            # NEW_VALUE_SOURCE=current_value_source,
+                            OLD_VALUE_SOURCE=old_value_source,
+                            NEW_VALUE_SOURCE=current_value_source,
                         ),
                         topic=Topic.POLICY,
                     )
 
             else:
-                self._apply_to_trivial_key(obj, key, logger.clone())
+                self._apply_to_trivial_key(obj, key, 'PLAN', logger.clone())
 
 
 class Policy(MetadataContainer):

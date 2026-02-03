@@ -11,13 +11,13 @@ description: |
         only. In the future, we plan to support stories as well.
 
     tmt policies offer a powerful and flexible way to dynamically
-    modify test metadata using templates. Instead of maintaining multiple
-    similar test versions, you can define a base test and then apply
-    policy to adjust its properties for different scenarios (e.g.,
-    different environments, feature flags, or CI runs).
+    modify test and plan metadata using templates. Instead of maintaining
+    multiple similar versions of metadata, you can define a base test or
+    plan and then apply policy to adjust its properties for different
+    scenarios (e.g., different environments, feature flags, or CI runs).
 
     A policy is stored in a YAML file, and consists of one or more
-    rules, each mapping a test key to a template that provides new
+    rules, each mapping a key to a template that provides new
     content for the said key.
 
     .. code-block:: yaml
@@ -31,12 +31,21 @@ description: |
             <test key>: <template>
             ...
 
+        plan-policy:
+          - <plan key>: <template>
+            <plan key>: <template>
+            ...
+
+          - <plan key>: <template>
+            <plan key>: <template>
+            ...
+
     A policy is applied by tmt after metadata are finalized. It is
-    applied on fully materialized tests, i.e. after reading fmf files,
-    ``adjust`` evaluation, and after all command-line options were taken
-    into account. All values would also be normalized, e.g. ``tag`` or
-    ``contact`` keys would always be lists of strings, and so on. At
-    this point, policies have access to the most final content of test
+    applied on fully materialized tests and plans, i.e. after reading fmf
+    files, ``adjust`` evaluation, and after all command-line options were
+    taken into account. All values would also be normalized, e.g. ``tag``
+    or ``contact`` keys would always be lists of strings, and so on. At
+    this point, policies have access to the most final content of metadata
     keys.
 
     When a policy is applied:
@@ -44,8 +53,8 @@ description: |
     * the template string is rendered as a
       :ref:`jinja2 template <custom_templates>`.
     * the rendered output is treated as if it were
-      :ref:`test metadata </spec/tests>` from an fmf file. Text is
-      parsed and normalized as any other fmf input.
+      metadata read from an fmf file. Text is parsed and normalized as
+      any other fmf input.
     * finally, it replaces the original value of the specified metadata
       key.
 
@@ -123,9 +132,18 @@ description: |
       command line, ``default`` when the value is the default value of
       the key, i.e. no other explicit value was set, and ``policy`` when
       the value was set by previous policy instruction.
-    * ``TEST``: the entire test object, allowing you to access any of
-      its metadata fields for conditional logic (e.g., ``TEST.contact``,
-      ``TEST.component``).
+
+      .. note::
+
+         ``VALUE_SOURCE`` for plan keys representing individual steps -
+         ``discover``, ``provision``, etc. - will be set to special
+         value ``unknown``. Steps are modified as whole rather than
+         changing individual step phases, and tmt does not support tracking
+         the origin of keys of phases. If the step is modified by a policy,
+         its ``VALUE_SOURCE`` would become ``policy``.
+    * ``TEST``, ``PLAN``: entire objects being modified, allowing the
+      rules to access any of its fields for conditional logic (e.g.,
+      ``TEST.contact``, ``TEST.component``).
 
     Policy can be passed to tmt in two ways:
 
