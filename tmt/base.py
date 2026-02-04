@@ -1999,7 +1999,9 @@ class RemotePlanReference(
     scope: RemotePlanReferenceImportScope = RemotePlanReferenceImportScope.FIRST_PLAN_ONLY
     inherit_context: bool = True
     inherit_environment: bool = True
-    adjust_plans: Optional[list[_RawAdjustRule]] = field(
+    # Note: normalize_adjust always returns a list, never None,
+    # so Optional is not needed here despite the function's type hint
+    adjust_plans: list[_RawAdjustRule] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_adjust,
     )
