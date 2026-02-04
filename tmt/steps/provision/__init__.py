@@ -560,9 +560,7 @@ class BootMarkBootTime(BootMark):
 
     @classmethod
     def fetch(cls, guest: 'Guest') -> str:
-        # Use make_changes=False because this is a probe command that must
-        # execute immediately, not be collected for bootc guests
-        stdout = guest.execute(Command("cat", "/proc/stat"), make_changes=False).stdout
+        stdout = guest.execute(Command("cat", "/proc/stat")).stdout
 
         assert stdout
 
@@ -659,8 +657,7 @@ class GuestFacts(SerializableContainer):
         """
 
         try:
-            # Fact discovery commands are probes, not system modifications
-            return guest.execute(command, silent=True, make_changes=False)
+            return guest.execute(command, silent=True)
 
         except tmt.utils.RunError:
             pass
@@ -1559,12 +1556,12 @@ class GuestCommandCollector(abc.ABC):
     Used by bootc guests where prepare commands should be collected into a
     Containerfile rather than executed immediately on the live guest.
 
-    When a guest implements this mixin, commands with ``make_changes=True``
-    (the default) are collected rather than executed immediately. The
-    collected commands are then executed in batch when :py:meth:`flush_collected`
-    is called (typically at the end of a step).
+    When a guest implements this mixin, commands with ``immediately=False``
+    are collected rather than executed immediately. The collected commands
+    are then executed in batch when :py:meth:`flush_collected` is called
+    (typically at the end of a step).
 
-    Commands with ``make_changes=False`` (probes, checks) or ``test_session=True``
+    Commands with ``immediately=True`` (default) or ``test_session=True``
     are always executed immediately, even on guests that implement this mixin.
     """
 
@@ -1890,15 +1887,12 @@ class Guest(
         """
 
         # Ensure scripts directory exists on guest (create only if missing)
-        # Use make_changes=False because this must execute immediately during setup,
-        # not be collected for bootc guests (rsync that follows needs the directory)
         self.execute(
             ShellScript(
                 f"[ -d {quote(str(self.scripts_path))} ] || "
                 f"{self.facts.sudo_prefix} mkdir -p {quote(str(self.scripts_path))}"
             ).to_shell_command(),
             silent=True,
-            make_changes=False,
         )
 
         # Install all scripts on guest
@@ -2267,7 +2261,7 @@ class Guest(
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
-        make_changes: bool = False,
+        immediately: bool = True,
         tty: bool = False,
         silent: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,
@@ -2287,7 +2281,7 @@ class Guest(
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
-        make_changes: bool = False,
+        immediately: bool = True,
         tty: bool = False,
         silent: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,
@@ -2307,7 +2301,7 @@ class Guest(
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
-        make_changes: bool = False,
+        immediately: bool = True,
         tty: bool = False,
         silent: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,
@@ -2325,15 +2319,11 @@ class Guest(
         :param env: if set, set these environment variables before running the command.
         :param friendly_command: nice, human-friendly representation of the command.
         :param test_session: if True, this is the actual test being run.
-        :param make_changes: if True, the command modifies system state.
-            For bootc guests implementing :py:class:`GuestCommandCollector`,
-            commands with ``make_changes=True`` are collected into a Containerfile
-            rather than executed immediately. Commands with ``make_changes=False``
-            (default, probes/checks) are always executed immediately.
-            For bootc guests implementing :py:class:`GuestCommandCollector`,
-            commands with ``make_changes=True`` are collected into a Containerfile
-            rather than executed immediately. Commands with ``make_changes=False``
-            (probes, checks) are always executed immediately.
+        :param immediately: if False, the command may be collected for later
+            batch execution on guests that support it (e.g., bootc guests).
+            Commands with ``immediately=True`` (default) are always executed
+            right away. Use ``immediately=False`` for commands that modify
+            system state and can be batched (e.g., package installation).
         """
 
         raise NotImplementedError
@@ -2715,11 +2705,8 @@ class Guest(
             path. Otherwise, the default directory is used.
         """
 
-        # Use make_changes=False because this must execute immediately,
-        # not be collected for bootc guests (we need the actual path returned)
         output = self.execute(
             self._construct_mkdtemp_command(prefix=prefix, template=template, parent=parent),
-            make_changes=False,
         )
 
         if not output.stdout:
@@ -2802,7 +2789,7 @@ class GuestSsh(Guest, GuestCommandCollector):
 
     This class also implements :py:class:`GuestCommandCollector` to support
     bootc guests. When running on a bootc system (detected via package manager),
-    commands with ``make_changes=True`` are collected into a Containerfile
+    commands with ``immediately=False`` are collected into a Containerfile
     rather than executed immediately.
 
     The following keys are expected in the 'data' dictionary::
@@ -3322,8 +3309,6 @@ class GuestSsh(Guest, GuestCommandCollector):
         if not self.facts.is_superuser and self.become:
             self.package_manager.install(FileSystemPath('/usr/bin/setfacl'))
             workdir_root = effective_workdir_root()
-            # Use make_changes=False because this must execute immediately during setup,
-            # not be collected for bootc guests (rsync that follows needs the directory)
             self.execute(
                 ShellScript(
                     f"""
@@ -3331,7 +3316,6 @@ class GuestSsh(Guest, GuestCommandCollector):
                     setfacl -d -m o:rX {workdir_root}
                     """
                 ),
-                make_changes=False,
             )
 
     def execute(
@@ -3341,7 +3325,7 @@ class GuestSsh(Guest, GuestCommandCollector):
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
-        make_changes: bool = False,
+        immediately: bool = True,
         tty: bool = False,
         silent: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,
@@ -3359,12 +3343,11 @@ class GuestSsh(Guest, GuestCommandCollector):
         :param env: if set, set these environment variables before running the command.
         :param friendly_command: nice, human-friendly representation of the command.
         :param test_session: if True, this is the actual test being run.
-        :param make_changes: whether the command modifies system state.
-            This parameter is used by bootc guests to determine whether to
-            collect commands for the Containerfile. Use make_changes=True for
-            commands that modify the system (e.g., package installs, file writes),
-            and make_changes=False for probe/diagnostic commands (e.g., whoami,
-            cat /proc/stat). For regular guests, this parameter is ignored.
+        :param immediately: if False, the command may be collected for later
+            batch execution on guests that support it (e.g., bootc guests).
+            Commands with ``immediately=True`` (default) are always executed
+            right away. Use ``immediately=False`` for commands that modify
+            system state and can be batched (e.g., package installation).
         """
 
         sourced_files = sourced_files or []
@@ -3373,12 +3356,12 @@ class GuestSsh(Guest, GuestCommandCollector):
         if test_session and self._has_bootc_collected_commands():
             self._flush_bootc_commands()
 
-        # For bootc guests: collect system-modifying commands instead of executing
-        # Commands with make_changes=True (default) are collected for later
-        # execution via a Containerfile build, unless test_session=True.
-        # Commands with make_changes=False (probes) or test_session=True are
+        # For bootc guests: collect commands for later batch execution
+        # Commands with immediately=False are collected for later execution
+        # via a Containerfile build, unless test_session=True.
+        # Commands with immediately=True (default) or test_session=True are
         # executed immediately on the live guest.
-        if make_changes and not test_session and self.facts.is_bootc:
+        if not immediately and not test_session and self.facts.is_bootc:
             self._collect_command_for_bootc(command, cwd=cwd, env=env)
             return tmt.utils.CommandOutput(stdout="", stderr="")
 
@@ -3545,11 +3528,7 @@ class GuestSsh(Guest, GuestCommandCollector):
 
         try:
             if options.create_destination:
-                # Use make_changes=False because this must execute immediately,
-                # not be collected for bootc guests (rsync that follows needs the directory)
-                self.execute(
-                    Command("mkdir", "-p", destination.parent), silent=True, make_changes=False
-                )
+                self.execute(Command("mkdir", "-p", destination.parent), silent=True)
             self._run_guest_command(cmd, silent=True)
 
         except tmt.utils.RunError as exc:
