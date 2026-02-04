@@ -203,12 +203,12 @@ class PlanInstruction(Instruction):
                 logger = base_logger.clone()
 
                 step = cast(tmt.steps.Step, getattr(obj, key))
-                current_value = old_value = step.data[:]
                 current_value_exported = old_value_exported = step._raw_data[:]
                 current_value_source = old_value_source = obj._field_value_sources.get(
                     key, FieldValueSource.UNKNOWN
                 )
 
+                # Let the rule prepare the new structure of step phases
                 rendered_new_value = render_template(
                     template,
                     VALUE=current_value_exported,
@@ -218,18 +218,31 @@ class PlanInstruction(Instruction):
 
                 raw_new_value = tmt.utils.from_yaml(rendered_new_value)
 
-                if type(old_value) is not type(current_value):
-                    raise tmt.utils.GeneralError(
-                        f"Type mismatch for field '{key}': expected '{type(old_value)}', "
-                        f"got '{type(current_value)}'."
-                    )
-
+                # Make sure all phases have `name` and `how` keys set.
+                # This has been already resolved in the original data,
+                # by the machinery of normalization in `Step` class,
+                # and policy rules can easily omit or even remove these
+                # keys, breaking assumptions the next parts of workflow
+                # have.
                 raw_new_value = step._set_default_names(raw_new_value)
-                raw_new_value = step._apply_cli_invocations(raw_new_value)
+                raw_new_value = step._set_default_how(raw_new_value)
 
+                # Once `step.data` is deleted, next attempt to read it will
+                # force `Step._normalize_data()` process `_raw_data`, turning
+                # it into plugins and their data classes.
                 del step.data
                 step._raw_data = raw_new_value
 
+                # We want to log the changes, but we also want to force
+                # the read of `step.data`, to make sure the conversion
+                # works. After all, we started with `step.data` fully
+                # ready, it'd be good to return the step in the same
+                # condition.
+                #
+                # Plus, whatever exception comes out of it, it will happen
+                # in the context of policy application, rather than at
+                # some random, unrelated point of tmt workflow. If policy
+                # breaks something, user should hear it from us first.
                 current_value_exported = [phase.to_spec() for phase in step.data]
 
                 if current_value_exported != old_value_exported:
