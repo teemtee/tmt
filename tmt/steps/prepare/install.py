@@ -92,9 +92,9 @@ class InstallBase(tmt.utils.Common):
 
         if parent is not None:
             self.skip_missing = bool(parent.get('missing') == 'skip')
-            
+
         self.install_outputs = []
-        
+
         # Prepare package lists and installation command
         self.prepare_installables(dependencies, directories)
 
