@@ -620,6 +620,7 @@ class GuestFacts(SerializableContainer):
     can_sudo: Optional[bool] = None
     sudo_prefix: Optional[str] = None
     is_ostree: Optional[bool] = None
+    is_bootc: Optional[bool] = None
     is_toolbox: Optional[bool] = None
     toolbox_container_name: Optional[str] = None
     is_container: Optional[bool] = None
@@ -938,6 +939,32 @@ class GuestFacts(SerializableContainer):
 
         return output.stdout.strip() == 'yes'
 
+    def _query_is_bootc(self, guest: 'Guest') -> Optional[bool]:
+        """
+        Detect whether guest is managed by bootc.
+
+        A bootc-managed system has the bootc command available and reports
+        a booted image in its status. See https://containers.github.io/bootc/
+        """
+        # Check if bootc command exists and system is booted from a bootc image.
+        # Uses same logic as bootc package manager probe: check that neither
+        # booted nor image are null in the status output.
+        output = self._execute(
+            guest,
+            ShellScript(
+                """
+                type bootc >/dev/null 2>&1 || { echo no; exit 0; }
+                sudo bootc status --format yaml 2>/dev/null \
+                    | grep -qE 'booted: null|image: null' && echo no || echo yes
+                """
+            ).to_shell_command(),
+        )
+
+        if output is None or output.stdout is None:
+            return None
+
+        return output.stdout.strip() == 'yes'
+
     def _query_is_toolbox(self, guest: 'Guest') -> Optional[bool]:
         # https://www.reddit.com/r/Fedora/comments/g6flgd/toolbox_specific_environment_variables/
         output = self._execute(
@@ -1036,6 +1063,7 @@ class GuestFacts(SerializableContainer):
             self.can_sudo = self._query_can_sudo(guest)
             self.sudo_prefix = self._query_sudo_prefix(guest)
             self.is_ostree = self._query_is_ostree(guest)
+            self.is_bootc = self._query_is_bootc(guest)
             self.is_toolbox = self._query_is_toolbox(guest)
             self.toolbox_container_name = self._query_toolbox_container_name(guest)
             self.is_container = self._query_is_container(guest)
@@ -1068,6 +1096,7 @@ class GuestFacts(SerializableContainer):
         yield _value('bootc_builder', 'bootc builder')
         yield _flag('is_container', 'is container')
         yield _flag('is_ostree', 'is ostree')
+        yield _flag('is_bootc', 'is bootc')
         yield _flag('is_toolbox', 'is toolbox')
         yield _flag('has_selinux', 'selinux')
         yield _flag('has_systemd', 'systemd')
@@ -1773,22 +1802,6 @@ class Guest(
         return tmt.package_managers.find_package_manager(self.facts.bootc_builder)(
             guest=self, logger=self._logger
         )
-
-    @property
-    def is_bootc_guest(self) -> bool:
-        """
-        Check if this guest is running a bootc-based system.
-
-        Returns True when the guest's detected package manager is 'bootc',
-        indicating that commands should be collected into a Containerfile
-        rather than executed immediately.
-        """
-        # Access __dict__ directly to avoid triggering the facts property getter
-        # which would call sync() if facts aren't ready, causing infinite recursion
-        facts = self.__dict__.get('facts')
-        if facts is None or not facts.in_sync:
-            return False
-        return bool(facts.package_manager == 'bootc')
 
     @functools.cached_property
     def scripts_path(self) -> Path:
@@ -3365,7 +3378,7 @@ class GuestSsh(Guest, GuestCommandCollector):
         # execution via a Containerfile build, unless test_session=True.
         # Commands with make_changes=False (probes) or test_session=True are
         # executed immediately on the live guest.
-        if make_changes and not test_session and self.is_bootc_guest:
+        if make_changes and not test_session and self.facts.is_bootc:
             self._collect_command_for_bootc(command, cwd=cwd, env=env)
             return tmt.utils.CommandOutput(stdout="", stderr="")
 
