@@ -1,0 +1,3 @@
+description: |
+  :ref:`Policies </spec/policy>` can now be applied to plans, including
+  their steps and all their phases.

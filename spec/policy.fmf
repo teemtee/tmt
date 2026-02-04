@@ -178,6 +178,9 @@ description: |
 
     .. versionadded:: 1.50
 
+    .. versionchanged:: 1.67
+       Added support for plan-level policies.
+
 example:
   - |
     # To unconditionally change a key value, provide the new value
