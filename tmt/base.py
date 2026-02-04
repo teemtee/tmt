@@ -1999,7 +1999,7 @@ class RemotePlanReference(
     scope: RemotePlanReferenceImportScope = RemotePlanReferenceImportScope.FIRST_PLAN_ONLY
     inherit_context: bool = True
     inherit_environment: bool = True
-    adjust_plans: Optional[list[Any]] = field(
+    adjust_plans: Optional[list[_RawAdjustRule]] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_adjust,
     )
@@ -2087,6 +2087,9 @@ class RemotePlanReference(
         )
         reference.inherit_context = bool(raw.get('inherit-context', True))
         reference.inherit_environment = bool(raw.get('inherit-environment', True))
+        reference.adjust_plans = tmt.utils.normalize_adjust(
+            'adjust-plans', raw.get('adjust-plans'), tmt.log.Logger.get_bootstrap_logger()
+        )
 
         return reference
 
@@ -3381,8 +3384,12 @@ class Plan(
             # in the Tree constructor, similar to how adjust-tests works
 
             # Adjust the imported tree, to let any `adjust` rules defined in it take
-            # action.
-            node.adjust(fmf.context.Context(**alteration_fmf_context), case_sensitive=False)
+            # action, including the adjust-plans rules.
+            node.adjust(
+                fmf.context.Context(**alteration_fmf_context),
+                case_sensitive=False,
+                additional_rules=reference.adjust_plans,
+            )
 
             # If the local plan is disabled, disable the imported plan as well
             if not self.enabled:

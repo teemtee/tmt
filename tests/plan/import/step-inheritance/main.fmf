@@ -1,4 +1,4 @@
-# Test step inheritance with adjust-* fields
+# Test step inheritance with adjust-plans fields
 
 # Test append mode for report step
 /test-report-append:
@@ -10,7 +10,7 @@
             inherit-context: false
             inherit-environment: false
             adjust-plans:
-                report+:
+              - report+:
                     how: junit
                     file: /tmp/local-results.xml
 
@@ -24,7 +24,7 @@
             inherit-context: false
             inherit-environment: false
             adjust-plans:
-                report:
+              - report:
                     how: html
                     file: /tmp/replacement.html
 
@@ -49,7 +49,7 @@
             inherit-context: false
             inherit-environment: false
             adjust-plans:
-                finish+:  # append mode
+              - finish+:  # append mode
                     how: shell
                     script: echo "Local finish with append enum"
 
@@ -63,10 +63,56 @@
             inherit-context: false
             inherit-environment: false
             adjust-plans:
-                finish+:
+              - finish+:
                     name: local-additional-finish
                     how: shell
                     script: echo "Local finish"
-                report:
+              - report:
                     how: junit
                     file: /tmp/local-finish.xml
+
+# Test multiple report plugins with list syntax
+/test-multiple-report-plugins:
+    summary: Test multiple report plugins using adjust-plans
+    plan:
+        import:
+            url: https://github.com/teemtee/tests
+            name: /plans/remote
+            inherit-context: false
+            inherit-environment: false
+            adjust-plans:
+              - report+:
+                  - how: junit
+                    file: /tmp/local-results.xml
+                  - how: html
+                    file: /tmp/local-results.html
+                  - how: display
+                    verbosity: 2
+
+# Test conditional adjust-plans with when/because like adjust-tests
+/test-conditional-adjust:
+    summary: Test conditional adjust-plans with when/because clauses
+    context:
+        arch: x86_64
+        distro: fedora
+    plan:
+        import:
+            url: https://github.com/teemtee/tests
+            name: /plans/remote
+            inherit-context: false
+            inherit-environment: false
+            adjust-plans:
+              - report+:
+                    how: junit
+                    file: /tmp/conditional-results.xml
+                when: distro == fedora
+                because: Fedora supports JUnit reporting
+              - execute:
+                    timeout: 30m
+                when: arch == x86_64
+                because: x86_64 systems need longer timeout
+              - finish+:
+                    how: shell
+                    script: echo "Cleanup for slow systems"
+                when: arch == i386
+                because: Slow system cleanup needed

@@ -47,13 +47,41 @@ rlJournalStart
         rlAssertGrep "/tmp/local-finish.xml" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "Test multiple report plugins with list syntax"
+        rlRun -s "tmt plan show -vv /test-multiple-report-plugins"
+        # Should show multiple local report configurations
+        rlAssertGrep "how junit" $rlRun_LOG     # local junit report
+        rlAssertGrep "/tmp/local-results.xml" $rlRun_LOG
+        rlAssertGrep "how html" $rlRun_LOG      # local html report
+        rlAssertGrep "/tmp/local-results.html" $rlRun_LOG
+        rlAssertGrep "how display" $rlRun_LOG   # local display report
+
+        # Export and verify inheritance
+        rlRun "tmt plan export /test-multiple-report-plugins > multiple-export.yaml"
+        rlAssertGrep "how: junit" multiple-export.yaml
+        rlAssertGrep "how: html" multiple-export.yaml
+        rlAssertGrep "how: display" multiple-export.yaml
+    rlPhaseEnd
+
+    rlPhaseStartTest "Test conditional adjust-plans with when/because"
+        rlRun -s "tmt plan show /test-conditional-adjust"
+        # Should show conditional adjustments applied
+        rlAssertGrep "/tmp/conditional-results.xml" $rlRun_LOG
+        rlAssertGrep "timeout.*30m" $rlRun_LOG
+
+        # Export and check for when/because clauses (in original plan data)
+        rlRun "tmt plan export /test-conditional-adjust > conditional-export.yaml"
+        rlAssertGrep "how: junit" conditional-export.yaml
+    rlPhaseEnd
+
     rlPhaseStartTest "Schema validation"
         # Ensure all adjust-plans configurations pass schema validation
         rlRun "tmt lint"
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun "rm -f append-export.yaml replace-export.yaml"
+        rlRun "rm -f append-export.yaml replace-export.yaml multiple-export.yaml"
+        rlRun "rm -f conditional-export.yaml conditional-patterns-export.yaml"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd
