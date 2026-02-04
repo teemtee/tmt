@@ -20,6 +20,7 @@ rlJournalStart
         rlAssertGrep "- name: /plan/context" $rlRun_LOG
         rlAssertGrep "- name: /plan/environment" $rlRun_LOG
         rlAssertGrep "- name: /plan/gate" $rlRun_LOG
+        rlAssertGrep "- name: /plan/extra-keys" $rlRun_LOG
         rlAssertGrep "discover:" $rlRun_LOG
         rlAssertGrep "execute:" $rlRun_LOG
         assert_internal_fields "$rlRun_LOG"
@@ -76,6 +77,16 @@ rlJournalStart
 
         rlRun -s "tmt plan export -e ENV_SCRIPT=dummy-script /plan/with-envvars" 0 "Export plan"
         rlAssertEquals "prepare script shall be an replaced" "$(yq '.[] | .prepare | .[] | .script' $rlRun_LOG)" "dummy-script"
+    rlPhaseEnd
+
+    rlPhaseStartTest "tmt plan export /plan/extra-keys"
+        rlRun -s "tmt plan export /plan/extra-keys" 0 "Export plan with extra- keys"
+        rlAssertGrep "- name: /plan/extra-keys" $rlRun_LOG
+        rlAssertGrep "summary: Plan with extra- keys" $rlRun_LOG
+        rlAssertGrep "extra-reviewer: John Doe" $rlRun_LOG
+        rlAssertGrep "extra-jira-id: TMT-123" $rlRun_LOG
+        rlAssertGrep "extra-priority: high" $rlRun_LOG
+        assert_internal_fields "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartTest "Invalid format"

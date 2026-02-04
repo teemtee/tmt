@@ -13,6 +13,7 @@ from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     ArtifactProviderId,
     Repository,
+    UnsupportedOperationError,
     provides_artifact_provider,
 )
 from tmt.steps.prepare.artifact.providers.repository import _REPO_NAME_GENERATOR
@@ -68,8 +69,9 @@ class RepositoryUrlProvider(ArtifactProvider[RpmArtifactInfo]):
         self, artifact: RpmArtifactInfo, guest: Guest, destination: tmt.utils.Path
     ) -> None:
         """This provider only discovers repos; it does not download individual RPMs."""
-        # FIXME: Change this to UnsupportedOperationError once its available
-        raise AssertionError("RepositoryUrlProvider does not support downloading individual RPMs.")
+        raise UnsupportedOperationError(
+            "RepositoryUrlProvider does not support downloading individual RPMs."
+        )
 
     def fetch_contents(
         self,

@@ -3194,6 +3194,13 @@ class Plan(
             if value:
                 data[key] = value
 
+        # Export user-defined extra- keys from the node data
+        for key in self.node.data:
+            if key.startswith(EXTRA_KEYS_PREFIX):
+                value = self.node.data.get(key)
+                if value:
+                    data[key] = value
+
         data['context'] = self.fmf_context.to_spec()
 
         for step_name in tmt.steps.STEPS:

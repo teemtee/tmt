@@ -36,3 +36,9 @@ execute:
     prepare:
       how: shell
       script: "$ENV_SCRIPT"
+
+/extra-keys:
+    summary: Plan with extra- keys
+    extra-reviewer: John Doe
+    extra-jira-id: TMT-123
+    extra-priority: high

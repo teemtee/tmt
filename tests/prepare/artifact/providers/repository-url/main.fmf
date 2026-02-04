@@ -1,0 +1,5 @@
+summary: Test repository-url artifact provider
+description: |
+    Test repository-url artifact provider which configures external
+    package repositories from a baseurl. Uses Docker CE repository
+    as the test case.
