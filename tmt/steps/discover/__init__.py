@@ -457,50 +457,72 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         """
         import tmt.libraries
 
-        library_failures: dict[str, set[str]] = defaultdict(set)
+        unresolved_dependencies: dict[str, dict[str, set[str]]] = defaultdict(
+            lambda: defaultdict(set)
+        )
 
         for test_origin in self.tests():
             test = test_origin.test
             if test.require or test.recommend:
-                test.require, test.recommend, _ = tmt.libraries.dependencies(
-                    original_require=test.require,
-                    original_recommend=test.recommend,
-                    parent=self,
-                    logger=self._logger,
-                    source_location=source,
-                    target_location=target,
-                )
+                try:
+                    test.require, test.recommend, _ = tmt.libraries.dependencies(
+                        original_require=test.require,
+                        original_recommend=test.recommend,
+                        parent=self,
+                        logger=self._logger,
+                        source_location=source,
+                        target_location=target,
+                    )
 
-                unresolved_dependencies = [
-                    dependency
-                    for dependency in (*test.require, *test.recommend)
-                    if not isinstance(dependency, tmt.base.DependencySimple)
-                ]
+                    dependencies = (*test.require, *test.recommend)
 
-                library_names = {
-                    (dependency.name or '/')
-                    for dependency in unresolved_dependencies
-                    if isinstance(dependency, tmt.base.DependencyFmfId)
-                }
+                # If beakerlib processing fails, use the original dependencies
+                # for reporting purposes and continue with other tests.
+                except tmt.utils.MetadataError:
+                    dependencies = (*test.require, *test.recommend)
 
-                for library_name in library_names:
-                    library_failures[library_name].add(test.name)
+                for dependency in dependencies:
+                    if isinstance(dependency, tmt.base.DependencySimple):
+                        continue
 
-        if library_failures:
-            # Report all failures in one go so users can fix multiple tests
-            # without rerunning tmt repeatedly.
-            lines: list[str] = []
+                    if isinstance(dependency, tmt.base.DependencyFmfId):
+                        dep_key = dependency.name or '/'
+                    elif isinstance(dependency, tmt.base.DependencyFile):
+                        patterns = dependency.pattern or []
+                        dep_key = ', '.join(patterns) if patterns else 'unknown'
+                    else:
+                        dep_key = str(dependency)
 
-            for library_name in sorted(library_failures.keys()):
-                tests = ', '.join(f"'{name}'" for name in sorted(library_failures[library_name]))
-                lines.append(
-                    f"Failed to process beakerlib libraries ({library_name}) for test {tests}."
-                )
+                    unresolved_dependencies[dependency.__class__.__name__][dep_key].add(test.name)
 
-            for line in lines:
-                self._logger.fail(line)
+        # Report all failures in one go so users can fix multiple tests
+        # without rerunning tmt repeatedly.
+        if unresolved_dependencies:
 
-            raise tmt.utils.DiscoverError('Failed to process beakerlib libraries.')
+            def _report_unresolved_dependencies(
+                dependencies: dict[str, dict[str, set[str]]],
+                class_name: str,
+                label: Optional[str] = None,
+            ) -> None:
+                display_label = label or f"{class_name} dependency"
+                for dep_key, tests in sorted(dependencies.pop(class_name, {}).items()):
+                    test_names = ', '.join(f"'{name}'" for name in sorted(tests))
+                    self._logger.fail(
+                        f"Failed to process {display_label} ({dep_key}) for test {test_names}."
+                    )
+
+            # Known types first
+            for class_name, label in (
+                (tmt.base.DependencyFmfId.__name__, "beakerlib libraries"),
+                (tmt.base.DependencyFile.__name__, "file dependencies"),
+            ):
+                _report_unresolved_dependencies(unresolved_dependencies, class_name, label)
+
+            # Anything else
+            for class_name in sorted(unresolved_dependencies):
+                _report_unresolved_dependencies(unresolved_dependencies, class_name)
+
+            raise tmt.utils.DiscoverError('Failed to process some dependencies.')
 
     def apply_policies(self) -> None:
         """

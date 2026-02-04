@@ -243,11 +243,9 @@ class Apt(PackageManager[AptEngine]):
     _engine_class = AptEngine
 
     # Compiled regex patterns for APT error messages
-    _UNABLE_TO_LOCATE_PATTERN = re.compile(
-        r'(?:E:\s+)?Unable to locate package\s+([^\s]+)', re.IGNORECASE
-    )
-
-    _FAILED_PACKAGE_INSTALLATION_PATTERNS = [_UNABLE_TO_LOCATE_PATTERN]
+    _FAILED_PACKAGE_INSTALLATION_PATTERNS = [
+        re.compile(r'(?:E:\s+)?Unable to locate package\s+([^\s]+)', re.IGNORECASE)
+    ]
 
     probe_command = Command('apt', '--version')
 

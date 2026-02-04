@@ -210,22 +210,11 @@ class Dnf(PackageManager[DnfEngine]):
     _engine_class = DnfEngine
 
     # Compiled regex patterns for DNF/YUM error messages
-    _NO_PACKAGE_PROVIDES_PATTERN = re.compile(r'no package provides\s+([^\s\n]+)', re.IGNORECASE)
-    _UNABLE_TO_FIND_MATCH_PATTERN = re.compile(
-        r'Unable to find a match:\s+([^\s\n]+)', re.IGNORECASE
-    )
-    _NO_MATCH_FOR_ARGUMENT_PATTERN = re.compile(
-        r'No match for argument:\s+([^\s\n]+)', re.IGNORECASE
-    )
-    _NO_PACKAGE_AVAILABLE_PATTERN = re.compile(
-        r'No package\s+([^\s\n]+)\s+available', re.IGNORECASE
-    )
-
     _FAILED_PACKAGE_INSTALLATION_PATTERNS = [
-        _NO_PACKAGE_PROVIDES_PATTERN,
-        _UNABLE_TO_FIND_MATCH_PATTERN,
-        _NO_MATCH_FOR_ARGUMENT_PATTERN,
-        _NO_PACKAGE_AVAILABLE_PATTERN,
+        re.compile(r'no package provides\s+([^\s\n]+)', re.IGNORECASE),
+        re.compile(r'Unable to find a match:\s+([^\s\n]+)', re.IGNORECASE),
+        re.compile(r'No match for argument:\s+([^\s\n]+)', re.IGNORECASE),
+        re.compile(r'No package\s+([^\s\n]+)\s+available', re.IGNORECASE),
     ]
 
     bootc_builder = True
