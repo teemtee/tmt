@@ -1,3 +1,4 @@
 description: |
-    Adding missing skipped/error tags to :ref:`/plugins/report/junit`
-    report template and include pending state in these reports as error.
+    The :ref:`/plugins/report/junit` report template has been updated
+    to correctly map test result ``skip`` to the ``skipped`` tag and
+    ``pending`` result to the ``error`` tag.
