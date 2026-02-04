@@ -1,4 +1,5 @@
 description: |
-  Bootc status JSON parsing now references the official bootc host v1 schema
-  (https://bootc-dev.github.io/bootc/host-v1.schema.json) for
-  structure, while validating only the subset of fields used by tmt.
+  Bootc status JSON parsing now references the official bootc `host v1 schema`__
+  for structure, while validating only the subset of fields used by tmt.
+
+  __ https://bootc-dev.github.io/bootc/host-v1.schema.json
