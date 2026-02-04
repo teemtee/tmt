@@ -485,15 +485,19 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
                     if isinstance(dependency, tmt.base.DependencySimple):
                         continue
 
+                    class_name = dependency.__class__.__name__
+
                     if isinstance(dependency, tmt.base.DependencyFmfId):
                         dep_key = dependency.name or '/'
+                        unresolved_dependencies[class_name][dep_key].add(test.name)
+
                     elif isinstance(dependency, tmt.base.DependencyFile):
-                        patterns = dependency.pattern or []
-                        dep_key = ', '.join(patterns) if patterns else 'unknown'
+                        for pattern in dependency.pattern or []:
+                            unresolved_dependencies[class_name][pattern].add(test.name)
+
                     else:
                         dep_key = str(dependency)
-
-                    unresolved_dependencies[dependency.__class__.__name__][dep_key].add(test.name)
+                        unresolved_dependencies[class_name][dep_key].add(test.name)
 
         # Report all failures in one go so users can fix multiple tests
         # without rerunning tmt repeatedly.
