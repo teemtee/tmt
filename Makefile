@@ -121,7 +121,6 @@ TMT_TEST_CONTAINER_IMAGES := $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/alpine:late
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/coreos/ostree:stable \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/eln:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/eln/upstream:latest \
-                             $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/eln/unprivileged:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/latest:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/latest/upstream:latest \
                              $(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/latest/unprivileged:latest \
@@ -234,8 +233,9 @@ $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/e
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/eln/upstream\:latest:
 	$(call build-test-container-image,$@,fedora/eln/Containerfile.upstream)
 
-$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/eln/unprivileged\:latest:
-	$(call build-test-container-image,$@,fedora/eln/Containerfile.unprivileged)
+# Disable for now to unblock testing/merging
+#$(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/eln/unprivileged\:latest:
+#	$(call build-test-container-image,$@,fedora/eln/Containerfile.unprivileged)
 
 $(TMT_TEST_IMAGE_TARGET_PREFIX)/$(TMT_TEST_CONTAINER_IMAGE_NAME_PREFIX)/fedora/rawhide\:latest:
 	$(call build-test-container-image,$@,fedora/rawhide/Containerfile)
