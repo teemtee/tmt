@@ -2,6 +2,7 @@
 . /usr/share/beakerlib/beakerlib.sh || exit 1
 
 SRC_PLAN="$(pwd)/data/plan.fmf"
+SRC_TEST="$(pwd)/data/test.fmf"
 
 rlJournalStart
     rlPhaseStartSetup
@@ -79,6 +80,14 @@ rlJournalStart
             rlAssertGrep "domain disk #2 size: 33 GB" "$run/log.txt"
         fi
     rlPhaseEnd
+
+    for boot_method in 'uefi' 'bios'; do
+        rlPhaseStartTest "Provision a guest with $boot_method boot method"
+            rlRun "cp $SRC_PLAN $SRC_TEST ."
+            rlRun "tmt run -i $run --scratch --all discover -h fmf provision -h virtual.testcloud --hardware boot.method=$boot_method"
+            rlAssertGrep "boot method: $boot_method" "$run/log.txt"
+        rlPhaseEnd
+    done
 
     rlPhaseStartCleanup
         rlRun "popd"
