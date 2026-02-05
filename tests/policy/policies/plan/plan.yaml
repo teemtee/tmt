@@ -29,7 +29,7 @@ plan-policy:
         {% endfor %}
       {% endif %}
 
-  # A trivial fields should be updatable too.
+  # Trivial fields should be updatable too.
   - contact: |
       {% if not VALUE %}
       - xyzzy

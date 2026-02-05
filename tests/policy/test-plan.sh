@@ -3,7 +3,6 @@
 
 rlJournalStart
     rlPhaseStartSetup
-        rlRun "run=\$(mktemp -d)" 0 "Create run directory"
         rlRun "pushd data/plan"
     rlPhaseEnd
 
@@ -28,6 +27,5 @@ shell:null"
 
     rlPhaseStartCleanup
         rlRun "popd"
-        rlRun "rm -r $run" 0 "Remove run directory"
     rlPhaseEnd
 rlJournalEnd

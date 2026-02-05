@@ -179,14 +179,14 @@ class Instruction(MetadataContainer):
 
 class PlanInstruction(Instruction):
     """
-    A single instruction describing changes to test, plan or story keys.
+    A single instruction describing changes to plan keys.
     """
 
     def apply(self, obj: 'Core', logger: Logger) -> None:
         """
         Apply the instruction to a given object.
 
-        :param obj: object to modify - a test, plan, or story.
+        :param obj: a plan to modify.
         :param logger: used for logging.
         """
 
