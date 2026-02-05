@@ -464,22 +464,16 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         for test_origin in self.tests():
             test = test_origin.test
             if test.require or test.recommend:
-                try:
-                    test.require, test.recommend, _ = tmt.libraries.dependencies(
-                        original_require=test.require,
-                        original_recommend=test.recommend,
-                        parent=self,
-                        logger=self._logger,
-                        source_location=source,
-                        target_location=target,
-                    )
+                test.require, test.recommend, _ = tmt.libraries.dependencies(
+                    original_require=test.require,
+                    original_recommend=test.recommend,
+                    parent=self,
+                    logger=self._logger,
+                    source_location=source,
+                    target_location=target,
+                )
 
-                    dependencies = (*test.require, *test.recommend)
-
-                # If beakerlib processing fails, use the original dependencies
-                # for reporting purposes and continue with other tests.
-                except tmt.utils.MetadataError:
-                    dependencies = (*test.require, *test.recommend)
+                dependencies = (*test.require, *test.recommend)
 
                 for dependency in dependencies:
                     if isinstance(dependency, tmt.base.DependencySimple):
