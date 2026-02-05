@@ -4,5 +4,7 @@ description: |
   will override any existing discover phases in the plan. For this
   to work, the current run must already include a plan with the same
   name as the one defined in the recipe, which tmt will update
-  by replacing its discover phases. Note that recipe loading is still
-  experimental and may change in future releases.
+  by replacing its discover phases. This requirement is only temporary
+  and will not be needed once the full recipe feature is implemented.
+  Note that recipe loading is still experimental and **will** change
+  in future releases.

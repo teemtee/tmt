@@ -16,6 +16,17 @@ environment:
     execute:
         how: tmt
 
+/insert:
+    summary: A plan with inserted steps
+    discover:
+      - name: discover-shell
+        how: shell
+        tests:
+          - name: /shell-test
+            test: /bin/true
+    execute:
+        how: tmt
+
 /remote:
     summary: A remote plan
     discover:
