@@ -1,0 +1,4 @@
+description: |
+    A new section :ref:`parametrize-tests` describing several ways
+    how to efficiently parametrize tests using environment
+    variables has been added to the :ref:`guide`.
