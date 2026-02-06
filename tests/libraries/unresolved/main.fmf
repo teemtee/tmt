@@ -1,0 +1,6 @@
+summary: Report unresolved library and file dependencies
+description:
+    Verify aggregated reporting for unresolved beakerlib libraries
+    and file dependencies across multiple tests.
+tag+:
+  - provision-local

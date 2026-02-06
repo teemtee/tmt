@@ -1,0 +1,49 @@
+/plan:
+    discover:
+        how: fmf
+    provision:
+        how: local
+    execute:
+        how: tmt
+
+/tests/1:
+    test: /bin/true
+    require:
+      - type: library
+        url: https://github.com/beakerlib/yum
+        name: /bad-library
+      - type: file
+        pattern: /bad/file/dependency
+
+/tests/2:
+    test: /bin/true
+    require:
+      - type: library
+        url: https://github.com/beakerlib/yum
+        name: /wrong-library
+      - type: library
+        url: https://github.com/beakerlib/yum
+        name: /incorrect-library
+      - type: file
+        pattern: /wrong/file/dependency
+      - type: file
+        pattern: /incorrect/file/dependency
+
+
+/tests/3:
+    test: /bin/true
+    require:
+      - type: library
+        url: https://github.com/beakerlib/yum
+        name: /absent-library
+      - type: file
+        pattern: /absent/file/dependency
+
+/tests/4:
+    test: /bin/true
+    require:
+      - type: library
+        url: https://github.com/beakerlib/yum
+        name: /absent-library
+      - type: file
+        pattern: /absent/file/dependency
