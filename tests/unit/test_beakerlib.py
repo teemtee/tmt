@@ -98,7 +98,7 @@ def test_dependencies(root_logger, tmppath):
     """
 
     parent = tmt.utils.Common(logger=root_logger, workdir=tmppath)
-    requires, recommends, libraries = tmt.libraries.dependencies(
+    requires, recommends = tmt.libraries.resolve_dependencies(
         original_require=[
             tmt.base.core.DependencySimple('library(httpd/http)'),
             tmt.base.core.DependencySimple('wget'),
@@ -110,24 +110,11 @@ def test_dependencies(root_logger, tmppath):
     # Check for correct requires and recommends
     for require in ['httpd', 'lsof', 'mod_ssl']:
         assert require in requires
-        assert require in libraries[0].require
-    assert 'openssl' in libraries[2].require
     assert 'forest' in recommends
     assert 'wget' in requires
     # Library require should be in httpd requires but not in the final result
-    assert 'library(openssl/certgen)' in libraries[0].require
     assert 'library(openssl/certgen)' not in requires
-    # Check library attributes for sane values
-    assert libraries[0].repo == Path('httpd')
-    assert libraries[0].name == '/http'
-    assert libraries[0].url == 'https://github.com/beakerlib/httpd'
-    assert libraries[0].ref == 'master'  # The default branch is master
-    assert (
-        libraries[0].dest.resolve()
-        == Path.cwd().joinpath(tmt.libraries.beakerlib.DEFAULT_DESTINATION).resolve()
-    )
-    assert libraries[1].repo == Path('openssl')
-    assert libraries[1].name == '/certgen'
+    # TODO: assert the libraries that were resolved
 
 
 @pytest.mark.web

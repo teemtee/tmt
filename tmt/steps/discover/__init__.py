@@ -464,7 +464,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         for test_origin in self.tests():
             test = test_origin.test
             if test.require or test.recommend:
-                test.require, test.recommend, _ = tmt.libraries.dependencies(
+                test.require, test.recommend = tmt.libraries.resolve_dependencies(
                     original_require=test.require,
                     original_recommend=test.recommend,
                     parent=self,
