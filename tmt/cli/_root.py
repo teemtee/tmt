@@ -66,6 +66,7 @@ remote_plan_options = create_options_decorator(tmt.options.REMOTE_PLAN_OPTIONS)
 lint_options = create_options_decorator(tmt.options.LINT_OPTIONS)
 environment_options = create_options_decorator(tmt.options.ENVIRONMENT_OPTIONS)
 policy_options = create_options_decorator(tmt.options.POLICY_OPTIONS)
+recipe_options = create_options_decorator(tmt.options.RECIPE_OPTIONS)
 
 
 def _load_policies(
@@ -341,18 +342,13 @@ def main(
          What to do when plan fails to finish. Quit by default, or continue with the next plan.
          """,
 )
-@option(
-    '--recipe',
-    default=None,
-    help='Path to the recipe file.',
-    metavar="PATH",
-)
 @environment_options
 @workdir_root_options
 @verbosity_options
 @force_dry_options
 @again_option
 @policy_options
+@recipe_options
 def run(
     context: Context,
     id_: Optional[str],
@@ -360,7 +356,7 @@ def run(
     policy_file: Optional[Path],
     policy_name: Optional[str],
     policy_root: Optional[Path],
-    recipe: Optional[str],
+    recipe: Optional[Path],
     **kwargs: Any,
 ) -> None:
     """
@@ -379,7 +375,7 @@ def run(
         cli_invocation=CliInvocation.from_context(context),
         workdir_root=effective_workdir_root(workdir_root),
         policies=policies,
-        recipe_path=Path(recipe) if recipe is not None else None,
+        recipe_path=recipe,
         logger=logger,
     )
 
