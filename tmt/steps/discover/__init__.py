@@ -479,19 +479,21 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
                     if isinstance(dependency, tmt.base.DependencySimple):
                         continue
 
-                    class_name = dependency.__class__.__name__
+                    dependency_class_name = dependency.__class__.__name__
 
                     if isinstance(dependency, tmt.base.DependencyFmfId):
-                        dep_key = dependency.name or '/'
-                        unresolved_dependencies[class_name][dep_key].add(test.name)
+                        unresolved_dependencies[dependency_class_name][dependency.name or '/'].add(
+                            test.name
+                        )
 
                     elif isinstance(dependency, tmt.base.DependencyFile):
                         for pattern in dependency.pattern or []:
-                            unresolved_dependencies[class_name][pattern].add(test.name)
+                            unresolved_dependencies[dependency_class_name][pattern].add(test.name)
 
                     else:
-                        dep_key = str(dependency)
-                        unresolved_dependencies[class_name][dep_key].add(test.name)
+                        unresolved_dependencies[dependency_class_name][str(dependency)].add(
+                            test.name
+                        )
 
         # Report all failures in one go so users can fix multiple tests
         # without rerunning tmt repeatedly.
@@ -499,26 +501,31 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
 
             def _report_unresolved_dependencies(
                 dependencies: dict[str, dict[str, set[str]]],
-                class_name: str,
+                dependency_class_name: str,
                 label: Optional[str] = None,
             ) -> None:
-                display_label = label or f"{class_name} dependency"
-                for dep_key, tests in sorted(dependencies.pop(class_name, {}).items()):
+                display_label = label or f"{dependency_class_name} dependency"
+                for dependency_name, tests in sorted(
+                    dependencies.pop(dependency_class_name, {}).items()
+                ):
                     test_names = ', '.join(f"'{name}'" for name in sorted(tests))
                     self._logger.fail(
-                        f"Failed to process {display_label} ({dep_key}) for test {test_names}."
+                        f"Failed to process {display_label} ({dependency_name}) "
+                        f"for test {test_names}."
                     )
 
             # Known types first
-            for class_name, label in (
+            for dependency_class_name, label in (
                 (tmt.base.DependencyFmfId.__name__, "beakerlib libraries"),
                 (tmt.base.DependencyFile.__name__, "file dependencies"),
             ):
-                _report_unresolved_dependencies(unresolved_dependencies, class_name, label)
+                _report_unresolved_dependencies(
+                    unresolved_dependencies, dependency_class_name, label
+                )
 
             # Anything else
-            for class_name in sorted(unresolved_dependencies):
-                _report_unresolved_dependencies(unresolved_dependencies, class_name)
+            for dependency_class_name in sorted(unresolved_dependencies):
+                _report_unresolved_dependencies(unresolved_dependencies, dependency_class_name)
 
             raise tmt.utils.DiscoverError('Failed to process some dependencies.')
 
