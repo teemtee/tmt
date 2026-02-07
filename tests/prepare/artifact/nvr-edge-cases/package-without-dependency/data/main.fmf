@@ -9,7 +9,7 @@
 /test:
     test: ./test.sh
     duration: 5m
-    summary: Test file provider with NVR edge cases
+    summary: Verify packages installed from shared repo without dependencies
     require:
       - jq
       - nano

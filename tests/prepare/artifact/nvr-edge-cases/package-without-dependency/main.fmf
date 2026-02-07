@@ -1,0 +1,6 @@
+summary: Test file artifact provider with NVR edge cases when dependencies are not present in shared repository
+description: |
+    Test NVR edge cases when the shared repository contains only the
+    requested packages without their dependencies. Packages (jq, nano)
+    are downloaded without --resolve --alldeps so the system must
+    resolve dependencies from standard repositories.
