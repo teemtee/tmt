@@ -6,7 +6,7 @@ rlJournalStart
         rlRun "pushd data/plan"
     rlPhaseEnd
 
-    rlPhaseStartTest "Sanity"
+    rlPhaseStartTest "Export"
         # Not doing anything complex, test-level policy test covers plenty
         # of cases. Focusing on plan-specific modifications only.
         rlRun -s "tmt -vv plan export --policy-file ../../policies/plan/plan.yaml"
@@ -23,6 +23,15 @@ rlJournalStart
             "$(yq -o json '.[] | .prepare | .[] | "\(.how):\(.order)"' $rlRun_LOG | jq -cSr)" \
             "feature:17
 shell:null"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Run"
+        # Not doing anything complex, just try to run a plan that should
+        # be modified by a policy.
+        rlRun -s "tmt -vv run -a --policy-file ../../policies/plan/simple.yaml" 3
+
+        rlAssertGrep "Apply tmt policy '../../policies/plan/simple.yaml' to plans." $rlRun_LOG
+        rlAssertGrep "No tests found, finishing plan." $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

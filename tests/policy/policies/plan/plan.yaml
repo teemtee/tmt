@@ -5,6 +5,15 @@ plan-policy:
   - discover: |
       []
 
+  # Provision step has some interesting objects, make sure policies do
+  # not break down when working with `provision`.
+  - provision: |
+      {% for phase in VALUE %}
+      {% if phase.how == 'virtual' %}
+      - how: container
+      {% endif %}
+      {% endfor %}
+
   # Can we add custom phases while keeping the current ones?
   - prepare: |
       {#
