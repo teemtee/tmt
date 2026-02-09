@@ -618,7 +618,7 @@ class GuestFacts(SerializableContainer):
     can_sudo: Optional[bool] = None
     sudo_prefix: Optional[str] = None
     is_ostree: Optional[bool] = None
-    is_bootc: Optional[bool] = None
+    is_image_mode: Optional[bool] = None
     is_toolbox: Optional[bool] = None
     toolbox_container_name: Optional[str] = None
     is_container: Optional[bool] = None
@@ -652,12 +652,14 @@ class GuestFacts(SerializableContainer):
         """
         Run a command on the given guest, ignoring :py:class:`tmt.utils.RunError`.
 
+        On image mode systems execute the commands immediately.
+
         :returns: command output if the command quit with a zero exit code,
             ``None`` otherwise.
         """
 
         try:
-            return guest.execute(command, silent=True)
+            return guest.execute(command, immediately=True, silent=True)
 
         except tmt.utils.RunError:
             pass
@@ -936,12 +938,12 @@ class GuestFacts(SerializableContainer):
 
         return output.stdout.strip() == 'yes'
 
-    def _query_is_bootc(self, guest: 'Guest') -> Optional[bool]:
+    def _query_is_image_mode(self, guest: 'Guest') -> Optional[bool]:
         """
-        Detect whether guest is managed by bootc.
+        Detect whether guest is an image mode based system.
 
-        A bootc-managed system has the bootc command available and reports
-        a booted image in its status. See https://containers.github.io/bootc/
+        A image mode based system has the ``bootc`` command available and reports
+        a booted image in its status. See https://containers.github.io/bootc/.
         """
         # Check if bootc command exists and system is booted from a bootc image.
         # Uses same logic as bootc package manager probe: check that neither
@@ -1060,7 +1062,7 @@ class GuestFacts(SerializableContainer):
             self.can_sudo = self._query_can_sudo(guest)
             self.sudo_prefix = self._query_sudo_prefix(guest)
             self.is_ostree = self._query_is_ostree(guest)
-            self.is_bootc = self._query_is_bootc(guest)
+            self.is_image_mode = self._query_is_image_mode(guest)
             self.is_toolbox = self._query_is_toolbox(guest)
             self.toolbox_container_name = self._query_toolbox_container_name(guest)
             self.is_container = self._query_is_container(guest)
@@ -1093,7 +1095,7 @@ class GuestFacts(SerializableContainer):
         yield _value('bootc_builder', 'bootc builder')
         yield _flag('is_container', 'is container')
         yield _flag('is_ostree', 'is ostree')
-        yield _flag('is_bootc', 'is bootc')
+        yield _flag('is_image_mode', 'is image mode')
         yield _flag('is_toolbox', 'is toolbox')
         yield _flag('has_selinux', 'selinux')
         yield _flag('has_systemd', 'systemd')
@@ -1549,20 +1551,9 @@ class GuestLog(abc.ABC):
         raise NotImplementedError
 
 
-class GuestCommandCollector(abc.ABC):
+class CommandCollector(abc.ABC):
     """
-    Mixin for guests that support collecting commands for deferred execution.
-
-    Used by bootc guests where prepare commands should be collected into a
-    Containerfile rather than executed immediately on the live guest.
-
-    When a guest implements this mixin, commands with ``immediately=False``
-    are collected rather than executed immediately. The collected commands
-    are then executed in batch when :py:meth:`flush_collected` is called
-    (typically at the end of a step).
-
-    Commands with ``immediately=True`` (default) or ``test_session=True``
-    are always executed immediately, even on guests that implement this mixin.
+    Mixin for that supports collecting commands for deferred execution.
     """
 
     @abc.abstractmethod
@@ -1576,8 +1567,6 @@ class GuestCommandCollector(abc.ABC):
         """
         Collect a command for later batch execution.
 
-        For bootc guests, this adds a RUN directive to the Containerfile.
-
         :param command: the command to collect.
         :param cwd: working directory for the command.
         :param env: environment variables for the command.
@@ -1586,29 +1575,9 @@ class GuestCommandCollector(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def collect_file(
-        self,
-        source: Path,
-        destination: Path,
-    ) -> None:
-        """
-        Collect a file copy operation for later batch execution.
-
-        For bootc guests, this adds a COPY directive to the Containerfile.
-
-        :param source: source path on the runner.
-        :param destination: destination path on the guest.
-        """
-
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def flush_collected(self) -> None:
         """
         Execute all collected commands.
-
-        For bootc guests, this builds the container image, switches to it,
-        and reboots the guest.
         """
 
         raise NotImplementedError
@@ -2371,16 +2340,11 @@ class Guest(
         """
         Called when a step completes execution on this guest.
 
-        This hook allows guests to perform cleanup or finalization actions
-        after all phases of a step have been executed. For example, bootc
-        guests use this to flush any collected commands by building a
-        container image and rebooting.
+        Flush collected commands for Image Mode if there are some.
 
         :param step: the step that has completed.
         """
-        # For guests implementing GuestCommandCollector, flush collected commands
-        # GuestSsh implements this interface for bootc command collection
-        if isinstance(self, GuestCommandCollector) and self.has_collected_commands:
+        if isinstance(self, CommandCollector) and self.has_collected_commands:
             self.flush_collected()
 
     def perform_reboot(
@@ -2783,14 +2747,14 @@ class GuestSshData(GuestData):
     )
 
 
-class GuestSsh(Guest, GuestCommandCollector):
+class GuestSsh(Guest, CommandCollector):
     """
     Guest provisioned for test execution, capable of accepting SSH connections
 
-    This class also implements :py:class:`GuestCommandCollector` to support
-    bootc guests. When running on a bootc system (detected via package manager),
-    commands with ``immediately=False`` are collected into a Containerfile
-    rather than executed immediately.
+    This class implements :py:class:`CommandCollector` to support
+    guests in image mode. When running in image mode, commands with
+    ``immediately=False`` are collected into a Containerfile
+    rather than executed immediately and applied on step completion.
 
     The following keys are expected in the 'data' dictionary::
 
@@ -2829,28 +2793,7 @@ class GuestSsh(Guest, GuestCommandCollector):
 
         super().__init__(data=data, logger=logger, parent=parent, name=name)
 
-    def _get_bootc_package_manager(self) -> Optional['tmt.package_managers.bootc.Bootc']:
-        """
-        Get the bootc package manager if this guest uses one.
-
-        Returns None if the package manager is not bootc or not yet discovered.
-        """
-        # Import here to avoid circular imports
-        from tmt.package_managers.bootc import Bootc
-
-        # Access __dict__ directly to avoid triggering the facts property getter
-        # which would call sync() if facts aren't ready, causing infinite recursion
-        facts = self.__dict__.get('facts')
-        if facts is None or not facts.in_sync or facts.package_manager != 'bootc':
-            return None
-
-        pm = self.package_manager
-        if isinstance(pm, Bootc):
-            return pm
-
-        return None
-
-    def _collect_command_for_bootc(
+    def collect_command(
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         *,
@@ -2858,14 +2801,16 @@ class GuestSsh(Guest, GuestCommandCollector):
         env: Optional[tmt.utils.Environment] = None,
     ) -> None:
         """
-        Collect a command for bootc Containerfile build.
+        Collect a command for image mode container build.
 
         Adds a RUN directive to the bootc package manager's Containerfile.
         Uses the same environment and cwd handling as regular execute().
         """
-        bootc_pm = self._get_bootc_package_manager()
-        if bootc_pm is None:
-            return
+
+        if not isinstance(self.package_manager, tmt.package_managers.bootc.Bootc):
+            raise tmt.utils.GeneralError(
+                'The `collect_command` function called for incorrect package manager.'
+            )
 
         # Build the command script using the same approach as execute()
         # Start with environment exports
@@ -2888,74 +2833,38 @@ class GuestSsh(Guest, GuestCommandCollector):
         full_script = ShellScript.from_scripts(script_parts)
 
         # Add to the package manager's engine
-        bootc_pm.engine.open_containerfile_directives()
-        bootc_pm.engine.containerfile_directives.append(f"RUN {full_script}")
+        self.package_manager.engine.open_containerfile_directives()
+        self.package_manager.engine.containerfile_directives.append(f"RUN {full_script}")
         self.debug(f"Collected command for Containerfile: {full_script}")
-
-    def _flush_bootc_commands(self) -> None:
-        """
-        Build container image from collected commands, switch, and reboot.
-
-        Delegates to the bootc package manager's build_container() method.
-        """
-        bootc_pm = self._get_bootc_package_manager()
-        if bootc_pm is None:
-            return
-
-        if not bootc_pm.engine.containerfile_directives:
-            self.debug("No collected commands to flush.")
-            return
-
-        self.info("prepare", "building container image from collected commands", "green")
-        bootc_pm.build_container()
-
-    def _has_bootc_collected_commands(self) -> bool:
-        """Check if there are pending commands in the bootc package manager."""
-        bootc_pm = self._get_bootc_package_manager()
-        if bootc_pm is None:
-            return False
-        return bool(bootc_pm.engine.containerfile_directives)
-
-    # GuestCommandCollector interface implementation
-
-    def collect_command(
-        self,
-        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
-        *,
-        cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
-    ) -> None:
-        """
-        Collect a command for later container image building.
-
-        For bootc guests, this adds a RUN directive to the Containerfile.
-        """
-        self._collect_command_for_bootc(command, cwd=cwd, env=env)
-
-    def collect_file(self, source: Path, destination: Path) -> None:
-        """
-        Collect a file copy operation for later batch execution.
-
-        For bootc guests, this would add a COPY directive to the Containerfile.
-        Currently, files are pushed to the guest and the /var directory
-        persists across reboots, so explicit COPY is not always needed.
-        """
-        # For now, files are pushed normally and persist in /var
-        # The bootc package manager handles this via push() calls
-        self.debug(f"File copy noted for bootc: {source} -> {destination}")
 
     @property
     def has_collected_commands(self) -> bool:
-        """Check if there are pending commands."""
-        return self._has_bootc_collected_commands()
+        """Check if there are collected commands to be applied."""
+
+        if not self.facts.is_image_mode or not isinstance(
+            self.package_manager, tmt.package_managers.bootc.Bootc
+        ):
+            return False
+
+        return bool(self.package_manager.engine.containerfile_directives)
 
     def flush_collected(self) -> None:
         """
-        Build container from collected commands, switch, and reboot.
+        Build image mode container image from collected commands, switch, and reboot.
 
         Delegates to the bootc package manager's build_container() method.
         """
-        self._flush_bootc_commands()
+        if not self.facts.is_image_mode or not isinstance(
+            self.package_manager, tmt.package_managers.bootc.Bootc
+        ):
+            return
+
+        if not self.package_manager.engine.containerfile_directives:
+            self.debug("No collected commands to flush.")
+            return
+
+        self.info("building container image from collected commands", "green")
+        self.package_manager.build_container()
 
     @functools.cached_property
     def _ssh_guest(self) -> str:
@@ -3352,17 +3261,13 @@ class GuestSsh(Guest, GuestCommandCollector):
 
         sourced_files = sourced_files or []
 
-        # For bootc guests: flush any pending commands before running a test
-        if test_session and self._has_bootc_collected_commands():
-            self._flush_bootc_commands()
-
-        # For bootc guests: collect commands for later batch execution
-        # Commands with immediately=False are collected for later execution
-        # via a Containerfile build, unless test_session=True.
-        # Commands with immediately=True (default) or test_session=True are
-        # executed immediately on the live guest.
-        if not immediately and not test_session and self.facts.is_bootc:
-            self._collect_command_for_bootc(command, cwd=cwd, env=env)
+        # For guests in image mode collect non testing commands with
+        # immediately=False for later batch execution.
+        # Prevent infinite recursion accessing facts in execute.
+        # Facts gathering calls execute also.
+        facts = self.__dict__.get('facts')
+        if facts is not None and facts.in_sync and self.facts.is_image_mode and not immediately:
+            self.collect_command(command, cwd=cwd, env=env)
             return tmt.utils.CommandOutput(stdout="", stderr="")
 
         # Abort if guest is unavailable

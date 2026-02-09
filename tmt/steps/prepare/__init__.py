@@ -505,7 +505,7 @@ class Prepare(tmt.steps.Step):
             )
 
         # Notify guests that the prepare step has completed.
-        # This allows bootc guests to flush collected commands and rebuild the image.
+        # This allows guests in image mode to apply collected commands to the running system.
         for guest in guest_copies:
             guest.on_step_complete(self)
 
