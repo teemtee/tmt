@@ -106,12 +106,12 @@ class Instruction(MetadataContainer):
         )
 
         if normalize_callback is None:
-            logger.warning(f"key '{key}' lacks normalizer")
+            logger.debug(f"key '{key}' lacks normalizer")
 
             normalize_callback = lambda key_address, value, logger: value  # noqa: E731
 
         if export_callback is None:
-            logger.warning(f"key '{key}' lacks exporter")
+            logger.debug(f"key '{key}' lacks exporter")
 
             export_callback = lambda value: value  # noqa: E731
 
