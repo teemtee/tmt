@@ -904,6 +904,12 @@ happen on the test level.
                 environment:
                     LEVEL: 8
 
+.. tip::
+
+   In order to prevent repeating the same content and simplify
+   maintenance you might want to use :ref:`anchors-aliases` to
+   define data only once and use multiple times.
+
 Another option is to define ``environment`` on the plan level.
 Below you can find an example with two plans, each defining a
 different value of the variable and a simple list of tests:
