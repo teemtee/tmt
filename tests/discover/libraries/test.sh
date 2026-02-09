@@ -21,8 +21,14 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Conflict"
-        rlRun -s "$tmt conflict" 2
-        rlAssertGrep 'Library.*conflicts' $rlRun_LOG
+        # TODO: Provide a better test covering the expected expansion defined in tmt.libraries.resolve_dependencies
+        rlRun -s "tmt run -arvvvddd discover plan --name conflict" 0
+        rlAssertGrep "Fetch library 'openssl/certgen'" $rlRun_LOG
+        rlAssertGrep "Detected library '{'url': 'https://github.com/beakerlib/openssl', 'name': '/certgen', 'type': 'library'}'." $rlRun_LOG
+        rlAssertGrep "Fetch library 'certgen/certgen'" $rlRun_LOG
+        rlAssertGrep "Detected library '{'url': 'https://github.com/redhat-qe-security/certgen', 'name': '/certgen', 'type': 'library'}'." $rlRun_LOG
+        rlAssertGrep "Detected library '{'url': 'https://github.com/beakerlib-libraries/certgen/', 'name': '/certgen', 'nick': 'openssl', 'type': 'library'}'." $rlRun_LOG
+        rlAssertGrep "Reusing previously fetched library 'openssl/certgen' from openssl/certgen (https://github.com/beakerlib/openssl#master)" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Destination"
