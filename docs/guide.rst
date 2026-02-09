@@ -965,6 +965,40 @@ including setting the desired environment variables.
         /two:
             test: echo second test on level $LEVEL
 
+Finally, environment variables can come from the command line as
+well. When executing the ``tmt run`` command directly you can use
+the ``--environment`` option and simply loop through all supported
+values:
+
+.. code-block:: shell
+
+   for level in {1..9}; do
+       tmt run --environment LEVEL=$level
+    done
+
+Every occurrence of ``$LEVEL`` in the test or plan metadata will
+be substituted with the corresponding value. For the use case
+above the config would look like this:
+
+.. code-block:: yaml
+
+    /plan:
+        discover:
+            how: fmf
+        provision:
+            how: local
+        execute:
+            how: tmt
+
+    /test:
+        /one:
+            test: echo first test on level $LEVEL
+        /two:
+            test: echo second test on level $LEVEL
+
+See also the :ref:`parametrize-plans` section for examples how to
+use :ref:`/spec/context` for parametrizing metadata.
+
 
 .. _adjust-metadata:
 
