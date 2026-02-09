@@ -862,8 +862,8 @@ Parametrize Tests
 
 Often it is desired to run a set of tests with different
 configurations, for example with different feature flags enabled
-or against different service levels. There are multiple ways how
-to achieve this in ``tmt``, let's discover some of them.
+or against different service levels. There are multiple ways to
+achieve this in ``tmt``, let's discover some of them.
 
 Below you can find a couple of simple working examples you can
 experiment with. Feel free to copy and paste them to your
