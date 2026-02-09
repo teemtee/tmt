@@ -1999,8 +1999,7 @@ class RemotePlanReference(
     scope: RemotePlanReferenceImportScope = RemotePlanReferenceImportScope.FIRST_PLAN_ONLY
     inherit_context: bool = True
     inherit_environment: bool = True
-    # Note: normalize_adjust always returns a list, never None,
-    # so Optional is not needed here despite the function's type hint
+    # Note: normalize_adjust returns a list as per its type hint
     adjust_plans: list[_RawAdjustRule] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_adjust,
@@ -3382,15 +3381,11 @@ class Plan(
                     {**imported_fmf_context, **self._noninheritable_fmf_context}
                 )
 
-            # Step inheritance is now handled by adjust-plans rules via additional_rules
-            # in the Tree constructor, similar to how adjust-tests works
-
             # Adjust the imported tree, to let any `adjust` rules defined in it take
-            # action, including the adjust-plans rules.
+            # action.
             node.adjust(
                 fmf.context.Context(**alteration_fmf_context),
                 case_sensitive=False,
-                additional_rules=reference.adjust_plans,
             )
 
             # If the local plan is disabled, disable the imported plan as well

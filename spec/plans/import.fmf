@@ -127,6 +127,34 @@ description: |
 
     .. versionadded:: 1.19
 
+    The second way to modify imported plans is via the ``adjust-plans``
+    feature, which allows modification of imported plan steps using
+    the same powerful rule system as :ref:`/spec/core/adjust`. This
+    provides flexible plan inheritance and step customization:
+
+    .. code-block:: yaml
+
+       /some-plan:
+           plan:
+               import:
+                   url: https://github.com/teemtee/tests
+                   name: /plans/remote
+                   adjust-plans:
+                     - report+:              # Add additional report step
+                           how: junit
+                           file: /tmp/results.xml
+                     - execute:              # Replace execute step
+                           timeout: 30m
+                       when: arch == x86_64
+                       because: x86_64 systems need longer timeout
+
+    The ``adjust-plans`` rules support all step types (discover, provision,
+    prepare, execute, report, finish, cleanup) and follow the same syntax
+    as regular adjust rules with ``when``, ``continue``, and ``because``
+    keys. Use the ``+`` suffix to append steps or no suffix to replace them.
+
+    .. versionadded:: 1.67
+
     __ https://fmf.readthedocs.io/en/latest/concept.html#identifiers
 
 example:
