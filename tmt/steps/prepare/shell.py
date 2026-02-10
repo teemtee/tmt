@@ -211,7 +211,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         def _invoke_script(
             command: ShellScript,
             environment: tmt.utils.Environment,
-        ) -> tmt.utils.CommandOutput:
+        ) -> Optional[tmt.utils.CommandOutput]:
             guest.push(source=self.phase_workdir)
 
             return guest.execute(
@@ -269,13 +269,22 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 )
 
             if output is None:
-                return self._save_error_outcome(
-                    label=script_name,
-                    timer=timer,
-                    note='Command produced no output but raised no exception',
-                    guest=guest,
-                    outcome=outcome,
+                # Command was collected for deferred batch execution (image mode).
+                # Record an INFO result and continue to the next script.
+                from tmt.result import PhaseResult, ResultGuestData
+
+                outcome.results.append(
+                    PhaseResult(
+                        name=script_name,
+                        result=tmt.steps.ResultOutcome.INFO,
+                        note=['Command collected for deferred execution'],
+                        guest=ResultGuestData.from_guest(guest=guest),
+                        start_time=timer.start_time_formatted,
+                        end_time=timer.end_time_formatted,
+                        duration=timer.duration_formatted,
+                    )
                 )
+                continue
 
             self._post_action_pull(
                 guest=guest,

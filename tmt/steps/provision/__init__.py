@@ -659,7 +659,7 @@ class GuestFacts(SerializableContainer):
         """
 
         try:
-            return guest.execute(command, immediately=True, silent=True)
+            return guest.execute(command, silent=True)
 
         except tmt.utils.RunError:
             pass
@@ -3227,7 +3227,7 @@ class GuestSsh(Guest, CommandCollector):
                 ),
             )
 
-    def execute(
+    def execute(  # type: ignore[override]
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
@@ -3243,7 +3243,7 @@ class GuestSsh(Guest, CommandCollector):
         on_process_end: Optional[OnProcessEndCallback] = None,
         sourced_files: Optional[list[Path]] = None,
         **kwargs: Any,
-    ) -> tmt.utils.CommandOutput:
+    ) -> Optional[tmt.utils.CommandOutput]:
         """
         Execute a command on the guest.
 
@@ -3257,6 +3257,10 @@ class GuestSsh(Guest, CommandCollector):
             Commands with ``immediately=True`` (default) are always executed
             right away. Use ``immediately=False`` for commands that modify
             system state and can be batched (e.g., package installation).
+            When a command is deferred, ``None`` is returned instead of
+            :py:class:`CommandOutput`.
+        :returns: command output, or ``None`` if the command was deferred
+            for batch execution (when ``immediately=False`` on supported guests).
         """
 
         sourced_files = sourced_files or []
@@ -3266,9 +3270,9 @@ class GuestSsh(Guest, CommandCollector):
         # Prevent infinite recursion accessing facts in execute.
         # Facts gathering calls execute also.
         facts = self.__dict__.get('facts')
-        if facts is not None and facts.in_sync and self.facts.is_image_mode and not immediately:
+        if not immediately and facts is not None and facts.in_sync and self.facts.is_image_mode:
             self.collect_command(command, cwd=cwd, env=env)
-            return tmt.utils.CommandOutput(stdout="", stderr="")
+            return None
 
         # Abort if guest is unavailable
         if self.primary_address is None and not self.is_dry_run:

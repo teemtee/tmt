@@ -124,9 +124,11 @@ class BootcEngine(PackageManagerEngine):
         return image_status.image.image
 
     def _get_base_containerfile_directives(self) -> list[str]:
-        # In dry run mode, use a placeholder image
+        # In dry run mode, return an empty list because _get_current_bootc_image()
+        # would fail - it executes a command on the guest. The build is skipped
+        # anyway via the dry-run guard in build_container().
         if self.guest.is_dry_run:
-            return ['FROM dry-run-bootc-image:latest']
+            return []
 
         bootc_image = self._get_current_bootc_image()
 
