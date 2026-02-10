@@ -212,6 +212,50 @@ class GuestContainer(tmt.Guest):
 
         return ['--network', self.network]
 
+    def _setup_environment(self) -> list[str]:
+        """
+        Set up environment variables for the container.
+
+        Writes plan environment variables to a file and returns
+        the arguments to pass them to ``podman run`` via ``--env-file``.
+
+        The file uses a simple ``KEY=VALUE`` format, one variable per line.
+        This is the format expected by podman's ``--env-file`` option.
+
+        .. note::
+
+            This is NOT the standard dotenv format. Podman's env-file parser
+            does not support quoted values or multiline values. Values are
+            taken literally after the first ``=`` character. See
+            https://github.com/containers/podman/blob/main/cmd/podman/parse/net.go
+        """
+
+        assert isinstance(self.parent, Provision)  # narrow type
+
+        environment = self.parent.plan.environment
+
+        if not environment:
+            return []
+
+        # Check for values containing newlines - podman's env-file format
+        # does not support multiline values (one line = one variable)
+        for key, value in environment.items():
+            if '\n' in str(value):
+                self.warn(
+                    f"Environment variable '{key}' contains a newline character. "
+                    "Podman's env-file format does not support multiline values, "
+                    "the value will be truncated at the first newline."
+                )
+
+        # Write environment to a file in the guest workdir
+        # Format: KEY=VALUE per line, no quoting (podman takes values literally)
+        env_file = self.guest_workdir / 'podman-run-environment'
+        env_file.write_text('\n'.join(f'{k}={v}' for k, v in environment.items()))
+
+        self.debug(f"Podman run environment file written to '{env_file}'.")
+
+        return ['--env-file', str(env_file)]
+
     def start(self) -> None:
         """
         Start provisioned guest
@@ -260,6 +304,7 @@ class GuestContainer(tmt.Guest):
         additional_args = []
 
         additional_args.extend(self._setup_network())
+        additional_args.extend(self._setup_environment())
 
         # Run the container
         self.debug(f"Start container '{self.image}'.")
