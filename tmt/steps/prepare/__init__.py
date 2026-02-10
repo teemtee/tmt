@@ -505,7 +505,6 @@ class Prepare(tmt.steps.Step):
             )
 
         # Notify guests that the prepare step has completed.
-        # This allows guests in image mode to apply collected commands to the running system.
         for guest in guest_copies:
             guest.on_step_complete(self)
 

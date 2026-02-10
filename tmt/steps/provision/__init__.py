@@ -1589,6 +1589,15 @@ class CommandCollector(abc.ABC):
 
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def on_step_complete(self, step: 'tmt.steps.Step') -> None:
+        """
+        Called when a step completes execution on this guest.
+
+        :param step: the step that has completed.
+        """
+        raise NotImplementedError
+
 
 class Guest(
     tmt.utils.HasRunWorkdir,
