@@ -2817,9 +2817,7 @@ class GuestSsh(Guest, CommandCollector):
         """
 
         if not isinstance(self.package_manager, tmt.package_managers.bootc.Bootc):
-            raise tmt.utils.GeneralError(
-                'The `collect_command` function called for incorrect package manager.'
-            )
+            return
 
         # Build the command script using the same approach as execute()
         # Start with environment exports
