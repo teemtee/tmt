@@ -3,7 +3,7 @@ description:
     A simple test to see if the provision handles multiple tests.
 
 adjust+:
-  - when: distro == fedora-rawhide
+  - when: distro == fedora-rawhide or distro == fedora-44
     check:
       - how: avc
         result: xfail
