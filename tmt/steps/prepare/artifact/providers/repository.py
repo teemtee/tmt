@@ -24,7 +24,7 @@ _REPO_NAME_GENERATOR = DefaultNameGenerator(known_names=[])
 
 
 @provides_artifact_provider('repository-file')
-class RepositoryFileProvider(ArtifactProvider[ArtifactInfo]):
+class RepositoryFileProvider(ArtifactProvider):
     """
     Provider for making RPM artifacts from a repository discoverable without downloading them.
 

@@ -9,7 +9,7 @@ from collections.abc import Iterator, Sequence
 from functools import cached_property
 from re import Pattern
 from shlex import quote
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar, cast, overload
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast, overload
 from urllib.parse import urlparse
 
 import tmt.log
@@ -65,7 +65,7 @@ class ArtifactInfo:
 
     version: Version
     location: str
-    provider: "ArtifactProvider[ArtifactInfo]"
+    provider: "ArtifactProvider"
 
     @property
     def id(self) -> str:
@@ -87,12 +87,8 @@ class ArtifactInfo:
 #: A type of an artifact provider identifier.
 ArtifactProviderId: TypeAlias = str
 
-#: A type variable representing subclasses of :py:class:`ArtifactInfo`
-#: containers.
-ArtifactInfoT = TypeVar('ArtifactInfoT', bound=ArtifactInfo)
 
-
-class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
+class ArtifactProvider(ABC):
     """
     Base class for artifact providers.
 
@@ -132,7 +128,7 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         raise NotImplementedError
 
     @abstractmethod
-    def get_installable_artifacts(self) -> Sequence[ArtifactInfoT]:
+    def get_installable_artifacts(self) -> Sequence[ArtifactInfo]:
         """
         Collect exact artifacts from this provider that **have** to be installed.
 
@@ -147,7 +143,7 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
 
     @abstractmethod
     def _download_artifact(
-        self, artifact: ArtifactInfoT, guest: Guest, destination: tmt.utils.Path
+        self, artifact: ArtifactInfo, guest: Guest, destination: tmt.utils.Path
     ) -> None:
         """
         Download a single artifact to the specified destination on a given guest.
@@ -220,7 +216,7 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         self.logger.info(f"Successfully downloaded '{len(downloaded_paths)}' artifacts.")
         return downloaded_paths
 
-    def _filter_artifacts(self, exclude_patterns: list[Pattern[str]]) -> Iterator[ArtifactInfoT]:
+    def _filter_artifacts(self, exclude_patterns: list[Pattern[str]]) -> Iterator[ArtifactInfo]:
         """
         Filter artifacts based on exclude patterns.
 
@@ -239,7 +235,10 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         """
         return []
 
-    def contribute_to_shared_repo(
+    # B027: "... is an empty method in an abstract base class, but has
+    # no abstract decorator" - expected, it's a default implementation
+    # provided for subclasses. It is acceptable to do nothing.
+    def contribute_to_shared_repo(  # noqa: B027
         self,
         guest: Guest,
         source_path: Path,
@@ -383,14 +382,14 @@ class Repository:
         return f"{tmt.utils.sanitize_name(self.name)}.repo"
 
 
-_PROVIDER_REGISTRY: PluginRegistry[type[ArtifactProvider[ArtifactInfo]]] = PluginRegistry(
+_PROVIDER_REGISTRY: PluginRegistry[type[ArtifactProvider]] = PluginRegistry(
     'prepare.artifact.providers'
 )
 
 
 def _register_hints(
     plugin_id: str,
-    plugin_class: type[ArtifactProvider[ArtifactInfoT]],
+    plugin_class: type[ArtifactProvider],
     hints: Optional[dict[str, str]] = None,
 ) -> None:
     for hint_id, hint in (hints or {}).items():

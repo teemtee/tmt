@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 from tmt.steps.prepare.artifact.providers import ArtifactInfo, ArtifactProvider, Version
 
 
-class MockProvider(ArtifactProvider[ArtifactInfo]):
+class MockProvider(ArtifactProvider):
     def _extract_provider_id(self, raw_provider_id: str) -> str:
         return raw_provider_id.split(":", 1)[1]
 
