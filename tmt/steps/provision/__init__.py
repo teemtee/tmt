@@ -2819,7 +2819,7 @@ class GuestSsh(Guest, CommandCollector):
 
         sourced_files = sourced_files or []
 
-        if not isinstance(self.package_manager, tmt.package_managers.bootc.Bootc):
+        if not self.facts.is_image_mode or not isinstance(self.package_manager, tmt.package_managers.bootc.Bootc):
             return
 
         # Build the command script using the same approach as execute()
