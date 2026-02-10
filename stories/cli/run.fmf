@@ -252,7 +252,7 @@ story: 'As a user I want to execute tests easily'
             As a user I want to log into the guest after each test.
         description:
             Per-test login mode does not include the default step-level
-            login. Use --step to also login at a specific step.
+            login. Use ``--step`` to also login at a specific step.
         example: |
             tmt run login --test
             tmt run login --test --step finish
