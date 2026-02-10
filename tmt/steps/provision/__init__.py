@@ -2679,7 +2679,7 @@ class Guest(
         """
 
         output = self.execute(
-            self._construct_mkdtemp_command(prefix=prefix, template=template, parent=parent),
+            self._construct_mkdtemp_command(prefix=prefix, template=template, parent=parent)
         )
 
         if not output.stdout:
@@ -2819,7 +2819,9 @@ class GuestSsh(Guest, CommandCollector):
 
         sourced_files = sourced_files or []
 
-        if not self.facts.is_image_mode or not isinstance(self.package_manager, tmt.package_managers.bootc.Bootc):
+        if not self.facts.is_image_mode or not isinstance(
+            self.package_manager, tmt.package_managers.bootc.Bootc
+        ):
             return
 
         # Build the command script using the same approach as execute()
@@ -3231,7 +3233,7 @@ class GuestSsh(Guest, CommandCollector):
                     mkdir -p {workdir_root};
                     setfacl -d -m o:rX {workdir_root}
                     """
-                ),
+                )
             )
 
     @overload
