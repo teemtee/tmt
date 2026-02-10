@@ -28,7 +28,7 @@ def test_koji_valid_build(mock_koji, mock_call_api, artifact_provider):
     provider = artifact_provider(f"koji.build:{MOCK_BUILD_ID_KOJI_BREW}")
     assert isinstance(provider, KojiBuild)
     assert provider.build_id == MOCK_BUILD_ID_KOJI_BREW
-    assert len(provider.get_installable_artifacts()) == 13
+    assert len(provider.artifacts) == 13
 
 
 def test_koji_valid_nvr(mock_koji, mock_call_api, artifact_provider):
@@ -36,7 +36,7 @@ def test_koji_valid_nvr(mock_koji, mock_call_api, artifact_provider):
     provider = artifact_provider("koji.nvr:tmt-1.58.0-1.fc43")
     assert isinstance(provider, KojiNvr)
     assert provider.build_id == MOCK_BUILD_ID_KOJI_BREW
-    assert len(provider.get_installable_artifacts()) == 13
+    assert len(provider.artifacts) == 13
 
 
 def test_koji_invalid_nvr(mock_koji, mock_call_api, artifact_provider):
@@ -52,7 +52,7 @@ def test_koji_valid_task_id_actual_build(mock_koji, mock_call_api, artifact_prov
     provider = artifact_provider("koji.task:137451383")
     assert isinstance(provider, KojiTask)
     assert provider.build_id == MOCK_BUILD_ID_KOJI_BREW
-    assert len(provider.get_installable_artifacts()) == 13
+    assert len(provider.artifacts) == 13
 
 
 def test_koji_valid_task_id_scratch_build(mock_koji, mock_call_api, artifact_provider):
@@ -67,7 +67,7 @@ def test_koji_valid_task_id_scratch_build(mock_koji, mock_call_api, artifact_pro
     assert len(tasks) == 2
     assert task_id in tasks
     assert provider.build_id is None
-    assert len(provider.get_installable_artifacts()) == 2
+    assert len(provider.artifacts) == 2
 
 
 def test_koji_preserves_epoch_from_metadata(mock_koji, mock_call_api, artifact_provider):
@@ -85,7 +85,7 @@ def test_koji_preserves_epoch_from_metadata(mock_koji, mock_call_api, artifact_p
 
     provider = artifact_provider("koji.build:45750883")
     assert isinstance(provider, KojiBuild)
-    artifacts = provider.get_installable_artifacts()
+    artifacts = provider.artifacts
 
     assert len(artifacts) == 1
     assert artifacts[0].version.epoch == 1

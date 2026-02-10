@@ -24,7 +24,7 @@ def test_file_artifact_provider_patterns(tmp_path, pattern, expected_names, arti
         (tmp_path / pattern).touch()
 
     provider = artifact_provider(f"file:{tmp_path}/{pattern}")
-    artifacts = provider.get_installable_artifacts()
+    artifacts = provider.artifacts
 
     assert len(artifacts) == len(expected_names)
     assert {a.id for a in artifacts} == expected_names
@@ -39,7 +39,7 @@ def test_file_artifact_provider_deduplicates_globs(tmp_path, caplog, artifact_pr
         (subdir / "baz-1.0-1.fc43.x86_64.rpm").touch()
 
     provider = artifact_provider(f"file:{tmp_path}/*/baz-1.0-1.fc43.x86_64.rpm")
-    artifacts = provider.get_installable_artifacts()
+    artifacts = provider.artifacts
 
     assert len(artifacts) == 1
     assert artifacts[0].id == "baz-1.0-1.fc43.x86_64"
@@ -53,7 +53,7 @@ def test_download_artifact(tmp_path, artifact_provider):
     file_provider = artifact_provider(f"file:{test_file}")
     guest = MagicMock()
     file_provider._download_artifact(
-        file_provider.get_installable_artifacts()[0],
+        file_provider.artifacts[0],
         guest,
         Path("/remote/foo-1.0-1.fc43.x86_64.rpm"),
     )
@@ -62,7 +62,7 @@ def test_download_artifact(tmp_path, artifact_provider):
     # Test URL download
     url_provider = artifact_provider("file:https://example.com/foo-1.0-1.fc43.x86_64.rpm")
     url_provider._download_artifact(
-        url_provider.get_installable_artifacts()[0],
+        url_provider.artifacts[0],
         guest,
         Path("/remote/foo-1.0-1.fc43.x86_64.rpm"),
     )
