@@ -17,7 +17,7 @@ dnf makecache
 dnf update -y
 
 # Create unprivileged user and setup sudo for it
-dnf install -y /usr/sbin/useradd
+dnf install -y /usr/sbin/useradd || cat /var/log/dnf5.log
 useradd fedora
 usermod -aG wheel fedora
 printf "fedora\tALL=(ALL)\tNOPASSWD: ALL" >> /etc/sudoers
