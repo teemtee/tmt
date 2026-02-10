@@ -23,6 +23,10 @@ rlJournalStart
             "$(yq -o json '.[] | .prepare | .[] | "\(.how):\(.order)"' $rlRun_LOG | jq -cSr)" \
             "feature:17
 shell:null"
+        rlAssertEquals \
+            "Verify that contact key was populated" \
+            "$(yq -o json '.[] | .contact | .[]' $rlRun_LOG | jq -cSr)" \
+            "xyzzy"
     rlPhaseEnd
 
     rlPhaseStartTest "Run"
