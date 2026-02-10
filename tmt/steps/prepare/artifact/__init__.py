@@ -268,9 +268,8 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
     def _persist_artifact_metadata(self, providers: list[ArtifactProvider]) -> None:
         """
-        Persist only the metadata of installable artifacts to a YAML file.
+        Persist the metadata of artifacts to a YAML file.
 
-        The installable artifacts are those that are downloaded and ready for installation.
         Groups artifacts by provider.
         """
         providers_data = []
