@@ -264,7 +264,7 @@ class Bootc(PackageManager[BootcEngine]):
                     ),
                 )
                 self.guest.execute(
-                    ShellScript(f'cat <<EOF > {containerfile_path!s} \n{containerfile} \nEOF'),
+                    ShellScript(f'cat <<EOF > {containerfile_path!s} \n{containerfile} \nEOF')
                 )
 
                 self.debug(f"containerfile content: {containerfile}")
@@ -278,7 +278,7 @@ class Bootc(PackageManager[BootcEngine]):
                 self.guest.execute(
                     ShellScript(
                         f'{self.guest.facts.sudo_prefix} podman build -v {self.guest.run_workdir}:{self.guest.run_workdir}:Z -t {image_tag} -f {containerfile_path} {self.guest.run_workdir}'  # noqa: E501
-                    ),
+                    )
                 )
 
                 # Switch to the new image for next boot
