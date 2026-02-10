@@ -942,29 +942,21 @@ class GuestFacts(SerializableContainer):
         """
         Detect whether guest is an image mode based system.
 
-        An image mode based system has the ``bootc`` command available and reports
-        a booted image in its status. See https://containers.github.io/bootc/.
+        An image mode based system has the image set to a image reference.
+        In case ``bootc`` is installed on a non image mode system, it
+        reports ``null``.
         """
 
-        # guest is not in image mode if bootc command is unavailable
-        if not self._query(
-            guest, [(ShellScript('type bootc').to_shell_command(), r'(bootc is.*)')]
-        ):
-            return False
-
-        # if status does not report an image, we are not in image mode
-        if self._query(
+        image = self._query(
             guest,
-            [
-                (
-                    ShellScript('sudo bootc status --format yaml').to_shell_command(),
-                    r'(image: null|booted: null)',
-                )
-            ],
-        ):
-            return False
+            [(ShellScript('sudo bootc status --format yaml').to_shell_command(), r'image: (.+)')],
+        )
 
-        return True
+        # if bootc reports status and the image is not `image: null`, we are in image mode
+        if image and image != "null":
+            return True
+
+        return False
 
     def _query_is_toolbox(self, guest: 'Guest') -> Optional[bool]:
         # https://www.reddit.com/r/Fedora/comments/g6flgd/toolbox_specific_environment_variables/
