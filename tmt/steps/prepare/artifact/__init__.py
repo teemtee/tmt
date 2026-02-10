@@ -9,7 +9,6 @@ from tmt.steps import PluginOutcome
 from tmt.steps.prepare import PreparePlugin, PrepareStepData
 from tmt.steps.prepare.artifact.providers import (
     _PROVIDER_REGISTRY,
-    ArtifactInfo,
     ArtifactProvider,
     Repository,
 )
@@ -39,7 +38,7 @@ class PrepareArtifactData(PrepareStepData):
     )
 
 
-def get_artifact_provider(provider_id: str) -> type[ArtifactProvider[ArtifactInfo]]:
+def get_artifact_provider(provider_id: str) -> type[ArtifactProvider]:
     provider_type = provider_id.split(':')[0]
     provider_class = _PROVIDER_REGISTRY.get_plugin(provider_type)
     if not provider_class:
@@ -196,7 +195,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         )
 
         # Initialize all providers and have them contribute to the shared repo
-        providers: list[ArtifactProvider[ArtifactInfo]] = []
+        providers: list[ArtifactProvider] = []
         for raw_provider_id in self.data.provide:
             try:
                 provider_class = get_artifact_provider(raw_provider_id)

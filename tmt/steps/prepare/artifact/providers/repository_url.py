@@ -21,7 +21,7 @@ from tmt.steps.provision import Guest
 
 
 @provides_artifact_provider('repository-url')
-class RepositoryUrlProvider(ArtifactProvider[ArtifactInfo]):
+class RepositoryUrlProvider(ArtifactProvider):
     """
     Provider for making RPM artifacts from a repository discoverable without downloading them.
 
