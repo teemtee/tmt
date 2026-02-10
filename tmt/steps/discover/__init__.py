@@ -645,14 +645,30 @@ class Discover(tmt.steps.Step):
         required_dependencies_to_tests: dict[str, list[str]] = defaultdict(list)
         recommended_dependencies_to_tests: dict[str, list[str]] = defaultdict(list)
 
+        def _normalize_dependency_name(dependency: tmt.base.Dependency) -> str:
+            """
+            Handles debuginfo dependencies by removing the '-debuginfo' suffix.
+            Such dependencies are installed by their base name.
+            """
+            dependency_name = str(dependency)
+            return (
+                dependency_name.removesuffix('-debuginfo')
+                if dependency_name.endswith('-debuginfo')
+                else dependency_name
+            )
+
         for test_origin in self.tests(enabled=True):
             test = test_origin.test
             test_name = test.name
             # Collect dependencies separately for required and recommended
             for dependency in test.require:
-                required_dependencies_to_tests[str(dependency)].append(test_name)
+                required_dependencies_to_tests[_normalize_dependency_name(dependency)].append(
+                    test_name
+                )
             for dependency in test.recommend:
-                recommended_dependencies_to_tests[(str(dependency))].append(test_name)
+                recommended_dependencies_to_tests[_normalize_dependency_name(dependency)].append(
+                    test_name
+                )
 
         return required_dependencies_to_tests, recommended_dependencies_to_tests
 
