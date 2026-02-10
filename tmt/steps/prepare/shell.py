@@ -269,20 +269,8 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 )
 
             if output is None:
-                # Command was collected for deferred batch execution (image mode).
-                # Record an INFO result and continue to the next script.
-                from tmt.result import PhaseResult, ResultGuestData
-
-                outcome.results.append(
-                    PhaseResult(
-                        name=script_name,
-                        result=tmt.steps.ResultOutcome.INFO,
-                        note=['Command collected for deferred execution'],
-                        guest=ResultGuestData.from_guest(guest=guest),
-                        start_time=timer.start_time_formatted,
-                        end_time=timer.end_time_formatted,
-                        duration=timer.duration_formatted,
-                    )
+                self._save_deferred_run_outcome(
+                    label=script_name, timer=timer, guest=guest, outcome=outcome
                 )
                 continue
 

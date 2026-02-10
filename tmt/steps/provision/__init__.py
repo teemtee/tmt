@@ -1561,6 +1561,7 @@ class CommandCollector(abc.ABC):
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         *,
+        sourced_files: Optional[list[Path]] = None,
         cwd: Optional[Path] = None,
         env: Optional[tmt.utils.Environment] = None,
     ) -> None:
@@ -2812,6 +2813,7 @@ class GuestSsh(Guest, CommandCollector):
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         *,
+        sourced_files: Optional[list[Path]] = None,
         cwd: Optional[Path] = None,
         env: Optional[tmt.utils.Environment] = None,
     ) -> None:
@@ -2822,33 +2824,36 @@ class GuestSsh(Guest, CommandCollector):
         Uses the same environment and cwd handling as regular execute().
         """
 
+        sourced_files = sourced_files or []
+
         if not isinstance(self.package_manager, tmt.package_managers.bootc.Bootc):
             return
 
         # Build the command script using the same approach as execute()
         # Start with environment exports
-        script_parts: list[ShellScript] = []
-
-        if env:
-            script_parts.extend(self._prepare_environment(env).to_shell_exports())
+        collected_commands: ShellScript = ShellScript.from_scripts(
+            self._prepare_environment(env).to_shell_exports()
+        )
 
         # Add working directory change (properly quoted like in execute())
         if cwd:
-            script_parts.append(ShellScript(f'cd {quote(str(cwd))}'))
+            collected_commands += ShellScript(f'cd {quote(str(cwd))}')
+
+        for file in sourced_files:
+            collected_commands += ShellScript(f'source {quote(str(file))}')
 
         # Add the actual command
         if isinstance(command, tmt.utils.Command):
-            script_parts.append(command.to_script())
+            collected_commands += command.to_script()
         else:
-            script_parts.append(command)
+            collected_commands += command
 
-        # Combine all parts into a single script
-        full_script = ShellScript.from_scripts(script_parts)
+        collected_command = collected_commands.to_element()
 
         # Add to the package manager's engine
         self.package_manager.engine.open_containerfile_directives()
-        self.package_manager.engine.containerfile_directives.append(f"RUN {full_script}")
-        self.debug(f"Collected command for Containerfile: {full_script}")
+        self.package_manager.engine.containerfile_directives.append(f"RUN {collected_command}")
+        self.debug(f"Collected command for Containerfile: {collected_command}")
 
     @property
     def has_collected_commands(self) -> bool:
@@ -3279,8 +3284,8 @@ class GuestSsh(Guest, CommandCollector):
         # Prevent infinite recursion accessing facts in execute.
         # Facts gathering calls execute also.
         facts = self.__dict__.get('facts')
-        if not immediately and facts is not None and facts.in_sync and self.facts.is_image_mode:
-            self.collect_command(command, cwd=cwd, env=env)
+        if not immediately and facts is not None and facts.in_sync and facts.is_image_mode:
+            self.collect_command(command, sourced_files=sourced_files, cwd=cwd, env=env)
             return None
 
         # Abort if guest is unavailable
