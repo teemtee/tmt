@@ -23,7 +23,7 @@ def test_brew_valid_build(mock_brew, mock_call_api, artifact_provider):
     provider = artifact_provider(f"brew.build:{MOCK_BUILD_ID_KOJI_BREW}")
     assert isinstance(provider, BrewBuild)
     assert provider.build_id == MOCK_BUILD_ID_KOJI_BREW
-    assert len(provider.artifacts) == 21
+    assert len(provider.get_installable_artifacts()) == 21
 
 
 def test_brew_valid_draft_build(mock_brew, mock_call_api, artifact_provider):
@@ -38,13 +38,15 @@ def test_brew_valid_draft_build(mock_brew, mock_call_api, artifact_provider):
         for i in range(2)
     ]
     mock_call_api.side_effect = (
-        lambda method, *a, **kw: mock_rpms if method == "listBuildRPMs" else {"id": draft_id}
+        lambda method, *a, **kw: mock_rpms
+        if method == "listBuildRPMs"
+        else {"id": draft_id, "package_name": "test-package"}
     )
 
     provider = artifact_provider(f"brew.build:{draft_id}")
     assert isinstance(provider, BrewBuild)
-    assert len(provider.artifacts) == 2
-    assert any(f"draft_{draft_id}" in a.location for a in provider.artifacts)
+    assert len(provider.get_installable_artifacts()) == 2
+    assert any(f"draft_{draft_id}" in a.location for a in provider.get_installable_artifacts())
 
 
 def test_brew_valid_task_id_scratch_build(mock_brew, mock_call_api, artifact_provider):
@@ -53,10 +55,9 @@ def test_brew_valid_task_id_scratch_build(mock_brew, mock_call_api, artifact_pro
 
     provider = artifact_provider(f"brew.task:{task_id}")
     assert isinstance(provider, BrewTask)
-    provider._top_url = "http://brew.example.com"
     tasks = list(provider._get_task_children(task_id))
 
     assert len(tasks) == 2
     assert task_id in tasks
     assert provider.build_id is None
-    assert len(provider.artifacts) == 2
+    assert len(provider.get_installable_artifacts()) == 2

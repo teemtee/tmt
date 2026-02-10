@@ -33,30 +33,55 @@ class UnsupportedOperationError(RuntimeError):
     """
 
 
+@container(frozen=True)
+class Version:
+    """
+    Version information for artifacts.
+    """
+
+    name: str
+    version: str
+    release: str
+    arch: str
+    epoch: int = 0
+
+    @property
+    def nvra(self) -> str:
+        return f"{self.name}-{self.version}-{self.release}.{self.arch}"
+
+    @property
+    def nevra(self) -> str:
+        return f"{self.name}-{self.epoch}:{self.version}-{self.release}.{self.arch}"
+
+    def __str__(self) -> str:
+        return self.nvra
+
+
 @container
-class ArtifactInfo(ABC):
+class ArtifactInfo:
     """
     Information about a single artifact, e.g. a package.
     """
 
-    _raw_artifact: Any
+    version: Version
+    location: str
+    provider: "ArtifactProvider[ArtifactInfo]"
 
     @property
-    @abstractmethod
     def id(self) -> str:
         """
         A unique identifier of the artifact.
-        """
 
-        raise NotImplementedError
+        TODO: Transient for now, modify based on the decision made here: https://github.com/teemtee/tmt/issues/4546
+        """
+        return str(self.version)
 
     @property
-    @abstractmethod
-    def location(self) -> str:
-        raise NotImplementedError
+    def name(self) -> str:
+        return self.version.name
 
     def __str__(self) -> str:
-        return self.id
+        return f"{self.provider.id}-{self.version}.rpm"
 
 
 #: A type of an artifact provider identifier.
@@ -106,11 +131,10 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
 
         raise NotImplementedError
 
-    @cached_property
     @abstractmethod
-    def artifacts(self) -> Sequence[ArtifactInfoT]:
+    def get_installable_artifacts(self) -> Sequence[ArtifactInfoT]:
         """
-        Collect all artifacts available from this provider.
+        Collect exact artifacts from this provider that **have** to be installed.
 
         The method is left for derived classes to implement with respect
         to the actual artifact provider they implement. The list of
@@ -205,7 +229,7 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         :yields: artifacts that satisfy the filtering.
         """
 
-        for artifact in self.artifacts:
+        for artifact in self.get_installable_artifacts():
             if not any(pattern.search(artifact.id) for pattern in exclude_patterns):
                 yield artifact
 
