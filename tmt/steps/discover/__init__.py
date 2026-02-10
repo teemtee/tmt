@@ -509,6 +509,9 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             test.path = Path(f"/{self.safe_name}{test.path}")
 
     def discover_from_recipe(self, logger: Optional[tmt.log.Logger] = None) -> None:
+        """
+        Discover tests directly from the recipe.
+        """
         self.go_prolog(logger or self._logger)
 
         assert self.step.plan.my_run is not None

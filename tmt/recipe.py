@@ -137,6 +137,9 @@ class _RecipeTest(SerializableContainer):
         return data
 
     def to_test(self, logger: Logger) -> 'tmt.base.Test':
+        """
+        Convert the recipe test to a :py:class:`tmt.base.Test` instance.
+        """
         from tmt.base import Test
 
         data = self.to_minimal_spec()
@@ -407,9 +410,14 @@ class RecipeManager(Common):
             ),
             plans=[_RecipePlan.from_plan(plan) for plan in run.plans],
         )
-        self.write(run.run_workdir / 'recipe.yaml', tmt.utils.to_yaml(recipe.to_serialized()))
+        self.write(
+            run.run_workdir / 'recipe.yaml', tmt.utils.to_yaml(recipe.to_serialized(), sort=True)
+        )
 
     def tests(self, recipe: Recipe, plan_name: str) -> list[TestOrigin]:
+        """
+        Return the list of tests for the given plan name in the recipe.
+        """
         for plan in recipe.plans:
             if plan.name == plan_name:
                 return [
@@ -424,4 +432,7 @@ class RecipeManager(Common):
 
     @staticmethod
     def update_tree(recipe: Recipe, tree: fmf.Tree) -> None:
+        """
+        Load the plans from the recipe and update the given fmf tree with their specifications.
+        """
         tree.update({plan.name: plan.to_spec() for plan in recipe.plans})
