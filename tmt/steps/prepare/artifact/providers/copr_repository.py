@@ -11,8 +11,8 @@ from typing import Optional
 import tmt.log
 import tmt.utils
 from tmt.steps.prepare import install
-from tmt.steps.prepare.artifact import RpmArtifactInfo
 from tmt.steps.prepare.artifact.providers import (
+    ArtifactInfo,
     ArtifactProvider,
     ArtifactProviderId,
     UnsupportedOperationError,
@@ -24,8 +24,8 @@ from tmt.utils import Path
 COPR_REPOSITORY_PATTERN = re.compile(r'^(?:@[^/]+/[^/]+|[^@/]+/[^/]+)$')
 
 
-@provides_artifact_provider('copr.repository')  # type: ignore[arg-type]
-class CoprRepositoryProvider(ArtifactProvider[RpmArtifactInfo]):
+@provides_artifact_provider('copr.repository')
+class CoprRepositoryProvider(ArtifactProvider[ArtifactInfo]):
     """
     Provider for enabling Copr repositories and making their packages available.
 
@@ -66,15 +66,12 @@ class CoprRepositoryProvider(ArtifactProvider[RpmArtifactInfo]):
 
         return value
 
-    @cached_property
-    def artifacts(self) -> Sequence[RpmArtifactInfo]:
+    def get_installable_artifacts(self) -> Sequence[ArtifactInfo]:
         # Copr repository provider does not enumerate individual artifacts.
         # The repository is enabled and packages are available through the package manager.
         return []
 
-    def _download_artifact(
-        self, artifact: RpmArtifactInfo, guest: Guest, destination: Path
-    ) -> None:
+    def _download_artifact(self, artifact: ArtifactInfo, guest: Guest, destination: Path) -> None:
         """This provider only enables repositories; it does not download individual RPMs."""
         raise UnsupportedOperationError(
             "CoprRepositoryProvider does not support downloading individual RPMs."
