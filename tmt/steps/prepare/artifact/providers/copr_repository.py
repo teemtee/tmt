@@ -66,7 +66,8 @@ class CoprRepositoryProvider(ArtifactProvider):
 
         return value
 
-    def get_installable_artifacts(self) -> Sequence[ArtifactInfo]:
+    @cached_property
+    def artifacts(self) -> Sequence[ArtifactInfo]:
         # Copr repository provider does not enumerate individual artifacts.
         # The repository is enabled and packages are available through the package manager.
         return []
