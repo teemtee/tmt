@@ -2291,7 +2291,6 @@ class Guest(
         :param cwd: if set, execute command in this directory on the guest.
         :param env: if set, set these environment variables before running the command.
         :param friendly_command: nice, human-friendly representation of the command.
-        :param test_session: if True, this is the actual test being run.
         :param immediately: if False, the command may be collected for later
             batch execution on guests that support it (e.g., bootc guests).
             Commands with ``immediately=True`` (default) are always executed

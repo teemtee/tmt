@@ -261,7 +261,7 @@ class Bootc(PackageManager[BootcEngine]):
                         f'  ( podman pull {base_image} || podman pull containers-storage:{base_image} )'  # noqa: E501
                         f'  || bootc image copy-to-storage --target {base_image}'
                         ')"'
-                    ),
+                    )
                 )
                 self.guest.execute(
                     ShellScript(f'cat <<EOF > {containerfile_path!s} \n{containerfile} \nEOF')
