@@ -1,5 +1,4 @@
-import typing
-from typing import Optional
+from typing import ClassVar, Optional
 
 import tmt.base
 import tmt.steps
@@ -38,24 +37,6 @@ class PrepareArtifactData(PrepareStepData):
             higher priority in package managers.
             """,
     )
-
-
-@container
-class RpmArtifactInfo(ArtifactInfo):
-    """
-    Represents a single RPM package.
-    """
-
-    _raw_artifact: dict[str, str]
-
-    @property
-    def id(self) -> str:
-        """RPM identifier"""
-        return f"{self._raw_artifact['nvr']}.{self._raw_artifact['arch']}.rpm"
-
-    @property
-    def location(self) -> str:
-        return self._raw_artifact['url']
 
 
 def get_artifact_provider(provider_id: str) -> type[ArtifactProvider[ArtifactInfo]]:
@@ -188,8 +169,8 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     _data_class = PrepareArtifactData
 
     # Shared repository configuration
-    SHARED_REPO_DIR_NAME: typing.ClassVar[str] = 'artifact-shared-repo'
-    SHARED_REPO_NAME: typing.ClassVar[str] = 'tmt-artifact-shared'
+    SHARED_REPO_DIR_NAME: ClassVar[str] = 'artifact-shared-repo'
+    SHARED_REPO_NAME: ClassVar[str] = 'tmt-artifact-shared'
 
     def go(
         self,

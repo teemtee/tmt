@@ -14,14 +14,15 @@ import requests
 import tmt.log
 import tmt.utils
 import tmt.utils.hints
-from tmt.steps.prepare.artifact import RpmArtifactInfo
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
     ArtifactProviderId,
     DownloadError,
+    Version,
     provides_artifact_provider,
 )
+from tmt.steps.prepare.artifact.providers.koji import RpmVersion
 from tmt.steps.provision import Guest
 from tmt.utils import ShellScript
 
@@ -62,8 +63,8 @@ def import_copr(logger: tmt.log.Logger) -> None:
         raise tmt.utils.GeneralError("Could not import copr package.") from error
 
 
-@provides_artifact_provider("copr.build")  # type: ignore[arg-type]
-class CoprBuildArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
+@provides_artifact_provider("copr.build")
+class CoprBuildArtifactProvider(ArtifactProvider[ArtifactInfo]):
     """
     Provider for downloading artifacts from Copr builds.
 
@@ -203,36 +204,23 @@ class CoprBuildArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
             return []
         return packages
 
-    def make_rpm_artifact(self, rpm_meta: dict[str, str]) -> RpmArtifactInfo:
-        name = rpm_meta["name"]
-        version = rpm_meta["version"]
-        release = rpm_meta["release"]
-        arch = rpm_meta["arch"]
-        nvr = f"{name}-{version}-{release}"
-        filename = f"{nvr}.{arch}.rpm"
-
-        artifact = RpmArtifactInfo(
-            _raw_artifact={
-                **rpm_meta,
-                "nvr": nvr,
-            }
-        )
-
+    def make_rpm_artifact(self, rpm_meta: dict[str, str]) -> ArtifactInfo:
+        version_info = RpmVersion.from_rpm_meta(rpm_meta)
+        filename = f"{version_info}.rpm"
         if self.is_pulp:
             assert self.build_info is not None
             base_url = urljoin(
                 f"{self.build_info.repo_url}/",
                 f"{self.chroot}/Packages/{filename[0]}",
             )
-
         else:
             base_url = self.result_url.rstrip("/")
 
-        artifact._raw_artifact["url"] = urljoin(base_url + "/", filename)
-        return artifact
+        return ArtifactInfo(
+            version=version_info, location=urljoin(base_url + "/", filename), provider=self
+        )
 
-    @cached_property
-    def artifacts(self) -> Sequence[RpmArtifactInfo]:
+    def get_installable_artifacts(self) -> Sequence[ArtifactInfo]:
         self.logger.debug(f"Fetching RPMs for build '{self.build_id}' in chroot '{self.chroot}'.")
         rpm_metas = self._fetch_results_json() if self.is_pulp else self.build_packages
 
