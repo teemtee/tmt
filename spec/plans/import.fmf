@@ -127,10 +127,10 @@ description: |
 
     .. versionadded:: 1.19
 
-    The second way to modify imported plans is via the ``adjust-plans``
-    feature, which allows modification of imported plan steps using
-    the same powerful rule system as :ref:`/spec/core/adjust`. This
-    provides flexible plan inheritance and step customization:
+    The imported plans could also be modified via the ``adjust-plans``
+    key, which allows modification of imported plans using
+    the same powerful rule system as :ref:`/spec/core/adjust` and :ref:`/plugins/discover/fmf`.
+    This provides flexible plan inheritance and customization:
 
     .. code-block:: yaml
 
@@ -144,14 +144,10 @@ description: |
                            how: junit
                            file: /tmp/results.xml
                      - execute:              # Replace execute step
+                           how: tmt
                            timeout: 30m
                        when: arch == x86_64
                        because: x86_64 systems need longer timeout
-
-    The ``adjust-plans`` rules support all step types (discover, provision,
-    prepare, execute, report, finish, cleanup) and follow the same syntax
-    as regular adjust rules with ``when``, ``continue``, and ``because``
-    keys. Use the ``+`` suffix to append steps or no suffix to replace them.
 
     .. versionadded:: 1.67
 

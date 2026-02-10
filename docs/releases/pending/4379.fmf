@@ -1,17 +1,5 @@
 description: |
-    Added ``adjust-plans`` support for plan imports, enabling flexible step
+    Added ``adjust-plans`` support for :ref:`/spec/plans/import`, enabling flexible step
     inheritance and modification of imported plans using the same powerful
-    rule system as ``adjust-tests``. This allows selective modification and
-    addition of steps when importing remote plans.
-
-    **New Features:**
-
-    * **Step inheritance**: Import remote plans and modify/add steps locally
-    * **Step operations**: Support both append (``+`` suffix) and replace modes for all step types
-    * **Multiple plugins**: Add multiple report plugins with list syntax
-    * **Conditional rules**: Full support for ``when`` and ``because`` clauses
-    * **Context integration**: Works with context inheritance settings
-    * **All step types**: Supports discover, provision, prepare, execute, report, finish, and cleanup steps
-
-    **Schema and validation**: Added ``adjust-plans`` field to plan import schema
-    with full validation and normalization support.
+    rule system as :ref:`/spec/core/adjust` and :ref:`/plugins/discover/fmf`.
+    This allows selective modification and addition of steps when importing remote plans.

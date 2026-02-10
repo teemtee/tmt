@@ -2088,9 +2088,7 @@ class RemotePlanReference(
         )
         reference.inherit_context = bool(raw.get('inherit-context', True))
         reference.inherit_environment = bool(raw.get('inherit-environment', True))
-        reference.adjust_plans = tmt.utils.normalize_adjust(
-            'adjust-plans', raw.get('adjust-plans'), tmt.log.Logger.get_bootstrap_logger()
-        )
+        reference.adjust_plans = cast(list[_RawAdjustRule], raw.get('adjust-plans', []))
 
         return reference
 
@@ -3240,16 +3238,6 @@ class Plan(
             f"Looking for plans in '{tree.root}' matching '{reference.name_pattern}'", level=3
         )
 
-        # Apply adjust-plans rules if specified, similar to adjust-tests
-        if reference.adjust_plans:
-            tmt_tree = tmt.Tree(
-                logger=self._logger,
-                path=tree.root,
-                fmf_context=self.fmf_context,
-                additional_rules=reference.adjust_plans,
-            )
-            tree = tmt_tree.tree
-
         for node in tree.prune(keys=['execute']):
             if reference.name_pattern.match(node.name) is not None:
                 yield node
@@ -3368,6 +3356,7 @@ class Plan(
                 node.name, node.data.get('context', {}), self._logger
             )
 
+            # For final context inheritance, respect inherit_context setting
             if reference.inherit_context:
                 alteration_fmf_context = FmfContext(
                     {
@@ -3382,10 +3371,11 @@ class Plan(
                 )
 
             # Adjust the imported tree, to let any `adjust` rules defined in it take
-            # action.
+            # action, including the adjust-plans rules.
             node.adjust(
                 fmf.context.Context(**alteration_fmf_context),
                 case_sensitive=False,
+                additional_rules=reference.adjust_plans,
             )
 
             # If the local plan is disabled, disable the imported plan as well

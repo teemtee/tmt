@@ -1,67 +1,36 @@
-# Test step inheritance with adjust-plans fields
+# Common configuration defined at the top level (root)
+plan:
+    import:
+        url: https://github.com/teemtee/tests
+        name: /plans/remote
+        # Default for most tests in this group
+        inherit-context: false
+        inherit-environment: false
 
-# Test append mode for report step
-/test-report-append:
-    summary: Test report step inheritance in append mode
-    plan:
-        import:
-            url: https://github.com/teemtee/tests
-            name: /plans/remote
-            inherit-context: false
-            inherit-environment: false
+# Child plans inherit the configuration above
+/discover-append:
+    summary: Test discover step inheritance in append mode
+    # Use '+' to merge into the inherited 'plan' -> 'import' structure
+    plan+:
+        import+:
             adjust-plans:
-              - report+:
-                    how: junit
-                    file: /tmp/local-results.xml
-
-# Test replace mode for report step
-/test-report-replace:
-    summary: Test report step inheritance in replace mode
-    plan:
-        import:
-            url: https://github.com/teemtee/tests
-            name: /plans/remote
-            inherit-context: false
-            inherit-environment: false
-            adjust-plans:
-              - report:
-                    how: html
-                    file: /tmp/replacement.html
-
-# Test no step inheritance (control)
-/test-no-inheritance:
-    summary: Test plan with no step inheritance
-    plan:
-        import:
-            url: https://github.com/teemtee/tests
-            name: /plans/remote
-            inherit-context: false
-            inherit-environment: false
-            # No adjust-plans fields, so only remote plan steps are used
-
-# Test alternative enum values
-/test-alternative-enum:
-    summary: Test alternative enum values (append/replace)
-    plan:
-        import:
-            url: https://github.com/teemtee/tests
-            name: /plans/remote
-            inherit-context: false
-            inherit-environment: false
-            adjust-plans:
-              - finish+:  # append mode
+              - discover+:
                     how: shell
-                    script: echo "Local finish with append enum"
+                    test: echo "Additional test from local plan"
 
-# Test multiple adjust fields
-/test-multiple-adjust:
+/discover-replace:
+    summary: Test discover step inheritance in replace mode
+    plan+:
+        import+:
+            adjust-plans:
+              - discover:
+                    how: shell
+                    test: echo "Replacement test from local plan"
+
+/multiple-adjust:
     summary: Test multiple adjust fields
-    plan:
-        import:
-            url: https://github.com/teemtee/tests
-            name: /plans/remote
-            inherit-context: false
-            inherit-environment: false
+    plan+:
+        import+:
             adjust-plans:
               - finish+:
                     name: local-additional-finish
@@ -71,48 +40,18 @@
                     how: junit
                     file: /tmp/local-finish.xml
 
-# Test multiple report plugins with list syntax
-/test-multiple-report-plugins:
-    summary: Test multiple report plugins using adjust-plans
-    plan:
-        import:
-            url: https://github.com/teemtee/tests
-            name: /plans/remote
-            inherit-context: false
-            inherit-environment: false
-            adjust-plans:
-              - report+:
-                  - how: junit
-                    file: /tmp/local-results.xml
-                  - how: html
-                    file: /tmp/local-results.html
-                  - how: display
-                    verbosity: 2
-
-# Test conditional adjust-plans with when/because like adjust-tests
-/test-conditional-adjust:
+/conditional-adjust:
     summary: Test conditional adjust-plans with when/because clauses
     context:
         arch: x86_64
         distro: fedora
-    plan:
-        import:
-            url: https://github.com/teemtee/tests
-            name: /plans/remote
-            inherit-context: false
-            inherit-environment: false
+    plan+:
+        import+:
+            # Override the inherited setting for this specific plan
+            inherit-context: true
             adjust-plans:
               - report+:
                     how: junit
                     file: /tmp/conditional-results.xml
                 when: distro == fedora
                 because: Fedora supports JUnit reporting
-              - execute:
-                    timeout: 30m
-                when: arch == x86_64
-                because: x86_64 systems need longer timeout
-              - finish+:
-                    how: shell
-                    script: echo "Cleanup for slow systems"
-                when: arch == i386
-                because: Slow system cleanup needed
