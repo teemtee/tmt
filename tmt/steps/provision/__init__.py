@@ -3315,10 +3315,7 @@ class GuestSsh(Guest, CommandCollector):
 
         # For guests in image mode collect non testing commands with
         # immediately=False for later batch execution.
-        # Prevent infinite recursion accessing facts in execute.
-        # Facts gathering calls execute also.
-        facts = self.__dict__.get('facts')
-        if not immediately and facts is not None and facts.in_sync and facts.is_image_mode:
+        if not immediately and self.facts.is_image_mode:
             self.collect_command(command, sourced_files=sourced_files, cwd=cwd, env=env)
             return None
 
