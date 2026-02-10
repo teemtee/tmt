@@ -7,7 +7,6 @@ import copy
 import enum
 import functools
 import itertools
-import operator
 import os
 import re
 import shutil
@@ -48,7 +47,6 @@ import tmt.frameworks
 import tmt.identifier
 import tmt.lint
 import tmt.log
-import tmt.plugins
 import tmt.plugins.plan_shapers
 import tmt.policy
 import tmt.result

@@ -2,13 +2,8 @@ import os
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Callable, Optional
 
-import tmt
-import tmt.base
 import tmt.log
-import tmt.steps
 import tmt.utils
-import tmt.utils.signals
-import tmt.utils.wait
 from tmt.container import container
 from tmt.utils import (
     Path,

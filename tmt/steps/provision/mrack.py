@@ -14,11 +14,9 @@ from typing import Any, Callable, Optional, TypedDict, TypeVar, Union, cast
 
 import packaging.version
 
-import tmt
 import tmt.config
 import tmt.hardware
 import tmt.log
-import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
@@ -30,11 +28,9 @@ from tmt.container import container, field, simple_field
 from tmt.steps.provision import RebootMode
 from tmt.utils import (
     Command,
-    GuestLogError,
     Path,
     ProvisionError,
     ShellScript,
-    UpdatableMessage,
 )
 from tmt.utils.templates import render_template
 from tmt.utils.wait import Deadline, Waiting

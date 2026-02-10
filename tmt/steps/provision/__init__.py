@@ -63,7 +63,9 @@ from tmt.package_managers import (
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue, PushTask, sync_with_guests
 from tmt.utils import (
-    OUTPUT_WIDTH,
+    OUTPUT_WIDTH as OUTPUT_WIDTH,
+)
+from tmt.utils import (
     Command,
     GeneralError,
     OnProcessEndCallback,
@@ -73,7 +75,9 @@ from tmt.utils import (
     ShellScript,
     configure_constant,
     effective_workdir_root,
-    format_timestamp,
+)
+from tmt.utils import (
+    format_timestamp as format_timestamp,
 )
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Deadline, Waiting

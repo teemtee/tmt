@@ -10,7 +10,6 @@ from types import TracebackType
 from typing import Any, Callable, Optional, Union, cast
 
 import tmt
-import tmt.base
 import tmt.log
 import tmt.steps
 import tmt.steps.provision

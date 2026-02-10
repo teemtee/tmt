@@ -1,7 +1,6 @@
 from collections.abc import Iterable, Iterator
 from typing import Any, Optional, Union
 
-import tmt
 import tmt.log
 import tmt.steps
 import tmt.steps.report

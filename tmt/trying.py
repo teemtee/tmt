@@ -22,7 +22,6 @@ import tmt.container
 import tmt.log
 import tmt.steps
 import tmt.steps.execute
-import tmt.steps.prepare
 import tmt.steps.prepare.feature
 import tmt.templates
 import tmt.utils
