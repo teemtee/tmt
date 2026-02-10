@@ -220,7 +220,8 @@ class CoprBuildArtifactProvider(ArtifactProvider):
             version=version_info, location=urljoin(base_url + "/", filename), provider=self
         )
 
-    def get_installable_artifacts(self) -> Sequence[ArtifactInfo]:
+    @cached_property
+    def artifacts(self) -> Sequence[ArtifactInfo]:
         self.logger.debug(f"Fetching RPMs for build '{self.build_id}' in chroot '{self.chroot}'.")
         rpm_metas = self._fetch_results_json() if self.is_pulp else self.build_packages
 

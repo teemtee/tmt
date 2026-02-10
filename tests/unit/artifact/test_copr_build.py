@@ -11,10 +11,10 @@ def test_copr_valid_build_non_pulp(artifact_provider):
     provider._session = mock_copr_build_api_responses(provider._session)
     assert isinstance(provider, CoprBuildArtifactProvider)
     assert provider.build_id == MOCK_BUILD_ID_COPR
-    assert len(provider.get_installable_artifacts()) == 14
+    assert len(provider.artifacts) == 14
     assert not provider.is_pulp
 
-    for artifact in provider.get_installable_artifacts():
+    for artifact in provider.artifacts:
         assert artifact.location.startswith(provider.result_url)
 
 
@@ -24,7 +24,7 @@ def test_copr_pulp_build(artifact_provider, monkeypatch):
 
     monkeypatch.setattr(provider, "_fetch_results_json", lambda: MOCK_RPMS_PULP)
 
-    artifacts = provider.get_installable_artifacts()
+    artifacts = provider.artifacts
     assert provider.is_pulp
     assert len(artifacts) == len(MOCK_RPMS_PULP)
 
@@ -44,4 +44,4 @@ def test_copr_invalid_chroot(artifact_provider):
     with pytest.raises(
         GeneralError, match=r"Chroot 'invalid_chroot' not found in build '9820798'\."
     ):
-        _ = provider.get_installable_artifacts()
+        _ = provider.artifacts
