@@ -1584,14 +1584,17 @@ class CommandCollector(abc.ABC):
 
         raise NotImplementedError
 
-    @abc.abstractmethod
     def on_step_complete(self, step: 'tmt.steps.Step') -> None:
         """
-        Called when a step completes execution on this guest.
+        Called when a step completes execution.
+
+        Flush collected commands if there are some.
 
         :param step: the step that has completed.
         """
-        raise NotImplementedError
+        if self.has_collected_commands:
+            self.flush_collected()
+            return
 
 
 class Guest(
@@ -2226,6 +2229,16 @@ class Guest(
 
         return output
 
+    def on_step_complete(self, step: 'tmt.steps.Step') -> None:
+        """
+        Called when a step completes execution.
+
+        Does nothing for :py:class:`Guest`. Should be overridden in subclass if needed.
+
+        :param step: the step that has completed.
+        """
+        pass
+
     @overload
     def execute(
         self,
@@ -2338,23 +2351,6 @@ class Guest(
         """
 
         raise NotImplementedError
-
-    def on_step_complete(self, step: 'tmt.steps.Step') -> None:
-        """
-        Called when a step completes execution on this guest.
-
-        Flush collected commands for Image Mode if there are some.
-
-        :param step: the step that has completed.
-        """
-        if not isinstance(self, CommandCollector):
-            return
-
-        if self.has_collected_commands:
-            self.flush_collected()
-            return
-
-        self.debug("No collected commands to flush.")
 
     def perform_reboot(
         self,
