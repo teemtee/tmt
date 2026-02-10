@@ -237,20 +237,27 @@ class GuestContainer(tmt.Guest):
         if not environment:
             return []
 
-        # Check for values containing newlines - podman's env-file format
+        # Filter out variables with newlines - podman's env-file format
         # does not support multiline values (one line = one variable)
+        filtered_env: dict[str, str] = {}
         for key, value in environment.items():
-            if '\n' in str(value):
+            str_value = str(value)
+            if '\n' in str_value:
                 self.warn(
                     f"Environment variable '{key}' contains a newline character. "
                     "Podman's env-file format does not support multiline values, "
-                    "the value will be truncated at the first newline."
+                    "skipping this variable."
                 )
+            else:
+                filtered_env[key] = str_value
+
+        if not filtered_env:
+            return []
 
         # Write environment to a file in the guest workdir
         # Format: KEY=VALUE per line, no quoting (podman takes values literally)
         env_file = self.guest_workdir / 'podman-run-environment'
-        env_file.write_text('\n'.join(f'{k}={v}' for k, v in environment.items()))
+        env_file.write_text('\n'.join(f'{k}={v}' for k, v in filtered_env.items()))
 
         self.debug(f"Podman run environment file written to '{env_file}'.")
 
