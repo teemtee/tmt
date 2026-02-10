@@ -2353,8 +2353,14 @@ class Guest(
 
         :param step: the step that has completed.
         """
-        if isinstance(self, CommandCollector) and self.has_collected_commands:
+        if not isinstance(self, CommandCollector):
+            return
+
+        if self.has_collected_commands:
             self.flush_collected()
+            return
+
+        self.debug("No collected commands to flush.")
 
     def perform_reboot(
         self,
@@ -2864,10 +2870,6 @@ class GuestSsh(Guest, CommandCollector):
         if not self.facts.is_image_mode or not isinstance(
             self.package_manager, tmt.package_managers.bootc.Bootc
         ):
-            return
-
-        if not self.package_manager.engine.containerfile_directives:
-            self.debug("No collected commands to flush.")
             return
 
         self.info("building container image from collected commands", "green")
