@@ -213,8 +213,9 @@ class BeakerLib(Library):
         """
 
     # TODO: Move these inside the identifier
+    @property
     @abc.abstractmethod
-    def _show_ref(self) -> str:
+    def ref_formatted(self) -> str:
         """
         Format the library name for debugging.
         """
@@ -228,7 +229,7 @@ class BeakerLib(Library):
         if cached_library := self._library_cache.get(local_library_path):
             # Use the already cached library as the source
             self.parent.debug(
-                f"Reusing previously fetched library '{self}' from {cached_library._show_ref()}",
+                f"Reusing previously fetched library '{self}' from {cached_library.ref_formatted}",
                 level=3,
             )
             self.tree = cached_library.tree
@@ -343,7 +344,8 @@ class BeakerLibFromUrl(BeakerLib):
             dest=identifier.destination or Path(DEFAULT_DESTINATION),
         )
 
-    def _show_ref(self) -> str:
+    @property
+    def ref_formatted(self) -> str:
         ref_suffix = f"#{self.ref}" if self.ref else ""
         return f"{self} ({self.url}{ref_suffix})"
 
@@ -509,7 +511,8 @@ class BeakerLibFromPath(BeakerLib):
             dest=identifier.destination or Path(DEFAULT_DESTINATION),
         )
 
-    def _show_ref(self) -> str:
+    @property
+    def ref_formatted(self) -> str:
         return f"{self} ({self.path})"
 
     def _do_fetch(self, directory: Path) -> None:
