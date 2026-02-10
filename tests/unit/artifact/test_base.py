@@ -8,7 +8,8 @@ class MockProvider(ArtifactProvider):
     def _extract_provider_id(self, raw_provider_id: str) -> str:
         return raw_provider_id.split(":", 1)[1]
 
-    def get_installable_artifacts(self):
+    @property
+    def artifacts(self):
         return [
             ArtifactInfo(
                 version=Version(name="mock", version="1.0", release="1", arch="x86_64"),

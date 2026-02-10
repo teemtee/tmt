@@ -321,7 +321,8 @@ class KojiTask(KojiArtifactProvider):
             version=RpmVersion.from_filename(filename), location=url, provider=self
         )
 
-    def get_installable_artifacts(self) -> Sequence[ArtifactInfo]:
+    @cached_property
+    def artifacts(self) -> Sequence[ArtifactInfo]:
         self.logger.debug(f"Fetching RPMs for task '{self.id}'.")
         # If task produced a build, reuse build path
         if self.build_id is not None:
@@ -329,7 +330,7 @@ class KojiTask(KojiArtifactProvider):
                 f"Task '{self.id}' produced build '{self.build_id}', fetching RPMs from the build."
             )
             assert self.build_provider is not None
-            return list(self.build_provider.get_installable_artifacts())
+            return list(self.build_provider.artifacts)
 
         # Otherwise, list the task output files for scratch builds
         self.logger.debug(f"Task '{self.id}' did not produce a build, fetching scratch RPMs.")
@@ -360,7 +361,8 @@ class KojiBuild(KojiArtifactProvider):
     def build_id(self) -> int:
         return int(self.id)
 
-    def get_installable_artifacts(self) -> Sequence[ArtifactInfo]:
+    @cached_property
+    def artifacts(self) -> Sequence[ArtifactInfo]:
         self.logger.debug(f"Fetching RPMs for build '{self.build_id}'.")
 
         return [
@@ -390,10 +392,11 @@ class KojiNvr(KojiArtifactProvider):
         assert isinstance(build_id, int)
         return build_id
 
-    def get_installable_artifacts(self) -> Sequence[ArtifactInfo]:
+    @cached_property
+    def artifacts(self) -> Sequence[ArtifactInfo]:
         """
         RPM artifacts for the given NVR.
         """
         self.logger.debug(f"Fetching RPMs for NVR '{self.id}'.")
         assert self.build_provider is not None
-        return list(self.build_provider.get_installable_artifacts())
+        return list(self.build_provider.artifacts)

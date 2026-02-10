@@ -127,10 +127,11 @@ class ArtifactProvider(ABC):
 
         raise NotImplementedError
 
+    @cached_property
     @abstractmethod
-    def get_installable_artifacts(self) -> Sequence[ArtifactInfo]:
+    def artifacts(self) -> Sequence[ArtifactInfo]:
         """
-        Collect exact artifacts from this provider that **have** to be installed.
+        Collect all artifacts available from this provider.
 
         The method is left for derived classes to implement with respect
         to the actual artifact provider they implement. The list of
@@ -225,7 +226,7 @@ class ArtifactProvider(ABC):
         :yields: artifacts that satisfy the filtering.
         """
 
-        for artifact in self.get_installable_artifacts():
+        for artifact in self.artifacts:
             if not any(pattern.search(artifact.id) for pattern in exclude_patterns):
                 yield artifact
 

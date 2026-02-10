@@ -69,7 +69,8 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
             provider=self,
         )
 
-    def get_installable_artifacts(self) -> Sequence[ArtifactInfo]:
+    @cached_property
+    def artifacts(self) -> Sequence[ArtifactInfo]:
         artifacts: list[ArtifactInfo] = []
         seen_ids: set[str] = set()
 

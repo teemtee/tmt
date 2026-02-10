@@ -271,7 +271,7 @@ def test_artifacts_before_fetch(mock_repo_file_fetch, artifact_provider):
 
     # Repository providers don't enumerate individual artifacts
     # They provide repositories that the package manager uses
-    assert provider.get_installable_artifacts() == []
+    assert provider.artifacts == []
 
 
 def test_fetch_contents(mock_repo_file_fetch, mock_guest_and_pm, artifact_provider, tmppath):
@@ -291,7 +291,7 @@ def test_fetch_contents(mock_repo_file_fetch, mock_guest_and_pm, artifact_provid
     assert result == []
 
     # Verify artifacts property returns empty list (no individual artifact files)
-    artifacts = provider.get_installable_artifacts()
+    artifacts = provider.artifacts
     assert len(artifacts) == 0
 
 
@@ -317,7 +317,7 @@ def test_contribute_to_shared_repo(
     mock_package_manager.install_repository.assert_not_called()
 
     # Verify artifacts returns empty list (no individual files)
-    assert provider.get_installable_artifacts() == []
+    assert provider.artifacts == []
 
 
 def test_get_repositories(mock_repo_file_fetch, mock_guest_and_pm, artifact_provider, tmppath):

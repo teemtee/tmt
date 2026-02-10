@@ -3,6 +3,7 @@ Artifact provider for creating DNF repositories from baseurl.
 """
 
 from collections.abc import Sequence
+from functools import cached_property
 from re import Pattern
 from typing import Optional
 
@@ -56,7 +57,8 @@ class RepositoryUrlProvider(ArtifactProvider):
             raise ValueError("Missing repository baseurl.")
         return value
 
-    def get_installable_artifacts(self) -> Sequence[ArtifactInfo]:
+    @cached_property
+    def artifacts(self) -> Sequence[ArtifactInfo]:
         # Repository provider does not enumerate individual artifacts.
         # The repository is installed and packages are available through the package manager.
         # There is no need to download individual artifact files.
