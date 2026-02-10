@@ -118,14 +118,14 @@ class RpmVersion(Version):
 
 
 BuildT = TypeVar(
-    "BuildT", bound="ArtifactProvider[ArtifactInfo]"
+    "BuildT", bound="ArtifactProvider"
 )  # Generic type for build provider classes (e.g., KojiBuild, BrewBuild)
 ProviderT = TypeVar(
     "ProviderT", bound="KojiArtifactProvider"
 )  # Generic type for artifact provider subclasses
 
 
-class KojiArtifactProvider(ArtifactProvider[ArtifactInfo]):
+class KojiArtifactProvider(ArtifactProvider):
     """
     Provider for downloading artifacts from Koji builds.
 

@@ -22,7 +22,7 @@ from tmt.utils import ShellScript
 
 
 @provides_artifact_provider("file")
-class PackageAsFileArtifactProvider(ArtifactProvider[ArtifactInfo]):
+class PackageAsFileArtifactProvider(ArtifactProvider):
     """
     Provider for preparing artifacts from local or remote package files.
 
