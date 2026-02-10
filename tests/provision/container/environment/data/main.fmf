@@ -1,0 +1,15 @@
+/plan:
+    environment:
+        TMT_NEWLINE_VAR: |
+          multi
+          line
+    discover:
+        how: fmf
+    provision:
+        how: container
+        image: fedora
+    execute:
+        how: tmt
+
+/test:
+    test: cat /etc/os-release
