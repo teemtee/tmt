@@ -64,7 +64,7 @@ def import_copr(logger: tmt.log.Logger) -> None:
 
 
 @provides_artifact_provider("copr.build")
-class CoprBuildArtifactProvider(ArtifactProvider[ArtifactInfo]):
+class CoprBuildArtifactProvider(ArtifactProvider):
     """
     Provider for downloading artifacts from Copr builds.
 

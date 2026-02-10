@@ -25,7 +25,7 @@ COPR_REPOSITORY_PATTERN = re.compile(r'^(?:@[^/]+/[^/]+|[^@/]+/[^/]+)$')
 
 
 @provides_artifact_provider('copr.repository')
-class CoprRepositoryProvider(ArtifactProvider[ArtifactInfo]):
+class CoprRepositoryProvider(ArtifactProvider):
     """
     Provider for enabling Copr repositories and making their packages available.
 
