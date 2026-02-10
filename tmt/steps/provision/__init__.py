@@ -2237,12 +2237,12 @@ class Guest(
     @overload
     def execute(
         self,
-        command: tmt.utils.ShellScript,
+        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
-        immediately: bool = True,
+        immediately: Literal[True] = True,
         tty: bool = False,
         silent: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,
@@ -2257,12 +2257,12 @@ class Guest(
     @overload
     def execute(
         self,
-        command: tmt.utils.Command,
+        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
-        immediately: bool = True,
+        immediately: Literal[False] = False,
         tty: bool = False,
         silent: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,
@@ -2271,7 +2271,7 @@ class Guest(
         on_process_end: Optional[OnProcessEndCallback] = None,
         sourced_files: Optional[list[Path]] = None,
         **kwargs: Any,
-    ) -> tmt.utils.CommandOutput:
+    ) -> Optional[tmt.utils.CommandOutput]:
         pass
 
     @abc.abstractmethod
@@ -3243,7 +3243,47 @@ class GuestSsh(Guest, CommandCollector):
                 ),
             )
 
-    def execute(  # type: ignore[override]
+    @overload
+    def execute(
+        self,
+        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
+        cwd: Optional[Path] = None,
+        env: Optional[tmt.utils.Environment] = None,
+        friendly_command: Optional[str] = None,
+        test_session: bool = False,
+        immediately: Literal[True] = True,
+        tty: bool = False,
+        silent: bool = False,
+        log: Optional[tmt.log.LoggingFunction] = None,
+        interactive: bool = False,
+        on_process_start: Optional[OnProcessStartCallback] = None,
+        on_process_end: Optional[OnProcessEndCallback] = None,
+        sourced_files: Optional[list[Path]] = None,
+        **kwargs: Any,
+    ) -> tmt.utils.CommandOutput:
+        pass
+
+    @overload
+    def execute(
+        self,
+        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
+        cwd: Optional[Path] = None,
+        env: Optional[tmt.utils.Environment] = None,
+        friendly_command: Optional[str] = None,
+        test_session: bool = False,
+        immediately: Literal[False] = False,
+        tty: bool = False,
+        silent: bool = False,
+        log: Optional[tmt.log.LoggingFunction] = None,
+        interactive: bool = False,
+        on_process_start: Optional[OnProcessStartCallback] = None,
+        on_process_end: Optional[OnProcessEndCallback] = None,
+        sourced_files: Optional[list[Path]] = None,
+        **kwargs: Any,
+    ) -> Optional[tmt.utils.CommandOutput]:
+        pass
+
+    def execute(
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
