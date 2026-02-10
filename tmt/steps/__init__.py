@@ -2433,6 +2433,44 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
 
         return outcome
 
+    def _save_deferred_run_outcome(
+        self,
+        *,
+        label: str,
+        timer: Stopwatch,
+        guest: 'Guest',
+        outcome: PluginOutcome,
+    ) -> PluginOutcome:
+        """
+        Save a deferred run outcome, recorded as an INFO result.
+        Used when a command was collected for deferred batch execution
+        in image mode.
+
+        :param label: see :py:func:`write_command_report`. It is also
+            used as the name of the newly created result.
+        :param timer: see :py:func:`write_command_report`.
+        :param guest: the guest on which the phase ran. It is attached
+            to the result.
+        :param outcome: plugin outcome to attach new result to.
+        :returns: plugin outcome provided as argument, ``outcome``.
+        """
+
+        from tmt.result import PhaseResult, ResultGuestData
+
+        outcome.results.append(
+            PhaseResult(
+                name=label,
+                result=tmt.steps.ResultOutcome.INFO,
+                note=['Command collected for deferred execution'],
+                guest=ResultGuestData.from_guest(guest=guest),
+                start_time=timer.start_time_formatted,
+                end_time=timer.end_time_formatted,
+                duration=timer.duration_formatted,
+            )
+        )
+
+        return outcome
+
     @overload
     def _save_error_outcome(
         self,
