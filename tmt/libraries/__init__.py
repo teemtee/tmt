@@ -225,7 +225,7 @@ def dependencies(
                 processed_recommend.update(set(recommends))
                 gathered_libraries.extend(libraries)
         # Regular package require/recommend
-        except (LibraryError, tmt.utils.MetadataError):
+        except LibraryError:
             if dependency in original_require:
                 processed_require.add(dependency)
             if dependency in original_recommend:
