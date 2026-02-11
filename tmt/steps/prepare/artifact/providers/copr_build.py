@@ -19,10 +19,10 @@ from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     ArtifactProviderId,
     DownloadError,
+    RpmVersion,
     Version,
     provides_artifact_provider,
 )
-from tmt.steps.prepare.artifact.providers.koji import RpmVersion
 from tmt.steps.provision import Guest
 from tmt.utils import ShellScript
 

@@ -13,14 +13,13 @@ from urllib.parse import urljoin
 import tmt.log
 import tmt.utils
 import tmt.utils.hints
-from tmt._compat.typing import Self
 from tmt.container import container
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
     ArtifactProviderId,
     DownloadError,
-    Version,
+    RpmVersion,
     provides_artifact_provider,
 )
 from tmt.steps.provision import Guest
@@ -60,61 +59,6 @@ def import_koji(logger: tmt.log.Logger) -> None:
         print_hints('artifact-provider/koji', logger=logger)
 
         raise tmt.utils.GeneralError("Could not import koji package.") from error
-
-
-@container(frozen=True)
-class RpmVersion(Version):
-    """
-    Represents an RPM package version.
-    """
-
-    @classmethod
-    def from_rpm_meta(cls, rpm_meta: dict[str, Any]) -> Self:
-        """
-        Version constructed from RPM metadata dictionary.
-
-        Example usage:
-
-        .. code-block:: python
-
-            version_info = RpmVersion.from_rpm_meta({
-                "name": "curl",
-                "version": "8.11.1",
-                "release": "7.fc42",
-                "arch": "x86_64"
-            })
-        """
-        return cls(
-            name=rpm_meta["name"],
-            version=rpm_meta["version"],
-            release=rpm_meta["release"],
-            arch=rpm_meta["arch"],
-            epoch=rpm_meta.get("epoch", 0),
-        )
-
-    @classmethod
-    def from_filename(cls, filename: str) -> Self:
-        """
-        Version constructed from RPM filename.
-
-        Example usage:
-
-        .. code-block:: python
-
-            version_info = RpmVersion.from_filename("curl-8.11.1-7.fc42.x86_64.rpm")
-        """
-        base = filename.removesuffix(".rpm")
-        nvr_part, *arch_parts = base.rsplit(".", 1)
-        arch = arch_parts[0] if arch_parts else "noarch"
-        parts = nvr_part.rsplit("-", 2)
-        if len(parts) != 3:
-            raise ValueError(
-                f"Invalid RPM filename format: '{filename}'. "
-                f"Expected name-version-release.arch.rpm"
-            )
-        name, version, release = parts
-
-        return cls(name=name, version=version, release=release, arch=arch, epoch=0)
 
 
 BuildT = TypeVar(
