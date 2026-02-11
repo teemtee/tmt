@@ -576,6 +576,8 @@ conditionally:
             package: python3-pytest
 
 
+.. _parametrize-plans:
+
 Parametrize Plans
 ------------------------------------------------------------------
 

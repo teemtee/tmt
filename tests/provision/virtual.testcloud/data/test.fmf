@@ -1,0 +1,3 @@
+summary: Check boot method
+framework: shell
+test: 'test -d /sys/firmware/efi && echo "boot method: uefi" || echo "boot method: bios"'

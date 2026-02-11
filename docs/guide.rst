@@ -855,6 +855,151 @@ that repository.
         how: fmf
 
 
+.. _parametrize-tests:
+
+Parametrize Tests
+------------------------------------------------------------------
+
+Often it is desired to run a set of tests with different
+configurations, for example with different feature flags enabled
+or against different service levels. There are multiple ways to
+achieve this in ``tmt``, let's discover some of them.
+
+Below you can find a couple of simple working examples you can
+experiment with. Feel free to copy and paste them to your
+directory and try out how each of them works.
+
+The first option is to use the concept of :ref:`virtual-tests` and
+define the desired environment variable for each test separately.
+In this case there is only a single plan. Environment combinations
+happen on the test level.
+
+.. code-block:: yaml
+
+    /plan:
+        discover:
+            how: fmf
+        provision:
+            how: local
+        execute:
+            how: tmt
+
+    /test:
+        /one:
+            test: echo first test on level $LEVEL
+
+            /level-7:
+                environment:
+                    LEVEL: 7
+            /level-8:
+                environment:
+                    LEVEL: 8
+
+        /two:
+            test: echo second test on level $LEVEL
+            /level-7:
+                environment:
+                    LEVEL: 7
+            /level-8:
+                environment:
+                    LEVEL: 8
+
+.. tip::
+
+   In order to prevent repeating the same content and simplify
+   maintenance you might want to use :ref:`anchors-aliases` to
+   define data only once and use multiple times.
+
+Another option is to define ``environment`` on the plan level.
+Below you can find an example with two plans, each defining a
+different value of the variable and a simple list of tests:
+
+.. code-block:: yaml
+
+    /plan:
+        discover:
+            how: fmf
+        provision:
+            how: local
+        execute:
+            how: tmt
+
+        /level-7:
+            environment:
+                LEVEL: 7
+        /level-8:
+            environment:
+                LEVEL: 8
+
+    /test:
+        /one:
+            test: echo first test on level $LEVEL
+        /two:
+            test: echo second test on level $LEVEL
+
+It is also possible to define several ``discover`` step phases and
+use the ``adjust-tests`` key of the :ref:`/plugins/discover/fmf`
+discover plugin to modify metadata of all discovered tests,
+including setting the desired environment variables.
+
+.. code-block:: yaml
+
+    /plan:
+        discover:
+          - how: fmf
+            adjust-tests:
+                environment+:
+                    LEVEL: 7
+          - how: fmf
+            adjust-tests:
+                environment+:
+                    LEVEL: 8
+        provision:
+            how: local
+        execute:
+            how: tmt
+
+    /test:
+        /one:
+            test: echo first test on level $LEVEL
+        /two:
+            test: echo second test on level $LEVEL
+
+Finally, environment variables can come from the command line as
+well. When executing the ``tmt run`` command directly you can use
+the ``--environment`` option and simply loop through all supported
+values:
+
+.. code-block:: shell
+
+   for level in {1..9}; do
+       tmt run --environment LEVEL=$level
+    done
+
+Every occurrence of ``$LEVEL`` in the test or plan metadata will
+be substituted with the corresponding value. For the use case
+above the config would look like this:
+
+.. code-block:: yaml
+
+    /plan:
+        discover:
+            how: fmf
+        provision:
+            how: local
+        execute:
+            how: tmt
+
+    /test:
+        /one:
+            test: echo first test on level $LEVEL
+        /two:
+            test: echo second test on level $LEVEL
+
+See also the :ref:`parametrize-plans` section for examples how to
+use :ref:`/spec/context` for parametrizing metadata.
+
+
 .. _adjust-metadata:
 
 Adjust Metadata

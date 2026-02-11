@@ -21,3 +21,4 @@ example:
 
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
+  - implemented-by: /tmt/steps/provision/testcloud.py

@@ -237,7 +237,11 @@ class ResultsContext(ImplementProperties):
         Returns results of tests with error/warn outcome
         """
 
-        return [r for r in self._results if r.result in (ResultOutcome.ERROR, ResultOutcome.WARN)]
+        return [
+            r
+            for r in self._results
+            if r.result in (ResultOutcome.ERROR, ResultOutcome.WARN, ResultOutcome.PENDING)
+        ]
 
     @functools.cached_property
     def duration(self) -> int:
@@ -523,6 +527,13 @@ class ReportJUnit(tmt.steps.report.ReportPlugin[ReportJUnitData]):
         report:
             how: junit
             file: test.xml
+
+    Possible test results and their mapping to junit tags:
+
+    * ``pass`` - no specific tag, test has succeeded
+    * ``fail`` - ``<failure />`` tag
+    * ``skip`` or ``info`` - ``<skipped />`` tag
+    * ``error``, ``warn``, or ``pending`` - ``<error />`` tag
     """
 
     _data_class = ReportJUnitData

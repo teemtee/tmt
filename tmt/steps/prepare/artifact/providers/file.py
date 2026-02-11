@@ -15,7 +15,7 @@ from tmt.steps.prepare.artifact.providers import (
     DownloadError,
     provides_artifact_provider,
 )
-from tmt.steps.provision import Guest
+from tmt.steps.provision import Guest, TransferOptions
 from tmt.utils import ShellScript
 
 
@@ -122,7 +122,14 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
                     silent=True,
                 )
             else:  # Local file, push it to the guest
-                guest.push(tmt.utils.Path(artifact.location), destination)
+                # When pushing a single file, use recursive=False. The default recursive=True
+                # treats the source as a directory (appending "/."), which only works for
+                # directories and fails when pushing individual files.
+                guest.push(
+                    tmt.utils.Path(artifact.location),
+                    destination,
+                    options=TransferOptions(recursive=False),
+                )
             self.logger.info(f"Successfully downloaded: '{artifact.id}'.")
         except Exception as error:
             raise DownloadError(f"Failed to download '{artifact}'.") from error

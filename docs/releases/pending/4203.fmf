@@ -1,0 +1,6 @@
+description: |
+    The :ref:`/plugins/provision/virtual.testcloud` provision plugin
+    now supports the :ref:`boot.method</spec/hardware/boot>` hardware
+    constraint, allowing users to explicitly select BIOS or UEFI boot
+    method for their x86_64 guests. For other architectures, the boot
+    method is set automatically and cannot be changed.
