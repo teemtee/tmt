@@ -82,6 +82,7 @@ if TYPE_CHECKING:
     import tmt.base
     import tmt.cli
     from tmt._compat.typing import TypeAlias
+    from tmt.steps.provision.executor import DeferrableExecutor, ExecutionDriver
 
 
 T = TypeVar('T')
@@ -1545,58 +1546,6 @@ class GuestLog(abc.ABC):
         raise NotImplementedError
 
 
-class CommandCollector(abc.ABC):
-    """
-    Mixin for that supports collecting commands for deferred execution.
-    """
-
-    @abc.abstractmethod
-    def collect_command(
-        self,
-        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
-        *,
-        sourced_files: Optional[list[Path]] = None,
-        cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
-    ) -> None:
-        """
-        Collect a command for later batch execution.
-
-        :param command: the command to collect.
-        :param cwd: working directory for the command.
-        :param env: environment variables for the command.
-        """
-
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def flush_collected(self) -> None:
-        """
-        Execute all collected commands.
-        """
-
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
-    def has_collected_commands(self) -> bool:
-        """Return True if there are collected commands pending."""
-
-        raise NotImplementedError
-
-    def on_step_complete(self, step: 'tmt.steps.Step') -> None:
-        """
-        Called when a step completes execution.
-
-        Flush collected commands if there are some.
-
-        :param step: the step that has completed.
-        """
-        if self.has_collected_commands:
-            self.flush_collected()
-            return
-
-
 class Guest(
     tmt.utils.HasRunWorkdir,
     tmt.utils.HasPlanWorkdir,
@@ -1685,9 +1634,32 @@ class Guest(
         """
 
         self.guest_logs = []
+        self._executor: Optional['ExecutionDriver'] = None
 
         super().__init__(logger=logger, parent=parent, name=name)
         self.load(data)
+
+    @property
+    def executor(self) -> 'ExecutionDriver':
+        """
+        Get the executor for this guest.
+
+        The executor is created lazily on first access using _create_executor().
+        """
+        if self._executor is None:
+            self._executor = self._create_executor()
+        return self._executor
+
+    def _create_executor(self) -> 'ExecutionDriver':
+        """
+        Create an executor for this guest.
+
+        Subclasses should override this method to return an appropriate
+        executor for their execution environment.
+        """
+        raise NotImplementedError(
+            f"Guest subclass {self.__class__.__name__} must implement _create_executor()"
+        )
 
     @property
     def run_workdir(self) -> Path:
@@ -2233,11 +2205,16 @@ class Guest(
         """
         Called when a step completes execution.
 
-        Does nothing for :py:class:`Guest`. Should be overridden in subclass if needed.
+        If the executor is a DeferrableExecutor and has pending commands,
+        it will be notified via on_step_complete().
 
         :param step: the step that has completed.
         """
-        pass
+        from tmt.steps.provision.executor import DeferrableExecutor
+
+        # Only notify the executor if it has been initialized
+        if self._executor is not None and isinstance(self._executor, DeferrableExecutor):
+            self._executor.on_step_complete(step)
 
     @overload
     def execute(
@@ -2752,13 +2729,13 @@ class GuestSshData(GuestData):
     )
 
 
-class GuestSsh(Guest, CommandCollector):
+class GuestSsh(Guest):
     """
     Guest provisioned for test execution, capable of accepting SSH connections
 
-    This class implements :py:class:`CommandCollector` to support
-    guests in image mode. When running in image mode, commands with
-    ``immediately=False`` are collected into a Containerfile
+    This class supports guests in image mode through its executor.
+    When running in image mode, commands with ``immediately=False``
+    are deferred to a Containerfile via the DeferrableSSHExecutor
     rather than executed immediately and applied on step completion.
 
     The following keys are expected in the 'data' dictionary::
@@ -2798,78 +2775,53 @@ class GuestSsh(Guest, CommandCollector):
 
         super().__init__(data=data, logger=logger, parent=parent, name=name)
 
-    def collect_command(
-        self,
-        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
-        *,
-        sourced_files: Optional[list[Path]] = None,
-        cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
-    ) -> None:
+    def _create_executor(self) -> 'ExecutionDriver':
         """
-        Collect a command for image mode container build.
+        Create an executor for this SSH guest.
 
-        Adds a RUN directive to the bootc package manager's Containerfile.
-        Uses the same environment and cwd handling as regular execute().
+        Always creates SSHExecutor initially. For deferred execution in
+        image mode, the execute() method handles this separately to avoid
+        circular dependencies with facts syncing.
         """
+        from tmt.steps.provision.executor.ssh import SSHExecutor
 
-        sourced_files = sourced_files or []
+        return SSHExecutor(guest=self, logger=self._logger)
 
-        if not self.facts.is_image_mode or not isinstance(
+    @functools.cached_property
+    def _deferrable_executor(self) -> Optional['DeferrableExecutor']:
+        """
+        Create a deferrable executor for image mode deferred execution.
+
+        This is created lazily only when needed (when immediately=False
+        and we're in image mode), avoiding circular dependencies during
+        initial guest setup.
+        """
+        from tmt.steps.provision.executor.bootc import DeferrableSSHExecutor
+
+        # Only create if in image mode with bootc support
+        if self.facts.is_image_mode and isinstance(
             self.package_manager, tmt.package_managers.bootc.Bootc
         ):
-            return
+            return DeferrableSSHExecutor(
+                guest=self,
+                logger=self._logger,
+                package_manager=self.package_manager,
+            )
+        return None
 
-        # Build the command script using the same approach as execute()
-        # Start with environment exports
-        collected_commands: ShellScript = ShellScript.from_scripts(
-            self._prepare_environment(env).to_shell_exports()
-        )
-
-        # Add working directory change (properly quoted like in execute())
-        if cwd:
-            collected_commands += ShellScript(f'cd {quote(str(cwd))}')
-
-        for file in sourced_files:
-            collected_commands += ShellScript(f'source {quote(str(file))}')
-
-        # Add the actual command
-        if isinstance(command, tmt.utils.Command):
-            collected_commands += command.to_script()
-        else:
-            collected_commands += command
-
-        collected_command = collected_commands.to_element()
-
-        # Add to the package manager's engine
-        self.package_manager.engine.open_containerfile_directives()
-        self.package_manager.engine.containerfile_directives.append(f"RUN {collected_command}")
-        self.debug(f"Collected command for Containerfile: {collected_command}")
-
-    @property
-    def has_collected_commands(self) -> bool:
-        """Check if there are collected commands to be applied."""
-
-        if not self.facts.is_image_mode or not isinstance(
-            self.package_manager, tmt.package_managers.bootc.Bootc
-        ):
-            return False
-
-        return bool(self.package_manager.engine.containerfile_directives)
-
-    def flush_collected(self) -> None:
+    def on_step_complete(self, step: 'tmt.steps.Step') -> None:
         """
-        Build image mode container image from collected commands, switch, and reboot.
+        Called when a step completes execution.
 
-        Delegates to the bootc package manager's build_container() method.
+        If the deferrable executor has pending commands, flush them.
+
+        :param step: the step that has completed.
         """
-        if not self.facts.is_image_mode or not isinstance(
-            self.package_manager, tmt.package_managers.bootc.Bootc
-        ):
-            return
-
-        self.info("building container image from collected commands", "green")
-        self.package_manager.build_container()
+        # Check if we have a deferrable executor with pending commands
+        # Use __dict__.get to avoid triggering cached_property creation
+        deferrable = self.__dict__.get('_deferrable_executor')
+        if deferrable is not None and deferrable.has_pending_commands:
+            deferrable.on_step_complete(step)
 
     @functools.cached_property
     def _ssh_guest(self) -> str:
@@ -3307,85 +3259,31 @@ class GuestSsh(Guest, CommandCollector):
         :returns: command output, or ``None`` if the command was deferred
             for batch execution (when ``immediately=False`` on supported guests).
         """
-
         sourced_files = sourced_files or []
 
-        # For guests in image mode collect non testing commands with
-        # immediately=False for later batch execution.
-        if not immediately and self.facts.is_image_mode:
-            self.collect_command(command, sourced_files=sourced_files, cwd=cwd, env=env)
-            return None
+        # For guests with a deferrable executor, defer commands when immediately=False
+        if not immediately:
+            deferrable = self._deferrable_executor
+            if deferrable is not None:
+                deferrable.defer(command, cwd=cwd, env=env, sourced_files=sourced_files)
+                return None
 
-        # Abort if guest is unavailable
-        if self.primary_address is None and not self.is_dry_run:
-            raise tmt.utils.GeneralError('The guest is not available.')
-
-        ssh_command: tmt.utils.Command = self._ssh_command
-
-        # Run in interactive mode if requested
-        if interactive:
-            ssh_command += Command('-t')
-
-        # Force ssh to allocate pseudo-terminal if requested. Without a pseudo-terminal,
-        # remote processes spawned by SSH would keep running after SSH process death, e.g.
-        # in the case of a timeout.
-        #
-        # Note that polite request, `-t`, is not enough since `ssh` itself has no pseudo-terminal,
-        # and a single `-t` wouldn't have the necessary effect.
-        if test_session or tty:
-            ssh_command += Command('-tt')
-
-        # Accumulate all necessary commands - they will form a "shell" script, a single
-        # string passed to SSH to execute on the remote machine.
-        remote_commands: ShellScript = ShellScript.from_scripts(
-            self._prepare_environment(env).to_shell_exports()
-        )
-
-        # Change to given directory on guest if cwd provided
-        if cwd:
-            remote_commands += ShellScript(f'cd {quote(str(cwd))}')
-
-        for file in sourced_files:
-            remote_commands += ShellScript(f'source {quote(str(file))}')
-
-        if isinstance(command, Command):
-            remote_commands += command.to_script()
-
-        else:
-            remote_commands += command
-
-        remote_command = remote_commands.to_element()
-
-        ssh_command += [self._ssh_guest, remote_command]
-
-        self.debug(f"Execute command '{remote_command}' on guest '{self.primary_address}'.")
-
-        output = self._run_guest_command(
-            ssh_command,
-            log=log,
-            friendly_command=friendly_command or str(command),
-            silent=silent,
+        # Delegate to the executor for immediate execution
+        return self.executor.execute(
+            command,
             cwd=cwd,
+            env=env,
+            friendly_command=friendly_command,
+            test_session=test_session,
+            tty=tty,
+            silent=silent,
+            log=log,
             interactive=interactive,
             on_process_start=on_process_start,
             on_process_end=on_process_end,
+            sourced_files=sourced_files,
             **kwargs,
         )
-
-        # Drop ssh connection closed messages, #2524
-        if test_session and output.stdout:
-            # Get last line index
-            last_line_index = output.stdout.rfind(os.linesep, 0, -2)
-            # Drop the connection closed message line, keep the ending lineseparator
-            if (
-                'Shared connection to ' in output.stdout[last_line_index:]
-                or 'Connection to ' in output.stdout[last_line_index:]
-            ):
-                output = dataclasses.replace(
-                    output, stdout=output.stdout[: last_line_index + len(os.linesep)]
-                )
-
-        return output
 
     def _assert_rsync(self) -> None:
         """
