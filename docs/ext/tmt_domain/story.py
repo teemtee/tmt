@@ -81,7 +81,7 @@ class AutoStoryDirective(TmtAutodocDirective[Story]):
 
     def _get_tmt_object(self) -> None:
         name = self.arguments[0]
-        name_re = f"^{name}$"
+        name_re = f"^{re.escape(name)}$"
         stories = self.tmt_tree.stories(names=[name_re], whole=True)
         if not stories:
             raise ValueError(f"Story {name} not found in tree {self.tmt_tree.root}")
