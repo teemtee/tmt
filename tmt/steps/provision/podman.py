@@ -154,6 +154,12 @@ class GuestContainer(tmt.Guest):
         )
         return str(cmd_output.stdout).strip() == 'true'
 
+    def _create_executor(self) -> 'tmt.steps.provision.executor.ExecutionDriver':
+        """Create a ContainerExecutor for this guest."""
+        from tmt.steps.provision.executor.container import ContainerExecutor
+
+        return ContainerExecutor(guest=self, logger=self._logger)
+
     def wake(self) -> None:
         """
         Wake up the guest

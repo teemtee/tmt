@@ -49,6 +49,12 @@ class GuestLocal(tmt.Guest):
 
         return True
 
+    def _create_executor(self) -> 'tmt.steps.provision.executor.ExecutionDriver':
+        """Create a LocalExecutor for this guest."""
+        from tmt.steps.provision.executor.local import LocalExecutor
+
+        return LocalExecutor(guest=self, logger=self._logger)
+
     def _run_ansible(
         self,
         playbook: tmt.steps.provision.AnsibleApplicable,

@@ -497,6 +497,12 @@ class GuestMock(tmt.Guest):
         """
         return True
 
+    def _create_executor(self) -> 'tmt.steps.provision.executor.ExecutionDriver':
+        """Create a MockExecutor for this guest."""
+        from tmt.steps.provision.executor.mock import MockExecutor
+
+        return MockExecutor(guest=self, logger=self._logger)
+
     def _run_ansible(
         self,
         playbook: tmt.steps.provision.AnsibleApplicable,
