@@ -92,7 +92,15 @@ class AutoStoryDirective(TmtAutodocDirective[Story]):
             self.env.note_dependency(source)
 
     def _has_story_attr(self, attr: str) -> bool:
-        return (value := getattr(self.story, attr)) and value != self.story.node.parent.get(attr)
+        value = getattr(self.story, attr)
+        if not value:
+            # Attribute was not provided
+            return False
+        if not self.story.node.parent:
+            # There is no parent story, so we know this attribute belongs to this
+            return True
+        # Otherwise we check if we have inherited the value (return False if it was inherited)
+        return value != self.story.node.parent.get(attr)
 
     def _add_title_content(self, title: str) -> None:
         # TODO: Find a better way to insert the title
