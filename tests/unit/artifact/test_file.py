@@ -13,18 +13,6 @@ from tmt.utils import Path
     ("pattern", "expected_names"),
     [
         ("foo-1.0-1.fc43.x86_64.rpm", {"foo-1.0-1.fc43.x86_64"}),
-        ("docker-ce-1:20.10.7-3.el8.x86_64.rpm", {"docker-ce-1:20.10.7-3.el8.x86_64"}),
-        ("bash-5.1.8-6.el9.x86_64.rpm", {"bash-5.1.8-6.el9.x86_64"}),
-        (
-            "tmt+export-polarion-1.61.0.dev17+gf29b2e83e-1.fc41.x86_64.rpm",
-            {"tmt+export-polarion-1.61.0.dev17+gf29b2e83e-1.fc41.x86_64"},
-        ),
-        (
-            "keylime-agent-rust-push-debuginfo-0.2.3-1.fc41.x86_64.rpm",
-            {"keylime-agent-rust-push-debuginfo-0.2.3-1.fc41.x86_64"},
-        ),
-        ("example-0:1.0-1.noarch.rpm", {"example-0:1.0-1.noarch"}),
-        ("example-5.1.8-6.el9.src.rpm", {"example-5.1.8-6.el9.src"}),
         ("package-*.rpm", {f"package-{i}-1.0-1.fc43.x86_64" for i in range(3)}),
     ],
 )

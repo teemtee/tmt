@@ -5,6 +5,7 @@ from tmt.steps.prepare.artifact.providers.koji import (
     KojiBuild,
     KojiNvr,
     KojiTask,
+    RpmVersion,
 )
 from tmt.utils import GeneralError
 
@@ -70,23 +71,62 @@ def test_koji_valid_task_id_scratch_build(mock_koji, mock_call_api, artifact_pro
     assert len(provider.artifacts) == 2
 
 
-def test_koji_preserves_epoch_from_metadata(mock_koji, mock_call_api, artifact_provider):
-    mock_rpms_with_epoch = [
-        {
-            "name": "python-click",
-            "version": "8.1.7",
-            "release": "12.fc44",
-            "arch": "x86_64",
-            "epoch": 1,
-        },
-    ]
+@pytest.mark.parametrize(
+    ("rpm_meta", "expected"),
+    [
+        (
+            {"name": "bash", "version": "5.1.8", "release": "6.el9", "arch": "x86_64"},
+            {
+                "name": "bash",
+                "epoch": 0,
+                "version": "5.1.8",
+                "release": "6.el9",
+                "arch": "x86_64",
+                "nvra": "bash-5.1.8-6.el9.x86_64",
+            },
+        ),
+        (
+            {
+                "name": "docker-ce",
+                "version": "20.10.7",
+                "release": "3.el8",
+                "arch": "x86_64",
+                "epoch": 1,
+            },
+            {
+                "name": "docker-ce",
+                "epoch": 1,
+                "version": "20.10.7",
+                "release": "3.el8",
+                "arch": "x86_64",
+                "nvra": "docker-ce-20.10.7-3.el8.x86_64",
+            },
+        ),
+        (
+            {
+                "name": "tmt+export-polarion",
+                "version": "1.61.0.dev17+gf29b2e83e",
+                "release": "1.fc41",
+                "arch": "x86_64",
+            },
+            {
+                "name": "tmt+export-polarion",
+                "epoch": 0,
+                "version": "1.61.0.dev17+gf29b2e83e",
+                "release": "1.fc41",
+                "arch": "x86_64",
+                "nvra": "tmt+export-polarion-1.61.0.dev17+gf29b2e83e-1.fc41.x86_64",
+            },
+        ),
+    ],
+)
+def test_version_from_rpm_meta_parsing(rpm_meta, expected):
+    version = RpmVersion.from_rpm_meta(rpm_meta)
 
-    mock_koji_brew_build_api_responses(mock_call_api, mock_rpms_with_epoch)
-
-    provider = artifact_provider("koji.build:45750883")
-    assert isinstance(provider, KojiBuild)
-    artifacts = provider.artifacts
-
-    assert len(artifacts) == 1
-    assert artifacts[0].version.epoch == 1
-    assert str(artifacts[0].version) == "python-click-8.1.7-12.fc44.x86_64"
+    assert version.name == expected["name"]
+    assert version.epoch == expected["epoch"]
+    assert version.version == expected["version"]
+    assert version.release == expected["release"]
+    assert version.arch == expected["arch"]
+    assert version.nvra == expected["nvra"]
+    assert str(version) == expected["nvra"]
