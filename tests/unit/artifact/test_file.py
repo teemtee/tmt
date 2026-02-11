@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from tmt.log import Logger
+from tmt.steps.prepare.artifact.providers import RpmVersion
 from tmt.steps.prepare.artifact.providers.file import (
     PackageAsFileArtifactProvider,
 )
@@ -67,3 +68,42 @@ def test_download_artifact(tmp_path, artifact_provider):
         Path("/remote/foo-1.0-1.fc43.x86_64.rpm"),
     )
     guest.execute.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    ("filename", "expected"),
+    [
+        (
+            "bash-5.1.8-6.el9.x86_64.rpm",
+            {
+                "name": "bash",
+                "epoch": 0,
+                "version": "5.1.8",
+                "release": "6.el9",
+                "arch": "x86_64",
+                "nvra": "bash-5.1.8-6.el9.x86_64",
+            },
+        ),
+        (
+            "tmt+export-polarion-1.61.0.dev17+gf29b2e83e-1.fc41.x86_64.rpm",
+            {
+                "name": "tmt+export-polarion",
+                "epoch": 0,
+                "version": "1.61.0.dev17+gf29b2e83e",
+                "release": "1.fc41",
+                "arch": "x86_64",
+                "nvra": "tmt+export-polarion-1.61.0.dev17+gf29b2e83e-1.fc41.x86_64",
+            },
+        ),
+    ],
+)
+def test_version_from_filename_parsing(filename, expected):
+    version = RpmVersion.from_filename(filename)
+
+    assert version.name == expected["name"]
+    assert version.epoch == expected["epoch"]
+    assert version.version == expected["version"]
+    assert version.release == expected["release"]
+    assert version.arch == expected["arch"]
+    assert version.nvra == expected["nvra"]
+    assert str(version) == expected["nvra"]
