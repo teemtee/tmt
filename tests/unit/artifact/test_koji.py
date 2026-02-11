@@ -1,11 +1,11 @@
 import pytest
 
+from tmt.steps.prepare.artifact.providers import RpmVersion
 from tmt.steps.prepare.artifact.providers.koji import (
     KojiArtifactProvider,
     KojiBuild,
     KojiNvr,
     KojiTask,
-    RpmVersion,
 )
 from tmt.utils import GeneralError
 
