@@ -1584,18 +1584,6 @@ class CommandCollector(abc.ABC):
 
         raise NotImplementedError
 
-    def on_step_complete(self, step: 'tmt.steps.Step') -> None:
-        """
-        Called when a step completes execution.
-
-        Flush collected commands if there are some.
-
-        :param step: the step that has completed.
-        """
-        if self.has_collected_commands:
-            self.flush_collected()
-            return
-
 
 class Guest(
     tmt.utils.HasRunWorkdir,
@@ -2870,6 +2858,17 @@ class GuestSsh(Guest, CommandCollector):
 
         self.info("building container image from collected commands", "green")
         self.package_manager.build_container()
+
+    def on_step_complete(self, step: 'tmt.steps.Step') -> None:
+        """
+        Called when a step completes execution.
+
+        Flush collected commands if there are some.
+
+        :param step: the step that has completed.
+        """
+        if self.has_collected_commands:
+            self.flush_collected()
 
     @functools.cached_property
     def _ssh_guest(self) -> str:
