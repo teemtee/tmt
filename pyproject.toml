@@ -48,9 +48,6 @@ dependencies = [
     "pygments>=2.7.4",
     "requests>=2.25.1",
     "ruamel.yaml>=0.16.6",
-    # Needed because beaker-client uses pkg_resources which are deprecated
-    # https://github.com/beaker-project/beaker/issues/232
-    "setuptools<81",
     "urllib3>=1.26.5, <3.0",
     "typing-extensions>=4; python_version < '3.13'",
     ]
@@ -74,6 +71,9 @@ prepare-artifact = [
     ]
 provision-beaker = [
     "mrack>=1.25.0",
+    # Needed because beaker-client uses pkg_resources which are deprecated
+    # https://github.com/beaker-project/beaker/issues/232
+    "setuptools<81",
     ]
 provision-mock = [
     # mockbuild
