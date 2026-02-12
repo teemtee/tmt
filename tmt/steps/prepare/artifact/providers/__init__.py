@@ -135,8 +135,15 @@ class ArtifactInfo:
     def name(self) -> str:
         return self.version.name
 
-    def __str__(self) -> str:
+    @property
+    def filename(self) -> str:
+        """
+        This is the filename of the artifact.
+        """
         return f"{self.provider.id}-{self.version}.rpm"
+
+    def __str__(self) -> str:
+        return f"{self.version} ({self.provider.id})"
 
 
 #: A type of an artifact provider identifier.
@@ -247,7 +254,7 @@ class ArtifactProvider(ABC):
         downloaded_paths: list[tmt.utils.Path] = []
 
         for artifact in self._filter_artifacts(exclude_patterns):
-            local_path = download_path / str(artifact)
+            local_path = download_path / artifact.filename
             self.logger.debug(f"Downloading '{artifact}' to '{local_path}'.")
 
             try:
