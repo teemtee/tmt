@@ -2,11 +2,17 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+import tmt.plugins
 from tmt.steps.prepare import install
 from tmt.steps.prepare.artifact import get_artifact_provider
 from tmt.steps.prepare.artifact.providers import koji as koji_module
 from tmt.steps.prepare.artifact.providers.brew import BrewArtifactProvider
 from tmt.steps.prepare.artifact.providers.koji import KojiArtifactProvider
+
+
+@pytest.fixture(scope='session')
+def _load_plugins():
+    tmt.plugins.explore(tmt.Logger.create())
 
 
 @pytest.fixture
@@ -46,7 +52,7 @@ def mock_brew(mock_koji):
 
 
 @pytest.fixture
-def artifact_provider(root_logger):
+def artifact_provider(root_logger, _load_plugins):
     def get_provider(provider_id: str, repository_priority: int = 50):
         provider_class = get_artifact_provider(provider_id)
         return provider_class(
