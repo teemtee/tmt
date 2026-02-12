@@ -84,7 +84,7 @@ example:
 
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
-    note: |
+    note: >-
         only ``system.vendor``, ``system.model``, ``system.numa-nodes``,
         ``system.model-name``, and ``system.vendor-name`` are supported
   - implemented-by: /tmt/steps/provision/mrack.py
