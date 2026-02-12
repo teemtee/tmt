@@ -2,8 +2,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tmt.steps.prepare.artifact.providers.copr_repository import CoprRepositoryProvider
-
 
 @pytest.mark.parametrize(
     ("raw_id", "expected"),
