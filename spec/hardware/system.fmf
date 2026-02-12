@@ -83,5 +83,9 @@ example:
             protocol: IPMI
 
 link:
+  - implemented-by: /tmt/steps/provision/artemis.py
+    note: |
+        only ``system.vendor``, ``system.model``, ``system.numa-nodes``,
+        ``system.model-name``, and ``system.vendor-name`` are supported
   - implemented-by: /tmt/steps/provision/mrack.py
     note: "``system.vendor``, ``system.model`` and ``management-controller`` not implemented yet"
