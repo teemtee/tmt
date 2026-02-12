@@ -22,6 +22,20 @@ rlJournalStart
         rlAssertGrep "Starting interactive" $rlRun_LOG
     rlPhaseEnd
 
+    rlPhaseStartTest "When fail with step report - test passes"
+        rlRun -s "$tmt true login -w fail -s report -c true"
+        rlAssertGrep "Skipping interactive" $rlRun_LOG
+        rlAssertNotGrep "Starting interactive" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "When fail with step report - test fails"
+        rlRun -s "$tmt false login -w fail -s report -c true" 1
+        rlAssertNotGrep "Skipping interactive" $rlRun_LOG
+        rlAssertGrep "Starting interactive" $rlRun_LOG
+        # Verify login happens at the report step specifically
+        rlRun "grep '^    report$' -A5 '$rlRun_LOG' | grep -i interactive"
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
         rlRun "rm -r $tmp" 0 "Removing tmp directory"

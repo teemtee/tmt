@@ -32,7 +32,7 @@ rlJournalStart
             elif [ "$step" = "execute" ]; then
                 rlRun "grep '^    $step$' -A9 '$rlRun_LOG' | grep -i interactive"
             elif [ "$step" = "discover" ]; then
-                rlRun "grep '^    $step$' -A9 '$rlRun_LOG' | grep -i 'No guests ready for login'"
+                rlRun "grep '^    $step$' -A9 '$rlRun_LOG' | grep -i 'Login not possible in discover step'"
             else
                 rlRun "grep '^    $step$' -A5 '$rlRun_LOG' | grep -i interactive"
             fi
@@ -51,7 +51,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Last run failed"
-        rlRun "tmt run provision -h local prepare --how shell --script false" 2
+        rlRun "tmt run -a provision -h local prepare --how shell --script false" 2
         rlRun -s "tmt run -rl login -c true" 2
         rlAssertGrep "interactive" "$rlRun_LOG"
     rlPhaseEnd

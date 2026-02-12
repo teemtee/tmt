@@ -246,6 +246,17 @@ story: 'As a user I want to execute tests easily'
             tmt run login --step execute --when error
             tmt run login --step execute --when fail --when error
 
+    /test:
+        summary: 'Log in after each test execution'
+        story:
+            As a user I want to log into the guest after each test.
+        description:
+            Per-test login mode does not include the default step-level
+            login. Use ``--step`` to also login at a specific step.
+        example: |
+            tmt run login --test
+            tmt run login --test --step finish
+
     /experiment:
         summary: 'Provision an environment for experimenting'
         story:
