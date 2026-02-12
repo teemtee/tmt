@@ -127,6 +127,30 @@ description: |
 
     .. versionadded:: 1.19
 
+    The imported plans could also be modified via the ``adjust-plans``
+    key, which allows modification of imported plans using
+    the same powerful rule system as :ref:`/spec/core/adjust` and :ref:`/plugins/discover/fmf`.
+    This provides flexible plan inheritance and customization:
+
+    .. code-block:: yaml
+
+       /some-plan:
+           plan:
+               import:
+                   url: https://github.com/teemtee/tests
+                   name: /plans/remote
+                   adjust-plans:
+                     - report+:              # Add additional report step
+                           how: junit
+                           file: /tmp/results.xml
+                     - execute:              # Replace execute step
+                           how: tmt
+                           timeout: 30m
+                       when: arch == x86_64
+                       because: x86_64 systems need longer timeout
+
+    .. versionadded:: 1.67
+
     __ https://fmf.readthedocs.io/en/latest/concept.html#identifiers
 
 example:

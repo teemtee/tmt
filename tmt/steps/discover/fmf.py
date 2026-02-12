@@ -207,7 +207,8 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
     )
 
     # Edit discovered tests
-    adjust_tests: Optional[list[_RawAdjustRule]] = field(
+    # Note: normalize_adjust returns a list as per its type hint
+    adjust_tests: list[_RawAdjustRule] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_adjust,
         help="""

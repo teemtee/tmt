@@ -1948,6 +1948,7 @@ class _RemotePlanReference(_RawFmfId):
     scope: Optional[str]
     inherit_context: Optional[bool]
     inherit_environment: Optional[bool]
+    adjust_plans: list[Any]
 
 
 class RemotePlanReferenceImporting(enum.Enum):
@@ -1991,12 +1992,18 @@ class RemotePlanReference(
         'scope',
         'inherit-context',
         'inherit-environment',
+        'adjust-plans',
     ]
 
     importing: RemotePlanReferenceImporting = RemotePlanReferenceImporting.REPLACE
     scope: RemotePlanReferenceImportScope = RemotePlanReferenceImportScope.FIRST_PLAN_ONLY
     inherit_context: bool = True
     inherit_environment: bool = True
+    # Note: normalize_adjust returns a list as per its type hint
+    adjust_plans: list[_RawAdjustRule] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_adjust,
+    )
 
     @functools.cached_property
     def name_pattern(self) -> Pattern[str]:
@@ -2081,6 +2088,7 @@ class RemotePlanReference(
         )
         reference.inherit_context = bool(raw.get('inherit-context', True))
         reference.inherit_environment = bool(raw.get('inherit-environment', True))
+        reference.adjust_plans = cast(list[_RawAdjustRule], raw.get('adjust-plans', []))
 
         return reference
 
@@ -3348,6 +3356,7 @@ class Plan(
                 node.name, node.data.get('context', {}), self._logger
             )
 
+            # For final context inheritance, respect inherit_context setting
             if reference.inherit_context:
                 alteration_fmf_context = FmfContext(
                     {
@@ -3362,8 +3371,12 @@ class Plan(
                 )
 
             # Adjust the imported tree, to let any `adjust` rules defined in it take
-            # action.
-            node.adjust(fmf.context.Context(**alteration_fmf_context), case_sensitive=False)
+            # action, including the adjust-plans rules.
+            node.adjust(
+                fmf.context.Context(**alteration_fmf_context),
+                case_sensitive=False,
+                additional_rules=reference.adjust_plans,
+            )
 
             # If the local plan is disabled, disable the imported plan as well
             if not self.enabled:
