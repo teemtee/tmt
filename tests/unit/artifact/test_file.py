@@ -4,9 +4,6 @@ import pytest
 
 from tmt.log import Logger
 from tmt.steps.prepare.artifact.providers import RpmVersion
-from tmt.steps.prepare.artifact.providers.file import (
-    PackageAsFileArtifactProvider,
-)
 from tmt.utils import Path
 
 
