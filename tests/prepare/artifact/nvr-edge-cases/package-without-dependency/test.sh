@@ -15,13 +15,21 @@ rlJournalStart
 
         setup_distro_environment
 
+        # Detect if host is rawhide - downloaded RPMs may have incompatible deps
+        if grep -qi "rawhide" /etc/os-release; then
+            HOST_IS_RAWHIDE=yes
+        else
+            HOST_IS_RAWHIDE=no
+        fi
+
         rlRun "rpm_dir=$(mktemp -d)" 0 "Create directory for RPMs"
         # Use $fedora_release (set by setup_distro_environment) to ensure packages match test distro
         rlRun "dnf download --forcearch=$ARCH --releasever=$fedora_release --destdir=$rpm_dir jq nano" 0 "Download jq and nano RPMs without dependencies"
     rlPhaseEnd
 
-    rlPhaseStartTest "Test file provider with NVR edge cases"
+    rlPhaseStartTest "Test provider NVR edge case for packages without dependencies"
         rlRun "tmt run -i $run --scratch -vvv --all \
+            --environment HOST_IS_RAWHIDE=$HOST_IS_RAWHIDE \
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
             prepare --how artifact --provide file:$rpm_dir" 0 "Run with file provider (packages without dependencies)"
     rlPhaseEnd

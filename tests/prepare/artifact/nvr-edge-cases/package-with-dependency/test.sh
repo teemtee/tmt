@@ -20,7 +20,7 @@ rlJournalStart
         rlRun "dnf download --forcearch=$ARCH --releasever=$fedora_release --destdir=$rpm_dir --resolve --alldeps jq nano" 0 "Download jq and nano RPMs with all dependencies"
     rlPhaseEnd
 
-    rlPhaseStartTest "Test file provider with NVR edge cases"
+    rlPhaseStartTest "Test provider NVR edge case for packages with dependencies"
         rlRun "tmt run -i $run --scratch -vvv --all \
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
             prepare --how artifact --provide file:$rpm_dir" 0 "Run with file provider (packages with dependencies)"
