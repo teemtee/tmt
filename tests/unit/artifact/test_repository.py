@@ -3,9 +3,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from tmt.steps.prepare.artifact.providers import Repository
-from tmt.steps.prepare.artifact.providers.repository import (
-    RepositoryFileProvider,
-)
 from tmt.utils import GeneralError, Path, PrepareError, RunError, requests
 
 # A valid .repo file content for testing, using Docker CE repo
