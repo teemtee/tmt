@@ -187,7 +187,7 @@ example:
 
 link:
   - implemented-by: /tmt/steps/provision/artemis.py
-    note: "``cpu.vendor``, ``cpu.vendor-name``, ``cpu.frequency`` and ``cpu.hyper-threading`` not implemented yet"
+    note: "``cpu.frequency`` and ``cpu.hyper-threading`` not implemented yet"
   - implemented-by: /tmt/steps/provision/mrack.py
     note: "``cpu.sockets``, ``cpu.threads``, ``cpu.cores-per-socket``, ``cpu.threads-per-core``, ``cpu.family-name``, ``cpu.vendor`` not implemented yet"
   - implemented-by: /tmt/steps/provision/testcloud.py
