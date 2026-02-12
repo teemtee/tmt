@@ -32,6 +32,13 @@ from tmt.utils.wait import Deadline, Waiting
 # know when particular feature became available, and avoid using it with
 # older APIs.
 SUPPORTED_API_VERSIONS = (
+    # NEW: cpu.vendor and cpu.vendor-name HW requirements
+    'v0.0.84',
+    # NEW: beaker.panic-watchdog HW requirement
+    # NEW: iommu HW requirements
+    # NEW: system.model-name HW requirement
+    # NEW: device HW requirements
+    'v0.0.83',
     # NEW: guest reboot
     '0.0.74',
     # NEW: allow passing security group rules for guest creation
