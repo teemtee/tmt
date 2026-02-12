@@ -618,6 +618,7 @@ class GuestFacts(SerializableContainer):
     can_sudo: Optional[bool] = None
     sudo_prefix: Optional[str] = None
     is_ostree: Optional[bool] = None
+    is_image_mode: Optional[bool] = None
     is_toolbox: Optional[bool] = None
     toolbox_container_name: Optional[str] = None
     is_container: Optional[bool] = None
@@ -650,6 +651,8 @@ class GuestFacts(SerializableContainer):
     def _execute(self, guest: 'Guest', command: Command) -> Optional[tmt.utils.CommandOutput]:
         """
         Run a command on the given guest, ignoring :py:class:`tmt.utils.RunError`.
+
+        On image mode systems execute the commands immediately.
 
         :returns: command output if the command quit with a zero exit code,
             ``None`` otherwise.
@@ -935,6 +938,26 @@ class GuestFacts(SerializableContainer):
 
         return output.stdout.strip() == 'yes'
 
+    def _query_is_image_mode(self, guest: 'Guest') -> Optional[bool]:
+        """
+        Detect whether guest is an image mode based system.
+
+        An image mode based system has the image set to a image reference.
+        In case ``bootc`` is installed on a non image mode system, it
+        reports ``null``.
+        """
+
+        image = self._query(
+            guest,
+            [(ShellScript('sudo bootc status --format yaml').to_shell_command(), r'image: (.+)')],
+        )
+
+        # if bootc reports status and the image is not `image: null`, we are in image mode
+        if image and image != "null":
+            return True
+
+        return False
+
     def _query_is_toolbox(self, guest: 'Guest') -> Optional[bool]:
         # https://www.reddit.com/r/Fedora/comments/g6flgd/toolbox_specific_environment_variables/
         output = self._execute(
@@ -1033,6 +1056,7 @@ class GuestFacts(SerializableContainer):
             self.can_sudo = self._query_can_sudo(guest)
             self.sudo_prefix = self._query_sudo_prefix(guest)
             self.is_ostree = self._query_is_ostree(guest)
+            self.is_image_mode = self._query_is_image_mode(guest)
             self.is_toolbox = self._query_is_toolbox(guest)
             self.toolbox_container_name = self._query_toolbox_container_name(guest)
             self.is_container = self._query_is_container(guest)
@@ -1065,6 +1089,7 @@ class GuestFacts(SerializableContainer):
         yield _value('bootc_builder', 'bootc builder')
         yield _flag('is_container', 'is container')
         yield _flag('is_ostree', 'is ostree')
+        yield _flag('is_image_mode', 'is image mode')
         yield _flag('is_toolbox', 'is toolbox')
         yield _flag('has_selinux', 'selinux')
         yield _flag('has_systemd', 'systemd')
@@ -1516,6 +1541,46 @@ class GuestLog(abc.ABC):
 
         :param logger: logger to use for logging.
         """
+
+        raise NotImplementedError
+
+
+class CommandCollector(abc.ABC):
+    """
+    Mixin for that supports collecting commands for deferred execution.
+    """
+
+    @abc.abstractmethod
+    def collect_command(
+        self,
+        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
+        *,
+        sourced_files: Optional[list[Path]] = None,
+        cwd: Optional[Path] = None,
+        env: Optional[tmt.utils.Environment] = None,
+    ) -> None:
+        """
+        Collect a command for later batch execution.
+
+        :param command: the command to collect.
+        :param cwd: working directory for the command.
+        :param env: environment variables for the command.
+        """
+
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def flush_collected(self) -> None:
+        """
+        Execute all collected commands.
+        """
+
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def has_collected_commands(self) -> bool:
+        """Return True if there are collected commands pending."""
 
         raise NotImplementedError
 
@@ -2152,14 +2217,25 @@ class Guest(
 
         return output
 
+    def on_step_complete(self, step: 'tmt.steps.Step') -> None:
+        """
+        Called when a step completes execution.
+
+        Does nothing for :py:class:`Guest`. Should be overridden in subclass if needed.
+
+        :param step: the step that has completed.
+        """
+        pass
+
     @overload
     def execute(
         self,
-        command: tmt.utils.ShellScript,
+        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
+        immediately: Literal[True] = True,
         tty: bool = False,
         silent: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,
@@ -2174,11 +2250,12 @@ class Guest(
     @overload
     def execute(
         self,
-        command: tmt.utils.Command,
+        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
+        immediately: Literal[False] = False,
         tty: bool = False,
         silent: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,
@@ -2187,7 +2264,7 @@ class Guest(
         on_process_end: Optional[OnProcessEndCallback] = None,
         sourced_files: Optional[list[Path]] = None,
         **kwargs: Any,
-    ) -> tmt.utils.CommandOutput:
+    ) -> Optional[tmt.utils.CommandOutput]:
         pass
 
     @abc.abstractmethod
@@ -2198,6 +2275,7 @@ class Guest(
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
+        immediately: bool = True,
         tty: bool = False,
         silent: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,
@@ -2214,6 +2292,11 @@ class Guest(
         :param cwd: if set, execute command in this directory on the guest.
         :param env: if set, set these environment variables before running the command.
         :param friendly_command: nice, human-friendly representation of the command.
+        :param immediately: if False, the command may be collected for later
+            batch execution on guests that support it (e.g., bootc guests).
+            Commands with ``immediately=True`` (default) are always executed
+            right away. Use ``immediately=False`` for commands that modify
+            system state and can be batched (e.g., package installation).
         """
 
         raise NotImplementedError
@@ -2657,9 +2740,14 @@ class GuestSshData(GuestData):
     )
 
 
-class GuestSsh(Guest):
+class GuestSsh(Guest, CommandCollector):
     """
     Guest provisioned for test execution, capable of accepting SSH connections
+
+    This class implements :py:class:`CommandCollector` to support
+    guests in image mode. When running in image mode, commands with
+    ``immediately=False`` are collected into a Containerfile
+    rather than executed immediately and applied on step completion.
 
     The following keys are expected in the 'data' dictionary::
 
@@ -2697,6 +2785,90 @@ class GuestSsh(Guest):
         self._ssh_master_process_lock = threading.Lock()
 
         super().__init__(data=data, logger=logger, parent=parent, name=name)
+
+    def collect_command(
+        self,
+        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
+        *,
+        sourced_files: Optional[list[Path]] = None,
+        cwd: Optional[Path] = None,
+        env: Optional[tmt.utils.Environment] = None,
+    ) -> None:
+        """
+        Collect a command for image mode container build.
+
+        Adds a RUN directive to the bootc package manager's Containerfile.
+        Uses the same environment and cwd handling as regular execute().
+        """
+
+        sourced_files = sourced_files or []
+
+        if not self.facts.is_image_mode or not isinstance(
+            self.package_manager, tmt.package_managers.bootc.Bootc
+        ):
+            return
+
+        # Build the command script using the same approach as execute()
+        # Start with environment exports
+        collected_commands: ShellScript = ShellScript.from_scripts(
+            self._prepare_environment(env).to_shell_exports()
+        )
+
+        # Add working directory change (properly quoted like in execute())
+        if cwd:
+            collected_commands += ShellScript(f'cd {quote(str(cwd))}')
+
+        for file in sourced_files:
+            collected_commands += ShellScript(f'source {quote(str(file))}')
+
+        # Add the actual command
+        if isinstance(command, tmt.utils.Command):
+            collected_commands += command.to_script()
+        else:
+            collected_commands += command
+
+        collected_command = collected_commands.to_element()
+
+        # Add to the package manager's engine
+        self.package_manager.engine.open_containerfile_directives()
+        self.package_manager.engine.containerfile_directives.append(f"RUN {collected_command}")
+        self.debug(f"Collected command for Containerfile: {collected_command}")
+
+    @property
+    def has_collected_commands(self) -> bool:
+        """Check if there are collected commands to be applied."""
+
+        if not self.facts.is_image_mode or not isinstance(
+            self.package_manager, tmt.package_managers.bootc.Bootc
+        ):
+            return False
+
+        return bool(self.package_manager.engine.containerfile_directives)
+
+    def flush_collected(self) -> None:
+        """
+        Build image mode container image from collected commands, switch, and reboot.
+
+        Delegates to the bootc package manager's build_container() method.
+        """
+        if not self.facts.is_image_mode or not isinstance(
+            self.package_manager, tmt.package_managers.bootc.Bootc
+        ):
+            return
+
+        self.info("building container image from collected commands", "green")
+        self.package_manager.build_container()
+
+    def on_step_complete(self, step: 'tmt.steps.Step') -> None:
+        """
+        Called when a step completes execution.
+
+        Flush collected commands if there are some.
+
+        :param step: the step that has completed.
+        """
+        if self.has_collected_commands:
+            self.flush_collected()
 
     @functools.cached_property
     def _ssh_guest(self) -> str:
@@ -3059,6 +3231,7 @@ class GuestSsh(Guest):
                 )
             )
 
+    @overload
     def execute(
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
@@ -3066,6 +3239,7 @@ class GuestSsh(Guest):
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
+        immediately: Literal[True] = True,
         tty: bool = False,
         silent: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,
@@ -3075,6 +3249,45 @@ class GuestSsh(Guest):
         sourced_files: Optional[list[Path]] = None,
         **kwargs: Any,
     ) -> tmt.utils.CommandOutput:
+        pass
+
+    @overload
+    def execute(
+        self,
+        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
+        cwd: Optional[Path] = None,
+        env: Optional[tmt.utils.Environment] = None,
+        friendly_command: Optional[str] = None,
+        test_session: bool = False,
+        immediately: Literal[False] = False,
+        tty: bool = False,
+        silent: bool = False,
+        log: Optional[tmt.log.LoggingFunction] = None,
+        interactive: bool = False,
+        on_process_start: Optional[OnProcessStartCallback] = None,
+        on_process_end: Optional[OnProcessEndCallback] = None,
+        sourced_files: Optional[list[Path]] = None,
+        **kwargs: Any,
+    ) -> Optional[tmt.utils.CommandOutput]:
+        pass
+
+    def execute(
+        self,
+        command: Union[tmt.utils.Command, tmt.utils.ShellScript],
+        cwd: Optional[Path] = None,
+        env: Optional[tmt.utils.Environment] = None,
+        friendly_command: Optional[str] = None,
+        test_session: bool = False,
+        immediately: bool = True,
+        tty: bool = False,
+        silent: bool = False,
+        log: Optional[tmt.log.LoggingFunction] = None,
+        interactive: bool = False,
+        on_process_start: Optional[OnProcessStartCallback] = None,
+        on_process_end: Optional[OnProcessEndCallback] = None,
+        sourced_files: Optional[list[Path]] = None,
+        **kwargs: Any,
+    ) -> Optional[tmt.utils.CommandOutput]:
         """
         Execute a command on the guest.
 
@@ -3082,9 +3295,25 @@ class GuestSsh(Guest):
         :param cwd: execute command in this directory on the guest.
         :param env: if set, set these environment variables before running the command.
         :param friendly_command: nice, human-friendly representation of the command.
+        :param test_session: if True, this is the actual test being run.
+        :param immediately: if False, the command may be collected for later
+            batch execution on guests that support it (e.g., bootc guests).
+            Commands with ``immediately=True`` (default) are always executed
+            right away. Use ``immediately=False`` for commands that modify
+            system state and can be batched (e.g., package installation).
+            When a command is deferred, ``None`` is returned instead of
+            :py:class:`CommandOutput`.
+        :returns: command output, or ``None`` if the command was deferred
+            for batch execution (when ``immediately=False`` on supported guests).
         """
 
         sourced_files = sourced_files or []
+
+        # For guests in image mode collect non testing commands with
+        # immediately=False for later batch execution.
+        if not immediately and self.facts.is_image_mode:
+            self.collect_command(command, sourced_files=sourced_files, cwd=cwd, env=env)
+            return None
 
         # Abort if guest is unavailable
         if self.primary_address is None and not self.is_dry_run:

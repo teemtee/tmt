@@ -143,6 +143,7 @@ plans:
                 can-sudo:
                 sudo-prefix:
                 is-ostree:
+                is-image-mode:
                 is-toolbox:
                 toolbox-container-name:
                 is-container:

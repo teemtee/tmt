@@ -124,6 +124,12 @@ class BootcEngine(PackageManagerEngine):
         return image_status.image.image
 
     def _get_base_containerfile_directives(self) -> list[str]:
+        # In dry run mode, return an empty list because _get_current_bootc_image()
+        # would fail - it executes a command on the guest. The build is skipped
+        # anyway via the dry-run guard in build_container().
+        if self.guest.is_dry_run:
+            return []
+
         bootc_image = self._get_current_bootc_image()
 
         if bootc_image.startswith(LOCALHOST_BOOTC_IMAGE_PREFIX):
@@ -222,6 +228,10 @@ class Bootc(PackageManager[BootcEngine]):
         return results
 
     def build_container(self) -> None:
+        # Skip in dry run mode
+        if self.guest.is_dry_run:
+            return
+
         if not self.engine.containerfile_directives:
             self.debug("No Containerfile directives to build container image, skipping build.")
             return
@@ -263,9 +273,11 @@ class Bootc(PackageManager[BootcEngine]):
 
                 assert self.guest.parent is not None
 
+                # Mount run_workdir so scripts have access to tmt files during build.
+                # Use :Z for SELinux private label.
                 self.guest.execute(
                     ShellScript(
-                        f'{self.guest.facts.sudo_prefix} podman build -t {image_tag} -f {containerfile_path} {self.guest.step_workdir}'  # noqa: E501
+                        f'{self.guest.facts.sudo_prefix} podman build -v {self.guest.run_workdir}:{self.guest.run_workdir}:Z -t {image_tag} -f {containerfile_path} {self.guest.run_workdir}'  # noqa: E501
                     )
                 )
 

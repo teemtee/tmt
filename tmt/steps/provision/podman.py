@@ -479,6 +479,7 @@ class GuestContainer(tmt.Guest):
         env: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
+        immediately: bool = True,
         tty: bool = False,
         silent: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,

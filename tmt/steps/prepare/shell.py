@@ -211,7 +211,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
         def _invoke_script(
             command: ShellScript,
             environment: tmt.utils.Environment,
-        ) -> tmt.utils.CommandOutput:
+        ) -> Optional[tmt.utils.CommandOutput]:
             guest.push(source=self.phase_workdir)
 
             return guest.execute(
@@ -219,6 +219,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 cwd=worktree,
                 env=environment,
                 sourced_files=[self.step.plan.plan_source_script],
+                immediately=False,
             )
 
         for script_index, script in enumerate(self.data.script):
@@ -268,13 +269,10 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 )
 
             if output is None:
-                return self._save_error_outcome(
-                    label=script_name,
-                    timer=timer,
-                    note='Command produced no output but raised no exception',
-                    guest=guest,
-                    outcome=outcome,
+                self._save_deferred_run_outcome(
+                    label=script_name, timer=timer, guest=guest, outcome=outcome
                 )
+                continue
 
             self._post_action_pull(
                 guest=guest,
