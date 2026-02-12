@@ -18,11 +18,8 @@ from tmt.utils import Path
     ],
 )
 def test_file_artifact_provider_patterns(tmp_path, pattern, expected_names, artifact_provider):
-    if "*" in pattern:
-        for i in range(3):
-            (tmp_path / f"package-{i}-1.0-1.fc43.x86_64.rpm").touch()
-    else:
-        (tmp_path / pattern).touch()
+    for name in expected_names:
+        (tmp_path / f"{name}.rpm").touch()
 
     provider = artifact_provider(f"file:{tmp_path}/{pattern}")
     artifacts = provider.artifacts
@@ -81,7 +78,6 @@ def test_download_artifact(tmp_path, artifact_provider):
                 "version": "5.1.8",
                 "release": "6.el9",
                 "arch": "x86_64",
-                "nvra": "bash-5.1.8-6.el9.x86_64",
             },
         ),
         (
@@ -92,7 +88,6 @@ def test_download_artifact(tmp_path, artifact_provider):
                 "version": "1.61.0.dev17+gf29b2e83e",
                 "release": "1.fc41",
                 "arch": "x86_64",
-                "nvra": "tmt+export-polarion-1.61.0.dev17+gf29b2e83e-1.fc41.x86_64",
             },
         ),
     ],
@@ -100,10 +95,4 @@ def test_download_artifact(tmp_path, artifact_provider):
 def test_version_from_filename_parsing(filename, expected):
     version = RpmVersion.from_filename(filename)
 
-    assert version.name == expected["name"]
-    assert version.epoch == expected["epoch"]
-    assert version.version == expected["version"]
-    assert version.release == expected["release"]
-    assert version.arch == expected["arch"]
-    assert version.nvra == expected["nvra"]
-    assert str(version) == expected["nvra"]
+    assert vars(version) == expected
