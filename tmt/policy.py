@@ -1,7 +1,8 @@
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 import tmt.container
+import tmt.steps
 import tmt.utils
 from tmt._compat.pydantic import ValidationError
 from tmt.container import PYDANTIC_V1, ConfigDict, MetadataContainer, metadata_field
@@ -10,7 +11,7 @@ from tmt.utils import FieldValueSource, Path, ShellScript
 from tmt.utils.templates import render_template
 
 if TYPE_CHECKING:
-    from tmt.base import Core, Test
+    from tmt.base import Core, Plan, Test
 
 T = TypeVar('T')
 
@@ -22,6 +23,11 @@ KEY_DIFF_TEMPLATE = """
 
 Field value source changed from {{ OLD_VALUE_SOURCE.value | style(fg='red') }} to {{ NEW_VALUE_SOURCE.value | style(fg='green') }}
 """  # noqa: E501
+
+STEP_DIFF_TEMPLATE = """
+{{ OLD_VALUE | to_yaml | prefix('- ') | style(fg='red') | trim }}
+{{ NEW_VALUE | to_yaml | prefix('+ ') | style(fg='green') | trim }}
+"""
 
 
 class Instruction(MetadataContainer):
@@ -36,11 +42,18 @@ class Instruction(MetadataContainer):
     else:
         model_config = ConfigDict(extra="allow")
 
-    def apply(self, obj: 'Core', logger: Logger) -> None:
+    def _apply_to_trivial_key(
+        self, obj: 'Core', key: str, template_variable_name: str, logger: Logger
+    ) -> None:
         """
         Apply the instruction to a given object.
 
+        Works with the primitive, trivial keys where values are Python
+        built-in data types: ``int``, ``bool``, or lists and dictionaries.
+
         :param obj: object to modify - a test, plan, or story.
+        :param template_variable_name: name to use for a variable
+            representing ``obj`` in the template.
         :param logger: used for logging.
         """
 
@@ -80,72 +93,175 @@ class Instruction(MetadataContainer):
 
             return new_value
 
+        template = getattr(self, key)
+        logger = base_logger.clone()
+
+        _, _, _, _, field_metadata = tmt.container.container_field(obj, key)
+
+        normalize_callback: Optional[tmt.container.NormalizeCallback[Any]] = (
+            field_metadata.normalize_callback
+        )
+        export_callback: Optional[tmt.container.FieldExporter[Any]] = (
+            field_metadata.export_callback
+        )
+
+        if normalize_callback is None:
+            logger.debug(f"key '{key}' lacks normalizer")
+
+            normalize_callback = lambda key_address, value, logger: value  # noqa: E731
+
+        if export_callback is None:
+            logger.debug(f"key '{key}' lacks exporter")
+
+            export_callback = lambda value: value  # noqa: E731
+
+        current_value = old_value = getattr(obj, tmt.container.option_to_key(key))
+        current_value_exported = old_value_exported = export_callback(current_value)
+        current_value_source = old_value_source = obj._field_value_sources[key]
+
+        if isinstance(
+            current_value,
+            (float, int, bool, str, list, dict, ShellScript, tmt.utils.Environment),
+        ):
+            current_value = set_key(
+                key,
+                template,
+                current_value_exported,
+                current_value_source,
+                normalize_callback,
+            )
+
+        else:
+            raise tmt.utils.GeneralError(
+                f"Field '{key}' of type '{type(current_value)}' is not supported by a policy."
+            )
+
+        if type(old_value) is not type(current_value):
+            raise tmt.utils.GeneralError(
+                f"Type mismatch for field '{key}': expected '{type(old_value)}', "
+                f"got '{type(current_value)}'."
+            )
+
+        current_value_exported = export_callback(current_value)
+
+        if current_value_exported != old_value_exported:
+            current_value_source = obj._field_value_sources[key] = FieldValueSource.POLICY
+
+            logger.info(
+                f"Modified '{obj.name}'",
+                render_template(
+                    KEY_DIFF_TEMPLATE,
+                    OLD_VALUE={key: old_value_exported},
+                    NEW_VALUE={key: current_value_exported},
+                    OLD_VALUE_SOURCE=old_value_source,
+                    NEW_VALUE_SOURCE=current_value_source,
+                    # ignore[arg-type]: not sure why, but mypy sees this
+                    # as being value for one of the existing parameters
+                    # rather than kwargs.
+                    **{  # type: ignore[arg-type]
+                        template_variable_name: obj,
+                    },
+                ),
+                topic=Topic.POLICY,
+            )
+
+    def apply(self, obj: 'Core', logger: Logger) -> None:
+        """
+        Apply the instruction to a given object.
+
+        :param obj: object to modify - a test, plan, or story.
+        :param logger: used for logging.
+        """
+
         for key in self.model_fields_set:
-            template = getattr(self, key)
-            logger = base_logger.clone()
+            self._apply_to_trivial_key(obj, key, 'TEST', logger.clone())
 
-            _, _, _, _, field_metadata = tmt.container.container_field(obj, key)
 
-            normalize_callback: Optional[tmt.container.NormalizeCallback[Any]] = (
-                field_metadata.normalize_callback
-            )
-            export_callback: Optional[tmt.container.FieldExporter[Any]] = (
-                field_metadata.export_callback
-            )
+class PlanInstruction(Instruction):
+    """
+    A single instruction describing changes to plan keys.
+    """
 
-            if normalize_callback is None:
-                logger.warning(f"key '{key}' lacks normalizer")
+    def apply(self, obj: 'Core', logger: Logger) -> None:
+        """
+        Apply the instruction to a given object.
 
-                normalize_callback = lambda key_address, value, logger: value  # noqa: E731
+        :param obj: a plan to modify.
+        :param logger: used for logging.
+        """
 
-            if export_callback is None:
-                logger.warning(f"key '{key}' lacks exporter")
+        base_logger = logger
 
-                export_callback = lambda value: value  # noqa: E731
+        for key in self.model_fields_set:
+            # With steps, we encounter not just trivial keys with built-in
+            # data types for values, but also complex, custom data types,
+            # like steps. Those require special handling as we need to
+            # carefully reset step data and force it to use the modified
+            # instead.
+            if key in tmt.steps.STEPS:
+                template = getattr(self, key)
+                logger = base_logger.clone()
 
-            current_value = old_value = getattr(obj, tmt.container.option_to_key(key))
-            current_value_exported = old_value_exported = export_callback(current_value)
-            current_value_source = old_value_source = obj._field_value_sources[key]
-
-            if isinstance(
-                current_value,
-                (float, int, bool, str, list, dict, ShellScript, tmt.utils.Environment),
-            ):
-                current_value = set_key(
-                    key,
-                    template,
-                    current_value_exported,
-                    current_value_source,
-                    normalize_callback,
+                step = cast(tmt.steps.Step, getattr(obj, key))
+                current_value_exported = old_value_exported = step._raw_data[:]
+                current_value_source = old_value_source = obj._field_value_sources.get(
+                    key, FieldValueSource.UNKNOWN
                 )
+
+                # Let the rule prepare the new structure of step phases
+                rendered_new_value = render_template(
+                    template,
+                    VALUE=current_value_exported,
+                    VALUE_SOURCE=current_value_source.value,
+                    PLAN=obj,
+                )
+
+                raw_new_value = tmt.utils.from_yaml(rendered_new_value)
+
+                # Make sure all phases have `name` and `how` keys set.
+                # This has been already resolved in the original data,
+                # by the machinery of normalization in `Step` class,
+                # and policy rules can easily omit or even remove these
+                # keys, breaking assumptions the next parts of workflow
+                # have.
+                raw_new_value = step._set_default_names(raw_new_value)
+                raw_new_value = step._set_default_how(raw_new_value)
+
+                # Once `step.data` is deleted, next attempt to read it will
+                # force `Step._normalize_data()` process `_raw_data`, turning
+                # it into plugins and their data classes.
+                del step.data
+                step._raw_data = raw_new_value
+
+                # We want to log the changes, but we also want to force
+                # the read of `step.data`, to make sure the conversion
+                # works. After all, we started with `step.data` fully
+                # ready, it'd be good to return the step in the same
+                # condition.
+                #
+                # Plus, whatever exception comes out of it, it will happen
+                # in the context of policy application, rather than at
+                # some random, unrelated point of tmt workflow. If policy
+                # breaks something, user should hear it from us first.
+                current_value_exported = [phase.to_spec() for phase in step.data]
+
+                if current_value_exported != old_value_exported:
+                    current_value_source = obj._field_value_sources[key] = FieldValueSource.POLICY
+
+                    logger.info(
+                        f"Modified '{obj.name}'",
+                        render_template(
+                            STEP_DIFF_TEMPLATE,
+                            OLD_VALUE={key: old_value_exported},
+                            NEW_VALUE={key: current_value_exported},
+                            OLD_VALUE_SOURCE=old_value_source,
+                            NEW_VALUE_SOURCE=current_value_source,
+                        ),
+                        topic=Topic.POLICY,
+                    )
 
             else:
-                raise tmt.utils.GeneralError(
-                    f"Field '{key}' of type '{type(current_value)}' is not supported by a policy."
-                )
-
-            if type(old_value) is not type(current_value):
-                raise tmt.utils.GeneralError(
-                    f"Type mismatch for field '{key}': expected '{type(old_value)}', "
-                    f"got '{type(current_value)}'."
-                )
-
-            current_value_exported = export_callback(current_value)
-
-            if current_value_exported != old_value_exported:
-                current_value_source = obj._field_value_sources[key] = FieldValueSource.POLICY
-
-                logger.info(
-                    f"Modified '{obj.name}'",
-                    render_template(
-                        KEY_DIFF_TEMPLATE,
-                        OLD_VALUE={key: old_value_exported},
-                        NEW_VALUE={key: current_value_exported},
-                        OLD_VALUE_SOURCE=old_value_source,
-                        NEW_VALUE_SOURCE=current_value_source,
-                    ),
-                    topic=Topic.POLICY,
-                )
+                self._apply_to_trivial_key(obj, key, 'PLAN', logger.clone())
 
 
 class Policy(MetadataContainer):
@@ -163,7 +279,7 @@ class Policy(MetadataContainer):
     test_policy: list[Instruction] = metadata_field(default_factory=list[Instruction])
 
     #: Instructions for modifications of plans.
-    # plan_policy: list[Instruction] = metadata_field(default_factory=list[Instruction])
+    plan_policy: list[PlanInstruction] = metadata_field(default_factory=list[PlanInstruction])
 
     #: Instructions for modifications of stories.
     # story_policy: list[Instruction] = metadata_field(default_factory=list[Instruction])
@@ -257,3 +373,24 @@ class Policy(MetadataContainer):
         )
 
         self._apply(tests, self.test_policy, logger.descend())
+
+    def apply_to_plans(
+        self,
+        *,
+        plans: Iterable['Plan'],
+        logger: Logger,
+    ) -> None:
+        """
+        Apply policy to given plans.
+
+        :param plans: plans to modify.
+        :param policy_name: if set, record this name in logging.
+        :param logger: used for logging.
+        """
+
+        logger.info(
+            f"Apply tmt policy '{self.name}' to plans.",
+            color='green',
+        )
+
+        self._apply(plans, self.plan_policy, logger.descend())

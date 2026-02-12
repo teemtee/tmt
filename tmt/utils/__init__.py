@@ -5847,6 +5847,9 @@ class FieldValueSource(enum.Enum):
     Indicates source of metadata field value.
     """
 
+    #: The source is not known.
+    UNKNOWN = 'unknown'
+
     #: The value was provided by fmf node key.
     FMF = 'fmf'
 

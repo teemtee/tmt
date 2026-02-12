@@ -3463,6 +3463,10 @@ class Plan(
 
                     self._imported_plans.append(imported_plan)
 
+        if self.my_run:
+            for policy in self.my_run.policies:
+                policy.apply_to_plans(plans=self._imported_plans, logger=self._logger)
+
         return self._imported_plans
 
     def derive_plan(self, derived_id: int, tests: dict[str, list[Test]]) -> 'Plan':
@@ -3547,7 +3551,12 @@ class Plan(
                 continue
 
             if self.my_run:
-                self.my_run.swap_plans(self, *shaper.apply(self, tests))
+                reshaped_plans = list(shaper.apply(self, tests))
+
+                for policy in self.my_run.policies:
+                    policy.apply_to_plans(plans=reshaped_plans, logger=self._logger)
+
+                self.my_run.swap_plans(self, *reshaped_plans)
 
             return True
 
@@ -4252,6 +4261,10 @@ class Tree(tmt.utils.Common):
             )
             for plan in [*local_plans, *importing_plans]
         ]
+
+        if run is not None:
+            for policy in run.policies:
+                policy.apply_to_plans(plans=plans, logger=logger)
 
         if not Plan._opt('shallow'):
             unresolved_plans = plans

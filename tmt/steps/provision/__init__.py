@@ -53,7 +53,13 @@ from tmt.ansible import (
     GuestAnsible,
     normalize_guest_ansible,
 )
-from tmt.container import SerializableContainer, container, field, key_to_option
+from tmt.container import (
+    SerializableContainer,
+    SpecBasedContainer,
+    container,
+    field,
+    key_to_option,
+)
 from tmt.log import Logger
 from tmt.options import option
 from tmt.package_managers import (
@@ -1230,7 +1236,9 @@ GuestDataT = TypeVar('GuestDataT', bound='GuestData')
 
 
 @container
-class GuestData(SerializableContainer):
+class GuestData(
+    SpecBasedContainer[tmt.steps._RawStepData, tmt.steps._RawStepData], SerializableContainer
+):
     """
     Keys necessary to describe, create, save and restore a guest.
 
@@ -1314,6 +1322,25 @@ class GuestData(SerializableContainer):
         else GuestAnsible(),
         help='Ansible configuration for individual guest inventory generation.',
     )
+
+    # ignore[override]: expected, we need to accept one extra parameter, `logger`.
+    @classmethod
+    def from_spec(  # type: ignore[override]
+        cls,
+        raw_data: tmt.steps._RawStepData,
+        logger: tmt.log.Logger,
+    ) -> Self:
+        # ignore[call-arg]: this is expected, parent classes uses special
+        # `from_spec`, and we need to follow.
+        return super().from_spec(raw_data, logger)  # type: ignore[call-arg]
+
+    def to_spec(self) -> tmt.steps._RawStepData:
+        spec = super().to_spec()
+
+        spec.pop('facts', None)  # type: ignore[typeddict-item]
+        spec['ansible'] = self.ansible.to_spec() if self.ansible else {}  # type: ignore[typeddict-unknown-key]
+
+        return spec
 
     # TODO: find out whether this could live in DataContainer. It probably could,
     # but there are containers not backed by options... Maybe a mixin then?
