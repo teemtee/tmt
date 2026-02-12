@@ -7,7 +7,7 @@ description: |
     .. note::
 
         As of now, the specification focuses and applies to
-        :ref:`test</spec/tests>` and :ref:`plan</spec/plans>` metadata
+        :tmt:story:`test</spec/tests>` and :tmt:story:`plan</spec/plans>` metadata
         only. In the future, we plan to support stories as well.
 
     tmt policies offer a powerful and flexible way to dynamically

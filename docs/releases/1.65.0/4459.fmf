@@ -1,4 +1,4 @@
 description: |
-    The :ref:`/spec/plans/prepare` step plugins now measure more
+    The :tmt:story:`/spec/plans/prepare` step plugins now measure more
     actions and include timestamps in results, providing better
     visibility into the duration of individual preparation phases.

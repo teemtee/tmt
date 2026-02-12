@@ -6,12 +6,12 @@ description: |
 
     As part of the provision step it is also possible to specify
     detailed hardware requirements for the testing environment.
-    See the :ref:`/spec/hardware` specification section for
+    See the :tmt:story:`/spec/hardware` specification section for
     details.
 
     As part of the provision step it is also possible to specify
     kickstart file used during the installation.
-    See the :ref:`/spec/plans/provision/kickstart` specification
+    See the :tmt:story:`/spec/plans/provision/kickstart` specification
     section for details.
 
 example: |
@@ -41,12 +41,12 @@ link:
 
         Both `name` and `role` can be used together with the
         ``where`` key to select guests on which the
-        :ref:`preparation</spec/plans/prepare/where>`
+        :tmt:story:`preparation</spec/plans/prepare/where>`
         tasks should be applied or where the test
-        :ref:`execution</spec/plans/discover/where>` should
+        :tmt:story:`execution</spec/plans/discover/where>` should
         take place.
 
-        See :ref:`/spec/plans/guest-topology` for details on how
+        See :tmt:story:`/spec/plans/guest-topology` for details on how
         this information is exposed to tests and ``prepare`` and
         ``finish`` tasks.
 

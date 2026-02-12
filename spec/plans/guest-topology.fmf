@@ -5,8 +5,8 @@ order: 95
 description: |
     The following text defines structure of files tmt uses for exposing
     guest names, roles and other properties to tests and steps that run
-    on a guest (:ref:`prepare </spec/plans/prepare>`,
-    :ref:`execute </spec/plans/execute>`, :ref:`finish </spec/plans/finish>`).
+    on a guest (:tmt:story:`prepare </spec/plans/prepare>`,
+    :tmt:story:`execute </spec/plans/execute>`, :tmt:story:`finish </spec/plans/finish>`).
     tmt saves these files on every guest used, and exposes their paths to
     processes started by tmt on these guests through environment variables:
 

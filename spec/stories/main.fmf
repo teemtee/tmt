@@ -10,7 +10,7 @@ description: |
     progress.
 
     In addition to the attributes defined here, stories also
-    support common :ref:`/spec/core` attributes which are shared
+    support common :tmt:story:`/spec/core` attributes which are shared
     across all metadata levels.
 
 example: |

@@ -6,14 +6,14 @@ story:
 
 description: |
     This specification defines all standard context dimensions
-    which can be used together with the :ref:`/spec/core/adjust`
+    which can be used together with the :tmt:story:`/spec/core/adjust`
     attribute to modify object metadata for particular context.
     For a detailed description of the concept itself see the `fmf
     context`_ documentation.
 
     The context can be defined either on the command line using
     the ``--context`` or the ``-c`` options or under the plan
-    :ref:`/spec/plans/context` key which can be used to adjust all
+    :tmt:story:`/spec/plans/context` key which can be used to adjust all
     tests included in that particular plan. The context definition
     provided on the command line overrides context defined in the
     plan.
@@ -21,7 +21,7 @@ description: |
     All context dimensions are optional and all context dimension
     values are handled in case-insensitive way. It is possible to
     define your own dimensions to describe the context, just make
-    sure the :ref:`/spec/context/dimension` name does not conflict
+    sure the :tmt:story:`/spec/context/dimension` name does not conflict
     with reserved names.
 
     .. _fmf context: https://fmf.readthedocs.io/en/stable/context.html

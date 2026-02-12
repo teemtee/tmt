@@ -43,11 +43,11 @@ description: |
     initiator
         Name of the service, pipeline or tool which initiated the
         testing or special value ``human`` for manual testing. See
-        the :ref:`/spec/context/initiator` section for details.
+        the :tmt:story:`/spec/context/initiator` section for details.
 
     trigger
         The event which triggered testing, see the
-        :ref:`/spec/context/trigger` section for the full list
+        :tmt:story:`/spec/context/trigger` section for the full list
         of supported values.
 
 example: |

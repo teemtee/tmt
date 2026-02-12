@@ -7,12 +7,15 @@ from collections.abc import Iterable
 from functools import cached_property
 
 from docutils import nodes
-from sphinx.domains import Domain
+from sphinx.domains import Domain, ObjType
+from sphinx.roles import XRefRole
 from sphinx.util import logging
 from sphinx.util.nodes import make_refnode
 
 import tmt
 import tmt.log
+
+from .story import AutoStoryDirective, StoryDirective, StoryIndex
 
 if typing.TYPE_CHECKING:
     from sphinx.addnodes import pending_xref
@@ -38,10 +41,19 @@ class TmtDomain(Domain):
     # Required attributes to setup the domain.
     name = "tmt"
     label = "Internal tmt sphinx domain"
-    roles = {}
-    directives = {}
-    indices = []
-    object_types = {}
+    roles = {
+        "story": XRefRole(),
+    }
+    directives = {
+        "autostory": AutoStoryDirective,
+        "story": StoryDirective,
+    }
+    indices = [
+        StoryIndex,
+    ]
+    object_types = {
+        "story": ObjType("story", "story"),
+    }
     initial_data = {
         "objects": {},
         "tmt_trees": {},

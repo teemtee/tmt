@@ -6,7 +6,7 @@ story:
 
 description: |
     When a test or a plan is broken or it is not relevant for
-    given :ref:`/spec/context` it can be disabled so that it's
+    given :tmt:story:`/spec/context` it can be disabled so that it's
     skipped during the execution. For stories, this attribute
     might be used to mark stories which should be skipped when
     generating the documentation.

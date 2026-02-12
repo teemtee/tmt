@@ -11,7 +11,7 @@ description: |
 
     If the test is a file, it is expected to be executable.
 
-    If the test is :ref:`/spec/tests/manual`, it points to the
+    If the test is :tmt:story:`/spec/tests/manual`, it points to the
     document describing the manual test case steps in Markdown
     format with defined structure.
 
@@ -21,7 +21,7 @@ description: |
     are applied using ``set -eo pipefail`` to avoid potential errors
     going unnoticed. You may revert this setting by explicitly
     using ``set +eo pipefail``. These options are not applied when
-    ``beakerlib`` is used as the :ref:`/spec/tests/framework`.
+    ``beakerlib`` is used as the :tmt:story:`/spec/tests/framework`.
 
 example:
   - |
