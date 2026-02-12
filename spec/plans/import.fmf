@@ -129,8 +129,9 @@ description: |
 
     The imported plans could also be modified via the ``adjust-plans``
     key, which allows modification of imported plans using
-    the same powerful rule system as :ref:`/spec/core/adjust` and :ref:`/plugins/discover/fmf`.
-    This provides flexible plan inheritance and customization:
+    the same powerful rule system as :tmt:story:`/spec/core/adjust` and
+    :tmt:story:`/plugins/discover/fmf`.  This provides flexible plan
+    inheritance and customization:
 
     .. code-block:: yaml
 
