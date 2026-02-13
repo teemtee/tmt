@@ -78,7 +78,7 @@ from tmt.log import LoggableValue
 from tmt.utils.themes import style
 
 if TYPE_CHECKING:
-    import tmt.base
+    import tmt.base.core
     import tmt.cli
     import tmt.utils.themes
     from tmt._compat.typing import ParamSpec, Self, TypeAlias
@@ -4471,12 +4471,12 @@ def fmf_id(
     name: str,
     fmf_root: Path,
     logger: tmt.log.Logger,
-) -> 'tmt.base.FmfId':
+) -> 'tmt.base.core.FmfId':
     """
     Return full fmf identifier of the node
     """
 
-    from tmt.base import FmfId
+    from tmt.base.core import FmfId
     from tmt.utils.git import GitInfo
 
     fmf_id = FmfId(fmf_root=fmf_root, name=name)
@@ -4846,7 +4846,7 @@ def generate_runs(path: Path, id_: tuple[str, ...], all_: bool = False) -> Itera
         yield abs_child_path
 
 
-def load_run(run: 'tmt.base.Run') -> tuple[bool, Optional[Exception]]:
+def load_run(run: 'tmt.base.core.Run') -> tuple[bool, Optional[Exception]]:
     """
     Load a run and its steps from the workdir
     """
@@ -5751,7 +5751,7 @@ def normalize_shell_script(
 
 def normalize_adjust(
     key_address: str, raw_value: Any, logger: tmt.log.Logger
-) -> list['tmt.base._RawAdjustRule']:
+) -> list['tmt.base.core._RawAdjustRule']:
     if raw_value is None:
         return []
     if isinstance(raw_value, list):

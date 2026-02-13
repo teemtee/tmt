@@ -23,7 +23,7 @@ from tmt.utils import (
 from tmt.utils.hints import hints_as_notes
 
 if TYPE_CHECKING:
-    import tmt.base
+    import tmt.base.core
     from tmt.guest import Guest
     from tmt.steps.execute import TestInvocation
 
@@ -457,18 +457,21 @@ class AvcDenials(CheckPlugin[AvcCheck]):
     def essential_requires(
         cls,
         guest: 'Guest',
-        test: 'tmt.base.Test',
+        test: 'tmt.base.core.Test',
         logger: tmt.log.Logger,
-    ) -> list['tmt.base.DependencySimple']:
+    ) -> list['tmt.base.core.DependencySimple']:
         if not guest.facts.has_selinux:
             return []
 
         # Avoid circular imports
-        import tmt.base
+        import tmt.base.core
 
         # Note: yes, this will most likely explode in any distro outside
         # of Fedora, CentOS and RHEL.
-        return [tmt.base.DependencySimple('audit'), tmt.base.DependencySimple('policycoreutils')]
+        return [
+            tmt.base.core.DependencySimple('audit'),
+            tmt.base.core.DependencySimple('policycoreutils'),
+        ]
 
     @classmethod
     def before_test(

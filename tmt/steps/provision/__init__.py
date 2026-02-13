@@ -34,7 +34,7 @@ from tmt.steps import Action, ActionTask, PhaseQueue, PushTask, sync_with_guests
 from tmt.utils import Path
 
 if TYPE_CHECKING:
-    import tmt.base
+    import tmt.base.core
     import tmt.cli
 
 
@@ -178,7 +178,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
 
         return self._guest
 
-    def essential_requires(self) -> list['tmt.base.Dependency']:
+    def essential_requires(self) -> list['tmt.base.core.Dependency']:
         """
         Collect all essential requirements of the guest implementation.
 
@@ -203,7 +203,7 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
         return super().options(how) + cls._guest_class.options(how)
 
     @classmethod
-    def clean_images(cls, clean: 'tmt.base.Clean', dry: bool, workdir_root: Path) -> bool:
+    def clean_images(cls, clean: 'tmt.base.core.Clean', dry: bool, workdir_root: Path) -> bool:
         """
         Remove the images of one particular plugin
         """

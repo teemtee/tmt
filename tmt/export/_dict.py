@@ -1,11 +1,11 @@
-import tmt.base
+import tmt.base.core
 import tmt.export
 
 
-@tmt.base.FmfId.provides_export('dict')
-@tmt.base.Test.provides_export('dict')
-@tmt.base.Plan.provides_export('dict')
-@tmt.base.Story.provides_export('dict')
+@tmt.base.core.FmfId.provides_export('dict')
+@tmt.base.core.Test.provides_export('dict')
+@tmt.base.core.Plan.provides_export('dict')
+@tmt.base.core.Story.provides_export('dict')
 class DictExporter(tmt.export.TrivialExporter):
     @classmethod
     def _export(cls, data: tmt.export._RawExported) -> str:

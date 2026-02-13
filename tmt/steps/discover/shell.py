@@ -6,7 +6,7 @@ import click
 import fmf
 
 import tmt
-import tmt.base
+import tmt.base.core
 import tmt.checks
 import tmt.log
 import tmt.steps
@@ -68,15 +68,15 @@ class TestDescription(
             50 if raw_value is None else int(raw_value)
         ),
     )
-    link: Optional[tmt.base.Links] = field(
+    link: Optional[tmt.base.core.Links] = field(
         default=None,
-        normalize=lambda key_address, raw_value, logger: tmt.base.Links(data=raw_value),
+        normalize=lambda key_address, raw_value, logger: tmt.base.core.Links(data=raw_value),
         # Using `to_spec()` on purpose: `Links` does not provide serialization
         # methods, because specification of links is already good enough. We
         # can use existing `to_spec()` method, and undo it with a simple
         # `Links(...)` call.
         serialize=lambda link: link.to_spec() if link else None,
-        unserialize=lambda serialized_link: tmt.base.Links(data=serialized_link),
+        unserialize=lambda serialized_link: tmt.base.core.Links(data=serialized_link),
     )
     id: Optional[str] = None
     tag: list[str] = field(
@@ -89,7 +89,7 @@ class TestDescription(
             None if raw_value is None else str(raw_value)
         ),
     )
-    adjust: Optional[list[tmt.base._RawAdjustRule]] = field(
+    adjust: Optional[list[tmt.base.core._RawAdjustRule]] = field(
         default=None,
         normalize=lambda key_address, raw_value, logger: (
             []
@@ -117,22 +117,22 @@ class TestDescription(
     framework: Optional[str] = None
     manual: bool = False
     tty: bool = False
-    require: list[tmt.base.Dependency] = field(
+    require: list[tmt.base.core.Dependency] = field(
         default_factory=list,
-        normalize=tmt.base.normalize_require,
+        normalize=tmt.base.core.normalize_require,
         serialize=lambda requires: [require.to_spec() for require in requires],
         unserialize=lambda serialized_requires: [
-            tmt.base.dependency_factory(require) for require in serialized_requires
+            tmt.base.core.dependency_factory(require) for require in serialized_requires
         ],
     )
-    recommend: list[tmt.base.Dependency] = field(
+    recommend: list[tmt.base.core.Dependency] = field(
         default_factory=list,
-        normalize=tmt.base.normalize_require,
+        normalize=tmt.base.core.normalize_require,
         serialize=lambda recommends: [recommend.to_spec() for recommend in recommends],
         unserialize=lambda serialized_recommends: [
-            tmt.base.DependencySimple.from_spec(recommend)
+            tmt.base.core.DependencySimple.from_spec(recommend)
             if isinstance(recommend, str)
-            else tmt.base.DependencyFmfId.from_spec(recommend)
+            else tmt.base.core.DependencyFmfId.from_spec(recommend)
             for recommend in serialized_recommends
         ],
     )
@@ -291,7 +291,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
 
     _data_class = DiscoverShellData
 
-    _tests: list[tmt.base.Test] = []
+    _tests: list[tmt.base.core.Test] = []
 
     def show(self, keys: Optional[list[str]] = None) -> None:
         """
@@ -363,7 +363,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                 )
             # Apply default test duration unless provided
             if not data.duration:
-                data.duration = tmt.base.DEFAULT_TEST_DURATION_L2
+                data.duration = tmt.base.core.DEFAULT_TEST_DURATION_L2
 
             # Create a simple fmf node, with correct name. Emit only keys and values
             # that are no longer default. Do not add `name` itself into the node,

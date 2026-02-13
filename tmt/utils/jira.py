@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 import fmf.utils
 
-import tmt.base
+import tmt.base.core
 import tmt.config
 import tmt.log
 import tmt.utils
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     import jira
 
 # Test, plan or story
-TmtObject = Union['tmt.base.Test', 'tmt.base.Plan', 'tmt.base.Story']
+TmtObject = Union['tmt.base.core.Test', 'tmt.base.core.Plan', 'tmt.base.core.Story']
 
 
 import_jira: ModuleImporter['jira'] = ModuleImporter(  # type: ignore[valid-type]
@@ -37,7 +37,7 @@ tmt.utils.hints.register_hint(
 )
 
 
-def prepare_url_params(tmt_object: 'tmt.base.Core') -> dict[str, str]:
+def prepare_url_params(tmt_object: 'tmt.base.core.Core') -> dict[str, str]:
     """
     Prepare url parameters prefixed with tmt object type
 
@@ -116,7 +116,7 @@ class JiraInstance:
 
     def add_link_to_issue(
         self,
-        link: 'tmt.base.Link',
+        link: 'tmt.base.core.Link',
         tmt_objects: Sequence[TmtObject],
     ) -> None:
         """
@@ -147,7 +147,7 @@ class JiraInstance:
 
 def save_link_to_metadata(
     tmt_object: TmtObject,
-    link: 'tmt.base.Link',
+    link: 'tmt.base.core.Link',
     logger: tmt.log.Logger,
 ) -> None:
     """
@@ -180,7 +180,7 @@ def save_link_to_metadata(
 def link(
     *,
     tmt_objects: Sequence[TmtObject],
-    links: 'tmt.base.Links',
+    links: 'tmt.base.core.Links',
     separate: bool = False,
     logger: tmt.log.Logger,
 ) -> None:

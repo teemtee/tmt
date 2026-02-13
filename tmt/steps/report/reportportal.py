@@ -13,7 +13,7 @@ import tmt.steps.report
 import tmt.utils
 import tmt.utils.templates
 from tmt._compat.pathlib import Path
-from tmt.base import Test
+from tmt.base.core import Test
 from tmt.container import container, field
 from tmt.result import Result, ResultOutcome
 from tmt.utils import (

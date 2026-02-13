@@ -9,9 +9,8 @@ from sphinx import addnodes
 from sphinx.domains import Index, IndexEntry
 from sphinx.util import logging
 
-import tmt.base
 from tmt._compat.pathlib import Path
-from tmt.base import Story
+from tmt.base.core import Link, Story
 from tmt.utils.git import web_git_url
 
 from .autodoc import Content
@@ -225,7 +224,7 @@ class AutoStoryDirective(TmtAutodocDirective[Story]):
         else:
             self._generate_leaf_story_content()
 
-    def _handle_link(self, link: tmt.base.Link) -> str:
+    def _handle_link(self, link: Link) -> str:
         relation = link.relation.replace("relates", "relates-to").replace("-", " ").capitalize()
         # TODO: Generalize this handling to a custom xref role
         # TODO: Handle tmt objects, plugins etc.

@@ -11,7 +11,7 @@ import tmt
 import tmt.cli._root
 import tmt.result
 from tests import CliRunner
-from tmt.base import FmfId, Link, LinkNeedle, Links, expand_node_data
+from tmt.base.core import FmfId, Link, LinkNeedle, Links, expand_node_data
 from tmt.utils import Path, SpecificationError
 
 runner = CliRunner()
@@ -219,7 +219,7 @@ def test_pickleable_tree() -> None:
 
 def test_expand_node_data(monkeypatch) -> None:
     """
-    :py:func:`tmt.base.expand_node_data` handles various forms of variables
+    :py:func:`tmt.base.core.expand_node_data` handles various forms of variables
     """
 
     # From ``_data` and `_expected` we construct lists with items, including

@@ -25,9 +25,9 @@ from tmt.steps import (
 from tmt.utils import uniq
 
 if TYPE_CHECKING:
-    import tmt.base
+    import tmt.base.core
     import tmt.cli
-    from tmt.base import Plan
+    from tmt.base.core import Plan
 
 
 @container
@@ -128,14 +128,14 @@ class DependencyCollection:
     # first, but when grouping guests by same requirements, we'd start
     # adding guests to the list when spotting same set of dependencies.
     guests: list[Guest]
-    dependencies: list['tmt.base.DependencySimple'] = simple_field(default_factory=list)
+    dependencies: list['tmt.base.core.DependencySimple'] = simple_field(default_factory=list)
 
     @property
     def as_key(self) -> 'DependencyCollectionKey':
         return frozenset(self.dependencies)
 
 
-DependencyCollectionKey = frozenset['tmt.base.DependencySimple']
+DependencyCollectionKey = frozenset['tmt.base.core.DependencySimple']
 
 
 class Prepare(tmt.steps.Step):
@@ -232,7 +232,7 @@ class Prepare(tmt.steps.Step):
             self.actions()
             return
 
-        import tmt.base
+        import tmt.base.core
 
         # All phases from all steps.
         phases = [
@@ -280,7 +280,7 @@ class Prepare(tmt.steps.Step):
 
                 collected_essential_requires[
                     guest
-                ].dependencies += tmt.base.assert_simple_dependencies(
+                ].dependencies += tmt.base.core.assert_simple_dependencies(
                     # ignore[attr-defined]: mypy thinks that phase is Phase type, while its
                     # actually PluginClass
                     phase.essential_requires(),  # type: ignore[attr-defined]
@@ -300,13 +300,15 @@ class Prepare(tmt.steps.Step):
                 if not test.enabled_on_guest(guest):
                     continue
 
-                collected_requires[guest].dependencies += tmt.base.assert_simple_dependencies(
+                collected_requires[guest].dependencies += tmt.base.core.assert_simple_dependencies(
                     test.require,
                     'After beakerlib processing, tests may have only simple requirements',
                     self._logger,
                 )
 
-                collected_recommends[guest].dependencies += tmt.base.assert_simple_dependencies(
+                collected_recommends[
+                    guest
+                ].dependencies += tmt.base.core.assert_simple_dependencies(
                     test.recommend,
                     'After beakerlib processing, tests may have only simple requirements',
                     self._logger,

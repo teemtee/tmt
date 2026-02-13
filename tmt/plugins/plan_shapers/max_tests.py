@@ -3,7 +3,7 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from tmt.base import Plan, Test
+    from tmt.base.core import Plan, Test
     from tmt.options import ClickOptionDecoratorType
     from tmt.steps.discover import TestOrigin
 

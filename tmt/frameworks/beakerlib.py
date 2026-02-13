@@ -13,7 +13,7 @@ from tmt.result import ResultOutcome, save_failures
 from tmt.utils import Environment, EnvVarValue, GeneralError, Path
 
 if TYPE_CHECKING:
-    from tmt.base import DependencySimple, Test
+    from tmt.base.core import DependencySimple, Test
     from tmt.steps.execute import TestInvocation
 
 
@@ -67,7 +67,7 @@ class Beakerlib(TestFramework):
     @classmethod
     def get_requirements(cls, test: 'Test', logger: tmt.log.Logger) -> list['DependencySimple']:
         # Avoiding circular imports: `Test.test_framework` requires `tmt.frameworks`.
-        from tmt.base import DependencySimple
+        from tmt.base.core import DependencySimple
 
         return [DependencySimple('beakerlib')]
 

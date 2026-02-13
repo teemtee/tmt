@@ -8,7 +8,7 @@ from fmf import Tree
 from requre import RequreTestCase
 from ruamel.yaml import YAML
 
-import tmt.base
+import tmt.base.core
 import tmt.cli._root
 import tmt.log
 from tests import CliRunner

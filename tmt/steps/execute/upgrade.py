@@ -2,7 +2,7 @@ from typing import Any, Optional, Union, cast
 
 import fmf.utils
 
-import tmt.base
+import tmt.base.core
 import tmt.log
 import tmt.steps
 import tmt.utils
@@ -273,19 +273,19 @@ class ExecuteUpgrade(ExecuteInternal):
             self.verbose('upgrade', 'run tests on the new system', color='blue', shift=1)
             self._run_test_phase(guest, AFTER_UPGRADE_PREFIX, logger)
 
-    def _get_plan(self, upgrades_repo: Path) -> tmt.base.Plan:
+    def _get_plan(self, upgrades_repo: Path) -> tmt.base.core.Plan:
         """
         Get plan based on upgrade path
         """
 
-        tree = tmt.base.Tree(logger=self._logger, path=upgrades_repo)
+        tree = tmt.base.core.Tree(logger=self._logger, path=upgrades_repo)
         try:
             # We do not want to consider plan -n provided on the command line
             # in the remote repo for finding upgrade path.
-            tmt.base.Plan.ignore_class_options = True
+            tmt.base.core.Plan.ignore_class_options = True
             plans = tree.plans(names=[self.upgrade_path])
         finally:
-            tmt.base.Plan.ignore_class_options = False
+            tmt.base.core.Plan.ignore_class_options = False
 
         if len(plans) == 0:
             raise tmt.utils.ExecuteError(
@@ -323,7 +323,7 @@ class ExecuteUpgrade(ExecuteInternal):
 
         # Discover normally uses also options from global Test class
         # (e.g. test -n foo). Ignore this when selecting upgrade tasks.
-        tmt.base.Test.ignore_class_options = True
+        tmt.base.core.Test.ignore_class_options = True
 
         cli_invocation = self._discover_upgrade.cli_invocation
         if cli_invocation:
@@ -336,7 +336,7 @@ class ExecuteUpgrade(ExecuteInternal):
             )
 
         finally:
-            tmt.base.Test.ignore_class_options = False
+            tmt.base.core.Test.ignore_class_options = False
 
             if cli_invocation:
                 cli_invocation.options['quiet'] = quiet
@@ -344,7 +344,7 @@ class ExecuteUpgrade(ExecuteInternal):
     def _install_dependencies(
         self,
         guest: tmt.guest.Guest,
-        dependencies: list[tmt.base.DependencySimple],
+        dependencies: list[tmt.base.core.DependencySimple],
         recommends: bool = False,
     ) -> None:
         """
@@ -364,7 +364,7 @@ class ExecuteUpgrade(ExecuteInternal):
             guest=guest, logger=self._logger
         )
 
-    def _prepare_remote_discover_data(self, plan: tmt.base.Plan) -> tmt.steps._RawStepData:
+    def _prepare_remote_discover_data(self, plan: tmt.base.core.Plan) -> tmt.steps._RawStepData:
         """
         Merge remote discover data with the local filters
         """
@@ -427,21 +427,21 @@ class ExecuteUpgrade(ExecuteInternal):
                 # Pass in the path-specific env variables
                 extra_environment = plan.environment
 
-            required_packages: list[tmt.base.DependencySimple] = []
-            recommended_packages: list[tmt.base.DependencySimple] = []
+            required_packages: list[tmt.base.core.DependencySimple] = []
+            recommended_packages: list[tmt.base.core.DependencySimple] = []
             for test_origin in self._discover_upgrade.tests(enabled=True):
                 test = test_origin.test
 
                 test.name = f'/{DURING_UPGRADE_PREFIX}/{test.name.lstrip("/")}'
 
                 # Gathering dependencies for upgrade tasks
-                required_packages += tmt.base.assert_simple_dependencies(
+                required_packages += tmt.base.core.assert_simple_dependencies(
                     test.require,
                     'After beakerlib processing, tests may have only simple requirements',
                     self._logger,
                 )
 
-                recommended_packages += tmt.base.assert_simple_dependencies(
+                recommended_packages += tmt.base.core.assert_simple_dependencies(
                     test.recommend,
                     'After beakerlib processing, tests may have only simple requirements',
                     self._logger,

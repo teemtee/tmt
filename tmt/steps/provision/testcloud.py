@@ -35,7 +35,7 @@ from tmt.utils import (
 from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
-    import tmt.base
+    import tmt.base.core
     from tmt.hardware import Size
 
 
@@ -1521,7 +1521,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
             click.echo(f"{store_dir / filename}")
 
     @classmethod
-    def clean_images(cls, clean: 'tmt.base.Clean', dry: bool, workdir_root: Path) -> bool:
+    def clean_images(cls, clean: 'tmt.base.core.Clean', dry: bool, workdir_root: Path) -> bool:
         """
         Remove the testcloud images
         """

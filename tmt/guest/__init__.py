@@ -70,7 +70,7 @@ from tmt.utils.hints import get_hint
 from tmt.utils.wait import Deadline, Waiting
 
 if TYPE_CHECKING:
-    import tmt.base
+    import tmt.base.core
     from tmt._compat.typing import TypeAlias
     from tmt.steps.provision import Provision, ProvisionPlugin, ProvisionStepDataT
 
@@ -416,14 +416,14 @@ DEFAULT_PULL_OPTIONS = TransferOptions(
 
 
 # Note: returns a static list, but we cannot make it a mere list,
-# because `tmt.base` needs to be imported and that creates a circular
+# because `tmt.base.core` needs to be imported and that creates a circular
 # import loop.
-def essential_ansible_requires() -> list['tmt.base.Dependency']:
+def essential_ansible_requires() -> list['tmt.base.core.Dependency']:
     """
     Return essential requirements for running Ansible modules
     """
 
-    return [tmt.base.DependencySimple('/usr/bin/python3')]
+    return [tmt.base.core.DependencySimple('/usr/bin/python3')]
 
 
 def format_guest_full_name(name: str, role: Optional[str]) -> str:
@@ -2526,7 +2526,7 @@ class Guest(
             )
 
     @classmethod
-    def essential_requires(cls) -> list['tmt.base.Dependency']:
+    def essential_requires(cls) -> list['tmt.base.core.Dependency']:
         """
         Collect all essential requirements of the guest.
 

@@ -14,7 +14,8 @@ from uuid import UUID
 import fmf.utils
 from click import echo
 
-import tmt.base
+import tmt.base.core
+import tmt.export
 import tmt.identifier
 import tmt.log
 import tmt.utils
@@ -1248,7 +1249,7 @@ def write(path: Path, data: NitrateDataType, quiet: bool = False) -> None:
         'extra-pepa',
     ]
     sorted_data = {}
-    for key in tmt.base.Test._keys() + extra_keys:
+    for key in tmt.base.core.Test._keys() + extra_keys:
         with suppress(KeyError):
             sorted_data[key] = data[key]
 

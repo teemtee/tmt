@@ -5,12 +5,13 @@ from typing import TYPE_CHECKING, Literal, Optional, cast
 
 import fmf
 
-import tmt.base
+import tmt
+import tmt.base.core
 import tmt.log
 import tmt.utils
 import tmt.utils.filesystem
 import tmt.utils.git
-from tmt.base import Dependency, DependencyFmfId, DependencySimple
+from tmt.base.core import Dependency, DependencyFmfId, DependencySimple
 from tmt.container import container, simple_field
 from tmt.convert import write
 from tmt.steps.discover import Discover
@@ -19,7 +20,7 @@ from tmt.utils import Command, Environment, EnvVarValue, Path
 from . import Library, LibraryError
 
 if TYPE_CHECKING:
-    from tmt.base import _RawDependency
+    from tmt.base.core import _RawDependency
 
 # Regular expressions for beakerlib libraries
 LIBRARY_REGEXP = re.compile(r'^library\(([^/]+)(/[^)]+)\)$')
@@ -334,12 +335,12 @@ class BeakerLib(Library):
                 )
                 raise LibraryError
             raise tmt.utils.GeneralError(f"Library '{self.name}' not found in '{self.repo}'.")
-        self.require = tmt.base.normalize_require(
+        self.require = tmt.base.core.normalize_require(
             f'{self.name}:require',
             cast(Optional['_RawDependency'], library_node.get('require', [])),
             self.parent._logger,
         )
-        self.recommend = tmt.base.normalize_require(
+        self.recommend = tmt.base.core.normalize_require(
             f'{self.name}:recommend',
             cast(Optional['_RawDependency'], library_node.get('recommend', [])),
             self.parent._logger,
@@ -448,7 +449,7 @@ class BeakerLibFromUrl(BeakerLib):
                 plan = cast(Discover, self.parent.parent).plan
             else:
                 plan = None
-            dynamic_ref = tmt.base.resolve_dynamic_ref(
+            dynamic_ref = tmt.base.core.resolve_dynamic_ref(
                 workdir=clone_dir, ref=self.ref, plan=plan, logger=self._logger
             )
         except tmt.utils.FileError as error:

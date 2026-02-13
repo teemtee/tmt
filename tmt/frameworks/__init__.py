@@ -8,7 +8,7 @@ import tmt.utils
 from tmt.guest import TransferOptions
 
 if TYPE_CHECKING:
-    from tmt.base import DependencySimple, Test
+    from tmt.base.core import DependencySimple, Test
     from tmt.steps.execute import TestInvocation
 
 

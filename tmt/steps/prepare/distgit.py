@@ -13,7 +13,7 @@ from tmt.steps.prepare.install import PrepareInstallData
 from tmt.utils import Command, Path, ShellScript, uniq
 
 if TYPE_CHECKING:
-    import tmt.base
+    import tmt.base.core
     import tmt.steps.discover
 
 #: Application of patches by ``rpm-build`` command invoked by
@@ -133,21 +133,21 @@ class DistGitData(tmt.steps.prepare.PrepareStepData):
         is_flag=True,
         help="Install package build dependencies",
     )
-    require: list['tmt.base.DependencySimple'] = field(
+    require: list['tmt.base.core.DependencySimple'] = field(
         default_factory=list,
         option="--require",
         metavar='PACKAGE',
         multiple=True,
         help='Additional required package(s) to be present before sources are prepared.',
         # *simple* requirements only
-        normalize=lambda key_address, value, logger: tmt.base.assert_simple_dependencies(
-            tmt.base.normalize_require(key_address, value, logger),
+        normalize=lambda key_address, value, logger: tmt.base.core.assert_simple_dependencies(
+            tmt.base.core.normalize_require(key_address, value, logger),
             "'require' can be simple packages only",
             logger,
         ),
         serialize=lambda packages: [package.to_spec() for package in packages],
         unserialize=lambda serialized: [
-            tmt.base.DependencySimple.from_spec(package) for package in serialized
+            tmt.base.core.DependencySimple.from_spec(package) for package in serialized
         ],
     )
 
@@ -308,11 +308,11 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
         # When discover is set let it rediscover tests
         if self.discover is not None:
             self.discover.post_dist_git(created_content)
-            # FIXME needs refactor of Prepare, tmt.base etc...
+            # FIXME needs refactor of Prepare, tmt.base.core etc...
             # doing quick & dirty injection of prepareinstalls
             for g in self.step.plan.provision.ready_guests:
-                collected_requires: list[tmt.base.DependencySimple] = []
-                collected_recommends: list[tmt.base.DependencySimple] = []
+                collected_requires: list[tmt.base.core.DependencySimple] = []
+                collected_recommends: list[tmt.base.core.DependencySimple] = []
 
                 for test_origin in self.step.plan.discover.tests(enabled=True):
                     test = test_origin.test
@@ -320,13 +320,13 @@ class PrepareDistGit(tmt.steps.prepare.PreparePlugin[DistGitData]):
                     if not test.enabled_on_guest(g):
                         continue
 
-                    collected_requires += tmt.base.assert_simple_dependencies(
+                    collected_requires += tmt.base.core.assert_simple_dependencies(
                         test.require,
                         'After beakerlib processing, tests may have only simple requirements',
                         self._logger,
                     )
 
-                    collected_recommends += tmt.base.assert_simple_dependencies(
+                    collected_recommends += tmt.base.core.assert_simple_dependencies(
                         test.recommend,
                         'After beakerlib processing, tests may have only simple requirements',
                         self._logger,

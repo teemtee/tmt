@@ -3,7 +3,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import tmt.base
+import tmt
+import tmt.base.core
 import tmt.libraries.beakerlib
 import tmt.utils.git
 from tmt.utils import Path
@@ -18,11 +19,11 @@ def test_basic(root_logger):
     parent = tmt.utils.Common(logger=root_logger, workdir=True)
     library_with_parent = tmt.libraries.Library.from_identifier(
         logger=root_logger,
-        identifier=tmt.base.DependencySimple('library(openssl/certgen)'),
+        identifier=tmt.base.core.DependencySimple('library(openssl/certgen)'),
         parent=parent,
     )
     library_without_parent = tmt.libraries.Library.from_identifier(
-        logger=root_logger, identifier=tmt.base.DependencySimple('library(openssl/certgen)')
+        logger=root_logger, identifier=tmt.base.core.DependencySimple('library(openssl/certgen)')
     )
 
     for library in [library_with_parent, library_without_parent]:
@@ -51,7 +52,7 @@ def test_require_from_fmf(url, name, default_branch, root_logger):
     """
 
     library = tmt.libraries.Library.from_identifier(
-        logger=root_logger, identifier=tmt.base.DependencyFmfId(url=url, name=name)
+        logger=root_logger, identifier=tmt.base.core.DependencyFmfId(url=url, name=name)
     )
     assert library.format == 'fmf'
     assert library.ref == default_branch
@@ -75,7 +76,7 @@ def test_invalid_url_conflict(root_logger):
     # Fetch to cache 'tmt' repo
     tmt.libraries.Library.from_identifier(
         logger=root_logger,
-        identifier=tmt.base.DependencyFmfId(
+        identifier=tmt.base.core.DependencyFmfId(
             url='https://github.com/teemtee/tmt',
             name='/',
             path=Path('/tests/libraries/local/data'),
@@ -101,10 +102,10 @@ def test_dependencies(root_logger):
     parent = tmt.utils.Common(logger=root_logger, workdir=True)
     requires, recommends, libraries = tmt.libraries.dependencies(
         original_require=[
-            tmt.base.DependencySimple('library(httpd/http)'),
-            tmt.base.DependencySimple('wget'),
+            tmt.base.core.DependencySimple('library(httpd/http)'),
+            tmt.base.core.DependencySimple('wget'),
         ],
-        original_recommend=[tmt.base.DependencySimple('forest')],
+        original_recommend=[tmt.base.core.DependencySimple('forest')],
         parent=parent,
         logger=root_logger,
     )
@@ -139,7 +140,7 @@ def test_mark_nonexistent_url(root_logger, monkeypatch):
     """
 
     parent = tmt.utils.Common(logger=root_logger, workdir=True)
-    identifier = tmt.base.DependencyFmfId(
+    identifier = tmt.base.core.DependencyFmfId(
         url='https://github.com/beakerlib/THISDOESNTEXIST',
         name='/',
     )

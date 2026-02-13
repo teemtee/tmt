@@ -1,6 +1,6 @@
 from typing import ClassVar, Optional
 
-import tmt.base
+import tmt.base.core
 import tmt.steps
 import tmt.utils
 from tmt.container import container, field
@@ -261,10 +261,10 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
         return outcome
 
-    def essential_requires(self) -> list[tmt.base.Dependency]:
+    def essential_requires(self) -> list[tmt.base.core.Dependency]:
         # createrepo is needed to create repository metadata from downloaded artifacts
         return [
-            tmt.base.DependencySimple('/usr/bin/createrepo'),
+            tmt.base.core.DependencySimple('/usr/bin/createrepo'),
         ]
 
     def _save_artifacts_metadata(self, providers: list[ArtifactProvider]) -> None:

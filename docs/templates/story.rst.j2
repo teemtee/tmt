@@ -33,14 +33,14 @@
 {#
     Convert link relation into a nicely formatted string.
 
-    :param tmt.base.Link link: instance.
+    :param tmt.base.core.Link link: instance.
 #}
 {% macro printable_relation(link) %}{{ link.relation.replace('relates', 'relates-to').replace('-', ' ').capitalize() }}{% endmacro %}
 
 {#
     Emit a remote link.
 
-    :param tmt.base.Link link: link to render.
+    :param tmt.base.core.Link link: link to render.
     :param str label: label of the link.
     :param url: URL to point at.
 #}
@@ -51,7 +51,7 @@
 {#
     Emit a link leading to something in tmt upstream repository.
 
-    :param tmt.base.Link link: link to render.
+    :param tmt.base.core.Link link: link to render.
 #}
 {% macro emit_tmt_repo_link(link) %}
 {{ _emit_remote_link(link, link.target, link.target | web_git_url(STORY.fmf_id.url, STORY.fmf_id.ref)) }}
@@ -60,7 +60,7 @@
 {#
     Emit a link leading to tmt plugin sources.
 
-    :param tmt.base.Link link: link to render.
+    :param tmt.base.core.Link link: link to render.
 #}
 {% macro emit_tmt_plugin_link(link) %}
 {% set matched = link.target | match('^/tmt/steps/([a-z_]+/[a-z_]+)\\.py$') %}
@@ -92,7 +92,7 @@
     therefore links pointing to stories are rendered as in-doc references
     by the template.
 
-    :param tmt.base.Link link: link to render.
+    :param tmt.base.core.Link link: link to render.
 #}
 {% macro emit_tmt_object_links(link) %}
 {% if link.target.startswith('/tests') %}
@@ -113,7 +113,7 @@
 {#
     Emit a link leading to tmt's own docs/ directory.
 
-    :param link: tmt.base.Link instance.
+    :param link: tmt.base.core.Link instance.
     :param pattern: used to extract page and fragment from link's target. It
         shall include two capturing groups, representing the page and optional
         fragment.

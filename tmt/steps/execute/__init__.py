@@ -12,7 +12,7 @@ import click
 import fmf.utils
 
 import tmt
-import tmt.base
+import tmt.base.core
 import tmt.log
 import tmt.steps
 import tmt.steps.scripts
@@ -78,7 +78,7 @@ SUBMITTED_FILES_FILENAME = "submitted-files.log"
 @container
 class ExecuteStepData(tmt.steps.WhereableStepData, tmt.steps.StepData):
     duration: str = field(
-        # TODO: ugly circular dependency (see tmt.base.DEFAULT_TEST_DURATION_L2)
+        # TODO: ugly circular dependency (see tmt.base.core.DEFAULT_TEST_DURATION_L2)
         default='1h',
         option='--duration',
         help="""
@@ -121,7 +121,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
     logger: tmt.log.Logger
 
     phase: 'ExecutePlugin[Any]'
-    test: 'tmt.base.Test'
+    test: 'tmt.base.core.Test'
     guest: Guest
 
     #: Environment variables for this invocation.
@@ -339,7 +339,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
             assert isinstance(self.phase.parent, Execute)
 
             # narrow type
-            assert isinstance(self.phase.parent.plan.my_run, tmt.base.Run)
+            assert isinstance(self.phase.parent.plan.my_run, tmt.base.core.Run)
 
             environment = Environment()
 
