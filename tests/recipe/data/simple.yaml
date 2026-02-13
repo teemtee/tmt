@@ -223,6 +223,7 @@ plans:
                 is-superuser:
                 can-sudo:
                 sudo-prefix:
+                is-image-mode:
                 is-ostree:
                 is-toolbox:
                 toolbox-container-name:
