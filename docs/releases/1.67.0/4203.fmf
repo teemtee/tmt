@@ -4,4 +4,4 @@ description: |
     constraint, allowing users to explicitly select BIOS or UEFI boot
     method for their x86_64 guests. For other architectures, the boot
     method is set automatically and cannot be changed.
-order: 10
+order: 12
