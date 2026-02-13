@@ -12,7 +12,7 @@ from tmt.package_managers import (
     PackageManagerEngine,
     provides_package_manager,
 )
-from tmt.utils import Command, CommandOutput, GeneralError, Path, RunError, ShellScript, from_json
+from tmt.utils import Command, CommandOutput, GeneralError, Path, RunError, ShellScript
 
 LOCALHOST_BOOTC_IMAGE_PREFIX = "localhost/tmt"
 
