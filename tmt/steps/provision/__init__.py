@@ -1067,7 +1067,7 @@ class GuestFacts(SerializableContainer):
     #: reports ``null``.
     is_image_mode = flag_guest_fact(
         """
-        if type bootc; then
+        if type bootc 1>&2; then
             if [ "$(sudo bootc status --format yaml | grep image:)" = "image: null" ]; then
                 echo 'false'
             else
