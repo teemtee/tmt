@@ -1,5 +1,6 @@
 description: |
-    Added ``adjust-plans`` support for :tmt:story:`/spec/plans/import`, enabling flexible step
-    inheritance and modification of imported plans using the same powerful
-    rule system as :tmt:story:`/spec/core/adjust` and :tmt:story:`/plugins/discover/fmf`.
-    This allows selective modification and addition of steps when importing remote plans.
+    New ``adjust-plans`` key for :tmt:story:`/spec/plans/import` has
+    been implemented. It allows selective modification and addition of
+    steps when importing remote plans using the same powerful rule
+    system as the context :tmt:story:`/spec/core/adjust` key.
+order: 10

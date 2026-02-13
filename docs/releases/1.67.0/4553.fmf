@@ -1,0 +1,4 @@
+description: |
+  The RPM package no longer requires ``podman-machine`` on EPEL, so the
+  :ref:`/plugins/provision/bootc` plugin can be used on EPEL at least with
+  ``root`` permissions until the ``podman-machine`` package is available.

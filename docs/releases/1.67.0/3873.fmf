@@ -2,3 +2,4 @@ description: |
     A new section :ref:`parametrize-tests` describing several ways
     to efficiently parametrize tests using environment variables
     has been added to the :ref:`guide`.
+order: 30

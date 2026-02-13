@@ -1,4 +1,5 @@
 description: |
-    The :ref:`/plugins/prepare/shell` plugin now supports image mode
-    guests. Shell commands are collected into a Containerfile, built into
-    a new image, and applied via ``bootc switch`` and reboot.
+    The prepare :ref:`/plugins/prepare/shell` plugin now supports image
+    mode guests. Shell commands are collected into a Containerfile,
+    built into a new image, and applied via ``bootc switch`` and reboot.
+order: 10
