@@ -3,5 +3,3 @@ description:
     Verify that plan environment variables are passed to podman
     using ``--env-file`` option. Variables containing newline
     are skipped and a warning is emitted.
-tag+:
-  - podman
