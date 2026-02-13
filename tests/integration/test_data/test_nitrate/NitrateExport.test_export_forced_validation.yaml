@@ -14,7 +14,7 @@ nitrate.xmlrpc_driver:
       - click.core
       - click.decorators
       - tmt.cli
-      - tmt.base
+      - tmt.base.core
       - tmt.export
       - nitrate.base
       - nitrate.mutable
@@ -84,7 +84,7 @@ nitrate.xmlrpc_driver:
       - click.core
       - click.decorators
       - tmt.cli
-      - tmt.base
+      - tmt.base.core
       - tmt.export
       - nitrate.containers
       - xmlrpc.client
@@ -104,7 +104,7 @@ nitrate.xmlrpc_driver:
       - click.core
       - click.decorators
       - tmt.cli
-      - tmt.base
+      - tmt.base.core
       - tmt.export
       - nitrate.containers
       - xmlrpc.client
@@ -125,7 +125,7 @@ nitrate.xmlrpc_driver:
       - click.core
       - click.decorators
       - tmt.cli
-      - tmt.base
+      - tmt.base.core
       - tmt.export
       - nitrate.containers
       - xmlrpc.client
@@ -145,7 +145,7 @@ nitrate.xmlrpc_driver:
       - click.core
       - click.decorators
       - tmt.cli
-      - tmt.base
+      - tmt.base.core
       - tmt.export
       - nitrate.containers
       - xmlrpc.client
@@ -165,7 +165,7 @@ nitrate.xmlrpc_driver:
       - click.core
       - click.decorators
       - tmt.cli
-      - tmt.base
+      - tmt.base.core
       - tmt.export
       - nitrate.base
       - nitrate.mutable
@@ -192,7 +192,7 @@ nitrate.xmlrpc_driver:
       - click.core
       - click.decorators
       - tmt.cli
-      - tmt.base
+      - tmt.base.core
       - tmt.export
       - nitrate.base
       - nitrate.mutable
@@ -228,7 +228,7 @@ nitrate.xmlrpc_driver:
       - click.core
       - click.decorators
       - tmt.cli
-      - tmt.base
+      - tmt.base.core
       - tmt.export
       - nitrate.base
       - nitrate.mutable
@@ -282,7 +282,7 @@ nitrate.xmlrpc_driver:
       - click.core
       - click.decorators
       - tmt.cli
-      - tmt.base
+      - tmt.base.core
       - tmt.export
       - nitrate.base
       - nitrate.mutable
@@ -338,7 +338,7 @@ tmt.utils.git:
       - click.core
       - click.decorators
       - tmt.cli
-      - tmt.base
+      - tmt.base.core
       - tmt.export
       - requre.objects
       - requre.cassette

@@ -1,15 +1,15 @@
 from typing import Any, Optional
 
-import tmt.base
+import tmt.base.core
 import tmt.export
 import tmt.utils
 from tmt.utils import Path
 
 
-@tmt.base.FmfId.provides_export('template')
-@tmt.base.Test.provides_export('template')
-@tmt.base.Plan.provides_export('template')
-@tmt.base.Story.provides_export('template')
+@tmt.base.core.FmfId.provides_export('template')
+@tmt.base.core.Test.provides_export('template')
+@tmt.base.core.Plan.provides_export('template')
+@tmt.base.core.Story.provides_export('template')
 class TemplateExporter(tmt.export.ExportPlugin):
     @classmethod
     def render_template(
@@ -35,7 +35,7 @@ class TemplateExporter(tmt.export.ExportPlugin):
     @classmethod
     def export_fmfid_collection(
         cls,
-        fmf_ids: list[tmt.base.FmfId],
+        fmf_ids: list[tmt.base.core.FmfId],
         keys: Optional[list[str]] = None,
         template: Optional[Path] = None,
         **kwargs: Any,
@@ -55,7 +55,7 @@ class TemplateExporter(tmt.export.ExportPlugin):
     @classmethod
     def export_test_collection(
         cls,
-        tests: list[tmt.base.Test],
+        tests: list[tmt.base.core.Test],
         keys: Optional[list[str]] = None,
         template: Optional[Path] = None,
         **kwargs: Any,
@@ -75,7 +75,7 @@ class TemplateExporter(tmt.export.ExportPlugin):
     @classmethod
     def export_plan_collection(
         cls,
-        plans: list[tmt.base.Plan],
+        plans: list[tmt.base.core.Plan],
         keys: Optional[list[str]] = None,
         template: Optional[Path] = None,
         **kwargs: Any,
@@ -95,7 +95,7 @@ class TemplateExporter(tmt.export.ExportPlugin):
     @classmethod
     def export_story_collection(
         cls,
-        stories: list[tmt.base.Story],
+        stories: list[tmt.base.core.Story],
         keys: Optional[list[str]] = None,
         template: Optional[Path] = None,
         include_title: bool = True,

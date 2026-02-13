@@ -236,7 +236,7 @@ default values or not set at all.
 .. code-block:: python
 
     # Create an fmf id object from raw data
-    fmf_id = tmt.base.FmfId.from_spec({'url': ..., 'ref': ...})
+    fmf_id = tmt.base.core.FmfId.from_spec({'url': ..., 'ref': ...})
 
 
 ``to_serialized``/``from_serialized``/``unserialize``
@@ -314,7 +314,7 @@ of default implementations.
 
 .. code-block:: python
 
-    # tmt.base.FmfId's specification is basically just a mapping,
+    # tmt.base.core.FmfId's specification is basically just a mapping,
     # therefore `to_dict()` is good enough to produce a specification.
     def to_spec(self) -> Dict[str, Any]:
         return self.to_dict()
