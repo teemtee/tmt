@@ -12,4 +12,4 @@ import tmt.utils
 class JSONExporter(tmt.export.TrivialExporter):
     @classmethod
     def _export(cls, data: tmt.export._RawExported) -> str:
-        return json.dumps(data)
+        return tmt.utils.to_json(data)
