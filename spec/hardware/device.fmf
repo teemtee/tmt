@@ -36,5 +36,7 @@ example:
         driver: thunderbolt
 
 link:
+  - implemented-by: /tmt/steps/provision/artemis.py
+    note: "only ``device.driver`` supported"
   - implemented-by: /tmt/steps/provision/mrack.py
     note: "``device.vendor-name`` not implemented yet"

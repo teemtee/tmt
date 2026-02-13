@@ -28,5 +28,6 @@ example:
         model-name: virtio
 
 link:
+    - implemented-by: /tmt/steps/provision/artemis.py
     - implemented-by: /tmt/steps/provision/mrack.py
       note: "``iommu.is-supported`` only"
