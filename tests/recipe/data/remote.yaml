@@ -1,37 +1,36 @@
 run:
-    root: /fmf_root_path
+    root: /path/to/fmf_root
     remove: false
     environment:
-        RUN_ENV: value
+        RUN_ENV: run_value
     context: {}
     __class__:
         module: tmt.recipe
         name: _RecipeRun
 plans:
-  - name: /plan
-    summary:
+  - name: /plans/remote
+    summary: A remote plan
     description:
     author: []
     contact: []
     enabled: true
     order: 50
-    link: []
     id:
     tag: []
     tier:
     adjust: []
+    link: []
     environment-from-fmf:
-        PLAN_ENV: value
+        PLAN_ENV: plan_value
     environment-from-importing: {}
     environment-from-cli:
-        RUN_ENV: value
+        RUN_ENV: run_value
     environment-from-intrinsics:
         TMT_VERSION: version
-        TMT_TREE: /run_path/plan/tree
-        TMT_PLAN_DATA: /run_path/plan/data
-        TMT_PLAN_ENVIRONMENT_FILE: /run_path/plan/data/variables.env
-        TMT_PLAN_SOURCE_SCRIPT: /run_path/plan/data/plan-source-script.sh
-    context: {}
+        TMT_TREE: /run_path/plans/remote/tree
+        TMT_PLAN_DATA: /run_path/plans/remote/data
+        TMT_PLAN_ENVIRONMENT_FILE: /run_path/plans/remote/data/variables.env
+        TMT_PLAN_SOURCE_SCRIPT: /run_path/plans/remote/data/plan-source-script.sh
     discover:
         enabled: true
         phases:
@@ -41,17 +40,18 @@ plans:
             when: []
             summary:
             where: &id001 []
+            url: https://github.com/teemtee/tests
+            url-content-type: git
+            ref:
             dist-git-source: false
             dist-git-type:
             dist-git-download-only: false
             dist-git-install-builddeps: false
             dist-git-require: []
             require-test: []
-            url:
-            url-content-type: git
-            ref:
             path:
-            test: []
+            test:
+              - /tests/one
             link: []
             filter: []
             include: []
@@ -74,37 +74,37 @@ plans:
                 module: tmt.steps.discover.fmf
                 name: DiscoverFmfStepData
         tests:
-          - name: /tests/first
-            summary: First test
+          - name: /tests/one
+            summary: Remote test one
             description:
             author: []
             contact: []
             enabled: true
             order: 50
             id:
-            tag: []
+            tag:
+              - remote
             tier:
             adjust: []
-            link: []
             component: []
-            test: /bin/true
-            path: /default-0/tests
             framework: shell
             manual: false
             tty: false
-            require: []
-            recommend: []
-            environment:
-                TEST_ENV: value
             duration: 5m
-            result: respect
             where: *id001
-            check: []
             restart-on-exit-code: []
             restart-max-count: 1
             restart-with-reboot: false
             serial-number: 1
             discover-phase: default-0
+            link: []
+            test: echo one
+            path: /default-0/tests/tests
+            require: []
+            recommend: []
+            environment: { }
+            result: respect
+            check: []
             __class__:
                 module: tmt.recipe
                 name: _RecipeTest
@@ -115,7 +115,7 @@ plans:
         enabled: true
         phases:
           - name: default-0
-            how: local
+            how: container
             order: 50
             when: []
             summary:
@@ -137,7 +137,6 @@ plans:
                 bootc-builder:
                 has-selinux:
                 has-systemd:
-                systemd-soft-reboot:
                 has-rsync:
                 is-superuser:
                 can-sudo:
@@ -147,6 +146,7 @@ plans:
                 is-toolbox:
                 toolbox-container-name:
                 is-container:
+                systemd-soft-reboot:
                 capabilities: {}
                 os-release-content: {}
                 lsb-release-content: {}
@@ -160,9 +160,18 @@ plans:
                 __class__:
                     module: tmt.ansible
                     name: GuestAnsible
+            image: fedora
+            user: root
+            force-pull: false
+            container:
+            network:
+            network-prefix:
+            pull-attempts: 5
+            pull-interval: 5
+            stop-time: 1
             __class__:
-                module: tmt.steps.provision.local
-                name: ProvisionLocalData
+                module: tmt.steps.provision.podman
+                name: ProvisionPodmanData
         __class__:
             module: tmt.recipe
             name: _RecipeStep
@@ -203,7 +212,7 @@ plans:
             __class__:
                 module: tmt.steps.execute.internal
                 name: ExecuteInternalData
-        results-path: plan/execute/results.yaml
+        results-path: plans/remote/execute/results.yaml
         __class__:
             module: tmt.recipe
             name: _RecipeExecuteStep
@@ -254,6 +263,7 @@ plans:
         __class__:
             module: tmt.recipe
             name: _RecipeStep
+    context: {}
     __class__:
         module: tmt.recipe
         name: _RecipePlan

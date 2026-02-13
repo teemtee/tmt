@@ -2,5 +2,11 @@ test: /bin/true
 
 /first:
     summary: First test
+    framework: beakerlib
+    test: ./test.sh
     environment:
-        TEST_ENV: value
+        TEST_ENV: test_value
+    require:
+      - url: https://github.com/beakerlib/test
+        name: /very/deep/file
+        type: library
