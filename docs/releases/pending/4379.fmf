@@ -1,5 +1,0 @@
-description: |
-    Added ``adjust-plans`` support for :tmt:story:`/spec/plans/import`, enabling flexible step
-    inheritance and modification of imported plans using the same powerful
-    rule system as :tmt:story:`/spec/core/adjust` and :tmt:story:`/plugins/discover/fmf`.
-    This allows selective modification and addition of steps when importing remote plans.
