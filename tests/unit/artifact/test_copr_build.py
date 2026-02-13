@@ -15,7 +15,7 @@ def test_copr_valid_build_non_pulp(artifact_provider):
     assert not provider.is_pulp
 
     for artifact in provider.artifacts:
-        assert artifact._raw_artifact["url"].startswith(provider.result_url)
+        assert artifact.location.startswith(provider.result_url)
 
 
 def test_copr_pulp_build(artifact_provider, monkeypatch):
@@ -29,8 +29,8 @@ def test_copr_pulp_build(artifact_provider, monkeypatch):
     assert len(artifacts) == len(MOCK_RPMS_PULP)
 
     for artifact in artifacts:
-        first_letter = artifact._raw_artifact["name"][0]
-        assert f"/Packages/{first_letter}/" in artifact._raw_artifact["url"]
+        first_letter = artifact.name[0]
+        assert f"/Packages/{first_letter}/" in artifact.location
 
 
 def test_copr_invalid_build_id(artifact_provider):

@@ -13,31 +13,16 @@ from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     ArtifactProviderId,
     DownloadError,
+    RpmVersion,
+    Version,
     provides_artifact_provider,
 )
 from tmt.steps.provision import Guest, TransferOptions
 from tmt.utils import ShellScript
 
 
-@container
-class PackageAsFileArtifactInfo(ArtifactInfo):
-    """
-    Represents a single local or remote package file or directory.
-    """
-
-    _raw_artifact: str  # full path or URL
-
-    @property
-    def id(self) -> str:
-        return tmt.utils.Path(self._raw_artifact).name
-
-    @property
-    def location(self) -> str:
-        return self._raw_artifact
-
-
-@provides_artifact_provider("file")  # type: ignore[arg-type]
-class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo]):
+@provides_artifact_provider("file")
+class PackageAsFileArtifactProvider(ArtifactProvider):
     """
     Provider for preparing artifacts from local or remote package files.
 
@@ -77,12 +62,19 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
             raise ValueError(f"Unsupported provider id: '{raw_provider_id}'.")
         return ArtifactProviderId(raw_provider_id)
 
+    def make_rpm_artifact(self, path: str) -> ArtifactInfo:
+        return ArtifactInfo(
+            version=RpmVersion.from_filename(tmt.utils.Path(path).name),
+            location=path,
+            provider=self,
+        )
+
     @cached_property
-    def artifacts(self) -> Sequence[PackageAsFileArtifactInfo]:
-        artifacts: list[PackageAsFileArtifactInfo] = []
+    def artifacts(self) -> Sequence[ArtifactInfo]:
+        artifacts: list[ArtifactInfo] = []
         seen_ids: set[str] = set()
 
-        def add(info: PackageAsFileArtifactInfo) -> None:
+        def add(info: ArtifactInfo) -> None:
             if info.id not in seen_ids:
                 artifacts.append(info)
                 seen_ids.add(info.id)
@@ -92,16 +84,16 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
                 )
 
         if self._is_url:
-            add(PackageAsFileArtifactInfo(_raw_artifact=self._source))
+            add(self.make_rpm_artifact(self._source))
         # Everything else is treated as a glob pattern
         elif matched_files := glob.glob(self._source):
             for matched_file in sorted(matched_files):
                 f = tmt.utils.Path(matched_file)
                 if f.is_dir():  # find all .rpm files within it
                     for rpm_file in sorted(f.glob("*.rpm")):
-                        add(PackageAsFileArtifactInfo(_raw_artifact=str(rpm_file)))
+                        add(self.make_rpm_artifact(str(rpm_file)))
                 elif f.is_file():
-                    add(PackageAsFileArtifactInfo(_raw_artifact=str(f)))
+                    add(self.make_rpm_artifact(str(f)))
         else:
             self.logger.warning(f"No files matched pattern: '{self._source}'.")
 
@@ -111,7 +103,7 @@ class PackageAsFileArtifactProvider(ArtifactProvider[PackageAsFileArtifactInfo])
         return artifacts
 
     def _download_artifact(
-        self, artifact: PackageAsFileArtifactInfo, guest: Guest, destination: tmt.utils.Path
+        self, artifact: ArtifactInfo, guest: Guest, destination: tmt.utils.Path
     ) -> None:
         try:
             if self._is_url:  # Remote file, download it

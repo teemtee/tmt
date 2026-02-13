@@ -3,13 +3,14 @@ Artifact provider for creating DNF repositories from baseurl.
 """
 
 from collections.abc import Sequence
+from functools import cached_property
 from re import Pattern
 from typing import Optional
 
 import tmt.log
 import tmt.utils
-from tmt.steps.prepare.artifact import RpmArtifactInfo
 from tmt.steps.prepare.artifact.providers import (
+    ArtifactInfo,
     ArtifactProvider,
     ArtifactProviderId,
     Repository,
@@ -20,10 +21,8 @@ from tmt.steps.prepare.artifact.providers.repository import _REPO_NAME_GENERATOR
 from tmt.steps.provision import Guest
 
 
-# ignore[type-arg]: TypeVar in provider registry annotations is
-# puzzling for type checkers. And not a good idea in general, probably.
-@provides_artifact_provider('repository-url')  # type: ignore[arg-type]
-class RepositoryUrlProvider(ArtifactProvider[RpmArtifactInfo]):
+@provides_artifact_provider('repository-url')
+class RepositoryUrlProvider(ArtifactProvider):
     """
     Provider for making RPM artifacts from a repository discoverable without downloading them.
 
@@ -58,15 +57,15 @@ class RepositoryUrlProvider(ArtifactProvider[RpmArtifactInfo]):
             raise ValueError("Missing repository baseurl.")
         return value
 
-    @property
-    def artifacts(self) -> Sequence[RpmArtifactInfo]:
+    @cached_property
+    def artifacts(self) -> Sequence[ArtifactInfo]:
         # Repository provider does not enumerate individual artifacts.
         # The repository is installed and packages are available through the package manager.
         # There is no need to download individual artifact files.
         return []
 
     def _download_artifact(
-        self, artifact: RpmArtifactInfo, guest: Guest, destination: tmt.utils.Path
+        self, artifact: ArtifactInfo, guest: Guest, destination: tmt.utils.Path
     ) -> None:
         """This provider only discovers repos; it does not download individual RPMs."""
         raise UnsupportedOperationError(

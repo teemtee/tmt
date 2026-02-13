@@ -3,10 +3,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from tmt.steps.prepare.artifact.providers import Repository
-from tmt.steps.prepare.artifact.providers.repository import (
-    RepositoryFileProvider,
-    parse_rpm_string,
-)
 from tmt.utils import GeneralError, Path, PrepareError, RunError, requests
 
 # A valid .repo file content for testing, using Docker CE repo
@@ -229,107 +225,6 @@ def test_url_no_path(root_logger):
             Repository.from_url(url="https://example.com/", logger=root_logger)
 
 
-@pytest.mark.parametrize(
-    ("pkg_string", "expected"),
-    [
-        # With epoch
-        (
-            "docker-ce-1:20.10.7-3.el8.x86_64",
-            {
-                "name": "docker-ce",
-                "epoch": "1",
-                "version": "20.10.7",
-                "release": "3.el8",
-                "arch": "x86_64",
-                "nvr": "docker-ce-20.10.7-3.el8",
-            },
-        ),
-        # Without epoch
-        (
-            "bash-5.1.8-6.el9.x86_64",
-            {
-                "name": "bash",
-                "epoch": "0",
-                "version": "5.1.8",
-                "release": "6.el9",
-                "arch": "x86_64",
-                "nvr": "bash-5.1.8-6.el9",
-            },
-        ),
-        # Name with '+', version with '+' and '.', release with '.'
-        (
-            "tmt+export-polarion-1.61.0.dev17+gf29b2e83e-1.fc41.x86_64",
-            {
-                "name": "tmt+export-polarion",
-                "epoch": "0",
-                "version": "1.61.0.dev17+gf29b2e83e",
-                "release": "1.fc41",
-                "arch": "x86_64",
-                "nvr": "tmt+export-polarion-1.61.0.dev17+gf29b2e83e-1.fc41",
-            },
-        ),
-        # Name with multiple '-', no epoch
-        (
-            "keylime-agent-rust-push-debuginfo-0.2.3-1.fc41.x86_64",
-            {
-                "name": "keylime-agent-rust-push-debuginfo",
-                "epoch": "0",
-                "version": "0.2.3",
-                "release": "1.fc41",
-                "arch": "x86_64",
-                "nvr": "keylime-agent-rust-push-debuginfo-0.2.3-1.fc41",
-            },
-        ),
-        # With epoch 0 explicitly
-        (
-            "example-0:1.0-1.noarch",
-            {
-                "name": "example",
-                "epoch": "0",
-                "version": "1.0",
-                "release": "1",
-                "arch": "noarch",
-                "nvr": "example-1.0-1",
-            },
-        ),
-        # Example of src rpm
-        (
-            "example-5.1.8-6.el9.src",
-            {
-                "name": "example",
-                "epoch": "0",
-                "version": "5.1.8",
-                "release": "6.el9",
-                "arch": "src",
-                "nvr": "example-5.1.8-6.el9",
-            },
-        ),
-    ],
-)
-def test_parse_rpm_string_valid(pkg_string, expected):
-    result = parse_rpm_string(pkg_string)
-    assert result == expected
-
-
-@pytest.mark.parametrize(
-    "pkg_string",
-    [
-        "invalid-string",  # No match
-        "name-version.x86_64",  # Missing release
-        "name-1:version.x86_64",  # Missing release
-        "name-version-release",  # Missing arch
-        "name-version-release.x86.64",  # Dot in arch
-        "name-version--release.x86_64",  # Double '-'
-        "name-a:b-release.x86_64",  # Invalid epoch (not digit before :)
-        "name-1:ver-sion-release.x86_64",  # '-' in version
-        "name-version-rel-ease.x86_64",  # '-' in release
-    ],
-)
-def test_parse_rpm_string_invalid(pkg_string):
-    with pytest.raises(ValueError, match=r"does not match|Malformed package string"):
-        parse_rpm_string(pkg_string)
-
-
 # ================================================================================
 # Tests for RepositoryFileProvider
 # ================================================================================
@@ -379,7 +274,7 @@ def test_artifacts_before_fetch(mock_repo_file_fetch, artifact_provider):
 def test_fetch_contents(mock_repo_file_fetch, mock_guest_and_pm, artifact_provider, tmppath):
     """Test that fetch_contents is a no-op for repository providers"""
 
-    mock_guest, mock_package_manager = mock_guest_and_pm
+    mock_guest, _ = mock_guest_and_pm
 
     provider = artifact_provider(
         "repository-file:https://download.docker.com/linux/centos/docker-ce.repo"
@@ -391,9 +286,6 @@ def test_fetch_contents(mock_repo_file_fetch, mock_guest_and_pm, artifact_provid
 
     # Verify result is empty list (no files downloaded)
     assert result == []
-
-    # Verify no package manager methods were called (it's a no-op)
-    mock_package_manager.list_packages.assert_not_called()
 
     # Verify artifacts property returns empty list (no individual artifact files)
     artifacts = provider.artifacts
@@ -420,7 +312,6 @@ def test_contribute_to_shared_repo(
 
     # Verify no package manager methods were called (since contribute_to_shared_repo is a no-op)
     mock_package_manager.install_repository.assert_not_called()
-    mock_package_manager.list_packages.assert_not_called()
 
     # Verify artifacts returns empty list (no individual files)
     assert provider.artifacts == []
