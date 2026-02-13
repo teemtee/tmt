@@ -6,7 +6,7 @@ import tmt.utils
 from tmt.plugins import PluginRegistry
 
 if TYPE_CHECKING:
-    from tmt.base import Plan
+    from tmt.base.core import Plan
     from tmt.options import ClickOptionDecoratorType
     from tmt.steps.discover import TestOrigin
 
