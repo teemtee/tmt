@@ -1,6 +1,7 @@
 import abc
 import contextlib
 import shutil
+from collections import defaultdict
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, cast
 
@@ -456,6 +457,10 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
         """
         import tmt.libraries
 
+        unresolved_dependencies: dict[str, dict[str, set[str]]] = defaultdict(
+            lambda: defaultdict(set)
+        )
+
         for test_origin in self.tests():
             test = test_origin.test
             if test.require or test.recommend:
@@ -467,6 +472,62 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
                     source_location=source,
                     target_location=target,
                 )
+
+                dependencies = (*test.require, *test.recommend)
+
+                for dependency in dependencies:
+                    if isinstance(dependency, tmt.base.DependencySimple):
+                        continue
+
+                    dependency_class_name = dependency.__class__.__name__
+
+                    if isinstance(dependency, tmt.base.DependencyFmfId):
+                        unresolved_dependencies[dependency_class_name][dependency.name or '/'].add(
+                            test.name
+                        )
+
+                    elif isinstance(dependency, tmt.base.DependencyFile):
+                        for pattern in dependency.pattern or []:
+                            unresolved_dependencies[dependency_class_name][pattern].add(test.name)
+
+                    else:
+                        unresolved_dependencies[dependency_class_name][str(dependency)].add(
+                            test.name
+                        )
+
+        # Report all failures in one go so users can fix multiple tests
+        # without rerunning tmt repeatedly.
+        if unresolved_dependencies:
+
+            def _report_unresolved_dependencies(
+                dependencies: dict[str, dict[str, set[str]]],
+                dependency_class_name: str,
+                label: Optional[str] = None,
+            ) -> None:
+                display_label = label or f"{dependency_class_name} dependency"
+                for dependency_name, tests in sorted(
+                    dependencies.pop(dependency_class_name, {}).items()
+                ):
+                    test_names = ', '.join(f"'{name}'" for name in sorted(tests))
+                    self._logger.fail(
+                        f"Failed to process {display_label} ({dependency_name}) "
+                        f"for test {test_names}."
+                    )
+
+            # Known types first
+            for dependency_class_name, label in (
+                (tmt.base.DependencyFmfId.__name__, "beakerlib libraries"),
+                (tmt.base.DependencyFile.__name__, "file dependencies"),
+            ):
+                _report_unresolved_dependencies(
+                    unresolved_dependencies, dependency_class_name, label
+                )
+
+            # Anything else
+            for dependency_class_name in sorted(unresolved_dependencies):
+                _report_unresolved_dependencies(unresolved_dependencies, dependency_class_name)
+
+            raise tmt.utils.DiscoverError('Failed to process some dependencies.')
 
     def apply_policies(self) -> None:
         """
@@ -613,6 +674,42 @@ class Discover(tmt.steps.Step):
             phase.adjust_test_attributes(path)
 
         phase.apply_policies()
+
+    @property
+    def dependencies_to_tests(self) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
+        """
+        A tuple containing two dictionaries mapping dependencies to tests (required & recommended)
+        """
+
+        required_dependencies_to_tests: dict[str, list[str]] = defaultdict(list)
+        recommended_dependencies_to_tests: dict[str, list[str]] = defaultdict(list)
+
+        def _normalize_dependency_name(dependency: tmt.base.Dependency) -> str:
+            """
+            Handles debuginfo dependencies by removing the '-debuginfo' suffix.
+            Such dependencies are installed by their base name.
+            """
+            dependency_name = str(dependency)
+            return (
+                dependency_name.removesuffix('-debuginfo')
+                if dependency_name.endswith('-debuginfo')
+                else dependency_name
+            )
+
+        for test_origin in self.tests(enabled=True):
+            test = test_origin.test
+            test_name = test.name
+            # Collect dependencies separately for required and recommended
+            for dependency in test.require:
+                required_dependencies_to_tests[_normalize_dependency_name(dependency)].append(
+                    test_name
+                )
+            for dependency in test.recommend:
+                recommended_dependencies_to_tests[_normalize_dependency_name(dependency)].append(
+                    test_name
+                )
+
+        return required_dependencies_to_tests, recommended_dependencies_to_tests
 
     def load(self) -> None:
         """

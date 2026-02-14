@@ -14,6 +14,9 @@ rlJournalStart
         rlRun "set -o pipefail"
     rlPhaseEnd
 
+    package_to_test_error="Required packages failed to install, aborting:
+                forest: required by: /test/missing"
+
     for image in $TEST_IMAGE_PREFIX/fedora/latest:latest \
                  $TEST_IMAGE_PREFIX/centos/7/upstream:latest; do
         # Prepare the tmt command and expected error message
@@ -32,11 +35,13 @@ rlJournalStart
         rlPhaseStartTest "Require a missing package ($image)"
             rlRun -s "$tmt plan --name missing" 2
             rlAssertGrep "$error" $rlRun_LOG
+	    rlAssertGrep "$package_to_test_error" $rlRun_LOG
         rlPhaseEnd
 
         rlPhaseStartTest "Require both available and missing ($image)"
             rlRun -s "$tmt plan --name mixed" 2
             rlAssertGrep "$error" $rlRun_LOG
+	    rlAssertGrep "$package_to_test_error" $rlRun_LOG
         rlPhaseEnd
     done
 
