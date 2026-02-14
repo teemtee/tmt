@@ -14,6 +14,7 @@ import tmt.steps.scripts
 import tmt.utils
 import tmt.utils.signals
 import tmt.utils.themes
+import tmt.utils.wait
 from tmt.container import container, field
 from tmt.result import Result, ResultOutcome
 from tmt.steps import safe_filename
@@ -375,32 +376,33 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         invocation.check_results = invocation.invoke_checks_before_test()
 
         # Pick the proper timeout for the test
-        timeout: Optional[int]
+        deadline: Optional[tmt.utils.wait.Deadline]
 
         if self.data.interactive:
-            if test.duration:
-                logger.warning('Ignoring requested duration, not supported in interactive mode.')
+            logger.warning('Test duration is not effective due to interactive mode.')
+            logger.info('duration deadline', 'none')
 
-            timeout = None
+            deadline = None
 
         elif self.data.ignore_duration:
             logger.debug("Test duration is not effective due to ignore-duration option.")
-            timeout = None
+            logger.info('duration deadline', 'none')
+
+            deadline = None
 
         else:
-            timeout = tmt.utils.duration_to_seconds(
-                test.duration, tmt.base.DEFAULT_TEST_DURATION_L1
-            )
+            deadline = invocation.deadline
 
-        if logger.verbosity_level >= 1:
-            shift = 1 if self.verbosity_level < 2 else 2
-            logger.verbose(
-                'duration limit',
-                f"{timeout}{' seconds' if timeout is not None else ''}",
-                color="yellow",
-                shift=shift,
-                level=1,
-            )
+            if logger.verbosity_level >= 1:
+                with deadline:
+                    logger.verbose(
+                        'duration deadline',
+                        f'{deadline.time_left.total_seconds():.0f} seconds,'
+                        f' at {deadline.due_at.strftime("%H:%M:%S %Y-%m-%d %Z")}',
+                        color="yellow",
+                        shift=1 if self.verbosity_level < 2 else 2,
+                        level=1,
+                    )
 
         # And invoke the test process.
         output = invocation.invoke_test(
@@ -408,7 +410,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             cwd=workdir,
             interactive=self.data.interactive,
             log=_test_output_logger,
-            timeout=timeout,
+            deadline=deadline,
         )
 
         # Save the captured output. Do not let the follow-up pulls
