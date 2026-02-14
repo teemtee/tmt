@@ -484,10 +484,11 @@ class WhereableStepData(SerializableContainer):
 
     To be used as a mixin class, adds necessary keys.
 
-    See [1] and [2] for specification.
+    See [1-3] for specification.
 
-    1. https://tmt.readthedocs.io/en/stable/spec/plans.html#where
-    2. https://tmt.readthedocs.io/en/stable/spec/plans.html#spec-plans-prepare-where
+    1. :tmt:story:`discover.where</spec/plans/discover/where>`
+    2. :tmt:story:`prepare.where</spec/plans/prepare/where>`
+    3. :tmt:story:`finish.where</spec/plans/finish/where>`
     """
 
     where: list[str] = field(

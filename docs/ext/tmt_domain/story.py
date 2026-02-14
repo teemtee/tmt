@@ -59,7 +59,10 @@ class StoryDirective(TmtDirective):
         )
 
         # Replicating much of the logic of `ObjectDescription`
-        target_node = nodes.target(ids=[name])
+        # Include a compatibility target for `/spec/plans/provision` to `spec-plans-provision`
+        # This was the older target with global refs
+        compat_target = name[1:].replace("/", "-")
+        target_node = nodes.target(ids=[name, compat_target])
         node = nodes.paragraph()
         index_node = addnodes.index(entries=[])
         node += self.parse_content_to_nodes(allow_section_headings=True)
