@@ -1,8 +1,6 @@
 import functools
 import textwrap
 
-import pytest
-
 from tmt.utils import GeneralError, render_exception
 from tmt.utils.themes import style
 

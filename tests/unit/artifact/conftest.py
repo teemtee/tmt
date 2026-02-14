@@ -6,7 +6,6 @@ from tmt.steps.prepare import install
 from tmt.steps.prepare.artifact import get_artifact_provider
 from tmt.steps.prepare.artifact.providers import koji as koji_module
 from tmt.steps.prepare.artifact.providers.brew import BrewArtifactProvider
-from tmt.steps.prepare.artifact.providers.copr_repository import CoprRepositoryProvider
 from tmt.steps.prepare.artifact.providers.koji import KojiArtifactProvider
 
 

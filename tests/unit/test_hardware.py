@@ -7,7 +7,6 @@ import fmf
 import pytest
 
 import tmt.hardware
-import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.hardware import Hardware

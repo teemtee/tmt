@@ -3,7 +3,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import tmt
 import tmt.base
 import tmt.libraries.beakerlib
 import tmt.utils.git

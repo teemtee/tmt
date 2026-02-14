@@ -1,9 +1,4 @@
-import tmt
-import tmt.log
-import tmt.plugins
-import tmt.steps.discover
 import tmt.templates
-import tmt.utils
 from tmt.utils import Path
 
 

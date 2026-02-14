@@ -1,7 +1,6 @@
 import re
 from typing import TYPE_CHECKING, Any, Optional, cast
 
-import tmt
 import tmt.log
 import tmt.steps
 import tmt.steps.prepare

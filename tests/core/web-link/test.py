@@ -1,7 +1,6 @@
 import re
 
 import tmt
-import tmt.utils
 
 logger = tmt.Logger.create()
 tree = tmt.Tree(path='.', logger=logger)

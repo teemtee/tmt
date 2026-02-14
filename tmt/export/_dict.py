@@ -1,6 +1,5 @@
 import tmt.base
 import tmt.export
-import tmt.utils
 
 
 @tmt.base.FmfId.provides_export('dict')

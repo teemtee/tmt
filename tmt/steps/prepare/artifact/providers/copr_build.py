@@ -9,8 +9,6 @@ from shlex import quote
 from typing import TYPE_CHECKING, Any, Optional
 from urllib.parse import urljoin
 
-import requests
-
 import tmt.log
 import tmt.utils
 import tmt.utils.hints

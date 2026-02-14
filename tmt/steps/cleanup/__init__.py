@@ -5,7 +5,7 @@ import click
 import fmf
 import fmf.utils
 
-import tmt
+import tmt as tmt
 import tmt.log
 import tmt.steps
 import tmt.utils
