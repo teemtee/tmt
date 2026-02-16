@@ -37,7 +37,7 @@ from typing import Any, Callable, NoReturn, Optional
 
 import tmt.log
 import tmt.utils
-from tmt._compat.typing import ParamSpec
+from tmt._compat.typing import ParamSpec, Self
 
 P = ParamSpec('P')
 
@@ -216,7 +216,7 @@ class PreventSignals(contextlib.AbstractContextManager['PreventSignals']):
     def __init__(self, logger: tmt.log.Logger) -> None:
         self.logger = logger
 
-    def __enter__(self) -> 'PreventSignals':
+    def __enter__(self) -> Self:
         with _INTERRUPT_LOCK:
             _INTERRUPT_MASKED.set()
 

@@ -535,7 +535,7 @@ class GuestContainer(tmt.Guest):
         # work as expected
         return self.podman(
             podman_command,
-            log=log if log else self._command_verbose_logger,
+            log=log or self._command_verbose_logger,
             friendly_command=friendly_command or str(command),
             silent=silent,
             interactive=interactive,

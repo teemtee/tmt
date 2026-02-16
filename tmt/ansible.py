@@ -154,9 +154,11 @@ class PlanAnsible(SerializableContainer):
         default=None,
         help='Inventory configuration for the plan.',
         serialize=lambda inventory: inventory.to_serialized() if inventory else None,
-        unserialize=lambda serialized: PlanAnsibleInventory.from_serialized(serialized)  # pyright: ignore[reportArgumentType]
-        if serialized
-        else None,
+        unserialize=lambda serialized: (
+            PlanAnsibleInventory.from_serialized(serialized)  # pyright: ignore[reportArgumentType]
+            if serialized
+            else None
+        ),
     )
 
     @classmethod

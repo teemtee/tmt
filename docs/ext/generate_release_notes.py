@@ -31,9 +31,9 @@ def generate_release_notes(app: "Sphinx") -> None:
         # The release notes structure is /<release>/<issue|note>
         for release in sorted(
             tree.stories(names=[r"^/(?:[\d\.]+|pending)$"], whole=True),
-            key=lambda x: Version('9999')
-            if x.name == '/pending'
-            else Version(x.name.removeprefix("/")),
+            key=lambda x: (
+                Version('9999') if x.name == '/pending' else Version(x.name.removeprefix("/"))
+            ),
             reverse=True,
         ):
             release_notes = tree.stories(names=[rf"^{release.name}/.*"])

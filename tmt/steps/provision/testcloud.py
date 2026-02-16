@@ -344,9 +344,9 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
         help='Set available memory in MB, 2048 MB by default.',
         normalize=normalize_memory_size,
         serialize=lambda value: str(value) if value is not None else None,
-        unserialize=lambda serialized: tmt.hardware.UNITS(serialized)
-        if serialized is not None
-        else None,
+        unserialize=lambda serialized: (
+            tmt.hardware.UNITS(serialized) if serialized is not None else None
+        ),
     )
     disk: Optional['Size'] = field(
         default=cast(Optional['Size'], None),
@@ -355,9 +355,9 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
         help='Specify disk size in GB, 10 GB by default.',
         normalize=normalize_disk_size,
         serialize=lambda value: str(value) if value is not None else None,
-        unserialize=lambda serialized: tmt.hardware.UNITS(serialized)
-        if serialized is not None
-        else None,
+        unserialize=lambda serialized: (
+            tmt.hardware.UNITS(serialized) if serialized is not None else None
+        ),
     )
     connection: str = field(
         default=DEFAULT_CONNECTION,
@@ -1107,7 +1107,7 @@ class GuestTestcloud(tmt.GuestSsh):
             image_path = Path(self.image_url.removeprefix("file://"))
             # We should not symlink any supported formats, e.g. the `.xz`
             # does an extract step that would be skip if we make the symlink.
-            if image_path.suffixes and image_path.suffixes[-1] in (".qcow2",):
+            if image_path.suffixes and image_path.suffixes[-1] == ".qcow2":
                 # Create a symlink in the testcloud STORE_DIR and make sure
                 # it is always updated to the requested version.
                 image_symlink = self.testcloud_image_dirpath / image_path.name
