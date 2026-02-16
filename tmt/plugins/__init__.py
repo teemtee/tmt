@@ -435,15 +435,19 @@ class PluginRegistry(Generic[RegisterableT]):
         :returns: plugin or ``None`` if no such id has been registered.
         """
 
+        explore(Logger.get_bootstrap_logger())
         return self._plugins.get(plugin_id, None)
 
     def iter_plugin_ids(self) -> Iterator[str]:
+        explore(Logger.get_bootstrap_logger())
         yield from self._plugins.keys()
 
     def iter_plugins(self) -> Iterator[RegisterableT]:
+        explore(Logger.get_bootstrap_logger())
         yield from self._plugins.values()
 
     def items(self) -> Iterator[tuple[str, RegisterableT]]:
+        explore(Logger.get_bootstrap_logger())
         yield from self._plugins.items()
 
     def __len__(self) -> int:
