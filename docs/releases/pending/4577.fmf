@@ -1,0 +1,3 @@
+description: |
+    The :ref:`/plugins/provision/artemis` provision plugin now supports Artemis API up to
+    v0.0.84.
