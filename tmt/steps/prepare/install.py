@@ -15,6 +15,7 @@ import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
 from tmt.container import container, field
+from tmt.guest import Guest
 from tmt.package_managers import (
     FileSystemPath,
     Installable,
@@ -25,7 +26,6 @@ from tmt.package_managers import (
 )
 from tmt.package_managers.bootc import Bootc, BootcEngine
 from tmt.plugins import PluginRegistry
-from tmt.steps.provision import Guest
 from tmt.utils import Command, Path, ShellScript
 
 COPR_URL = 'https://copr.fedorainfracloud.org/coprs'

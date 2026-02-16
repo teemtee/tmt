@@ -21,6 +21,6 @@ __all__ = [
 ]
 
 from tmt.base import Clean, Plan, Run, Status, Story, Test, Tree
+from tmt.guest import Guest, GuestSsh
 from tmt.log import Logger
 from tmt.result import Result
-from tmt.steps.provision import Guest, GuestSsh

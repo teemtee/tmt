@@ -7,10 +7,10 @@ import tmt.steps
 import tmt.steps.prepare
 import tmt.utils
 from tmt.container import container, field
+from tmt.guest import Guest
 from tmt.package_managers import Package
 from tmt.steps.prepare import PreparePlugin
 from tmt.steps.prepare.install import PrepareInstallData
-from tmt.steps.provision import Guest
 from tmt.utils import Command, Path, ShellScript, uniq
 
 if TYPE_CHECKING:

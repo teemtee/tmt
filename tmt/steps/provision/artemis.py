@@ -4,6 +4,7 @@ from typing import Any, Optional, TypedDict, Union, cast
 import requests
 
 import tmt
+import tmt.guest
 import tmt.hardware
 import tmt.log
 import tmt.options
@@ -14,7 +15,7 @@ import tmt.utils.signals
 import tmt.utils.url
 import tmt.utils.wait
 from tmt.container import container, field
-from tmt.steps.provision import RebootMode
+from tmt.guest import RebootMode
 from tmt.utils import (
     Command,
     GuestLogError,
@@ -122,7 +123,7 @@ def _normalize_log_type(key_address: str, raw_value: Any, logger: tmt.log.Logger
 
 
 @container
-class ArtemisGuestData(tmt.steps.provision.GuestSshData):
+class ArtemisGuestData(tmt.guest.GuestSshData):
     # API
     api_url: str = field(
         default=DEFAULT_API_URL,
@@ -691,7 +692,7 @@ class GuestArtemis(tmt.GuestSsh):
         command: Optional[Union[Command, ShellScript]] = None,
         waiting: Optional[Waiting] = None,
     ) -> bool:
-        waiting = waiting or tmt.steps.provision.default_reboot_waiting()
+        waiting = waiting or tmt.guest.default_reboot_waiting()
 
         if mode == RebootMode.HARD:
             if self.guestname is None:
@@ -836,7 +837,7 @@ class GuestLogBlobType(TypedDict):
 
 
 @container
-class GuestLogArtemis(tmt.steps.provision.GuestLog):
+class GuestLogArtemis(tmt.guest.GuestLog):
     guest: GuestArtemis
 
     @functools.cached_property

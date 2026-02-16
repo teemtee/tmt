@@ -1540,7 +1540,7 @@ class Test(
 
         return framework
 
-    def enabled_on_guest(self, guest: tmt.steps.provision.Guest) -> bool:
+    def enabled_on_guest(self, guest: tmt.guest.Guest) -> bool:
         """
         Check if the test is enabled on the specific guest
         """
@@ -4597,7 +4597,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         import tmt.steps.provision.local
 
         guest_runner = tmt.steps.provision.local.GuestLocal(
-            data=tmt.steps.provision.GuestData(primary_address='localhost', role=None),
+            data=tmt.guest.GuestData(primary_address='localhost', role=None),
             name='tmt runner',
             logger=self._logger,
         )
