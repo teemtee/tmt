@@ -2,6 +2,180 @@
 
 This file contains instructions for AI assistants (Claude Code, Gemini CLI, GitHub Copilot, etc.) when working with the tmt codebase. Different sections cover different tasks.
 
+## Overview
+
+TMT (Test Management Tool) is a comprehensive Python-based testing framework that provides
+a user-friendly way to work with tests. It implements the Metadata Specification using the Flexible
+Metadata Format (FMF) for storing test execution data directly within git repositories.
+
+## Development Commands
+
+### Setup and Dependencies
+```bash
+# Install development dependencies
+make develop
+
+# Install build dependencies
+make build-deps
+```
+
+### Testing
+```bash
+# Run pre-commit checks
+pre-commit run --all-files
+```
+
+### Code Quality
+```bash
+# Run pre-commit checks
+pre-commit run --all-files
+```
+
+### Building and Packaging
+```bash
+# Build documentation
+make docs
+
+# Build man page
+make man
+
+# Build RPM packages
+make rpm
+
+# Build SRPM
+make srpm
+```
+
+### Container Images
+```bash
+# Build tmt container images
+make images
+
+# Build test container images
+make images/test
+
+# Update base images for tmt containers
+make images/test/bases
+
+# Clean up container images
+make clean/images
+make clean/images/test
+```
+
+### Development Utilities
+```bash
+# Clean temporary files and build artifacts
+make clean
+
+# Show available make targets
+make help
+```
+
+## Architecture
+
+### Core Components
+
+**Base Classes** (`tmt/base.py`):
+
+- `Tree`: Represents the metadata tree structure
+- `Test`: Individual test metadata and execution
+- `Plan`: Test execution plans with step definitions
+- `Story`: User story requirements
+- `Run`: Test run execution context
+
+**Steps Framework** (`tmt/steps/`):
+
+TMT uses a 7-phase execution model:
+
+1. **discover**: Find and select tests to run
+2. **provision**: Prepare testing environment (guests/containers)
+3. **prepare**: Install dependencies and configure environment
+4. **execute**: Run the actual tests
+5. **report**: Generate and publish test results
+6. **finish**: Cleanup and finalization tasks
+7. **cleanup**: Remove temporary resources
+
+Each step is implemented as a plugin system supporting multiple "how" methods.
+
+**Plugin System**:
+
+- Steps can have multiple implementations (e.g., provision: local, container, virtual, beaker)
+- Plugins are dynamically loaded based on the "how" field in step configuration
+- Common plugins: ansible, shell, fmf, beakerlib
+
+**Key Directories**:
+
+- `tmt/checks/`: Additional checks running before/after tests (AVC, journalctl, coredumpct, ...)
+- `tmt/frameworks/`: Test framework support (beakerlib, shell)
+- `tmt/package_managers/`: Abstraction of package manager actions used by the rest of tmt code
+- `tmt/steps/discover/`: Test discovery implementations (fmf, shell)
+- `tmt/steps/provision/`: Environment provisioning (local, container, virtual, artemis, bootc)
+- `tmt/steps/prepare/`: Environment preparation (ansible, shell, install packages)
+- `tmt/steps/execute/`: Test execution (internal, upgrade)
+- `tmt/steps/report/`: Result reporting (display, html, junit, polarion)
+- `tmt/steps/finish/`: Cleanup tasks (ansible, shell)
+- `tmt/utils/`: Utility modules (git, filesystem, command execution)
+
+### Configuration and Metadata
+
+**FMF Integration**: TMT heavily uses the Flexible Metadata Format (fmf) for:
+
+- Test definitions and metadata
+- Plan configurations
+- Context and environment specifications
+- Inheritance and data organization
+
+**Config System** (`tmt/config/`):
+
+- Centralized configuration management
+- Hardware requirements specification
+- Theme and styling options
+
+### Testing Structure
+
+**Tests Organization**:
+
+- `tests/unit/`: Unit tests using pytest
+- `tests/integration/`: Integration tests with external services
+- Tests use both pytest and shell-based test execution
+- Container-based testing for isolation
+- Beakerlib framework integration for complex test scenarios
+
+### CLI and User Interface
+
+**Command Structure**:
+
+- Main CLI in `tmt/cli/` with modular command organization
+- Consistent option handling across commands
+- Support for multiple output formats and verbosity levels
+- Context-aware command execution
+
+## Working with TMT Code
+
+### Adding New Step Plugins
+
+1. Create plugin module in appropriate `tmt/steps/<step>/` directory
+2. Inherit from base plugin class of the step
+3. Implement required methods (`go()`, `show()`, `wake()`)
+4. Add plugin registration and CLI options
+
+### Test Development
+
+- Unit tests should mock external dependencies
+- Integration tests can use the container framework
+- Follow existing test patterns in `tests/` directory
+- Use `make test` for quick validation during development
+
+### Code Standards
+
+- Python 3.9+ required
+- Type hints enforced via mypy and pyright with strict settings
+- Comprehensive linting via ruff (configured in pyproject.toml)
+- Code formatting via ruff (configured in pyproject.toml)
+- Comprehensive docstring requirements
+- Security-focused linting with bandit checks provided by ruff
+
+
 ## Release Notes Generation
 
 When creating release notes for tmt, use the milestone name as input (e.g., "1.65") and follow these guidelines:
