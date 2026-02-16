@@ -5,13 +5,13 @@ import requests
 
 import tmt
 import tmt.base
+import tmt.guest
 import tmt.log
 import tmt.steps
 import tmt.steps.prepare
-import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
-from tmt.steps.provision import (
+from tmt.guest import (
     ANSIBLE_COLLECTION_PLAYBOOK_PATTERN,
     AnsibleApplicable,
     AnsibleCollectionPlaybook,
@@ -302,4 +302,4 @@ class PrepareAnsible(tmt.steps.prepare.PreparePlugin[PrepareAnsibleData]):
         :returns: a list of requirements.
         """
 
-        return tmt.steps.provision.essential_ansible_requires()
+        return tmt.guest.essential_ansible_requires()

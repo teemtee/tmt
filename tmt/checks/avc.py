@@ -24,8 +24,8 @@ from tmt.utils.hints import hints_as_notes
 
 if TYPE_CHECKING:
     import tmt.base
+    from tmt.guest import Guest
     from tmt.steps.execute import TestInvocation
-    from tmt.steps.provision import Guest
 
 
 class TestMethod(enum.Enum):

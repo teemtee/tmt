@@ -5,6 +5,7 @@ import time
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Optional
 
+import tmt.guest
 import tmt.log
 import tmt.steps.provision
 import tmt.steps.provision.artemis
@@ -27,7 +28,7 @@ SSH_PING_OUTPUT_PATTERN = re.compile(r'Ncat: Connected')
 
 # TODO: do not use the list of classes, it's hard to maintain.
 # Tracked in https://github.com/teemtee/tmt/issues/2739
-PINGABLE_GUEST_CLASSES: tuple[type[tmt.steps.provision.Guest], ...] = (
+PINGABLE_GUEST_CLASSES: tuple[type[tmt.guest.Guest], ...] = (
     tmt.steps.provision.artemis.GuestArtemis,
     tmt.steps.provision.connect.GuestConnect,
     tmt.steps.provision.mrack.GuestBeaker,
@@ -36,8 +37,8 @@ PINGABLE_GUEST_CLASSES: tuple[type[tmt.steps.provision.Guest], ...] = (
     # tmt.steps.provision.testcloud.GuestTestcloud
 )
 
-SSH_PINGABLE_GUEST_CLASSES: tuple[type[tmt.steps.provision.Guest], ...] = (
-    tmt.steps.provision.GuestSsh,
+SSH_PINGABLE_GUEST_CLASSES: tuple[type[tmt.guest.Guest], ...] = (
+    tmt.guest.GuestSsh,
     tmt.steps.provision.local.GuestLocal,
 )
 
@@ -286,7 +287,7 @@ class WatchdogCheck(Check):
         Perform a "SSH ping" check
         """
 
-        assert isinstance(invocation.guest, tmt.steps.provision.GuestSsh)
+        assert isinstance(invocation.guest, tmt.guest.GuestSsh)
 
         logger.debug('checking SSH port', level=4)
 

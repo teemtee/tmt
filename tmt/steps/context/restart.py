@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Callable, Optional
 import tmt.log
 import tmt.utils
 from tmt.container import container
-from tmt.steps.provision import Guest
+from tmt.guest import Guest
 from tmt.utils import Environment, EnvVarValue, HasEnvironment
 
 if TYPE_CHECKING:

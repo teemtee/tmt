@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     # This class will be added in a future PR.
     # For now, just type it as Any to satisfy pyright.
     Repository: TypeAlias = Any
-    from tmt.steps.provision import Guest
+    from tmt.guest import Guest
 
     #: A type of package manager names.
     GuestPackageManager: TypeAlias = str
@@ -80,7 +80,10 @@ class PackagePath(Path):
 Installable = Union[Package, FileSystemPath, PackagePath, PackageUrl]
 
 
-PackageManagerEngineT = TypeVar('PackageManagerEngineT', bound='PackageManagerEngine')
+# PLC0105: typevar name does not reflect its covariance, but that's fine.
+PackageManagerEngineT = TypeVar(  # noqa: PLC0105
+    'PackageManagerEngineT', bound='PackageManagerEngine', covariant=True
+)
 PackageManagerClass = type['PackageManager[PackageManagerEngineT]']
 
 

@@ -3,9 +3,9 @@ from typing import Any, Optional
 
 import tmt.log
 from tmt.container import container, field
+from tmt.guest import Guest
 from tmt.package_managers import Package
 from tmt.steps.prepare.feature import PrepareFeatureData, ToggleableFeature, provides_feature
-from tmt.steps.provision import Guest
 from tmt.utils import ShellScript
 
 SUPPORTED_DISTRO_PATTERNS = tuple(

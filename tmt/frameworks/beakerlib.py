@@ -8,8 +8,8 @@ import tmt.steps.execute
 import tmt.steps.scripts
 import tmt.utils
 from tmt.frameworks import TestFramework, provides_framework
+from tmt.guest import TransferOptions
 from tmt.result import ResultOutcome, save_failures
-from tmt.steps.provision import TransferOptions
 from tmt.utils import Environment, EnvVarValue, GeneralError, Path
 
 if TYPE_CHECKING:

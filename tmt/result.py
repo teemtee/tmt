@@ -14,8 +14,8 @@ from tmt.utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.base
+    import tmt.guest
     import tmt.steps.execute
-    import tmt.steps.provision
 
 
 class ResultOutcome(enum.Enum):
@@ -141,7 +141,7 @@ class ResultGuestData(SerializableContainer):
     primary_address: Optional[str] = None
 
     @classmethod
-    def from_guest(cls, *, guest: 'tmt.steps.provision.Guest') -> 'ResultGuestData':
+    def from_guest(cls, *, guest: 'tmt.guest.Guest') -> 'ResultGuestData':
         """
         Create a guest data for a result from a :py:class:`Guest` instance.
 
@@ -577,7 +577,7 @@ class Result(BaseResult):
         Return a nicely colored result with test name (and note)
         """
 
-        from tmt.steps.provision import format_guest_full_name
+        from tmt.guest import format_guest_full_name
 
         result = 'errr' if self.result == ResultOutcome.ERROR else self.result.value
 

@@ -3,8 +3,8 @@ from typing import Any, Optional
 
 import tmt.log
 from tmt.container import container, field
+from tmt.guest import Guest
 from tmt.steps.prepare.feature import PrepareFeatureData, ToggleableFeature, provides_feature
-from tmt.steps.provision import Guest
 
 SUPPORTED_DISTRO_PATTERNS = tuple(
     re.compile(pattern)

@@ -2,8 +2,8 @@ from typing import Any, Optional
 
 import tmt.log
 from tmt.container import container, field
+from tmt.guest import AnsibleCollectionPlaybook, Guest
 from tmt.steps.prepare.feature import Feature, PrepareFeatureData, provides_feature
-from tmt.steps.provision import AnsibleCollectionPlaybook, Guest
 
 # TODO: provide link to said specification once it's created.
 #: The name of a playbook provided by the collection. This name is

@@ -81,8 +81,8 @@ import jinja2
 import tmt.log
 import tmt.steps
 from tmt.container import container
+from tmt.guest import Guest, TransferOptions
 from tmt.steps import safe_filename
-from tmt.steps.provision import Guest, TransferOptions
 from tmt.utils import Environment, EnvVarValue, HasEnvironment, Path, ShellScript
 from tmt.utils.templates import render_template
 

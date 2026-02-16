@@ -25,7 +25,7 @@ import tmt.steps.provision
 import tmt.utils
 import tmt.utils.wait
 from tmt.container import container, field
-from tmt.steps.provision import CONNECT_TIMEOUT, RebootMode, default_connect_waiting
+from tmt.guest import CONNECT_TIMEOUT, RebootMode, default_connect_waiting
 from tmt.utils import (
     Command,
     GuestLogError,
@@ -327,7 +327,7 @@ def _report_hw_requirement_support(constraint: tmt.hardware.Constraint) -> bool:
 
 
 @container
-class TestcloudGuestData(tmt.steps.provision.GuestSshData):
+class TestcloudGuestData(tmt.guest.GuestSshData):
     image: str = field(
         default=DEFAULT_IMAGE,
         option=('-i', '--image'),
@@ -1301,7 +1301,7 @@ class GuestTestcloud(tmt.GuestSsh):
         if self._instance is None:
             raise tmt.utils.ProvisionError("No instance initialized.")
 
-        waiting = waiting or tmt.steps.provision.default_reboot_waiting()
+        waiting = waiting or tmt.guest.default_reboot_waiting()
 
         if mode == RebootMode.HARD:
             self.debug("Hard reboot using the testcloud API.")
@@ -1549,7 +1549,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
 
 
 @container
-class ConsoleLog(tmt.steps.provision.GuestLog):
+class ConsoleLog(tmt.guest.GuestLog):
     #: Temporary directory for storing the console log content.
     exchange_directory: Optional[Path] = None
 
