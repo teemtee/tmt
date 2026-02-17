@@ -129,7 +129,7 @@ class ArtifactInfo:
 
         TODO: Transient for now, modify based on the decision made here: https://github.com/teemtee/tmt/issues/4546
         """
-        return str(self.version)
+        return self.version.nvra
 
     @property
     def name(self) -> str:
@@ -140,7 +140,7 @@ class ArtifactInfo:
         """
         This is the filename of the artifact.
         """
-        return f"{self.provider.id}-{self.version}.rpm"
+        return f"{self.id}.rpm"
 
     def __str__(self) -> str:
         return f"{self.version} ({self.provider.id})"

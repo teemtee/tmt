@@ -39,7 +39,7 @@ def test_download_artifacts(tmp_path, root_logger):
     provider = MockProvider("mock:123", repository_priority=50, logger=root_logger)
 
     paths = provider.fetch_contents(guest, tmp_path, [])
-    file_path = tmp_path / "123-mock-1.0-1.x86_64.rpm"
+    file_path = tmp_path / "mock-1.0-1.x86_64.rpm"
     assert file_path in paths
     assert file_path.exists()
     assert file_path.read_text() == "ok"
