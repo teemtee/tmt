@@ -979,7 +979,7 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             f"Adjust the test 'duration' attribute if necessary.\n"
             f"https://tmt.readthedocs.io/en/stable/spec/tests.html#duration\n",
             mode='a',
-            level=3,
+            debug_level=3,
         )
 
     @abc.abstractmethod
@@ -1023,7 +1023,11 @@ class Execute(tmt.steps.Step):
         A set of members of the step workdir that should not be removed.
         """
 
-        return {*super()._preserved_workdir_members, 'data', 'results.yaml'}
+        return {
+            *super()._preserved_workdir_members,
+            'data',
+            f'results{tmt.utils.STATE_FILENAME_SUFFIX}',
+        }
 
     def load(self) -> None:
         """
