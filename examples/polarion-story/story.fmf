@@ -1,4 +1,4 @@
-summary: User authentication and authorization feature
+summary: TMT_Example - User authentication and authorization feature
 story: |
     **As a** system administrator,
     **I want to** be able to authenticate and authorize users through multiple providers:
@@ -64,5 +64,5 @@ link:
   - verified-by: /examples/polarion-story/tests/auth/ldap
   - verified-by: /examples/polarion-story/tests/auth/oauth
   - implemented-by: /src/auth/providers.py
-id: 5fb05e6c-e5e1-4564-a6cf-6549ac1dd082
-extra-polarion: RHELCOCKPIT-833
+id: 89afaef2-2a95-4aba-878b-ad1297153229
+extra-polarion: RHELCOCKPIT-1811

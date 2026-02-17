@@ -3645,12 +3645,19 @@ def json_to_list(data: Any) -> list[Any]:
     return loaded_data
 
 
-def markdown_to_html(filename: Path) -> str:
+def markdown_to_html(
+        source: Path | str,
+        extensions: Optional[list[str]] = None) -> str:
     """
     Convert markdown to html
 
-    Expects: Markdown document as a file.
+    Expects: Markdown document as a file path or text string.
     Returns: An HTML document as a string.
+    
+    Args:
+        source: Either a Path to a markdown file or a markdown text string
+        extensions: Optional list of markdown extensions to enable
+                   (e.g., ['extra', 'nl2br', 'sane_lists'])
     """
 
     try:
@@ -3658,13 +3665,23 @@ def markdown_to_html(filename: Path) -> str:
     except ImportError as error:
         raise ConvertError("Install tmt+test-convert to export tests.") from error
 
-    try:
+    # Handle Path input (read from file)
+    if isinstance(source, Path):
         try:
-            return markdown.markdown(filename.read_text())
-        except UnicodeError as error:
-            raise MetadataError(f"Unable to read '{filename}'.") from error
-    except OSError as error:
-        raise ConvertError(f"Unable to open '{filename}'.") from error
+            try:
+                markdown_text = source.read_text()
+            except UnicodeError as error:
+                raise MetadataError(f"Unable to read '{source}'.") from error
+        except OSError as error:
+            raise ConvertError(f"Unable to open '{source}'.") from error
+    # Handle string input (use directly)
+    else:
+        markdown_text = source
+    
+    # Convert markdown to HTML with optional extensions
+    if extensions:
+        return markdown.markdown(markdown_text, extensions=extensions)
+    return markdown.markdown(markdown_text)
 
 
 def duration_to_seconds(duration: str, injected_default: Optional[str] = None) -> int:

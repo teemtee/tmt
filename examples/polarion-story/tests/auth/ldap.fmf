@@ -1,8 +1,6 @@
-summary: LDAP authentication test
+summary: TMT_Example - LDAP authentication test
 test: echo "Testing LDAP authentication"
 duration: 5m
 tag:
   - authentication
   - ldap
-id: b135b91d-08f5-4842-99f4-a0cb62dc868e
-extra-polarion: RHELCOCKPIT-1612

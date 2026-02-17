@@ -4,7 +4,6 @@ import traceback
 from typing import Any, Optional
 
 import fmf.utils
-import markdown
 from click import echo
 
 import tmt.base
@@ -26,33 +25,6 @@ RE_POLARION_URL = r'.*/polarion/#/project/.*/workitem\?id=(.*)'
 
 # TODO: why this exists?
 log = fmf.utils.Logging('tmt').logger
-
-
-def markdown_to_html(text: str) -> str:
-    """
-    Convert Markdown text to HTML for Polarion rich text fields.
-    
-    Args:
-        text: Markdown-formatted text
-        
-    Returns:
-        HTML-formatted text suitable for Polarion work items
-    """
-    if not text:
-        return text
-    
-    # Configure markdown extensions for better formatting
-    # extras: fenced-code-blocks, tables, code-friendly
-    html = markdown.markdown(
-        text,
-        extensions=[
-            'extra',           # Adds tables, fenced code blocks, etc.
-            'nl2br',           # Converts newlines to <br/>
-            'sane_lists',      # Better list handling
-        ]
-    )
-    
-    return html
 
 
 def get_test_script_link(test: tmt.base.Test) -> Optional[str]:
@@ -686,24 +658,29 @@ def _generate_story_description_html(story: tmt.base.Story) -> str:
             f'<hr/>'
         )
     
+    # Markdown extensions for better formatting in Polarion
+    markdown_extensions = [
+        'extra',           # Adds tables, fenced code blocks, etc.
+        'nl2br',           # Converts newlines to <br/>
+        'sane_lists',      # Better list handling
+    ]
+    
     # Add story text
     if story.story:
-        description += markdown_to_html(story.story)
+        description += tmt.utils.markdown_to_html(story.story, extensions=markdown_extensions)
     
     # Add description
     if story.description:
-        if description and not web_link:  # Only add spacing if no header was added
+        if description:
             description += '<br/><br/>'
-        elif description:  # Header was added
-            description += '<br/>'
-        description += markdown_to_html(story.description)
+        description += tmt.utils.markdown_to_html(story.description, extensions=markdown_extensions)
     
     # Add examples
     if story.example:
         description += '<br/><br/><strong>Examples:</strong><br/>'
         for example in story.example:
             # Examples can also contain markdown
-            example_html = markdown_to_html(example)
+            example_html = tmt.utils.markdown_to_html(example, extensions=markdown_extensions)
             description += f'<br/>• {example_html}'
     
     return description
@@ -820,6 +797,64 @@ def _set_polarion_feature_fields(
         logger.debug(f"Failed to set some Polarion fields: {exc}")
 
 
+def _export_single_test_case_for_story(
+    test_name: str,
+    story: tmt.base.Story,
+    project_id: str,
+    create: bool,
+    dry_mode: bool,
+    append_summary: Optional[str],
+    logger: tmt.log.Logger
+) -> Optional[str]:
+    """
+    Helper function to export a single test case to Polarion.
+    
+    Returns the Polarion work item ID if successful, None otherwise.
+    """
+    if not story.tree:
+        return None
+    
+    try:
+        tests = story.tree.tests(names=[test_name])
+        if not tests:
+            logger.warning(f'Test {test_name} not found in fmf tree')
+            return None
+        
+        test = tests[0]
+        polarion_test_case = get_polarion_case(test.node, project_id)
+        
+        # If test case not found in Polarion, export it first
+        if not polarion_test_case:
+            logger.debug(f'Test {test_name} not found in Polarion')
+            if create:
+                logger.info(f'Creating test case {test_name} in Polarion')
+                try:
+                    test_options = {
+                        'create': True,
+                        'project_id': project_id,
+                        'dry_mode': dry_mode,
+                        'duplicate': False,
+                        'link_polarion': False,
+                        'append-summary': append_summary,
+                    }
+                    polarion_test_case = export_to_polarion(test, options=test_options)
+                    if polarion_test_case:
+                        logger.info(f'Test case exported: {polarion_test_case.work_item_id}')
+                except Exception as export_err:
+                    logger.debug(f"Failed to export test case {test_name}: {export_err}")
+                    logger.warning(f'Failed to export test case: {export_err}')
+        else:
+            logger.debug(f'Test case found: {polarion_test_case.work_item_id}')
+        
+        # Return the Polarion work item ID if we have one
+        return str(polarion_test_case.work_item_id) if polarion_test_case else None
+        
+    except Exception as err:
+        logger.debug(f"Failed to process test {test_name}: {err}")
+        logger.warning(f'Failed to process test {test_name}: {err}')
+        return None
+
+
 def _export_and_link_story_tests(
     story: tmt.base.Story,
     polarion_feature: Optional[PolarionWorkItem],
@@ -867,79 +902,19 @@ def _export_and_link_story_tests(
                     continue  # Skip FMF lookup for Polarion URLs
                 
                 # Not a Polarion URL, treat as FMF test path
-                if story.tree:
-                    try:
-                        tests = story.tree.tests(names=[link.target])
-                        if tests:
-                            test = tests[0]
-                            # Try to find the Polarion test case
-                            polarion_test_case = get_polarion_case(test.node, project_id)
-                            
-                            # If test case not found in Polarion, export it first
-                            if not polarion_test_case:
-                                logger.debug(f'Test {link.target} not found in Polarion')
-                                if create:
-                                    logger.info(f'Creating test case {link.target} in Polarion')
-                                    try:
-                                        # Reuse existing export_to_polarion() function with options
-                                        test_options = {
-                                            'create': True,
-                                            'project_id': project_id,
-                                            'dry_mode': dry_mode,
-                                            'duplicate': False,
-                                            'link_polarion': False,
-                                            'append-summary': append_summary,
-                                        }
-                                        polarion_test_case = export_to_polarion(test, options=test_options)
-                                        if polarion_test_case:
-                                            logger.info(f'Test case exported: {polarion_test_case.work_item_id}')
-                                    except Exception as export_err:
-                                        logger.debug(f"Failed to export test case {link.target}: {export_err}")
-                                        logger.warning(f'Failed to export test case: {export_err}')
-                            else:
-                                logger.debug(f'Test case found: {polarion_test_case.work_item_id}')
-                            
-                            # Save the mapping if we have a Polarion test case
-                            if polarion_test_case:
-                                test_case_map[link.target] = str(polarion_test_case.work_item_id)
-                        else:
-                            logger.warning(f'Test {link.target} not found in fmf tree')
-                    except Exception as err:
-                        logger.debug(f"Failed to process test {link.target}: {err}")
-                        logger.warning(f'Failed to process test {link.target}: {err}')
+                polarion_id = _export_single_test_case_for_story(
+                    link.target, story, project_id, create, dry_mode, append_summary, logger
+                )
+                if polarion_id:
+                    test_case_map[link.target] = polarion_id
             
             # Handle FmfId objects
             elif isinstance(link.target, tmt.base.FmfId):
-                if story.tree:
-                    try:
-                        tests = story.tree.tests(names=[link.target.name])
-                        if tests:
-                            test = tests[0]
-                            polarion_test_case = get_polarion_case(test.node, project_id)
-                            
-                            if not polarion_test_case and create:
-                                logger.info(f'Creating test case {link.target.name} in Polarion')
-                                try:
-                                    # Reuse existing export_to_polarion() function with options
-                                    test_options = {
-                                        'create': True,
-                                        'project_id': project_id,
-                                        'dry_mode': dry_mode,
-                                        'duplicate': False,
-                                        'link_polarion': False,
-                                        'append-summary': append_summary,
-                                    }
-                                    polarion_test_case = export_to_polarion(test, options=test_options)
-                                    if polarion_test_case:
-                                        logger.info(f'Test case exported: {polarion_test_case.work_item_id}')
-                                except Exception as export_err:
-                                    logger.debug(f"Failed to export test case: {export_err}")
-                                    logger.warning(f'Failed to export test case: {export_err}')
-                            
-                            if polarion_test_case:
-                                test_case_map[link.target.name] = str(polarion_test_case.work_item_id)
-                    except Exception as err:
-                        logger.debug(f"Failed to process test: {err}")
+                polarion_id = _export_single_test_case_for_story(
+                    link.target.name, story, project_id, create, dry_mode, append_summary, logger
+                )
+                if polarion_id:
+                    test_case_map[link.target.name] = polarion_id
     
     # Step 2: Link test cases to story
     # Now that all test cases are exported, we can link them
@@ -970,8 +945,8 @@ def _export_and_link_story_tests(
     if not dry_mode and polarion_feature and links_to_create:
         for polarion_id in links_to_create:
             try:
-                # Use "verifies" role - the test case verifies the requirement
-                polarion_feature.add_linked_item(polarion_id, 'verifies')
+                # Use "verified_by" role - the feature is verified by the test case
+                polarion_feature.add_linked_item(polarion_id, 'verified_by')
             except (AttributeError, PolarionException) as err:
                 logger.debug(f"Failed to link test case {polarion_id}: {err}")
                 logger.warning(f'Failed to link: {polarion_id}')
