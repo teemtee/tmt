@@ -1,26 +1,22 @@
 import re
 from unittest.mock import MagicMock
 
-from tmt.steps.prepare.artifact.providers import ArtifactInfo, ArtifactProvider
+from tmt.steps.prepare.artifact.providers import ArtifactInfo, ArtifactProvider, Version
 
 
-class MockArtifactInfo(ArtifactInfo):
-    @property
-    def id(self) -> str:
-        return "mock.rpm"
-
-    @property
-    def location(self) -> str:
-        return "http://example.com/mock.rpm"
-
-
-class MockProvider(ArtifactProvider[MockArtifactInfo]):
+class MockProvider(ArtifactProvider):
     def _extract_provider_id(self, raw_provider_id: str) -> str:
         return raw_provider_id.split(":", 1)[1]
 
     @property
     def artifacts(self):
-        return [MockArtifactInfo(_raw_artifact={})]
+        return [
+            ArtifactInfo(
+                version=Version(name="mock", version="1.0", release="1", arch="x86_64"),
+                location="http://example.com/mock-1.0-1.x86_64.rpm",
+                provider=self,
+            )
+        ]
 
     def _download_artifact(self, artifact, guest, destination):
         destination.write_text("ok")
@@ -43,8 +39,7 @@ def test_download_artifacts(tmp_path, root_logger):
     provider = MockProvider("mock:123", repository_priority=50, logger=root_logger)
 
     paths = provider.fetch_contents(guest, tmp_path, [])
-
-    file_path = tmp_path / "mock.rpm"
+    file_path = tmp_path / "mock-1.0-1.x86_64.rpm"
     assert file_path in paths
     assert file_path.exists()
     assert file_path.read_text() == "ok"

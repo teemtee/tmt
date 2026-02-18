@@ -1,5 +1,4 @@
-import typing
-from typing import Optional
+from typing import ClassVar, Optional
 
 import tmt.base
 import tmt.steps
@@ -10,7 +9,6 @@ from tmt.steps import PluginOutcome
 from tmt.steps.prepare import PreparePlugin, PrepareStepData
 from tmt.steps.prepare.artifact.providers import (
     _PROVIDER_REGISTRY,
-    ArtifactInfo,
     ArtifactProvider,
     Repository,
 )
@@ -40,25 +38,7 @@ class PrepareArtifactData(PrepareStepData):
     )
 
 
-@container
-class RpmArtifactInfo(ArtifactInfo):
-    """
-    Represents a single RPM package.
-    """
-
-    _raw_artifact: dict[str, str]
-
-    @property
-    def id(self) -> str:
-        """RPM identifier"""
-        return f"{self._raw_artifact['nvr']}.{self._raw_artifact['arch']}.rpm"
-
-    @property
-    def location(self) -> str:
-        return self._raw_artifact['url']
-
-
-def get_artifact_provider(provider_id: str) -> type[ArtifactProvider[ArtifactInfo]]:
+def get_artifact_provider(provider_id: str) -> type[ArtifactProvider]:
     provider_type = provider_id.split(':')[0]
     provider_class = _PROVIDER_REGISTRY.get_plugin(provider_type)
     if not provider_class:
@@ -188,8 +168,8 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     _data_class = PrepareArtifactData
 
     # Shared repository configuration
-    SHARED_REPO_DIR_NAME: typing.ClassVar[str] = 'artifact-shared-repo'
-    SHARED_REPO_NAME: typing.ClassVar[str] = 'tmt-artifact-shared'
+    SHARED_REPO_DIR_NAME: ClassVar[str] = 'artifact-shared-repo'
+    SHARED_REPO_NAME: ClassVar[str] = 'tmt-artifact-shared'
 
     def go(
         self,
@@ -215,7 +195,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         )
 
         # Initialize all providers and have them contribute to the shared repo
-        providers: list[ArtifactProvider[ArtifactInfo]] = []
+        providers: list[ArtifactProvider] = []
         for raw_provider_id in self.data.provide:
             try:
                 provider_class = get_artifact_provider(raw_provider_id)

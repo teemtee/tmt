@@ -14,12 +14,12 @@ import tmt.log
 import tmt.utils
 import tmt.utils.hints
 from tmt.container import container
-from tmt.steps.prepare.artifact import RpmArtifactInfo
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
     ArtifactProviderId,
     DownloadError,
+    RpmVersion,
     provides_artifact_provider,
 )
 from tmt.steps.provision import Guest
@@ -61,26 +61,15 @@ def import_koji(logger: tmt.log.Logger) -> None:
         raise tmt.utils.GeneralError("Could not import koji package.") from error
 
 
-@container
-class ScratchRpmArtifactInfo(RpmArtifactInfo):
-    """
-    Represents a single RPM url from Koji scratch builds.
-    """
-
-    @property
-    def id(self) -> str:
-        return f"{self._raw_artifact['filename']}"
-
-
 BuildT = TypeVar(
-    "BuildT", bound="ArtifactProvider[RpmArtifactInfo]"
+    "BuildT", bound="ArtifactProvider"
 )  # Generic type for build provider classes (e.g., KojiBuild, BrewBuild)
 ProviderT = TypeVar(
     "ProviderT", bound="KojiArtifactProvider"
 )  # Generic type for artifact provider subclasses
 
 
-class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
+class KojiArtifactProvider(ArtifactProvider):
     """
     Provider for downloading artifacts from Koji builds.
 
@@ -183,7 +172,7 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         return value
 
     def _download_artifact(
-        self, artifact: RpmArtifactInfo, guest: Guest, destination: tmt.utils.Path
+        self, artifact: ArtifactInfo, guest: Guest, destination: tmt.utils.Path
     ) -> None:
         """
         Download the specified artifact to the given destination on the guest.
@@ -215,30 +204,27 @@ class KojiArtifactProvider(ArtifactProvider[RpmArtifactInfo]):
         )
         self.logger.info(f"Contributed artifacts from '{source_path}' to '{shared_repo_dir}'.")
 
-    def _rpm_url(self, rpm_meta: dict[str, str]) -> str:
-        """Construct Koji RPM URL."""
-        assert self.build_info is not None
-        package_name = self.build_info["package_name"]
-        name = rpm_meta["name"]
-        version = rpm_meta["version"]
-        release = rpm_meta["release"]
-        arch = rpm_meta["arch"]
-        path = (
-            f"packages/{package_name}/"
-            f"{version}/{release}/"
-            f"{arch}/"
-            f"{name}-{version}-{release}.{arch}.rpm"
-        )
-        return urljoin(self._top_url, path)
-
-    def make_rpm_artifact(self, rpm_meta: dict[str, str]) -> RpmArtifactInfo:
+    def make_rpm_artifact(self, rpm_meta: dict[str, Any]) -> ArtifactInfo:
         """
         Create a normal build RPM artifact from metadata returned by listBuildRPMs.
         """
-        return RpmArtifactInfo(_raw_artifact={**rpm_meta, "url": self._rpm_url(rpm_meta)})
+        assert self.build_info is not None
+        package_name = self.build_info["package_name"]
+        version_info = RpmVersion.from_rpm_meta(rpm_meta)
+        path = (
+            f"packages/{package_name}/"
+            f"{version_info.version}/"
+            f"{version_info.release}/"
+            f"{version_info.arch}/"
+            f"{version_info.nvra}.rpm"
+        )
+
+        return ArtifactInfo(
+            version=version_info, location=urljoin(self._top_url, path), provider=self
+        )
 
 
-@provides_artifact_provider("koji.task")  # type: ignore[arg-type]
+@provides_artifact_provider("koji.task")
 class KojiTask(KojiArtifactProvider):
     @cached_property
     def build_id(self) -> Optional[int]:
@@ -264,9 +250,7 @@ class KojiTask(KojiArtifactProvider):
         for task_id_str in descendants_map:
             yield int(task_id_str)
 
-    # ignore[override]: expected, we do want to return more specific
-    # type than the one declared in superclass.
-    def make_rpm_artifact(self, task_id: int, filename: str) -> ScratchRpmArtifactInfo:  # type: ignore[override]
+    def make_rpm_artifact(self, task_id: int, filename: str) -> ArtifactInfo:  # type: ignore[override]
         """
         Create a scratch RPM artifact from a task output filename.
         """
@@ -277,14 +261,12 @@ class KojiTask(KojiArtifactProvider):
         task_path = pathinfo.taskrelpath(task_id)
         url = f"{work_path}/{task_path}/{filename}"
 
-        raw_artifact = {
-            "filename": filename,
-            "url": url,
-        }
-        return ScratchRpmArtifactInfo(_raw_artifact=raw_artifact)
+        return ArtifactInfo(
+            version=RpmVersion.from_filename(filename), location=url, provider=self
+        )
 
     @cached_property
-    def artifacts(self) -> Sequence[RpmArtifactInfo]:
+    def artifacts(self) -> Sequence[ArtifactInfo]:
         self.logger.debug(f"Fetching RPMs for task '{self.id}'.")
         # If task produced a build, reuse build path
         if self.build_id is not None:
@@ -297,7 +279,7 @@ class KojiTask(KojiArtifactProvider):
         # Otherwise, list the task output files for scratch builds
         self.logger.debug(f"Task '{self.id}' did not produce a build, fetching scratch RPMs.")
 
-        artifacts: list[RpmArtifactInfo] = []
+        artifacts: list[ArtifactInfo] = []
         seen_ids = set()  # Multiple tasks may produce the same RPM
 
         for child_task in self._get_task_children(int(self.id)):
@@ -317,14 +299,14 @@ class KojiTask(KojiArtifactProvider):
         return artifacts
 
 
-@provides_artifact_provider('koji.build')  # type: ignore[arg-type]
+@provides_artifact_provider('koji.build')
 class KojiBuild(KojiArtifactProvider):
     @cached_property
     def build_id(self) -> int:
         return int(self.id)
 
     @cached_property
-    def artifacts(self) -> Sequence[RpmArtifactInfo]:
+    def artifacts(self) -> Sequence[ArtifactInfo]:
         self.logger.debug(f"Fetching RPMs for build '{self.build_id}'.")
 
         return [
@@ -333,7 +315,7 @@ class KojiBuild(KojiArtifactProvider):
         ]
 
 
-@provides_artifact_provider("koji.nvr")  # type: ignore[arg-type]
+@provides_artifact_provider("koji.nvr")
 class KojiNvr(KojiArtifactProvider):
     @cached_property
     def build_info(self) -> Optional[dict[str, Any]]:
@@ -355,7 +337,7 @@ class KojiNvr(KojiArtifactProvider):
         return build_id
 
     @cached_property
-    def artifacts(self) -> Sequence[RpmArtifactInfo]:
+    def artifacts(self) -> Sequence[ArtifactInfo]:
         """
         RPM artifacts for the given NVR.
         """

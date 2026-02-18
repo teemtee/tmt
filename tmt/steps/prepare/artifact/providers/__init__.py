@@ -9,12 +9,12 @@ from collections.abc import Iterator, Sequence
 from functools import cached_property
 from re import Pattern
 from shlex import quote
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar, cast, overload
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast, overload
 from urllib.parse import urlparse
 
 import tmt.log
 import tmt.utils
-from tmt._compat.typing import TypeAlias
+from tmt._compat.typing import Self, TypeAlias
 from tmt.container import container, simple_field
 from tmt.plugins import PluginRegistry
 from tmt.steps.provision import Guest
@@ -33,41 +33,124 @@ class UnsupportedOperationError(RuntimeError):
     """
 
 
+@container(frozen=True)
+class Version:
+    """
+    Version information for artifacts.
+    """
+
+    name: str
+    version: str
+    release: str
+    arch: str
+    epoch: int = 0
+
+    @property
+    def nvra(self) -> str:
+        return f"{self.name}-{self.version}-{self.release}.{self.arch}"
+
+    @property
+    def nevra(self) -> str:
+        return f"{self.name}-{self.epoch}:{self.version}-{self.release}.{self.arch}"
+
+    def __str__(self) -> str:
+        return self.nvra
+
+
+@container(frozen=True)
+class RpmVersion(Version):
+    """
+    Represents an RPM package version.
+    """
+
+    @classmethod
+    def from_rpm_meta(cls, rpm_meta: dict[str, Any]) -> Self:
+        """
+        Version constructed from RPM metadata dictionary.
+
+        Example usage:
+
+        .. code-block:: python
+
+            version_info = RpmVersion.from_rpm_meta({
+                "name": "curl",
+                "version": "8.11.1",
+                "release": "7.fc42",
+                "arch": "x86_64"
+            })
+        """
+        return cls(
+            name=rpm_meta["name"],
+            version=rpm_meta["version"],
+            release=rpm_meta["release"],
+            arch=rpm_meta["arch"],
+            epoch=rpm_meta.get("epoch", 0),
+        )
+
+    @classmethod
+    def from_filename(cls, filename: str) -> Self:
+        """
+        Version constructed from RPM filename.
+
+        Example usage:
+
+        .. code-block:: python
+
+            version_info = RpmVersion.from_filename("curl-8.11.1-7.fc42.x86_64.rpm")
+        """
+        base = filename.removesuffix(".rpm")
+        nvr_part, *arch_parts = base.rsplit(".", 1)
+        arch = arch_parts[0] if arch_parts else "noarch"
+        parts = nvr_part.rsplit("-", 2)
+        if len(parts) != 3:
+            raise ValueError(
+                f"Invalid RPM filename format: '{filename}'. "
+                f"Expected name-version-release.arch.rpm"
+            )
+        name, version, release = parts
+
+        return cls(name=name, version=version, release=release, arch=arch, epoch=0)
+
+
 @container
-class ArtifactInfo(ABC):
+class ArtifactInfo:
     """
     Information about a single artifact, e.g. a package.
     """
 
-    _raw_artifact: Any
+    version: Version
+    location: str
+    provider: "ArtifactProvider"
 
     @property
-    @abstractmethod
     def id(self) -> str:
         """
         A unique identifier of the artifact.
-        """
 
-        raise NotImplementedError
+        TODO: Transient for now, modify based on the decision made here: https://github.com/teemtee/tmt/issues/4546
+        """
+        return self.version.nvra
 
     @property
-    @abstractmethod
-    def location(self) -> str:
-        raise NotImplementedError
+    def name(self) -> str:
+        return self.version.name
+
+    @property
+    def filename(self) -> str:
+        """
+        This is the filename of the artifact.
+        """
+        return f"{self.id}.rpm"
 
     def __str__(self) -> str:
-        return self.id
+        return f"{self.version} ({self.provider.id})"
 
 
 #: A type of an artifact provider identifier.
 ArtifactProviderId: TypeAlias = str
 
-#: A type variable representing subclasses of :py:class:`ArtifactInfo`
-#: containers.
-ArtifactInfoT = TypeVar('ArtifactInfoT', bound=ArtifactInfo)
 
-
-class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
+class ArtifactProvider(ABC):
     """
     Base class for artifact providers.
 
@@ -108,7 +191,7 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
 
     @cached_property
     @abstractmethod
-    def artifacts(self) -> Sequence[ArtifactInfoT]:
+    def artifacts(self) -> Sequence[ArtifactInfo]:
         """
         Collect all artifacts available from this provider.
 
@@ -123,7 +206,7 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
 
     @abstractmethod
     def _download_artifact(
-        self, artifact: ArtifactInfoT, guest: Guest, destination: tmt.utils.Path
+        self, artifact: ArtifactInfo, guest: Guest, destination: tmt.utils.Path
     ) -> None:
         """
         Download a single artifact to the specified destination on a given guest.
@@ -171,7 +254,7 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         downloaded_paths: list[tmt.utils.Path] = []
 
         for artifact in self._filter_artifacts(exclude_patterns):
-            local_path = download_path / str(artifact)
+            local_path = download_path / artifact.filename
             self.logger.debug(f"Downloading '{artifact}' to '{local_path}'.")
 
             try:
@@ -196,7 +279,7 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         self.logger.info(f"Successfully downloaded '{len(downloaded_paths)}' artifacts.")
         return downloaded_paths
 
-    def _filter_artifacts(self, exclude_patterns: list[Pattern[str]]) -> Iterator[ArtifactInfoT]:
+    def _filter_artifacts(self, exclude_patterns: list[Pattern[str]]) -> Iterator[ArtifactInfo]:
         """
         Filter artifacts based on exclude patterns.
 
@@ -215,7 +298,10 @@ class ArtifactProvider(ABC, Generic[ArtifactInfoT]):
         """
         return []
 
-    def contribute_to_shared_repo(
+    # B027: "... is an empty method in an abstract base class, but has
+    # no abstract decorator" - expected, it's a default implementation
+    # provided for subclasses. It is acceptable to do nothing.
+    def contribute_to_shared_repo(  # noqa: B027
         self,
         guest: Guest,
         source_path: Path,
@@ -359,14 +445,14 @@ class Repository:
         return f"{tmt.utils.sanitize_name(self.name)}.repo"
 
 
-_PROVIDER_REGISTRY: PluginRegistry[type[ArtifactProvider[ArtifactInfo]]] = PluginRegistry(
+_PROVIDER_REGISTRY: PluginRegistry[type[ArtifactProvider]] = PluginRegistry(
     'prepare.artifact.providers'
 )
 
 
 def _register_hints(
     plugin_id: str,
-    plugin_class: type[ArtifactProvider[ArtifactInfoT]],
+    plugin_class: type[ArtifactProvider],
     hints: Optional[dict[str, str]] = None,
 ) -> None:
     for hint_id, hint in (hints or {}).items():
