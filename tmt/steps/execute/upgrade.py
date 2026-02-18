@@ -234,7 +234,7 @@ class ExecuteUpgrade(ExecuteInternal):
     def go(
         self,
         *,
-        guest: 'tmt.steps.provision.Guest',
+        guest: 'tmt.guest.Guest',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
     ) -> None:
@@ -347,7 +347,7 @@ class ExecuteUpgrade(ExecuteInternal):
 
     def _install_dependencies(
         self,
-        guest: tmt.steps.provision.Guest,
+        guest: tmt.guest.Guest,
         dependencies: list[tmt.base.DependencySimple],
         recommends: bool = False,
     ) -> None:
@@ -402,7 +402,7 @@ class ExecuteUpgrade(ExecuteInternal):
 
         return remote_raw_data
 
-    def _perform_upgrade(self, guest: tmt.steps.provision.Guest, logger: tmt.log.Logger) -> None:
+    def _perform_upgrade(self, guest: tmt.guest.Guest, logger: tmt.log.Logger) -> None:
         """
         Perform a system upgrade
         """
@@ -464,9 +464,7 @@ class ExecuteUpgrade(ExecuteInternal):
             self._discover_upgrade = None
             self.discover_phase = original_discover_phase
 
-    def _run_test_phase(
-        self, guest: tmt.steps.provision.Guest, prefix: str, logger: tmt.log.Logger
-    ) -> None:
+    def _run_test_phase(self, guest: tmt.guest.Guest, prefix: str, logger: tmt.log.Logger) -> None:
         """
         Execute a single test phase on the guest
 

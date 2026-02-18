@@ -81,8 +81,8 @@ if TYPE_CHECKING:
     import tmt.steps.discover
     import tmt.steps.execute
     from tmt.base import Plan
+    from tmt.guest import Guest, TransferOptions
     from tmt.result import BaseResult, PhaseResult
-    from tmt.steps.provision import Guest, TransferOptions
 
 
 DEFAULT_ALLOWED_HOW_PATTERN: Pattern[str] = re.compile(r'.*')
@@ -2771,7 +2771,7 @@ class Reboot(Action):
         assert hasattr(self.parent, 'plan')
         assert self.parent.plan is not None
 
-        from tmt.steps.provision import RebootMode
+        from tmt.guest import RebootMode
 
         command = tmt.utils.ShellScript(self.opt('command')) if self.opt('command') else None
 
@@ -3192,7 +3192,7 @@ class Topology(SerializableContainer):
         """
 
         # Avoid circular imports
-        from tmt.steps.provision import TransferOptions
+        from tmt.guest import TransferOptions
 
         topology_filepaths = self.save(dirpath=dirpath, filename_base=filename_base)
 

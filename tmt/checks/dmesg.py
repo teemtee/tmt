@@ -2,21 +2,21 @@ import re
 from re import Pattern
 from typing import TYPE_CHECKING, Optional
 
+import tmt.guest
 import tmt.log
-import tmt.steps.provision
 import tmt.utils
 import tmt.utils.themes
 from tmt.checks import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
+from tmt.guest import GuestCapability
 from tmt.result import CheckResult, ResultOutcome, save_failures
-from tmt.steps.provision import GuestCapability
 from tmt.utils import Path, Stopwatch
 from tmt.utils.hints import hints_as_notes
 
 if TYPE_CHECKING:
     import tmt.base
+    from tmt.guest import Guest
     from tmt.steps.execute import TestInvocation
-    from tmt.steps.provision import Guest
 
 TEST_POST_DMESG_FILENAME = 'dmesg-{event}.txt'
 
@@ -68,7 +68,7 @@ class DmesgCheck(Check):
     @classmethod
     def _fetch_dmesg(
         cls,
-        guest: tmt.steps.provision.Guest,
+        guest: tmt.guest.Guest,
         logger: tmt.log.Logger,
     ) -> tmt.utils.CommandOutput:
         def _test_output_logger(

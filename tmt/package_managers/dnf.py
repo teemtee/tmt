@@ -201,9 +201,7 @@ class DnfEngine(PackageManagerEngine):
         return ShellScript(f"createrepo {directory}")
 
 
-# ignore[type-arg]: TypeVar in package manager registry annotations is
-# puzzling for type checkers. And not a good idea in general, probably.
-@provides_package_manager('dnf')  # type: ignore[arg-type]
+@provides_package_manager('dnf')
 class Dnf(PackageManager[DnfEngine]):
     NAME = 'dnf'
 
@@ -266,9 +264,7 @@ class Dnf5Engine(DnfEngine):
     skip_missing_packages_option = '--skip-unavailable'
 
 
-# ignore[type-arg]: TypeVar in package manager registry annotations is
-# puzzling for type checkers. And not a good idea in general, probably.
-@provides_package_manager('dnf5')  # type: ignore[arg-type]
+@provides_package_manager('dnf5')
 class Dnf5(Dnf):
     NAME = 'dnf5'
 
@@ -341,9 +337,7 @@ class YumEngine(DnfEngine):
         return ShellScript(f'{self.command.to_script()} makecache')
 
 
-# ignore[type-arg]: TypeVar in package manager registry annotations is
-# puzzling for type checkers. And not a good idea in general, probably.
-@provides_package_manager('yum')  # type: ignore[arg-type]
+@provides_package_manager('yum')
 class Yum(Dnf):
     NAME = 'yum'
 

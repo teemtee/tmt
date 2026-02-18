@@ -9,7 +9,7 @@ from tmt.log import Logger
 
 if TYPE_CHECKING:
     from tmt._compat.typing import Self
-    from tmt.steps.provision import Guest
+    from tmt.guest import Guest
 
 
 T = TypeVar('T')

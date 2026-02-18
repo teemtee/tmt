@@ -5,20 +5,22 @@ from typing import Any, Optional, Union
 
 import tmt
 import tmt.base
+import tmt.guest
 import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.steps.scripts
 import tmt.utils
 from tmt.container import container
-from tmt.steps.provision import Provision, RebootMode, TransferOptions
+from tmt.guest import RebootMode, TransferOptions
+from tmt.steps.provision import Provision
 from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
 from tmt.utils.hints import get_hint
 from tmt.utils.wait import Waiting
 
 
 @container
-class ProvisionLocalData(tmt.steps.provision.GuestData, tmt.steps.provision.ProvisionStepData):
+class ProvisionLocalData(tmt.guest.GuestData, tmt.steps.provision.ProvisionStepData):
     pass
 
 
@@ -51,7 +53,7 @@ class GuestLocal(tmt.Guest):
 
     def _run_ansible(
         self,
-        playbook: tmt.steps.provision.AnsibleApplicable,
+        playbook: tmt.guest.AnsibleApplicable,
         playbook_root: Optional[Path] = None,
         extra_args: Optional[str] = None,
         friendly_command: Optional[str] = None,
@@ -293,7 +295,7 @@ class ProvisionLocal(tmt.steps.provision.ProvisionPlugin[ProvisionLocalData]):
         super().go(logger=logger)
 
         # Create a GuestLocal instance
-        data = tmt.steps.provision.GuestData.from_plugin(self)
+        data = tmt.guest.GuestData.from_plugin(self)
         data.primary_address = 'localhost'
 
         data.show(verbose=self.verbosity_level, logger=self._logger)

@@ -11,8 +11,8 @@ import tmt.steps.prepare
 import tmt.utils
 import tmt.utils.git
 from tmt.container import container, field
+from tmt.guest import DEFAULT_PULL_OPTIONS, Guest, TransferOptions
 from tmt.steps import safe_filename
-from tmt.steps.provision import DEFAULT_PULL_OPTIONS, Guest, TransferOptions
 from tmt.utils import Command, EnvVarValue, ShellScript, Stopwatch
 
 PREPARE_WRAPPER_FILENAME = 'tmt-prepare-wrapper.sh'

@@ -9,13 +9,13 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
-from tmt.steps.provision import (
+from tmt.guest import (
     DEFAULT_PUSH_OPTIONS,
     GuestCapability,
-    Provision,
     RebootMode,
     TransferOptions,
 )
+from tmt.steps.provision import Provision
 from tmt.utils import (
     Command,
     OnProcessEndCallback,
@@ -40,7 +40,7 @@ DEFAULT_STOP_TIME = 1
 
 
 @container
-class PodmanGuestData(tmt.steps.provision.GuestData):
+class PodmanGuestData(tmt.guest.GuestData):
     image: str = field(
         default=DEFAULT_IMAGE,
         option=('-i', '--image'),
@@ -361,7 +361,7 @@ class GuestContainer(tmt.Guest):
                 raise tmt.utils.ProvisionError("No container initialized.")
 
             if waiting is None:
-                waiting = tmt.steps.provision.default_reconnect_waiting()
+                waiting = tmt.guest.default_reconnect_waiting()
                 waiting.deadline = Deadline.from_seconds(CONNECTION_TIMEOUT)
 
             self.debug("Hard reboot using the reboot command 'container restart'.")
@@ -375,7 +375,7 @@ class GuestContainer(tmt.Guest):
                 "Custom reboot command not supported in podman provision."
             )
 
-        raise tmt.steps.provision.RebootModeNotSupportedError(
+        raise tmt.guest.RebootModeNotSupportedError(
             f"Guest '{self.multihost_name}' does not support {mode.value} reboot."
             " Containers can only be stopped and started again (hard reboot).",
             guest=self,
@@ -384,7 +384,7 @@ class GuestContainer(tmt.Guest):
 
     def _run_ansible(
         self,
-        playbook: tmt.steps.provision.AnsibleApplicable,
+        playbook: tmt.guest.AnsibleApplicable,
         playbook_root: Optional[Path] = None,
         extra_args: Optional[str] = None,
         friendly_command: Optional[str] = None,

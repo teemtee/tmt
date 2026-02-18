@@ -12,6 +12,7 @@ import tmt.steps.discover
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, simple_field
+from tmt.guest import Guest
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
@@ -24,7 +25,6 @@ from tmt.steps import (
     PushTask,
     sync_with_guests,
 )
-from tmt.steps.provision import Guest
 from tmt.utils import uniq
 
 if TYPE_CHECKING:
@@ -90,7 +90,7 @@ class PreparePlugin(tmt.steps.Plugin[PrepareStepDataT, PluginOutcome]):
     def go(
         self,
         *,
-        guest: 'tmt.steps.provision.Guest',
+        guest: 'tmt.guest.Guest',
         environment: Optional[tmt.utils.Environment] = None,
         logger: tmt.log.Logger,
     ) -> PluginOutcome:

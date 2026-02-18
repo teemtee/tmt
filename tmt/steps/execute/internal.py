@@ -15,6 +15,7 @@ import tmt.utils
 import tmt.utils.signals
 import tmt.utils.themes
 from tmt.container import container, field
+from tmt.guest import DEFAULT_PULL_OPTIONS, Guest, TransferOptions
 from tmt.result import Result, ResultOutcome
 from tmt.steps import safe_filename
 from tmt.steps.context.abort import AbortStep
@@ -23,7 +24,6 @@ from tmt.steps.execute import (
     TEST_OUTPUT_FILENAME,
     TestInvocation,
 )
-from tmt.steps.provision import DEFAULT_PULL_OPTIONS, Guest, TransferOptions
 from tmt.steps.report.display import ResultRenderer
 from tmt.utils import (
     Environment,

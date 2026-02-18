@@ -16,8 +16,8 @@ import tmt.log
 import tmt.utils
 from tmt._compat.typing import Self, TypeAlias
 from tmt.container import container, simple_field
+from tmt.guest import Guest
 from tmt.plugins import PluginRegistry
-from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path, ShellScript, retry
 
 

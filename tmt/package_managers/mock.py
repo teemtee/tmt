@@ -178,22 +178,16 @@ class _MockPackageManager(PackageManager[MockEngine]):
         return self.guest.run(self.engine.refresh_metadata().to_shell_command())
 
 
-# ignore[type-arg]: TypeVar in package manager registry annotations is
-# puzzling for type checkers. And not a good idea in general, probably.
-@provides_package_manager('mock-yum')  # type: ignore[arg-type]
+@provides_package_manager('mock-yum')
 class MockYum(_MockPackageManager):
     NAME = 'mock-yum'
 
 
-# ignore[type-arg]: TypeVar in package manager registry annotations is
-# puzzling for type checkers. And not a good idea in general, probably.
-@provides_package_manager('mock-dnf')  # type: ignore[arg-type]
+@provides_package_manager('mock-dnf')
 class MockDnf(_MockPackageManager):
     NAME = 'mock-dnf'
 
 
-# ignore[type-arg]: TypeVar in package manager registry annotations is
-# puzzling for type checkers. And not a good idea in general, probably.
-@provides_package_manager('mock-dnf5')  # type: ignore[arg-type]
+@provides_package_manager('mock-dnf5')
 class MockDnf5(_MockPackageManager):
     NAME = 'mock-dnf5'

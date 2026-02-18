@@ -8,16 +8,16 @@ import pytest
 from pytest_container.container import ContainerData
 
 import tmt
-from tmt.log import Logger, LoggingFunction
-from tmt.steps.provision import (
+from tmt.guest import (
     AnsibleApplicable,
     Guest,
     GuestData,
     GuestSsh,
     GuestSshData,
-    Provision,
     TransferOptions,
 )
+from tmt.log import Logger, LoggingFunction
+from tmt.steps.provision import Provision
 from tmt.steps.provision.podman import GuestContainer, PodmanGuestData
 from tmt.utils import (
     Command,

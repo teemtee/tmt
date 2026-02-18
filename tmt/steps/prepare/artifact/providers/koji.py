@@ -14,6 +14,7 @@ import tmt.log
 import tmt.utils
 import tmt.utils.hints
 from tmt.container import container
+from tmt.guest import Guest
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
@@ -22,7 +23,6 @@ from tmt.steps.prepare.artifact.providers import (
     RpmVersion,
     provides_artifact_provider,
 )
-from tmt.steps.provision import Guest
 from tmt.utils import ShellScript
 
 koji: Optional[types.ModuleType] = None

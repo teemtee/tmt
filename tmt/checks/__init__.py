@@ -17,9 +17,9 @@ from tmt.utils import NormalizeKeysMixin
 
 if TYPE_CHECKING:
     import tmt.base
+    from tmt.guest import Guest
     from tmt.result import CheckResult
     from tmt.steps.execute import TestInvocation
-    from tmt.steps.provision import Guest
 
 
 #: A type variable representing a :py:class:`Check` instances.

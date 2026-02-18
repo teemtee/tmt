@@ -60,7 +60,7 @@ class GuestBootc(GuestTestcloud):
     def __init__(
         self,
         *,
-        data: tmt.steps.provision.GuestData,
+        data: tmt.guest.GuestData,
         name: Optional[str] = None,
         parent: Optional[tmt.utils.Common] = None,
         logger: tmt.log.Logger,

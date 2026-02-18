@@ -11,8 +11,8 @@ from tmt.result import CheckResult, ResultOutcome, save_failures
 from tmt.utils import Command, Path, ShellScript
 
 if TYPE_CHECKING:
+    from tmt.guest import Guest
     from tmt.steps.execute import TestInvocation
-    from tmt.steps.provision import Guest
 
 
 COREDUMP_LAST_DUMP_FILENAME = "coredump-latest"
