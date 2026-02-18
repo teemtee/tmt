@@ -1,0 +1,5 @@
+description: |
+    Fixed missing subpackages in the ``tmt+all`` metapackage
+    requires. The ``tmt+link-jira`` and ``tmt+provision-bootc``
+    subpackages are now properly included when installing
+    ``tmt+all``.
