@@ -102,7 +102,7 @@ except ImportError:
 @pytest.fixture
 def test_path() -> Path:
     """Returns the path to the directory containing the tests."""
-    return Path(__file__).parent
+    return Path(__file__).parent / 'unit'
 
 
 def create_path_helper(tmppath: Path, test_path: Path, name: str) -> Iterator[Path]:
