@@ -4,3 +4,5 @@ duration: 5m
 tag:
   - authentication
   - basic
+id: 2a13b2ea-a970-4cd4-9ae0-01d80c8bb26b
+extra-polarion: RHELCOCKPIT-1812

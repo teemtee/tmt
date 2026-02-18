@@ -64,5 +64,5 @@ link:
   - verified-by: /examples/polarion-story/tests/auth/ldap
   - verified-by: /examples/polarion-story/tests/auth/oauth
   - implemented-by: /src/auth/providers.py
-id: 89afaef2-2a95-4aba-878b-ad1297153229
-extra-polarion: RHELCOCKPIT-1811
+id: ced319db-a4b3-44b1-bddd-c372b5dc9297
+extra-polarion: RHELCOCKPIT-1823

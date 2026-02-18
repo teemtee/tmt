@@ -167,12 +167,13 @@ description: |
    - **Automatic test case creation**: Referenced test cases will be created in Polarion
    - **Automatic linking**: Test cases will be linked with "verifies" relationship
    - A link back to the fmf source (if --link-polarion is used)
-   - Polarion work item IDs stored in `extra-polarion` field
+   - TMT UUID stored in Polarion's `tmtid` field for test cases (if available)
+   - Polarion work item ID stored in `extra-polarion` field for features
 
 ### Update Existing Feature
 
 ```bash
-# Automatic detection (requires tmtid field in Polarion project)
+# Automatic detection using TMT UUID mapped to Polarion's tmtid field
 tmt stories export --how polarion --project-id MYPROJECT .
 
 # Or specify feature ID explicitly
@@ -220,10 +221,10 @@ See `POLARION_CUSTOM_FIELDS.md` for complete documentation.
 
 ## Notes
 
-- The export will look for existing Polarion work items using the tmt UUID or `extra-polarion` field
+- **Test Cases**: Use Polarion's `tmtid` custom field to store TMT UUID (if field exists, otherwise fallback to `extra-polarion`)
+- **Features/Stories**: Use `extra-polarion` field to store Polarion work item ID (tmtid field typically doesn't exist for requirements)
 - **New:** Test cases are automatically exported and linked when exporting stories (can be disabled with `--no-export-linked-tests`)
-- The Polarion work item IDs are stored in the `extra-polarion` field in FMF metadata for future reference
 - Test cases are created with the relationship "verifies" to the story/requirement
-- Custom Polarion fields can be set using `extra-polarion-*` metadata
+- Custom Polarion fields can be set using `extra-polarion-*` metadata (e.g., `extra-polarion-team`, `extra-polarion-component`)
 
 

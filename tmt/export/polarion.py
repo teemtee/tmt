@@ -157,7 +157,8 @@ def find_polarion_case_ids(
     
     Searches in order:
     1. Direct polarion_case_id parameter (explicit override)
-    2. extra-polarion field (Polarion work item ID stored in FMF)
+    2. TMT ID mapped to Polarion's tmtid field
+    3. Legacy extra-polarion field (for backward compatibility)
     """
 
     assert PolarionWorkItem
@@ -171,7 +172,24 @@ def find_polarion_case_ids(
         query_result = PolarionWorkItem.query(f'id:{polarion_case_id}', fields=wanted_fields)
         case_id, project_id = get_polarion_ids(query_result, preferred_project)
 
-    # Search by extra-polarion (Polarion work item ID stored in FMF)
+    # Search by TMT ID (mapped to Polarion's tmtid custom field)
+    if not project_id:
+        tmt_id = data.get(ID_KEY)
+        if tmt_id:
+            # Try multiple query formats for custom field - format varies by Polarion version
+            log.debug(f"Searching for work item with tmtid={tmt_id}")
+            for query_format in [f'tmtid:{tmt_id}', f'customFields.tmtid:{tmt_id}']:
+                try:
+                    query_result = PolarionWorkItem.query(query_format, fields=wanted_fields)
+                    case_id, project_id = get_polarion_ids(query_result, preferred_project)
+                    if case_id:
+                        log.debug(f"Found work item via query '{query_format}': {case_id}")
+                        break
+                except PolarionException as err:
+                    log.debug(f"Query '{query_format}' failed: {err}")
+                    continue
+
+    # Fallback: Search by legacy extra-polarion field (backward compatibility)
     if not project_id:
         extra_polarion = data.get('extra-polarion')
         if extra_polarion:
@@ -317,19 +335,32 @@ def export_to_polarion(
     if test.summary is not None:
         echo(style('title: ', fg='green') + test.summary)
 
-    # Add id to test
+    # Add TMT ID to test and set it in Polarion's tmtid field
     uuid = add_uuid_if_not_defined(test.node, dry_mode, test._logger)
     if not uuid:
         uuid = test.node.get(ID_KEY)
     echo(style(f"Append the ID {uuid}.", fg='green'))
     
-    # Store Polarion work item ID in extra-polarion for future lookups
-    if not dry_mode and polarion_case:
+    # Set TMT ID in Polarion's tmtid custom field for future lookups
+    if not dry_mode and polarion_case and uuid:
         assert polarion_case  # Narrow type
-        polarion_work_item_id = str(polarion_case.work_item_id)
-        with test.node as data:
-            data['extra-polarion'] = polarion_work_item_id
-        echo(style(f"Stored Polarion work item ID: {polarion_work_item_id}", fg='green'))
+        tmtid_set = False
+        try:
+            # Use custom field API to set tmtid
+            polarion_case._set_custom_field('tmtid', uuid)
+            echo(style(f"Set Polarion tmtid field to: {uuid}", fg='green'))
+            tmtid_set = True
+        except (AttributeError, PolarionException) as err:
+            # Field might not exist - fall back to extra-polarion
+            echo(style(f"Warning: Could not set tmtid field, using extra-polarion fallback", fg='yellow'))
+            log.debug(f"tmtid field error: {err}")
+        
+        # Fallback: Store Polarion work item ID in extra-polarion if tmtid failed
+        if not tmtid_set:
+            polarion_work_item_id = str(polarion_case.work_item_id)
+            with test.node as data:
+                data['extra-polarion'] = polarion_work_item_id
+            echo(style(f"Stored Polarion ID in extra-polarion: {polarion_work_item_id}", fg='green'))
 
     # Description
     description = summary
@@ -517,15 +548,22 @@ def get_polarion_feature(
     if hasattr(data, 'get'):
         data = data.get()
     
+    # Log what we're searching for
+    tmt_id = data.get(ID_KEY)
+    extra_polarion = data.get('extra-polarion')
+    log.debug(f"Searching for feature - TMT ID: {tmt_id}, extra-polarion: {extra_polarion}, explicit ID: {polarion_feature_id}")
+    
     case_id, project_id = find_polarion_case_ids(data, preferred_project, polarion_feature_id)
     if case_id is None or project_id is None:
+        log.debug("No existing feature found in Polarion")
         return None
 
     try:
         polarion_feature = PolarionWorkItem(project_id=project_id, work_item_id=case_id)
         echo(style(f"Feature '{polarion_feature.work_item_id!s}' found.", fg='blue'))
         return polarion_feature
-    except PolarionException:
+    except PolarionException as err:
+        log.debug(f"Failed to load feature {case_id}: {err}")
         return None
 
 
@@ -810,6 +848,9 @@ def _export_single_test_case_for_story(
     Helper function to export a single test case to Polarion.
     
     Returns the Polarion work item ID if successful, None otherwise.
+    
+    Note: Git validation is skipped for auto-exported tests since they are
+    being exported as part of story export, not as a standalone operation.
     """
     if not story.tree:
         return None
@@ -829,6 +870,8 @@ def _export_single_test_case_for_story(
             if create:
                 logger.info(f'Creating test case {test_name} in Polarion')
                 try:
+                    # Skip git validation for auto-exported tests from story context
+                    # This is a convenience feature, so we don't want to fail on git issues
                     test_options = {
                         'create': True,
                         'project_id': project_id,
@@ -836,6 +879,7 @@ def _export_single_test_case_for_story(
                         'duplicate': False,
                         'link_polarion': False,
                         'append-summary': append_summary,
+                        'ignore_git_validation': True,
                     }
                     polarion_test_case = export_to_polarion(test, options=test_options)
                     if polarion_test_case:
@@ -920,7 +964,7 @@ def _export_and_link_story_tests(
     # Now that all test cases are exported, we can link them
     logger.info('Linking test cases to feature')
     
-    # Collect all links to be made
+    # Collect all links to be made (test case ID + test path for logging)
     links_to_create = []
     for link in story.verified:
         # Get the Polarion work item ID from our map
@@ -935,24 +979,31 @@ def _export_and_link_story_tests(
             polarion_id = test_case_map.get(link.target.name)
         
         if polarion_id:
-            links_to_create.append(polarion_id)
-            logger.info(f'Linked: {polarion_id} (verifies)')
+            links_to_create.append((polarion_id, test_path))
         elif export_linked_tests:
             # We tried to export but failed
             logger.warning(f'Skipping link for {test_path} (test case not available)')
     
-    # Apply all links at once (only if not dry mode)
+    # Apply all links FROM test cases TO the feature (only if not dry mode)
+    # Per pylero documentation: links are added to the "child" object (test case)
+    # with the 'verifies' role pointing to the requirement/feature
     if not dry_mode and polarion_feature and links_to_create:
-        for polarion_id in links_to_create:
+        feature_id = str(polarion_feature.work_item_id)
+        for polarion_test_id, test_path in links_to_create:
             try:
-                # Use "verified_by" role - the feature is verified by the test case
-                polarion_feature.add_linked_item(polarion_id, 'verified_by')
+                # Load test case and add 'verifies' link to the feature
+                test_case = PolarionTestCase(
+                    project_id=polarion_feature.project_id,
+                    work_item_id=polarion_test_id
+                )
+                test_case.add_linked_item(feature_id, 'verifies')
+                logger.info(f'Linked: test {polarion_test_id} verifies feature {feature_id}')
             except (AttributeError, PolarionException) as err:
-                logger.debug(f"Failed to link test case {polarion_id}: {err}")
-                logger.warning(f'Failed to link: {polarion_id}')
+                logger.debug(f"Failed to link test case {polarion_test_id}: {err}")
+                logger.warning(f'Failed to link test {polarion_test_id}: {err}')
             except Exception as err:
-                logger.debug(f"Unexpected error linking test case {polarion_id}: {err}")
-                logger.warning(f'Failed to link: {polarion_id}')
+                logger.debug(f"Unexpected error linking test case {polarion_test_id}: {err}")
+                logger.warning(f'Failed to link test {polarion_test_id}: {err}')
 
 
 def export_story_to_polarion(story: tmt.base.Story) -> None:
@@ -1003,11 +1054,28 @@ def export_story_to_polarion(story: tmt.base.Story) -> None:
                 f"(You can use --create option to enforce creating features.)"
             )
 
-    # Add id to story
+    # Add TMT ID to story and set it in Polarion's tmtid field
     uuid = add_uuid_if_not_defined(story.node, dry_mode, story._logger)
     if not uuid:
         uuid = story.node.get(ID_KEY)
     logger.debug(f"Appended ID: {uuid}")
+
+    # For features: tmtid field typically doesn't exist, use extra-polarion instead
+    # Note: Test cases have tmtid field, but features/requirements usually don't
+    if not dry_mode and polarion_feature and uuid:
+        # Store Polarion work item ID in extra-polarion for features
+        polarion_work_item_id = str(polarion_feature.work_item_id)
+        with story.node as data:
+            data['extra-polarion'] = polarion_work_item_id
+        logger.info(f"Stored Polarion work item ID in extra-polarion: {polarion_work_item_id}")
+        
+        # Also try to set tmtid if the field exists (uncommon for features)
+        try:
+            polarion_feature._set_custom_field('tmtid', uuid)
+            logger.debug(f"Set Polarion tmtid field to: {uuid}")
+        except (AttributeError, PolarionException) as err:
+            # Expected for most Polarion projects - features don't have tmtid field
+            logger.debug(f"tmtid field not available for features (expected): {err}")
 
     # Set all Polarion feature fields (title, description, priority, tags, etc.)
     if polarion_feature:
@@ -1026,12 +1094,6 @@ def export_story_to_polarion(story: tmt.base.Story) -> None:
     
     # All operations below only execute when not in dry mode
     assert polarion_feature is not None  # Should exist if not dry mode
-    
-    # Store Polarion work item ID in extra-polarion for future lookups
-    polarion_work_item_id = str(polarion_feature.work_item_id)
-    with story.node as data:
-        data['extra-polarion'] = polarion_work_item_id
-    logger.info(f"Stored Polarion work item ID: {polarion_work_item_id}")
 
     # Add web link to Polarion feature
     web_link = story.web_link()
