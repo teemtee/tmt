@@ -55,7 +55,16 @@ def test_persist_artifact_metadata(tmp_path, mock_provider):
     prepare = MagicMock()
     prepare.plan_workdir = tmp_path
 
-    PrepareArtifact._persist_artifact_metadata(prepare, [mock_provider])
+    artifacts_metadata = PrepareArtifact._collect_artifacts_metadata(prepare, mock_provider, {})
+
+    providers_data = [
+        {
+            "id": mock_provider.raw_provider_id,
+            "artifacts": artifacts_metadata,
+        }
+    ]
+
+    PrepareArtifact._persist_artifact_metadata(prepare, providers_data)
 
     # Verify YAML
     yaml_file = tmp_path / "artifacts.yaml"

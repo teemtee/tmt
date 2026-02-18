@@ -1,4 +1,4 @@
-from typing import ClassVar, Optional
+from typing import Any, ClassVar, Optional
 
 import tmt.base
 import tmt.steps
@@ -196,6 +196,9 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
         # Initialize all providers and have them contribute to the shared repo
         providers: list[ArtifactProvider] = []
+        seen_nvras: dict[str, str] = {}
+        providers_data: list[dict[str, Any]] = []
+
         for raw_provider_id in self.data.provide:
             try:
                 provider_class = get_artifact_provider(raw_provider_id)
@@ -208,6 +211,15 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                     repository_priority=self.data.default_repository_priority,
                     logger=provider_logger,
                 )
+
+                if artifacts_metadata := self._collect_artifacts_metadata(provider, seen_nvras):
+                    providers_data.append(
+                        {
+                            'id': provider.raw_provider_id,
+                            'artifacts': artifacts_metadata,
+                        }
+                    )
+
                 providers.append(provider)
 
                 # Define a unique download path for this provider's artifacts
@@ -250,7 +262,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             logger.debug(f"Installed repository '{repo.name}'.")
 
         # Persist artifact metadata to YAML
-        self._persist_artifact_metadata(providers)
+        self._persist_artifact_metadata(providers_data)
 
         # Report configuration summary
         logger.info(
@@ -266,31 +278,47 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             tmt.base.DependencySimple('/usr/bin/createrepo'),
         ]
 
-    def _persist_artifact_metadata(self, providers: list[ArtifactProvider]) -> None:
+    def _collect_artifacts_metadata(
+        self, provider: ArtifactProvider, seen_nvras: dict[str, str]
+    ) -> list[dict[str, Any]]:
+        """
+        Collect artifact metadata from a provider and check for duplicate NVRAs.
+
+        :param provider: The artifact provider to collect from
+        :param seen_nvras: A dictionary tracking NVRAs already seen (updated in-place)
+        :returns: A list of artifact metadata dicts
+        :raises PrepareError: If duplicate NVRA is detected
+        """
+        raw_provider_id = provider.raw_provider_id
+        artifacts_list: list[dict[str, Any]] = []
+
+        for artifact in provider.artifacts:
+            nvra = str(artifact.version)
+
+            # Check for duplicates
+            if nvra in seen_nvras:
+                raise tmt.utils.PrepareError(
+                    f"Artifact '{nvra}' provided by both '{seen_nvras[nvra]}' "
+                    f"and '{raw_provider_id}'."
+                )
+
+            seen_nvras[nvra] = raw_provider_id
+
+            artifact_dict = {
+                "version": vars(artifact.version),
+                'nvra': nvra,
+                'location': artifact.location,
+            }
+            artifacts_list.append(artifact_dict)
+
+        return artifacts_list
+
+    def _persist_artifact_metadata(self, providers_data: list[dict[str, Any]]) -> None:
         """
         Persist the metadata of artifacts to a YAML file.
 
         Groups artifacts by provider.
         """
-        providers_data = []
-
-        for provider in providers:
-            artifacts = [
-                {
-                    'version': vars(artifact.version),
-                    'nvra': artifact.version.nvra,
-                    'location': artifact.location,
-                }
-                for artifact in provider.artifacts
-            ]
-
-            if artifacts:  # Only add provider if it has artifacts
-                providers_data.append(
-                    {
-                        'id': provider.raw_provider_id,
-                        'artifacts': artifacts,
-                    }
-                )
 
         metadata_file = self.plan_workdir / "artifacts.yaml"
 
