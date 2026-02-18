@@ -6,7 +6,8 @@ if TYPE_CHECKING:
     from tests import RunTmt
 
 
-EXPECTED_PLUGIN_CATEGORIES = textwrap.dedent("""
+EXPECTED_PLUGIN_CATEGORIES = (
+    textwrap.dedent("""
 Export plugins for plan
 Export plugins for story
 Export plugins for test
@@ -21,7 +22,10 @@ Finish step plugins
 Report step plugins
 Test check plugins
 Test framework plugins
-""").split('\n')
+""")
+    .strip()
+    .split('\n')
+)
 
 
 def test_plugin_ls_human_output(run_tmt: 'RunTmt') -> None:
