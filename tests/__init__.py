@@ -43,9 +43,8 @@ class RunTmt(Protocol):
         command: Optional[click.BaseCommand] = None,
         input: Optional[Union[str, bytes, IO[Any]]] = None,
         env: Optional[Mapping[str, Optional[str]]] = None,
-        catch_exceptions: bool = True,
         color: bool = False,
-        **extra: Any,
+        **kwargs: Any,
     ) -> click.testing.Result:
         pass
 
@@ -57,7 +56,6 @@ class CliRunner(click.testing.CliRunner):
         env: Optional[Mapping[str, Optional[str]]] = None,
         echo_stdin: bool = False,
         catch_exceptions: bool = True,
-        mix_stderr: bool = False,
     ) -> None:
         super().__init__(charset=charset, env=env, echo_stdin=echo_stdin)
 
@@ -69,7 +67,7 @@ class CliRunner(click.testing.CliRunner):
         env: Optional[Mapping[str, Optional[str]]] = None,
         catch_exceptions: bool = True,
         color: bool = False,
-        **extra: Any,
+        **kwargs: Any,
     ) -> click.testing.Result:
         reset_common()
 
@@ -84,5 +82,5 @@ class CliRunner(click.testing.CliRunner):
             env=env,
             catch_exceptions=catch_exceptions,
             color=color,
-            **extra,
+            **kwargs,
         )
