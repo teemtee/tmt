@@ -1731,7 +1731,7 @@ class Guest(
         """
 
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
-        parent = cast(Provision, self.parent)
+        parent = cast('Provision', self.parent)
 
         run_id = parent.run_workdir.name
         return self._random_name(prefix=f"tmt-{run_id[-3:]}-")
