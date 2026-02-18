@@ -3172,7 +3172,7 @@ class GuestSsh(Guest, CommandCollector):
         )
 
         # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
-        parent = cast(Provision, self.parent)
+        parent = cast('Provision', self.parent)
 
         inventory_path = parent.plan.provision.ansible_inventory_path
 
