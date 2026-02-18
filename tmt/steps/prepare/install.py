@@ -1112,6 +1112,21 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             failed_packages = self._extract_failed_packages_from_outputs(
                 installer.install_outputs, guest
             )
+            # Output from yum is non-deterministic. It depends on order in which
+            # the invalid debuginfo package is getting installed. If first, its error messages
+            # are omitted. If after a valid package, the error messages are included.
+            # So we're checking for presence on the system.
+            if installer.debuginfo_packages:
+                presence = guest.package_manager.check_presence(
+                    *(Package(f"{name}-debuginfo") for name in installer.debuginfo_packages)
+                )
+
+                failed_packages.update(
+                    str(package).removesuffix("-debuginfo")
+                    for package, present in presence.items()
+                    if not present
+                )
+
             if failed_packages:
                 self._show_failed_packages_with_tests(failed_packages)
 
