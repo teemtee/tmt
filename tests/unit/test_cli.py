@@ -95,7 +95,7 @@ def test_create(run_tmt: 'RunTmt'):
         'story create -t full test',
     ]
     for command in commands:
-        result = run_tmt(command.split())
+        result = run_tmt(*command.split())
         assert result.exit_code == 0
         os.system('rm -rf *')
     # Test directory cleanup
