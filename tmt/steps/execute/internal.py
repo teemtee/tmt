@@ -1,34 +1,24 @@
-import os
-import textwrap
 from typing import Any, Optional, cast
 
-import jinja2
-
-import tmt
 import tmt.base
 import tmt.log
-import tmt.options
 import tmt.steps
 import tmt.steps.execute
-import tmt.steps.scripts
 import tmt.utils
 import tmt.utils.signals
 import tmt.utils.themes
 from tmt.container import container, field
 from tmt.result import Result, ResultOutcome
-from tmt.steps import safe_filename
 from tmt.steps.context.abort import AbortStep
 from tmt.steps.discover import DiscoverPlugin
 from tmt.steps.execute import (
     TEST_OUTPUT_FILENAME,
     TestInvocation,
 )
-from tmt.steps.provision import DEFAULT_PULL_OPTIONS, Guest, TransferOptions
+from tmt.steps.provision import DEFAULT_PULL_OPTIONS, Guest
 from tmt.steps.report.display import ResultRenderer
 from tmt.utils import (
     Environment,
-    EnvVarValue,
-    Path,
     ShellScript,
 )
 from tmt.utils.themes import style

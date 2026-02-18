@@ -22,7 +22,6 @@ import tmt.steps.prepare
 import tmt.steps.prepare.feature
 import tmt.steps.provision
 import tmt.steps.report
-import tmt.utils
 import tmt.utils.hints
 from tmt.container import ContainerClass
 from tmt.utils import Path

@@ -12,7 +12,6 @@ from re import Pattern
 from typing import Any
 
 import tmt.plugins
-import tmt.steps.provision
 from tmt.utils import GeneralError, Path, yaml_to_dict
 from tmt.utils.templates import render_template_file_into_file
 

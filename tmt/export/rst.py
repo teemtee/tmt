@@ -3,7 +3,6 @@ from typing import Any, Optional
 import tmt.base
 import tmt.export
 import tmt.export.template
-import tmt.utils
 from tmt.utils import Path
 
 

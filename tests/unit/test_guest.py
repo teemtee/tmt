@@ -1,13 +1,12 @@
 import os
 import re
 from typing import Any, Optional, Union
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock
 
 import _pytest.logging
 import pytest
 from pytest_container.container import ContainerData
 
-import tmt
 from tmt.log import Logger, LoggingFunction
 from tmt.steps.provision import (
     AnsibleApplicable,
@@ -23,7 +22,6 @@ from tmt.utils import (
     Command,
     CommandOutput,
     Environment,
-    GeneralError,
     OnProcessEndCallback,
     OnProcessStartCallback,
     Path,

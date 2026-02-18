@@ -15,7 +15,6 @@ import fmf.utils
 from click import echo
 
 import tmt.base
-import tmt.export
 import tmt.identifier
 import tmt.log
 import tmt.utils

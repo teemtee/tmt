@@ -2,11 +2,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tmt.log import Logger
-from tmt.steps.prepare.artifact.providers.file import (
-    PackageAsFileArtifactInfo,
-    PackageAsFileArtifactProvider,
-)
 from tmt.utils import Path
 
 

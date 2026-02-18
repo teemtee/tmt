@@ -18,7 +18,7 @@ from tmt._compat.typing import TypeAlias
 from tmt.container import container, simple_field
 from tmt.plugins import PluginRegistry
 from tmt.steps.provision import Guest
-from tmt.utils import GeneralError, Path, ShellScript, retry
+from tmt.utils import GeneralError, Path, ShellScript, retry  # noqa: F401
 
 
 class DownloadError(tmt.utils.GeneralError):

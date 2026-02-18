@@ -4,9 +4,7 @@ from typing import Any, Optional, TypedDict, Union, cast
 import requests
 
 import tmt
-import tmt.hardware
 import tmt.log
-import tmt.options
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
@@ -18,7 +16,6 @@ from tmt.steps.provision import RebootMode
 from tmt.utils import (
     Command,
     GuestLogError,
-    Path,
     ProvisionError,
     ShellScript,
     normalize_string_dict,
