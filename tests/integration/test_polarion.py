@@ -18,24 +18,24 @@ if TYPE_CHECKING:
 class PolarionExport(Base):
     EXAMPLES = TEST_DIR / "data" / "polarion"
 
-    def test_create(self, run_tmt: 'RunTmt'):
+    def test_create(self):
         fmf_node = Tree(self.tmpdir).find("/new_testcase")
         assert ID_KEY not in fmf_node.data
 
         os.chdir(self.tmpdir / "new_testcase")
-        self.runner_output = run_tmt(
+        self.runner_output = CliRunner().invoke(
             "test", "export", "--how", "polarion", "--project-id", "RHIVOS", "--create", "."
         )
         # Reload the node data to see if it appears there
         fmf_node = Tree(self.tmpdir).find("/new_testcase")
         assert ID_KEY in fmf_node.data
 
-    def test_create_dryrun(self, run_tmt: 'RunTmt'):
+    def test_create_dryrun(self):
         fmf_node_before = Tree(self.tmpdir).find("/new_testcase")
         assert ID_KEY not in fmf_node_before.data
 
         os.chdir(self.tmpdir / "new_testcase")
-        self.runner_output = run_tmt(
+        self.runner_output = CliRunner().invoke(
             "test",
             "export",
             "--how",
@@ -50,24 +50,24 @@ class PolarionExport(Base):
         assert fmf_node_before.data == fmf_node.data
         assert "title: tmt /new_testcase - This i" in self.runner_output.output
 
-    def test_existing(self, run_tmt: 'RunTmt'):
+    def test_existing(self):
         fmf_node = Tree(self.tmpdir).find("/existing_testcase")
         assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
         os.chdir(self.tmpdir / "existing_testcase")
-        self.runner_output = run_tmt(
+        self.runner_output = CliRunner().invoke(
             "test", "export", "--how", "polarion", "--project-id", "RHIVOS", "--create", "."
         )
 
         fmf_node = Tree(self.tmpdir).find("/existing_testcase")
         assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
-    def test_existing_dryrun(self, run_tmt: 'RunTmt'):
+    def test_existing_dryrun(self):
         fmf_node = Tree(self.tmpdir).find("/existing_dryrun_testcase")
         assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
         os.chdir(self.tmpdir / "existing_dryrun_testcase")
-        self.runner_output = run_tmt(
+        self.runner_output = CliRunner().invoke(
             "test",
             "export",
             "--how",
@@ -80,12 +80,12 @@ class PolarionExport(Base):
         )
         assert "title: tmt /existing_dryrun_testcase - ABCDEF" in self.runner_output.output
 
-    def test_coverage_bugzilla(self, run_tmt: 'RunTmt'):
+    def test_coverage_bugzilla(self):
         fmf_node = Tree(self.tmpdir).find("/existing_testcase")
         assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
         os.chdir(self.tmpdir / "existing_testcase")
-        self.runner_output = run_tmt(
+        self.runner_output = CliRunner().invoke(
             "test", "export", "--how", "polarion", "--project-id", "RHIVOS", "--bugzilla", "."
         )
         assert self.runner_output.exit_code == 0
