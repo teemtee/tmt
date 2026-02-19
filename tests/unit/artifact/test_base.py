@@ -54,6 +54,7 @@ def test_download_artifacts(tmp_path, root_logger, mock_provider):
 def test_persist_artifact_metadata(tmp_path, mock_provider):
     prepare = MagicMock()
     prepare.plan_workdir = tmp_path
+    prepare.ARTIFACTS_METADATA_FILENAME = 'artifacts.yaml'
 
     PrepareArtifact._persist_artifact_metadata(prepare, [mock_provider])
 

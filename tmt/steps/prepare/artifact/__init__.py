@@ -170,6 +170,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     # Shared repository configuration
     SHARED_REPO_DIR_NAME: ClassVar[str] = 'artifact-shared-repo'
     SHARED_REPO_NAME: ClassVar[str] = 'tmt-artifact-shared'
+    ARTIFACTS_METADATA_FILENAME: ClassVar[str] = 'artifacts.yaml'
 
     def go(
         self,
@@ -272,27 +273,15 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
         Groups artifacts by provider.
         """
-        providers_data = []
+        providers_data = [
+            {
+                'id': provider.raw_provider_id,
+                'artifacts': provider.get_artifact_metadata(),
+            }
+            for provider in providers
+        ]
 
-        for provider in providers:
-            artifacts = [
-                {
-                    'version': vars(artifact.version),
-                    'nvra': artifact.version.nvra,
-                    'location': artifact.location,
-                }
-                for artifact in provider.artifacts
-            ]
-
-            if artifacts:  # Only add provider if it has artifacts
-                providers_data.append(
-                    {
-                        'id': provider.raw_provider_id,
-                        'artifacts': artifacts,
-                    }
-                )
-
-        metadata_file = self.plan_workdir / "artifacts.yaml"
+        metadata_file = self.plan_workdir / self.ARTIFACTS_METADATA_FILENAME
 
         try:
             metadata_file.write_text(tmt.utils.to_yaml({'providers': providers_data}, start=True))
