@@ -249,6 +249,9 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             guest.package_manager.install_repository(repo)
             logger.debug(f"Installed repository '{repo.name}'.")
 
+        # Persist artifact metadata to YAML
+        self._persist_artifact_metadata(providers)
+
         # Report configuration summary
         logger.info(
             f"Configured artifact preparation with {len(self.data.provide)} provider(s) "
@@ -262,3 +265,36 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         return [
             tmt.base.DependencySimple('/usr/bin/createrepo'),
         ]
+
+    def _persist_artifact_metadata(self, providers: list[ArtifactProvider]) -> None:
+        """
+        Persist the metadata of artifacts to a YAML file.
+
+        Groups artifacts by provider.
+        """
+        providers_data = []
+
+        for provider in providers:
+            artifacts = [
+                {
+                    'version': vars(artifact.version),
+                    'nvra': artifact.version.nvra,
+                    'location': artifact.location,
+                }
+                for artifact in provider.artifacts
+            ]
+
+            if artifacts:  # Only add provider if it has artifacts
+                providers_data.append(
+                    {
+                        'id': provider.raw_provider_id,
+                        'artifacts': artifacts,
+                    }
+                )
+
+        metadata_file = self.plan_workdir / "artifacts.yaml"
+
+        try:
+            metadata_file.write_text(tmt.utils.to_yaml({'providers': providers_data}, start=True))
+        except OSError as error:
+            raise tmt.utils.FileError(f"Failed to write into '{metadata_file}' file.") from error

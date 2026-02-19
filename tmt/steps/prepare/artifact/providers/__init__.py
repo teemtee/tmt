@@ -173,6 +173,7 @@ class ArtifactProvider(ABC):
     def __init__(self, raw_provider_id: str, repository_priority: int, logger: tmt.log.Logger):
         self.repository_priority = repository_priority
         self.logger = logger
+        self.raw_provider_id = raw_provider_id
 
         self.id = self._extract_provider_id(raw_provider_id)
 
