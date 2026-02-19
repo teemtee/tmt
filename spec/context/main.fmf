@@ -82,4 +82,4 @@ example:
     tmt --context distro=fedora-44 run --all provision --how container
 
 link:
-  - implemented-by: /tmt/base.py
+  - implemented-by: /tmt/base/core.py
