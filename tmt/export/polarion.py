@@ -765,7 +765,8 @@ def _set_polarion_feature_fields(
     login_name = None
     if story.contact:
         email_address = email.utils.parseaddr(story.contact[0])[1]
-        login_name = email_address[: email_address.find('@')]
+        at_pos = email_address.find('@')
+        login_name = email_address[:at_pos] if at_pos != -1 else email_address
     
     # Prepare status
     status_value = 'approved' if story.enabled else 'inactive'
