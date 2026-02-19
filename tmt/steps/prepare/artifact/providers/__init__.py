@@ -325,6 +325,21 @@ class ArtifactProvider(ABC):
         """
         pass
 
+    def get_artifact_metadata(self) -> list[dict[str, Any]]:
+        """
+        Get metadata for the artifacts provided by this provider.
+
+        :returns: List of artifact metadata dictionaries.
+        """
+        return [
+            {
+                'version': vars(artifact.version),
+                'nvra': artifact.version.nvra,
+                'location': artifact.location,
+            }
+            for artifact in self.artifacts
+        ]
+
 
 @container
 class Repository:
