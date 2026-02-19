@@ -280,7 +280,6 @@ class Bootc(PackageManager[BootcEngine]):
                 # Mount run_workdir so scripts have access to tmt files during build.
                 # Use :Z for SELinux private label.
                 build_output = self.guest.execute(
-                self.guest.execute(
                     ShellScript(
                         f'{self.guest.facts.sudo_prefix} podman build -v {self.guest.run_workdir}:{self.guest.run_workdir}:Z -t {image_tag} -f {containerfile_path} {self.guest.run_workdir}'  # noqa: E501
                     )

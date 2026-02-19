@@ -68,7 +68,9 @@ class File(Library):
         files: list[Path] = tmt.utils.filter_paths(self.source_location, self.pattern)
         if not files:
             self.parent.debug('No files found.')
-            raise LibraryError
+            raise LibraryError(
+                f"Patterns {patterns} don't match any files in '{self.source_location}'."
+            )
 
         # Nothing to do if source and target directory are identical.
         # Could be called at the very start of the method but we still
