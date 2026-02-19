@@ -178,6 +178,7 @@ def resolve_dependencies(
     from .beakerlib import BeakerLib
 
     # TODO: These should actually be `set[DependencySimple]`
+    #  need more work detangling covariant/variant issues
     require_to_install: set[Dependency] = set()
     recommend_to_install: set[Dependency] = set()
     for dependency in (*original_require, *original_recommend):
