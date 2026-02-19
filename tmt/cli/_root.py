@@ -66,6 +66,7 @@ remote_plan_options = create_options_decorator(tmt.options.REMOTE_PLAN_OPTIONS)
 lint_options = create_options_decorator(tmt.options.LINT_OPTIONS)
 environment_options = create_options_decorator(tmt.options.ENVIRONMENT_OPTIONS)
 policy_options = create_options_decorator(tmt.options.POLICY_OPTIONS)
+recipe_options = create_options_decorator(tmt.options.RECIPE_OPTIONS)
 
 
 def _load_policies(
@@ -347,6 +348,7 @@ def main(
 @force_dry_options
 @again_option
 @policy_options
+@recipe_options
 def run(
     context: Context,
     id_: Optional[str],
@@ -354,6 +356,7 @@ def run(
     policy_file: Optional[Path],
     policy_name: Optional[str],
     policy_root: Optional[Path],
+    recipe: Optional[Path],
     **kwargs: Any,
 ) -> None:
     """
@@ -372,6 +375,7 @@ def run(
         cli_invocation=CliInvocation.from_context(context),
         workdir_root=effective_workdir_root(workdir_root),
         policies=policies,
+        recipe_path=recipe,
         logger=logger,
     )
 
@@ -1217,11 +1221,15 @@ _plan_export_default = 'yaml'
     help="Path to a template to use for rendering the export. Used with '--how=template' only.",
 )
 @environment_options
+@policy_options
 def plans_export(
     context: Context,
     how: str,
     format: str,
     template: Optional[str],
+    policy_file: Optional[Path],
+    policy_name: Optional[str],
+    policy_root: Optional[Path],
     **kwargs: Any,
 ) -> None:
     """
@@ -1238,9 +1246,16 @@ def plans_export(
 
         how = format
 
+    plans = context.obj.tree.plans()
+
+    policies = _load_policies(policy_name, policy_file, policy_root)
+
+    for policy in policies:
+        policy.apply_to_plans(plans=plans, logger=context.obj.logger)
+
     context.obj.print(
         tmt.Plan.export_collection(
-            collection=context.obj.tree.plans(),
+            collection=plans,
             format=how,
             template=Path(template) if template else None,
         )

@@ -33,7 +33,7 @@ story:
         different repository.
     description:
         It is possible to use a full fmf identifier in the
-        :ref:`/spec/core/link` attribute.
+        :tmt:story:`/spec/core/link` attribute.
     example: |
         verified-by:
             url: https://github.com/teemtee/fmf

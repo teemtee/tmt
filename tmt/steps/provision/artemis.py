@@ -32,6 +32,13 @@ from tmt.utils.wait import Deadline, Waiting
 # know when particular feature became available, and avoid using it with
 # older APIs.
 SUPPORTED_API_VERSIONS = (
+    # NEW: cpu.vendor and cpu.vendor-name HW requirements
+    '0.0.84',
+    # NEW: beaker.panic-watchdog HW requirement
+    # NEW: iommu HW requirements
+    # NEW: system.model-name HW requirement
+    # NEW: device HW requirements
+    '0.0.83',
     # NEW: guest reboot
     '0.0.74',
     # NEW: allow passing security group rules for guest creation
@@ -720,8 +727,8 @@ class ProvisionArtemis(tmt.steps.provision.ProvisionPlugin[ProvisionArtemisData]
     Reserve a machine using the Artemis service.
     Users can specify many requirements, mostly regarding the
     desired OS, RAM, disk size and more. Most of the HW specifications
-    defined in the :ref:`/spec/hardware` are supported. Including the
-    :ref:`/spec/plans/provision/kickstart`.
+    defined in the :tmt:story:`/spec/hardware` are supported. Including the
+    :tmt:story:`/spec/plans/provision/kickstart`.
 
     Artemis takes machines from AWS, OpenStack, Beaker or Azure.
     By default, Artemis handles the selection of a cloud provider

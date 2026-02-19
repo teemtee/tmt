@@ -22,9 +22,9 @@ story: 'As a user I want to execute tests easily'
             As a tester I want to execute tests in the default
             environment without having to define a plan.
         description: |
-            Even if there are no :ref:`/spec/plans` defined it is
+            Even if there are no :tmt:story:`/spec/plans` defined it is
             still possible to execute tests and custom scripts. In
-            that case the default :ref:`/spec/plans` configuration
+            that case the default :tmt:story:`/spec/plans` configuration
             is applied and tests are executed using the ``shell``
             method.
 
@@ -245,6 +245,17 @@ story: 'As a user I want to execute tests easily'
             tmt run login --step execute --when fail
             tmt run login --step execute --when error
             tmt run login --step execute --when fail --when error
+
+    /test:
+        summary: 'Log in after each test execution'
+        story:
+            As a user I want to log into the guest after each test.
+        description:
+            Per-test login mode does not include the default step-level
+            login. Use ``--step`` to also login at a specific step.
+        example: |
+            tmt run login --test
+            tmt run login --test --step finish
 
     /experiment:
         summary: 'Provision an environment for experimenting'

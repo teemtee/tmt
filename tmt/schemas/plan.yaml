@@ -135,9 +135,6 @@ properties:
 
         additionalProperties: false
 
-        # NOTE: Because of old jsonschema package on RHEL-8, we cannot use
-        # `url: true` and inherit `url` attributes from parent schema. It
-        # seems like we have to repeat properties schemas here as well.
         properties:
           url:
             # https://github.com/teemtee/tmt/issues/1258
@@ -171,6 +168,9 @@ properties:
 
           inherit-environment:
             type: boolean
+
+          adjust-plans:
+            $ref: "/schemas/core#/definitions/adjust"
 
         required:
           - url

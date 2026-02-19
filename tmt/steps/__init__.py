@@ -107,9 +107,9 @@ _PLUGIN_CLASS_NAME_TO_STEP_PATTERN = re.compile(r'tmt.steps.([a-z]+)')
 PHASE_ORDER_DEFAULT = 50
 #: Installation of essential plugin and check requirements.
 PHASE_ORDER_PREPARE_INSTALL_ESSENTIAL_REQUIRES = 30
-#: Installation of packages :ref:`required</spec/tests/require>` by tests.
+#: Installation of packages :tmt:story:`required</spec/tests/require>` by tests.
 PHASE_ORDER_PREPARE_INSTALL_REQUIRES = 70
-#: Installation of packages :ref:`recommended</spec/tests/recommend>` by tests.
+#: Installation of packages :tmt:story:`recommended</spec/tests/recommend>` by tests.
 PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS = 75
 
 # Supported steps and actions
@@ -484,10 +484,11 @@ class WhereableStepData(SerializableContainer):
 
     To be used as a mixin class, adds necessary keys.
 
-    See [1] and [2] for specification.
+    See [1-3] for specification.
 
-    1. https://tmt.readthedocs.io/en/stable/spec/plans.html#where
-    2. https://tmt.readthedocs.io/en/stable/spec/plans.html#spec-plans-prepare-where
+    1. :tmt:story:`discover.where</spec/plans/discover/where>`
+    2. :tmt:story:`prepare.where</spec/plans/prepare/where>`
+    3. :tmt:story:`finish.where</spec/plans/finish/where>`
     """
 
     where: list[str] = field(
@@ -2433,6 +2434,44 @@ class Plugin(BasePlugin[StepDataT, PluginReturnValueT]):
 
         return outcome
 
+    def _save_deferred_run_outcome(
+        self,
+        *,
+        label: str,
+        timer: Stopwatch,
+        guest: 'Guest',
+        outcome: PluginOutcome,
+    ) -> PluginOutcome:
+        """
+        Save a deferred run outcome, recorded as an INFO result.
+        Used when a command was collected for deferred batch execution
+        in image mode.
+
+        :param label: see :py:func:`write_command_report`. It is also
+            used as the name of the newly created result.
+        :param timer: see :py:func:`write_command_report`.
+        :param guest: the guest on which the phase ran. It is attached
+            to the result.
+        :param outcome: plugin outcome to attach new result to.
+        :returns: plugin outcome provided as argument, ``outcome``.
+        """
+
+        from tmt.result import PhaseResult, ResultGuestData
+
+        outcome.results.append(
+            PhaseResult(
+                name=label,
+                result=tmt.steps.ResultOutcome.INFO,
+                note=['Command collected for deferred execution'],
+                guest=ResultGuestData.from_guest(guest=guest),
+                start_time=timer.start_time_formatted,
+                end_time=timer.end_time_formatted,
+                duration=timer.duration_formatted,
+            )
+        )
+
+        return outcome
+
     @overload
     def _save_error_outcome(
         self,
@@ -2561,8 +2600,20 @@ class Action(Phase, tmt.utils.MultiInvokableCommon):
         Parse options and store phase order
         """
 
-        phases = {}
+        phases: dict[str, list[int]] = {}
         options: list[str] = cls._opt('step', default=[])
+
+        # When `-t` (test mode) is used without explicit `--step`,
+        # return empty phases to prevent the default "last enabled step" behavior.
+        #
+        # Without this check, test mode would log in twice:
+        # 1. After each test (handled by after_test() for per-test login)
+        # 2. At the end of the last enabled step (default behavior)
+        #
+        # Users who want both per-test login AND step-level login can
+        # explicitly specify the step using `--step <step>`.
+        if not options and cls._opt('test'):
+            return phases
 
         # Use the end of the last enabled step if no --step given
         if not options:
@@ -2808,7 +2859,10 @@ class Login(Action):
             '-t',
             '--test',
             is_flag=True,
-            help='Log into the guest after each executed test in the execute phase.',
+            help="""
+                 Log into the guest after each test (per-test mode). Disables default step-level
+                 login unless combined with --step.
+                 """,
         )
         def login(context: 'tmt.cli.Context', **kwargs: Any) -> None:
             """
@@ -2818,6 +2872,9 @@ class Login(Action):
             enabled step. When used together with the --last option the
             last completed step is selected. Use one or more --step
             options to select a different step instead.
+
+            Use --test (-t) for per-test login mode instead of the default
+            step-level login. Combine with --step to enable both modes.
 
             Optional phase can be provided to specify the exact phase of
             the step when the shell should be provided. The following
@@ -2896,6 +2953,11 @@ class Login(Action):
         """
         Run the interactive command
         """
+
+        # Discover step runs before provision, so no guests exist yet
+        if self.parent.name == 'discover':
+            self.warn("Login not possible in discover step (no guests provisioned yet).")
+            return
 
         # Nothing to do if there are no guests ready for login
         if not self.parent.plan.provision.ready_guests:

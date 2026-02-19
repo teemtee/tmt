@@ -43,10 +43,10 @@ Helper Scripts
 On the provisioned guests ``tmt`` installs several helper scripts
 which can be used by tests for special actions:
 
-* :ref:`/stories/features/reboot` using ``tmt-reboot``
-* :ref:`/stories/features/abort`  using ``tmt-abort``
-* :ref:`/stories/features/report-log` using ``tmt-file-submit``
-* :ref:`/stories/features/report-result` using ``tmt-report-result``
+* :tmt:story:`/stories/features/reboot` using ``tmt-reboot``
+* :tmt:story:`/stories/features/abort`  using ``tmt-abort``
+* :tmt:story:`/stories/features/report-log` using ``tmt-file-submit``
+* :tmt:story:`/stories/features/report-result` using ``tmt-report-result``
 
 By default these are installed under ``/usr/local/bin``, use
 ``TMT_SCRIPTS_DIR`` environment variable to choose a different

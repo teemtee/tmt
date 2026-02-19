@@ -8,7 +8,7 @@ story:
 
 description: |
     In some cases the configuration stored in a plan can be quite
-    large, for example the :ref:`/spec/plans/prepare` step can
+    large, for example the :tmt:story:`/spec/plans/prepare` step can
     define complex scripts to set up the guest for testing. Using
     a reference to a remote plan makes it possible to reuse the
     same config on multiple places without the need to duplicate
@@ -126,6 +126,31 @@ description: |
     Adjust rules are respected during this process.
 
     .. versionadded:: 1.19
+
+    The imported plans could also be modified via the ``adjust-plans``
+    key, which allows modification of imported plans using
+    the same powerful rule system as :tmt:story:`/spec/core/adjust` and
+    :tmt:story:`/plugins/discover/fmf`.  This provides flexible plan
+    inheritance and customization:
+
+    .. code-block:: yaml
+
+       /some-plan:
+           plan:
+               import:
+                   url: https://github.com/teemtee/tests
+                   name: /plans/remote
+                   adjust-plans:
+                     - report+:              # Add additional report step
+                           how: junit
+                           file: /tmp/results.xml
+                     - execute:              # Replace execute step
+                           how: tmt
+                           timeout: 30m
+                       when: arch == x86_64
+                       because: x86_64 systems need longer timeout
+
+    .. versionadded:: 1.67
 
     __ https://fmf.readthedocs.io/en/latest/concept.html#identifiers
 

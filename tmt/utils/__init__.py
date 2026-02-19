@@ -5753,7 +5753,7 @@ def normalize_shell_script(
 
 def normalize_adjust(
     key_address: str, raw_value: Any, logger: tmt.log.Logger
-) -> Optional[list['tmt.base._RawAdjustRule']]:
+) -> list['tmt.base._RawAdjustRule']:
     if raw_value is None:
         return []
     if isinstance(raw_value, list):
@@ -5846,6 +5846,9 @@ class FieldValueSource(enum.Enum):
     """
     Indicates source of metadata field value.
     """
+
+    #: The source is not known.
+    UNKNOWN = 'unknown'
 
     #: The value was provided by fmf node key.
     FMF = 'fmf'

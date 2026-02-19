@@ -1,4 +1,4 @@
-The :ref:`/spec/plans/cleanup` step plugins implement cleanup
+The :tmt:story:`/spec/plans/cleanup` step plugins implement cleanup
 actions to be performed at the very end of testing.
 
 Stop and remove all guests after the testing is finished. Also takes

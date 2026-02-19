@@ -14,13 +14,13 @@ description: |
     constructed from the test name and it's stored under the
     ``execute/data`` directory. It contains a ``metadata.yaml``
     file with the aggregated L1 metadata which can be used by the
-    test :ref:`/spec/tests/framework`. In addition to supported
-    :ref:`/spec/tests` attributes it also contains fmf ``name`` of
+    test :tmt:story:`/spec/tests/framework`. In addition to supported
+    :tmt:story:`/spec/tests` attributes it also contains fmf ``name`` of
     the test.
 
     In each plan, the execute step must produce a ``results.yaml`` file
     with results for executed tests. The format of the file is described
-    at :ref:`/spec/results`.
+    at :tmt:story:`/spec/results`.
 
 
 /isolate:
@@ -108,7 +108,7 @@ description: |
             Providing a multi-line shell script is also supported.
             Note that the first command with non-zero exit code
             will finish the execution. See the
-            :ref:`/spec/tests/test` key for details about default
+            :tmt:story:`/spec/tests/test` key for details about default
             shell options.
         example: |
             execute:

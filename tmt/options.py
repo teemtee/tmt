@@ -579,6 +579,16 @@ POLICY_OPTIONS: list[ClickOptionDecoratorType] = [
     ),
 ]
 
+RECIPE_OPTIONS: list[ClickOptionDecoratorType] = [
+    option(
+        '--recipe',
+        default=None,
+        help='Path to the recipe file.',
+        metavar='PATH',
+        type=Path(),
+    )
+]
+
 
 def create_options_decorator(options: list[ClickOptionDecoratorType]) -> Callable[[FC], FC]:
     def common_decorator(fn: FC) -> FC:

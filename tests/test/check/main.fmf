@@ -46,7 +46,7 @@ duration: 20m
       - provision-virtual
 
     adjust+:
-      - when: distro == fedora-rawhide
+      - when: distro >= fedora-44
         check:
           - how: avc
             result: xfail

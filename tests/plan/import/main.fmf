@@ -22,3 +22,7 @@
 /plan-of-plans:
   summary: Check nested plan features
   test: ./plan-of-plans.sh
+
+/step-inheritance:
+  summary: Make sure step inheritance for report and finish steps works
+  test: ./step-inheritance.sh

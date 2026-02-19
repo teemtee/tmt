@@ -1,0 +1,9 @@
+summary: Check that tree package was installed via prepare/shell
+description: |
+    Verify that the tree command is available after prepare/shell
+    executed 'dnf -y install tree' via the bootc Containerfile build.
+test: |
+    # Verify tree is installed and working
+    tree --version
+    # Also verify the booted image shows we're running a modified image
+    bootc status --booted --format humanreadable

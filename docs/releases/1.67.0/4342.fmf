@@ -1,0 +1,6 @@
+description: |
+  The ``tmt plan export`` command now includes user-defined
+  :tmt:story:`/spec/core/extra` keys from the plan data in the
+  exported output, so that custom metadata such as
+  ``extra-nitrate`` or ``extra-myproject`` is preserved when
+  exporting plans.

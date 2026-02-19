@@ -76,7 +76,7 @@ from tmt.container import (
     field,
 )
 from tmt.lint import LinterOutcome, LinterReturn
-from tmt.recipe import RecipeBuilder
+from tmt.recipe import RecipeManager
 from tmt.result import Result, ResultInterpret
 from tmt.utils import (
     Command,
@@ -1301,9 +1301,13 @@ class Test(
 
     serial_number: int = field(default=0, internal=True)
 
-    _original_fmf_environment: tmt.utils.Environment = field(
+    _original_require: list[Dependency] = field(
         internal=True,
-        default_factory=tmt.utils.Environment,
+        default_factory=list,
+    )
+    _original_recommend: list[Dependency] = field(
+        internal=True,
+        default_factory=list,
     )
 
     _KEYS_SHOW_ORDER = [
@@ -1419,8 +1423,8 @@ class Test(
             )
 
         self._update_metadata()
-        # TODO: refactor the code so it does not modify the test environment
-        self._original_fmf_environment = self.environment.copy()
+        self._original_require = self.require.copy()
+        self._original_recommend = self.recommend.copy()
 
     @staticmethod
     def overview(tree: 'Tree') -> None:
@@ -1948,6 +1952,7 @@ class _RemotePlanReference(_RawFmfId):
     scope: Optional[str]
     inherit_context: Optional[bool]
     inherit_environment: Optional[bool]
+    adjust_plans: list[Any]
 
 
 class RemotePlanReferenceImporting(enum.Enum):
@@ -1991,12 +1996,18 @@ class RemotePlanReference(
         'scope',
         'inherit-context',
         'inherit-environment',
+        'adjust-plans',
     ]
 
     importing: RemotePlanReferenceImporting = RemotePlanReferenceImporting.REPLACE
     scope: RemotePlanReferenceImportScope = RemotePlanReferenceImportScope.FIRST_PLAN_ONLY
     inherit_context: bool = True
     inherit_environment: bool = True
+    # Note: normalize_adjust returns a list as per its type hint
+    adjust_plans: list[_RawAdjustRule] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_adjust,
+    )
 
     @functools.cached_property
     def name_pattern(self) -> Pattern[str]:
@@ -2081,6 +2092,7 @@ class RemotePlanReference(
         )
         reference.inherit_context = bool(raw.get('inherit-context', True))
         reference.inherit_environment = bool(raw.get('inherit-environment', True))
+        reference.adjust_plans = cast(list[_RawAdjustRule], raw.get('adjust-plans', []))
 
         return reference
 
@@ -3348,6 +3360,7 @@ class Plan(
                 node.name, node.data.get('context', {}), self._logger
             )
 
+            # For final context inheritance, respect inherit_context setting
             if reference.inherit_context:
                 alteration_fmf_context = FmfContext(
                     {
@@ -3362,8 +3375,12 @@ class Plan(
                 )
 
             # Adjust the imported tree, to let any `adjust` rules defined in it take
-            # action.
-            node.adjust(fmf.context.Context(**alteration_fmf_context), case_sensitive=False)
+            # action, including the adjust-plans rules.
+            node.adjust(
+                fmf.context.Context(**alteration_fmf_context),
+                case_sensitive=False,
+                additional_rules=reference.adjust_plans,
+            )
 
             # If the local plan is disabled, disable the imported plan as well
             if not self.enabled:
@@ -3463,6 +3480,10 @@ class Plan(
 
                     self._imported_plans.append(imported_plan)
 
+        if self.my_run:
+            for policy in self.my_run.policies:
+                policy.apply_to_plans(plans=self._imported_plans, logger=self._logger)
+
         return self._imported_plans
 
     def derive_plan(self, derived_id: int, tests: dict[str, list[Test]]) -> 'Plan':
@@ -3547,7 +3568,12 @@ class Plan(
                 continue
 
             if self.my_run:
-                self.my_run.swap_plans(self, *shaper.apply(self, tests))
+                reshaped_plans = list(shaper.apply(self, tests))
+
+                for policy in self.my_run.policies:
+                    policy.apply_to_plans(plans=reshaped_plans, logger=self._logger)
+
+                self.my_run.swap_plans(self, *reshaped_plans)
 
             return True
 
@@ -4253,6 +4279,10 @@ class Tree(tmt.utils.Common):
             for plan in [*local_plans, *importing_plans]
         ]
 
+        if run is not None:
+            for policy in run.policies:
+                policy.apply_to_plans(plans=plans, logger=logger)
+
         if not Plan._opt('shallow'):
             unresolved_plans = plans
             plans = []
@@ -4510,6 +4540,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         parent: Optional[tmt.utils.Common] = None,
         workdir_root: Optional[Path] = None,
         policies: Optional[list[tmt.policy.Policy]] = None,
+        recipe_path: Optional[Path] = None,
         logger: tmt.log.Logger,
     ) -> None:
         """
@@ -4545,7 +4576,10 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         self.unique_id = str(time.time()).split('.')[0]
 
         self.policies = policies or []
-        self.recipe_builder = RecipeBuilder(logger)
+        self.recipe_manager = RecipeManager(logger)
+        self.recipe = self.recipe_manager.load(recipe_path) if recipe_path else None
+        if self.recipe is not None and self._tree is not None:
+            self.recipe_manager.update_tree(self.recipe, self._tree.tree)
 
     @property
     def run_workdir(self) -> Path:
@@ -4809,7 +4843,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         """
         # Save recipe
         if not self.is_dry_run:
-            self.recipe_builder.save(self)
+            self.recipe_manager.save(self)
 
         # We get interesting results only if execute or prepare step is enabled
         execute = self.plans[0].execute

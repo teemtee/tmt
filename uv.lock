@@ -3465,6 +3465,7 @@ all = [
     { name = "nitrate" },
     { name = "pylero" },
     { name = "python-bugzilla" },
+    { name = "setuptools" },
     { name = "testcloud" },
 ]
 ansible = [
@@ -3497,6 +3498,7 @@ prepare-artifact = [
 ]
 provision-beaker = [
     { name = "mrack" },
+    { name = "setuptools" },
 ]
 provision-bootc = [
     { name = "testcloud" },
@@ -3561,6 +3563,8 @@ requires-dist = [
     { name = "renku-sphinx-theme", marker = "extra == 'docs'" },
     { name = "requests", specifier = ">=2.25.1" },
     { name = "ruamel-yaml", specifier = ">=0.16.6" },
+    { name = "setuptools", marker = "extra == 'all'", specifier = "<81" },
+    { name = "setuptools", marker = "extra == 'provision-beaker'", specifier = "<81" },
     { name = "sphinx", marker = "extra == 'docs'" },
     { name = "sphinx-reredirects", marker = "extra == 'docs'" },
     { name = "testcloud", marker = "extra == 'all'", specifier = ">=0.11.7" },

@@ -71,6 +71,9 @@ prepare-artifact = [
     ]
 provision-beaker = [
     "mrack>=1.25.0",
+    # Needed because beaker-client uses pkg_resources which are deprecated
+    # https://github.com/beaker-project/beaker/issues/232
+    "setuptools<81",
     ]
 provision-mock = [
     # mockbuild

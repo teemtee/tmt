@@ -1,0 +1,4 @@
+description: |
+  The ``tmt run login --test`` command no longer includes a login
+  at the last enabled step, instead only after test executions.
+  Use ``--step`` explicitly to also login at a specific step.

@@ -58,7 +58,7 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         metavar="RELATION:TARGET",
         multiple=True,
         help="""
-            Select tests using the :ref:`/spec/core/link` keys.
+            Select tests using the :tmt:story:`/spec/core/link` keys.
             Values must be in the form of ``RELATION:TARGET``,
             tests containing at least one of them are selected.
             Regular expressions are supported for both relation
@@ -87,7 +87,7 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         multiple=True,
         help="""
             Include only tests matching given regular expression.
-            Respect the :ref:`/spec/core/order` defined in test.
+            Respect the :tmt:story:`/spec/core/order` defined in test.
             The search mode is used for pattern matching. See the
             :ref:`regular-expressions` section for details.
             """,
@@ -207,7 +207,8 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
     )
 
     # Edit discovered tests
-    adjust_tests: Optional[list[_RawAdjustRule]] = field(
+    # Note: normalize_adjust returns a list as per its type hint
+    adjust_tests: list[_RawAdjustRule] = field(
         default_factory=list,
         normalize=tmt.utils.normalize_adjust,
         help="""
@@ -344,7 +345,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     The ``include`` key also allows to select tests by name, with two
     important distinctions from the ``test`` key:
 
-    * The original test :ref:`/spec/core/order` is preserved so it does
+    * The original test :tmt:story:`/spec/core/order` is preserved so it does
       not matter in which order tests are listed under the ``include``
       key.
 
@@ -389,7 +390,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     The ``filter`` key can be used to apply an advanced filter based on
     test metadata attributes. These can be especially useful when tests
-    are grouped by the :ref:`/spec/core/tag` or :ref:`/spec/core/tier`
+    are grouped by the :tmt:story:`/spec/core/tag` or :tmt:story:`/spec/core/tier`
     keys:
 
     .. code-block:: yaml

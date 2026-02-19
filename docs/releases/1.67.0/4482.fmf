@@ -1,0 +1,6 @@
+description: |
+    The :ref:`/plugins/provision/container` plugin now passes
+    plan environment variables to the container via ``podman run --env-file``.
+    This allows container images that require environment variables for
+    initialization to receive them at container startup time.
+order: 21

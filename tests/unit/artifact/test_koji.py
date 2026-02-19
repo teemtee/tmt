@@ -1,5 +1,6 @@
 import pytest
 
+from tmt.steps.prepare.artifact.providers import RpmVersion
 from tmt.steps.prepare.artifact.providers.koji import (
     KojiArtifactProvider,
     KojiBuild,
@@ -68,3 +69,64 @@ def test_koji_valid_task_id_scratch_build(mock_koji, mock_call_api, artifact_pro
     assert task_id in tasks
     assert provider.build_id is None
     assert len(provider.artifacts) == 2
+
+
+@pytest.mark.parametrize(
+    ("rpm_meta", "expected"),
+    [
+        (
+            {"name": "bash", "version": "5.1.8", "release": "6.el9", "arch": "x86_64"},
+            {
+                "name": "bash",
+                "epoch": 0,
+                "version": "5.1.8",
+                "release": "6.el9",
+                "arch": "x86_64",
+                "nvra": "bash-5.1.8-6.el9.x86_64",
+            },
+        ),
+        (
+            {
+                "name": "docker-ce",
+                "version": "20.10.7",
+                "release": "3.el8",
+                "arch": "x86_64",
+                "epoch": 1,
+            },
+            {
+                "name": "docker-ce",
+                "epoch": 1,
+                "version": "20.10.7",
+                "release": "3.el8",
+                "arch": "x86_64",
+                "nvra": "docker-ce-20.10.7-3.el8.x86_64",
+            },
+        ),
+        (
+            {
+                "name": "tmt+export-polarion",
+                "version": "1.61.0.dev17+gf29b2e83e",
+                "release": "1.fc41",
+                "arch": "x86_64",
+            },
+            {
+                "name": "tmt+export-polarion",
+                "epoch": 0,
+                "version": "1.61.0.dev17+gf29b2e83e",
+                "release": "1.fc41",
+                "arch": "x86_64",
+                "nvra": "tmt+export-polarion-1.61.0.dev17+gf29b2e83e-1.fc41.x86_64",
+            },
+        ),
+    ],
+)
+def test_version_from_rpm_meta_parsing(rpm_meta, expected):
+    version = RpmVersion.from_rpm_meta(rpm_meta)
+
+    assert version.name == expected["name"]
+    assert version.epoch == expected["epoch"]
+    assert version.version == expected["version"]
+    assert version.release == expected["release"]
+    assert version.arch == expected["arch"]
+    assert version.nvra == expected["nvra"]
+    assert str(version) == expected["nvra"]

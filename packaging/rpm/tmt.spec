@@ -104,7 +104,8 @@ Requires:       podman
 # skip the whole sub-package, but that would need a more thorough impact
 # check. For now we at least allow this to be installed and fail at runtime.
 # Also, podman-machine is only present on x86_64 and aarch64
-%if 0%{?fedora} || 0%{?epel} > 9
+# TODO: re-enable podman-machine on epel10 once it is packaged
+%if 0%{?fedora}
 Requires:       (podman-machine if (filesystem(x86-64) or filesystem(aarch-64)))
 %endif
 
@@ -136,15 +137,17 @@ Provides:       tmt-all == %{version}-%{release}
 %if 0%{?fedora} < 40
 Obsoletes:      tmt-all < %{version}-%{release}
 %endif
-Requires:       tmt+test-convert == %{version}-%{release}
 Requires:       tmt+export-polarion == %{version}-%{release}
-Requires:       tmt+provision-container == %{version}-%{release}
-Requires:       tmt+provision-virtual == %{version}-%{release}
+Requires:       tmt+link-jira == %{version}-%{release}
+Requires:       tmt+prepare-artifact == %{version}-%{release}
 Requires:       tmt+provision-beaker == %{version}-%{release}
+Requires:       tmt+provision-bootc == %{version}-%{release}
+Requires:       tmt+provision-container == %{version}-%{release}
+Requires:       tmt+provision-mock == %{version}-%{release}
+Requires:       tmt+provision-virtual == %{version}-%{release}
 Requires:       tmt+report-junit == %{version}-%{release}
 Requires:       tmt+report-polarion == %{version}-%{release}
-Requires:       tmt+prepare-artifact == %{version}-%{release}
-Requires:       tmt+provision-mock == %{version}-%{release}
+Requires:       tmt+test-convert == %{version}-%{release}
 
 %description -n tmt+all
 All extra dependencies of the Test Management Tool. Install this

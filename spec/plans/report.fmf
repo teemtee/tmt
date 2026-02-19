@@ -12,7 +12,7 @@ link:
     description: |
         Using the ``when`` key makes it easier to restrict a step configuration
         to run only if any of the specified rules matches.
-        The syntax is the same as in ``adjust`` and :ref:`/spec/context`.
+        The syntax is the same as in ``adjust`` and :tmt:story:`/spec/context`.
 
         Values can be single string with the rule or list of rules.
     example: |

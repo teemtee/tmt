@@ -1,0 +1,4 @@
+description: |
+  :tmt:story:`Policies </spec/policy>` can now be applied to plans, including
+  their steps and all their phases.
+order: 10

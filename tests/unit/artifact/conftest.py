@@ -2,12 +2,17 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+import tmt.plugins
 from tmt.steps.prepare import install
 from tmt.steps.prepare.artifact import get_artifact_provider
 from tmt.steps.prepare.artifact.providers import koji as koji_module
 from tmt.steps.prepare.artifact.providers.brew import BrewArtifactProvider
-from tmt.steps.prepare.artifact.providers.copr_repository import CoprRepositoryProvider
 from tmt.steps.prepare.artifact.providers.koji import KojiArtifactProvider
+
+
+@pytest.fixture(scope='session')
+def _load_plugins():
+    tmt.plugins.explore(tmt.Logger.create())
 
 
 @pytest.fixture
@@ -23,13 +28,13 @@ def mock_koji(mock_pathinfo):
     mock_koji = MagicMock()
     mock_koji.PathInfo.return_value = mock_pathinfo
 
+    def mock_initialize_session(self, api_url=None, top_url=None):
+        self._top_url = top_url or "http://koji.example.com/"
+        self._api_url = api_url or "http://koji.example.com/kojihub"
+        return MagicMock()
+
     with (
-        patch.object(KojiArtifactProvider, "_initialize_session", return_value=MagicMock()),
-        patch.object(
-            KojiArtifactProvider,
-            "_rpm_url",
-            side_effect=lambda rpm: f"http://koji.example.com/{rpm['name']}.rpm",
-        ),
+        patch.object(KojiArtifactProvider, "_initialize_session", mock_initialize_session),
         patch.object(koji_module, "koji", mock_koji),
     ):
         yield mock_koji
@@ -37,19 +42,17 @@ def mock_koji(mock_pathinfo):
 
 @pytest.fixture
 def mock_brew(mock_koji):
-    with (
-        patch.object(BrewArtifactProvider, "_initialize_session", return_value=MagicMock()),
-        patch.object(
-            BrewArtifactProvider,
-            "_rpm_url",
-            side_effect=lambda rpm: f"http://brew.example.com/{rpm['name']}.rpm",
-        ),
-    ):
+    def mock_initialize_session(self, api_url=None, top_url=None):
+        self._top_url = top_url or "http://brew.example.com/"
+        self._api_url = api_url or "http://brew.example.com/brewhub"
+        return MagicMock()
+
+    with patch.object(BrewArtifactProvider, "_initialize_session", mock_initialize_session):
         yield mock_koji
 
 
 @pytest.fixture
-def artifact_provider(root_logger):
+def artifact_provider(root_logger, _load_plugins):
     def get_provider(provider_id: str, repository_priority: int = 50):
         provider_class = get_artifact_provider(provider_id)
         return provider_class(

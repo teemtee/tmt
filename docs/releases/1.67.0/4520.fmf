@@ -1,0 +1,4 @@
+description: |
+  Output stream log prefixes in command output have been updated from
+  ``out``/``err`` to ``stdout``/``stderr`` for consistency and clearer
+  identification of standard output and standard error in logs.

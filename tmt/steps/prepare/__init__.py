@@ -504,6 +504,10 @@ class Prepare(tmt.steps.Step):
                 causes=exceptions,
             )
 
+        # Notify guests that the prepare step has completed.
+        for guest in guest_copies:
+            guest.on_step_complete(self)
+
         self.info('')
 
         # Pull artifacts created in the plan data directory

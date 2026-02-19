@@ -63,16 +63,16 @@ class BrewArtifactProvider(KojiArtifactProvider):
         return urljoin(self._top_url, path)
 
 
-@provides_artifact_provider("brew.build")  # type: ignore[arg-type]
+@provides_artifact_provider("brew.build")
 class BrewBuild(BrewArtifactProvider, KojiBuild):
     pass
 
 
-@provides_artifact_provider("brew.task")  # type: ignore[arg-type]
+@provides_artifact_provider("brew.task")
 class BrewTask(BrewArtifactProvider, KojiTask):
     pass
 
 
-@provides_artifact_provider("brew.nvr")  # type: ignore[arg-type]
+@provides_artifact_provider("brew.nvr")
 class BrewNvr(BrewArtifactProvider, KojiNvr):
     pass
