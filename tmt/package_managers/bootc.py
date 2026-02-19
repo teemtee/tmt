@@ -1,6 +1,7 @@
 import json
 import re
 import uuid
+from collections.abc import Iterator
 from typing import Any, Optional, cast
 
 import tmt.utils
@@ -168,6 +169,9 @@ class Bootc(PackageManager[BootcEngine]):
     # Needs to be bigger than priorities of `yum`, `dnf`, `dnf5` and `rpm-ostree`.
     probe_priority = 130
 
+    def extract_package_name_from_package_manager_output(self, output: str) -> Iterator[str]:
+        return self.guest.bootc_builder.extract_package_name_from_package_manager_output(output)
+
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:
         script = self.engine.check_presence(*installables)
 
@@ -198,10 +202,10 @@ class Bootc(PackageManager[BootcEngine]):
 
         return results
 
-    def build_container(self) -> None:
+    def build_container(self) -> Optional[CommandOutput]:
         if not self.engine.containerfile_directives:
             self.debug("No Containerfile directives to build container image, skipping build.")
-            return
+            return None
 
         image_tag = f"{LOCALHOST_BOOTC_IMAGE_PREFIX}/bootc/{uuid.uuid4()}"
 
@@ -240,7 +244,7 @@ class Bootc(PackageManager[BootcEngine]):
 
                 assert self.guest.parent is not None
 
-                self.guest.execute(
+                build_output = self.guest.execute(
                     ShellScript(
                         f'{self.guest.facts.sudo_prefix} podman build -t {image_tag} -f {containerfile_path} {self.guest.step_workdir}'  # noqa: E501
                     )
@@ -257,6 +261,8 @@ class Bootc(PackageManager[BootcEngine]):
                 self.info("package", "rebooting to apply new image", "green")
                 self.guest.reboot()
 
+                return build_output
+
             finally:
                 # Reset containerfile directives
                 self.engine.flush_containerfile_directives()
@@ -264,8 +270,7 @@ class Bootc(PackageManager[BootcEngine]):
     def refresh_metadata(self) -> CommandOutput:
         self.engine.refresh_metadata()
 
-        self.build_container()
-        return CommandOutput(stdout=None, stderr=None)
+        return self.build_container() or CommandOutput(stdout=None, stderr=None)
 
     def install(
         self,
@@ -280,7 +285,7 @@ class Bootc(PackageManager[BootcEngine]):
 
         if missing_installables:
             self.engine.install(*missing_installables, options=options)
-            self.build_container()
+            return self.build_container() or CommandOutput(stdout=None, stderr=None)
 
         return CommandOutput(stdout=None, stderr=None)
 
@@ -291,8 +296,7 @@ class Bootc(PackageManager[BootcEngine]):
     ) -> CommandOutput:
         self.engine.reinstall(*installables, options=options)
 
-        self.build_container()
-        return CommandOutput(stdout=None, stderr=None)
+        return self.build_container() or CommandOutput(stdout=None, stderr=None)
 
     def install_debuginfo(
         self,
@@ -301,5 +305,4 @@ class Bootc(PackageManager[BootcEngine]):
     ) -> CommandOutput:
         self.engine.install_debuginfo(*installables, options=options)
 
-        self.build_container()
-        return CommandOutput(stdout=None, stderr=None)
+        return self.build_container() or CommandOutput(stdout=None, stderr=None)

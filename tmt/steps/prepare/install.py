@@ -706,7 +706,9 @@ class InstallBootc(InstallBase):
         # Call base install methods to collect all package types
         super()._install()
 
-        cast(Bootc, self.guest.package_manager).build_container()
+        output = cast(Bootc, self.guest.package_manager).build_container()
+        if output is not None:
+            self.install_outputs.append(output)
 
 
 @provides_installer('mock')
