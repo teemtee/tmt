@@ -22,7 +22,7 @@ rlJournalStart
 
     rlPhaseStartTest "Conflict"
         # TODO: Provide a better test covering the expected expansion defined in tmt.libraries.resolve_dependencies
-        rlRun -s "tmt run -arvvvddd discover plan --name conflict" 0
+        rlRun -s "tmt run -rvvvddd discover plan --name conflict" 0
         rlAssertGrep "Fetch library 'openssl/certgen'" $rlRun_LOG
         rlAssertGrep "Detected library '{'url': 'https://github.com/beakerlib/openssl', 'name': '/certgen', 'type': 'library'}'." $rlRun_LOG
         rlAssertGrep "Fetch library 'certgen/certgen'" $rlRun_LOG
