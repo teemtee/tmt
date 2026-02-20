@@ -42,6 +42,6 @@ example:
     tmt run --environment "BUGS='123 456 789'"
 
 link:
-  - implemented-by: /tmt/base.py
+  - implemented-by: /tmt/base/core.py
   - implemented-by: /tmt/steps/discover
   - verified-by: /tests/core/environment
