@@ -48,7 +48,7 @@ def test_nothing_found(root_logger, source_dir, target_dir):
     """
 
     parent = tmt.utils.Common(logger=root_logger, workdir=True)
-    with pytest.raises(tmt.utils.MetadataError):
+    with pytest.raises(tmt.libraries.LibraryError):
         tmt.libraries.Library.from_identifier(
             logger=root_logger,
             parent=parent,
