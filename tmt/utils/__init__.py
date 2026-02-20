@@ -73,7 +73,7 @@ from tmt._compat import importlib
 from tmt._compat.annotationlib import Format, get_annotations
 from tmt._compat.importlib.readers import MultiplexedPath
 from tmt._compat.pathlib import Path
-from tmt._compat.typing import ParamSpec
+from tmt._compat.typing import ParamSpec, Self
 from tmt.container import container
 from tmt.log import LoggableValue
 from tmt.utils.themes import style
@@ -440,7 +440,7 @@ class EnvVarValue(str):
     A type of environment variable value
     """
 
-    def __new__(cls, raw_value: Any) -> 'EnvVarValue':
+    def __new__(cls, raw_value: Any) -> Self:
         if isinstance(raw_value, str):
             return str.__new__(cls, raw_value)
 
@@ -6232,7 +6232,7 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
     def __init__(self) -> None:
         pass
 
-    def __enter__(self) -> 'Stopwatch':
+    def __enter__(self) -> Self:
         self.start_time = datetime.datetime.now(datetime.timezone.utc)
 
         return self

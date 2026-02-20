@@ -480,7 +480,8 @@ class TestStructuredField(unittest.TestCase):
         """
 
         text = "\n".join([self.header, self.sections, self.footer])
-        pytest.raises(StructuredFieldError, StructuredField, text, 0)
+        with pytest.raises(StructuredFieldError):
+            StructuredField(text, 0)
 
     def test_broken_field(self):
         """
@@ -488,7 +489,8 @@ class TestStructuredField(unittest.TestCase):
         """
 
         text = "[structured-field-start]"
-        pytest.raises(StructuredFieldError, StructuredField, text)
+        with pytest.raises(StructuredFieldError):
+            StructuredField(text)
 
     def test_set_content(self):
         """
@@ -689,7 +691,8 @@ class TestStructuredField(unittest.TestCase):
         # Remove multiple values
         field.remove("section", "key")
         assert 'key = 1\nkey = 2\nkey = 3' not in field.save()
-        pytest.raises(StructuredFieldError, field.get, "section", "key")
+        with pytest.raises(StructuredFieldError):
+            field.get("section", "key")
 
 
 def test_run_interactive_not_joined(tmppath, root_logger):

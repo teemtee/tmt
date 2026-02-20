@@ -325,7 +325,7 @@ def _transform_unsupported(constraint: tmt.hardware.Constraint) -> dict[str, Any
 def _get_registry_from_url(bootc_image_url: str) -> str:
     """Extract registry from image URL"""
     # Handle quay.io/repo/image:tag -> quay.io
-    return bootc_image_url.split('/')[0] if '/' in bootc_image_url else bootc_image_url
+    return bootc_image_url.split('/', maxsplit=1)[0] if '/' in bootc_image_url else bootc_image_url
 
 
 def _translate_constraint_by_config(

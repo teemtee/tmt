@@ -387,7 +387,7 @@ def _template_filter_format_duration(  # type: ignore[reportUnusedFunction,unuse
         {{ {"duration": "12:34:56"} | format_duration }}
     """
 
-    return result.duration if result.duration else '..:..:..'
+    return result.duration or '..:..:..'
 
 
 def _template_filter_to_yaml(  # type: ignore[reportUnusedFunction,unused-ignore]

@@ -64,9 +64,9 @@ class TestDescription(
     enabled: bool = True
     order: int = field(
         default=tmt.steps.PHASE_ORDER_DEFAULT,
-        normalize=lambda key_address, raw_value, logger: 50
-        if raw_value is None
-        else int(raw_value),
+        normalize=lambda key_address, raw_value, logger: (
+            50 if raw_value is None else int(raw_value)
+        ),
     )
     link: Optional[tmt.base.Links] = field(
         default=None,
@@ -85,15 +85,17 @@ class TestDescription(
     )
     tier: Optional[str] = field(
         default=None,
-        normalize=lambda key_address, raw_value, logger: None
-        if raw_value is None
-        else str(raw_value),
+        normalize=lambda key_address, raw_value, logger: (
+            None if raw_value is None else str(raw_value)
+        ),
     )
     adjust: Optional[list[tmt.base._RawAdjustRule]] = field(
         default=None,
-        normalize=lambda key_address, raw_value, logger: []
-        if raw_value is None
-        else ([raw_value] if not isinstance(raw_value, list) else raw_value),
+        normalize=lambda key_address, raw_value, logger: (
+            []
+            if raw_value is None
+            else ([raw_value] if not isinstance(raw_value, list) else raw_value)
+        ),
     )
 
     # Basic test information

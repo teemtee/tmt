@@ -39,7 +39,7 @@ def mock_config(root: Optional[str], logger: tmt.log.Logger) -> dict[str, Any]:
         print_hints('provision/mock', logger=logger)
         raise tmt.utils.ProvisionError('Could not import mockbuild.config module.') from error
 
-    return cast(dict[str, Any], mockbuild.config.simple_load_config(root if root else 'default'))
+    return cast(dict[str, Any], mockbuild.config.simple_load_config(root or 'default'))
 
 
 @container

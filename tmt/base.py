@@ -770,9 +770,9 @@ class Core(
     enabled: bool = True
     order: int = field(
         default=DEFAULT_ORDER,
-        normalize=lambda key_address, raw_value, logger: DEFAULT_ORDER
-        if raw_value is None
-        else int(raw_value),
+        normalize=lambda key_address, raw_value, logger: (
+            DEFAULT_ORDER if raw_value is None else int(raw_value)
+        ),
     )
     link: Optional['Links'] = field(
         default=cast(Optional['Links'], None),
@@ -786,15 +786,17 @@ class Core(
     )
     tier: Optional[str] = field(
         default=None,
-        normalize=lambda key_address, raw_value, logger: None
-        if raw_value is None
-        else str(raw_value),
+        normalize=lambda key_address, raw_value, logger: (
+            None if raw_value is None else str(raw_value)
+        ),
     )
     adjust: Optional[list[_RawAdjustRule]] = field(
         default_factory=list,
-        normalize=lambda key_address, raw_value, logger: []
-        if raw_value is None
-        else ([raw_value] if not isinstance(raw_value, list) else raw_value),
+        normalize=lambda key_address, raw_value, logger: (
+            []
+            if raw_value is None
+            else ([raw_value] if not isinstance(raw_value, list) else raw_value)
+        ),
     )
 
     _KEYS_SHOW_ORDER = [
@@ -3631,9 +3633,9 @@ class Story(
     title: Optional[str] = None
     priority: Optional[StoryPriority] = field(
         default=cast(Optional['StoryPriority'], None),
-        normalize=lambda key_address, raw_value, logger: None
-        if raw_value is None
-        else StoryPriority(raw_value),
+        normalize=lambda key_address, raw_value, logger: (
+            None if raw_value is None else StoryPriority(raw_value)
+        ),
         exporter=lambda value: value.value if value is not None else None,
     )
 
@@ -4625,7 +4627,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
             tmt.templates.MANAGER.render_default_plan()
         )
         try:
-            self.tree = tree if tree else tmt.Tree(logger=self._logger, path=Path('.'))
+            self.tree = tree or tmt.Tree(logger=self._logger, path=Path('.'))
             self.debug(f"Using tree '{self.tree.root}'.")
             # Clear the tree and insert default plan if requested
             if Plan._opt("default"):

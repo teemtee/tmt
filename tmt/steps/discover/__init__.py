@@ -900,7 +900,7 @@ class Discover(tmt.steps.Step):
 
         from tmt.steps.discover import TestOrigin
 
-        suitable_tests = self._failed_tests if self._failed_tests else self._tests
+        suitable_tests = self._failed_tests or self._tests
         suitable_phases = [phase_name] if phase_name is not None else list(self._tests.keys())
 
         def _iter_tests() -> Iterator['TestOrigin']:
