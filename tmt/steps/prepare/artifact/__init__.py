@@ -39,7 +39,7 @@ class PrepareArtifactData(PrepareStepData):
 
 
 def get_artifact_provider(provider_id: str) -> type[ArtifactProvider]:
-    provider_type = provider_id.split(':')[0]
+    provider_type = provider_id.split(':', maxsplit=1)[0]
     provider_class = _PROVIDER_REGISTRY.get_plugin(provider_type)
     if not provider_class:
         raise tmt.utils.PrepareError(f"Unknown provider type '{provider_type}'")

@@ -37,8 +37,8 @@ def test_brew_valid_draft_build(mock_brew, mock_call_api, artifact_provider):
         }
         for i in range(2)
     ]
-    mock_call_api.side_effect = (
-        lambda method, *a, **kw: mock_rpms
+    mock_call_api.side_effect = lambda method, *a, **kw: (
+        mock_rpms
         if method == "listBuildRPMs"
         else {"id": draft_id, "package_name": "test-package"}
     )
