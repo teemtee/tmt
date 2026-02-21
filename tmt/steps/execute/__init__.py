@@ -379,22 +379,28 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
         return environment
 
     def invoke_check(self, event: CheckEvent, check: Check) -> list[CheckResult]:
-        with Stopwatch() as timer:
-            results = check.go(
-                event=event,
-                invocation=self,
-                environment=self.environment,
-                logger=self.logger,
-            )
+        results, exc, timer = Stopwatch.measure(
+            check.go,
+            event=event,
+            invocation=self,
+            environment=self.environment,
+            logger=self.logger,
+        )
 
-        for result in results:
-            result.event = event
+        if exc is not None:
+            raise exc
 
-            result.start_time = timer.start_time_formatted
-            result.end_time = timer.end_time_formatted
-            result.duration = timer.duration_formatted
+        if results is not None:
+            for result in results:
+                result.event = event
 
-        return results
+                result.start_time = timer.start_time_formatted
+                result.end_time = timer.end_time_formatted
+                result.duration = timer.duration_formatted
+
+            return results
+
+        raise tmt.utils.GeneralError('Check produced no results but raised no exception.')
 
     def invoke_checks(self, event: CheckEvent, checks: Sequence[Check]) -> list[CheckResult]:
         return list(
@@ -475,45 +481,49 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
                 if self.on_interrupt_callback_token is not None:
                     tmt.utils.signals.remove_callback(self.on_interrupt_callback_token)
 
-        with Stopwatch() as timer:
-            self.start_time = timer.start_time_formatted
+        output, error, timer = Stopwatch.measure(
+            self.guest.execute,
+            command,
+            cwd=cwd,
+            env=self.environment,
+            join=True,
+            interactive=interactive,
+            tty=self.test.tty,
+            log=log,
+            timeout=timeout,
+            on_process_start=_save_process,
+            on_process_end=_reset_process,
+            test_session=True,
+            friendly_command=str(self.test.test),
+            sourced_files=[self.phase.step.plan.plan_source_script],
+        )
 
-            try:
-                output = self.guest.execute(
-                    command,
-                    cwd=cwd,
-                    env=self.environment,
-                    join=True,
-                    interactive=interactive,
-                    tty=self.test.tty,
-                    log=log,
-                    timeout=timeout,
-                    on_process_start=_save_process,
-                    on_process_end=_reset_process,
-                    test_session=True,
-                    friendly_command=str(self.test.test),
-                    sourced_files=[self.phase.step.plan.plan_source_script],
-                )
-
-                self.return_code = tmt.utils.ProcessExitCodes.SUCCESS
-
-            except tmt.utils.RunError as error:
-                self.exceptions.append(error)
-
-                output = error.output
-
-                self.return_code = error.returncode
-
-                if self.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
-                    self.logger.debug(f"Test duration '{self.test.duration}' exceeded.")
-
-                elif tmt.utils.ProcessExitCodes.is_pidfile(self.return_code):
-                    self.logger.warning('Test failed to manage its pidfile.')
-
+        self.start_time = timer.start_time_formatted
         self.end_time = timer.end_time_formatted
         self.real_duration = timer.duration_formatted
 
-        return output
+        if error is not None:
+            self.exceptions.append(error)
+
+            if not isinstance(error, tmt.utils.RunError):
+                raise error
+
+            self.return_code = error.returncode
+
+            if self.return_code == tmt.utils.ProcessExitCodes.TIMEOUT:
+                self.logger.debug(f"Test duration '{self.test.duration}' exceeded.")
+
+            elif tmt.utils.ProcessExitCodes.is_pidfile(self.return_code):
+                self.logger.warning('Test failed to manage its pidfile.')
+
+            return error.output
+
+        if output is not None:
+            self.return_code = tmt.utils.ProcessExitCodes.SUCCESS
+
+            return output
+
+        raise tmt.utils.GeneralError('Test produced no output but raised no exception')
 
     def terminate_process(
         self,

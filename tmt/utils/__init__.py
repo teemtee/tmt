@@ -6223,6 +6223,26 @@ def resource_files(
     return resource_path
 
 
+def safe_call(
+    fn: Callable[P, T], *args: P.args, **kwargs: P.kwargs
+) -> tuple[Optional[T], Optional[Exception]]:
+    """
+    Run a function and capture possible exceptions raised during the call.
+
+    :param fn: a function to call. It will be invoked with all
+        positional and keyword arguments given to ``safe_call``.
+    :returns: a tuple of two items: the return value of ``fn`` and
+        ``None``, on success, i.e. when no exception was raised, or
+        ``None`` and the raised exception when ``fn`` raised an exception.
+    """
+
+    try:
+        return (fn(*args, **kwargs), None)
+
+    except Exception as exc:
+        return (None, exc)
+
+
 class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
     start_time: datetime.datetime
     end_time: datetime.datetime
@@ -6270,11 +6290,7 @@ class Stopwatch(contextlib.AbstractContextManager['Stopwatch']):
         """
 
         with cls() as timer:
-            try:
-                return (fn(*args, **kwargs), None, timer)
-
-            except Exception as exc:
-                return (None, exc, timer)
+            return (*safe_call(fn, *args, **kwargs), timer)
 
 
 def format_timestamp(timestamp: datetime.datetime) -> str:
