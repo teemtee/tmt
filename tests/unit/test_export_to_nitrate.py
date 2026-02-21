@@ -2,7 +2,7 @@ from collections.abc import Iterator
 
 import pytest
 
-from tests.unit.conftest import create_path_helper
+from tests.conftest import create_path_helper
 from tmt.export.nitrate import convert_manual_to_nitrate
 from tmt.utils import Path
 
