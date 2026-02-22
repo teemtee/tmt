@@ -2765,6 +2765,17 @@ class GuestSshData(GuestData):
              """,
         normalize=tmt.utils.normalize_string_list,
     )
+    ssh_config_file: Optional[Path] = field(
+        default=None,
+        option='--ssh-config-file',
+        metavar='PATH',
+        help="""
+             SSH configuration file to use. If not specified, the default
+             SSH config file under TMT_CONFIG_DIR is used if it exists.
+             """,
+        serialize=lambda path: None if path is None else str(path),
+        unserialize=lambda value: None if value is None else Path(value),
+    )
 
 
 class GuestSsh(Guest, CommandCollector):
@@ -2796,6 +2807,7 @@ class GuestSsh(Guest, CommandCollector):
     key: list[Path]
     password: Optional[str]
     ssh_option: list[str]
+    ssh_config_file: Optional[Path]
 
     # Master ssh connection process and socket path
     _ssh_master_process_lock: threading.Lock
@@ -3015,6 +3027,26 @@ class GuestSsh(Guest, CommandCollector):
     def _ssh_master_socket_reservation_path(self) -> Path:
         return Path(f'{self._ssh_master_socket_path}.reservation')
 
+    def _get_effective_ssh_config_file(self) -> Optional[Path]:
+        """
+        Get the effective SSH config file to use.
+
+        Returns the SSH config file specified via --ssh-config-file option,
+        or the default SSH config file under TMT_CONFIG_DIR if it exists.
+        """
+        import tmt.config
+
+        # Use explicitly provided SSH config file
+        if self.ssh_config_file is not None:
+            return self.ssh_config_file
+
+        # Check for default SSH config file under TMT_CONFIG_DIR
+        default_ssh_config = tmt.config.effective_config_dir() / 'ssh_config'
+        if default_ssh_config.exists():
+            return default_ssh_config
+
+        return None
+
     @property
     def _ssh_options(self) -> Command:
         """
@@ -3022,6 +3054,11 @@ class GuestSsh(Guest, CommandCollector):
         """
 
         options = BASE_SSH_OPTIONS[:]
+
+        # Add SSH config file if available
+        ssh_config_file = self._get_effective_ssh_config_file()
+        if ssh_config_file is not None:
+            options.extend(['-F', str(ssh_config_file)])
 
         if self.key or self.password:
             # Skip ssh-agent (it adds additional identities)
