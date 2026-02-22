@@ -610,6 +610,10 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
     #: If set, plugin should run tests only from this discover phase.
     discover_phase: Optional[str] = None
 
+    #: Flag to indicate whether :py:meth:`Guest.push` should be invoked before each tests.
+    #: As it will overwrite remote content, some scenarios, namely ``tmt try``, need to avoid it.
+    skip_guest_push: bool = False
+
     def __init__(
         self,
         *,
