@@ -7,6 +7,8 @@ import fmf.utils
 import tmt
 import tmt.log
 import tmt.steps
+import tmt.steps.context.pidfile
+import tmt.steps.context.reboot
 import tmt.steps.prepare
 import tmt.utils
 import tmt.utils.git
@@ -119,6 +121,17 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
 
         outcome = super().go(guest=guest, environment=environment, logger=logger)
 
+        reboot_context = tmt.steps.context.reboot.RebootContext(
+            owner_label=f'{self.step.name} / {self.name}',
+            guest=guest,
+            path=self.phase_workdir,
+            logger=logger,
+        )
+
+        pidfile_context = tmt.steps.context.pidfile.PidFileContext(
+            phase=self, guest=guest, logger=logger
+        )
+
         environment = environment or tmt.utils.Environment()
         environment.update(guest.environment)
 
@@ -222,7 +235,13 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 immediately=False,
             )
 
-        for script_index, script in enumerate(self.data.script):
+        script_queue = self.data.script[:]
+        script_count = len(script_queue)
+
+        while script_queue:
+            script_index = script_count - len(script_queue)
+            script = original_script = script_queue.pop(0)
+
             logger.verbose('script', script, 'green')
 
             script_name = f'{self.name} / script #{script_index}'
@@ -234,20 +253,29 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             script_log_filepath.touch()
 
             script_environment = environment.copy()
+            script_environment.update(reboot_context)
+            script_environment.update(pidfile_context)
 
             pull_options = DEFAULT_PULL_OPTIONS.copy()
             pull_options.exclude.append(str(script_log_filepath))
 
             if guest.become and not guest.facts.is_superuser:
-                command = tmt.utils.ShellScript(
-                    f'{guest.facts.sudo_prefix} {script.to_shell_command()}'
-                )
-            else:
-                command = script
+                script = ShellScript(f'{guest.facts.sudo_prefix} {script.to_shell_command()}')
 
-            command = tmt.utils.ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {command}')
+            script = ShellScript(f'{tmt.utils.SHELL_OPTIONS}; {script}')
 
-            output, error, timer = Stopwatch.measure(_invoke_script, command, script_environment)
+            _, outer_wrapper_filepath = pidfile_context.create_wrappers(
+                worktree,
+                f'inner-{PREPARE_WRAPPER_FILENAME}',
+                f'outer-{PREPARE_WRAPPER_FILENAME}',
+                ACTION=script,
+            )
+
+            output, error, timer = Stopwatch.measure(
+                _invoke_script,
+                ShellScript(str(outer_wrapper_filepath)),
+                script_environment,
+            )
 
             if error is not None:
                 if isinstance(error, tmt.utils.RunError):
@@ -255,15 +283,29 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                         guest=guest,
                         path=self.phase_workdir,
                         pull_options=pull_options,
+                        reboot=reboot_context,
                         exceptions=outcome.exceptions,
                     )
+
+                if reboot_context.requested and reboot_context.handle_reboot():
+                    self.write_command_report(
+                        path=script_log_filepath,
+                        label=script_name,
+                        timer=timer,
+                        command=script,
+                        exc=error,
+                    )
+
+                    script_queue.insert(0, original_script)
+
+                    continue
 
                 return self._save_failed_run_outcome(
                     log_filepath=script_log_filepath,
                     label=script_name,
                     timer=timer,
                     guest=guest,
-                    command=command,
+                    command=script,
                     exception=error,
                     outcome=outcome,
                 )
@@ -278,6 +320,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                 guest=guest,
                 path=self.phase_workdir,
                 pull_options=pull_options,
+                reboot=reboot_context,
                 exceptions=outcome.exceptions,
             )
 

@@ -1,0 +1,4 @@
+description: |
+  The :ref:`/plugins/prepare/shell` prepare and finish plugins now
+  support guest reboot by invoking ``tmt-reboot`` script. They are now
+  consistent with how reboot works in tests.
