@@ -14,6 +14,7 @@ import shutil
 import sys
 import tempfile
 import time
+import urllib.parse
 from collections.abc import Iterable, Iterator, Sequence
 from re import Pattern
 from typing import (
@@ -1207,6 +1208,62 @@ class Core(
             return
 
         yield LinterOutcome.PASS, 'summary key is set and is reasonably long'
+
+    def lint_valid_links(self) -> LinterReturn:
+        """
+        C002: links must point to existing targets
+        """
+
+        if not self.link:
+            yield LinterOutcome.SKIP, 'no links set'
+            return
+
+        for link in self.link.get():
+            link_label = ', '.join(
+                f'{key}={value}' for key, value in link.to_minimal_spec().items()
+            )
+
+            # TODO: targeting an fmf node means we need to load the tree,
+            # possibly also cloning the repo.
+            if not isinstance(link.target, str):
+                yield (
+                    LinterOutcome.SKIP,
+                    f'{link_label}: links targeting fmf ID are not yet covered by the check',
+                )
+
+                continue
+
+            target_url = urllib.parse.urlparse(link.target)
+
+            if target_url.scheme:
+                with tmt.utils.retry_session(logger=self._logger) as session:
+                    response = session.head(link.target, allow_redirects=True)
+
+                if response.ok:
+                    yield LinterOutcome.PASS, f'{link_label}: link target exists'
+                    continue
+
+                yield (
+                    LinterOutcome.FAIL,
+                    f'{link_label}: link targets URL which does seem to be broken',
+                )
+                continue
+
+            path = Path(target_url.path).unrooted()
+
+            if path.exists():
+                yield LinterOutcome.PASS, f'{link_label}: link target exists'
+                continue
+
+            assert self.tree is not None  # narrow type
+
+            target_nodes = list(self.tree.tree.prune(names=[link.target]))
+
+            if not target_nodes:
+                yield LinterOutcome.FAIL, f'{link_label}: link targets fmf nodes that do not exist'
+                continue
+
+            yield LinterOutcome.PASS, f'{link_label}: link target exists'
 
     def has_link(self, needle: 'LinkNeedle') -> bool:
         """
