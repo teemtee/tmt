@@ -5,6 +5,7 @@ import dataclasses
 import enum
 import functools
 import hashlib
+import inspect
 import os
 import re
 import secrets
@@ -13,6 +14,7 @@ import shutil
 import signal as _signal
 import string
 import subprocess
+import textwrap
 import threading
 from collections.abc import Iterable, Iterator, Sequence
 from shlex import quote
@@ -20,6 +22,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Generic,
     Literal,
     NewType,
     Optional,
@@ -575,6 +578,200 @@ class GuestCapability(enum.Enum):
     SYSLOG_ACTION_READ_CLEAR = 'syslog-action-read-clear'
 
 
+class guest_fact(Generic[T]):  # noqa: N801
+    """
+    A descriptor that associates a shell snippet with a guest fact attribute.
+
+    This descriptor allows facts to be collected efficiently by registering
+    shell snippets that can be combined into a single script execution.
+    """
+
+    #: A shell snippet responsible for discovering a fact. Its standard
+    #: output is passed to :py:attr:`extract`, standard error output is
+    #: ignored.
+    snippet: str
+
+    #: If set, it is used instead of :py:attr:`snippet`. The callable
+    #: is invoked during the construction of the discover script, and
+    #: its return value must comply with the rules for :py:attr:`snippet`.
+    snippet_creator: Callable[[], str]
+
+    #: A callable that receives the standard output of the shell snippet,
+    #: and returns the actual value of the fact, to be assigned to the
+    #: corresponding :py:class:`GuestFacts` attribute.
+    extract: Callable[[str], T]
+
+    #: Name of the attribute which owns this descriptor. Needed to support
+    #: the descriptor API.
+    name: Optional[str]
+
+    def __init__(
+        self,
+        probe: Union[str, Callable[[], str]],
+        extract: Callable[[str], T],
+    ) -> None:
+        """
+        Initialize a fact collector.
+
+        :param snippet: a shell snippet responsible for discovering the
+            fact. Its standard output is passed to :py:attr:`extract`,
+            standard error output is ignored. If a callable is used,
+            its return value is supposed to be the snippet, and must
+            comply with the rules above.
+        :param extract: a callable that receives the standard output of
+            the shell snippet, and returns the actual value of the fact,
+            to be assigned to the corresponding :py:class:`GuestFacts`
+            attribute.
+        """
+
+        if isinstance(probe, str):
+            self.snippet = textwrap.dedent(probe).strip()
+
+        else:
+            self.snippet_creator = probe
+
+        self.extract = extract
+
+        self.name = None
+
+    def __set_name__(self, owner: type, name: str) -> None:
+        """
+        Called when the descriptor is assigned to a class attribute.
+        """
+
+        self.name = name
+
+    @overload
+    def __get__(self, obj: None, objtype: Optional[type] = None) -> 'guest_fact[T]':
+        pass
+
+    @overload
+    def __get__(self, obj: 'GuestFacts', objtype: Optional[type] = None) -> T:
+        pass
+
+    def __get__(
+        self, obj: Optional['GuestFacts'], objtype: Optional[type] = None
+    ) -> Union['guest_fact[T]', T]:
+        """
+        Get the fact value from the instance.
+        """
+
+        if obj is None:
+            return self
+
+        assert self.name
+
+        return cast(T, obj._raw_facts.get(self.name))
+
+    def __set__(self, obj: 'GuestFacts', value: T) -> None:
+        """
+        Set the fact value on the instance.
+        """
+
+        assert self.name
+
+        obj._raw_facts[self.name] = value
+
+
+class string_guest_fact(guest_fact[Optional[str]]):  # noqa: N801
+    """
+    A guest fact whose value is a simple string.
+    """
+
+    def __init__(self, probe: str) -> None:
+        super().__init__(
+            probe, lambda output: output.strip() if output.strip() != 'unknown' else None
+        )
+
+
+class flag_guest_fact(guest_fact[Optional[bool]]):  # noqa: N801
+    """
+    A guest fact whose value is a booleab flag.
+    """
+
+    def __init__(self, probe: str) -> None:
+        super().__init__(
+            probe, lambda output: output.strip() == 'true' if output.strip() != 'unknown' else None
+        )
+
+
+class keyval_guest_fact(guest_fact[dict[str, str]]):  # noqa: N801
+    """
+    A guest fact whose value is a key/value mapping.
+    """
+
+    @staticmethod
+    def _parse(content: str) -> dict[str, str]:
+        """
+        Parse key=value content (like os-release or lsb-release).
+
+        :param content: File content with key=value pairs.
+        :returns: Dictionary of parsed key/value pairs.
+        """
+
+        result: dict[str, str] = {}
+
+        for line in content.splitlines():
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+
+            if '=' not in line:
+                continue
+
+            key, value = line.split('=', 1)
+
+            # Remove quotes if present
+            if value and value[0] in '"\'':
+                # If ast.literal_eval fails, keep the original value
+                with contextlib.suppress(ValueError, SyntaxError):
+                    value = ast.literal_eval(value)
+
+            result[key] = value
+
+        return result
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(f"cat {shlex.quote(str(path))}", keyval_guest_fact._parse)
+
+
+class package_manager_guest_fact(guest_fact[Optional['tmt.package_managers.GuestPackageManager']]):  # noqa: N801
+    """
+    A guest fact whose value is a package manager name.
+    """
+
+    def __init__(
+        self,
+        predicate: Optional[
+            Callable[[type['tmt.package_managers.PackageManager[Any]']], bool]
+        ] = None,
+    ) -> None:
+        def _snippet_creator() -> str:
+            probes: list[str] = []
+
+            for package_manager_class in sorted(
+                tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.iter_plugins(),
+                key=lambda pm: pm.probe_priority,
+                reverse=True,
+            ):
+                if predicate and not predicate(package_manager_class):
+                    continue
+
+                probes.append(
+                    f"({package_manager_class.probe_command.to_element()}) 1>&2 && echo '{package_manager_class.NAME}'"  # noqa: E501
+                )
+
+            return '\n'.join(probes)
+
+        def _extract(output: str) -> Optional['tmt.package_managers.GuestPackageManager']:
+            if not output:
+                return None
+
+            return output.splitlines()[0]
+
+        super().__init__(_snippet_creator, _extract)
+
+
 @container
 class GuestFacts(SerializableContainer):
     """
@@ -583,428 +780,129 @@ class GuestFacts(SerializableContainer):
     Inspired by Ansible or Puppet facts, interesting guest facts tmt
     discovers while managing the guest are stored in this container,
     plus the code performing the discovery of these facts.
+
+    Each fact is represented as an attribute with the proper type
+    annotation, assigned an instance of :py:class:`guest_fact` class, or
+    one of its subclasses.
+
+    * ``guest_fact`` classes implement the Python descriptor API, see
+      https://docs.python.org/3/howto/descriptor.html, which allows us
+      to attach interesting information to each fact.
+    * the information we attach is 1. a shell script snippet, "probe",
+      to be executed on the guest, whose responsibility is to print
+      something to its standard output, and 2. a callable, "extractor",
+      that is given this standard output, and is expected to produce the
+      actual value of the corresponding fact.
+
+    For example, a probe for the :py:attr:`arch` fact is simple, it calls
+    the ``arch`` command. The corresponding extractor is also trivial,
+    and takes the output produced by the probe - a raw output of
+    ``arch`` - and returns it as the value of the ``arch`` fact.
+
+    Probes of flag-like facts, :py:attr:`has_selinux` for example, usually
+    test some system property, and echo ``true`` or ``false``. The
+    corresponding extractor turns it into a proper ``bool`` value.
+
+    When discovering facts, i.e. when :py:meth:`sync` is called, relevant
+    probes are collected and joined into a single shell script that is
+    then executed on the guest. :py:meth:`_extract_facts` then extracts
+    the actual values, and updates :py:attr:`_raw_facts` mapping.
+    Descriptors then return values from this mapping instead of running
+    any additional code on the guest.
     """
+
+    #: Store the actual values of facts. This mapping serves as a
+    #: storage for descriptors, see :py:meth:`guest_fact.__get__`.
+    #: It is this mapping that is refreshed by :py:meth:`sync`.
+    _raw_facts: dict[str, Any] = field(default_factory=dict)
 
     #: Set to ``True`` by the first call to :py:meth:`sync`.
     in_sync: bool = False
 
-    arch: Optional[str] = None
-    distro: Optional[str] = None
-    kernel_release: Optional[str] = None
-    package_manager: Optional['tmt.package_managers.GuestPackageManager'] = field(
-        # cast: since the default is None, mypy cannot infere the full type,
-        # and reports `package_manager` parameter to be `object`.
-        default=cast(Optional['tmt.package_managers.GuestPackageManager'], None)
-    )
-    bootc_builder: Optional['tmt.package_managers.GuestPackageManager'] = field(
-        # cast: since the default is None, mypy cannot infere the full type,
-        # and reports `bootc_builder` parameter to be `object`.
-        default=cast(Optional['tmt.package_managers.GuestPackageManager'], None)
-    )
-
-    has_selinux: Optional[bool] = None
-    has_systemd: Optional[bool] = None
-    has_rsync: Optional[bool] = None
-    is_superuser: Optional[bool] = None
-    can_sudo: Optional[bool] = None
-    sudo_prefix: Optional[str] = None
-    is_ostree: Optional[bool] = None
-    is_image_mode: Optional[bool] = None
-    is_toolbox: Optional[bool] = None
-    toolbox_container_name: Optional[str] = None
-    is_container: Optional[bool] = None
-    systemd_soft_reboot: Optional[bool] = None
-
-    #: Various Linux capabilities and whether they are permitted to
-    #: commands executed on this guest.
-    capabilities: dict[GuestCapability, bool] = field(
-        default_factory=cast(Callable[[], dict[GuestCapability, bool]], dict),
-        serialize=lambda capabilities: (
-            {capability.value: enabled for capability, enabled in capabilities.items()}
-            if capabilities
-            else {}
-        ),
-        unserialize=lambda raw_value: {
-            GuestCapability(raw_capability): enabled
-            for raw_capability, enabled in raw_value.items()
-        },
-    )
-
-    os_release_content: dict[str, str] = field(default_factory=dict)
-    lsb_release_content: dict[str, str] = field(default_factory=dict)
-
-    def has_capability(self, cap: GuestCapability) -> bool:
-        if not self.capabilities:
-            return False
-
-        return self.capabilities.get(cap, False)
-
-    def _execute(self, guest: 'Guest', command: Command) -> Optional[tmt.utils.CommandOutput]:
+    @classmethod
+    def _facts(cls) -> dict[str, guest_fact[Any]]:
         """
-        Run a command on the given guest, ignoring :py:class:`tmt.utils.RunError`.
+        Find all defined facts and their descriptors.
 
-        On image mode systems execute the commands immediately.
-
-        :returns: command output if the command quit with a zero exit code,
-            ``None`` otherwise.
+        :returns: a mapping with fact names as keys, and fact descriptors
+            as values.
         """
 
-        try:
-            return guest.execute(command, silent=True)
+        return {
+            name: value for name, value in inspect.getmembers(cls) if isinstance(value, guest_fact)
+        }
 
-        except tmt.utils.RunError:
-            pass
-
-        return None
-
-    def _fetch_keyval_file(self, guest: 'Guest', filepath: Path) -> dict[str, str]:
+    @functools.cached_property
+    def _fact_snippets(self) -> dict[str, str]:
         """
-        Load key/value pairs from a file on the given guest.
+        Collect all fact collection snippets from the facts.
 
-        Converts file with ``key=value`` pairs into a mapping. Some values might
-        be wrapped with quotes.
-
-        .. code:: shell
-
-           $ cat /etc/os-release
-           NAME="Ubuntu"
-           VERSION="20.04.5 LTS (Focal Fossa)"
-           ID=ubuntu
-           ID_LIKE=debian
-           ...
-
-        See https://www.freedesktop.org/software/systemd/man/os-release.html for
-        more details on syntax of these files.
-
-        :returns: mapping with key/value pairs loaded from ``filepath``, or an
-            empty mapping if it was impossible to load the content.
+        :returns: a mapping with fact names as keys, and shell snippets
+            as values.
         """
 
-        content: dict[str, str] = {}
+        return {
+            name: (value.snippet if hasattr(value, 'snippet') else value.snippet_creator())
+            for name, value in self._facts().items()
+        }
 
-        output = self._execute(guest, Command('cat', filepath))
+    def _create_collection_script(self, *facts: str) -> ShellScript:
+        """
+        Generate a comprehensive shell script to collect all facts.
 
-        if not output or not output.stdout:
-            return content
+        :returns: a shell script that invokes all probes, and "wraps"
+            them with markers for the future parsing.
+        """
 
-        def _iter_pairs() -> Iterator[tuple[str, str]]:
-            assert output  # narrow type in a closure
-            assert output.stdout  # narrow type in a closure
+        scripts: list[str] = []
 
-            line_pattern = re.compile(r'([A-Z][A-Z_0-9]+)=(.*)')
+        for fact, snippet in self._fact_snippets.items():
+            if fact not in facts:
+                continue
 
-            for line_number, line in enumerate(output.stdout.splitlines(keepends=False), start=1):
-                line = line.rstrip()
+            # The extra `echo` is there to enforce at least one empty line
+            # in the output.
+            scripts.append(f'echo ">>> {fact}"\n{snippet}\necho\necho "<<<"\n')
 
-                if not line or line.startswith('#'):
-                    continue
+        return ShellScript('\n\n'.join(scripts))
 
-                match = line_pattern.match(line)
+    def _extract_facts(self, output: str) -> dict[str, str]:
+        """
+        Parse the output of the fact collection script.
 
-                if not match:
-                    raise tmt.utils.ProvisionError(
-                        f"Cannot parse line {line_number} in '{filepath}' on guest '{guest.name}':"
-                        f" {line}"
+        :param output: raw output from the fact collection script.
+        :returns: a mapping between fact names and their values, as
+            extracted from the output.
+        """
+
+        facts = {}
+
+        current_fact: Optional[str] = None
+        current_fact_content: list[str] = []
+
+        for line in output.splitlines():
+            line = line.strip()
+
+            if line.startswith('>>> '):
+                current_fact = line[4:]
+
+            elif line.startswith('<<<'):
+                if current_fact is None:
+                    raise GeneralError(
+                        "Malformed fact probe output: closing marker '<<<' without opening marker"
                     )
 
-                key, value = match.groups()
-
-                if value and value[0] in '"\'':
-                    value = ast.literal_eval(value)
-
-                yield key, value
-
-        return dict(_iter_pairs())
-
-    def _probe(self, guest: 'Guest', probes: list[tuple[Command, T]]) -> Optional[T]:
-        """
-        Find a first successful command.
-
-        :param guest: the guest to run commands on.
-        :param probes: list of command/mark pairs.
-        :returns: "mark" corresponding to the first command to quit with
-            a zero exit code.
-        :raises tmt.utils.GeneralError: when no command succeeded.
-        """
-
-        for command, outcome in probes:
-            if self._execute(guest, command):
-                return outcome
-
-        return None
-
-    def _query(self, guest: 'Guest', probes: list[tuple[Command, str]]) -> Optional[str]:
-        """
-        Find a first successful command, and extract info from its output.
-
-        :param guest: the guest to run commands on.
-        :param probes: list of command/pattenr pairs.
-        :returns: substring extracted by the first matching pattern.
-        :raises tmt.utils.GeneralError: when no command succeeded, or when no
-            pattern matched.
-        """
-
-        for command, pattern in probes:
-            output = self._execute(guest, command)
-
-            if not output or not output.stdout:
-                guest.debug('query', f"Command '{command!s}' produced no usable output.")
-                continue
-
-            match = re.search(pattern, output.stdout)
-
-            if not match:
-                guest.debug('query', f"Command '{command!s}' produced no usable output.")
-                continue
-
-            return match.group(1)
-
-        return None
-
-    def _query_arch(self, guest: 'Guest') -> Optional[str]:
-        return self._query(guest, [(Command('arch'), r'(.+)')])
-
-    def _query_distro(self, guest: 'Guest') -> Optional[str]:
-        # Try some low-hanging fruits first. We already might have the answer,
-        # provided by some standardized locations.
-        if 'PRETTY_NAME' in self.os_release_content:
-            return self.os_release_content['PRETTY_NAME']
-
-        if 'DISTRIB_DESCRIPTION' in self.lsb_release_content:
-            return self.lsb_release_content['DISTRIB_DESCRIPTION']
-
-        # Nope, inspect more files.
-        return self._query(
-            guest,
-            [
-                (Command('cat', '/etc/redhat-release'), r'(.*)'),
-                (Command('cat', '/etc/fedora-release'), r'(.*)'),
-            ],
-        )
-
-    def _query_kernel_release(self, guest: 'Guest') -> Optional[str]:
-        return self._query(guest, [(Command('uname', '-r'), r'(.+)')])
-
-    def _discover_package_manager(
-        self,
-        guest: 'Guest',
-        plugin_classes: Iterable[
-            type[tmt.package_managers.PackageManager[tmt.package_managers.PackageManagerEngine]]
-        ],
-        *,
-        debug_label: str,
-    ) -> Optional['tmt.package_managers.GuestPackageManager']:
-        # Sort available package managers by priority and probe them one by one,
-        # break after the first one is detected.
-
-        for package_manager_class in sorted(
-            plugin_classes, key=lambda pm: pm.probe_priority, reverse=True
-        ):
-            if self._execute(guest, package_manager_class.probe_command):
-                guest.debug(
-                    f'Discovered {debug_label}',
-                    package_manager_class.NAME,
-                    level=4,
+                facts[current_fact] = self._facts()[current_fact].extract(
+                    '\n'.join(current_fact_content)
                 )
-                return package_manager_class.NAME
 
-        return None
+                current_fact = None
+                current_fact_content = []
 
-    def _query_package_manager(
-        self, guest: 'Guest'
-    ) -> Optional['tmt.package_managers.GuestPackageManager']:
-        return self._discover_package_manager(
-            guest,
-            plugin_classes=(
-                package_manager_class
-                for _, package_manager_class in (
-                    tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items()
-                )
-            ),
-            debug_label='package manager',
-        )
+            else:
+                current_fact_content.append(line)
 
-    def _query_bootc_builder(
-        self, guest: 'Guest'
-    ) -> Optional['tmt.package_managers.GuestPackageManager']:
-        return self._discover_package_manager(
-            guest,
-            plugin_classes=(
-                pm
-                for pm in tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.iter_plugins()
-                if pm.bootc_builder
-            ),
-            debug_label='bootc builder',
-        )
-
-    def _query_has_selinux(self, guest: 'Guest') -> Optional[bool]:
-        """
-        Detect whether guest has SELinux and it is enabled.
-
-        For detection ``/sys/fs/selinux/enforce`` is used. This file exists
-        only when SELinux is actually available and mounted (regardless of
-        enforcing/permissive mode).
-        """
-        try:
-            guest.execute(Command('test', '-e', '/sys/fs/selinux/enforce'), silent=True)
-            return True
-        except tmt.utils.RunError:
-            return False
-
-    def _query_has_systemd(self, guest: 'Guest') -> Optional[bool]:
-        """
-        Detect whether guest uses systemd.
-        For detection we check if systemctl exists and is executable.
-        """
-        try:
-            guest.execute(Command('systemctl', '--version'), silent=True)
-            return True
-        except tmt.utils.RunError:
-            return False
-
-    def _query_systemd_soft_reboot(self, guest: 'Guest') -> Optional[bool]:
-        output = self._execute(
-            guest,
-            (
-                ShellScript('systemctl --help | grep -q "soft-reboot"')
-                & ShellScript('cat /proc/sys/kernel/random/boot_id')
-            ).to_shell_command(),
-        )
-
-        return output is not None and output.stdout is not None
-
-    def _query_has_rsync(self, guest: 'Guest') -> Optional[bool]:
-        """
-        Detect whether ``rsync`` is available.
-        """
-
-        try:
-            guest.execute(Command('rsync', '--version'), silent=True)
-
-            return True
-
-        except tmt.utils.RunError:
-            return False
-
-    def _query_is_superuser(self, guest: 'Guest') -> Optional[bool]:
-        output = self._execute(guest, Command('whoami'))
-
-        if output is None or output.stdout is None:
-            return None
-
-        return output.stdout.strip() == 'root'
-
-    def _query_can_sudo(self, guest: 'Guest') -> Optional[bool]:
-        try:
-            guest.execute(Command("sudo", "-n", "true"), silent=True)
-        except tmt.utils.RunError:
-            # Failed non-interactive sudo, so we can't sudo
-            return False
-        # Otherwise we may use sudo
-        return True
-
-    def _query_sudo_prefix(self, guest: 'Guest') -> Optional[str]:
-        # Note: we cannot reuse `is_superuser` or `can_sudo` fact so we just recall the query
-        # functions for now
-        if self._query_is_superuser(guest):
-            # Root user does not need sudo
-            return ""
-        if self._query_can_sudo(guest):
-            return "sudo"
-        return ""
-
-    def _query_is_ostree(self, guest: 'Guest') -> Optional[bool]:
-        # https://github.com/vrothberg/chkconfig/commit/538dc7edf0da387169d83599fe0774ea080b4a37#diff-562b9b19cb1cd12a7343ce5c739745ebc8f363a195276ca58e926f22927238a5R1334
-        output = self._execute(
-            guest,
-            ShellScript(
-                """
-                ( [ -e /run/ostree-booted ] || [ -L /ostree ] ) && echo yes || echo no
-                """
-            ).to_shell_command(),
-        )
-
-        if output is None or output.stdout is None:
-            return None
-
-        return output.stdout.strip() == 'yes'
-
-    def _query_is_image_mode(self, guest: 'Guest') -> Optional[bool]:
-        """
-        Detect whether guest is an image mode based system.
-
-        An image mode based system has the image set to a image reference.
-        In case ``bootc`` is installed on a non image mode system, it
-        reports ``null``.
-        """
-
-        image = self._query(
-            guest,
-            [(ShellScript('sudo bootc status --format yaml').to_shell_command(), r'image: (.+)')],
-        )
-
-        # if bootc reports status and the image is not `image: null`, we are in image mode
-        if image and image != "null":
-            return True
-
-        return False
-
-    def _query_is_toolbox(self, guest: 'Guest') -> Optional[bool]:
-        # https://www.reddit.com/r/Fedora/comments/g6flgd/toolbox_specific_environment_variables/
-        output = self._execute(
-            guest,
-            ShellScript('[ -e /run/.toolboxenv ] && echo yes || echo no').to_shell_command(),
-        )
-
-        if output is None or output.stdout is None:
-            return None
-
-        return output.stdout.strip() == 'yes'
-
-    def _query_toolbox_container_name(self, guest: 'Guest') -> Optional[str]:
-        output = self._execute(
-            guest,
-            ShellScript('[ -e /run/.containerenv ] && echo yes || echo no').to_shell_command(),
-        )
-
-        if output is None or output.stdout is None:
-            return None
-
-        if output.stdout.strip() == 'no':
-            return None
-
-        output = self._execute(guest, Command('cat', '/run/.containerenv'))
-
-        if output is None or output.stdout is None:
-            return None
-
-        for line in output.stdout.splitlines():
-            if line.startswith('name="'):
-                return line[6:-1]
-
-        return None
-
-    def _query_is_container(self, guest: 'Guest') -> Optional[bool]:
-        """
-        Detect whether guest is a container (running systemd)
-
-        In containers running systemd pid 1 has environment variable ``container`` set
-        (e.g. container=podman). See https://systemd.io/CONTAINER_INTERFACE/ for more details.
-        """
-        output = self._execute(guest, ShellScript('echo -n "$container"').to_shell_command())
-
-        if output is None or output.stdout is None:
-            return None
-
-        return len(output.stdout) > 0
-
-    def _query_capabilities(self, guest: 'Guest') -> dict[GuestCapability, bool]:
-        # TODO: there must be a canonical way of getting permitted capabilities.
-        # For now, we're interested in whether we can access kernel message buffer.
-        return {
-            GuestCapability.SYSLOG_ACTION_READ_ALL: True,
-            GuestCapability.SYSLOG_ACTION_READ_CLEAR: True,
-        }
+        return facts
 
     def sync(self, guest: 'Guest', *facts: str) -> None:
         """
@@ -1016,42 +914,15 @@ class GuestFacts(SerializableContainer):
             ``is_container`` - will be synced.
         """
 
-        if facts:
-            for fact in facts:
-                if not hasattr(self, fact):
-                    raise GeneralError(f"Cannot sync unknown guest fact '{fact}'.")
+        output = guest.execute(
+            self._create_collection_script(*(facts or self._facts().keys())).to_shell_command(),
+            silent=True,
+        )
 
-                method_name = f'_query_{fact}'
+        if not output.stdout:
+            return
 
-                if not hasattr(self, method_name):
-                    raise GeneralError(
-                        f"Cannot sync guest fact '{fact}', query method '{method_name}' not found."
-                    )
-
-                setattr(self, fact, getattr(self, method_name)(guest))
-
-        else:
-            self.os_release_content = self._fetch_keyval_file(guest, Path('/etc/os-release'))
-            self.lsb_release_content = self._fetch_keyval_file(guest, Path('/etc/lsb-release'))
-
-            self.arch = self._query_arch(guest)
-            self.distro = self._query_distro(guest)
-            self.kernel_release = self._query_kernel_release(guest)
-            self.package_manager = self._query_package_manager(guest)
-            self.bootc_builder = self._query_bootc_builder(guest)
-            self.has_selinux = self._query_has_selinux(guest)
-            self.has_systemd = self._query_has_systemd(guest)
-            self.systemd_soft_reboot = self._query_systemd_soft_reboot(guest)
-            self.has_rsync = self._query_has_rsync(guest)
-            self.is_superuser = self._query_is_superuser(guest)
-            self.can_sudo = self._query_can_sudo(guest)
-            self.sudo_prefix = self._query_sudo_prefix(guest)
-            self.is_ostree = self._query_is_ostree(guest)
-            self.is_image_mode = self._query_is_image_mode(guest)
-            self.is_toolbox = self._query_is_toolbox(guest)
-            self.toolbox_container_name = self._query_toolbox_container_name(guest)
-            self.is_container = self._query_is_container(guest)
-            self.capabilities = self._query_capabilities(guest)
+        self._raw_facts.update(self._extract_facts(output.stdout))
 
         self.in_sync = True
 
@@ -1059,44 +930,194 @@ class GuestFacts(SerializableContainer):
         """
         Format facts for pretty printing.
 
-        :yields: three-item tuples: the field name, its pretty label, and formatted representation
-            of its value.
+        :yields: three-item tuples: the field name, its pretty label,
+            and formatted representation of its value.
         """
 
-        def _value(field: str, label: str) -> tuple[str, str, str]:
-            v = getattr(self, field)
+        for fact in self._facts():
+            label = fact.replace('_', ' ')
+            value = getattr(self, fact)
 
-            return field, label, v or 'unknown'
+            if value is None:
+                yield fact, label, 'unknown'
 
-        def _flag(field: str, label: str) -> tuple[str, str, str]:
-            v = getattr(self, field)
+            elif isinstance(value, bool):
+                yield fact, label, 'yes' if value else 'no'
 
-            return field, label, 'yes' if v else 'no'
+            elif isinstance(value, str):
+                yield fact, label, value
 
-        yield _value('arch', 'arch')
-        yield _value('distro', 'distro')
-        yield _value('kernel_release', 'kernel')
-        yield _value('package_manager', 'package manager')
-        yield _value('bootc_builder', 'bootc builder')
-        yield _flag('is_container', 'is container')
-        yield _flag('is_ostree', 'is ostree')
-        yield _flag('is_image_mode', 'is image mode')
-        yield _flag('is_toolbox', 'is toolbox')
-        yield _flag('has_selinux', 'selinux')
-        yield _flag('has_systemd', 'systemd')
-        yield _flag('systemd_soft_reboot', 'systemd soft-reboot')
-        yield _flag('has_rsync', 'rsync')
-        yield _flag('is_superuser', 'is superuser')
-        yield _flag('can_sudo', 'can sudo')
+            elif isinstance(value, dict):
+                pass
+
+            else:
+                raise GeneralError(f"Undefined formatting of guest fact '{fact}'.")
+
+    def has_capability(self, cap: GuestCapability) -> bool:
+        """Check if the guest has a specific capability."""
+        if not self.capabilities:
+            return False
+        return self.capabilities.get(cap, False)
+
+    #: Content of the ``/etc/os-release`` file. If the file does not
+    #: exist, the mapping will be empty.
+    os_release_content = keyval_guest_fact(Path('/etc/os-release'))
+
+    #: Content of the ``/etc/lsb-release`` file. If the file does not
+    #: exist, the mapping will be empty.
+    lsb_release_content = keyval_guest_fact(Path('/etc/lsb-release'))
+
+    #: Architecture of the guest, as reported by the ``arch`` command.
+    arch = string_guest_fact("arch || echo 'unknown'")
+
+    #: Name of the distribution on the guest.
+    distro = string_guest_fact(
+        """
+        if [ -f /etc/os-release ] && grep -q 'PRETTY_NAME=' /etc/os-release; then
+            grep '^PRETTY_NAME=' /etc/os-release | cut -d'=' -f2- | sed 's/^\\"\\(.*\\)\\"$/\\1/'
+
+        elif [ -f /etc/lsb-release ] && grep -q 'DISTRIB_DESCRIPTION=' /etc/lsb-release; then
+            grep '^DISTRIB_DESCRIPTION=' /etc/lsb-release | cut -d'=' -f2- | sed 's/^\\"\\(.*\\)\\"$/\\1/'
+
+        elif [ -f /etc/redhat-release ]; then
+            cat /etc/redhat-release
+
+        elif [ -f /etc/fedora-release ]; then
+            cat /etc/fedora-release
+
+        else
+            echo 'unknown'
+        fi
+        """  # noqa: E501
+    )
+
+    #: Release of the running kernel, as reported by the ``uname -r``
+    #: command.
+    kernel_release = string_guest_fact("uname -r || echo 'unknown'")
+
+    #: Whether SELinux is present and enabled.
+    has_selinux = flag_guest_fact(
+        "if [ -e /sys/fs/selinux/enforce ]; then echo 'true'; else echo 'false'; fi",
+    )
+
+    #: Whether systemd is available.
+    has_systemd = flag_guest_fact(
+        "if systemctl --version 1>&2; then echo 'true'; else echo 'false'; fi",
+    )
+
+    #: Whether systemd soft-reboot is supported.
+    systemd_soft_reboot = flag_guest_fact(
+        """
+        if systemctl --help | grep -q 'soft-reboot' && [ -f /proc/sys/kernel/random/boot_id ]; then
+            echo 'true'
+        else
+            echo 'false'
+        fi
+        """
+    )
+
+    #: Whether rsync is available.
+    has_rsync = flag_guest_fact("if rsync --version 1>&2; then echo 'true'; else echo 'false'; fi")
+
+    #: Whether the current user is superuser.
+    is_superuser = flag_guest_fact(
+        'if [ "$(whoami)" = "root" ]; then echo \'true\'; else echo \'false\'; fi'
+    )
+
+    #: Whether the current user can use ``sudo``.
+    can_sudo = flag_guest_fact("if sudo -n true 1>&2; then echo 'true'; else echo 'false'; fi")
+
+    #: A prefix to use when invoking commands with ``sudo``.
+    sudo_prefix = string_guest_fact(
+        """
+        if [ "$(whoami)" = "root" ]; then
+            echo ''
+        elif sudo -n true 1>&2; then
+            echo 'sudo'
+        else
+            echo ''
+        fi
+        """
+    )
+
+    #: Whether the guest is an OSTree-based system.
+    is_ostree = flag_guest_fact(
+        "if [ -e /run/ostree-booted ] || [ -L /ostree ]; then echo 'true'; else echo 'false'; fi",
+    )
+
+    #: Whether the guest is an image-mode system.
+    #:
+    #: An image mode based system has the image set to a image reference.
+    #: In case ``bootc`` is installed on a non image mode system, it
+    #: reports ``null``.
+    is_image_mode = flag_guest_fact(
+        """
+        if type bootc &> /dev/null; then
+            image="$(sudo bootc status --format yaml | grep -Po 'image: \\K(.*)')"
+
+            if [ -n "$image" ]; then
+                if [ "$image" = "null" ]; then echo 'false'; else echo 'true'; fi
+            else
+                echo 'unknown'
+            fi
+        else
+            echo 'false'
+        fi
+        """
+    )
+
+    #: Whether the guest is a toolbox container
+    is_toolbox = flag_guest_fact(
+        "if [ -e /run/.toolboxenv ]; then echo 'true'; else echo 'false'; fi"
+    )
+
+    #: Name of the toolbox container (if applicable).
+    toolbox_container_name = string_guest_fact(
+        """
+        if [ -e /run/.containerenv ]; then
+            if grep -q '^name=' /run/.containerenv; then
+                grep '^name=' /run/.containerenv | sed 's/^name=\\"\\(.*\\)\\"$/\\1/'
+            else
+                echo 'unknown'
+            fi
+        else
+            echo 'unknown'
+        fi
+        """
+    )
+
+    #: Whether the guest is a container.
+    is_container = flag_guest_fact(
+        'if [ -n "${container:-}" ]; then echo \'true\'; else echo \'false\'; fi'
+    )
+
+    #: Name of the package manager available on the guest.
+    package_manager = package_manager_guest_fact()
+
+    #: name of the bootc builder available on the guest.
+    bootc_builder = package_manager_guest_fact(lambda pm: pm.bootc_builder)
+
+    #: Various Linux capabilities and whether they are permitted.
+    capabilities: dict[GuestCapability, bool] = field(
+        default_factory=lambda: {
+            GuestCapability.SYSLOG_ACTION_READ_ALL: True,
+            GuestCapability.SYSLOG_ACTION_READ_CLEAR: True,
+        },
+        serialize=lambda capabilities: (
+            {capability.value: enabled for capability, enabled in capabilities.items()}
+            if capabilities
+            else {}
+        ),
+        unserialize=lambda raw_value: {
+            GuestCapability(raw_capability): enabled
+            for raw_capability, enabled in raw_value.items()
+        },
+    )
 
 
 GUEST_FACTS_INFO_FIELDS: list[str] = ['arch', 'distro']
 GUEST_FACTS_VERBOSE_FIELDS: list[str] = [
-    # SIM118: Use `{key} in {dict}` instead of `{key} in {dict}.keys()`
-    # "NormalizeKeysMixin" has no attribute "__iter__" (not iterable)
-    key
-    for key in GuestFacts.keys()  # noqa: SIM118
-    if key not in GUEST_FACTS_INFO_FIELDS
+    key for key in GuestFacts._facts() if key not in GUEST_FACTS_INFO_FIELDS
 ]
 
 
