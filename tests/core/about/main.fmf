@@ -4,4 +4,4 @@ description: |
     for now, more info in the future.
 
 framework: shell
-test: $PYTEST
+test: $PYTEST ./

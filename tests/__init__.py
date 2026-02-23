@@ -55,7 +55,7 @@ class CliRunner(click.testing.CliRunner):
         charset: str = "utf-8",
         env: Optional[Mapping[str, Optional[str]]] = None,
         echo_stdin: bool = False,
-        catch_exceptions: bool = True,
+        **kwargs: Any,
     ) -> None:
         super().__init__(charset=charset, env=env, echo_stdin=echo_stdin)
 
