@@ -51,14 +51,8 @@ class RunTmt(Protocol):
 
 
 class CliRunner(click.testing.CliRunner):
-    def __init__(
-        self,
-        charset: str = "utf-8",
-        env: Optional[Mapping[str, Optional[str]]] = None,
-        echo_stdin: bool = False,
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(charset=charset, env=env, echo_stdin=echo_stdin)
+    def __init__(self) -> None:
+        super().__init__(charset='utf-8', echo_stdin=False)
 
     def invoke(  # type: ignore[override]
         self,
