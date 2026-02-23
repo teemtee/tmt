@@ -10,6 +10,19 @@ prepare+:
       - yq
       - make
       - python3-pip
+  - how: shell
+    summary: Make sure we run koji commands with automatic retry to avoid 50x errors
+    script: |
+      mkdir -p ~/.koji
+      if [ -f ~/.koji/config ]; then
+        echo "~/.koji/config was already set:"
+        cat ~/.koji/config
+      else
+        cat <<EOF > ~/.koji/config
+      [koji]
+      anon_retry = true
+      EOF
+      fi
 
 # Use the internal executor
 execute:
