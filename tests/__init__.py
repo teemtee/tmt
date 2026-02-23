@@ -43,6 +43,7 @@ class RunTmt(Protocol):
         command: Optional[click.BaseCommand] = None,
         input: Optional[Union[str, bytes, IO[Any]]] = None,
         env: Optional[Mapping[str, Optional[str]]] = None,
+        catch_exceptions: bool = True,
         color: bool = False,
         **kwargs: Any,
     ) -> click.testing.Result:
