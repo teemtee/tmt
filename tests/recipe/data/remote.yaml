@@ -151,7 +151,7 @@ plans:
                 os-release-content: {}
                 lsb-release-content: {}
                 __class__:
-                    module: tmt.steps.provision
+                    module: tmt.guest
                     name: GuestFacts
             environment: {}
             ansible:

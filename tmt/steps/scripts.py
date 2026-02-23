@@ -63,7 +63,7 @@ class Script:
     destination_path: Optional[Path]
     aliases: list[str]
     related_variables: list[str]
-    enabled: Callable[['tmt.steps.provision.Guest'], bool]
+    enabled: Callable[['tmt.guest.Guest'], bool]
 
     def __enter__(self) -> Path:
         scripts_dir = tmt.utils.resource_files(

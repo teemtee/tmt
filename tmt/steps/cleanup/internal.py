@@ -6,7 +6,7 @@ import tmt.steps
 import tmt.steps.cleanup
 import tmt.utils
 from tmt.container import container
-from tmt.steps.provision import Guest
+from tmt.guest import Guest
 
 
 @container

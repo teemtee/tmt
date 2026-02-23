@@ -15,7 +15,7 @@ from tmt._compat.pathlib import Path
 from tmt.container import SerializableContainer, container, field
 
 if TYPE_CHECKING:
-    from tmt.steps.provision import Guest
+    from tmt.guest import Guest
 
 
 class _RawGuestAnsible(TypedDict, total=False):

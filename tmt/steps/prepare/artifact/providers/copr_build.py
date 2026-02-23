@@ -14,6 +14,7 @@ import requests
 import tmt.log
 import tmt.utils
 import tmt.utils.hints
+from tmt.guest import Guest
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
@@ -23,7 +24,6 @@ from tmt.steps.prepare.artifact.providers import (
     Version,
     provides_artifact_provider,
 )
-from tmt.steps.provision import Guest
 from tmt.utils import ShellScript
 
 if TYPE_CHECKING:

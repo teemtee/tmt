@@ -4,6 +4,7 @@ import tmt.base
 import tmt.steps
 import tmt.utils
 from tmt.container import container, field
+from tmt.guest import Guest
 from tmt.log import Logger
 from tmt.steps import PluginOutcome
 from tmt.steps.prepare import PreparePlugin, PrepareStepData
@@ -12,7 +13,6 @@ from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     Repository,
 )
-from tmt.steps.provision import Guest
 from tmt.utils import Environment, Path
 
 

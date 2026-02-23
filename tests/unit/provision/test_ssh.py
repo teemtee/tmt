@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import pytest
 
 import tmt.log
-from tmt.steps.provision import (
+from tmt.guest import (
     _socket_path_hash,
     _socket_path_trivial,
 )
