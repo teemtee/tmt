@@ -84,6 +84,7 @@ Choose which plans should be executed:
             result: 2 tests passed, 0 tests failed
         report
         finish
+        cleanup
 
 
 Select Tests
@@ -125,10 +126,10 @@ To run only tests defined in the current working directory:
 Select Steps
 ------------------------------------------------------------------
 
-The test execution is divided into the following six steps:
-``discover``, ``provision``, ``prepare``, ``execute``, ``report``
-and ``finish``. See the :ref:`specification` for more details
-about individual steps.
+The test execution is divided into the following seven steps:
+``discover``, ``provision``, ``prepare``, ``execute``, ``report``,
+``finish`` and ``cleanup``. See the :ref:`specification` for more
+details about individual steps.
 
 It is possible to execute only selected steps. For example in
 order to see which tests would be executed without actually
@@ -371,7 +372,7 @@ directly on your ``local`` host:
 
 .. code-block:: shell
 
-    tmt run --all provision --how=local
+    tmt --feeling-safe run --all provision --how=local
 
 In order to reboot a provisioned guest use the ``reboot`` command.
 By default a soft reboot is performed which should prevent data
@@ -400,7 +401,7 @@ finally clean up when debugging is done:
     tmt run -i <ID> execute -f           # run it again
     tmt run -i <ID> execute -f           # and again
 
-    tmt run -i <ID> report finish
+    tmt run -i <ID> report finish cleanup
 
 Instead of always specifying the whole run id you can also use
 ``--last`` or ``-l`` as an abbreviation for the last run id:
@@ -438,7 +439,7 @@ a machine or a container for quick experimenting:
 
 .. code-block:: shell
 
-    alias reserve='tmt run login --step execute execute finish provision --how container --image fedora'
+    alias reserve='tmt run login --step execute execute cleanup provision --how container --image fedora'
 
 Reserving a testing box then can be as short as this:
 
@@ -457,7 +458,7 @@ come in handy:
 
     alias start='tmt run --verbose --until report execute --how tmt --interactive test --name . provision --how virtual --image fedora'
     alias retest='tmt run --last test --name . discover -f execute -f --how tmt --interactive'
-    alias stop='tmt run --last report --verbose finish'
+    alias stop='tmt run --last report --verbose cleanup'
 
 The test debugging session then can look like this:
 
@@ -507,20 +508,20 @@ specific test result occurs:
     tmt run login --when fail --when error
 
 You can also enable only the ``provision`` step to easily get a
-clean and safe environment for experimenting. Use the ``finish``
+clean and safe environment for experimenting. Use the ``cleanup``
 step to remove provisioned guest:
 
 .. code-block:: shell
 
     tmt run provision login
-    tmt run --last finish
+    tmt run --last cleanup
 
 Clean up the box right after your are done with experimenting by
 combining the above-mentioned commands on a single line:
 
 .. code-block:: shell
 
-    tmt run provision login finish
+    tmt run provision login cleanup
 
 Login can be used to run an arbitrary script on a provisioned
 guest. This can be handy if you want to run arbitrary scripts between
