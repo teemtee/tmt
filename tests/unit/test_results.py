@@ -5,6 +5,7 @@ import pytest
 import tmt.utils
 from tmt.checks import CheckEvent
 from tmt.cli import TmtExitCode
+from tmt.container import container
 from tmt.result import (
     CheckResult,
     CheckResultInterpret,
@@ -14,6 +15,27 @@ from tmt.result import (
     results_to_exit_code,
 )
 from tmt.utils import Common, Path
+
+
+@container
+class CheckPhasesCase:
+    result_outcome: ResultOutcome
+    result_interpret: ResultInterpret
+    check_outcome: ResultOutcome
+    check_interpret: CheckResultInterpret
+    overall_outcome: ResultOutcome
+    note_contains: list[str]
+
+
+@container
+class CheckPhasesDuplicateCase:
+    result_outcome: ResultOutcome
+    result_interpret: ResultInterpret
+    check_outcome1: ResultOutcome
+    check_outcome2: ResultOutcome
+    check_interpret: CheckResultInterpret
+    overall_outcome: ResultOutcome
+    note_contains: list[str]
 
 
 @pytest.mark.parametrize(
@@ -99,156 +121,59 @@ def test_result_to_exit_code(outcomes: list[ResultOutcome], expected_exit_code: 
 
 
 @pytest.mark.parametrize(
-    (
-        'result_outcome',
-        'interpret',
-        'interpret_checks',
-        'expected_outcome',
-        'expected_note_contains',
-    ),
+    ("checks", "expected_check_results"),
     [
-        # Test RESPECT interpretation
-        (
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            {"check1": CheckResultInterpret.RESPECT},
-            ResultOutcome.PASS,
-            [],
-        ),
-        (
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            {"check1": CheckResultInterpret.RESPECT},
-            ResultOutcome.FAIL,
-            ["check 'check1' failed"],  # Note is set when check fails
-        ),
-        # Test XFAIL interpretation
-        (
-            ResultOutcome.FAIL,
-            ResultInterpret.XFAIL,
-            {"check1": CheckResultInterpret.RESPECT},
-            ResultOutcome.PASS,
-            ["check 'check1' failed", "test failed as expected", "original test result: fail"],
-        ),
-        (
-            ResultOutcome.PASS,
-            ResultInterpret.XFAIL,
-            {"check1": CheckResultInterpret.RESPECT},
-            ResultOutcome.FAIL,
-            ["test was expected to fail", "original test result: pass"],
-        ),
-        # Test INFO interpretation
-        (
-            ResultOutcome.FAIL,
-            ResultInterpret.INFO,
-            {"check1": CheckResultInterpret.RESPECT},
-            ResultOutcome.INFO,
+        pytest.param(
             [
-                "check 'check1' failed",
-                "test result overridden: info",
-                "original test result: fail",
+                CheckResult(
+                    name="check1", result=ResultOutcome.FAIL, event=CheckEvent.BEFORE_TEST
+                ),
+                CheckResult(name="check1", result=ResultOutcome.PASS, event=CheckEvent.AFTER_TEST),
+                CheckResult(
+                    name="check2", result=ResultOutcome.PASS, event=CheckEvent.BEFORE_TEST
+                ),
             ],
+            [ResultOutcome.FAIL, ResultOutcome.PASS, ResultOutcome.PASS],
+            id="fail-before",
         ),
-        (
-            ResultOutcome.PASS,
-            ResultInterpret.INFO,
-            {"check1": CheckResultInterpret.RESPECT},
-            ResultOutcome.INFO,
-            ["test result overridden: info", "original test result: pass"],
+        pytest.param(
+            [
+                CheckResult(
+                    name="check1", result=ResultOutcome.PASS, event=CheckEvent.BEFORE_TEST
+                ),
+                CheckResult(name="check1", result=ResultOutcome.FAIL, event=CheckEvent.AFTER_TEST),
+                CheckResult(
+                    name="check2", result=ResultOutcome.PASS, event=CheckEvent.BEFORE_TEST
+                ),
+            ],
+            [ResultOutcome.PASS, ResultOutcome.FAIL, ResultOutcome.PASS],
+            id="fail-after",
         ),
-        # Test WARN interpretation
-        (
-            ResultOutcome.PASS,
-            ResultInterpret.WARN,
-            {"check1": CheckResultInterpret.RESPECT},
-            ResultOutcome.WARN,
-            ["test result overridden: warn", "original test result: pass"],
+        pytest.param(
+            [
+                CheckResult(
+                    name="check1", result=ResultOutcome.FAIL, event=CheckEvent.BEFORE_TEST
+                ),
+                CheckResult(name="check1", result=ResultOutcome.FAIL, event=CheckEvent.AFTER_TEST),
+                CheckResult(
+                    name="check2", result=ResultOutcome.PASS, event=CheckEvent.BEFORE_TEST
+                ),
+            ],
+            [ResultOutcome.FAIL, ResultOutcome.FAIL, ResultOutcome.PASS],
+            id="fail-both",
         ),
-        # Test ERROR interpretation
-        (
-            ResultOutcome.PASS,
-            ResultInterpret.ERROR,
-            {"check1": CheckResultInterpret.RESPECT},
-            ResultOutcome.ERROR,
-            ["test result overridden: error", "original test result: pass"],
-        ),
-        # Test CUSTOM interpretation (should not modify result)
-        (
-            ResultOutcome.FAIL,
-            ResultInterpret.CUSTOM,
-            {"check1": CheckResultInterpret.RESPECT},
-            ResultOutcome.FAIL,
-            [],
-        ),
-    ],
-    ids=[
-        "respect-pass",
-        "respect-fail",
-        "xfail-fail",
-        "xfail-pass",
-        "info-fail",
-        "info-pass",
-        "warn-pass",
-        "error-pass",
-        "custom-fail",
     ],
 )
-def test_result_interpret_all_cases(
-    result_outcome: ResultOutcome,
-    interpret: ResultInterpret,
-    interpret_checks: dict[str, CheckResultInterpret],
-    expected_outcome: ResultOutcome,
-    expected_note_contains: list[str],
+def test_result_interpret_check_phases(
+    checks: list[CheckResult], expected_check_results: list[ResultOutcome]
 ) -> None:
-    """
-    Test all possible combinations of result interpretations
-    """
-
-    result = Result(
-        name="test-case",
-        result=result_outcome,
-        check=[CheckResult(name="check1", result=result_outcome, event=CheckEvent.BEFORE_TEST)],
-    )
-
-    interpreted = result.interpret_result(interpret, interpret_checks)
-    assert interpreted.result == expected_outcome
-
-    if expected_note_contains:
-        assert interpreted.note
-        for expected_note in expected_note_contains:
-            assert expected_note in interpreted.note
-    else:
-        assert not interpreted.note
-
-
-def test_result_interpret_check_phases() -> None:
     """
     Test the interpretation of check results with different phases
     """
 
-    result_before = Result(
-        name="test-case-before",
-        check=[
-            CheckResult(name="check1", result=ResultOutcome.FAIL, event=CheckEvent.BEFORE_TEST),
-            CheckResult(name="check1", result=ResultOutcome.PASS, event=CheckEvent.AFTER_TEST),
-            CheckResult(name="check2", result=ResultOutcome.PASS, event=CheckEvent.BEFORE_TEST),
-        ],
-    )
-    result_after = Result(
-        name="test-case-after",
-        check=[
-            CheckResult(name="check1", result=ResultOutcome.PASS, event=CheckEvent.BEFORE_TEST),
-            CheckResult(name="check1", result=ResultOutcome.FAIL, event=CheckEvent.AFTER_TEST),
-            CheckResult(name="check2", result=ResultOutcome.PASS, event=CheckEvent.BEFORE_TEST),
-        ],
-    )
-    result_both = Result(
-        name="test-case-both",
-        check=[
-            CheckResult(name="check1", result=ResultOutcome.FAIL, event=CheckEvent.BEFORE_TEST),
-            CheckResult(name="check1", result=ResultOutcome.FAIL, event=CheckEvent.AFTER_TEST),
-            CheckResult(name="check2", result=ResultOutcome.PASS, event=CheckEvent.BEFORE_TEST),
-        ],
+    result = Result(
+        name="test-case",
+        check=checks,
     )
 
     # Test with mixed interpretations
@@ -257,27 +182,15 @@ def test_result_interpret_check_phases() -> None:
         "check2": CheckResultInterpret.INFO,
     }
 
-    interpreted_before = result_before.interpret_result(ResultInterpret.RESPECT, interpret_checks)
-    interpreted_after = result_after.interpret_result(ResultInterpret.RESPECT, interpret_checks)
-    interpreted_both = result_both.interpret_result(ResultInterpret.RESPECT, interpret_checks)
-
-    for interpreted in [interpreted_before, interpreted_after, interpreted_both]:
-        assert interpreted.note is not None
-        assert "check 'check1' failed" in interpreted.note
-        assert "check 'check2' is informational" in interpreted.note
+    interpreted = result.interpret_result(ResultInterpret.RESPECT, interpret_checks)
+    assert interpreted.note is not None
+    assert "check 'check1' failed" in interpreted.note
+    assert "check 'check2' is informational" in interpreted.note
 
     # Verify individual check results were interpreted
-    assert interpreted_before.check[0].result == ResultOutcome.FAIL  # check1 BEFORE_TEST
-    assert interpreted_before.check[1].result == ResultOutcome.PASS  # check1 AFTER_TEST
-    assert interpreted_before.check[2].result == ResultOutcome.PASS  # check2 BEFORE_TEST (INFO)
-
-    assert interpreted_after.check[0].result == ResultOutcome.PASS  # check1 BEFORE_TEST
-    assert interpreted_after.check[1].result == ResultOutcome.FAIL  # check1 AFTER_TEST
-    assert interpreted_after.check[2].result == ResultOutcome.PASS  # check2 BEFORE_TEST (INFO)
-
-    assert interpreted_both.check[0].result == ResultOutcome.FAIL  # check1 BEFORE_TEST
-    assert interpreted_both.check[1].result == ResultOutcome.FAIL  # check1 AFTER_TEST
-    assert interpreted_both.check[2].result == ResultOutcome.PASS  # check2 BEFORE_TEST (INFO)
+    assert len(interpreted.check) == len(expected_check_results)
+    for i, check in enumerate(interpreted.check):
+        assert check.result == expected_check_results[i]
 
 
 def test_result_interpret_edge_cases() -> None:
@@ -299,571 +212,796 @@ def test_result_interpret_edge_cases() -> None:
 
 
 @pytest.mark.parametrize(
-    (
-        'result_outcome',
-        'interpret',
-        'check_result_outcome',
-        'check_interpret',
-        'expected_outcome',
-        'expected_note_contains',
-    ),
+    'case',
     [
         # Test interpret RESPECT:
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.PASS,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.PASS,
-            [],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.PASS,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.PASS,
+                note_contains=[],
+            ),
             id="pass-respect-pass-respect",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            ["check 'check1' failed", "original test result: pass"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.FAIL,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=[
+                    "check 'check1' failed",
+                    "original test result: pass",
+                ],
+            ),
             id="pass-respect-fail-respect",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.PASS,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            [],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.PASS,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=[],
+            ),
             id="fail-respect-pass-respect",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            ["check 'check1' failed"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.FAIL,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=["check 'check1' failed"],
+            ),
             id="fail-respect-fail-respect",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.WARN,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.WARN,
-            ["original test result: pass"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.WARN,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.WARN,
+                note_contains=["original test result: pass"],
+            ),
             id="pass-respect-warn-respect",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.WARN,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            [],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.WARN,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=[],
+            ),
             id="fail-respect-warn-respect",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.ERROR,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.ERROR,
-            ["original test result: pass"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.ERROR,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.ERROR,
+                note_contains=["original test result: pass"],
+            ),
             id="pass-respect-error-respect",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.ERROR,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.ERROR,
-            ["original test result: fail"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.ERROR,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.ERROR,
+                note_contains=["original test result: fail"],
+            ),
             id="fail-respect-error-respect",
         ),
+        # Test result outcome PENDING:
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.PASS,
-            CheckResultInterpret.INFO,
-            ResultOutcome.PASS,
-            ["check 'check1' is informational"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PENDING,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.PASS,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.PASS,
+                note_contains=["original test result: pending"],
+            ),
+            id="pending-respect-pass-respect",
+        ),
+        pytest.param(
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PENDING,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.FAIL,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=[
+                    "check 'check1' failed",
+                    "original test result: pending",
+                ],
+            ),
+            id="pending-respect-fail-respect",
+        ),
+        pytest.param(
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PENDING,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.WARN,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.WARN,
+                note_contains=["original test result: pending"],
+            ),
+            id="pending-respect-warn-respect",
+        ),
+        pytest.param(
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PENDING,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.PENDING,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.PASS,
+                note_contains=["original test result: pending"],
+            ),
+            id="pending-respect-pending-respect",
+        ),
+        pytest.param(
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.PASS,
+                check_interpret=CheckResultInterpret.INFO,
+                overall_outcome=ResultOutcome.PASS,
+                note_contains=["check 'check1' is informational"],
+            ),
             id="pass-respect-pass-info",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            CheckResultInterpret.INFO,
-            ResultOutcome.PASS,
-            ["check 'check1' is informational"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.FAIL,
+                check_interpret=CheckResultInterpret.INFO,
+                overall_outcome=ResultOutcome.PASS,
+                note_contains=["check 'check1' is informational"],
+            ),
             id="pass-respect-fail-info",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.WARN,
-            CheckResultInterpret.INFO,
-            ResultOutcome.PASS,
-            ["check 'check1' is informational"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.WARN,
+                check_interpret=CheckResultInterpret.INFO,
+                overall_outcome=ResultOutcome.PASS,
+                note_contains=["check 'check1' is informational"],
+            ),
             id="pass-respect-warn-info",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.WARN,
-            CheckResultInterpret.INFO,
-            ResultOutcome.FAIL,
-            ["check 'check1' is informational"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.WARN,
+                check_interpret=CheckResultInterpret.INFO,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=["check 'check1' is informational"],
+            ),
             id="fail-respect-warn-info",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.ERROR,
-            CheckResultInterpret.INFO,
-            ResultOutcome.PASS,
-            ["check 'check1' is informational"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.ERROR,
+                check_interpret=CheckResultInterpret.INFO,
+                overall_outcome=ResultOutcome.PASS,
+                note_contains=["check 'check1' is informational"],
+            ),
             id="pass-respect-error-info",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.ERROR,
-            CheckResultInterpret.INFO,
-            ResultOutcome.FAIL,
-            ["check 'check1' is informational"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.ERROR,
+                check_interpret=CheckResultInterpret.INFO,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=["check 'check1' is informational"],
+            ),
             id="fail-respect-error-info",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.INFO,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.PASS,
-            [],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.INFO,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.PASS,
+                note_contains=[],
+            ),
             id="pass-respect-info-respect",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.INFO,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            [],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.INFO,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=[],
+            ),
             id="fail-respect-info-respect",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.INFO,
-            CheckResultInterpret.INFO,
-            ResultOutcome.PASS,
-            ["check 'check1' is informational"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.INFO,
+                check_interpret=CheckResultInterpret.INFO,
+                overall_outcome=ResultOutcome.PASS,
+                note_contains=["check 'check1' is informational"],
+            ),
             id="pass-respect-info-info",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.INFO,
-            CheckResultInterpret.INFO,
-            ResultOutcome.FAIL,
-            ["check 'check1' is informational"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.INFO,
+                check_interpret=CheckResultInterpret.INFO,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=["check 'check1' is informational"],
+            ),
             id="fail-respect-info-info",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.INFO,
-            CheckResultInterpret.XFAIL,
-            ResultOutcome.FAIL,
-            ["check 'check1' did not fail as expected"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.INFO,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=["check 'check1' did not fail as expected"],
+            ),
             id="pass-respect-info-xfail",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.INFO,
-            CheckResultInterpret.XFAIL,
-            ResultOutcome.FAIL,
-            ["check 'check1' did not fail as expected"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.INFO,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=["check 'check1' did not fail as expected"],
+            ),
             id="fail-respect-info-xfail",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.SKIP,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.PASS,
-            [],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.SKIP,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.PASS,
+                note_contains=[],
+            ),
             id="pass-respect-skip-respect",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.SKIP,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            [],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.SKIP,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=[],
+            ),
             id="fail-respect-skip-respect",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.SKIP,
-            CheckResultInterpret.INFO,
-            ResultOutcome.PASS,
-            ["check 'check1' is informational"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.SKIP,
+                check_interpret=CheckResultInterpret.INFO,
+                overall_outcome=ResultOutcome.PASS,
+                note_contains=["check 'check1' is informational"],
+            ),
             id="pass-respect-skip-info",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.SKIP,
-            CheckResultInterpret.INFO,
-            ResultOutcome.FAIL,
-            ["check 'check1' is informational"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.SKIP,
+                check_interpret=CheckResultInterpret.INFO,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=["check 'check1' is informational"],
+            ),
             id="fail-respect-skip-info",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.SKIP,
-            CheckResultInterpret.XFAIL,
-            ResultOutcome.FAIL,
-            ["check 'check1' did not fail as expected"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.SKIP,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=["check 'check1' did not fail as expected"],
+            ),
             id="pass-respect-skip-xfail",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.SKIP,
-            CheckResultInterpret.XFAIL,
-            ResultOutcome.FAIL,
-            ["check 'check1' did not fail as expected"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.SKIP,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=["check 'check1' did not fail as expected"],
+            ),
             id="fail-respect-skip-xfail",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.PENDING,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.PASS,
-            [],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.PENDING,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.PASS,
+                note_contains=[],
+            ),
             id="pass-respect-pending-respect",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.PENDING,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            [],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.PENDING,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=[],
+            ),
             id="fail-respect-pending-respect",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.PENDING,
-            CheckResultInterpret.INFO,
-            ResultOutcome.PASS,
-            ["check 'check1' is informational"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.PENDING,
+                check_interpret=CheckResultInterpret.INFO,
+                overall_outcome=ResultOutcome.PASS,
+                note_contains=["check 'check1' is informational"],
+            ),
             id="pass-respect-pending-info",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.PENDING,
-            CheckResultInterpret.INFO,
-            ResultOutcome.FAIL,
-            ["check 'check1' is informational"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.PENDING,
+                check_interpret=CheckResultInterpret.INFO,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=["check 'check1' is informational"],
+            ),
             id="fail-respect-pending-info",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.PENDING,
-            CheckResultInterpret.XFAIL,
-            ResultOutcome.FAIL,
-            ["check 'check1' did not fail as expected"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.PENDING,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=["check 'check1' did not fail as expected"],
+            ),
             id="pass-respect-pending-xfail",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.PENDING,
-            CheckResultInterpret.XFAIL,
-            ResultOutcome.FAIL,
-            ["check 'check1' did not fail as expected"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.PENDING,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=["check 'check1' did not fail as expected"],
+            ),
             id="fail-respect-pending-xfail",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            CheckResultInterpret.XFAIL,
-            ResultOutcome.PASS,
-            ["check 'check1' failed as expected"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.FAIL,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.PASS,
+                note_contains=["check 'check1' failed as expected"],
+            ),
             id="pass-respect-fail-xfail",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.PASS,
-            CheckResultInterpret.XFAIL,
-            ResultOutcome.FAIL,
-            ["check 'check1' did not fail as expected", "original test result: pass"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.PASS,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=[
+                    "check 'check1' did not fail as expected",
+                    "original test result: pass",
+                ],
+            ),
             id="pass-respect-pass-xfail",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            CheckResultInterpret.XFAIL,
-            ResultOutcome.FAIL,
-            ["check 'check1' failed as expected"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.FAIL,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=["check 'check1' failed as expected"],
+            ),
             id="fail-respect-fail-xfail",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.PASS,
-            CheckResultInterpret.XFAIL,
-            ResultOutcome.FAIL,
-            ["check 'check1' did not fail as expected"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.PASS,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=["check 'check1' did not fail as expected"],
+            ),
             id="fail-respect-pass-xfail",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.WARN,
-            CheckResultInterpret.XFAIL,
-            ResultOutcome.WARN,
-            ["original test result: pass"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.WARN,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.WARN,
+                note_contains=["original test result: pass"],
+            ),
             id="pass-respect-warn-xfail",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.WARN,
-            CheckResultInterpret.XFAIL,
-            ResultOutcome.FAIL,
-            [],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.WARN,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=[],
+            ),
             id="fail-respect-warn-xfail",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.ERROR,
-            CheckResultInterpret.XFAIL,
-            ResultOutcome.ERROR,
-            ["original test result: pass"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.ERROR,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.ERROR,
+                note_contains=["original test result: pass"],
+            ),
             id="pass-respect-error-xfail",
         ),
         pytest.param(
-            ResultOutcome.FAIL,
-            ResultInterpret.RESPECT,
-            ResultOutcome.ERROR,
-            CheckResultInterpret.XFAIL,
-            ResultOutcome.ERROR,
-            ["original test result: fail"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.ERROR,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.ERROR,
+                note_contains=["original test result: fail"],
+            ),
             id="fail-respect-error-xfail",
         ),
         # Test interpret CUSTOM:
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.CUSTOM,
-            ResultOutcome.FAIL,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.PASS,
-            [],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.CUSTOM,
+                check_outcome=ResultOutcome.FAIL,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.PASS,
+                note_contains=[],
+            ),
             id="pass-custom-fail-respect",
+        ),
+        pytest.param(
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.CUSTOM,
+                check_outcome=ResultOutcome.FAIL,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=[],
+            ),
+            id="fail-custom-fail-respect",
+        ),
+        # Test interpret INFO:
+        pytest.param(
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.INFO,
+                check_outcome=ResultOutcome.PASS,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.INFO,
+                note_contains=[
+                    "test result overridden: info",
+                    "original test result: pass",
+                ],
+            ),
+            id="pass-info-pass-respect",
+        ),
+        pytest.param(
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.FAIL,
+                result_interpret=ResultInterpret.INFO,
+                check_outcome=ResultOutcome.FAIL,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.INFO,
+                note_contains=[
+                    "check 'check1' failed",
+                    "test result overridden: info",
+                    "original test result: fail",
+                ],
+            ),
+            id="fail-info-fail-respect",
+        ),
+        pytest.param(
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PENDING,
+                result_interpret=ResultInterpret.INFO,
+                check_outcome=ResultOutcome.PASS,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.INFO,
+                note_contains=[
+                    "test result overridden: info",
+                    "original test result: pending",
+                ],
+            ),
+            id="pending-info-pass-respect",
+        ),
+        # Test interpret ERROR:
+        pytest.param(
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.ERROR,
+                check_outcome=ResultOutcome.PASS,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.ERROR,
+                note_contains=[
+                    "test result overridden: error",
+                    "original test result: pass",
+                ],
+            ),
+            id="pass-error-pass-respect",
         ),
         # Test interpret XFAIL:
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.XFAIL,
-            ResultOutcome.FAIL,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.PASS,
-            ["check 'check1' failed", "test failed as expected"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.XFAIL,
+                check_outcome=ResultOutcome.FAIL,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.PASS,
+                note_contains=[
+                    "check 'check1' failed",
+                    "test failed as expected",
+                ],
+            ),
             id="pass-xfail-fail-respect",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.XFAIL,
-            ResultOutcome.PASS,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            ["test was expected to fail", "original test result: pass"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.XFAIL,
+                check_outcome=ResultOutcome.PASS,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=[
+                    "test was expected to fail",
+                    "original test result: pass",
+                ],
+            ),
             id="pass-xfail-pass-respect",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.XFAIL,
-            ResultOutcome.FAIL,
-            CheckResultInterpret.XFAIL,
-            ResultOutcome.FAIL,
-            [
-                "check 'check1' failed as expected",
-                "test was expected to fail",
-                "original test result: pass",
-            ],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.XFAIL,
+                check_outcome=ResultOutcome.FAIL,
+                check_interpret=CheckResultInterpret.XFAIL,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=[
+                    "check 'check1' failed as expected",
+                    "test was expected to fail",
+                    "original test result: pass",
+                ],
+            ),
             id="pass-xfail-fail-xfail",
         ),
         # Test interpret WARN:
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.WARN,
-            ResultOutcome.PASS,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.WARN,
-            ["test result overridden: warn", "original test result: pass"],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.WARN,
+                check_outcome=ResultOutcome.PASS,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.WARN,
+                note_contains=[
+                    "test result overridden: warn",
+                    "original test result: pass",
+                ],
+            ),
             id="pass-warn-pass-respect",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.WARN,
-            ResultOutcome.FAIL,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.WARN,
-            [
-                "check 'check1' failed",
-                "test result overridden: warn",
-                "original test result: pass",
-            ],
+            CheckPhasesCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.WARN,
+                check_outcome=ResultOutcome.FAIL,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.WARN,
+                note_contains=[
+                    "check 'check1' failed",
+                    "test result overridden: warn",
+                    "original test result: pass",
+                ],
+            ),
             id="pass-warn-fail-respect",
         ),
     ],
 )
-def test_check_phases_combinations(
-    result_outcome: ResultOutcome,
-    interpret: ResultInterpret,
-    check_result_outcome: ResultOutcome,
-    check_interpret: CheckResultInterpret,
-    expected_outcome: ResultOutcome,
-    expected_note_contains: list[str],
-) -> None:
+def test_result_interpret_with_checks(case: CheckPhasesCase) -> None:
+    """
+    Test result and check interpretation across outcome and interpret combinations.
+    """
     result = Result(
         name="test-case",
-        result=result_outcome,
+        result=case.result_outcome,
         check=[
             CheckResult(name="check1", result=ResultOutcome.PASS, event=CheckEvent.BEFORE_TEST),
-            CheckResult(name="check1", result=check_result_outcome, event=CheckEvent.AFTER_TEST),
+            CheckResult(
+                name="check1",
+                result=case.check_outcome,
+                event=CheckEvent.AFTER_TEST,
+            ),
             CheckResult(name="check2", result=ResultOutcome.PASS, event=CheckEvent.BEFORE_TEST),
         ],
     )
 
     interpret_checks = {
-        "check1": check_interpret,
+        "check1": case.check_interpret,
         "check2": CheckResultInterpret.RESPECT,
     }
 
-    interpreted = result.interpret_result(interpret, interpret_checks)
-    assert interpreted.result == expected_outcome
-    if expected_note_contains:
+    interpreted = result.interpret_result(case.result_interpret, interpret_checks)
+    assert interpreted.result == case.overall_outcome
+    if case.note_contains:
         assert interpreted.note
-        for expected_note in expected_note_contains:
+        for expected_note in case.note_contains:
             assert expected_note in interpreted.note
     else:
         assert not interpreted.note
 
 
 @pytest.mark.parametrize(
-    (
-        'result_outcome',
-        'interpret',
-        'check_result_outcome1',
-        'check_result_outcome2',
-        'check_interpret',
-        'expected_outcome',
-        'expected_note_contains',
-    ),
+    'case',
     [
         # check1 reduced from [PASS, outcome1, PASS, outcome2] -> worst wins
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.PASS,
-            ResultOutcome.PASS,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.PASS,
-            [],
+            CheckPhasesDuplicateCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome1=ResultOutcome.PASS,
+                check_outcome2=ResultOutcome.PASS,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.PASS,
+                note_contains=[],
+            ),
             id="pass-respect-pass-pass-respect",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.PASS,
-            ResultOutcome.FAIL,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            ["check 'check1' failed", "original test result: pass"],
+            CheckPhasesDuplicateCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome1=ResultOutcome.PASS,
+                check_outcome2=ResultOutcome.FAIL,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=[
+                    "check 'check1' failed",
+                    "original test result: pass",
+                ],
+            ),
             id="pass-respect-pass-fail-respect",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            ResultOutcome.FAIL,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            ["check 'check1' failed", "original test result: pass"],
+            CheckPhasesDuplicateCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome1=ResultOutcome.FAIL,
+                check_outcome2=ResultOutcome.FAIL,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=[
+                    "check 'check1' failed",
+                    "original test result: pass",
+                ],
+            ),
             id="pass-respect-fail-fail-respect",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.WARN,
-            ResultOutcome.PASS,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.WARN,
-            ["original test result: pass"],
+            CheckPhasesDuplicateCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome1=ResultOutcome.WARN,
+                check_outcome2=ResultOutcome.PASS,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.WARN,
+                note_contains=["original test result: pass"],
+            ),
             id="pass-respect-warn-pass-respect",
         ),
         pytest.param(
-            ResultOutcome.PASS,
-            ResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            ResultOutcome.WARN,
-            CheckResultInterpret.RESPECT,
-            ResultOutcome.FAIL,
-            ["check 'check1' failed", "original test result: pass"],
+            CheckPhasesDuplicateCase(
+                result_outcome=ResultOutcome.PASS,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome1=ResultOutcome.FAIL,
+                check_outcome2=ResultOutcome.WARN,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=[
+                    "check 'check1' failed",
+                    "original test result: pass",
+                ],
+            ),
             id="pass-respect-fail-warn-respect",
         ),
     ],
 )
-def test_check_phases_duplicate_phase(
-    result_outcome: ResultOutcome,
-    interpret: ResultInterpret,
-    check_result_outcome1: ResultOutcome,
-    check_result_outcome2: ResultOutcome,
-    check_interpret: CheckResultInterpret,
-    expected_outcome: ResultOutcome,
-    expected_note_contains: list[str],
-) -> None:
+def test_check_phases_duplicate_phase(case: CheckPhasesDuplicateCase) -> None:
+    """
+    Test the interpretation of check results with duplicate phases.
+    """
     result = Result(
         name="test-case",
-        result=result_outcome,
+        result=case.result_outcome,
         check=[
             CheckResult(name="check1", result=ResultOutcome.PASS, event=CheckEvent.BEFORE_TEST),
-            CheckResult(name="check1", result=check_result_outcome1, event=CheckEvent.AFTER_TEST),
+            CheckResult(name="check1", result=case.check_outcome1, event=CheckEvent.AFTER_TEST),
             CheckResult(name="check2", result=ResultOutcome.PASS, event=CheckEvent.BEFORE_TEST),
+            # Duplicate phases of check1
             CheckResult(name="check1", result=ResultOutcome.PASS, event=CheckEvent.BEFORE_TEST),
-            CheckResult(name="check1", result=check_result_outcome2, event=CheckEvent.AFTER_TEST),
+            CheckResult(name="check1", result=case.check_outcome2, event=CheckEvent.AFTER_TEST),
         ],
     )
 
     interpret_checks = {
-        "check1": check_interpret,
+        "check1": case.check_interpret,
         "check2": CheckResultInterpret.RESPECT,
     }
 
-    interpreted = result.interpret_result(interpret, interpret_checks)
-    assert interpreted.result == expected_outcome
-    if expected_note_contains:
+    interpreted = result.interpret_result(case.result_interpret, interpret_checks)
+    assert interpreted.result == case.overall_outcome
+    if case.note_contains:
         assert interpreted.note
-        for expected_note in expected_note_contains:
+        for expected_note in case.note_contains:
             assert expected_note in interpreted.note
     else:
         assert not interpreted.note
