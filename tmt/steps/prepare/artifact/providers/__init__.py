@@ -325,7 +325,8 @@ class ArtifactProvider(ABC):
         """
         pass
 
-    def get_artifact_metadata(self) -> list[dict[str, Any]]:
+    @property
+    def artifact_metadata(self) -> list[dict[str, Any]]:
         """
         Get metadata for the artifacts provided by this provider.
 

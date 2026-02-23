@@ -276,7 +276,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         providers_data = [
             {
                 'id': provider.raw_provider_id,
-                'artifacts': provider.get_artifact_metadata(),
+                'artifacts': provider.artifact_metadata,
             }
             for provider in providers
         ]
