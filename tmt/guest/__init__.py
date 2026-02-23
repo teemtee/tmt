@@ -620,11 +620,11 @@ class GuestFacts(SerializableContainer):
     #: commands executed on this guest.
     capabilities: dict[GuestCapability, bool] = field(
         default_factory=cast(Callable[[], dict[GuestCapability, bool]], dict),
-        serialize=lambda capabilities: {
-            capability.value: enabled for capability, enabled in capabilities.items()
-        }
-        if capabilities
-        else {},
+        serialize=lambda capabilities: (
+            {capability.value: enabled for capability, enabled in capabilities.items()}
+            if capabilities
+            else {}
+        ),
         unserialize=lambda raw_value: {
             GuestCapability(raw_capability): enabled
             for raw_capability, enabled in raw_value.items()
@@ -1067,7 +1067,7 @@ class GuestFacts(SerializableContainer):
         def _value(field: str, label: str) -> tuple[str, str, str]:
             v = getattr(self, field)
 
-            return field, label, v if v else 'unknown'
+            return field, label, v or 'unknown'
 
         def _flag(field: str, label: str) -> tuple[str, str, str]:
             v = getattr(self, field)
@@ -1294,18 +1294,18 @@ class GuestData(
         multiple=True,
         normalize=normalize_hardware,
         serialize=lambda hardware: hardware.to_spec() if hardware else None,
-        unserialize=lambda serialized: tmt.hardware.Hardware.from_spec(serialized)
-        if serialized is not None
-        else None,
+        unserialize=lambda serialized: (
+            tmt.hardware.Hardware.from_spec(serialized) if serialized is not None else None
+        ),
     )
 
     ansible: Optional[GuestAnsible] = field(
         default=None,
         normalize=normalize_guest_ansible,
         serialize=lambda ansible: ansible.to_serialized() if ansible else None,
-        unserialize=lambda serialized: GuestAnsible.from_serialized(serialized)
-        if serialized
-        else GuestAnsible(),
+        unserialize=lambda serialized: (
+            GuestAnsible.from_serialized(serialized) if serialized else GuestAnsible()
+        ),
         help='Ansible configuration for individual guest inventory generation.',
     )
 
@@ -2154,7 +2154,7 @@ class Guest(
             cwd=cwd,
             env=env,
             interactive=interactive,
-            log=log if log else self._command_verbose_logger,
+            log=log or self._command_verbose_logger,
             **kwargs,
         )
 
@@ -2222,7 +2222,7 @@ class Guest(
             playbook_root=playbook_root,
             extra_args=extra_args,
             friendly_command=friendly_command,
-            log=log if log else self._command_verbose_logger,
+            log=log or self._command_verbose_logger,
             silent=silent,
         )
 
