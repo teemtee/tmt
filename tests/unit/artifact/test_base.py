@@ -56,7 +56,7 @@ def test_persist_artifact_metadata(tmp_path, mock_provider):
     prepare.plan_workdir = tmp_path
     prepare.ARTIFACTS_METADATA_FILENAME = 'artifacts.yaml'
 
-    PrepareArtifact._persist_artifact_metadata(prepare, [mock_provider])
+    PrepareArtifact._save_artifacts_metadata(prepare, [mock_provider])
 
     # Verify YAML
     yaml_file = tmp_path / "artifacts.yaml"

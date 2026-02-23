@@ -251,7 +251,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             logger.debug(f"Installed repository '{repo.name}'.")
 
         # Persist artifact metadata to YAML
-        self._persist_artifact_metadata(providers)
+        self._save_artifacts_metadata(providers)
 
         # Report configuration summary
         logger.info(
@@ -267,7 +267,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             tmt.base.DependencySimple('/usr/bin/createrepo'),
         ]
 
-    def _persist_artifact_metadata(self, providers: list[ArtifactProvider]) -> None:
+    def _save_artifacts_metadata(self, providers: list[ArtifactProvider]) -> None:
         """
         Persist the metadata of artifacts to a YAML file.
 
