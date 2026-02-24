@@ -1,0 +1,6 @@
+description: |
+   When package installation fails during the prepare step, tmt now
+   reports which specific packages failed and which tests required
+   them, making it easier to identify the root cause. Unresolvable
+   library or file dependencies are also reported with the affected
+   tests.
