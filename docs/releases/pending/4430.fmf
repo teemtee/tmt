@@ -1,5 +1,5 @@
 description: |
-    When package installation fails during the ``prepare`` :ref:`/plugins/prepare/install`
-    step, tmt now reports which specific packages failed and which tests required
+    When package installation fails during the :ref:`/plugins/prepare/install`
+    phase, tmt now reports which specific packages failed and which tests required
     them, making it easier to identify the root cause. Unresolvable library or file
     dependencies are also reported with the affected tests.
