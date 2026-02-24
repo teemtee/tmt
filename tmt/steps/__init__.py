@@ -4,7 +4,6 @@ Step Classes
 
 import abc
 import collections
-import datetime
 import functools
 import itertools
 import re
@@ -78,8 +77,6 @@ if TYPE_CHECKING:
     import tmt.base
     import tmt.cli
     import tmt.plugins
-    import tmt.steps.discover
-    import tmt.steps.execute
     from tmt.base import Plan
     from tmt.guest import Guest, TransferOptions
     from tmt.result import BaseResult, PhaseResult

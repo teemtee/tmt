@@ -1,7 +1,5 @@
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 MOCK_BUILD_ID_KOJI_BREW = 2829512
 MOCK_BUILD_ID_COPR = 9820798
 MOCK_BUILD_ID_PULP = 9975054

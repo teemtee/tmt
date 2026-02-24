@@ -55,7 +55,7 @@ class TempPathFactory:
 
 try:
     # If the import succeeds, we're about to wrap `Path` by `tmp_path`...
-    from _pytest.tmpdir import tmp_path_factory
+    from _pytest.tmpdir import tmp_path_factory  # noqa: F401
 
     @pytest.fixture(scope='session')
     def tmppath_factory(tmp_path_factory: '_pytest.tmpdir.TempPathFactory') -> TempPathFactory:  # noqa: F811

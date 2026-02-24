@@ -2,10 +2,8 @@ import copy
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 import click
-import fmf
 import fmf.utils
 
-import tmt as tmt
 import tmt.log
 import tmt.steps
 import tmt.utils
