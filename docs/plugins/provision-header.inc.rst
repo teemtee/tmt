@@ -8,6 +8,11 @@ to provision the environment for testing, for example:
 * :ref:`/plugins/provision/local`
 * :ref:`/plugins/provision/artemis`
 
+As part of the provision step it is also possible to specify
+detailed hardware requirements for the testing environment. See
+the :tmt:story:`/spec/hardware` specification section for details.
+
+
 .. _/plugins/provision/hard-reboot:
 
 Hard reboot
