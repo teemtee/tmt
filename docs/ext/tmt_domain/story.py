@@ -150,7 +150,7 @@ class AutoStoryDirective(TmtAutodocDirective[Story]):
         )
         self.content.extend(section_content)
 
-    def _generate_leaf_story_content(self) -> None:
+    def _generate_autodoc_content(self) -> None:
         title = self.story.name.split("/")[-1]
         if self._has_story_attr("title"):
             # We only use the title if it is specific to the current story (not inherited)
@@ -188,22 +188,11 @@ class AutoStoryDirective(TmtAutodocDirective[Story]):
             self.new_line()
             self._generate_links_content()
 
-    def _generate_branch_story_content(self) -> None:
-        if "title" in self.options:
-            title = self.options["title"]
-        elif self._has_story_attr("title"):
-            title = self.story.title
-        else:
-            title = self.story.name.split("/")[-1]
-
-        with self.directive("tmt:story", self.story.name, title=title):
-            self._add_title_content(title)
-            self._add_story_content("story", transform_line=lambda line: f"*{line}*")
-            self._generate_links_content()
-
-            for child in self.story.node.children:
-                with self.directive("tmt:autostory", f"{self.story.name}/{child}"):
-                    pass
+            # Add all sub-stories as well
+            if self.story.node.children:
+                for child in self.story.node.children:
+                    with self.directive("tmt:autostory", f"{self.story.name}/{child}"):
+                        pass
 
     def _generate_links_content(self) -> None:
         if not self.story.link:
@@ -217,12 +206,6 @@ class AutoStoryDirective(TmtAutodocDirective[Story]):
                     content=self._handle_link(link),
                     new_line=False,
                 )
-
-    def _generate_autodoc_content(self) -> None:
-        if self.story.node.children:
-            self._generate_branch_story_content()
-        else:
-            self._generate_leaf_story_content()
 
     def _handle_link(self, link: Link) -> str:
         relation = link.relation.replace("relates", "relates-to").replace("-", " ").capitalize()
