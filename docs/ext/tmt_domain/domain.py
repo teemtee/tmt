@@ -42,7 +42,9 @@ class TmtDomain(Domain):
     name = "tmt"
     label = "Internal tmt sphinx domain"
     roles = {
-        "story": TmtXRefRole(use_obj_name=True),
+        # The default literal node formats the string as a code.
+        # Using inline instead, same as sphinx's `ref` role (`sphinx.domains.std`)
+        "story": TmtXRefRole(use_obj_name=True, innernodeclass=nodes.inline),
     }
     directives = {
         "autostory": AutoStoryDirective,
