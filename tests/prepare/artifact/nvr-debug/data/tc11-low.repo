@@ -1,0 +1,6 @@
+[test-low-priority]
+name=Test Low Priority Repo (dummy-nvr-test v2.0)
+baseurl=file:///tmp/nvr-test/repo-low
+enabled=1
+gpgcheck=0
+priority=100
