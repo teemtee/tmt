@@ -1,7 +1,6 @@
 import enum
 from typing import TYPE_CHECKING, Any, Callable, Optional, cast
 
-import fmf
 import fmf.utils
 
 import tmt.container

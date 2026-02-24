@@ -82,7 +82,7 @@ from tmt.config import Config
 from tmt.container import container
 
 if TYPE_CHECKING:
-    import tmt.base
+    pass
 
 
 # ignore[type-arg]: bound type vars cannot be generic, and it would create a loop anyway.

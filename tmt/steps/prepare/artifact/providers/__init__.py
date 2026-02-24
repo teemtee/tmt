@@ -18,7 +18,9 @@ from tmt._compat.typing import Self, TypeAlias
 from tmt.container import container, simple_field
 from tmt.guest import Guest
 from tmt.plugins import PluginRegistry
-from tmt.utils import GeneralError, Path, ShellScript, retry
+from tmt.utils import GeneralError, Path
+from tmt.utils import ShellScript as ShellScript
+from tmt.utils import retry as retry
 
 
 class DownloadError(tmt.utils.GeneralError):

@@ -16,7 +16,6 @@ import fmf
 import pytest
 
 import tmt
-import tmt.config
 import tmt.log
 import tmt.plugins
 import tmt.steps.discover

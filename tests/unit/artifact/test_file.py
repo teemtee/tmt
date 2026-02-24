@@ -2,7 +2,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tmt.log import Logger
 from tmt.steps.prepare.artifact.providers import RpmVersion
 from tmt.utils import Path
 

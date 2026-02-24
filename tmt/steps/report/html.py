@@ -3,7 +3,6 @@ from typing import Optional
 
 from jinja2 import select_autoescape
 
-import tmt
 import tmt.log
 import tmt.steps
 import tmt.steps.report

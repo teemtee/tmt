@@ -51,44 +51,75 @@ import tmt.utils.wait
 from tmt._compat.typing import Self
 from tmt.ansible import (
     AnsibleInventory,
-    GuestAnsible,
-    normalize_guest_ansible,
+)
+from tmt.ansible import (
+    GuestAnsible as GuestAnsible,
+)
+from tmt.ansible import (
+    normalize_guest_ansible as normalize_guest_ansible,
 )
 from tmt.container import (
     SerializableContainer,
-    SpecBasedContainer,
     container,
     field,
-    key_to_option,
+)
+from tmt.container import (
+    SpecBasedContainer as SpecBasedContainer,
+)
+from tmt.container import (
+    key_to_option as key_to_option,
 )
 from tmt.log import Logger
 from tmt.options import option
 from tmt.package_managers import (
-    FileSystemPath,
-    Package,
+    FileSystemPath as FileSystemPath,
+)
+from tmt.package_managers import (
+    Package as Package,
 )
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue, PushTask, sync_with_guests
 from tmt.utils import (
-    OUTPUT_WIDTH,
-    Command,
-    GeneralError,
-    OnProcessEndCallback,
-    OnProcessStartCallback,
-    Path,
-    ProvisionError,
-    ShellScript,
-    configure_constant,
-    effective_workdir_root,
-    format_timestamp,
+    OUTPUT_WIDTH as OUTPUT_WIDTH,
 )
-from tmt.utils.hints import get_hint
-from tmt.utils.wait import Deadline, Waiting
+from tmt.utils import (
+    Command as Command,
+)
+from tmt.utils import (
+    GeneralError as GeneralError,
+)
+from tmt.utils import (
+    OnProcessEndCallback as OnProcessEndCallback,
+)
+from tmt.utils import (
+    OnProcessStartCallback as OnProcessStartCallback,
+)
+from tmt.utils import (
+    Path,
+)
+from tmt.utils import (
+    ProvisionError as ProvisionError,
+)
+from tmt.utils import (
+    ShellScript as ShellScript,
+)
+from tmt.utils import (
+    configure_constant as configure_constant,
+)
+from tmt.utils import (
+    effective_workdir_root as effective_workdir_root,
+)
+from tmt.utils import (
+    format_timestamp as format_timestamp,
+)
+from tmt.utils.hints import get_hint as get_hint
+from tmt.utils.wait import Deadline as Deadline
+from tmt.utils.wait import Waiting as Waiting
 
 if TYPE_CHECKING:
     import tmt.base
     import tmt.cli
-    from tmt._compat.typing import TypeAlias
+    from tmt._compat.typing import TypeAlias as TypeAlias
 
 
 @container

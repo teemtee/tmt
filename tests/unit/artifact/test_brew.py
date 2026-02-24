@@ -1,7 +1,6 @@
 import pytest
 
 from tmt.steps.prepare.artifact.providers.brew import BrewArtifactProvider, BrewBuild, BrewTask
-from tmt.utils import GeneralError
 
 from . import (
     MOCK_BUILD_ID_KOJI_BREW,

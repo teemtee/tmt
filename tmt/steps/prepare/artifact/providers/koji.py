@@ -7,13 +7,12 @@ from abc import abstractmethod
 from collections.abc import Iterator, Sequence
 from functools import cached_property
 from shlex import quote
-from typing import Any, ClassVar, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar
 from urllib.parse import urljoin
 
 import tmt.log
 import tmt.utils
 import tmt.utils.hints
-from tmt.container import container
 from tmt.guest import Guest
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,

@@ -3,14 +3,10 @@ import shutil
 from collections.abc import Iterator
 from typing import Any, Callable, Literal, Optional, TypeVar, Union, cast
 
-import fmf
 import fmf.utils
 
-import tmt
 import tmt.base
 import tmt.log
-import tmt.options
-import tmt.package_managers
 import tmt.steps
 import tmt.steps.prepare
 import tmt.utils

@@ -4,7 +4,6 @@ import itertools
 import os
 import platform
 import re
-import shlex
 import shutil
 import tempfile
 import threading
@@ -14,7 +13,6 @@ from string import Template
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 import click
-import pint
 import requests
 
 import tmt
@@ -28,7 +26,6 @@ from tmt.container import container, field
 from tmt.guest import CONNECT_TIMEOUT, RebootMode, default_connect_waiting
 from tmt.utils import (
     Command,
-    GuestLogError,
     Path,
     ProvisionError,
     ShellScript,

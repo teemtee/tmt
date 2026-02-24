@@ -1,6 +1,5 @@
 import pytest
 
-import tmt
 import tmt.base
 import tmt.libraries
 import tmt.utils

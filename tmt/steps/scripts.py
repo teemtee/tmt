@@ -3,12 +3,8 @@ from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Callable, Optional
 
 import tmt
-import tmt.base
 import tmt.log
-import tmt.steps
 import tmt.utils
-import tmt.utils.signals
-import tmt.utils.wait
 from tmt.container import container
 from tmt.utils import (
     Path,
@@ -16,7 +12,7 @@ from tmt.utils import (
 from tmt.utils.templates import render_template_file
 
 if TYPE_CHECKING:
-    import tmt.steps.provision
+    pass
 
 #: Scripts source resource. Use `tmt.utils.resource_files` to access them.
 SCRIPTS_RESOURCE = 'steps/scripts'

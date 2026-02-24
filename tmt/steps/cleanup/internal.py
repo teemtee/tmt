@@ -1,6 +1,5 @@
 from typing import Optional
 
-import tmt
 import tmt.log
 import tmt.steps
 import tmt.steps.cleanup

@@ -3,7 +3,6 @@ from shlex import quote
 from typing import Any, ClassVar, Optional, Union, cast
 
 import tmt
-import tmt.base
 import tmt.log
 import tmt.steps
 import tmt.steps.provision

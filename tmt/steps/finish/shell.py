@@ -1,4 +1,3 @@
-import tmt
 import tmt.steps
 import tmt.steps.finish
 from tmt.steps.prepare.shell import PrepareShell

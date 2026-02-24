@@ -5,7 +5,6 @@ Unit tests for data size validation in tmt.utils and tmt.hardware
 import pytest
 
 import tmt.hardware
-import tmt.log
 import tmt.utils
 from tmt.utils import NormalizationError
 
@@ -23,7 +22,6 @@ def test_valid_string_sizes(root_logger, size):
 
 def test_valid_quantity_objects(root_logger):
     """Test that valid Quantity objects pass through"""
-    from pint import Quantity
 
     valid_quantity = tmt.hardware.UNITS("64 MB")
     result = tmt.utils.normalize_data_amount("test.field", valid_quantity, root_logger)

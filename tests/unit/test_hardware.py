@@ -8,8 +8,6 @@ import pytest
 
 import tmt.guest
 import tmt.hardware
-import tmt.steps
-import tmt.steps.provision
 import tmt.utils
 from tmt.hardware import Hardware
 from tmt.log import Logger

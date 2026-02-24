@@ -27,7 +27,7 @@ import fmf
 import fmf.utils
 from click import echo
 
-import tmt
+import tmt as tmt
 import tmt.log
 import tmt.utils
 from tmt._compat.typing import Self

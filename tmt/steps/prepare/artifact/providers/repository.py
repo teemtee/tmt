@@ -2,7 +2,6 @@
 Artifact provider for discovering RPMs from repository files.
 """
 
-import re
 from collections.abc import Sequence
 from functools import cached_property
 from re import Pattern
@@ -18,7 +17,7 @@ from tmt.steps.prepare.artifact.providers import (
     Repository,
     provides_artifact_provider,
 )
-from tmt.utils import GeneralError, Path, PrepareError, RunError
+from tmt.utils import Path, PrepareError, RunError
 
 # Counter for generating unique repository names in the format ``tmt-repo-default-{n}``.
 _REPO_NAME_GENERATOR = DefaultNameGenerator(known_names=[])

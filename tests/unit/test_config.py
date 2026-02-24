@@ -2,7 +2,6 @@ import queue
 import re
 import textwrap
 import threading
-import unittest
 import unittest.mock
 from unittest.mock import MagicMock
 
