@@ -376,8 +376,6 @@ ignore = [
     "PERF203", # `try`-`except` within a loop incurs performance overhead
     "D200",  # One-line docstring should fit on one line
     "D212",  # Multi-line docstring summary should start at the first line
-    "F401",  # Checks for unused imports
-             # (Started failing but need a manual PR to verify all cases)
 
     # pydocstyle
     # TODO: the permanent list (drop this comment once the temporary list
