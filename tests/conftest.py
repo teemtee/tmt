@@ -35,25 +35,8 @@ def fixture_run_tmt() -> RunTmt:
     return CliRunner().invoke
 
 
-# Temporary directories and paths
-#
-# * the recommended way is to use `tmp_path` and `tmp_path_factory` fixtures
-# * `pathlib.Path` is also not good enough, as it may lack some methods in older
-#   Python versions, that's why we have our own `tmt.utils.Path`.
-#
-# So, what we need:
-#
-# * a single name, we can't switch between `tmp_path` and `tmpdir` in every test
-# * `tmt.utils.Path`, no strings, no `py.path.local`
-#
-# To solve this, we add here:
-#
-# * a wrapper class, representing the "tmp path factory". It's initialized with an
-#   actual factory, has the same public API, but returns our `tmt.utils.Path`
-# * two new fixtures, `tmppath` and `tmppath_factory` that consume available fixtures
-#   and return corresponding `tmt.utils.Path`.
-# * tests using `tmppath*` instead of pytest's own `tmp_path*` and `tmpdir*` fixtures
-#
+# Equivalent fixtures to `tmp_path_factory` and `tmp_path` recasting the paths
+# to tmt's Path.
 class TempPathFactory:
     def __init__(self, actual_factory: Any) -> None:
         self._actual_factory = actual_factory
