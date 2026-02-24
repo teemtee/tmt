@@ -5,7 +5,6 @@ import re
 from collections.abc import Iterator
 from typing import Any, Callable, Optional, cast
 
-import tmt as tmt
 import tmt.base.core
 import tmt.container
 import tmt.guest
