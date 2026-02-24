@@ -170,6 +170,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     # Shared repository configuration
     SHARED_REPO_DIR_NAME: ClassVar[str] = 'artifact-shared-repo'
     SHARED_REPO_NAME: ClassVar[str] = 'tmt-artifact-shared'
+    ARTIFACTS_METADATA_FILENAME: ClassVar[str] = 'artifacts.yaml'
 
     def go(
         self,
@@ -249,6 +250,9 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             guest.package_manager.install_repository(repo)
             logger.debug(f"Installed repository '{repo.name}'.")
 
+        # Persist artifact metadata to YAML
+        self._save_artifacts_metadata(providers)
+
         # Report configuration summary
         logger.info(
             f"Configured artifact preparation with {len(self.data.provide)} provider(s) "
@@ -262,3 +266,24 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         return [
             tmt.base.DependencySimple('/usr/bin/createrepo'),
         ]
+
+    def _save_artifacts_metadata(self, providers: list[ArtifactProvider]) -> None:
+        """
+        Persist the metadata of artifacts to a YAML file.
+
+        Groups artifacts by provider.
+        """
+        providers_data = [
+            {
+                'id': provider.raw_provider_id,
+                'artifacts': provider.artifact_metadata,
+            }
+            for provider in providers
+        ]
+
+        metadata_file = self.plan_workdir / self.ARTIFACTS_METADATA_FILENAME
+
+        try:
+            metadata_file.write_text(tmt.utils.to_yaml({'providers': providers_data}, start=True))
+        except OSError as error:
+            raise tmt.utils.FileError(f"Failed to write into '{metadata_file}' file.") from error
