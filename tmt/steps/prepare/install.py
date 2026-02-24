@@ -655,12 +655,6 @@ class InstallBootc(InstallBase):
             PackagePath(self.package_directory / filename.name) for filename in self.local_packages
         ]
 
-        self._engine.containerfile_directives.append(f'RUN mkdir -p {self.package_directory}')
-
-        files = " ".join(str(file.relative_to(self.guest.step_workdir)) for file in filelist)
-
-        self._engine.containerfile_directives.append(f'COPY {files} {self.package_directory}')
-
         self._engine.install(
             *filelist,
             options=Options(
