@@ -15,7 +15,7 @@ from tmt.base import Story
 from tmt.utils.git import web_git_url
 
 from .autodoc import Content
-from .base import TmtAutodocDirective, TmtDirective
+from .base import TmtAutodocDirective, TmtDirective, TmtXRefRole
 
 if typing.TYPE_CHECKING:
     from .domain import TmtDomain
@@ -263,3 +263,12 @@ class StoryIndex(Index):
             entries = content.setdefault(index_key, [])
             entries.append(index_item)
         return sorted(content.items()), True
+
+
+class StoryRole(TmtXRefRole):
+    # The default literal node formats the string as a code.
+    # Using inline instead, same as sphinx's `ref` role (`sphinx.domains.std`)
+    innernodeclass = nodes.inline
+    # We want to use the story titles here. See `tmt_domain.note_object` call in
+    # `StoryDirective.run` for the index entry that we created.
+    use_obj_name = True
