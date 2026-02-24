@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any
 
 import _pytest.logging
 import _pytest.tmpdir
-import py.path
 import pytest
 
 from tests import CliRunner, RunTmt
@@ -39,8 +38,6 @@ def fixture_run_tmt() -> RunTmt:
 # Temporary directories and paths
 #
 # * the recommended way is to use `tmp_path` and `tmp_path_factory` fixtures
-# * `tmp_path*` fixtures are not available in RHEL-8, `tmpdir` (and `tmpdir_factory`)
-#   fixtures are - but these return `py.path.local` instead of a lovely `pathlib.Path`
 # * `pathlib.Path` is also not good enough, as it may lack some methods in older
 #   Python versions, that's why we have our own `tmt.utils.Path`.
 #
@@ -48,7 +45,6 @@ def fixture_run_tmt() -> RunTmt:
 #
 # * a single name, we can't switch between `tmp_path` and `tmpdir` in every test
 # * `tmt.utils.Path`, no strings, no `py.path.local`
-# * works across all supported Python versions, from 3.6 in RHEL8 till 3.11 or so
 #
 # To solve this, we add here:
 #
@@ -69,34 +65,14 @@ class TempPathFactory:
         return Path(str(self._actual_factory.mktemp(basename, numbered=numbered)))
 
 
-try:
-    # If the import succeeds, we're about to wrap `Path` by `tmp_path`...
-    from _pytest.tmpdir import tmp_path_factory  # noqa: F401
+@pytest.fixture(scope='session')
+def tmppath_factory(tmp_path_factory: _pytest.tmpdir.TempPathFactory) -> TempPathFactory:
+    return TempPathFactory(tmp_path_factory)
 
-    @pytest.fixture(scope='session')
-    def tmppath_factory(tmp_path_factory: '_pytest.tmpdir.TempPathFactory') -> TempPathFactory:  # noqa: F811
-        return TempPathFactory(tmp_path_factory)
 
-    @pytest.fixture
-    def tmppath(tmp_path: pathlib.Path) -> Path:  # noqa: TID251
-        return Path(str(tmp_path))
-
-except ImportError:
-    # ... and if the import fails, we're wrapping `py.path.local` from `tmpdir` family.
-
-    # ignore[name-defined]: when inspected with our daily Python 3.9 or something,
-    # the pytest is probably way newer than the one in RHEL8, and therefore the
-    # name indeed would not exist. But this whole branch applies only with the old
-    # pytest, therefore things are safe.
-    @pytest.fixture(scope='session')
-    def tmppath_factory(
-        tmpdir_factory: '_pytest.tmpdir.TempdirFactory',  # type: ignore[name-defined]
-    ) -> TempPathFactory:
-        return TempPathFactory(tmpdir_factory)
-
-    @pytest.fixture
-    def tmppath(tmpdir: py.path.local) -> Path:
-        return Path(str(tmpdir))
+@pytest.fixture
+def tmppath(tmp_path: pathlib.Path) -> Path:  # noqa: TID251
+    return Path(str(tmp_path))
 
 
 @pytest.fixture
