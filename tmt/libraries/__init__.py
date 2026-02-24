@@ -5,10 +5,8 @@ Handle libraries
 import abc
 from typing import Optional
 
-import fmf
 import fmf.utils
 
-import tmt
 import tmt.log
 import tmt.utils
 from tmt.base import Dependency, DependencyFile, DependencyFmfId, DependencySimple

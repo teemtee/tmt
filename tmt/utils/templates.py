@@ -17,7 +17,6 @@ from typing import (
     cast,
 )
 
-import fmf
 import fmf.utils
 import jinja2
 import jinja2.exceptions

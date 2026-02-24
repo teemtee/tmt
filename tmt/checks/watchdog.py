@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Optional
 
 import tmt.guest
 import tmt.log
-import tmt.steps.provision
 import tmt.steps.provision.artemis
 import tmt.steps.provision.connect
 import tmt.steps.provision.local

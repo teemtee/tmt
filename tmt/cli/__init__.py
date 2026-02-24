@@ -9,7 +9,6 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, cast
 
 import click
-import fmf
 import fmf.utils
 
 import tmt

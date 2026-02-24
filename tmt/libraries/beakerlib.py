@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Literal, Optional, cast
 
 import fmf
 
-import tmt
 import tmt.base
 import tmt.log
 import tmt.utils

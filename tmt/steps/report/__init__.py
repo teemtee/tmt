@@ -2,8 +2,6 @@ from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 import click
 
-import tmt
-import tmt.plugins
 import tmt.steps
 from tmt.container import container
 from tmt.options import option

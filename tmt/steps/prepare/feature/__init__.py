@@ -5,15 +5,12 @@ import re
 from collections.abc import Iterator
 from typing import Any, Callable, Optional, cast
 
-import tmt
 import tmt.base
 import tmt.container
 import tmt.guest
 import tmt.log
-import tmt.options
 import tmt.steps
 import tmt.steps.prepare
-import tmt.steps.provision
 import tmt.utils
 from tmt.container import container
 from tmt.guest import Guest

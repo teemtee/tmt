@@ -67,7 +67,6 @@ import re
 import textwrap
 from collections.abc import Iterable, Iterator
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
@@ -80,10 +79,6 @@ import tmt
 import tmt.utils
 from tmt.config import Config
 from tmt.container import container
-
-if TYPE_CHECKING:
-    import tmt.base
-
 
 # ignore[type-arg]: bound type vars cannot be generic, and it would create a loop anyway.
 LintableT = TypeVar('LintableT', bound='Lintable')  # type: ignore[type-arg]

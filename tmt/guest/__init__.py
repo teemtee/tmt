@@ -29,7 +29,6 @@ from typing import (
     overload,
 )
 
-import fmf
 import fmf.utils
 
 import tmt

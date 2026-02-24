@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Optional, cast
 import click
 
 import tmt
-import tmt.base
 import tmt.hardware
 import tmt.log
 import tmt.steps

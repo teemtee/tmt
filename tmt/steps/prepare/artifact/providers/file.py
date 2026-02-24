@@ -7,7 +7,6 @@ from typing import ClassVar, Optional
 
 import tmt.log
 import tmt.utils
-from tmt.container import container
 from tmt.guest import Guest, TransferOptions
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
@@ -15,7 +14,6 @@ from tmt.steps.prepare.artifact.providers import (
     ArtifactProviderId,
     DownloadError,
     RpmVersion,
-    Version,
     provides_artifact_provider,
 )
 from tmt.utils import ShellScript

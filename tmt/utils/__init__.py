@@ -40,7 +40,6 @@ from typing import (
     Callable,
     Generic,
     Literal,
-    NewType,
     Optional,
     TextIO,
     TypeVar,
@@ -81,7 +80,6 @@ from tmt.utils.themes import style
 if TYPE_CHECKING:
     import tmt.base
     import tmt.cli
-    import tmt.steps
     import tmt.utils.themes
     from tmt._compat.typing import ParamSpec, Self, TypeAlias
     from tmt.guest import GuestLog

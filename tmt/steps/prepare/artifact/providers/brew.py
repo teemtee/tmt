@@ -2,9 +2,8 @@
 Brew Artifact Provider
 """
 
-from collections.abc import Sequence
 from functools import cached_property
-from typing import Any, ClassVar, Optional
+from typing import Optional
 from urllib.parse import urljoin
 
 import tmt.log

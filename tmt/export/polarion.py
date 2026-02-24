@@ -7,9 +7,7 @@ import fmf.utils
 from click import echo
 
 import tmt.base
-import tmt.convert
 import tmt.export
-import tmt.utils
 from tmt.identifier import ID_KEY, add_uuid_if_not_defined
 from tmt.utils import ConvertError, Path
 from tmt.utils.themes import style

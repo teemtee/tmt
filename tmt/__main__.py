@@ -7,7 +7,6 @@ def import_cli_commands() -> None:
     """
 
     # TODO: some kind of `import tmt.cli.*` would be nice
-    import tmt.cli._root  # type: ignore[reportUnusedImport,unused-ignore]
     import tmt.cli.about  # noqa: F401,I001,RUF100  # type: ignore[reportUnusedImport]
     import tmt.cli.init  # noqa: F401,I001,RUF100  # type: ignore[reportUnusedImport]
     import tmt.cli.lint  # noqa: F401,I001,RUF100 # type: ignore[reportUnusedImport]

@@ -2,14 +2,11 @@ import copy
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, cast
 
 import click
-import fmf
 import fmf.utils
 
 import tmt
 import tmt.log
 import tmt.steps
-import tmt.steps.discover
-import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, simple_field
 from tmt.guest import Guest

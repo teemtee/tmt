@@ -3,13 +3,12 @@ Abstract base class for artifact providers.
 """
 
 import configparser
-import functools
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
 from functools import cached_property
 from re import Pattern
 from shlex import quote
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast, overload
+from typing import Any, Optional
 from urllib.parse import urlparse
 
 import tmt.log
@@ -18,7 +17,7 @@ from tmt._compat.typing import Self, TypeAlias
 from tmt.container import container, simple_field
 from tmt.guest import Guest
 from tmt.plugins import PluginRegistry
-from tmt.utils import GeneralError, Path, ShellScript, retry
+from tmt.utils import GeneralError, Path, ShellScript
 
 
 class DownloadError(tmt.utils.GeneralError):
@@ -245,7 +244,7 @@ class ArtifactProvider(ABC):
 
         # Ensure download directory exists on guest (create only if missing)
         guest.execute(
-            tmt.utils.ShellScript(
+            ShellScript(
                 f"[ -d {quote(str(download_path))} ] || "
                 f"{guest.facts.sudo_prefix} mkdir -p {quote(str(download_path))}"
             ),

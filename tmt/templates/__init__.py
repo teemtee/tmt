@@ -1,7 +1,6 @@
 import functools
 from typing import Any, Optional, Union
 
-import tmt
 import tmt.config
 import tmt.log
 import tmt.utils

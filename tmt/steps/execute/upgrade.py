@@ -4,11 +4,7 @@ import fmf.utils
 
 import tmt.base
 import tmt.log
-import tmt.result
 import tmt.steps
-import tmt.steps.discover.fmf
-import tmt.steps.execute
-import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field, key_to_option
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData, normalize_ref

@@ -9,7 +9,6 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 import click
-import fmf
 import fmf.utils
 
 import tmt
@@ -19,7 +18,6 @@ import tmt.steps
 import tmt.steps.scripts
 import tmt.utils
 import tmt.utils.signals
-import tmt.utils.wait
 from tmt.checks import Check, CheckEvent, CheckPlugin
 from tmt.container import container, field, simple_field
 from tmt.guest import Guest
@@ -54,10 +52,8 @@ from tmt.utils import (
 
 if TYPE_CHECKING:
     import tmt.cli
-    import tmt.options
     import tmt.result
     import tmt.steps.discover
-    import tmt.steps.provision
 
 # Test data and checks directory names
 TEST_DATA = 'data'

@@ -4,7 +4,6 @@ import shlex
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generic, Optional, TypeVar, Union
 
-import tmt
 import tmt.log
 import tmt.plugins
 import tmt.utils

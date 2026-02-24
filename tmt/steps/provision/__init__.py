@@ -1,94 +1,41 @@
-import abc
-import ast
-import contextlib
-import dataclasses
-import datetime
-import enum
 import functools
-import hashlib
-import os
-import re
-import secrets
-import shlex
-import shutil
-import signal as _signal
-import string
-import subprocess
-import threading
-from collections.abc import Iterable, Iterator, Sequence
-from shlex import quote
+from collections.abc import Iterator
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Literal,
-    NewType,
     Optional,
     TypeVar,
     Union,
     cast,
-    overload,
 )
 
 import click
-import fmf
 import fmf.utils
 from click import echo
 
 import tmt
-import tmt.ansible
 import tmt.guest
 import tmt.hardware
 import tmt.log
-import tmt.package_managers
-import tmt.plugins
 import tmt.queue
 import tmt.steps
-import tmt.steps.provision
-import tmt.steps.scripts
 import tmt.utils
-import tmt.utils.wait
 from tmt._compat.typing import Self
-from tmt.ansible import (
-    AnsibleInventory,
-    GuestAnsible,
-    normalize_guest_ansible,
-)
+from tmt.ansible import AnsibleInventory
 from tmt.container import (
     SerializableContainer,
-    SpecBasedContainer,
     container,
     field,
-    key_to_option,
 )
 from tmt.log import Logger
 from tmt.options import option
-from tmt.package_managers import (
-    FileSystemPath,
-    Package,
-)
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue, PushTask, sync_with_guests
-from tmt.utils import (
-    OUTPUT_WIDTH,
-    Command,
-    GeneralError,
-    OnProcessEndCallback,
-    OnProcessStartCallback,
-    Path,
-    ProvisionError,
-    ShellScript,
-    configure_constant,
-    effective_workdir_root,
-    format_timestamp,
-)
-from tmt.utils.hints import get_hint
-from tmt.utils.wait import Deadline, Waiting
+from tmt.utils import Path
 
 if TYPE_CHECKING:
     import tmt.base
     import tmt.cli
-    from tmt._compat.typing import TypeAlias
 
 
 @container

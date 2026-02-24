@@ -23,7 +23,6 @@ import tmt.convert
 import tmt.identifier
 import tmt.log
 import tmt.options
-import tmt.plugins
 import tmt.plugins.plan_shapers
 import tmt.policy
 import tmt.steps
