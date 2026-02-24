@@ -1,4 +1,4 @@
-from typing import ClassVar, Optional
+from typing import Any, ClassVar, Optional
 
 import tmt.base.core
 import tmt.steps
@@ -197,6 +197,9 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
         # Initialize all providers and have them contribute to the shared repo
         providers: list[ArtifactProvider] = []
+        seen_nvras: dict[str, str] = {}
+        providers_data: list[dict[str, Any]] = []
+
         for raw_provider_id in self.data.provide:
             try:
                 provider_class = get_artifact_provider(raw_provider_id)
@@ -209,6 +212,14 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                     repository_priority=self.data.default_repository_priority,
                     logger=provider_logger,
                 )
+
+                providers_data.append(
+                    {
+                        'id': provider.raw_provider_id,
+                        'artifacts': self._collect_artifacts_metadata(provider, seen_nvras),
+                    }
+                )
+
                 providers.append(provider)
 
                 # Define a unique download path for this provider's artifacts
@@ -251,7 +262,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             logger.debug(f"Installed repository '{repo.name}'.")
 
         # Persist artifact metadata to YAML
-        self._save_artifacts_metadata(providers)
+        self._save_artifacts_metadata(providers_data)
 
         # Report configuration summary
         logger.info(
@@ -267,19 +278,32 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             tmt.base.core.DependencySimple('/usr/bin/createrepo'),
         ]
 
-    def _save_artifacts_metadata(self, providers: list[ArtifactProvider]) -> None:
+    def _collect_artifacts_metadata(
+        self, provider: ArtifactProvider, seen_nvras: dict[str, str]
+    ) -> list[dict[str, Any]]:
+        """
+        Collect artifact metadata from a provider and check for duplicate NVRAs.
+        """
+        raw_provider_id = provider.raw_provider_id
+        artifacts_metadata = provider.artifact_metadata
+
+        for artifact_dict in artifacts_metadata:
+            if (nvra := artifact_dict["nvra"]) in seen_nvras:
+                raise tmt.utils.PrepareError(
+                    f"Artifact '{nvra}' provided by both "
+                    f"'{seen_nvras[nvra]}' and '{raw_provider_id}'."
+                )
+
+            seen_nvras[nvra] = raw_provider_id
+
+        return artifacts_metadata
+
+    def _save_artifacts_metadata(self, providers_data: list[dict[str, Any]]) -> None:
         """
         Persist the metadata of artifacts to a YAML file.
 
         Groups artifacts by provider.
         """
-        providers_data = [
-            {
-                'id': provider.raw_provider_id,
-                'artifacts': provider.artifact_metadata,
-            }
-            for provider in providers
-        ]
 
         metadata_file = self.plan_workdir / self.ARTIFACTS_METADATA_FILENAME
 
