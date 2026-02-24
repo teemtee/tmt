@@ -32,14 +32,10 @@ from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue, PushTask, sync_with_guests
 from tmt.utils import Path
-from tmt.utils.hints import get_hint as get_hint
-from tmt.utils.wait import Deadline as Deadline
-from tmt.utils.wait import Waiting as Waiting
 
 if TYPE_CHECKING:
     import tmt.base
     import tmt.cli
-    from tmt._compat.typing import TypeAlias as TypeAlias
 
 
 @container

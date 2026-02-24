@@ -17,10 +17,7 @@ from tmt.steps.execute import (
     TestInvocation,
 )
 from tmt.steps.report.display import ResultRenderer
-from tmt.utils import (
-    Environment,
-    ShellScript,
-)
+from tmt.utils import Environment, ShellScript
 from tmt.utils.themes import style
 
 #
