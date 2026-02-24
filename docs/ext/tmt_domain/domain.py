@@ -8,13 +8,13 @@ from functools import cached_property
 
 from docutils import nodes
 from sphinx.domains import Domain, ObjType
-from sphinx.roles import XRefRole
 from sphinx.util import logging
 from sphinx.util.nodes import make_refnode
 
 import tmt
 import tmt.log
 
+from .base import TmtXRefRole
 from .story import AutoStoryDirective, StoryDirective, StoryIndex
 
 if typing.TYPE_CHECKING:
@@ -42,7 +42,7 @@ class TmtDomain(Domain):
     name = "tmt"
     label = "Internal tmt sphinx domain"
     roles = {
-        "story": XRefRole(),
+        "story": TmtXRefRole(use_obj_name=True),
     }
     directives = {
         "autostory": AutoStoryDirective,
@@ -137,9 +137,12 @@ class TmtDomain(Domain):
         typ_objects = self.objects.get(obj_types[0], {})
         if not (obj := typ_objects.get(target)):
             return None
-        # Fix title from the actual object's title.
-        # Check `refexplicit` aka `has_explicit_title` if we actually need to do it.
-        if not node.get("refexplicit", False):
+        # Fix title from the actual object's title if needed.
+        # - `tmtrefuseobjname` aka `use_obj_name` is defined for each `TmtXRefRole` and
+        #   specifies if we want to use the tmt object's name/title (saved as `obj.name`)
+        # - `refexplicit` aka `has_explicit_title` is `True` if the role was defined like
+        #   :tmt:story:`Other title</spec/plans>` (we do not need to change the title then)
+        if node.get("tmtrefuseobjname", False) and not node.get("refexplicit", False):
             contnode.pop(0)
             contnode += nodes.Text(obj.name)
         return make_refnode(
