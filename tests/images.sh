@@ -25,13 +25,10 @@ $TEST_IMAGE_PREFIX/centos/stream10/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/42/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/43/upstream:latest
 $TEST_IMAGE_PREFIX/fedora/rawhide/upstream:latest
+$TEST_IMAGE_PREFIX/fedora/eln/upstream:latest
 $TEST_IMAGE_PREFIX/ubi/8/upstream:latest
 $TEST_IMAGE_PREFIX/ubuntu/22.04/upstream:latest
 $TEST_IMAGE_PREFIX/debian/12.7/upstream:latest}"
-
-# TODO: Disabled for now to unblock testing/merging
-# https://github.com/teemtee/tmt/pull/4552
-#$TEST_IMAGE_PREFIX/fedora/eln:latest
 
 # For the following images we do not exercise all possible feature
 # combinations, just make sure the basic functionality works.

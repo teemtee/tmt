@@ -10,6 +10,7 @@ from typing import Optional
 
 import tmt.log
 import tmt.utils
+from tmt.guest import Guest
 from tmt.steps.prepare import install
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
@@ -18,7 +19,6 @@ from tmt.steps.prepare.artifact.providers import (
     UnsupportedOperationError,
     provides_artifact_provider,
 )
-from tmt.steps.provision import Guest
 from tmt.utils import Path
 
 COPR_REPOSITORY_PATTERN = re.compile(r'^(?:@[^/]+/[^/]+|[^@/]+/[^/]+)$')

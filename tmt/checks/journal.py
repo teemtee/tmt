@@ -11,8 +11,8 @@ from tmt.utils import Path, ShellScript, Stopwatch
 from tmt.utils.hints import hints_as_notes
 
 if TYPE_CHECKING:
+    from tmt.guest import Guest
     from tmt.steps.execute import TestInvocation
-    from tmt.steps.provision import Guest
 
 #: The filename of the final check report file.
 TEST_POST_JOURNAL_FILENAME = 'journal.txt'

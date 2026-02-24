@@ -15,7 +15,7 @@ from tmt._compat.pathlib import Path
 from tmt.container import SerializableContainer, container, field
 
 if TYPE_CHECKING:
-    from tmt.steps.provision import Guest
+    from tmt.guest import Guest
 
 
 class _RawGuestAnsible(TypedDict, total=False):
@@ -154,9 +154,11 @@ class PlanAnsible(SerializableContainer):
         default=None,
         help='Inventory configuration for the plan.',
         serialize=lambda inventory: inventory.to_serialized() if inventory else None,
-        unserialize=lambda serialized: PlanAnsibleInventory.from_serialized(serialized)  # pyright: ignore[reportArgumentType]
-        if serialized
-        else None,
+        unserialize=lambda serialized: (
+            PlanAnsibleInventory.from_serialized(serialized)  # pyright: ignore[reportArgumentType]
+            if serialized
+            else None
+        ),
     )
 
     @classmethod

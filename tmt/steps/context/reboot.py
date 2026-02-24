@@ -2,12 +2,12 @@ import functools
 import os
 from typing import TYPE_CHECKING, NoReturn, Optional
 
+import tmt.guest
 import tmt.log
-import tmt.steps.provision
 import tmt.steps.scripts
 import tmt.utils
 from tmt.container import MetadataContainer, container
-from tmt.steps.provision import Guest, RebootMode, SoftRebootModes
+from tmt.guest import Guest, RebootMode, SoftRebootModes
 from tmt.utils import Environment, EnvVarValue, HasEnvironment, Path, ShellScript
 from tmt.utils.wait import Deadline, Waiting
 
@@ -21,7 +21,7 @@ class RebootData(MetadataContainer):
     """
 
     command: Optional[str] = None
-    timeout: int = tmt.steps.provision.REBOOT_TIMEOUT
+    timeout: int = tmt.guest.REBOOT_TIMEOUT
     systemd_soft_reboot: bool = False
 
 
@@ -171,7 +171,7 @@ class RebootContext(HasEnvironment):
                 except tmt.utils.RunError as error:
                     _handle_run_error(error)
 
-                except tmt.steps.provision.RebootModeNotSupportedError:
+                except tmt.guest.RebootModeNotSupportedError:
                     return _soft_fallback()
 
             def _issue_reboot() -> bool:
@@ -183,7 +183,7 @@ class RebootContext(HasEnvironment):
                 except tmt.utils.RunError as error:
                     _handle_run_error(error)
 
-                except tmt.steps.provision.RebootModeNotSupportedError:
+                except tmt.guest.RebootModeNotSupportedError:
                     if reboot_mode == RebootMode.SOFT:
                         return _soft_fallback()
 

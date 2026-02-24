@@ -1,20 +1,21 @@
 from typing import Any, Optional, Union
 
 import tmt
+import tmt.guest
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.container import container, field
-from tmt.steps.provision import RebootMode
+from tmt.guest import RebootMode
 from tmt.utils import Command, ShellScript
 from tmt.utils.wait import Waiting
 
 
 @container
-class ConnectGuestData(tmt.steps.provision.GuestSshData):
+class ConnectGuestData(tmt.guest.GuestSshData):
     # Connect plugin actually allows `guest` key to be controlled by an option.
     _OPTIONLESS_FIELDS = tuple(
-        key for key in tmt.steps.provision.GuestSshData._OPTIONLESS_FIELDS if key != 'guest'
+        key for key in tmt.guest.GuestSshData._OPTIONLESS_FIELDS if key != 'guest'
     )
 
     # Override parent class with our defaults
@@ -84,7 +85,7 @@ class ProvisionConnectData(ConnectGuestData, tmt.steps.provision.ProvisionStepDa
     pass
 
 
-class GuestConnect(tmt.steps.provision.GuestSsh):
+class GuestConnect(tmt.guest.GuestSsh):
     _data_class = ConnectGuestData
 
     soft_reboot: Optional[ShellScript]
@@ -118,11 +119,11 @@ class GuestConnect(tmt.steps.provision.GuestSsh):
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
-        waiting = waiting or tmt.steps.provision.default_reboot_waiting()
+        waiting = waiting or tmt.guest.default_reboot_waiting()
 
         if mode == RebootMode.HARD:
             if self.hard_reboot is None:
-                raise tmt.steps.provision.RebootModeNotSupportedError(guest=self, mode=mode)
+                raise tmt.guest.RebootModeNotSupportedError(guest=self, mode=mode)
 
             self.debug(f"Hard reboot using the hard reboot command '{self.hard_reboot}'.")
 

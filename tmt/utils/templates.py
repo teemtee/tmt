@@ -26,8 +26,8 @@ from tmt.utils import GeneralError, Path, to_yaml
 from tmt.utils.git import web_git_url
 
 if TYPE_CHECKING:
+    from tmt.guest import Guest
     from tmt.result import BaseResult
-    from tmt.steps.provision import Guest
 
 
 def _template_filter_basename(  # type: ignore[reportUnusedFunction,unused-ignore]
@@ -365,7 +365,7 @@ def _template_filter_guest_full_name(  # type: ignore[reportUnusedFunction,unuse
         {{ {"name": "foo", "role": "bar"} | guest_full_name }}
     """
 
-    from tmt.steps.provision import format_guest_full_name
+    from tmt.guest import format_guest_full_name
 
     return format_guest_full_name(guest.name, guest.role)
 
@@ -387,7 +387,7 @@ def _template_filter_format_duration(  # type: ignore[reportUnusedFunction,unuse
         {{ {"duration": "12:34:56"} | format_duration }}
     """
 
-    return result.duration if result.duration else '..:..:..'
+    return result.duration or '..:..:..'
 
 
 def _template_filter_to_yaml(  # type: ignore[reportUnusedFunction,unused-ignore]

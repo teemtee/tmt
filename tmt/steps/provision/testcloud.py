@@ -25,7 +25,7 @@ import tmt.steps.provision
 import tmt.utils
 import tmt.utils.wait
 from tmt.container import container, field
-from tmt.steps.provision import CONNECT_TIMEOUT, RebootMode, default_connect_waiting
+from tmt.guest import CONNECT_TIMEOUT, RebootMode, default_connect_waiting
 from tmt.utils import (
     Command,
     GuestLogError,
@@ -327,7 +327,7 @@ def _report_hw_requirement_support(constraint: tmt.hardware.Constraint) -> bool:
 
 
 @container
-class TestcloudGuestData(tmt.steps.provision.GuestSshData):
+class TestcloudGuestData(tmt.guest.GuestSshData):
     image: str = field(
         default=DEFAULT_IMAGE,
         option=('-i', '--image'),
@@ -344,9 +344,9 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
         help='Set available memory in MB, 2048 MB by default.',
         normalize=normalize_memory_size,
         serialize=lambda value: str(value) if value is not None else None,
-        unserialize=lambda serialized: tmt.hardware.UNITS(serialized)
-        if serialized is not None
-        else None,
+        unserialize=lambda serialized: (
+            tmt.hardware.UNITS(serialized) if serialized is not None else None
+        ),
     )
     disk: Optional['Size'] = field(
         default=cast(Optional['Size'], None),
@@ -355,9 +355,9 @@ class TestcloudGuestData(tmt.steps.provision.GuestSshData):
         help='Specify disk size in GB, 10 GB by default.',
         normalize=normalize_disk_size,
         serialize=lambda value: str(value) if value is not None else None,
-        unserialize=lambda serialized: tmt.hardware.UNITS(serialized)
-        if serialized is not None
-        else None,
+        unserialize=lambda serialized: (
+            tmt.hardware.UNITS(serialized) if serialized is not None else None
+        ),
     )
     connection: str = field(
         default=DEFAULT_CONNECTION,
@@ -1107,7 +1107,7 @@ class GuestTestcloud(tmt.GuestSsh):
             image_path = Path(self.image_url.removeprefix("file://"))
             # We should not symlink any supported formats, e.g. the `.xz`
             # does an extract step that would be skip if we make the symlink.
-            if image_path.suffixes and image_path.suffixes[-1] in (".qcow2",):
+            if image_path.suffixes and image_path.suffixes[-1] == ".qcow2":
                 # Create a symlink in the testcloud STORE_DIR and make sure
                 # it is always updated to the requested version.
                 image_symlink = self.testcloud_image_dirpath / image_path.name
@@ -1301,7 +1301,7 @@ class GuestTestcloud(tmt.GuestSsh):
         if self._instance is None:
             raise tmt.utils.ProvisionError("No instance initialized.")
 
-        waiting = waiting or tmt.steps.provision.default_reboot_waiting()
+        waiting = waiting or tmt.guest.default_reboot_waiting()
 
         if mode == RebootMode.HARD:
             self.debug("Hard reboot using the testcloud API.")
@@ -1549,7 +1549,7 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
 
 
 @container
-class ConsoleLog(tmt.steps.provision.GuestLog):
+class ConsoleLog(tmt.guest.GuestLog):
     #: Temporary directory for storing the console log content.
     exchange_directory: Optional[Path] = None
 

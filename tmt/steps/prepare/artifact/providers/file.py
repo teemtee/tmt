@@ -8,6 +8,7 @@ from typing import ClassVar, Optional
 import tmt.log
 import tmt.utils
 from tmt.container import container
+from tmt.guest import Guest, TransferOptions
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
@@ -17,7 +18,6 @@ from tmt.steps.prepare.artifact.providers import (
     Version,
     provides_artifact_provider,
 )
-from tmt.steps.provision import Guest, TransferOptions
 from tmt.utils import ShellScript
 
 

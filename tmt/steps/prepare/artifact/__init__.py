@@ -4,6 +4,7 @@ import tmt.base
 import tmt.steps
 import tmt.utils
 from tmt.container import container, field
+from tmt.guest import Guest
 from tmt.log import Logger
 from tmt.steps import PluginOutcome
 from tmt.steps.prepare import PreparePlugin, PrepareStepData
@@ -12,7 +13,6 @@ from tmt.steps.prepare.artifact.providers import (
     ArtifactProvider,
     Repository,
 )
-from tmt.steps.provision import Guest
 from tmt.utils import Environment, Path
 
 
@@ -39,7 +39,7 @@ class PrepareArtifactData(PrepareStepData):
 
 
 def get_artifact_provider(provider_id: str) -> type[ArtifactProvider]:
-    provider_type = provider_id.split(':')[0]
+    provider_type = provider_id.split(':', maxsplit=1)[0]
     provider_class = _PROVIDER_REGISTRY.get_plugin(provider_type)
     if not provider_class:
         raise tmt.utils.PrepareError(f"Unknown provider type '{provider_type}'")

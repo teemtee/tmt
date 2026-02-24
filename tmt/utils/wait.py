@@ -3,6 +3,7 @@ import time
 from typing import Callable, TypeVar
 
 import tmt.log
+from tmt._compat.typing import Self
 from tmt.container import container
 from tmt.utils import GeneralError
 
@@ -134,7 +135,7 @@ class Deadline:
 
         return datetime.timedelta(self._now - self._deadline)
 
-    def __enter__(self) -> 'Deadline':
+    def __enter__(self) -> Self:
         self._now = time.monotonic()
         return self
 

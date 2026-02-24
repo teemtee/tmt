@@ -11,13 +11,14 @@ from typing import Any, Callable, Optional, Union, cast
 
 import tmt
 import tmt.base
+import tmt.guest
 import tmt.log
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt._compat.typing import Self
 from tmt.container import container, field
-from tmt.steps.provision import RebootMode
+from tmt.guest import RebootMode
 from tmt.utils import Command, OnProcessEndCallback, OnProcessStartCallback, Path, ShellScript
 from tmt.utils.wait import Waiting
 
@@ -39,11 +40,11 @@ def mock_config(root: Optional[str], logger: tmt.log.Logger) -> dict[str, Any]:
         print_hints('provision/mock', logger=logger)
         raise tmt.utils.ProvisionError('Could not import mockbuild.config module.') from error
 
-    return cast(dict[str, Any], mockbuild.config.simple_load_config(root if root else 'default'))
+    return cast(dict[str, Any], mockbuild.config.simple_load_config(root or 'default'))
 
 
 @container
-class MockGuestData(tmt.steps.provision.GuestData):
+class MockGuestData(tmt.guest.GuestData):
     root: Optional[str] = field(
         default=None,
         option=('-r', '--root'),
@@ -499,7 +500,7 @@ class GuestMock(tmt.Guest):
 
     def _run_ansible(
         self,
-        playbook: tmt.steps.provision.AnsibleApplicable,
+        playbook: tmt.guest.AnsibleApplicable,
         playbook_root: Optional[Path] = None,
         extra_args: Optional[str] = None,
         friendly_command: Optional[str] = None,
@@ -640,7 +641,7 @@ class GuestMock(tmt.Guest):
         self,
         source: Optional[Path] = None,
         destination: Optional[Path] = None,
-        options: Optional[tmt.steps.provision.TransferOptions] = None,
+        options: Optional[tmt.guest.TransferOptions] = None,
         superuser: bool = False,
     ) -> None:
         """
@@ -651,7 +652,7 @@ class GuestMock(tmt.Guest):
         Create destination option is ignored, there were problems with workdir.
         """
         # TODO chmod permissions for tar
-        options = options or tmt.steps.provision.DEFAULT_PUSH_OPTIONS
+        options = options or tmt.guest.DEFAULT_PUSH_OPTIONS
         excludes = Command()
         permissions = Command()
         if options.chmod is not None:
@@ -697,7 +698,7 @@ class GuestMock(tmt.Guest):
         self,
         source: Optional[Path] = None,
         destination: Optional[Path] = None,
-        options: Optional[tmt.steps.provision.TransferOptions] = None,
+        options: Optional[tmt.guest.TransferOptions] = None,
     ) -> None:
         """
         Pull content from the mock chroot via a pipe at `MOCK_PIPE_FILESYNC`.
@@ -706,7 +707,7 @@ class GuestMock(tmt.Guest):
         Compress option is ignored, it only slows down the execution.
         """
         # TODO chmod permissions for tar
-        options = options or tmt.steps.provision.DEFAULT_PULL_OPTIONS
+        options = options or tmt.guest.DEFAULT_PULL_OPTIONS
         excludes = Command()
         permissions = Command()
         if options.chmod is not None:

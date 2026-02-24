@@ -16,6 +16,7 @@ import packaging.version
 
 import tmt
 import tmt.config
+import tmt.guest
 import tmt.hardware
 import tmt.log
 import tmt.options
@@ -27,7 +28,7 @@ import tmt.utils.url
 import tmt.utils.wait
 from tmt.config.models.hardware import MrackTranslation
 from tmt.container import container, field, simple_field
-from tmt.steps.provision import RebootMode
+from tmt.guest import RebootMode
 from tmt.utils import (
     Command,
     GuestLogError,
@@ -325,7 +326,7 @@ def _transform_unsupported(constraint: tmt.hardware.Constraint) -> dict[str, Any
 def _get_registry_from_url(bootc_image_url: str) -> str:
     """Extract registry from image URL"""
     # Handle quay.io/repo/image:tag -> quay.io
-    return bootc_image_url.split('/')[0] if '/' in bootc_image_url else bootc_image_url
+    return bootc_image_url.split('/', maxsplit=1)[0] if '/' in bootc_image_url else bootc_image_url
 
 
 def _translate_constraint_by_config(
@@ -1132,7 +1133,7 @@ def async_run(func: Any) -> Any:
 
 
 @container
-class BeakerGuestData(tmt.steps.provision.GuestSshData):
+class BeakerGuestData(tmt.guest.GuestSshData):
     # Guest request properties
     whiteboard: Optional[str] = field(
         default=None,
@@ -1435,7 +1436,7 @@ class BeakerAPI:
         return await self._mrack_provider.delete_host(self._bkr_job_id, None)
 
 
-class GuestBeaker(tmt.steps.provision.GuestSsh):
+class GuestBeaker(tmt.guest.GuestSsh):
     """
     Beaker guest instance
     """
@@ -1719,7 +1720,7 @@ class GuestBeaker(tmt.steps.provision.GuestSsh):
         :returns: ``True`` if the reboot succeeded, ``False`` otherwise.
         """
 
-        waiting = waiting or tmt.steps.provision.default_reboot_waiting()
+        waiting = waiting or tmt.guest.default_reboot_waiting()
 
         if mode == RebootMode.HARD:
             self.debug("Hard reboot using the reboot command 'bkr system-power --action reboot'.")
@@ -1897,7 +1898,7 @@ class ProvisionBeaker(tmt.steps.provision.ProvisionPlugin[ProvisionBeakerData]):
 
 
 @container
-class GuestLogBeaker(tmt.steps.provision.GuestLog):
+class GuestLogBeaker(tmt.guest.GuestLog):
     guest: GuestBeaker
     url: str
 

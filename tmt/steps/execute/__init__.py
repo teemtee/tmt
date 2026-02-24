@@ -22,6 +22,7 @@ import tmt.utils.signals
 import tmt.utils.wait
 from tmt.checks import Check, CheckEvent, CheckPlugin
 from tmt.container import container, field, simple_field
+from tmt.guest import Guest
 from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.result import (
@@ -38,7 +39,6 @@ from tmt.steps.context.reboot import RebootContext
 from tmt.steps.context.restart import RestartContext
 from tmt.steps.context.restraint import RestraintContext
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData
-from tmt.steps.provision import Guest
 from tmt.utils import (
     Command,
     CommandOutput,
@@ -553,7 +553,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
 
             self.process.send_signal(signal)
 
-            if isinstance(self.guest, tmt.steps.provision.GuestSsh):
+            if isinstance(self.guest, tmt.guest.GuestSsh):
                 self.guest._cleanup_ssh_master_process(signal, logger)
 
 

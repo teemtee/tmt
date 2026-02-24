@@ -8,7 +8,14 @@ description: |
     requirements for the testing environment. This provides a
     generic and an extensible way to write down essential hardware
     requirements. For example one consistent way how to specify
-    `at least 2 GB of RAM` for all supported provisioners.
+    `at least 2 GB of RAM` for all supported provisioners:
+
+    .. code-block:: yaml
+
+        provision:
+            image: fedora
+            hardware:
+                memory: ">= 2 GB"
 
     The current state of support of HW requirements among plugins
     bundled with tmt is available at

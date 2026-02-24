@@ -9,6 +9,7 @@ from re import Pattern
 from typing import Optional
 
 import tmt.log
+from tmt.guest import Guest
 from tmt.steps import DefaultNameGenerator
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
@@ -17,7 +18,6 @@ from tmt.steps.prepare.artifact.providers import (
     Repository,
     provides_artifact_provider,
 )
-from tmt.steps.provision import Guest
 from tmt.utils import GeneralError, Path, PrepareError, RunError
 
 # Counter for generating unique repository names in the format ``tmt-repo-default-{n}``.
