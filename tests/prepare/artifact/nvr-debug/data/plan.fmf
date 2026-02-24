@@ -1,0 +1,35 @@
+# Two plans driven by the outer beakerlib test (test.sh).
+# Each plan runs one test case and has a shell prepare step that builds
+# the dummy RPMs and creates two local repos inside the container.
+# The outer test inserts the matching repository-file artifact steps
+# (with the correct priorities) via --insert on the tmt command line.
+
+/tc11:
+    summary: TC 1.1 - Repository priority overrides package version
+    discover:
+        how: fmf
+        filter: 'name: /tc11'
+    provision:
+        how: container
+    prepare:
+        - name: Build dummy RPMs and create local repos
+          how: shell
+          order: 40
+          script: ./build-repos.sh
+    execute:
+        how: tmt
+
+/tc12:
+    summary: TC 1.2 - Same priority falls back to NVR comparison
+    discover:
+        how: fmf
+        filter: 'name: /tc12'
+    provision:
+        how: container
+    prepare:
+        - name: Build dummy RPMs and create local repos
+          how: shell
+          order: 40
+          script: ./build-repos.sh
+    execute:
+        how: tmt

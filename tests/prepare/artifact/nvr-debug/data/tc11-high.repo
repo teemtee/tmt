@@ -1,0 +1,6 @@
+[test-high-priority]
+name=Test High Priority Repo (dummy-nvr-test v1.0)
+baseurl=file:///tmp/nvr-test/repo-high
+enabled=1
+gpgcheck=0
+priority=1

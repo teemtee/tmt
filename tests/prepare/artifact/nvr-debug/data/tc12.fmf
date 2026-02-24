@@ -1,0 +1,15 @@
+summary: TC 1.2 - Same priority falls back to NVR comparison
+description: |
+    Verify that when repositories share the same priority, DNF5 selects
+    the package with the highest NVR (Name-Version-Release).
+
+    Setup (done by the outer test.sh):
+      - test-same-priority-a repo (priority=50) provides dummy-nvr-test-1.0
+      - test-same-priority-b repo (priority=50) provides dummy-nvr-test-2.0
+
+    Expected result: dummy-nvr-test-2.0 is installed because both repos
+    have equal priority and DNF5 falls back to RPM version comparison.
+
+test: ./tc12.sh
+require:
+  - dummy-nvr-test
