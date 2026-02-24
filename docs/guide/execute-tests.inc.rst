@@ -481,7 +481,7 @@ Guest Login
 ------------------------------------------------------------------
 
 Use the ``login`` command to get an interactive shell on the
-provisined guest. This can be useful for example for additional
+provisioned guest. This can be useful for example for additional
 manual preparation of the guest before testing or checking test
 logs to investigate a test failure:
 
