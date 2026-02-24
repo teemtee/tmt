@@ -14,8 +14,7 @@ from sphinx.util.nodes import make_refnode
 import tmt
 import tmt.log
 
-from .base import TmtXRefRole
-from .story import AutoStoryDirective, StoryDirective, StoryIndex
+from .story import AutoStoryDirective, StoryDirective, StoryIndex, StoryRole
 
 if typing.TYPE_CHECKING:
     from sphinx.addnodes import pending_xref
@@ -42,9 +41,7 @@ class TmtDomain(Domain):
     name = "tmt"
     label = "Internal tmt sphinx domain"
     roles = {
-        # The default literal node formats the string as a code.
-        # Using inline instead, same as sphinx's `ref` role (`sphinx.domains.std`)
-        "story": TmtXRefRole(use_obj_name=True, innernodeclass=nodes.inline),
+        "story": StoryRole(),
     }
     directives = {
         "autostory": AutoStoryDirective,
