@@ -152,6 +152,12 @@ class Apk(PackageManager[ApkEngine]):
     NAME = 'apk'
 
     _engine_class = ApkEngine
+    # Compiled regex patterns for APK error messages
+    _FAILED_PACKAGE_INSTALLATION_PATTERNS = [
+        re.compile(r'unable to locate package\s+([^\s]+)', re.IGNORECASE),
+        re.compile(r'ERROR:\s+([^\s:]+):\s+No such package', re.IGNORECASE),
+        re.compile(r'([^\s]+)\s+\(no such package\):', re.IGNORECASE),
+    ]
 
     probe_command = Command('apk', '--version')
 

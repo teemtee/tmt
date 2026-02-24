@@ -510,7 +510,7 @@ class BeakerLibFromUrl(BeakerLib):
                     if s is not None
                 ]
             )
-            raise tmt.utils.SpecificationError(f"Library with {fmf_id=} doesn't exist.") from error
+            raise LibraryError(f"Library with {fmf_id=} doesn't exist.") from error
 
         # Copy fmf metadata
         tmt.utils.filesystem.copy_tree(

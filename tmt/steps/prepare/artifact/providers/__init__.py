@@ -172,6 +172,7 @@ class ArtifactProvider(ABC):
     def __init__(self, raw_provider_id: str, repository_priority: int, logger: tmt.log.Logger):
         self.repository_priority = repository_priority
         self.logger = logger
+        self.raw_provider_id = raw_provider_id
 
         self.id = self._extract_provider_id(raw_provider_id)
 
@@ -322,6 +323,22 @@ class ArtifactProvider(ABC):
             of the given regular expressions would not be contributed.
         """
         pass
+
+    @property
+    def artifact_metadata(self) -> list[dict[str, Any]]:
+        """
+        Get metadata for the artifacts provided by this provider.
+
+        :returns: List of artifact metadata dictionaries.
+        """
+        return [
+            {
+                'version': vars(artifact.version),
+                'nvra': artifact.version.nvra,
+                'location': artifact.location,
+            }
+            for artifact in self.artifacts
+        ]
 
 
 @container
