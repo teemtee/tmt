@@ -1,6 +1,7 @@
 import re
 import typing
 from collections.abc import Callable, Iterable
+from typing import Optional
 
 import fmf.utils
 from docutils import nodes
@@ -62,7 +63,7 @@ class StoryDirective(TmtDirective):
         # This was the older target with global refs
         compat_target = name[1:].replace("/", "-")
         target_node = nodes.target(ids=[name, compat_target])
-        node = nodes.paragraph()
+        node = nodes.Element()
         index_node = addnodes.index(entries=[])
         node += self.parse_content_to_nodes(allow_section_headings=True)
         return [
@@ -81,33 +82,37 @@ class AutoStoryDirective(TmtAutodocDirective[Story]):
     def story(self) -> Story:
         return self.tmt_object
 
-    def _get_tmt_object(self) -> None:
-        name = self.arguments[0]
+    def _get_story(self, name: str) -> Story:
         name_re = f"^{re.escape(name)}$"
         stories = self.tmt_tree.stories(names=[name_re], whole=True)
         if not stories:
             raise ValueError(f"Story {name} not found in tree {self.tmt_tree.root}")
         if len(stories) > 1:
             raise ValueError(f"Multiple stories matched '{name_re}'")
-        self.tmt_object = stories[0]
+        return stories[0]
+
+    def _get_tmt_object(self) -> None:
+        name = self.arguments[0]
+        self.tmt_object = self._get_story(name)
         for source in self.story.node.sources:
             self.env.note_dependency(source)
 
-    def _has_story_attr(self, attr: str) -> bool:
-        value = getattr(self.story, attr)
+    def _has_story_attr(self, attr: str, story: Optional[Story] = None) -> bool:
+        story = story or self.story
+        value = getattr(story, attr)
         if not value:
             # Attribute was not provided
             return False
-        if not self.story.node.parent:
+        if not story.node.parent:
             # There is no parent story, so we know this attribute belongs to this
             return True
         # Otherwise we check if we have inherited the value (return False if it was inherited)
-        return value != self.story.node.parent.get(attr)
+        return value != story.node.parent.get(attr)
 
     def _add_title_content(self, title: str) -> None:
         # TODO: Find a better way to insert the title
         self.append(title)
-        self.append("=" * len(title))
+        self.append("^" * len(title))
         self.new_line()
 
     def _add_story_content(
@@ -162,36 +167,44 @@ class AutoStoryDirective(TmtAutodocDirective[Story]):
             self.story.name,
             title=title,
         ):
-            self._add_title_content(title)
             self._add_story_content("summary")
-            self._add_story_content("story", transform_line=lambda line: f"*{line}*")
-            if not self.story.implemented:
-                # We are assuming we only document leaf stories
-                with self.directive("note"):
-                    self.append("This is a draft, the story is not implemented yet.")
-            self._add_story_content("description")
-            if self._has_story_attr("example"):
-                self.append("**Examples:**")
+            # We use a fake story with empty story purely for organization. This
+            # should not produce any content other than the `summary`
+            if self.story.story:
+                self._add_story_content("story", transform_line=lambda line: f"*{line}*")
+                if not self.story.implemented:
+                    # We are assuming we only document leaf stories
+                    with self.directive("note"):
+                        self.append("This is a draft, the story is not implemented yet.")
+                self._add_story_content("description")
+                if self._has_story_attr("example"):
+                    self.append("**Examples:**")
+                    self.new_line()
+                    for ind, example in enumerate(self.story.example):
+                        syntax = "yaml"
+                        if match := EXAMPLE_SYNTAX.search(example):
+                            syntax = match.group("syntax")
+                            example = example.replace(match.group(0), "")
+                        with self.directive("code-block", syntax):
+                            self._add_story_content(
+                                "example",
+                                source_suffix=f"[{ind}]",
+                                content=example,
+                            )
+                self.append(f"**Status:** {fmf.utils.listed(self.story.status) or 'idea'}")
                 self.new_line()
-                for ind, example in enumerate(self.story.example):
-                    syntax = "yaml"
-                    if match := EXAMPLE_SYNTAX.search(example):
-                        syntax = match.group("syntax")
-                        example = example.replace(match.group(0), "")
-                    with self.directive("code-block", syntax):
-                        self._add_story_content(
-                            "example",
-                            source_suffix=f"[{ind}]",
-                            content=example,
-                        )
-            self.append(f"**Status:** {fmf.utils.listed(self.story.status) or 'idea'}")
-            self.new_line()
-            self._generate_links_content()
+                self._generate_links_content()
 
             # Add all sub-stories as well
             if self.story.node.children:
                 for child in self.story.node.children:
-                    with self.directive("tmt:autostory", f"{self.story.name}/{child}"):
+                    child_name = f"{self.story.name}/{child}"
+                    child_story = self._get_story(child_name)
+                    child_title = child
+                    if self._has_story_attr("title", child_story):
+                        child_title = child_story.title
+                    self._add_title_content(child_title)
+                    with self.directive("tmt:autostory", child_name):
                         pass
 
     def _generate_links_content(self) -> None:
