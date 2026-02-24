@@ -1,6 +1,0 @@
-summary: Test file artifact provider with NVR edge cases when dependencies are present in shared repository
-description: |
-    Test NVR edge cases when the shared repository contains both the
-    requested packages and all their dependencies. Packages (jq, nano)
-    are downloaded with --resolve --alldeps so the shared repo can
-    satisfy all dependency requirements without falling back to system repos.

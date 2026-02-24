@@ -1,0 +1,30 @@
+summary: Test DNF5 NVR resolution with repository priorities
+description: |
+    Verify DNF5 package resolution behavior when multiple repositories
+    provide the same package with different versions and priorities.
+
+    TC 1.1 - Priority overrides Version:
+        A high-priority (priority=1) repository with an older package
+        wins over a low-priority (priority=100) repository with a newer
+        package.
+
+    TC 1.2 - Same Priority favors NVR:
+        When repository priorities are equal, DNF5 falls back to
+        standard RPM version comparison and installs the highest NVR.
+
+link:
+  - verifies: https://github.com/teemtee/tmt/issues/4546
+
+require:
+  - tmt
+  - createrepo_c
+  - rpm-build
+
+tag+:
+  - provision-only
+  - provision-container
+
+adjust:
+  - when: distro != fedora
+    enabled: false
+    because: Test relies on DNF5 behavior and uses Fedora containers
