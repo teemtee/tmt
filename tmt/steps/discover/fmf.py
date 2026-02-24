@@ -14,7 +14,6 @@ import tmt.steps.discover
 import tmt.utils
 import tmt.utils.filesystem
 import tmt.utils.git
-import tmt.utils.url
 from tmt.base.core import _RawAdjustRule
 from tmt.container import container, field
 from tmt.steps.prepare.distgit import insert_to_prepare_step

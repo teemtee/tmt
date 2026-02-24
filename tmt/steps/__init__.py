@@ -77,8 +77,6 @@ if TYPE_CHECKING:
     import tmt.base.core
     import tmt.cli
     import tmt.plugins
-    import tmt.steps.discover
-    import tmt.steps.execute
     from tmt.base.core import Plan
     from tmt.guest import Guest, TransferOptions
     from tmt.result import BaseResult, PhaseResult

@@ -6,7 +6,6 @@ from typing import Any, Callable, Literal, Optional, TypeVar, Union, cast
 
 import fmf.utils
 
-import tmt
 import tmt.base.core
 import tmt.log
 import tmt.steps

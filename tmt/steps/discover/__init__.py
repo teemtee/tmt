@@ -684,7 +684,7 @@ class Discover(tmt.steps.Step):
         required_dependencies_to_tests: dict[str, list[str]] = defaultdict(list)
         recommended_dependencies_to_tests: dict[str, list[str]] = defaultdict(list)
 
-        def _normalize_dependency_name(dependency: tmt.base.Dependency) -> str:
+        def _normalize_dependency_name(dependency: tmt.base.core.Dependency) -> str:
             """
             Handles debuginfo dependencies by removing the '-debuginfo' suffix.
             Such dependencies are installed by their base name.

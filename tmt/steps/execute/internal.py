@@ -1,8 +1,5 @@
 from typing import Any, Optional, cast
 
-import jinja2
-
-import tmt
 import tmt.base.core
 import tmt.log
 import tmt.steps

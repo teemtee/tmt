@@ -4,7 +4,6 @@ from collections.abc import Sequence
 from typing import Any, Optional, Union
 
 import tmt
-import tmt.base.core
 import tmt.guest
 import tmt.log
 import tmt.steps

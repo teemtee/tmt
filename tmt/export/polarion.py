@@ -7,7 +7,6 @@ import fmf.utils
 from click import echo
 
 import tmt.base.core
-import tmt.convert
 import tmt.export
 from tmt.identifier import ID_KEY, add_uuid_if_not_defined
 from tmt.utils import ConvertError, Path

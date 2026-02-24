@@ -3,7 +3,6 @@ from tempfile import NamedTemporaryFile
 from typing import Callable, Optional
 
 import tmt
-import tmt.base.core
 import tmt.log
 import tmt.utils
 from tmt.container import container

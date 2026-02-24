@@ -3,7 +3,6 @@ from typing import Optional, Union
 
 import requests
 
-import tmt
 import tmt.base.core
 import tmt.guest
 import tmt.log
