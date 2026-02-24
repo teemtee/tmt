@@ -240,6 +240,11 @@ class Apt(PackageManager[AptEngine]):
 
     _engine_class = AptEngine
 
+    # Compiled regex patterns for APT error messages
+    _FAILED_PACKAGE_INSTALLATION_PATTERNS = [
+        re.compile(r'(?:E:\s+)?Unable to locate package\s+([^\s]+)', re.IGNORECASE)
+    ]
+
     probe_command = Command('apt', '--version')
 
     def check_presence(self, *installables: Installable) -> dict[Installable, bool]:

@@ -11,7 +11,7 @@ from tmt.base import Dependency, DependencyFile
 from tmt.container import container
 from tmt.utils import Path
 
-from . import Library
+from . import Library, LibraryError
 
 
 @container
@@ -68,7 +68,7 @@ class File(Library):
         files: list[Path] = tmt.utils.filter_paths(self.source_location, self.pattern)
         if not files:
             self.parent.debug('No files found.')
-            raise tmt.utils.MetadataError(
+            raise LibraryError(
                 f"Patterns {patterns} don't match any files in '{self.source_location}'."
             )
 

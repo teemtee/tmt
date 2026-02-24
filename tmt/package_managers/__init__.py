@@ -1,7 +1,8 @@
 import abc
+import re
 import shlex
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generic, Optional, TypeVar, Union
 
 import tmt
 import tmt.log
@@ -243,6 +244,10 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
     _engine_class: type[PackageManagerEngineT]
     engine: PackageManagerEngineT
 
+    #: Patterns for extracting failed package names from error output.
+    #: Subclasses override this with their own specific patterns.
+    _FAILED_PACKAGE_INSTALLATION_PATTERNS: ClassVar[list[re.Pattern[str]]] = []
+
     #: If set, this package manager can be used for building derived
     #: images under the hood of the ``bootc`` package manager.
     bootc_builder: bool = False
@@ -272,6 +277,17 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         """
 
         raise NotImplementedError
+
+    def extract_package_name_from_package_manager_output(self, output: str) -> Iterator[str]:
+        """
+        Extract failed package names from package manager error output.
+
+        :param output: Error output (stdout or stderr) from the package manager.
+        :returns: An iterator of package names that failed to install.
+        """
+        for pattern in self._FAILED_PACKAGE_INSTALLATION_PATTERNS:
+            for match in pattern.finditer(output):
+                yield match.group(1)
 
     def install(
         self,

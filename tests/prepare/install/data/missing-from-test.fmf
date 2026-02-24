@@ -1,0 +1,9 @@
+discover:
+  - how: shell
+    tests:
+      - name: test-with-invalid-package
+        test: /bin/true
+        require: tree-but-spelled-wrong
+
+execute:
+    how: tmt
