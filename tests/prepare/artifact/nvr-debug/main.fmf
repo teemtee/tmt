@@ -17,7 +17,6 @@ link:
 
 require:
   - tmt
-  - createrepo_c
   - mock
 
 tag+:

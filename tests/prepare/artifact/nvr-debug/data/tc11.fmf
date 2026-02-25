@@ -3,7 +3,7 @@ description: |
     Verify that DNF5 installs a package from a higher-priority repository
     even when a lower-priority repository offers a newer version.
 
-    Repos configured by tc11.sh:
+    Repos used:
       - test-high-priority repo (priority=30) provides dummy-nvr-test-1.0
       - test-low-priority repo  (priority=50) provides dummy-nvr-test-2.0
 
