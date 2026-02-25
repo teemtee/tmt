@@ -1,5 +1,3 @@
-import json
-
 import tmt.base.core
 import tmt.export
 
