@@ -3,9 +3,7 @@
 # priority=30 repo (v1.0) beats priority=50 repo (v2.0)
 set -ex
 
-cp ./tc11-high.repo /etc/yum.repos.d/
-cp ./tc11-low.repo  /etc/yum.repos.d/
-
+cp /tmp/nvr-test/tc11-high.repo /tmp/nvr-test/tc11-low.repo /etc/yum.repos.d/
 dnf install -y dummy-nvr-test
 
 # priority=30 repo wins: v1.0 must be installed

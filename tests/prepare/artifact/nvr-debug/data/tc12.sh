@@ -3,9 +3,7 @@
 # Both repos at priority=50; highest NVR (v2.0) wins
 set -ex
 
-cp ./tc12-a.repo /etc/yum.repos.d/
-cp ./tc12-b.repo /etc/yum.repos.d/
-
+cp /tmp/nvr-test/tc12-a.repo /tmp/nvr-test/tc12-b.repo /etc/yum.repos.d/
 dnf install -y dummy-nvr-test
 
 # Same priority: highest NVR wins, v2.0 must be installed

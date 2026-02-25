@@ -4,7 +4,14 @@ discover:
 provision:
     how: container
 prepare:
+    - name: Install build dependencies
+      order: 10
+      how: install
+      package:
+          - rpm-build
+          - createrepo_c
     - name: Build dummy RPMs and create local repos
+      order: 20
       how: shell
       script: ./build-repos.sh
 execute:
