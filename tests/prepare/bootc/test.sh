@@ -31,10 +31,11 @@ rlJournalStart
     rlPhaseStartTest "Prepare/install on bootc guest - install tree package from rpm"
         # Download tree RPM
         rlRun -s "koji -p stream list-tagged --arch x86_64 --rpms --latest --quiet c10s-candidate tree-pkg | head -1"
-        rlRun "curl -LO https://mirror.stream.centos.org/10-stream/BaseOS/x86_64/os/Packages/$(cat $rlRun_LOG).rpm"
+        rlRun "TREE_RPM=$(cat $rlRun_LOG).rpm"
+        rlRun "curl -LO https://mirror.stream.centos.org/10-stream/BaseOS/x86_64/os/Packages/$TREE_RPM"
 
         # Run tmt
-        rlRun -s "tmt -dddvvv run --scratch -i $run plan --name /plans/centos-stream-10/prepare-install"
+        rlRun -s "tmt -dddvvv run -e TREE_RPM=$TREE_RPM --scratch -i $run plan --name /plans/centos-stream-10/prepare-install"
 
         # Verify the container image was built
         rlAssertGrep "Trying to pull quay.io/testing-farm/centos-bootc:stream10" $rlRun_LOG
