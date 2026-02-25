@@ -92,3 +92,29 @@ def test_persist_artifact_metadata(tmp_path, mock_provider):
         "location": "http://example.com/mock-1.0-1.x86_64.rpm",
     }
     assert artifact == expected
+
+
+def test_duplicate_nvra_detection(tmp_path, root_logger):
+    # Two providers with the same NVRA
+    provider1 = MockProvider("mock:provider1", repository_priority=50, logger=root_logger)
+    provider2 = MockProvider("mock:provider2", repository_priority=50, logger=root_logger)
+
+    prepare = MagicMock()
+    prepare.plan_workdir = tmp_path
+
+    seen_nvras = {}
+
+    # First one should succeed
+    PrepareArtifact._collect_artifacts_metadata(prepare, provider1, seen_nvras)
+    assert "mock-1.0-1.x86_64" in seen_nvras
+    assert seen_nvras["mock-1.0-1.x86_64"] == "mock:provider1"
+
+    # Second one with same NVRA should raise error
+    with pytest.raises(
+        tmt.utils.PrepareError,
+        match=(
+            r"Artifact 'mock-1\.0-1\.x86_64' provided by both "
+            r"'mock:provider1' and 'mock:provider2'"
+        ),
+    ):
+        PrepareArtifact._collect_artifacts_metadata(prepare, provider2, seen_nvras)
