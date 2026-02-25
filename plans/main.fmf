@@ -10,6 +10,8 @@ prepare+:
       - yq
       - make
       - python3-pip
+      - python3-pytest
+
   - how: shell
     summary: Make sure we run koji commands with automatic retry to avoid 50x errors
     script: |
@@ -27,6 +29,9 @@ prepare+:
 # Use the internal executor
 execute:
     how: tmt
+
+environment:
+  PYTEST: python3 -m pytest -vvv -ra --showlocals
 
 # Install packages in full mode
 adjust:

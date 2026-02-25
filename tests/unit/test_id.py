@@ -1,17 +1,16 @@
 from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 import fmf
 import pytest
 
 import tmt
-import tmt.cli._root
-from tests import CliRunner
-from tests.unit.conftest import create_path_helper
+from tests.conftest import create_path_helper
 from tmt.identifier import ID_KEY, add_uuid_if_not_defined
 from tmt.utils import Path
 
-# Common setup for tests in this file
-runner = CliRunner()
+if TYPE_CHECKING:
+    from tests import RunTmt
 
 
 @pytest.fixture(name='test_path')
@@ -65,27 +64,27 @@ def test_manually_add_id(empty_path: Path, root_logger: tmt.log.Logger):
     assert test.id == identifier
 
 
-def test_defined_dry(defined_path: Path):
+def test_defined_dry(defined_path: Path, run_tmt: 'RunTmt'):
     """--dry run should report a new id"""
-    result = runner.invoke(tmt.cli._root.main, ["test", "id", "--dry", "^/no"])
+    result = run_tmt("test", "id", "--dry", "^/no")
     assert "added to test '/no" in result.output
     # A second dry run should report the same
-    result = runner.invoke(tmt.cli._root.main, ["test", "id", "--dry", "^/no"])
+    result = run_tmt("test", "id", "--dry", "^/no")
     assert "added to test '/no" in result.output
 
 
-def test_defined_real(defined_path: Path):
+def test_defined_real(defined_path: Path, run_tmt: 'RunTmt'):
     """A real run should persist the new id"""
     # Check that there is no id before the run
     node = fmf.Tree(defined_path).find("/no")
     assert node.get(ID_KEY) is None
 
     # The first run should generate and persist the id
-    result = runner.invoke(tmt.cli._root.main, ["test", "id", "^/no"])
+    result = run_tmt("test", "id", "^/no")
     assert "added to test '/no" in result.output
 
     # The second run should not add it again
-    result = runner.invoke(tmt.cli._root.main, ["test", "id", "^/no"])
+    result = run_tmt("test", "id", "^/no")
     assert "added to test '/no" not in result.output
 
     # Verify that the id has been defined in the file
@@ -95,23 +94,23 @@ def test_defined_real(defined_path: Path):
     assert len(node.data[ID_KEY]) > 10
 
 
-def test_empty_dry(empty_path: Path):
+def test_empty_dry(empty_path: Path, run_tmt: 'RunTmt'):
     """--dry run should report a new id"""
-    result = runner.invoke(tmt.cli._root.main, ["test", "id", "--dry"])
+    result = run_tmt("test", "id", "--dry")
     assert "added to test '/some/structure'" in result.output
     # A second dry run should report the same
-    result = runner.invoke(tmt.cli._root.main, ["test", "id", "--dry"])
+    result = run_tmt("test", "id", "--dry")
     assert "added to test '/some/structure'" in result.output
 
 
-def test_empty_real(empty_path: Path):
+def test_empty_real(empty_path: Path, run_tmt: 'RunTmt'):
     """A real run should persist the new id"""
     # The first run should generate and persist the id
-    result = runner.invoke(tmt.cli._root.main, ["test", "id"])
+    result = run_tmt("test", "id")
     assert "added to test '/some/structure'" in result.output
 
     # The second run should not add it again
-    result = runner.invoke(tmt.cli._root.main, ["test", "id"])
+    result = run_tmt("test", "id")
     assert "added to test '/some/structure'" not in result.output
 
     # Verify that the id has been defined in the file

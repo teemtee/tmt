@@ -3,21 +3,21 @@ import os
 import pickle
 import shutil
 import tempfile
+from typing import TYPE_CHECKING
 
 import jsonschema
 import pytest
 
 import tmt
-import tmt.cli._root
 import tmt.result
-from tests import CliRunner
 from tmt.base.core import FmfId, Link, LinkNeedle, Links, expand_node_data
 from tmt.utils import Path, SpecificationError
 
-runner = CliRunner()
+if TYPE_CHECKING:
+    from tests import RunTmt
 
 
-def test_invalid_yaml_syntax():
+def test_invalid_yaml_syntax(run_tmt: 'RunTmt'):
     """
     Invalid yaml syntax
     """
@@ -25,10 +25,10 @@ def test_invalid_yaml_syntax():
     tmp = tempfile.mkdtemp()
     original_directory = os.getcwd()
     os.chdir(tmp)
-    result = runner.invoke(tmt.cli._root.main, ['init', '--template', 'mini'])
+    result = run_tmt('init', '--template', 'mini')
     with open('plans/example.fmf', 'a') as plan:
         plan.write('bad line')
-    result = runner.invoke(tmt.cli._root.main)
+    result = run_tmt()
     assert isinstance(result.exception, tmt.utils.GeneralError)
     assert result.exit_code != 0
     os.chdir(original_directory)

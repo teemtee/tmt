@@ -8,7 +8,6 @@ from fmf import Tree
 from requre import RequreTestCase
 from ruamel.yaml import YAML
 
-import tmt.cli._root
 import tmt.log
 from tests import CliRunner
 from tmt.utils import ConvertError, Path
@@ -47,20 +46,16 @@ class NitrateExport(Base):
         assert "extra-nitrate" not in fmf_node.data
 
         os.chdir(self.tmpdir / "new_testcase")
-        runner = CliRunner()
-        self.runner_output = runner.invoke(
-            tmt.cli._root.main,
-            [
-                "test",
-                "export",
-                "--how",
-                "nitrate",
-                "--ignore-git-validation",
-                "--create",
-                "--general",
-                "--append-summary",
-                ".",
-            ],
+        self.runner_output = CliRunner().invoke(
+            "test",
+            "export",
+            "--how",
+            "nitrate",
+            "--ignore-git-validation",
+            "--create",
+            "--general",
+            "--append-summary",
+            ".",
             catch_exceptions=False,
         )
         # Reload the node data to see if it appears there
@@ -72,21 +67,17 @@ class NitrateExport(Base):
         assert "extra-nitrate" not in fmf_node_before.data
 
         os.chdir(self.tmpdir / "new_testcase")
-        runner = CliRunner()
-        self.runner_output = runner.invoke(
-            tmt.cli._root.main,
-            [
-                "test",
-                "export",
-                "--how",
-                "nitrate",
-                "--ignore-git-validation",
-                "--create",
-                "--dry",
-                "--general",
-                "--append-summary",
-                ".",
-            ],
+        self.runner_output = CliRunner().invoke(
+            "test",
+            "export",
+            "--how",
+            "nitrate",
+            "--ignore-git-validation",
+            "--create",
+            "--dry",
+            "--general",
+            "--append-summary",
+            ".",
             catch_exceptions=False,
         )
         fmf_node = Tree(self.tmpdir).find("/new_testcase")
@@ -99,20 +90,16 @@ class NitrateExport(Base):
         assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
         os.chdir(self.tmpdir / "existing_testcase")
-        runner = CliRunner()
-        self.runner_output = runner.invoke(
-            tmt.cli._root.main,
-            [
-                "test",
-                "export",
-                "--how",
-                "nitrate",
-                "--ignore-git-validation",
-                "--create",
-                "--general",
-                "--append-summary",
-                ".",
-            ],
+        self.runner_output = CliRunner().invoke(
+            "test",
+            "export",
+            "--how",
+            "nitrate",
+            "--ignore-git-validation",
+            "--create",
+            "--general",
+            "--append-summary",
+            ".",
             catch_exceptions=False,
         )
         fmf_node = Tree(self.tmpdir).find("/existing_testcase")
@@ -122,22 +109,18 @@ class NitrateExport(Base):
         assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
         os.chdir(self.tmpdir / "existing_dryrun_testcase")
-        runner = CliRunner()
-        self.runner_output = runner.invoke(
-            tmt.cli._root.main,
-            [
-                "test",
-                "export",
-                "--how",
-                "nitrate",
-                "--ignore-git-validation",
-                "--debug",
-                "--dry",
-                "--general",
-                "--bugzilla",
-                "--append-summary",
-                ".",
-            ],
+        self.runner_output = CliRunner().invoke(
+            "test",
+            "export",
+            "--how",
+            "nitrate",
+            "--ignore-git-validation",
+            "--debug",
+            "--dry",
+            "--general",
+            "--bugzilla",
+            "--append-summary",
+            ".",
             catch_exceptions=False,
         )
         assert "summary: tmt /existing_dryrun_testcase - ABCDEF" in self.runner_output.output
@@ -147,23 +130,19 @@ class NitrateExport(Base):
         assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
         os.chdir(self.tmpdir / "existing_dryrun_release_testcase")
-        runner = CliRunner()
-        self.runner_output = runner.invoke(
-            tmt.cli._root.main,
-            [
-                "test",
-                "export",
-                "--how",
-                "nitrate",
-                "--debug",
-                "--dry",
-                "--ignore-git-validation",
-                "--general",
-                "--bugzilla",
-                "--link-runs",
-                "--append-summary",
-                ".",
-            ],
+        self.runner_output = CliRunner().invoke(
+            "test",
+            "export",
+            "--how",
+            "nitrate",
+            "--debug",
+            "--dry",
+            "--ignore-git-validation",
+            "--general",
+            "--bugzilla",
+            "--link-runs",
+            "--append-summary",
+            ".",
             catch_exceptions=False,
         )
         assert (
@@ -178,30 +157,30 @@ class NitrateExport(Base):
         assert fmf_node.data["extra-nitrate"] == "TC#0609686"
 
         os.chdir(self.tmpdir / "existing_testcase")
-        runner = CliRunner()
-        self.runner_output = runner.invoke(
-            tmt.cli._root.main,
-            [
-                "test",
-                "export",
-                "--how",
-                "nitrate",
-                "--ignore-git-validation",
-                "--bugzilla",
-                "--append-summary",
-                ".",
-            ],
+        self.runner_output = CliRunner().invoke(
+            "test",
+            "export",
+            "--how",
+            "nitrate",
+            "--ignore-git-validation",
+            "--bugzilla",
+            "--append-summary",
+            ".",
             catch_exceptions=False,
         )
         assert self.runner_output.exit_code == 0
 
     def test_missing_user_dryrun(self):
         os.chdir(self.tmpdir / "existing_testcase_missing_user")
-        runner = CliRunner()
         with pytest.raises(ConvertError):
-            self.runner_output = runner.invoke(
-                tmt.cli._root.main,
-                ["test", "export", "--how", "nitrate", "--debug", "--dry", "."],
+            self.runner_output = CliRunner().invoke(
+                "test",
+                "export",
+                "--how",
+                "nitrate",
+                "--debug",
+                "--dry",
+                ".",
                 catch_exceptions=False,
             )
 
@@ -210,11 +189,15 @@ class NitrateExport(Base):
         fmf_node = Tree(self.tmpdir).find("/validation")
         with fmf_node as data:
             data['test'] = 'echo hello world'
-        runner = CliRunner()
         with pytest.raises(ConvertError) as error:
-            self.runner_output = runner.invoke(
-                tmt.cli._root.main,
-                ["test", "export", "--nitrate", "--debug", "--dry", "--append-summary", "."],
+            self.runner_output = CliRunner().invoke(
+                "test",
+                "export",
+                "--nitrate",
+                "--debug",
+                "--dry",
+                "--append-summary",
+                ".",
                 catch_exceptions=False,
             )
         assert "Uncommitted changes" in str(error.value)
@@ -225,19 +208,14 @@ class NitrateExport(Base):
         with fmf_node as data:
             data['extra-nitrate'] = 'TC#599605'
 
-        runner = CliRunner()
-
-        self.runner_output = runner.invoke(
-            tmt.cli._root.main,
-            [
-                "test",
-                "export",
-                "--nitrate",
-                "--debug",
-                "--ignore-git-validation",
-                "--append-summary",
-                ".",
-            ],
+        self.runner_output = CliRunner().invoke(
+            "test",
+            "export",
+            "--nitrate",
+            "--debug",
+            "--ignore-git-validation",
+            "--append-summary",
+            ".",
             catch_exceptions=False,
         )
 
@@ -246,21 +224,17 @@ class NitrateExport(Base):
 
 class NitrateImport(Base):
     def test_import_manual_confirmed(self):
-        runner = CliRunner()
         # TODO: import does not respect --root param anyhow (could)
-        self.runner_output = runner.invoke(
-            tmt.cli._root.main,
-            [
-                '-vvvvdddd',
-                '--root',
-                self.tmpdir / "import_case",
-                "test",
-                "import",
-                "--no-general",
-                "--nitrate",
-                "--manual",
-                "--case=609704",
-            ],
+        self.runner_output = CliRunner().invoke(
+            '-vvvvdddd',
+            '--root',
+            self.tmpdir / "import_case",
+            "test",
+            "import",
+            "--no-general",
+            "--nitrate",
+            "--manual",
+            "--case=609704",
             catch_exceptions=False,
         )
         assert self.runner_output.exit_code == 0
@@ -285,19 +259,15 @@ class NitrateImport(Base):
             assert "tmt_test_component" in out["component"]
 
     def test_import_manual_proposed(self):
-        runner = CliRunner()
-        self.runner_output = runner.invoke(
-            tmt.cli._root.main,
-            [
-                '--root',
-                self.tmpdir / "import_case",
-                "test",
-                "import",
-                "--no-general",
-                "--nitrate",
-                "--manual",
-                "--case=609705",
-            ],
+        self.runner_output = CliRunner().invoke(
+            '--root',
+            self.tmpdir / "import_case",
+            "test",
+            "import",
+            "--no-general",
+            "--nitrate",
+            "--manual",
+            "--case=609705",
             catch_exceptions=False,
         )
         assert self.runner_output.exit_code == 0
@@ -372,9 +342,8 @@ extra-task: /tmt/integration
         assert "Makefile" in files
         assert "main.fmf" not in files
         assert "test.md" not in files
-        runner = CliRunner()
-        self.runner_output = runner.invoke(
-            tmt.cli._root.main, ["test", "import", "--nitrate"], catch_exceptions=False
+        self.runner_output = CliRunner().invoke(
+            "test", "import", "--nitrate", catch_exceptions=False
         )
         assert self.runner_output.exit_code == 0
         files = os.listdir()
@@ -393,10 +362,11 @@ extra-task: /tmt/integration
         os.chdir(self.tmpdir / "import_old_relevancy")
         files = os.listdir()
         assert files == ["Makefile"]
-        runner = CliRunner()
-        self.runner_output = runner.invoke(
-            tmt.cli._root.main,
-            ["test", "import", "--nitrate", "--no-general"],
+        self.runner_output = CliRunner().invoke(
+            "test",
+            "import",
+            "--nitrate",
+            "--no-general",
             catch_exceptions=False,
         )
         assert self.runner_output.exit_code == 0
