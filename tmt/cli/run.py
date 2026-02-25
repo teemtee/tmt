@@ -5,8 +5,7 @@
 from typing import Any, Optional
 
 import tmt
-import tmt.base
-import tmt.plugins
+import tmt.base.core
 import tmt.plugins.plan_shapers
 import tmt.steps
 import tmt.steps.cleanup
@@ -25,6 +24,7 @@ from tmt.cli._root import (
     force_dry_options,
     main,
     policy_options,
+    recipe_options,
     verbosity_options,
     workdir_root_options,
 )
