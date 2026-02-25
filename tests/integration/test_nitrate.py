@@ -1,7 +1,6 @@
 import os
 import shutil
 import tempfile
-from typing import TYPE_CHECKING
 
 import nitrate
 import pytest
@@ -12,9 +11,6 @@ from ruamel.yaml import YAML
 import tmt.log
 from tests import CliRunner
 from tmt.utils import ConvertError, Path
-
-if TYPE_CHECKING:
-    pass
 
 # Prepare path to examples
 TEST_DIR = Path(__file__).parent

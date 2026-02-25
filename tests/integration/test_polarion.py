@@ -1,5 +1,4 @@
 import os
-from typing import TYPE_CHECKING
 
 import pytest
 from fmf import Tree
@@ -8,9 +7,6 @@ from tests import CliRunner
 from tmt.identifier import ID_KEY
 
 from .test_nitrate import TEST_DIR, Base
-
-if TYPE_CHECKING:
-    pass
 
 
 @pytest.mark.skip(reason="Only works locally for now")
