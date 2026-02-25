@@ -1,5 +1,6 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
+. ../artifact/lib/common.sh || exit 1
 
 rlJournalStart
     rlPhaseStartSetup
@@ -30,9 +31,9 @@ rlJournalStart
     # Test prepare/install on bootc guest - should install rpm via Containerfile
     rlPhaseStartTest "Prepare/install on bootc guest - install tree package from rpm"
         # Download tree RPM
-        rlRun -s "koji -p stream list-tagged --arch x86_64 --rpms --latest --quiet c10s-candidate tree-pkg | head -1"
-        rlRun "TREE_RPM=$(cat $rlRun_LOG).rpm"
-        rlRun "curl -LO https://mirror.stream.centos.org/10-stream/BaseOS/x86_64/os/Packages/$TREE_RPM"
+        get_koji_nvr "tree-pkg" "c10s-candidate" "stream"
+        rlRun "koji --profile stream download-build --arch=x86_64 $KOJI_NVR" 0 "Download tree RPM"
+        rlRun "TREE_RPM=$(ls tree-*.rpm)"
 
         # Run tmt
         rlRun -s "tmt -dddvvv run -e TREE_RPM=$TREE_RPM --scratch -i $run plan --name /plans/centos-stream-10/prepare-install"

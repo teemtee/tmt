@@ -78,9 +78,13 @@ get_koji_build_id() {
 #   get_koji_nvr "make" "f43"
 #   echo "$KOJI_NVR"
 #
+#   get_koji_nvr "tree" "c10s" "stream"
+#   echo "$KOJI_NVR"
+#
 # Arguments:
 #   $1 - package name (e.g., "make")
 #   $2 - koji tag (e.g., "f43")
+#   $3 - optional profile (e.g., "stream")
 #
 # Sets:
 #   KOJI_NVR - the NVR on success
@@ -94,11 +98,14 @@ get_koji_build_id() {
 get_koji_nvr() {
     local package="$1"
     local tag="$2"
+    local profile="$3"
     unset KOJI_NVR  # Clear any previous value
+
+    [ -n "$profile" ] && profile_option="--profile $profile"
 
     # Get the latest tagged build for the package
     # Output format: "make-4.4.1-10.fc42    f42    releng"
-    rlRun -s "koji list-tagged --latest $tag $package" 0 "Get the latest $package build"
+    rlRun -s "koji $profile_option list-tagged --latest $tag $package" 0 "Get the latest $package build"
 
     # The NVR should be the first word in the last line
     if [[ ! "$(tail -1 $rlRun_LOG)" =~ ^([^[:space:]]+) ]]; then

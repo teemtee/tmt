@@ -650,6 +650,10 @@ class InstallBootc(InstallBase):
             PackagePath(self.package_directory / filename.name) for filename in self.local_packages
         ]
 
+        # The container image building has access to the above paths because the whole working
+        # directory is volume mounted during the process. See `build_container` function
+        # in `tmt/package_managers/bootc.py`.
+
         self._engine.install(
             *filelist,
             options=Options(
