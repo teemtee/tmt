@@ -4,7 +4,6 @@ import dataclasses
 import datetime
 import functools
 import importlib.metadata
-import json
 import logging
 import re
 import threading

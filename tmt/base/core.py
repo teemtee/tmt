@@ -82,7 +82,6 @@ from tmt.utils import (
     ShellScript,
     WorkdirArgumentType,
     normalize_shell_script,
-    to_state,
     to_yaml,
     verdict,
 )
