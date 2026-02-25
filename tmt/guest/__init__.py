@@ -1406,11 +1406,8 @@ class GuestData(
             elif isinstance(value, dict):
                 printable_value = tmt.utils.format_value(value)
 
-            elif isinstance(value, tmt.hardware.Hardware):
+            elif isinstance(value, (tmt.hardware.Hardware, tmt.ansible.GuestAnsible)):
                 printable_value = tmt.utils.to_yaml(value.to_spec())
-
-            elif isinstance(value, tmt.ansible.GuestAnsible):
-                printable_value = tmt.utils.dict_to_yaml(cast(dict[str, Any], value.to_spec()))
 
             else:
                 printable_value = str(value)
