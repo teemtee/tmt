@@ -164,7 +164,7 @@ repos:
           # in order to be parsed by ansible-lint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.15.1
+    rev: v0.15.2
     hooks:
       - id: ruff-check
         args:
@@ -255,7 +255,7 @@ repos:
           - 'versionadded,versionchanged'
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.10.3
+    rev: 0.10.6
     hooks:
       # Keep pyproject.toml and uv.lock in sync
       - id: uv-lock
