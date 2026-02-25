@@ -101,6 +101,7 @@ get_koji_nvr() {
     local profile="$3"
     unset KOJI_NVR  # Clear any previous value
 
+    local profile_option=""
     [ -n "$profile" ] && profile_option="--profile $profile"
 
     # Get the latest tagged build for the package
