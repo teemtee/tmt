@@ -196,7 +196,9 @@ def resolve_dependencies(
             #  explicitly outside of the try..except.
             if not isinstance(dependency, DependencySimple):
                 logger.warning(f"Library '{dependency}' failed unexpectedly")
-                continue
+                # TODO: we should not add these to the *_to_install, but currently
+                #  DiscoverPlugin.install_libraries handles the logging of unresolved
+                #  libraries in general.
             if dependency in original_require:
                 require_to_install.add(dependency)
             if dependency in original_recommend:
