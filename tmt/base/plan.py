@@ -783,7 +783,7 @@ class Plan(
         """
         # Prepare paths
         if dry is None:
-            dry = Plan._opt('dry')
+            dry = Plan._opt('dry', False)
         assert isinstance(dry, bool)  # Narrow type
 
         # Get plan template
