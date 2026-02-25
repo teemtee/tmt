@@ -645,11 +645,6 @@ class InstallBootc(InstallBase):
             )
 
     def install_local(self) -> None:
-        # Make sure the containerfile session has been initialized. The
-        # engine would do it for us, but we need to prepend some
-        # directives first before using the engine.
-        self._engine.open_containerfile_directives()
-
         # Filelist for packages on the guest
         filelist = [
             PackagePath(self.package_directory / filename.name) for filename in self.local_packages
