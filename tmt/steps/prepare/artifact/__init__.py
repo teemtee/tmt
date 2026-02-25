@@ -196,10 +196,11 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         )
 
         # Initialize all providers and have them contribute to the shared repo
-        providers: list[ArtifactProvider] = []
+        providers: list[tuple[ArtifactProvider, str]] = []
         seen_nvras: dict[str, str] = {}
         providers_data: list[dict[str, Any]] = []
 
+        # --- Pass 1: Initialize all providers and validate for duplicate NVRAs ---
         for raw_provider_id in self.data.provide:
             try:
                 provider_class = get_artifact_provider(raw_provider_id)
@@ -220,8 +221,19 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                     }
                 )
 
-                providers.append(provider)
+                providers.append((provider, provider_id_sanitized))
 
+            except tmt.utils.PrepareError:
+                raise
+
+            except Exception as error:
+                raise tmt.utils.PrepareError(
+                    f"Failed to initialize artifact provider '{raw_provider_id}'."
+                ) from error
+
+        # --- Pass 2: Download and contribute (only reached if no duplicates) ---
+        for provider, provider_id_sanitized in providers:
+            try:
                 # Define a unique download path for this provider's artifacts
                 download_path = self.plan_workdir / "artifacts" / provider_id_sanitized
 
@@ -240,7 +252,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
             except Exception as error:
                 raise tmt.utils.PrepareError(
-                    f"Failed to initialize or use artifact provider '{raw_provider_id}'."
+                    f"Failed to use artifact provider '{provider.raw_provider_id}'."
                 ) from error
 
         # Create or update the shared repository.
@@ -252,7 +264,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
         # Collect all repositories (shared repository + provider repositories)
         repositories: list[Repository] = [shared_repository]
-        for provider in providers:
+        for provider, _ in providers:
             repositories.extend(provider.get_repositories())
 
         # Install all repositories centrally
