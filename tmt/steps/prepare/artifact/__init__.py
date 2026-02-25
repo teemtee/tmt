@@ -214,10 +214,12 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                     logger=provider_logger,
                 )
 
+                self._detect_duplicate_nvras(provider, seen_nvras)
+
                 providers_data.append(
                     {
                         'id': provider.raw_provider_id,
-                        'artifacts': self._collect_artifacts_metadata(provider, seen_nvras),
+                        'artifacts': provider.artifact_metadata,
                     }
                 )
 
@@ -290,16 +292,15 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             tmt.base.core.DependencySimple('/usr/bin/createrepo'),
         ]
 
-    def _collect_artifacts_metadata(
+    def _detect_duplicate_nvras(
         self, provider: ArtifactProvider, seen_nvras: dict[str, str]
-    ) -> list[dict[str, Any]]:
+    ) -> None:
         """
-        Collect artifact metadata from a provider and check for duplicate NVRAs.
+        Check for duplicate NVRAs across providers.
         """
         raw_provider_id = provider.raw_provider_id
-        artifacts_metadata = provider.artifact_metadata
 
-        for artifact_dict in artifacts_metadata:
+        for artifact_dict in provider.artifact_metadata:
             if (nvra := artifact_dict["nvra"]) in seen_nvras:
                 raise tmt.utils.PrepareError(
                     f"Artifact '{nvra}' provided by both "
@@ -307,8 +308,6 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                 )
 
             seen_nvras[nvra] = raw_provider_id
-
-        return artifacts_metadata
 
     def _save_artifacts_metadata(self, providers_data: list[dict[str, Any]]) -> None:
         """

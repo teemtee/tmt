@@ -56,12 +56,12 @@ def test_persist_artifact_metadata(tmp_path, mock_provider):
     prepare.plan_workdir = tmp_path
     prepare.ARTIFACTS_METADATA_FILENAME = 'artifacts.yaml'
 
-    artifacts_metadata = PrepareArtifact._collect_artifacts_metadata(prepare, mock_provider, {})
+    PrepareArtifact._detect_duplicate_nvras(prepare, mock_provider, {})
 
     providers_data = [
         {
             "id": mock_provider.raw_provider_id,
-            "artifacts": artifacts_metadata,
+            "artifacts": mock_provider.artifact_metadata,
         }
     ]
 
@@ -105,7 +105,7 @@ def test_duplicate_nvra_detection(tmp_path, root_logger):
     seen_nvras = {}
 
     # First one should succeed
-    PrepareArtifact._collect_artifacts_metadata(prepare, provider1, seen_nvras)
+    PrepareArtifact._detect_duplicate_nvras(prepare, provider1, seen_nvras)
     assert "mock-1.0-1.x86_64" in seen_nvras
     assert seen_nvras["mock-1.0-1.x86_64"] == "mock:provider1"
 
@@ -117,4 +117,4 @@ def test_duplicate_nvra_detection(tmp_path, root_logger):
             r"'mock:provider1' and 'mock:provider2'"
         ),
     ):
-        PrepareArtifact._collect_artifacts_metadata(prepare, provider2, seen_nvras)
+        PrepareArtifact._detect_duplicate_nvras(prepare, provider2, seen_nvras)
