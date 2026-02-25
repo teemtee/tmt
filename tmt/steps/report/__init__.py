@@ -1,15 +1,10 @@
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
-
-import click
+from typing import Optional, TypeVar, Union, cast
 
 import tmt.steps
 from tmt.container import container
-from tmt.options import option
+from tmt.options import option as option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
-
-if TYPE_CHECKING:
-    import tmt.cli
 
 
 @container

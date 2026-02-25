@@ -8,7 +8,6 @@ import threading
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
-import click
 import fmf.utils
 
 import tmt
@@ -21,7 +20,7 @@ import tmt.utils.signals
 from tmt.checks import Check, CheckEvent, CheckPlugin
 from tmt.container import container, field, simple_field
 from tmt.guest import Guest
-from tmt.options import option
+from tmt.options import option as option
 from tmt.plugins import PluginRegistry
 from tmt.result import (
     CheckResult,
@@ -51,7 +50,6 @@ from tmt.utils import (
 )
 
 if TYPE_CHECKING:
-    import tmt.cli
     import tmt.result
     import tmt.steps.discover
 

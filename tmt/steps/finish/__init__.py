@@ -1,14 +1,13 @@
 import copy
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
+from typing import Optional, TypeVar, cast
 
-import click
 import fmf
 
 import tmt
 import tmt.steps
 from tmt.container import container
 from tmt.guest import Guest
-from tmt.options import option
+from tmt.options import option as option
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
 from tmt.steps import (
@@ -20,9 +19,6 @@ from tmt.steps import (
     PullTask,
     sync_with_guests,
 )
-
-if TYPE_CHECKING:
-    import tmt.cli
 
 
 @container

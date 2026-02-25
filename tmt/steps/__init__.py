@@ -17,6 +17,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    ClassVar,
     Generic,
     Literal,
     Optional,
@@ -1565,7 +1566,7 @@ class BasePlugin(
     #:    When the plugin base class is defined, the step class does not
     #:    even exist yet. Therefore this link is set after both classes,
     #:    step and its plugin base, are finalized.
-    _step_class: type[Step]
+    _step_class: ClassVar[type[Step]]
 
     @classmethod
     def get_step_name(cls) -> str:

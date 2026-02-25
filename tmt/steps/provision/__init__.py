@@ -9,7 +9,6 @@ from typing import (
     cast,
 )
 
-import click
 import fmf.utils
 from click import echo
 
@@ -29,8 +28,10 @@ from tmt.container import (
 )
 from tmt.log import Logger
 from tmt.package_managers import (
-    FileSystemPath,
-    Package,
+    FileSystemPath as FileSystemPath,
+)
+from tmt.package_managers import (
+    Package as Package,
 )
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue, PushTask, sync_with_guests
@@ -38,7 +39,6 @@ from tmt.utils import Path
 
 if TYPE_CHECKING:
     import tmt.base.core
-    import tmt.cli
 
 
 @container

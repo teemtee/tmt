@@ -1,7 +1,6 @@
 import copy
 from typing import Optional, TypeVar, cast
 
-import fmf
 import fmf.utils
 
 import tmt.log
