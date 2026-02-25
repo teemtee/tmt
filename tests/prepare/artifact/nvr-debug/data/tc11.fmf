@@ -3,13 +3,11 @@ description: |
     Verify that DNF5 installs a package from a higher-priority repository
     even when a lower-priority repository offers a newer version.
 
-    Setup (done by the outer test.sh):
-      - test-high-priority repo (priority=1)  provides dummy-nvr-test-1.0
-      - test-low-priority repo  (priority=100) provides dummy-nvr-test-2.0
+    Repos configured by tc11.sh:
+      - test-high-priority repo (priority=30) provides dummy-nvr-test-1.0
+      - test-low-priority repo  (priority=50) provides dummy-nvr-test-2.0
 
-    Expected result: dummy-nvr-test-1.0 is installed because the
-    lower numeric priority value (1) overrides the higher package version.
+    Expected result: dummy-nvr-test-1.0 is installed because the lower
+    numeric priority value (30) overrides the higher package version.
 
 test: ./tc11.sh
-require:
-  - dummy-nvr-test

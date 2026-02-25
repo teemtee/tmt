@@ -1,6 +1,6 @@
 [test-same-priority-a]
 name=Test Same Priority Repo A (dummy-nvr-test v1.0)
-baseurl=file:///tmp/nvr-test/repo-high
+baseurl=file:///tmp/nvr-test/tc12-a
 enabled=1
 gpgcheck=0
 priority=50
