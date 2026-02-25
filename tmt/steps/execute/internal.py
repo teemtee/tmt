@@ -1,6 +1,6 @@
 from typing import Any, Optional, cast
 
-import tmt.base
+import tmt.base.core
 import tmt.log
 import tmt.steps
 import tmt.steps.execute
@@ -376,7 +376,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         else:
             timeout = tmt.utils.duration_to_seconds(
-                test.duration, tmt.base.DEFAULT_TEST_DURATION_L1
+                test.duration, tmt.base.core.DEFAULT_TEST_DURATION_L1
             )
 
         if logger.verbosity_level >= 1:
@@ -625,7 +625,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         return self._results
 
-    def essential_requires(self) -> list[tmt.base.Dependency]:
+    def essential_requires(self) -> list[tmt.base.core.Dependency]:
         """
         Collect all essential requirements of the plugin.
 
@@ -636,5 +636,5 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         """
 
         return [
-            tmt.base.DependencySimple('/usr/bin/flock'),
+            tmt.base.core.DependencySimple('/usr/bin/flock'),
         ]

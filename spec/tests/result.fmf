@@ -43,6 +43,6 @@ example:
     result: custom
 
 link:
-  - implemented-by: /tmt/base.py
+  - implemented-by: /tmt/base/core.py
   - verified-by: /tests/execute/result
   - verified-by: /tests/execute/result/custom

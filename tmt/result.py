@@ -12,7 +12,7 @@ from tmt.utils import GeneralError, Path
 from tmt.utils.themes import style
 
 if TYPE_CHECKING:
-    import tmt.base
+    import tmt.base.core
     import tmt.guest
     import tmt.steps.execute
 
@@ -171,10 +171,10 @@ class ResultGuestData(SerializableContainer):
         return cls.from_guest(guest=invocation.guest)
 
 
-# This needs to be a stand-alone function because of the import of `tmt.base`.
+# This needs to be a stand-alone function because of the import of `tmt.base.core`.
 # It cannot be imported on module level because of circular dependency.
-def _unserialize_fmf_id(serialized: 'tmt.base._RawFmfId') -> 'tmt.base.FmfId':
-    from tmt.base import FmfId
+def _unserialize_fmf_id(serialized: 'tmt.base.core._RawFmfId') -> 'tmt.base.core.FmfId':
+    from tmt.base.core import FmfId
 
     return FmfId.from_spec(serialized)
 
@@ -325,8 +325,8 @@ class Result(BaseResult):
     """
 
     serial_number: int = 0
-    fmf_id: Optional['tmt.base.FmfId'] = field(
-        default=cast(Optional['tmt.base.FmfId'], None),
+    fmf_id: Optional['tmt.base.core.FmfId'] = field(
+        default=cast(Optional['tmt.base.core.FmfId'], None),
         serialize=lambda fmf_id: fmf_id.to_minimal_spec() if fmf_id is not None else {},
         unserialize=_unserialize_fmf_id,
     )

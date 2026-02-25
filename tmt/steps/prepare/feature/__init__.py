@@ -5,7 +5,7 @@ import re
 from collections.abc import Iterator
 from typing import Any, Callable, Optional, cast
 
-import tmt.base
+import tmt.base.core
 import tmt.container
 import tmt.guest
 import tmt.log
@@ -386,7 +386,7 @@ class PrepareFeature(tmt.steps.prepare.PreparePlugin[PrepareFeatureData]):
 
         return outcome
 
-    def essential_requires(self) -> list[tmt.base.Dependency]:
+    def essential_requires(self) -> list[tmt.base.core.Dependency]:
         """
         Collect all essential requirements of the plugin.
 

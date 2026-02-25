@@ -95,6 +95,6 @@ example:
     tmt --context repo=https://custom.url/fedora-38-x86_64 run ...
 
 link:
-  - implemented-by: /tmt/base.py
+  - implemented-by: /tmt/base/core.py
   - verified-by: /tests/core/adjust
   - verified-by: /tests/prepare/adjust

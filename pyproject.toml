@@ -274,7 +274,7 @@ ignore = [
     "tmt/steps/report/polarion.py",
     "tmt/steps/report/reportportal.py",
     "tmt/__init__.py",
-    "tmt/base.py",
+    "tmt/base/core.py",
     "tmt/convert.py",
     "tmt/guest/__init__.py",
     "tmt/lint.py",

@@ -24,7 +24,7 @@ from tmt.utils.structured_field import StructuredField
 from tmt.utils.themes import style
 
 if TYPE_CHECKING:
-    import tmt.base
+    import tmt.base.core
 
 
 NITRATE_TRACKER_ID = 69  # ID of nitrate in RH's bugzilla
@@ -89,7 +89,7 @@ def _nitrate_find_fmf_testcases(test: 'tmt.Test') -> Iterator[Any]:
     All component general plans are explored for possible duplicates.
     """
 
-    import tmt.base
+    import tmt.base.core
 
     assert nitrate
     for component in test.component:
@@ -101,8 +101,11 @@ def _nitrate_find_fmf_testcases(test: 'tmt.Test') -> Iterator[Any]:
                     if isinstance(fmf_field, list):
                         fmf_field = '\n'.join(fmf_field)
 
-                    fmf_id = tmt.base.FmfId.from_spec(
-                        cast(tmt.base._RawFmfId, tmt.utils.yaml_to_dict(fmf_field))
+                    fmf_id = tmt.base.core.FmfId.from_spec(
+                        cast(
+                            tmt.base.core._RawFmfId,
+                            tmt.utils.yaml_to_dict(fmf_field),
+                        )
                     )
                     if fmf_id == test.fmf_id:
                         echo(
@@ -129,15 +132,17 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
     as html strings.
     """
 
-    import tmt.base
+    import tmt.base.core
 
     sections_headings: SectionsHeadingsType = {
-        pattern: [] for patterns in tmt.base.SECTIONS_HEADINGS.values() for pattern in patterns
+        pattern: []
+        for patterns in tmt.base.core.SECTIONS_HEADINGS.values()
+        for pattern in patterns
     }
 
     section_mapping: SectionsMappingType = {  # This exists to avoid inspecting the regex string
         pattern: section
-        for section, patterns_list in tmt.base.SECTIONS_HEADINGS.items()
+        for section, patterns_list in tmt.base.core.SECTIONS_HEADINGS.items()
         for pattern in patterns_list
     }
 
@@ -191,16 +196,16 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
 
         return content
 
-    sorted_test = sorted(concatenate_headings_content(tmt.base.SECTIONS_HEADINGS['Test']))
+    sorted_test = sorted(concatenate_headings_content(tmt.base.core.SECTIONS_HEADINGS['Test']))
 
     sorted_step = sorted(
-        enumerate_content(concatenate_headings_content(tmt.base.SECTIONS_HEADINGS['Step']))
+        enumerate_content(concatenate_headings_content(tmt.base.core.SECTIONS_HEADINGS['Step']))
         + sorted_test
     )
     step = ''.join([f"{v[1]}" for v in sorted_step])
 
     sorted_expect = sorted(
-        enumerate_content(concatenate_headings_content(tmt.base.SECTIONS_HEADINGS['Expect']))
+        enumerate_content(concatenate_headings_content(tmt.base.core.SECTIONS_HEADINGS['Expect']))
         + sorted_test
     )
     expect = ''.join([f"{v[1]}" for v in sorted_expect])
@@ -211,8 +216,8 @@ def convert_manual_to_nitrate(test_md: Path) -> SectionsReturnType:
         except IndexError:
             return ''
 
-    setup = check_section_exists(tmt.base.SECTIONS_HEADINGS['Setup'][0])
-    cleanup = check_section_exists(tmt.base.SECTIONS_HEADINGS['Cleanup'][0])
+    setup = check_section_exists(tmt.base.core.SECTIONS_HEADINGS['Setup'][0])
+    cleanup = check_section_exists(tmt.base.core.SECTIONS_HEADINGS['Cleanup'][0])
 
     return step, expect, setup, cleanup
 
@@ -261,7 +266,7 @@ def enabled_somewhere(test: 'tmt.Test') -> bool:
     return False
 
 
-def enabled_for_environment(test: 'tmt.base.Test', tcms_notes: str) -> bool:
+def enabled_for_environment(test: 'tmt.base.core.Test', tcms_notes: str) -> bool:
     """
     Check whether test is enabled for specified environment
     """
@@ -434,7 +439,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
     Export fmf metadata to nitrate test cases
     """
 
-    import tmt.base
+    import tmt.base.core
 
     import_nitrate()
     assert nitrate
@@ -683,7 +688,7 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
     verifies_bug_ids = []
     if test.link:
         for link in test.link.get('verifies'):
-            if isinstance(link.target, tmt.base.FmfId):
+            if isinstance(link.target, tmt.base.core.FmfId):
                 log.debug(f"Will not look for bugzila URL in fmf id '{link.target}'.")
                 continue
 
@@ -721,11 +726,11 @@ def export_to_nitrate(test: 'tmt.Test') -> None:
         tmt.export.bz_set_coverage(verifies_bug_ids, nitrate_case.id, NITRATE_TRACKER_ID)
 
 
-@tmt.base.Test.provides_export('nitrate')
+@tmt.base.core.Test.provides_export('nitrate')
 class NitrateExporter(tmt.export.ExportPlugin):
     @classmethod
     def export_test_collection(
-        cls, tests: list[tmt.base.Test], keys: Optional[list[str]] = None, **kwargs: Any
+        cls, tests: list[tmt.base.core.Test], keys: Optional[list[str]] = None, **kwargs: Any
     ) -> str:
         for test in tests:
             export_to_nitrate(test)

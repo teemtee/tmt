@@ -6,7 +6,7 @@ from typing import Optional, cast
 import fmf
 
 import tmt
-import tmt.base
+import tmt.base.core
 import tmt.log
 import tmt.options
 import tmt.steps
@@ -14,7 +14,7 @@ import tmt.steps.discover
 import tmt.utils
 import tmt.utils.filesystem
 import tmt.utils.git
-from tmt.base import _RawAdjustRule
+from tmt.base.core import _RawAdjustRule
 from tmt.container import container, field
 from tmt.steps.prepare.distgit import insert_to_prepare_step
 from tmt.utils import Command, Path
@@ -608,7 +608,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         self.step.plan.discover.extract_tests_later = True
         self.info("Tests will be discovered after dist-git patching in prepare.")
 
-    def do_the_discovery(self, path: Optional[Path] = None) -> list['tmt.base.Test']:
+    def do_the_discovery(self, path: Optional[Path] = None) -> list['tmt.base.core.Test']:
         """
         Discover the tests
         """
@@ -620,7 +620,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
         # Show filters and test names if provided
         # Check the 'test --filter' option first, then from discover
-        filters = list(tmt.base.Test._opt('filters') or self.get('filter', []))
+        filters = list(tmt.base.core.Test._opt('filters') or self.get('filter', []))
         for filter_ in filters:
             self.info('filter', filter_, 'green')
         # Names of tests selected by --test option
@@ -632,14 +632,14 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # FIXME: cast() - typeless "dispatcher" method
         raw_link_needles = cast(list[str], tmt.Test._opt('links', []) or self.get('link', []))
         link_needles = [
-            tmt.base.LinkNeedle.from_spec(raw_needle) for raw_needle in raw_link_needles
+            tmt.base.core.LinkNeedle.from_spec(raw_needle) for raw_needle in raw_link_needles
         ]
 
         for link_needle in link_needles:
             self.info('link', str(link_needle), 'green')
 
-        excludes = list(tmt.base.Test._opt('exclude') or self.data.exclude)
-        includes = list(tmt.base.Test._opt('include') or self.data.include)
+        excludes = list(tmt.base.core.Test._opt('exclude') or self.data.exclude)
+        includes = list(tmt.base.core.Test._opt('include') or self.data.include)
 
         # Filter only modified tests if requested
         modified_only = self.get('modified-only')

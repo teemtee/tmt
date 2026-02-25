@@ -28,7 +28,7 @@ from tmt.utils import (
 )
 
 if TYPE_CHECKING:
-    import tmt.base
+    import tmt.base.core
 
 
 FILE_SCHEMA = 'file://'
@@ -459,7 +459,7 @@ def default_branch(
     return head.read_text().strip().split('/')[-1]
 
 
-def validate_git_status(test: 'tmt.base.Test') -> tuple[bool, str]:
+def validate_git_status(test: 'tmt.base.core.Test') -> tuple[bool, str]:
     """
     Validate that test has current metadata on fmf_id
 

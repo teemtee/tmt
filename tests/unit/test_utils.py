@@ -1681,13 +1681,13 @@ class TestJiraLink(unittest.TestCase):
                     token: secret
             """.strip()
         self.config_tree = fmf.Tree(data=tmt.utils.yaml_to_dict(config_yaml))
-        tmt.base.Test.create(
+        tmt.base.core.Test.create(
             names=['tmp/test'], template='shell', path=self.tmp, logger=self.logger
         )
-        tmt.base.Plan.create(
+        tmt.base.core.Plan.create(
             names=['tmp/plan'], template='mini', path=self.tmp, logger=self.logger
         )
-        tmt.base.Story.create(
+        tmt.base.core.Story.create(
             names=['tmp/story'], template='mini', path=self.tmp, logger=self.logger
         )
 
@@ -1702,7 +1702,7 @@ class TestJiraLink(unittest.TestCase):
         test = tmt.Tree(logger=self.logger, path=self.tmp).tests(names=['tmp/test'])[0]
         tmt.utils.jira.link(
             tmt_objects=[test],
-            links=tmt.base.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
+            links=tmt.base.core.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
             logger=self.logger,
         )
         result = mock_add_simple_link.call_args.args[1]
@@ -1720,7 +1720,7 @@ class TestJiraLink(unittest.TestCase):
         story = tmt.Tree(logger=self.logger, path=self.tmp).stories(names=['tmp'])[0]
         tmt.utils.jira.link(
             tmt_objects=[test, plan, story],
-            links=tmt.base.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
+            links=tmt.base.core.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
             logger=self.logger,
         )
         result = mock_add_simple_link.call_args.args[1]
@@ -1745,7 +1745,7 @@ class TestJiraLink(unittest.TestCase):
         test = tmt.Tree(logger=self.logger, path=self.tmp).tests(names=['tmp/test'])[0]
         tmt.utils.jira.link(
             tmt_objects=[test],
-            links=tmt.base.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
+            links=tmt.base.core.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
             logger=self.logger,
         )
         # Load the test object again with the link present

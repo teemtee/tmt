@@ -14,7 +14,7 @@ from tmt.utils import Path, Stopwatch
 from tmt.utils.hints import hints_as_notes
 
 if TYPE_CHECKING:
-    import tmt.base
+    import tmt.base.core
     from tmt.guest import Guest
     from tmt.steps.execute import TestInvocation
 
@@ -187,16 +187,16 @@ class Dmesg(CheckPlugin[DmesgCheck]):
     def essential_requires(
         cls,
         guest: 'Guest',
-        test: 'tmt.base.Test',
+        test: 'tmt.base.core.Test',
         logger: tmt.log.Logger,
-    ) -> list['tmt.base.DependencySimple']:
+    ) -> list['tmt.base.core.DependencySimple']:
         if not guest.facts.has_capability(GuestCapability.SYSLOG_ACTION_READ_ALL):
             return []
 
         # Avoid circular imports
-        import tmt.base
+        import tmt.base.core
 
-        return [tmt.base.DependencySimple('/usr/bin/dmesg')]
+        return [tmt.base.core.DependencySimple('/usr/bin/dmesg')]
 
     @classmethod
     def before_test(

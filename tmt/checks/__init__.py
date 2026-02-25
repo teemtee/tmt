@@ -16,7 +16,7 @@ from tmt.plugins import PluginRegistry
 from tmt.utils import NormalizeKeysMixin
 
 if TYPE_CHECKING:
-    import tmt.base
+    import tmt.base.core
     from tmt.guest import Guest
     from tmt.result import CheckResult
     from tmt.steps.execute import TestInvocation
@@ -248,9 +248,9 @@ class CheckPlugin(tmt.utils._CommonBase, Generic[CheckT]):
     def essential_requires(
         cls,
         guest: 'Guest',
-        test: 'tmt.base.Test',
+        test: 'tmt.base.core.Test',
         logger: tmt.log.Logger,
-    ) -> list['tmt.base.DependencySimple']:
+    ) -> list['tmt.base.core.DependencySimple']:
         """
         Collect all essential requirements of the test check.
 

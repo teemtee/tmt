@@ -12,24 +12,24 @@ from tmt.steps.discover import Discover, TestOrigin
 from tmt.utils import Common, Environment, FmfContext, Path, ShellScript
 
 if TYPE_CHECKING:
-    import tmt.base
-    from tmt.base import Dependency, Plan, Run, _RawAdjustRule, _RawLinks
+    import tmt.base.core
+    from tmt.base.core import Dependency, Plan, Run, _RawAdjustRule, _RawLinks
 
 
 # This needs to be a stand-alone function because of the import of `tmt.base`.
 # It cannot be imported on module level because of circular dependency.
 def _unserialize_dependency(
-    serialized: Optional['tmt.base._RawDependencyItem'],
-) -> 'tmt.base.Dependency':
-    from tmt.base import dependency_factory
+    serialized: Optional['tmt.base.core._RawDependencyItem'],
+) -> 'tmt.base.core.Dependency':
+    from tmt.base.core import dependency_factory
 
     return dependency_factory(serialized)
 
 
 # This needs to be a stand-alone function because of the import of `tmt.base`.
 # It cannot be imported on module level because of circular dependency.
-def _unserialize_links(serialized: Optional['_RawLinks']) -> Optional['tmt.base.Links']:
-    from tmt.base import Links
+def _unserialize_links(serialized: Optional['_RawLinks']) -> Optional['tmt.base.core.Links']:
+    from tmt.base.core import Links
 
     return Links(data=serialized)
 
@@ -58,7 +58,7 @@ class _RecipeTest(SerializableContainer):
     restart_with_reboot: bool
     serial_number: int
     discover_phase: str
-    link: Optional['tmt.base.Links'] = field(
+    link: Optional['tmt.base.core.Links'] = field(
         serialize=lambda value: value.to_spec() if value else [],
         unserialize=lambda value: _unserialize_links(value),
     )
@@ -136,11 +136,11 @@ class _RecipeTest(SerializableContainer):
         data.pop('discover-phase')
         return data
 
-    def to_test(self, logger: Logger) -> 'tmt.base.Test':
+    def to_test(self, logger: Logger) -> 'tmt.base.core.Test':
         """
-        Convert the recipe test to a :py:class:`tmt.base.Test` instance.
+        Convert the recipe test to a :py:class:`tmt.base.core.Test` instance.
         """
-        from tmt.base import Test
+        from tmt.base.core import Test
 
         data = self.to_minimal_spec()
         name = data.pop('name')
@@ -258,7 +258,9 @@ class _RecipePlan(SerializableContainer):
     tag: list[str]
     tier: Optional[str]
     adjust: Optional[list['_RawAdjustRule']]
-    link: Optional['tmt.base.Links'] = field(serialize=lambda link: link.to_spec() if link else [])
+    link: Optional['tmt.base.core.Links'] = field(
+        serialize=lambda link: link.to_spec() if link else []
+    )
     environment_from_fmf: Environment = field(
         serialize=lambda environment: environment.to_fmf_spec()
     )
@@ -288,7 +290,7 @@ class _RecipePlan(SerializableContainer):
     # ignore[override]: does not match the signature on purpose, we need to pass logger
     @classmethod
     def from_serialized(cls, serialized: dict[str, Any], logger: Logger) -> '_RecipePlan':  # type: ignore[override]
-        from tmt.base import DEFAULT_ORDER
+        from tmt.base.core import DEFAULT_ORDER
 
         return _RecipePlan(
             name=serialized.get('name', ''),

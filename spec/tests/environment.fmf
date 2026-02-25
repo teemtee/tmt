@@ -19,5 +19,5 @@ example: |
         PYTHON: python3.7
 
 link:
-  - implemented-by: /tmt/base.py
+  - implemented-by: /tmt/base/core.py
   - verified-by: /tests/core/environment

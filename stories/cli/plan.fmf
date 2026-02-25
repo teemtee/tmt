@@ -29,7 +29,7 @@ story: 'As a user I want to comfortably work with plans'
         - tmt plan ls REGEXP
         - tmt plan show --filter artifact:build
     link:
-      - implemented-by: /tmt/base.py
+      - implemented-by: /tmt/base/core.py
       - documented-by: /docs/examples.rst#explore-plans
       - verified-by: /tests/plan/select
 

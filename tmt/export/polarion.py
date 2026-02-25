@@ -6,7 +6,7 @@ from typing import Any, Optional
 import fmf.utils
 from click import echo
 
-import tmt.base
+import tmt.base.core
 import tmt.export
 from tmt.identifier import ID_KEY, add_uuid_if_not_defined
 from tmt.utils import ConvertError, Path
@@ -179,7 +179,7 @@ def add_hyperlink(polarion_case: PolarionTestCase, link: str, role: str = 'tests
                 polarion_case.remove_hyperlink(hyperlink)
 
 
-def export_to_polarion(test: tmt.base.Test) -> None:
+def export_to_polarion(test: tmt.base.core.Test) -> None:
     """
     Export fmf metadata to a Polarion test case
     """
@@ -380,7 +380,7 @@ def export_to_polarion(test: tmt.base.Test) -> None:
     requirements = []
     if test.link:
         for link in test.link.get('verifies'):
-            if isinstance(link.target, tmt.base.FmfId):
+            if isinstance(link.target, tmt.base.core.FmfId):
                 log.debug(f"Will not look for bugzila URL in fmf id '{link.target}'.")
                 continue
 
@@ -429,12 +429,12 @@ def export_to_polarion(test: tmt.base.Test) -> None:
         tmt.export.bz_set_coverage(bug_ids, case_id, POLARION_TRACKER_ID)
 
 
-@tmt.base.Test.provides_export('polarion')
+@tmt.base.core.Test.provides_export('polarion')
 class PolarionExporter(tmt.export.ExportPlugin):
     @classmethod
     def export_test_collection(
         cls,
-        tests: list[tmt.base.Test],
+        tests: list[tmt.base.core.Test],
         keys: Optional[list[str]] = None,
         **kwargs: Any,
     ) -> str:

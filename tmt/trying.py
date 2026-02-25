@@ -16,7 +16,7 @@ import fmf.context
 import fmf.utils
 
 import tmt
-import tmt.base
+import tmt.base.core
 import tmt.config
 import tmt.container
 import tmt.log
@@ -26,7 +26,7 @@ import tmt.steps.prepare.feature
 import tmt.templates
 import tmt.utils
 from tmt import Plan
-from tmt.base import RunData
+from tmt.base.core import RunData
 from tmt.steps.prepare import PreparePlugin
 from tmt.utils import Command, GeneralError, MetadataError, Path
 from tmt.utils.themes import style
@@ -285,7 +285,7 @@ class Try(tmt.utils.Common):
         options = {"names": [f"^{re.escape(test.name)}$" for test in self.tests]}
         tmt.Test.store_cli_invocation(context=None, options=options)
 
-    def get_default_plans(self, run: tmt.base.Run) -> list[Plan]:
+    def get_default_plans(self, run: tmt.base.core.Run) -> list[Plan]:
         """
         Get default plan from user config or the standard template
         """
@@ -306,7 +306,7 @@ class Try(tmt.utils.Common):
                     user_plan.adjust(
                         fmf.context.Context(**self.tree.fmf_context),
                         case_sensitive=False,
-                        decision_callback=tmt.base.create_adjust_callback(self._logger),
+                        decision_callback=tmt.base.core.create_adjust_callback(self._logger),
                         additional_rules=self.tree._additional_rules,
                     )
                     plan_dict: dict[str, Any] = {user_plan.name: user_plan.data}
@@ -321,7 +321,7 @@ class Try(tmt.utils.Common):
         self.debug("Use the default plan template.")
         return self.tree.plans(names=[f"^{plan_name}"], run=run)
 
-    def check_plans(self, run: tmt.base.Run) -> None:
+    def check_plans(self, run: tmt.base.core.Run) -> None:
         """
         Check for plans to be used for testing
         """
@@ -823,7 +823,7 @@ class Try(tmt.utils.Common):
         """
 
         # Create run, prepare it for testing
-        run = tmt.base.Run(tree=self.tree, logger=self._logger, parent=self)
+        run = tmt.base.core.Run(tree=self.tree, logger=self._logger, parent=self)
         run.prepare_for_try(self.tree)
         self._workdir = run.run_workdir
         self.environment = run.environment

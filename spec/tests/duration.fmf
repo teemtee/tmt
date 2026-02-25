@@ -60,6 +60,6 @@ example:
 
 
 link:
-  - implemented-by: /tmt/base.py
+  - implemented-by: /tmt/base/core.py
   - verified-by: /tests/discover/duration
   - verified-by: /tests/execute/duration
