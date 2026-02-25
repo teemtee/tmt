@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from typing import IO, Any, Optional, Protocol, Union
 
 import click.core

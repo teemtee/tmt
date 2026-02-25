@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 import _pytest.monkeypatch
 import pytest
 
-import tmt.cli._root
 import tmt.log
 from tests import CliRunner
 from tmt.container import container

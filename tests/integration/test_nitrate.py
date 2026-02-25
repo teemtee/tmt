@@ -9,13 +9,12 @@ from fmf import Tree
 from requre import RequreTestCase
 from ruamel.yaml import YAML
 
-import tmt.cli._root
 import tmt.log
 from tests import CliRunner
 from tmt.utils import ConvertError, Path
 
 if TYPE_CHECKING:
-    from tests import RunTmt
+    pass
 
 # Prepare path to examples
 TEST_DIR = Path(__file__).parent

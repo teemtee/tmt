@@ -4,14 +4,13 @@ from typing import TYPE_CHECKING
 import pytest
 from fmf import Tree
 
-import tmt.cli._root
 from tests import CliRunner
 from tmt.identifier import ID_KEY
 
 from .test_nitrate import TEST_DIR, Base
 
 if TYPE_CHECKING:
-    from tests import RunTmt
+    pass
 
 
 @pytest.mark.skip(reason="Only works locally for now")
