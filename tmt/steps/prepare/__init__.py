@@ -1,7 +1,6 @@
 import copy
-from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Literal, Optional, TypeVar, cast
 
-import click
 import fmf.utils
 
 import tmt
@@ -10,7 +9,7 @@ import tmt.steps
 import tmt.utils
 from tmt.container import container, simple_field
 from tmt.guest import Guest
-from tmt.options import option
+from tmt.options import option as option
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
 from tmt.steps import (
@@ -26,7 +25,6 @@ from tmt.utils import uniq
 
 if TYPE_CHECKING:
     import tmt.base.core
-    import tmt.cli
     from tmt.base.core import Plan
 
 
