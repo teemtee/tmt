@@ -10,5 +10,7 @@ tag+:
   - provision-only
   - provision-virtual
 require:
+  - centpkg
+  - koji
   - tmt+provision-virtual
 duration: 2h

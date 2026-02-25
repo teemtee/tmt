@@ -1,14 +1,26 @@
 discover:
     how: fmf
+
+provision:
+    how: virtual
+
 execute:
     how: tmt
 
-/centos-stream-10/prepare-shell:
-    summary: "Test prepare/shell on bootc guest - install tree package"
-    provision:
-        how: virtual
+/centos-stream-10:
+    provision+:
         image: https://artifacts.dev.testing-farm.io/images/CentOS-Stream-10-image-mode-x86_64.qcow2
-    prepare:
-        how: shell
-        script:
-          - dnf -y install tree
+
+    /prepare-shell:
+        summary: "Test prepare/shell on bootc guest - install tree package"
+        prepare:
+            how: shell
+            script:
+              - dnf -y install tree
+
+    /prepare-install:
+        summary: "Test prepare/install on bootc guest - install tree package from local rpm"
+        prepare:
+            how: install
+            package:
+              - $TREE_RPM

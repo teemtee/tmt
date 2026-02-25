@@ -645,21 +645,14 @@ class InstallBootc(InstallBase):
             )
 
     def install_local(self) -> None:
-        # Make sure the containerfile session has been initialized. The
-        # engine would do it for us, but we need to prepend some
-        # directives first before using the engine.
-        self._engine.open_containerfile_directives()
-
         # Filelist for packages on the guest
         filelist = [
             PackagePath(self.package_directory / filename.name) for filename in self.local_packages
         ]
 
-        self._engine.containerfile_directives.append(f'RUN mkdir -p {self.package_directory}')
-
-        files = " ".join(str(file.relative_to(self.guest.step_workdir)) for file in filelist)
-
-        self._engine.containerfile_directives.append(f'COPY {files} {self.package_directory}')
+        # The container image building has access to the above paths because the whole working
+        # directory is volume mounted during the process. See `build_container` function
+        # in `tmt/package_managers/bootc.py`.
 
         self._engine.install(
             *filelist,
