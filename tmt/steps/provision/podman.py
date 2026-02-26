@@ -238,7 +238,7 @@ class GuestContainer(tmt.Guest):
 
         # Filter out variables with newlines - podman's env-file format
         # does not support multiline values (one line = one variable)
-        filtered_env = tmt.utils.Environment()
+        filtered_environment = tmt.utils.Environment()
         for key, value in environment.items():
             if '\n' in value:
                 self.warn(
@@ -247,15 +247,15 @@ class GuestContainer(tmt.Guest):
                     "skipping this variable."
                 )
             else:
-                filtered_env[key] = value
+                filtered_environment[key] = value
 
-        if not filtered_env:
+        if not filtered_environment:
             return []
 
         # Write environment to a file in the guest workdir
         # Format: KEY=VALUE per line, no quoting (podman takes values literally)
         env_file = self.guest_workdir / 'podman-run-environment'
-        env_file.write_text('\n'.join(f'{k}={v}' for k, v in filtered_env.items()))
+        env_file.write_text('\n'.join(f'{k}={v}' for k, v in filtered_environment.items()))
 
         self.debug(f"Podman run environment file written to '{env_file}'.")
 
@@ -436,7 +436,7 @@ class GuestContainer(tmt.Guest):
             return self._run_guest_command(
                 podman_command,
                 cwd=self.parent.plan.worktree,
-                env=self._prepare_environment(),
+                environment=self._prepare_environment(),
                 friendly_command=friendly_command,
                 log=log,
                 silent=silent,
@@ -475,7 +475,7 @@ class GuestContainer(tmt.Guest):
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
+        environment: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: bool = True,
@@ -501,7 +501,9 @@ class GuestContainer(tmt.Guest):
 
         # Accumulate all necessary commands - they will form a "shell" script, a single
         # string passed to a shell executed inside the container.
-        script = ShellScript.from_scripts(self._prepare_environment(env).to_shell_exports())
+        script = ShellScript.from_scripts(
+            self._prepare_environment(environment).to_shell_exports()
+        )
 
         # Change to given directory on guest if cwd provided
         if cwd is not None:
