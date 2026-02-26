@@ -605,7 +605,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                     else:
                         cwd = self.discover.workdir / test.path.unrooted()
                     self._login_after_test.after_test(
-                        invocation.results, cwd=cwd, env=invocation.environment
+                        invocation.results, cwd=cwd, environment=invocation.environment
                     )
 
         # Pull artifacts created in the plan data directory

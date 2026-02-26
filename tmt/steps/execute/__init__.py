@@ -482,7 +482,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
                 output = self.guest.execute(
                     command,
                     cwd=cwd,
-                    env=self.environment,
+                    environment=self.environment,
                     join=True,
                     interactive=interactive,
                     tty=self.test.tty,

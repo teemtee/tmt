@@ -262,7 +262,7 @@ class BeakerLib(Library):
                                     url=self.url,
                                     destination=destination,
                                     shallow=True,
-                                    env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
+                                    environment=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
                                     logger=self._logger,
                                 )
                                 self.parent.debug(
@@ -425,7 +425,7 @@ class BeakerLibFromUrl(BeakerLib):
                 url=self.url,
                 destination=clone_dir,
                 shallow=self.ref is None,
-                env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
+                environment=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
                 logger=self._logger,
             )
 

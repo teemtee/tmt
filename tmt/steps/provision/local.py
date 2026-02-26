@@ -94,7 +94,7 @@ class GuestLocal(tmt.Guest):
                     '-i', 'localhost,',
                     playbook,
                 ),
-                env=self._prepare_environment(),
+                environment=self._prepare_environment(),
                 friendly_command=friendly_command,
                 log=log,
                 silent=silent,
@@ -112,7 +112,7 @@ class GuestLocal(tmt.Guest):
         self,
         command: Union[Command, ShellScript],
         cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
+        environment: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: bool = True,
@@ -133,7 +133,7 @@ class GuestLocal(tmt.Guest):
 
         # Prepare the environment (plan/cli variables override)
         environment = tmt.utils.Environment()
-        environment.update(env or {})
+        environment.update(environment or {})
         if self.parent:
             environment.update(self.parent.plan.environment)
 
@@ -155,7 +155,7 @@ class GuestLocal(tmt.Guest):
         # Run the command under the prepared environment
         return self._run_guest_command(
             actual_command,
-            env=environment,
+            environment=environment,
             log=log,
             friendly_command=friendly_command or str(command),
             silent=silent,

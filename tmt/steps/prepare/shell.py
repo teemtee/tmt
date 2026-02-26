@@ -146,7 +146,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
                         url=self.data.url,
                         destination=repo_path,
                         shallow=False,
-                        env=environment,
+                        environment=environment,
                         logger=self._logger,
                     )
 
@@ -215,7 +215,7 @@ class PrepareShell(tmt.steps.prepare.PreparePlugin[PrepareShellData]):
             return guest.execute(
                 command=command,
                 cwd=worktree,
-                env=environment,
+                environment=environment,
                 sourced_files=[self.step.plan.plan_source_script],
                 immediately=False,
             )
