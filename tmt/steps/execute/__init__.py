@@ -177,7 +177,9 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
             if discover_phase.name == self.phase.discover_phase:
                 return discover_phase
 
-        raise tmt.utils.GeneralError('Failed to find discover phase for the test.')
+        raise tmt.utils.GeneralError(
+            f"Failed to find discover phase '{self.phase.discover_phase}' for the test."
+        )
 
     @property
     def step_workdir(self) -> Path:
