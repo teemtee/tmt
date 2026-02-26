@@ -18,6 +18,7 @@ link:
 require:
   - tmt
   - mock
+  - rpm-build
 
 tag+:
   - provision-only

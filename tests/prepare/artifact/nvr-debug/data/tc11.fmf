@@ -11,3 +11,5 @@ description: |
     numeric priority value (30) overrides the higher package version.
 
 test: ./tc11.sh
+require:
+  - dummy-nvr-test
