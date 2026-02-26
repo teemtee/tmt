@@ -1212,7 +1212,7 @@ class Command:
         if not isinstance(other, Command):
             return False
 
-        return bool(self._command == other._command)
+        return self._command == other._command
 
     def to_element(self) -> _CommandElement:
         """
