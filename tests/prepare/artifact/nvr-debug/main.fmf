@@ -4,8 +4,8 @@ description: |
     provide the same package with different versions and priorities.
 
     TC 1.1 - Priority overrides Version:
-        A high-priority (priority=1) repository with an older package
-        wins over a low-priority (priority=100) repository with a newer
+        A high-priority (priority=30) repository with an older package
+        wins over a low-priority (priority=50) repository with a newer
         package.
 
     TC 1.2 - Same Priority favors NVR:
@@ -17,8 +17,6 @@ link:
 
 require:
   - tmt
-  - mock
-  - rpm-build
 
 tag+:
   - provision-only

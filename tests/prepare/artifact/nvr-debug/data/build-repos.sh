@@ -1,21 +1,25 @@
 #!/bin/bash
-# Create local repos from pre-built binary RPMs.
-# Runs inside the container as a plan prepare step (order 40).
-# Binary RPMs are built by test.sh and pushed here by tmt as part of the
-# normal repo sync. The .repo files are read from the controller by the
-# artifact provider (order 50) and installed to /etc/yum.repos.d/.
-#
-# Usage: build-repos.sh <full-package-name:repo-name>...
-# Example: build-repos.sh dummy-nvr-test-1.0-1:tc11-high dummy-nvr-test-2.0-1:tc11-low
+# Build local RPM repos from per-repo spec directories.
+# For each subdirectory containing .spec files, builds SRPMs and binary RPMs,
+# then creates a repo in-place at /tmp/nvr-test/<dirname>.
 
 set -ex
 
 REPO_BASE="/tmp/nvr-test"
 
-for spec in "$@"; do
-    package="${spec%%:*}"
-    repo="${spec#*:}"
+for repo_dir in */; do
+    repo="${repo_dir%/}"
     mkdir -p "$REPO_BASE/$repo"
-    cp "./rpms/${package}"*.rpm "$REPO_BASE/$repo/"
+    pushd "$repo_dir"
+    build_dir=$(mktemp -d)
+    for spec in *.spec; do
+        rpmbuild --define "_topdir $build_dir" -bs "$spec"
+    done
+    for srpm in "$build_dir"/SRPMS/*.src.rpm; do
+        rpmbuild --define "_topdir $build_dir" --rebuild "$srpm"
+    done
+    cp "$build_dir"/RPMS/noarch/*.rpm "$REPO_BASE/$repo/"
+    rm -rf "$build_dir"
     createrepo_c "$REPO_BASE/$repo"
+    popd
 done

@@ -1,13 +1,43 @@
 summary: TC 1.1 - Repository priority overrides package version
 discover:
-    how: fmf
-    filter: 'name:/tc11'
+    how: shell
+    tests:
+      - name: /tc11
+        summary: TC 1.1 - Repository priority overrides package version
+        description: |
+            Verify that DNF5 installs a package from a higher-priority repository
+            even when a lower-priority repository offers a newer version.
+
+            Repos used:
+              - test-high-priority repo (priority=30) provides dummy-nvr-test-1.0
+              - test-low-priority repo  (priority=50) provides dummy-nvr-test-2.0
+
+            Expected result: dummy-nvr-test-1.0 is installed because the lower
+            numeric priority value (30) overrides the higher package version.
+        require:
+          - dummy-nvr-test
+        test: |
+            set -ex
+            rpm -q dummy-nvr-test | grep -E "^dummy-nvr-test-1\.0-"
+            dnf repoquery --installed dummy-nvr-test --qf "%{from_repo}" | grep -Fx "test-high-priority"
 provision:
     how: container
 prepare:
+    - name: Install build tools
+      order: 10
+      how: install
+      package:
+        - rpm-build
+        - createrepo_c
     - name: Build dummy RPMs and create local repos
-      order: 40
+      order: 20
       how: shell
-      script: ./build-repos.sh dummy-nvr-test-1.0-1:tc11-high dummy-nvr-test-2.0-1:tc11-low
+      script: ./build-repos.sh
+    - name: Install repo files
+      order: 25
+      how: artifact
+      provide:
+        - repository-file:file:tc11-high.repo
+        - repository-file:file:tc11-low.repo
 execute:
     how: tmt

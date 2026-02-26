@@ -1,13 +1,43 @@
 summary: TC 1.2 - Same priority falls back to NVR comparison
 discover:
-    how: fmf
-    filter: 'name:/tc12'
+    how: shell
+    tests:
+      - name: /tc12
+        summary: TC 1.2 - Same priority falls back to NVR comparison
+        description: |
+            Verify that when repositories share the same priority, DNF5 selects
+            the package with the highest NVR (Name-Version-Release).
+
+            Repos used:
+              - test-same-priority-a repo (priority=50) provides dummy-nvr-test-1.0
+              - test-same-priority-b repo (priority=50) provides dummy-nvr-test-2.0
+
+            Expected result: dummy-nvr-test-2.0 is installed because both repos
+            have equal priority and DNF5 falls back to RPM version comparison.
+        require:
+          - dummy-nvr-test
+        test: |
+            set -ex
+            rpm -q dummy-nvr-test | grep -E "^dummy-nvr-test-2\.0-"
+            dnf repoquery --installed dummy-nvr-test --qf "%{from_repo}" | grep -Fx "test-same-priority-b"
 provision:
     how: container
 prepare:
+    - name: Install build tools
+      order: 10
+      how: install
+      package:
+        - rpm-build
+        - createrepo_c
     - name: Build dummy RPMs and create local repos
-      order: 40
+      order: 20
       how: shell
-      script: ./build-repos.sh dummy-nvr-test-1.0-1:tc12-a dummy-nvr-test-2.0-1:tc12-b
+      script: ./build-repos.sh
+    - name: Install repo files
+      order: 25
+      how: artifact
+      provide:
+        - repository-file:file:tc12-a.repo
+        - repository-file:file:tc12-b.repo
 execute:
     how: tmt
