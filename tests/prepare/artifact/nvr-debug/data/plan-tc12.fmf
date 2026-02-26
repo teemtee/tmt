@@ -1,0 +1,13 @@
+summary: TC 1.2 - Same priority falls back to NVR comparison
+discover:
+    how: fmf
+    filter: 'name:/tc12'
+provision:
+    how: container
+prepare:
+    - name: Build dummy RPMs and create local repos
+      order: 40
+      how: shell
+      script: ./build-repos.sh dummy-nvr-test-1.0-1:tc12-a dummy-nvr-test-2.0-1:tc12-b
+execute:
+    how: tmt

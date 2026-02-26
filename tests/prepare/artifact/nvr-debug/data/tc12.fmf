@@ -11,3 +11,5 @@ description: |
     have equal priority and DNF5 falls back to RPM version comparison.
 
 test: ./tc12.sh
+require:
+  - dummy-nvr-test
