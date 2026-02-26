@@ -44,7 +44,19 @@ properties:
     $ref: "/schemas/core#/definitions/order"
 
   test:
-    $ref: "/schemas/common#/definitions/one_or_more_strings"
+    oneOf:
+      - type: string
+      - type: array
+        items:
+          anyOf:
+            - type: string
+            - type: object
+              additionalProperties: false
+              properties:
+                name:
+                  type: string
+                adjust-tests:
+                  $ref: "/schemas/core#/definitions/adjust"
 
   require-test:
     $ref: "/schemas/common#/definitions/one_or_more_strings"

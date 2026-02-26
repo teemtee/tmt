@@ -1,7 +1,7 @@
 import glob
 import re
 import shutil
-from typing import Optional, cast
+from typing import Any, Optional, TypedDict, Union, cast
 
 import fmf
 
@@ -14,10 +14,77 @@ import tmt.steps.discover
 import tmt.utils
 import tmt.utils.filesystem
 import tmt.utils.git
+from tmt._compat.typing import Self
 from tmt.base.core import _RawAdjustRule
-from tmt.container import container, field
+from tmt.container import SerializableContainer, SpecBasedContainer, container, field
 from tmt.steps.prepare.distgit import insert_to_prepare_step
-from tmt.utils import Command, Path
+from tmt.utils import Command, NormalizationError, Path
+
+
+class _RawTestsWithAdjusts(TypedDict, total=True):
+    name: str
+    adjust_tests: list[_RawAdjustRule]
+
+
+@container
+class TestsWithAdjusts(
+    SpecBasedContainer[Union[str, _RawTestsWithAdjusts], Union[str, _RawTestsWithAdjusts]],
+    tmt.utils.NormalizeKeysMixin,
+    SerializableContainer,
+):
+    name: str
+
+    adjust_tests: list[_RawAdjustRule] = field(
+        default_factory=list,
+        normalize=tmt.utils.normalize_adjust,
+    )
+
+    @classmethod
+    def from_spec(cls, spec: Union[str, _RawTestsWithAdjusts]) -> Self:
+        if isinstance(spec, str):
+            return cls(name=spec)
+        return cls(**spec)
+
+    def to_spec(self) -> Union[str, _RawTestsWithAdjusts]:
+        if self.adjust_tests:
+            return _RawTestsWithAdjusts(
+                name=self.name,
+                adjust_tests=self.adjust_tests,
+            )
+        return self.name
+
+
+def normalize_tests_with_adjusts(
+    key_address: str,
+    value: Any,
+    logger: tmt.log.Logger,
+) -> list[TestsWithAdjusts]:
+    def normalize_raw_item(raw_item: Any, index: Optional[int] = None) -> TestsWithAdjusts:
+        if isinstance(raw_item, str):
+            return TestsWithAdjusts(name=raw_item)
+        if isinstance(raw_item, dict):
+            return TestsWithAdjusts(**raw_item)
+        problem_address = key_address
+        if index is not None:
+            problem_address = f'{problem_address}[{index}]'
+        raise NormalizationError(problem_address, raw_item, "a string or a {name, adjust_tests}")
+
+    if value is None:
+        return []
+
+    if isinstance(value, (str, dict)):
+        return [normalize_raw_item(value)]
+
+    if isinstance(value, (list, tuple)):
+        normalized_value: list[TestsWithAdjusts] = []
+
+        for i, raw_item in enumerate(value):
+            normalized_value.append(normalize_raw_item(raw_item, index=i))
+        return normalized_value
+
+    raise NormalizationError(
+        key_address, value, 'a string, a dict or a list of strings or {name, adjust_tests}'
+    )
 
 
 @container
@@ -34,7 +101,7 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
     )
 
     # Selecting tests
-    test: list[str] = field(
+    test: list[TestsWithAdjusts] = field(
         default_factory=list,
         option=('-t', '--test'),
         metavar='NAMES',
@@ -47,7 +114,12 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
             matching. See the :ref:`regular-expressions` section for
             details.
             """,
-        normalize=tmt.utils.normalize_string_list,
+        normalize=normalize_tests_with_adjusts,
+        serialize=lambda tests: [test.to_serialized() for test in tests],
+        unserialize=lambda serialized_tests: [
+            TestsWithAdjusts.from_serialized(serialized_test)
+            for serialized_test in serialized_tests
+        ],
     )
 
     link: list[str] = field(
@@ -624,9 +696,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         for filter_ in filters:
             self.info('filter', filter_, 'green')
         # Names of tests selected by --test option
-        names = self.get('test', [])
-        if names:
-            self.info('tests', fmf.utils.listed(names), 'green')
+        if self.data.test:
+            self.info('tests', fmf.utils.listed([test.name for test in self.data.test]), 'green')
+        tests_without_adjust = [test.name for test in self.data.test if not test.adjust_tests]
+        tests_with_adjust = [test for test in self.data.test if test.adjust_tests]
 
         # Check the 'test --link' option first, then from discover
         # FIXME: cast() - typeless "dispatcher" method
@@ -686,7 +759,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     # Nothing was modified, do not select anything
                     return []
                 self.debug(f"Limit to modified test dirs: {modified}", level=3)
-                names.extend(modified)
+                tests_without_adjust.extend(modified)
             else:
                 self.debug(f"No modified directories between '{modified_ref}..HEAD' found.")
                 # Nothing was modified, do not select anything
@@ -696,21 +769,43 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         self.debug(f"Check metadata tree in '{tree_path}'.")
         if self.is_dry_run:
             return []
+        tests = []
         tree = tmt.Tree(
             logger=self._logger,
             path=tree_path,
             fmf_context=self.step.plan.fmf_context,
             additional_rules=self.data.adjust_tests,
         )
-        return tree.tests(
-            filters=filters,
-            names=names,
-            conditions=["manual is False"],
-            unique=False,
-            links=link_needles,
-            includes=includes,
-            excludes=excludes,
-        )
+        if tests_without_adjust:
+            tests.extend(
+                tree.tests(
+                    filters=filters,
+                    names=tests_without_adjust,
+                    conditions=["manual is False"],
+                    unique=False,
+                    links=link_needles,
+                    includes=includes,
+                    excludes=excludes,
+                )
+            )
+        for test_adjust in tests_with_adjust:
+            tests.extend(
+                tmt.Tree(
+                    logger=self._logger,
+                    path=tree_path,
+                    fmf_context=self.step.plan.fmf_context,
+                    additional_rules=[*self.data.adjust_tests, *test_adjust.adjust_tests],
+                ).tests(
+                    filters=filters,
+                    names=[test_adjust.name],
+                    conditions=["manual is False"],
+                    unique=False,
+                    links=link_needles,
+                    includes=includes,
+                    excludes=excludes,
+                )
+            )
+        return tests
 
     def post_dist_git(self, created_content: list[Path]) -> None:
         """
