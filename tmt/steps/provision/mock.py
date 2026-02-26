@@ -169,8 +169,6 @@ class MockShell:
         Invoke commands in the mock shell without checking for errors.
         This is done by writing the commands to the shell, ending each with
         a newline.
-        Each command invocation causes the shell to print a newline when the
-        command has finished.
         """
 
         assert self.epoll is not None
@@ -178,24 +176,29 @@ class MockShell:
         assert self.mock_shell.stdin is not None
         assert self.mock_shell.stdout is not None
         assert self.mock_shell.stderr is not None
+        finished_keyword = 'TMT_FINISHED_EXEC'
 
-        self.mock_shell.stdin.write(''.join(command + '\n' for command in commands))
-        # Issue a command writing a binary zero on the standard output after all
+        self.mock_shell.stdin.write('\n'.join(commands))
+        # Issue a command writing a terminator on the standard output after all
         # the previous commands are finished.
-        self.mock_shell.stdin.write('echo -e \\\\x00\n')
+        self.mock_shell.stdin.write(f'\necho {finished_keyword}\n')
         self.mock_shell.stdin.flush()
 
         # Wait until we read the binary zero from stdout.
-        loop = True
-        while loop and self.mock_shell.poll() is None:
+        while True:
+            mock_shell_result = self.mock_shell.poll()
+            if mock_shell_result is not None:
+                raise tmt.utils.ProvisionError(f'Mock shell abruptly exited: {mock_shell_result}.')
             events = self.epoll.poll()
             for fileno, _ in events:
                 if (
                     fileno == self.mock_shell_stdout_fd
-                    and self.mock_shell.stdout.read() == '\x00\n'
+                    and self.mock_shell.stdout.read() == f'{finished_keyword}\n'
                 ):
-                    loop = False
                     break
+            else:
+                continue
+            break
         for line in self.mock_shell.stderr.readlines():
             self.parent.debug('mock', line.rstrip(), color='blue', level=2)
 
@@ -423,8 +426,7 @@ class MockShell:
                     break
                 for fileno, _ in events:
                     if fileno == self.mock_shell_stdout_fd:
-                        # Various environments may print variable number of
-                        # times here.
+                        # Mock prints newlines on stdout.
                         self.mock_shell.stdout.read()
                     elif fileno == self.mock_shell_stderr_fd:
                         # Whatever we sent on mock shell's input it prints on
