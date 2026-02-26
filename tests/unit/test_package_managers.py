@@ -46,6 +46,7 @@ from . import (  # noqa: E402
     CONTAINER_DEBIAN_127,
     CONTAINER_FEDORA_42,
     CONTAINER_FEDORA_43,
+    CONTAINER_FEDORA_ELN,
     # CONTAINER_FEDORA_COREOS,
     # CONTAINER_FEDORA_COREOS_OSTREE,
     CONTAINER_FEDORA_RAWHIDE,
@@ -78,6 +79,7 @@ def has_legacy_dnf(container: ContainerData) -> bool:
         CONTAINER_FEDORA_RAWHIDE.url,
         CONTAINER_FEDORA_43.url,
         CONTAINER_FEDORA_42.url,
+        CONTAINER_FEDORA_ELN.url,
         # CONTAINER_FEDORA_COREOS.url,
         # CONTAINER_FEDORA_COREOS_OSTREE.url,
     )
@@ -92,6 +94,7 @@ def has_dnf5_preinstalled(container: ContainerData) -> bool:
         CONTAINER_FEDORA_RAWHIDE.url,
         CONTAINER_FEDORA_43.url,
         CONTAINER_FEDORA_42.url,
+        CONTAINER_FEDORA_ELN.url,
         # CONTAINER_FEDORA_COREOS.url,
         # CONTAINER_FEDORA_COREOS_OSTREE.url,
     )
@@ -126,6 +129,7 @@ CONTAINER_BASE_MATRIX = [
     (CONTAINER_FEDORA_RAWHIDE, PACKAGE_MANAGER_DNF5),
     (CONTAINER_FEDORA_42, PACKAGE_MANAGER_DNF5),
     (CONTAINER_FEDORA_43, PACKAGE_MANAGER_DNF5),
+    (CONTAINER_FEDORA_ELN, PACKAGE_MANAGER_DNF5),
     # CentOS Stream
     (CONTAINER_CENTOS_STREAM_10, PACKAGE_MANAGER_DNF),
     (CONTAINER_CENTOS_STREAM_9, PACKAGE_MANAGER_DNF),
@@ -1855,7 +1859,7 @@ def _parametrize_test_install_debuginfo() -> Iterator[
                 container,
                 package_manager_class,
                 (Package('dos2unix'), Package('tree')),
-                r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| dnf5 install -y  /usr/bin/debuginfo-install && debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",  # noqa: E501
+                r"dnf5 debuginfo-install -y  dos2unix tree && rpm -q dos2unix-debuginfo tree-debuginfo",  # noqa: E501
                 None,
             )
 
@@ -2084,7 +2088,7 @@ def _parametrize_test_install_debuginfo_nonexistent_skip() -> Iterator[
                 container,
                 package_manager_class,
                 (Package('dos2unix'), Package('tree-but-spelled-wrong')),
-                r"rpm -q --whatprovides /usr/bin/debuginfo-install \|\| dnf5 install -y  /usr/bin/debuginfo-install && debuginfo-install -y --skip-broken dos2unix tree-but-spelled-wrong",  # noqa: E501
+                r"dnf5 debuginfo-install -y --skip-unavailable dos2unix tree-but-spelled-wrong",
                 None,
             )
 

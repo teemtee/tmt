@@ -131,7 +131,9 @@ rlJournalStart
                 rlFail "Cannot infer distro for image $image"
             fi
 
-            tmt="tmt -vvv -c distro=$distro run --id $run --scratch cleanup discover provision --how $PROVISION_HOW --image $image prepare"
+            tmt_run="tmt -vvv -c distro=$distro run --id $run --scratch"
+            tmt_steps="cleanup discover provision --how $PROVISION_HOW --image $image prepare"
+            tmt="$tmt_run $tmt_steps"
         rlPhaseEnd
 
         # TODO: find out whether all those exceptions can be simplified and parametrized...
@@ -373,9 +375,15 @@ rlJournalStart
                 rlPhaseEnd
             fi
 
-            rlPhaseStartTest "$phase_prefix Escape package names"
-                rlRun "$tmt execute plan --name escape"
-            rlPhaseEnd
+            if is_fedora_eln "$image"; then
+                rlPhaseStartTest "$phase_prefix Escape package names"
+                    rlRun "$tmt_run -e COPR_PLUGIN=\"dnf5-command(copr)\" -e COPR_PLUGIN_PACKAGE=\"dnf5-plugins\" $tmt_steps execute plan --name escape"
+                rlPhaseEnd
+            else
+                rlPhaseStartTest "$phase_prefix Escape package names"
+                    rlRun "$tmt_run -e COPR_PLUGIN=\"dnf-command(copr)\" -e COPR_PLUGIN_PACKAGE=\"dnf-plugins-core\" $tmt_steps execute plan --name escape"
+                rlPhaseEnd
+            fi
 
             if is_centos_7 "$image"; then
                 rlPhaseStartTest "$phase_prefix Install from epel7 copr"

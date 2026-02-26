@@ -1208,6 +1208,12 @@ class Command:
 
         return Command(*self._command, *other)
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Command):
+            return False
+
+        return bool(self._command == other._command)
+
     def to_element(self) -> _CommandElement:
         """
         Convert a command to a shell command line element.
