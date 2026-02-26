@@ -132,8 +132,7 @@ class GuestLocal(tmt.Guest):
         sourced_files = sourced_files or []
 
         # Prepare the environment (plan/cli variables override)
-        environment = tmt.utils.Environment()
-        environment.update(environment or {})
+        environment = environment or tmt.utils.Environment()
         if self.parent:
             environment.update(self.parent.plan.environment)
 
