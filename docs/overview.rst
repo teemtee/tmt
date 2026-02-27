@@ -614,6 +614,17 @@ TMT_POLICY_ROOT
 
 __ https://tmt.readthedocs.io/en/stable/spec/policy.html
 
+TMT_STATE_FORMAT
+    Which format should tmt use for its on-disk storage of various state
+    information like run or step data, or the collection of discovered
+    tests.
+
+    .. note::
+
+        This does not affect user-provided files, like test, plan and
+        story metadata in fmf files, as well as various exports and
+        conversions. It merely affects files tmt uses for its own needs.
+
 .. _step-variables:
 
 Step Variables

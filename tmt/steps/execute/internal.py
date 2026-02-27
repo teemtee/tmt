@@ -400,7 +400,9 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
         # Save the captured output. Do not let the follow-up pulls
         # overwrite it.
-        self.write(invocation.path / TEST_OUTPUT_FILENAME, output.stdout or '', mode='a', level=3)
+        self.write(
+            invocation.path / TEST_OUTPUT_FILENAME, output.stdout or '', mode='a', debug_level=3
+        )
 
         # Reset `has-rsync` fact: tmt is expected to install rsync if it
         # is missing after a test. To achieve that, pretend we don't

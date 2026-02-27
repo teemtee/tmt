@@ -4712,7 +4712,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
             environment=self.environment,
             remove=self.remove,
         )
-        self.write(Path('run.yaml'), to_yaml(data.to_serialized()))
+        self.write_state('run', data.to_serialized())
 
     def load_from_workdir(self) -> None:
         """
@@ -4726,9 +4726,8 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         self._save_tree(self._tree)
         self._workdir_load(self._workdir_path)
         try:
-            self.data = RunData.from_serialized(
-                tmt.utils.yaml_to_dict(self.read(Path('run.yaml')))
-            )
+            self.data = RunData.from_serialized(self.read_state('run'))
+
         except tmt.utils.FileError:
             self.debug('Run data not found.')
             return
@@ -4756,9 +4755,8 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         Load list of selected plans and enabled steps
         """
         try:
-            self.data = RunData.from_serialized(
-                tmt.utils.yaml_to_dict(self.read(Path('run.yaml')))
-            )
+            self.data = RunData.from_serialized(self.read_state('run'))
+
         except tmt.utils.FileError:
             self.debug('Run data not found.')
             return
