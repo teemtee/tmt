@@ -1,0 +1,4 @@
+summary: Verify some basic output of `tmt about`
+
+tag+:
+  - provision-local

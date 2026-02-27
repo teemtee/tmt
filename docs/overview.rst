@@ -759,7 +759,7 @@ belongs to, and the option name:
 
     ``TMT_PLUGIN_${STEP}_${PLUGIN}_${OPTION}``
 
-All values are upper-cased, with dashes (``-``) replaced by
+All names are upper-cased, with dashes (``-``) replaced by
 underscores (``_``).
 
 For example, an execute plugin "tmt" would run with verbosity
@@ -787,28 +787,10 @@ The following commands would override the URL::
 
     TMT_PLUGIN_DISCOVER_FMF_URL=https://actual.org/ tmt run ...
 
-For setting flag-like option, 0 and 1 are the expected value. For
-example, an interactive mode would be enabled in this run::
+For setting flag-like option, ``0`` and ``1`` are the expected values.
+For example, an interactive mode would be enabled in this run::
 
     TMT_PLUGIN_EXECUTE_TMT_INTERACTIVE=1 tmt run ... execute -h tmt ...
-
-.. note::
-
-   The following applies to situations when a plugin is specified
-   on the command line only. Keys of plugins specified in fmf files
-   would not be modified. This is a limit of the current implementation,
-   and will be addressed in the future::
-
-      # Here the verbosity will not be increased since the plugin is
-      # not mentioned on the command line:
-      $ TMT_PLUGIN_DISCOVER_FMF_VERBOSE=2 tmt run -a
-
-      # Here the environment variable will take effect:
-      $ TMT_PLUGIN_DISCOVER_FMF_VERBOSE=2 tmt run -a discover -h fmf ...
-
-   Several plugins (``report -h reportportal``, ``report -h polarion``,
-   ``execute -h tmt``) allow selected variables to be processed,
-   even when plugin is not specified on the command line.
 
 .. _regular-expressions:
 
