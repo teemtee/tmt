@@ -1,6 +1,6 @@
 prepare:
     how: install
-    package: dnf-command(copr)
+    package: "$COPR_PLUGIN"
 execute:
     how: tmt
-    script: rpm -q dnf-plugins-core
+    script: "rpm -q $COPR_PLUGIN_PACKAGE"

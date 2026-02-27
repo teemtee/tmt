@@ -153,17 +153,26 @@ class DnfEngine(PackageManagerEngine):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> ShellScript:
-        # Make sure debuginfo-install is present on the target system
-        script = self.install(FileSystemPath('/usr/bin/debuginfo-install'))
-
         options = options or Options()
 
-        script &= cast(  # type: ignore[redundant-cast]
-            ShellScript,
-            self._construct_install_debuginfo_script(  # type: ignore[reportGeneralIssues,unused-ignore]
-                *installables, options=options
-            ),
-        )
+        # Make sure debuginfo-install is present on the target system
+        if self._base_debuginfo_command == Command('debuginfo-install'):
+            script = self.install(FileSystemPath('/usr/bin/debuginfo-install'))
+
+            script &= cast(  # type: ignore[redundant-cast]
+                ShellScript,
+                self._construct_install_debuginfo_script(  # type: ignore[reportGeneralIssues,unused-ignore]
+                    *installables, options=options
+                ),
+            )
+
+        else:
+            script = cast(  # type: ignore[redundant-cast]
+                ShellScript,
+                self._construct_install_debuginfo_script(  # type: ignore[reportGeneralIssues,unused-ignore]
+                    *installables, options=options
+                ),
+            )
 
         # Extra ignore/check for yum to workaround BZ#1920176
         if not options.skip_missing:
@@ -269,7 +278,9 @@ class Dnf(PackageManager[DnfEngine]):
 
 class Dnf5Engine(DnfEngine):
     _base_command = Command('dnf5')
+    _base_debuginfo_command = Command('dnf5', 'debuginfo-install')
     skip_missing_packages_option = '--skip-unavailable'
+    skip_missing_debuginfo_option = skip_missing_packages_option
 
 
 @provides_package_manager('dnf5')
