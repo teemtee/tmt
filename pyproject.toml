@@ -150,7 +150,7 @@ dependencies = [
     # frozen.
     "types-Markdown",
     # prevent conflict between types-requests and urllib3
-    "types-requests<2.31.0.7; python_version < '3.10'",
+    "types-requests<2.32.4.20260108; python_version < '3.10'",
     "types-requests; python_version >= '3.10'",
     "types-setuptools",
     "types-jsonschema",
