@@ -14,6 +14,7 @@ import fmf.utils
 from click import echo
 
 import tmt
+import tmt.ansible
 import tmt.guest
 import tmt.hardware
 import tmt.log
@@ -42,6 +43,15 @@ if TYPE_CHECKING:
 class ProvisionStepData(tmt.steps.StepData):
     # guest role in the multihost scenario
     role: Optional[str] = None
+
+    ansible: Optional[tmt.ansible.GuestAnsible] = field(
+        default=cast(Optional[tmt.ansible.GuestAnsible], None),
+        normalize=tmt.ansible.normalize_guest_ansible,
+        serialize=lambda ansible: ansible.to_serialized() if ansible else None,
+        unserialize=lambda serialized: (
+            tmt.ansible.GuestAnsible.from_serialized(serialized) if serialized else None
+        ),
+    )
 
     hardware: Optional[tmt.hardware.Hardware] = field(
         default=cast(Optional[tmt.hardware.Hardware], None),
@@ -214,9 +224,13 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
         keys = keys or list(set(self.data.keys()))
 
         show_hardware = 'hardware' in keys
+        show_ansible = 'ansible' in keys
 
         if show_hardware:
             keys.remove('hardware')
+
+        if show_ansible:
+            keys.remove('ansible')
 
         super().show(keys=keys)
 
@@ -225,6 +239,9 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
 
             if hardware:
                 echo(tmt.utils.format('hardware', tmt.utils.to_yaml(hardware.to_spec())))
+
+        if show_ansible and self.data.ansible:
+            echo(tmt.utils.format('ansible', tmt.utils.to_yaml(self.data.ansible.to_spec())))
 
 
 class ProvisionTask(tmt.queue.GuestlessTask[None]):
