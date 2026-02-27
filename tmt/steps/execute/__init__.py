@@ -163,6 +163,25 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
     exceptions: list[Exception] = simple_field(default_factory=list)
 
     @property
+    def discovery_phase(self) -> DiscoverPlugin[Any]:
+        """
+        Discovery phase the test comes from.
+        """
+
+        if isinstance(self.phase.discover, DiscoverPlugin):
+            return self.phase.discover
+
+        for discover_phase in self.phase.discover.phases(
+            classes=DiscoverPlugin,  # type: ignore[type-abstract]
+        ):
+            if discover_phase.name == self.phase.discover_phase:
+                return discover_phase
+
+        raise tmt.utils.GeneralError(
+            f"Failed to find discover phase '{self.phase.discover_phase}' for the test."
+        )
+
+    @property
     def step_workdir(self) -> Path:
         return self.phase.step_workdir
 
@@ -359,6 +378,8 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
             environment['TMT_TEST_ITERATION_ID'] = EnvVarValue(
                 f"{self.phase.parent.plan.my_run.unique_id}-{self.test.serial_number}"
             )
+
+            environment['TMT_SOURCE_DIR'] = EnvVarValue(self.discovery_phase.source_dir)
 
         else:
             environment = self._environment

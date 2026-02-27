@@ -556,9 +556,6 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             # Propagate 'where' condition from discover phase to the test
             test.where = self.data.where
 
-            if bool(self.get('dist-git-source', False)):
-                test.environment['TMT_SOURCE_DIR'] = EnvVarValue(self.source_dir)
-
     def apply_phase_prefix(self, prefix: str) -> None:
         """
         Apply phase name prefix to discovered tests
