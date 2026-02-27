@@ -1,0 +1,10 @@
+/git_clone:
+  description: |
+    Failing git clone operations will not be retried if it previously failed
+    for the same url.
+
+/beakerlib:
+  description: |
+    Fixed a bug in beakerlib libraries that did not allow multiple libraries
+    with the same ``repo`` but different ``name`` if the last part of the
+    ``name`` was conflicting.

@@ -1,7 +1,7 @@
 import abc
+import hashlib
 import re
-from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Literal, Optional, cast
+from typing import TYPE_CHECKING, ClassVar, Literal, Optional, cast
 
 import fmf
 
@@ -37,11 +37,6 @@ STRIP_SUFFIX_FORGES = [
 ]
 
 
-class CommonWithLibraryCache(tmt.utils.Common):
-    _library_cache: dict[str, 'BeakerLib']
-    _nonexistent_url: set[str]
-
-
 @container
 class BeakerLib(Library):
     """
@@ -71,6 +66,10 @@ class BeakerLib(Library):
     #: Source directory where used for files required by the library dependencies
     source_directory: Path = simple_field(init=False)
     default_branch: Optional[str] = None
+
+    #: Cache of already fetched libraries. The keys are the absolute paths of
+    #: the local library path that is ultimately used
+    _library_cache: ClassVar[dict[Path, "BeakerLib"]] = {}
 
     def __post_init__(self) -> None:
         # Set default source directory
@@ -193,30 +192,6 @@ class BeakerLib(Library):
             return self.path / self.name.strip('/')
         return super().fmf_node_path
 
-    def __str__(self) -> str:
-        """
-        Use repo/name for string representation
-        """
-
-        return f"{self.repo}{self.name[self.name.rindex('/') :]}"
-
-    @property
-    def _library_cache(self) -> dict[str, 'BeakerLib']:
-        # Initialize library cache (indexed by the repository and library name)
-        # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
-        if not hasattr(self.parent, '_library_cache'):
-            cast(CommonWithLibraryCache, self.parent)._library_cache = {}
-
-        return cast(CommonWithLibraryCache, self.parent)._library_cache
-
-    @property
-    def _nonexistent_url(self) -> set[str]:
-        # Set of url we tried to clone but didn't succeed
-        if not hasattr(self.parent, '_nonexistent_url'):
-            cast(CommonWithLibraryCache, self.parent)._nonexistent_url = set()
-
-        return cast(CommonWithLibraryCache, self.parent)._nonexistent_url
-
     def _merge_metadata(self, library_path: Path, local_library_path: Path) -> None:
         """
         Merge all inherited metadata into one metadata file
@@ -235,94 +210,56 @@ class BeakerLib(Library):
         """
         The actual beakerlib fetch logic.
         """
-        # TODO: This can be dropped when addressing #4440
+
+    # TODO: Move these inside the identifier
+    @property
+    @abc.abstractmethod
+    def ref_formatted(self) -> str:
+        """
+        Format the library name for debugging.
+        """
 
     def fetch(self) -> None:
         # Check if the library was already fetched
-        try:
-            library = self._library_cache[str(self)]
-            # Check in case "tmt try retest" deleted the libs
-            assert self.parent.workdir
-            if not (self.parent.workdir / self.dest / self.repo).exists():
-                raise FileNotFoundError
-            if isinstance(self, BeakerLibFromUrl):
-                assert isinstance(library, BeakerLibFromUrl)
-                # The url must be identical
-                if library.url != self.url:
-                    # tmt guessed url so try if repo exists
-                    if self.format == 'rpm':
-                        if self.url in self._nonexistent_url:
-                            self.parent.debug(f"Already know that '{self.url}' does not exist.")
-                            raise LibraryError
-                        with TemporaryDirectory() as tmp:
-                            assert self.url is not None  # narrow type
-                            destination = Path(tmp)
-                            try:
-                                tmt.utils.git.git_clone(
-                                    url=self.url,
-                                    destination=destination,
-                                    shallow=True,
-                                    env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
-                                    logger=self._logger,
-                                )
-                                self.parent.debug(
-                                    'hash',
-                                    tmt.utils.git.git_hash(
-                                        directory=destination, logger=self._logger
-                                    ),
-                                )
-                            except (tmt.utils.RunError, tmt.utils.RetryError) as error:
-                                self.parent.debug(f"Repository '{self.url}' not found.")
-                                self._nonexistent_url.add(self.url)
-                                raise LibraryError from error
-                    # If repo does exist we really have unsolvable url conflict
-                    raise tmt.utils.GeneralError(
-                        f"Library '{self}' with url '{self.url}' conflicts "
-                        f"with already fetched library from '{library.url}'."
-                    )
-                # Use the default branch if no ref provided
-                if self.ref is None:
-                    self.ref = library.default_branch
-                # The same ref has to be used
-                if library.ref != self.ref:
-                    raise tmt.utils.GeneralError(
-                        f"Library '{self}' using ref '{self.ref}' conflicts "
-                        f"with already fetched library '{library}' "
-                        f"using ref '{library.ref}'."
-                    )
-            self.parent.debug(f"Library '{self}' already fetched.", level=3)
-            # Reuse the existing metadata tree
-            self.tree: fmf.Tree = library.tree
-        # Fetch the library and add it to the index
-        except (KeyError, FileNotFoundError):
-            self.parent.debug(f"Fetch library '{self}'.", level=3)
-            # Prepare path, clone the repository, checkout ref
-            assert self.parent.workdir
-            directory = self.parent.workdir / self.dest / self.repo
-            # Clone repo with disabled prompt to ignore missing/private repos
-            try:
-                self._do_fetch(directory)
-            except (tmt.utils.RunError, tmt.utils.RetryError, tmt.utils.GitUrlError) as error:
-                assert isinstance(self, BeakerLibFromUrl)
-                # Fallback to install during the prepare step if in rpm format
-                if self.format == 'rpm':
-                    # Print this message only for the first attempt
-                    if not isinstance(error, tmt.utils.GitUrlError):
-                        self.parent.debug(f"Repository '{self.url}' not found.")
-                        self._nonexistent_url.add(self.url)
-                    raise LibraryError from error
-                # Mark self.url as known to be missing
-                self._nonexistent_url.add(self.url)
-                self.parent.fail(f"Failed to fetch library '{self}' from '{self.url}'.")
-                raise
-            # Initialize metadata tree, add self into the library index
-            tree_path = (
-                str(directory / self.path.unrooted())
-                if (isinstance(self, BeakerLibFromUrl) and self.path)
-                else str(directory)
+        # TODO: Use phase_workdir instead since this is for sure DiscoverPlugin
+        assert self.parent.workdir
+        local_repo_path = self.parent.workdir / self.dest / self.repo
+        local_library_path = local_repo_path / self.fmf_node_path
+        if cached_library := self._library_cache.get(local_library_path):
+            # Use the already cached library as the source
+            self.parent.debug(
+                f"Reusing previously fetched library '{self}' from {cached_library.ref_formatted}",
+                level=3,
             )
-            self.tree = fmf.Tree(tree_path)
-            self._library_cache[str(self)] = self
+            self.tree = cached_library.tree
+            self.require = []
+            self.recommend = []
+            return
+
+        # Otherwise do the actual fetch and finalize the library
+        self.parent.debug(f"Fetch library '{self}'.", level=3)
+        try:
+            self._do_fetch(local_repo_path)
+        except (tmt.utils.RunError, tmt.utils.RetryError, tmt.utils.GitUrlError) as error:
+            assert isinstance(self, BeakerLibFromUrl)
+            # Fallback to install during the prepare step if in rpm format
+            if self.format == 'rpm':
+                # Print this message only for the first attempt
+                if not isinstance(error, tmt.utils.GitUrlError):
+                    self.parent.debug(f"Repository '{self.url}' not found.")
+                raise LibraryError from error
+            # Mark self.url as known to be missing
+            self.parent.fail(f"Failed to fetch library '{self}' from '{self.url}'.")
+            raise
+
+        self._library_cache[local_library_path] = self
+        # Initialize metadata tree, add self into the library index
+        tree_path = (
+            str(local_repo_path / self.path.unrooted())
+            if (isinstance(self, BeakerLibFromUrl) and self.path)
+            else str(local_repo_path)
+        )
+        self.tree = fmf.Tree(tree_path)
 
         # Get the library node, check require and recommend
         library_node = cast(Optional[fmf.Tree], self.tree.find(self.name))
@@ -362,17 +299,10 @@ class BeakerLibFromUrl(BeakerLib):
     #: Path under the git repository pointing to the fmf root
     path: Optional[Path] = None
 
-    @property
-    def hostname(self) -> str:
-        """
-        Get hostname from url or default to local
-        """
-
-        if self.url:
-            matched = re.match(r'(?:git|http|https|ssh)(?:@|://)(.*?)[/:]', self.url)
-            if matched:
-                return matched.group(1)
-        return super().hostname
+    #: Cache of git cloned repos. The keys are the absolute paths of the git
+    #: clones already processed, and the values are the libraries that did the
+    #: git clone
+    _git_clone_cache: ClassVar[dict[Path, "BeakerLib"]] = {}
 
     @classmethod
     def from_identifier(
@@ -413,14 +343,23 @@ class BeakerLibFromUrl(BeakerLib):
             dest=identifier.destination or Path(DEFAULT_DESTINATION),
         )
 
+    @property
+    def ref_formatted(self) -> str:
+        ref_suffix = f"#{self.ref}" if self.ref else ""
+        return f"{self} ({self.url}{ref_suffix})"
+
     def _do_fetch(self, directory: Path) -> None:
-        if self.url in self._nonexistent_url:
-            raise tmt.utils.GitUrlError(f"Already know that '{self.url}' does not exist.")
-        clone_dir = self.parent.clone_dirpath / self.hostname / self.repo
-        self.source_directory = clone_dir
-        # Shallow clone to speed up testing and
-        # minimize data transfers if ref is not provided
-        if not clone_dir.exists():
+        # TODO: Move this to a proper cache
+        repo_unique_id = hashlib.sha256(usedforsecurity=False)
+        repo_unique_id.update(self.url.encode())
+        repo_unique_name = f"{self.repo}_{repo_unique_id.hexdigest()[:8]}"
+        clone_dir = self.parent.clone_dirpath / repo_unique_name
+        if cached_library := self._git_clone_cache.get(clone_dir):
+            self.parent.debug(
+                f"Repo '{self.identifier}' was already cloned from '{cached_library}'.", level=3
+            )
+        else:
+            self.parent.debug(f"Cloning '{self.identifier}' for '{self}'.", level=3)
             tmt.utils.git.git_clone(
                 url=self.url,
                 destination=clone_dir,
@@ -428,6 +367,8 @@ class BeakerLibFromUrl(BeakerLib):
                 env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
                 logger=self._logger,
             )
+            self._git_clone_cache[clone_dir] = self
+        self.source_directory = clone_dir
 
         # Detect the default branch from the origin
         try:
@@ -478,8 +419,8 @@ class BeakerLibFromUrl(BeakerLib):
         )
 
         # Copy only the required library
-        library_path: Path = clone_dir / str(self.fmf_node_path).strip('/')
-        local_library_path: Path = directory / str(self.fmf_node_path).strip('/')
+        library_path: Path = clone_dir / self.fmf_node_path.unrooted()
+        local_library_path: Path = directory / self.fmf_node_path.unrooted()
         if not library_path.exists():
             self.parent.debug(f"Failed to find library {self} at {self.url}")
             raise LibraryError
@@ -568,6 +509,10 @@ class BeakerLibFromPath(BeakerLib):
             path=identifier.path,
             dest=identifier.destination or Path(DEFAULT_DESTINATION),
         )
+
+    @property
+    def ref_formatted(self) -> str:
+        return f"{self} ({self.path})"
 
     def _do_fetch(self, directory: Path) -> None:
         library_path = self.fmf_node_path
