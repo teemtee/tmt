@@ -13,10 +13,12 @@ This split is similar to the python sphinx domain workflow.
 import abc
 import typing
 from functools import cached_property
-from typing import Generic
+from typing import Generic, Optional
 
 from docutils.parsers.rst import directives
+from sphinx import addnodes
 from sphinx.directives import ObjDescT, ObjectDescription
+from sphinx.roles import XRefRole
 from sphinx.util import logging
 from sphinx.util.docutils import SphinxDirective
 
@@ -26,6 +28,8 @@ from tmt._compat.pathlib import Path
 from .autodoc import AutodocDirectiveBase
 
 if typing.TYPE_CHECKING:
+    from docutils.nodes import Element, Node, TextElement, system_message
+
     from .domain import TmtDomain
 
 
@@ -129,3 +133,45 @@ class TmtAutodocDirective(
         Get the :py:attr:`tmt_object`
         """
         raise NotImplementedError
+
+
+class TmtXRefRole(XRefRole):
+    """
+    Base tmt role for cross-referencing to a tmt object.
+
+    This saves some additional options indicating how to expand the role during the
+    call to :py:meth:`sphinx.domains.Domain.resolve_xref`.
+    """
+
+    #: Whether to use the tmt object's name/title key instead of the address
+    use_obj_name: bool = False
+
+    def __init__(
+        self,
+        fix_parens: bool = False,
+        lowercase: bool = False,
+        nodeclass: Optional[type["Element"]] = None,
+        innernodeclass: Optional[type["TextElement"]] = None,
+        warn_dangling: bool = False,
+        use_obj_name: Optional[bool] = None,
+    ) -> None:
+        if use_obj_name is not None:
+            self.use_obj_name = use_obj_name
+        super().__init__(
+            fix_parens=fix_parens,
+            lowercase=lowercase,
+            nodeclass=nodeclass,
+            innernodeclass=innernodeclass,
+            warn_dangling=warn_dangling,
+        )
+
+    def create_xref_node(self) -> tuple[list["Node"], list["system_message"]]:
+        # We do not have access to the actual tmt object until `Domain.resolve_xref` is
+        # being executed. We can only save the intent in the pending_xref node's data
+        # and handle it accordingly in the `resolve_xref`. See similar logic used with
+        # `refexplicit` (`sphinx.domains.std`)
+        nodes, messages = super().create_xref_node()
+        ref_node = nodes[0]
+        assert isinstance(ref_node, addnodes.pending_xref)
+        ref_node["tmtrefuseobjname"] = self.use_obj_name
+        return nodes, messages
