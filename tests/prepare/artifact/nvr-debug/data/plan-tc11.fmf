@@ -1,0 +1,13 @@
+summary: TC 1.1 - Repository priority overrides package version
+discover:
+    how: fmf
+    filter: 'name:/tc11'
+provision:
+    how: container
+prepare:
+    - name: Build dummy RPMs and create local repos
+      order: 40
+      how: shell
+      script: ./build-repos.sh dummy-nvr-test-1.0-1:tc11-high dummy-nvr-test-2.0-1:tc11-low
+execute:
+    how: tmt

@@ -6,8 +6,10 @@ from collections.abc import Sequence
 from functools import cached_property
 from re import Pattern
 from typing import Optional
+from urllib.parse import urlparse
 
 import tmt.log
+import tmt.utils
 from tmt.guest import Guest
 from tmt.steps import DefaultNameGenerator
 from tmt.steps.prepare.artifact.providers import (
@@ -81,8 +83,18 @@ class RepositoryFileProvider(ArtifactProvider):
         # It returns an Empty list, as no individual artifact files are downloaded.
 
         self.logger.info(f"Initializing repository provider with URL: {self.id}")
-        # TODO: This should not be using Repository.from_url
-        self.repository = Repository.from_url(url=self.id, logger=self.logger)
+
+        parsed = urlparse(self.id)
+        if parsed.scheme == 'file':
+            # Read .repo file from the local (controller) filesystem.
+            self.logger.info(f"Reading repository file from local path: {parsed.path}")
+            self.repository = Repository.from_file_path(
+                file_path=Path(parsed.path), logger=self.logger
+            )
+        else:
+            # TODO: This should not be using Repository.from_url
+            self.repository = Repository.from_url(url=self.id, logger=self.logger)
+
         self.logger.info(
             f"Repository initialized: {self.repository.name} "
             f"(repo IDs: {', '.join(self.repository.repo_ids)})"

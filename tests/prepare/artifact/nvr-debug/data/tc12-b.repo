@@ -1,0 +1,6 @@
+[test-same-priority-b]
+name=Test Same Priority Repo B (dummy-nvr-test v2.0)
+baseurl=file:///tmp/nvr-test/tc12-b
+enabled=1
+gpgcheck=0
+priority=50
