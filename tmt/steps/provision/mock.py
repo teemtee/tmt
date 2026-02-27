@@ -295,7 +295,7 @@ class MockShell:
         command: Command,
         *,
         cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
+        environment: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         log: Optional[tmt.log.LoggingFunction] = None,
         silent: bool = False,
@@ -337,9 +337,9 @@ class MockShell:
 
         shell_command_components: list[str] = [str(command)]
 
-        if env is not None:
+        if environment is not None:
             shell_command_components = [
-                *env.to_shell(),
+                *environment.to_shell(),
                 *shell_command_components,
             ]
 
@@ -531,7 +531,7 @@ class GuestMock(tmt.Guest):
         self,
         command: Union[Command, ShellScript],
         cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
+        environment: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: bool = True,
@@ -580,7 +580,7 @@ class GuestMock(tmt.Guest):
             *self.mock_shell.execute(
                 actual_command,
                 cwd=cwd,
-                env=env,
+                env=environment,
                 friendly_command=friendly_command or str(command),
                 logger=self._logger,
                 **kwargs,

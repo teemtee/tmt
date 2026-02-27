@@ -311,7 +311,7 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
                 url=url,
                 destination=self.test_dir,
                 shallow=self.data.ref is None,
-                env=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
+                environment=Environment({"GIT_ASKPASS": EnvVarValue("echo")}),
                 logger=self._logger,
             )
         elif self.data.url_content_type == "archive":

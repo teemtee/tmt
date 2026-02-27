@@ -1993,7 +1993,11 @@ def setup_completion(shell: str, install: bool, context: Context, logger: tmt.lo
 
     completions = (
         Command('tmt')
-        .run(env=tmt.utils.Environment.from_dict(env_var), cwd=None, logger=context.obj.logger)
+        .run(
+            environment=tmt.utils.Environment.from_dict(env_var),
+            cwd=None,
+            logger=context.obj.logger,
+        )
         .stdout
     )
     if not completions:

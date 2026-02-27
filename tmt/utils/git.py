@@ -733,7 +733,7 @@ def git_clone(
     destination: Path,
     shallow: bool = False,
     can_change: bool = True,
-    env: Optional[Environment] = None,
+    environment: Optional[Environment] = None,
     attempts: Optional[int] = None,
     interval: Optional[int] = None,
     timeout: Optional[int] = None,
@@ -749,7 +749,7 @@ def git_clone(
         the whole history.
     :param can_change: URL can be modified with hardcoded rules. Use
         ``can_change=False`` to disable rewrite rules.
-    :param env: Environment provided to the ``git clone`` process.
+    :param environment: Environment provided to the ``git clone`` process.
     :param attempts: Number of tries to call the function.
     :param interval: Amount of seconds to wait before a new try.
     :param timeout: Overall maximum time in seconds to clone the repo.
@@ -761,7 +761,7 @@ def git_clone(
         url: str,
         destination: Path,
         shallow: bool = False,
-        env: Optional[Environment] = None,
+        environment: Optional[Environment] = None,
         timeout: Optional[int] = None,
     ) -> CommandOutput:
         """
@@ -770,7 +770,7 @@ def git_clone(
 
         depth = ['--depth=1'] if shallow else []
         output = Command('git', 'clone', *depth, url, destination).run(
-            cwd=Path('/'), env=env, timeout=timeout, logger=logger
+            cwd=Path('/'), environment=environment, timeout=timeout, logger=logger
         )
         logger.info(
             'cloned-commit-hash',
@@ -796,7 +796,7 @@ def git_clone(
                 shallow=True,
                 url=url,
                 destination=destination,
-                env=env,
+                environment=environment,
                 timeout=timeout,
             )
         except RunError:
@@ -811,7 +811,7 @@ def git_clone(
         url=url,
         destination=destination,
         shallow=False,
-        env=env,
+        environment=environment,
         timeout=timeout,
         logger=logger,
     )

@@ -79,7 +79,7 @@ class GuestBootc(GuestTestcloud):
                 cwd=self.guest_workdir,
                 stream_output=True,
                 logger=self._logger,
-                env=PODMAN_ENV if self._rootless else None,
+                environment=PODMAN_ENV if self._rootless else None,
             )
 
         try:
@@ -283,7 +283,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             cwd=self.phase_workdir,
             stream_output=True,
             logger=self._logger,
-            env=PODMAN_ENV if self._rootless else None,
+            environment=PODMAN_ENV if self._rootless else None,
         )
 
         return image_tag
@@ -307,7 +307,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             cwd=self.phase_workdir,
             stream_output=True,
             logger=self._logger,
-            env=PODMAN_ENV if self._rootless else None,
+            environment=PODMAN_ENV if self._rootless else None,
         )
         return image_tag
 
@@ -341,7 +341,7 @@ class ProvisionBootc(tmt.steps.provision.ProvisionPlugin[BootcData]):
             cwd=self.phase_workdir,
             stream_output=True,
             logger=self._logger,
-            env=PODMAN_ENV if self._rootless else None,
+            environment=PODMAN_ENV if self._rootless else None,
         )
 
     def _init_podman_machine(self) -> None:

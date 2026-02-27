@@ -1246,7 +1246,7 @@ class Command:
         *,
         cwd: Optional[Path],
         shell: bool = False,
-        env: Optional[Environment] = None,
+        environment: Optional[Environment] = None,
         dry: bool = False,
         join: bool = False,
         interactive: bool = False,
@@ -1268,7 +1268,7 @@ class Command:
         :param cwd: if set, command would be executed in the given directory,
             otherwise the current working directory is used.
         :param shell: if set, the command would be executed in a shell.
-        :param env: environment variables to combine with the current environment
+        :param environment: environment variables to combine with the current environment
             before running the command.
         :param dry: if set, the command would not be actually executed.
         :param join: if set, stdout and stderr of the command would be merged into
@@ -1328,14 +1328,14 @@ class Command:
 
         # Prepare the environment: use the current process environment, but do
         # not modify it if caller wants something extra, make a copy.
-        actual_env: Optional[Environment] = None
+        actual_environment: Optional[Environment] = None
 
         # Do not modify current process environment
-        if env is not None:
-            actual_env = Environment.from_environ()
-            actual_env.update(env)
+        if environment is not None:
+            actual_environment = Environment.from_environ()
+            actual_environment.update(environment)
 
-        logger.debug('environment', actual_env, level=4)
+        logger.debug('environment', actual_environment, level=4)
 
         # Set special executable only when shell was requested
         executable = DEFAULT_SHELL if shell else None
@@ -1347,7 +1347,7 @@ class Command:
                     self.to_popen(),
                     cwd=cwd,
                     shell=shell,
-                    env=actual_env.to_popen() if actual_env is not None else None,
+                    env=actual_environment.to_popen() if actual_environment is not None else None,
                     # Disabling for now: When used together with the
                     # local provision this results into errors such as:
                     # 'cannot set terminal process group: Inappropriate
@@ -1367,7 +1367,7 @@ class Command:
                     self.to_popen(),
                     cwd=cwd,
                     shell=shell,
-                    env=actual_env.to_popen() if actual_env is not None else None,
+                    env=actual_environment.to_popen() if actual_environment is not None else None,
                     start_new_session=True,
                     stdin=subprocess.DEVNULL,
                     stdout=subprocess.PIPE,
@@ -2270,7 +2270,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         cwd: Optional[Path] = None,
         ignore_dry: bool = False,
         shell: bool = False,
-        env: Optional[Environment] = None,
+        environment: Optional[Environment] = None,
         interactive: bool = False,
         join: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,
@@ -2304,7 +2304,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             cwd=cwd or self.workdir,
             dry=dryrun_actual,
             shell=shell,
-            env=env,
+            environment=environment,
             interactive=interactive,
             on_process_start=on_process_start,
             on_process_end=on_process_end,
