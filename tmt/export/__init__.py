@@ -36,6 +36,7 @@ from tmt.utils.themes import style
 
 if TYPE_CHECKING:
     import tmt.base.core
+    import tmt.base.plan
 
 TEMPLATES_RESOURCE = 'export/templates'
 
@@ -225,7 +226,7 @@ class ExportPlugin(abc.ABC):
     @abc.abstractmethod
     def export_plan_collection(
         cls,
-        plans: list['tmt.base.core.Plan'],
+        plans: list['tmt.base.plan.Plan'],
         keys: Optional[list[str]] = None,
         **kwargs: Any,
     ) -> str:
@@ -316,7 +317,7 @@ class TrivialExporter(ExportPlugin):
     @classmethod
     def export_plan_collection(
         cls,
-        plans: list['tmt.base.core.Plan'],
+        plans: list['tmt.base.plan.Plan'],
         keys: Optional[list[str]] = None,
         **kwargs: Any,
     ) -> str:
