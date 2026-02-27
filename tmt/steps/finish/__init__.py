@@ -1,14 +1,13 @@
 import copy
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
+from typing import Optional, TypeVar, cast
 
-import click
 import fmf
 
 import tmt
 import tmt.steps
 from tmt.container import container
 from tmt.guest import Guest
-from tmt.options import option
+from tmt.options import option as option
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
 from tmt.steps import (
@@ -20,9 +19,6 @@ from tmt.steps import (
     PullTask,
     sync_with_guests,
 )
-
-if TYPE_CHECKING:
-    import tmt.cli
 
 
 @container
@@ -44,31 +40,6 @@ class FinishPlugin(tmt.steps.Plugin[FinishStepDataT, PluginOutcome]):
 
     # Methods ("how: ..." implementations) registered for the same step.
     _supported_methods: PluginRegistry[Method] = PluginRegistry('step.finish')
-
-    @classmethod
-    def base_command(
-        cls,
-        usage: str,
-        method_class: Optional[type[click.Command]] = None,
-    ) -> click.Command:
-        """
-        Create base click command (common for all finish plugins)
-        """
-
-        # Prepare general usage message for the step
-        if method_class:
-            usage = Finish.usage(method_overview=usage)
-
-        # Create the command
-        @click.command(cls=method_class, help=usage)
-        @click.pass_context
-        @option('-h', '--how', metavar='METHOD', help='Use specified method for finishing tasks.')
-        @tmt.steps.PHASE_OPTIONS
-        def finish(context: 'tmt.cli.Context', **kwargs: Any) -> None:
-            context.obj.steps.add('finish')
-            Finish.store_cli_invocation(context)
-
-        return finish
 
     def go(
         self,
@@ -263,3 +234,7 @@ class Finish(tmt.steps.Step):
         # Update status and save
         self.status('done')
         self.save()
+
+
+# Establish the "plugin class -> step class" link.
+FinishPlugin._step_class = Finish

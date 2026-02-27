@@ -1,7 +1,6 @@
 import copy
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
+from typing import Optional, TypeVar, cast
 
-import click
 import fmf.utils
 
 import tmt.log
@@ -9,7 +8,6 @@ import tmt.steps
 import tmt.utils
 from tmt.container import container
 from tmt.guest import Guest
-from tmt.options import option
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
 from tmt.steps import (
@@ -18,9 +16,6 @@ from tmt.steps import (
     PluginOutcome,
     PluginTask,
 )
-
-if TYPE_CHECKING:
-    import tmt.cli
 
 
 @container
@@ -45,31 +40,6 @@ class CleanupPlugin(tmt.steps.Plugin[CleanupStepDataT, PluginOutcome]):
 
     # Internal cleanup plugin is the default implementation
     how = 'tmt'
-
-    @classmethod
-    def base_command(
-        cls,
-        usage: str,
-        method_class: Optional[type[click.Command]] = None,
-    ) -> click.Command:
-        """
-        Create base click command (common for all cleanup plugins)
-        """
-
-        # Prepare general usage message for the step
-        if method_class:
-            usage = Cleanup.usage(method_overview=usage)
-
-        # Create the command
-        @click.command(cls=method_class, help=usage)
-        @click.pass_context
-        @option('-h', '--how', metavar='METHOD', help='Use specified method for cleanup tasks.')
-        @tmt.steps.PHASE_OPTIONS
-        def cleanup(context: 'tmt.cli.Context', **kwargs: Any) -> None:
-            context.obj.steps.add('cleanup')
-            Cleanup.store_cli_invocation(context)
-
-        return cleanup
 
     def go(
         self,
@@ -263,3 +233,7 @@ class Cleanup(tmt.steps.Step):
         # Update status and save
         self.status('done')
         self.save()
+
+
+# Establish the "plugin class -> step class" link.
+CleanupPlugin._step_class = Cleanup

@@ -9,7 +9,6 @@ from typing import (
     cast,
 )
 
-import click
 import fmf.utils
 from click import echo
 
@@ -28,14 +27,18 @@ from tmt.container import (
     field,
 )
 from tmt.log import Logger
-from tmt.options import option
+from tmt.package_managers import (
+    FileSystemPath as FileSystemPath,
+)
+from tmt.package_managers import (
+    Package as Package,
+)
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue, PushTask, sync_with_guests
 from tmt.utils import Path
 
 if TYPE_CHECKING:
     import tmt.base.core
-    import tmt.cli
 
 
 @container
@@ -88,31 +91,6 @@ class ProvisionPlugin(tmt.steps.GuestlessPlugin[ProvisionStepDataT, None]):
         """
 
         return {*super()._preserved_workdir_members, "logs"}
-
-    @classmethod
-    def base_command(
-        cls,
-        usage: str,
-        method_class: Optional[type[click.Command]] = None,
-    ) -> click.Command:
-        """
-        Create base click command (common for all provision plugins)
-        """
-
-        # Prepare general usage message for the step
-        if method_class:
-            usage = Provision.usage(method_overview=usage)
-
-        # Create the command
-        @click.command(cls=method_class, help=usage)
-        @click.pass_context
-        @option('-h', '--how', metavar='METHOD', help='Use specified method for provisioning.')
-        @tmt.steps.PHASE_OPTIONS
-        def provision(context: 'tmt.cli.Context', **kwargs: Any) -> None:
-            context.obj.steps.add('provision')
-            Provision.store_cli_invocation(context)
-
-        return provision
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
@@ -677,3 +655,7 @@ class Provision(tmt.steps.Step):
         self.summary()
         self.status('done')
         self.save()
+
+
+# Establish the "plugin class -> step class" link.
+ProvisionPlugin._step_class = Provision

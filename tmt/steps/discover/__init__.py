@@ -23,7 +23,7 @@ import tmt.utils
 import tmt.utils.filesystem
 import tmt.utils.git
 import tmt.utils.url
-from tmt.options import option
+from tmt.options import option as option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
 from tmt.utils import Command, Environment, EnvVarValue, GeneralError, Path
@@ -190,31 +190,6 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
     @property
     def source_dir(self) -> Path:
         return self.phase_workdir / 'source'
-
-    @classmethod
-    def base_command(
-        cls,
-        usage: str,
-        method_class: Optional[type[click.Command]] = None,
-    ) -> click.Command:
-        """
-        Create base click command (common for all discover plugins)
-        """
-
-        # Prepare general usage message for the step
-        if method_class:
-            usage = Discover.usage(method_overview=usage)
-
-        # Create the command
-        @click.command(cls=method_class, help=usage)
-        @click.pass_context
-        @option('-h', '--how', metavar='METHOD', help='Use specified method to discover tests.')
-        @tmt.steps.PHASE_OPTIONS
-        def discover(context: 'tmt.cli.Context', **kwargs: Any) -> None:
-            context.obj.steps.add('discover')
-            Discover.store_cli_invocation(context)
-
-        return discover
 
     def go(self, *, path: Optional[Path] = None, logger: Optional[tmt.log.Logger] = None) -> None:
         """
@@ -1017,3 +992,7 @@ class Discover(tmt.steps.Step):
         return [
             test_origin for test_origin in _iter_tests() if test_origin.test.enabled is enabled
         ]
+
+
+# Establish the "plugin class -> step class" link.
+DiscoverPlugin._step_class = Discover
