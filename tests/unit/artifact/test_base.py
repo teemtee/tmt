@@ -56,7 +56,16 @@ def test_persist_artifact_metadata(tmp_path, mock_provider):
     prepare.plan_workdir = tmp_path
     prepare.ARTIFACTS_METADATA_FILENAME = 'artifacts.yaml'
 
-    PrepareArtifact._save_artifacts_metadata(prepare, [mock_provider])
+    PrepareArtifact._detect_duplicate_nvras(prepare, mock_provider, {})
+
+    providers_data = [
+        {
+            "id": mock_provider.raw_provider_id,
+            "artifacts": mock_provider.artifact_metadata,
+        }
+    ]
+
+    PrepareArtifact._save_artifacts_metadata(prepare, providers_data)
 
     # Verify YAML
     yaml_file = tmp_path / "artifacts.yaml"
@@ -83,3 +92,29 @@ def test_persist_artifact_metadata(tmp_path, mock_provider):
         "location": "http://example.com/mock-1.0-1.x86_64.rpm",
     }
     assert artifact == expected
+
+
+def test_duplicate_nvra_detection(tmp_path, root_logger):
+    # Two providers with the same NVRA
+    provider1 = MockProvider("mock:provider1", repository_priority=50, logger=root_logger)
+    provider2 = MockProvider("mock:provider2", repository_priority=50, logger=root_logger)
+
+    prepare = MagicMock()
+    prepare.plan_workdir = tmp_path
+
+    seen_nvras = {}
+
+    # First one should succeed
+    PrepareArtifact._detect_duplicate_nvras(prepare, provider1, seen_nvras)
+    assert "mock-1.0-1.x86_64" in seen_nvras
+    assert seen_nvras["mock-1.0-1.x86_64"] == "mock:provider1"
+
+    # Second one with same NVRA should raise error
+    with pytest.raises(
+        tmt.utils.PrepareError,
+        match=(
+            r"Artifact 'mock-1\.0-1\.x86_64' provided by both "
+            r"'mock:provider1' and 'mock:provider2'"
+        ),
+    ):
+        PrepareArtifact._detect_duplicate_nvras(prepare, provider2, seen_nvras)
