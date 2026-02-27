@@ -10,6 +10,7 @@ def import_cli_commands() -> None:
     import tmt.cli.about  # noqa: F401,I001,RUF100  # type: ignore[reportUnusedImport]
     import tmt.cli.init  # noqa: F401,I001,RUF100  # type: ignore[reportUnusedImport]
     import tmt.cli.lint  # noqa: F401,I001,RUF100 # type: ignore[reportUnusedImport]
+    import tmt.cli.run  # noqa: F401,I001,RUF100 # type: ignore[reportUnusedImport]
     import tmt.cli.status  # noqa: F401,I001,RUF100 # type: ignore[reportUnusedImport]
     import tmt.cli.trying  # noqa: F401,I001,RUF100 # type: ignore[reportUnusedImport]
 
