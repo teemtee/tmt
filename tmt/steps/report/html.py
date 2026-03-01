@@ -1,5 +1,5 @@
 import webbrowser
-from typing import Optional
+from typing import Any, Optional, cast
 
 from jinja2 import select_autoescape
 
@@ -107,13 +107,16 @@ class ReportHtml(tmt.steps.report.ReportPlugin[ReportHtmlData]):
             def _linkable_path(path: str) -> str:
                 return str(Path(path).absolute())
 
-            environment.filters["linkable_path"] = _linkable_path
+            # TODO: explain waivers before merging!
+            cast(dict[str, Any], environment.filters)["linkable_path"] = _linkable_path
+
         else:
             # Links used in html should be relative to a workdir
             def _linkable_path(path: str) -> str:
                 return str(Path(path).relative_to(self.phase_workdir))
 
-            environment.filters["linkable_path"] = _linkable_path
+            # TODO: explain waivers before merging!
+            cast(dict[str, Any], environment.filters)["linkable_path"] = _linkable_path
 
         if self.data.display_guest == 'always':
             display_guest = True
