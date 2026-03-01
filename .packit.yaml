@@ -114,10 +114,9 @@ _:
           - status | discuss
           - ci | skip
 
-  # Internal provisioning jobs
-  - &internal-provision
+  # Provisioning jobs
+  - &provision
     <<: *test-base
-    <<: *internal
     <<: *require-full-tests
     tf_extra_params:
       environments:
@@ -125,6 +124,33 @@ _:
             context:
               how: provision
           <<: *tmt-cloud-resources
+
+  # Internal provisioning jobs
+  - &internal-provision
+    # TODO: can I merge `provision` and `internal`? They seem to fight over `tf_extra_params`,
+    # dropping keys.
+    # <<: *provision
+    # <<: *internal
+
+    <<: *test-base
+    <<: *require-full-tests
+    use_internal_tf: true
+    tf_extra_params:
+      environments:
+        - <<: *copr-teemtee-stable
+          tmt:
+            context:
+              how: provision
+          settings:
+            provisioning:
+              tags:
+                BusinessUnit: tmt
+
+    targets:
+      # Temporarily running these on F42 because tests started to break due to avc on F43
+      # TODO: Move revert this targets overwrite
+      # - fedora-latest-stable
+      - fedora-42
 
 jobs:
   # Build released bits to stable
@@ -170,6 +196,10 @@ jobs:
   - <<: *internal-provision
     identifier: provision-bootc
     tmt_plan: /plans/provision/bootc
+
+  - <<: *provision
+    identifier: 'provision:container'
+    tmt_plan: /plans/provision/container
 
   - <<: *internal-provision
     identifier: provision-virtual
