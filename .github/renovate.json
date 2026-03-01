@@ -6,6 +6,7 @@
     ":enablePreCommit",
     ":semanticCommitsDisabled"
   ],
+  "schedule": ["* 0-6 * * 1"],
   "separateMajorMinor": false,
   "configMigration": true,
   "labels": [
@@ -46,12 +47,7 @@
       "matchManagers": ["pep621"],
       "matchDepTypes": ["project.optional-dependencies"],
       "enabled": true,
-      "matchPackageNames": [
-        "/renku-sphinx-theme/",
-        "/sphinx/",
-        "/readthedocs-sphinx-ext/",
-        "/docutils/"
-      ]
+      "matchJsonata": ["managerData.depGroup = 'docs'"]
     },
     {
       "description": "Group hatch dev dependencies together",
