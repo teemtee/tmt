@@ -1636,6 +1636,27 @@ def _parse_beaker(spec: Spec) -> BaseConstraint:
 
 
 @ungroupify
+def _parse_aws(spec: Spec) -> BaseConstraint:
+    """
+    Parse constraints related to the ``aws`` HW requirement.
+
+    :param spec: raw constraint block specification.
+    :returns: block representation as :py:class:`BaseConstraint` or one of its subclasses.
+    """
+
+    group = And()
+
+    group.constraints += _parse_text_constraints(
+        spec,
+        'aws',
+        ('instance-type',),
+        allowed_operators=(Operator.EQ, Operator.NEQ),
+    )
+
+    return group
+
+
+@ungroupify
 def _parse_generic_spec(spec: Spec) -> BaseConstraint:
     """
     Parse actual constraints.
@@ -1651,6 +1672,9 @@ def _parse_generic_spec(spec: Spec) -> BaseConstraint:
 
     if 'beaker' in spec:
         group.constraints += [_parse_beaker(spec['beaker'])]
+
+    if 'aws' in spec:
+        group.constraints += [_parse_aws(spec['aws'])]
 
     if 'boot' in spec:
         group.constraints += [_parse_boot(spec['boot'])]

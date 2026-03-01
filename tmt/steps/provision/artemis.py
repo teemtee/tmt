@@ -536,6 +536,17 @@ class GuestArtemis(tmt.GuestSsh):
         if self.hardware is not None:
             environment['hw']['constraints'] = self.hardware.to_spec()
 
+            # Extract AWS instance-type constraint for passing to Artemis API
+            variant = self.hardware.constraint.variant()
+            for constraint in variant:
+                components = constraint.expand_name()
+
+                # Check for the specific aws.instance-type requirement
+                if components.name == 'aws' and components.child_name == 'instance_type':
+                    # Inject the AWS instance type requirement into the environment
+                    environment['aws_instance_type'] = constraint.value
+                    self.debug('aws_instance_type', constraint.value, level=4)
+
         if self.api_version >= "0.0.24":
             if self.skip_prepare_verify_ssh:
                 data['skip_prepare_verify_ssh'] = self.skip_prepare_verify_ssh
