@@ -75,7 +75,7 @@ rlJournalStart
 
         rlAssertGrep "arch: $arch" $rlRun_LOG
         rlAssertGrep "distro: $distro" $rlRun_LOG
-        rlAssertGrep "kernel: $kernel" $rlRun_LOG
+        rlAssertGrep "kernel release: $kernel" $rlRun_LOG
         rlAssertGrep "package manager: $package_manager" $rlRun_LOG
         rlAssertGrep "selinux: $selinux" $rlRun_LOG
         rlAssertGrep "is superuser: $is_superuser" $rlRun_LOG
@@ -86,7 +86,7 @@ rlJournalStart
 
             rlAssertGrep "arch: $arch" $rlRun_LOG
             rlAssertGrep "distro: $distro" $rlRun_LOG
-            rlAssertGrep "kernel: $kernel" $rlRun_LOG
+            rlAssertGrep "kernel release: $kernel" $rlRun_LOG
             rlAssertGrep "package manager: $package_manager" $rlRun_LOG
             rlAssertGrep "selinux: $selinux" $rlRun_LOG
             rlAssertGrep "is superuser: $bfu_is_superuser" $rlRun_LOG

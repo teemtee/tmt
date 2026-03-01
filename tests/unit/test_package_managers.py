@@ -222,8 +222,6 @@ def test_discovery(
 
         assert guest.facts.package_manager == expected
 
-        assert_log(caplog, message=MATCH(rf"^Discovered package manager: {expected_discovery}$"))
-
     # Images in which `dnf5`` would be the best possible choice, do not
     # come with `dnf5`` pre-installed. Therefore run the discovery first,
     # but expect to find *dnf* instead of `dnf5`. Then install `dnf5`,

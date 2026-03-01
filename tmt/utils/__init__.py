@@ -1134,7 +1134,7 @@ class ShellScript:
             wrapper.
         """
 
-        self._script = textwrap.dedent(script)
+        self._script = textwrap.dedent(script).strip()
 
     def __str__(self) -> str:
         return self._script
