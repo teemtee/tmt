@@ -65,7 +65,7 @@ rlJournalStart
         rlRun "tmpkeep=\$(mktemp -d)" 0 "Create a temporary directory for keep test"
         rlRun -s "tmt run -i $tmpkeep/run1 --until provision provision -h local"
         rlRun -s "tmt run -i $tmpkeep/run2 --until provision provision -h local"
-        rlRun "tmt clean guests --workdir-root $tmpkeep --keep 1"
+        rlRun "tmt clean guests --workdir-root $tmpkeep --preserve 1"
         rlRun -s "tmt status --workdir-root $tmpkeep -vv"
         rlAssertGrep "(done\s+){2}(todo\s+){4}done\s+$tmpkeep/run1" "$rlRun_LOG" -E
         rlAssertGrep "(done\s+){2}(todo\s+){5}$tmpkeep/run2" "$rlRun_LOG" -E
