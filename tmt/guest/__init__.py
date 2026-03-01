@@ -16,7 +16,7 @@ import string
 import subprocess
 import textwrap
 import threading
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterator, Sequence
 from shlex import quote
 from typing import (
     TYPE_CHECKING,
