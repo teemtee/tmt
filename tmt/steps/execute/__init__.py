@@ -4,7 +4,7 @@ import itertools
 import signal as _signal
 import subprocess
 import threading
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 import click
@@ -979,16 +979,15 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
         )
 
     @abc.abstractmethod
-    def gather_tasks(
+    def tasks(
         self,
-    ) -> list[tuple['ExecutePlugin[ExecuteStepData]', list['Guest']]]:
+    ) -> Iterator[tuple['ExecutePlugin[ExecuteStepData]', list['Guest']]]:
         """
-        Return tasks to be enqueued for execution.
+        Iterate over tasks to be enqueued for execution.
 
-        This method returns a list of tuples, each containing a plugin phase
-        copy and the list of guests it should run on.
+        :yields: tuple of two items, a plugin phase copy
+            and the list of guests it should run on.
         """
-
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -1219,7 +1218,7 @@ class Execute(tmt.steps.Step):
                 queue.enqueue_action(phase=phase)
 
             elif isinstance(phase, ExecutePlugin):
-                for phase_copy, guests in phase.gather_tasks():
+                for phase_copy, guests in phase.tasks():
                     queue.enqueue_plugin(phase=phase_copy, guests=guests)
 
         failed_tasks: list[Union[ActionTask, PluginTask[ExecuteStepData, None]]] = []

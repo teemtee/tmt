@@ -2,7 +2,7 @@ duration: 10m
 tier: 4
 
 /full:
-    summary: Perform a full distro upgrade
+    summary: Perform a full distro upgrade with multiple discover phases
     test: ./full.sh
     # dnf upgrade is run, this may take quite long
     duration: 1h
@@ -30,15 +30,6 @@ tier: 4
 /skip-tests:
     summary: Skip tests before and/or after upgrade
     test: ./skip-tests.sh
-    duration: 1h
-    tag+:
-      - provision-only
-      - provision-virtual
-
-/multi-phase-discover:
-    summary: Perform a full distro upgrade with multiple discover phases
-    test: ./multi-phase-discover.sh
-    # dnf upgrade is run, this may take quite long
     duration: 1h
     tag+:
       - provision-only

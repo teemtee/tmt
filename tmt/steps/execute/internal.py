@@ -1,4 +1,5 @@
 import copy
+from collections.abc import Iterator
 from typing import Any, Optional, cast
 
 import tmt.base.core
@@ -272,21 +273,16 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         super().__init__(**kwargs)
         self._previous_progress_message = ""
 
-    def gather_tasks(
+    def tasks(
         self,
-    ) -> list[tuple['ExecutePlugin[ExecuteStepData]', list['Guest']]]:
-        """
-        Return tasks to be enqueued for execution.
-
-        A single execute plugin is expected to process (potentially)
-        multiple discover phases. There must be a way to tell the execute
-        plugin which discover phase to focus on. Unfortunately, the
-        current way is the execute plugin checking its `discover`
-        attribute. For each discover phase, we need a copy of the execute
-        plugin, so we could point it to that discover phase rather than
-        let it "see" all tests, or test in different discover phase.
-        """
-        tasks: list[tuple[ExecutePlugin[ExecuteStepData], list[Guest]]] = []
+    ) -> Iterator[tuple['ExecutePlugin[ExecuteStepData]', list['Guest']]]:
+        # A single execute plugin is expected to process (potentially)
+        # multiple discover phases. There must be a way to tell the execute
+        # plugin which discover phase to focus on. Unfortunately, the
+        # current way is the execute plugin checking its `discover`
+        # attribute. For each discover phase, we need a copy of the execute
+        # plugin, so we could point it to that discover phase rather than
+        # let it "see" all tests, or test in different discover phase.
         for discover in self.step.plan.discover.phases(classes=(DiscoverPlugin,)):
             if not discover.enabled_by_when:
                 continue
@@ -294,17 +290,14 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             phase_copy = cast(ExecutePlugin[ExecuteStepData], copy.copy(self))
             phase_copy.discover_phase = discover.name
 
-            tasks.append(
-                (
-                    phase_copy,
-                    [
-                        guest
-                        for guest in self.step.plan.provision.ready_guests
-                        if discover.enabled_on_guest(guest)
-                    ],
-                )
+            yield (
+                phase_copy,
+                [
+                    guest
+                    for guest in self.step.plan.provision.ready_guests
+                    if discover.enabled_on_guest(guest)
+                ],
             )
-        return tasks
 
     def _test_output_logger(
         self,
