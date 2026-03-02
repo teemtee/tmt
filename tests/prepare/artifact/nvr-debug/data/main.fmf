@@ -1,0 +1,8 @@
+provision:
+    how: container
+
+prepare:
+    - name: Install createrepo
+      how: install
+      package:
+        - createrepo
