@@ -34,3 +34,12 @@ tier: 4
     tag+:
       - provision-only
       - provision-virtual
+
+/multi-phase-discover:
+    summary: Perform a full distro upgrade with multiple discover phases
+    test: ./multi-phase-discover.sh
+    # dnf upgrade is run, this may take quite long
+    duration: 1h
+    tag+:
+      - provision-only
+      - provision-virtual

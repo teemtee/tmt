@@ -1,3 +1,4 @@
+import copy
 from typing import Any, Optional, Union, cast
 
 import fmf.utils
@@ -10,7 +11,7 @@ import tmt.utils
 from tmt.container import container, field, key_to_option
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData, normalize_ref
 from tmt.steps.discover.fmf import DiscoverFmf, DiscoverFmfStepData
-from tmt.steps.execute import ExecutePlugin
+from tmt.steps.execute import ExecutePlugin, ExecuteStepData
 from tmt.steps.execute.internal import ExecuteInternal, ExecuteInternalData
 from tmt.steps.prepare import PreparePlugin
 from tmt.steps.prepare.install import PrepareInstallData
@@ -227,6 +228,30 @@ class ExecuteUpgrade(ExecuteInternal):
     @discover.setter
     def discover(self, plugin: Optional[DiscoverPlugin[DiscoverStepData]]) -> None:
         self._discover = plugin
+
+    def gather_tasks(
+        self,
+    ) -> list[tuple['ExecutePlugin[ExecuteStepData]', list['tmt.guest.Guest']]]:
+        """
+        Return tasks to be enqueued for execution.
+
+        upgrade plugin is expected to (potentially) execute multiple
+        discover phases on old, perform the upgrade, then execute
+        those same discover phases again on new. All of this should occur
+        in a single task.
+        """
+        phase_copy = cast(ExecutePlugin[ExecuteStepData], copy.copy(self))
+        # We want to run all discover phases on old and new, so set discover_phase to None.
+        # This comes with the responsibility to later only run discover phases that are enabled
+        # for that guest, based on discover.enabled_by_when and discover.enabled_on_guest(guest).
+        phase_copy.discover_phase = None
+
+        return [
+            (
+                phase_copy,
+                self.step.plan.provision.ready_guests,
+            )
+        ]
 
     def go(
         self,
@@ -470,21 +495,36 @@ class ExecuteUpgrade(ExecuteInternal):
         The prefix is also set as IN_PLACE_UPGRADE environment variable.
         """
 
-        names_backup = []
-        for test_origin in self.discover.tests(enabled=True):
-            names_backup.append(test_origin.test.name)
-            test_origin.test.name = f'/{prefix}/{test_origin.test.name.lstrip("/")}'
+        # Backup the original discover phase, it should be None
+        original_discover_phase = self.discover_phase
 
-        self._run_tests(
-            guest=guest,
-            extra_environment=Environment({STATUS_VARIABLE: EnvVarValue(prefix)}),
-            logger=logger,
-        )
+        # Run discover phases one at a time,
+        # only running phases that are enabled for this guest.
+        for discover in self.step.plan.discover.phases(classes=(DiscoverPlugin,)):
+            if discover.enabled_by_when and discover.enabled_on_guest(guest):
+                self.discover_phase = discover.name
+
+                # Backup and modify test names for this discover phase
+                test_name_backups: list[tuple[tmt.base.core.Test, str]] = []
+                for test_origin in self.discover.tests(
+                    phase_name=self.discover_phase, enabled=True
+                ):
+                    test_name_backups.append((test_origin.test, test_origin.test.name))
+                    test_origin.test.name = f'/{prefix}/{test_origin.test.name.lstrip("/")}'
+
+                self._run_tests(
+                    guest=guest,
+                    extra_environment=Environment({STATUS_VARIABLE: EnvVarValue(prefix)}),
+                    logger=logger,
+                )
+
+                # Restore test names immediately after this phase
+                for test, original_name in test_name_backups:
+                    test.name = original_name
+
+        self.discover_phase = original_discover_phase
 
         self._remove_old_results(prefix)
-
-        for i, test_origin in enumerate(self.discover.tests(enabled=True)):
-            test_origin.test.name = names_backup[i]
 
     def _remove_old_results(self, prefix: str) -> None:
         """

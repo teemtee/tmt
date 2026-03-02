@@ -1,5 +1,6 @@
 discover:
-    how: fmf
+    - how: fmf
+      filter: tag:-extra
 provision:
     how: virtual
     image: $@{distro}
@@ -26,3 +27,11 @@ execute:
         execute+:
             upgrade-path: $@{upgrade-path}
             skip-tests-after: true
+/multi-phase-discover:
+    summary: Upgrade test with multiple discover phases
+    discover+:
+        - name: extra-phase
+          how: fmf
+          filter: tag:extra
+    execute+:
+        upgrade-path: $@{upgrade-path}
