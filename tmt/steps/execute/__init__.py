@@ -1001,14 +1001,14 @@ class Execute(tmt.steps.Step):
         self,
         *,
         plan: "tmt.Plan",
-        data: tmt.steps.RawStepDataArgument,
+        raw_data: list[tmt.steps._RawStepData],
         logger: tmt.log.Logger,
     ) -> None:
         """
         Initialize execute step data
         """
 
-        super().__init__(plan=plan, data=data, logger=logger)
+        super().__init__(plan=plan, raw_data=raw_data, logger=logger)
         # List of Result() objects representing test results
         self._results: list[tmt.Result] = []
         self._old_results: list[tmt.Result] = []

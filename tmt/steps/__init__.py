@@ -360,9 +360,6 @@ class _RawStepData(TypedDict, total=False):
     order: Optional[int]
 
 
-RawStepDataArgument = Union[_RawStepData, list[_RawStepData]]
-
-
 StepDataT = TypeVar('StepDataT', bound='StepData')
 
 #: A type variable representing a return value of plugin's ``go()`` method.
@@ -533,7 +530,7 @@ class Step(
         self,
         *,
         plan: 'Plan',
-        data: Optional[RawStepDataArgument] = None,
+        raw_data: Optional[list[_RawStepData]] = None,
         name: Optional[str] = None,
         workdir: tmt.utils.WorkdirArgumentType = None,
         logger: tmt.log.Logger,
@@ -557,22 +554,7 @@ class Step(
         # NOTE: this is not a normalization step as performed by NormalizeKeysMixin.
         # Here we make sure the raw data can be consumed by the delegation code, we
         # do not modify any existing content of raw data items.
-
-        # Create an empty step by default (can be updated from cli)
-        if data is None:
-            raw_data: list[_RawStepData] = [{}]
-
-        # Convert to list if only a single config provided
-        elif isinstance(data, dict):
-            raw_data = [data]
-
-        # List is as good as it gets
-        elif isinstance(data, list):
-            raw_data = data
-
-        # Shout about invalid configuration
-        else:
-            raise tmt.utils.GeneralError(f"Invalid '{self}' config in '{self.plan}'.")
+        raw_data = raw_data or []
 
         raw_data = self._set_default_names(raw_data)
         raw_data = self._apply_cli_invocations(raw_data)
