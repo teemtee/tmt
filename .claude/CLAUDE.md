@@ -11,6 +11,7 @@ Metadata Format (FMF) for storing test execution data directly within git reposi
 ## Development Commands
 
 ### Setup and Dependencies
+
 ```bash
 # Install development dependencies
 make develop
@@ -20,18 +21,17 @@ make build-deps
 ```
 
 ### Testing
-```bash
-# Run pre-commit checks
-pre-commit run --all-files
-```
 
-### Code Quality
 ```bash
 # Run pre-commit checks
 pre-commit run --all-files
+
+# Run the core test plan - runs on developer's workstation
+tmt --feeling-safe -vv run -a provision -h local plan -n '^/plans/features/core$'
 ```
 
 ### Building and Packaging
+
 ```bash
 # Build documentation
 make docs
@@ -47,6 +47,7 @@ make srpm
 ```
 
 ### Container Images
+
 ```bash
 # Build tmt container images
 make images
@@ -63,6 +64,7 @@ make clean/images/test
 ```
 
 ### Development Utilities
+
 ```bash
 # Clean temporary files and build artifacts
 make clean
@@ -75,7 +77,7 @@ make help
 
 ### Core Components
 
-**Base Classes** (`tmt/base.py`):
+#### Base Classes (`tmt/base/*.py`)
 
 - `Tree`: Represents the metadata tree structure
 - `Test`: Individual test metadata and execution
@@ -83,7 +85,7 @@ make help
 - `Story`: User story requirements
 - `Run`: Test run execution context
 
-**Steps Framework** (`tmt/steps/`):
+#### Steps Framework (`tmt/steps/`)
 
 TMT uses a 7-phase execution model:
 
@@ -95,18 +97,19 @@ TMT uses a 7-phase execution model:
 6. **finish**: Cleanup and finalization tasks
 7. **cleanup**: Remove temporary resources
 
-Each step is implemented as a plugin system supporting multiple "how" methods.
+Each step is implemented as a plugin system supporting multiple `how` methods.
 
-**Plugin System**:
+#### Plugin System
 
-- Steps can have multiple implementations (e.g., provision: local, container, virtual, beaker)
-- Plugins are dynamically loaded based on the "how" field in step configuration
-- Common plugins: ansible, shell, fmf, beakerlib
+- Steps can have multiple implementations (e.g., `provision: local`, `container`, `virtual`, `beaker`)
+- Plugins are dynamically loaded based on the `how` field in step configuration
+- Common plugins: `ansible`, `shell`, `fmf`, `beakerlib` framework
 
-**Key Directories**:
+#### Key Directories
 
 - `tmt/checks/`: Additional checks running before/after tests (AVC, journalctl, coredumpct, ...)
 - `tmt/frameworks/`: Test framework support (beakerlib, shell)
+- `tmt/guest/`: Abstraction of guest hosting the tests
 - `tmt/package_managers/`: Abstraction of package manager actions used by the rest of tmt code
 - `tmt/steps/discover/`: Test discovery implementations (fmf, shell)
 - `tmt/steps/provision/`: Environment provisioning (local, container, virtual, artemis, bootc)
@@ -118,14 +121,16 @@ Each step is implemented as a plugin system supporting multiple "how" methods.
 
 ### Configuration and Metadata
 
-**FMF Integration**: TMT heavily uses the Flexible Metadata Format (fmf) for:
+#### FMF Integration
+
+TMT heavily uses the Flexible Metadata Format (fmf) for:
 
 - Test definitions and metadata
 - Plan configurations
 - Context and environment specifications
 - Inheritance and data organization
 
-**Config System** (`tmt/config/`):
+#### Config System (`tmt/config/`)
 
 - Centralized configuration management
 - Hardware requirements specification
@@ -133,7 +138,7 @@ Each step is implemented as a plugin system supporting multiple "how" methods.
 
 ### Testing Structure
 
-**Tests Organization**:
+#### Tests Organization
 
 - `tests/unit/`: Unit tests using pytest
 - `tests/integration/`: Integration tests with external services
@@ -143,7 +148,7 @@ Each step is implemented as a plugin system supporting multiple "how" methods.
 
 ### CLI and User Interface
 
-**Command Structure**:
+#### Command Structure
 
 - Main CLI in `tmt/cli/` with modular command organization
 - Consistent option handling across commands
@@ -164,14 +169,13 @@ Each step is implemented as a plugin system supporting multiple "how" methods.
 - Unit tests should mock external dependencies
 - Integration tests can use the container framework
 - Follow existing test patterns in `tests/` directory
-- Use `make test` for quick validation during development
 
 ### Code Standards
 
 - Python 3.9+ required
 - Type hints enforced via mypy and pyright with strict settings
-- Comprehensive linting via ruff (configured in pyproject.toml)
-- Code formatting via ruff (configured in pyproject.toml)
+- Comprehensive linting via ruff (configured in `pyproject.toml`)
+- Code formatting via ruff (configured in `pyproject.toml`)
 - Comprehensive docstring requirements
 - Security-focused linting with bandit checks provided by ruff
 
