@@ -15,5 +15,6 @@ adjust+:
       - how: avc
         ignore-pattern:
           - "type=AVC.*comm=bootupctl.*scontext=system_u:system_r:install_t"
+          - "type=SELINUX_ERR.*oldcontext=system_u:system_r:install_t.*newcontext=system_u:system_r:mount_t"
           # From default pattern
           - "type=USER_AVC.*received policyload notice"
