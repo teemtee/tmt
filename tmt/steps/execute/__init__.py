@@ -20,7 +20,6 @@ import tmt.utils.signals
 from tmt.checks import Check, CheckEvent, CheckPlugin
 from tmt.container import container, field, simple_field
 from tmt.guest import Guest
-from tmt.options import option as option
 from tmt.plugins import PluginRegistry
 from tmt.result import (
     CheckResult,
