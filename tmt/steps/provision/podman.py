@@ -119,8 +119,10 @@ class PodmanGuestData(tmt.guest.GuestData):
         option='--device',
         multiple=True,
         metavar='DEVICE',
-        help='Device to expose to the container (e.g., /dev/kvm, /dev/ttyS3). '
-        'Can be specified multiple times.',
+        help="""
+        Device to expose to the container (e.g., /dev/kvm, /dev/ttyS3).
+        Can be specified multiple times.
+        """,
     )
 
 
@@ -322,8 +324,8 @@ class GuestContainer(tmt.Guest):
         additional_args.extend(self._setup_environment())
 
         # Add device access if requested
-        for device_path in self.device:
-            additional_args.extend(['--device=' + device_path])
+        for device in self.device:
+            additional_args.extend(['--device', device])
 
         # Run the container
         self.debug(f"Start container '{self.image}'.")
