@@ -29,5 +29,3 @@ prepare:
       provide:
         - repository-file:file:tc12-a.repo
         - repository-file:file:tc12-b.repo
-execute:
-    how: tmt

@@ -29,5 +29,3 @@ prepare:
       provide:
         - repository-file:file:tc11-high.repo
         - repository-file:file:tc11-low.repo
-execute:
-    how: tmt
