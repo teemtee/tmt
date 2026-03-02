@@ -938,9 +938,14 @@ class GuestFacts(SerializableContainer):
         reports ``null``.
         """
 
+        # Note: we cannot reuse `sudo_prefix` fact so we just recall the query
+        # function for now
+        sudo_prefix = self._query_sudo_prefix(guest)
+        assert sudo_prefix is not None  # narrow type
+
         image = self._query(
             guest,
-            [(ShellScript('sudo bootc status --format yaml').to_shell_command(), r'image: (.+)')],
+            [(Command(sudo_prefix, "bootc", "status", "--format", "yaml"), r'image: (.+)')],
         )
 
         # if bootc reports status and the image is not `image: null`, we are in image mode
