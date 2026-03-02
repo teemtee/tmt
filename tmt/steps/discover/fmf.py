@@ -434,9 +434,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     detailed information about how exactly the regular expressions are
     handled.
 
-    .. versionadded:: 1.69
-       The ``tests`` key accepts a dict with at least a key ``name``. See
-       :ref:`/discover/fmf/adjust-tests` for more info.
+    The ``tests`` key accepts a dict with at least a key ``name``. See
+    :ref:`/discover/fmf/adjust-tests` for more info.
 
     Link Filter
     ^^^^^^^^^^^
@@ -534,21 +533,20 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
               - require~:
                   - '/python3.11/python3.12/'
 
-    .. versionadded:: 1.69
-       You can also adjust individual test(s) using the form
+    You can also adjust individual test(s) using the form
 
-       .. code-block:: yaml
+    .. code-block:: yaml
 
-          discover:
-              how: fmf
-              test:
-                - name: ^/test/one$
-                  check+:
-                    - how: avc
+       discover:
+           how: fmf
+           test:
+             - name: ^/test/one$
+               check+:
+                 - how: avc
 
-       Note that unlike the more generic ``adjust-tests``, only one adjust
-       rule is allowed. Everything except for the ``name`` key is treated as
-       the adjust rule.
+    Note that unlike the more generic ``adjust-tests``, only one adjust
+    rule is allowed. Everything except for the ``name`` key is treated as
+    the adjust rule.
     """
 
     _data_class = DiscoverFmfStepData
