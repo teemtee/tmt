@@ -9,7 +9,6 @@ import tmt.steps
 import tmt.utils
 from tmt.container import container, simple_field
 from tmt.guest import Guest
-from tmt.options import option as option
 from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
 from tmt.steps import (

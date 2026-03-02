@@ -24,7 +24,6 @@ import tmt.utils
 import tmt.utils.filesystem
 import tmt.utils.git
 import tmt.utils.url
-from tmt.options import option as option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
 from tmt.utils import Command, Environment, EnvVarValue, GeneralError, Path

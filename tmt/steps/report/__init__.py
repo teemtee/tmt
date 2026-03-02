@@ -2,7 +2,6 @@ from typing import Optional, TypeVar, Union, cast
 
 import tmt.steps
 from tmt.container import container
-from tmt.options import option as option
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action
 
