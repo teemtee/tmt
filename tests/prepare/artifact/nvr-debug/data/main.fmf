@@ -1,6 +1,9 @@
 provision:
     how: container
 
+execute:
+    how: tmt
+
 prepare:
     - name: Install createrepo
       how: install
