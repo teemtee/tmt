@@ -5,3 +5,13 @@ tag+:
 require:
   - tmt+provision-virtual
 duration: 2h
+
+adjust+:
+  - when: distro > fedora-42
+    because: |
+      Tests have started to fail avc test
+      https://bugzilla.redhat.com/show_bug.cgi?id=2443825
+    check:
+      - how: avc
+        ignore-pattern:
+          - "type=AVC.*comm=bootupctl.*scontext=system_u:system_r:install_t"
