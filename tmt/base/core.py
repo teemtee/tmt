@@ -2798,6 +2798,8 @@ class Plan(
             echo(tmt.utils.format('tier', self.tier, key_color='cyan'))
         if self.link is not None:
             self.link.show()
+        if self.ansible:
+            echo(tmt.utils.format('ansible', self.ansible.to_spec(), key_color='cyan'))
         if self.verbosity_level:
             self._show_additional_keys()
 

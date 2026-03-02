@@ -32,6 +32,7 @@ from typing import (
 import fmf.utils
 
 import tmt
+import tmt.ansible
 import tmt.hardware
 import tmt.log
 import tmt.package_managers
@@ -1405,7 +1406,7 @@ class GuestData(
             elif isinstance(value, dict):
                 printable_value = tmt.utils.format_value(value)
 
-            elif isinstance(value, tmt.hardware.Hardware):
+            elif isinstance(value, (tmt.hardware.Hardware, tmt.ansible.GuestAnsible)):
                 printable_value = tmt.utils.to_yaml(value.to_spec())
 
             else:
