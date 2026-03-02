@@ -196,20 +196,18 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         )
 
         # Initialize all providers and have them contribute to the shared repo
-        providers: list[tuple[ArtifactProvider, str]] = []
+        providers: list[ArtifactProvider] = []
         seen_nvras: dict[str, str] = {}
         providers_data: list[dict[str, Any]] = []
 
         # --- Pass 1: Initialize all providers and validate for duplicate NVRAs ---
-        for raw_provider_id in self.data.provide:
+        for raw_id in self.data.provide:
             try:
-                provider_class = get_artifact_provider(raw_provider_id)
+                provider_class = get_artifact_provider(raw_id)
 
-                # Sanitize the provider ID to use as a directory name
-                provider_id_sanitized = tmt.utils.sanitize_name(raw_provider_id, allow_slash=False)
-                provider_logger = self._logger.descend(raw_provider_id)
+                provider_logger = self._logger.descend(raw_id)
                 provider = provider_class(
-                    raw_provider_id,
+                    raw_id,
                     repository_priority=self.data.default_repository_priority,
                     logger=provider_logger,
                 )
@@ -218,26 +216,26 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
                 providers_data.append(
                     {
-                        'id': provider.raw_provider_id,
+                        'id': provider.raw_id,
                         'artifacts': provider.artifact_metadata,
                     }
                 )
 
-                providers.append((provider, provider_id_sanitized))
+                providers.append(provider)
 
             except tmt.utils.PrepareError:
                 raise
 
             except Exception as error:
                 raise tmt.utils.PrepareError(
-                    f"Failed to initialize artifact provider '{raw_provider_id}'."
+                    f"Failed to initialize artifact provider '{raw_id}'."
                 ) from error
 
         # --- Pass 2: Download and contribute (only reached if no duplicates) ---
-        for provider, provider_id_sanitized in providers:
+        for provider in providers:
             try:
                 # Define a unique download path for this provider's artifacts
-                download_path = self.plan_workdir / "artifacts" / provider_id_sanitized
+                download_path = self.plan_workdir / "artifacts" / provider.sanitized_id
 
                 # First, fetch the contents (download artifacts)
                 provider.fetch_contents(guest, download_path)
@@ -254,7 +252,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
             except Exception as error:
                 raise tmt.utils.PrepareError(
-                    f"Failed to use artifact provider '{provider.raw_provider_id}'."
+                    f"Failed to use artifact provider '{provider.raw_id}'."
                 ) from error
 
         # Create or update the shared repository.
@@ -266,7 +264,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
         # Collect all repositories (shared repository + provider repositories)
         repositories: list[Repository] = [shared_repository]
-        for provider, _ in providers:
+        for provider in providers:
             repositories.extend(provider.get_repositories())
 
         # Install all repositories centrally
@@ -298,16 +296,15 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         """
         Check for duplicate NVRAs across providers.
         """
-        raw_provider_id = provider.raw_provider_id
+        raw_id = provider.raw_id
 
-        for artifact_dict in provider.artifact_metadata:
-            if (nvra := artifact_dict["nvra"]) in seen_nvras:
+        for artifact_info in provider.artifact_metadata:
+            if (nvra := artifact_info["nvra"]) in seen_nvras:
                 raise tmt.utils.PrepareError(
-                    f"Artifact '{nvra}' provided by both "
-                    f"'{seen_nvras[nvra]}' and '{raw_provider_id}'."
+                    f"Artifact '{nvra}' provided by both '{seen_nvras[nvra]}' and '{raw_id}'."
                 )
 
-            seen_nvras[nvra] = raw_provider_id
+            seen_nvras[nvra] = raw_id
 
     def _save_artifacts_metadata(self, providers_data: list[dict[str, Any]]) -> None:
         """

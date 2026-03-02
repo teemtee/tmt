@@ -9,8 +9,8 @@ from tmt.steps.prepare.artifact.providers import ArtifactInfo, ArtifactProvider,
 
 
 class MockProvider(ArtifactProvider):
-    def _extract_provider_id(self, raw_provider_id: str) -> str:
-        return raw_provider_id.split(":", 1)[1]
+    def _extract_provider_id(self, raw_id: str) -> str:
+        return raw_id.split(":", 1)[1]
 
     @property
     def artifacts(self):
@@ -60,7 +60,7 @@ def test_persist_artifact_metadata(tmp_path, mock_provider):
 
     providers_data = [
         {
-            "id": mock_provider.raw_provider_id,
+            "id": mock_provider.raw_id,
             "artifacts": mock_provider.artifact_metadata,
         }
     ]

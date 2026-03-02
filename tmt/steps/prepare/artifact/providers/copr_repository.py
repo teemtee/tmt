@@ -44,17 +44,17 @@ class CoprRepositoryProvider(ArtifactProvider):
 
     copr_repo: str  # Parsed Copr repository name (e.g. 'packit/packit-dev')
 
-    def __init__(self, raw_provider_id: str, repository_priority: int, logger: tmt.log.Logger):
-        super().__init__(raw_provider_id, repository_priority, logger)
+    def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
+        super().__init__(raw_id, repository_priority, logger)
         self.copr_repo = self.id
 
     @classmethod
-    def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
+    def _extract_provider_id(cls, raw_id: str) -> ArtifactProviderId:
         prefix = 'copr.repository:'
-        if not raw_provider_id.startswith(prefix):
-            raise ValueError(f"Invalid Copr repository provider format: '{raw_provider_id}'.")
+        if not raw_id.startswith(prefix):
+            raise ValueError(f"Invalid Copr repository provider format: '{raw_id}'.")
 
-        value = raw_provider_id[len(prefix) :]
+        value = raw_id[len(prefix) :]
         if not value:
             raise ValueError("Missing Copr repository name.")
 

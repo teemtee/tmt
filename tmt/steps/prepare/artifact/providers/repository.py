@@ -35,22 +35,22 @@ class RepositoryFileProvider(ArtifactProvider):
     and lists RPMs available in the defined repositories without downloading them, acting as a
     discovery-only provider. Artifacts are all available RPM packages listed in the repository.
 
-    :param raw_provider_id: The full provider identifier, starting with 'repository-file:'.
+    :param raw_id: The full provider identifier, starting with 'repository-file:'.
     :param logger: Logger instance for outputting messages.
     :raises GeneralError: If the .repo file URL is invalid.
     """
 
     repository: Repository
 
-    def __init__(self, raw_provider_id: str, repository_priority: int, logger: tmt.log.Logger):
-        super().__init__(raw_provider_id, repository_priority, logger)
+    def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
+        super().__init__(raw_id, repository_priority, logger)
 
     @classmethod
-    def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
+    def _extract_provider_id(cls, raw_id: str) -> ArtifactProviderId:
         prefix = 'repository-file:'
-        if not raw_provider_id.startswith(prefix):
-            raise ValueError(f"Invalid repository provider format: '{raw_provider_id}'.")
-        value = raw_provider_id[len(prefix) :]
+        if not raw_id.startswith(prefix):
+            raise ValueError(f"Invalid repository provider format: '{raw_id}'.")
+        value = raw_id[len(prefix) :]
         if not value:
             raise ValueError("Missing repository URL.")
         return value
