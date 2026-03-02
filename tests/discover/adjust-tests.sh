@@ -7,8 +7,8 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)"
     rlPhaseEnd
 
-    rlPhaseStartTest
-        rlRun -s "tmt -c trigger=commit run -i $run discover plans --name /fmf/adjust-tests"
+    rlPhaseStartTest "Adjust all tests (adjust-tests key)"
+        rlRun -s "tmt -c trigger=commit run --scratch -i $run discover plans --name /fmf/adjust-tests"
         # If we ever change the path...
         tests_yaml="$(find $run -name tests.yaml)"
         rlAssertExists "$tests_yaml"
@@ -23,6 +23,19 @@ rlJournalStart
         # recommend should not contain FAILURE
         rlRun -s "yq '.[].recommend' < $tests_yaml"
         rlAssertNotGrep "FAILURE" "$rlRun_LOG"
+    rlPhaseEnd
+
+    rlPhaseStartTest "Adjust individual tests"
+        rlRun -s "tmt run --scratch -i $run discover plans --name /fmf/adjust-individual-tests"
+        # If we ever change the path...
+        tests_yaml="$(find $run -name tests.yaml)"
+        rlAssertExists "$tests_yaml"
+        # First one has the adjust
+        rlRun -s "yq '.[] | select(.name == \"/tests/discover1\").duration' < $tests_yaml"
+        rlAssertGrep "*2" "$rlRun_LOG"
+        # Other tests have no adjust
+        rlRun -s "yq '.[] | select(.name != \"/tests/discover1\").duration' < $tests_yaml"
+        rlAssertNotGrep "*2" "$rlRun_LOG"
     rlPhaseEnd
 
     rlPhaseStartCleanup
