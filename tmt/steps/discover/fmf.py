@@ -435,7 +435,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     handled.
 
     The ``tests`` key accepts a dict with at least a key ``name``. See
-    :ref:`/discover/fmf/adjust-tests` for more info.
+    the ``Adjust Tests`` section for more info.
 
     Link Filter
     ^^^^^^^^^^^
@@ -504,8 +504,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     Note that internally the modified tests are appended to the list
     specified via ``test``, so those tests will also be selected even if
     not modified.
-
-    .. _/discover/fmf/adjust-tests:
 
     Adjust Tests
     ^^^^^^^^^^^^
