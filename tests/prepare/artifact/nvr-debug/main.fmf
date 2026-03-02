@@ -18,7 +18,7 @@ link:
 require:
   - tmt
   - rpm-build
-  - createrepo_c
+  - createrepo
 
 tag+:
   - provision-only

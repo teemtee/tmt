@@ -14,6 +14,6 @@ for repo_dir in */; do
     done
     find "$build_dir/RPMS" -name "*.rpm" -exec cp {} . \;
     rm -rf "$build_dir"
-    createrepo_c .
+    createrepo .
     popd
 done

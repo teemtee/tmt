@@ -20,20 +20,11 @@ discover:
             set -ex
             rpm -q dummy-nvr-test | grep -E "^dummy-nvr-test-1\.0-"
             dnf repoquery --installed dummy-nvr-test --qf "%{from_repo}" | grep -Fx "test-high-priority"
-provision:
-    how: container
 prepare:
-    - name: Install createrepo_c
-      order: 10
-      how: install
-      package:
-        - createrepo_c
     - name: Copy RPM repos
-      order: 20
       how: shell
       script: mkdir -p /tmp/nvr-test && cp -r tc11-high tc11-low /tmp/nvr-test/
     - name: Install repo files
-      order: 25
       how: artifact
       provide:
         - repository-file:file:tc11-high.repo
