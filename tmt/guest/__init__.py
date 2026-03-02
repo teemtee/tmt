@@ -903,7 +903,7 @@ class GuestFacts(SerializableContainer):
         # Otherwise we may use sudo
         return True
 
-    def _query_sudo_prefix(self, guest: 'Guest') -> Optional[str]:
+    def _query_sudo_prefix(self, guest: 'Guest') -> str:
         # Note: we cannot reuse `is_superuser` or `can_sudo` fact so we just recall the query
         # functions for now
         if self._query_is_superuser(guest):
@@ -941,7 +941,6 @@ class GuestFacts(SerializableContainer):
         # Note: we cannot reuse `sudo_prefix` fact so we just recall the query
         # function for now
         sudo_prefix = self._query_sudo_prefix(guest)
-        assert sudo_prefix is not None  # narrow type
 
         image = self._query(
             guest,
