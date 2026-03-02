@@ -1,0 +1,4 @@
+description: |
+  The :ref:`discover fmf</plugins/discover/fmf>` plugin can now adjust
+  individual tests using the ``test`` key. See the plugin documentation for
+  more detail.
