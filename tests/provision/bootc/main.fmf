@@ -15,3 +15,5 @@ adjust+:
       - how: avc
         ignore-pattern:
           - "type=AVC.*comm=bootupctl.*scontext=system_u:system_r:install_t"
+          # From default pattern
+          - "type=USER_AVC.*received policyload notice"
