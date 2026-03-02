@@ -57,15 +57,7 @@ def test_persist_artifact_metadata(tmp_path, mock_provider):
     prepare.ARTIFACTS_METADATA_FILENAME = 'artifacts.yaml'
 
     PrepareArtifact._detect_duplicate_nvras(prepare, mock_provider, {})
-
-    providers_data = [
-        {
-            "id": mock_provider.raw_id,
-            "artifacts": mock_provider.artifact_metadata,
-        }
-    ]
-
-    PrepareArtifact._save_artifacts_metadata(prepare, providers_data)
+    PrepareArtifact._save_artifacts_metadata(prepare, [mock_provider])
 
     # Verify YAML
     yaml_file = tmp_path / "artifacts.yaml"

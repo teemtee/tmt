@@ -1,4 +1,4 @@
-from typing import Any, ClassVar, Optional
+from typing import ClassVar, Optional
 
 import tmt.base.core
 import tmt.steps
@@ -198,7 +198,6 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
         # Initialize all providers and have them contribute to the shared repo
         providers: list[ArtifactProvider] = []
         seen_nvras: dict[str, str] = {}
-        providers_data: list[dict[str, Any]] = []
 
         # --- Pass 1: Initialize all providers and validate for duplicate NVRAs ---
         for raw_id in self.data.provide:
@@ -213,13 +212,6 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
                 )
 
                 self._detect_duplicate_nvras(provider, seen_nvras)
-
-                providers_data.append(
-                    {
-                        'id': provider.raw_id,
-                        'artifacts': provider.artifact_metadata,
-                    }
-                )
 
                 providers.append(provider)
 
@@ -274,7 +266,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             logger.debug(f"Installed repository '{repo.name}'.")
 
         # Persist artifact metadata to YAML
-        self._save_artifacts_metadata(providers_data)
+        self._save_artifacts_metadata(providers)
 
         # Report configuration summary
         logger.info(
@@ -306,16 +298,26 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
             seen_nvras[nvra] = raw_id
 
-    def _save_artifacts_metadata(self, providers_data: list[dict[str, Any]]) -> None:
+    def _save_artifacts_metadata(self, providers: list[ArtifactProvider]) -> None:
         """
         Persist the metadata of artifacts to a YAML file.
 
         Groups artifacts by provider.
         """
 
+        metadata = {
+            'providers': [
+                {
+                    'id': provider.raw_id,
+                    'artifacts': provider.artifact_metadata,
+                }
+                for provider in providers
+            ]
+        }
+
         metadata_file = self.plan_workdir / self.ARTIFACTS_METADATA_FILENAME
 
         try:
-            metadata_file.write_text(tmt.utils.to_yaml({'providers': providers_data}, start=True))
+            metadata_file.write_text(tmt.utils.to_yaml(metadata, start=True))
         except OSError as error:
             raise tmt.utils.FileError(f"Failed to write into '{metadata_file}' file.") from error
