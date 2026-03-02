@@ -23,7 +23,7 @@ from tmt.utils import Command, NormalizationError, Path
 
 class _RawTestsWithAdjusts(TypedDict, total=True):
     name: str
-    adjust_tests: list[_RawAdjustRule]
+    adjust_rule: Optional[_RawAdjustRule]
 
 
 @container
@@ -34,10 +34,7 @@ class TestsWithAdjusts(
 ):
     name: str
 
-    adjust_tests: list[_RawAdjustRule] = field(
-        default_factory=list,
-        normalize=tmt.utils.normalize_adjust,
-    )
+    adjust_rule: Optional[_RawAdjustRule] = None
 
     @classmethod
     def from_spec(cls, spec: Union[str, _RawTestsWithAdjusts]) -> Self:
@@ -46,10 +43,10 @@ class TestsWithAdjusts(
         return cls(**spec)
 
     def to_spec(self) -> Union[str, _RawTestsWithAdjusts]:
-        if self.adjust_tests:
+        if self.adjust_rule:
             return _RawTestsWithAdjusts(
                 name=self.name,
-                adjust_tests=self.adjust_tests,
+                adjust_rule=self.adjust_rule,
             )
         return self.name
 
@@ -62,12 +59,18 @@ def normalize_tests_with_adjusts(
     def normalize_raw_item(raw_item: Any, index: Optional[int] = None) -> TestsWithAdjusts:
         if isinstance(raw_item, str):
             return TestsWithAdjusts(name=raw_item)
-        if isinstance(raw_item, dict):
-            return TestsWithAdjusts(**raw_item)
         problem_address = key_address
         if index is not None:
             problem_address = f'{problem_address}[{index}]'
-        raise NormalizationError(problem_address, raw_item, "a string or a {name, adjust_tests}")
+        if isinstance(raw_item, dict):
+            try:
+                name = raw_item.pop("name")
+            except KeyError as err:
+                raise NormalizationError(
+                    problem_address, raw_item, "a string or a dict with a key 'name'"
+                ) from err
+            return TestsWithAdjusts(name=name, adjust_rule=cast(_RawAdjustRule, raw_item))
+        raise NormalizationError(problem_address, raw_item, "a string or a dict with a key 'name'")
 
     if value is None:
         return []
@@ -83,7 +86,7 @@ def normalize_tests_with_adjusts(
         return normalized_value
 
     raise NormalizationError(
-        key_address, value, 'a string, a dict or a list of strings or {name, adjust_tests}'
+        key_address, value, "a string, a dict or a list of strings or a dict with a key 'name'"
     )
 
 
@@ -698,8 +701,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # Names of tests selected by --test option
         if self.data.test:
             self.info('tests', fmf.utils.listed([test.name for test in self.data.test]), 'green')
-        tests_without_adjust = [test.name for test in self.data.test if not test.adjust_tests]
-        tests_with_adjust = [test for test in self.data.test if test.adjust_tests]
+        tests_without_adjust = [test.name for test in self.data.test if not test.adjust_rule]
+        tests_with_adjust = [test for test in self.data.test if test.adjust_rule]
 
         # Check the 'test --link' option first, then from discover
         # FIXME: cast() - typeless "dispatcher" method
@@ -789,12 +792,13 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 )
             )
         for test_adjust in tests_with_adjust:
+            assert test_adjust.adjust_rule  # narrow type
             tests.extend(
                 tmt.Tree(
                     logger=self._logger,
                     path=tree_path,
                     fmf_context=self.step.plan.fmf_context,
-                    additional_rules=[*self.data.adjust_tests, *test_adjust.adjust_tests],
+                    additional_rules=[*self.data.adjust_tests, test_adjust.adjust_rule],
                 ).tests(
                     filters=filters,
                     names=[test_adjust.name],

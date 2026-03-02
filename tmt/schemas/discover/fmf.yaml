@@ -51,12 +51,12 @@ properties:
           anyOf:
             - type: string
             - type: object
-              additionalProperties: false
+              additionalProperties: true
               properties:
                 name:
                   type: string
-                adjust-tests:
-                  $ref: "/schemas/core#/definitions/adjust"
+              required:
+                - name
 
   require-test:
     $ref: "/schemas/common#/definitions/one_or_more_strings"
