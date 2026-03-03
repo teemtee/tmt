@@ -249,6 +249,7 @@ FULL_HARDWARE_REQUIREMENTS = """
         is-supported: true
         is-virtualized: false
         hypervisor: "~ xen"
+        confidential: true
     zcrypt:
         adapter: "CEX8C"
         mode: "CCA"
@@ -364,6 +365,7 @@ def test_parse_maximal_constraint() -> None:
           - and:
               - virtualization.is-virtualized: == False
               - virtualization.is-supported: == True
+              - virtualization.confidential: == True
               - virtualization.hypervisor: ~ xen
           - and:
               - zcrypt.adapter: == CEX8C
