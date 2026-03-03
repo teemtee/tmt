@@ -1,4 +1,5 @@
 import abc
+import copy
 import functools
 import itertools
 import signal as _signal
@@ -978,14 +979,15 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             level=3,
         )
 
+    @property
     @abc.abstractmethod
     def tasks(
         self,
-    ) -> Iterator[tuple['ExecutePlugin[ExecuteStepData]', list['Guest']]]:
+    ) -> Iterator[tuple[Optional[str], list['Guest']]]:
         """
         Iterate over tasks to be enqueued for execution.
 
-        :yields: tuple of two items, a plugin phase copy
+        :yields: tuple of two items, a discover phase name
             and the list of guests it should run on.
         """
         raise NotImplementedError
@@ -1218,7 +1220,12 @@ class Execute(tmt.steps.Step):
                 queue.enqueue_action(phase=phase)
 
             elif isinstance(phase, ExecutePlugin):
-                for phase_copy, guests in phase.tasks():
+                for discover_phase_name, guests in phase.tasks:
+                    # For each discover phase, we need a copy of the execute
+                    # plugin, so we could point it to that discover phase rather than
+                    # let it "see" all tests, or test in different discover phase.
+                    phase_copy = cast(ExecutePlugin[ExecuteStepData], copy.copy(phase))
+                    phase_copy.discover_phase = discover_phase_name
                     queue.enqueue_plugin(phase=phase_copy, guests=guests)
 
         failed_tasks: list[Union[ActionTask, PluginTask[ExecuteStepData, None]]] = []

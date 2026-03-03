@@ -1,4 +1,3 @@
-import copy
 from collections.abc import Iterator
 from typing import Any, Optional, cast
 
@@ -16,8 +15,6 @@ from tmt.steps.context.abort import AbortStep
 from tmt.steps.discover import DiscoverPlugin
 from tmt.steps.execute import (
     TEST_OUTPUT_FILENAME,
-    ExecutePlugin,
-    ExecuteStepData,
     TestInvocation,
 )
 from tmt.steps.report.display import ResultRenderer
@@ -273,25 +270,21 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
         super().__init__(**kwargs)
         self._previous_progress_message = ""
 
+    @property
     def tasks(
         self,
-    ) -> Iterator[tuple['ExecutePlugin[ExecuteStepData]', list['Guest']]]:
+    ) -> Iterator[tuple[Optional[str], list['Guest']]]:
         # A single execute plugin is expected to process (potentially)
         # multiple discover phases. There must be a way to tell the execute
         # plugin which discover phase to focus on. Unfortunately, the
         # current way is the execute plugin checking its `discover`
-        # attribute. For each discover phase, we need a copy of the execute
-        # plugin, so we could point it to that discover phase rather than
-        # let it "see" all tests, or test in different discover phase.
+        # attribute.
         for discover in self.step.plan.discover.phases(classes=(DiscoverPlugin,)):
             if not discover.enabled_by_when:
                 continue
 
-            phase_copy = cast(ExecutePlugin[ExecuteStepData], copy.copy(self))
-            phase_copy.discover_phase = discover.name
-
             yield (
-                phase_copy,
+                discover.name,
                 [
                     guest
                     for guest in self.step.plan.provision.ready_guests

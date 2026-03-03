@@ -1,4 +1,3 @@
-import copy
 from collections.abc import Iterator
 from typing import Any, Optional, Union, cast
 
@@ -12,7 +11,7 @@ import tmt.utils
 from tmt.container import container, field, key_to_option
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData, normalize_ref
 from tmt.steps.discover.fmf import DiscoverFmf, DiscoverFmfStepData
-from tmt.steps.execute import ExecutePlugin, ExecuteStepData
+from tmt.steps.execute import ExecutePlugin
 from tmt.steps.execute.internal import ExecuteInternal, ExecuteInternalData
 from tmt.steps.prepare import PreparePlugin
 from tmt.steps.prepare.install import PrepareInstallData
@@ -230,20 +229,31 @@ class ExecuteUpgrade(ExecuteInternal):
     def discover(self, plugin: Optional[DiscoverPlugin[DiscoverStepData]]) -> None:
         self._discover = plugin
 
+    @property
     def tasks(
         self,
-    ) -> Iterator[tuple['ExecutePlugin[ExecuteStepData]', list['tmt.guest.Guest']]]:
-        # upgrade plugin is expected to (potentially) execute multiple
+    ) -> Iterator[tuple[Optional[str], list['tmt.guest.Guest']]]:
+        # upgrade plugin is expected to execute multiple
         # discover phases on old, perform the upgrade, then execute
         # those same discover phases again on new. All of this should occur
-        # in a single task.
-        phase_copy = cast(ExecutePlugin[ExecuteStepData], copy.copy(self))
-        # We want to run all discover phases on old and new, so set discover_phase to None.
-        # This comes with the responsibility to later only run discover phases that are enabled
-        # for that guest, based on discover.enabled_by_when and discover.enabled_on_guest(guest).
-        phase_copy.discover_phase = None
+        # in a single task, so that the upgrade happens only once
+        # (due to how the upgrade plugin is currently structured).
 
-        yield (phase_copy, self.step.plan.provision.ready_guests)
+        # TODO: The logic for this plugin could be simplified if it were refactored to make
+        # the before upgrade self._run_test_phase() an execute task,
+        # the actual upgrade step an execute task,
+        # then the after upgrade self._run_test_phase() an execute task, all specified here.
+
+        # TODO: It would be nice if the discover_phase variable was a list instead of string,
+        # so that we could specify multiple discover phases to run, instead of all
+        # (by setting it to None) or a single specified one.
+        # Then we would not need to do the discover_phase shuffle in self._run_test_phase().
+
+        # Due to the above, we have to set discover_phase to None for now, which tells
+        # self._run_tests() to run all discover phases. This comes with the responsibility
+        # to later only run discover phases that are enabled for that guest, based on
+        # discover.enabled_by_when and discover.enabled_on_guest(guest) in self._run_test_phase().
+        yield (None, self.step.plan.provision.ready_guests)
 
     def go(
         self,

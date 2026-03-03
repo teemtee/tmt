@@ -14,13 +14,17 @@ execute:
 /no-path:
     summary: Basic upgrade test with no upgrade path
 /path:
-    summary: Basic upgrade test with multiple discover phases
+    summary: Basic upgrade test with upgrade path
+    execute+:
+        upgrade-path: $@{upgrade-path}
+/add-phase:
+    summary: Upgrade test with upgrade path and extra discover phase
+    execute+:
+        upgrade-path: $@{upgrade-path}
     discover+:
         - name: extra-phase
           how: fmf
           filter: tag:extra
-    execute+:
-        upgrade-path: $@{upgrade-path}
 /skip-tests:
     /before:
         execute+:
