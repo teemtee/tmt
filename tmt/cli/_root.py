@@ -18,6 +18,7 @@ import fmf.utils
 import tmt
 import tmt._bootstrap
 import tmt.base.core
+import tmt.base.plan
 import tmt.config
 import tmt.convert
 import tmt.identifier
@@ -437,7 +438,7 @@ def run_plans(context: Context, **kwargs: Any) -> None:
     Use '.' to select plans under the current working directory.
     """
 
-    tmt.base.core.Plan.store_cli_invocation(context)
+    tmt.base.plan.Plan.store_cli_invocation(context)
 
 
 @run.command(name='tests')
