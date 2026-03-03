@@ -32,6 +32,9 @@ description: |
       75
           Installation of packages :tmt:story:`recommended</spec/tests/recommend>` by tests.
 
+      79
+          Verification of package source repositories after installation.
+
       .. note::
 
          Individual plugins may define their own special ``order`` values,

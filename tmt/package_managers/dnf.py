@@ -1,4 +1,5 @@
 import re
+import shlex
 from typing import TYPE_CHECKING, Any, Optional, cast
 
 from tmt._compat.pathlib import Path
@@ -198,6 +199,17 @@ class DnfEngine(PackageManagerEngine):
             f"""
             {self.command.to_script()} repoquery --disablerepo='*' {repo_ids}
             """
+        )
+
+    def get_installed_repo(self, package: str) -> ShellScript:
+        """
+        Return a shell script that outputs the repository a package was installed from.
+
+        Uses ``repoquery --installed --queryformat %{from_repo}`` to query the RPM database.
+        """
+        return ShellScript(
+            f'{self.command.to_script()} repoquery --installed'
+            f' --queryformat "%{{from_repo}}" {shlex.quote(package)}'
         )
 
     def create_repository(self, directory: Path) -> ShellScript:

@@ -1,0 +1,53 @@
+/plan/success:
+    discover:
+        how: fmf
+        test: /test/success
+    provision:
+        how: container
+    prepare:
+      - how: artifact
+        provide:
+          - koji.build:2761810
+      - how: verify-installation
+        verify:
+          - make,tmt-artifact-shared
+          - make-devel,tmt-artifact-shared
+          - diffutils,fedora
+    execute:
+        how: tmt
+
+/test/success:
+    test: ./test-success.sh
+    duration: 5m
+    summary: Verify successful package source verification
+    require:
+      - make
+      - make-devel
+      - diffutils
+
+/plan/failure:
+    discover:
+        how: fmf
+        test: /test/failure
+    provision:
+        how: container
+    prepare:
+      - how: artifact
+        provide:
+          - koji.build:2761810
+      - how: verify-installation
+        verify:
+          - make,tmt-artifact-shared
+          - make-devel,SOME_NON_EXISTENT_REPO
+          - diffutils,fedora
+    execute:
+        how: tmt
+
+/test/failure:
+    test: /bin/false
+    duration: 5m
+    summary: Verify package source verification fails with wrong repo
+    require:
+      - make
+      - make-devel
+      - diffutils

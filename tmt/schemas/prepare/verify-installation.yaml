@@ -1,0 +1,50 @@
+---
+
+#
+# JSON Schema definition for `verify-installation` prepare plugin
+#
+# https://tmt.readthedocs.io/en/stable/plugins/prepare.html#verify-installation
+#
+
+$id: /schemas/prepare/verify-installation
+$schema: https://json-schema.org/draft-07/schema
+
+type: object
+additionalProperties: false
+
+properties:
+
+  how:
+    type: string
+    enum:
+      - verify-installation
+
+  name:
+    type: string
+
+  order:
+    $ref: "/schemas/core#/definitions/order"
+
+  summary:
+    $ref: "/schemas/core#/definitions/summary"
+
+  verify:
+    oneOf:
+      - type: string
+        pattern: "^[^,]+,[^,]+$"
+      - type: array
+        items:
+          type: string
+          pattern: "^[^,]+,[^,]+$"
+    description: |
+      Package and expected repository mapping as a ``package_name,repository_name`` string
+      or a list of such strings.
+
+  where:
+    $ref: "/schemas/common#/definitions/where"
+
+  when:
+    $ref: "/schemas/common#/definitions/when"
+
+required:
+  - how

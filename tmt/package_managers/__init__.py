@@ -222,6 +222,16 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
+    def get_installed_repo(self, package: str) -> ShellScript:
+        """
+        Return a shell script that outputs the repository a package was installed from.
+
+        :param package: The package name to query.
+        :returns: A shell script whose stdout contains the repository name.
+        :raises NotImplementedError: If the package manager does not support this query.
+        """
+        raise NotImplementedError
+
     def create_repository(self, directory: Path) -> ShellScript:
         """
         Create repository metadata for package files in the given directory.
@@ -337,6 +347,22 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             raise GeneralError("Repository query provided no output")
 
         return stdout.strip().splitlines()
+
+    def get_installed_repo(self, package: str) -> Optional[str]:
+        """
+        Get the repository a package was installed from.
+
+        :param package: The package name to query.
+        :returns: The repository name, or ``None`` if the package is not installed
+            or its source cannot be determined.
+        :raises NotImplementedError: If the package manager does not support this query.
+        :raises tmt.utils.RunError: If the query command fails on the guest.
+        """
+        script = self.engine.get_installed_repo(package)
+        output = self.guest.execute(script)
+        if not output.stdout:
+            return None
+        return output.stdout.strip() or None
 
     def create_repository(self, directory: Path) -> CommandOutput:
         """
