@@ -108,6 +108,8 @@ PHASE_ORDER_PREPARE_INSTALL_ESSENTIAL_REQUIRES = 30
 PHASE_ORDER_PREPARE_INSTALL_REQUIRES = 70
 #: Installation of packages :tmt:story:`recommended</spec/tests/recommend>` by tests.
 PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS = 75
+#: Verification of package source repositories after installation.
+PHASE_ORDER_PREPARE_VERIFY_INSTALLATION = 79
 
 # Supported steps and actions
 StepName = Literal['discover', 'provision', 'prepare', 'execute', 'report', 'finish', 'cleanup']

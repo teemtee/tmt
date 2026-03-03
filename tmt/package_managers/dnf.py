@@ -1,4 +1,5 @@
 import re
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from tmt._compat.pathlib import Path
@@ -203,6 +204,18 @@ class DnfEngine(PackageManagerEngine):
             """
         )
 
+    def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
+        return (
+            self.command
+            + Command(
+                'repoquery',
+                '--installed',
+                '--queryformat',
+                r'%{name} %{from_repo}\n',
+                *[Package(p) for p in packages],
+            )
+        ).to_script()
+
     def create_repository(self, directory: Path) -> ShellScript:
         """
         Create repository metadata for package files in the given directory.
@@ -389,6 +402,13 @@ class Dnf5(Dnf):
 
 class YumEngine(DnfEngine):
     _base_command = Command('yum')
+
+    def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
+        # Real yum 3.x (not a dnf symlink) ships repoquery as a separate
+        # yum-utils plugin and the %{from_repo} queryformat field is not
+        # guaranteed to be available.  Support can be added once tested on
+        # an actual yum 3.x system (RHEL 6 / CentOS 6 era).
+        raise NotImplementedError
 
     # TODO: get rid of those `type: ignore` below. I think it's caused by the
     # decorator, it might be messing with the class inheritance as seen by pyright,

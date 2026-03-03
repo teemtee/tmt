@@ -1,7 +1,7 @@
 import abc
 import re
 import shlex
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generic, Optional, TypeVar, Union
 
 import tmt.log
@@ -222,6 +222,16 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
+    def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
+        """
+        List source repositories for each installed package.
+
+        :param packages: Package names to query.
+        :returns: A shell script to list source repositories for the given packages.
+        :raises NotImplementedError: If the package manager does not support this query.
+        """
+        raise NotImplementedError
+
     def create_repository(self, directory: Path) -> ShellScript:
         """
         Create repository metadata for package files in the given directory.
@@ -337,6 +347,35 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             raise GeneralError("Repository query provided no output")
 
         return stdout.strip().splitlines()
+
+    def get_package_origin(self, packages: Iterable[str]) -> dict[str, Optional[str]]:
+        """
+        Get the repository each package was installed from.
+
+        :param packages: Package names to query.
+        :returns: A mapping of package names to source repository names.
+            Packages not installed are mapped to ``None``.
+        """
+        result: dict[str, Optional[str]] = dict.fromkeys(packages)
+        script = self.engine.get_package_origin(result.keys())
+        output = self.guest.execute(script)
+        for line in (output.stdout or '').strip().splitlines():
+            # dnf4 produces a blank line after each entry due to the explicit \n
+            # in --queryformat combined with its own record separator.
+            # dnf5 does not have this issue and outputs one line per package.
+            if not line.strip():
+                continue
+            parts = line.split(maxsplit=1)
+            if len(parts) == 2:
+                # Expected format: "package-name repo-name"
+                result[parts[0]] = parts[1].strip()
+            elif len(parts) == 1:
+                # dnf4: empty %{from_repo} means package was not installed via a repo
+                result[parts[0]] = "[unknown]"
+            else:
+                # anything else is malformed
+                raise GeneralError(f"Unexpected output from package origin query: {line!r}")
+        return result
 
     def create_repository(self, directory: Path) -> CommandOutput:
         """
