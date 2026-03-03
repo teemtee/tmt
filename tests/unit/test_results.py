@@ -1,3 +1,4 @@
+from typing import Union
 from unittest.mock import MagicMock
 
 import pytest
@@ -36,6 +37,22 @@ class CheckPhasesDuplicateCase:
     check_interpret: CheckResultInterpret
     overall_outcome: ResultOutcome
     note_contains: list[str]
+
+
+def assert_result(case: Union[CheckPhasesCase, CheckPhasesDuplicateCase], result: Result) -> None:
+    interpret_checks = {
+        "check1": case.check_interpret,
+        "check2": CheckResultInterpret.RESPECT,
+    }
+
+    interpreted = result.interpret_result(case.result_interpret, interpret_checks)
+    assert interpreted.result == case.overall_outcome
+    if case.note_contains:
+        assert interpreted.note
+        for expected_note in case.note_contains:
+            assert expected_note in interpreted.note
+    else:
+        assert not interpreted.note
 
 
 @pytest.mark.parametrize(
@@ -885,19 +902,7 @@ def test_result_interpret_with_checks(case: CheckPhasesCase) -> None:
         ],
     )
 
-    interpret_checks = {
-        "check1": case.check_interpret,
-        "check2": CheckResultInterpret.RESPECT,
-    }
-
-    interpreted = result.interpret_result(case.result_interpret, interpret_checks)
-    assert interpreted.result == case.overall_outcome
-    if case.note_contains:
-        assert interpreted.note
-        for expected_note in case.note_contains:
-            assert expected_note in interpreted.note
-    else:
-        assert not interpreted.note
+    assert_result(case, result)
 
 
 @pytest.mark.parametrize(
@@ -977,7 +982,8 @@ def test_result_interpret_with_checks(case: CheckPhasesCase) -> None:
 )
 def test_check_phases_duplicate_phase(case: CheckPhasesDuplicateCase) -> None:
     """
-    Test the interpretation of check results with duplicate phases.
+    Test the interpretation of check results with duplicate
+    phases (phases with the same name and event).
     """
     result = Result(
         name="test-case",
@@ -992,19 +998,7 @@ def test_check_phases_duplicate_phase(case: CheckPhasesDuplicateCase) -> None:
         ],
     )
 
-    interpret_checks = {
-        "check1": case.check_interpret,
-        "check2": CheckResultInterpret.RESPECT,
-    }
-
-    interpreted = result.interpret_result(case.result_interpret, interpret_checks)
-    assert interpreted.result == case.overall_outcome
-    if case.note_contains:
-        assert interpreted.note
-        for expected_note in case.note_contains:
-            assert expected_note in interpreted.note
-    else:
-        assert not interpreted.note
+    assert_result(case, result)
 
 
 # Weird control characters in failures.yaml
