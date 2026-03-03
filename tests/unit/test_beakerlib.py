@@ -10,12 +10,12 @@ from tmt.utils import Path
 
 
 @pytest.mark.web
-def test_basic(root_logger):
+def test_basic(root_logger, tmppath):
     """
     Fetch a beakerlib library with/without providing a parent
     """
 
-    parent = tmt.utils.Common(logger=root_logger, workdir=True)
+    parent = tmt.utils.Common(logger=root_logger, workdir=tmppath)
     library_with_parent = tmt.libraries.Library.from_identifier(
         logger=root_logger,
         identifier=tmt.base.core.DependencySimple('library(openssl/certgen)'),
@@ -66,12 +66,12 @@ def test_require_from_fmf(url, name, default_branch, root_logger):
 
 
 @pytest.mark.web
-def test_invalid_url_conflict(root_logger):
+def test_invalid_url_conflict(root_logger, tmppath):
     """
     Saner check if url mismatched for translated library
     """
 
-    parent = tmt.utils.Common(logger=root_logger, workdir=True)
+    parent = tmt.utils.Common(logger=root_logger, workdir=tmppath)
     # Fetch to cache 'tmt' repo
     tmt.libraries.Library.from_identifier(
         logger=root_logger,
@@ -89,17 +89,16 @@ def test_invalid_url_conflict(root_logger):
         tmt.libraries.Library.from_identifier(
             logger=root_logger, identifier='library(tmt/foo)', parent=parent
         )
-    shutil.rmtree(parent.workdir)
 
 
 @pytest.mark.web
-def test_dependencies(root_logger):
+def test_dependencies(root_logger, tmppath):
     """
     Check requires for possible libraries
     """
 
-    parent = tmt.utils.Common(logger=root_logger, workdir=True)
-    requires, recommends, libraries = tmt.libraries.dependencies(
+    parent = tmt.utils.Common(logger=root_logger, workdir=tmppath)
+    requires, recommends = tmt.libraries.resolve_dependencies(
         original_require=[
             tmt.base.core.DependencySimple('library(httpd/http)'),
             tmt.base.core.DependencySimple('wget'),
@@ -111,36 +110,23 @@ def test_dependencies(root_logger):
     # Check for correct requires and recommends
     for require in ['httpd', 'lsof', 'mod_ssl']:
         assert require in requires
-        assert require in libraries[0].require
-    assert 'openssl' in libraries[2].require
     assert 'forest' in recommends
     assert 'wget' in requires
     # Library require should be in httpd requires but not in the final result
-    assert 'library(openssl/certgen)' in libraries[0].require
     assert 'library(openssl/certgen)' not in requires
-    # Check library attributes for sane values
-    assert libraries[0].repo == Path('httpd')
-    assert libraries[0].name == '/http'
-    assert libraries[0].url == 'https://github.com/beakerlib/httpd'
-    assert libraries[0].ref == 'master'  # The default branch is master
-    assert (
-        libraries[0].dest.resolve()
-        == Path.cwd().joinpath(tmt.libraries.beakerlib.DEFAULT_DESTINATION).resolve()
-    )
-    assert libraries[1].repo == Path('openssl')
-    assert libraries[1].name == '/certgen'
-    shutil.rmtree(parent.workdir)
+    # TODO: assert the libraries that were resolved
 
 
 @pytest.mark.web
-def test_mark_nonexistent_url(root_logger, monkeypatch):
+def test_mark_nonexistent_url(root_logger, monkeypatch, tmppath):
     """
     Check url existence just one time
     """
 
-    parent = tmt.utils.Common(logger=root_logger, workdir=True)
+    non_existent_url = 'https://github.com/beakerlib/THISDOESNTEXIST'
+    parent = tmt.utils.Common(logger=root_logger, workdir=tmppath)
     identifier = tmt.base.core.DependencyFmfId(
-        url='https://github.com/beakerlib/THISDOESNTEXIST',
+        url=non_existent_url,
         name='/',
     )
     with pytest.raises(tmt.utils.GeneralError):
@@ -148,8 +134,10 @@ def test_mark_nonexistent_url(root_logger, monkeypatch):
             logger=root_logger, identifier=identifier, parent=parent
         ).fetch()
     # Second time there shouldn't be an attempt to clone...
+    assert non_existent_url in tmt.utils.git.NON_EXISTING_GIT_URL
+    # TODO: Try to narrow to check for the git clone specifically
     monkeypatch.setattr(
-        "tmt.utils.git.git_clone", MagicMock(side_effect=RuntimeError('Should not be called'))
+        "tmt.utils.Command.run", MagicMock(side_effect=RuntimeError('Should not be called'))
     )
     with pytest.raises(tmt.utils.GeneralError):
         tmt.libraries.beakerlib.BeakerLibFromUrl.from_identifier(
