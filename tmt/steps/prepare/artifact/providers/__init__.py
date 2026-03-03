@@ -169,20 +169,22 @@ class ArtifactProvider(ABC):
     #: Lower values have higher priority in package managers.
     repository_priority: int
 
-    def __init__(self, raw_provider_id: str, repository_priority: int, logger: tmt.log.Logger):
+    def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
         self.repository_priority = repository_priority
         self.logger = logger
-        self.raw_provider_id = raw_provider_id
+        self.raw_id = raw_id
+        # Sanitize the provider ID to use as a directory name
+        self.sanitized_id = tmt.utils.sanitize_name(raw_id, allow_slash=False)
 
-        self.id = self._extract_provider_id(raw_provider_id)
+        self.id = self._extract_provider_id(raw_id)
 
     @classmethod
     @abstractmethod
-    def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
+    def _extract_provider_id(cls, raw_id: str) -> ArtifactProviderId:
         """
         Parse and validate the artifact provider identifier.
 
-        :param raw_provider_id: artifact provider identifier to parse and validate.
+        :param raw_id: artifact provider identifier to parse and validate.
         :returns: parsed identifier specific to this provider class.
         :raises ValueError: when the artifact provider identifier is invalid.
         """

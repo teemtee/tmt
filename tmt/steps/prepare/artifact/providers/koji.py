@@ -82,8 +82,8 @@ class KojiArtifactProvider(ArtifactProvider):
         artifacts = provider.download_artifacts(guest, Path("/tmp"), [])
     """
 
-    def __init__(self, raw_provider_id: str, repository_priority: int, logger: tmt.log.Logger):
-        super().__init__(raw_provider_id, repository_priority, logger)
+    def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
+        super().__init__(raw_id, repository_priority, logger)
         self._session = self._initialize_session()
 
     @cached_property
@@ -160,13 +160,13 @@ class KojiArtifactProvider(ArtifactProvider):
         return self._make_build_provider(KojiBuild, "koji.build")
 
     @classmethod
-    def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
+    def _extract_provider_id(cls, raw_id: str) -> ArtifactProviderId:
         # TODO: Use a specific prefix from a ClassVar
         try:
-            _, value = raw_provider_id.split(":", maxsplit=1)
+            _, value = raw_id.split(":", maxsplit=1)
         except Exception as exc:
             raise AssertionError(
-                f"Provider id '{raw_provider_id}' is invalid, how did we get here?"
+                f"Provider id '{raw_id}' is invalid, how did we get here?"
             ) from exc
         return value
 

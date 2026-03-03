@@ -47,18 +47,18 @@ class PackageAsFileArtifactProvider(ArtifactProvider):
 
     SUPPORTED_PREFIX: ClassVar[str] = "file"
 
-    def __init__(self, raw_provider_id: str, repository_priority: int, logger: tmt.log.Logger):
-        super().__init__(raw_provider_id, repository_priority, logger)
-        source = raw_provider_id[len(f"{self.SUPPORTED_PREFIX}:") :]
+    def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
+        super().__init__(raw_id, repository_priority, logger)
+        source = raw_id[len(f"{self.SUPPORTED_PREFIX}:") :]
         parsed = urllib.parse.urlparse(source)
         self._source = source
         self._is_url = parsed.scheme in ("http", "https")
 
     @classmethod
-    def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
-        if not raw_provider_id.startswith(f"{cls.SUPPORTED_PREFIX}:"):
-            raise ValueError(f"Unsupported provider id: '{raw_provider_id}'.")
-        return ArtifactProviderId(raw_provider_id)
+    def _extract_provider_id(cls, raw_id: str) -> ArtifactProviderId:
+        if not raw_id.startswith(f"{cls.SUPPORTED_PREFIX}:"):
+            raise ValueError(f"Unsupported provider id: '{raw_id}'.")
+        return ArtifactProviderId(raw_id)
 
     def make_rpm_artifact(self, path: str) -> ArtifactInfo:
         return ArtifactInfo(

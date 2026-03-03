@@ -78,8 +78,8 @@ class CoprBuildArtifactProvider(ArtifactProvider):
               - copr.build:1784470:fedora-32-x86_64
     """
 
-    def __init__(self, raw_provider_id: str, repository_priority: int, logger: tmt.log.Logger):
-        super().__init__(raw_provider_id, repository_priority, logger)
+    def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
+        super().__init__(raw_id, repository_priority, logger)
         self._session = self._initialize_session()
         try:
             build_id_str, chroot = self.id.split(":", 1)
@@ -121,12 +121,12 @@ class CoprBuildArtifactProvider(ArtifactProvider):
             raise tmt.utils.GeneralError("Failed to initialize Copr client session.") from error
 
     @classmethod
-    def _extract_provider_id(cls, raw_provider_id: str) -> ArtifactProviderId:
+    def _extract_provider_id(cls, raw_id: str) -> ArtifactProviderId:
         try:
-            _, value = raw_provider_id.split(":", maxsplit=1)
+            _, value = raw_id.split(":", maxsplit=1)
         except Exception as error:
             raise AssertionError(
-                f"Provider id '{raw_provider_id}' is invalid, how did we get here?"
+                f"Provider id '{raw_id}' is invalid, how did we get here?"
             ) from error
         return value
 

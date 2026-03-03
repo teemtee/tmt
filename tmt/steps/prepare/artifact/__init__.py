@@ -197,22 +197,37 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
         # Initialize all providers and have them contribute to the shared repo
         providers: list[ArtifactProvider] = []
-        for raw_provider_id in self.data.provide:
-            try:
-                provider_class = get_artifact_provider(raw_provider_id)
+        seen_nvras: dict[str, str] = {}
 
-                # Sanitize the provider ID to use as a directory name
-                provider_id_sanitized = tmt.utils.sanitize_name(raw_provider_id, allow_slash=False)
-                provider_logger = self._logger.descend(raw_provider_id)
+        # --- Pass 1: Initialize all providers and validate for duplicate NVRAs ---
+        for raw_id in self.data.provide:
+            try:
+                provider_class = get_artifact_provider(raw_id)
+
+                provider_logger = self._logger.descend(raw_id)
                 provider = provider_class(
-                    raw_provider_id,
+                    raw_id,
                     repository_priority=self.data.default_repository_priority,
                     logger=provider_logger,
                 )
+
+                self._detect_duplicate_nvras(provider, seen_nvras)
+
                 providers.append(provider)
 
+            except tmt.utils.PrepareError:
+                raise
+
+            except Exception as error:
+                raise tmt.utils.PrepareError(
+                    f"Failed to initialize artifact provider '{raw_id}'."
+                ) from error
+
+        # --- Pass 2: Download and contribute (only reached if no duplicates) ---
+        for provider in providers:
+            try:
                 # Define a unique download path for this provider's artifacts
-                download_path = self.plan_workdir / "artifacts" / provider_id_sanitized
+                download_path = self.plan_workdir / "artifacts" / provider.sanitized_id
 
                 # First, fetch the contents (download artifacts)
                 provider.fetch_contents(guest, download_path)
@@ -229,7 +244,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
             except Exception as error:
                 raise tmt.utils.PrepareError(
-                    f"Failed to initialize or use artifact provider '{raw_provider_id}'."
+                    f"Failed to use artifact provider '{provider.raw_id}'."
                 ) from error
 
         # Create or update the shared repository.
@@ -267,23 +282,42 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             tmt.base.core.DependencySimple('/usr/bin/createrepo'),
         ]
 
+    def _detect_duplicate_nvras(
+        self, provider: ArtifactProvider, seen_nvras: dict[str, str]
+    ) -> None:
+        """
+        Check for duplicate NVRAs across providers.
+        """
+        raw_id = provider.raw_id
+
+        for artifact_info in provider.artifact_metadata:
+            if (nvra := artifact_info["nvra"]) in seen_nvras:
+                raise tmt.utils.PrepareError(
+                    f"Artifact '{nvra}' provided by both '{seen_nvras[nvra]}' and '{raw_id}'."
+                )
+
+            seen_nvras[nvra] = raw_id
+
     def _save_artifacts_metadata(self, providers: list[ArtifactProvider]) -> None:
         """
         Persist the metadata of artifacts to a YAML file.
 
         Groups artifacts by provider.
         """
-        providers_data = [
-            {
-                'id': provider.raw_provider_id,
-                'artifacts': provider.artifact_metadata,
-            }
-            for provider in providers
-        ]
+
+        metadata = {
+            'providers': [
+                {
+                    'id': provider.raw_id,
+                    'artifacts': provider.artifact_metadata,
+                }
+                for provider in providers
+            ]
+        }
 
         metadata_file = self.plan_workdir / self.ARTIFACTS_METADATA_FILENAME
 
         try:
-            metadata_file.write_text(tmt.utils.to_yaml({'providers': providers_data}, start=True))
+            metadata_file.write_text(tmt.utils.to_yaml(metadata, start=True))
         except OSError as error:
             raise tmt.utils.FileError(f"Failed to write into '{metadata_file}' file.") from error
