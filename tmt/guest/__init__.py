@@ -942,10 +942,11 @@ class GuestFacts(SerializableContainer):
         # function for now
         sudo_prefix = self._query_sudo_prefix(guest)
 
-        image = self._query(
-            guest,
-            [(Command(sudo_prefix, "bootc", "status", "--format", "yaml"), r'image: (.+)')],
-        )
+        command = Command("bootc", "status", "--format", "yaml")
+        if sudo_prefix:
+            command = Command(sudo_prefix) + command
+
+        image = self._query(guest, [(command, r'image: (.+)')])
 
         # if bootc reports status and the image is not `image: null`, we are in image mode
         if image and image != "null":
