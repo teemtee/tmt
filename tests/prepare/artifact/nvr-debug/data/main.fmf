@@ -3,9 +3,3 @@ provision:
 
 execute:
     how: tmt
-
-prepare:
-    - name: Install createrepo
-      how: install
-      package:
-        - createrepo
