@@ -3,3 +3,8 @@ addedfiles:
   ignore:
     # rpminspect forbids /var/tmp prefix by default
     - /var/tmp/tmt
+xml:
+  ignore:
+    # rpminspect is unable to detect jinja templates
+    # https://github.com/rpminspect/rpminspect/issues/1545
+    - /usr/lib/python*/site-packages/tmt/steps/report/junit/templates/*.xml.j2
