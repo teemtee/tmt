@@ -47,12 +47,12 @@ def assert_result(case: Union[CheckPhasesCase, CheckPhasesDuplicateCase], result
 
     interpreted = result.interpret_result(case.result_interpret, interpret_checks)
     assert interpreted.result == case.overall_outcome
-    if case.note_contains:
-        assert interpreted.note
-        for expected_note in case.note_contains:
-            assert expected_note in interpreted.note
-    else:
+    if not case.note_contains:
         assert not interpreted.note
+        return
+    assert interpreted.note
+    for expected_note in case.note_contains:
+        assert expected_note in interpreted.note
 
 
 @pytest.mark.parametrize(
