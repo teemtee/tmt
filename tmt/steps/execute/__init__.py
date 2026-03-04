@@ -5,7 +5,7 @@ import itertools
 import signal as _signal
 import subprocess
 import threading
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 import click
@@ -979,6 +979,19 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
             level=3,
         )
 
+    @property
+    @abc.abstractmethod
+    def tasks(
+        self,
+    ) -> Iterator[tuple[Optional[str], list['Guest']]]:
+        """
+        Iterate over tasks to be enqueued for execution.
+
+        :yields: tuple of two items, a discover phase name
+            and the list of guests it should run on.
+        """
+        raise NotImplementedError
+
     @abc.abstractmethod
     def results(self) -> list["tmt.Result"]:
         """
@@ -1206,29 +1219,14 @@ class Execute(tmt.steps.Step):
             if isinstance(phase, Action):
                 queue.enqueue_action(phase=phase)
 
-            else:
-                # A single execute plugin is expected to process (potentially)
-                # multiple discover phases. There must be a way to tell the execute
-                # plugin which discover phase to focus on. Unfortunately, the
-                # current way is the execute plugin checking its `discover`
-                # attribute. For each discover phase, we need a copy of the execute
-                # plugin, so we could point it to that discover phase rather than
-                # let is "see" all tests, or test in different discover phase.
-                for discover in self.plan.discover.phases(classes=(DiscoverPlugin,)):
-                    if not discover.enabled_by_when:
-                        continue
-
+            elif isinstance(phase, ExecutePlugin):
+                for discover_phase_name, guests in phase.tasks:
+                    # For each discover phase, we need a copy of the execute
+                    # plugin, so we could point it to that discover phase rather than
+                    # let it "see" all tests, or test in different discover phase.
                     phase_copy = cast(ExecutePlugin[ExecuteStepData], copy.copy(phase))
-                    phase_copy.discover_phase = discover.name
-
-                    queue.enqueue_plugin(
-                        phase=phase_copy,
-                        guests=[
-                            guest
-                            for guest in self.plan.provision.ready_guests
-                            if discover.enabled_on_guest(guest)
-                        ],
-                    )
+                    phase_copy.discover_phase = discover_phase_name
+                    queue.enqueue_plugin(phase=phase_copy, guests=guests)
 
         failed_tasks: list[Union[ActionTask, PluginTask[ExecuteStepData, None]]] = []
 

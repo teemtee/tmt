@@ -1,0 +1,5 @@
+description: |
+    The :ref:`/plugins/execute/upgrade` execute plugin now supports multiple
+    discover phases. Tests from all discover phases are executed before
+    the upgrade, then the upgrade is performed, and finally all tests
+    are executed again after the upgrade.

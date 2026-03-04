@@ -1,0 +1,3 @@
+summary: Run extra test that always passes
+test: 'true'
+tag: extra

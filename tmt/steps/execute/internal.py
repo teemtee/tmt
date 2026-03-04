@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from typing import Any, Optional, cast
 
 import tmt.base.core
@@ -268,6 +269,28 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
         self._previous_progress_message = ""
+
+    @property
+    def tasks(
+        self,
+    ) -> Iterator[tuple[Optional[str], list['Guest']]]:
+        # A single execute plugin is expected to process (potentially)
+        # multiple discover phases. There must be a way to tell the execute
+        # plugin which discover phase to focus on. Unfortunately, the
+        # current way is the execute plugin checking its `discover`
+        # attribute.
+        for discover in self.step.plan.discover.phases(classes=(DiscoverPlugin,)):
+            if not discover.enabled_by_when:
+                continue
+
+            yield (
+                discover.name,
+                [
+                    guest
+                    for guest in self.step.plan.provision.ready_guests
+                    if discover.enabled_on_guest(guest)
+                ],
+            )
 
     def _test_output_logger(
         self,
