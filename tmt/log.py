@@ -293,33 +293,8 @@ class LogRecordDetails:
 
 
 class RunWarningsHandler(logging.FileHandler):
-    #: Yaml handler for formatting the content.
-    #:
-    #: We do not use roundtrip loader here because that would require rewriting
-    #: the whole content each time, but the streaming nature of the logger
-    #: assumes that we will be appending when ``emit()`` is called. Instead we
-    #: make use of the document is composed of direct list items so we can
-    #: simply append each item as a new list.
-    _yaml_handler: YAML
-    #: String IO handler for constructing the file content
-    _string_io: io.StringIO
-
     def __init__(self, filepath: Path) -> None:
-        from tmt.utils import _yaml
-
-        self._yaml_handler = _yaml(yaml_type="safe")
-        self._string_io = io.StringIO()
         super().__init__(filepath, mode="a")
-
-    def format(self, record: logging.LogRecord) -> str:
-        # TODO: make this in a better yaml with a schema
-        warning_msg = super().format(record)
-        # The yaml content to be appended is always a single list item so that
-        # it can be appended with the previous content
-        yaml_content = [warning_msg]
-        # Format and dump the yaml content
-        self._yaml_handler.dump(yaml_content, self._string_io)
-        return self._string_io.getvalue()
 
 
 class LogfileHandler(logging.FileHandler):
@@ -397,6 +372,34 @@ class ConsoleFormatter(_Formatter):
         )
 
 
+class RunWarningsFormatter(_Formatter):
+    #: Yaml handler for formatting the content.
+    #:
+    #: We do not use roundtrip loader here because that would require rewriting
+    #: the whole content each time, but the streaming nature of the logger
+    #: assumes that we will be appending when ``emit()`` is called. Instead we
+    #: make use of the document is composed of direct list items so we can
+    #: simply append each item as a new list.
+    _yaml_handler: YAML
+
+    def __init__(self) -> None:
+        from tmt.utils import _yaml
+
+        self._yaml_handler = _yaml(yaml_type="safe")
+        super().__init__('%(message)s', apply_colors=False)
+
+    def format(self, record: logging.LogRecord) -> str:
+        # TODO: make this in a better yaml with a schema
+        warning_msg = super().format(record)
+        # The yaml content to be appended is always a single list item so that
+        # it can be appended with the previous content
+        yaml_content = [warning_msg]
+        # Format and dump the yaml content
+        string_io = io.StringIO()
+        self._yaml_handler.dump(yaml_content, string_io)
+        return string_io.getvalue()
+
+
 class VerbosityLevelFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         if record.levelno != logging.INFO:
@@ -462,6 +465,14 @@ class TopicFilter(logging.Filter):
             return True
 
         if details.message_topic in details.logger_topics:
+            return True
+
+        return False
+
+
+class RunWarningsFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.levelno == logging.WARNING:
             return True
 
         return False
@@ -683,9 +694,9 @@ class Logger:
 
         handler = RunWarningsHandler(filepath)
 
-        handler.setFormatter(LogfileFormatter())
+        handler.setFormatter(RunWarningsFormatter())
 
-        handler.addFilter(TopicFilter())
+        handler.addFilter(RunWarningsFilter())
 
         self._logger.addHandler(handler)
 
