@@ -1,7 +1,7 @@
 #!/bin/bash
 # Build local RPM repos from per-repo spec directories.
 # For each subdirectory containing .spec files, builds binary RPMs
-# and runs createrepo_c in-place.
+# and runs createrepo in-place.
 
 set -ex
 shopt -s nullglob

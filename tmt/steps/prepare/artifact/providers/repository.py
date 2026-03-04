@@ -88,6 +88,9 @@ class RepositoryFileProvider(ArtifactProvider):
         if parsed.scheme == 'file':
             # Read .repo file from the local (controller) filesystem.
             self.logger.info(f"Reading repository file from local path: {parsed.path}")
+            self.logger.debug(
+                f"Absolute path of the repository file: '{Path(parsed.path).resolve()}'"
+            )
             self.repository = Repository.from_file_path(
                 file_path=Path(parsed.path), logger=self.logger
             )

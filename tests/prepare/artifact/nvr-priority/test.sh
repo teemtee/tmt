@@ -1,5 +1,5 @@
 #!/bin/bash
-# Outer beakerlib test for the nvr-debug suite.
+# Outer beakerlib test for the nvr-priority suite.
 # RPMs are built once on the controller by build-repos.sh, then synced into
 # each container. Each plan installs its own .repo files via the artifact provider.
 
