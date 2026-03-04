@@ -1,5 +1,5 @@
 description: |
-  :ref:`/plugins/provision/podman` now executes tests in its containers
+  :ref:`/plugins/provision/container` now executes tests in its containers
   with the ``-t/--tty`` option always enabled. Before this release, ``-t``
   was used only when interactive mode was requested, or when the
   :tmt:story:`/spec/tests/tty` was enabled.
