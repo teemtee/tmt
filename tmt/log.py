@@ -25,6 +25,7 @@ managing handlers themselves, which would be very messy given the propagation of
 """
 
 import enum
+import io
 import itertools
 import logging
 import os
@@ -39,6 +40,8 @@ from typing import (
     Union,
     cast,
 )
+
+from ruamel.yaml import YAML
 
 from tmt._compat.pathlib import Path
 from tmt._compat.warnings import deprecated
@@ -287,6 +290,36 @@ class LogRecordDetails:
 
     logger_topics: set[Topic] = simple_field(default_factory=set[Topic])
     message_topic: Optional[Topic] = None
+
+
+class RunWarningsHandler(logging.FileHandler):
+    #: Yaml handler for formatting the content.
+    #:
+    #: We do not use roundtrip loader here because that would require rewriting
+    #: the whole content each time, but the streaming nature of the logger
+    #: assumes that we will be appending when ``emit()`` is called. Instead we
+    #: make use of the document is composed of direct list items so we can
+    #: simply append each item as a new list.
+    _yaml_handler: YAML
+    #: String IO handler for constructing the file content
+    _string_io: io.StringIO
+
+    def __init__(self, filepath: Path) -> None:
+        from tmt.utils import _yaml
+
+        self._yaml_handler = _yaml(yaml_type="safe")
+        self._string_io = io.StringIO()
+        super().__init__(filepath, mode="a")
+
+    def format(self, record: logging.LogRecord) -> str:
+        # TODO: make this in a better yaml with a schema
+        warning_msg = super().format(record)
+        # The yaml content to be appended is always a single list item so that
+        # it can be appended with the previous content
+        yaml_content = [warning_msg]
+        # Format and dump the yaml content
+        self._yaml_handler.dump(yaml_content, self._string_io)
+        return self._string_io.getvalue()
 
 
 class LogfileHandler(logging.FileHandler):
@@ -639,6 +672,16 @@ class Logger:
         """
 
         handler = LogfileHandler(filepath)
+
+        handler.setFormatter(LogfileFormatter())
+
+        handler.addFilter(TopicFilter())
+
+        self._logger.addHandler(handler)
+
+    def add_runwarnings_handler(self, filepath: Path) -> None:
+
+        handler = RunWarningsHandler(filepath)
 
         handler.setFormatter(LogfileFormatter())
 
