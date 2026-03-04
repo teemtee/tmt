@@ -2871,6 +2871,8 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
 
     data: Optional[RunData] = None
 
+    WARNINGS_FILE_NAME: ClassVar[str] = "warnings.yaml"
+
     def __init__(
         self,
         *,
@@ -2929,6 +2931,12 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
             )
 
         return self.workdir
+
+    def _workdir_init(self, id_: WorkdirArgumentType = None) -> None:
+        super()._workdir_init(id_)
+        warnings_file = self.run_workdir / self.WARNINGS_FILE_NAME
+        warnings_file.touch(exist_ok=True)
+        self._logger.add_runwarnings_handler(warnings_file)
 
     @functools.cached_property
     def runner(self) -> 'tmt.steps.provision.local.GuestLocal':
