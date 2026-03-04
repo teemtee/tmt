@@ -420,7 +420,9 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
         """
 
         return tmt.utils.wait.Deadline.from_seconds(
-            tmt.utils.duration_to_seconds(self.test.duration, tmt.base.DEFAULT_TEST_DURATION_L1)
+            tmt.utils.duration_to_seconds(
+                self.test.duration, tmt.base.core.DEFAULT_TEST_DURATION_L1
+            )
         )
 
     def invoke_test(
