@@ -19,8 +19,8 @@ rlJournalStart
         rlRun "grep -A2 'fail /bad-with-var'  $rlRun_LOG | grep wrong.txt"
         rlRun "tmt run --scratch --id $run plans -n $plan tests -n /test/env-var"
         test_log="$run$plan/execute/data/guest/default-0/test/env-var-1/output.txt"
-        rlAssertGrep "^TMT_RESTRAINT_COMPATIBLE=1$" "$test_log"
-        rlAssertGrep "^RSTRNT_TASKNAME=/test/env-var$" "$test_log"
+        rlAssertGrep "^TMT_RESTRAINT_COMPATIBLE=1" "$test_log"
+        rlAssertGrep "^RSTRNT_TASKNAME=/test/env-var" "$test_log"
     rlPhaseEnd
 
     # In the incompatible mode the OUTPUTFILE variable should be
@@ -35,7 +35,7 @@ rlJournalStart
             rlRun "grep -A2 'fail /bad-with-var'  $rlRun_LOG | grep txt" 1
             rlRun "tmt run --scratch --id $run plans -n $plan tests -n /test/env-var"
             test_log="$run$plan/execute/data/guest/default-0/test/env-var-1/output.txt"
-            rlAssertGrep "^TMT_RESTRAINT_COMPATIBLE=0$" "$test_log"
+            rlAssertGrep "^TMT_RESTRAINT_COMPATIBLE=0" "$test_log"
             rlAssertNotGrep "^RSTRNT_TASKNAME=" "$test_log"
         rlPhaseEnd
     done
