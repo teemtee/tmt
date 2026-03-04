@@ -24,6 +24,7 @@ but all-capturing log files while keeping implementation simple - the other opti
 managing handlers themselves, which would be very messy given the propagation of messages.
 """
 
+import copy
 import enum
 import io
 import itertools
@@ -372,7 +373,7 @@ class ConsoleFormatter(_Formatter):
         )
 
 
-class RunWarningsFormatter(_Formatter):
+class RunWarningsFormatter(logging.Formatter):
     #: Yaml handler for formatting the content.
     #:
     #: We do not use roundtrip loader here because that would require rewriting
@@ -386,11 +387,19 @@ class RunWarningsFormatter(_Formatter):
         from tmt.utils import _yaml
 
         self._yaml_handler = _yaml(yaml_type="safe")
-        super().__init__('%(message)s', apply_colors=False)
+        super().__init__('%(message)s', datefmt='%H:%M:%S')
 
     def format(self, record: logging.LogRecord) -> str:
         # TODO: make this in a better yaml with a schema
-        warning_msg = super().format(record)
+        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
+        if not details:
+            # Not a tmt owned warning
+            warning_msg = super().format(record)
+        else:
+            # Tmt warning, we take the original raw value
+            record_copy = copy.copy(record)
+            record_copy.msg = details.value
+            warning_msg = super().format(record_copy)
         # The yaml content to be appended is always a single list item so that
         # it can be appended with the previous content
         yaml_content = [warning_msg]
