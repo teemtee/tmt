@@ -15,16 +15,7 @@ description: |
 link:
   - verifies: https://github.com/teemtee/tmt/issues/4546
 
-require:
+require+:
   - tmt
   - rpm-build
   - createrepo
-
-tag+:
-  - provision-only
-  - provision-container
-
-adjust:
-  - when: distro != fedora
-    enabled: false
-    because: Test relies on DNF5 behavior and uses Fedora containers
