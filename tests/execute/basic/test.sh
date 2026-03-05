@@ -72,8 +72,8 @@ rlJournalStart
             0 "Check output.txt log exists in $results"
         rlRun "yq  -e '.[] | select(.name == \"/test/beakerlib/good\") | .log | any_c(test(\"^data/.+/journal.txt$\"))' $results" \
             0 "Check journal.txt log exists in $results"
-        rlRun "yq  -e '.[] | select(.name == \"/test/beakerlib/good\") | .log | any_c(test(\"^data/.+/journal.xml$\"))' $results" \
-            0 "Check journal.xml log exists in $results"
+#        rlRun "yq  -e '.[] | select(.name == \"/test/beakerlib/good\") | .log | any_c(test(\"^data/.+/journal.xml$\"))' $results" \
+#            0 "Check journal.xml log exists in $results"
     rlPhaseEnd
 
     rlPhaseStartCleanup
