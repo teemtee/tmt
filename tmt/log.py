@@ -45,7 +45,7 @@ from typing import (
 from ruamel.yaml import YAML
 
 from tmt._compat.pathlib import Path
-from tmt._compat.typing import Self, TypeAlias
+from tmt._compat.typing import Self, TypeAlias, override
 from tmt._compat.warnings import deprecated
 from tmt.container import SpecBasedContainer, container, simple_field
 
@@ -333,6 +333,7 @@ class _Formatter(logging.Formatter):
 
         self._decolorize = create_decolorizer(apply_colors)
 
+    @override
     def formatMessage(self, record: logging.LogRecord) -> str:
         return self._decolorize(super().formatMessage(record))
 
