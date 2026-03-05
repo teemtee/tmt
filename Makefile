@@ -45,7 +45,7 @@ requre:  ## Regenerate test data for integration tests
 ##
 docs: clean  ## Build documentation
 	uv sync --frozen --extra docs
-	uv run sphinx-build -b html docs docs/_build
+	uv run sphinx-build -E -b html docs docs/_build
 
 man:  ## Build man page
 	hatch run docs:man
