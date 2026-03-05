@@ -281,6 +281,20 @@ def test_result_interpret_edge_cases() -> None:
         ),
         pytest.param(
             CheckPhasesCase(
+                result_outcome=ResultOutcome.INFO,
+                result_interpret=ResultInterpret.RESPECT,
+                check_outcome=ResultOutcome.FAIL,
+                check_interpret=CheckResultInterpret.RESPECT,
+                overall_outcome=ResultOutcome.FAIL,
+                note_contains=[
+                    "check 'check1' failed",
+                    "original test result: info",
+                ],
+            ),
+            id="info-respect-fail-respect",
+        ),
+        pytest.param(
+            CheckPhasesCase(
                 result_outcome=ResultOutcome.PASS,
                 result_interpret=ResultInterpret.RESPECT,
                 check_outcome=ResultOutcome.WARN,
