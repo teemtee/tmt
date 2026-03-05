@@ -994,10 +994,10 @@ def test_result_interpret_with_checks(case: CheckPhasesCase) -> None:
         ),
     ],
 )
-def test_check_phases_duplicate_phase(case: CheckPhasesDuplicateCase) -> None:
+def test_check_phases_duplicate(case: CheckPhasesDuplicateCase) -> None:
     """
-    Test the interpretation of check results with duplicate
-    phases (phases with the same name and event).
+    Test the interpretation of duplicate check results
+    (check results with the same name and event).
     """
     result = Result(
         name="test-case",
