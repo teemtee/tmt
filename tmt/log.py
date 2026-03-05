@@ -41,6 +41,7 @@ from typing import (
 )
 
 from tmt._compat.pathlib import Path
+from tmt._compat.typing import override
 from tmt._compat.warnings import deprecated
 from tmt.container import container, simple_field
 
@@ -314,6 +315,7 @@ class _Formatter(logging.Formatter):
 
         self._decolorize = create_decolorizer(apply_colors)
 
+    @override
     def formatMessage(self, record: logging.LogRecord) -> str:
         return self._decolorize(super().formatMessage(record))
 
