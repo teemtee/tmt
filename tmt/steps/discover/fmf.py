@@ -797,7 +797,10 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             fmf_context=self.step.plan.fmf_context,
             additional_rules=self.data.adjust_tests,
         )
-        if tests_without_adjust:
+        if tests_without_adjust or not tests_with_adjust:
+            # - tests_without_adjust is not empty: we have test names to use in the filter
+            # - both tests_without_adjust and test_with_adjust are empty: we do not have any
+            #   names filter (i.e. we take all tests)
             tests.extend(
                 tree.tests(
                     filters=filters,
