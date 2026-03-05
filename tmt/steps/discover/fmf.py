@@ -21,9 +21,8 @@ from tmt.steps.prepare.distgit import insert_to_prepare_step
 from tmt.utils import Command, NormalizationError, Path
 
 
-class _RawTestsWithAdjusts(TypedDict, total=True):
+class _RawTestsWithAdjusts(TypedDict, total=False):
     name: str
-    adjust_rule: Optional[_RawAdjustRule]
 
 
 @container
@@ -40,13 +39,14 @@ class TestsWithAdjusts(
     def from_spec(cls, spec: Union[str, _RawTestsWithAdjusts]) -> Self:
         if isinstance(spec, str):
             return cls(name=spec)
-        return cls(**spec)
+        name = spec.pop("name")
+        return cls(name=name, adjust_rule=cast(_RawAdjustRule, spec))
 
     def to_spec(self) -> Union[str, _RawTestsWithAdjusts]:
         if self.adjust_rule:
             return _RawTestsWithAdjusts(
                 name=self.name,
-                adjust_rule=self.adjust_rule,
+                **self.adjust_rule,  # type: ignore[typeddict-unknown-key]
             )
         return self.name
 
@@ -118,10 +118,9 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
             details.
             """,
         normalize=normalize_tests_with_adjusts,
-        serialize=lambda tests: [test.to_serialized() for test in tests],
+        serialize=lambda tests: [test.to_spec() for test in tests],
         unserialize=lambda serialized_tests: [
-            TestsWithAdjusts.from_serialized(serialized_test)
-            for serialized_test in serialized_tests
+            TestsWithAdjusts.from_spec(serialized_test) for serialized_test in serialized_tests
         ],
     )
 
