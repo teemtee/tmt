@@ -1,5 +1,5 @@
 description: |
-    Introduced the :ref:`/spec/hardware/virtualization` hardware
+    Introduced the :tmt:story:`/spec/hardware/virtualization` hardware
     requirement ``virtualization.confidential`` to specify that a guest
     should be provisioned as a `confidential VM`__.
 
