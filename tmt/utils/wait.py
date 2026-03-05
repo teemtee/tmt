@@ -1,5 +1,6 @@
 import datetime
 import time
+from functools import cached_property
 from typing import Callable, TypeVar
 
 import tmt.log
@@ -73,6 +74,12 @@ class Deadline:
     _deadline: float
     _now: float
 
+    #: A timestamp of the end of the deadline, as UNIX timestamp.
+    #: Represents the actual date and time on real-world clock, in
+    #: contrast to :py:attr:`_deadline` which deals with
+    #: :py:func:`time.monotonic`, with no real-world relevance.
+    _real_world_deadline: float
+
     #: The original timeout that populated this deadline.
     original_timeout: datetime.timedelta
 
@@ -81,6 +88,7 @@ class Deadline:
 
         self._now = time.monotonic()
         self._deadline = self._now + timeout.total_seconds()
+        self._real_world_deadline = time.time() + timeout.total_seconds()
 
     def __repr__(self) -> str:
         return f'<Deadline: now={self._now} deadline={self._deadline}>'
@@ -100,6 +108,14 @@ class Deadline:
         """
 
         return Deadline(datetime.timedelta(seconds=timeout))
+
+    @cached_property
+    def due_at(self) -> datetime.datetime:
+        """
+        Date and time when this deadline runs out.
+        """
+
+        return datetime.datetime.fromtimestamp(self._real_world_deadline, tz=datetime.timezone.utc)
 
     @property
     def is_due(self) -> bool:
