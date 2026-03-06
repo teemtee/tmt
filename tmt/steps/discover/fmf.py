@@ -57,6 +57,8 @@ def normalize_tests_with_adjusts(
     logger: tmt.log.Logger,
 ) -> list[TestsWithAdjusts]:
     def normalize_raw_item(raw_item: Any, index: Optional[int] = None) -> TestsWithAdjusts:
+        if isinstance(raw_item, TestsWithAdjusts):
+            return raw_item
         if isinstance(raw_item, str):
             return TestsWithAdjusts(name=raw_item)
         problem_address = key_address
