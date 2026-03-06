@@ -451,6 +451,7 @@ builtins-ignorelist = ["help", "format", "input", "filter", "copyright", "max"]
 "typing.TypeGuard".msg = "Use tmt._compat.typing.TypeGuard instead."
 "typing.TypeIs".msg = "Not present in centos-stream-10"
 "typing_extensions.Self".msg = "Use tmt._compat.typing.Self instead."
+"typing.override".msg = "Use tmt._compat.typing.override instead."
 "pathlib.Path".msg = "Use tmt._compat.pathlib.Path instead."
 "pathlib.PosixPath".msg = "Use tmt._compat.pathlib.Path instead."
 "pydantic".msg = "Use tmt._compat.pydantic instead."

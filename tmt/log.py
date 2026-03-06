@@ -41,6 +41,7 @@ from typing import (
 )
 
 from tmt._compat.pathlib import Path
+from tmt._compat.typing import override
 from tmt._compat.warnings import deprecated
 from tmt.container import container, simple_field
 
@@ -314,41 +315,9 @@ class _Formatter(logging.Formatter):
 
         self._decolorize = create_decolorizer(apply_colors)
 
-    def format(self, record: logging.LogRecord) -> str:
-        if self.usesTime():
-            record.asctime = self.formatTime(record, self.datefmt)
-
-        # When message already exists, do nothing - it either some other logging subsystem,
-        # or tmt's own, already rendered message.
-        if hasattr(record, 'message'):
-            pass
-
-        # Otherwise render the message.
-        elif record.msg and record.args:
-            record.message = record.msg % record.args
-
-        else:
-            record.message = record.msg
-
-        # Original code from Formatter.format() - hard to inherit when overriding
-        # Formatter.format()...
-        s = self._decolorize(self.formatMessage(record))
-        # SIM102: Use a single `if` statement instead of nested `if` statements. Keeping for
-        # readability.
-        if record.exc_info:  # noqa: SIM102
-            # Cache the traceback text to avoid converting it multiple times
-            # (it's constant anyway)
-            if not record.exc_text:
-                record.exc_text = self.formatException(record.exc_info)
-        if record.exc_text:
-            if s[-1:] != "\n":
-                s = s + "\n"
-            s = s + record.exc_text
-        if record.stack_info:
-            if s[-1:] != "\n":
-                s = s + "\n"
-            s = s + self.formatStack(record.stack_info)
-        return s
+    @override
+    def formatMessage(self, record: logging.LogRecord) -> str:
+        return self._decolorize(super().formatMessage(record))
 
 
 class LogfileFormatter(_Formatter):
