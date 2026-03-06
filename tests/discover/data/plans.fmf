@@ -233,3 +233,14 @@ execute:
               because: check if context is evaluated
             - check+:
                 - how: avc
+
+    /adjust-individual-tests:
+        discover:
+            how: fmf
+            test:
+            # With adjust
+            - name: /tests/discover1
+              duration+: "*2"
+            # Without any adjust
+            - /tests/discover2
+            - name: /tests/discover3
