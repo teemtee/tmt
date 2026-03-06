@@ -1302,7 +1302,7 @@ class Command:
 
         # First, if we were given a message, emit it.
         if message:
-            logger.verbose(message, level=2)
+            logger.verbose(message, level=2, stacklevel=2)
 
         # For debugging, we want to save somewhere the actual command rather
         # than the provided "friendly". Emit the actual command to the debug
@@ -1312,7 +1312,7 @@ class Command:
         # The friendly command version would be emitted only when we were not
         # asked to be quiet.
         if not silent and friendly_command:
-            (log or logger.verbose)("cmd", friendly_command, color="yellow", level=2)
+            (log or logger.verbose)("cmd", friendly_command, color="yellow", level=2, stacklevel=2)
 
         # Nothing more to do in dry mode
         if dry:
