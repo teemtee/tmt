@@ -1,0 +1,21 @@
+summary: Test DNF5 NVR resolution with repository priorities
+description: |
+    Verify DNF5 package resolution behavior when multiple repositories
+    provide the same package with different versions and priorities.
+
+    TC 1.1 - Priority overrides Version:
+        A high-priority (priority=30) repository with an older package
+        wins over a low-priority (priority=50) repository with a newer
+        package.
+
+    TC 1.2 - Same Priority favors NVR:
+        When repository priorities are equal, DNF5 falls back to
+        standard RPM version comparison and installs the highest NVR.
+
+link:
+  - verifies: https://github.com/teemtee/tmt/issues/4546
+
+require+:
+  - tmt
+  - rpm-build
+  - createrepo
