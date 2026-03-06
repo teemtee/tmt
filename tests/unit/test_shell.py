@@ -2,6 +2,7 @@ import time
 from unittest.mock import MagicMock
 
 from tmt.frameworks.shell import _extract_failures
+from tmt.utils import Path
 
 
 def _make_invocation(log_content: str) -> MagicMock:
@@ -14,41 +15,39 @@ def _make_invocation(log_content: str) -> MagicMock:
 class TestExtractFailures:
     def test_no_failures(self) -> None:
         invocation = _make_invocation("all good\nnothing wrong here\n")
-        assert _extract_failures(invocation, MagicMock()) == []
+        assert _extract_failures(invocation, Path("dummy.log")) == []
 
     def test_error_match(self) -> None:
         invocation = _make_invocation("line1\nsome error occurred\nline3\n")
-        result = _extract_failures(invocation, MagicMock())
+        result = _extract_failures(invocation, Path("dummy.log"))
         assert result == ["some error occurred"]
 
     def test_fail_match(self) -> None:
         invocation = _make_invocation("test passed\ntest fail here\ndone\n")
-        result = _extract_failures(invocation, MagicMock())
+        result = _extract_failures(invocation, Path("dummy.log"))
         assert result == ["test fail here"]
 
     def test_case_insensitive(self) -> None:
         invocation = _make_invocation("ERROR: something\nFAIL: test\n")
-        result = _extract_failures(invocation, MagicMock())
-        assert len(result) == 2
-        assert "ERROR: something" in result
-        assert "FAIL: test" in result
+        result = _extract_failures(invocation, Path("dummy.log"))
+        assert result == ["ERROR: something", "FAIL: test"]
 
     def test_multiple_matches(self) -> None:
         invocation = _make_invocation("ok\nerror one\npass\nfail two\nerror three\n")
-        result = _extract_failures(invocation, MagicMock())
-        assert len(result) == 3
+        result = _extract_failures(invocation, Path("dummy.log"))
+        assert result == ["error one", "fail two", "error three"]
 
     def test_word_boundary(self) -> None:
         """Words like 'errorless' or 'failover' should not match."""
         invocation = _make_invocation("errorless operation\nfailover complete\n")
-        assert _extract_failures(invocation, MagicMock()) == []
+        assert _extract_failures(invocation, Path("dummy.log")) == []
 
     def test_file_error(self) -> None:
         import tmt.utils
 
         invocation = MagicMock()
         invocation.phase.step.plan.execute.read.side_effect = tmt.utils.FileError("not found")
-        assert _extract_failures(invocation, MagicMock()) == []
+        assert _extract_failures(invocation, Path("dummy.log")) == []
 
     def test_long_lines_performance(self) -> None:
         """
@@ -67,7 +66,7 @@ class TestExtractFailures:
         invocation = _make_invocation(log_content)
 
         start = time.monotonic()
-        result = _extract_failures(invocation, MagicMock())
+        result = _extract_failures(invocation, Path("dummy.log"))
         elapsed = time.monotonic() - start
 
         # Must complete in under 5 seconds (the old regex took 5+ seconds
