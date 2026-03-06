@@ -26,6 +26,8 @@ if TYPE_CHECKING:
 # A stand-in variable for generic use.
 T = TypeVar('T')
 
+from dataclasses import asdict as asdict  # noqa: E402
+
 # According to [1], this is the easiest way how to notify type checker
 # `container` is an alias for `dataclass`. Assignment is not recognized
 # by neither mypy nor pyright.
