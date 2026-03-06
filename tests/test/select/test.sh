@@ -178,18 +178,18 @@ rlJournalStart
         # First one has the adjust
         rlRun -s "yq '.[0]' < $tests_yaml"
         rlAssertGrep "name: /tests/tier/two" "$rlRun_LOG"
-        rlAssertGrep "result: 'respect'" "$rlRun_LOG"
+        rlAssertGrep "result: respect" "$rlRun_LOG"
         rlAssertGrep "serial-number: 1" "$rlRun_LOG"
         rlRun -s "yq '.[1]' < $tests_yaml"
         rlAssertGrep "name: /tests/tier/one" "$rlRun_LOG"
         rlAssertGrep "serial-number: 2" "$rlRun_LOG"
         rlRun -s "yq '.[2]' < $tests_yaml"
         rlAssertGrep "name: /tests/tier/two" "$rlRun_LOG"
-        rlAssertGrep "result: 'info'" "$rlRun_LOG"  # This is the adjusted test
+        rlAssertGrep "result: info" "$rlRun_LOG"  # This is the adjusted test
         rlAssertGrep "serial-number: 3" "$rlRun_LOG"
         rlRun -s "yq '.[3]' < $tests_yaml"
         rlAssertGrep "name: /tests/tier/two" "$rlRun_LOG"
-        rlAssertGrep "result: 'respect'" "$rlRun_LOG"
+        rlAssertGrep "result: respect" "$rlRun_LOG"
         rlAssertGrep "serial-number: 4" "$rlRun_LOG"
 
         # tests --name filters discovered test names (/two is discovered twice)
