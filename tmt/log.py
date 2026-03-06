@@ -443,6 +443,7 @@ class LoggingFunction(Protocol):
         shift: int = 0,
         level: int = 1,
         topic: Optional[Topic] = None,
+        stacklevel: int = 1,
     ) -> None:
         pass
 
@@ -764,6 +765,7 @@ class Logger:
         level: int,
         details: LogRecordDetails,
         message: str = '',
+        stacklevel: int = 1,
     ) -> None:
         """
         Emit a log record describing the message and related properties.
@@ -772,6 +774,12 @@ class Logger:
         and shifts, to :py:class:`logging.LogRecord` instances compatible with :py:mod:`logging`
         workflow and carrying extra information for our custom filters and handlers.
         """
+
+        # This function is never called directly, instead it is called by one level higher
+        # e.g. `info`. So we escape at least 2 levels of the stack (this function, and its
+        # caller) + the requested stacklevel of the caller (default is the current caller of
+        # `info`)
+        stacklevel += 2
 
         details.logger_labels = self.labels
         details.logger_labels_padding = self.labels_padding
@@ -794,7 +802,7 @@ class Logger:
                 labels_padding=self.labels_padding,
             )
 
-        self._logger._log(level, message, (), extra={'details': details})
+        self._logger._log(level, message, (), extra={'details': details}, stacklevel=stacklevel)
 
     def print_format(
         self,
@@ -836,10 +844,12 @@ class Logger:
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         topic: Optional[Topic] = None,
+        stacklevel: int = 1,
     ) -> None:
         self._log(
             logging.INFO,
             LogRecordDetails(key=key, value=value, color=color, shift=shift, message_topic=topic),
+            stacklevel=stacklevel,
         )
 
     def verbose(
@@ -850,6 +860,7 @@ class Logger:
         shift: int = 0,
         level: int = 1,
         topic: Optional[Topic] = None,
+        stacklevel: int = 1,
     ) -> None:
         self._log(
             logging.INFO,
@@ -861,6 +872,7 @@ class Logger:
                 message_verbosity_level=level,
                 message_topic=topic,
             ),
+            stacklevel=stacklevel,
         )
 
     def debug(
@@ -871,6 +883,7 @@ class Logger:
         shift: int = 0,
         level: int = 1,
         topic: Optional[Topic] = None,
+        stacklevel: int = 1,
     ) -> None:
         self._log(
             logging.DEBUG,
@@ -882,16 +895,19 @@ class Logger:
                 message_debug_level=level,
                 message_topic=topic,
             ),
+            stacklevel=stacklevel,
         )
 
     def warning(
         self,
         message: str,
         shift: int = 0,
+        stacklevel: int = 1,
     ) -> None:
         self._log(
             logging.WARNING,
             LogRecordDetails(key='warn', value=message, color='yellow', shift=shift),
+            stacklevel=stacklevel,
         )
 
     @deprecated("Use Logger.warning instead")
@@ -899,16 +915,21 @@ class Logger:
         self,
         message: str,
         shift: int,
+        stacklevel: int = 1,
     ) -> None:
-        return self.warning(message, shift)
+        stacklevel += 1
+        return self.warning(message, shift, stacklevel=stacklevel)
 
     def fail(
         self,
         message: str,
         shift: int = 0,
+        stacklevel: int = 1,
     ) -> None:
         self._log(
-            logging.ERROR, LogRecordDetails(key='fail', value=message, color='red', shift=shift)
+            logging.ERROR,
+            LogRecordDetails(key='fail', value=message, color='red', shift=shift),
+            stacklevel=stacklevel,
         )
 
     _bootstrap_logger: Optional['Logger'] = None
