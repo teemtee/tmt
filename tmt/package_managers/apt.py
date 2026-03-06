@@ -278,9 +278,28 @@ class Apt(PackageManager[AptEngine]):
 
         return results
 
-    def install_debuginfo(
+    def install_local(
         self,
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        raise tmt.utils.GeneralError("There is no support for debuginfo packages in apt.")
+
+        options = options or Options()
+        return self.install(
+            *installables,
+            options=Options(
+                excluded_packages=options.excluded_packages,
+                skip_missing=options.skip_missing,
+                check_first=False,
+            ),
+        )
+
+    def install_debuginfo(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> Optional[CommandOutput]:
+        raise tmt.utils.PrepareError(
+            f'Package manager "{self.guest.facts.package_manager}" does not support '
+            'installing debuginfo packages.'
+        )
