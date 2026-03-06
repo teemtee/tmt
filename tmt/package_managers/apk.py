@@ -191,7 +191,7 @@ class Apk(PackageManager[ApkEngine]):
         self,
         *installables: Installable,
         options: Optional[Options] = None,
-    ) -> None:
+    ) -> Optional[CommandOutput]:
         raise tmt.utils.PrepareError(
             f'Package manager "{self.guest.facts.package_manager}" does not support '
             'installing debuginfo packages.'
