@@ -378,8 +378,8 @@ class Bootc(PackageManager[BootcEngine]):
         self.engine.install(*installables, options=local_options)
         self.engine.reinstall(*installables, options=local_options)
 
-    def finalize_installation(self) -> None:
+    def finalize_installation(self) -> Optional[CommandOutput]:
         """
         Coordinate installation process through containerfile building and switching
         """
-        self.build_container()
+        return self.build_container()

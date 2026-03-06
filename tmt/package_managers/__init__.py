@@ -383,7 +383,8 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
                 f"Package manager '{self.NAME}' does not support enabling COPR repositories."
             )
 
-    def finalize_installation(self) -> None:
+    def finalize_installation(self) -> Optional[CommandOutput]:
         """
         Perform any post-installation steps. Currently, only container image builds are supported.
         """
+        return None
