@@ -17,7 +17,9 @@ def _extract_failures(invocation: 'TestInvocation', log_path: Path) -> list[str]
     except tmt.utils.FileError:
         return []
 
-    return re.findall(r'.*\b(?:error|fail)\b.*', log, re.IGNORECASE | re.MULTILINE)
+    return [
+        line for line in log.splitlines() if re.search(r'\b(?:error|fail)\b', line, re.IGNORECASE)
+    ]
 
 
 @provides_framework('shell')
