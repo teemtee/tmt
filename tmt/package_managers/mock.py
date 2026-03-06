@@ -8,6 +8,7 @@ from tmt.package_managers import (
     Options,
     PackageManager,
     PackageManagerEngine,
+    PackagePath,
     escape_installables,
     provides_package_manager,
 )
@@ -176,6 +177,35 @@ class _MockPackageManager(PackageManager[MockEngine]):
 
     def refresh_metadata(self) -> CommandOutput:
         return self.guest.run(self.engine.refresh_metadata().to_shell_command())
+
+    def install_local(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
+
+        assert isinstance(self.guest, GuestMock)
+
+        options = options or Options()
+        local_options = Options(
+            excluded_packages=options.excluded_packages,
+            skip_missing=options.skip_missing,
+            check_first=False,
+        )
+
+        # mock's package manager mounts the buildroot directory, so we need to
+        # prefix the path with the guest's root_path.
+        filelist = [
+            PackagePath(self.guest.root_path / p.relative_to('/'))
+            for p in installables
+            if isinstance(p, PackagePath)
+        ]
+
+        # Use both install/reinstall to get all packages refreshed
+        # FIXME Simplify this once BZ#1831022 is fixed/implemented.
+        output = self.install(*filelist, options=local_options)
+        self.reinstall(*filelist, options=local_options)
+        return output
 
 
 @provides_package_manager('mock-yum')

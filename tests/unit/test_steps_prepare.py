@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
 from tmt.base.core import DependencySimple
-from tmt.steps.prepare.install import InstallBase
+from tmt.steps.prepare.install import PrepareInstall
 
 
 def test_debuginfo(root_logger):
@@ -9,11 +9,10 @@ def test_debuginfo(root_logger):
     Check debuginfo package parsing
     """
 
-    parent = MagicMock()
-    guest = MagicMock()
+    plugin = MagicMock(spec=PrepareInstall)
 
-    install = InstallBase(
-        parent=parent,
+    PrepareInstall._prepare_installables(
+        plugin,
         dependencies=[
             # Regular packages
             DependencySimple("wget"),
@@ -24,17 +23,15 @@ def test_debuginfo(root_logger):
             DependencySimple("elfutils-debuginfod-debuginfo"),
         ],
         directories=[],
-        exclude=[],
         logger=root_logger,
-        guest=guest,
     )
 
-    assert install.packages == [
+    assert plugin.packages == [
         "wget",
         "debuginfo-something",
         "elfutils-debuginfod",
     ]
-    assert install.debuginfo_packages == [
+    assert plugin.debuginfo_packages == [
         "grep",
         "elfutils-debuginfod",
     ]
