@@ -10,7 +10,12 @@ import tmt.steps
 import tmt.utils
 from tmt.container import container, field, key_to_option
 from tmt.steps.discover import Discover, DiscoverPlugin, DiscoverStepData, normalize_ref
-from tmt.steps.discover.fmf import DiscoverFmf, DiscoverFmfStepData
+from tmt.steps.discover.fmf import (
+    DiscoverFmf,
+    DiscoverFmfStepData,
+    TestsWithAdjusts,
+    normalize_tests_with_adjusts,
+)
 from tmt.steps.execute import ExecutePlugin
 from tmt.steps.execute.internal import ExecuteInternal, ExecuteInternalData
 from tmt.steps.prepare import PreparePlugin
@@ -61,13 +66,17 @@ class ExecuteUpgradeData(ExecuteInternalData):
         help='Branch, tag or commit specifying the git revision.',
         normalize=normalize_ref,
     )
-    test: list[str] = field(
+    test: list[TestsWithAdjusts] = field(
         default_factory=list,
         option=('-t', '--test'),
         metavar='NAMES',
         multiple=True,
         help='Select tests by name.',
-        normalize=tmt.utils.normalize_string_list,
+        normalize=normalize_tests_with_adjusts,
+        serialize=lambda tests: [test.to_spec() for test in tests],
+        unserialize=lambda serialized_tests: [
+            TestsWithAdjusts.from_spec(serialized_test) for serialized_test in serialized_tests
+        ],
     )
     filter: list[str] = field(
         default_factory=list,
