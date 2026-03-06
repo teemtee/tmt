@@ -1,7 +1,5 @@
 import re
-from typing import ClassVar, Optional
-
-import fmf.utils
+from typing import Optional
 
 from tmt.package_managers import (
     FileSystemPath,
@@ -121,8 +119,6 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
     NAME = 'rpm-ostree'
 
     _engine_class = RpmOstreeEngine
-
-    copr_plugin: ClassVar[str] = 'dnf-plugins-core'  # mayy not be needed as it delegates to Dnf5
 
     probe_command = Command('stat', '/run/ostree-booted')
     # Needs to be bigger than priorities of `yum`, `dnf` and `dnf5`.
@@ -264,15 +260,9 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
             check_first=False,
         )
 
-        local_packages_installed: list[PackagePath] = []
-
         for package in installables:
             assert isinstance(package, PackagePath)
             try:
                 self.install(package, options=options)
-                local_packages_installed.append(package)
             except RunError as error:
                 self.warn(f"Local package '{package.name}' not installed: {error.stderr}")
-
-        summary = fmf.utils.listed(local_packages_installed, 'local package')
-        self.info('total', f"{summary} installed", 'green')

@@ -299,9 +299,7 @@ class Apt(PackageManager[AptEngine]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> Optional[CommandOutput]:
-        output = super().install_debuginfo(*installables, options=options)
-        # Check the packages are installed because 'debuginfo-install'
-        # returns 0 even though it didn't manage to install the required packages
-        if not (options and options.skip_missing):
-            self.check_presence(*[Package(f'{p}-debuginfo') for p in installables])
-        return output
+        raise tmt.utils.PrepareError(
+            f'Package manager "{self.guest.facts.package_manager}" does not support '
+            'installing debuginfo packages.'
+        )
