@@ -718,8 +718,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         # Names of tests selected by --test option
         if self.data.test:
             self.info('tests', fmf.utils.listed([test.name for test in self.data.test]), 'green')
-        tests_without_adjust = [test.name for test in self.data.test if not test.adjust_rule]
-        tests_with_adjust = [test for test in self.data.test if test.adjust_rule]
 
         # Check the 'test --link' option first, then from discover
         # FIXME: cast() - typeless "dispatcher" method
@@ -779,7 +777,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     # Nothing was modified, do not select anything
                     return []
                 self.debug(f"Limit to modified test dirs: {modified}", level=3)
-                tests_without_adjust.extend(modified)
+                self.data.test.extend(TestsWithAdjusts(name=name) for name in modified)
             else:
                 self.debug(f"No modified directories between '{modified_ref}..HEAD' found.")
                 # Nothing was modified, do not select anything
@@ -796,14 +794,13 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             fmf_context=self.step.plan.fmf_context,
             additional_rules=self.data.adjust_tests,
         )
-        if tests_without_adjust or not tests_with_adjust:
-            # - tests_without_adjust is not empty: we have test names to use in the filter
-            # - both tests_without_adjust and test_with_adjust are empty: we do not have any
-            #   names filter (i.e. we take all tests)
+        if not self.data.test or not any(test.adjust_rule for test in self.data.test):
+            # - not test: we do not have any names filter (i.e. we take all tests)
+            # - not any(.adjust_rule): we do not any tests with custom adjust
             tests.extend(
                 tree.tests(
                     filters=filters,
-                    names=tests_without_adjust,
+                    names=[test.name for test in self.data.test],
                     conditions=["manual is False"],
                     unique=False,
                     links=link_needles,
@@ -811,24 +808,31 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     excludes=excludes,
                 )
             )
-        for test_adjust in tests_with_adjust:
-            assert test_adjust.adjust_rule  # narrow type
-            tests.extend(
-                tmt.Tree(
-                    logger=self._logger,
-                    path=tree_path,
-                    fmf_context=self.step.plan.fmf_context,
-                    additional_rules=[*self.data.adjust_tests, test_adjust.adjust_rule],
-                ).tests(
-                    filters=filters,
-                    names=[test_adjust.name],
-                    conditions=["manual is False"],
-                    unique=False,
-                    links=link_needles,
-                    includes=includes,
-                    excludes=excludes,
+        else:
+            # We have at least one test with an adjust rule.
+            # In order to preserve the order and duplication defined in the fmf file,
+            # we need to resolve each test entry at a time
+            for test in self.data.test:
+                # Recalculate the adjusted tree only if necessary
+                adjusted_tree = tree
+                if test.adjust_rule:
+                    adjusted_tree = tmt.Tree(
+                        logger=self._logger,
+                        path=tree_path,
+                        fmf_context=self.step.plan.fmf_context,
+                        additional_rules=[*self.data.adjust_tests, test.adjust_rule],
+                    )
+                tests.extend(
+                    adjusted_tree.tests(
+                        filters=filters,
+                        names=[test.name],
+                        conditions=["manual is False"],
+                        unique=False,
+                        links=link_needles,
+                        includes=includes,
+                        excludes=excludes,
+                    )
                 )
-            )
         return tests
 
     def post_dist_git(self, created_content: list[Path]) -> None:
