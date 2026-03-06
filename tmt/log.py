@@ -24,7 +24,9 @@ but all-capturing log files while keeping implementation simple - the other opti
 managing handlers themselves, which would be very messy given the propagation of messages.
 """
 
+import copy
 import enum
+import io
 import itertools
 import logging
 import os
@@ -40,9 +42,11 @@ from typing import (
     cast,
 )
 
+from ruamel.yaml import YAML
+
 from tmt._compat.pathlib import Path
 from tmt._compat.warnings import deprecated
-from tmt.container import container, simple_field
+from tmt.container import asdict, container, simple_field
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -289,6 +293,11 @@ class LogRecordDetails:
     message_topic: Optional[Topic] = None
 
 
+class RunWarningsHandler(logging.FileHandler):
+    def __init__(self, filepath: Path) -> None:
+        super().__init__(filepath, mode="a")
+
+
 class LogfileHandler(logging.FileHandler):
     #: Paths of all log files to which ``LogfileHandler`` was attached.
     emitting_to: list[Path] = []
@@ -364,6 +373,57 @@ class ConsoleFormatter(_Formatter):
         )
 
 
+@container
+class RunWarningEntry:
+    msg: str
+    logger: str
+    trace: str
+
+
+class RunWarningsFormatter(logging.Formatter):
+    #: Yaml handler for formatting the content.
+    #:
+    #: We do not use roundtrip loader here because that would require rewriting
+    #: the whole content each time, but the streaming nature of the logger
+    #: assumes that we will be appending when ``emit()`` is called. Instead we
+    #: make use of the document is composed of direct list items so we can
+    #: simply append each item as a new list.
+    _yaml_handler: YAML
+
+    def __init__(self) -> None:
+        from tmt.utils import _yaml
+
+        self._yaml_handler = _yaml(yaml_type="safe")
+        super().__init__('%(message)s', datefmt='%H:%M:%S')
+
+    def format(self, record: logging.LogRecord) -> str:
+        # TODO: make this in a better yaml with a schema
+        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
+        if not details:
+            # Not a tmt owned warning
+            warning_msg = super().format(record)
+        else:
+            # Tmt warning, we take the original raw value
+            record_copy = copy.copy(record)
+            record_copy.msg = details.value
+            warning_msg = super().format(record_copy)
+        # The yaml content to be appended is always a single list item so that
+        # it can be appended with the previous content
+        yaml_content = [
+            asdict(
+                RunWarningEntry(
+                    msg=warning_msg,
+                    logger=record.name,
+                    trace=f"{record.pathname}#{record.lineno}: {record.funcName}()",
+                )
+            ),
+        ]
+        # Format and dump the yaml content
+        string_io = io.StringIO()
+        self._yaml_handler.dump(yaml_content, string_io)
+        return string_io.getvalue()
+
+
 class VerbosityLevelFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         if record.levelno != logging.INFO:
@@ -434,6 +494,14 @@ class TopicFilter(logging.Filter):
         return False
 
 
+class RunWarningsFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.levelno is logging.WARNING:
+            return True
+
+        return False
+
+
 class LoggingFunction(Protocol):
     def __call__(
         self,
@@ -443,6 +511,7 @@ class LoggingFunction(Protocol):
         shift: int = 0,
         level: int = 1,
         topic: Optional[Topic] = None,
+        stacklevel: int = 1,
     ) -> None:
         pass
 
@@ -645,6 +714,15 @@ class Logger:
 
         self._logger.addHandler(handler)
 
+    def add_runwarnings_handler(self, filepath: Path) -> None:
+        handler = RunWarningsHandler(filepath)
+
+        handler.setFormatter(RunWarningsFormatter())
+
+        handler.addFilter(RunWarningsFilter())
+
+        self._logger.addHandler(handler)
+
     def add_console_handler(self, show_timestamps: bool = False) -> None:
         """
         Attach console handler to this logger.
@@ -764,6 +842,7 @@ class Logger:
         level: int,
         details: LogRecordDetails,
         message: str = '',
+        stacklevel: int = 1,
     ) -> None:
         """
         Emit a log record describing the message and related properties.
@@ -772,6 +851,12 @@ class Logger:
         and shifts, to :py:class:`logging.LogRecord` instances compatible with :py:mod:`logging`
         workflow and carrying extra information for our custom filters and handlers.
         """
+
+        # This function is never called directly, instead it is called by one level higher
+        # e.g. `info`. So we escape at least 2 levels of the stack (this function, and its
+        # caller) + the requested stacklevel of the caller (default is the current caller of
+        # `info`)
+        stacklevel += 2
 
         details.logger_labels = self.labels
         details.logger_labels_padding = self.labels_padding
@@ -794,7 +879,7 @@ class Logger:
                 labels_padding=self.labels_padding,
             )
 
-        self._logger._log(level, message, (), extra={'details': details})
+        self._logger._log(level, message, (), extra={'details': details}, stacklevel=stacklevel)
 
     def print_format(
         self,
@@ -836,10 +921,12 @@ class Logger:
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         topic: Optional[Topic] = None,
+        stacklevel: int = 1,
     ) -> None:
         self._log(
             logging.INFO,
             LogRecordDetails(key=key, value=value, color=color, shift=shift, message_topic=topic),
+            stacklevel=stacklevel,
         )
 
     def verbose(
@@ -850,6 +937,7 @@ class Logger:
         shift: int = 0,
         level: int = 1,
         topic: Optional[Topic] = None,
+        stacklevel: int = 1,
     ) -> None:
         self._log(
             logging.INFO,
@@ -861,6 +949,7 @@ class Logger:
                 message_verbosity_level=level,
                 message_topic=topic,
             ),
+            stacklevel=stacklevel,
         )
 
     def debug(
@@ -871,6 +960,7 @@ class Logger:
         shift: int = 0,
         level: int = 1,
         topic: Optional[Topic] = None,
+        stacklevel: int = 1,
     ) -> None:
         self._log(
             logging.DEBUG,
@@ -882,16 +972,19 @@ class Logger:
                 message_debug_level=level,
                 message_topic=topic,
             ),
+            stacklevel=stacklevel,
         )
 
     def warning(
         self,
         message: str,
         shift: int = 0,
+        stacklevel: int = 1,
     ) -> None:
         self._log(
             logging.WARNING,
             LogRecordDetails(key='warn', value=message, color='yellow', shift=shift),
+            stacklevel=stacklevel,
         )
 
     @deprecated("Use Logger.warning instead")
@@ -899,16 +992,21 @@ class Logger:
         self,
         message: str,
         shift: int,
+        stacklevel: int = 1,
     ) -> None:
-        return self.warning(message, shift)
+        stacklevel += 1
+        return self.warning(message, shift, stacklevel=stacklevel)
 
     def fail(
         self,
         message: str,
         shift: int = 0,
+        stacklevel: int = 1,
     ) -> None:
         self._log(
-            logging.ERROR, LogRecordDetails(key='fail', value=message, color='red', shift=shift)
+            logging.ERROR,
+            LogRecordDetails(key='fail', value=message, color='red', shift=shift),
+            stacklevel=stacklevel,
         )
 
     _bootstrap_logger: Optional['Logger'] = None
