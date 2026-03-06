@@ -292,6 +292,13 @@ class LogRecordDetails:
     logger_topics: set[Topic] = simple_field(default_factory=set[Topic])
     message_topic: Optional[Topic] = None
 
+    #: The source related to the log message. This is different from the stacktrace
+    #: which is automatically handled. This is meant to track sources such as those
+    #: from fmf file
+    source: Optional[str] = None
+    #: The reason for triggering the log.
+    reason: Optional[str] = None
+
 
 class RunWarningsHandler(logging.FileHandler):
     def __init__(self, filepath: Path) -> None:
@@ -378,6 +385,8 @@ class RunWarningEntry:
     msg: str
     logger: str
     trace: str
+    source: Optional[str]
+    reason: Optional[str]
 
 
 class RunWarningsFormatter(logging.Formatter):
@@ -415,6 +424,8 @@ class RunWarningsFormatter(logging.Formatter):
                     msg=warning_msg,
                     logger=record.name,
                     trace=f"{record.pathname}#{record.lineno}: {record.funcName}()",
+                    source=details.source if details else "(external)",
+                    reason=details.reason if details else None,
                 )
             ),
         ]
@@ -984,10 +995,19 @@ class Logger:
         message: str,
         shift: int = 0,
         stacklevel: int = 1,
+        source: Optional[str] = None,
+        reason: Optional[str] = None,
     ) -> None:
         self._log(
             logging.WARNING,
-            LogRecordDetails(key='warn', value=message, color='yellow', shift=shift),
+            LogRecordDetails(
+                key='warn',
+                value=message,
+                color='yellow',
+                shift=shift,
+                source=source,
+                reason=reason,
+            ),
             stacklevel=stacklevel,
         )
 
