@@ -21,4 +21,6 @@ execute:
         test:
         - /tier/two
         - /tier/one
+        - name: /tier/two
+          result: info
         - /tier/two
