@@ -1302,7 +1302,7 @@ class Command:
 
         # First, if we were given a message, emit it.
         if message:
-            logger.verbose(message, level=2)
+            logger.verbose(message, level=2, stacklevel=2)
 
         # For debugging, we want to save somewhere the actual command rather
         # than the provided "friendly". Emit the actual command to the debug
@@ -1312,7 +1312,7 @@ class Command:
         # The friendly command version would be emitted only when we were not
         # asked to be quiet.
         if not silent and friendly_command:
-            (log or logger.verbose)("cmd", friendly_command, color="yellow", level=2)
+            (log or logger.verbose)("cmd", friendly_command, color="yellow", level=2, stacklevel=2)
 
         # Nothing more to do in dry mode
         if dry:
@@ -2188,12 +2188,21 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         color: 'tmt.utils.themes.Style' = None,
         shift: int = 0,
         topic: Optional[tmt.log.Topic] = None,
+        stacklevel: int = 1,
     ) -> None:
         """
         Show a message unless in quiet mode
         """
 
-        self._logger.info(key, value=value, color=color, shift=shift, topic=topic)
+        stacklevel += 1
+        self._logger.info(
+            key,
+            value=value,
+            color=color,
+            shift=shift,
+            topic=topic,
+            stacklevel=stacklevel,
+        )
 
     def verbose(
         self,
@@ -2203,6 +2212,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         shift: int = 0,
         level: int = 1,
         topic: Optional[tmt.log.Topic] = None,
+        stacklevel: int = 1,
     ) -> None:
         """
         Show message if in requested verbose mode level
@@ -2210,7 +2220,16 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         In quiet mode verbose messages are not displayed.
         """
 
-        self._logger.verbose(key, value=value, color=color, shift=shift, level=level, topic=topic)
+        stacklevel += 1
+        self._logger.verbose(
+            key,
+            value=value,
+            color=color,
+            shift=shift,
+            level=level,
+            topic=topic,
+            stacklevel=stacklevel,
+        )
 
     def debug(
         self,
@@ -2220,6 +2239,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         shift: int = 0,
         level: int = 1,
         topic: Optional[tmt.log.Topic] = None,
+        stacklevel: int = 1,
     ) -> None:
         """
         Show message if in requested debug mode level
@@ -2227,21 +2247,32 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         In quiet mode debug messages are not displayed.
         """
 
-        self._logger.debug(key, value=value, color=color, shift=shift, level=level, topic=topic)
+        stacklevel += 1
+        self._logger.debug(
+            key,
+            value=value,
+            color=color,
+            shift=shift,
+            level=level,
+            topic=topic,
+            stacklevel=stacklevel,
+        )
 
-    def warn(self, message: str, shift: int = 0) -> None:
+    def warn(self, message: str, shift: int = 0, stacklevel: int = 1) -> None:
         """
         Show a yellow warning message on info level, send to stderr
         """
 
-        self._logger.warning(message, shift=shift)
+        stacklevel += 1
+        self._logger.warning(message, shift=shift, stacklevel=stacklevel)
 
-    def fail(self, message: str, shift: int = 0) -> None:
+    def fail(self, message: str, shift: int = 0, stacklevel: int = 1) -> None:
         """
         Show a red failure message on info level, send to stderr
         """
 
-        self._logger.fail(message, shift=shift)
+        stacklevel += 1
+        self._logger.fail(message, shift=shift, stacklevel=stacklevel)
 
     def _command_verbose_logger(
         self,
@@ -2251,6 +2282,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         shift: int = 1,
         level: int = 3,
         topic: Optional[tmt.log.Topic] = None,
+        stacklevel: int = 1,
     ) -> None:
         """
         Reports the executed command in verbose mode.
@@ -2259,7 +2291,16 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         default parameters are adjusted (to preserve the function type).
         """
 
-        self.verbose(key=key, value=value, color=color, shift=shift, level=level, topic=topic)
+        stacklevel += 1
+        self.verbose(
+            key=key,
+            value=value,
+            color=color,
+            shift=shift,
+            level=level,
+            topic=topic,
+            stacklevel=stacklevel,
+        )
 
     def run(
         self,
