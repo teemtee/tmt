@@ -1231,7 +1231,7 @@ def _parse_virtualization(spec: Spec) -> BaseConstraint:
     group.constraints += _parse_flag_constraints(
         spec,
         'virtualization',
-        ('is-virtualized', 'is-supported'),
+        ('is-virtualized', 'is-supported', 'confidential'),
     )
     group.constraints += _parse_text_constraints(
         spec,
