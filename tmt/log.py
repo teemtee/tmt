@@ -46,7 +46,7 @@ from ruamel.yaml import YAML
 
 from tmt._compat.pathlib import Path
 from tmt._compat.warnings import deprecated
-from tmt.container import container, simple_field
+from tmt.container import asdict, container, simple_field
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -373,6 +373,13 @@ class ConsoleFormatter(_Formatter):
         )
 
 
+@container
+class RunWarningEntry:
+    msg: str
+    logger: str
+    trace: str
+
+
 class RunWarningsFormatter(logging.Formatter):
     #: Yaml handler for formatting the content.
     #:
@@ -402,7 +409,15 @@ class RunWarningsFormatter(logging.Formatter):
             warning_msg = super().format(record_copy)
         # The yaml content to be appended is always a single list item so that
         # it can be appended with the previous content
-        yaml_content = [warning_msg]
+        yaml_content = [
+            asdict(
+                RunWarningEntry(
+                    msg=warning_msg,
+                    logger=record.name,
+                    trace=f"{record.pathname}#{record.lineno}: {record.funcName}()",
+                )
+            ),
+        ]
         # Format and dump the yaml content
         string_io = io.StringIO()
         self._yaml_handler.dump(yaml_content, string_io)
@@ -700,7 +715,6 @@ class Logger:
         self._logger.addHandler(handler)
 
     def add_runwarnings_handler(self, filepath: Path) -> None:
-
         handler = RunWarningsHandler(filepath)
 
         handler.setFormatter(RunWarningsFormatter())
