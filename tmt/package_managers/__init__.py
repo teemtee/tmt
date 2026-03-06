@@ -306,7 +306,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         self,
         *installables: Installable,
         options: Optional[Options] = None,
-    ) -> CommandOutput:
+    ) -> Optional[CommandOutput]:
         return self.guest.execute(self.engine.install_debuginfo(*installables, options=options))
 
     def refresh_metadata(self) -> CommandOutput:
@@ -343,3 +343,47 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         Wrapper of :py:meth:`PackageManagerEngine.create_repository`.
         """
         return self.guest.execute(self.engine.create_repository(directory))
+
+    def install_from_repository(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> Optional[CommandOutput]:
+        """
+        Install packages from a repository
+        """
+        return self.install(*installables, options=options)
+
+    def install_local(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> Optional[CommandOutput]:
+        """
+        Install packages stored in a local directory
+        """
+        return self.install(*installables, options=options)
+
+    def install_from_url(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> Optional[CommandOutput]:
+        """
+        Install packages stored on a remote URL
+        """
+        return self.install(*installables, options=options)
+
+    def enable_copr(self, repositories: list[str]) -> None:
+        """
+        Enable requested copr repositories
+        """
+        if repositories:
+            raise PrepareError(
+                f"Package manager '{self.NAME}' does not support enabling COPR repositories."
+            )
+
+    def finalize_installation(self) -> None:
+        """
+        Perform any post-installation steps. Currently, only container image builds are supported.
+        """

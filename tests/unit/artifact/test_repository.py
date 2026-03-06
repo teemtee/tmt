@@ -245,9 +245,8 @@ def mock_repo_file_fetch():
 
 
 @pytest.fixture
-def mock_guest_and_pm():
+def mock_guest_and_pm(mock_package_manager):
     mock_guest = MagicMock()
-    mock_package_manager = MagicMock()
     mock_guest.package_manager = mock_package_manager
     return mock_guest, mock_package_manager
 

@@ -1,5 +1,7 @@
 import re
-from typing import Optional
+from typing import ClassVar, Optional
+
+import fmf.utils
 
 from tmt.package_managers import (
     FileSystemPath,
@@ -7,6 +9,7 @@ from tmt.package_managers import (
     Options,
     PackageManager,
     PackageManagerEngine,
+    PackagePath,
     escape_installables,
     provides_package_manager,
 )
@@ -119,6 +122,8 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
 
     _engine_class = RpmOstreeEngine
 
+    copr_plugin: ClassVar[str] = 'dnf-plugins-core'  # mayy not be needed as it delegates to Dnf5
+
     probe_command = Command('stat', '/run/ostree-booted')
     # Needs to be bigger than priorities of `yum`, `dnf` and `dnf5`.
     probe_priority = 100
@@ -193,4 +198,81 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        raise GeneralError("rpm-ostree does not support debuginfo packages.")
+        self.warn("Installation of debuginfo packages not supported yet.")
+        return CommandOutput(stdout=None, stderr=None)
+
+    def enable_copr(self, repositories: list[str]) -> None:
+        """
+        Enable COPR repositories by delegating to a Dnf5 package manager instance.
+        """
+
+        if not repositories:
+            return
+
+        from tmt.package_managers.dnf import Dnf5
+
+        Dnf5(guest=self.guest, logger=self._logger).enable_copr(repositories)
+
+    def sort_packages(
+        self,
+        *installables: Installable,
+        options: Options,
+    ) -> None:
+        """Sort packages into required and recommended based on presence and skip_missing."""
+        self.required: list[Installable] = []
+        self.recommended: list[Installable] = []
+
+        for installable in installables:
+            if all(self.check_presence(installable).values()):
+                continue
+            if options.skip_missing:
+                self.recommended.append(installable)
+            else:
+                self.required.append(installable)
+
+    def install_from_repository(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> Optional[CommandOutput]:
+        options = options or Options()
+        self.sort_packages(*installables, options=options)
+
+        for package in self.recommended:
+            self.info('package', str(package), 'green')
+            try:
+                self.install(package)
+            except RunError as error:
+                self.debug(f"Package installation failed: {error}")
+                self.warn(f"Unable to install recommended package '{package}'.")
+
+        if self.required:
+            return self.install(*self.required)
+
+        return None
+
+    def install_local(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> None:
+
+        options = options or Options()
+        options = Options(
+            excluded_packages=options.excluded_packages,
+            skip_missing=options.skip_missing,
+            check_first=False,
+        )
+
+        local_packages_installed: list[PackagePath] = []
+
+        for package in installables:
+            assert isinstance(package, PackagePath)
+            try:
+                self.install(package, options=options)
+                local_packages_installed.append(package)
+            except RunError as error:
+                self.warn(f"Local package '{package.name}' not installed: {error.stderr}")
+
+        summary = fmf.utils.listed(local_packages_installed, 'local package')
+        self.info('total', f"{summary} installed", 'green')

@@ -35,6 +35,7 @@ import tmt
 import tmt.hardware
 import tmt.log
 import tmt.package_managers
+import tmt.package_managers.bootc
 import tmt.steps
 import tmt.steps.scripts
 import tmt.utils
