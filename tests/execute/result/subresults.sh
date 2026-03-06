@@ -140,7 +140,7 @@ rlJournalStart
         rlAssertExists "$log_dir/beakerlib-1/data/extra-tmt-report-result_weird/bkr_weird_log.txt"
         rlAssertExists "$log_dir/beakerlib-1/data/extra-rhts-report-result_bad-with-compat/resultoutputfile.log"
         rlAssertExists "$log_dir/beakerlib-1/data/extra-rhts-report-result_bad-without-compat/output.txt"
-        # rlAssertExists "$log_dir/beakerlib-1/journal.xml"
+        rlAssertExists "$log_dir/beakerlib-1/journal.xml"
     rlPhaseEnd
 
     rlPhaseStartCleanup
