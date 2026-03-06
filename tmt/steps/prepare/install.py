@@ -294,7 +294,8 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         ):
             install_outputs.append(output)
 
-        self.guest.package_manager.finalize_installation()
+        if output := self.guest.package_manager.finalize_installation():
+            install_outputs.append(output)
 
         # For recommended packages (skip_missing=True), check output even if no exception
         # was raised, since --skip-broken makes the command succeed but packages still fail
