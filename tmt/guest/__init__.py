@@ -2089,22 +2089,33 @@ class Guest(
 
         raise GeneralError(f"Unknown Ansible object type, '{type(playbook)}'.")
 
-    def _prepare_environment(
-        self, execute_environment: Optional[tmt.utils.Environment] = None
+    def _prepare_command_environment(
+        self, environment: Optional[tmt.utils.Environment] = None
     ) -> tmt.utils.Environment:
         """
-        Prepare dict of environment variables
+        Prepare meaningful environment for a command.
+
+        When the environment is unset, construct a basic environment
+        from the plan and run. Otherwise, the environment is left
+        unmodified.
         """
-        # Prepare environment variables so they can be correctly passed
-        # to shell. Create a copy to prevent modifying source.
-        environment = tmt.utils.Environment()
-        environment.update(execute_environment or {})
-        # Plan environment and variables provided on the command line
-        # override environment provided to execute().
-        # FIXME: cast() - https://github.com/teemtee/tmt/issues/1372
-        if self.parent:
-            parent = cast('Provision', self.parent)
-            environment.update(parent.plan.environment)
+
+        if environment is None:
+            # narrow type
+            assert isinstance(self.parent, tmt.steps.Step)
+
+            environment = tmt.utils.Environment()
+
+            environment.update(
+                self.environment,
+                self.parent.plan.environment,
+            )
+
+        else:
+            # Create a copy of given environment - this prevents any
+            # accidental modification of the given environment.
+            environment = environment.copy()
+
         return environment
 
     def _run_guest_command(
@@ -2823,7 +2834,7 @@ class GuestSsh(Guest, CommandCollector):
         # Build the command script using the same approach as execute()
         # Start with environment exports
         collected_commands: ShellScript = ShellScript.from_scripts(
-            self._prepare_environment(env).to_shell_exports()
+            self._prepare_command_environment(env).to_shell_exports()
         )
 
         # Add working directory change (properly quoted like in execute())
@@ -3194,7 +3205,7 @@ class GuestSsh(Guest, CommandCollector):
                 friendly_command=friendly_command,
                 silent=silent,
                 cwd=parent.plan.worktree,
-                env=self._prepare_environment(),
+                env=self._prepare_command_environment(),
                 log=log,
             )
         except tmt.utils.RunError as exc:
@@ -3349,7 +3360,7 @@ class GuestSsh(Guest, CommandCollector):
         # Accumulate all necessary commands - they will form a "shell" script, a single
         # string passed to SSH to execute on the remote machine.
         remote_commands: ShellScript = ShellScript.from_scripts(
-            self._prepare_environment(env).to_shell_exports()
+            self._prepare_command_environment(env).to_shell_exports()
         )
 
         # Change to given directory on guest if cwd provided

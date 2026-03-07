@@ -94,7 +94,7 @@ class GuestLocal(tmt.Guest):
                     '-i', 'localhost,',
                     playbook,
                 ),
-                env=self._prepare_environment(),
+                env=self._prepare_command_environment(),
                 friendly_command=friendly_command,
                 log=log,
                 silent=silent,
