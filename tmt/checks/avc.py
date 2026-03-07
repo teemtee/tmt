@@ -3,7 +3,7 @@ import re
 import textwrap
 import time
 from re import Pattern
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional
 
 import jinja2
 
@@ -19,6 +19,7 @@ from tmt.utils import (
     ShellScript,
     Stopwatch,
     render_command_report,
+    safe_call,
 )
 from tmt.utils.hints import hints_as_notes
 
@@ -119,7 +120,7 @@ def _run_script(
     script: ShellScript,
     needs_sudo: bool = False,
     logger: tmt.log.Logger,
-) -> Union[tuple[CommandOutput, None], tuple[None, tmt.utils.RunError]]:
+) -> CommandOutput:
     """
     A helper to run a script on the guest.
 
@@ -145,13 +146,7 @@ def _run_script(
     ) -> None:
         logger.verbose(key=key, value=value, color=color, shift=shift, level=level, topic=topic)
 
-    try:
-        output = invocation.guest.execute(script, log=_output_logger, silent=True)
-
-        return output, None
-
-    except tmt.utils.RunError as exc:
-        return None, exc
+    return invocation.guest.execute(script, log=_output_logger, silent=True)
 
 
 def create_ausearch_mark(
@@ -178,8 +173,9 @@ def create_ausearch_mark(
         ).strip()
     )
 
-    with Stopwatch() as timer:
-        output, exc = _run_script(invocation=invocation, script=script, logger=logger)
+    output, exc, timer = Stopwatch.measure(
+        _run_script, invocation=invocation, script=script, logger=logger
+    )
 
     if exc is None:
         assert output is not None
@@ -228,7 +224,9 @@ def create_final_report(
     got_sestatus, got_rpm, got_ausearch, got_denials = False, False, False, False
 
     # Get the `sestatus` output.
-    output, exc = _run_script(invocation=invocation, script=ShellScript('sestatus'), logger=logger)
+    output, exc = safe_call(
+        _run_script, invocation=invocation, script=ShellScript('sestatus'), logger=logger
+    )
 
     if exc is None:
         assert output is not None
@@ -244,8 +242,11 @@ def create_final_report(
 
     # Record NVRs of interesting packages.
     interesting_packages = ' '.join(INTERESTING_PACKAGES)
-    output, exc = _run_script(
-        invocation=invocation, script=ShellScript(f'rpm -q {interesting_packages}'), logger=logger
+    output, exc = safe_call(
+        _run_script,
+        invocation=invocation,
+        script=ShellScript(f'rpm -q {interesting_packages}'),
+        logger=logger,
     )
 
     if exc is None:
@@ -269,10 +270,9 @@ def create_final_report(
         ).strip()
     )
 
-    with Stopwatch() as timer:
-        output, exc = _run_script(
-            invocation=invocation, script=script, needs_sudo=True, logger=logger
-        )
+    output, exc, timer = Stopwatch.measure(
+        _run_script, invocation=invocation, script=script, needs_sudo=True, logger=logger
+    )
 
     # `ausearch` outcome evaluation is a bit more complicated than the one for a simple
     # `rpm -q`, because not all non-zero exit codes mean error.
@@ -319,7 +319,12 @@ def create_final_report(
         failure = list(render_command_report(label='ausearch', exc=exc))
         report += failure
 
-        if exc.returncode == 1 and exc.stderr and '<no matches>' in exc.stderr.strip():
+        if (
+            isinstance(exc, tmt.utils.RunError)
+            and exc.returncode == 1
+            and exc.stderr
+            and '<no matches>' in exc.stderr.strip()
+        ):
             got_ausearch = True
         else:
             failures.append('\n'.join(failure))
