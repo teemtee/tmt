@@ -817,8 +817,8 @@ class GuestFacts(SerializableContainer):
             guest,
             plugin_classes=(
                 package_manager_class
-                for _, package_manager_class in (
-                    tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.items()
+                for package_manager_class in (
+                    tmt.package_managers._PACKAGE_MANAGER_PLUGIN_REGISTRY.iter_plugins()
                 )
             ),
             debug_label='package manager',
