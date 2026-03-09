@@ -748,6 +748,11 @@ class Step(
         if self.plan.my_run is None or self.plan.my_run._cli_context_object is None:
             return None
 
+        if self.plan.my_run.recipe:
+            plan = self.plan.my_run.recipe.get_plan_by_name(self.plan.name)
+            step = plan.get_step_by_name(self.step_name)
+            return step.enabled
+
         return self.name in self.plan.my_run._cli_context_object.steps
 
     @functools.cached_property

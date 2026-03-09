@@ -10,12 +10,11 @@ rlJournalStart
 
     function replace_values () {
         temp_recipe=$(mktemp)
-        yq '.run.root = "/path/to/fmf_root" | .plans[]."environment-from-intrinsics".TMT_VERSION = "version"' "$recipe" > "$temp_recipe"
+        yq '.run.root = "/path/to/fmf_root"' "$recipe" > "$temp_recipe"
         mv "$temp_recipe" "$recipe"
-        sed -i "s#$run#/run_path#g" "$recipe"
     }
 
-    for plan_name in 'simple' 'remote'; do
+    for plan_name in 'local' 'remote'; do
         rlPhaseStartTest "Test recipe generation of a $plan_name plan"
             rlRun -s "tmt -vv run --scratch --id $run -e RUN_ENV=run_value plan -n /plans/$plan_name"
             rlAssertExists "$recipe" "Recipe file exists"
