@@ -45,8 +45,9 @@ from typing import (
 from ruamel.yaml import YAML
 
 from tmt._compat.pathlib import Path
+from tmt._compat.typing import Self, TypeAlias
 from tmt._compat.warnings import deprecated
-from tmt.container import asdict, container, simple_field
+from tmt.container import SpecBasedContainer, container, simple_field
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -380,13 +381,20 @@ class ConsoleFormatter(_Formatter):
         )
 
 
+_RawRunWarningEntry: TypeAlias = dict[str, Any]
+
+
 @container
-class RunWarningEntry:
+class RunWarningEntry(SpecBasedContainer[_RawRunWarningEntry, _RawRunWarningEntry]):
     msg: str
     logger: str
     trace: str
     source: Optional[str]
     reason: Optional[str]
+
+    @classmethod
+    def from_spec(cls, spec: _RawRunWarningEntry) -> Self:
+        return cls(**spec)
 
 
 class RunWarningsFormatter(logging.Formatter):
@@ -419,15 +427,13 @@ class RunWarningsFormatter(logging.Formatter):
         # The yaml content to be appended is always a single list item so that
         # it can be appended with the previous content
         yaml_content = [
-            asdict(
-                RunWarningEntry(
-                    msg=warning_msg,
-                    logger=record.name,
-                    trace=f"{record.pathname}#{record.lineno}: {record.funcName}()",
-                    source=details.source if details else "(external)",
-                    reason=details.reason if details else None,
-                )
-            ),
+            RunWarningEntry(
+                msg=warning_msg,
+                logger=record.name,
+                trace=f"{record.pathname}#{record.lineno}: {record.funcName}()",
+                source=details.source if details else "(external)",
+                reason=details.reason if details else None,
+            ).to_dict(),
         ]
         # Format and dump the yaml content
         string_io = io.StringIO()
