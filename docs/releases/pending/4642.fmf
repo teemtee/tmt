@@ -1,0 +1,4 @@
+description: |
+  All warnings encountered in a run are now saved in a
+  :tmt:story:`warnings.yaml</stories/cli/run/logs/warnings.yaml>` file under
+  the run workdir.
