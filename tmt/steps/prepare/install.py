@@ -217,7 +217,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         """
 
         self.package_directory = self.step_workdir / self.guest.safe_name / 'packages'
-        self.package_directory.mkdir(parents=True)
+        self.package_directory.mkdir(parents=True, exist_ok=True)
 
         for package in self.local_packages:
             self.verbose(package.name, shift=1)
