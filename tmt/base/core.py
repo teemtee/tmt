@@ -2553,9 +2553,13 @@ class Tree(tmt.utils.Common):
 
         # Handle defaults, apply possible command line options
         logger = logger or (run._logger if run is not None else self._logger)
-        local_plan_keys = (keys or []) + ['execute']
+        if run is not None and run.recipe:
+            names = names or [plan.name for plan in run.recipe.plans]
+            local_plan_keys = []
+        else:
+            names = names or []
+            local_plan_keys = (keys or []) + ['execute']
         remote_plan_keys = (keys or []) + ['plan']
-        names = names or []
         filters = filters or []
         conditions = conditions or []
         # FIXME: cast() - typeless "dispatcher" method
@@ -2922,6 +2926,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         self.recipe = self.recipe_manager.load(recipe_path) if recipe_path else None
         if self.recipe is not None and self._tree is not None:
             self.recipe_manager.update_tree(self.recipe, self._tree.tree)
+            self.remove = self.remove or self.recipe.run.remove
 
     @property
     def run_workdir(self) -> Path:
@@ -3045,6 +3050,14 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         * run's environment, ``--environment`` and ``--environment-file``
           options.
         """
+
+        if self.recipe is not None:
+            return Environment(
+                {
+                    **self.recipe.run.environment,
+                    **self._environment_from_cli,
+                }
+            )
 
         return Environment(
             {
