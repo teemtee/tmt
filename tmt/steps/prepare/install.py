@@ -211,19 +211,19 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
                     logger.debug(f"Found rpm '{filepath}'.", level=3)
                     self.local_packages.append(PackagePath(filepath))
 
-    def _prepare_install_local(self) -> None:
+    def _prepare_install_local(self, guest: 'Guest') -> None:
         """
         Copy packages to the test system
         """
 
-        self.package_directory = self.step_workdir / self.guest.safe_name / 'packages'
+        self.package_directory = self.step_workdir / guest.safe_name / 'packages'
         self.package_directory.mkdir(parents=True, exist_ok=True)
 
         for package in self.local_packages:
             self.verbose(package.name, shift=1)
             self.debug(f"Copy '{package}' to '{self.package_directory}'.", level=3)
             shutil.copy(package, self.package_directory)
-        self.guest.push()
+        guest.push()
 
     def _list_installables(
         self,
@@ -249,6 +249,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
 
     def _install(
         self,
+        guest: 'Guest',
         options: Options,
     ) -> None:
         """
@@ -258,11 +259,11 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         install_outputs: list[tmt.utils.CommandOutput] = []
 
         if self.local_packages:
-            self._prepare_install_local()
+            self._prepare_install_local(guest)
             local_packages = [
                 PackagePath(self.package_directory / p.name) for p in self.local_packages
             ]
-            if output := self.guest.package_manager.install_local(
+            if output := guest.package_manager.install_local(
                 *self._list_installables('local package', *local_packages),
                 options=options,
             ):
@@ -271,7 +272,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             self.info('total', f"{summary} installed", 'green')
 
         if self.remote_packages and (
-            output := self.guest.package_manager.install_from_url(
+            output := guest.package_manager.install_from_url(
                 *self._list_installables('remote package', *self.remote_packages),
                 options=options,
             )
@@ -279,7 +280,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             install_outputs.append(output)
 
         if self.packages and (
-            output := self.guest.package_manager.install_from_repository(
+            output := guest.package_manager.install_from_repository(
                 *self._list_installables('package', *self.packages),
                 options=options,
             )
@@ -287,28 +288,26 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             install_outputs.append(output)
 
         if self.debuginfo_packages and (
-            output := self.guest.package_manager.install_debuginfo(
+            output := guest.package_manager.install_debuginfo(
                 *self._list_installables('debuginfo', *self.debuginfo_packages),
                 options=options,
             )
         ):
             install_outputs.append(output)
 
-        if output := self.guest.package_manager.finalize_installation():
+        if output := guest.package_manager.finalize_installation():
             install_outputs.append(output)
 
         # For recommended packages (skip_missing=True), check output even if no exception
         # was raised, since --skip-broken makes the command succeed but packages still fail
         if options.skip_missing:
-            failed_packages = self._extract_failed_packages_from_outputs(
-                install_outputs, self.guest
-            )
+            failed_packages = self._extract_failed_packages_from_outputs(install_outputs, guest)
             # Output from yum is non-deterministic. It depends on order in which
             # the invalid debuginfo package is getting installed. If first, its error messages
             # are omitted. If after a valid package, the error messages are included.
             # So we're checking for presence on the system.
             if self.debuginfo_packages:
-                presence = self.guest.package_manager.check_presence(
+                presence = guest.package_manager.check_presence(
                     *(Package(f"{name}-debuginfo") for name in self.debuginfo_packages)
                 )
 
@@ -416,8 +415,6 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         if self.is_dry_run:
             return outcome
 
-        self.guest = guest
-
         if guest.facts.package_manager is None:
             raise tmt.utils.PrepareError('Unrecognized package manager.')
 
@@ -432,11 +429,11 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         self._prepare_installables(self.data.package, self.data.directory, logger)
 
         # Enable copr repositories...
-        self.guest.package_manager.enable_copr(self.data.copr)
+        guest.package_manager.enable_copr(self.data.copr)
 
         # ... and install packages.
         try:
-            self._install(options)
+            self._install(guest, options)
         except Exception as exc1:
             # We do not have any special handling for exceptions raised by the following code.
             # Wrapping them with try/except gives us a chance to attach the original exception
@@ -446,12 +443,12 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
 
             try:
                 # Refresh cache in case of recent but not updated change to repodata
-                self.guest.package_manager.refresh_metadata()
-                self._install(options)
+                guest.package_manager.refresh_metadata()
+                self._install(guest, options)
             except Exception as exc2:
                 if isinstance(exc2, tmt.utils.RunError):
                     failed_packages = self._extract_failed_packages_from_outputs(
-                        [exc2.output], self.guest
+                        [exc2.output], guest
                     )
                     if failed_packages:
                         self._show_failed_packages_with_tests(failed_packages)
