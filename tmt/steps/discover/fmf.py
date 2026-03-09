@@ -435,7 +435,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     detailed information about how exactly the regular expressions are
     handled.
 
-    The ``tests`` key accepts a dict with at least a key ``name``. See
+    The ``test`` key accepts a dict with at least a key ``name``. See
     the ``Adjust Tests`` section for more info.
 
     Link Filter
