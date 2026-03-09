@@ -10,6 +10,10 @@ from tmt.result import ResultOutcome, save_failures
 from tmt.steps.execute import TEST_OUTPUT_FILENAME, TestInvocation
 from tmt.utils import Path
 
+# Pattern to match lines containing "error" or "fail" as whole words.
+# Compiled at module level to avoid re-compilation per line.
+FAILURE_PATTERN = re.compile(r'\b(?:error|fail)\b', re.IGNORECASE)
+
 
 def _extract_failures(invocation: 'TestInvocation', log_path: Path) -> list[str]:
     try:
@@ -17,9 +21,7 @@ def _extract_failures(invocation: 'TestInvocation', log_path: Path) -> list[str]
     except tmt.utils.FileError:
         return []
 
-    return [
-        line for line in log.splitlines() if re.search(r'\b(?:error|fail)\b', line, re.IGNORECASE)
-    ]
+    return [line for line in log.splitlines() if FAILURE_PATTERN.search(line)]
 
 
 @provides_framework('shell')
