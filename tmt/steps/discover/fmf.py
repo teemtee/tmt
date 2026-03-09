@@ -39,8 +39,9 @@ class TestsWithAdjusts(
     def from_spec(cls, spec: Union[str, _RawTestsWithAdjusts]) -> Self:
         if isinstance(spec, str):
             return cls(name=spec)
-        name = spec.pop("name")
-        return cls(name=name, adjust_rule=cast(_RawAdjustRule, spec))
+        spec_copy = spec.copy()
+        name = spec_copy.pop("name")
+        return cls(name=name, adjust_rule=cast(_RawAdjustRule, spec_copy))
 
     def to_spec(self) -> Union[str, _RawTestsWithAdjusts]:
         if self.adjust_rule:
