@@ -20,17 +20,8 @@ plans:
     tier:
     adjust: []
     link: []
-    environment-from-fmf:
+    environment:
         PLAN_ENV: plan_value
-    environment-from-importing: {}
-    environment-from-cli:
-        RUN_ENV: run_value
-    environment-from-intrinsics:
-        TMT_VERSION: version
-        TMT_TREE: /run_path/plans/insert/tree
-        TMT_PLAN_DATA: /run_path/plans/insert/data
-        TMT_PLAN_ENVIRONMENT_FILE: /run_path/plans/insert/data/variables.env
-        TMT_PLAN_SOURCE_SCRIPT: /run_path/plans/insert/data/plan-source-script.sh
     discover:
         enabled: true
         phases:
@@ -141,7 +132,6 @@ plans:
             restart-max-count: 1
             restart-with-reboot: false
             serial-number: 1
-            discover-phase: discover-shell
             link: []
             test: /bin/true
             path: /discover-shell/tests
@@ -174,7 +164,6 @@ plans:
             restart-max-count: 1
             restart-with-reboot: false
             serial-number: 2
-            discover-phase: default-0
             link: []
             test: ./test.sh
             path: /default-0/tests
@@ -224,8 +213,8 @@ plans:
                 can-sudo:
                 sudo-prefix:
                 is-image-mode:
-                is-ostree:
                 is-toolbox:
+                is-ostree:
                 toolbox-container-name:
                 is-container:
                 systemd-soft-reboot:
@@ -235,7 +224,8 @@ plans:
                 __class__:
                     module: tmt.guest
                     name: GuestFacts
-            environment: {}
+            environment:
+                PROVISION_ENV: provision_value
             ansible:
                 group:
                 vars: {}

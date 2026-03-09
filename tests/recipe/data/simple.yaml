@@ -19,18 +19,10 @@ plans:
     tag: []
     tier:
     adjust: []
-    link: []
-    environment-from-fmf:
+    link:
+      - relates: https://something.org/related
+    environment:
         PLAN_ENV: plan_value
-    environment-from-importing: {}
-    environment-from-cli:
-        RUN_ENV: run_value
-    environment-from-intrinsics:
-        TMT_VERSION: version
-        TMT_TREE: /run_path/plans/simple/tree
-        TMT_PLAN_DATA: /run_path/plans/simple/data
-        TMT_PLAN_ENVIRONMENT_FILE: /run_path/plans/simple/data/variables.env
-        TMT_PLAN_SOURCE_SCRIPT: /run_path/plans/simple/data/plan-source-script.sh
     discover:
         enabled: true
         phases:
@@ -141,7 +133,6 @@ plans:
             restart-max-count: 1
             restart-with-reboot: false
             serial-number: 1
-            discover-phase: discover-fmf
             link: []
             test: ./test.sh
             path: /discover-fmf/tests
@@ -178,7 +169,6 @@ plans:
             restart-max-count: 1
             restart-with-reboot: false
             serial-number: 2
-            discover-phase: discover-shell
             link: []
             test: /bin/true
             path: /discover-shell/tests
@@ -235,7 +225,8 @@ plans:
                 __class__:
                     module: tmt.guest
                     name: GuestFacts
-            environment: {}
+            environment:
+                PROVISION_ENV: provision_value
             ansible:
                 group:
                 vars: {}
@@ -266,7 +257,8 @@ plans:
             when: []
             summary:
             where: []
-            script: []
+            script:
+              - echo "Prepare phase"
             url:
             ref:
             __class__:
@@ -278,7 +270,7 @@ plans:
     execute:
         enabled: true
         phases:
-          - name: default-0
+          - name: Execute phase
             how: tmt
             order: 50
             when: []
@@ -322,7 +314,8 @@ plans:
             when: []
             summary:
             where: []
-            script: []
+            script:
+              - echo "Finish phase"
             url:
             ref:
             __class__:

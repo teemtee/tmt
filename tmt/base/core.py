@@ -2920,6 +2920,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         self.recipe = self.recipe_manager.load(recipe_path) if recipe_path else None
         if self.recipe is not None and self._tree is not None:
             self.recipe_manager.update_tree(self.recipe, self._tree.tree)
+            self.remove = self.recipe.run.remove
 
     @property
     def run_workdir(self) -> Path:
@@ -3032,6 +3033,9 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         * run's environment, ``--environment`` and ``--environment-file``
           options.
         """
+
+        if self.recipe is not None:
+            return self.recipe.run.environment.copy()
 
         return Environment(
             {

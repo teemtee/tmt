@@ -1,10 +1,13 @@
 provision:
     how: container
+    environment:
+        PROVISION_ENV: provision_value
 environment:
     PLAN_ENV: plan_value
 
 /simple:
     summary: A simple plan
+    link: https://something.org/related
     discover:
       - name: discover-fmf
         how: fmf
@@ -13,8 +16,15 @@ environment:
         tests:
           - name: /shell-test
             test: /bin/true
+    prepare:
+        how: shell
+        script: echo "Prepare phase"
     execute:
+      - name: Execute phase
         how: tmt
+    finish:
+        how: shell
+        script: echo "Finish phase"
 
 /insert:
     summary: A plan with inserted steps

@@ -13,7 +13,7 @@ from tmt.utils import Common, Environment, FmfContext, Path, ShellScript
 
 if TYPE_CHECKING:
     import tmt.base.core
-    from tmt.base.core import Dependency, Run, _RawAdjustRule, _RawLinks
+    from tmt.base.core import Dependency, Run, _RawAdjustRule
     from tmt.base.plan import Plan
 
 
@@ -25,14 +25,6 @@ def _unserialize_dependency(
     from tmt.base.core import dependency_factory
 
     return dependency_factory(serialized)
-
-
-# This needs to be a stand-alone function because of the import of `tmt.base`.
-# It cannot be imported on module level because of circular dependency.
-def _unserialize_links(serialized: Optional['_RawLinks']) -> Optional['tmt.base.core.Links']:
-    from tmt.base.core import Links
-
-    return Links(data=serialized)
 
 
 @container
@@ -58,18 +50,16 @@ class _RecipeTest(SerializableContainer):
     restart_max_count: int
     restart_with_reboot: bool
     serial_number: int
-    discover_phase: str
     link: Optional['tmt.base.core.Links'] = field(
         serialize=lambda value: value.to_spec() if value else [],
-        unserialize=lambda value: _unserialize_links(value),
     )
     test: ShellScript = field(
         serialize=lambda value: str(value),
         unserialize=lambda value: ShellScript(value),
     )
-    path: Optional[Path] = field(
-        serialize=lambda value: str(value) if value else None,
-        unserialize=lambda value: Path(value) if value else None,
+    path: Path = field(
+        serialize=lambda value: str(value),
+        unserialize=lambda value: Path(value),
     )
     require: list['Dependency'] = field(
         serialize=lambda value: [dependency.to_minimal_spec() for dependency in value],
@@ -89,8 +79,17 @@ class _RecipeTest(SerializableContainer):
     )
     check: list[Check] = field(
         serialize=lambda checks: [check.to_spec() for check in checks],
-        unserialize=lambda serialized: [Check.from_spec(**check) for check in serialized],
     )
+
+    # ignore[override]: does not match the signature on purpose, we need to pass logger
+    @classmethod
+    def from_serialized(cls, serialized: dict[str, Any], logger: Logger) -> '_RecipeTest':  # type: ignore[override]
+        serialized = serialized.copy()
+        raw_checks = serialized.pop('check', [])
+        serialized['check'] = []
+        test = super().from_serialized(serialized)
+        test.check = [Check.from_spec(check, logger) for check in raw_checks]
+        return test
 
     @classmethod
     def from_test_origin(cls, test_origin: 'TestOrigin') -> '_RecipeTest':
@@ -109,7 +108,7 @@ class _RecipeTest(SerializableContainer):
             link=test_origin.test.link,
             component=test_origin.test.component,
             test=test_origin.test.test or ShellScript(''),
-            path=test_origin.test.path,
+            path=test_origin.test.path or Path('/'),
             framework=test_origin.test.framework,
             manual=test_origin.test.manual,
             tty=test_origin.test.tty,
@@ -124,7 +123,6 @@ class _RecipeTest(SerializableContainer):
             restart_max_count=test_origin.test.restart_max_count,
             restart_with_reboot=test_origin.test.restart_with_reboot,
             serial_number=test_origin.test.serial_number,
-            discover_phase=test_origin.phase,
         )
 
     def to_minimal_spec(self) -> dict[str, Any]:
@@ -134,7 +132,6 @@ class _RecipeTest(SerializableContainer):
             if value not in (None, [], {})
         }
         data.pop('__class__')
-        data.pop('discover-phase')
         return data
 
     def to_test(self, logger: Logger) -> 'tmt.base.core.Test':
@@ -202,7 +199,9 @@ class _RecipeDiscoverStep(_RecipeStep):
             phases=[StepData.unserialize(phase, logger) for phase in serialized.get('phases', [])]
             if enabled
             else [],
-            tests=[_RecipeTest.from_serialized(test) for test in serialized.get('tests', [])],
+            tests=[
+                _RecipeTest.from_serialized(test, logger) for test in serialized.get('tests', [])
+            ],
         )
 
     @classmethod
@@ -262,18 +261,7 @@ class _RecipePlan(SerializableContainer):
     link: Optional['tmt.base.core.Links'] = field(
         serialize=lambda link: link.to_spec() if link else []
     )
-    environment_from_fmf: Environment = field(
-        serialize=lambda environment: environment.to_fmf_spec()
-    )
-    environment_from_importing: Environment = field(
-        serialize=lambda environment: environment.to_fmf_spec()
-    )
-    environment_from_cli: Environment = field(
-        serialize=lambda environment: environment.to_fmf_spec()
-    )
-    environment_from_intrinsics: Environment = field(
-        serialize=lambda environment: environment.to_fmf_spec()
-    )
+    environment: Environment = field(serialize=lambda environment: environment.to_fmf_spec())
 
     discover: _RecipeDiscoverStep = field(serialize=lambda step: step.to_serialized())
     provision: _RecipeStep = field(serialize=lambda step: step.to_serialized())
@@ -305,19 +293,8 @@ class _RecipePlan(SerializableContainer):
             tag=serialized.get('tag', []),
             tier=serialized.get('tier'),
             adjust=serialized.get('adjust'),
-            link=_unserialize_links(serialized.get('link')),
-            environment_from_fmf=Environment.from_fmf_spec(
-                serialized.get('environment-from-fmf', {})
-            ),
-            environment_from_importing=Environment.from_fmf_spec(
-                serialized.get('environment-from-importing', {})
-            ),
-            environment_from_cli=Environment.from_fmf_spec(
-                serialized.get('environment-from-cli', {})
-            ),
-            environment_from_intrinsics=Environment.from_fmf_spec(
-                serialized.get('environment-from-intrinsics', {})
-            ),
+            link=serialized.get('link'),
+            environment=Environment.from_fmf_spec(serialized.get('environment', {})),
             discover=_RecipeDiscoverStep.from_serialized(serialized.get('discover', {}), logger),
             provision=_RecipeStep.from_serialized(serialized.get('provision', {}), logger),
             prepare=_RecipeStep.from_serialized(serialized.get('prepare', {}), logger),
@@ -343,10 +320,7 @@ class _RecipePlan(SerializableContainer):
             tag=plan.tag,
             tier=plan.tier,
             adjust=plan.adjust,
-            environment_from_fmf=plan._environment_from_fmf,
-            environment_from_importing=plan._environment_from_importing,
-            environment_from_cli=plan._environment_from_cli,
-            environment_from_intrinsics=plan._environment_from_intrinsics,
+            environment=plan._environment_from_fmf,
             context=plan.context,
             discover=_RecipeDiscoverStep.from_step(plan.discover),
             provision=_RecipeStep.from_step(plan.provision),
@@ -358,8 +332,17 @@ class _RecipePlan(SerializableContainer):
         )
 
     def to_spec(self) -> dict[str, Any]:
-        # TODO: For now, only return the discover step.
-        return {'discover': self.discover.to_spec()}
+        spec = self.to_dict()
+        spec['environment'] = self.environment.to_fmf_spec()
+        spec['context'] = self.context.to_spec()
+        spec['discover'] = self.discover.to_spec()
+        spec['provision'] = self.provision.to_spec()
+        spec['prepare'] = self.prepare.to_spec()
+        spec['execute'] = self.execute.to_spec()
+        spec['report'] = self.report.to_spec()
+        spec['finish'] = self.finish.to_spec()
+        spec['cleanup'] = self.cleanup.to_spec()
+        return spec
 
 
 @container
@@ -413,9 +396,7 @@ class RecipeManager(Common):
             ),
             plans=[_RecipePlan.from_plan(plan) for plan in run.plans],
         )
-        self.write(
-            run.run_workdir / 'recipe.yaml', tmt.utils.to_yaml(recipe.to_serialized(), sort=True)
-        )
+        self.write(run.run_workdir / 'recipe.yaml', tmt.utils.to_yaml(recipe.to_serialized()))
 
     def tests(self, recipe: Recipe, plan_name: str) -> list[TestOrigin]:
         """
@@ -425,7 +406,7 @@ class RecipeManager(Common):
             if plan.name == plan_name:
                 return [
                     TestOrigin(
-                        phase=test.discover_phase,
+                        phase=test.path.unrooted().parts[0],
                         test=test.to_test(self._logger),
                     )
                     for test in plan.discover.tests
@@ -438,4 +419,5 @@ class RecipeManager(Common):
         """
         Load the plans from the recipe and update the given fmf tree with their specifications.
         """
+        tree.children.clear()
         tree.update({plan.name: plan.to_spec() for plan in recipe.plans})

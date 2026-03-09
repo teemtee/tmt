@@ -20,17 +20,8 @@ plans:
     tier:
     adjust: []
     link: []
-    environment-from-fmf:
+    environment:
         PLAN_ENV: plan_value
-    environment-from-importing: {}
-    environment-from-cli:
-        RUN_ENV: run_value
-    environment-from-intrinsics:
-        TMT_VERSION: version
-        TMT_TREE: /run_path/plans/remote/tree
-        TMT_PLAN_DATA: /run_path/plans/remote/data
-        TMT_PLAN_ENVIRONMENT_FILE: /run_path/plans/remote/data/variables.env
-        TMT_PLAN_SOURCE_SCRIPT: /run_path/plans/remote/data/plan-source-script.sh
     discover:
         enabled: true
         phases:
@@ -96,13 +87,12 @@ plans:
             restart-max-count: 1
             restart-with-reboot: false
             serial-number: 1
-            discover-phase: default-0
             link: []
             test: echo one
             path: /default-0/tests/tests
             require: []
             recommend: []
-            environment: { }
+            environment: {}
             result: respect
             check: []
             __class__:
@@ -153,7 +143,8 @@ plans:
                 __class__:
                     module: tmt.guest
                     name: GuestFacts
-            environment: {}
+            environment:
+                PROVISION_ENV: provision_value
             ansible:
                 group:
                 vars: {}
