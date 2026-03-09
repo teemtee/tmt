@@ -385,6 +385,6 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
     def finalize_installation(self) -> Optional[CommandOutput]:
         """
-        Perform any post-installation steps. Currently, only container image builds are supported.
+        Perform any post-installation steps.
         """
         return None
