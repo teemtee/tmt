@@ -399,17 +399,16 @@ class RunWarningEntry(SpecBasedContainer[_RawRunWarningEntry, _RawRunWarningEntr
 
 class RunWarningsFormatter(logging.Formatter):
     #: Yaml handler for formatting the content.
-    #:
-    #: We do not use roundtrip loader here because that would require rewriting
-    #: the whole content each time, but the streaming nature of the logger
-    #: assumes that we will be appending when ``emit()`` is called. Instead we
-    #: make use of the document is composed of direct list items so we can
-    #: simply append each item as a new list.
     _yaml_handler: YAML
 
     def __init__(self) -> None:
         from tmt.utils import _yaml
 
+        # We do not use roundtrip loader here because that would require rewriting
+        # the whole content each time, but the streaming nature of the logger
+        # assumes that we will be appending when ``emit()`` is called. Instead we
+        # make use of the document is composed of direct list items so we can
+        # simply append each item as a new list.
         self._yaml_handler = _yaml(yaml_type="safe")
         super().__init__('%(message)s', datefmt='%H:%M:%S')
 
