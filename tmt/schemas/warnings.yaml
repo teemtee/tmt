@@ -20,13 +20,9 @@ definitions:
       trace:
         type: string
       source:
-        type:
-          - string
-          - "null"
+        type: string
       reason:
-        type:
-          - string
-          - "null"
+        type: string
     required:
       - msg
       - logger

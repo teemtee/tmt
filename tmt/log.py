@@ -432,7 +432,7 @@ class RunWarningsFormatter(logging.Formatter):
                 trace=f"{record.pathname}#{record.lineno}: {record.funcName}()",
                 source=details.source if details else "(external)",
                 reason=details.reason if details else None,
-            ).to_dict(),
+            ).to_minimal_spec(),
         ]
         # Format and dump the yaml content
         string_io = io.StringIO()
