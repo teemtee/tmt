@@ -799,16 +799,14 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         if not self.data.test or not any(test.adjust_rule for test in self.data.test):
             # - not test: we do not have any names filter (i.e. we take all tests)
             # - not any(.adjust_rule): we do not any tests with custom adjust
-            tests.extend(
-                tree.tests(
-                    filters=filters,
-                    names=[test.name for test in self.data.test],
-                    conditions=["manual is False"],
-                    unique=False,
-                    links=link_needles,
-                    includes=includes,
-                    excludes=excludes,
-                )
+            tests += tree.tests(
+                filters=filters,
+                names=[test.name for test in self.data.test],
+                conditions=["manual is False"],
+                unique=False,
+                links=link_needles,
+                includes=includes,
+                excludes=excludes,
             )
         else:
             # We have at least one test with an adjust rule.
@@ -824,16 +822,14 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                         fmf_context=self.step.plan.fmf_context,
                         additional_rules=[*self.data.adjust_tests, test.adjust_rule],
                     )
-                tests.extend(
-                    adjusted_tree.tests(
-                        filters=filters,
-                        names=[test.name],
-                        conditions=["manual is False"],
-                        unique=False,
-                        links=link_needles,
-                        includes=includes,
-                        excludes=excludes,
-                    )
+                tests += adjusted_tree.tests(
+                    filters=filters,
+                    names=[test.name],
+                    conditions=["manual is False"],
+                    unique=False,
+                    links=link_needles,
+                    includes=includes,
+                    excludes=excludes,
                 )
         return tests
 
