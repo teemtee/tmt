@@ -13,6 +13,7 @@ import shutil
 import signal as _signal
 import string
 import subprocess
+import tempfile
 import threading
 from collections.abc import Iterable, Iterator, Sequence
 from shlex import quote
@@ -3498,6 +3499,7 @@ class GuestSsh(Guest, CommandCollector):
         try:
             if options.create_destination:
                 self.execute(Command("mkdir", "-p", destination.parent), silent=True)
+
             self._run_guest_command(cmd, silent=True)
 
         except tmt.utils.RunError as exc:
@@ -3545,17 +3547,20 @@ class GuestSsh(Guest, CommandCollector):
             self.debug(f"Copy '{source}' from the guest to '{destination}'.")
 
         try:
-            self._run_guest_command(
-                Command(
-                    "rsync",
-                    *options.to_rsync(),
-                    "-e",
-                    self._ssh_command.to_element(),
-                    f"{self._ssh_guest}:{source}",
-                    destination,
-                ),
-                silent=True,
-            )
+            with tempfile.TemporaryDirectory(prefix='tmt.rsync-') as rsync_tempdir:
+                self._run_guest_command(
+                    Command(
+                        "rsync",
+                        '--temp-dir',
+                        rsync_tempdir,
+                        *options.to_rsync(),
+                        "-e",
+                        self._ssh_command.to_element(),
+                        f"{self._ssh_guest}:{source}",
+                        destination,
+                    ),
+                    silent=True,
+                )
 
         except tmt.utils.RunError as exc:
             # Provide a reasonable error to the user

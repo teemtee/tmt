@@ -654,7 +654,10 @@ class Plan(
             level=4,
         )
 
-        with tempfile.NamedTemporaryFile(mode='w') as excludes_tempfile:
+        with (
+            tempfile.NamedTemporaryFile(mode='w') as excludes_tempfile,
+            tempfile.TemporaryDirectory(prefix='tmt.rsync-') as rsync_tempdir,
+        ):
             excludes_tempfile.write('\n'.join(str(path) for path in ignore))
 
             # Make sure ignored paths are saved before telling rsync to use them.
@@ -667,6 +670,8 @@ class Plan(
                 Command(
                     "rsync",
                     "-ar",
+                    '--temp-dir',
+                    rsync_tempdir,
                     "--exclude-from",
                     excludes_tempfile.name,
                     f"{tree_root}/",
