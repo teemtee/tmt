@@ -142,8 +142,17 @@ def _run_script(
         shift: int = 2,
         level: int = 3,
         topic: Optional[tmt.log.Topic] = None,
+        stacklevel: int = 1,
     ) -> None:
-        logger.verbose(key=key, value=value, color=color, shift=shift, level=level, topic=topic)
+        logger.verbose(
+            key=key,
+            value=value,
+            color=color,
+            shift=shift,
+            level=level,
+            topic=topic,
+            stacklevel=stacklevel + 1,
+        )
 
     try:
         output = invocation.guest.execute(script, log=_output_logger, silent=True)
