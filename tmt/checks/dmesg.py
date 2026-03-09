@@ -80,7 +80,6 @@ class DmesgCheck(Check):
             topic: Optional[tmt.log.Topic] = None,
             stacklevel: int = 1,
         ) -> None:
-            stacklevel += 1
             logger.verbose(
                 key=key,
                 value=value,
@@ -88,7 +87,7 @@ class DmesgCheck(Check):
                 shift=shift,
                 level=level,
                 topic=topic,
-                stacklevel=stacklevel,
+                stacklevel=stacklevel + 1,
             )
 
         script = tmt.utils.ShellScript(f'{guest.facts.sudo_prefix} dmesg')

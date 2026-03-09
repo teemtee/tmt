@@ -775,12 +775,6 @@ class Logger:
         workflow and carrying extra information for our custom filters and handlers.
         """
 
-        # This function is never called directly, instead it is called by one level higher
-        # e.g. `info`. So we escape at least 2 levels of the stack (this function, and its
-        # caller) + the requested stacklevel of the caller (default is the current caller of
-        # `info`)
-        stacklevel += 2
-
         details.logger_labels = self.labels
         details.logger_labels_padding = self.labels_padding
 
@@ -802,7 +796,17 @@ class Logger:
                 labels_padding=self.labels_padding,
             )
 
-        self._logger._log(level, message, (), extra={'details': details}, stacklevel=stacklevel)
+        # stacklevel: This function is never called directly, instead it is called by one level
+        # higher e.g. `info`. So we escape at least 2 levels of the stack (this function, and its
+        # caller) + the requested stacklevel of the caller (default is the current caller of
+        # `info`)
+        self._logger._log(
+            level,
+            message,
+            (),
+            extra={'details': details},
+            stacklevel=stacklevel + 2,
+        )
 
     def print_format(
         self,
@@ -917,8 +921,7 @@ class Logger:
         shift: int,
         stacklevel: int = 1,
     ) -> None:
-        stacklevel += 1
-        return self.warning(message, shift, stacklevel=stacklevel)
+        return self.warning(message, shift, stacklevel=stacklevel + 1)
 
     def fail(
         self,

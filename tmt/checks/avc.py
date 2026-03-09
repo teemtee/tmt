@@ -144,7 +144,6 @@ def _run_script(
         topic: Optional[tmt.log.Topic] = None,
         stacklevel: int = 1,
     ) -> None:
-        stacklevel += 1
         logger.verbose(
             key=key,
             value=value,
@@ -152,7 +151,7 @@ def _run_script(
             shift=shift,
             level=level,
             topic=topic,
-            stacklevel=stacklevel,
+            stacklevel=stacklevel + 1,
         )
 
     try:

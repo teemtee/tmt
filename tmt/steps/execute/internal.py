@@ -377,7 +377,6 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
             topic: Optional[tmt.log.Topic] = None,
             stacklevel: int = 1,
         ) -> None:
-            stacklevel += 1
             logger.verbose(
                 key=key,
                 value=value,
@@ -385,7 +384,7 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 shift=shift,
                 level=level,
                 topic=topic,
-                stacklevel=stacklevel,
+                stacklevel=stacklevel + 1,
             )
 
         # TODO: do we want timestamps? Yes, we do, leaving that for refactoring later,

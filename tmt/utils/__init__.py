@@ -2194,14 +2194,13 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         Show a message unless in quiet mode
         """
 
-        stacklevel += 1
         self._logger.info(
             key,
             value=value,
             color=color,
             shift=shift,
             topic=topic,
-            stacklevel=stacklevel,
+            stacklevel=stacklevel + 1,
         )
 
     def verbose(
@@ -2220,7 +2219,6 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         In quiet mode verbose messages are not displayed.
         """
 
-        stacklevel += 1
         self._logger.verbose(
             key,
             value=value,
@@ -2228,7 +2226,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             shift=shift,
             level=level,
             topic=topic,
-            stacklevel=stacklevel,
+            stacklevel=stacklevel + 1,
         )
 
     def debug(
@@ -2247,7 +2245,6 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         In quiet mode debug messages are not displayed.
         """
 
-        stacklevel += 1
         self._logger.debug(
             key,
             value=value,
@@ -2255,7 +2252,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             shift=shift,
             level=level,
             topic=topic,
-            stacklevel=stacklevel,
+            stacklevel=stacklevel + 1,
         )
 
     def warn(self, message: str, shift: int = 0, stacklevel: int = 1) -> None:
@@ -2263,16 +2260,14 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         Show a yellow warning message on info level, send to stderr
         """
 
-        stacklevel += 1
-        self._logger.warning(message, shift=shift, stacklevel=stacklevel)
+        self._logger.warning(message, shift=shift, stacklevel=stacklevel + 1)
 
     def fail(self, message: str, shift: int = 0, stacklevel: int = 1) -> None:
         """
         Show a red failure message on info level, send to stderr
         """
 
-        stacklevel += 1
-        self._logger.fail(message, shift=shift, stacklevel=stacklevel)
+        self._logger.fail(message, shift=shift, stacklevel=stacklevel + 1)
 
     def _command_verbose_logger(
         self,
@@ -2291,7 +2286,6 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         default parameters are adjusted (to preserve the function type).
         """
 
-        stacklevel += 1
         self.verbose(
             key=key,
             value=value,
@@ -2299,7 +2293,7 @@ class Common(_CommonBase, metaclass=_CommonMeta):
             shift=shift,
             level=level,
             topic=topic,
-            stacklevel=stacklevel,
+            stacklevel=stacklevel + 1,
         )
 
     def run(
