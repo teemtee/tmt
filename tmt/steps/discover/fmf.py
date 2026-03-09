@@ -546,7 +546,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
 
     Note that unlike the more generic ``adjust-tests``, only one adjust
     rule is allowed. Everything except for the ``name`` key is treated as
-    the adjust rule.
+    the adjust rule, and are applied on top and at the end of any previous
+    rules defined with ``adjust-tests``.
     """
 
     _data_class = DiscoverFmfStepData
