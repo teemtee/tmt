@@ -78,7 +78,6 @@ EXPECTED_PLUGIN_LIST = {
         "repository-url",
     ],
     "prepare.feature": ["crb", "epel", "fips", "profile"],
-    "prepare.install": ["apk", "apt", "bootc", "dnf", "dnf5", "mock", "rpm-ostree", "yum"],
     "step.cleanup": ["tmt"],
     "step.discover": ["fmf", "shell"],
     "step.execute": ["tmt", "upgrade"],
