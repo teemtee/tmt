@@ -306,7 +306,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         self,
         *installables: Installable,
         options: Optional[Options] = None,
-    ) -> Optional[CommandOutput]:
+    ) -> CommandOutput:
         return self.guest.execute(self.engine.install_debuginfo(*installables, options=options))
 
     def refresh_metadata(self) -> CommandOutput:
@@ -348,7 +348,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         self,
         *installables: Installable,
         options: Optional[Options] = None,
-    ) -> Optional[CommandOutput]:
+    ) -> CommandOutput:
         """
         Install packages from a repository
         """
@@ -358,7 +358,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         self,
         *installables: Installable,
         options: Optional[Options] = None,
-    ) -> Optional[CommandOutput]:
+    ) -> CommandOutput:
         """
         Install packages stored in a local directory
         """
@@ -368,7 +368,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         self,
         *installables: Installable,
         options: Optional[Options] = None,
-    ) -> Optional[CommandOutput]:
+    ) -> CommandOutput:
         """
         Install packages stored on a remote URL
         """
@@ -383,8 +383,8 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
                 f"Package manager '{self.NAME}' does not support enabling COPR repositories."
             )
 
-    def finalize_installation(self) -> Optional[CommandOutput]:
+    def finalize_installation(self) -> CommandOutput:
         """
         Perform any post-installation steps.
         """
-        return None
+        return CommandOutput(stdout=None, stderr=None)

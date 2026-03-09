@@ -230,7 +230,7 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
         self,
         *installables: Installable,
         options: Optional[Options] = None,
-    ) -> Optional[CommandOutput]:
+    ) -> CommandOutput:
         options = options or Options()
         self.sort_packages(*installables, options=options)
 
@@ -245,13 +245,13 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
         if self.required:
             return self.install(*self.required)
 
-        return None
+        return CommandOutput(stdout=None, stderr=None)
 
     def install_local(
         self,
         *installables: Installable,
         options: Optional[Options] = None,
-    ) -> None:
+    ) -> CommandOutput:
 
         options = options or Options()
         options = Options(
@@ -266,3 +266,5 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
                 self.install(package, options=options)
             except RunError as error:
                 self.warn(f"Local package '{package.name}' not installed: {error.stderr}")
+
+        return CommandOutput(stdout=None, stderr=None)

@@ -263,40 +263,40 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             local_packages = [
                 PackagePath(self.package_directory / p.name) for p in self.local_packages
             ]
-            if output := guest.package_manager.install_local(
-                *self._list_installables('local package', *local_packages),
-                options=options,
-            ):
-                install_outputs.append(output)
+            install_outputs.append(
+                guest.package_manager.install_local(
+                    *self._list_installables('local package', *local_packages),
+                    options=options,
+                )
+            )
             summary = fmf.utils.listed([str(p) for p in self.local_packages], 'local package')
             self.info('total', f"{summary} installed", 'green')
 
-        if self.remote_packages and (
-            output := guest.package_manager.install_from_url(
-                *self._list_installables('remote package', *self.remote_packages),
-                options=options,
+        if self.remote_packages:
+            install_outputs.append(
+                guest.package_manager.install_from_url(
+                    *self._list_installables('remote package', *self.remote_packages),
+                    options=options,
+                )
             )
-        ):
-            install_outputs.append(output)
 
-        if self.packages and (
-            output := guest.package_manager.install_from_repository(
-                *self._list_installables('package', *self.packages),
-                options=options,
+        if self.packages:
+            install_outputs.append(
+                guest.package_manager.install_from_repository(
+                    *self._list_installables('package', *self.packages),
+                    options=options,
+                )
             )
-        ):
-            install_outputs.append(output)
 
-        if self.debuginfo_packages and (
-            output := guest.package_manager.install_debuginfo(
-                *self._list_installables('debuginfo', *self.debuginfo_packages),
-                options=options,
+        if self.debuginfo_packages:
+            install_outputs.append(
+                guest.package_manager.install_debuginfo(
+                    *self._list_installables('debuginfo', *self.debuginfo_packages),
+                    options=options,
+                )
             )
-        ):
-            install_outputs.append(output)
 
-        if output := guest.package_manager.finalize_installation():
-            install_outputs.append(output)
+        install_outputs.append(guest.package_manager.finalize_installation())
 
         # For recommended packages (skip_missing=True), check output even if no exception
         # was raised, since --skip-broken makes the command succeed but packages still fail

@@ -361,7 +361,7 @@ class Dnf(PackageManager[DnfEngine]):
         self,
         *installables: Installable,
         options: Optional[Options] = None,
-    ) -> Optional[CommandOutput]:
+    ) -> CommandOutput:
 
         output = super().install_debuginfo(*installables, options=options)
 
