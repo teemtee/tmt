@@ -28,6 +28,9 @@ definitions:
       - logger
       - trace
 
-type: array
+type:
+  - array
+  # null case
+  - "null"
 items:
   $ref: "#/definitions/warning-entry"
