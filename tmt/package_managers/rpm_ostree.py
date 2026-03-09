@@ -197,7 +197,7 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
         self.warn("Installation of debuginfo packages not supported yet.")
         return CommandOutput(stdout=None, stderr=None)
 
-    def enable_copr(self, repositories: list[str]) -> None:
+    def enable_copr(self, *repositories: str) -> None:
         """
         Enable COPR repositories by delegating to a Dnf5 package manager instance.
         """
@@ -207,7 +207,7 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
 
         from tmt.package_managers.dnf import Dnf5
 
-        Dnf5(guest=self.guest, logger=self._logger).enable_copr(repositories)
+        Dnf5(guest=self.guest, logger=self._logger).enable_copr(*repositories)
 
     def sort_packages(
         self,

@@ -309,7 +309,7 @@ class Dnf(PackageManager[DnfEngine]):
                 raise PrepareError(f"Copr repository '{copr}' not found.") from error
             raise
 
-    def enable_copr(self, repositories: list[str]) -> None:
+    def enable_copr(self, *repositories: str) -> None:
         """
         Enable requested copr repositories
         """

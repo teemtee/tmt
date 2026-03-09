@@ -89,5 +89,5 @@ class CoprRepositoryProvider(ArtifactProvider):
         :raises tmt.utils.PrepareError: If the package manager does not support
             enabling Copr repositories.
         """
-        guest.package_manager.enable_copr([self.copr_repo])
+        guest.package_manager.enable_copr(self.copr_repo)
         return []

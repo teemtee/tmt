@@ -429,7 +429,7 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
         self._prepare_installables(self.data.package, self.data.directory, logger)
 
         # Enable copr repositories...
-        guest.package_manager.enable_copr(self.data.copr)
+        guest.package_manager.enable_copr(*self.data.copr)
 
         # ... and install packages.
         try:

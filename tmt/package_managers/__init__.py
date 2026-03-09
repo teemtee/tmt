@@ -374,7 +374,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         """
         return self.install(*installables, options=options)
 
-    def enable_copr(self, repositories: list[str]) -> None:
+    def enable_copr(self, *repositories: str) -> None:
         """
         Enable requested copr repositories
         """

@@ -36,5 +36,5 @@ def test_fetch_contents_enables_repository(mock_package_manager, artifact_provid
 
     result = provider.fetch_contents(mock_guest, tmppath / "artifacts")
 
-    mock_package_manager.enable_copr.assert_called_once_with(['@teemtee/stable'])
+    mock_package_manager.enable_copr.assert_called_once_with('@teemtee/stable')
     assert result == []
