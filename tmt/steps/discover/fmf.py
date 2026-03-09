@@ -798,7 +798,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         )
         if not self.data.test or not any(test.adjust_rule for test in self.data.test):
             # - not test: we do not have any names filter (i.e. we take all tests)
-            # - not any(.adjust_rule): we do not any tests with custom adjust
+            # - not any(.adjust_rule): we do not have any tests with custom adjust
             tests += tree.tests(
                 filters=filters,
                 names=[test.name for test in self.data.test],
@@ -814,7 +814,6 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
             # we need to resolve each test entry at a time
             for test in self.data.test:
                 # Recalculate the adjusted tree only if necessary
-                adjusted_tree = tree
                 if test.adjust_rule:
                     adjusted_tree = tmt.Tree(
                         logger=self._logger,
@@ -822,6 +821,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                         fmf_context=self.step.plan.fmf_context,
                         additional_rules=[*self.data.adjust_tests, test.adjust_rule],
                     )
+                else:
+                    # Original tree without adjustments
+                    adjusted_tree = tree
                 tests += adjusted_tree.tests(
                     filters=filters,
                     names=[test.name],

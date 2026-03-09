@@ -175,7 +175,6 @@ rlJournalStart
         # Check the order from tests.yaml as well to distinguish the adjusted test
         tests_yaml="$run$plan/discover/tests.yaml"
         rlAssertExists "$tests_yaml"
-        # First one has the adjust
         rlRun -s "yq '.[0]' < $tests_yaml"
         rlAssertGrep "name: /tests/tier/two" "$rlRun_LOG"
         rlAssertGrep "result: respect" "$rlRun_LOG"
