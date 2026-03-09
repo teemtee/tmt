@@ -516,9 +516,10 @@ class GuestContainer(tmt.Guest):
         else:
             script += command
 
-        # Force the use of a pseudo-terminal if requested. Without it,
-        # processes spawned by the test session would keep running after
-        # `podman exec` completes, e.g. in the case of a timeout.
+        # Force the use of a pseudo-terminal if requested or when running
+        # a test. Without it, processes spawned by the test session would
+        # keep running after `podman exec` completes, e.g. in the case of
+        # a timeout.
         if test_session or tty or interactive:
             podman_command += ['-t']
 
