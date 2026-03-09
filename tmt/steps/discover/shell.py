@@ -1,5 +1,6 @@
 import copy
 import shutil
+import tempfile
 from typing import Any, Optional, TypeVar, cast
 
 import click
@@ -332,7 +333,18 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                         "The 'keep-git-metadata' option can be "
                         "used only when fmf root is the same as git root."
                     )
-                self.run(Command("rsync", "-ar", f"{git_root}/.git", self.test_dir))
+
+                with tempfile.TemporaryDirectory(prefix='tmt.rsync-') as rsync_tempdir:
+                    self.run(
+                        Command(
+                            "rsync",
+                            "-ar",
+                            '--temp-dir',
+                            rsync_tempdir,
+                            f"{git_root}/.git",
+                            self.test_dir,
+                        )
+                    )
         return None
 
     def go(self, *, path: Optional[Path] = None, logger: Optional[tmt.log.Logger] = None) -> None:
