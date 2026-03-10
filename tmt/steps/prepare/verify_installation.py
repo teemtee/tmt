@@ -20,6 +20,17 @@ class VerifyMapping:
     package: Package
     expected_repo: str
 
+    def to_spec(self) -> dict[str, str]:
+        return {'package': str(self.package), 'expected-repo': self.expected_repo}
+
+    @classmethod
+    def from_spec(cls, data: dict[str, str]) -> 'VerifyMapping':
+        return cls(
+            package=Package(data['package']),
+            # Support both hyphen (canonical) and underscore (legacy serialised runs)
+            expected_repo=data.get('expected-repo', data.get('expected_repo', '')),
+        )
+
 
 def _normalize_verify_mappings(
     key_address: str,
@@ -31,24 +42,12 @@ def _normalize_verify_mappings(
         raise tmt.utils.NormalizationError(
             key_address, value, "a list of dicts with 'package' and 'expected-repo' keys"
         )
-    mappings: list[VerifyMapping] = []
-    for raw_item in cast(list[object], value):
-        if (
-            not isinstance(raw_item, dict)
-            or 'package' not in raw_item
-            or 'expected-repo' not in raw_item
-        ):
-            raise tmt.utils.NormalizationError(
-                key_address, raw_item, "a dict with 'package' and 'expected-repo' keys"
-            )
-        mapping_dict = cast(dict[str, str], raw_item)
-        mappings.append(
-            VerifyMapping(
-                package=Package(mapping_dict['package']),
-                expected_repo=mapping_dict['expected-repo'],
-            )
-        )
-    return mappings
+    # ignore[redundant-cast]: mypy infers the type to be `list[Any]` while pyright settles
+    # for `list[Unknown]`; the cast helps pyright but mypy considers it redundant.
+    return [
+        VerifyMapping.from_spec(cast(dict[str, str], item))
+        for item in cast(list[Any], value)  # type: ignore[redundant-cast]
+    ]
 
 
 @container
@@ -64,15 +63,9 @@ class PrepareVerifyInstallationData(PrepareStepData):
         default_factory=list,
         help="List of package and expected repository mappings.",
         normalize=_normalize_verify_mappings,
-        serialize=lambda mappings: [
-            {'package': str(m.package), 'expected_repo': m.expected_repo} for m in mappings
-        ],
+        serialize=lambda mappings: [m.to_spec() for m in mappings],
         unserialize=lambda data: [
-            VerifyMapping(
-                package=Package(item['package']),
-                expected_repo=item['expected_repo'],
-            )
-            for item in cast(list[dict[str, str]], data)
+            VerifyMapping.from_spec(item) for item in cast(list[dict[str, str]], data)
         ],
     )
 
@@ -92,6 +85,14 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
         Other package managers will cause the step to fail. Note that
         legacy ``yum`` (not a dnf symlink) may not support the
         ``repoquery --queryformat`` syntax used by this plugin.
+
+    .. note::
+
+        On ``dnf5``, packages installed as part of a kiwi container image build
+        report a random UUID as their source repository (the mapping between the
+        UUID and the original repo is discarded after the build). Such packages
+        are attributed to ``DEFAULT-SYSTEM-REPO`` and can be matched with
+        ``expected-repo: DEFAULT-SYSTEM-REPO`` in the verification mapping.
 
     .. warning::
 
@@ -121,7 +122,6 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
         environment: Optional[Environment] = None,
         logger: Logger,
     ) -> tmt.steps.PluginOutcome:
-        """Perform package source verification."""
         outcome = super().go(guest=guest, environment=environment, logger=logger)
 
         if self.is_dry_run:
@@ -136,9 +136,10 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             color='green',
         )
 
-        packages = [str(m.package) for m in self.data.verify]
         try:
-            installed_repos = guest.package_manager.get_installed_repos(packages)
+            installed_repos = guest.package_manager.get_installed_repos(
+                m.package for m in self.data.verify
+            )
         except NotImplementedError as err:
             raise tmt.utils.PrepareError(
                 f"Package source verification not supported for "
@@ -158,8 +159,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
 
         has_failures = False
         for verify_mapping in self.data.verify:
-            package = str(verify_mapping.package)
-            actual_repo = installed_repos.get(package)
+            actual_repo = installed_repos.get(verify_mapping.package)
 
             if actual_repo == verify_mapping.expected_repo:
                 continue
@@ -167,19 +167,19 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             has_failures = True
             if actual_repo is None:
                 note = (
-                    f"Package '{package}': expected repo '{verify_mapping.expected_repo}'"
-                    f", but the package is not installed or its source repository"
-                    f" could not be determined."
+                    f"Package '{verify_mapping.package}': expected repo"
+                    f" '{verify_mapping.expected_repo}', but the package is not installed"
+                    f" or its source repository could not be determined."
                 )
             else:
                 note = (
-                    f"Package '{package}': expected repo '{verify_mapping.expected_repo}'"
-                    f", actual '{actual_repo}'."
+                    f"Package '{verify_mapping.package}': expected repo"
+                    f" '{verify_mapping.expected_repo}', actual '{actual_repo}'."
                 )
 
             outcome.results.append(
                 PhaseResult(
-                    name=package,
+                    name=verify_mapping.package,
                     result=ResultOutcome.FAIL,
                     note=[note],
                     guest=ResultGuestData.from_guest(guest=guest),
@@ -188,6 +188,10 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
 
         if has_failures:
             failed = [r.name for r in outcome.results if r.result == ResultOutcome.FAIL]
+            # FIXME: once https://github.com/teemtee/tmt/pull/4667 is merged,
+            # the explicit exception appended here may no longer be needed —
+            # the prepare step will recognise FAIL outcomes and stop the run
+            # without requiring an attached exception.
             outcome.exceptions.append(
                 tmt.utils.PrepareError(
                     f"Package source verification failed for: {', '.join(failed)}"
