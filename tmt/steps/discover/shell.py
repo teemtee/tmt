@@ -1,6 +1,5 @@
 import copy
 import shutil
-import tempfile
 from typing import Any, Optional, TypeVar, cast
 
 import click
@@ -334,7 +333,7 @@ class DiscoverShell(tmt.steps.discover.DiscoverPlugin[DiscoverShellData]):
                         "used only when fmf root is the same as git root."
                     )
 
-                with tempfile.TemporaryDirectory(prefix='tmt.rsync-') as rsync_tempdir:
+                with self.tmpdir(prefix='rsync-') as rsync_tempdir:
                     self.run(
                         Command(
                             "rsync",
