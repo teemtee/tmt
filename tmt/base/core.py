@@ -2935,7 +2935,6 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
     def _workdir_init(self, id_: WorkdirArgumentType = None) -> None:
         super()._workdir_init(id_)
         warnings_file = self.run_workdir / self.WARNINGS_FILE_NAME
-        warnings_file.touch(exist_ok=True)
         self._logger.add_runwarnings_handler(warnings_file)
 
     @functools.cached_property
