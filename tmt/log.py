@@ -303,7 +303,9 @@ class LogRecordDetails:
 
 class RunWarningsHandler(logging.FileHandler):
     def __init__(self, filepath: Path) -> None:
-        super().__init__(filepath, mode="a")
+        # mode="a": We want to keep the old warnings.yaml if we are running a new run on top
+        # delay=True: If we did not have any warnings then we do not create the file at all
+        super().__init__(filepath, mode="a", delay=True)
 
 
 class LogfileHandler(logging.FileHandler):
