@@ -704,10 +704,9 @@ def _set_polarion_feature_fields(
     }
     priority_value = priority_map.get(str(story.priority), 'medium') if story.priority else None
 
-    # Prepare tags
-    if story.tag:
-        story.tag.append('fmf-export')
-    tags_value = ' '.join(story.tag) if story.tag else None
+    # Prepare tags (copy to avoid mutating the story's tag list)
+    tags = list(story.tag) + ['fmf-export'] if story.tag else None
+    tags_value = ' '.join(tags) if tags else None
 
     # Prepare contact/assignee
     login_name = None
@@ -723,7 +722,7 @@ def _set_polarion_feature_fields(
     if priority_value:
         logger.debug(f"priority: {story.priority}")
     if tags_value:
-        logger.debug(f"tags: {' '.join(set(story.tag))}")
+        logger.debug(f"tags: {tags_value}")
     if login_name:
         logger.debug(f"assignee: {login_name}")
 
