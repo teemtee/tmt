@@ -685,7 +685,7 @@ def _set_polarion_feature_fields(
     """
     Set all Polarion feature/requirement fields from story metadata.
 
-    Updates title, description, priority, tags, contact/assignee, status
+    Updates title, description, priority, tags, contact/assignee
     and any ``extra-polarion-*`` custom fields on the work item.
 
     :param polarion_feature: the Polarion work item to update.
@@ -716,9 +716,6 @@ def _set_polarion_feature_fields(
         at_pos = email_address.find('@')
         login_name = email_address[:at_pos] if at_pos != -1 else email_address
 
-    # Prepare status
-    status_value = 'approved' if story.enabled else 'inactive'
-
     # Log what would be set
     if title:
         logger.debug(f"title: {title}")
@@ -729,7 +726,6 @@ def _set_polarion_feature_fields(
         logger.debug(f"tags: {' '.join(set(story.tag))}")
     if login_name:
         logger.debug(f"assignee: {login_name}")
-    logger.debug(f"enabled: {story.enabled}")
 
     # Early return if dry mode - don't actually update Polarion
     if dry_mode:
@@ -766,12 +762,6 @@ def _set_polarion_feature_fields(
                 polarion_feature.add_assignee(login_name)
             except (AttributeError, PolarionException) as err:
                 logger.debug(f"Failed to set assignee: {err}")
-
-        # Status
-        try:
-            polarion_feature.status = status_value
-        except (AttributeError, PolarionException) as exc:
-            logger.debug(f"Failed to set status: {exc}")
 
         # Custom Polarion fields from extra-polarion-* metadata
         logger.debug('Setting custom Polarion fields')
