@@ -3674,6 +3674,21 @@ def markdown_to_html(filename: Path) -> str:
     return markdown.markdown(markdown_text, extensions=DEFAULT_MD_HTML_EXTENSIONS)
 
 
+def markdown_to_html_str(text: str) -> str:
+    """
+    Convert a Markdown string to HTML.
+
+    :param text: Markdown source text.
+    :returns: an HTML string.
+    """
+    try:
+        import markdown
+    except ImportError as error:
+        raise ConvertError("Install tmt+test-convert to export tests.") from error
+
+    return markdown.markdown(text, extensions=DEFAULT_MD_HTML_EXTENSIONS)
+
+
 def duration_to_seconds(duration: str, injected_default: Optional[str] = None) -> int:
     """
     Convert extended sleep time format into seconds

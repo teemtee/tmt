@@ -13,7 +13,7 @@ import tmt.options
 import tmt.utils
 from tmt.container import container, field
 from tmt.identifier import ID_KEY, add_uuid_if_not_defined
-from tmt.utils import ConvertError, GeneralError, Path
+from tmt.utils import ConvertError, GeneralError, Path, markdown_to_html_str
 from tmt.utils.themes import style
 
 PolarionException: Any = None
@@ -51,16 +51,6 @@ def import_polarion() -> None:
         log.debug(traceback.format_exc())
         raise ConvertError("Failed to login with pylero") from exc
 
-
-def _markdown_str_to_html(text: str) -> str:
-    """
-    Convert a Markdown string to HTML.
-
-    :param text: Markdown source text.
-    :returns: an HTML string.
-    """
-    import markdown
-    return markdown.markdown(text, extensions=tmt.utils.DEFAULT_MD_HTML_EXTENSIONS)
 
 
 def get_polarion_ids(
@@ -311,7 +301,7 @@ def export_to_polarion(
     if test.environment:
         env_lines = '\n'.join(f'- `{k}={v}`' for k, v in test.environment.items())
         md_parts.append(f'**Environment variables:**\n\n{env_lines}')
-    description = _markdown_str_to_html('\n\n'.join(md_parts))
+    description = markdown_to_html_str('\n\n'.join(md_parts))
     if not dry_mode:
         assert polarion_case  # Narrow type
         polarion_case.description = description
@@ -662,7 +652,7 @@ def _generate_story_description_html(story: tmt.base.Story) -> str:
     if not parts:
         return ''
 
-    return _markdown_str_to_html('\n\n'.join(parts))
+    return markdown_to_html_str('\n\n'.join(parts))
 
 
 def _set_polarion_feature_fields(
