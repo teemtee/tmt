@@ -14,7 +14,7 @@ import tmt.options
 import tmt.utils
 from tmt.container import container, field
 from tmt.identifier import ID_KEY, add_uuid_if_not_defined
-from tmt.utils import ConvertError, Path
+from tmt.utils import ConvertError, GeneralError, Path
 from tmt.utils.themes import style
 
 PolarionException: Any = None
@@ -767,7 +767,7 @@ def _set_polarion_feature_fields(
         logger.debug('Setting custom Polarion fields')
         set_polarion_custom_fields(polarion_feature, story.node, dry_mode=False)
 
-    except Exception as exc:
+    except (AttributeError, PolarionException) as exc:
         logger.debug(f"Failed to set some Polarion fields: {exc}")
 
 
@@ -820,7 +820,7 @@ def _export_single_test_case_for_story(
                     polarion_test_case = export_to_polarion(test, options=test_options)
                     if polarion_test_case:
                         logger.debug(f'Test case exported: {polarion_test_case.work_item_id}')
-                except Exception as export_err:
+                except (ConvertError, PolarionException) as export_err:
                     logger.warning(f'Failed to export test case {test_name}: {export_err}')
         else:
             logger.debug(f'Test case found: {polarion_test_case.work_item_id}')
@@ -828,7 +828,7 @@ def _export_single_test_case_for_story(
         # Return the Polarion work item ID if we have one
         return str(polarion_test_case.work_item_id) if polarion_test_case else None
 
-    except Exception as err:
+    except (GeneralError, PolarionException) as err:
         logger.warning(f'Failed to process test {test_name}: {err}')
         return None
 
@@ -932,7 +932,7 @@ def _export_and_link_story_tests(
                 )
                 test_case.add_linked_item(feature_id, 'verifies')
                 logger.debug(f'Linked: test {polarion_test_id} verifies feature {feature_id}')
-            except Exception as err:
+            except PolarionException as err:
                 logger.warning(f'Failed to link test {polarion_test_id}: {err}')
 
 
