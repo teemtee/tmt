@@ -423,13 +423,14 @@ class PrepareInstall(tmt.steps.prepare.PreparePlugin[PrepareInstallData]):
             skip_missing=self.data.missing == 'skip',
         )
 
-        if not self.data.package and not self.data.directory:
-            self.debug("No packages for installation found.", level=3)
-
         self._prepare_installables(self.data.package, self.data.directory, logger)
 
         # Enable copr repositories...
         guest.package_manager.enable_copr(*self.data.copr)
+
+        if not self.data.package and not self.data.directory:
+            self.debug("No packages for installation found.", level=3)
+            return outcome
 
         # ... and install packages.
         try:
