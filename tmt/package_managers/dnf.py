@@ -1,5 +1,5 @@
 import re
-import shlex
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from tmt._compat.pathlib import Path
@@ -204,11 +204,13 @@ class DnfEngine(PackageManagerEngine):
             """
         )
 
-    def get_installed_repos(self, packages: list[str]) -> ShellScript:
-        package_args = ' '.join(shlex.quote(p) for p in packages)
-        return ShellScript(
-            f'{self.command.to_script()} repoquery --installed'
-            f' --queryformat "%{{name}} %{{from_repo}}\\n" {package_args}'
+    def get_installed_repos(self, packages: Iterable[str]) -> Command:
+        return self.command + Command(
+            'repoquery',
+            '--installed',
+            '--queryformat',
+            '%{name} %{from_repo}\n',
+            *packages,
         )
 
     def create_repository(self, directory: Path) -> ShellScript:
@@ -383,6 +385,18 @@ class Dnf5Engine(DnfEngine):
     skip_missing_debuginfo_option = skip_missing_packages_option
 
 
+#: On dnf5, packages installed during a container image build via kiwi store a 32-character
+#: hex UUID as ``from_repo`` instead of a human-readable repo name.  The UUID was the repo
+#: section ID used by kiwi's temporary repo files, whose name→UUID mapping is discarded after
+#: the build.  We normalise these to ``DEFAULT-SYSTEM-REPO`` to indicate that the package
+#: was installed as part of the base system image and its source cannot be determined.
+_DNF5_UUID_RE = re.compile(r'^[0-9a-f]{32}$')
+
+#: Sentinel repo name used for packages whose installation source cannot be determined
+#: (e.g. packages baked into a kiwi container image).
+DEFAULT_SYSTEM_REPO = 'DEFAULT-SYSTEM-REPO'
+
+
 @provides_package_manager('dnf5')
 class Dnf5(Dnf):
     NAME = 'dnf5'
@@ -394,9 +408,19 @@ class Dnf5(Dnf):
     probe_command = Command('dnf5', '--version')
     probe_priority = 60
 
+    def get_installed_repos(self, packages: Iterable[str]) -> dict[str, Optional[str]]:
+        result = super().get_installed_repos(packages)
+        return {
+            pkg: (DEFAULT_SYSTEM_REPO if repo is not None and _DNF5_UUID_RE.match(repo) else repo)
+            for pkg, repo in result.items()
+        }
+
 
 class YumEngine(DnfEngine):
     _base_command = Command('yum')
+
+    def get_installed_repos(self, packages: Iterable[str]) -> Command:
+        raise NotImplementedError
 
     # TODO: get rid of those `type: ignore` below. I think it's caused by the
     # decorator, it might be messing with the class inheritance as seen by pyright,
