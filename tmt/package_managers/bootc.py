@@ -375,13 +375,9 @@ class Bootc(PackageManager[BootcEngine]):
     ) -> CommandOutput:
 
         options = options or Options()
-        local_options = Options(
-            excluded_packages=options.excluded_packages,
-            skip_missing=options.skip_missing,
-            check_first=False,
-        )
-        self.engine.install(*installables, options=local_options)
-        self.engine.reinstall(*installables, options=local_options)
+        options.check_first = False
+        self.engine.install(*installables, options=options)
+        self.engine.reinstall(*installables, options=options)
 
         return CommandOutput(stdout=None, stderr=None)
 

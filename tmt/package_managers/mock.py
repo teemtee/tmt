@@ -187,11 +187,7 @@ class _MockPackageManager(PackageManager[MockEngine]):
         assert isinstance(self.guest, GuestMock)
 
         options = options or Options()
-        local_options = Options(
-            excluded_packages=options.excluded_packages,
-            skip_missing=options.skip_missing,
-            check_first=False,
-        )
+        options.check_first = False
 
         # mock's package manager mounts the buildroot directory, so we need to
         # prefix the path with the guest's root_path.
@@ -203,8 +199,8 @@ class _MockPackageManager(PackageManager[MockEngine]):
 
         # Use both install/reinstall to get all packages refreshed
         # FIXME Simplify this once BZ#1831022 is fixed/implemented.
-        output = self.install(*filelist, options=local_options)
-        self.reinstall(*filelist, options=local_options)
+        output = self.install(*filelist, options=options)
+        self.reinstall(*filelist, options=options)
         return output
 
 

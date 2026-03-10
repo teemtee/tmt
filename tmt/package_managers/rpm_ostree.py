@@ -254,11 +254,7 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
     ) -> CommandOutput:
 
         options = options or Options()
-        options = Options(
-            excluded_packages=options.excluded_packages,
-            skip_missing=options.skip_missing,
-            check_first=False,
-        )
+        options.check_first = False
 
         for package in installables:
             assert isinstance(package, PackagePath)

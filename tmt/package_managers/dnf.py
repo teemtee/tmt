@@ -346,15 +346,11 @@ class Dnf(PackageManager[DnfEngine]):
     ) -> CommandOutput:
 
         options = options or Options()
-        local_options = Options(
-            excluded_packages=options.excluded_packages,
-            skip_missing=options.skip_missing,
-            check_first=False,
-        )
+        options.check_first = False
         # Use both install/reinstall to get all packages refreshed
         # FIXME Simplify this once BZ#1831022 is fixed/implemented.
-        output = self.install(*installables, options=local_options)
-        self.reinstall(*installables, options=local_options)
+        output = self.install(*installables, options=options)
+        self.reinstall(*installables, options=options)
         return output
 
     def install_debuginfo(

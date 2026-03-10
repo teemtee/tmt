@@ -124,7 +124,7 @@ def escape_installables(*installables: Installable) -> Iterator[str]:
 
 
 # TODO: find a better name, "options" is soooo overloaded...
-@container(frozen=True)
+@container
 class Options:
     #: A list of packages to exclude from installation.
     excluded_packages: list[Package] = simple_field(default_factory=list[Package])

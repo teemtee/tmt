@@ -203,15 +203,9 @@ class Apk(PackageManager[ApkEngine]):
         options: Optional[Options] = None,
     ) -> CommandOutput:
         options = options or Options()
-        return self.install(
-            *installables,
-            options=Options(
-                excluded_packages=options.excluded_packages,
-                skip_missing=options.skip_missing,
-                allow_untrusted=True,
-                check_first=False,
-            ),
-        )
+        options.allow_untrusted = True
+        options.check_first = False
+        return self.install(*installables, options=options)
 
     def install_from_url(
         self,
