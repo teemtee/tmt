@@ -1,0 +1,381 @@
+#!/usr/bin/python3
+"""
+List all issues and pull requests sprint with story points.
+
+Usage:
+    sprint-overview "Sprint 11"
+    sprint-overview "Sprint 11" --org myorg --project 2
+    sprint-overview "Sprint 11" --yaml
+
+Environment variables:
+    GITHUB_PERSONAL_ACCESS_TOKEN:
+        GitHub personal access token with repo and project permissions
+"""
+
+import argparse
+import os
+import sys
+from typing import Optional
+
+import requests
+import yaml
+
+GITHUB_API_URL = "https://api.github.com/graphql"
+
+
+def print_separator(before: bool = False, after: bool = False, char: str = "=") -> None:
+    """Print a separator line with optional extra newlines."""
+    if before:
+        print()
+    print(char * 80)
+    if after:
+        print()
+
+
+def fetch_sprint_items(
+    token: str, org: str, project: int, sprint_name: str
+) -> list[tuple[str, str, int, str, Optional[float], str]]:
+    """
+    Fetch all items in a sprint from GitHub Project using server-side filtering.
+
+    Returns a list of tuples: (type, state, number, title, size, url)
+    where type is "Issue" or "PullRequest", state is the item state,
+    number is the issue/PR number, title is the item title,
+    size is the story points (None if not set), and url is the item URL.
+    """
+    print(
+        f"Fetching items from {org}/project/{project} for sprint '{sprint_name}'...",
+        file=sys.stderr,
+    )
+
+    query = """
+    query($orgName: String!, $projectNumber: Int!, $cursor: String, $query: String!) {
+      organization(login: $orgName) {
+        projectV2(number: $projectNumber) {
+          items(first: 100, after: $cursor, query: $query) {
+            nodes {
+              content {
+                ... on Issue {
+                  __typename
+                  number
+                  title
+                  state
+                  url
+                }
+                ... on PullRequest {
+                  __typename
+                  number
+                  title
+                  state
+                  url
+                }
+              }
+              size: fieldValueByName(name: "Size") {
+                ... on ProjectV2ItemFieldNumberValue {
+                  number
+                }
+              }
+            }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+          }
+        }
+      }
+    }
+    """
+
+    # Store items as: (type, state, number, title, size, url)
+    all_items: list[tuple[str, str, int, str, Optional[float], str]] = []
+    cursor = None
+    page = 1
+
+    while True:
+        variables = {
+            "orgName": org,
+            "projectNumber": project,
+            "cursor": cursor,
+            "query": f'Sprint:"{sprint_name}"',
+        }
+
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+
+        response = requests.post(
+            GITHUB_API_URL,
+            headers=headers,
+            json={"query": query, "variables": variables},
+            timeout=30,
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        if "errors" in data:
+            print(f"GraphQL errors: {data['errors']}", file=sys.stderr)
+            sys.exit(1)
+
+        items = data["data"]["organization"]["projectV2"]["items"]["nodes"]
+        print(f"  Page {page}: {len(items)} items", file=sys.stderr)
+
+        for item in items:
+            if item.get("content"):
+                content = item["content"]
+                size = item.get("size", {}).get("number") if item.get("size") else None
+                all_items.append(
+                    (
+                        content["__typename"],
+                        content["state"],
+                        content["number"],
+                        content["title"],
+                        size,
+                        content["url"],
+                    )
+                )
+
+        page_info = data["data"]["organization"]["projectV2"]["items"]["pageInfo"]
+        if not page_info["hasNextPage"]:
+            break
+
+        cursor = page_info["endCursor"]
+        page += 1
+
+    print(f"Total: {len(all_items)} items\n", file=sys.stderr)
+    return all_items
+
+
+def categorize_items(
+    items: list[tuple[str, str, int, str, Optional[float], str]],
+) -> dict[str, list[tuple[int, str, Optional[float], str]]]:
+    """
+    Categorize items by type and state.
+
+    Args:
+        items: List of tuples (type, state, number, title, size, url)
+
+    Returns:
+        Dictionary with category names as keys and lists of
+        (number, title, size, url) tuples as values. Categories are:
+        open_issues, open_prs, closed_issues, merged_prs, closed_prs
+    """
+    categories: dict[str, list[tuple[int, str, Optional[float], str]]] = {
+        "open_issues": [],
+        "open_prs": [],
+        "closed_issues": [],
+        "merged_prs": [],
+        "closed_prs": [],
+    }
+
+    for item_type, state, number, title, size, url in items:
+        if item_type == "Issue":
+            key = "open_issues" if state == "OPEN" else "closed_issues"
+        else:  # PullRequest
+            key = (
+                "open_prs"
+                if state == "OPEN"
+                else "merged_prs"
+                if state == "MERGED"
+                else "closed_prs"
+            )
+        categories[key].append((number, title, size, url))
+
+    # Sort all categories by number
+    for items_list in categories.values():
+        items_list.sort()
+
+    return categories
+
+
+def display_items(
+    sprint_name: str, categories: dict[str, list[tuple[int, str, Optional[float], str]]]
+) -> None:
+    """Display categorized items in a readable format with story points."""
+    total = sum(len(items) for items in categories.values())
+
+    # Calculate total story points by category
+    total_points: dict[str, float] = {}
+    for key, items in categories.items():
+        total_points[key] = sum(size or 0 for _, _, size, _ in items)
+
+    print_separator(before=True)
+    print(f"Sprint: {sprint_name}")
+    print(f"Total items: {total}")
+    print(f"Total story points: {sum(total_points.values()):.0f}")
+    print_separator(after=True)
+
+    # Define display order and labels
+    sections = [
+        ("open_issues", "Open Issues"),
+        ("open_prs", "Open Pull Requests"),
+        ("closed_issues", "Closed Issues"),
+        ("merged_prs", "Merged Pull Requests"),
+        ("closed_prs", "Closed Pull Requests"),
+    ]
+
+    for key, label in sections:
+        if categories[key]:
+            print(f"{label} ({len(categories[key])}) - {total_points[key]:.0f} points:")
+            print_separator(char="-")
+            for number, title, size, _ in categories[key]:
+                size_str = f"{size:.0f}" if size is not None else "-"
+                print(f"  #{number:<6} [{size_str:>2}] {title}")
+            print()
+
+    # Summary
+    open_count = len(categories["open_issues"]) + len(categories["open_prs"])
+    closed_count = total - open_count
+    open_points = total_points["open_issues"] + total_points["open_prs"]
+    closed_points = sum(total_points.values()) - open_points
+
+    print_separator()
+    print(
+        f"Summary: {open_count} open ({open_points:.0f} pts), "
+        f"{closed_count} closed/merged ({closed_points:.0f} pts)"
+    )
+    print_separator(after=True)
+
+
+def display_items_yaml(
+    sprint_name: str, categories: dict[str, list[tuple[int, str, Optional[float], str]]]
+) -> None:
+    """Display categorized items in YAML format."""
+    # Calculate total story points by category
+    total_points: dict[str, int] = {}
+    for key, items in categories.items():
+        total_points[key] = int(sum(size or 0 for _, _, size, _ in items))
+
+    total = sum(len(items) for items in categories.values())
+    open_count = len(categories["open_issues"]) + len(categories["open_prs"])
+    closed_count = total - open_count
+    open_points = total_points["open_issues"] + total_points["open_prs"]
+    closed_points = sum(total_points.values()) - open_points
+
+    # Build the output structure
+    output = {
+        "sprint": sprint_name,
+        "total": {
+            "items": total,
+            "story_points": int(sum(total_points.values())),
+        },
+        "categories": {
+            "open_issues": {
+                "count": len(categories["open_issues"]),
+                "story_points": total_points["open_issues"],
+                "items": [
+                    {
+                        "url": url,
+                        "title": title,
+                        "story_points": int(size) if size is not None else None,
+                    }
+                    for _, title, size, url in categories["open_issues"]
+                ],
+            },
+            "open_prs": {
+                "count": len(categories["open_prs"]),
+                "story_points": total_points["open_prs"],
+                "items": [
+                    {
+                        "url": url,
+                        "title": title,
+                        "story_points": int(size) if size is not None else None,
+                    }
+                    for _, title, size, url in categories["open_prs"]
+                ],
+            },
+            "closed_issues": {
+                "count": len(categories["closed_issues"]),
+                "story_points": total_points["closed_issues"],
+                "items": [
+                    {
+                        "url": url,
+                        "title": title,
+                        "story_points": int(size) if size is not None else None,
+                    }
+                    for _, title, size, url in categories["closed_issues"]
+                ],
+            },
+            "merged_prs": {
+                "count": len(categories["merged_prs"]),
+                "story_points": total_points["merged_prs"],
+                "items": [
+                    {
+                        "url": url,
+                        "title": title,
+                        "story_points": int(size) if size is not None else None,
+                    }
+                    for _, title, size, url in categories["merged_prs"]
+                ],
+            },
+            "closed_prs": {
+                "count": len(categories["closed_prs"]),
+                "story_points": total_points["closed_prs"],
+                "items": [
+                    {
+                        "url": url,
+                        "title": title,
+                        "story_points": int(size) if size is not None else None,
+                    }
+                    for _, title, size, url in categories["closed_prs"]
+                ],
+            },
+        },
+        "summary": {
+            "open": {"count": open_count, "story_points": int(open_points)},
+            "closed": {"count": closed_count, "story_points": int(closed_points)},
+        },
+    }
+
+    print(yaml.dump(output, default_flow_style=False, sort_keys=False))
+
+
+def main() -> None:
+    """Main entry point."""
+    parser = argparse.ArgumentParser(
+        description=(
+            "List all issues and pull requests in a GitHub Project sprint with story points"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("sprint_name", help="Name of the sprint (e.g., 'Sprint 11')")
+    parser.add_argument(
+        "--org", default="teemtee", help="GitHub organization name (default: teemtee)"
+    )
+    parser.add_argument("--project", type=int, default=1, help="Project number (default: 1)")
+    parser.add_argument(
+        "--yaml",
+        action="store_true",
+        help="Output in YAML format for machine-readable processing",
+    )
+
+    args = parser.parse_args()
+
+    token = os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN")
+    if not token:
+        print("Error: GITHUB_PERSONAL_ACCESS_TOKEN environment variable not set", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        items = fetch_sprint_items(token, args.org, args.project, args.sprint_name)
+
+        if not items:
+            print(f"No items found in sprint '{args.sprint_name}'")
+            return
+
+        categories = categorize_items(items)
+        if args.yaml:
+            display_items_yaml(args.sprint_name, categories)
+        else:
+            display_items(args.sprint_name, categories)
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error making API request: {e}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
