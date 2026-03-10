@@ -3645,19 +3645,17 @@ def json_to_list(data: Any) -> list[Any]:
     return loaded_data
 
 
-def markdown_to_html(
-        source: Path | str,
-        extensions: Optional[list[str]] = None) -> str:
-    """
-    Convert markdown to html
+DEFAULT_MD_HTML_EXTENSIONS: list[str] = ['extra', 'nl2br', 'sane_lists']
 
-    Expects: Markdown document as a file path or text string.
-    Returns: An HTML document as a string.
-    
-    Args:
-        source: Either a Path to a markdown file or a markdown text string
-        extensions: Optional list of markdown extensions to enable
-                   (e.g., ['extra', 'nl2br', 'sane_lists'])
+
+def markdown_to_html(filename: Path) -> str:
+    """
+    Convert Markdown to HTML.
+
+    Uses :py:data:`DEFAULT_MD_HTML_EXTENSIONS` for consistent output across all callers.
+
+    :param filename: path to a Markdown file to convert.
+    :returns: an HTML document as a string.
     """
 
     try:
@@ -3665,23 +3663,15 @@ def markdown_to_html(
     except ImportError as error:
         raise ConvertError("Install tmt+test-convert to export tests.") from error
 
-    # Handle Path input (read from file)
-    if isinstance(source, Path):
+    try:
         try:
-            try:
-                markdown_text = source.read_text()
-            except UnicodeError as error:
-                raise MetadataError(f"Unable to read '{source}'.") from error
-        except OSError as error:
-            raise ConvertError(f"Unable to open '{source}'.") from error
-    # Handle string input (use directly)
-    else:
-        markdown_text = source
-    
-    # Convert markdown to HTML with optional extensions
-    if extensions:
-        return markdown.markdown(markdown_text, extensions=extensions)
-    return markdown.markdown(markdown_text)
+            markdown_text = filename.read_text()
+        except UnicodeError as error:
+            raise MetadataError(f"Unable to read '{filename}'.") from error
+    except OSError as error:
+        raise ConvertError(f"Unable to open '{filename}'.") from error
+
+    return markdown.markdown(markdown_text, extensions=DEFAULT_MD_HTML_EXTENSIONS)
 
 
 def duration_to_seconds(duration: str, injected_default: Optional[str] = None) -> int:

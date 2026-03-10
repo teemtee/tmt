@@ -6,6 +6,7 @@ export of tests, plans or stories.
 """
 
 import abc
+import dataclasses
 import re
 import traceback
 import types
@@ -29,9 +30,10 @@ from click import echo
 
 import tmt
 import tmt.log
+import tmt.options
 import tmt.utils
 from tmt._compat.typing import Self
-from tmt.container import container, simple_field
+from tmt.container import container, container_field, container_keys, simple_field
 from tmt.plugins import PluginRegistry
 from tmt.utils import Path
 from tmt.utils.themes import style
@@ -199,6 +201,26 @@ class ExportPlugin(abc.ABC):
     """
     Base class for plugins providing metadata export functionality
     """
+
+    _data_class: ClassVar[type] = type('_EmptyExportData', (), {})
+
+    @classmethod
+    def get_data_class(cls) -> type:
+        """Return the data class holding plugin-specific options"""
+        return cls._data_class
+
+    @classmethod
+    def options(cls, how: Optional[str] = None) -> list['tmt.options.ClickOptionDecoratorType']:
+        """Prepare click option decorators from the plugin's data class fields"""
+        result: list[tmt.options.ClickOptionDecoratorType] = []
+        data_class = cls.get_data_class()
+        if not dataclasses.is_dataclass(data_class):
+            return result
+        for key in container_keys(data_class):
+            _, _, _, _, metadata = container_field(data_class, key)
+            if metadata.option is not None:
+                result.append(metadata.option)
+        return result
 
     @classmethod
     @abc.abstractmethod
