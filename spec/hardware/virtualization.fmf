@@ -2,7 +2,8 @@ summary: |
     Select or provision a guest with requested virtualization properties.
 
     .. versionadded:: 1.42
-       ``virtualization.confidential``
+       ``virtualization.confidential`` (not yet supported by any
+       provisioner plugin)
 
     .. versionchanged:: 1.33
        ``beaker`` plugin supports ``virtualization.hypervisor``
