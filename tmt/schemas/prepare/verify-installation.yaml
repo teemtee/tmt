@@ -35,15 +35,15 @@ properties:
       additionalProperties: false
       required:
         - package
-        - expected_repo
+        - expected-repo
       properties:
         package:
           type: string
-        expected_repo:
+        expected-repo:
           type: string
     description: |
       List of package and expected repository mappings, each as a dict
-      with ``package`` and ``expected_repo`` keys.
+      with ``package`` and ``expected-repo`` keys.
 
   where:
     $ref: "/schemas/common#/definitions/where"
