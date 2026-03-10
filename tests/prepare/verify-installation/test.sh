@@ -19,7 +19,7 @@ rlJournalStart
             plan --name /plan/success \
             provision -h \$PROVISION_HOW --image \$TEST_IMAGE_PREFIX/\$image_name 2>&1" 0 "Run verification test with correct repo"
 
-        rlAssertGrep "verify: all packages verified successfully" $rlRun_LOG
+        rlAssertGrep "All packages verified successfully." $rlRun_LOG
         rlAssertGrep "1 test passed" $rlRun_LOG
     rlPhaseEnd
 
@@ -28,14 +28,13 @@ rlJournalStart
 
         rlRun -s "tmt run -i \$run/failure --scratch -vvv --all \
             plan --name /plan/failure \
-            provision -h \$PROVISION_HOW --image \$TEST_IMAGE_PREFIX/\$image_name 2>&1" 2 "Verification should fail with wrong repo"
+            provision -h \$PROVISION_HOW --image \$TEST_IMAGE_PREFIX/\$image_name 2>&1" 1 "Verification should fail with wrong repo"
 
-        rlAssertGrep "verify: 3 packages" $rlRun_LOG
-        rlAssertGrep "Package source verification failed" $rlRun_LOG
+        rlAssertGrep "3 packages" $rlRun_LOG
+        rlAssertGrep "fail make-devel" $rlRun_LOG
         rlAssertGrep "make-devel" $rlRun_LOG
         rlAssertGrep "expected repo 'SOME_NON_EXISTENT_REPO'" $rlRun_LOG
         rlAssertGrep "actual 'tmt-artifact-shared'" $rlRun_LOG
-        rlAssertGrep "Package source verification failed for 1 package" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup

@@ -8,6 +8,7 @@ from tmt.container import container, field
 from tmt.guest import Guest
 from tmt.log import Logger
 from tmt.package_managers import Package
+from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
 from tmt.steps.prepare import PreparePlugin, PrepareStepData
 from tmt.utils import Environment
 
@@ -20,35 +21,34 @@ class VerifyMapping:
     expected_repo: str
 
 
-@container
-class VerificationFailure:
-    """Record of a verification failure."""
-
-    package: str
-    expected_repo: str
-    actual_repo: Optional[str] = None
-
-
-def _parse_verify_string(key_address: str, value: str) -> VerifyMapping:
-    """Parse 'package,repo' format into a VerifyMapping."""
-    parts = value.split(',')
-    if len(parts) != 2:
-        raise tmt.utils.NormalizationError(
-            key_address, value, "a 'package_name,repository_name' string"
-        )
-    return VerifyMapping(package=Package(parts[0].strip()), expected_repo=parts[1].strip())
-
-
 def _normalize_verify_mappings(
     key_address: str,
     value: Any,
     logger: Logger,
 ) -> list[VerifyMapping]:
-    """Normalize verify mappings from a string or list of 'package,repo' strings."""
-    return [
-        _parse_verify_string(key_address, s)
-        for s in tmt.utils.normalize_string_list(key_address, value, logger)
-    ]
+    """Normalize verify mappings from a list of dicts with 'package' and 'expected_repo' keys."""
+    if not isinstance(value, list):
+        raise tmt.utils.NormalizationError(
+            key_address, value, "a list of dicts with 'package' and 'expected_repo' keys"
+        )
+    mappings: list[VerifyMapping] = []
+    for raw_item in cast(list[object], value):
+        if (
+            not isinstance(raw_item, dict)
+            or 'package' not in raw_item
+            or 'expected_repo' not in raw_item
+        ):
+            raise tmt.utils.NormalizationError(
+                key_address, raw_item, "a dict with 'package' and 'expected_repo' keys"
+            )
+        mapping_dict = cast(dict[str, str], raw_item)
+        mappings.append(
+            VerifyMapping(
+                package=Package(mapping_dict['package']),
+                expected_repo=mapping_dict['expected_repo'],
+            )
+        )
+    return mappings
 
 
 @container
@@ -62,14 +62,17 @@ class PrepareVerifyInstallationData(PrepareStepData):
 
     verify: list[VerifyMapping] = field(
         default_factory=list,
-        option='--verify',
-        metavar='MAPPING',
-        multiple=True,
-        help="Package and expected repository mapping (format: package_name,repository_name).",
+        help="List of package and expected repository mappings.",
         normalize=_normalize_verify_mappings,
-        serialize=lambda mappings: [f'{m.package},{m.expected_repo}' for m in mappings],
+        serialize=lambda mappings: [
+            {'package': m.package, 'expected_repo': m.expected_repo} for m in mappings
+        ],
         unserialize=lambda data: [
-            _parse_verify_string('verify', item) for item in cast(list[str], data)
+            VerifyMapping(
+                package=Package(item['package']),
+                expected_repo=item['expected_repo'],
+            )
+            for item in cast(list[dict[str, str]], data)
         ],
     )
 
@@ -86,7 +89,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
     .. note::
 
         Currently only supports DNF-based package managers (dnf, dnf5, yum).
-        Other package managers will log a warning and skip verification.
+        Other package managers will cause the step to fail.
 
     .. warning::
 
@@ -100,12 +103,10 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
         prepare:
             how: verify-installation
             verify:
-                - make,fedora
-                - gcc,fedora
-
-    .. code-block:: shell
-
-        prepare --how verify-installation --verify make,fedora --verify gcc,fedora
+                - package: make
+                  expected_repo: fedora
+                - package: gcc
+                  expected_repo: fedora
     """
 
     _data_class = PrepareVerifyInstallationData
@@ -124,89 +125,52 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             return outcome
 
         if not self.data.verify:
-            self.verbose('verify', 'no packages to verify', level=2)
-            return outcome
-
-        # Probe capability without executing a remote command — engine methods
-        # only build a ShellScript locally, so this raises NotImplementedError
-        # immediately if the package manager doesn't support repo queries.
-        try:
-            guest.package_manager.engine.get_installed_repo('')
-        except NotImplementedError:
-            self.warn(
-                f"Package source verification not supported for "
-                f"'{guest.facts.package_manager}' package manager, skipping."
-            )
+            self.verbose('No packages to verify.')
             return outcome
 
         self.info(
-            'verify',
             fmf.utils.listed([m.package for m in self.data.verify], 'package'),
-            'green',
+            color='green',
         )
 
-        failures = self._verify_packages(guest, self.data.verify)
-
-        if failures:
-            self._report_failures(failures)
-            raise tmt.utils.PrepareError(
-                f"Package source verification failed for {len(failures)} package(s)."
-            )
-
-        self.info('verify', 'all packages verified successfully', 'green')
-
-        return outcome
-
-    def _verify_packages(
-        self,
-        guest: Guest,
-        verify_mappings: list[VerifyMapping],
-    ) -> list[VerificationFailure]:
-        """Verify all packages came from expected repositories."""
-        failures: list[VerificationFailure] = []
-
-        for verify_mapping in verify_mappings:
-            actual_repo = self._get_package_repository(guest, verify_mapping.package)
-
-            if actual_repo != verify_mapping.expected_repo:
-                failures.append(
-                    VerificationFailure(
-                        package=verify_mapping.package,
-                        expected_repo=verify_mapping.expected_repo,
-                        actual_repo=actual_repo,
-                    )
-                )
-
-        return failures
-
-    def _get_package_repository(
-        self,
-        guest: Guest,
-        package: str,
-    ) -> Optional[str]:
-        """Query which repository a package was installed from."""
+        packages = [str(m.package) for m in self.data.verify]
         try:
-            repo = guest.package_manager.get_installed_repo(package)
-        except tmt.utils.RunError as e:
-            self.debug(f"Package repository query failed for '{package}': {e}")
-            return None
+            installed_repos = guest.package_manager.get_installed_repos(packages)
+        except NotImplementedError as err:
+            raise tmt.utils.PrepareError(
+                f"Package source verification not supported for "
+                f"'{guest.facts.package_manager}' package manager."
+            ) from err
 
-        if repo:
-            self.debug(f"Package '{package}' installed from repo: {repo}")
-        else:
-            self.debug(f"Could not determine repository for '{package}'")
-        return repo
+        for verify_mapping in self.data.verify:
+            package = str(verify_mapping.package)
+            actual_repo = installed_repos.get(package)
 
-    def _report_failures(self, failures: list[VerificationFailure]) -> None:
-        """Report verification failures to user."""
-        for failure in failures:
-            if failure.actual_repo is None:
-                self.warn(
-                    f"Package '{failure.package}': expected repo '{failure.expected_repo}'"
-                    f", but package is not installed, its source repo cannot be determined,"
+            if actual_repo == verify_mapping.expected_repo:
+                continue
+
+            if actual_repo is None:
+                note = (
+                    f"Package '{package}': expected repo '{verify_mapping.expected_repo}'"
+                    f", but the package is not installed or its source repository"
+                    f" could not be determined."
                 )
             else:
-                self.warn(
-                    f"Package '{failure.package}': expected repo '{failure.expected_repo}'"
-                    f", actual '{failure.actual_repo}'."
+                note = (
+                    f"Package '{package}': expected repo '{verify_mapping.expected_repo}'"
+                    f", actual '{actual_repo}'."
                 )
+
+            outcome.results.append(
+                PhaseResult(
+                    name=package,
+                    result=ResultOutcome.FAIL,
+                    note=[note],
+                    guest=ResultGuestData.from_guest(guest=guest),
+                )
+            )
+
+        if not any(r.result == ResultOutcome.FAIL for r in outcome.results):
+            self.info('All packages verified successfully.', color='green')
+
+        return outcome

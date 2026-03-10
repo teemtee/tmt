@@ -222,12 +222,13 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
-    def get_installed_repo(self, package: str) -> ShellScript:
+    def get_installed_repos(self, packages: list[str]) -> ShellScript:
         """
-        Return a shell script that outputs the repository a package was installed from.
+        Get the repository each package was installed from.
 
-        :param package: The package name to query.
-        :returns: A shell script whose stdout contains the repository name.
+        :param packages: Package names to query.
+        :returns: A shell script whose stdout lists ``name repo`` per line for each installed
+            package.
         :raises NotImplementedError: If the package manager does not support this query.
         """
         raise NotImplementedError
@@ -348,21 +349,22 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
         return stdout.strip().splitlines()
 
-    def get_installed_repo(self, package: str) -> Optional[str]:
+    def get_installed_repos(self, packages: list[str]) -> dict[str, str]:
         """
-        Get the repository a package was installed from.
+        Get the repositories packages were installed from.
 
-        :param package: The package name to query.
-        :returns: The repository name, or ``None`` if the package is not installed
-            or its source cannot be determined.
-        :raises NotImplementedError: If the package manager does not support this query.
-        :raises tmt.utils.RunError: If the query command fails on the guest.
+        :param packages: Package names to query.
+        :returns: A mapping of package names to source repository names.
+            Packages not installed or with undetermined source are omitted.
         """
-        script = self.engine.get_installed_repo(package)
+        script = self.engine.get_installed_repos(packages)
         output = self.guest.execute(script)
-        if not output.stdout:
-            return None
-        return output.stdout.strip() or None
+        result: dict[str, str] = {}
+        for line in (output.stdout or '').strip().splitlines():
+            parts = line.split()
+            if len(parts) == 2:
+                result[parts[0]] = parts[1]
+        return result
 
     def create_repository(self, directory: Path) -> CommandOutput:
         """
