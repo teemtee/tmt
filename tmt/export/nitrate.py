@@ -377,7 +377,7 @@ def add_to_nitrate_runs(
 
 
 def prepare_extra_summary(
-    test: 'tmt.Test', append_summary: bool, ignore_git_validation: bool = False
+    test: 'tmt.base.Core', append_summary: bool, ignore_git_validation: bool = False
 ) -> str:
     """
     extra-summary for export --create test

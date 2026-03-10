@@ -515,7 +515,7 @@ def get_polarion_feature(
     assert PolarionException
 
     # If data is a Tree node, convert to dictionary
-    if hasattr(data, 'get'):
+    if hasattr(data, 'get') and not isinstance(data, dict):
         data = data.get()
 
     tmt_id = data.get(ID_KEY)
@@ -888,19 +888,22 @@ def _export_and_link_story_tests(
                     continue  # Skip FMF lookup for Polarion URLs
 
                 # Not a Polarion URL, treat as FMF test path
-                polarion_id = _export_single_test_case_for_story(
-                    link.target, story, project_id, create, dry_mode, append_summary, logger
-                )
-                if polarion_id:
-                    test_case_map[link.target] = polarion_id
+                if project_id is not None:
+                    polarion_id = _export_single_test_case_for_story(
+                        link.target, story, project_id, create, dry_mode, append_summary, logger
+                    )
+                    if polarion_id:
+                        test_case_map[link.target] = polarion_id
 
             # Handle FmfId objects
             elif isinstance(link.target, tmt.base.FmfId):
-                polarion_id = _export_single_test_case_for_story(
-                    link.target.name, story, project_id, create, dry_mode, append_summary, logger
-                )
-                if polarion_id:
-                    test_case_map[link.target.name] = polarion_id
+                target_name = link.target.name
+                if project_id is not None and target_name is not None:
+                    polarion_id = _export_single_test_case_for_story(
+                        target_name, story, project_id, create, dry_mode, append_summary, logger
+                    )
+                    if polarion_id:
+                        test_case_map[target_name] = polarion_id
 
     # Step 2: Link test cases to story
     # Now that all test cases are exported, we can link them
@@ -916,7 +919,7 @@ def _export_and_link_story_tests(
         if isinstance(link.target, str):
             test_path = link.target
             polarion_id = test_case_map.get(link.target)
-        elif isinstance(link.target, tmt.base.FmfId):
+        elif isinstance(link.target, tmt.base.FmfId) and link.target.name is not None:
             test_path = link.target.name
             polarion_id = test_case_map.get(link.target.name)
 
