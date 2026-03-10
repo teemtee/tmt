@@ -32,7 +32,6 @@ rlJournalStart
 
         rlAssertGrep "3 packages" $rlRun_LOG
         rlAssertGrep "fail make-devel" $rlRun_LOG
-        rlAssertGrep "make-devel" $rlRun_LOG
         rlAssertGrep "expected repo 'SOME_NON_EXISTENT_REPO'" $rlRun_LOG
         rlAssertGrep "actual 'tmt-artifact-shared'" $rlRun_LOG
     rlPhaseEnd
