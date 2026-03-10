@@ -241,8 +241,6 @@ class Finish(tmt.steps.Step):
                         for exc in outcome.result.exceptions:
                             _record_exception(outcome, exc)
 
-                        continue
-
                 # Do not let the queue continue if there was an exception,
                 # or when there are negative results.
                 if _is_failed():
