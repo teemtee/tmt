@@ -213,18 +213,20 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
         self,
         *installables: Installable,
         options: Options,
-    ) -> None:
+    ) -> tuple[list[Installable], list[Installable]]:
         """Sort packages into required and recommended based on presence and skip_missing."""
-        self.required: list[Installable] = []
-        self.recommended: list[Installable] = []
+        required: list[Installable] = []
+        recommended: list[Installable] = []
 
         for installable in installables:
             if all(self.check_presence(installable).values()):
                 continue
             if options.skip_missing:
-                self.recommended.append(installable)
+                recommended.append(installable)
             else:
-                self.required.append(installable)
+                required.append(installable)
+
+        return required, recommended
 
     def install_from_repository(
         self,
@@ -232,9 +234,9 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
         options: Optional[Options] = None,
     ) -> CommandOutput:
         options = options or Options()
-        self.sort_packages(*installables, options=options)
+        required, recommended = self.sort_packages(*installables, options=options)
 
-        for package in self.recommended:
+        for package in recommended:
             self.info('package', str(package), 'green')
             try:
                 self.install(package)
@@ -242,8 +244,8 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
                 self.debug(f"Package installation failed: {error}")
                 self.warn(f"Unable to install recommended package '{package}'.")
 
-        if self.required:
-            return self.install(*self.required)
+        if required:
+            return self.install(*required)
 
         return CommandOutput(stdout=None, stderr=None)
 
