@@ -20,20 +20,20 @@ rlJournalStart
                 rlPhaseStartTest "Test provision $PROVISION_HOW, execute $execute_method, $tty, $interactive short tests"
                     rlRun -s "tmt $context --log-topic=command-events run --scratch -vfi $tmp -a provision -h $PROVISION_HOW execute -h $execute_method $interactive test --name short" 0
 
-                    rlRun "grep 'duration \"5\" exceeded' $tmp/log.txt" 1
+                    rlAssertNotGrep "Maximum test time .* exceeded'" $tmp/log.txt
                 rlPhaseEnd
 
                 rlPhaseStartTest "Test provision $PROVISION_HOW, execute $execute_method, $tty, $interactive long tests"
                     if [ "$interactive" = "" ]; then
                         rlRun -s "tmt $context --log-topic=command-events run --scratch -vfi $tmp -a provision -h $PROVISION_HOW execute -h $execute_method $interactive test --name long" 2
 
-                        rlAssertNotGrep "warn: Ignoring requested duration, not supported in interactive mode." $rlRun_LOG
-                        rlAssertGrep "duration limit: 5 seconds" $tmp/log.txt
+                        rlAssertNotGrep "warn: Test duration is not effective due to interactive mode." $rlRun_LOG
+                        rlAssertGrep "duration deadline: 30 seconds" $tmp/log.txt
                     else
                         rlRun -s "tmt $context --log-topic=command-events run --scratch -vfi $tmp -a provision -h $PROVISION_HOW execute -h $execute_method $interactive test --name long" 0
 
-                        rlAssertGrep "warn: Ignoring requested duration, not supported in interactive mode." $rlRun_LOG
-                        rlAssertGrep "duration limit: None" $tmp/log.txt
+                        rlAssertGrep "warn: Test duration is not effective due to interactive mode." $rlRun_LOG
+                        rlAssertGrep "duration deadline: none" $tmp/log.txt
                     fi
 
                     rlAssertNotGrep "00:02:.. errr /test/long/beakerlib (timeout)" $rlRun_LOG
@@ -42,11 +42,11 @@ rlJournalStart
                     if [ "$interactive" = "" ]; then
                         rlRun -s "tmt --log-topic=command-events run --last report -fvvvv" 2
 
-                        rlAssertGrep "Maximum test time '5s' exceeded." $rlRun_LOG
+                        rlAssertGrep "Maximum test time '30s' exceeded." $rlRun_LOG
                         rlAssertGrep "Adjust the test 'duration' attribute" $rlRun_LOG
                         rlAssertGrep "spec/tests.html#duration" $rlRun_LOG
 
-                        rlRun -s "grep -A4 'duration \"5\" exceeded' $tmp/log.txt"
+                        rlRun -s "grep -A4 'duration \"29\" exceeded' $tmp/log.txt"
 
                         rlRun "grep -E ' [[:digit:]]{1,2}\.[[:digit:]]+ sent SIGKILL signal' $rlRun_LOG"
                         rlRun "grep -E ' [[:digit:]]{1,2}\.[[:digit:]]+ kill confirmed' $rlRun_LOG"
@@ -55,11 +55,11 @@ rlJournalStart
                     else
                         rlRun -s "tmt --log-topic=command-events run --last report -fvvvv" 0
 
-                        rlAssertNotGrep "Maximum test time '5s' exceeded." $rlRun_LOG
+                        rlAssertNotGrep "Maximum test time '30s' exceeded." $rlRun_LOG
                         rlAssertNotGrep "Adjust the test 'duration' attribute" $rlRun_LOG
                         rlAssertNotGrep "spec/tests.html#duration" $rlRun_LOG
 
-                        rlAssertNotGrep "duration \"5\" exceeded" $tmp/log.txt
+                        rlAssertNotGrep "duration \"29\" exceeded" $tmp/log.txt
 
                         rlRun "grep -E ' [[:digit:]]{1,2}\.[[:digit:]]+ sent SIGKILL signal' $rlRun_LOG" 1
                         rlRun "grep -E ' [[:digit:]]{1,2}\.[[:digit:]]+ kill confirmed' $rlRun_LOG" 1
@@ -72,23 +72,23 @@ rlJournalStart
     done
 
     rlPhaseStartTest "Test duration+ and adjust-tests modifications"
-        rlRun -s "tmt -v run --scratch -i $tmp test --name duration-modified" 0 "Base duration limit, unmodified"
-        rlAssertGrep "duration limit: 2 seconds" $tmp/log.txt
+        rlRun -s "tmt -v run --scratch -i $tmp test --name duration-modified" 0 "Base duration deadline, unmodified"
+        rlAssertGrep "duration deadline: 20 seconds" $tmp/log.txt
 
-        rlRun -s "tmt -v --context slow-arch=yes run --scratch -i $tmp test --name duration-modified" 0 "Base duration limit, modified by adjust slow-arch"
-        # base duration: 2s, *2.5 from test adjust slow-arch, results in 5 sec limit
-        rlAssertGrep "duration limit: 5 seconds" $tmp/log.txt
+        rlRun -s "tmt -v --context slow-arch=yes run --scratch -i $tmp test --name duration-modified" 0 "Base duration deadline, modified by adjust slow-arch"
+        # base duration: 20s, *2.5 from test adjust slow-arch, results in 50 sec limit
+        rlAssertGrep "duration deadline: 50 seconds" $tmp/log.txt
 
-        rlRun -s "tmt -v run --scratch -i $tmp plan --name adjust-tests" 0 "Base duration limit, modified by discover adjust-tests"
-        # base duration: 2s, *2 from plan discover adjust-tests, results in 4 sec limit
-        rlAssertGrep "duration limit: 4 seconds" $tmp/log.txt
+        rlRun -s "tmt -v run --scratch -i $tmp plan --name adjust-tests" 0 "Base duration deadline, modified by discover adjust-tests"
+        # base duration: 20s, *2 from plan discover adjust-tests, results in 40 sec limit
+        rlAssertGrep "duration deadline: 40 seconds" $tmp/log.txt
 
-        rlRun -s "tmt -v --context slow-arch=yes run --scratch -i $tmp plan --name adjust-tests" 0 "Base duration limit, modified by adjust slow-arch and discover adjust-tests"
-        # base duration: 2s, *2.5 from test adjust slow-arch, *2 from plan discover adjust-tests, results in 10 sec limit
-        rlAssertGrep "duration limit: 10 seconds" $tmp/log.txt
+        rlRun -s "tmt -v --context slow-arch=yes run --scratch -i $tmp plan --name adjust-tests" 0 "Base duration deadline, modified by adjust slow-arch and discover adjust-tests"
+        # base duration: 20s, *2.5 from test adjust slow-arch, *2 from plan discover adjust-tests, results in 100 sec limit
+        rlAssertGrep "duration deadline: 100 seconds" $tmp/log.txt
 
         rlRun -s "tmt -v --context slow-arch=yes run --scratch -i $tmp --all execute --ignore-duration plan --name adjust-tests" 0 "Verify --ignore-duration"
-        rlAssertGrep "duration limit: None" $tmp/log.txt
+        rlAssertGrep "duration deadline: none" $tmp/log.txt
     rlPhaseEnd
 
     rlPhaseStartCleanup
