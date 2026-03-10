@@ -306,18 +306,14 @@ def export_to_polarion(
         except (AttributeError, PolarionException) as err:
             log.debug(f"tmtid field error: {err}")
 
-        # Always store Polarion work item ID in extra-polarion for reliable future lookups.
-        # tmtid custom field may not be supported in all Polarion project schemas,
-        # so extra-polarion in the FMF file acts as a guaranteed fallback.
-        polarion_work_item_id = str(polarion_case.work_item_id)
-        with test.node as data:
-            data['extra-polarion'] = polarion_work_item_id
+        # Fallback: Store Polarion work item ID in extra-polarion if tmtid failed
         if not tmtid_set:
+            polarion_work_item_id = str(polarion_case.work_item_id)
+            with test.node as data:
+                data['extra-polarion'] = polarion_work_item_id
             log.warning(
                 f"tmtid field not available, stored {polarion_work_item_id} in extra-polarion"
             )
-        else:
-            log.debug(f"Stored {polarion_work_item_id} in extra-polarion as backup")
 
     # Description - build as Markdown and convert to HTML in one pass
     md_parts = [summary]
@@ -804,32 +800,9 @@ def _export_single_test_case_for_story(
         test = tests[0]
         polarion_test_case = get_polarion_case(test.node, project_id)
 
-        # Fallback: title-based lookup when tmtid/extra-polarion lookup fails.
-        # This handles test cases that exist in Polarion but were created before
-        # tmtid support was added and have no extra-polarion in FMF metadata.
-        if not polarion_test_case and project_id and test.summary:
-            assert PolarionTestCase
-            try:
-                title_results = PolarionTestCase.query(
-                    f'project.id:{project_id} AND title:"{test.summary}"',
-                    fields=['work_item_id', 'project_id', 'status'],
-                )
-                case_id, found_project = get_polarion_ids(title_results, project_id)
-                if case_id and found_project:
-                    polarion_test_case = PolarionTestCase(
-                        project_id=found_project, work_item_id=case_id
-                    )
-                    logger.debug(
-                        f'Test case found by title "{test.summary}": '
-                        f'{polarion_test_case.work_item_id}'
-                    )
-            except Exception as err:
-                logger.debug(f'Title-based fallback lookup failed: {err}')
-
         # If test case not found in Polarion, export it first
         if not polarion_test_case:
-            logger.warning(f'Test case {test_name!r} not found in Polarion (no tmtid, '
-                           f'extra-polarion, or title match found)')
+            logger.debug(f'Test {test_name} not found in Polarion')
             if create:
                 logger.debug(f'Creating test case {test_name} in Polarion')
                 try:
@@ -944,10 +917,7 @@ def _export_and_link_story_tests(
             links_to_create.append((polarion_id, test_path))
         elif export_linked_tests:
             # We tried to export but failed
-            logger.warning(
-                f'Skipping link for {test_path} (test case not found in Polarion - '
-                f'use --create to auto-export and set up tmtid mapping)'
-            )
+            logger.warning(f'Skipping link for {test_path} (test case not available)')
 
     # Apply all links FROM test cases TO the feature (only if not dry mode)
     # Per pylero documentation: links are added to the "child" object (test case)
