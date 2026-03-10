@@ -29,16 +29,21 @@ properties:
     $ref: "/schemas/core#/definitions/summary"
 
   verify:
-    oneOf:
-      - type: string
-        pattern: "^[^,]+,[^,]+$"
-      - type: array
-        items:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required:
+        - package
+        - expected_repo
+      properties:
+        package:
           type: string
-          pattern: "^[^,]+,[^,]+$"
+        expected_repo:
+          type: string
     description: |
-      Package and expected repository mapping as a ``package_name,repository_name`` string
-      or a list of such strings.
+      List of package and expected repository mappings, each as a dict
+      with ``package`` and ``expected_repo`` keys.
 
   where:
     $ref: "/schemas/common#/definitions/where"

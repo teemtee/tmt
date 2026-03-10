@@ -10,9 +10,12 @@
           - koji.build:2761810
       - how: verify-installation
         verify:
-          - make,tmt-artifact-shared
-          - make-devel,tmt-artifact-shared
-          - diffutils,fedora
+          - package: make
+            expected_repo: tmt-artifact-shared
+          - package: make-devel
+            expected_repo: tmt-artifact-shared
+          - package: diffutils
+            expected_repo: fedora
     execute:
         how: tmt
 
@@ -37,9 +40,12 @@
           - koji.build:2761810
       - how: verify-installation
         verify:
-          - make,tmt-artifact-shared
-          - make-devel,SOME_NON_EXISTENT_REPO
-          - diffutils,fedora
+          - package: make
+            expected_repo: tmt-artifact-shared
+          - package: make-devel
+            expected_repo: SOME_NON_EXISTENT_REPO
+          - package: diffutils
+            expected_repo: fedora
     execute:
         how: tmt
 
