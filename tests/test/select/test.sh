@@ -161,30 +161,52 @@ rlJournalStart
 
         # Prepare run dir and common command line
         run=$(mktemp -d)
-        tmt="tmt run --id $run --scratch plans --name duplicate discover -v"
+        plan="/plans/duplicate"
+        tmt="tmt run --id $run --scratch plans --name $plan discover -v"
 
         # 'tmt run discover' lists duplicate test names preserving order
         rlRun "$tmt 2>&1 >/dev/null | grep -v 'warn: ' | tee $output"
-        rlAssertGrep 'tests: /tier/two, /tier/one and /tier/two' $output
-        rlAssertGrep 'summary: 3 tests selected' $output
+        rlAssertGrep 'tests: /tier/two, /tier/one, /tier/two and /tier/two' $output
+        rlAssertGrep 'summary: 4 tests selected' $output
         rlRun "grep -A 1 summary $output | tail -1 | grep '/tests/tier/two'"
         rlRun "grep -A 2 summary $output | tail -1 | grep '/tests/tier/one'"
         rlRun "grep -A 3 summary $output | tail -1 | grep '/tests/tier/two'"
+        rlRun "grep -A 4 summary $output | tail -1 | grep '/tests/tier/two'"
+        # Check the order from tests.yaml as well to distinguish the adjusted test
+        tests_yaml="$run$plan/discover/tests.yaml"
+        rlAssertExists "$tests_yaml"
+        rlRun -s "yq '.[0]' < $tests_yaml"
+        rlAssertGrep "name: /tests/tier/two" "$rlRun_LOG"
+        rlAssertGrep "result: respect" "$rlRun_LOG"
+        rlAssertGrep "serial-number: 1" "$rlRun_LOG"
+        rlRun -s "yq '.[1]' < $tests_yaml"
+        rlAssertGrep "name: /tests/tier/one" "$rlRun_LOG"
+        rlAssertGrep "serial-number: 2" "$rlRun_LOG"
+        rlRun -s "yq '.[2]' < $tests_yaml"
+        rlAssertGrep "name: /tests/tier/two" "$rlRun_LOG"
+        rlAssertGrep "result: info" "$rlRun_LOG"  # This is the adjusted test
+        rlAssertGrep "serial-number: 3" "$rlRun_LOG"
+        rlRun -s "yq '.[3]' < $tests_yaml"
+        rlAssertGrep "name: /tests/tier/two" "$rlRun_LOG"
+        rlAssertGrep "result: respect" "$rlRun_LOG"
+        rlAssertGrep "serial-number: 4" "$rlRun_LOG"
 
         # tests --name filters discovered test names (/two is discovered twice)
         rlRun "$tmt -h fmf tests --name two 2>&1 >/dev/null | grep -v 'warn: ' | tee $output"
-        rlAssertGrep 'tests: /tier/two, /tier/one and /tier/two' $output
-        rlAssertGrep 'summary: 2 tests selected' $output
+        rlAssertGrep 'tests: /tier/two, /tier/one, /tier/two and /tier/two' $output
+        rlAssertGrep 'summary: 3 tests selected' $output
         rlRun "grep -A 1 summary $output | tail -1 | grep '/tests/tier/two'"
         rlRun "grep -A 2 summary $output | tail -1 | grep '/tests/tier/two'"
+        rlRun "grep -A 3 summary $output | tail -1 | grep '/tests/tier/two'"
 
         # tests --name doesn't effect order of discovered tests
         rlRun "$tmt -h fmf tests --name one --name two 2>&1 >/dev/null | grep -v 'warn: ' | tee $output"
-        rlAssertGrep 'tests: /tier/two, /tier/one and /tier/two' $output
-        rlAssertGrep 'summary: 3 tests selected' $output
+        rlAssertGrep 'tests: /tier/two, /tier/one, /tier/two and /tier/two' $output
+        rlAssertGrep 'summary: 4 tests selected' $output
         rlRun "grep -A 1 summary $output | tail -1 | grep '/tests/tier/two'"
         rlRun "grep -A 2 summary $output | tail -1 | grep '/tests/tier/one'"
         rlRun "grep -A 3 summary $output | tail -1 | grep '/tests/tier/two'"
+        rlRun "grep -A 4 summary $output | tail -1 | grep '/tests/tier/two'"
 
         # discover --test redefines duplicate plan so two is discovered just once
         rlRun "$tmt -h fmf --test two 2>&1 >/dev/null | grep -v 'warn: ' | tee $output"

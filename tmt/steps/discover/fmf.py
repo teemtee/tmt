@@ -1,7 +1,7 @@
 import glob
 import re
 import shutil
-from typing import Optional, cast
+from typing import Any, Optional, TypedDict, Union, cast
 
 import fmf
 
@@ -14,10 +14,83 @@ import tmt.steps.discover
 import tmt.utils
 import tmt.utils.filesystem
 import tmt.utils.git
+from tmt._compat.typing import Self
 from tmt.base.core import _RawAdjustRule
-from tmt.container import container, field
+from tmt.container import SerializableContainer, SpecBasedContainer, container, field
 from tmt.steps.prepare.distgit import insert_to_prepare_step
-from tmt.utils import Command, Path
+from tmt.utils import Command, NormalizationError, Path
+
+
+class _RawTestsWithAdjusts(TypedDict, total=False):
+    name: str
+
+
+@container
+class TestsWithAdjusts(
+    SpecBasedContainer[Union[str, _RawTestsWithAdjusts], Union[str, _RawTestsWithAdjusts]],
+    tmt.utils.NormalizeKeysMixin,
+    SerializableContainer,
+):
+    name: str
+
+    adjust_rule: Optional[_RawAdjustRule] = None
+
+    @classmethod
+    def from_spec(cls, spec: Union[str, _RawTestsWithAdjusts]) -> Self:
+        if isinstance(spec, str):
+            return cls(name=spec)
+        spec_copy = spec.copy()
+        name = spec_copy.pop("name")
+        return cls(name=name, adjust_rule=cast(_RawAdjustRule, spec_copy))
+
+    def to_spec(self) -> Union[str, _RawTestsWithAdjusts]:
+        if self.adjust_rule:
+            return _RawTestsWithAdjusts(
+                name=self.name,
+                **self.adjust_rule,  # type: ignore[typeddict-unknown-key]
+            )
+        return self.name
+
+
+def normalize_tests_with_adjusts(
+    key_address: str,
+    value: Any,
+    logger: tmt.log.Logger,
+) -> list[TestsWithAdjusts]:
+    def normalize_raw_item(raw_item: Any, index: Optional[int] = None) -> TestsWithAdjusts:
+        if isinstance(raw_item, TestsWithAdjusts):
+            return raw_item
+        if isinstance(raw_item, str):
+            return TestsWithAdjusts(name=raw_item)
+        problem_address = key_address
+        if index is not None:
+            problem_address = f'{problem_address}[{index}]'
+        if isinstance(raw_item, dict):
+            try:
+                name = raw_item.pop("name")
+            except KeyError as err:
+                raise NormalizationError(
+                    problem_address, raw_item, "a string or a dict with a key 'name'"
+                ) from err
+            return TestsWithAdjusts(name=name, adjust_rule=cast(_RawAdjustRule, raw_item))
+        raise NormalizationError(problem_address, raw_item, "a string or a dict with a key 'name'")
+
+    if value is None:
+        return []
+
+    if isinstance(value, (str, dict)):
+        return [normalize_raw_item(value)]
+
+    if isinstance(value, (list, tuple)):
+        normalized_value: list[TestsWithAdjusts] = []
+
+        for i, raw_item in enumerate(value):
+            normalized_value.append(normalize_raw_item(raw_item, index=i))
+        return normalized_value
+
+    raise NormalizationError(
+        key_address, value, "a string, a dict or a list of strings or a dict with a key 'name'"
+    )
 
 
 @container
@@ -34,7 +107,7 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
     )
 
     # Selecting tests
-    test: list[str] = field(
+    test: list[TestsWithAdjusts] = field(
         default_factory=list,
         option=('-t', '--test'),
         metavar='NAMES',
@@ -47,7 +120,11 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
             matching. See the :ref:`regular-expressions` section for
             details.
             """,
-        normalize=tmt.utils.normalize_string_list,
+        normalize=normalize_tests_with_adjusts,
+        serialize=lambda tests: [test.to_spec() for test in tests],
+        unserialize=lambda serialized_tests: [
+            TestsWithAdjusts.from_spec(serialized_test) for serialized_test in serialized_tests
+        ],
     )
 
     link: list[str] = field(
@@ -359,6 +436,9 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
     detailed information about how exactly the regular expressions are
     handled.
 
+    The ``test`` key accepts a dict with at least a key ``name``. See
+    the ``Adjust Tests`` section for more info.
+
     Link Filter
     ^^^^^^^^^^^
 
@@ -452,6 +532,22 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                 when: arch == i286
               - require~:
                   - '/python3.11/python3.12/'
+
+    You can also adjust individual test(s) using the form
+
+    .. code-block:: yaml
+
+       discover:
+           how: fmf
+           test:
+             - name: ^/test/one$
+               check+:
+                 - how: avc
+
+    Note that unlike the more generic ``adjust-tests``, only one adjust
+    rule is allowed. Everything except for the ``name`` key is treated as
+    the adjust rule, and are applied on top and at the end of any previous
+    rules defined with ``adjust-tests``.
     """
 
     _data_class = DiscoverFmfStepData
@@ -624,9 +720,8 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         for filter_ in filters:
             self.info('filter', filter_, 'green')
         # Names of tests selected by --test option
-        names = self.get('test', [])
-        if names:
-            self.info('tests', fmf.utils.listed(names), 'green')
+        if self.data.test:
+            self.info('tests', fmf.utils.listed([test.name for test in self.data.test]), 'green')
 
         # Check the 'test --link' option first, then from discover
         # FIXME: cast() - typeless "dispatcher" method
@@ -686,7 +781,7 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
                     # Nothing was modified, do not select anything
                     return []
                 self.debug(f"Limit to modified test dirs: {modified}", level=3)
-                names.extend(modified)
+                self.data.test.extend(TestsWithAdjusts(name=name) for name in modified)
             else:
                 self.debug(f"No modified directories between '{modified_ref}..HEAD' found.")
                 # Nothing was modified, do not select anything
@@ -696,21 +791,51 @@ class DiscoverFmf(tmt.steps.discover.DiscoverPlugin[DiscoverFmfStepData]):
         self.debug(f"Check metadata tree in '{tree_path}'.")
         if self.is_dry_run:
             return []
+        tests = []
         tree = tmt.Tree(
             logger=self._logger,
             path=tree_path,
             fmf_context=self.step.plan.fmf_context,
             additional_rules=self.data.adjust_tests,
         )
-        return tree.tests(
-            filters=filters,
-            names=names,
-            conditions=["manual is False"],
-            unique=False,
-            links=link_needles,
-            includes=includes,
-            excludes=excludes,
-        )
+        if not self.data.test or not any(test.adjust_rule for test in self.data.test):
+            # - not test: we do not have any names filter (i.e. we take all tests)
+            # - not any(.adjust_rule): we do not have any tests with custom adjust
+            tests += tree.tests(
+                filters=filters,
+                names=[test.name for test in self.data.test],
+                conditions=["manual is False"],
+                unique=False,
+                links=link_needles,
+                includes=includes,
+                excludes=excludes,
+            )
+        else:
+            # We have at least one test with an adjust rule.
+            # In order to preserve the order and duplication defined in the fmf file,
+            # we need to resolve each test entry at a time
+            for test in self.data.test:
+                # Recalculate the adjusted tree only if necessary
+                if test.adjust_rule:
+                    adjusted_tree = tmt.Tree(
+                        logger=self._logger,
+                        path=tree_path,
+                        fmf_context=self.step.plan.fmf_context,
+                        additional_rules=[*self.data.adjust_tests, test.adjust_rule],
+                    )
+                else:
+                    # Original tree without adjustments
+                    adjusted_tree = tree
+                tests += adjusted_tree.tests(
+                    filters=filters,
+                    names=[test.name],
+                    conditions=["manual is False"],
+                    unique=False,
+                    links=link_needles,
+                    includes=includes,
+                    excludes=excludes,
+                )
+        return tests
 
     def post_dist_git(self, created_content: list[Path]) -> None:
         """
