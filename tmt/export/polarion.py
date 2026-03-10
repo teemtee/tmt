@@ -90,12 +90,15 @@ def find_polarion_case_ids(
     polarion_case_id: Optional[str] = None,
 ) -> tuple[Optional[str], Optional[str]]:
     """
-    Find IDs for Polarion case from data dictionary
+    Find IDs for Polarion case from data dictionary.
 
     Searches in order:
-    1. Direct polarion_case_id parameter (explicit override)
-    2. TMT ID mapped to Polarion's tmtid field
-    3. Legacy extra-polarion field (for backward compatibility)
+    1. Direct ``polarion_case_id`` parameter (explicit override)
+    2. TMT ID via ``tmtid`` custom field (preferred)
+    3. ``extra-polarion`` FMF field (new fallback)
+    4. UUID plain query (legacy, backward compatibility)
+    5. TCMS Case ID from ``extra-nitrate`` (legacy, backward compatibility)
+    6. ``extra-task`` (legacy, backward compatibility)
     """
 
     assert PolarionWorkItem
@@ -126,12 +129,36 @@ def find_polarion_case_ids(
                     log.debug(f"Query '{query_format}' failed: {err}")
                     continue
 
-    # Fallback: Search by legacy extra-polarion field (backward compatibility)
+    # Search by extra-polarion field
     if not project_id:
         extra_polarion = data.get('extra-polarion')
         if extra_polarion:
             query_result = PolarionWorkItem.query(f'id:{extra_polarion}', fields=wanted_fields)
             case_id, project_id = get_polarion_ids(query_result, preferred_project)
+
+    # Legacy: Search by UUID (plain query)
+    if not project_id and data.get(ID_KEY):
+        query_result = PolarionWorkItem.query(data.get(ID_KEY), fields=wanted_fields)
+        case_id, project_id = get_polarion_ids(query_result, preferred_project)
+
+    # Legacy: Search by TCMS Case ID from extra-nitrate
+    extra_nitrate = data.get('extra-nitrate')
+    if not project_id and extra_nitrate:
+        nitrate_case_id_search = re.search(r'\d+', extra_nitrate)
+        if not nitrate_case_id_search:
+            raise ConvertError(
+                "Could not find a valid nitrate testcase ID in 'extra-nitrate' attribute"
+            )
+        nitrate_case_id = str(int(nitrate_case_id_search.group()))
+        query_result = PolarionWorkItem.query(
+            f"tcmscaseid:{nitrate_case_id}", fields=wanted_fields
+        )
+        case_id, project_id = get_polarion_ids(query_result, preferred_project)
+
+    # Legacy: Search by extra-task
+    if not project_id and data.get('extra-task'):
+        query_result = PolarionWorkItem.query(data.get('extra-task'), fields=wanted_fields)
+        case_id, project_id = get_polarion_ids(query_result, preferred_project)
 
     return case_id, project_id
 
