@@ -382,16 +382,16 @@ class Queue(list[TaskT]):
         instance of this class is yielded.
         """
 
-        i = 0
+        task_count = len(self)
 
         while self:
+            task_index = task_count - len(self)
             task = self.pop(0)
-            i += 1
 
             self._logger.info('')
 
             self._logger.info(
-                f'{self.name} task #{i + 1}',
+                f'{self.name} task #{task_index + 1}',
                 task.name,
                 color='cyan',
             )
