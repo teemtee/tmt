@@ -1547,6 +1547,36 @@ class HasRunWorkdir(abc.ABC):
 
         raise NotImplementedError
 
+    @functools.cached_property
+    def run_tmpdir(self) -> Path:
+        """
+        Path to a run temporary directory.
+
+        For temporary files and directories that should stay close to
+        run and its workdir.
+        """
+
+        path = self.run_workdir / 'tmp'
+        path.mkdir(exist_ok=True)
+
+        return path
+
+    @contextlib.contextmanager
+    def tmpdir(self, prefix: Optional[str] = None, suffix: Optional[str] = None) -> Iterator[Path]:
+        """
+        Path to a new, unique temporary directory.
+
+        The directory is created with the help of
+        :py:func:`tempfile.TemporaryDirectory`, using it to manage the
+        directory itself. The newly created temporary directory is
+        located under the :py:attr:`run_tempdir` directory.
+        """
+
+        with tempfile.TemporaryDirectory(
+            prefix=prefix, suffix=suffix, dir=self.run_tmpdir
+        ) as path:
+            yield self.run_tmpdir / path
+
 
 class HasPlanWorkdir(abc.ABC):
     """

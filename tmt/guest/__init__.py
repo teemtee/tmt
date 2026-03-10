@@ -13,7 +13,6 @@ import shutil
 import signal as _signal
 import string
 import subprocess
-import tempfile
 import threading
 from collections.abc import Iterable, Iterator, Sequence
 from shlex import quote
@@ -3547,7 +3546,7 @@ class GuestSsh(Guest, CommandCollector):
             self.debug(f"Copy '{source}' from the guest to '{destination}'.")
 
         try:
-            with tempfile.TemporaryDirectory(prefix='tmt.rsync-') as rsync_tempdir:
+            with self.tmpdir(prefix='rsync-') as rsync_tempdir:
                 self._run_guest_command(
                     Command(
                         "rsync",
