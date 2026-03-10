@@ -2945,7 +2945,7 @@ class Login(Action):
     def _login(
         self,
         cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
+        environment: Optional[tmt.utils.Environment] = None,
     ) -> None:
         """
         Run the interactive command
@@ -2986,7 +2986,7 @@ class Login(Action):
                                 tmt.utils.ShellScript("/bin/true"),
                                 interactive=True,
                                 cwd=cwd,
-                                env=env,
+                                environment=environment,
                             )
                         except RunError:
                             cwd = worktree
@@ -2997,7 +2997,7 @@ class Login(Action):
             # Execute all requested commands
             for script in scripts:
                 try:
-                    guest.execute(script, interactive=True, cwd=cwd, env=env)
+                    guest.execute(script, interactive=True, cwd=cwd, environment=environment)
 
                 except RunError as exc:
                     # Interactive mode can return non-zero if the last command failed,
@@ -3009,14 +3009,14 @@ class Login(Action):
         self,
         results: list['tmt.base.core.Result'],
         cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
+        environment: Optional[tmt.utils.Environment] = None,
     ) -> None:
         """
         Check and login after test execution
         """
 
         if self._enabled_by_results(results):
-            self._login(cwd, env)
+            self._login(cwd, environment)
 
 
 @container
