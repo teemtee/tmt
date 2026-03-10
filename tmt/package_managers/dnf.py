@@ -204,15 +204,11 @@ class DnfEngine(PackageManagerEngine):
             """
         )
 
-    def get_installed_repo(self, package: str) -> ShellScript:
-        """
-        Return a shell script that outputs the repository a package was installed from.
-
-        Uses ``repoquery --installed --queryformat %{from_repo}`` to query the RPM database.
-        """
+    def get_installed_repos(self, packages: list[str]) -> ShellScript:
+        package_args = ' '.join(shlex.quote(p) for p in packages)
         return ShellScript(
             f'{self.command.to_script()} repoquery --installed'
-            f' --queryformat "%{{from_repo}}" {shlex.quote(package)}'
+            f' --queryformat "%{{name}} %{{from_repo}}\\n" {package_args}'
         )
 
     def create_repository(self, directory: Path) -> ShellScript:
