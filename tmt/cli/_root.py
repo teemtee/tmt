@@ -20,7 +20,6 @@ import tmt._bootstrap
 import tmt.base
 import tmt.config
 import tmt.convert
-import tmt.export
 import tmt.identifier
 import tmt.log
 import tmt.options
