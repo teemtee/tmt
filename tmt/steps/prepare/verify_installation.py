@@ -65,7 +65,7 @@ class PrepareVerifyInstallationData(PrepareStepData):
         help="List of package and expected repository mappings.",
         normalize=_normalize_verify_mappings,
         serialize=lambda mappings: [
-            {'package': m.package, 'expected_repo': m.expected_repo} for m in mappings
+            {'package': str(m.package), 'expected_repo': m.expected_repo} for m in mappings
         ],
         unserialize=lambda data: [
             VerifyMapping(
@@ -141,7 +141,18 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
                 f"Package source verification not supported for "
                 f"'{guest.facts.package_manager}' package manager."
             ) from err
+        except tmt.utils.RunError as err:
+            outcome.results.append(
+                PhaseResult(
+                    name=self.name,
+                    result=ResultOutcome.ERROR,
+                    note=[f"Failed to query package repositories: {err}"],
+                    guest=ResultGuestData.from_guest(guest=guest),
+                )
+            )
+            return outcome
 
+        has_failures = False
         for verify_mapping in self.data.verify:
             package = str(verify_mapping.package)
             actual_repo = installed_repos.get(package)
@@ -149,6 +160,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             if actual_repo == verify_mapping.expected_repo:
                 continue
 
+            has_failures = True
             if actual_repo is None:
                 note = (
                     f"Package '{package}': expected repo '{verify_mapping.expected_repo}'"
@@ -170,7 +182,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
                 )
             )
 
-        if not any(r.result == ResultOutcome.FAIL for r in outcome.results):
+        if not has_failures:
             self.info('All packages verified successfully.', color='green')
 
         return outcome
