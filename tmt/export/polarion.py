@@ -31,27 +31,6 @@ RE_POLARION_URL = r'.*/polarion/#/project/.*/workitem\?id=(.*)'
 log = fmf.utils.Logging('tmt').logger
 
 
-def _markdown_str_to_html(text: str) -> str:
-    """
-    Convert a Markdown string to HTML via :py:func:`tmt.utils.markdown_to_html`.
-
-    Writes *text* to a temporary file so the shared utility can be used
-    consistently for all Markdown-to-HTML conversions in this module.
-
-    :param text: Markdown source text.
-    :returns: an HTML string.
-    """
-    with tempfile.NamedTemporaryFile(
-        mode='w', suffix='.md', delete=False, encoding='utf-8'
-    ) as tmp:
-        tmp_path = tmt.utils.Path(tmp.name)
-        tmp_path.write_text(text)
-    try:
-        return tmt.utils.markdown_to_html(tmp_path)
-    finally:
-        tmp_path.unlink(missing_ok=True)
-
-
 def import_polarion() -> None:
     """
     Import polarion python api - pylero
@@ -72,6 +51,27 @@ def import_polarion() -> None:
     except PolarionException as exc:
         log.debug(traceback.format_exc())
         raise ConvertError("Failed to login with pylero") from exc
+
+
+def _markdown_str_to_html(text: str) -> str:
+    """
+    Convert a Markdown string to HTML via :py:func:`tmt.utils.markdown_to_html`.
+
+    Writes *text* to a temporary file so the shared utility can be used
+    consistently for all Markdown-to-HTML conversions in this module.
+
+    :param text: Markdown source text.
+    :returns: an HTML string.
+    """
+    with tempfile.NamedTemporaryFile(
+        mode='w', suffix='.md', delete=False, encoding='utf-8'
+    ) as tmp:
+        tmp_path = tmt.utils.Path(tmp.name)
+        tmp_path.write_text(text)
+    try:
+        return tmt.utils.markdown_to_html(tmp_path)
+    finally:
+        tmp_path.unlink(missing_ok=True)
 
 
 def get_polarion_ids(
