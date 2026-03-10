@@ -1,6 +1,6 @@
 import abc
 import copy
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING, Callable, Generic, Optional, TypeVar
 
@@ -349,10 +349,16 @@ class Queue(list[TaskT]):
     Queue class for running tasks.
     """
 
+    #: After yielding all outcomes from a single task, this flag is
+    #: checked. If it's set, the next task in line would be started;
+    #: otherwise, :py:meth:`run` will quit.
+    _keep_running: bool
+
     def __init__(self, name: str, logger: Logger) -> None:
         super().__init__()
 
         self.name = name
+        self._keep_running = True
         self._logger = logger
 
     def enqueue_task(self, task: TaskT) -> None:
@@ -376,7 +382,12 @@ class Queue(list[TaskT]):
         instance of this class is yielded.
         """
 
-        for i, task in enumerate(self):
+        i = 0
+
+        while self:
+            task = self.pop(0)
+            i += 1
+
             self._logger.info('')
 
             self._logger.info(
@@ -396,3 +407,17 @@ class Queue(list[TaskT]):
             # TODO: make this optional
             if failed_tasks:
                 return
+
+            if not self._keep_running:
+                return
+
+    def stop(self) -> Iterable[TaskT]:
+        """
+        Stop crunching the queue tasks.
+
+        :returns: remaining tasks.
+        """
+
+        self._keep_running = False
+
+        return self[:]
