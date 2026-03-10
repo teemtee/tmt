@@ -26,26 +26,26 @@ def _normalize_verify_mappings(
     value: Any,
     logger: Logger,
 ) -> list[VerifyMapping]:
-    """Normalize verify mappings from a list of dicts with 'package' and 'expected_repo' keys."""
+    """Normalize verify mappings from a list of dicts with 'package' and 'expected-repo' keys."""
     if not isinstance(value, list):
         raise tmt.utils.NormalizationError(
-            key_address, value, "a list of dicts with 'package' and 'expected_repo' keys"
+            key_address, value, "a list of dicts with 'package' and 'expected-repo' keys"
         )
     mappings: list[VerifyMapping] = []
     for raw_item in cast(list[object], value):
         if (
             not isinstance(raw_item, dict)
             or 'package' not in raw_item
-            or 'expected_repo' not in raw_item
+            or 'expected-repo' not in raw_item
         ):
             raise tmt.utils.NormalizationError(
-                key_address, raw_item, "a dict with 'package' and 'expected_repo' keys"
+                key_address, raw_item, "a dict with 'package' and 'expected-repo' keys"
             )
         mapping_dict = cast(dict[str, str], raw_item)
         mappings.append(
             VerifyMapping(
                 package=Package(mapping_dict['package']),
-                expected_repo=mapping_dict['expected_repo'],
+                expected_repo=mapping_dict['expected-repo'],
             )
         )
     return mappings
@@ -88,13 +88,16 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
 
     .. note::
 
-        Currently only supports DNF-based package managers (dnf, dnf5, yum).
-        Other package managers will cause the step to fail.
+        Currently only supports DNF-based package managers (dnf, dnf5).
+        Other package managers will cause the step to fail. Note that
+        legacy ``yum`` (not a dnf symlink) may not support the
+        ``repoquery --queryformat`` syntax used by this plugin.
 
     .. warning::
 
-        Verification failure will cause the prepare step to fail and
-        prevent test execution.
+        Verification failures are recorded as ``FAIL`` results in the
+        prepare phase output and cause the prepare step to fail, preventing
+        test execution.
 
     Example usage:
 
@@ -104,9 +107,9 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             how: verify-installation
             verify:
                 - package: make
-                  expected_repo: fedora
+                  expected-repo: fedora
                 - package: gcc
-                  expected_repo: fedora
+                  expected-repo: fedora
     """
 
     _data_class = PrepareVerifyInstallationData
@@ -150,6 +153,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
                     guest=ResultGuestData.from_guest(guest=guest),
                 )
             )
+            outcome.exceptions.append(err)
             return outcome
 
         has_failures = False
@@ -182,7 +186,14 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
                 )
             )
 
-        if not has_failures:
+        if has_failures:
+            failed = [r.name for r in outcome.results if r.result == ResultOutcome.FAIL]
+            outcome.exceptions.append(
+                tmt.utils.PrepareError(
+                    f"Package source verification failed for: {', '.join(failed)}"
+                )
+            )
+        else:
             self.info('All packages verified successfully.', color='green')
 
         return outcome
