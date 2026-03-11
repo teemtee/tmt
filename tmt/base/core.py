@@ -3080,7 +3080,10 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         from tmt.base.plan import Plan
 
         self._save_tree(self._tree)
-        self.load_workdir()
+        # with_logfiles=False: This function is currently only called by `tmt.utils.load_run`
+        #  which in turn is only called by status and clean, both cases where we do not want
+        #  to attach the logfile loggers to.
+        self.load_workdir(with_logfiles=False)
         try:
             self.data = RunData.from_serialized(
                 tmt.utils.yaml_to_dict(self.read(Path('run.yaml')))
