@@ -2932,10 +2932,16 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
 
         return self.workdir
 
-    def _workdir_init(self, id_: WorkdirArgumentType = None) -> None:
-        super()._workdir_init(id_)
-        warnings_file = self.run_workdir / self.WARNINGS_FILE_NAME
-        self._logger.add_runwarnings_handler(warnings_file)
+    def load_workdir(self, *, with_logfiles: bool = True) -> None:
+        """
+        Prepare the run workdir and associated.
+
+        :param with_logfiles: whether to attach logfile handlers
+        """
+        self._workdir_load(self._workdir_path)
+        if with_logfiles:
+            warnings_file = self.run_workdir / self.WARNINGS_FILE_NAME
+            self._logger.add_runwarnings_handler(warnings_file)
 
     @functools.cached_property
     def runner(self) -> 'tmt.steps.provision.local.GuestLocal':
@@ -3074,7 +3080,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         from tmt.base.plan import Plan
 
         self._save_tree(self._tree)
-        self._workdir_load(self._workdir_path)
+        self.load_workdir()
         try:
             self.data = RunData.from_serialized(
                 tmt.utils.yaml_to_dict(self.read(Path('run.yaml')))
@@ -3289,7 +3295,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         """
         self.tree = tree
         self._save_tree(self.tree)
-        self._workdir_load(self._workdir_path)
+        self.load_workdir()
         self.config.last_run = self.run_workdir
         self.info(str(self.run_workdir), color='magenta')
 
@@ -3304,7 +3310,7 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
 
         # Create the workdir and save last run
         self._save_tree(self._tree)
-        self._workdir_load(self._workdir_path)
+        self.load_workdir()
         assert self.tree is not None  # narrow type
         assert self._workdir is not None  # narrow type
         if self.tree.root and self._workdir.is_relative_to(self.tree.root):
@@ -3748,7 +3754,7 @@ class Clean(tmt.utils.Common):
             # Pass the context containing --last to Run to choose
             # the correct one.
             last_run = Run(logger=self._logger, cli_invocation=self.cli_invocation)
-            last_run._workdir_load(last_run._workdir_path)
+            last_run.load_workdir(with_logfiles=False)
             return self._clean_workdir(last_run.run_workdir)
         all_workdirs = list(tmt.utils.generate_runs(self.workdir_root, id_, all_=True))
         if keep is not None:
