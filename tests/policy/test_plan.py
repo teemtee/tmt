@@ -16,8 +16,13 @@ POLICIES_DIR = TEST_DIR / 'policies'
 @with_cwd(DATA_DIR)
 def test_export_modified_plan(run_tmt: 'RunTmt') -> None:
     """
-    # Not doing anything complex, test-level policy test covers plenty
-    # of cases. Focusing on plan-specific modifications only.
+    Verify a plan export is affected by the policy.
+
+    .. note::
+
+        Not doing anything complex, test-level policy tests cover plenty
+        of policy instructions and behavior. Focusing on plan-specific
+        modifications only.
     """
 
     result = run_tmt(
@@ -47,8 +52,7 @@ def test_export_modified_plan(run_tmt: 'RunTmt') -> None:
 @with_cwd(DATA_DIR)
 def test_run_modified_plan(run_tmt: 'RunTmt') -> None:
     """
-    # Not doing anything complex, just try to run a plan that should
-    # be modified by a policy.
+    Verify a run is affected by the policy.
     """
 
     result = run_tmt('-vv', 'run', '-a', '--policy-file', POLICIES_DIR / 'plan/simple.yaml')
