@@ -9,9 +9,7 @@ from re import Pattern
 from typing import Optional
 
 import tmt.log
-import tmt.utils
 from tmt.guest import Guest
-from tmt.steps.prepare import install
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
@@ -88,15 +86,8 @@ class CoprRepositoryProvider(ArtifactProvider):
         Enable the Copr repository on the guest.
 
         :return: Empty list as no files are downloaded.
-        :raises tmt.utils.PrepareError: If the guest does not have a valid package manager or
-            if the package manager does not support enabling Copr repositories.
+        :raises tmt.utils.PrepareError: If the package manager does not support
+            enabling Copr repositories.
         """
-        pm_name = guest.package_manager.NAME
-        installer_class = install.get_installer_class(pm_name)
-        installer = installer_class(guest=guest, logger=self.logger)
-        if not isinstance(installer, install.Copr):
-            raise tmt.utils.PrepareError(
-                f"The package manager '{pm_name}' does not support enabling Copr repositories."
-            )
-        installer.enable_copr([self.copr_repo])
+        guest.package_manager.enable_copr(self.copr_repo)
         return []

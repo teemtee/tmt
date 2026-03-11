@@ -124,7 +124,7 @@ def escape_installables(*installables: Installable) -> Iterator[str]:
 
 
 # TODO: find a better name, "options" is soooo overloaded...
-@container(frozen=True)
+@container
 class Options:
     #: A list of packages to exclude from installation.
     excluded_packages: list[Package] = simple_field(default_factory=list[Package])
@@ -343,3 +343,48 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         Wrapper of :py:meth:`PackageManagerEngine.create_repository`.
         """
         return self.guest.execute(self.engine.create_repository(directory))
+
+    def install_from_repository(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
+        """
+        Install packages from a repository
+        """
+        return self.install(*installables, options=options)
+
+    def install_local(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
+        """
+        Install packages stored in a local directory
+        """
+        return self.install(*installables, options=options)
+
+    def install_from_url(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
+        """
+        Install packages stored on a remote URL
+        """
+        return self.install(*installables, options=options)
+
+    def enable_copr(self, *repositories: str) -> None:
+        """
+        Enable requested copr repositories
+        """
+        if repositories:
+            raise PrepareError(
+                f"Package manager '{self.NAME}' does not support enabling COPR repositories."
+            )
+
+    def finalize_installation(self) -> CommandOutput:
+        """
+        Perform any post-installation steps.
+        """
+        return CommandOutput(stdout=None, stderr=None)
