@@ -44,7 +44,7 @@ Table of Contents
     :maxdepth: 1
     :caption: About Project
 
-    Repository <https://github.com/teemtee/tmt
+    Repository <https://github.com/teemtee/tmt>
     Releases <releases/index>
     Contribute <contribute>
 
