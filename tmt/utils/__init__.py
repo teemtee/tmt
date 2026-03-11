@@ -3232,7 +3232,7 @@ def _render_exception_into_files(exception: BaseException, logger: tmt.log.Logge
     logfile_streams: list[TextIO] = []
 
     with contextlib.ExitStack() as stack:
-        for path in tmt.log.LogfileHandler.emitting_to:
+        for path in tmt.log.LogfileHandler.logfiles_with_stacktrace:
             try:
                 # SIM115: all opened files are added on exit stack, and they
                 # will get collected and closed properly.

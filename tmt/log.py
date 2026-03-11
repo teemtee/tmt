@@ -35,6 +35,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    ClassVar,
     Optional,
     Protocol,
     TextIO,
@@ -301,21 +302,16 @@ class LogRecordDetails:
     reason: Optional[str] = None
 
 
-class RunWarningsHandler(logging.FileHandler):
-    def __init__(self, filepath: Path) -> None:
-        # mode="a": We want to keep the old warnings.yaml if we are running a new run on top
-        # delay=True: If we did not have any warnings then we do not create the file at all
-        super().__init__(filepath, mode="a", delay=True)
-
-
 class LogfileHandler(logging.FileHandler):
     #: Paths of all log files to which ``LogfileHandler`` was attached.
-    emitting_to: list[Path] = []
+    logfiles_with_stacktrace: ClassVar[list[Path]] = []
 
-    def __init__(self, filepath: 'tmt.utils.Path') -> None:
-        super().__init__(filepath, mode='a')
-
-        LogfileHandler.emitting_to.append(filepath)
+    def __init__(self, filepath: Path, with_stacktrace: bool = False) -> None:
+        # mode="a": We want to keep the old log file if we are running a new run on top of it
+        # delay=True: Open the file as soon as we actually have something to log
+        super().__init__(filepath, mode="a", delay=True)
+        if with_stacktrace:
+            LogfileHandler.logfiles_with_stacktrace.append(filepath)
 
 
 # ignore[type-arg]: StreamHandler is a generic type, but such expression would be incompatible
@@ -724,7 +720,7 @@ class Logger:
         Attach a log file handler to this logger
         """
 
-        handler = LogfileHandler(filepath)
+        handler = LogfileHandler(filepath, with_stacktrace=True)
 
         handler.setFormatter(LogfileFormatter())
 
@@ -733,7 +729,7 @@ class Logger:
         self._logger.addHandler(handler)
 
     def add_runwarnings_handler(self, filepath: Path) -> None:
-        handler = RunWarningsHandler(filepath)
+        handler = LogfileHandler(filepath)
 
         handler.setFormatter(RunWarningsFormatter())
 
