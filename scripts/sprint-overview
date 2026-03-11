@@ -12,11 +12,11 @@ Environment variables:
         GitHub personal access token with repo and project permissions
 """
 
-import argparse
 import os
 import sys
 from typing import Optional
 
+import click
 import requests
 import yaml
 
@@ -350,46 +350,50 @@ def display_items_yaml(
     print(yaml.dump(output, default_flow_style=False, sort_keys=False))
 
 
-def main() -> None:
+@click.command()
+@click.argument('sprint_name', metavar='SPRINT_NAME')
+@click.option(
+    '--org',
+    default='teemtee',
+    show_default=True,
+    help='GitHub organization name.',
+)
+@click.option(
+    '--project',
+    type=int,
+    default=1,
+    show_default=True,
+    help='Project number.',
+)
+@click.option(
+    '--yaml',
+    'output_yaml',
+    is_flag=True,
+    help='Output in YAML format for machine-readable processing.',
+)
+def main(sprint_name: str, org: str, project: int, output_yaml: bool) -> None:
     """
-    Main entry point.
+    List all issues and pull requests in a GitHub Project sprint with story points.
+
+    SPRINT_NAME: Name of the sprint (e.g., 'Sprint 11')
     """
-    parser = argparse.ArgumentParser(
-        description=(
-            "List all issues and pull requests in a GitHub Project sprint with story points"
-        ),
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument("sprint_name", help="Name of the sprint (e.g., 'Sprint 11')")
-    parser.add_argument(
-        "--org", default="teemtee", help="GitHub organization name (default: teemtee)"
-    )
-    parser.add_argument("--project", type=int, default=1, help="Project number (default: 1)")
-    parser.add_argument(
-        "--yaml",
-        action="store_true",
-        help="Output in YAML format for machine-readable processing",
-    )
-
-    args = parser.parse_args()
-
     token = os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN")
     if not token:
         print("Error: GITHUB_PERSONAL_ACCESS_TOKEN environment variable not set", file=sys.stderr)
         sys.exit(1)
 
     try:
-        items = fetch_sprint_items(token, args.org, args.project, args.sprint_name)
+        items = fetch_sprint_items(token, org, project, sprint_name)
 
         if not items:
-            print(f"No items found in sprint '{args.sprint_name}'")
+            print(f"No items found in sprint '{sprint_name}'")
             return
 
         categories = categorize_items(items)
-        if args.yaml:
-            display_items_yaml(args.sprint_name, categories)
+        if output_yaml:
+            display_items_yaml(sprint_name, categories)
         else:
-            display_items(args.sprint_name, categories)
+            display_items(sprint_name, categories)
 
     except requests.exceptions.RequestException as e:
         print(f"Error making API request: {e}", file=sys.stderr)
