@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 from tests import jq_all, with_cwd
 
+import tmt.cli
 from tmt.utils import Path, from_yaml
 
 if TYPE_CHECKING:
@@ -57,5 +58,6 @@ def test_run_modified_plan(run_tmt: 'RunTmt') -> None:
 
     result = run_tmt('-vv', 'run', '-a', '--policy-file', POLICIES_DIR / 'plan/simple.yaml')
 
+    assert result.exit_code == tmt.cli.TmtExitCode.NO_RESULTS_FOUND
     assert f"Apply tmt policy '{POLICIES_DIR}/plan/simple.yaml' to plans." in result.stderr
     assert "No tests found, finishing plan." in result.stderr
