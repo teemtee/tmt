@@ -35,7 +35,6 @@ import tmt
 import tmt.hardware
 import tmt.log
 import tmt.package_managers
-import tmt.package_managers.bootc
 import tmt.steps
 import tmt.steps.scripts
 import tmt.utils
@@ -2814,6 +2813,8 @@ class GuestSsh(Guest, CommandCollector):
         Uses the same environment and cwd handling as regular execute().
         """
 
+        import tmt.package_managers.bootc
+
         sourced_files = sourced_files or []
 
         if not self.facts.is_image_mode or not isinstance(
@@ -2851,6 +2852,8 @@ class GuestSsh(Guest, CommandCollector):
     def has_collected_commands(self) -> bool:
         """Check if there are collected commands to be applied."""
 
+        import tmt.package_managers.bootc
+
         if not self.facts.is_image_mode or not isinstance(
             self.package_manager, tmt.package_managers.bootc.Bootc
         ):
@@ -2864,6 +2867,9 @@ class GuestSsh(Guest, CommandCollector):
 
         Delegates to the bootc package manager's build_container() method.
         """
+
+        import tmt.package_managers.bootc
+
         if not self.facts.is_image_mode or not isinstance(
             self.package_manager, tmt.package_managers.bootc.Bootc
         ):
