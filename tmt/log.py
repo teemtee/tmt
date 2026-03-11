@@ -305,13 +305,52 @@ class LogRecordDetails:
 class LogfileHandler(logging.FileHandler):
     #: Paths of all log files to which ``LogfileHandler`` was attached.
     logfiles_with_stacktrace: ClassVar[list[Path]] = []
+    #: Temporary buffer until the file is created
+    _log_buffer: Optional[io.StringIO] = None
+    #: Path reference to the file being written to
+    _file: Path
 
     def __init__(self, filepath: Path, with_stacktrace: bool = False) -> None:
         # mode="a": We want to keep the old log file if we are running a new run on top of it
-        # delay=True: Open the file as soon as we actually have something to log
-        super().__init__(filepath, mode="a", delay=True)
+        # delay: If the file was not present don't try to open it
+        super().__init__(filepath, mode="a", delay=not filepath.exists())
+        self._file = filepath
+        if not filepath.exists():
+            self._log_buffer = io.StringIO()
+            # logging.FileHandler always checks `self.stream` before opening or writing to it. We
+            # switch this to the buffer so that it just writes to it immediately instead of
+            # skipping the messages
+            # ignore[assignment]: Intentional because we are using a different stream type in the
+            #  meantime
+            self.stream = self._log_buffer  # type: ignore[assignment]
         if with_stacktrace:
             LogfileHandler.logfiles_with_stacktrace.append(filepath)
+
+    def _check_file(self) -> None:
+        """
+        Check for the presence of :py:attr:`_file` and switch to it when it becomes
+        available.
+        """
+        if not self._log_buffer:
+            # We do not have any temporary buffer (anymore). Nothing to do here.
+            return
+        if not self._file.exists():
+            # File is not yet available continue as-is
+            return
+        # See logic in `logging.FileHandler.emit` when `stream is None` aka `delay=True`. So far
+        # the only thing we need to do is to run `_open`
+        self.stream = self._open()
+        # Write everything we have accumulated so far
+        content = self._log_buffer.getvalue()
+        if content:
+            self.stream.write(content)
+        # Cleanup after ourselves
+        self._log_buffer = None
+
+    def emit(self, record: logging.LogRecord) -> None:
+        # Check if the file is created in the meantime
+        self._check_file()
+        super().emit(record)
 
 
 # ignore[type-arg]: StreamHandler is a generic type, but such expression would be incompatible
@@ -720,7 +759,7 @@ class Logger:
         Attach a log file handler to this logger
         """
 
-        handler = LogfileHandler(filepath, with_stacktrace=True)
+        handler = LogfileHandler(filepath)
 
         handler.setFormatter(LogfileFormatter())
 
