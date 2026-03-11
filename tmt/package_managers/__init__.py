@@ -222,12 +222,12 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         raise NotImplementedError
 
-    def get_installed_repos(self, packages: Iterable[str]) -> Command:
+    def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
         """
-        Get a command to query the repository each package was installed from.
+        Return a shell script to query which repository each package was installed from.
 
         :param packages: Package names to query.
-        :returns: A command whose stdout lists ``name repo`` per line for each installed package.
+        :returns: A shell script whose stdout lists ``name repo`` per line for each package.
         :raises NotImplementedError: If the package manager does not support this query.
         """
         raise NotImplementedError
@@ -348,24 +348,24 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
         return stdout.strip().splitlines()
 
-    def get_installed_repos(self, packages: Iterable[str]) -> dict[str, Optional[str]]:
+    def get_package_origin(self, packages: Iterable[str]) -> dict[str, Optional[str]]:
         """
-        Get the repositories packages were installed from.
+        Get the repository each package was installed from.
 
         :param packages: Package names to query.
         :returns: A mapping of package names to source repository names.
             Packages not installed or with undetermined source are mapped to ``None``.
         """
         all_packages = list(packages)
-        command = self.engine.get_installed_repos(all_packages)
-        output = self.guest.execute(command)
+        script = self.engine.get_package_origin(all_packages)
+        output = self.guest.execute(script)
         result: dict[str, Optional[str]] = dict.fromkeys(all_packages)
         for line in (output.stdout or '').strip().splitlines():
-            parts = line.split()
+            parts = line.split(maxsplit=1)
             if len(parts) == 2:
                 result[parts[0]] = parts[1]
-            elif parts:
-                self.warn(f"Unexpected output from repository query: {line!r}")
+            else:
+                self.warn(f"Unexpected output from package origin query: {line!r}")
         return result
 
     def create_repository(self, directory: Path) -> CommandOutput:

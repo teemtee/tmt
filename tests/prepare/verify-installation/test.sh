@@ -39,7 +39,7 @@ rlJournalStart
             provision -h \$PROVISION_HOW --image \$TEST_IMAGE_PREFIX/\$image_name" 2 "Verification should fail with wrong repo"
 
         rlAssertGrep "3 packages" $rlRun_LOG
-        rlAssertGrep "fail make-devel" $rlRun_LOG
+        rlAssertGrep "fail verify-installation / make-devel" $rlRun_LOG
         rlAssertGrep "expected repo 'SOME_NON_EXISTENT_REPO'" $rlRun_LOG
         rlAssertGrep "actual 'tmt-artifact-shared'" $rlRun_LOG
         rlAssertNotGrep "All packages verified successfully." $rlRun_LOG
