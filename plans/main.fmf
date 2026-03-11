@@ -13,6 +13,10 @@ prepare+:
       - python3-pytest
 
   - how: shell
+    script: |
+      pip3 install jq
+
+  - how: shell
     summary: Make sure we run koji commands with automatic retry to avoid 50x errors
     script: |
       mkdir -p ~/.koji
