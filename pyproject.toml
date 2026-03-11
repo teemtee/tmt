@@ -137,6 +137,7 @@ platforms = ["linux"]
 description = "Development environment"
 dependencies = [
     "autopep8",
+    "jq",
     "ruff",
     "mypy",
     "pytest",
