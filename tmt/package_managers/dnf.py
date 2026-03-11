@@ -204,14 +204,17 @@ class DnfEngine(PackageManagerEngine):
             """
         )
 
-    def get_installed_repos(self, packages: Iterable[str]) -> Command:
-        return self.command + Command(
-            'repoquery',
-            '--installed',
-            '--queryformat',
-            '%{name} %{from_repo}\n',
-            *packages,
-        )
+    def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
+        return (
+            self.command
+            + Command(
+                'repoquery',
+                '--installed',
+                '--queryformat',
+                r'%{name} %{from_repo}\n',
+                *[Package(p) for p in packages],
+            )
+        ).to_script()
 
     def create_repository(self, directory: Path) -> ShellScript:
         """
@@ -388,13 +391,13 @@ class Dnf5Engine(DnfEngine):
 #: On dnf5, packages installed during a container image build via kiwi store a 32-character
 #: hex UUID as ``from_repo`` instead of a human-readable repo name.  The UUID was the repo
 #: section ID used by kiwi's temporary repo files, whose name→UUID mapping is discarded after
-#: the build.  We normalise these to ``DEFAULT-SYSTEM-REPO`` to indicate that the package
-#: was installed as part of the base system image and its source cannot be determined.
+#: the build.  We normalise these to ``KIWI-PREBAKED`` to make it clear the package was
+#: baked into the image by kiwi and its original source repository is no longer traceable.
 _DNF5_UUID_RE = re.compile(r'^[0-9a-f]{32}$')
 
-#: Sentinel repo name used for packages whose installation source cannot be determined
-#: (e.g. packages baked into a kiwi container image).
-DEFAULT_SYSTEM_REPO = 'DEFAULT-SYSTEM-REPO'
+#: Sentinel repo name for packages baked into a container image by kiwi whose original
+#: source repository can no longer be determined from the running system.
+KIWI_PREBAKED = 'KIWI-PREBAKED'
 
 
 @provides_package_manager('dnf5')
@@ -408,10 +411,10 @@ class Dnf5(Dnf):
     probe_command = Command('dnf5', '--version')
     probe_priority = 60
 
-    def get_installed_repos(self, packages: Iterable[str]) -> dict[str, Optional[str]]:
-        result = super().get_installed_repos(packages)
+    def get_package_origin(self, packages: Iterable[str]) -> dict[str, Optional[str]]:
+        result = super().get_package_origin(packages)
         return {
-            pkg: (DEFAULT_SYSTEM_REPO if repo is not None and _DNF5_UUID_RE.match(repo) else repo)
+            pkg: (KIWI_PREBAKED if repo is not None and _DNF5_UUID_RE.match(repo) else repo)
             for pkg, repo in result.items()
         }
 
@@ -419,7 +422,11 @@ class Dnf5(Dnf):
 class YumEngine(DnfEngine):
     _base_command = Command('yum')
 
-    def get_installed_repos(self, packages: Iterable[str]) -> Command:
+    def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
+        # Real yum 3.x (not a dnf symlink) ships repoquery as a separate
+        # yum-utils plugin and the %{from_repo} queryformat field is not
+        # guaranteed to be available.  Support can be added once tested on
+        # an actual yum 3.x system (RHEL 6 / CentOS 6 era).
         raise NotImplementedError
 
     # TODO: get rid of those `type: ignore` below. I think it's caused by the

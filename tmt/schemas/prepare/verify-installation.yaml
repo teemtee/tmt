@@ -29,21 +29,11 @@ properties:
     $ref: "/schemas/core#/definitions/summary"
 
   verify:
-    type: array
-    items:
-      type: object
-      additionalProperties: false
-      required:
-        - package
-        - expected-repo
-      properties:
-        package:
-          type: string
-        expected-repo:
-          type: string
+    type: object
+    additionalProperties:
+      type: string
     description: |
-      List of package and expected repository mappings, each as a dict
-      with ``package`` and ``expected-repo`` keys.
+      Mapping of package names to their expected source repository names.
 
   where:
     $ref: "/schemas/common#/definitions/where"
