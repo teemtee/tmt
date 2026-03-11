@@ -9,9 +9,14 @@ import click.testing
 import jq as _jq
 
 import tmt.__main__
+import tmt._compat.importlib.metadata
 import tmt.cli._root
 from tmt._compat.typing import ParamSpec
 from tmt.utils import Path
+
+_CLICK_VERSION = tuple(
+    int(_s) for _s in tmt._compat.importlib.metadata.version('click').split('.')
+)
 
 T = TypeVar('T')
 P = ParamSpec('P')
@@ -108,7 +113,11 @@ class RunTmt(Protocol):
 
 class CliRunner(click.testing.CliRunner):
     def __init__(self) -> None:
-        super().__init__(charset='utf-8', echo_stdin=False)
+        if _CLICK_VERSION >= (8, 2, 0):
+            super().__init__(charset='utf-8', echo_stdin=False)
+
+        else:
+            super().__init__(charset='utf-8', echo_stdin=False, mix_stderr=False)
 
     def invoke(  # type: ignore[override]
         self,
