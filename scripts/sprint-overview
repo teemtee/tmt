@@ -24,7 +24,13 @@ GITHUB_API_URL = "https://api.github.com/graphql"
 
 
 def print_separator(before: bool = False, after: bool = False, char: str = "=") -> None:
-    """Print a separator line with optional extra newlines."""
+    """
+    Print a separator line with optional extra newlines.
+
+    :param before: if set, print an extra newline before the separator.
+    :param after: if set, print an extra newline after the separator.
+    :param char: character to use for the separator line.
+    """
     if before:
         print()
     print(char * 80)
@@ -38,10 +44,14 @@ def fetch_sprint_items(
     """
     Fetch all items in a sprint from GitHub Project using server-side filtering.
 
-    Returns a list of tuples: (type, state, number, title, size, url)
-    where type is "Issue" or "PullRequest", state is the item state,
-    number is the issue/PR number, title is the item title,
-    size is the story points (None if not set), and url is the item URL.
+    :param token: GitHub personal access token with repo and project permissions.
+    :param org: GitHub organization name.
+    :param project: GitHub Project number.
+    :param sprint_name: name of the sprint to fetch items for.
+    :returns: a list of tuples ``(type, state, number, title, size, url)`` where
+        ``type`` is ``Issue`` or ``PullRequest``, ``state`` is the item state,
+        ``number`` is the issue/PR number, ``title`` is the item title,
+        ``size`` is the story points (``None`` if not set), and ``url`` is the item URL.
     """
     print(
         f"Fetching items from {org}/project/{project} for sprint '{sprint_name}'...",
@@ -152,13 +162,11 @@ def categorize_items(
     """
     Categorize items by type and state.
 
-    Args:
-        items: List of tuples (type, state, number, title, size, url)
-
-    Returns:
-        Dictionary with category names as keys and lists of
-        (number, title, size, url) tuples as values. Categories are:
-        open_issues, open_prs, closed_issues, merged_prs, closed_prs
+    :param items: list of tuples ``(type, state, number, title, size, url)``.
+    :returns: dictionary with category names as keys and lists of
+        ``(number, title, size, url)`` tuples as values. Categories are:
+        ``open_issues``, ``open_prs``, ``closed_issues``, ``merged_prs``,
+        ``closed_prs``.
     """
     categories: dict[str, list[tuple[int, str, Optional[float], str]]] = {
         "open_issues": [],
@@ -191,7 +199,13 @@ def categorize_items(
 def display_items(
     sprint_name: str, categories: dict[str, list[tuple[int, str, Optional[float], str]]]
 ) -> None:
-    """Display categorized items in a readable format with story points."""
+    """
+    Display categorized items in a readable format with story points.
+
+    :param sprint_name: name of the sprint being displayed.
+    :param categories: dictionary of categorized items returned by
+        :py:func:`categorize_items`.
+    """
     total = sum(len(items) for items in categories.values())
 
     # Calculate total story points by category
@@ -240,7 +254,13 @@ def display_items(
 def display_items_yaml(
     sprint_name: str, categories: dict[str, list[tuple[int, str, Optional[float], str]]]
 ) -> None:
-    """Display categorized items in YAML format."""
+    """
+    Display categorized items in YAML format.
+
+    :param sprint_name: name of the sprint being displayed.
+    :param categories: dictionary of categorized items returned by
+        :py:func:`categorize_items`.
+    """
     # Calculate total story points by category
     total_points: dict[str, int] = {}
     for key, items in categories.items():
@@ -331,7 +351,9 @@ def display_items_yaml(
 
 
 def main() -> None:
-    """Main entry point."""
+    """
+    Main entry point.
+    """
     parser = argparse.ArgumentParser(
         description=(
             "List all issues and pull requests in a GitHub Project sprint with story points"
