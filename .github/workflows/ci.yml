@@ -11,7 +11,25 @@ on:
         description: Committish to checkout and run CI against
 
 jobs:
+  pre-commit:
+    uses: ./.github/workflows/step-pre-commit.yml
+    with:
+      ref: ${{ inputs.ref }}
+
   build-wheel:
     uses: ./.github/workflows/step-build-wheel.yml
     with:
       ref: ${{ inputs.ref }}
+    needs: [ pre-commit ]
+
+  shellcheck:
+    uses: ./.github/workflows/step-shellcheck.yml
+    with:
+      ref: ${{ inputs.ref }}
+    needs: [ pre-commit ]
+
+  doc-tests:
+    uses: ./.github/workflows/step-doc-tests.yml
+    with:
+      ref: ${{ inputs.ref }}
+    needs: [ pre-commit ]

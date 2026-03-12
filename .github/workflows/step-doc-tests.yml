@@ -1,13 +1,13 @@
-name: test-docs
-run-name: Documentation tests
+name: Documentation tests
 
 on:
-  pull_request:
-  push:
-    branches: [main]
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        description: Committish to test
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   doc-test:
@@ -29,6 +29,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
+          ref: ${{ inputs.ref }}
       - uses: actions/setup-python@v6
         with:
           python-version: 3.x

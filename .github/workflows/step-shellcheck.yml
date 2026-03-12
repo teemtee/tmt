@@ -1,12 +1,12 @@
 name: Differential ShellCheck
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        description: Committish to test
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   lint:
@@ -21,6 +21,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+          ref: ${{ inputs.ref }}
 
       - id: ShellCheck
         name: Differential ShellCheck
