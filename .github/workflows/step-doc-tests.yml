@@ -11,7 +11,7 @@ permissions: {}
 
 jobs:
   doc-test:
-    name: Sphinx Tests (${{ matrix.builder }})
+    name: Sphinx (${{ matrix.builder }})
     runs-on: ubuntu-latest
     if: "!contains(github.event.pull_request.labels.*.name, 'ci | skip')"
     strategy:
