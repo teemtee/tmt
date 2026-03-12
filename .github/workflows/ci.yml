@@ -33,3 +33,12 @@ jobs:
     with:
       ref: ${{ inputs.ref }}
     needs: [ pre-commit ]
+
+  pass:
+    if: always()
+    needs: [ pre-commit, build-wheel, shellcheck, doc-tests ]
+    runs-on: ubuntu-slim
+    steps:
+      - uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
