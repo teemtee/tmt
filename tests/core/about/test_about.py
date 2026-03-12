@@ -82,7 +82,7 @@ EXPECTED_PLUGIN_LIST = {
     "step.discover": ["fmf", "shell"],
     "step.execute": ["tmt", "upgrade"],
     "step.finish": ["ansible", "shell"],
-    "step.prepare": ["ansible", "artifact", "feature", "install", "shell"],
+    "step.prepare": ["ansible", "artifact", "feature", "install", "shell", "verify-installation"],
     "step.provision": [
         "artemis",
         "beaker",
