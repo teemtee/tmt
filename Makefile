@@ -44,7 +44,8 @@ requre:  ## Regenerate test data for integration tests
 ## Documentation
 ##
 docs: clean  ## Build documentation
-	hatch run docs:html
+	uv sync --frozen --extra docs
+	uv run sphinx-build -E -b html docs docs/_build
 
 man:  ## Build man page
 	hatch run docs:man
@@ -66,7 +67,7 @@ srpm: tarball ver2spec  ## Build SRPM
 	rpmbuild --define '_topdir $(TMP)' -bs packaging/rpm/tmt.spec
 
 _deps:  # Minimal dependencies (common for 'deps' and 'develop' targets)
-	sudo dnf install -y hatch python3-devel python3-hatch-vcs rpm-build clang beakerlib
+	sudo dnf install -y hatch uv python3-devel python3-hatch-vcs rpm-build clang beakerlib
 
 build-deps: _deps tarball ver2spec  ## Install build dependencies
 	rpmbuild --define '_topdir $(TMP)' -br packaging/rpm/tmt.spec || sudo dnf builddep -y $(TMP)/SRPMS/tmt-*buildreqs.nosrc.rpm
