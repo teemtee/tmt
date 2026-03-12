@@ -1,7 +1,7 @@
 summary: |
     Select or provision a guest with requested virtualization properties.
 
-    .. versionadded:: 1.42
+    .. versionadded:: 1.70
        ``virtualization.confidential`` (not yet supported by any
        provisioner plugin)
 
