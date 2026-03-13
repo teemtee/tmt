@@ -38,9 +38,9 @@ def test_mini(run_tmt: 'RunTmt'):
     tmp = tempfile.mkdtemp()
     result = run_tmt('--root', example('mini'), 'run', '-i', tmp, '-dv', 'discover')
     assert result.exit_code == 0
-    assert 'Found 1 plan.' in result.output
-    assert '1 test selected' in result.output
-    assert '/ci' in result.output
+    assert 'Found 1 plan.' in result.stderr
+    assert '1 test selected' in result.stderr
+    assert '/ci' in result.stderr
     shutil.rmtree(tmp)
 
 
@@ -111,8 +111,8 @@ def test_step(run_tmt: 'RunTmt'):
         tmp = tempfile.mkdtemp()
         result = run_tmt('--feeling-safe', '--root', example('local'), 'run', '-i', tmp, step)
         assert result.exit_code == 0
-        assert step in result.output
-        assert 'finish' not in result.output
+        assert step in result.stderr
+        assert 'finish' not in result.stderr
         shutil.rmtree(tmp)
 
 
@@ -132,8 +132,8 @@ def test_step_execute(run_tmt: 'RunTmt'):
     # As we started using 'from' everywhere, '__cause__' must be set
     assert result.exception.__cause__ is not None
     assert isinstance(result.exception.__cause__, tmt.utils.ExecuteError)
-    assert step in result.output
-    assert 'provision' not in result.output
+    assert step in result.stderr
+    assert 'provision' not in result.stderr
     shutil.rmtree(tmp)
 
 
