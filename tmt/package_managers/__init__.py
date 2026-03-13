@@ -10,6 +10,12 @@ import tmt.utils
 from tmt.container import container, simple_field
 from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, ShellScript
 
+#: Sentinel repository name for packages whose source repository cannot be traced —
+#: either pre-installed in a container base image (dnf4: empty ``from_repo``) or
+#: installed during an image build with repository metadata discarded afterwards
+#: (dnf5: UUID ``from_repo``). Users can match against this value in ``verify`` mappings.
+PREBAKED = 'PREBAKED'
+
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
 
@@ -224,10 +230,10 @@ class PackageManagerEngine(tmt.utils.Common):
 
     def get_package_origin(self, packages: Iterable[str]) -> ShellScript:
         """
-        Return a shell script to query which repository each package was installed from.
+        List source repositories for each installed package.
 
         :param packages: Package names to query.
-        :returns: A shell script whose stdout lists ``name repo`` per line for each package.
+        :returns: A shell script to list source repositories for the given packages.
         :raises NotImplementedError: If the package manager does not support this query.
         """
         raise NotImplementedError
@@ -354,18 +360,26 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
         :param packages: Package names to query.
         :returns: A mapping of package names to source repository names.
-            Packages not installed or with undetermined source are mapped to ``None``.
+            Packages not installed are mapped to ``None``. Packages whose source
+            repository cannot be determined (e.g. pre-installed in a container
+            image) are mapped to :py:data:`PREBAKED`.
         """
-        all_packages = list(packages)
-        script = self.engine.get_package_origin(all_packages)
+        result: dict[str, Optional[str]] = dict.fromkeys(packages)
+        script = self.engine.get_package_origin(result.keys())
         output = self.guest.execute(script)
-        result: dict[str, Optional[str]] = dict.fromkeys(all_packages)
         for line in (output.stdout or '').strip().splitlines():
+            # dnf4 produces a blank line after each entry due to the explicit \n
+            # in --queryformat combined with its own record separator.
+            # dnf5 does not have this issue and outputs one line per package.
+            if not line.strip():
+                continue
             parts = line.split(maxsplit=1)
             if len(parts) == 2:
-                result[parts[0]] = parts[1]
+                result[parts[0]] = parts[1].strip()
+            elif len(parts) == 1 and parts[0] in result:
+                result[parts[0]] = PREBAKED
             else:
-                self.warn(f"Unexpected output from package origin query: {line!r}")
+                raise GeneralError(f"Unexpected output from package origin query: {line!r}")
         return result
 
     def create_repository(self, directory: Path) -> CommandOutput:

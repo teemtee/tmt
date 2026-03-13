@@ -1,0 +1,36 @@
+/plan:
+    provision:
+        how: container
+    execute:
+        how: tmt
+    discover:
+        how: fmf
+        test: /test
+    prepare:
+      - how: artifact
+        provide:
+          - repository-file:https://download.docker.com/linux/centos/docker-ce.repo
+
+/plan/success:
+    prepare+:
+      - how: verify-installation
+        verify:
+            make: baseos
+            diffutils: PREBAKED
+            docker-ce-cli: docker-ce-stable
+
+/plan/failure:
+    prepare+:
+      - how: verify-installation
+        verify:
+            make: SOME_NON_EXISTENT_REPO
+            diffutils: PREBAKED
+            docker-ce-cli: docker-ce-stable
+            random-non-existent-package: some-repo
+
+/test:
+    test: /bin/true
+    require:
+      - make
+      - diffutils
+      - docker-ce-cli
