@@ -265,3 +265,18 @@ story: 'As a user I want to execute tests easily'
         example: |
             tmt run provision login
             tmt run --last finish
+
+/logs:
+    /warnings.yaml:
+        story: As a CI runner I want to forward the warnings to the user.
+        description: |
+            All warnings encountered during a run are recorded in a
+            ``warnings.yaml`` file under the run workdir.
+        example: |
+            - logger: tmt.run
+              msg: User is feeling safe.
+              trace: 'tmt/base/core.py#3322: go()'
+
+            - logger: tmt.run.logger0
+              msg: '/: - ''invalid'' does not match any of the regexes: ''^extra-'''
+              trace: 'tmt/utils/__init__.py#5385: _validate_fmf_node()'

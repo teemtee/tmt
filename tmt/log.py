@@ -24,7 +24,9 @@ but all-capturing log files while keeping implementation simple - the other opti
 managing handlers themselves, which would be very messy given the propagation of messages.
 """
 
+import copy
 import enum
+import io
 import itertools
 import logging
 import os
@@ -40,9 +42,12 @@ from typing import (
     cast,
 )
 
+from ruamel.yaml import YAML
+
 from tmt._compat.pathlib import Path
+from tmt._compat.typing import Self, TypeAlias
 from tmt._compat.warnings import deprecated
-from tmt.container import container, simple_field
+from tmt.container import SpecBasedContainer, container, simple_field
 
 if TYPE_CHECKING:
     import tmt.cli
@@ -288,6 +293,20 @@ class LogRecordDetails:
     logger_topics: set[Topic] = simple_field(default_factory=set[Topic])
     message_topic: Optional[Topic] = None
 
+    #: The source related to the log message. This is different from the stacktrace
+    #: which is automatically handled. This is meant to track sources such as those
+    #: from fmf file
+    source: Optional[str] = None
+    #: The reason for triggering the log.
+    reason: Optional[str] = None
+
+
+class RunWarningsHandler(logging.FileHandler):
+    def __init__(self, filepath: Path) -> None:
+        # mode="a": We want to keep the old warnings.yaml if we are running a new run on top
+        # delay=True: If we did not have any warnings then we do not create the file at all
+        super().__init__(filepath, mode="a", delay=True)
+
 
 class LogfileHandler(logging.FileHandler):
     #: Paths of all log files to which ``LogfileHandler`` was attached.
@@ -364,6 +383,65 @@ class ConsoleFormatter(_Formatter):
         )
 
 
+_RawRunWarningEntry: TypeAlias = dict[str, Any]
+
+
+@container
+class RunWarningEntry(SpecBasedContainer[_RawRunWarningEntry, _RawRunWarningEntry]):
+    msg: str
+    logger: str
+    trace: str
+    source: Optional[str]
+    reason: Optional[str]
+
+    @classmethod
+    def from_spec(cls, spec: _RawRunWarningEntry) -> Self:
+        return cls(**spec)
+
+
+class RunWarningsFormatter(logging.Formatter):
+    #: Yaml handler for formatting the content.
+    _yaml_handler: YAML
+
+    def __init__(self) -> None:
+        from tmt.utils import _yaml
+
+        # We do not use roundtrip loader here because that would require rewriting
+        # the whole content each time, but the streaming nature of the logger
+        # assumes that we will be appending when ``emit()`` is called. Instead we
+        # make use of the document is composed of direct list items so we can
+        # simply append each item as a new list.
+        self._yaml_handler = _yaml(yaml_type="safe")
+        super().__init__('%(message)s', datefmt='%H:%M:%S')
+
+    def format(self, record: logging.LogRecord) -> str:
+        # TODO: make this in a better yaml with a schema
+        details: Optional[LogRecordDetails] = getattr(record, 'details', None)
+        if not details:
+            # Not a tmt owned warning
+            warning_msg = super().format(record)
+        else:
+            # Tmt warning, we take the original raw value
+            record_copy = copy.copy(record)
+            record_copy.msg = details.value
+            warning_msg = super().format(record_copy)
+        # The yaml content to be appended is always a single list item so that
+        # it can be appended with the previous content
+        yaml_content = [
+            RunWarningEntry(
+                msg=warning_msg,
+                logger=record.name,
+                trace=f"{record.pathname}#{record.lineno}: {record.funcName}()",
+                source=details.source if details else "(external)",
+                reason=details.reason if details else None,
+            ).to_minimal_spec(),
+        ]
+        # Format and dump the yaml content
+        string_io = io.StringIO()
+        self._yaml_handler.dump(yaml_content, string_io)
+        return string_io.getvalue()
+
+
 class VerbosityLevelFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         if record.levelno != logging.INFO:
@@ -429,6 +507,14 @@ class TopicFilter(logging.Filter):
             return True
 
         if details.message_topic in details.logger_topics:
+            return True
+
+        return False
+
+
+class RunWarningsFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.levelno == logging.WARNING:
             return True
 
         return False
@@ -643,6 +729,15 @@ class Logger:
         handler.setFormatter(LogfileFormatter())
 
         handler.addFilter(TopicFilter())
+
+        self._logger.addHandler(handler)
+
+    def add_runwarnings_handler(self, filepath: Path) -> None:
+        handler = RunWarningsHandler(filepath)
+
+        handler.setFormatter(RunWarningsFormatter())
+
+        handler.addFilter(RunWarningsFilter())
 
         self._logger.addHandler(handler)
 
@@ -907,10 +1002,19 @@ class Logger:
         message: str,
         shift: int = 0,
         stacklevel: int = 1,
+        source: Optional[str] = None,
+        reason: Optional[str] = None,
     ) -> None:
         self._log(
             logging.WARNING,
-            LogRecordDetails(key='warn', value=message, color='yellow', shift=shift),
+            LogRecordDetails(
+                key='warn',
+                value=message,
+                color='yellow',
+                shift=shift,
+                source=source,
+                reason=reason,
+            ),
             stacklevel=stacklevel,
         )
 
