@@ -450,6 +450,12 @@ class Prepare(tmt.steps.Step):
 
             exceptions.append(exc)
 
+        def _is_failed() -> bool:
+            return bool(exceptions) or any(
+                result.result in (ResultOutcome.ERROR, ResultOutcome.FAIL)
+                for result in self.results
+            )
+
         for outcome in queue.run():
             if not isinstance(outcome.phase, PreparePlugin):
                 continue
@@ -476,7 +482,10 @@ class Prepare(tmt.steps.Step):
                     )
                 )
 
-                continue
+                # Do not let the queue continue.
+                queue.stop()
+
+                break
 
             # Or, plugin finished successfully - not necessarily after
             # achieving its goals successfully. Save results, and if
@@ -490,13 +499,16 @@ class Prepare(tmt.steps.Step):
                     for exc in outcome.result.exceptions:
                         _record_exception(outcome, exc)
 
-                    continue
+            if _is_failed():
+                queue.stop()
+
+                break
 
             self.preparations_applied += 1
 
         self._save_results(self.results)
 
-        if exceptions:
+        if _is_failed():
             # TODO: needs a better message...
             raise tmt.utils.PrepareError(
                 'prepare step failed',
