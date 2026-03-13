@@ -11,7 +11,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test successful verification on dnf4"
-        rlLog "Verify packages installed from BaseOS and Docker CE repo pass verification"
+        rlLog "Verify packages installed from BaseOS and EPEL pass verification"
 
         rlRun -s "tmt run -i \$run/success --scratch -vvv --all \
             plan --name /plan/success \
@@ -20,7 +20,7 @@ rlJournalStart
 
         rlAssertGrep "pass .* / make" $rlRun_LOG
         rlAssertGrep "pass .* / diffutils" $rlRun_LOG
-        rlAssertGrep "pass .* / docker-ce-cli" $rlRun_LOG
+        rlAssertGrep "pass .* / centpkg" $rlRun_LOG
         rlAssertGrep "All packages verified successfully." $rlRun_LOG
         rlAssertGrep "1 test passed" $rlRun_LOG
     rlPhaseEnd
@@ -35,7 +35,7 @@ rlJournalStart
 
         rlAssertGrep "4 packages" $rlRun_LOG
         rlAssertGrep "pass .* / diffutils" $rlRun_LOG
-        rlAssertGrep "pass .* / docker-ce-cli" $rlRun_LOG
+        rlAssertGrep "pass .* / centpkg" $rlRun_LOG
         rlAssertGrep "fail .* / make" $rlRun_LOG
         rlAssertGrep "expected repo 'SOME_NON_EXISTENT_REPO'" $rlRun_LOG
         rlAssertGrep "actual 'baseos'" $rlRun_LOG

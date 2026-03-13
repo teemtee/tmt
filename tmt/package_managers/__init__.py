@@ -10,12 +10,6 @@ import tmt.utils
 from tmt.container import container, simple_field
 from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, ShellScript
 
-#: Sentinel repository name for packages whose source repository cannot be traced —
-#: either pre-installed in a container base image (dnf4: empty ``from_repo``) or
-#: installed during an image build with repository metadata discarded afterwards
-#: (dnf5: UUID ``from_repo``). Users can match against this value in ``verify`` mappings.
-PREBAKED = 'PREBAKED'
-
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
 
@@ -360,9 +354,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
         :param packages: Package names to query.
         :returns: A mapping of package names to source repository names.
-            Packages not installed are mapped to ``None``. Packages whose source
-            repository cannot be determined (e.g. pre-installed in a container
-            image) are mapped to :py:data:`PREBAKED`.
+            Packages not installed are mapped to ``None``.
         """
         result: dict[str, Optional[str]] = dict.fromkeys(packages)
         script = self.engine.get_package_origin(result.keys())
@@ -377,7 +369,9 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             if len(parts) == 2:
                 result[parts[0]] = parts[1].strip()
             elif len(parts) == 1 and parts[0] in result:
-                result[parts[0]] = PREBAKED
+                result[parts[0]] = (
+                    "[unknown]"  # dnf4: empty %{from_repo} for pre-installed packages
+                )
             else:
                 raise GeneralError(f"Unexpected output from package origin query: {line!r}")
         return result
