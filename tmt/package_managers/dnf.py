@@ -29,6 +29,29 @@ COPR_URL = 'https://copr.fedorainfracloud.org/coprs'
 COPR_REPO_PATTERN = re.compile(r'^(@)?([^/]+)/([^/]+)$')
 
 
+def parse_copr_repo(copr_repo: str) -> tuple[bool, str, str]:
+    """
+    Parse a COPR repository identifier into its components.
+    """
+    matched = COPR_REPO_PATTERN.match(copr_repo)
+    if not matched:
+        raise PrepareError(f"Invalid copr repository '{copr_repo}'.")
+    is_group, name, project = matched.groups()
+    return bool(is_group), name, project
+
+
+def build_copr_repo_url(copr_repo: str, chroot: str) -> str:
+    """
+    Construct the URL for a COPR ``.repo`` file.
+    """
+    is_group, name, project = parse_copr_repo(copr_repo)
+    group = 'group_' if is_group else ''
+    parts = [COPR_URL] + (['g'] if is_group else [])
+    parts += [name, project, 'repo', chroot]
+    parts += [f"{group}{name}-{project}-{chroot}.repo"]
+    return '/'.join(parts)
+
+
 class DnfEngine(PackageManagerEngine):
     _base_command = Command('dnf')
     _base_debuginfo_command = Command('debuginfo-install')
@@ -286,17 +309,7 @@ class Dnf(PackageManager[DnfEngine]):
         Manually enable copr repositories for epel6
         """
 
-        # Parse the copr repo name
-        matched = COPR_REPO_PATTERN.match(copr)
-        if not matched:
-            raise PrepareError(f"Invalid copr repository '{copr}'.")
-        group, name, project = matched.groups()
-        group = 'group_' if group else ''
-        # Prepare the repo file url
-        parts = [COPR_URL] + (['g'] if group else [])
-        parts += [name, project, 'repo', 'epel-6']
-        parts += [f"{group}{name}-{project}-epel-6.repo"]
-        url = '/'.join(parts)
+        url = build_copr_repo_url(copr, 'epel-6')
         # Download the repo file on guest
         try:
             self.guest.execute(
