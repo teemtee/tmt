@@ -1,0 +1,50 @@
+name: CI
+run-name:  >
+  CI (${{ github.event_name }})
+  ${{ github.event_name == 'pull_request' && format('PR#{0}', github.event.number) || '' }}
+  ${{ github.event_name == 'workflow_dispatch' && inputs.ref || '' }}
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      ref:
+        type: string
+        description: Committish to checkout and run CI against
+
+jobs:
+  pre-commit:
+    uses: ./.github/workflows/step-pre-commit.yml
+    with:
+      ref: ${{ inputs.ref }}
+
+  build-wheel:
+    uses: ./.github/workflows/step-build-wheel.yml
+    with:
+      ref: ${{ inputs.ref }}
+    needs: [ pre-commit ]
+
+  shellcheck:
+    uses: ./.github/workflows/step-shellcheck.yml
+    with:
+      ref: ${{ inputs.ref }}
+    needs: [ pre-commit ]
+
+  doc-tests:
+    name: 📘 docs
+    uses: ./.github/workflows/step-doc-tests.yml
+    with:
+      ref: ${{ inputs.ref }}
+    needs: [ pre-commit ]
+
+  pass:
+    name: ✅ Pass
+    if: always()
+    needs: [ pre-commit, build-wheel, shellcheck, doc-tests ]
+    runs-on: ubuntu-slim
+    steps:
+      - uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
