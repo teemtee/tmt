@@ -36,3 +36,4 @@ Table of Contents
     Contribute <contribute>
     Code <code/index>
     Releases <releases/index>
+    glossary
