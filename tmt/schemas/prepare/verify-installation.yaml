@@ -32,8 +32,6 @@ properties:
     type: object
     additionalProperties:
       type: string
-    description: |
-      Mapping of package names to their expected source repository names.
 
   where:
     $ref: "/schemas/common#/definitions/where"

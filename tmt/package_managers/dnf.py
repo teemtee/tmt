@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from tmt._compat.pathlib import Path
 from tmt.package_managers import (
+    PREBAKED,
     FileSystemPath,
     Installable,
     Options,
@@ -388,16 +389,11 @@ class Dnf5Engine(DnfEngine):
     skip_missing_debuginfo_option = skip_missing_packages_option
 
 
-#: On dnf5, packages installed during a container image build via kiwi store a 32-character
-#: hex UUID as ``from_repo`` instead of a human-readable repo name.  The UUID was the repo
-#: section ID used by kiwi's temporary repo files, whose name→UUID mapping is discarded after
-#: the build.  We normalise these to ``KIWI-PREBAKED`` to make it clear the package was
-#: baked into the image by kiwi and its original source repository is no longer traceable.
+#: On dnf5, packages installed during a container image build store a 32-character
+#: hex UUID as ``from_repo`` instead of a human-readable repo name.  The UUID was the
+#: repo section ID used by temporary repo files during the build, whose name→UUID mapping
+#: is discarded afterwards.  We normalise these to :data:`~tmt.package_managers.PREBAKED`.
 _DNF5_UUID_RE = re.compile(r'^[0-9a-f]{32}$')
-
-#: Sentinel repo name for packages baked into a container image by kiwi whose original
-#: source repository can no longer be determined from the running system.
-KIWI_PREBAKED = 'KIWI-PREBAKED'
 
 
 @provides_package_manager('dnf5')
@@ -414,7 +410,7 @@ class Dnf5(Dnf):
     def get_package_origin(self, packages: Iterable[str]) -> dict[str, Optional[str]]:
         result = super().get_package_origin(packages)
         return {
-            pkg: (KIWI_PREBAKED if repo is not None and _DNF5_UUID_RE.match(repo) else repo)
+            pkg: (PREBAKED if repo is not None and _DNF5_UUID_RE.match(repo) else repo)
             for pkg, repo in result.items()
         }
 

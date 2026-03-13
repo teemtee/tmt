@@ -1,7 +1,7 @@
 #!/bin/bash
 . /usr/share/beakerlib/beakerlib.sh || exit 1
-. ../../images.sh || exit 1
-. ../artifact/lib/common.sh || exit 1
+. ../../../images.sh || exit 1
+. ../../artifact/lib/common.sh || exit 1
 
 rlJournalStart
     rlPhaseStartSetup
@@ -27,6 +27,9 @@ rlJournalStart
             plan --name /plan/success \
             provision -h \$PROVISION_HOW --image \$TEST_IMAGE_PREFIX/\$image_name" 0 "Run verification test with correct repo"
 
+        rlAssertGrep "pass .* / make" $rlRun_LOG
+        rlAssertGrep "pass .* / make-devel" $rlRun_LOG
+        rlAssertGrep "pass .* / diffutils" $rlRun_LOG
         rlAssertGrep "All packages verified successfully." $rlRun_LOG
         rlAssertGrep "1 test passed" $rlRun_LOG
     rlPhaseEnd
@@ -38,10 +41,14 @@ rlJournalStart
             plan --name /plan/failure \
             provision -h \$PROVISION_HOW --image \$TEST_IMAGE_PREFIX/\$image_name" 2 "Verification should fail with wrong repo"
 
-        rlAssertGrep "3 packages" $rlRun_LOG
-        rlAssertGrep "fail verify-installation / make-devel" $rlRun_LOG
+        rlAssertGrep "4 packages" $rlRun_LOG
+        rlAssertGrep "pass .* / make" $rlRun_LOG
+        rlAssertGrep "pass .* / diffutils" $rlRun_LOG
+        rlAssertGrep "fail .* / make-devel" $rlRun_LOG
         rlAssertGrep "expected repo 'SOME_NON_EXISTENT_REPO'" $rlRun_LOG
         rlAssertGrep "actual 'tmt-artifact-shared'" $rlRun_LOG
+        rlAssertGrep "fail .* / random-non-existent-package" $rlRun_LOG
+        rlAssertGrep "random-non-existent-package.*not installed" $rlRun_LOG
         rlAssertNotGrep "All packages verified successfully." $rlRun_LOG
     rlPhaseEnd
 
