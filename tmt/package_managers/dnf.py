@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from tmt._compat.pathlib import Path
 from tmt.package_managers import (
-    PREBAKED,
     FileSystemPath,
     Installable,
     Options,
@@ -348,13 +347,6 @@ class Dnf5Engine(DnfEngine):
     skip_missing_debuginfo_option = skip_missing_packages_option
 
 
-#: On dnf5, packages installed during a container image build store a 32-character
-#: hex UUID as ``from_repo`` instead of a human-readable repo name.  The UUID was the
-#: repo section ID used by temporary repo files during the build, whose name→UUID mapping
-#: is discarded afterwards.  We normalise these to :data:`~tmt.package_managers.PREBAKED`.
-_DNF5_UUID_RE = re.compile(r'^[0-9a-f]{32}$')
-
-
 @provides_package_manager('dnf5')
 class Dnf5(Dnf):
     NAME = 'dnf5'
@@ -365,13 +357,6 @@ class Dnf5(Dnf):
 
     probe_command = Command('dnf5', '--version')
     probe_priority = 60
-
-    def get_package_origin(self, packages: Iterable[str]) -> dict[str, Optional[str]]:
-        result = super().get_package_origin(packages)
-        return {
-            pkg: (PREBAKED if repo is not None and _DNF5_UUID_RE.match(repo) else repo)
-            for pkg, repo in result.items()
-        }
 
 
 class YumEngine(DnfEngine):
