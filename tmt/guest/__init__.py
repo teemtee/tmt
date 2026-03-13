@@ -1665,6 +1665,21 @@ class Guest(
     #: Guest logs active and available for collection.
     guest_logs: list[GuestLog]
 
+    #: Number of test tasks pending execution on this guest.
+    #:
+    #: This counter tracks the workload assigned to each guest during the execute
+    #: phase planning. It is incremented when tests are assigned to a guest and
+    #: decremented when tests complete execution. This enables:
+    #:
+    #: - Workload monitoring and balancing across guests
+    #: - Resource management and cleanup decisions
+    #: - Progress tracking during test execution
+    #: - Early termination handling when tests are aborted
+    #:
+    #: The counter is managed automatically by the execute step and should not
+    #: be modified directly by user code.
+    pending_tasks: int
+
     # TODO: do we need this list? Can whatever code is using it use _data_class directly?
     # List of supported keys
     # (used for import/export to/from attributes during load and save)
@@ -1685,6 +1700,8 @@ class Guest(
         """
 
         self.guest_logs = []
+        self.pending_tasks = 0
+        self._pending_tasks_lock = threading.Lock()
 
         super().__init__(logger=logger, parent=parent, name=name)
         self.load(data)
@@ -1742,6 +1759,61 @@ class Guest(
         """
 
         return format_guest_full_name(self.name, self.role)
+
+    def increment_pending_tasks(self) -> None:
+        """
+        Increment the number of pending tasks for this guest.
+
+        This method is called during execute phase planning when a test is
+        assigned to this guest. The counter helps track workload distribution
+        and enables proper resource management.
+
+        Thread-safe: Multiple guests can have their counters modified
+        concurrently during parallel test execution.
+
+        Used by: Execute step during test assignment planning
+        """
+        with self._pending_tasks_lock:
+            self.pending_tasks += 1
+
+    def decrement_pending_tasks(self) -> None:
+        """
+        Decrement the number of pending tasks for this guest.
+
+        This method is called when a test completes execution on this guest,
+        either successfully or due to failure/abort. It includes safety
+        validation to prevent negative counter values and logs warnings
+        when attempting to decrement non-existent tasks.
+
+        Thread-safe: Multiple guests can have their counters modified
+        concurrently during parallel test execution.
+
+        Used by: Execute plugins after test completion or when handling aborts
+        """
+        with self._pending_tasks_lock:
+            if self.pending_tasks <= 0:
+                self._logger.warning(
+                    f"Attempted to decrement pending tasks for guest '{self.multihost_name}' "
+                    f"when none exist (current count: {self.pending_tasks})"
+                )
+                return
+            self.pending_tasks -= 1
+
+    def has_pending_tasks(self) -> bool:
+        """
+        Check if this guest has any pending tasks.
+
+        This method can be used to determine if the guest is still busy
+        executing tests, which is useful for resource cleanup decisions
+        and workload monitoring.
+
+        Thread-safe: Provides a consistent snapshot of the counter value
+        even during concurrent modifications.
+
+        :returns: True if there are pending tasks, False otherwise
+        """
+        with self._pending_tasks_lock:
+            return self.pending_tasks > 0
 
     @property
     @abc.abstractmethod

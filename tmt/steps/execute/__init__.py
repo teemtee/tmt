@@ -1268,6 +1268,59 @@ class Execute(tmt.steps.Step):
                     phase_copy.discover_phase = discover_phase_name
                     queue.enqueue_plugin(phase=phase_copy, guests=guests)
 
+        # Calculate workload before execution: count tests per guest
+        #
+        # This workload calculation phase serves several critical purposes:
+        #
+        # 1. RESOURCE MANAGEMENT: By tracking pending tasks per guest, the system
+        #    can make informed decisions about resource allocation and cleanup.
+        #    Guests with no pending tasks can be safely released or terminated.
+        #
+        # 2. PROGRESS MONITORING: The pending task counters enable real-time
+        #    progress tracking across distributed test execution, allowing users
+        #    and monitoring systems to understand execution status.
+        #
+        # 3. ABORT HANDLING: When execution is interrupted or aborted, the system
+        #    needs to properly clean up pending task counters to maintain
+        #    accurate state representation.
+        #
+        # 4. LOAD BALANCING: Future enhancements can use these counters to
+        #    implement intelligent load balancing across available guests.
+        #
+        # The calculation happens BEFORE actual execution starts to ensure that
+        # all guests have their workload properly tracked from the beginning,
+        # which is essential for scenarios where guests might be released or
+        # terminated during execution.
+        #
+        # Integration with execute plugins:
+        # - Each execute plugin (internal, upgrade, etc.) manages its own
+        #   subset of tests and guests
+        # - The counting logic mirrors the actual test assignment logic
+        #   used in prepare_tests() to ensure accuracy
+        # - Task decrements happen in individual plugins after test completion
+        for phase in self.phases(classes=(ExecutePlugin,)):
+            if isinstance(phase, ExecutePlugin):
+                for discover_phase_name, guests in phase.tasks:
+                    # Find the corresponding discover phase to get test list
+                    discover_phase = None
+                    for discover in self.plan.discover.phases(classes=(DiscoverPlugin,)):
+                        if discover.name == discover_phase_name and discover.enabled_by_when:
+                            discover_phase = discover
+                            break
+
+                    if discover_phase:
+                        # For each test in this specific discover phase, check which guests
+                        # will execute it
+                        for test_origin in discover_phase.tests(
+                            phase_name=discover_phase_name, enabled=True
+                        ):
+                            test = test_origin.test
+
+                            # Check if this test runs on any of the current guests
+                            for guest in guests:
+                                if test.enabled_on_guest is None or test.enabled_on_guest(guest):
+                                    guest.increment_pending_tasks()
+
         failed_tasks: list[Union[ActionTask, PluginTask[ExecuteStepData, None]]] = []
 
         for outcome in queue.run():

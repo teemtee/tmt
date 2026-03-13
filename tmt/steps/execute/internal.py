@@ -613,6 +613,17 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
                 self.step.plan.execute.update_results(self.results())
                 self.step.plan.execute.save()
 
+                # Decrement pending task counter for this guest after test completion
+                #
+                # This decrement happens after:
+                # - Test execution completes (success or failure)
+                # - Results are collected and saved
+                # - Internal checks are invoked
+                #
+                # This ensures accurate tracking of remaining workload and enables
+                # proper resource management decisions.
+                guest.decrement_pending_tasks()
+
                 ResultRenderer(
                     basepath=self.phase_workdir,
                     logger=logger,
@@ -622,6 +633,20 @@ class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):
 
                 if abort_execute_exception is not None or interrupt_exception is not None:
                     progress_bar.clear()
+
+                    # Decrement pending tasks for remaining tests that won't be executed
+                    #
+                    # When execution is aborted or interrupted, we need to properly
+                    # clean up the pending task counters for tests that will never
+                    # be executed. This maintains accurate state and prevents
+                    # resource management issues.
+                    #
+                    # We calculate remaining tests from current index + 1 because
+                    # the current test has already been processed and its counter
+                    # decremented above.
+                    remaining_tests = len(test_invocations) - (index + 1)
+                    for _ in range(remaining_tests):
+                        guest.decrement_pending_tasks()
 
                     break
 
