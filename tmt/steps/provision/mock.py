@@ -169,8 +169,6 @@ class MockShell:
         Invoke commands in the mock shell without checking for errors.
         This is done by writing the commands to the shell, ending each with
         a newline.
-        Each command invocation causes the shell to print a newline when the
-        command has finished.
         """
 
         assert self.epoll is not None
@@ -178,19 +176,29 @@ class MockShell:
         assert self.mock_shell.stdin is not None
         assert self.mock_shell.stdout is not None
         assert self.mock_shell.stderr is not None
+        finished_keyword = 'TMT_FINISHED_EXEC'
 
-        self.mock_shell.stdin.write(''.join(command + '\n' for command in commands))
+        self.mock_shell.stdin.write('\n'.join(commands))
+        # Issue a command writing a terminator on the standard output after all
+        # the previous commands are finished.
+        self.mock_shell.stdin.write(f'\necho {finished_keyword}\n')
         self.mock_shell.stdin.flush()
 
-        # Wait until the previous commands finished.
-        loop = len(commands)
-        while loop != 0 and self.mock_shell.poll() is None:
+        # Wait until we read the binary zero from stdout.
+        while True:
+            mock_shell_result = self.mock_shell.poll()
+            if mock_shell_result is not None:
+                raise tmt.utils.ProvisionError(f'Mock shell abruptly exited: {mock_shell_result}.')
             events = self.epoll.poll()
             for fileno, _ in events:
-                if fileno == self.mock_shell_stdout_fd:
-                    loop -= 1
-                    self.mock_shell.stdout.read()
+                if (
+                    fileno == self.mock_shell_stdout_fd
+                    and self.mock_shell.stdout.read() == f'{finished_keyword}\n'
+                ):
                     break
+            else:
+                continue
+            break
         for line in self.mock_shell.stderr.readlines():
             self.parent.debug('mock', line.rstrip(), color='blue', level=2)
 
@@ -407,16 +415,22 @@ class MockShell:
                     # kill the process spawned inside the mock shell
                     pass
 
-                # The command is finished when mock shell prints a newline on its
-                # stdout. We want to break loop after we handled all the other
-                # epoll events because the event ordering is not guaranteed.
-                if len(events) == 1 and events[0][0] == self.mock_shell_stdout_fd:
-                    self.mock_shell.stdout.read()
+                # The command is finished when the returncode is written to its
+                # file.
+                # We want to break loop after we handled all the other epoll
+                # events because the event ordering is not guaranteed.
+                if len(events) == 1 and events[0][0] == returncode_fd:
+                    content = os.read(returncode_fd, 16)
+                    returncode = int(content.decode('utf-8').strip())
+                    returncode_io.try_unregister()
                     break
                 for fileno, _ in events:
-                    # Whatever we sent on mock shell's input it prints on the stderr
-                    # so just discard it.
-                    if fileno == self.mock_shell_stderr_fd:
+                    if fileno == self.mock_shell_stdout_fd:
+                        # Mock prints newlines on stdout.
+                        self.mock_shell.stdout.read()
+                    elif fileno == self.mock_shell_stderr_fd:
+                        # Whatever we sent on mock shell's input it prints on
+                        # the stderr so just discard it.
                         self.mock_shell.stderr.read()
                     elif fileno == stdout_fd:
                         content = os.read(stdout_fd, 128)
@@ -428,12 +442,6 @@ class MockShell:
                         stream_err += content
                         if not content:
                             stderr_io.try_unregister()
-                    elif fileno == returncode_fd:
-                        content = os.read(returncode_fd, 16)
-                        if not content:
-                            returncode_io.try_unregister()
-                        else:
-                            returncode = int(content.decode('utf-8').strip())
 
             stdout = stream_out.string
             stderr = stream_err.string
