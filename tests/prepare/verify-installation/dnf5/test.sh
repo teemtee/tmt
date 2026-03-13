@@ -41,7 +41,7 @@ rlJournalStart
             plan --name /plan/failure \
             provision -h \$PROVISION_HOW --image \$TEST_IMAGE_PREFIX/\$image_name" 2 "Verification should fail with wrong repo"
 
-        rlAssertGrep "4 packages" $rlRun_LOG
+        rlAssertGrep "5 packages" $rlRun_LOG
         rlAssertGrep "pass .* / make" $rlRun_LOG
         rlAssertGrep "pass .* / diffutils" $rlRun_LOG
         rlAssertGrep "fail .* / make-devel" $rlRun_LOG
@@ -49,6 +49,7 @@ rlJournalStart
         rlAssertGrep "actual 'tmt-artifact-shared'" $rlRun_LOG
         rlAssertGrep "fail .* / random-non-existent-package" $rlRun_LOG
         rlAssertGrep "random-non-existent-package.*not installed" $rlRun_LOG
+        rlAssertGrep "fail .* / bash" $rlRun_LOG
         rlAssertNotGrep "All packages verified successfully." $rlRun_LOG
     rlPhaseEnd
 
