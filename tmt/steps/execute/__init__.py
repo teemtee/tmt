@@ -52,7 +52,6 @@ from tmt.utils import (
 
 if TYPE_CHECKING:
     import tmt.base.plan
-    import tmt.cli
     import tmt.result
     import tmt.steps.discover
 
