@@ -1,7 +1,0 @@
-summary: Check verify-installation plugin on dnf5 (Fedora)
-test: test.sh
-
-adjust:
-  - when: distro != fedora
-    enabled: false
-    because: Test uses koji artifacts which are Fedora-specific

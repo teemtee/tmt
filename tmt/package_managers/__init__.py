@@ -367,12 +367,13 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
                 continue
             parts = line.split(maxsplit=1)
             if len(parts) == 2:
+                # Expected format: "package-name repo-name"
                 result[parts[0]] = parts[1].strip()
-            elif len(parts) == 1 and parts[0] in result:
-                result[parts[0]] = (
-                    "[unknown]"  # dnf4: empty %{from_repo} for pre-installed packages
-                )
+            elif len(parts) == 1:
+                # dnf4: empty %{from_repo} means package was not installed via a repo
+                result[parts[0]] = "[unknown]"
             else:
+                # anything else is malformed
                 raise GeneralError(f"Unexpected output from package origin query: {line!r}")
         return result
 
