@@ -1,0 +1,7 @@
+summary: verify-installation plugin on dnf4
+test: test.sh
+
+adjust:
+  - when: distro != centos
+    enabled: false
+    because: Test targets dnf4 behaviour on CentOS Stream 10

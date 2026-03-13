@@ -1,15 +1,6 @@
 summary: Check verify-installation prepare plugin
-description: |
-    Verify that the verify-installation plugin correctly checks
-    that packages were installed from expected repositories.
-    Tests both successful verification and failure cases.
 
 # TODO: Enable for other provision methods when appropriate
 tag+:
   - provision-only
   - provision-container
-
-adjust:
-  - when: distro != fedora
-    enabled: false
-    because: Test uses koji which is Fedora-specific

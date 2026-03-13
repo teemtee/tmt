@@ -1,0 +1,36 @@
+/plan:
+    provision:
+        how: container
+    execute:
+        how: tmt
+    discover:
+        how: fmf
+        test: /test
+    prepare:
+      - how: artifact
+        provide:
+          - koji.build:KOJI_BUILD_ID
+
+/plan/success:
+    prepare+:
+      - how: verify-installation
+        verify:
+            make: tmt-artifact-shared
+            make-devel: tmt-artifact-shared
+            diffutils: fedora
+
+/plan/failure:
+    prepare+:
+      - how: verify-installation
+        verify:
+            make: tmt-artifact-shared
+            make-devel: SOME_NON_EXISTENT_REPO
+            diffutils: fedora
+            random-non-existent-package: some-repo
+
+/test:
+    test: /bin/true
+    require:
+      - make
+      - make-devel
+      - diffutils
