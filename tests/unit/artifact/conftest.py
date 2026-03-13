@@ -5,6 +5,7 @@ import pytest
 import tmt.plugins
 from tmt.steps.prepare.artifact import get_artifact_provider
 from tmt.steps.prepare.artifact.providers import koji as koji_module
+from tmt.steps.prepare.artifact.providers._copr import CoprArtifactProvider
 from tmt.steps.prepare.artifact.providers.brew import BrewArtifactProvider
 from tmt.steps.prepare.artifact.providers.koji import KojiArtifactProvider
 
@@ -48,6 +49,13 @@ def mock_brew(mock_koji):
 
     with patch.object(BrewArtifactProvider, "_initialize_session", mock_initialize_session):
         yield mock_koji
+
+
+@pytest.fixture
+def mock_copr():
+    mock_session = MagicMock()
+    with patch.object(CoprArtifactProvider, '_initialize_session', return_value=mock_session):
+        yield mock_session
 
 
 @pytest.fixture
