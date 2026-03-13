@@ -22,6 +22,9 @@ properties:
   name:
     type: string
 
+  display-guest:
+    type: boolean
+
   when:
     $ref: "/schemas/common#/definitions/when"
 

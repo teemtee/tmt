@@ -588,6 +588,24 @@ class DiscoverPlugin(tmt.steps.GuestlessPlugin[DiscoverStepDataT, None]):
             if test_origin.phase == self.name
         ]
 
+        # Recreate test paths if they don't exist
+        for test in self._tests:
+            if test.path is None:
+                continue
+            test_dir = self.test_dir.resolve()
+            path = (
+                self.test_dir / test.path.unrooted().relative_to(Path(self.safe_name) / 'tests')
+            ).resolve()
+
+            # Ensure the path is inside the test directory
+            if test_dir != path and test_dir not in path.parents:
+                raise tmt.utils.DiscoverError(
+                    f"Test '{test.safe_name}' has path outside of test directory."
+                )
+
+            if not path.exists():
+                path.mkdir(parents=True, exist_ok=True)
+
 
 class Discover(tmt.steps.Step):
     """

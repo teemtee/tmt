@@ -22,19 +22,7 @@ plans:
     adjust: []
     link:
       - relates: https://github.com/teemtee/tmt/tree/main/tests/plan/import
-    environment-from-fmf: {}
-    environment-from-importing:
-        PLAN_ENV: plan_value
-    environment-from-cli:
-        RUN_ENV: run_value
-    environment-from-intrinsics:
-        TMT_VERSION: version
-        TMT_TREE: /run_path/plans/import/tree
-        TMT_PLAN_DATA: /run_path/plans/import/data
-        TMT_PLAN_ENVIRONMENT_FILE:
-            /run_path/plans/import/data/variables.env
-        TMT_PLAN_SOURCE_SCRIPT:
-            /run_path/plans/import/data/plan-source-script.sh
+    environment: {}
     discover:
         enabled: true
         phases:
@@ -100,7 +88,6 @@ plans:
             restart-max-count: 1
             restart-with-reboot: false
             serial-number: 1
-            discover-phase: default-0
             link: []
             test: echo one
             path: /default-0/tests/tests
@@ -134,7 +121,6 @@ plans:
             restart-max-count: 1
             restart-with-reboot: false
             serial-number: 2
-            discover-phase: default-0
             link: []
             test: echo two
             path: /default-0/tests/tests
