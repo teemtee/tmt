@@ -1,0 +1,6 @@
+description: |
+    Introduced the :tmt:story:`/spec/hardware/virtualization` hardware
+    requirement ``virtualization.confidential`` to specify that a guest
+    should be provisioned as a `confidential VM`__.
+
+    __ https://confidentialcomputing.io/
