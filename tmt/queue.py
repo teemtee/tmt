@@ -404,7 +404,11 @@ class Queue(list[TaskT]):
 
                 yield outcome
 
-            # TODO: make this optional
+            # TODO: with the `self._keep_running` this check is probably
+            # no longer needed, as the responsibility shifts more to the
+            # user of the queue, to decide when to stop. To drop it, we
+            # will need to review uses of `Queue`, which will happen as
+            # part of https://github.com/teemtee/tmt/issues/4668.
             if failed_tasks:
                 return
 
