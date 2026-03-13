@@ -49,7 +49,10 @@ duration: 20m
       - when: distro >= fedora-44
         check:
           - how: avc
-            result: xfail
+            ignore-pattern:
+              - "type=AVC.*comm=systemd-coredum.*scontext=system_u:system_r:systemd_coredump_t"
+              # From default pattern
+              - "type=USER_AVC.*received policyload notice"
         because: https://bugzilla.redhat.com/show_bug.cgi?id=2418343
 
 /internal:
