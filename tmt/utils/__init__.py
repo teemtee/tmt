@@ -1096,7 +1096,7 @@ CommonDerivedType = TypeVar('CommonDerivedType', bound='Common')
 #: A single element of command-line.
 _CommandElement = str
 #: A single element of raw command line in its ``list`` form.
-RawCommandElement = Union[str, Path]
+RawCommandElement = Union[str, Path, None]
 #: A raw command line form, a list of elements.
 RawCommand = list[RawCommandElement]
 
@@ -1197,7 +1197,7 @@ class Command:
     """
 
     def __init__(self, *elements: RawCommandElement) -> None:
-        self._command = [str(element) for element in elements]
+        self._command = [str(element) for element in elements if element]
 
     def __str__(self) -> str:
         return self.to_element()
