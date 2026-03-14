@@ -1,0 +1,10 @@
+summary: Check that tree package was installed via prepare/ansible
+description: |
+    Verify that the tree command is available after prepare/ansible
+    executed a playbook via the podman connection plugin on the bootc
+    guest container, committed the result, and rebooted.
+test: |
+    # Verify tree is installed and working
+    tree --version
+    # Also verify the booted image shows we're running a modified image
+    bootc status --booted --format humanreadable
