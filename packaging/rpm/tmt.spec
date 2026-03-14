@@ -1,3 +1,5 @@
+%global debug_package %{nil}
+
 Name:           tmt
 Version:        0.0.0
 Release:        %autorelease
@@ -7,13 +9,10 @@ License:        MIT
 URL:            https://github.com/teemtee/tmt
 Source0:        %{pypi_source tmt}
 
-BuildArch:      noarch
 BuildRequires:  python3-devel
 
 # For rst2man
 BuildRequires:  python3-docutils
-
-Requires:       git-core rsync sshpass
 
 %if 0%{?fedora} < 40
 Obsoletes:      python3-tmt < %{version}-%{release}
@@ -27,18 +26,31 @@ Provides:       tmt-report-reportportal == %{version}-%{release}
 Obsoletes:      tmt-report-reportportal < %{version}-%{release}
 %endif
 
-Recommends:     bash-completion
-Recommends:     ansible-core
-
-%py_provides    python3-tmt
 
 %global _metapackage_description %{expand:
 This is a metapackage bringing in extra dependencies for tmt.
 It contains no code, just makes sure the dependencies are installed.}
 
-%description
+%global _description %{expand:
 The tmt Python module and command line tool implement the test
 metadata specification (L1 and L2) and allows easy test execution.
+}
+
+%description %_description
+
+%package -n python3-tmt
+Summary:        %{summary}
+BuildArch:      noarch
+
+Requires:       git-core
+Requires:       rsync
+Requires:       sshpass
+Recommends:     bash-completion
+Recommends:     ansible-core
+
+Provides:       tmt = %{version}-%{release}
+
+%description -n python3-tmt %_description
 
 %pyproject_extras_subpkg -n tmt export-polarion
 %pyproject_extras_subpkg -n tmt report-junit
@@ -184,7 +196,7 @@ install -pm 644 %{name}/steps/provision/mrack/mrack* %{buildroot}/etc/%{name}/
 %check
 %pyproject_check_import
 
-%files -n tmt -f %{pyproject_files}
+%files -n python3-tmt -f %{pyproject_files}
 %doc README.rst examples
 %{_bindir}/tmt
 %{_mandir}/man1/tmt.1.gz
