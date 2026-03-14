@@ -51,7 +51,7 @@ jobs:
         if: ${{ matrix.builder == 'linkcheck' }}
 
       - name: Run sphinx builder ${{ matrix.sphinx_builder || matrix.builder }}
-        run: sphinx-build -b ${{ matrix.sphinx_builder || matrix.builder }} ${{ matrix.args }} docs/ docs/_build
+        run: sphinx-build -E -b ${{ matrix.sphinx_builder || matrix.builder }} ${{ matrix.args }} docs/ docs/_build
 
       # TODO: enable all checks
       # https://github.com/sphinx-contrib/sphinx-lint/issues/74

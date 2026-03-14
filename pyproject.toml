@@ -487,3 +487,8 @@ skip = "tests/execute/weird/data/weird.txt,tests/lint/plan/data/invalid_attr.fmf
 [tool.djlint]
 use_gitignore=true
 ignore="H005,H030,H031"
+
+[tool.check-wheel-contents]
+# W002: Wheel contains duplicate files
+#   Minor issue for us, it is fine if we have a few duplicate files
+ignore = ["W002"]

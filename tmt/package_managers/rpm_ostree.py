@@ -7,6 +7,7 @@ from tmt.package_managers import (
     Options,
     PackageManager,
     PackageManagerEngine,
+    PackagePath,
     escape_installables,
     provides_package_manager,
 )
@@ -193,4 +194,75 @@ class RpmOstree(PackageManager[RpmOstreeEngine]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        raise GeneralError("rpm-ostree does not support debuginfo packages.")
+        self.warn("Installation of debuginfo packages not supported yet.")
+        return CommandOutput(stdout=None, stderr=None)
+
+    def enable_copr(self, *repositories: str) -> None:
+        """
+        Enable COPR repositories by delegating to a Dnf5 package manager instance.
+        """
+
+        if not repositories:
+            return
+
+        from tmt.package_managers.dnf import Dnf5
+
+        Dnf5(guest=self.guest, logger=self._logger).enable_copr(*repositories)
+
+    def sort_packages(
+        self,
+        *installables: Installable,
+        options: Options,
+    ) -> tuple[list[Installable], list[Installable]]:
+        """Sort packages into required and recommended based on presence and skip_missing."""
+        required: list[Installable] = []
+        recommended: list[Installable] = []
+
+        for installable in installables:
+            if all(self.check_presence(installable).values()):
+                continue
+            if options.skip_missing:
+                recommended.append(installable)
+            else:
+                required.append(installable)
+
+        return required, recommended
+
+    def install_from_repository(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
+        options = options or Options()
+        required, recommended = self.sort_packages(*installables, options=options)
+
+        for package in recommended:
+            self.info('package', str(package), 'green')
+            try:
+                self.install(package)
+            except RunError as error:
+                self.debug(f"Package installation failed: {error}")
+                self.warn(f"Unable to install recommended package '{package}'.")
+
+        if required:
+            return self.install(*required)
+
+        return CommandOutput(stdout=None, stderr=None)
+
+    def install_local(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
+
+        options = options or Options()
+        options.check_first = False
+
+        for package in installables:
+            assert isinstance(package, PackagePath)
+            try:
+                self.install(package, options=options)
+            except RunError as error:
+                self.warn(f"Local package '{package.name}' not installed: {error.stderr}")
+
+        return CommandOutput(stdout=None, stderr=None)

@@ -28,15 +28,13 @@ def test_invalid_repository_id(raw_id, error, artifact_provider):
         artifact_provider(raw_id)
 
 
-def test_fetch_contents_enables_repository(mock_installer, artifact_provider, tmppath):
+def test_fetch_contents_enables_repository(mock_package_manager, artifact_provider, tmppath):
     mock_guest = MagicMock()
-    mock_pm = MagicMock()
-    mock_pm.NAME = "dnf"
-    mock_guest.package_manager = mock_pm
+    mock_guest.package_manager = mock_package_manager
 
     provider = artifact_provider("copr.repository:@teemtee/stable")
 
     result = provider.fetch_contents(mock_guest, tmppath / "artifacts")
 
-    mock_installer.enable_copr.assert_called_once_with(['@teemtee/stable'])
+    mock_package_manager.enable_copr.assert_called_once_with('@teemtee/stable')
     assert result == []

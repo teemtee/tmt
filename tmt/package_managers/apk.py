@@ -192,4 +192,27 @@ class Apk(PackageManager[ApkEngine]):
         *installables: Installable,
         options: Optional[Options] = None,
     ) -> CommandOutput:
-        raise tmt.utils.GeneralError("There is no support for debuginfo packages in apk.")
+        raise tmt.utils.PrepareError(
+            f'Package manager "{self.guest.facts.package_manager}" does not support '
+            'installing debuginfo packages.'
+        )
+
+    def install_local(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
+        options = options or Options()
+        options.allow_untrusted = True
+        options.check_first = False
+        return self.install(*installables, options=options)
+
+    def install_from_url(
+        self,
+        *installables: Installable,
+        options: Optional[Options] = None,
+    ) -> CommandOutput:
+        raise tmt.utils.PrepareError(
+            f'Package manager "{self.guest.facts.package_manager}" '
+            'does not support installing from a remote URL.'
+        )
