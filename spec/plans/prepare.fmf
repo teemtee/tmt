@@ -45,6 +45,10 @@ description: |
         move or copy them into ``${TMT_PLAN_DATA}`` directory. Only
         files in this directory are guaranteed to be preserved.
 
+        Do **not** store persistent data in ``${TMT_TREE}``. There is no
+        guarantee that data written to this directory will persist between
+        steps. See :ref:`step-variables` for more details.
+
 example: |
     # Install fresh packages from a custom copr repository
     prepare:
