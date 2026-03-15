@@ -1666,6 +1666,8 @@ def test_invocation_terminate_process_not_running_anymore(
     )
 
 
+@unittest.mock.patch('jira.JIRA')
+@unittest.mock.patch('tmt.config.Config.fmf_tree', new_callable=unittest.mock.PropertyMock)
 class TestJiraLink(unittest.TestCase):
     def setUp(self):
         self.logger = tmt.log.Logger(actual_logger=logging.getLogger('tmt'))
@@ -1695,9 +1697,7 @@ class TestJiraLink(unittest.TestCase):
         # Cleanup the created files of tmt objects
         shutil.rmtree(self.tmp)
 
-    @unittest.mock.patch('jira.JIRA.add_simple_link')
-    @unittest.mock.patch('tmt.config.Config.fmf_tree', new_callable=unittest.mock.PropertyMock)
-    def test_jira_link_test_only(self, mock_config_tree, mock_add_simple_link) -> None:
+    def test_jira_link_test_only(self, mock_config_tree, mock_jira) -> None:
         mock_config_tree.return_value = self.config_tree
         test = tmt.Tree(logger=self.logger, path=self.tmp).tests(names=['tmp/test'])[0]
         tmt.utils.jira.link(
@@ -1705,15 +1705,13 @@ class TestJiraLink(unittest.TestCase):
             links=tmt.base.core.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
             logger=self.logger,
         )
-        result = mock_add_simple_link.call_args.args[1]
+        result = mock_jira.return_value.add_simple_link.call_args.args[1]
         assert 'https://tmt.testing-farm.io/?' in result['url']
         assert 'test-url=https%3A%2F%2Fgithub.com%2F' in result['url']
         assert '&test-name=%2Ftmp%2Ftest' in result['url']
         assert '&test-path=%2Ftests%2Funit%2Ftmp' in result['url']
 
-    @unittest.mock.patch('jira.JIRA.add_simple_link')
-    @unittest.mock.patch('tmt.config.Config.fmf_tree', new_callable=unittest.mock.PropertyMock)
-    def test_jira_link_test_plan_story(self, mock_config_tree, mock_add_simple_link) -> None:
+    def test_jira_link_test_plan_story(self, mock_config_tree, mock_jira) -> None:
         mock_config_tree.return_value = self.config_tree
         test = tmt.Tree(logger=self.logger, path=self.tmp).tests(names=['tmp/test'])[0]
         plan = tmt.Tree(logger=self.logger, path=self.tmp).plans(names=['tmp'])[0]
@@ -1723,7 +1721,7 @@ class TestJiraLink(unittest.TestCase):
             links=tmt.base.core.Links(data=['verifies:https://issues.redhat.com/browse/TT-262']),
             logger=self.logger,
         )
-        result = mock_add_simple_link.call_args.args[1]
+        result = mock_jira.return_value.add_simple_link.call_args.args[1]
         assert 'https://tmt.testing-farm.io/?' in result['url']
 
         assert 'test-url=https%3A%2F%2Fgithub.com%2F' in result['url']
@@ -1738,9 +1736,7 @@ class TestJiraLink(unittest.TestCase):
         assert '&story-name=%2Ftmp%2Fstory' in result['url']
         assert '&story-path=%2Ftests%2Funit%2Ftmp' in result['url']
 
-    @unittest.mock.patch('jira.JIRA.add_simple_link')
-    @unittest.mock.patch('tmt.config.Config.fmf_tree', new_callable=unittest.mock.PropertyMock)
-    def test_create_link_relation(self, mock_config_tree, mock_add_simple_link) -> None:
+    def test_create_link_relation(self, mock_config_tree, mock_jira) -> None:
         mock_config_tree.return_value = self.config_tree
         test = tmt.Tree(logger=self.logger, path=self.tmp).tests(names=['tmp/test'])[0]
         tmt.utils.jira.link(
