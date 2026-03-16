@@ -261,7 +261,18 @@ FEELING_SAFE_OPTION: list[ClickOptionDecoratorType] = [
              Do not use this option unless you trust metadata consumed
              by tmt, or unless you know what you are doing.
              """,
-    )
+    ),
+    option(
+        '--acessible-runner-devices',
+        metavar='PATTERN',
+        envvar='TMT_ACCESSIBLE_RUNNER_DEVICES',
+        multiple=True,
+        help="""
+             Guests may require access to devices of the runner, and
+             only devices whose path matches this regular expression
+             would be made accessible.
+             """,
+    ),
 ]
 
 # TODO: Maybe this should be reversed.

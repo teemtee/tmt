@@ -2171,6 +2171,14 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         # support missing `key` parameter
         return self._get_cli_flag('import_before_name_filter', 'import_before_name_filter', False)
 
+    @property
+    def accessible_runner_device_patterns(self) -> list[Pattern[str]]:
+        """
+        A list of patterns accessible runner devices must conform to.
+        """
+
+        return [re.compile(pattern) for pattern in self.opt('accessible_runner_devices')]
+
     def _level(self) -> int:
         """
         Hierarchy level
