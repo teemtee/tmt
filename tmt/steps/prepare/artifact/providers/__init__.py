@@ -215,7 +215,7 @@ class ArtifactProvider(ABC):
         self.sanitized_id = tmt.utils.sanitize_name(raw_id, allow_slash=False)
 
         self.id = self._extract_provider_id(raw_id)
-        self._artifacts = []
+        self._artifacts: list[ArtifactInfo] = []
 
     @classmethod
     @abstractmethod
