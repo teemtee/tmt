@@ -35,4 +35,5 @@ Table of Contents
     Questions <questions>
     Contribute <contribute>
     Code <code/index>
+    glossary
     Releases <releases/index>
