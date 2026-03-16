@@ -1,7 +1,8 @@
 """
-Shared COPR utilities for copr-based artifact providers.
+Shared COPR utilities.
 """
 
+import re
 import types
 from abc import abstractmethod
 from functools import cached_property
@@ -30,6 +31,33 @@ To quickly test Copr presence, you can try running:
   via ``pip install copr``.
 """,
 )
+
+
+COPR_URL = 'https://copr.fedorainfracloud.org/coprs'
+COPR_REPO_PATTERN = re.compile(r'^(@)?([^/]+)/([^/]+)$')
+
+
+def parse_copr_repo(copr_repo: str) -> tuple[bool, str, str]:
+    """
+    Parse a COPR repository identifier into its components.
+    """
+    matched = COPR_REPO_PATTERN.match(copr_repo)
+    if not matched:
+        raise tmt.utils.PrepareError(f"Invalid copr repository '{copr_repo}'.")
+    is_group, name, project = matched.groups()
+    return bool(is_group), name, project
+
+
+def build_copr_repo_url(copr_repo: str, chroot: str) -> str:
+    """
+    Construct the URL for a COPR ``.repo`` file.
+    """
+    is_group, name, project = parse_copr_repo(copr_repo)
+    group = 'group_' if is_group else ''
+    parts = [COPR_URL] + (['g'] if is_group else [])
+    parts += [name, project, 'repo', chroot]
+    parts += [f"{group}{name}-{project}-{chroot}.repo"]
+    return '/'.join(parts)
 
 
 def import_copr(logger: tmt.log.Logger) -> None:
