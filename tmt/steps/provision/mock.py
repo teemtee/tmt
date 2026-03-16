@@ -200,16 +200,15 @@ class MockShell:
         self.mock_shell.stdin.write(f'\necho {finished_keyword}\n')
         self.mock_shell.stdin.flush()
 
-        # Wait until we read the binary zero from stdout.
+        # Wait until we read the `finished_keyword`.
         while True:
             mock_shell_result = self.mock_shell.poll()
             if mock_shell_result is not None:
                 raise tmt.utils.ProvisionError(f'Mock shell abruptly exited: {mock_shell_result}.')
             events = self.epoll.poll()
             for fileno, _ in events:
-                if (
-                    fileno == self.mock_shell_stdout_fd
-                    and self.mock_shell.stdout.read() == f'{finished_keyword}\n'
+                if fileno == self.mock_shell_stdout_fd and self.mock_shell.stdout.read().endswith(
+                    f'{finished_keyword}\n'
                 ):
                     break
             else:
