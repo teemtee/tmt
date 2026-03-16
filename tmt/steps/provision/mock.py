@@ -407,6 +407,15 @@ class MockShell:
             yield  # type: ignore[misc]
 
             while self.mock_shell.poll() is None:
+                # The `epoll.poll` call returns a list of pairs of all the
+                # events, that are currently ready. The pair consists of the
+                # file descriptor and the event type (we only registered
+                # select.EPOLLIN - ready for reading).
+                #
+                # `epoll.poll` is level-based: each time it is invoked, it
+                # returns a list of descriptors which are ready and it will
+                # contain those descriptors until we actually read from the
+                # descriptor.
                 events = self.epoll.poll(timeout=timeout)
 
                 if len(events) == 0:
@@ -416,8 +425,9 @@ class MockShell:
 
                 # The command is finished when the returncode is written to its
                 # file.
-                # We want to break loop after we handled all the other epoll
-                # events because the event ordering is not guaranteed.
+                # We want to break loop after we handled all the epoll events
+                # other than `returncode` because the event ordering is not
+                # guaranteed.
                 if len(events) == 1 and events[0][0] == returncode_fd:
                     content = os.read(returncode_fd, 16)
                     returncode = int(content.decode('utf-8').strip())
