@@ -57,3 +57,31 @@ def test_fetch_contents_enables_repository(
     )
     assert result == []
     assert provider.repository is mock_repo
+
+
+def test_enumerate_artifacts(mock_copr, mock_package_manager, artifact_provider, tmppath):
+    mock_repo = MagicMock()
+    mock_repo.repo_ids = ['group_teemtee-stable-fedora-42-x86_64']
+    mock_guest = MagicMock()
+    mock_guest.package_manager = mock_package_manager
+
+    mock_package_manager.list_packages.return_value = [
+        'tmt-1.69.0-1.fc42.noarch',
+        'tmt-all-0:1.69.0-1.fc42.noarch',
+    ]
+
+    provider = artifact_provider("copr.repository:@teemtee/stable")
+
+    with patch(
+        'tmt.steps.prepare.artifact.providers.copr_repository.Repository.from_file_path',
+        return_value=mock_repo,
+    ):
+        provider.fetch_contents(mock_guest, tmppath / "artifacts")
+
+    provider.enumerate_artifacts(mock_guest)
+
+    assert len(provider.artifacts) == 2
+    assert provider.artifacts[0].version.name == 'tmt'
+    assert provider.artifacts[0].version.version == '1.69.0'
+    assert provider.artifacts[1].version.name == 'tmt-all'
+    assert provider.artifacts[1].version.epoch == 0
