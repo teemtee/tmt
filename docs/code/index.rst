@@ -14,6 +14,7 @@ the documentation generated from sources linked below.
     :maxdepth: 2
 
     Class Overview <classes>
+    Tree Handling <trees>
     Template Extensions <template-extensions>
     Plugin Introduction <plugin-introduction>
     tmt <../z_autodocs/tmt>

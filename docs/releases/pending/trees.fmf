@@ -1,0 +1,4 @@
+description: |
+    New section :ref:`trees` helps contributors to clearly
+    understand the difference between :ref:`user-tree`,
+    :ref:`work-tree` and :ref:`test-tree`.
