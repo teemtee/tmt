@@ -395,8 +395,9 @@ TMT_FEELING_SAFE
 
 TMT_ACCESSIBLE_RUNNER_DEVICES
     Guests may require access to devices of the runner, and only devices
-    whose path matches this regular expression would be made accessible.
-    By default no runner device is exposed.
+    whose path matches any of the regular expressions passed to this
+    option would be made accessible. By default no runner device is
+    exposed.
 
 TMT_CONFIG_DIR
     Path to an alternative directory with config files. By default

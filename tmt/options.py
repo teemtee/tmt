@@ -247,7 +247,7 @@ AGAIN_OPTION: list[ClickOptionDecoratorType] = [
     ),
 ]
 
-FEELING_SAFE_OPTION: list[ClickOptionDecoratorType] = [
+FEELING_SAFE_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '--feeling-safe',
         metavar='FEELING_SAFE',
@@ -263,14 +263,14 @@ FEELING_SAFE_OPTION: list[ClickOptionDecoratorType] = [
              """,
     ),
     option(
-        '--acessible-runner-devices',
+        '--accessible-runner-devices',
         metavar='PATTERN',
         envvar='TMT_ACCESSIBLE_RUNNER_DEVICES',
         multiple=True,
         help="""
              Guests may require access to devices of the runner, and
-             only devices whose path matches this regular expression
-             would be made accessible.
+             only devices whose path matches any of the regular
+             expressions passed to this option would be made accessible.
              """,
     ),
 ]
