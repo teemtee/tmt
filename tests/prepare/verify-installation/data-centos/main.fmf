@@ -15,7 +15,7 @@
       - how: verify-installation
         verify:
             make: baseos
-            diffutils: "[unknown]"
+            diffutils: "<unknown>"
             centpkg: epel
 
 /plan/failure:
@@ -23,7 +23,7 @@
       - how: verify-installation
         verify:
             make: SOME_NON_EXISTENT_REPO
-            diffutils: "[unknown]"
+            diffutils: "<unknown>"
             centpkg: epel
             random-non-existent-package: some-repo
 
