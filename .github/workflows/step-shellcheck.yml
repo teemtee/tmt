@@ -12,9 +12,6 @@ jobs:
   lint:
     runs-on: ubuntu-latest
 
-    permissions:
-      security-events: write
-
     steps:
       - name: Repository checkout
         uses: actions/checkout@v6
@@ -26,6 +23,9 @@ jobs:
       - id: ShellCheck
         name: Differential ShellCheck
         uses: redhat-plumbers-in-action/differential-shellcheck@v5
+        # Note: we do not use token here to have more control of when to upload the sarif.
+        #  It might be incorrect to upload them for PRs.
+        #  https://github.com/github/codeql-action/issues/3578
         with:
           # Keep exclusions in sync with shellcheck-py hook in .pre-commit-config.yaml
           exclude-path: |
@@ -33,7 +33,6 @@ jobs:
             examples/**
             tmt/steps/execute/scripts/*.sh.j2
             tmt/templates/**
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - if: ${{ always() }}
         name: Upload artifact with ShellCheck defects in SARIF format

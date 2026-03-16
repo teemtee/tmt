@@ -14,6 +14,8 @@ on:
         type: string
         description: Committish to checkout and run CI against
 
+permissions: {}
+
 jobs:
   pre-commit:
     uses: ./.github/workflows/step-pre-commit.yml

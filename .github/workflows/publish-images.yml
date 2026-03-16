@@ -1,6 +1,8 @@
 name: publish_images
 on: workflow_dispatch
 
+permissions: {}
+
 jobs:
   publish-images:
     runs-on: ubuntu-latest
