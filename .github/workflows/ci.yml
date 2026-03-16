@@ -32,7 +32,11 @@ jobs:
     uses: ./.github/workflows/step-shellcheck.yml
     with:
       ref: ${{ inputs.ref }}
+      upload_sarif: ${{ github.event_name != 'pull_request' }}
     needs: [ pre-commit ]
+    permissions:
+      # needed by upload-sarif job (and only conditionally)
+      security-events: write
 
   doc-tests:
     name: 📘 docs
