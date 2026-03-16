@@ -192,6 +192,12 @@ class Finish(tmt.steps.Step):
 
                 exceptions.append(exc)
 
+            def _is_failed() -> bool:
+                return bool(exceptions) or any(
+                    result.result in (ResultOutcome.ERROR, ResultOutcome.FAIL)
+                    for result in results
+                )
+
             for outcome in queue.run():
                 if not isinstance(outcome.phase, FinishPlugin):
                     continue
@@ -218,7 +224,10 @@ class Finish(tmt.steps.Step):
                         )
                     )
 
-                    continue
+                    # Do not let the queue continue.
+                    queue.stop()
+
+                    break
 
                 # Or, plugin finished successfully - not necessarily after
                 # achieving its goals successfully. Save results, and if
@@ -232,11 +241,16 @@ class Finish(tmt.steps.Step):
                         for exc in outcome.result.exceptions:
                             _record_exception(outcome, exc)
 
-                        continue
+                # Do not let the queue continue if there was an exception,
+                # or when there are negative results.
+                if _is_failed():
+                    queue.stop()
+
+                    break
 
             self._save_results(results)
 
-            if exceptions:
+            if _is_failed():
                 raise tmt.utils.GeneralError(
                     'finish step failed',
                     causes=exceptions,
