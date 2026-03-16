@@ -903,7 +903,7 @@ class GuestFacts(SerializableContainer):
         # Otherwise we may use sudo
         return True
 
-    def _query_sudo_prefix(self, guest: 'Guest') -> Optional[str]:
+    def _query_sudo_prefix(self, guest: 'Guest') -> str:
         # Note: we cannot reuse `is_superuser` or `can_sudo` fact so we just recall the query
         # functions for now
         if self._query_is_superuser(guest):
@@ -938,10 +938,15 @@ class GuestFacts(SerializableContainer):
         reports ``null``.
         """
 
-        image = self._query(
-            guest,
-            [(ShellScript('sudo bootc status --format yaml').to_shell_command(), r'image: (.+)')],
-        )
+        # Note: we cannot reuse `sudo_prefix` fact so we just recall the query
+        # function for now
+        sudo_prefix = self._query_sudo_prefix(guest)
+
+        command = Command("bootc", "status", "--format", "yaml")
+        if sudo_prefix:
+            command = Command(sudo_prefix) + command
+
+        image = self._query(guest, [(command, r'image: (.+)')])
 
         # if bootc reports status and the image is not `image: null`, we are in image mode
         if image and image != "null":
@@ -3498,6 +3503,7 @@ class GuestSsh(Guest, CommandCollector):
         try:
             if options.create_destination:
                 self.execute(Command("mkdir", "-p", destination.parent), silent=True)
+
             self._run_guest_command(cmd, silent=True)
 
         except tmt.utils.RunError as exc:
@@ -3545,17 +3551,20 @@ class GuestSsh(Guest, CommandCollector):
             self.debug(f"Copy '{source}' from the guest to '{destination}'.")
 
         try:
-            self._run_guest_command(
-                Command(
-                    "rsync",
-                    *options.to_rsync(),
-                    "-e",
-                    self._ssh_command.to_element(),
-                    f"{self._ssh_guest}:{source}",
-                    destination,
-                ),
-                silent=True,
-            )
+            with self.tmpdir(prefix='rsync-') as rsync_tempdir:
+                self._run_guest_command(
+                    Command(
+                        "rsync",
+                        '--temp-dir',
+                        rsync_tempdir,
+                        *options.to_rsync(),
+                        "-e",
+                        self._ssh_command.to_element(),
+                        f"{self._ssh_guest}:{source}",
+                        destination,
+                    ),
+                    silent=True,
+                )
 
         except tmt.utils.RunError as exc:
             # Provide a reasonable error to the user

@@ -1,0 +1,9 @@
+summary: Verify rsync push uses --temp-dir option
+description: |
+    Make sure a dedicated temporary directory is used by push operations
+    that use rsync.
+tag+:
+  - provision-only
+  - provision-virtual
+link:
+  - verifies: https://github.com/teemtee/tmt/pull/4662
