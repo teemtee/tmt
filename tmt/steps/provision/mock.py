@@ -446,8 +446,13 @@ class MockShell:
                 # guaranteed.
                 if len(events) == 1 and events[0][0] == returncode_fd:
                     content = os.read(returncode_fd, 16)
-                    returncode = int(content.decode('utf-8').strip())
-                    returncode_io.try_unregister()
+                    try:
+                        returncode = int(content.decode('ascii').strip())
+                    except ValueError:
+                        # Missing `returncode` is handled outside of the loop.
+                        break
+                    finally:
+                        returncode_io.try_unregister()
                     break
                 for fileno, _ in events:
                     if fileno == self.mock_shell_stdout_fd:
