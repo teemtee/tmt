@@ -10,6 +10,10 @@ import tmt.utils
 from tmt.container import container, simple_field
 from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, ShellScript
 
+#: Sentinel used when a package's source repository is unknown.
+UNKNOWN_PACKAGE_ORIGIN = "<unknown>"
+
+
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
 
@@ -226,6 +230,15 @@ class PackageManagerEngine(tmt.utils.Common):
         """
         List source repositories for each installed package.
 
+        The script must emit one line per package in the format::
+
+            <name> <origin>
+
+        Empty lines are allowed and will be ignored by the caller.  If
+        the origin field is omitted the package is treated as having an
+        unknown source repository (equivalent to
+        :py:data:`UNKNOWN_PACKAGE_ORIGIN`).
+
         :param packages: Package names to query.
         :returns: A shell script to list source repositories for the given packages.
         :raises NotImplementedError: If the package manager does not support this query.
@@ -354,27 +367,21 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
         :param packages: Package names to query.
         :returns: A mapping of package names to source repository names.
-            Packages not installed are mapped to ``None``.
+            Packages not installed are mapped to ``None``. Packages whose
+            source repository is unknown are mapped to
+            :py:data:`UNKNOWN_PACKAGE_ORIGIN`.
         """
         result: dict[str, Optional[str]] = dict.fromkeys(packages)
         script = self.engine.get_package_origin(result.keys())
         output = self.guest.execute(script)
         for line in (output.stdout or '').strip().splitlines():
-            # dnf4 produces a blank line after each entry due to the explicit \n
-            # in --queryformat combined with its own record separator.
-            # dnf5 does not have this issue and outputs one line per package.
+            # Empty lines are allowed by the engine contract.
             if not line.strip():
                 continue
             parts = line.split(maxsplit=1)
-            if len(parts) == 2:
-                # Expected format: "package-name repo-name"
-                result[parts[0]] = parts[1].strip()
-            elif len(parts) == 1:
-                # dnf4: empty %{from_repo} means package was not installed via a repo
-                result[parts[0]] = "[unknown]"
-            else:
-                # anything else is malformed
-                raise GeneralError(f"Unexpected output from package origin query: {line!r}")
+            package = parts[0]
+            # Omitted origin field → unknown source repository.
+            result[package] = parts[1].strip() if len(parts) == 2 else UNKNOWN_PACKAGE_ORIGIN
         return result
 
     def create_repository(self, directory: Path) -> CommandOutput:

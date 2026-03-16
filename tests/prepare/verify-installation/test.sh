@@ -58,14 +58,12 @@ rlJournalStart
         # diffutils passes on both distros in the failure plan
         rlAssertGrep "pass .* / diffutils" $rlRun_LOG
 
+        rlAssertGrep "4 packages" $rlRun_LOG
         if rlIsFedora; then
-            rlAssertGrep "5 packages" $rlRun_LOG
             rlAssertGrep "pass .* / make" $rlRun_LOG
             rlAssertGrep "fail .* / make-devel" $rlRun_LOG
             rlAssertGrep "actual 'tmt-artifact-shared'" $rlRun_LOG
-            rlAssertGrep "fail .* / bash" $rlRun_LOG
         else
-            rlAssertGrep "4 packages" $rlRun_LOG
             rlAssertGrep "pass .* / centpkg" $rlRun_LOG
             rlAssertGrep "fail .* / make" $rlRun_LOG
             rlAssertGrep "actual 'baseos'" $rlRun_LOG

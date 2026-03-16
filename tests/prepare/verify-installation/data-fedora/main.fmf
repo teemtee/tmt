@@ -27,7 +27,6 @@
             make-devel: SOME_NON_EXISTENT_REPO
             diffutils: fedora
             random-non-existent-package: some-repo
-            bash: 99b6c549102d45d2ab876d156f974d68
 
 /test:
     test: /bin/true

@@ -35,9 +35,9 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
     ``dnf5``). Other package managers will cause the step to fail with
     an unsupported error.
 
-    On ``dnf`` (dnf4), packages pre-installed in a container image report
-    an empty source repository. Such packages are attributed to
-    ``[unknown]`` and can be matched with ``expected-repo: '[unknown]'``
+    Packages pre-installed in a container image (or otherwise not installed
+    via a repository) report an unknown source. Such packages are attributed
+    to ``<unknown>`` and can be matched with ``expected-repo: '<unknown>'``
     in the verification mapping.
 
     Verification failures are recorded as ``FAIL`` results in the
