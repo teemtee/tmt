@@ -7,7 +7,7 @@
 The ``fmf`` trees holding test, plan and story metadata are used
 at several places of the code and their data is copied to multiple
 locations. Here we give them clear names so that we can clearly
-distinguish what we're speaking about.
+distinguish them.
 
 
 .. _user-tree:
@@ -20,7 +20,7 @@ is called **user tree**. For example:
 
 .. code-block::
 
-    /home/psss/git/tests/nested
+    /home/user/git/tests/nested
 
 By default it is detected from the current working directory. It
 can be directly ``$PWD`` or the closest parent which contains
@@ -33,10 +33,10 @@ above:
 
 .. code-block::
 
-    tmt --root /home/psss/git/tests/nested
-    tmt --root /home/psss/git/tests/nested/deeper
-    cd /home/psss/git/tests/nested && tmt
-    cd /home/psss/git/tests/nested/deeper && tmt
+    tmt --root /home/user/git/tests/nested
+    tmt --root /home/user/git/tests/nested/deeper
+    cd /home/user/git/tests/nested && tmt
+    cd /home/user/git/tests/nested/deeper && tmt
 
 
 .. _work-tree:
@@ -55,8 +55,7 @@ in the ``TMT_TREE`` environment variable. For example this is a
 
 Runner work tree is synced to the **guest work tree** so that
 tests defined by the discover shell plugin or prepare shell phases
-can use files from the *user tree* when scripts are executed on
-the guest.
+can use files and scripts from there.
 
 .. code-block::
 
@@ -68,9 +67,9 @@ the guest.
 Test Tree
 ------------------------------------------------------------------
 
-The discover plugin prepares ``tests`` directory where test
-scripts and files are available for test execution, let's call it
-a **test tree**.
+The discover plugin prepares a ``tests`` directory where test
+scripts and files are available for test execution. This directory
+is called a **test tree**.
 
 The ``fmf`` discover plugin copies *user tree* to *test tree* when
 ``url`` is not provided. Otherwise the whole git repository is
