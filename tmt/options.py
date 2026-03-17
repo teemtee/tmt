@@ -247,7 +247,7 @@ AGAIN_OPTION: list[ClickOptionDecoratorType] = [
     ),
 ]
 
-FEELING_SAFE_OPTIONS: list[ClickOptionDecoratorType] = [
+SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '--feeling-safe',
         metavar='FEELING_SAFE',

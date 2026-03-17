@@ -1663,7 +1663,7 @@ class BasePlugin(
             tmt.options.VERBOSITY_OPTIONS
             + tmt.options.FORCE_DRY_OPTIONS
             + tmt.options.AGAIN_OPTION
-            + tmt.options.FEELING_SAFE_OPTIONS
+            + tmt.options.SECURITY_OPTIONS
         )
 
     @classmethod
