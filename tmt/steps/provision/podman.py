@@ -37,6 +37,82 @@ DEFAULT_PULL_INTERVAL = 5
 # podman default stop time is 10s
 DEFAULT_STOP_TIME = 1
 
+# Allowlist of safe device patterns for security
+# Only devices matching these patterns are permitted to prevent exposure
+# of dangerous devices like storage devices in shared environments
+ALLOWED_DEVICE_PATTERNS = [
+    # KVM and virtualization devices
+    '/dev/kvm',
+    '/dev/vhost-net',
+    '/dev/vhost-vsock',
+    # Serial/console devices (common for testing)
+    '/dev/ttyS*',
+    '/dev/ttyUSB*',
+    '/dev/ttyACM*',
+    # Audio devices
+    '/dev/snd/*',
+    # Graphics auxiliary devices (not primary graphics devices)
+    '/dev/drm_dp_aux*',
+    # Random number devices
+    '/dev/random',
+    '/dev/urandom',
+    '/dev/hwrng',
+    # Specific input devices
+    '/dev/input/event*',
+    '/dev/input/js*',
+]
+
+
+def _validate_device_against_allowlist(device: str) -> str:
+    """
+    Validate device path against allowlist for security.
+
+    Only devices matching allowed patterns are permitted to prevent exposure
+    of dangerous devices like storage devices in shared environments like
+    Testing Farm.
+    """
+    import fnmatch
+
+    # Check if device matches any allowed pattern
+    for pattern in ALLOWED_DEVICE_PATTERNS:
+        if fnmatch.fnmatch(device, pattern):
+            return device
+
+    # Device not in allowlist - block it
+    raise tmt.utils.SpecificationError(
+        f"Device '{device}' is not in the allowlist of permitted devices. "
+        "For security reasons, only specific safe devices are allowed. "
+        f"Allowed patterns: {', '.join(ALLOWED_DEVICE_PATTERNS)}"
+    )
+
+
+def normalize_device_list(key_address: str, raw_value: Any, logger: tmt.log.Logger) -> list[str]:
+    """
+    Normalize and validate device list against security allowlist.
+    """
+    devices = raw_value
+
+    if not devices:
+        return []
+
+    if isinstance(devices, str):
+        devices = [devices]
+
+    if not isinstance(devices, list):
+        raise tmt.utils.SpecificationError(
+            f"Device must be a string or list of strings, got {type(devices).__name__}."
+        )
+
+    validated_devices = []
+    for device in devices:
+        if not isinstance(device, str):
+            raise tmt.utils.SpecificationError(
+                f"Each device must be a string, got {type(device).__name__}: {device}"
+            )
+        validated_devices.append(_validate_device_against_allowlist(device.strip()))
+
+    return validated_devices
+
 
 @container
 class PodmanGuestData(tmt.guest.GuestData):
@@ -114,15 +190,16 @@ class PodmanGuestData(tmt.guest.GuestData):
         normalize=tmt.utils.normalize_int,
     )
 
-    device: list[str] = field(
+    expose_device: list[str] = field(
         default_factory=list,
-        option='--device',
+        option='--expose-device',
         multiple=True,
         metavar='DEVICE',
         help="""
-        Device to expose to the container (e.g., /dev/kvm, /dev/ttyS3).
-        Can be specified multiple times.
-        """,
+             Device to expose to the container (e.g., ``/dev/kvm``, ``/dev/ttyS3``).
+             Can be specified multiple times.
+             """,
+        normalize=normalize_device_list,
     )
 
 
@@ -148,7 +225,7 @@ class GuestContainer(tmt.Guest):
     pull_interval: int
     stop_time: int
     network_prefix: Optional[str]
-    device: list[str]
+    expose_device: list[str]
     logger: tmt.log.Logger
 
     @property
@@ -324,7 +401,7 @@ class GuestContainer(tmt.Guest):
         additional_args.extend(self._setup_environment())
 
         # Add device access if requested
-        for device in self.device:
+        for device in self.expose_device:
             additional_args.extend(['--device', device])
 
         # Run the container
@@ -702,31 +779,23 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
 
     .. code-block:: yaml
 
-        # Expose devices to the container (e.g., for KVM acceleration)
+        # Expose devices to the container (single or multiple)
         provision:
             how: container
             image: fedora:latest
-            device: /dev/kvm
-
-    .. code-block:: yaml
-
-        # Expose multiple devices to the container
-        provision:
-            how: container
-            image: fedora:latest
-            device:
+            expose-device:
                 - /dev/kvm
                 - /dev/ttyS3
-                - /dev/drm_dp_aux5
 
     In order to always pull the fresh container image use ``pull: true``.
 
     In order to run the container with different user as the default ``root``,
     use ``user: USER``.
 
-    Use ``device`` to expose host devices to the container. This is useful
-    for cases like KVM acceleration (``device: /dev/kvm``) or accessing
+    Use ``expose-device`` to expose host devices to the container. This is useful
+    for cases like KVM acceleration (``expose-device: /dev/kvm``) or accessing
     serial devices. Multiple devices can be specified as a list.
+    For security, only devices matching a predefined allowlist are permitted.
 
     Container-backed guests do not support soft reboots or custom reboot
     commands. Soft reboot or ``tmt-reboot -c ...`` will result in an

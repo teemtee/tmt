@@ -1,0 +1,51 @@
+# 1. The Base Plan (contains common settings)
+/plan-base:
+    summary: Base plan for container device test
+    discover:
+        how: fmf
+    provision:
+        how: container
+        image: fedora
+    execute:
+        how: tmt
+
+    # 2. Child plans nested directly under /plan-base naturally inherit its settings
+    /plan-with-random:
+        summary: Test container provisioning with random device access
+        # Merge the test filter to discover only the random device test
+        discover+:
+            test: /tests/test-random-device
+        # The + suffix merges this device into the parent's container provisioner
+        provision+:
+            expose-device: /dev/random
+
+    /plan-with-multiple-devices:
+        summary: Test container provisioning with multiple device access
+        # Merge the test filter to discover only the multiple-devices test
+        discover+:
+            test: /tests/test-multiple-devices
+        provision+:
+            expose-device:
+                - /dev/random
+                - /dev/urandom
+
+# 3. Tests kept in a separate tree to avoid schema warnings
+/tests:
+    /test-random-device:
+        framework: shell
+        test: |
+            if [ -c /dev/random ]; then
+                echo "SUCCESS"
+            else
+                exit 1
+            fi
+
+    /test-multiple-devices:
+        framework: shell
+        test: |
+            if [ -c /dev/random ] && [ -c /dev/urandom ]; then
+                echo "SUCCESS: Both devices are present."
+            else
+                echo "FAIL: One or both devices are missing."
+                exit 1
+            fi

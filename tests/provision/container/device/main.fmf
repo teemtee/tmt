@@ -1,0 +1,7 @@
+tag+:
+  - provision-container-device
+
+summary: Test container provisioning with device access
+description: |
+    Test that container provisioning plugin properly handles
+    device mounting and access for containers.
