@@ -157,6 +157,8 @@ class Finish(tmt.steps.Step):
             guest_copies: list[Guest] = []
 
             for guest in self.plan.provision.ready_guests:
+                if guest.is_released:
+                    continue
                 # Create a guest copy and change its parent so that the
                 # operations inside finish plugins on the guest use the
                 # finish step config rather than provision step config.
