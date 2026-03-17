@@ -20,6 +20,7 @@ import tmt.utils.signals
 from tmt.checks import Check, CheckEvent, CheckPlugin
 from tmt.container import container, field, simple_field
 from tmt.guest import Guest
+from tmt.options import option as option
 from tmt.plugins import PluginRegistry
 from tmt.result import (
     CheckResult,
@@ -635,6 +636,10 @@ class ExecutePlugin(tmt.steps.Plugin[ExecuteStepDataT, None]):
 
     # Methods ("how: ..." implementations) registered for the same step.
     _supported_methods: PluginRegistry[tmt.steps.Method] = PluginRegistry('step.execute')
+
+    # No additional options, `execute` does not support modifications of
+    # phases.
+    _base_command_options = ()
 
     # Internal executor is the default implementation
     how = 'tmt'
