@@ -247,7 +247,7 @@ AGAIN_OPTION: list[ClickOptionDecoratorType] = [
     ),
 ]
 
-FEELING_SAFE_OPTION: list[ClickOptionDecoratorType] = [
+SECURITY_OPTIONS: list[ClickOptionDecoratorType] = [
     option(
         '--feeling-safe',
         metavar='FEELING_SAFE',
@@ -261,7 +261,18 @@ FEELING_SAFE_OPTION: list[ClickOptionDecoratorType] = [
              Do not use this option unless you trust metadata consumed
              by tmt, or unless you know what you are doing.
              """,
-    )
+    ),
+    option(
+        '--exposable-runner-devices',
+        metavar='PATTERN',
+        envvar='TMT_EXPOSABLE_RUNNER_DEVICES',
+        multiple=True,
+        help="""
+             Guests may require access to devices of the runner, and
+             only devices whose path matches any of the regular
+             expressions passed to this option would be made accessible.
+             """,
+    ),
 ]
 
 # TODO: Maybe this should be reversed.

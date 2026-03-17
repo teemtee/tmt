@@ -393,6 +393,12 @@ TMT_FEELING_SAFE
     when you can fully trust the ``tmt`` metadata or if you know
     what you are doing.
 
+TMT_EXPOSABLE_RUNNER_DEVICES
+    Guests may require access to devices of the runner, and only devices
+    whose path matches the regular expression passed to this environment
+    variable would be made accessible. By default no runner device can
+    be exposed to guests.
+
 TMT_CONFIG_DIR
     Path to an alternative directory with config files. By default
     ``~/.config/tmt`` is used.
