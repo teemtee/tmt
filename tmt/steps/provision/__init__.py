@@ -27,12 +27,6 @@ from tmt.container import (
     field,
 )
 from tmt.log import Logger
-from tmt.package_managers import (
-    FileSystemPath as FileSystemPath,
-)
-from tmt.package_managers import (
-    Package as Package,
-)
 from tmt.plugins import PluginRegistry
 from tmt.steps import Action, ActionTask, PhaseQueue, PushTask, sync_with_guests
 from tmt.utils import Path
