@@ -263,9 +263,9 @@ FEELING_SAFE_OPTIONS: list[ClickOptionDecoratorType] = [
              """,
     ),
     option(
-        '--accessible-runner-devices',
+        '--exposable-runner-devices',
         metavar='PATTERN',
-        envvar='TMT_ACCESSIBLE_RUNNER_DEVICES',
+        envvar='TMT_EXPOSABLE_RUNNER_DEVICES',
         multiple=True,
         help="""
              Guests may require access to devices of the runner, and

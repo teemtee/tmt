@@ -2172,12 +2172,20 @@ class Common(_CommonBase, metaclass=_CommonMeta):
         return self._get_cli_flag('import_before_name_filter', 'import_before_name_filter', False)
 
     @property
-    def accessible_runner_device_patterns(self) -> list[Pattern[str]]:
+    def exposable_runner_device_patterns(self) -> list[Pattern[str]]:
         """
-        A list of patterns accessible runner devices must conform to.
+        A list of patterns exposable runner devices must conform to.
         """
 
-        return [re.compile(pattern) for pattern in self.opt('accessible_runner_devices')]
+        try:
+            return [re.compile(pattern) for pattern in self.opt('exposable_runner_devices')]
+
+        except re.error as exc:
+            faulty_pattern = (
+                exc.pattern.decode() if isinstance(exc.pattern, bytes) else exc.pattern
+            )
+
+            raise GeneralError(f"Invalid regular expression '{faulty_pattern}'.") from exc
 
     def _level(self) -> int:
         """
