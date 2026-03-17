@@ -1,4 +1,5 @@
 name: release
+run-name: Release ${{ inputs.ref || github.ref_name }}
 
 on:
   release:
@@ -6,6 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
+        type: string
         description: 'Tag to release'
         required: true
 
@@ -13,13 +15,9 @@ permissions: {}
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.ref }}
-          persist-credentials: false
-      - uses: hynek/build-and-inspect-python-package@v2
+    uses: ./.github/workflows/step-build-wheel.yml
+    with:
+      ref: ${{ inputs.ref }}
 
   deploy:
     needs: [build]

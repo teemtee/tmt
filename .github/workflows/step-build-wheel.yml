@@ -1,0 +1,20 @@
+name: Build wheel
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        description: Committish to build
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - uses: hynek/build-and-inspect-python-package@v2

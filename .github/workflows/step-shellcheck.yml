@@ -1,0 +1,62 @@
+name: Differential ShellCheck
+on:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        description: Committish to test
+      upload_sarif:
+        type: boolean
+        description: Whether the sarif should be uploaded
+
+permissions: {}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    outputs:
+      sarif: ${{ steps.ShellCheck.outputs.sarif }}
+
+    steps:
+      - name: Repository checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ inputs.ref }}
+
+      - id: ShellCheck
+        name: Differential ShellCheck
+        uses: redhat-plumbers-in-action/differential-shellcheck@v5
+        # Note: we do not use token here to have more control of when to upload the sarif.
+        #  It might be incorrect to upload them for PRs.
+        #  https://github.com/github/codeql-action/issues/3578
+        with:
+          # Keep exclusions in sync with shellcheck-py hook in .pre-commit-config.yaml
+          exclude-path: |
+            tests/**
+            examples/**
+            tmt/steps/execute/scripts/*.sh.j2
+            tmt/templates/**
+
+      - if: ${{ always() }}
+        name: Upload artifact with ShellCheck defects in SARIF format
+        uses: actions/upload-artifact@v6
+        with:
+          name: Differential ShellCheck SARIF
+          path: ${{ steps.ShellCheck.outputs.sarif }}
+
+  upload-sarif:
+    name: Upload sarif
+    runs-on: ubuntu-slim
+    needs: [ lint ]
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/download-artifact@v6
+        with:
+          name: Differential ShellCheck SARIF
+      - uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: ${{ needs.lint.outputs.sarif }}
+    if: ${{ inputs.upload_sarif }}
