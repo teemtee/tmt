@@ -54,8 +54,9 @@ in the ``TMT_TREE`` environment variable. For example this is a
     runner:/var/tmp/tmt/run-123/plan/tree
 
 Runner work tree is synced to the **guest work tree** so that
-tests defined by the discover shell plugin or prepare shell phases
-can use files and scripts from there.
+tests defined by the :ref:`/plugins/discover/shell` discover
+plugin or prepare :ref:`/plugins/prepare/shell` phases can use
+files and scripts from there.
 
 .. code-block::
 
@@ -71,12 +72,13 @@ The discover plugin prepares a ``tests`` directory where test
 scripts and files are available for test execution. This directory
 is called a **test tree**.
 
-The ``fmf`` discover plugin copies *user tree* to *test tree* when
-``url`` is not provided. Otherwise the whole git repository is
-cloned into it.
+The :ref:`/plugins/discover/fmf` discover plugin copies *user
+tree* to *test tree* when ``url`` is not provided. Otherwise the
+whole git repository is cloned into it.
 
-The ``shell`` discover plugin creates a symlink to the *work
-tree* so the resulting structure looks like this:
+The :ref:`/plugins/discover/shell` discover plugin creates a
+symlink to the *work tree* so the resulting structure looks like
+this:
 
 .. code-block::
 
