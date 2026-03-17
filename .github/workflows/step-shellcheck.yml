@@ -7,7 +7,7 @@ on:
         description: Committish to test
       upload_sarif:
         type: boolean
-        description: Whether the sharif should be uploaded
+        description: Whether the sarif should be uploaded
 
 permissions: {}
 
