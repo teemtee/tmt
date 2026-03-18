@@ -17,6 +17,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    ClassVar,
     Generic,
     Literal,
     Optional,
@@ -53,7 +54,7 @@ from tmt.container import (
     option_to_key,
     simple_field,
 )
-from tmt.options import option
+from tmt.options import ClickOptionDecoratorType, option
 from tmt.result import ResultOutcome
 from tmt.utils import (
     DEFAULT_NAME,
@@ -1366,7 +1367,7 @@ class Step(
 
         # Do not prune plugin workdirs, each plugin decides what should
         # be pruned from the workdir and what should be kept there
-        plugins = self.phases(classes=BasePlugin)  # type: ignore[type-abstract]
+        plugins = self.phases(classes=BasePlugin)
         for plugin in plugins:
             if plugin.workdir is not None:
                 preserved_members = {*preserved_members, plugin.workdir.name}
@@ -1537,6 +1538,11 @@ class BasePlugin(
     # subclasses.
     _supported_methods: 'tmt.plugins.PluginRegistry[Method]'
 
+    #: A sequence of :py:func:`click.option`-like decorators that should
+    #: be added to the step base command created by :py:meth:`base_command`.
+    #: Decorators are applied in the same order they are in this sequence.
+    _base_command_options: tuple[ClickOptionDecoratorType, ...] = (PHASE_OPTIONS,)
+
     _data_class: type[StepDataT]
 
     @classmethod
@@ -1551,6 +1557,21 @@ class BasePlugin(
         return cls._data_class
 
     data: StepDataT
+
+    #: Point back to the :py:class:`Step` subclass implementing the step
+    #: which owns this family of plugins.
+    #:
+    #: .. note::
+    #:
+    #:    This "backlink" is initialized at the end of Python modules
+    #:    holding the respective step implementations. Each ``Step``
+    #:    subclass points at the base class of its plugin family, via
+    #:    simple class-level attribute, and it would be impossible to
+    #:    establish the same kind of link in the opposite direction.
+    #:    When the plugin base class is defined, the step class does not
+    #:    even exist yet. Therefore this link is set after both classes,
+    #:    step and its plugin base, are finalized.
+    _step_class: ClassVar[type[Step]]
 
     @classmethod
     def get_step_name(cls) -> str:
@@ -1633,17 +1654,61 @@ class BasePlugin(
         return self.pathless_safe_name
 
     @classmethod
-    @abc.abstractmethod
     def base_command(
         cls,
         usage: str,
         method_class: Optional[type[click.Command]] = None,
     ) -> click.Command:
         """
-        Create base click command (common for all step plugins)
+        Create base :py:mod:`click` command for plugins of the step.
         """
 
-        raise NotImplementedError
+        step_name = cls._step_class.__name__.lower()
+
+        # Prepare general usage message for the step
+        if method_class:
+            usage = cls._step_class.usage(method_overview=usage)
+
+        # Instead of the well-known way `@option(...)` decorators are
+        # used, we get rid of the syntax sugar they add, and apply them
+        # in a way they are actually applied. We want to include the
+        # extra decorators, and we can't simply `@cls._base_command_extra_options`.
+        # Note that the order is opposite to what one would expect when
+        # looking at decorators, which is correct, they are indeed applied
+        # from bottom to top.
+
+        # First, the actual command code.
+        def base_command(context: 'tmt.cli.Context', **kwargs: Any) -> None:
+            context.obj.steps.add(step_name)
+            cls._step_class.store_cli_invocation(context)
+
+        # Then apply the custom options by invoking them as if they were
+        # decorators.
+        for options_decorator in cls._base_command_options:
+            base_command = options_decorator(base_command)
+
+        # And then the rest, `@option(...)` for `--how`, context, and
+        # finally `@click.command(...)`.
+        base_command = option(
+            '-h',
+            '--how',
+            # Cannot use `choices=...` because we want to allow values
+            # that are not on the list *as long as they are clearly
+            # matching values on the list*. For example, `virtual` is
+            # absolutely acceptable as long as some `virtual.*` plugin
+            # is available.
+            metavar='|'.join(
+                sorted([method.name for method in cls._supported_methods.iter_plugins()])
+            ),
+            help=f'Use specified method for {step_name} phase.',
+        )(base_command)
+
+        # ignore[arg-type]: `pass_context` annotations add `Context`
+        # parameter, but we already have that one, because we use it
+        # in the command code. This is probably much less visible when
+        # `pass_context` is used as a decorator.
+        base_command = click.pass_context(base_command)  # type: ignore[arg-type]
+        return click.command(cls=method_class, help=usage, name=step_name)(base_command)
 
     @classmethod
     def options(cls, how: Optional[str] = None) -> list[tmt.options.ClickOptionDecoratorType]:
