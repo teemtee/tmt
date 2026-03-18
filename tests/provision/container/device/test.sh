@@ -28,7 +28,9 @@ rlJournalStart
         # Test that device access fails when TMT_EXPOSABLE_RUNNER_DEVICES is not set
         # Temporarily unset the environment variable to test security restriction
         rlRun "unset TMT_EXPOSABLE_RUNNER_DEVICES"
-        rlRun "tmt run -vvvddd --scratch --id $run  plan --name /plan/with-random test --name /test-random-device" 2 "Device access should fail without allowlist"
+        rlRun -s "tmt run -vvvddd --scratch --id $run  plan --name /plan/with-random test --name /test-random-device" 2 "Device access should fail without allowlist"
+        # Check that the failure is due to security allowlist validation
+        rlAssertGrep "Device '/dev/random' cannot be exposed. The device is not in the security allowlist" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartCleanup
