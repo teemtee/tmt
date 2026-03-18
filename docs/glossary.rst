@@ -20,6 +20,15 @@ Directories
 
 .. glossary::
 
+    plan workdir
+        Directory used for storing temporary files related to particular
+        plan, e.g. ``/var/tmp/tmt/run-123/plans/core``.
+
+    run workdir
+        Working directory created for each run used for storing various
+        temporary files needed during the test discovery and execution,
+        e.g. ``/var/tmp/tmt/run-123/``.
+
     test tree
         Directory ``tests`` containing test code prepared by the
         ``discover`` step, e.g.
@@ -36,12 +45,3 @@ Directories
         to this directory is available in the ``TMT_TREE`` environment
         variable, e.g. ``/var/tmp/tmt/run-123/plans/core/tree``. See
         :ref:`work-tree` for details.
-
-    run workdir
-        Working directory created for each run used for storing various
-        temporary files needed during the test discovery and execution,
-        e.g. ``/var/tmp/tmt/run-123/``.
-
-    plan workdir
-        Directory used for storing temporary files related to particular
-        plan, e.g. ``/var/tmp/tmt/run-123/plans/core``.

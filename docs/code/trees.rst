@@ -54,9 +54,8 @@ in the ``TMT_TREE`` environment variable. For example this is a
     runner:/var/tmp/tmt/run-123/plan/tree
 
 Runner work tree is synced to the **guest work tree** so that
-tests defined by the :ref:`/plugins/discover/shell` discover
-plugin or prepare :ref:`/plugins/prepare/shell` phases can use
-files and scripts from there.
+discovered tests, prepare and finish steps can can use files and
+scripts from there.
 
 .. code-block::
 
