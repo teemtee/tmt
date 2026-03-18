@@ -1130,16 +1130,14 @@ class GuestTestcloud(tmt.GuestSsh):
             try:
                 self._image.prepare()
             except FileNotFoundError as error:
-                raise ProvisionError(
-                    f"Image '{self._image.local_path}' not found.") from error
+                raise ProvisionError(f"Image '{self._image.local_path}' not found.") from error
             except (testcloud.exceptions.TestcloudPermissionsError, PermissionError) as error:
                 raise ProvisionError(
                     f"Failed to prepare the image. Check the "
                     f"'{self.testcloud_image_dirpath}' directory permissions."
                 ) from error
             except KeyError as error:
-                raise ProvisionError(
-                    f"Failed to prepare image '{self.image_url}'.") from error
+                raise ProvisionError(f"Failed to prepare image '{self.image_url}'.") from error
 
             # Validate the base image is a proper qcow2 file
             image_path = Path(self._image.local_path)
@@ -1153,7 +1151,8 @@ class GuestTestcloud(tmt.GuestSsh):
                     self.debug(f"Removing corrupt image '{image_path}'.")
                     image_path.unlink()
                 raise ProvisionError(
-                    f"Image '{image_path}' is not a valid qcow2 image.") from error
+                    f"Image '{image_path}' is not a valid qcow2 image."
+                ) from error
 
         try:
             retry(
@@ -1165,8 +1164,7 @@ class GuestTestcloud(tmt.GuestSsh):
             )
         except tmt.utils.RetryError as error:
             raise ProvisionError(
-                f"Failed to prepare a valid image after "
-                f"{IMAGE_PREPARE_RETRY_ATTEMPTS} attempts."
+                f"Failed to prepare a valid image after {IMAGE_PREPARE_RETRY_ATTEMPTS} attempts."
             ) from error
 
         # Prepare hostname (get rid of possible unwanted characters)
