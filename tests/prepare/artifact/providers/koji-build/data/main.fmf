@@ -12,6 +12,17 @@
     execute:
         how: tmt
 
+/plan/auto-verify:
+    summary: Verify auto-inject of verify-installation phase when auto_verify=true (default)
+
+/plan/no-verify:
+    summary: Verify auto_verify=false suppresses auto-inject of verify-installation phase
+    prepare:
+      - how: artifact
+        provide:
+          - koji.build:DUMMY_KOJI_BUILD_ID
+        auto_verify: false
+
 /test:
     test: ./test.sh
     duration: 5m

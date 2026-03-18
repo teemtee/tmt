@@ -1,4 +1,4 @@
-from typing import ClassVar, Optional
+from typing import ClassVar, Final, Optional
 
 import tmt.base.core
 import tmt.steps
@@ -14,6 +14,12 @@ from tmt.steps.prepare.artifact.providers import (
     Repository,
 )
 from tmt.utils import Environment, Path
+
+#: Name of the shared repository created by the artifact plugin.
+ARTIFACT_SHARED_REPO_NAME: Final[str] = 'tmt-artifact-shared'
+
+#: Filename of the artifact metadata file written by the artifact plugin.
+ARTIFACT_METADATA_FILENAME: Final[str] = 'artifacts.yaml'
 
 
 @container
@@ -34,6 +40,17 @@ class PrepareArtifactData(PrepareStepData):
         help="""
             Default priority for created artifact repositories. Lower values mean
             higher priority in package managers.
+            """,
+    )
+
+    verify: bool = field(
+        default=True,
+        option='--verify/--no-verify',
+        is_flag=True,
+        help="""
+            Automatically verify that packages from require/recommend that are
+            present in the artifact metadata were installed from the artifact
+            repository. Enabled by default.
             """,
     )
 
@@ -169,8 +186,8 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
 
     # Shared repository configuration
     SHARED_REPO_DIR_NAME: ClassVar[str] = 'artifact-shared-repo'
-    SHARED_REPO_NAME: ClassVar[str] = 'tmt-artifact-shared'
-    ARTIFACTS_METADATA_FILENAME: ClassVar[str] = 'artifacts.yaml'
+    SHARED_REPO_NAME: ClassVar[str] = ARTIFACT_SHARED_REPO_NAME
+    ARTIFACTS_METADATA_FILENAME: ClassVar[str] = ARTIFACT_METADATA_FILENAME
 
     def go(
         self,
