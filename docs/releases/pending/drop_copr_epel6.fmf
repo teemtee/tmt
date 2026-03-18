@@ -1,0 +1,4 @@
+description: |
+  Copr support for ``epel-6`` is dropped as that chroot has been
+  `removed <https://github.com/fedora-copr/copr/issues/3357>`_
+  from copr.fedoraproject.org a long time ago.
