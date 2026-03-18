@@ -370,6 +370,44 @@ class Prepare(tmt.steps.Step):
             missing='skip',
         )
 
+        # Auto-inject a verify-installation phase when:
+        # - at least one artifact phase has verify=True, and
+        # - no explicit verify-installation phase was configured by the user.
+        from tmt.steps.prepare.artifact import PrepareArtifact
+        from tmt.steps.prepare.verify_installation import (
+            PrepareVerifyInstallation,
+            PrepareVerifyInstallationData,
+        )
+
+        artifact_phases_with_verify = [
+            phase
+            for phase in self._phases
+            if isinstance(phase, PrepareArtifact) and phase.data.verify
+        ]
+        has_verify_phase = any(
+            isinstance(phase, PrepareVerifyInstallation) for phase in self._phases
+        )
+
+        if artifact_phases_with_verify and not has_verify_phase:
+            # Mirror the where= scope of the artifact phases: if any artifact
+            # phase runs on all guests (empty where), verify should too;
+            # otherwise restrict to the union of their guest/role targets.
+            if any(not phase.data.where for phase in artifact_phases_with_verify):
+                verify_where: list[str] = []
+            else:
+                verify_where = list(
+                    {dest for phase in artifact_phases_with_verify for dest in phase.data.where}
+                )
+            verify_data = PrepareVerifyInstallationData(
+                name='verify-artifact-packages',
+                how='verify-installation',
+                summary='Verify packages were installed from artifact repositories',
+                order=tmt.steps.PHASE_ORDER_PREPARE_VERIFY_INSTALLATION,
+                auto=True,
+                where=verify_where,
+            )
+            self._phases.append(PreparePlugin.delegate(self, data=verify_data))
+
         # Prepare guests (including workdir sync)
         guest_copies: list[Guest] = []
 
