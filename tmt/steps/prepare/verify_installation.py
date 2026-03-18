@@ -7,6 +7,7 @@ import tmt.utils
 from tmt.container import container, field
 from tmt.guest import Guest
 from tmt.log import Logger
+from tmt.package_managers import SpecialPackageOrigin
 from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
 from tmt.steps.prepare import PreparePlugin, PrepareStepData
 from tmt.utils import Environment
@@ -103,15 +104,15 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
 
         failed_packages: list[str] = []
         for package, expected_repo in self.data.verify.items():
-            actual_repo = package_origins.get(package)
+            actual_origin = package_origins[package]
 
-            if actual_repo == expected_repo:
+            if actual_origin == expected_repo:
                 outcome.results.append(
                     PhaseResult(
                         name=f'{self.name} / {package}',
                         result=ResultOutcome.PASS,
                         note=[
-                            f"Package '{package}' installed from expected repo '{actual_repo}'."
+                            f"Package '{package}' installed from expected repo '{actual_origin}'."
                         ],
                         guest=ResultGuestData.from_guest(guest=guest),
                     )
@@ -119,7 +120,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
                 continue
 
             failed_packages.append(package)
-            if actual_repo is None:
+            if actual_origin is SpecialPackageOrigin.NOT_INSTALLED:
                 note = (
                     f"Package '{package}': expected repo"
                     f" '{expected_repo}', but the package is not installed."
@@ -127,7 +128,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             else:
                 note = (
                     f"Package '{package}': expected repo"
-                    f" '{expected_repo}', actual '{actual_repo}'."
+                    f" '{expected_repo}', actual '{actual_origin}'."
                 )
 
             outcome.results.append(
@@ -140,15 +141,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             )
 
         if failed_packages:
-            # FIXME: once https://github.com/teemtee/tmt/pull/4667 is merged,
-            # the explicit exception appended here may no longer be needed —
-            # the prepare step will recognise FAIL outcomes and stop the run
-            # without requiring an attached exception.
-            outcome.exceptions.append(
-                tmt.utils.PrepareError(
-                    f"Package source verification failed for: {', '.join(failed_packages)}"
-                )
-            )
+            self.info(f"Package source verification failed for: {', '.join(failed_packages)}")
         else:
             self.info('All packages verified successfully.', color='green')
 
