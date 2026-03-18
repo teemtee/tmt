@@ -30,6 +30,7 @@ from tmt.utils import (
     ProvisionError,
     ShellScript,
     configure_constant,
+    retry,
     retry_session,
 )
 from tmt.utils.wait import Deadline, Waiting
@@ -217,6 +218,10 @@ BOOT_METHOD_SUPPORTED_METHODS: tuple[str, ...] = ('bios', 'uefi')
 #: Image url fetch retry attempts and interval
 IMAGE_URL_FETCH_RETRY_ATTEMPTS = 5
 IMAGE_URL_FETCH_RETRY_INTERVAL = 5
+
+#: Image prepare retry attempts and interval
+IMAGE_PREPARE_RETRY_ATTEMPTS = 3
+IMAGE_PREPARE_RETRY_INTERVAL = 5
 
 
 def normalize_memory_size(
@@ -1113,22 +1118,56 @@ class GuestTestcloud(tmt.GuestSsh):
                 # Adjust selinux tags for the actual image
                 testcloud.image.Image._adjust_image_selinux(image_path)
 
-        # Initialize and prepare testcloud image
-        self._image = testcloud.image.Image(self.image_url)
-        self.verbose('qcow', self._image.name, 'green')
-        if not Path(self._image.local_path).exists():
-            self.info('progress', 'downloading...', 'cyan')
+        # Initialize and prepare testcloud image with validation and retry.
+        # Testcloud does not check the qemu-img return code when creating
+        # an overlay, so a corrupt base image causes a confusing libvirt
+        # error later. Validate the image after download and retry if needed.
+        def prepare_image() -> None:
+            self._image = testcloud.image.Image(self.image_url)
+            self.verbose('qcow', self._image.name, 'green')
+            if not Path(self._image.local_path).exists():
+                self.info('progress', 'downloading...', 'cyan')
+            try:
+                self._image.prepare()
+            except FileNotFoundError as error:
+                raise ProvisionError(
+                    f"Image '{self._image.local_path}' not found.") from error
+            except (testcloud.exceptions.TestcloudPermissionsError, PermissionError) as error:
+                raise ProvisionError(
+                    f"Failed to prepare the image. Check the "
+                    f"'{self.testcloud_image_dirpath}' directory permissions."
+                ) from error
+            except KeyError as error:
+                raise ProvisionError(
+                    f"Failed to prepare image '{self.image_url}'.") from error
+
+            # Validate the base image is a proper qcow2 file
+            image_path = Path(self._image.local_path)
+            try:
+                Command("qemu-img", "info", str(image_path)).run(
+                    cwd=Path.cwd(),
+                    logger=self._logger,
+                )
+            except tmt.utils.RunError as error:
+                if image_path.exists():
+                    self.debug(f"Removing corrupt image '{image_path}'.")
+                    image_path.unlink()
+                raise ProvisionError(
+                    f"Image '{image_path}' is not a valid qcow2 image.") from error
+
         try:
-            self._image.prepare()
-        except FileNotFoundError as error:
-            raise ProvisionError(f"Image '{self._image.local_path}' not found.") from error
-        except (testcloud.exceptions.TestcloudPermissionsError, PermissionError) as error:
+            retry(
+                func=prepare_image,
+                attempts=IMAGE_PREPARE_RETRY_ATTEMPTS,
+                interval=IMAGE_PREPARE_RETRY_INTERVAL,
+                label=f"Prepare image '{self.image_url}'",
+                logger=self._logger,
+            )
+        except tmt.utils.RetryError as error:
             raise ProvisionError(
-                f"Failed to prepare the image. Check the '{self.testcloud_image_dirpath}' "
-                f"directory permissions."
+                f"Failed to prepare a valid image after "
+                f"{IMAGE_PREPARE_RETRY_ATTEMPTS} attempts."
             ) from error
-        except KeyError as error:
-            raise ProvisionError(f"Failed to prepare image '{self.image_url}'.") from error
 
         # Prepare hostname (get rid of possible unwanted characters)
         hostname = re.sub(r"[^a-zA-Z0-9\-]+", "-", self.name.lower()).strip("-")
