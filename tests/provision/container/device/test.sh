@@ -9,17 +9,26 @@ rlJournalStart
 
     rlPhaseStartTest "Single device access test"
         # Test the plan with single device access enabled
-        rlRun -s "tmt run -vvvddd --id $run  plan --name /plan-with-random test --name /test-random-device"
+        rlRun "export TMT_EXPOSABLE_RUNNER_DEVICES='/dev/random'" 0 "Set device allowlist"
+        rlRun -s "tmt run -vvvddd --scratch --id $run  plan --name /plan-with-random test --name /test-random-device"
         # Check if device access was configured (look for --device /dev/random in logs)
         rlAssertGrep "--device /dev/random" $rlRun_LOG
     rlPhaseEnd
 
     rlPhaseStartTest "Multiple devices access test"
         # Test the plan with multiple devices access enabled
-	rlRun -s "tmt run -vvvddd --id $run  plan --name /plan-with-multiple-devices test --name /test-multiple-devices"
+        rlRun "export TMT_EXPOSABLE_RUNNER_DEVICES='/dev/random /dev/urandom'" 0 "Set device allowlist"
+        rlRun -s "tmt run -vvvddd --scratch --id $run  plan --name /plan-with-multiple-devices test --name /test-multiple-devices"
         # Check if multiple device access was configured
-	rlAssertGrep "--device /dev/random" $rlRun_LOG
-	rlAssertGrep "--device /dev/urandom" $rlRun_LOG
+        rlAssertGrep "--device /dev/random" $rlRun_LOG
+        rlAssertGrep "--device /dev/urandom" $rlRun_LOG
+    rlPhaseEnd
+
+    rlPhaseStartTest "Device access failure test when allowlist not configured"
+        # Test that device access fails when TMT_EXPOSABLE_RUNNER_DEVICES is not set
+        # Temporarily unset the environment variable to test security restriction
+        rlRun "unset TMT_EXPOSABLE_RUNNER_DEVICES"
+        rlRun "tmt run -vvvddd --scratch --id $run  plan --name /plan-with-random test --name /test-random-device" 2 "Device access should fail without allowlist"
     rlPhaseEnd
 
     rlPhaseStartCleanup

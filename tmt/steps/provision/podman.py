@@ -37,82 +37,6 @@ DEFAULT_PULL_INTERVAL = 5
 # podman default stop time is 10s
 DEFAULT_STOP_TIME = 1
 
-# Allowlist of safe device patterns for security
-# Only devices matching these patterns are permitted to prevent exposure
-# of dangerous devices like storage devices in shared environments
-ALLOWED_DEVICE_PATTERNS = [
-    # KVM and virtualization devices
-    '/dev/kvm',
-    '/dev/vhost-net',
-    '/dev/vhost-vsock',
-    # Serial/console devices (common for testing)
-    '/dev/ttyS*',
-    '/dev/ttyUSB*',
-    '/dev/ttyACM*',
-    # Audio devices
-    '/dev/snd/*',
-    # Graphics auxiliary devices (not primary graphics devices)
-    '/dev/drm_dp_aux*',
-    # Random number devices
-    '/dev/random',
-    '/dev/urandom',
-    '/dev/hwrng',
-    # Specific input devices
-    '/dev/input/event*',
-    '/dev/input/js*',
-]
-
-
-def _validate_device_against_allowlist(device: str) -> str:
-    """
-    Validate device path against allowlist for security.
-
-    Only devices matching allowed patterns are permitted to prevent exposure
-    of dangerous devices like storage devices in shared environments like
-    Testing Farm.
-    """
-    import fnmatch
-
-    # Check if device matches any allowed pattern
-    for pattern in ALLOWED_DEVICE_PATTERNS:
-        if fnmatch.fnmatch(device, pattern):
-            return device
-
-    # Device not in allowlist - block it
-    raise tmt.utils.SpecificationError(
-        f"Device '{device}' is not in the allowlist of permitted devices. "
-        "For security reasons, only specific safe devices are allowed. "
-        f"Allowed patterns: {', '.join(ALLOWED_DEVICE_PATTERNS)}"
-    )
-
-
-def normalize_device_list(key_address: str, raw_value: Any, logger: tmt.log.Logger) -> list[str]:
-    """
-    Normalize and validate device list against security allowlist.
-    """
-    devices = raw_value
-
-    if not devices:
-        return []
-
-    if isinstance(devices, str):
-        devices = [devices]
-
-    if not isinstance(devices, list):
-        raise tmt.utils.SpecificationError(
-            f"Device must be a string or list of strings, got {type(devices).__name__}."
-        )
-
-    validated_devices = []
-    for device in devices:
-        if not isinstance(device, str):
-            raise tmt.utils.SpecificationError(
-                f"Each device must be a string, got {type(device).__name__}: {device}"
-            )
-        validated_devices.append(_validate_device_against_allowlist(device.strip()))
-
-    return validated_devices
-
 
 @container
 class PodmanGuestData(tmt.guest.GuestData):
@@ -199,7 +123,7 @@ class PodmanGuestData(tmt.guest.GuestData):
              Device to expose to the container (e.g., ``/dev/kvm``, ``/dev/ttyS3``).
              Can be specified multiple times.
              """,
-        normalize=normalize_device_list,
+        normalize=tmt.utils.normalize_string_list,
     )
 
 
@@ -402,6 +326,7 @@ class GuestContainer(tmt.Guest):
 
         # Add device access if requested
         for device in self.expose_device:
+            # Device has already been validated in ProvisionPodman.go()
             additional_args.extend(['--device', device])
 
         # Run the container
@@ -795,7 +720,22 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
     Use ``expose-device`` to expose host devices to the container. This is useful
     for cases like KVM acceleration (``expose-device: /dev/kvm``) or accessing
     serial devices. Multiple devices can be specified as a list.
-    For security, only devices matching a predefined allowlist are permitted.
+
+    For security, device access must be explicitly enabled by the environment
+    running tmt (Testing Farm, user workstation, etc.) rather than maintaining
+    a hardcoded allowlist in tmt itself. This puts the security responsibility
+    on the infrastructure provider.
+
+    Permitted devices are defined using the ``--exposable-runner-devices``
+    CLI option (which can be passed multiple times) or the
+    ``TMT_EXPOSABLE_RUNNER_DEVICES`` environment variable (formatted as a
+    space-separated list). Both exact paths and regular expressions are supported.
+
+    Example environment configuration:
+
+    .. code-block:: bash
+
+        export TMT_EXPOSABLE_RUNNER_DEVICES="/dev/random /dev/urandom /dev/kvm"
 
     Container-backed guests do not support soft reboots or custom reboot
     commands. Soft reboot or ``tmt-reboot -c ...`` will result in an
@@ -820,6 +760,25 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
 
         return super().default(option, default=default)
 
+    def _validate_device_against_allowlist(self, device: str) -> str:
+        """
+        Validate a requested device path against the configured security allowlist.
+
+        Raises a SpecificationError if the device does not match any of the
+        patterns allowed by the TMT_EXPOSABLE_RUNNER_DEVICES configuration.
+        """
+        allowed_patterns = self.exposable_runner_device_patterns
+
+        # Now you can iterate over allowed_patterns and use pattern.match(device)
+        if not any(pattern.match(device) for pattern in allowed_patterns):
+            raise tmt.utils.SpecificationError(
+                f"Device '{device}' cannot be exposed. The device is not in the security "
+                "allowlist. Please configure the '--exposable-runner-devices' option or the "
+                "'TMT_EXPOSABLE_RUNNER_DEVICES' environment variable."
+            )
+
+        return device
+
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
         Provision the container
@@ -834,6 +793,10 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
 
         if data.hardware and data.hardware.constraint:
             self.warn("The 'container' provision plugin does not support hardware requirements.")
+
+        # Validate device access configuration before creating guest
+        for device in data.expose_device:
+            self._validate_device_against_allowlist(device.strip())
 
         # Create a new GuestTestcloud instance and start it
         self._guest = GuestContainer(
