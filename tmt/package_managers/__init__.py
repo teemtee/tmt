@@ -1,4 +1,5 @@
 import abc
+import enum
 import re
 import shlex
 from collections.abc import Iterable, Iterator
@@ -10,8 +11,18 @@ import tmt.utils
 from tmt.container import container, simple_field
 from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, ShellScript
 
-#: Sentinel used when a package's source repository is unknown.
-UNKNOWN_PACKAGE_ORIGIN = "<unknown>"
+
+class SpecialPackageOrigin(str, enum.Enum):
+    """
+    Sentinel values used in place of an actual repository name to convey
+    special package states returned by :py:meth:`PackageManager.get_package_origin`.
+    """
+
+    # Package is not installed on the guest.
+    NOT_INSTALLED = '<not-installed>'
+    # Package is installed but its source repository cannot be determined
+    # (e.g. pre-installed in a container image).
+    UNKNOWN = '<unknown>'
 
 
 if TYPE_CHECKING:
@@ -25,6 +36,9 @@ if TYPE_CHECKING:
 
     #: A type of package manager names.
     GuestPackageManager: TypeAlias = str
+
+    #: A package origin: either an actual repository name or a :class:`SpecialPackageOrigin`.
+    PackageOrigin: TypeAlias = Union[str, SpecialPackageOrigin]
 else:
     Repository: Any = None  # type: ignore[assignment]
 
@@ -237,7 +251,7 @@ class PackageManagerEngine(tmt.utils.Common):
         Empty lines are allowed and will be ignored by the caller.  If
         the origin field is omitted the package is treated as having an
         unknown source repository (equivalent to
-        :py:data:`UNKNOWN_PACKAGE_ORIGIN`).
+        :py:attr:`SpecialPackageOrigin.UNKNOWN`).
 
         :param packages: Package names to query.
         :returns: A shell script to list source repositories for the given packages.
@@ -361,17 +375,20 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
 
         return stdout.strip().splitlines()
 
-    def get_package_origin(self, packages: Iterable[str]) -> dict[str, Optional[str]]:
+    def get_package_origin(self, packages: Iterable[str]) -> 'dict[str, PackageOrigin]':
         """
         Get the repository each package was installed from.
 
         :param packages: Package names to query.
         :returns: A mapping of package names to source repository names.
-            Packages not installed are mapped to ``None``. Packages whose
+            Packages not installed are mapped to
+            :py:attr:`SpecialPackageOrigin.NOT_INSTALLED`. Packages whose
             source repository is unknown are mapped to
-            :py:data:`UNKNOWN_PACKAGE_ORIGIN`.
+            :py:attr:`SpecialPackageOrigin.UNKNOWN`.
         """
-        result: dict[str, Optional[str]] = dict.fromkeys(packages)
+        result: dict[str, PackageOrigin] = dict.fromkeys(
+            packages, SpecialPackageOrigin.NOT_INSTALLED
+        )
         script = self.engine.get_package_origin(result.keys())
         output = self.guest.execute(script)
         for line in (output.stdout or '').strip().splitlines():
@@ -381,7 +398,7 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
             parts = line.split(maxsplit=1)
             package = parts[0]
             # Omitted origin field → unknown source repository.
-            result[package] = parts[1].strip() if len(parts) == 2 else UNKNOWN_PACKAGE_ORIGIN
+            result[package] = parts[1].strip() if len(parts) == 2 else SpecialPackageOrigin.UNKNOWN
         return result
 
     def create_repository(self, directory: Path) -> CommandOutput:

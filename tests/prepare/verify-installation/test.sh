@@ -46,6 +46,7 @@ rlJournalStart
         fi
 
         rlAssertGrep "All packages verified successfully." $rlRun_LOG
+        rlAssertNotGrep "Package source verification failed for:" $rlRun_LOG
         rlAssertGrep "1 test passed" $rlRun_LOG
     rlPhaseEnd
 
@@ -72,6 +73,7 @@ rlJournalStart
         rlAssertGrep "expected repo 'SOME_NON_EXISTENT_REPO'" $rlRun_LOG
         rlAssertGrep "fail .* / random-non-existent-package" $rlRun_LOG
         rlAssertGrep "random-non-existent-package.*not installed" $rlRun_LOG
+        rlAssertGrep "Package source verification failed for:" $rlRun_LOG
         rlAssertNotGrep "All packages verified successfully." $rlRun_LOG
     rlPhaseEnd
 
