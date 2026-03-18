@@ -721,21 +721,9 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
     for cases like KVM acceleration (``expose-device: /dev/kvm``) or accessing
     serial devices. Multiple devices can be specified as a list.
 
-    For security, device access must be explicitly enabled by the environment
-    running tmt (Testing Farm, user workstation, etc.) rather than maintaining
-    a hardcoded allowlist in tmt itself. This puts the security responsibility
-    on the infrastructure provider.
-
-    Permitted devices are defined using the ``--exposable-runner-devices``
-    CLI option (which can be passed multiple times) or the
-    ``TMT_EXPOSABLE_RUNNER_DEVICES`` environment variable (formatted as a
-    space-separated list). Both exact paths and regular expressions are supported.
-
-    Example environment configuration:
-
-    .. code-block:: bash
-
-        export TMT_EXPOSABLE_RUNNER_DEVICES="/dev/random /dev/urandom /dev/kvm"
+    For security reasons, exposable devices need to be explicitly allowed by tmt
+    runner, either via ``--exposable-runner-devices`` CLI option or
+    ``TMT_EXPOSABLE_RUNNER_DEVICES`` environment variable.
 
     Container-backed guests do not support soft reboots or custom reboot
     commands. Soft reboot or ``tmt-reboot -c ...`` will result in an
@@ -796,7 +784,7 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
 
         # Validate device access configuration before creating guest
         for device in data.expose_device:
-            self._validate_device_against_allowlist(device.strip())
+            self._validate_device_against_allowlist(device)
 
         # Create a new GuestTestcloud instance and start it
         self._guest = GuestContainer(
