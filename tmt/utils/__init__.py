@@ -3506,6 +3506,8 @@ def _yaml(
     :returns: a loader/dumper instance.
     """
 
+    # We use the safe mode as default in order to use CParser from ruamel.yaml.clib
+    yaml_type = yaml_type or "safe"
     yaml = YAML(typ=yaml_type)
 
     yaml.indent(mapping=4, sequence=4, offset=2)
