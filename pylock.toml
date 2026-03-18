@@ -1924,6 +1924,7 @@ name = "pylero"
 version = "0.1.1"
 index = "https://pypi.org/simple"
 sdist = { url = "https://files.pythonhosted.org/packages/88/38/0c0ccaafbb8594cf50af8d2376a5afee9e7279b7715a928558e7b52eb6f6/pylero-0.1.1.tar.gz", upload-time = 2025-05-30T13:38:52Z, size = 309121, hashes = { sha256 = "de0ccd37da69e50993fe403eca5d093d70c57319640d6af6403ab9a3496ae16c" } }
+wheels = [{ url = "https://files.pythonhosted.org/packages/0b/79/4a7ff895325f7226f846cf4e274be9bbeedcd2d9804027c5025e72134ff4/pylero-0.1.1-py3-none-any.whl", upload-time = 2025-12-19T15:11:28Z, size = 101338, hashes = { sha256 = "ada04668e36adaaed950e213699f8442466994142c127a3f07b5e4d19fc9709f" } }]
 
 [[packages]]
 name = "python-bugzilla"
@@ -2402,7 +2403,6 @@ wheels = [{ name = "ruamel_yaml-0.18.16-py3-none-any.whl", url = "https://files.
 [[packages]]
 name = "ruamel-yaml-clib"
 version = "0.2.15"
-marker = "python_full_version < '3.14' and platform_python_implementation == 'CPython'"
 index = "https://pypi.org/simple"
 sdist = { url = "https://files.pythonhosted.org/packages/ea/97/60fda20e2fb54b83a61ae14648b0817c8f5d84a3821e40bfbdae1437026a/ruamel_yaml_clib-0.2.15.tar.gz", upload-time = 2025-11-16T16:12:59Z, size = 225794, hashes = { sha256 = "46e4cc8c43ef6a94885f72512094e482114a8a706d3c555a34ed4b0d20200600" } }
 wheels = [
