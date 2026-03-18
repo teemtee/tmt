@@ -1,4 +1,4 @@
-/plan-base:
+/plan:
     summary: Base plan for container tests
     provision:
         how: container
@@ -6,7 +6,7 @@
     execute:
         how: tmt
 
-    /plan-with-random:
+    /with-random:
         summary: Test container provisioning with random device access
         discover:
             how: shell
@@ -22,7 +22,7 @@
         provision+:
             expose-device: /dev/random
 
-    /plan-with-multiple-devices:
+    /with-multiple-devices:
         summary: Test container provisioning with multiple device access
         discover:
             how: shell
