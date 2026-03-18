@@ -54,7 +54,7 @@ this is a **runner work tree**:
     runner:/var/tmp/tmt/run-123/plan/tree
 
 Runner work tree is synced to the **guest work tree** so that
-discovered tests, prepare and finish steps can can use files and
+discovered tests, prepare and finish steps can use files and
 scripts from there.
 
 .. code-block::
