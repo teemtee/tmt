@@ -59,7 +59,9 @@ def test_fetch_contents_enables_repository(
     assert provider.repository is mock_repo
 
 
-def test_enumerate_artifacts(mock_copr, mock_package_manager, artifact_provider, tmppath):
+def test_enumerate_artifacts(
+    mock_copr_build_session, mock_package_manager, artifact_provider, tmppath
+):
     mock_repo = MagicMock()
     mock_repo.repo_ids = ['group_teemtee-stable-fedora-42-x86_64']
     mock_guest = MagicMock()
