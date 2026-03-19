@@ -2094,15 +2094,19 @@ class Guest(
 
         raise GeneralError(f"Unknown Ansible object type, '{type(playbook)}'.")
 
+    # TODO: the existence of this method is very questionable, it may
+    # go away while works on https://github.com/teemtee/tmt/pull/4364
+    # continue.
     def _prepare_command_environment(
         self, environment: Optional[tmt.utils.Environment] = None
     ) -> tmt.utils.Environment:
         """
         Prepare meaningful environment for a command.
 
-        When the environment is unset, construct a basic environment
-        from the plan and run. Otherwise, the environment is left
-        unmodified.
+        :param environment: if set, it is considered the desired command
+            environment, and used without modification.
+        :returns: either a copy of ``environment``, or a new environment
+            constructed from guest and plan environments
         """
 
         if environment is None:
