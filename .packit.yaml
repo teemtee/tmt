@@ -174,7 +174,7 @@ jobs:
 
   - <<: *provision
     identifier: provision-virtual
-    tmt_plan: /plans/provision/virtual
+    tmt_plan: '/plans/provision/virtual/'
 
   - <<: *provision
     identifier: provision-virtual-image-mode

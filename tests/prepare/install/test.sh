@@ -155,6 +155,10 @@ rlJournalStart
 
             tmt_run="tmt -vvv -c distro=$distro -c package_manager=$package_manager run --id $run --scratch"
             tmt_steps="cleanup discover provision --how $PROVISION_HOW --image $image prepare"
+            # On image mode, also run execute to verify packages persist after reboot
+            if [ "$IS_IMAGE_MODE" = "yes" ]; then
+                tmt_steps="$tmt_steps execute"
+            fi
             tmt="$tmt_run $tmt_steps"
         rlPhaseEnd
 
@@ -172,7 +176,7 @@ rlJournalStart
                 rlAssertGrep "package: building container image with dependencies" $rlRun_LOG
                 rlAssertGrep "switching to new image" $rlRun_LOG
                 rlAssertGrep "rebooting to apply new image" $rlRun_LOG
-                rlAssertGrep "1 test passed" $rlRun_LOG
+                rlAssertGrep "total: 1 test passed" $rlRun_LOG
             elif is_ubuntu "$image" || is_debian "$image"; then
                 # Runs 1 extra phase, to populate local caches.
                 rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
