@@ -6,11 +6,14 @@ from typing import TYPE_CHECKING, Any
 
 import _pytest.logging
 import _pytest.tmpdir
+import fmf.base
 import py.path
 import pytest
 
 from tests import CliRunner, RunTmt
+from tmt.base.plan import Plan
 from tmt.log import Logger
+from tmt.steps.provision import Provision
 from tmt.steps.provision.podman import GuestContainer, PodmanGuestData
 from tmt.utils import Path
 
@@ -149,27 +152,39 @@ def target_dir(tmppath_factory: TempPathFactory) -> Path:
     return tmppath_factory.mktemp('target')
 
 
-@pytest.fixture(name='guest')
-def fixture_guest(container: 'ContainerData', root_logger: Logger) -> GuestContainer:
+def _construct_fixture_guest(container: 'ContainerData', logger: Logger) -> GuestContainer:
+    """
+    Construct a container guest for ``guest`` and ``guest_per_test`` fixtures.
+
+    Guest is created to wrap an existing, running container provided to
+    us by :py:mod:`pytest_container`.
+
+    :param container: object describing a running container.
+    """
+
+    # We need a significant group of internal objects: a plan to host
+    # the `provision` step to hold the guest. Without this, some
+    # functionality will not work correctly, e.g. dry-run detection.
+    plan = Plan(node=fmf.base.Tree(data={'execute': {'how': 'tmt'}}), logger=logger)
+
+    step = Provision(plan=plan, data=[], logger=logger)
+
     guest_data = PodmanGuestData(image=container.image_url_or_id, container=container.container_id)
 
-    guest = GuestContainer(logger=root_logger, data=guest_data, name='dummy-container')
+    guest = GuestContainer(logger=logger, data=guest_data, name='dummy-container', parent=step)
 
     guest.start()
 
     return guest
+
+
+@pytest.fixture(name='guest')
+def fixture_guest(container: 'ContainerData', root_logger: Logger) -> GuestContainer:
+    return _construct_fixture_guest(container, root_logger)
 
 
 @pytest.fixture(name='guest_per_test')
 def fixture_guest_per_test(
     container_per_test: 'ContainerData', root_logger: Logger
 ) -> GuestContainer:
-    guest_data = PodmanGuestData(
-        image=container_per_test.image_url_or_id, container=container_per_test.container_id
-    )
-
-    guest = GuestContainer(logger=root_logger, data=guest_data, name='dummy-container')
-
-    guest.start()
-
-    return guest
+    return _construct_fixture_guest(container_per_test, root_logger)
