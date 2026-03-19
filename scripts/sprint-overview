@@ -9,16 +9,7 @@
 # ///
 
 """
-List all issues and pull requests sprint with story points.
-
-Usage:
-    sprint-overview "Sprint 11"
-    sprint-overview "Sprint 11" --org myorg --project 2
-    sprint-overview "Sprint 11" --yaml
-
-Environment variables:
-    GITHUB_PERSONAL_ACCESS_TOKEN:
-        GitHub personal access token with repo and project permissions
+List issues and pull requests with story points for the given sprint
 """
 
 import os
@@ -387,6 +378,10 @@ def main(sprint_name: str, org: str, project: int, output_yaml: bool) -> None:
     List all issues and pull requests in a GitHub Project sprint with story points.
 
     SPRINT_NAME: Name of the sprint (e.g., 'Sprint 11')
+
+    Environment variables:
+        GITHUB_PERSONAL_ACCESS_TOKEN:
+            GitHub personal access token with repo and project permissions
     """
     token = os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN")
     if not token:
