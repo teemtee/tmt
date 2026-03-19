@@ -13,3 +13,12 @@ adjust+:
     prepare+<:
       - how: shell
         script: sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/CentOS-Stream-Debuginfo.repo
+
+    # On image mode, verify debuginfo packages persist after reboot.
+  - when: package_manager == bootc
+    execute:
+        script: |
+            rpm -q grep-debuginfo
+            if [ "$TMT_REBOOT_COUNT" == "0" ]; then
+                tmt-reboot
+            fi

@@ -1,7 +1,14 @@
 import re
 import uuid
 from collections.abc import Iterator
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from tmt._compat.typing import TypeAlias
+
+    Repository: TypeAlias = Any
+else:
+    Repository: Any = None  # type: ignore[assignment]
 
 import tmt.utils
 from tmt.container import PYDANTIC_V1, ConfigDict, MetadataContainer
@@ -380,6 +387,35 @@ class Bootc(PackageManager[BootcEngine]):
         self.engine.reinstall(*installables, options=options)
 
         return CommandOutput(stdout=None, stderr=None)
+
+    def enable_copr(self, *repositories: str) -> None:
+        """
+        Enable COPR repositories by delegating to the underlying package manager.
+
+        The copr plugin install and ``dnf copr enable`` write to ``/etc``
+        which persists in image mode.
+        """
+        self.guest.bootc_builder.enable_copr(*repositories)
+
+    def create_repository(self, directory: Path) -> CommandOutput:
+        """
+        Create repository metadata by delegating to the underlying engine.
+
+        Runs on the live system, writing to the workdir which is writable
+        in image mode.
+        """
+        return self.guest.execute(self.engine.aux_engine.create_repository(directory))
+
+    def install_repository(self, repository: Repository) -> CommandOutput:
+        """
+        Install a repository by delegating to the underlying engine.
+
+        Writes the ``.repo`` file to ``/etc/yum.repos.d/`` which persists
+        in image mode. Refreshes the package cache on the live system
+        without triggering a container rebuild.
+        """
+        self.guest.execute(self.engine.aux_engine.install_repository(repository))
+        return self.guest.execute(self.engine.aux_engine.refresh_metadata())
 
     def finalize_installation(self) -> CommandOutput:
         """

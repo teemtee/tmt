@@ -1,0 +1,52 @@
+summary: Image mode virtual machine via testcloud
+
+description: |
+    Verify functionality of prepare plugins on image mode guests
+    provisioned via the virtual (testcloud) plugin with bootc
+    qcow2 images. Tests exercise package installation, shell
+    scripts, require/recommend handling on image mode systems.
+
+discover:
+    how: fmf
+    filter: 'tag:provision-virtual-image-mode'
+
+environment:
+    PROVISION_HOW: virtual-image-mode
+
+prepare+:
+  - name: required-packages
+    how: install
+    package: guestfs-tools
+  - name: start-libvirtd
+    script: |
+        systemctl start libvirtd
+        systemctl status libvirtd
+
+adjust+:
+  - enabled: true
+    when: how == provision
+
+  - provision:
+        hardware:
+            virtualization:
+                is-supported: true
+            memory: ">= 8 GB"
+    when: trigger == commit
+
+  - prepare+:
+      - name: Disable IPv6
+        how: shell
+        script:
+          - sysctl -w net.ipv6.conf.all.disable_ipv6=1
+          - sysctl -w net.ipv6.conf.default.disable_ipv6=1
+    because: Disable IPv6 in CI to avoid IPv6 connections that are disabled in CI
+    when: trigger == commit
+
+/prepare:
+    discover+:
+        test: "^/tests/prepare"
+        exclude: "^/tests/prepare/install"
+
+/install:
+    discover+:
+        test: "^/tests/prepare/install"

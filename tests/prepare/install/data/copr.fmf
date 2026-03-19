@@ -5,3 +5,14 @@ prepare:
 execute:
     how: tmt
     script: dnf repolist | grep 'Copr repo for stable owned by @teemtee'
+
+adjust:
+    # On image mode, verify the copr repo persists after reboot.
+  - when: package_manager == bootc
+    execute:
+        how: tmt
+        script: |
+            dnf repolist | grep 'Copr repo for stable owned by @teemtee'
+            if [ "$TMT_REBOOT_COUNT" == "0" ]; then
+                tmt-reboot
+            fi

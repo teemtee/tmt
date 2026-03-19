@@ -22,3 +22,13 @@ adjust:
         package:
           - dconf
           - libpng
+
+    # On image mode, verify installed packages persist after reboot.
+  - when: package_manager == bootc
+    execute:
+        how: tmt
+        script: |
+            tree --version && diffutils --version
+            if [ "$TMT_REBOOT_COUNT" == "0" ]; then
+                tmt-reboot
+            fi

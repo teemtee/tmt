@@ -6,18 +6,25 @@ function fetch_downloaded_packages () {
     in_subdirectory="$2"
 
     if [ ! -e $package_cache/tree.rpm ]; then
-        # For some reason, this command will get stuck in rlRun...
-        container_id="$(podman run -d $1 sleep 3600)"
+        if [ "$IS_IMAGE_MODE" = "yes" ]; then
+            # For image mode, download RPMs directly on the runner
+            rlRun "dnf download --destdir $package_cache tree diffutils"
+            rlRun "mv $package_cache/tree-*.rpm $package_cache/tree.rpm"
+            rlRun "mv $package_cache/diffutils-*.rpm $package_cache/diffutils.rpm"
+        else
+            # For some reason, this command will get stuck in rlRun...
+            container_id="$(podman run -d $1 sleep 3600)"
 
-        rlRun "podman exec $container_id bash -c \"set -x; \
-                                                    dnf install -y 'dnf-command(download)' \
-                                                    && dnf download --destdir /tmp tree diffutils \
-                                                    && mv /tmp/tree*.rpm /tmp/tree.rpm \
-                                                    && mv /tmp/diffutils*.rpm /tmp/diffutils.rpm\""
-        rlRun "podman cp $container_id:/tmp/tree.rpm $package_cache/"
-        rlRun "podman cp $container_id:/tmp/diffutils.rpm $package_cache/"
-        rlRun "podman kill $container_id"
-        rlRun "podman rm $container_id"
+            rlRun "podman exec $container_id bash -c \"set -x; \
+                                                        dnf install -y 'dnf-command(download)' \
+                                                        && dnf download --destdir /tmp tree diffutils \
+                                                        && mv /tmp/tree*.rpm /tmp/tree.rpm \
+                                                        && mv /tmp/diffutils*.rpm /tmp/diffutils.rpm\""
+            rlRun "podman cp $container_id:/tmp/tree.rpm $package_cache/"
+            rlRun "podman cp $container_id:/tmp/diffutils.rpm $package_cache/"
+            rlRun "podman kill $container_id"
+            rlRun "podman rm $container_id"
+        fi
     fi
 
     if [ -z "$in_subdirectory" ]; then
@@ -33,6 +40,7 @@ function fetch_downloaded_packages () {
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
+        rlRun "IS_IMAGE_MODE=no"
 
         if [ "$PROVISION_HOW" = "container" ]; then
             rlRun "IMAGES='$TEST_CONTAINER_IMAGES'"
@@ -43,6 +51,12 @@ rlJournalStart
         elif [ "$PROVISION_HOW" = "virtual" ]; then
             rlRun "IMAGES='$TEST_VIRTUAL_IMAGES'"
             rlRun "SECONDARY_IMAGES='$TEST_VIRTUAL_IMAGES_SECONDARY'"
+
+        elif [ "$PROVISION_HOW" = "virtual-image-mode" ]; then
+            rlRun "IS_IMAGE_MODE=yes"
+            rlRun "PROVISION_HOW=virtual"
+            rlRun "IMAGES='$TEST_IMAGE_MODE_IMAGES'"
+            rlRun "SECONDARY_IMAGES=''"
 
         else
             rlRun "IMAGES="
@@ -123,6 +137,14 @@ rlJournalStart
                 rlRun "distro=rhel-8"
                 rlRun "package_manager=dnf"
 
+            elif is_image_mode_centos_stream_10 "$image"; then
+                rlRun "distro=centos-stream-10"
+                rlRun "package_manager=bootc"
+
+            elif is_image_mode_fedora "$image"; then
+                rlRun "distro=fedora"
+                rlRun "package_manager=bootc"
+
             elif is_alpine "$image"; then
                 rlRun "distro=alpine"
                 rlRun "package_manager=apk"
@@ -131,7 +153,7 @@ rlJournalStart
                 rlFail "Cannot infer distro for image $image"
             fi
 
-            tmt_run="tmt -vvv -c distro=$distro run --id $run --scratch"
+            tmt_run="tmt -vvv -c distro=$distro -c package_manager=$package_manager run --id $run --scratch"
             tmt_steps="cleanup discover provision --how $PROVISION_HOW --image $image prepare"
             tmt="$tmt_run $tmt_steps"
         rlPhaseEnd
@@ -144,7 +166,14 @@ rlJournalStart
 
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
-            if is_ubuntu "$image" || is_debian "$image"; then
+            if is_image_mode "$image"; then
+                # Image mode uses Containerfile build, image switch and reboot.
+                # The inner test verifies packages persist after reboot.
+                rlAssertGrep "package: building container image with dependencies" $rlRun_LOG
+                rlAssertGrep "switching to new image" $rlRun_LOG
+                rlAssertGrep "rebooting to apply new image" $rlRun_LOG
+                rlAssertGrep "1 test passed" $rlRun_LOG
+            elif is_ubuntu "$image" || is_debian "$image"; then
                 # Runs 1 extra phase, to populate local caches.
                 rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
             else
@@ -174,7 +203,7 @@ rlJournalStart
             fi
         rlPhaseEnd
 
-        if [ "$PROVISION_HOW" = "container" ] && rlIsFedora 43 && is_fedora_43 "$image"; then
+        if ([ "$PROVISION_HOW" = "container" ] && rlIsFedora 43 && is_fedora_43 "$image") || is_image_mode "$image"; then
             rlPhaseStartTest "$phase_prefix Install downloaded packages from current directory (plan)"
                 fetch_downloaded_packages "$image"
 
@@ -269,6 +298,9 @@ rlJournalStart
             elif is_alpine "$image"; then
                 rlAssertGrep "stderr:   tree-but-spelled-wrong (no such package)" $rlRun_LOG
 
+            elif is_image_mode_fedora "$image"; then
+                rlAssertGrep "No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+
             else
                 rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
             fi
@@ -309,6 +341,9 @@ rlJournalStart
 
             elif is_alpine "$image"; then
                 rlAssertGrep "stderr:   tree-but-spelled-wrong (no such package)" $rlRun_LOG
+
+            elif is_image_mode_fedora "$image"; then
+                rlAssertGrep "No match for argument: tree-but-spelled-wrong" $rlRun_LOG
 
             else
                 rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
@@ -351,6 +386,9 @@ rlJournalStart
             elif is_alpine "$image"; then
                 rlAssertGrep "stderr:   tree-but-spelled-wrong (no such package)" $rlRun_LOG
 
+            elif is_image_mode_fedora "$image"; then
+                rlAssertGrep "No match for argument: tree-but-spelled-wrong" $rlRun_LOG
+
             else
                 rlAssertGrep "stderr: Error: Unable to find a match: tree-but-spelled-wrong" $rlRun_LOG
             fi
@@ -364,7 +402,7 @@ rlJournalStart
 
         # TODO: at least copr is RH-specific, but package name escaping and debuginfo should be
         # possible to extend to other distros.
-        if (is_fedora "$image" && ! is_fedora_coreos "$image") || is_centos "$image" || is_ubi "$image"; then
+        if (is_fedora "$image" && ! is_fedora_coreos "$image") || is_centos "$image" || is_ubi "$image" || is_image_mode "$image"; then
             if ! is_centos_7 "$image" && ! is_ubi_8 "$image"; then
                 rlPhaseStartTest "$phase_prefix Just enable copr"
                     rlRun "$tmt execute plan --name copr"
