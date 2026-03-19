@@ -12,7 +12,7 @@
 List issues and pull requests with story points for the given sprint
 """
 
-import os
+import re
 import sys
 from typing import Optional
 
@@ -20,7 +20,8 @@ import click
 import requests
 from ruamel.yaml import YAML
 
-GITHUB_API_URL = "https://api.github.com/graphql"
+GITHUB_API_URL = "https://api.github.com"
+GITHUB_API_VERSION = "2026-03-10"
 GITHUB_ORGANIZATION = "teemtee"
 GITHUB_PROJECT_NUMBER = 1
 
@@ -40,13 +41,41 @@ def print_separator(before: bool = False, after: bool = False, char: str = "=") 
         print()
 
 
+def fetch_field_ids() -> tuple[int, int]:
+    """
+    Fetch the field IDs for Size and Sprint from the project.
+
+    :returns: a tuple ``(size_field_id, sprint_field_id)``.
+    """
+    url = f"{GITHUB_API_URL}/orgs/{GITHUB_ORGANIZATION}/projectsV2/{GITHUB_PROJECT_NUMBER}/fields"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": GITHUB_API_VERSION,
+    }
+
+    response = requests.get(url, headers=headers, timeout=30)
+    response.raise_for_status()
+
+    size_id = sprint_id = None
+    for field in response.json():
+        if field["name"] == "Size":
+            size_id = field["id"]
+        elif field["name"] == "Sprint":
+            sprint_id = field["id"]
+
+    if size_id is None or sprint_id is None:
+        print("Error: Could not find Size and Sprint fields in the project", file=sys.stderr)
+        sys.exit(1)
+
+    return size_id, sprint_id
+
+
 def fetch_sprint_items(
-    token: str, sprint_name: str
+    sprint_name: str,
 ) -> list[tuple[str, str, int, str, Optional[float], str]]:
     """
-    Fetch all items in a sprint from GitHub Project using server-side filtering.
+    Fetch all items in a sprint from GitHub Project using the REST API.
 
-    :param token: GitHub personal access token with repo and project permissions.
     :param sprint_name: name of the sprint to fetch items for.
     :returns: a list of tuples ``(type, state, number, title, size, url)`` where
         ``type`` is ``Issue`` or ``PullRequest``, ``state`` is the item state,
@@ -59,98 +88,58 @@ def fetch_sprint_items(
         file=sys.stderr,
     )
 
-    query = """
-    query($orgName: String!, $projectNumber: Int!, $cursor: String, $query: String!) {
-      organization(login: $orgName) {
-        projectV2(number: $projectNumber) {
-          items(first: 100, after: $cursor, query: $query) {
-            nodes {
-              content {
-                ... on Issue {
-                  __typename
-                  number
-                  title
-                  state
-                  url
-                }
-                ... on PullRequest {
-                  __typename
-                  number
-                  title
-                  state
-                  url
-                }
-              }
-              size: fieldValueByName(name: "Size") {
-                ... on ProjectV2ItemFieldNumberValue {
-                  number
-                }
-              }
-            }
-            pageInfo {
-              hasNextPage
-              endCursor
-            }
-          }
-        }
-      }
-    }
-    """
+    size_field_id, sprint_field_id = fetch_field_ids()
 
-    # Store items as: (type, state, number, title, size, url)
+    url = f"{GITHUB_API_URL}/orgs/{GITHUB_ORGANIZATION}/projectsV2/{GITHUB_PROJECT_NUMBER}/items"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": GITHUB_API_VERSION,
+    }
+    params: dict[str, str] = {
+        "per_page": "100",
+        "fields": f"{size_field_id},{sprint_field_id}",
+        "q": f'Sprint:"{sprint_name}"',
+    }
+
     all_items: list[tuple[str, str, int, str, Optional[float], str]] = []
-    cursor = None
     page = 1
 
-    while True:
-        variables = {
-            "orgName": GITHUB_ORGANIZATION,
-            "projectNumber": GITHUB_PROJECT_NUMBER,
-            "cursor": cursor,
-            "query": f'Sprint:"{sprint_name}"',
-        }
-
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        }
-
-        response = requests.post(
-            GITHUB_API_URL,
-            headers=headers,
-            json={"query": query, "variables": variables},
-            timeout=30,
-        )
+    while url:
+        response = requests.get(url, headers=headers, params=params, timeout=30)
         response.raise_for_status()
-        data = response.json()
-
-        if "errors" in data:
-            print(f"GraphQL errors: {data['errors']}", file=sys.stderr)
-            sys.exit(1)
-
-        items = data["data"]["organization"]["projectV2"]["items"]["nodes"]
+        items = response.json()
         print(f"  Page {page}: {len(items)} items", file=sys.stderr)
 
         for item in items:
-            if item.get("content"):
-                content = item["content"]
-                size = item.get("size", {}).get("number") if item.get("size") else None
-                all_items.append(
-                    (
-                        content["__typename"],
-                        content["state"],
-                        content["number"],
-                        content["title"],
-                        size,
-                        content["url"],
-                    )
+            content = item.get("content")
+            if not content:
+                continue
+
+            content_type = item["content_type"]
+            size_field = next((f for f in item.get("fields", []) if f["name"] == "Size"), None)
+            size = size_field.get("value") if size_field else None
+
+            if content_type == "PullRequest":
+                state = "MERGED" if content.get("merged_at") else content["state"].upper()
+            else:
+                state = content["state"].upper()
+
+            all_items.append(
+                (
+                    content_type,
+                    state,
+                    content["number"],
+                    content["title"],
+                    size,
+                    content["html_url"],
                 )
+            )
 
-        page_info = data["data"]["organization"]["projectV2"]["items"]["pageInfo"]
-        if not page_info["hasNextPage"]:
-            break
-
-        cursor = page_info["endCursor"]
+        # Follow pagination via Link header
+        link_header = response.headers.get("Link", "")
+        match = re.search(r'<([^>]+)>;\s*rel="next"', link_header)
+        url = match.group(1) if match else None
+        params = {}
         page += 1
 
     print(f"Total: {len(all_items)} items\n", file=sys.stderr)
@@ -366,18 +355,9 @@ def main(sprint_name: str, output_yaml: bool) -> None:
     List all issues and pull requests in a GitHub Project sprint with story points.
 
     SPRINT_NAME: Name of the sprint (e.g., 'Sprint 11')
-
-    Environment variables:
-        GITHUB_PERSONAL_ACCESS_TOKEN:
-            GitHub personal access token with repo and project permissions
     """
-    token = os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN")
-    if not token:
-        print("Error: GITHUB_PERSONAL_ACCESS_TOKEN environment variable not set", file=sys.stderr)
-        sys.exit(1)
-
     try:
-        items = fetch_sprint_items(token, sprint_name)
+        items = fetch_sprint_items(sprint_name)
 
         if not items:
             print(f"No items found in sprint '{sprint_name}'")
