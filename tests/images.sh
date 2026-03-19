@@ -160,17 +160,15 @@ function is_ubi_8 () {
 }
 
 function is_image_mode_centos_stream_10 () {
-    [[ "$1" =~ CentOS-Stream-10-image-mode ]] && return 0 || return 1
+    [[ "$1" =~ CentOS-Stream-10-image-mode ]]
 }
 
 function is_image_mode_fedora () {
-    [[ "$1" =~ Fedora-.*-image-mode ]] && return 0 || return 1
+    [[ "$1" =~ Fedora-.*-image-mode ]]
 }
 
 function is_image_mode () {
-    is_image_mode_centos_stream_10 "$1" && return 0
-    is_image_mode_fedora "$1" && return 0
-    return 1
+    is_image_mode_centos_stream_10 "$1" || is_image_mode_fedora "$1"
 }
 
 function test_phase_prefix () {
