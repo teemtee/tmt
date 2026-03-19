@@ -21,6 +21,8 @@ import requests
 from ruamel.yaml import YAML
 
 GITHUB_API_URL = "https://api.github.com/graphql"
+GITHUB_ORGANIZATION = "teemtee"
+GITHUB_PROJECT_NUMBER = 1
 
 
 def print_separator(before: bool = False, after: bool = False, char: str = "=") -> None:
@@ -39,14 +41,12 @@ def print_separator(before: bool = False, after: bool = False, char: str = "=") 
 
 
 def fetch_sprint_items(
-    token: str, org: str, project: int, sprint_name: str
+    token: str, sprint_name: str
 ) -> list[tuple[str, str, int, str, Optional[float], str]]:
     """
     Fetch all items in a sprint from GitHub Project using server-side filtering.
 
     :param token: GitHub personal access token with repo and project permissions.
-    :param org: GitHub organization name.
-    :param project: GitHub Project number.
     :param sprint_name: name of the sprint to fetch items for.
     :returns: a list of tuples ``(type, state, number, title, size, url)`` where
         ``type`` is ``Issue`` or ``PullRequest``, ``state`` is the item state,
@@ -54,7 +54,8 @@ def fetch_sprint_items(
         ``size`` is the story points (``None`` if not set), and ``url`` is the item URL.
     """
     print(
-        f"Fetching items from {org}/project/{project} for sprint '{sprint_name}'...",
+        f"Fetching items from {GITHUB_ORGANIZATION}/project/{GITHUB_PROJECT_NUMBER}"
+        f" for sprint '{sprint_name}'...",
         file=sys.stderr,
     )
 
@@ -103,8 +104,8 @@ def fetch_sprint_items(
 
     while True:
         variables = {
-            "orgName": org,
-            "projectNumber": project,
+            "orgName": GITHUB_ORGANIZATION,
+            "projectNumber": GITHUB_PROJECT_NUMBER,
             "cursor": cursor,
             "query": f'Sprint:"{sprint_name}"',
         }
@@ -355,25 +356,12 @@ def display_items_yaml(
 @click.command()
 @click.argument('sprint_name', metavar='SPRINT_NAME')
 @click.option(
-    '--org',
-    default='teemtee',
-    show_default=True,
-    help='GitHub organization name.',
-)
-@click.option(
-    '--project',
-    type=int,
-    default=1,
-    show_default=True,
-    help='Project number.',
-)
-@click.option(
     '--yaml',
     'output_yaml',
     is_flag=True,
     help='Output in YAML format for machine-readable processing.',
 )
-def main(sprint_name: str, org: str, project: int, output_yaml: bool) -> None:
+def main(sprint_name: str, output_yaml: bool) -> None:
     """
     List all issues and pull requests in a GitHub Project sprint with story points.
 
@@ -389,7 +377,7 @@ def main(sprint_name: str, org: str, project: int, output_yaml: bool) -> None:
         sys.exit(1)
 
     try:
-        items = fetch_sprint_items(token, org, project, sprint_name)
+        items = fetch_sprint_items(token, sprint_name)
 
         if not items:
             print(f"No items found in sprint '{sprint_name}'")
