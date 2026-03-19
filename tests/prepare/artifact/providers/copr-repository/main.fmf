@@ -1,0 +1,4 @@
+summary: Test copr-repository artifact provider
+description: |
+    Test copr-repository artifact provider which makes packages from Copr
+    repositories available for installation.
