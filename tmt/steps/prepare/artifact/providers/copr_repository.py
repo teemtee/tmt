@@ -81,7 +81,7 @@ class CoprRepositoryProvider(ArtifactProvider):
         if not raw_id.startswith(prefix):
             raise ValueError(f"Invalid Copr repository provider format: '{raw_id}'.")
 
-        value = raw_id[len(prefix) :]
+        value = raw_id[len(prefix):]
         if not value:
             raise ValueError("Missing Copr repository name.")
 
