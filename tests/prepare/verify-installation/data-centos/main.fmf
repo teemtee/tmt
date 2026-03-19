@@ -6,9 +6,6 @@
     discover:
         how: fmf
         test: /test
-    prepare:
-      - how: feature
-        epel: enabled
 
 /plan/success:
     prepare+:
@@ -16,7 +13,6 @@
         verify:
             make: baseos
             diffutils: "<unknown>"
-            centpkg: epel
 
 /plan/failure:
     prepare+:
@@ -24,12 +20,9 @@
         verify:
             make: SOME_NON_EXISTENT_REPO
             diffutils: "<unknown>"
-            centpkg: epel
             random-non-existent-package: some-repo
 
 /test:
     test: /bin/true
     require:
       - make
-      - diffutils
-      - centpkg

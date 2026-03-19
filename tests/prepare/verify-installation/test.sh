@@ -8,20 +8,9 @@ rlJournalStart
         rlRun "run=\$(mktemp -d)" 0 "Create run directory"
 
         if rlIsFedora; then
-            . ../artifact/lib/common.sh || exit 1
-
-            setup_distro_environment
-            rlRun "image=\$TEST_IMAGE_PREFIX/\$image_name"
-
-            rlRun "data_dir=\$(mktemp -d)" 0 "Create temp data directory"
-
-            # Fetch the latest koji build ID for make dynamically
-            get_koji_build_id "make" "f\${fedora_release}"
-
-            # Copy plan data and substitute the dynamic build ID
-            rlRun "cp -r data-fedora/. \$data_dir/" 0 "Copy test data"
-            rlRun "sed -i 's/KOJI_BUILD_ID/${KOJI_BUILD_ID}/g' \$data_dir/main.fmf" 0 "Substitute koji build ID"
-            rlRun "pushd \$data_dir"
+            build_container_image "fedora/43/upstream:latest"
+            rlRun "image=\$TEST_IMAGE_PREFIX/fedora/43/upstream:latest"
+            rlRun "pushd data-fedora"
         else
             build_container_image "centos/stream10/upstream:latest"
             rlRun "image=\$TEST_IMAGE_PREFIX/centos/stream10/upstream:latest"
@@ -35,14 +24,13 @@ rlJournalStart
             provision -h \$PROVISION_HOW --image \$image" \
             0 "Run verification test with correct repos"
 
-        # make and diffutils are available in both Fedora and CentOS
-        rlAssertGrep "pass .* / make" $rlRun_LOG
+        rlAssertGrep "2 packages" $rlRun_LOG
         rlAssertGrep "pass .* / diffutils" $rlRun_LOG
 
         if rlIsFedora; then
-            rlAssertGrep "pass .* / make-devel" $rlRun_LOG
+            rlAssertGrep "pass .* / patch" $rlRun_LOG
         else
-            rlAssertGrep "pass .* / centpkg" $rlRun_LOG
+            rlAssertGrep "pass .* / make" $rlRun_LOG
         fi
 
         rlAssertGrep "All packages verified successfully." $rlRun_LOG
@@ -56,17 +44,12 @@ rlJournalStart
             provision -h \$PROVISION_HOW --image \$image" \
             2 "Verification should fail with wrong repo"
 
-        # diffutils passes on both distros in the failure plan
-        rlAssertGrep "pass .* / diffutils" $rlRun_LOG
+        rlAssertGrep "3 packages" $rlRun_LOG
 
-        rlAssertGrep "4 packages" $rlRun_LOG
-        if rlIsFedora; then
-            rlAssertGrep "pass .* / make" $rlRun_LOG
-            rlAssertGrep "fail .* / make-devel" $rlRun_LOG
-            rlAssertGrep "actual 'tmt-artifact-shared'" $rlRun_LOG
-        else
-            rlAssertGrep "pass .* / centpkg" $rlRun_LOG
-            rlAssertGrep "fail .* / make" $rlRun_LOG
+        rlAssertGrep "pass .* / diffutils" $rlRun_LOG
+        rlAssertGrep "fail .* / make" $rlRun_LOG
+
+        if ! rlIsFedora; then
             rlAssertGrep "actual 'baseos'" $rlRun_LOG
         fi
 
@@ -78,11 +61,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        if rlIsFedora; then
-            rlRun "rm -rf \$run \$data_dir" 0 "Removing run and data directories"
-        else
-            rlRun "rm -rf \$run" 0 "Removing run directory"
-        fi
+        rlRun "rm -rf \$run" 0 "Removing run directory"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd
