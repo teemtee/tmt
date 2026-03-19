@@ -345,7 +345,7 @@ class Plan(
         def _normalize_raw_step_phases(
             step_name: tmt.steps.StepName,
         ) -> list[tmt.steps._RawStepData]:
-            raw_step_data = self.node.get(step_name)
+            raw_step_data: Any = node.get(name=step_name)  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
 
             # Create an empty step by default (can be updated from cli)
             if raw_step_data is None:
@@ -357,7 +357,7 @@ class Plan(
 
             # List is as good as it gets
             if isinstance(raw_step_data, list):
-                return raw_step_data
+                return cast(list[tmt.steps._RawStepData], raw_step_data)
 
             # Shout about invalid configuration
             raise tmt.utils.GeneralError(f"Invalid '{step_name}' config in '{self}'.")
