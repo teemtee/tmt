@@ -2,6 +2,7 @@ from typing import Optional
 
 import fmf.utils
 
+import tmt.base.core
 import tmt.steps
 import tmt.utils
 from tmt.container import container, field
@@ -24,6 +25,18 @@ class PrepareVerifyInstallationData(PrepareStepData):
         default_factory=dict,
         help="Mapping of package names to expected source repository names.",
         normalize=tmt.utils.normalize_string_dict,
+    )
+
+    auto: bool = field(
+        default=False,
+        option='--auto/--no-auto',
+        is_flag=True,
+        help="""
+            Automatically verify packages listed in ``require`` or ``recommend``
+            that are present in the artifact metadata (``artifacts.yaml``) were
+            installed from the artifact repository. Entries in ``verify`` take
+            precedence over auto-detected ones.
+            """,
     )
 
 
@@ -58,6 +71,76 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
 
     _data_class = PrepareVerifyInstallationData
 
+    def _build_auto_verify(self, guest: Guest) -> dict[str, str]:
+        """
+        Build a verify mapping from artifact metadata and test requirements.
+
+        Reads ``artifacts.yaml`` from the plan workdir, collects all
+        package names provided by artifact providers, and intersects them
+        with packages listed in ``require``/``recommend`` of tests enabled
+        on this guest.  Returns a mapping of intersecting package names to
+        the artifact shared repository name.
+        """
+        from tmt.steps.prepare.artifact import (
+            ARTIFACT_METADATA_FILENAME,
+            ARTIFACT_SHARED_REPO_NAME,
+        )
+
+        artifacts_file = self.plan_workdir / ARTIFACT_METADATA_FILENAME
+
+        if not artifacts_file.exists():
+            self.debug('No artifacts.yaml found, skipping auto-verification.')
+            return {}
+
+        try:
+            metadata = tmt.utils.yaml_to_dict(artifacts_file.read_text())
+        except tmt.utils.GeneralError as err:
+            self.warn(f"Failed to read artifacts.yaml: {err}")
+            return {}
+
+        # Collect all package names provided by artifact providers.
+        artifact_package_names: set[str] = {
+            artifact['version']['name']
+            for provider in metadata.get('providers', [])
+            for artifact in provider.get('artifacts', [])
+        }
+
+        if not artifact_package_names:
+            self.debug('No artifact packages found in artifacts.yaml.')
+            return {}
+
+        # Collect require/recommend package names for tests enabled on this guest.
+        # Only DependencySimple entries are package names; fmf/file deps are skipped.
+        require_recommend_names: set[str] = set()
+        for test_origin in self.step.plan.discover.tests(enabled=True):
+            test = test_origin.test
+            if not test.enabled_on_guest(guest):
+                continue
+            for dep in (*test.require, *test.recommend):
+                if isinstance(dep, tmt.base.core.DependencySimple):
+                    require_recommend_names.add(str(dep))
+
+        intersection = artifact_package_names & require_recommend_names
+        if not intersection:
+            self.debug('No overlap between artifact packages and test requirements.')
+            return {}
+
+        self.debug(
+            f"Auto-verifying {fmf.utils.listed(sorted(intersection), 'package')} "
+            f"against '{ARTIFACT_SHARED_REPO_NAME}'."
+        )
+
+        unverified = require_recommend_names - artifact_package_names
+        if unverified:
+            self.warn(
+                f"{fmf.utils.listed(sorted(unverified), 'package')} "
+                f"from require/recommend not found in artifacts.yaml, "
+                f"consider adding a custom verify-installation entry: "
+                f"{', '.join(sorted(unverified))}"
+            )
+
+        return dict.fromkeys(intersection, ARTIFACT_SHARED_REPO_NAME)
+
     def go(
         self,
         *,
@@ -71,17 +154,24 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
         if self.is_dry_run:
             return outcome
 
-        if not self.data.verify:
+        # Build the effective verify mapping: auto-detected entries are
+        # overridden by any manually specified ones.
+        effective_verify: dict[str, str] = {}
+        if self.data.auto:
+            effective_verify.update(self._build_auto_verify(guest))
+        effective_verify.update(self.data.verify)
+
+        if not effective_verify:
             self.verbose('No packages to verify.')
             return outcome
 
         self.info(
-            fmf.utils.listed(list(self.data.verify.keys()), 'package'),
+            fmf.utils.listed(list(effective_verify.keys()), 'package'),
             color='green',
         )
 
         try:
-            package_origins = guest.package_manager.get_package_origin(self.data.verify.keys())
+            package_origins = guest.package_manager.get_package_origin(effective_verify.keys())
         except (NotImplementedError, tmt.utils.GeneralError) as err:
             error: Exception = (
                 tmt.utils.PrepareError(
@@ -103,7 +193,7 @@ class PrepareVerifyInstallation(PreparePlugin[PrepareVerifyInstallationData]):
             return outcome
 
         failed_packages: list[str] = []
-        for package, expected_repo in self.data.verify.items():
+        for package, expected_repo in effective_verify.items():
             actual_origin = package_origins[package]
 
             if actual_origin == expected_repo:
