@@ -3,9 +3,9 @@ Abstract base class for artifact providers.
 """
 
 import configparser
+import re
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
-from functools import cached_property
 from re import Pattern
 from shlex import quote
 from typing import Any, Optional
@@ -18,6 +18,10 @@ from tmt.container import container, simple_field
 from tmt.guest import Guest
 from tmt.plugins import PluginRegistry
 from tmt.utils import GeneralError, Path, ShellScript
+
+NEVRA_PATTERN = re.compile(
+    r'^(?P<name>.+)-(?:(?P<epoch>\d+):)?(?P<version>.+)-(?P<release>.+)\.(?P<arch>.+)$'
+)
 
 
 class DownloadError(tmt.utils.GeneralError):
@@ -84,6 +88,32 @@ class RpmVersion(Version):
             release=rpm_meta["release"],
             arch=rpm_meta["arch"],
             epoch=rpm_meta.get("epoch", 0),
+        )
+
+    @classmethod
+    def from_nevra(
+        cls, nevra: str
+    ) -> Self:  # TODO: move this to `tmt.package_managers.PackageManager.list_packages`
+        """
+        Version constructed from a NEVRA string as returned by ``dnf repoquery``.
+
+        Example usage:
+
+        .. code-block:: python
+
+            version_info = RpmVersion.from_nevra("curl-0:8.11.1-7.fc42.x86_64")
+            version_info = RpmVersion.from_nevra("curl-8.11.1-7.fc42.x86_64")
+        """
+        match = NEVRA_PATTERN.match(nevra)
+        if not match:
+            raise ValueError(f"Cannot parse NEVRA '{nevra}'.")
+        epoch_str = match.group('epoch')
+        return cls(
+            name=match.group('name'),
+            epoch=int(epoch_str) if epoch_str is not None else 0,
+            version=match.group('version'),
+            release=match.group('release'),
+            arch=match.group('arch'),
         )
 
     @classmethod
@@ -169,6 +199,10 @@ class ArtifactProvider(ABC):
     #: Lower values have higher priority in package managers.
     repository_priority: int
 
+    # Artifacts enumerated from this provider's repositories after they have
+    # been installed on the guest.
+    _artifacts: list[ArtifactInfo]
+
     def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
         self.repository_priority = repository_priority
         self.logger = logger
@@ -177,6 +211,7 @@ class ArtifactProvider(ABC):
         self.sanitized_id = tmt.utils.sanitize_name(raw_id, allow_slash=False)
 
         self.id = self._extract_provider_id(raw_id)
+        self._artifacts = []
 
     @classmethod
     @abstractmethod
@@ -191,20 +226,15 @@ class ArtifactProvider(ABC):
 
         raise NotImplementedError
 
-    @cached_property
-    @abstractmethod
+    @property
     def artifacts(self) -> Sequence[ArtifactInfo]:
         """
         Collect all artifacts available from this provider.
 
-        The method is left for derived classes to implement with respect
-        to the actual artifact provider they implement. The list of
-        artifacts will be cached, and is treated as read-only.
-
         :returns: a list of provided artifacts.
         """
 
-        raise NotImplementedError
+        return self._artifacts
 
     @abstractmethod
     def _download_artifact(
@@ -299,6 +329,39 @@ class ArtifactProvider(ABC):
         Return a list of :py:class:`Repository` that this provider manages.
         """
         return []
+
+    def enumerate_artifacts(
+        self, guest: Guest
+    ) -> None:  # TODO: refactor this once the NEVRA parsing is centralized.
+        """
+        Enumerate artifacts available from this provider after its repositories
+        have been installed on the guest.
+        """
+        for repository in self.get_repositories():
+            try:
+                nevras = guest.package_manager.list_packages(repository)
+            except tmt.utils.RunError:
+                self.logger.warning(
+                    f"Failed to enumerate packages from repository '{repository.name}'."
+                )
+                continue
+            count = 0
+            for nevra in nevras:
+                nevra = nevra.strip()
+                if not nevra:
+                    continue
+                try:
+                    self._artifacts.append(
+                        ArtifactInfo(
+                            version=RpmVersion.from_nevra(nevra),
+                            provider=self,
+                            location=repository.name,
+                        )
+                    )
+                    count += 1
+                except ValueError:
+                    self.logger.warning(f"Could not parse NEVRA '{nevra}'.")
+            self.logger.debug(f"Enumerated {count} packages from repository '{repository.name}'.")
 
     # B027: "... is an empty method in an abstract base class, but has
     # no abstract decorator" - expected, it's a default implementation
