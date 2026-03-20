@@ -683,6 +683,8 @@ class GuestMock(tmt.Guest):
         source = source or self.plan_workdir
         destination = destination or source
 
+        if options.delete:
+            self.mock_shell.execute(Command('rm', '-rf', str(destination)), logger=self._logger)
         if source.is_dir():
             self.mock_shell.execute(Command('mkdir', '-p', str(destination)), logger=self._logger)
             p = self.mock_shell._spawn_command(
