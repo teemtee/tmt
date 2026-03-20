@@ -17,6 +17,8 @@ foreach arg $argv {
   send -- "$arg\r"
 }
 
-# Make sure we wait for some output and timeout quickly
-set timeout 1
+# Wait for the next prompt after the action completes
+expect "What do we do next?"
+send -- "q\r"
+set timeout 3
 expect eof
