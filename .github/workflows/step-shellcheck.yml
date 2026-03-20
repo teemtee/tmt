@@ -41,7 +41,7 @@ jobs:
 
       - if: ${{ always() }}
         name: Upload artifact with ShellCheck defects in SARIF format
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: Differential ShellCheck SARIF
           path: ${{ steps.ShellCheck.outputs.sarif }}
@@ -53,10 +53,10 @@ jobs:
     permissions:
       security-events: write
     steps:
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v8
         with:
           name: Differential ShellCheck SARIF
-      - uses: github/codeql-action/upload-sarif@v2
+      - uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: ${{ needs.lint.outputs.sarif }}
     if: ${{ inputs.upload_sarif }}
