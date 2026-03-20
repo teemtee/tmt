@@ -10,3 +10,10 @@ test: /bin/true
       - url: https://github.com/beakerlib/test
         name: /very/deep/file
         type: library
+/second:
+    summary: Second test
+    framework: shell
+    test: echo SECOND_TEST
+    check:
+      - how: dmesg
+        result: info
