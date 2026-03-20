@@ -61,6 +61,22 @@ class MockGuestData(tmt.guest.GuestData):
         normalize=tmt.utils.normalize_path,
     )
 
+    def to_spec(self) -> tmt.steps._RawStepData:
+        return cast(
+            tmt.steps._RawStepData,
+            {
+                **super().to_spec(),
+                'rootdir': str(self.rootdir) if self.rootdir else None,
+            },
+        )
+
+    def to_minimal_spec(self) -> tmt.steps._RawStepData:
+        spec = {**super().to_minimal_spec()}
+        spec.pop('rootdir', None)
+        if self.rootdir:
+            spec['rootdir'] = str(self.rootdir)
+        return cast(tmt.steps._RawStepData, spec)
+
 
 @container
 class ProvisionMockData(MockGuestData, tmt.steps.provision.ProvisionStepData):
