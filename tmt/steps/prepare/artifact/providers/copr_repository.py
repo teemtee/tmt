@@ -96,11 +96,6 @@ class CoprRepositoryProvider(ArtifactProvider):
             return []
         return [self.repository]
 
-    def get_repositories(self) -> list[Repository]:
-        if self.repository is None:
-            return []
-        return [self.repository]
-
     def _download_artifact(self, artifact: ArtifactInfo, guest: Guest, destination: Path) -> None:
         """This provider only enables repositories; it does not download individual RPMs."""
         raise UnsupportedOperationError(
