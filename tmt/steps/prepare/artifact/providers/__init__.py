@@ -332,11 +332,12 @@ class ArtifactProvider(ABC):
         for repository in self.get_repositories():
             try:
                 nevras = guest.package_manager.list_packages(repository)
-            except Exception:
+            except tmt.utils.RunError:
                 self.logger.warning(
                     f"Failed to enumerate packages from repository '{repository.name}'."
                 )
                 continue
+            count = 0
             for nevra in nevras:
                 nevra = nevra.strip()
                 if not nevra:
@@ -349,11 +350,10 @@ class ArtifactProvider(ABC):
                             location=repository.name,
                         )
                     )
+                    count += 1
                 except ValueError:
                     self.logger.warning(f"Could not parse NEVRA '{nevra}'.")
-            self.logger.debug(
-                f"Enumerated {len(self._artifacts)} packages from repository '{repository.name}'."
-            )
+            self.logger.debug(f"Enumerated {count} packages from repository '{repository.name}'.")
 
     # B027: "... is an empty method in an abstract base class, but has
     # no abstract decorator" - expected, it's a default implementation
