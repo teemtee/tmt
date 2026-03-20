@@ -48,6 +48,7 @@ dependencies = [
     "pygments>=2.7.4",
     "requests>=2.25.1",
     "ruamel.yaml>=0.16.6",
+    "ruamel-yaml-clib",
     "urllib3>=1.26.5, <3.0",
     "typing-extensions>=4; python_version < '3.13'",
     ]
