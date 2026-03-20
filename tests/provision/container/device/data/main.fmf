@@ -1,0 +1,42 @@
+/plan:
+    summary: Base plan for container tests
+    provision:
+        how: container
+        image: fedora
+    execute:
+        how: tmt
+
+    /with-random:
+        summary: Test container provisioning with random device access
+        discover:
+            how: shell
+            tests:
+                - name: test-random-device
+                  framework: shell
+                  test: |
+                      if [ -c /dev/random ]; then
+                          echo "SUCCESS"
+                      else
+                          exit 1
+                      fi
+        provision+:
+            expose-device: /dev/random
+
+    /with-multiple-devices:
+        summary: Test container provisioning with multiple device access
+        discover:
+            how: shell
+            tests:
+                - name: test-multiple-devices
+                  framework: shell
+                  test: |
+                      if [ -c /dev/random ] && [ -c /dev/urandom ]; then
+                          echo "SUCCESS: Both devices are present."
+                      else
+                          echo "FAIL: One or both devices are missing."
+                          exit 1
+                      fi
+        provision+:
+            expose-device:
+                - /dev/random
+                - /dev/urandom

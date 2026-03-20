@@ -19,6 +19,9 @@ properties:
     enum:
       - container
 
+  expose-device:
+    $ref: "/schemas/common#/definitions/one_or_more_strings"
+
   name:
     type: string
 

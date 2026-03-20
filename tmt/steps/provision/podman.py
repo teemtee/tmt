@@ -114,6 +114,18 @@ class PodmanGuestData(tmt.guest.GuestData):
         normalize=tmt.utils.normalize_int,
     )
 
+    expose_device: list[str] = field(
+        default_factory=list,
+        option='--expose-device',
+        multiple=True,
+        metavar='DEVICE',
+        help="""
+             Device to expose to the container (e.g., ``/dev/kvm``, ``/dev/ttyS3``).
+             Can be specified multiple times.
+             """,
+        normalize=tmt.utils.normalize_string_list,
+    )
+
 
 @container
 class ProvisionPodmanData(PodmanGuestData, tmt.steps.provision.ProvisionStepData):
@@ -137,6 +149,7 @@ class GuestContainer(tmt.Guest):
     pull_interval: int
     stop_time: int
     network_prefix: Optional[str]
+    expose_device: list[str]
     logger: tmt.log.Logger
 
     @property
@@ -310,6 +323,11 @@ class GuestContainer(tmt.Guest):
 
         additional_args.extend(self._setup_network())
         additional_args.extend(self._setup_environment())
+
+        # Add device access if requested
+        for device in self.expose_device:
+            # Device has already been validated in ProvisionPodman.go()
+            additional_args.extend(['--device', device])
 
         # Run the container
         self.debug(f"Start container '{self.image}'.")
@@ -684,10 +702,28 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
             user: tester
             become: true
 
+    .. code-block:: yaml
+
+        # Expose devices to the container (single or multiple)
+        provision:
+            how: container
+            image: fedora:latest
+            expose-device:
+                - /dev/kvm
+                - /dev/ttyS3
+
     In order to always pull the fresh container image use ``pull: true``.
 
     In order to run the container with different user as the default ``root``,
     use ``user: USER``.
+
+    Use ``expose-device`` to expose host devices to the container. This is useful
+    for cases like KVM acceleration (``expose-device: /dev/kvm``) or accessing
+    serial devices. Multiple devices can be specified as a list.
+
+    For security reasons, exposable devices need to be explicitly allowed by tmt
+    runner, either via ``--exposable-runner-devices`` CLI option or the
+    ``TMT_EXPOSABLE_RUNNER_DEVICES`` environment variable.
 
     Container-backed guests do not support soft reboots or custom reboot
     commands. Soft reboot or ``tmt-reboot -c ...`` will result in an
@@ -712,6 +748,21 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
 
         return super().default(option, default=default)
 
+    def _validate_device_against_allowlist(self, device: str) -> None:
+        """
+        Validate a requested device path against the configured security allowlist.
+
+        Raises a SpecificationError if the device does not match any of the
+        patterns allowed for exposable devices.
+        """
+        # Check if device matches any of the allowed patterns
+        if not any(pattern.match(device) for pattern in self.exposable_runner_device_patterns):
+            raise tmt.utils.SpecificationError(
+                f"Device '{device}' cannot be exposed. The device is not in the security "
+                "allowlist. Please configure the '--exposable-runner-devices' option or the "
+                "'TMT_EXPOSABLE_RUNNER_DEVICES' environment variable."
+            )
+
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
         Provision the container
@@ -726,6 +777,10 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
 
         if data.hardware and data.hardware.constraint:
             self.warn("The 'container' provision plugin does not support hardware requirements.")
+
+        # Validate device access configuration before creating guest
+        for device in data.expose_device:
+            self._validate_device_against_allowlist(device)
 
         # Create a new GuestTestcloud instance and start it
         self._guest = GuestContainer(
