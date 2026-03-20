@@ -49,6 +49,18 @@ class ProvisionStepData(tmt.steps.StepData):
         ),
     )
 
+    def to_spec(self) -> tmt.steps._RawStepData:
+        spec = super().to_spec()
+        spec['hardware'] = self.hardware.to_spec() if self.hardware else None  # type: ignore[typeddict-unknown-key]
+        return spec
+
+    def to_minimal_spec(self) -> tmt.steps._RawStepData:
+        spec = super().to_minimal_spec()
+        spec.pop('hardware', None)  # type: ignore[typeddict-item]
+        if self.hardware:
+            spec['hardware'] = self.hardware.to_minimal_spec()  # type: ignore[typeddict-unknown-key]
+        return spec
+
 
 ProvisionStepDataT = TypeVar('ProvisionStepDataT', bound=ProvisionStepData)
 

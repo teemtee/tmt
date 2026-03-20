@@ -95,6 +95,20 @@ class ExecuteUpgradeData(ExecuteInternalData):
         normalize=tmt.utils.normalize_string_list,
     )
 
+    # ignore[override] & cast: two base classes define to_spec(), with conflicting
+    # formal types.
+    def to_spec(self) -> dict[str, Any]:  # type: ignore[override]
+        return {**super().to_spec(), 'test': [test.to_spec() for test in self.test]}
+
+    # ignore[override] & cast: two base classes define to_spec(), with conflicting
+    # formal types.
+    def to_minimal_spec(self) -> dict[str, Any]:  # type: ignore[override]
+        spec = super().to_minimal_spec()
+        spec.pop('test', None)
+        if self.test:
+            spec['test'] = [test.to_minimal_spec() for test in self.test]
+        return spec
+
 
 @tmt.steps.provides_method('upgrade')
 class ExecuteUpgrade(ExecuteInternal):

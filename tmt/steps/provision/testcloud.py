@@ -403,6 +403,26 @@ class TestcloudGuestData(tmt.guest.GuestSshData):
              """,
     )
 
+    def to_spec(self) -> tmt.steps._RawStepData:
+        return cast(
+            tmt.steps._RawStepData,
+            {
+                **super().to_spec(),
+                'memory': str(self.memory) if self.memory is not None else None,
+                'disk': str(self.disk) if self.disk is not None else None,
+            },
+        )
+
+    def to_minimal_spec(self) -> tmt.steps._RawStepData:
+        spec = {**super().to_minimal_spec()}
+        spec.pop('memory', None)
+        spec.pop('disk', None)
+        if self.memory is not None:
+            spec['memory'] = str(self.memory)
+        if self.disk is not None:
+            spec['disk'] = str(self.disk)
+        return cast(tmt.steps._RawStepData, spec)
+
     # TODO: custom handling for two fields - when the formatting moves into
     # field(), this should not be necessary.
     def show(
