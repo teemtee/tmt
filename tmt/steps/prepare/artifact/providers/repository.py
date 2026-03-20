@@ -2,7 +2,6 @@
 Artifact provider for discovering RPMs from repository files.
 """
 
-from collections.abc import Sequence
 from re import Pattern
 from typing import Optional
 from urllib.parse import urlparse
@@ -55,10 +54,6 @@ class RepositoryFileProvider(ArtifactProvider):
         if not value:
             raise ValueError("Missing repository URL.")
         return value
-
-    @property
-    def artifacts(self) -> Sequence[ArtifactInfo]:
-        return self._artifacts
 
     def _download_artifact(self, artifact: ArtifactInfo, guest: Guest, destination: Path) -> None:
         """This provider only discovers repos; it does not download individual RPMs."""

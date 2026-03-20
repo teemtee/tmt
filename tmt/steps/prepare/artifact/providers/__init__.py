@@ -3,6 +3,7 @@ Abstract base class for artifact providers.
 """
 
 import configparser
+import re
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
 from re import Pattern
@@ -17,6 +18,10 @@ from tmt.container import container, simple_field
 from tmt.guest import Guest
 from tmt.plugins import PluginRegistry
 from tmt.utils import GeneralError, Path, ShellScript
+
+NEVRA_PATTERN = re.compile(
+    r'^(?P<name>.+)-(?:(?P<epoch>\d+):)?(?P<version>.+)-(?P<release>.+)\.(?P<arch>.+)$'
+)
 
 
 class DownloadError(tmt.utils.GeneralError):
@@ -99,17 +104,17 @@ class RpmVersion(Version):
             version_info = RpmVersion.from_nevra("curl-0:8.11.1-7.fc42.x86_64")
             version_info = RpmVersion.from_nevra("curl-8.11.1-7.fc42.x86_64")
         """
-        nvr_epoch, sep, arch = nevra.rpartition('.')
-        if not sep:
-            raise ValueError(f"Cannot parse arch from NEVRA '{nevra}'.")
-        parts = nvr_epoch.rsplit('-', 2)
-        if len(parts) != 3:
-            raise ValueError(f"Cannot parse NVR from NEVRA '{nevra}'.")
-        name, ev, release = parts
-        epoch_str, sep, version = ev.partition(':')
-        epoch = int(epoch_str) if sep else 0
-        version = version if sep else epoch_str
-        return cls(name=name, version=version, release=release, arch=arch, epoch=epoch)
+        match = NEVRA_PATTERN.match(nevra)
+        if not match:
+            raise ValueError(f"Cannot parse NEVRA '{nevra}'.")
+        epoch_str = match.group('epoch')
+        return cls(
+            name=match.group('name'),
+            epoch=int(epoch_str) if epoch_str is not None else 0,
+            version=match.group('version'),
+            release=match.group('release'),
+            arch=match.group('arch'),
+        )
 
     @classmethod
     def from_filename(cls, filename: str) -> Self:
@@ -194,6 +199,10 @@ class ArtifactProvider(ABC):
     #: Lower values have higher priority in package managers.
     repository_priority: int
 
+    # Artifacts enumerated from this provider's repositories after they have
+    # been installed on the guest.
+    _artifacts: list[ArtifactInfo]
+
     def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
         self.repository_priority = repository_priority
         self.logger = logger
@@ -202,7 +211,7 @@ class ArtifactProvider(ABC):
         self.sanitized_id = tmt.utils.sanitize_name(raw_id, allow_slash=False)
 
         self.id = self._extract_provider_id(raw_id)
-        self._artifacts: list[ArtifactInfo] = []
+        self._artifacts = []
 
     @classmethod
     @abstractmethod
@@ -218,7 +227,6 @@ class ArtifactProvider(ABC):
         raise NotImplementedError
 
     @property
-    @abstractmethod
     def artifacts(self) -> Sequence[ArtifactInfo]:
         """
         Collect all artifacts available from this provider.
@@ -226,7 +234,7 @@ class ArtifactProvider(ABC):
         :returns: a list of provided artifacts.
         """
 
-        raise NotImplementedError
+        return self._artifacts
 
     @abstractmethod
     def _download_artifact(
