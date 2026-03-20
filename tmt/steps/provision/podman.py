@@ -723,7 +723,7 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
 
     For security reasons, exposable devices need to be explicitly allowed by tmt
     runner, either via ``--exposable-runner-devices`` CLI option or the
-    'TMT_EXPOSABLE_RUNNER_DEVICES' environment variable.
+    ``TMT_EXPOSABLE_RUNNER_DEVICES`` environment variable.
 
     Container-backed guests do not support soft reboots or custom reboot
     commands. Soft reboot or ``tmt-reboot -c ...`` will result in an
