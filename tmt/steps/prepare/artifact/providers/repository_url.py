@@ -2,7 +2,6 @@
 Artifact provider for creating DNF repositories from baseurl.
 """
 
-from collections.abc import Sequence
 from re import Pattern
 from typing import Optional
 
@@ -55,10 +54,6 @@ class RepositoryUrlProvider(ArtifactProvider):
         if not value:
             raise ValueError("Missing repository baseurl.")
         return value
-
-    @property
-    def artifacts(self) -> Sequence[ArtifactInfo]:
-        return self._artifacts
 
     def _download_artifact(
         self, artifact: ArtifactInfo, guest: Guest, destination: tmt.utils.Path

@@ -3,7 +3,6 @@ Copr Repository Artifact Provider
 """
 
 import re
-from collections.abc import Sequence
 from re import Pattern
 from typing import Optional
 
@@ -89,10 +88,6 @@ class CoprRepositoryProvider(ArtifactProvider):
             )
 
         return value
-
-    @property
-    def artifacts(self) -> Sequence[ArtifactInfo]:
-        return self._artifacts
 
     def get_repositories(self) -> list[Repository]:
         if self.repository is None:
