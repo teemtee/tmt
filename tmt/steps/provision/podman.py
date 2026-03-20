@@ -723,7 +723,7 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
 
     For security reasons, exposable devices need to be explicitly allowed by tmt
     runner, either via ``--exposable-runner-devices`` CLI option or
-    ``TMT_EXPOSABLE_RUNNER_DEVICES`` environment variable.
+    exposable device patterns.
 
     Container-backed guests do not support soft reboots or custom reboot
     commands. Soft reboot or ``tmt-reboot -c ...`` will result in an
@@ -748,24 +748,20 @@ class ProvisionPodman(tmt.steps.provision.ProvisionPlugin[ProvisionPodmanData]):
 
         return super().default(option, default=default)
 
-    def _validate_device_against_allowlist(self, device: str) -> str:
+    def _validate_device_against_allowlist(self, device: str) -> None:
         """
         Validate a requested device path against the configured security allowlist.
 
         Raises a SpecificationError if the device does not match any of the
-        patterns allowed by the TMT_EXPOSABLE_RUNNER_DEVICES configuration.
+        patterns allowed for exposable devices.
         """
-        allowed_patterns = self.exposable_runner_device_patterns
-
-        # Now you can iterate over allowed_patterns and use pattern.match(device)
-        if not any(pattern.match(device) for pattern in allowed_patterns):
+        # Check if device matches any of the allowed patterns
+        if not any(pattern.match(device) for pattern in self.exposable_runner_device_patterns):
             raise tmt.utils.SpecificationError(
                 f"Device '{device}' cannot be exposed. The device is not in the security "
                 "allowlist. Please configure the '--exposable-runner-devices' option or the "
                 "'TMT_EXPOSABLE_RUNNER_DEVICES' environment variable."
             )
-
-        return device
 
     def go(self, *, logger: Optional[tmt.log.Logger] = None) -> None:
         """
