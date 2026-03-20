@@ -2553,13 +2553,9 @@ class Tree(tmt.utils.Common):
 
         # Handle defaults, apply possible command line options
         logger = logger or (run._logger if run is not None else self._logger)
-        if run is not None and run.recipe:
-            names = names or [plan.name for plan in run.recipe.plans]
-            local_plan_keys = []
-        else:
-            names = names or []
-            local_plan_keys = (keys or []) + ['execute']
+        local_plan_keys = (keys or []) + ['execute']
         remote_plan_keys = (keys or []) + ['plan']
+        names = names or []
         filters = filters or []
         conditions = conditions or []
         # FIXME: cast() - typeless "dispatcher" method
@@ -2923,10 +2919,9 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
 
         self.policies = policies or []
         self.recipe_manager = RecipeManager(logger)
-        self.recipe = self.recipe_manager.load(recipe_path) if recipe_path else None
-        if self.recipe is not None and self._tree is not None:
-            self.recipe_manager.update_tree(self.recipe, self._tree.tree)
-            self.remove = self.remove or self.recipe.run.remove
+        self.recipe = self.recipe_manager.load(
+            self, recipe_path, self._tree.tree if self._tree is not None else None
+        )
 
     @property
     def run_workdir(self) -> Path:
@@ -3038,6 +3033,17 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         )
 
     @property
+    def _environment_from_recipe(self) -> Environment:
+        """
+        Environment variables from the recipe.
+        """
+
+        if self.recipe is None:
+            return Environment()
+
+        return self.recipe.run.environment.copy()
+
+    @property
     def environment(self) -> Environment:
         """
         Environment variables of the run.
@@ -3047,21 +3053,15 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
 
         * run's environment, saved from the previous runs in the same
           workdir,
+        * run's environment, loaded from the recipe file.
         * run's environment, ``--environment`` and ``--environment-file``
           options.
         """
 
-        if self.recipe is not None:
-            return Environment(
-                {
-                    **self.recipe.run.environment,
-                    **self._environment_from_cli,
-                }
-            )
-
         return Environment(
             {
                 **self._environment_from_workdir,
+                **self._environment_from_recipe,
                 **self._environment_from_cli,
             }
         )

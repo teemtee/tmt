@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypedDict, cast
 
-import fmf
+from fmf import Tree
 
 import tmt.utils
 from tmt.checks import Check, _RawCheck, normalize_test_checks
@@ -14,7 +14,7 @@ from tmt.container import (
 )
 from tmt.log import Logger
 from tmt.result import ResultInterpret
-from tmt.steps import Step, _RawStepData
+from tmt.steps import STEPS, Step, _RawStepData
 from tmt.steps.discover import Discover, TestOrigin
 from tmt.utils import Common, Environment, FmfContext, NormalizeKeysMixin, Path, ShellScript
 
@@ -276,17 +276,18 @@ class _RecipeStep(SpecBasedContainer[_RawRecipeStep, _RawRecipeStep], Serializab
 
     @classmethod
     def from_step(cls, step: 'Step') -> '_RecipeStep':
-        enabled = bool(step.enabled)
         return _RecipeStep(
-            enabled=enabled,
-            phases=[phase.to_minimal_spec() for phase in step.data] if enabled else [],
+            enabled=bool(step.enabled),
+            phases=[phase.to_minimal_spec() for phase in step.data],
         )
 
     # ignore[override]: does not match the signature on purpose, we need to pass logger
     @classmethod
     def from_spec(cls, spec: _RawRecipeStep, logger: Logger) -> '_RecipeStep':  # type: ignore[override]
-        enabled = bool(spec.get('enabled', False))
-        return _RecipeStep(enabled=enabled, phases=spec.get('phases', []) if enabled else [])
+        return _RecipeStep(
+            enabled=bool(spec.get('enabled', False)),
+            phases=spec.get('phases', []),
+        )
 
     def to_spec(self) -> _RawRecipeStep:
         return _RawRecipeStep(enabled=self.enabled, phases=self.phases)
@@ -316,10 +317,9 @@ class _RecipeDiscoverStep(_RecipeStep):
     # ignore[override]: does not match the signature on purpose, we need to pass logger
     @classmethod
     def from_spec(cls, spec: _RawRecipeStep, logger: Logger) -> '_RecipeDiscoverStep':  # type: ignore[override]
-        enabled = bool(spec.get('enabled', False))
         return _RecipeDiscoverStep(
-            enabled=enabled,
-            phases=spec.get('phases', []) if enabled else [],
+            enabled=bool(spec.get('enabled', False)),
+            phases=spec.get('phases', []),
             tests=[
                 _RecipeTest.from_spec(test, logger)
                 for test in cast(list[_RawRecipeTest], spec.get('tests', []))
@@ -329,10 +329,9 @@ class _RecipeDiscoverStep(_RecipeStep):
     @classmethod
     def from_step(cls, step: 'Step') -> '_RecipeDiscoverStep':
         assert isinstance(step, Discover)
-        enabled = bool(step.enabled)
         return _RecipeDiscoverStep(
-            enabled=enabled,
-            phases=[phase.to_minimal_spec() for phase in step.data] if enabled else [],
+            enabled=bool(step.enabled),
+            phases=[phase.to_minimal_spec() for phase in step.data],
             tests=[_RecipeTest.from_test_origin(test_origin) for test_origin in step.tests()],
         )
 
@@ -354,20 +353,18 @@ class _RecipeExecuteStep(_RecipeStep):
     # ignore[override]: does not match the signature on purpose, we need to pass logger
     @classmethod
     def from_spec(cls, spec: _RawRecipeStep, logger: Logger) -> '_RecipeExecuteStep':  # type: ignore[override]
-        enabled = bool(spec.get('enabled', False))
         results_path = cast(Optional[str], spec.get('results-path', None))
         return _RecipeExecuteStep(
-            enabled=enabled,
-            phases=spec.get('phases', []) if enabled else [],
+            enabled=bool(spec.get('enabled', False)),
+            phases=spec.get('phases', []),
             results_path=Path(results_path) if results_path else None,
         )
 
     @classmethod
     def from_step(cls, step: 'Step') -> '_RecipeExecuteStep':
-        enabled = bool(step.enabled)
         return _RecipeExecuteStep(
-            enabled=enabled,
-            phases=[phase.to_minimal_spec() for phase in step.data] if enabled else [],
+            enabled=bool(step.enabled),
+            phases=[phase.to_minimal_spec() for phase in step.data],
             results_path=(step.step_workdir / 'results.yaml').relative_to(step.run_workdir),
         )
 
@@ -549,23 +546,25 @@ class Recipe(SpecBasedContainer[_RawRecipe, _RawRecipe], SerializableContainer):
             'plans': [plan.to_minimal_spec() for plan in self.plans],
         }
 
-    def get_plan_by_name(self, name: str) -> _RecipePlan:
-        plans = [plan for plan in self.plans if plan.name == name]
-        if len(plans) != 1:
-            raise tmt.utils.GeneralError(
-                f"Unable to find the correct plan in the recipe: '{name}'"
-            )
-        return plans[0]
-
 
 class RecipeManager(Common):
     def __init__(self, logger: Logger):
         super().__init__(logger=logger)
 
-    def load(self, path: Path) -> Recipe:
-        return Recipe.from_spec(
-            cast(_RawRecipe, tmt.utils.yaml_to_dict(self.read(path))), self._logger
+    def load(
+        self, run: 'Run', recipe_path: Optional[Path], fmf_tree: Optional[Tree]
+    ) -> Optional[Recipe]:
+        if recipe_path is None or fmf_tree is None:
+            return None
+
+        recipe = Recipe.from_spec(
+            cast(_RawRecipe, tmt.utils.yaml_to_dict(self.read(recipe_path))), self._logger
         )
+        self._update_tree(recipe, fmf_tree)
+        self._update_cli_context(recipe)
+        run.remove = run.remove or recipe.run.remove
+
+        return recipe
 
     def save(self, run: 'Run') -> None:
         recipe = Recipe(
@@ -596,9 +595,21 @@ class RecipeManager(Common):
         raise tmt.utils.GeneralError(f"Plan '{plan_name}' not found in the recipe.")
 
     @staticmethod
-    def update_tree(recipe: Recipe, tree: fmf.Tree) -> None:
+    def _update_tree(recipe: Recipe, tree: Tree) -> None:
         """
         Load the plans from the recipe and update the given fmf tree with their specifications.
         """
         tree.children.clear()
         tree.update({plan.name: plan.to_fmf_spec() for plan in recipe.plans})
+
+    def _update_cli_context(self, recipe: Recipe) -> None:
+        """
+        Load the names of enabled steps from the recipe and save them to the CLI context.
+        """
+        if self._cli_context_object is None:
+            return
+        for plan in recipe.plans:
+            for step_name in STEPS:
+                recipe_step = plan.get_step_by_name(step_name)
+                if recipe_step.enabled:
+                    self._cli_context_object.steps.add(step_name)
