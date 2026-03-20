@@ -2,31 +2,66 @@
 Copr Build Artifact Provider
 """
 
+import types
 from collections.abc import Sequence
 from functools import cached_property
 from shlex import quote
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 from urllib.parse import urljoin
 
 import tmt.log
 import tmt.utils
+import tmt.utils.hints
 from tmt.guest import Guest
 from tmt.package_managers._rpm import RpmVersion
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
+    ArtifactProvider,
     ArtifactProviderId,
     DownloadError,
     provides_artifact_provider,
 )
-from tmt.steps.prepare.artifact.providers._copr import CoprArtifactProvider
 from tmt.utils import ShellScript
 
 if TYPE_CHECKING:
     from munch import Munch
 
+copr: Optional[types.ModuleType] = None
+
+# To silence mypy
+Client: Any
+
+tmt.utils.hints.register_hint(
+    'artifact-provider/copr',
+    """
+The ``copr`` Python package is required by tmt for Copr integration.
+
+To quickly test Copr presence, you can try running:
+
+    python -c 'import copr'
+
+* Users who installed tmt from PyPI should install the ``copr`` package
+  via ``pip install copr``.
+""",
+)
+
+
+def import_copr(logger: tmt.log.Logger) -> None:
+    """Import copr module with error handling."""
+    global copr, Client
+    try:
+        import copr
+        from copr.v3 import Client
+    except ImportError as error:
+        from tmt.utils.hints import print_hints
+
+        print_hints('artifact-provider/copr', logger=logger)
+
+        raise tmt.utils.GeneralError("Could not import copr package.") from error
+
 
 @provides_artifact_provider("copr.build")
-class CoprBuildArtifactProvider(CoprArtifactProvider):
+class CoprBuildArtifactProvider(ArtifactProvider):
     """
     Provider for downloading artifacts from Copr builds.
 
@@ -45,6 +80,7 @@ class CoprBuildArtifactProvider(CoprArtifactProvider):
 
     def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
         super().__init__(raw_id, repository_priority, logger)
+        self._session = self._initialize_session()
         try:
             build_id_str, chroot = self.id.split(":", 1)
             self.build_id = int(build_id_str)
@@ -61,22 +97,28 @@ class CoprBuildArtifactProvider(CoprArtifactProvider):
         """
         return self._session.build_proxy.get(self.build_id)
 
-    @property
-    def _copr_owner(self) -> str:
-        assert self.build_info is not None
-        return str(self.build_info.ownername)
-
-    @property
-    def _copr_project(self) -> str:
-        assert self.build_info is not None
-        return str(self.build_info.projectname)
-
     @cached_property
     def is_pulp(self) -> bool:
         """
         Check if the build is stored in Pulp.
         """
-        return self.project_info is not None and self.project_info.storage == "pulp"
+        assert self.build_info is not None
+        project = self._session.project_proxy.get(
+            self.build_info.ownername, self.build_info.projectname
+        )
+        return project is not None and project.storage == "pulp"
+
+    def _initialize_session(self) -> 'Client':
+        """
+        Initialize copr client session.
+        """
+        import_copr(self.logger)
+
+        try:
+            config = {"copr_url": "https://copr.fedorainfracloud.org"}
+            return Client(config)
+        except Exception as error:
+            raise tmt.utils.GeneralError("Failed to initialize Copr client session.") from error
 
     @classmethod
     def _extract_provider_id(cls, raw_id: str) -> ArtifactProviderId:
