@@ -1,0 +1,20 @@
+summary: Verify installed packages persist after reboot
+description: |
+    Install packages and verify they survive a reboot.
+    This is critical for image mode where changes are applied
+    via Containerfile rebuild and bootc switch.
+
+prepare:
+  - how: install
+    package:
+      - tree
+      - diffutils
+
+execute:
+    how: tmt
+    script: |
+        tree --version
+        diffutils --version
+        if [ "$TMT_REBOOT_COUNT" == "0" ]; then
+            tmt-reboot
+        fi

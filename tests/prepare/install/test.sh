@@ -181,6 +181,15 @@ rlJournalStart
             fi
         rlPhaseEnd
 
+        # On image mode, verify packages persist after reboot
+        if is_image_mode "$image"; then
+            rlPhaseStartTest "$phase_prefix Reboot persistence"
+                rlRun -s "$tmt_run --all provision --how $PROVISION_HOW --image $image plan --name /reboot-persistence"
+
+                rlAssertGrep "total: 1 test passed" $rlRun_LOG
+            rlPhaseEnd
+        fi
+
         # Here the basic functionality check ends for the secondary distros.
         if [[ "$SECONDARY_IMAGES" =~ "$image" ]]; then
             continue
