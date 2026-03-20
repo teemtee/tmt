@@ -232,6 +232,7 @@ def test_maximal_constraint(root_logger: Logger) -> None:
                 'and': [
                     {'system': {'hypervisor': {'_op': '==', '_value': ''}}},
                     {},
+                    {},
                     {'system': {'hypervisor': {'_op': 'like', '_value': 'xen'}}},
                 ]
             },
