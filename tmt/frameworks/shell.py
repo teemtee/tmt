@@ -11,7 +11,7 @@ from tmt.steps.execute import TEST_OUTPUT_FILENAME, TestInvocation
 from tmt.utils import Path
 
 # Pattern to match lines containing "error" or "fail" as whole words.
-# Compiled at module level to avoid re-compilation per line.
+# Compiled at module level to avoid re-compilation per call.
 FAILURE_PATTERN = re.compile(r'\b(?:error|fail)\b', re.IGNORECASE)
 
 
