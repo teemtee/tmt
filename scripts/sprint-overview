@@ -50,6 +50,17 @@ DISPLAY_SECTIONS = [
     ("closed-pull", "Closed Pull Requests"),
 ]
 
+DISPLAY_COMPARISON_SECTIONS = [
+    ('completed', 'Completed'),
+    ('pending', 'Pending'),
+    ('added', 'Added'),
+    ('removed', 'Removed'),
+    ('completed-original', 'Completed original items'),
+    ('incomplete-original', 'Incomplete original items'),
+    ('complete-added', 'Completed added items'),
+    ('incomplete-added', 'Incompleted added items'),
+]
+
 DISPLAY_TEMPLATE = jinja2.Template(
     trim_blocks=True,
     source="""
@@ -74,6 +85,32 @@ DISPLAY_TEMPLATE = jinja2.Template(
 {{ closed_count }} closed/merged ({{ closed_points }} points)
 ================================================================================
 """,
+)
+
+
+DISPLAY_COMPARISON_TEMPLATE = jinja2.Template(
+    trim_blocks=True,
+    source="""
+================================================================================
+  Sprint:                     {{ sprint_name }}
+  Total items:                {{ count_base }} => {{ count_current }}
+  Total story points:         {{ size_base }} => {{ size_current }}
+  Completed items:            {{ count_completed }} vs {{ count_pending }}
+  Completed story points:     {{ size_completed }} vs {{ size_pending }}
+  Added/removed items:        {{ count_added }} vs {{ count_removed }}
+  Added/removed story points: {{ size_added }} vs {{ size_removed }}
+================================================================================
+{% for key, label in sections %}
+{% if categories.get(key) %}
+
+  {{ label }} ({{ categories[key] | length }}) - {{ categories[key] | sum(attribute="safe_size") }} points
+--------------------------------------------------------------------------------
+{% for item in categories[key] %}
+  {{ item }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+""",  # noqa: E501
 )
 
 
@@ -214,6 +251,95 @@ def display_items(sprint_name: str, items: list[Item]) -> None:
     )
 
 
+def display_comparison(sprint_name: str, base: list[Item], current: list[Item]) -> None:
+    """
+    Display difference between two sets of items in a readable format.
+
+    :param base: list of the "base", initial items, representing a past
+        state of the sprint.
+    :param items: list of the current items, representing the current
+        state of the sprint.
+    """
+
+    base.sort(key=lambda x: x.id)
+
+    base_map = {item.id: item for item in base}
+    current_map = {item.id: item for item in current}
+
+    completed: list[Item] = []
+    pending: list[Item] = []
+    added: list[Item] = []
+    removed: list[Item] = []
+
+    for base_id, base_item in base_map.items():
+        current_item = current_map.pop(base_id, None)
+
+        if current_item is None:
+            removed.append(base_item)
+
+        elif current_item.status in ('closed', 'merged'):
+            completed.append(base_item)
+
+        else:
+            pending.append(base_item)
+
+    for current_item in current_map.values():
+        added.append(current_item)
+
+        if current_item.status in ('closed', 'merged'):
+            completed.append(current_item)
+
+        else:
+            pending.append(current_item)
+
+    def size(items: list[Item]) -> int:
+        return sum(item.size or 0 for item in items)
+
+    count_base, count_current, size_base, size_current = (
+        len(base),
+        len(current),
+        size(base),
+        size(current),
+    )
+    count_completed, count_pending, size_completed, size_pending = (
+        len(completed),
+        len(pending),
+        size(completed),
+        size(pending),
+    )
+    count_added, size_added = len(added), size(added)
+    count_removed, size_removed = len(removed), size(removed)
+
+    click.echo(
+        DISPLAY_COMPARISON_TEMPLATE.render(
+            sections=DISPLAY_COMPARISON_SECTIONS,
+            categories={
+                'completed': completed,
+                'pending': pending,
+                'added': added,
+                'removed': removed,
+                'completed-original': [item for item in completed if item not in added],
+                'incomplete-original': [item for item in pending if item not in added],
+                'complete-added': [item for item in added if item in completed],
+                'incomplete-added': [item for item in added if item not in completed],
+            },
+            sprint_name=sprint_name,
+            count_base=count_base,
+            count_current=count_current,
+            size_base=size_base,
+            size_current=size_current,
+            count_completed=count_completed,
+            count_pending=count_pending,
+            size_completed=size_completed,
+            size_pending=size_pending,
+            count_added=count_added,
+            size_added=size_added,
+            count_removed=count_removed,
+            size_removed=size_removed,
+        )
+    )
+
+
 @click.command()
 @click.option(
     '--sprint',
@@ -227,20 +353,53 @@ def display_items(sprint_name: str, items: list[Item]) -> None:
     is_flag=True,
     help='Output in YAML format for machine-readable processing.',
 )
-def main(sprint: str, output_yaml: bool) -> None:
+@click.option(
+    '--base',
+    'base_path',
+    default=None,
+    help='Instead of reporting, compare the current sprint against this saved state.',
+)
+@click.option(
+    '--current',
+    'current_path',
+    default=None,
+    help='If set, compare --base against --current instead of the live sprint state.',
+)
+def main(
+    sprint: str,
+    output_yaml: bool,
+    base_path: Optional[str] = None,
+    current_path: Optional[str] = None,
+) -> None:
     """
     List all issues and pull requests in a GitHub Project sprint with story points.
 
     Set the GITHUB_PERSONAL_ACCESS_TOKEN environment variable to avoid rate limits.
     """
-    items = fetch_sprint_items(sprint)
+
+    if current_path is not None:
+        with open(current_path) as f:
+            items = YAML().load(f)
+
+    else:
+        items = fetch_sprint_items(sprint)
+
+        if not items:
+            click.echo(f"No items found in sprint '{sprint}'.")
+            return
 
     if output_yaml:
         YAML().dump([dataclasses.asdict(item) for item in items], sys.stdout)
-        return
 
-    if items:
+    elif base_path is not None:
+        with open(base_path) as f:
+            base = [Item(**item) for item in YAML().load(f)]
+
+        display_comparison(sprint, base, items)
+
+    elif items:
         display_items(sprint, items)
+
     else:
         click.echo(f"No items found in sprint '{sprint}'.", err=True)
 
