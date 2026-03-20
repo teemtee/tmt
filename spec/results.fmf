@@ -3,6 +3,19 @@ story:
     document the format in which test results are saved on storage.
 
 description: |
+    .. note::
+
+        Name of the file holding results is affected by the choice of
+        the on-disk format of tmt state files. See
+        :ref:`TMT_STATE_FORMAT<command-variables>` environment variable
+        which controls the selection.
+
+        By default, YAML is used, and the file would be called
+        ``results.yaml``. The specification below will stick to this
+        setting, and will describe the format of results in terms of
+        YAML, but the specification is applicable to other formats
+        as well.
+
     The following text defines a YAML file structure tmt uses for storing
     results. tmt itself will use it when saving results of ``execute`` step,
     and custom test results are required to follow it when creating their
