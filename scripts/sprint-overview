@@ -248,7 +248,11 @@ def display_items(sprint_name: str, categories: dict[str, list[dict[str, Any]]])
 
 
 @click.command()
-@click.argument('sprint_name', metavar='SPRINT_NAME')
+@click.argument(
+    'sprint_name',
+    metavar='SPRINT_NAME',
+    default='@current',
+)
 @click.option(
     '--yaml',
     'output_yaml',
