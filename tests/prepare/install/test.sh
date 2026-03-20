@@ -40,9 +40,13 @@ function fetch_downloaded_packages () {
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
-        rlRun "IS_IMAGE_MODE=no"
+        rlRun "IS_IMAGE_MODE=${IS_IMAGE_MODE:-no}"
 
-        if [ "$PROVISION_HOW" = "container" ]; then
+        if [ "$IS_IMAGE_MODE" = "yes" ]; then
+            rlRun "IMAGES='$TEST_IMAGE_MODE_IMAGES'"
+            rlRun "SECONDARY_IMAGES=''"
+
+        elif [ "$PROVISION_HOW" = "container" ]; then
             rlRun "IMAGES='$TEST_CONTAINER_IMAGES'"
             rlRun "SECONDARY_IMAGES='$TEST_CONTAINER_IMAGES_SECONDARY'"
 
@@ -51,12 +55,6 @@ rlJournalStart
         elif [ "$PROVISION_HOW" = "virtual" ]; then
             rlRun "IMAGES='$TEST_VIRTUAL_IMAGES'"
             rlRun "SECONDARY_IMAGES='$TEST_VIRTUAL_IMAGES_SECONDARY'"
-
-        elif [ "$PROVISION_HOW" = "virtual-image-mode" ]; then
-            rlRun "IS_IMAGE_MODE=yes"
-            rlRun "PROVISION_HOW=virtual"
-            rlRun "IMAGES='$TEST_IMAGE_MODE_IMAGES'"
-            rlRun "SECONDARY_IMAGES=''"
 
         else
             rlRun "IMAGES="

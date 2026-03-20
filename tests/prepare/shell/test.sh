@@ -4,12 +4,10 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-local}"
+        rlRun "IS_IMAGE_MODE=${IS_IMAGE_MODE:-no}"
         rlRun "PROVISION_OPTS='--how=$PROVISION_HOW'"
-        rlRun "IS_IMAGE_MODE=no"
-        if [ "$PROVISION_HOW" = "virtual-image-mode" ]; then
+        if [ "$IS_IMAGE_MODE" = "yes" ]; then
             . ../../images.sh || exit 1
-            rlRun "IS_IMAGE_MODE=yes"
-            rlRun "PROVISION_HOW=virtual"
             rlRun "IMAGE_MODE_IMAGE=$(echo "$TEST_IMAGE_MODE_IMAGES" | head -1)"
             rlRun "PROVISION_OPTS='--how=virtual --image=$IMAGE_MODE_IMAGE'"
         fi

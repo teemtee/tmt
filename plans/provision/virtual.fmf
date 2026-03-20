@@ -85,3 +85,25 @@ adjust+:
 /the-rest:
     discover+:
         test: "^/tests/(?!provision|prepare|execute)"
+
+/image-mode:
+    summary: Image mode guests via testcloud
+    description: |
+        Verify functionality of prepare plugins on image mode guests
+        provisioned via the virtual (testcloud) plugin with bootc
+        qcow2 images.
+
+    discover+:
+        filter: 'tag:provision-virtual-image-mode'
+
+    environment+:
+        IS_IMAGE_MODE: "yes"
+
+    /prepare:
+        discover+:
+            test: "^/tests/prepare"
+            exclude: "^/tests/prepare/install"
+
+    /install:
+        discover+:
+            test: "^/tests/prepare/install"

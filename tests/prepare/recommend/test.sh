@@ -5,12 +5,9 @@
 rlJournalStart
     rlPhaseStartSetup
         rlRun "PROVISION_HOW=${PROVISION_HOW:-container}"
-        rlRun "IS_IMAGE_MODE=no"
+        rlRun "IS_IMAGE_MODE=${IS_IMAGE_MODE:-no}"
 
-        if [ "$PROVISION_HOW" = "virtual-image-mode" ]; then
-            rlRun "PROVISION_HOW=virtual"
-            rlRun "IS_IMAGE_MODE=yes"
-        else
+        if [ "$IS_IMAGE_MODE" != "yes" ]; then
             build_container_image "ubi/8/upstream\:latest"
             build_container_image "centos/7/upstream\:latest"
             build_container_image "fedora/latest/upstream\:latest"
