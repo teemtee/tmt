@@ -1,11 +1,11 @@
-from typing import Any, Optional, Union
+from typing import Any, Callable, Optional, Union, cast
 
 import tmt
 import tmt.guest
 import tmt.steps
 import tmt.steps.provision
 import tmt.utils
-from tmt.container import container, field
+from tmt.container import container, field, option_to_key
 from tmt.guest import RebootMode
 from tmt.utils import Command, ShellScript
 from tmt.utils.wait import Waiting
@@ -62,6 +62,48 @@ class ConnectGuestData(tmt.guest.GuestSshData):
         serialize=lambda value: str(value) if isinstance(value, ShellScript) else None,
         unserialize=lambda serialized: None if serialized is None else ShellScript(serialized),
     )
+
+    def to_spec(self) -> tmt.steps._RawStepData:
+        return cast(
+            tmt.steps._RawStepData,
+            {
+                **super().to_spec(),
+                'soft-reboot': str(self.soft_reboot)
+                if isinstance(self.soft_reboot, ShellScript)
+                else None,
+                'systemd-soft-reboot': str(self.systemd_soft_reboot)
+                if isinstance(self.systemd_soft_reboot, ShellScript)
+                else None,
+                'hard-reboot': str(self.hard_reboot)
+                if isinstance(self.hard_reboot, ShellScript)
+                else None,
+            },
+        )
+
+    def to_minimal_spec(self) -> tmt.steps._RawStepData:
+        spec = {**super().to_minimal_spec()}
+
+        # Some fields need special handling.
+        # Map them to functions that will correctly convert them.
+        field_map: dict[str, Callable[[Any], Any]] = {
+            'soft-reboot': lambda reboot: str(reboot) if isinstance(reboot, ShellScript) else None,
+            'systemd-soft-reboot': lambda reboot: (
+                str(reboot) if isinstance(reboot, ShellScript) else None
+            ),
+            'hard-reboot': lambda reboot: str(reboot) if isinstance(reboot, ShellScript) else None,
+        }
+
+        for key, transform in field_map.items():
+            value = getattr(self, option_to_key(key), None)
+            if value is not None:
+                value = transform(value)
+            # Do not include empty values
+            if value in (None, [], {}):
+                spec.pop(key, None)
+            else:
+                spec[key] = value
+
+        return cast(tmt.steps._RawStepData, spec)
 
     @classmethod
     def from_plugin(
