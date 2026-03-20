@@ -15,18 +15,23 @@ List issues and pull requests with story points for the given sprint
 import os
 import re
 import sys
+import traceback
 from collections import defaultdict
 from typing import Any, Optional
 
 import click
 import requests
 from ruamel.yaml import YAML
+from typing_extensions import TypeAlias  # noqa: TID251
 
 GITHUB_API_URL = "https://api.github.com"
 GITHUB_API_VERSION = "2026-03-10"
 GITHUB_ORGANIZATION = "teemtee"
 GITHUB_PROJECT_NUMBER = 1
 GITHUB_ITEMS_PER_PAGE = 100
+
+
+Item: TypeAlias = dict[str, Any]
 
 
 def header(text: str, char: str = "-", top: bool = False) -> None:
@@ -102,7 +107,7 @@ def fetch_field_ids() -> tuple[int, int]:
     return size_id, sprint_id
 
 
-def fetch_sprint_items(sprint_name: str) -> list[dict[str, Any]]:
+def fetch_sprint_items(sprint_name: str) -> list[Item]:
     """
     Fetch all items in the given sprint.
 
@@ -128,7 +133,7 @@ def fetch_sprint_items(sprint_name: str) -> list[dict[str, Any]]:
         },
     )
 
-    all_items: list[dict[str, Any]] = []
+    all_items: list[Item] = []
     page = 1
 
     while True:
@@ -173,7 +178,7 @@ def fetch_sprint_items(sprint_name: str) -> list[dict[str, Any]]:
     return all_items
 
 
-def categorize_items(items: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+def categorize_items(items: list[Item]) -> dict[str, list[Item]]:
     """
     Categorize items by type and status.
 
@@ -182,7 +187,7 @@ def categorize_items(items: list[dict[str, Any]]) -> dict[str, list[dict[str, An
     :returns: dictionary with category keys like ``open-issue``,
         ``merged-pull``, ``closed-issue``, etc.
     """
-    categories: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    categories: dict[str, list[Item]] = defaultdict(list)
 
     for item in items:
         categories[f'{item["status"]}-{item["type"]}'].append(item)
@@ -194,7 +199,14 @@ def categorize_items(items: list[dict[str, Any]]) -> dict[str, list[dict[str, An
     return categories
 
 
-def display_items(sprint_name: str, categories: dict[str, list[dict[str, Any]]]) -> None:
+def display_category(label: str, items: list[Item]) -> None:
+    header(f"{label} ({len(items)}) - {sum(item['size'] or 0 for item in items)} points:")
+    for item in items:
+        size_str = f"[{item['size']}]" if item["size"] is not None else "[-]"
+        print(f"  #{item['id']:<4} {size_str:>4} {item['title']}")
+
+
+def display_items(sprint_name: str, categories: dict[str, list[Item]]) -> None:
     """
     Display categorized items in a readable format with story points.
 
@@ -228,10 +240,7 @@ def display_items(sprint_name: str, categories: dict[str, list[dict[str, Any]]])
 
     for key, label in sections:
         if categories.get(key):
-            header(f"{label} ({len(categories[key])}) - {total_points.get(key, 0)} points:")
-            for item in categories[key]:
-                size_str = f"[{item['size']}]" if item["size"] is not None else "[-]"
-                print(f"  #{item['id']:<4} {size_str:>4} {item['title']}")
+            display_category(label, categories[key])
 
     # Summary
     open_count = len(categories.get("open-issue", [])) + len(categories.get("open-pull", []))
@@ -247,6 +256,74 @@ def display_items(sprint_name: str, categories: dict[str, list[dict[str, Any]]])
     )
 
 
+def display_comparison(base: list[Item], current: list[Item]) -> None:
+    base.sort(key=lambda x: x['id'])
+
+    base_map = {item['id']: item for item in base}
+    current_map = {item['id']: item for item in current}
+
+    completed: list[Item] = []
+    pending: list[Item] = []
+    added: list[Item] = []
+    removed: list[Item] = []
+
+    for base_id, base_item in base_map.items():
+        current_item = current_map.pop(base_id, None)
+
+        if current_item is None:
+            removed.append(base_item)
+
+        elif current_item['status'] in ('closed', 'merged'):
+            completed.append(base_item)
+
+        else:
+            pending.append(base_item)
+
+    for current_item in current_map.values():
+        added.append(current_item)
+
+        if current_item['status'] in ('closed', 'merged'):
+            completed.append(current_item)
+
+        else:
+            pending.append(current_item)
+
+    def size(items: list[Item]) -> int:
+        return sum(item['size'] or 0 for item in items)
+
+    count_base, count_current, size_base, size_current = (
+        len(base),
+        len(current),
+        size(base),
+        size(current),
+    )
+    count_completed, count_pending, size_completed, size_pending = (
+        len(completed),
+        len(pending),
+        size(completed),
+        size(pending),
+    )
+    count_added, size_added = len(added), size(added)
+
+    header(
+        f"Total items: {count_base} => {count_current}\n"
+        f"Total story points: {size_base} => {size_current}\n"
+        f"Completed items: {count_completed} vs {count_pending} items,"
+        f" {size_completed} vs {size_pending} points\n"
+        f"Added items: {count_added} ({count_added / count_base * 100:.0f} %),"
+        f" {size_added} ({size_added / size_base * 100:.0f} %)",
+        char="=",
+        top=True,
+    )
+
+    display_category('Completed', completed)
+    display_category('Pending', pending)
+    display_category('Added', added)
+    display_category('Removed', removed)
+
+    display_category('Added and incomplete', [item for item in added if item not in completed])
+
+
 @click.command()
 @click.argument(
     'sprint_name',
@@ -259,33 +336,71 @@ def display_items(sprint_name: str, categories: dict[str, list[dict[str, Any]]])
     is_flag=True,
     help='Output in YAML format for machine-readable processing.',
 )
-def main(sprint_name: str, output_yaml: bool) -> None:
+@click.option(
+    '--base',
+    'base_path',
+    default=None,
+    help='Instead of reporting, compare the current sprint against this saved state.',
+)
+@click.option(
+    '--current',
+    'current_path',
+    default=None,
+    help='If set, compare --base against --current instead of the live sprint state.',
+)
+def main(
+    sprint_name: str,
+    output_yaml: bool,
+    base_path: Optional[str] = None,
+    current_path: Optional[str] = None,
+) -> None:
     """
     List all issues and pull requests in a GitHub Project sprint with story points.
 
     SPRINT_NAME: Name of the sprint (e.g., 'Sprint 11')
 
     Set the GITHUB_PERSONAL_ACCESS_TOKEN environment variable to avoid rate limits.
+
+    # Comparison
+
+    Use --base to compare sprint state in different points in time. For example,
+    save the sprint overview using --yaml at the beginning of the sprint, then
+    at some time later, pass the saved file to --base to get overview of what
+    happened to various items.
     """
     try:
-        items = fetch_sprint_items(sprint_name)
+        if current_path is not None:
+            with open(current_path) as f:
+                items = YAML().load(f)
 
-        if not items:
-            print(f"No items found in sprint '{sprint_name}'.")
-            return
+        else:
+            items = fetch_sprint_items(sprint_name)
+
+            if not items:
+                print(f"No items found in sprint '{sprint_name}'.")
+                return
 
         if output_yaml:
             YAML().dump(items, sys.stdout)
+
+        elif base_path is not None:
+            with open(base_path) as f:
+                base = YAML().load(f)
+
+            display_comparison(base, items)
+
         else:
             categories = categorize_items(items)
             display_items(sprint_name, categories)
 
     except requests.exceptions.RequestException as error:
         print(f"Error making API request: {error}", file=sys.stderr)
+        traceback.print_exc()
         sys.exit(1)
 
     except Exception as error:
         print(f"Error: {error}", file=sys.stderr)
+        traceback.print_exc()
         sys.exit(1)
 
 
