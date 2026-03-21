@@ -12,6 +12,13 @@ prepare+:
       - python3-pip
       - python3-pytest
 
+  # Install *Python bindings for jq* - jq itself was installed above
+  # as a regular package. But Python tests use jq to inspect structures,
+  # and need jq Python bindings.
+  - how: shell
+    script: |
+      pip3 install jq
+
   - how: shell
     summary: Make sure we run koji commands with automatic retry to avoid 50x errors
     script: |
