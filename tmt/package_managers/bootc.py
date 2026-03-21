@@ -390,12 +390,32 @@ class Bootc(PackageManager[BootcEngine]):
 
     def enable_copr(self, *repositories: str) -> None:
         """
-        Enable COPR repositories by delegating to the underlying package manager.
+        Enable COPR repositories on an image mode guest.
 
-        The copr plugin install and ``dnf copr enable`` write to ``/etc``
-        which persists in image mode.
+        Installs the copr plugin via the Containerfile mechanism
+        (``/usr`` is read-only on image mode) and then runs
+        ``dnf copr enable`` on the live system which writes the
+        ``.repo`` file to ``/etc/yum.repos.d/``.
         """
-        self.guest.bootc_builder.enable_copr(*repositories)
+        if not repositories:
+            return
+
+        from tmt.package_managers import Package
+
+        # Install the copr plugin through bootc (Containerfile + rebuild).
+        # The bootc_builder is always a Dnf subclass with copr_plugin attribute.
+        copr_plugin: str = getattr(self.guest.bootc_builder, 'copr_plugin', 'dnf-plugins-core')
+        self.install(Package(copr_plugin))
+
+        # Enable each repository on the live system
+        for repository in repositories:
+            self.info('copr', repository, 'green')
+            self.guest.execute(
+                ShellScript(
+                    f"{self.engine.aux_engine.command.to_script()} copr "
+                    f"{self.engine.aux_engine.options.to_script()} enable -y {repository}"
+                )
+            )
 
     def create_repository(self, directory: Path) -> CommandOutput:
         """

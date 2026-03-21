@@ -14,7 +14,7 @@ execute:
     how: tmt
     script: |
         tree --version
-        diffutils --version
+        diff --version
         if [ "$TMT_REBOOT_COUNT" == "0" ]; then
             tmt-reboot
         fi
