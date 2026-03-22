@@ -176,6 +176,17 @@ jobs:
     identifier: provision-virtual
     tmt_plan: /plans/provision/virtual
 
+  - <<: *provision
+    identifier: provision-virtual-image-mode
+    tmt_plan: /plans/provision/virtual
+    tf_extra_params:
+      environments:
+        - tmt:
+            context:
+              how: provision
+              image_mode: "yes"
+          <<: *tmt-cloud-resources
+
   # Test internal plugins
   - <<: *test-base
     <<: *internal
