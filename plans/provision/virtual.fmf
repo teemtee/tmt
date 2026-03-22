@@ -60,6 +60,12 @@ adjust+:
     because: Disable IPv6 in CI to avoid IPv6 connections that are disabled in CI
     when: trigger == commit
 
+  - discover+:
+        filter: 'tag:provision-virtual & tag:image-mode'
+    environment+:
+        IMAGE_MODE: "yes"
+    when: image_mode == yes
+
 /provision:
     discover+:
         test: "^/tests/provision"
