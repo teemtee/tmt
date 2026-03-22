@@ -51,6 +51,12 @@ fedora-coreos}"
 # combinations, just make sure the basic functionality works.
 TEST_VIRTUAL_IMAGES_SECONDARY="${TEST_VIRTUAL_IMAGES_SECONDARY:-fedora-42}"
 
+
+# Image mode (bootc) images for virtual provision.
+# These are qcow2 images with bootc/image mode enabled.
+TEST_IMAGE_MODE_IMAGES="${TEST_IMAGE_MODE_IMAGES:-https://artifacts.dev.testing-farm.io/images/CentOS-Stream-10-image-mode-x86_64.qcow2
+https://artifacts.dev.testing-farm.io/images/Fedora-44-image-mode-x86_64.qcow2}"
+
 # A couple of "is image this?" helpers, to simplify conditions.
 function is_fedora_rawhide () {
     [[ "$1" =~ ^.*fedora/rawhide[:/].* ]] && return 0
@@ -90,6 +96,7 @@ function is_centos_stream_9 () {
 function is_centos_stream_10 () {
     [[ "$1" =~ ^.*centos/stream10[:/].* ]] && return 0
     [[ "$1" = "centos-stream-10" ]] && return 0
+    [[ "$1" =~ CentOS-Stream-10 ]] && return 0
 
     return 1
 }
@@ -130,11 +137,11 @@ function is_fedora_coreos () {
 }
 
 function is_fedora () {
-    [[ "$1" =~ ^.*fedora.* ]] && return 0 || return 1
+    [[ "${1,,}" =~ ^.*fedora.* ]] && return 0 || return 1
 }
 
 function is_centos () {
-    [[ "$1" =~ ^.*centos.* ]] && return 0 || return 1
+    [[ "${1,,}" =~ ^.*centos.* ]] && return 0 || return 1
 }
 
 function is_rhel () {
@@ -151,6 +158,10 @@ function is_ubi () {
 
 function is_ubi_8 () {
     [[ "$1" =~ ^.*ubi/8.* ]] && return 0 || return 1
+}
+
+function is_image_mode () {
+    [[ "$1" =~ image-mode ]]
 }
 
 function test_phase_prefix () {
