@@ -57,7 +57,7 @@ _DEPS_DEVELOP_FEDORA := \
 
 # Note: interestingly, `hatch` is not shipped by Ubuntu, but `hatch` plugins are.
 # Manual `hatch` installation probably does not the packaged plugin, leaving it
-# in for now untill we get better coverage.
+# in for now until we get better coverage.
 _DEPS_CORE_UBUNTU := \
     python3-dev \
     python3-hatch-vcs \
