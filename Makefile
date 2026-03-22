@@ -55,6 +55,9 @@ _DEPS_DEVELOP_FEDORA := \
     /usr/bin/python3.9 \
     pre-commit
 
+# Note: interestingly, `hatch` is not shipped by Ubuntu, but `hatch` plugins are.
+# Manual `hatch` installation probably does not the packaged plugin, leaving it
+# in for now untill we get better coverage.
 _DEPS_CORE_UBUNTU := \
     python3-dev \
     python3-hatch-vcs \
@@ -97,7 +100,7 @@ _deps/ubuntu:
 	fi
 
 # TODO: a placeholder, not packaging yet
-_build-deps/fedora: _deps
+_build-deps/ubuntu: _deps
 
 _develop/ubuntu: _deps/ubuntu
 	sudo apt-get install -y $(_DEPS_DEVELOP_UBUNTU)
