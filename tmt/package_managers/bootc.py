@@ -1,7 +1,14 @@
 import re
 import uuid
 from collections.abc import Iterator
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from tmt._compat.typing import TypeAlias
+
+    Repository: TypeAlias = Any
+else:
+    Repository: Any = None  # type: ignore[assignment]
 
 import tmt.utils
 from tmt.container import PYDANTIC_V1, ConfigDict, MetadataContainer
@@ -380,6 +387,55 @@ class Bootc(PackageManager[BootcEngine]):
         self.engine.reinstall(*installables, options=options)
 
         return CommandOutput(stdout=None, stderr=None)
+
+    def enable_copr(self, *repositories: str) -> None:
+        """
+        Enable COPR repositories on an image mode guest.
+
+        Installs the copr plugin via the Containerfile mechanism
+        (``/usr`` is read-only on image mode) and then runs
+        ``dnf copr enable`` on the live system which writes the
+        ``.repo`` file to ``/etc/yum.repos.d/``.
+        """
+        if not repositories:
+            return
+
+        from tmt.package_managers import Package
+
+        # Install the copr plugin through bootc (Containerfile + rebuild).
+        # The bootc_builder is always a Dnf subclass with copr_plugin attribute.
+        copr_plugin: str = getattr(self.guest.bootc_builder, 'copr_plugin', 'dnf-plugins-core')
+        self.install(Package(copr_plugin))
+
+        # Enable each repository on the live system
+        for repository in repositories:
+            self.info('copr', repository, 'green')
+            self.guest.execute(
+                ShellScript(
+                    f"{self.engine.aux_engine.command.to_script()} copr "
+                    f"{self.engine.aux_engine.options.to_script()} enable -y {repository}"
+                )
+            )
+
+    def create_repository(self, directory: Path) -> CommandOutput:
+        """
+        Create repository metadata by delegating to the underlying engine.
+
+        Runs on the live system, writing to the workdir which is writable
+        in image mode.
+        """
+        return self.guest.execute(self.engine.aux_engine.create_repository(directory))
+
+    def install_repository(self, repository: Repository) -> CommandOutput:
+        """
+        Install a repository by delegating to the underlying engine.
+
+        Writes the ``.repo`` file to ``/etc/yum.repos.d/`` which persists
+        in image mode. Refreshes the package cache on the live system
+        without triggering a container rebuild.
+        """
+        self.guest.execute(self.engine.aux_engine.install_repository(repository))
+        return self.guest.execute(self.engine.aux_engine.refresh_metadata())
 
     def finalize_installation(self) -> CommandOutput:
         """

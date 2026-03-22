@@ -4,3 +4,14 @@ prepare:
 execute:
     how: tmt
     script: "rpm -q $COPR_PLUGIN_PACKAGE"
+
+adjust:
+    # On image mode, verify installed package persists after reboot.
+  - when: package_manager == bootc
+    execute:
+        how: tmt
+        script: |
+            rpm -q $COPR_PLUGIN_PACKAGE
+            if [ "$TMT_REBOOT_COUNT" == "0" ]; then
+                tmt-reboot
+            fi

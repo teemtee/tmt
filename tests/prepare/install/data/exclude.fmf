@@ -6,3 +6,14 @@ prepare:
 execute:
     how: tmt
     script: rpm -q httpd-manual && exit 1 || echo 'Good!'
+
+adjust:
+    # On image mode, verify excluded packages stay excluded after reboot.
+  - when: package_manager == bootc
+    execute:
+        how: tmt
+        script: |
+            rpm -q httpd-manual && exit 1 || echo 'Good!'
+            if [ "$TMT_REBOOT_COUNT" == "0" ]; then
+                tmt-reboot
+            fi
