@@ -14,7 +14,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test repository-url provider"
-        rlRun "tmt run -i $run --scratch -vvv --all \
+        rlRun "tmt run -i $run --scratch -vv --all \
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name" 0 "Run with repository-url provider"
     rlPhaseEnd
 

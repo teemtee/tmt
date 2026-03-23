@@ -21,5 +21,8 @@ properties:
   default-repository-priority:
     type: integer
 
+  auto_verify:
+    type: boolean
+
 required:
   - how

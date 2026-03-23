@@ -14,7 +14,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test repository-file provider with command-line override"
-        rlRun "tmt run -i $run --scratch -vvv --all \
+        rlRun "tmt run -i $run --scratch -vv --all \
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
             prepare --how artifact --provide repository-file:https://download.docker.com/linux/fedora/docker-ce.repo" 0 "Run with repository-file provider"
     rlPhaseEnd
