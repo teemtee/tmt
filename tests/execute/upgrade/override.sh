@@ -15,7 +15,7 @@ rlJournalStart
     for condition in 'True' '"Basic upgrade test" in summary'; do
         rlPhaseStartTest "Plan condition $condition"
             rlRun -s "tmt -c upgrade-path="${UPGRADE_PATH}" \
-                run --scratch -avvvdddi $run --rm --before finish \
+                run --scratch -avvvdddi $run --rm --before cleanup \
                 plan -n /plan/path -c '$condition' \
                 execute -h upgrade -F 'path:/tasks/prepare' \
                 provision -h container -i fedora:$PREVIOUS_VERSION" 0 "Run a single upgrade task"
@@ -31,7 +31,7 @@ rlJournalStart
     done
 
     rlPhaseStartCleanup
-        rlRun "tmt run -l finish" 0 "Stop the guest and remove the workdir"
+        rlRun "tmt run -l cleanup" 0 "Stop the guest and remove the workdir"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd

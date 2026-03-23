@@ -13,7 +13,7 @@ rlJournalStart
         rlRun -s "tmt \
             --context distro=fedora-${PREVIOUS_VERSION} \
             --context upgrade-path="${UPGRADE_PATH}" \
-            run --id $run --scratch --rm -vvv --before finish \
+            run --id $run --scratch --rm -vvv --before cleanup \
             plan --name /plan/add-phase" 0 "Run the upgrade test"
 
         # 2 test before + 3 upgrade tasks + 2 test after
@@ -35,7 +35,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun "tmt run --id $run finish" 0 "Stop the guest and remove the workdir"
+        rlRun "tmt run --id $run cleanup" 0 "Stop the guest and remove the workdir"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd

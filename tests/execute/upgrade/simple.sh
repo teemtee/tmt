@@ -11,7 +11,7 @@ rlJournalStart
 
     rlPhaseStartTest
         rlRun -s "tmt -c upgrade-path="${PATH}" \
-            run --scratch -avvvdddi $run --rm --before finish --environment REMOVE_BEAKERLIB=1 \
+            run --scratch -avvvdddi $run --rm --before cleanup --environment REMOVE_BEAKERLIB=1 \
             plan -n /plan/no-path \
             execute -h upgrade -t '/tasks/prepare' \
             provision -h container -i fedora:${PREVIOUS_VERSION}" \
@@ -27,7 +27,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun "tmt run -l finish" 0 "Stop the guest and remove the workdir"
+        rlRun "tmt run -l cleanup" 0 "Stop the guest and remove the workdir"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd
