@@ -117,6 +117,7 @@ class CoprRepositoryProvider(ArtifactProvider):
 
         repo = parse_copr_repo(self.copr_repo)
         owner = f'group_{repo.name}' if repo.is_group else repo.name
+        # TODO: Replace hardcoded hub URL by passing it from PrepareArtifacts to providers.
         repo_filename = f"_copr:copr.fedorainfracloud.org:{owner}:{repo.project}.repo"
 
         # pull from guest to build Repository object with populated repo_ids
