@@ -11,7 +11,7 @@ rlJournalStart
 
     rlPhaseStartTest
         rlRun -s "tmt -c upgrade-path="${UPGRADE_PATH}" \
-            run --scratch -avvvdddi $run --rm --before finish \
+            run --scratch -avvvdddi $run --rm --before cleanup \
             plan -n /plan/no-path \
             test -n /test \
             execute -h upgrade -t '/tasks/prepare' \
@@ -27,7 +27,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun "tmt run -l finish" 0 "Stop the guest and remove the workdir"
+        rlRun "tmt run -l cleanup" 0 "Stop the guest and remove the workdir"
         rlRun "popd"
     rlPhaseEnd
 rlJournalEnd
