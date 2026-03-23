@@ -1,0 +1,5 @@
+description: |
+    The :ref:`/plugins/provision/container` plugin now supports the
+    ``expose-device`` key to expose runner devices to the guest.
+    This is useful for cases like KVM acceleration (``expose-device: /dev/kvm``).
+    Multiple devices can be specified as a list.
