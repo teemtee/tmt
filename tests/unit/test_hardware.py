@@ -305,82 +305,82 @@ Detailed validation error:
 def test_parse_maximal_constraint() -> None:
     hw_spec_out = """
         and:
+        - and:
+          - beaker.pool: '!= foo.*'
+          - beaker.panic-watchdog: == True
+        - boot.method: not contains exclusive bios
+        - and:
+          - compatible.distro: contains rhel-7
+          - compatible.distro: contains rhel-8
+        - and:
+          - cpu.processors: '> 8'
+          - cpu.sockets: <= 1
+          - cpu.cores: == 2
+          - cpu.threads: '>= 8'
+          - cpu.cores-per-socket: == 2
+          - cpu.threads-per-core: == 4
+          - cpu.model: == 62
+          - cpu.family: < 6
+          - cpu.vendor: == 32902
+          - cpu.stepping: '!= 10'
+          - cpu.frequency: '>= 2300.0 MHz'
+          - cpu.family-name: == Skylake
+          - cpu.model-name: '!~ Haswell'
+          - cpu.vendor-name: ~ Intel.*
           - and:
-              - beaker.pool: '!= foo.*'
-              - beaker.panic-watchdog: == True
-          - boot.method: not contains exclusive bios
+            - cpu.flag: contains avx
+            - cpu.flag: contains avx2
+            - cpu.flag: not contains smep
+          - cpu.hyper-threading: == True
+        - and:
+          - device.vendor: '> 97'
+          - device.device: == 79
+          - device.vendor-name: '!= Intel'
+          - device.device-name: ~ .*Thunderbolt.*
+          - device.driver: == mc
+        - and:
+          - gpu.vendor: == 4318
+          - gpu.device: == 97
+          - gpu.vendor-name: == Nvidia
+          - gpu.device-name: == G86 [Quadro NVS 290]
+          - gpu.driver: ~ radeon
+        - memory: == 8 GiB
+        - and:
           - and:
-              - compatible.distro: contains rhel-7
-              - compatible.distro: contains rhel-8
+            - disk[0].size: == 40 GiB
+            - disk[0].physical-sector-size: == 4096 B
+            - disk[0].model-name: ~ WD 100G.*
           - and:
-              - cpu.processors: '> 8'
-              - cpu.sockets: <= 1
-              - cpu.cores: == 2
-              - cpu.threads: '>= 8'
-              - cpu.cores-per-socket: == 2
-              - cpu.threads-per-core: == 4
-              - cpu.model: == 62
-              - cpu.family: < 6
-              - cpu.vendor: == 32902
-              - cpu.stepping: '!= 10'
-              - cpu.frequency: '>= 2300.0 MHz'
-              - cpu.family-name: == Skylake
-              - cpu.model-name: '!~ Haswell'
-              - cpu.vendor-name: ~ Intel.*
-              - and:
-                  - cpu.flag: contains avx
-                  - cpu.flag: contains avx2
-                  - cpu.flag: not contains smep
-              - cpu.hyper-threading: == True
+            - disk[1].size: == 120 GiB
+            - disk[1].logical-sector-size: == 512 B
+            - disk[1].driver: == virtblk
+        - and:
           - and:
-              - device.vendor: '> 97'
-              - device.device: == 79
-              - device.vendor-name: '!= Intel'
-              - device.device-name: ~ .*Thunderbolt.*
-              - device.driver: == mc
-          - and:
-              - gpu.vendor: == 4318
-              - gpu.device: == 97
-              - gpu.vendor-name: == Nvidia
-              - gpu.device-name: == G86 [Quadro NVS 290]
-              - gpu.driver: ~ radeon
-          - memory: == 8 GiB
-          - and:
-              - and:
-                  - disk[0].size: == 40 GiB
-                  - disk[0].physical-sector-size: == 4096 B
-                  - disk[0].model-name: ~ WD 100G.*
-              - and:
-                  - disk[1].size: == 120 GiB
-                  - disk[1].logical-sector-size: == 512 B
-                  - disk[1].driver: == virtblk
-          - and:
-              - and:
-                  - network[0].vendor: '!= 121'
-                  - network[0].device: == 1657
-                  - network[0].vendor-name: ~ ^Broadcom
-                  - network[0].device-name: ~ ^NetXtreme II BCM
-                  - network[0].driver: == iwlwifi
-                  - network[0].type: == eth
-              - network[1].type: == eth
-          - hostname: ~ .*.foo.redhat.com
-          - location.lab-controller: '!= lab-1.bar.redhat.com'
-          - and:
-              - system.vendor: == 16700
-              - system.vendor-name: ~ Dell.*
-              - system.model: == 79
-              - system.numa-nodes: < 4
-              - system.model-name: ~ PowerEdge R750
-              - system.type: '!= Machine'
-          - tpm.version: == 2.0
-          - and:
-              - virtualization.is-virtualized: == False
-              - virtualization.is-supported: == True
-              - virtualization.confidential: == True
-              - virtualization.hypervisor: ~ xen
-          - and:
-              - zcrypt.adapter: == CEX8C
-              - zcrypt.mode: == CCA
+            - network[0].vendor: '!= 121'
+            - network[0].device: == 1657
+            - network[0].vendor-name: ~ ^Broadcom
+            - network[0].device-name: ~ ^NetXtreme II BCM
+            - network[0].driver: == iwlwifi
+            - network[0].type: == eth
+          - network[1].type: == eth
+        - hostname: ~ .*.foo.redhat.com
+        - location.lab-controller: '!= lab-1.bar.redhat.com'
+        - and:
+          - system.vendor: == 16700
+          - system.vendor-name: ~ Dell.*
+          - system.model: == 79
+          - system.numa-nodes: < 4
+          - system.model-name: ~ PowerEdge R750
+          - system.type: '!= Machine'
+        - tpm.version: == 2.0
+        - and:
+          - virtualization.is-virtualized: == False
+          - virtualization.is-supported: == True
+          - virtualization.confidential: == True
+          - virtualization.hypervisor: ~ xen
+        - and:
+          - zcrypt.adapter: == CEX8C
+          - zcrypt.mode: == CCA
     """
 
     if PINT_VERSION < Version("0.25.3"):  # noqa: SIM300 (false-positive)
@@ -400,12 +400,12 @@ def test_parse_maximal_constraint() -> None:
 def test_parse_or_constraint() -> None:
     hw_spec_out = """
      or:
-       - hostname: == dummy1.redhat.com
+     - hostname: == dummy1.redhat.com
+     - or:
+       - hostname: == dummy2.redhat.com
        - or:
-           - hostname: == dummy2.redhat.com
-           - or:
-               - hostname: == dummy3.redhat.com
-               - hostname: == dummy4.redhat.com
+         - hostname: == dummy3.redhat.com
+         - hostname: == dummy4.redhat.com
     """
 
     hw = parse_hw(OR_HARDWARE_REQUIREMENTS)
