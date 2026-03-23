@@ -4,117 +4,168 @@ from unittest.mock import MagicMock
 import pytest
 
 import tmt.utils
+from tmt.container import container
 from tmt.frameworks.shell import _extract_failures
 from tmt.utils import Path
 
 
+@container
+class FailureCase:
+    """A test case for _extract_failures: input log content and expected matched lines."""
+
+    log_content: str
+    expected: list[str]
+
+
 @pytest.fixture
-def make_invocation():
-    """Factory fixture creating a mock TestInvocation returning given log content."""
-
-    def _factory(log_content: str) -> MagicMock:
-        mock = MagicMock()
-        mock.phase.step.plan.execute.read.return_value = log_content
-        return mock
-
-    return _factory
+def invocation():
+    """Provide a mock TestInvocation."""
+    return MagicMock()
 
 
-_FAILURE_MATCH_CASES: list[tuple[str, str, list[str]]] = [
-    ('no failures', 'all good\nnothing wrong here\n', []),
-    ('error keyword', 'line1\nsome error occurred\nline3\n', ['some error occurred']),
-    ('fail keyword', 'test passed\ntest fail here\ndone\n', ['test fail here']),
-    ('case insensitive', 'ERROR: something\nFAIL: test\n', ['ERROR: something', 'FAIL: test']),
-    (
-        'multiple matches',
-        'ok\nerror one\npass\nfail two\nerror three\n',
-        ['error one', 'fail two', 'error three'],
-    ),
-    ('word boundary - no false positives', 'errorless operation\nfailover complete\n', []),
-]
+# A realistic long line: lorem-ipsum-like text with varied word separators,
+# spaces, punctuation, and mixed case to exercise word-boundary matching.
+# 50k characters — chosen to match the benchmark size used to establish
+# the performance threshold (see test_extract_failures_long_lines docstring).
+_LONG_SEGMENT = (
+    'Lorem ipsum dolor sit amet consectetur adipiscing elit '
+    'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua '
+    'Ut enim ad minim veniam quis nostrud exercitation ullamco laboris '
+    'nisi ut aliquip ex ea commodo consequat Duis aute irure dolor in '
+    'reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla '
+    'pariatur Excepteur sint occaecat cupidatat non proident sunt in '
+    'culpa qui officia deserunt mollit anim id est laborum '
+) * 140  # ~50k characters
 
 
 @pytest.mark.parametrize(
-    ('log_content', 'expected'),
-    [(log, expected) for _, log, expected in _FAILURE_MATCH_CASES],
-    ids=[name for name, _, _ in _FAILURE_MATCH_CASES],
+    'case',
+    [
+        pytest.param(
+            FailureCase(
+                log_content='all good\nnothing wrong here\n',
+                expected=[],
+            ),
+            id='no-failures',
+        ),
+        pytest.param(
+            FailureCase(
+                log_content='line1\nsome error occurred\nline3\n',
+                expected=['some error occurred'],
+            ),
+            id='error-keyword',
+        ),
+        pytest.param(
+            FailureCase(
+                log_content='test passed\ntest fail here\ndone\n',
+                expected=['test fail here'],
+            ),
+            id='fail-keyword',
+        ),
+        pytest.param(
+            FailureCase(
+                log_content='ERROR: something\nFAIL: test\n',
+                expected=['ERROR: something', 'FAIL: test'],
+            ),
+            id='case-insensitive',
+        ),
+        pytest.param(
+            FailureCase(
+                log_content='ok\nerror one\npass\nfail two\nerror three\n',
+                expected=['error one', 'fail two', 'error three'],
+            ),
+            id='multiple-matches',
+        ),
+        pytest.param(
+            FailureCase(
+                log_content='errorless operation\nfailover complete\n',
+                expected=[],
+            ),
+            id='word-boundary-no-false-positives',
+        ),
+    ],
 )
-def test_extract_failures(
-    make_invocation,
-    log_content: str,
-    expected: list[str],
-) -> None:
+def test_extract_failures(invocation: MagicMock, case: FailureCase) -> None:
     """Verify _extract_failures matches the correct lines."""
-    invocation = make_invocation(log_content)
-    assert _extract_failures(invocation, Path('dummy.log')) == expected
+    invocation.phase.step.plan.execute.read.return_value = case.log_content
+    assert _extract_failures(invocation, Path('dummy.log')) == case.expected
 
 
-def test_extract_failures_file_error() -> None:
+def test_extract_failures_file_error(invocation: MagicMock) -> None:
     """Verify _extract_failures returns empty list when the log file cannot be read."""
-    invocation = MagicMock()
     invocation.phase.step.plan.execute.read.side_effect = tmt.utils.FileError('not found')
     assert _extract_failures(invocation, Path('dummy.log')) == []
 
 
-_LONG_LINE_CASES: list[tuple[str, str, list[str]]] = [
-    (
-        'long line without match followed by error line',
-        'start\n{long}\nsome error here\nend\n',
-        ['some error here'],
-    ),
-    (
-        'error embedded in long line without newline separator',
-        'start\n{long} error in the middle {long}\nend\n',
-        ['{long} error in the middle {long}'],
-    ),
-    (
-        'long line with word boundary - no false positive',
-        'start\n{long}errorless{long}\nend\n',
-        [],
-    ),
-]
-
-
 @pytest.mark.parametrize(
-    ('log_template', 'expected_template'),
-    [(log, expected) for _, log, expected in _LONG_LINE_CASES],
-    ids=[name for name, _, _ in _LONG_LINE_CASES],
+    'case',
+    [
+        pytest.param(
+            FailureCase(
+                log_content=f'start\n{_LONG_SEGMENT}\nsome error here\nend\n',
+                expected=['some error here'],
+            ),
+            id='long-line-no-match-followed-by-error',
+        ),
+        pytest.param(
+            FailureCase(
+                log_content=f'start\n{_LONG_SEGMENT} error in the middle {_LONG_SEGMENT}\nend\n',
+                expected=[f'{_LONG_SEGMENT} error in the middle {_LONG_SEGMENT}'],
+            ),
+            id='error-embedded-in-long-line',
+        ),
+        pytest.param(
+            FailureCase(
+                log_content=f'start\n{_LONG_SEGMENT}errorless{_LONG_SEGMENT}\nend\n',
+                expected=[],
+            ),
+            id='long-line-word-boundary-no-false-positive',
+        ),
+        pytest.param(
+            FailureCase(
+                log_content=(
+                    f'start\n{_LONG_SEGMENT} a b c d e f g h i j k l m n o p '
+                    f'{_LONG_SEGMENT}\nend\n'
+                ),
+                expected=[],
+            ),
+            id='long-line-many-word-boundaries-no-match',
+        ),
+    ],
 )
-def test_extract_failures_long_lines(
-    make_invocation,
-    log_template: str,
-    expected_template: list[str],
-) -> None:
+@pytest.mark.timeout(10)
+def test_extract_failures_long_lines(invocation: MagicMock, case: FailureCase) -> None:
     """
-    Verify correct handling of very long lines.
+    Verify correct handling of very long lines (~50k characters).
 
-    The original implementation used ``re.findall(r'.*\\b(?:error|fail)\\b.*', ...)``
-    which caused catastrophic backtracking on long lines (O(n^2) or worse),
-    hanging tmt processes for hours on 1M+ character lines (e.g. base64-encoded
-    in-toto attestation payloads in container build logs).
+    The original ``re.findall(r'.*\\b(?:error|fail)\\b.*', ...)`` caused
+    catastrophic backtracking on long lines, hanging tmt processes for hours
+    on 1M+ character lines (e.g. base64-encoded in-toto attestation payloads).
 
-    The current implementation uses ``str.splitlines()`` and per-line
-    ``re.search()`` which processes each line in linear time.
+    Benchmarks with 50k-character lines:
+
+    ================================  ===========  ===========
+    Case                              Old regex    New method
+    ================================  ===========  ===========
+    long line, no match + error line  11.335 s     < 0.001 s
+    error embedded in long line       0.001 s      < 0.001 s
+    word boundary, no false positive  49.290 s     < 0.001 s
+    ================================  ===========  ===========
+
+    The new ``splitlines()`` + per-line ``re.search()`` runs in < 0.001 s
+    for all cases. A 0.1 s threshold sits well between the two methods:
+    any result above 0.1 s indicates a regression toward the old behavior.
+    The ``@pytest.mark.timeout(10)`` serves as an additional safety net
+    to prevent CI from hanging if a regression is catastrophic.
     """
-    long_segment = 'A' * 1_000_000
-    log_content = log_template.replace('{long}', long_segment)
-    expected = [line.replace('{long}', long_segment) for line in expected_template]
+    invocation.phase.step.plan.execute.read.return_value = case.log_content
 
-    invocation = make_invocation(log_content)
-
-    # time.monotonic() is the correct choice for elapsed time measurement
-    # as it is not affected by system clock adjustments.
-    start = time.monotonic()
+    start = time.time()
     result = _extract_failures(invocation, Path('dummy.log'))
-    elapsed = time.monotonic() - start
+    elapsed = time.time() - start
 
-    assert result == expected
-
-    # The old regex would never complete on lines this long — it took 5+
-    # seconds on just 10k characters. The splitlines approach finishes in
-    # well under 1 second. Use 30 seconds as a generous ceiling to avoid
-    # flakiness on slow CI while still catching catastrophic backtracking.
-    assert elapsed < 30.0, (
-        f'_extract_failures took {elapsed:.1f}s on a log with a 1M-char line; '
-        f'likely catastrophic regex backtracking'
+    assert result == case.expected
+    assert elapsed < 0.1, (
+        f'_extract_failures took {elapsed:.3f}s on a log with a ~50k-char line; '
+        f'expected < 0.001s (old regex took 11-49s at this size)'
     )
