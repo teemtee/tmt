@@ -12,7 +12,6 @@ from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
 from tmt.steps import (
     Method,
-    PhaseQueue,
     PluginOutcome,
     PluginTask,
 )
@@ -53,7 +52,7 @@ class CleanupPlugin(tmt.steps.Plugin[CleanupStepDataT, PluginOutcome]):
         return PluginOutcome()
 
 
-class Cleanup(tmt.steps.Step):
+class Cleanup(tmt.steps.StepWithQueue[CleanupStepData, PluginOutcome]):
     """
     Clean up the provisioned guests and prune the workdir.
 
@@ -146,18 +145,13 @@ class Cleanup(tmt.steps.Step):
 
             guest_copies.append(guest_copy)
 
-        # Prepare the queue
-        queue: PhaseQueue[CleanupStepData, PluginOutcome] = PhaseQueue(
-            'cleanup', self._logger.descend(logger_name=f'{self}.queue')
-        )
-
         # Pick only the CleanupPlugin phases, Action phases are not
         # expected in the cleanup step
         phases: list[CleanupPlugin[CleanupStepData]] = self.phases(classes=(CleanupPlugin,))
 
         for phase in phases:
             if phase.enabled_by_when:
-                queue.enqueue_plugin(
+                self._queue.enqueue_plugin(
                     phase=phase,
                     guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)],
                 )
@@ -173,7 +167,7 @@ class Cleanup(tmt.steps.Step):
             exceptions.append(exc)
 
         # Run the queue
-        for outcome in queue.run():
+        for outcome in self._queue.run():
             if not isinstance(outcome.phase, CleanupPlugin):
                 continue
 

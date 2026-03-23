@@ -13,7 +13,6 @@ from tmt.plugins import PluginRegistry
 from tmt.result import PhaseResult, ResultGuestData, ResultOutcome
 from tmt.steps import (
     Action,
-    PhaseQueue,
     PluginOutcome,
     PluginTask,
     PullTask,
@@ -105,7 +104,7 @@ class DependencyCollection:
 DependencyCollectionKey = frozenset['tmt.base.core.DependencySimple']
 
 
-class Prepare(tmt.steps.Step):
+class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
     """
     Prepare the environment for testing.
 
@@ -391,16 +390,12 @@ class Prepare(tmt.steps.Step):
             # To separate "push" from "prepare" queue visually
             self.info('')
 
-        queue: PhaseQueue[PrepareStepData, PluginOutcome] = PhaseQueue(
-            'prepare', self._logger.descend(logger_name=f'{self}.queue')
-        )
-
         for prepare_phase in self.phases(classes=(Action, PreparePlugin)):
             if isinstance(prepare_phase, Action):
-                queue.enqueue_action(phase=prepare_phase)
+                self._queue.enqueue_action(phase=prepare_phase)
 
             elif prepare_phase.enabled_by_when:
-                queue.enqueue_plugin(
+                self._queue.enqueue_plugin(
                     phase=prepare_phase,  # type: ignore[arg-type]
                     guests=[
                         guest for guest in guest_copies if prepare_phase.enabled_on_guest(guest)
@@ -423,7 +418,7 @@ class Prepare(tmt.steps.Step):
                 for result in self.results
             )
 
-        for outcome in queue.run():
+        for outcome in self._queue.run():
             if not isinstance(outcome.phase, PreparePlugin):
                 continue
 
@@ -450,7 +445,7 @@ class Prepare(tmt.steps.Step):
                 )
 
                 # Do not let the queue continue.
-                queue.stop()
+                self._queue.stop()
 
                 break
 
@@ -467,7 +462,7 @@ class Prepare(tmt.steps.Step):
                         _record_exception(outcome, exc)
 
             if _is_failed():
-                queue.stop()
+                self._queue.stop()
 
                 break
 
