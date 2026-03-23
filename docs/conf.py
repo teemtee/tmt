@@ -331,7 +331,7 @@ linkcheck_request_headers = {
 }
 
 # custom linkcheck cache variables
-linkcheck_cache_period = 1.0
+linkcheck_cache_period = 14.0
 
 # -- Options for sphinx_reredirects ---------------------------------------
 
