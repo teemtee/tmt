@@ -9,6 +9,7 @@ import tmt.log
 import tmt.plugins
 import tmt.utils
 from tmt.container import container, simple_field
+from tmt.package_managers.rpm import Repository
 from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, ShellScript
 
 
@@ -27,11 +28,6 @@ class SpecialPackageOrigin(str, enum.Enum):
 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
-
-    # TODO: Move Repository abstraction to tmt.package_manager subpackage
-    # This class will be added in a future PR.
-    # For now, just type it as Any to satisfy pyright.
-    Repository: TypeAlias = Any
     from tmt.guest import Guest
 
     #: A type of package manager names.
@@ -39,8 +35,6 @@ if TYPE_CHECKING:
 
     #: A package origin: either an actual repository name or a :class:`SpecialPackageOrigin`.
     PackageOrigin: TypeAlias = Union[str, SpecialPackageOrigin]
-else:
-    Repository: Any = None  # type: ignore[assignment]
 
 
 #
