@@ -3361,7 +3361,10 @@ class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginR
                 f'No guests queued for phase "{phase}". A typo in "where" key?'
             )
 
-        self.enqueue_task(PluginTask(phase, guests, phase._logger))
+        task = PluginTask(phase, guests, phase._logger)
+        task.order = phase.order
+
+        self.enqueue_task(task)
 
 
 class PushTask(tmt.queue.MultiGuestTask[None]):
