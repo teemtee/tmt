@@ -16,6 +16,7 @@ from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, 
 if TYPE_CHECKING:
     from tmt._compat.typing import TypeAlias
     from tmt.guest import Guest
+    from tmt.package_managers._rpm import RpmVersion
 
     #: A type of package manager names.
     GuestPackageManager: TypeAlias = str
@@ -499,13 +500,15 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         """
         return self.guest.execute(self.engine.install_repository(repository))
 
-    def list_packages(self, repository: "Repository") -> list[str]:
+    def list_packages(self, repository: "Repository") -> "list[RpmVersion]":
         """
         List packages available in the specified repository.
 
         :param repository: The repository to query.
-        :returns: A list of package names available in the repository.
+        :returns: A list of RPM versions available in the repository.
         """
+        from tmt.package_managers._rpm import RpmVersion
+
         script = self.engine.list_packages(repository)
         output = self.guest.execute(script)
         stdout = output.stdout
@@ -513,7 +516,8 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         if stdout is None:
             raise GeneralError("Repository query provided no output")
 
-        return stdout.strip().splitlines()
+        stripped_lines = (line.strip() for line in stdout.strip().splitlines())
+        return [RpmVersion.from_nevra(line) for line in stripped_lines if line]
 
     def get_package_origin(self, packages: Iterable[str]) -> 'dict[str, PackageOrigin]':
         """
