@@ -2,6 +2,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from tmt.steps.prepare.artifact.providers import RpmVersion
+
 
 @pytest.mark.parametrize(
     ("raw_id", "expected"),
@@ -68,8 +70,8 @@ def test_enumerate_artifacts(
     mock_guest.package_manager = mock_package_manager
 
     mock_package_manager.list_packages.return_value = [
-        'tmt-1.69.0-1.fc42.noarch',
-        'tmt-all-0:1.69.0-1.fc42.noarch',
+        RpmVersion.from_nevra('tmt-1.69.0-1.fc42.noarch'),
+        RpmVersion.from_nevra('tmt-all-0:1.69.0-1.fc42.noarch'),
     ]
 
     provider = artifact_provider("copr.repository:@teemtee/stable")

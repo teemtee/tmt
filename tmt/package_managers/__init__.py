@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     # For now, just type it as Any to satisfy pyright.
     Repository: TypeAlias = Any
     from tmt.guest import Guest
+    from tmt.steps.prepare.artifact.providers import RpmVersion
 
     #: A type of package manager names.
     GuestPackageManager: TypeAlias = str
@@ -361,13 +362,15 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         """
         return self.guest.execute(self.engine.install_repository(repository))
 
-    def list_packages(self, repository: "Repository") -> list[str]:
+    def list_packages(self, repository: "Repository") -> "list[RpmVersion]":
         """
         List packages available in the specified repository.
 
         :param repository: The repository to query.
-        :returns: A list of package names available in the repository.
+        :returns: A list of RPM versions available in the repository.
         """
+        from tmt.steps.prepare.artifact.providers import RpmVersion
+
         script = self.engine.list_packages(repository)
         output = self.guest.execute(script)
         stdout = output.stdout
@@ -375,7 +378,12 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         if stdout is None:
             raise GeneralError("Repository query provided no output")
 
-        return stdout.strip().splitlines()
+        result: list[RpmVersion] = []
+        for line in stdout.strip().splitlines():
+            line = line.strip()
+            if line:
+                result.append(RpmVersion.from_nevra(line))
+        return result
 
     def get_package_origin(self, packages: Iterable[str]) -> 'dict[str, PackageOrigin]':
         """
