@@ -584,15 +584,16 @@ class Constraint(BaseConstraint):
         if as_quantity:
             value = UNITS(raw_value)
 
+            # pint < 0.25.3:
             # Number-like raw_value, without units, get converted into
             # pure `int` or `float`. Force `Quantity` for quantities by
             # explicitly wrapping built-in types with `Quantity`.
-            #
-            # reportUnnecessaryIsInstance: pyright cannot infere this
-            # little trick Pint plays with us, and considers the `isinstance`
-            # call to be pointless. But it's not. mypy does not care...
-            if not isinstance(value, pint.Quantity):  # type: ignore[reportUnnecessaryIsInstance,unused-ignore]
+            if not isinstance(value, pint.Quantity):
                 value = pint.Quantity(value, default_unit)
+
+            # Make sure the value has appropriate units if it was not provided
+            if value.unitless and default_unit:
+                value *= UNITS(default_unit)
 
         elif as_cast is not None:
             # Type depends on the `as_cast` function; subclasses handle the specific type.

@@ -1,0 +1,35 @@
+/plan:
+    provision:
+        how: container
+    execute:
+        how: tmt
+    discover:
+        how: fmf
+        test: /test
+    prepare:
+      - how: feature
+        epel: enabled
+
+/plan/success:
+    prepare+:
+      - how: verify-installation
+        verify:
+            make: baseos
+            diffutils: "<unknown>"
+            centpkg: epel
+
+/plan/failure:
+    prepare+:
+      - how: verify-installation
+        verify:
+            make: SOME_NON_EXISTENT_REPO
+            diffutils: "<unknown>"
+            centpkg: epel
+            random-non-existent-package: some-repo
+
+/test:
+    test: /bin/true
+    require:
+      - make
+      - diffutils
+      - centpkg
