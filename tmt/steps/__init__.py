@@ -1378,6 +1378,21 @@ class Step(
         prune_directory(self.workdir, preserved_members, self._logger)
 
 
+class StepWithQueue(Step, Generic[StepDataT, PluginReturnValueT]):
+    """
+    Common parent of all steps that use queue to run phases in parallel.
+    """
+
+    _queue: 'PhaseQueue[StepDataT, PluginReturnValueT]'
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+
+        self._queue = PhaseQueue(
+            self.step_name, self._logger.descend(logger_name=f'{self.step_name}.queue')
+        )
+
+
 class Method:
     """
     Step implementation method
