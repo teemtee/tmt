@@ -1326,7 +1326,6 @@ class GuestData(
         return super().from_spec(raw_data, logger)  # type: ignore[call-arg]
 
     def to_spec(self) -> tmt.steps._RawStepData:
-        """Convert to a form suitable for saving in a specification file"""
         spec = super().to_spec()
 
         spec.pop('facts', None)  # type: ignore[typeddict-item]
@@ -1338,10 +1337,6 @@ class GuestData(
         return spec
 
     def to_minimal_spec(self) -> tmt.steps._RawStepData:
-        """
-        Convert to a form suitable for saving in a specification
-        file while skipping empty values.
-        """
         spec = {**super().to_minimal_spec()}
 
         spec.pop('facts', None)
