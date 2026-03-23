@@ -4,6 +4,7 @@
 # dependencies = [
 #   "click",
 #   "requests",
+#   "jinja2",
 #   "ruamel.yaml",
 # ]
 # ///
@@ -12,130 +13,151 @@
 List issues and pull requests with story points for the given sprint
 """
 
+import dataclasses
 import os
 import re
 import sys
 from collections import defaultdict
+from collections.abc import Iterator
 from typing import Any, Optional
 
 import click
+import jinja2
 import requests
 from ruamel.yaml import YAML
 
+# https://docs.github.com/en/rest/about-the-rest-api/breaking-changes
 GITHUB_API_URL = "https://api.github.com"
 GITHUB_API_VERSION = "2026-03-10"
 GITHUB_ORGANIZATION = "teemtee"
 GITHUB_PROJECT_NUMBER = 1
+
+# https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api
 GITHUB_ITEMS_PER_PAGE = 100
+GITHUB_NEXT_PAGE_PATTERN = re.compile(r'<([^>]+)>;\s*rel="next"')
+
+# https://docs.github.com/en/rest/projects/fields
+GITHUB_FIELD_SIZE = 252508798
+GITHUB_FIELD_SPRINT = 223204946
+
+DISPLAY_SECTIONS = [
+    ("open-issue", "Open Issues"),
+    ("open-pull", "Open Pull Requests"),
+    ("closed-issue", "Closed Issues"),
+    ("merged-pull", "Merged Pull Requests"),
+    ("closed-pull", "Closed Pull Requests"),
+]
+
+DISPLAY_TEMPLATE = jinja2.Template(
+    trim_blocks=True,
+    source="""
+================================================================================
+  Sprint: {{ sprint_name }}
+  Total items: {{ total_count }}
+  Total story points: {{ total_points }}
+================================================================================
+{% for key, label in sections %}
+{% if categories.get(key) %}
+
+  {{ label }} ({{ categories[key] | length }}) - {{ points[key] }} points
+--------------------------------------------------------------------------------
+{% for item in categories[key] %}
+  {{ item }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+================================================================================
+  Summary: {{ open_count }} open ({{ open_points }} points), \
+{{ closed_count }} closed/merged ({{ closed_points }} points)
+================================================================================
+""",
+)
 
 
-def header(text: str, char: str = "-", top: bool = False) -> None:
+@dataclasses.dataclass
+class Item:
     """
-    Print a header with the given text and a separator line below it.
-
-    :param text: header text, can be multiline.
-    :param char: character to use for the separator lines.
-    :param top: if set, print a separator line above the text as well.
+    A sprint item (issue or pull request).
     """
 
-    separator = char * 80
-    print()
-    if top:
-        print(separator)
-    print(text)
-    print(separator)
+    id: int
+    type: str
+    repo: str
+    status: str
+    size: Optional[int]
+    url: str
+    title: str
+
+    def __str__(self) -> str:
+        size_str = f"[{self.size}]" if self.size is not None else "[-]"
+        identifier = f"{self.repo}#{self.id}"
+        return f"{identifier:<10} {size_str:>4}  {self.title}"
 
 
 def github_api_get(
     path: str,
     params: Optional[dict[str, str]] = None,
-    url: Optional[str] = None,
-) -> requests.Response:
+) -> Iterator[list[dict[str, Any]]]:
     """
-    Make a GET request to the GitHub REST API.
+    Make a GET request to the GitHub REST API, following pagination.
 
     :param path: API path relative to the project endpoint,
-        e.g. ``fields`` or ``items``. Ignored when ``url`` is given.
+        e.g. ``fields`` or ``items``.
     :param params: optional query parameters.
-    :param url: if set, use this full URL instead of building one from ``path``.
-    :returns: the HTTP response.
+    :returns: an iterator of parsed JSON pages (each a list of items).
     """
 
-    if url is None:
-        url = (
-            f"{GITHUB_API_URL}/orgs/{GITHUB_ORGANIZATION}"
-            f"/projectsV2/{GITHUB_PROJECT_NUMBER}/{path}"
-        )
+    url = f"{GITHUB_API_URL}/orgs/{GITHUB_ORGANIZATION}/projectsV2/{GITHUB_PROJECT_NUMBER}/{path}"
+
     headers: dict[str, str] = {
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": GITHUB_API_VERSION,
     }
-    token = os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN")
-    if token:
+
+    if token := os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN"):
         headers["Authorization"] = f"Bearer {token}"
 
-    response = requests.get(url, headers=headers, params=params, timeout=30)
-    response.raise_for_status()
-    return response
+    page = 0
+    while url:
+        page += 1
+        response = requests.get(url, headers=headers, params=params, timeout=30)
+        response.raise_for_status()
+        data: list[dict[str, Any]] = response.json()
+        click.echo(f"Page {page}: {len(data)} items", err=True)
+        yield data
+
+        # Follow pagination via Link header
+        link_header = response.headers.get("Link", "")
+        match = GITHUB_NEXT_PAGE_PATTERN.search(link_header)
+        url = match.group(1) if match else None
+        params = None
 
 
-def fetch_field_ids() -> tuple[int, int]:
-    """
-    Fetch the field IDs for Size and Sprint from the project.
-
-    :returns: a tuple ``(size_field_id, sprint_field_id)``.
-    """
-
-    response = github_api_get("fields")
-
-    size_id = sprint_id = None
-    for field in response.json():
-        if field["name"] == "Size":
-            size_id = field["id"]
-        elif field["name"] == "Sprint":
-            sprint_id = field["id"]
-
-    if size_id is None or sprint_id is None:
-        print("Error: Could not find Size and Sprint fields in the project", file=sys.stderr)
-        sys.exit(1)
-
-    return size_id, sprint_id
-
-
-def fetch_sprint_items(sprint_name: str) -> list[dict[str, Any]]:
+def fetch_sprint_items(sprint_name: str) -> list[Item]:
     """
     Fetch all items in the given sprint.
 
     :param sprint_name: name of the sprint to fetch items for.
-    :returns: a list of dictionaries with keys ``id``, ``type``, ``status``,
-        ``size``, ``url``, and ``title``.
+    :returns: a list of :py:class:`Item` instances sorted by id.
     """
 
-    print(
+    click.echo(
         f"Fetching items from {GITHUB_ORGANIZATION}/project/{GITHUB_PROJECT_NUMBER}"
         f" for sprint '{sprint_name}'...",
-        file=sys.stderr,
+        err=True,
     )
 
-    size_field_id, sprint_field_id = fetch_field_ids()
+    all_items: list[Item] = []
 
-    response = github_api_get(
-        "items",
-        params={
-            "per_page": str(GITHUB_ITEMS_PER_PAGE),
-            "fields": f"{size_field_id},{sprint_field_id}",
-            "q": f'Sprint:"{sprint_name}"',
-        },
-    )
+    params = {
+        "per_page": str(GITHUB_ITEMS_PER_PAGE),
+        "fields": f"{GITHUB_FIELD_SIZE},{GITHUB_FIELD_SPRINT}",
+        "q": f"Sprint:'{sprint_name}'",
+    }
 
-    all_items: list[dict[str, Any]] = []
-    page = 1
-
-    while True:
-        items = response.json()
-        print(f"Page {page}: {len(items)} items", file=sys.stderr)
-
-        for item in items:
+    for page_items in github_api_get("items", params=params):
+        for item in page_items:
             content = item.get("content")
             if not content:
                 continue
@@ -150,108 +172,67 @@ def fetch_sprint_items(sprint_name: str) -> list[dict[str, Any]]:
                 status = content["state"]
 
             all_items.append(
-                {
-                    "id": content["number"],
-                    "type": item_type,
-                    "status": status,
-                    "size": size,
-                    "url": content["html_url"],
-                    "title": content["title"],
-                }
+                Item(
+                    id=content["number"],
+                    type=item_type,
+                    repo=content["html_url"].split("/")[4],
+                    status=status,
+                    size=size,
+                    url=content["html_url"],
+                    title=content["title"],
+                )
             )
 
-        # Follow pagination via Link header
-        link_header = response.headers.get("Link", "")
-        match = re.search(r'<([^>]+)>;\s*rel="next"', link_header)
-        if not match:
-            break
-
-        response = github_api_get("", url=match.group(1))
-        page += 1
-
-    print(f"Total: {len(all_items)} items", file=sys.stderr)
+    all_items.sort(key=lambda item: item.id)
+    click.echo(f"Total: {len(all_items)} items", err=True)
     return all_items
 
 
-def categorize_items(items: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+def display_items(sprint_name: str, items: list[Item]) -> None:
     """
-    Categorize items by type and status.
-
-    :param items: list of item dictionaries as returned by
-        :py:func:`fetch_sprint_items`.
-    :returns: dictionary with category keys like ``open-issue``,
-        ``merged-pull``, ``closed-issue``, etc.
-    """
-    categories: dict[str, list[dict[str, Any]]] = defaultdict(list)
-
-    for item in items:
-        categories[f'{item["status"]}-{item["type"]}'].append(item)
-
-    # Sort all categories by id
-    for items_list in categories.values():
-        items_list.sort(key=lambda item: item["id"])
-
-    return categories
-
-
-def display_items(sprint_name: str, categories: dict[str, list[dict[str, Any]]]) -> None:
-    """
-    Display categorized items in a readable format with story points.
+    Display items in a readable format with story points.
 
     :param sprint_name: name of the sprint being displayed.
-    :param categories: dictionary of categorized items returned by
-        :py:func:`categorize_items`.
+    :param items: list of :py:class:`Item` instances as returned by
+        :py:func:`fetch_sprint_items`.
     """
-    total = sum(len(items) for items in categories.values())
 
-    # Calculate total story points by category
-    total_points: dict[str, int] = {}
-    for key, items in categories.items():
-        total_points[key] = sum(item["size"] or 0 for item in items)
+    categories: dict[str, list[Item]] = defaultdict(list)
+    for item in items:
+        categories[f'{item.status}-{item.type}'].append(item)
 
-    header(
-        f"Sprint: {sprint_name}\n"
-        f"Total items: {total}\n"
-        f"Total story points: {sum(total_points.values())}",
-        char="=",
-        top=True,
-    )
-
-    # Define display order and labels
-    sections = [
-        ("open-issue", "Open Issues"),
-        ("open-pull", "Open Pull Requests"),
-        ("closed-issue", "Closed Issues"),
-        ("merged-pull", "Merged Pull Requests"),
-        ("closed-pull", "Closed Pull Requests"),
-    ]
-
-    for key, label in sections:
-        if categories.get(key):
-            header(f"{label} ({len(categories[key])}) - {total_points.get(key, 0)} points:")
-            for item in categories[key]:
-                size_str = f"[{item['size']}]" if item["size"] is not None else "[-]"
-                print(f"  #{item['id']:<4} {size_str:>4} {item['title']}")
-
-    # Summary
+    total_count = sum(len(items) for items in categories.values())
     open_count = len(categories.get("open-issue", [])) + len(categories.get("open-pull", []))
-    closed_count = total - open_count
-    open_points = total_points.get("open-issue", 0) + total_points.get("open-pull", 0)
-    closed_points = sum(total_points.values()) - open_points
+    closed_count = total_count - open_count
 
-    header(
-        f"Summary: {open_count} open ({open_points} pts), "
-        f"{closed_count} closed/merged ({closed_points} pts)",
-        char="=",
-        top=True,
+    points = {key: sum(item.size or 0 for item in items) for key, items in categories.items()}
+
+    total_points = sum(points.values())
+    open_points = points.get("open-issue", 0) + points.get("open-pull", 0)
+    closed_points = total_points - open_points
+
+    click.echo(
+        DISPLAY_TEMPLATE.render(
+            sprint_name=sprint_name,
+            categories=categories,
+            sections=DISPLAY_SECTIONS,
+            points=points,
+            total_count=total_count,
+            total_points=total_points,
+            open_count=open_count,
+            closed_count=closed_count,
+            open_points=open_points,
+            closed_points=closed_points,
+        )
     )
 
 
 @click.command()
-@click.argument(
-    'sprint_name',
-    metavar='SPRINT_NAME',
+@click.option(
+    '--sprint',
+    metavar='NAME',
     default='@current',
+    help="Name of the sprint, e.g. 'Sprint 11'.",
 )
 @click.option(
     '--yaml',
@@ -259,33 +240,26 @@ def display_items(sprint_name: str, categories: dict[str, list[dict[str, Any]]])
     is_flag=True,
     help='Output in YAML format for machine-readable processing.',
 )
-def main(sprint_name: str, output_yaml: bool) -> None:
+def main(sprint: str, output_yaml: bool) -> None:
     """
     List all issues and pull requests in a GitHub Project sprint with story points.
-
-    SPRINT_NAME: Name of the sprint (e.g., 'Sprint 11')
 
     Set the GITHUB_PERSONAL_ACCESS_TOKEN environment variable to avoid rate limits.
     """
     try:
-        items = fetch_sprint_items(sprint_name)
+        items = fetch_sprint_items(sprint)
 
         if not items:
-            print(f"No items found in sprint '{sprint_name}'.")
+            click.echo(f"No items found in sprint '{sprint}'.")
             return
 
         if output_yaml:
-            YAML().dump(items, sys.stdout)
+            YAML().dump([dataclasses.asdict(item) for item in items], sys.stdout)
         else:
-            categories = categorize_items(items)
-            display_items(sprint_name, categories)
-
-    except requests.exceptions.RequestException as error:
-        print(f"Error making API request: {error}", file=sys.stderr)
-        sys.exit(1)
+            display_items(sprint, items)
 
     except Exception as error:
-        print(f"Error: {error}", file=sys.stderr)
+        click.echo(f"Error: {error}", err=True)
         sys.exit(1)
 
 
