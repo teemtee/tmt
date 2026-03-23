@@ -119,6 +119,80 @@ class Prepare(tmt.steps.Step):
 
     results: list[PhaseResult]
 
+    def _inject_artifact_verify_phase(self) -> None:
+        """
+        Pre-register a verify-installation phase for artifact phases that have auto_verify=True.
+
+        Checks whether any artifact phase requests auto-verification and no
+        explicit verify-installation phase was configured, then pre-registers an empty
+        verify-installation phase in :py:attr:`_phases` before the queue is built.
+        Sets :py:attr:`tmt.steps.prepare.artifact.PrepareArtifact._future_verify` on
+        each matching artifact phase so that :py:meth:`PrepareArtifact.go
+        <tmt.steps.prepare.artifact.PrepareArtifact.go>` can populate the
+        package→repository mapping once artifact package names are known.
+        """
+        from tmt.steps.prepare.artifact import (
+            VERIFY_PHASE_NAME,
+            VERIFY_PHASE_SUMMARY,
+            PrepareArtifact,
+        )
+        from tmt.steps.prepare.verify_installation import (
+            PrepareVerifyInstallation,
+            PrepareVerifyInstallationData,
+        )
+
+        artifact_phases_with_verify = [
+            phase
+            for phase in self._phases
+            if isinstance(phase, PrepareArtifact) and phase.data.auto_verify
+        ]
+        if not artifact_phases_with_verify:
+            return
+
+        # go() can be called multiple times on the same Prepare object (e.g. tmt try
+        # calls it twice).  _phases accumulates across calls, so guard against adding
+        # a second copy of the auto phase.  A user-configured verify-installation phase
+        # is intentionally left alone — the auto phase runs in addition to it.
+        if any(
+            isinstance(phase, PrepareVerifyInstallation) and phase.name == VERIFY_PHASE_NAME
+            for phase in self._phases
+        ):
+            return
+
+        # Mirror the where= scope of the artifact phases: if any runs on all
+        # guests (empty where), the verify phase should too; otherwise use the
+        # union of all targeted guests/roles.
+        if any(not phase.data.where for phase in artifact_phases_with_verify):
+            verify_where: list[str] = []
+        else:
+            verify_where = list(
+                {dest for phase in artifact_phases_with_verify for dest in phase.data.where}
+            )
+
+        # Verify must run after ALL artifact phases, regardless of user-set order.
+        max_artifact_order = max(phase.data.order for phase in artifact_phases_with_verify)
+        verify_order = max(
+            tmt.steps.PHASE_ORDER_PREPARE_VERIFY_INSTALLATION,
+            max_artifact_order + 1,
+        )
+
+        verify_data = PrepareVerifyInstallationData(
+            name=VERIFY_PHASE_NAME,
+            how='verify-installation',
+            summary=VERIFY_PHASE_SUMMARY,
+            order=verify_order,
+            where=verify_where,
+        )
+        future_verify = PreparePlugin.delegate(self, data=verify_data)
+        assert isinstance(future_verify, PrepareVerifyInstallation), (
+            f"Expected PrepareVerifyInstallation from delegate, got {type(future_verify)}"
+        )
+        self._phases.append(future_verify)
+
+        # Give each artifact phase a reference so go() can populate the verify dict.
+        for phase in artifact_phases_with_verify:
+            phase._future_verify = future_verify
+
     @property
     def _preserved_workdir_members(self) -> set[str]:
         """
@@ -370,43 +444,7 @@ class Prepare(tmt.steps.Step):
             missing='skip',
         )
 
-        # Auto-inject a verify-installation phase when:
-        # - at least one artifact phase has verify=True, and
-        # - no explicit verify-installation phase was configured by the user.
-        from tmt.steps.prepare.artifact import PrepareArtifact
-        from tmt.steps.prepare.verify_installation import (
-            PrepareVerifyInstallation,
-            PrepareVerifyInstallationData,
-        )
-
-        artifact_phases_with_verify = [
-            phase
-            for phase in self._phases
-            if isinstance(phase, PrepareArtifact) and phase.data.verify
-        ]
-        has_verify_phase = any(
-            isinstance(phase, PrepareVerifyInstallation) for phase in self._phases
-        )
-
-        if artifact_phases_with_verify and not has_verify_phase:
-            # Mirror the where= scope of the artifact phases: if any artifact
-            # phase runs on all guests (empty where), verify should too;
-            # otherwise restrict to the union of their guest/role targets.
-            if any(not phase.data.where for phase in artifact_phases_with_verify):
-                verify_where: list[str] = []
-            else:
-                verify_where = list(
-                    {dest for phase in artifact_phases_with_verify for dest in phase.data.where}
-                )
-            verify_data = PrepareVerifyInstallationData(
-                name='verify-artifact-packages',
-                how='verify-installation',
-                summary='Verify packages were installed from artifact repositories',
-                order=tmt.steps.PHASE_ORDER_PREPARE_VERIFY_INSTALLATION,
-                auto=True,
-                where=verify_where,
-            )
-            self._phases.append(PreparePlugin.delegate(self, data=verify_data))
+        self._inject_artifact_verify_phase()
 
         # Prepare guests (including workdir sync)
         guest_copies: list[Guest] = []

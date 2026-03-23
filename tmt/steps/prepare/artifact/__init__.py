@@ -1,8 +1,11 @@
-from typing import ClassVar, Final, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional
+
+import fmf.utils
 
 import tmt.base.core
 import tmt.steps
 import tmt.utils
+from tmt.base.core import DependencySimple
 from tmt.container import container, field
 from tmt.guest import Guest
 from tmt.log import Logger
@@ -15,11 +18,20 @@ from tmt.steps.prepare.artifact.providers import (
 )
 from tmt.utils import Environment, Path
 
+if TYPE_CHECKING:
+    import tmt.steps.prepare.verify_installation
+
 #: Name of the shared repository created by the artifact plugin.
 ARTIFACT_SHARED_REPO_NAME: Final[str] = 'tmt-artifact-shared'
 
 #: Filename of the artifact metadata file written by the artifact plugin.
 ARTIFACT_METADATA_FILENAME: Final[str] = 'artifacts.yaml'
+
+#: Name of the auto-injected verify-installation phase.
+VERIFY_PHASE_NAME: Final[str] = 'verify-artifact-packages'
+
+#: Summary of the auto-injected verify-installation phase.
+VERIFY_PHASE_SUMMARY: Final[str] = 'Verify packages were installed from artifact repositories'
 
 
 @container
@@ -43,9 +55,9 @@ class PrepareArtifactData(PrepareStepData):
             """,
     )
 
-    verify: bool = field(
+    auto_verify: bool = field(
         default=True,
-        option='--verify/--no-verify',
+        option='--auto-verify/--no-auto-verify',
         is_flag=True,
         help="""
             Automatically verify that packages from require/recommend that are
@@ -189,6 +201,15 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
     SHARED_REPO_NAME: ClassVar[str] = ARTIFACT_SHARED_REPO_NAME
     ARTIFACTS_METADATA_FILENAME: ClassVar[str] = ARTIFACT_METADATA_FILENAME
 
+    #: Pre-registered verify-installation phase, set by
+    #: :py:func:`tmt.steps.prepare.Prepare._inject_artifact_verify_phase` before the
+    #: queue is built.  Populated with the package→repo mapping during :py:meth:`go`.
+    _future_verify: Optional['tmt.steps.prepare.verify_installation.PrepareVerifyInstallation']
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._future_verify = None
+
     def go(
         self,
         *,
@@ -291,7 +312,88 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             f"and {len(repositories)} repository(ies)."
         )
 
+        self._populate_verify_from_providers(providers, guest)
+
         return outcome
+
+    def _populate_verify_from_providers(
+        self, providers: list[ArtifactProvider], guest: Guest
+    ) -> None:
+        """
+        Populate the pre-registered verify phase with the package→repo mapping.
+
+        Computes the intersection of artifact package names and package names
+        collected from test require/recommend (filtered to those enabled on *guest*)
+        and explicit prepare install phases, then updates :py:attr:`_future_verify`
+        with ``{package: ARTIFACT_SHARED_REPO_NAME}`` entries for each package in
+        the intersection.
+
+        Called from :py:meth:`go` after providers have been initialized and artifacts
+        are known.  Each artifact phase contributes only its own providers' packages.
+        Different artifact phases run sequentially in the queue so no cross-phase race
+        is possible.
+        """
+        if self._future_verify is None:
+            return
+
+        from typing import cast
+
+        # @provides_method erases PrepareInstall's type to PluginClass; the pyright
+        # suppression covers the resulting reportUnknownVariableType on the import and
+        # reportUnknownArgumentType on its use as a classes= argument.  The cast is
+        # needed by Pyright but redundant for mypy (hence type: ignore[redundant-cast]).
+        from tmt.steps.prepare.install import (
+            PrepareInstall,  # pyright: ignore[reportUnknownVariableType]
+        )
+
+        pkg_names: set[str] = set()
+
+        # Collect simple package names from test require/recommend, restricted to
+        # tests that are actually enabled on this guest to avoid cross-guest pollution.
+        for test_origin in self.step.plan.discover.tests(enabled=True):
+            test = test_origin.test
+            if not test.enabled_on_guest(guest):
+                continue
+            for dep in (*test.require, *test.recommend):
+                if isinstance(dep, DependencySimple):
+                    pkg_names.add(str(dep))
+
+        # Collect packages explicitly listed in prepare install phases.
+        _install_phases = cast(  # type: ignore[redundant-cast]
+            list[Any],
+            self.step.phases(
+                classes=PrepareInstall,  # pyright: ignore[reportUnknownArgumentType]
+            ),
+        )
+        for install_phase in _install_phases:
+            for pkg in install_phase.data.package:
+                pkg_names.add(str(pkg))
+
+        # Artifact package names from providers in THIS phase only
+        artifact_pkg_names: set[str] = {
+            artifact.version.name for provider in providers for artifact in provider.artifacts
+        }
+
+        intersection = artifact_pkg_names & pkg_names
+        if not intersection:
+            self.debug('No overlap between artifact packages and test requirements.')
+            return
+
+        self.debug(
+            f"Auto-verifying {fmf.utils.listed(sorted(intersection), 'package')} "
+            f"against '{ARTIFACT_SHARED_REPO_NAME}'."
+        )
+
+        uncovered = pkg_names - artifact_pkg_names
+        if uncovered:
+            self.debug(
+                f"{fmf.utils.listed(sorted(uncovered), 'package')} "
+                f"from require/recommend/install not provided by this artifact phase."
+            )
+
+        self._future_verify.data.verify.update(
+            dict.fromkeys(intersection, ARTIFACT_SHARED_REPO_NAME)
+        )
 
     def essential_requires(self) -> list[tmt.base.core.Dependency]:
         # createrepo is needed to create repository metadata from downloaded artifacts
@@ -326,6 +428,7 @@ class PrepareArtifact(PreparePlugin[PrepareArtifactData]):
             'providers': [
                 {
                     'id': provider.raw_id,
+                    'auto_verify': self.data.auto_verify,
                     'artifacts': provider.artifact_metadata,
                 }
                 for provider in providers

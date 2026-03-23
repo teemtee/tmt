@@ -1,0 +1,7 @@
+description: |
+    The :ref:`/plugins/prepare/artifact` plugin now automatically verifies
+    that packages listed in test ``require`` or ``recommend`` (and explicit
+    :ref:`/plugins/prepare/install` phases) were installed from the artifact
+    repository. The check runs as an auto-injected
+    :ref:`/plugins/prepare/verify-installation` phase after all artifact
+    phases complete. Set ``verify: false`` on the artifact phase to opt out.
