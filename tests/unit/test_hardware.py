@@ -1,10 +1,12 @@
 import logging
 import textwrap
+from importlib.metadata import version as metadata_version
 from typing import Any
 
 import _pytest.logging
 import fmf
 import pytest
+from packaging.version import Version
 
 import tmt.guest
 import tmt.hardware
@@ -13,6 +15,8 @@ from tmt.hardware import Hardware
 from tmt.log import Logger
 
 from . import MATCH, assert_log
+
+PINT_VERSION = Version(metadata_version("pint"))
 
 
 def parse_hw(text: str) -> Hardware:
@@ -80,9 +84,16 @@ def test_constraint_name_pattern(value: str, expected: tuple[Any, Any]) -> None:
 _size_constraint_pattern_input = [
     (
         {'name': 'num_with_default', 'raw_value': '10', 'default_unit': 'GiB'},
-        'num_with_default: == 10 gibibyte',
+        'num_with_default: == 10 GiB'
+        if PINT_VERSION >= Version("0.25.3")  # noqa: SIM300 (false-positive)
+        else 'num_with_default: == 10 gibibyte',
     ),
-    ({'name': 'num_without_default', 'raw_value': '1024'}, 'num_without_default: == 1024 byte'),
+    (
+        {'name': 'num_without_default', 'raw_value': '1024'},
+        'num_without_default: == 1024 B'
+        if PINT_VERSION >= Version("0.25.3")  # noqa: SIM300 (false-positive)
+        else 'num_without_default: == 1024 byte',
+    ),
     (
         {'name': 'num_with_unit', 'raw_value': '10 GiB', 'default_unit': 'MiB'},
         'num_with_unit: == 10 GiB',
@@ -312,7 +323,7 @@ def test_parse_maximal_constraint() -> None:
               - cpu.family: < 6
               - cpu.vendor: == 32902
               - cpu.stepping: '!= 10'
-              - cpu.frequency: '>= 2300.0 megahertz'
+              - cpu.frequency: '>= 2300.0 MHz'
               - cpu.family-name: == Skylake
               - cpu.model-name: '!~ Haswell'
               - cpu.vendor-name: ~ Intel.*
@@ -371,6 +382,9 @@ def test_parse_maximal_constraint() -> None:
               - zcrypt.adapter: == CEX8C
               - zcrypt.mode: == CCA
     """
+
+    if PINT_VERSION < Version("0.25.3"):  # noqa: SIM300 (false-positive)
+        hw_spec_out = hw_spec_out.replace("MHz", "megahertz")
 
     hw = parse_hw(FULL_HARDWARE_REQUIREMENTS)
 
