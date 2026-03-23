@@ -1,11 +1,13 @@
 import abc
 import copy
+import threading
 from collections.abc import Iterable, Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from typing import TYPE_CHECKING, Callable, Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar
 
 from tmt._compat.typing import ParamSpec
 from tmt.log import Logger
+from tmt.utils import GeneralError
 
 if TYPE_CHECKING:
     from tmt._compat.typing import Self
@@ -34,6 +36,12 @@ class Task(abc.ABC, Generic[TaskResultT]):
     #: A logger to use for logging events related to the outcome.
     logger: Logger
 
+    #: Order of this task. Follow the semantics of the
+    #: :tmt:story:`/spec/test/order` key, the lower the number, the
+    #: earlier the task runs. Tasks with ``order`` left unset will be
+    #: invoked last, in no guaranteed order.
+    order: Optional[int] = None
+
     #: Result returned by the task when executed.
     result: Optional[TaskResultT] = None
 
@@ -48,6 +56,47 @@ class Task(abc.ABC, Generic[TaskResultT]):
 
     def __init__(self, logger: Logger) -> None:
         self.logger = logger
+
+    def __repr__(self) -> str:
+        return f'<{self.__class__.__name__} name={self.name} order={self.order}>'
+
+    # Magic methods to support queue sorting: sort tasks by their `order`,
+    # `order=None` means "undefined" and comes last.
+    def __gt__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return False
+
+        if self.order is None and other.order is None:
+            return False
+
+        if self.order is None and other.order is not None:
+            return True
+
+        if self.order is not None and other.order is None:
+            return False
+
+        if self.order is not None and other.order is not None:
+            return self.order > other.order
+
+        raise NotImplementedError
+
+    def __gte__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return True
+
+        if self.order is None and other.order is None:
+            return True
+
+        if self.order is None and other.order is not None:
+            return True
+
+        if self.order is not None and other.order is None:
+            return False
+
+        if self.order is not None and other.order is not None:
+            return self.order >= other.order
+
+        raise NotImplementedError
 
     @property
     @abc.abstractmethod
@@ -354,6 +403,13 @@ class Queue(list[TaskT]):
     #: otherwise, :py:meth:`run` will quit.
     _keep_running: bool
 
+    #: Tracks how many tasks were added to the queue.
+    _task_counter: int
+
+    #: Lock protecting modifications of the queue, i.e. the list of
+    #: tasks.
+    _queue_lock: threading.Lock
+
     def __init__(self, name: str, logger: Logger) -> None:
         super().__init__()
 
@@ -361,18 +417,66 @@ class Queue(list[TaskT]):
         self._keep_running = True
         self._logger = logger
 
+        self._task_counter = 0
+        self._queue_lock = threading.Lock()
+
+    @property
+    def _first_task_index(self) -> int:
+        """
+        Index of the first task in the queue, including all completed tasks.
+
+        :raises GeneralError: when accessed without holding the queue
+            lock, :py:attr:`_queue_lock`.
+        """
+
+        if not self._queue_lock.locked():
+            raise GeneralError("Cannot access queued tasks without holding a queue lock.")
+
+        return self._task_counter - len(self)
+
     def enqueue_task(self, task: TaskT) -> None:
         """
         Put new task into a queue
         """
 
-        self.append(task)
+        # While `append()` is thread-safe and atomic, sorting certainly
+        # isn't.
+        with self._queue_lock:
+            self.append(task)
+            self._task_counter += 1
 
-        self._logger.info(
-            f'queued {self.name} task #{len(self)}',
-            task.name,
-            color='cyan',
-        )
+            self._logger.info(
+                f'queued {self.name} task #{self._task_counter}',
+                task.name,
+                color='cyan',
+            )
+
+            # Reorder the remaining tasks.
+            current_order = [task.name for task in self]
+
+            self.sort()
+
+            new_order = [task.name for task in self]
+
+            if current_order != new_order:
+                self._logger.info(
+                    f'queued {self.name} changed order',
+                    color='cyan',
+                )
+
+                # PLR1704: redefining `task` - on purpose, parameter is
+                # no longer needed for anything.
+                for i, task in enumerate(self):  # noqa: PLR1704
+                    # The number assigned to each task is preseted as if
+                    # it continues after already completed tasks. For
+                    # example, 10 tasks at the beginning, 8 tasks left
+                    # to run, the message below should state `task #3`
+                    # for the first task.
+                    self._logger.info(
+                        f'queued {self.name} task #{self._first_task_index + i + 1}',
+                        task.name,
+                        color='cyan',
+                    )
 
     def run(self) -> Iterator[TaskT]:
         """
@@ -382,11 +486,19 @@ class Queue(list[TaskT]):
         instance of this class is yielded.
         """
 
-        task_count = len(self)
-
+        # `self` test does not need to be protected by a lock: nothing
+        # except the `pop()` below removes tasks from the queue, so if
+        # the queue is empty, it will remain empty, and if it has tasks,
+        # it will remain having at least the same amount of tasks.
+        #
+        # `pop()` must be protected, because it must not collide with
+        # 1. addition of tasks - that would be fine, both `append()`
+        # and `pop()` are atomic - but also 2. sorting of the queue
+        # after addition, which is not atomic.
         while self:
-            task_index = task_count - len(self)
-            task = self.pop(0)
+            with self._queue_lock:
+                task_index = self._first_task_index
+                task = self.pop(0)
 
             self._logger.info('')
 
