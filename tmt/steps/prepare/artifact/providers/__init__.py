@@ -107,10 +107,10 @@ class RpmVersion(Version):
         match = NEVRA_PATTERN.match(nevra)
         if not match:
             raise ValueError(f"Cannot parse NEVRA '{nevra}'.")
-        epoch_str = match.group('epoch')
+
         return cls(
             name=match.group('name'),
-            epoch=int(epoch_str) if epoch_str is not None else 0,
+            epoch=int(match.group('epoch') or 0),
             version=match.group('version'),
             release=match.group('release'),
             arch=match.group('arch'),
@@ -199,8 +199,8 @@ class ArtifactProvider(ABC):
     #: Lower values have higher priority in package managers.
     repository_priority: int
 
-    # Artifacts enumerated from this provider's repositories after they have
-    # been installed on the guest.
+    #: Artifacts enumerated from this provider's repositories after they have
+    #: been installed on the guest.
     _artifacts: list[ArtifactInfo]
 
     def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
