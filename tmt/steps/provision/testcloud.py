@@ -1162,7 +1162,7 @@ class GuestTestcloud(tmt.GuestSsh):
             # Validate the base image is a proper qcow2 file
             image_path = Path(self._image.local_path)
             try:
-                Command("qemu-img", "info", str(image_path)).run(
+                Command("qemu-img", "check", str(image_path)).run(
                     cwd=Path.cwd(),
                     logger=self._logger,
                 )
