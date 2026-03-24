@@ -2,8 +2,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tmt.utils import Path
-
 
 @pytest.mark.parametrize(
     ("raw_id", "expected"),
@@ -44,20 +42,18 @@ def test_fetch_contents_enables_repository(
     expected_repo_filename = "_copr:copr.fedorainfracloud.org:group_teemtee:stable.repo"
 
     with patch(
-        'tmt.steps.prepare.artifact.providers.copr_repository.Repository.from_file_path',
+        'tmt.steps.prepare.artifact.providers.copr_repository.Repository.from_content',
         return_value=mock_repo,
-    ) as mock_from_file:
+    ) as mock_from_content:
         result = provider.fetch_contents(mock_guest, download_path)
 
     mock_package_manager.enable_copr.assert_called_once_with('@teemtee/stable')
-    mock_guest.pull.assert_called_once_with(
-        source=Path(f"/etc/yum.repos.d/{expected_repo_filename}"),
-        destination=download_path,
-    )
-    mock_from_file.assert_called_once_with(
-        download_path / expected_repo_filename,
+    mock_guest.execute.assert_called_once()
+    assert expected_repo_filename in str(mock_guest.execute.call_args[0][0])
+    mock_from_content.assert_called_once_with(
+        mock_guest.execute.return_value.stdout or '',
+        '@teemtee/stable',
         provider.logger,
-        name='@teemtee/stable',
     )
     assert result == []
     assert provider.repository is mock_repo
