@@ -54,7 +54,6 @@ plans:
         phases:
           - name: default-0
             how: container
-            expose-device: []
             order: 50
             become: false
             environment:
