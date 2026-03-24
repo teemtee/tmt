@@ -23,10 +23,7 @@ def invocation():
     return MagicMock()
 
 
-# A realistic long line: lorem-ipsum-like text with varied word separators,
-# spaces, punctuation, and mixed case to exercise word-boundary matching.
-# 50k characters — chosen to match the benchmark size used to establish
-# the performance threshold (see test_extract_failures_long_lines docstring).
+# ~50k chars of lorem-ipsum text with word boundaries for regex benchmarking.
 _LONG_SEGMENT = (
     'Lorem ipsum dolor sit amet consectetur adipiscing elit '
     'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua '
@@ -144,13 +141,14 @@ def test_extract_failures_long_lines(invocation: MagicMock, case: FailureCase) -
 
     Benchmarks with 50k-character lines:
 
-    ================================  ===========  ===========
-    Case                              Old regex    New method
-    ================================  ===========  ===========
-    long line, no match + error line  11.335 s     < 0.001 s
-    error embedded in long line       0.001 s      < 0.001 s
-    word boundary, no false positive  49.290 s     < 0.001 s
-    ================================  ===========  ===========
+    ====================================  ===========  ===========
+    Case                                  Old regex    New method
+    ====================================  ===========  ===========
+    long line, no match + error line      11.335 s     < 0.001 s
+    error embedded in long line           0.001 s      < 0.001 s
+    word boundary, no false positive      49.290 s     < 0.001 s
+    many word boundaries, no match        133.628 s    < 0.003 s
+    ====================================  ===========  ===========
 
     The new ``splitlines()`` + per-line ``re.search()`` runs in < 0.001 s
     for all cases. A 0.1 s threshold sits well between the two methods:
