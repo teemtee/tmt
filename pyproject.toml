@@ -142,7 +142,6 @@ dependencies = [
     "pytest",
     "python-coveralls",
     "pytest-container",
-    "pytest-timeout",
     "pytest-xdist",
     "requre",
     "pre-commit",

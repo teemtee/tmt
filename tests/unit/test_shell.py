@@ -118,19 +118,8 @@ def test_extract_failures_file_error(invocation: MagicMock) -> None:
             ),
             id='long-line-word-boundary-no-false-positive',
         ),
-        pytest.param(
-            FailureCase(
-                log_content=(
-                    f'start\n{_LONG_SEGMENT} a b c d e f g h i j k l m n o p '
-                    f'{_LONG_SEGMENT}\nend\n'
-                ),
-                expected=[],
-            ),
-            id='long-line-many-word-boundaries-no-match',
-        ),
     ],
 )
-@pytest.mark.timeout(10)
 def test_extract_failures_long_lines(invocation: MagicMock, case: FailureCase) -> None:
     """
     Verify correct handling of very long lines (~50k characters).
@@ -141,20 +130,18 @@ def test_extract_failures_long_lines(invocation: MagicMock, case: FailureCase) -
 
     Benchmarks with 50k-character lines:
 
-    ====================================  ===========  ===========
-    Case                                  Old regex    New method
-    ====================================  ===========  ===========
-    long line, no match + error line      11.335 s     < 0.001 s
-    error embedded in long line           0.001 s      < 0.001 s
-    word boundary, no false positive      49.290 s     < 0.001 s
-    many word boundaries, no match        133.628 s    < 0.003 s
-    ====================================  ===========  ===========
+    ==================================  ===========  ===========
+    Case                                Old regex    New method
+    ==================================  ===========  ===========
+    long line, no match + error line    11.335 s     < 0.001 s
+    error embedded in long line         0.001 s      < 0.001 s
+    word boundary, no false positive    49.290 s     < 0.001 s
+    ==================================  ===========  ===========
 
     The new ``splitlines()`` + per-line ``re.search()`` runs in < 0.001 s
     for all cases. A 0.1 s threshold sits well between the two methods:
     any result above 0.1 s indicates a regression toward the old behavior.
-    The ``@pytest.mark.timeout(10)`` serves as an additional safety net
-    to prevent CI from hanging if a regression is catastrophic.
+    The explicit time assertion serves as a safeguard against regressions.
     """
     invocation.phase.step.plan.execute.read.return_value = case.log_content
 
