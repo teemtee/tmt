@@ -207,7 +207,10 @@ def display_items(sprint_name: str, items: list[Item]) -> None:
     open_count = len(categories.get("open-issue", [])) + len(categories.get("open-pull", []))
     closed_count = total_count - open_count
 
-    points = {key: sum(item.size or 0 for item in items) for key, items in categories.items()}
+    points = {
+        category: sum(item.size or 0 for item in category_items)
+        for category, category_items in categories.items()
+    }
 
     total_points = sum(points.values())
     open_points = points.get("open-issue", 0) + points.get("open-pull", 0)
