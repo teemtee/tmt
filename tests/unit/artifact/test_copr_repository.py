@@ -75,7 +75,7 @@ def test_enumerate_artifacts(
     provider = artifact_provider("copr.repository:@teemtee/stable")
 
     with patch(
-        'tmt.steps.prepare.artifact.providers.copr_repository.Repository.from_file_path',
+        'tmt.steps.prepare.artifact.providers.copr_repository.Repository.from_content',
         return_value=mock_repo,
     ):
         provider.fetch_contents(mock_guest, tmppath / "artifacts")
