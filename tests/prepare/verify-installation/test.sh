@@ -17,9 +17,11 @@ rlJournalStart
         if rlIsFedora; then
             get_koji_build_id "centpkg" "f\${fedora_release}"
             rlRun "cp -r data-fedora/. \$data_dir/" 0 "Copy test data"
-        else
+        elif rlIsCentOS; then
             get_koji_build_id "centpkg" "c\${centos_release}s" "stream"
             rlRun "cp -r data-centos/. \$data_dir/" 0 "Copy test data"
+        else
+            rlDie "Unsupported distribution, must be Fedora or CentOS"
         fi
         rlRun "sed -i 's/KOJI_BUILD_ID/${KOJI_BUILD_ID}/g' \$data_dir/main.fmf" 0 "Substitute koji build ID"
         rlRun "pushd \$data_dir"
