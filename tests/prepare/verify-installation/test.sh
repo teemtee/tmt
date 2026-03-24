@@ -18,7 +18,7 @@ rlJournalStart
             get_koji_build_id "centpkg" "f\${fedora_release}"
             rlRun "cp -r data-fedora/. \$data_dir/" 0 "Copy test data"
         elif rlIsCentOS; then
-            rlRun "dnf install -y centos-packager" 0 "Install centos-packager for koji stream profile"
+            setup_koji_stream_profile
             get_koji_build_id "centpkg" "c\${centos_release}s" "stream"
             rlRun "cp -r data-centos/. \$data_dir/" 0 "Copy test data"
         else
