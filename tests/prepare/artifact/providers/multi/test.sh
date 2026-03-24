@@ -17,7 +17,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test multiple providers with command-line override"
-        rlRun "tmt run -i $run --scratch -vv --all \
+        rlRun "tmt run -i $run --scratch -vvv --all \
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
             prepare --how artifact \
                 --provide koji.build:$KOJI_BUILD_ID \

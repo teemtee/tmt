@@ -14,7 +14,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test copr-repository provider with command-line override"
-        rlRun "tmt run -i $run --scratch -vv --all \
+        rlRun "tmt run -i $run --scratch -vvv --all \
             provision -h $PROVISION_HOW --image $TEST_IMAGE_PREFIX/$image_name \
             prepare --how artifact --provide copr.repository:mariobl/pyspread" 0 "Run with copr-repository provider"
     rlPhaseEnd
