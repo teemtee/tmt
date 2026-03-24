@@ -211,6 +211,15 @@ class ExecuteInternalData(tmt.steps.execute.ExecuteStepData):
 
         return data
 
+    # ignore[override] & cast: two base classes define to_spec(), with conflicting
+    # formal types.
+    def to_minimal_spec(self) -> dict[str, Any]:  # type: ignore[override]
+        data = cast(dict[str, Any], super().to_minimal_spec())
+        data.pop('script', None)
+        if self.script:
+            data['script'] = [str(script) for script in self.script]
+        return data
+
 
 @tmt.steps.provides_method('tmt')
 class ExecuteInternal(tmt.steps.execute.ExecutePlugin[ExecuteInternalData]):

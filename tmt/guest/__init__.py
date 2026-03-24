@@ -50,6 +50,7 @@ from tmt.container import (
     container,
     field,
     key_to_option,
+    option_to_key,
 )
 from tmt.package_managers import (
     FileSystemPath,
@@ -1328,9 +1329,37 @@ class GuestData(
         spec = super().to_spec()
 
         spec.pop('facts', None)  # type: ignore[typeddict-item]
+        spec.pop('-OPTIONLESS-FIELDS', None)  # type: ignore[typeddict-item]
         spec['ansible'] = self.ansible.to_spec() if self.ansible else {}  # type: ignore[typeddict-unknown-key]
+        spec['environment'] = self.environment.to_fmf_spec() if self.environment else {}  # type: ignore[typeddict-unknown-key]
+        spec['hardware'] = self.hardware.to_spec() if self.hardware else None  # type: ignore[typeddict-unknown-key]
 
         return spec
+
+    def to_minimal_spec(self) -> tmt.steps._RawStepData:
+        spec = {**super().to_minimal_spec()}
+
+        spec.pop('facts', None)
+        spec.pop('-OPTIONLESS-FIELDS', None)
+
+        # Some fields need special handling.
+        # Map them to functions that will correctly convert them.
+        field_map: dict[str, Callable[[Any], Any]] = {
+            'ansible': lambda ansible: ansible.to_spec() if self.ansible else {},
+            'environment': lambda environment: environment.to_fmf_spec(),
+            'hardware': lambda hardware: hardware.to_minimal_spec() if hardware else None,
+        }
+        for key, transform in field_map.items():
+            value = getattr(self, option_to_key(key), None)
+            if value is not None:
+                value = transform(value)
+            # Do not include empty values
+            if value in (None, [], {}):
+                spec.pop(key, None)
+            else:
+                spec[key] = value
+
+        return cast(tmt.steps._RawStepData, spec)
 
     # TODO: find out whether this could live in DataContainer. It probably could,
     # but there are containers not backed by options... Maybe a mixin then?
@@ -2755,6 +2784,18 @@ class GuestSshData(GuestData):
              """,
         normalize=tmt.utils.normalize_string_list,
     )
+
+    def to_spec(self) -> tmt.steps._RawStepData:
+        spec = super().to_spec()
+        spec['key'] = [str(key) for key in self.key]  # type: ignore[typeddict-unknown-key]
+        return spec
+
+    def to_minimal_spec(self) -> tmt.steps._RawStepData:
+        spec = super().to_minimal_spec()
+        spec.pop('key', None)  # type: ignore[typeddict-item]
+        if self.key:
+            spec['key'] = [str(key) for key in self.key]  # type: ignore[typeddict-unknown-key]
+        return spec
 
 
 class GuestSsh(Guest, CommandCollector):

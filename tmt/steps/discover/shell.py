@@ -1,6 +1,6 @@
 import copy
 import shutil
-from typing import Any, Optional, TypeVar, cast
+from typing import Any, Callable, Optional, TypeVar, cast
 
 import click
 import fmf
@@ -14,7 +14,13 @@ import tmt.steps.discover
 import tmt.utils
 import tmt.utils.git
 from tmt._compat.typing import Self
-from tmt.container import SerializableContainer, SpecBasedContainer, container, field
+from tmt.container import (
+    SerializableContainer,
+    SpecBasedContainer,
+    container,
+    field,
+    option_to_key,
+)
 from tmt.steps import _RawStepData
 from tmt.steps.prepare.distgit import insert_to_prepare_step
 from tmt.utils import (
@@ -185,7 +191,29 @@ class TestDescription(
         return data
 
     def to_minimal_spec(self) -> dict[str, Any]:
-        return {key: value for key, value in self.to_spec().items() if value not in (None, [], {})}
+        data = {key: value for key, value in self.items() if value not in (None, [], {})}
+
+        # Some fields need special handling.
+        # Map them to functions that will correctly convert them.
+        field_map: dict[str, Callable[[Any], Any]] = {
+            'link': lambda link: link.to_spec(),
+            'require': lambda requires: [require.to_spec() for require in requires],
+            'recommend': lambda recommends: [recommend.to_spec() for recommend in recommends],
+            'check': lambda checks: [check.to_spec() for check in checks],
+            'test': str,
+        }
+
+        for key, transform in field_map.items():
+            value = getattr(self, option_to_key(key), None)
+            if value is not None:
+                value = transform(value)
+            # Do not include empty values
+            if value in (None, [], {}):
+                data.pop(key, None)
+            else:
+                data[key] = value
+
+        return data
 
 
 @container
@@ -226,6 +254,7 @@ class DiscoverShellData(tmt.steps.discover.DiscoverStepData):
 
     def to_minimal_spec(self) -> _RawDiscoverShellData:
         spec = {**super().to_minimal_spec()}
+        spec.pop('tests', None)
         if self.tests:
             spec['tests'] = [test.to_minimal_spec() for test in self.tests]
         return cast(_RawDiscoverShellData, spec)

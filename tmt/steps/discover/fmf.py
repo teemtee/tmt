@@ -51,6 +51,9 @@ class TestsWithAdjusts(
             )
         return self.name
 
+    def to_minimal_spec(self) -> Union[str, _RawTestsWithAdjusts]:
+        return self.to_spec()
+
 
 def normalize_tests_with_adjusts(
     key_address: str,
@@ -306,6 +309,21 @@ class DiscoverFmfStepData(tmt.steps.discover.DiscoverStepData):
         option='--revision',
         deprecated=tmt.options.Deprecated(since="1.66", hint="use 'ref' instead"),
     )
+
+    def to_spec(self) -> tmt.steps._RawStepData:
+        return cast(
+            tmt.steps._RawStepData,
+            {**super().to_spec(), 'test': [test.to_spec() for test in self.test]},
+        )
+
+    def to_minimal_spec(self) -> tmt.steps._RawStepData:
+        spec = super().to_minimal_spec()
+        spec.pop('test', None)  # type: ignore[typeddict-item]
+
+        tests = [test.to_minimal_spec() for test in self.test]
+        if tests:
+            spec['test'] = tests  # type: ignore[typeddict-unknown-key]
+        return spec
 
     def post_normalization(
         self,
