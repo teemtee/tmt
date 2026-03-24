@@ -1009,12 +1009,17 @@ class Step(
             Convert CLI options to fmf-like raw step data dictionary.
 
             This means dropping all keys that cannot come from an fmf node, like
-            keys representing CLI options.
+            keys representing CLI options. Also skip None values to avoid overriding
+            field defaults.
             """
 
             def _iter_options() -> Iterator[tuple[str, Any]]:
                 for name, value in options.items():
                     if name in ('update', 'update_missing', 'insert', 'allowed-how'):
+                        continue
+
+                    # Skip None values to avoid overriding field defaults
+                    if value is None:
                         continue
 
                     yield key_to_option(name), value
