@@ -123,7 +123,9 @@ class CoprRepositoryProvider(ArtifactProvider):
         repo_filename = f"_copr:copr.fedorainfracloud.org:{owner}:{repo.project}.repo"
 
         try:
-            output = guest.execute(tmt.utils.ShellScript(f"cat /etc/yum.repos.d/{repo_filename}"))
+            output = guest.execute(
+                tmt.utils.Command("cat", Path(f"/etc/yum.repos.d/{repo_filename}"))
+            )
         except tmt.utils.RunError as error:
             raise tmt.utils.PrepareError(
                 f"Failed to read '{repo_filename}' from the guest. "
