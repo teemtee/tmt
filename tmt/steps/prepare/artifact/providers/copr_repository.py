@@ -122,7 +122,12 @@ class CoprRepositoryProvider(ArtifactProvider):
         # TODO: Replace hardcoded hub URL by passing it from PrepareArtifacts to providers.
         repo_filename = f"_copr:copr.fedorainfracloud.org:{owner}:{repo.project}.repo"
 
-        output = guest.execute(tmt.utils.ShellScript(f"cat /etc/yum.repos.d/{repo_filename}"))
+        try:
+            output = guest.execute(tmt.utils.ShellScript(f"cat /etc/yum.repos.d/{repo_filename}"))
+        except tmt.utils.RunError as error:
+            raise tmt.utils.PrepareError(
+                f"Failed to read '{repo_filename}' from the guest. "
+            ) from error
 
         self.repository = Repository.from_content(output.stdout or '', self.copr_repo, self.logger)
         return []
