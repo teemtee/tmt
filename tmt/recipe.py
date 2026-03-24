@@ -551,18 +551,15 @@ class RecipeManager(Common):
     def __init__(self, logger: Logger):
         super().__init__(logger=logger)
 
-    def load(
-        self, run: 'Run', recipe_path: Optional[Path], fmf_tree: Optional[Tree]
-    ) -> Optional[Recipe]:
-        if recipe_path is None or fmf_tree is None:
-            return None
-
+    def load(self, run: 'Run', recipe_path: Path, fmf_tree: Tree) -> Recipe:
         recipe = Recipe.from_spec(
             cast(_RawRecipe, tmt.utils.yaml_to_dict(self.read(recipe_path))), self._logger
         )
         self._update_tree(recipe, fmf_tree)
+        # TODO: We should have a way to set which steps are enabled
+        # without modifying the CLI context directly.
         self._update_cli_context(recipe)
-        run.remove = run.remove or recipe.run.remove
+        run.remove = recipe.run.remove
 
         return recipe
 
