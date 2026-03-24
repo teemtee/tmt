@@ -168,14 +168,16 @@ def fetch_sprint_items(sprint_name: str) -> list[Item]:
 
             if item_type == "pull":
                 status = "merged" if content.get("merged_at") else content["state"]
+                repo = content["base"]["repo"]["name"]
             else:
                 status = content["state"]
+                repo = content["repository"]["name"]
 
             all_items.append(
                 Item(
                     id=content["number"],
                     type=item_type,
-                    repo=content["html_url"].split("/")[4],
+                    repo=repo,
                     status=status,
                     size=size,
                     url=content["html_url"],
@@ -246,21 +248,16 @@ def main(sprint: str, output_yaml: bool) -> None:
 
     Set the GITHUB_PERSONAL_ACCESS_TOKEN environment variable to avoid rate limits.
     """
-    try:
-        items = fetch_sprint_items(sprint)
+    items = fetch_sprint_items(sprint)
 
-        if not items:
-            click.echo(f"No items found in sprint '{sprint}'.")
-            return
+    if not items:
+        click.echo(f"No items found in sprint '{sprint}'.")
+        return
 
-        if output_yaml:
-            YAML().dump([dataclasses.asdict(item) for item in items], sys.stdout)
-        else:
-            display_items(sprint, items)
-
-    except Exception as error:
-        click.echo(f"Error: {error}", err=True)
-        sys.exit(1)
+    if output_yaml:
+        YAML().dump([dataclasses.asdict(item) for item in items], sys.stdout)
+    else:
+        display_items(sprint, items)
 
 
 if __name__ == "__main__":
