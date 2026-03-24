@@ -52,7 +52,7 @@ def mock_brew(mock_koji):
 
 
 @pytest.fixture
-def mock_copr():
+def mock_copr_build_session():
     mock_session = MagicMock()
     with patch.object(CoprBuildArtifactProvider, '_initialize_session', return_value=mock_session):
         yield mock_session

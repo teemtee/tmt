@@ -10,6 +10,7 @@ from typing import Optional
 
 import tmt.log
 import tmt.utils
+from tmt._compat.typing import Self
 from tmt.container import container
 from tmt.guest import Guest
 from tmt.steps.prepare.artifact.providers import (
@@ -22,8 +23,9 @@ from tmt.steps.prepare.artifact.providers import (
 )
 from tmt.utils import Path
 
-COPR_REPO_PATTERN = re.compile(r'^(?P<group>@)?(?P<name>[^/]+)/(?P<project>[^/]+)$')
-COPR_REPOSITORY_PATTERN = re.compile(r'^(?:@[^/]+/[^/]+|[^@/]+/[^/]+)$')
+COPR_REPO_PATTERN = re.compile(
+    r'^(?P<group>@)?(?P<name>(?(group)[^/]+|[^@/]+))/(?P<project>[^/]+)$'
+)
 
 
 @container(frozen=True)
@@ -32,19 +34,19 @@ class CoprRepo:
     name: str
     project: str
 
-
-def parse_copr_repo(copr_repo: str) -> CoprRepo:
-    """
-    Parse a COPR repository identifier into its components.
-    """
-    matched = COPR_REPO_PATTERN.match(copr_repo)
-    if not matched:
-        raise tmt.utils.PrepareError(f"Invalid copr repository '{copr_repo}'.")
-    return CoprRepo(
-        is_group=bool(matched.group('group')),
-        name=matched.group('name'),
-        project=matched.group('project'),
-    )
+    @classmethod
+    def from_id(cls, copr_repo: str) -> Self:
+        """
+        Parse a COPR repository identifier into its components.
+        """
+        matched = COPR_REPO_PATTERN.match(copr_repo)
+        if not matched:
+            raise tmt.utils.PrepareError(f"Invalid copr repository '{copr_repo}'.")
+        return cls(
+            is_group=bool(matched.group('group')),
+            name=matched.group('name'),
+            project=matched.group('project'),
+        )
 
 
 @provides_artifact_provider('copr.repository')
@@ -83,7 +85,7 @@ class CoprRepositoryProvider(ArtifactProvider):
         if not value:
             raise ValueError("Missing Copr repository name.")
 
-        if not COPR_REPOSITORY_PATTERN.match(value):
+        if not COPR_REPO_PATTERN.match(value):
             raise ValueError(
                 f"Invalid Copr repository format: '{value}'. "
                 "Expected format: '@group/project' or 'user/project'."
@@ -115,7 +117,7 @@ class CoprRepositoryProvider(ArtifactProvider):
         """
         guest.package_manager.enable_copr(self.copr_repo)
 
-        repo = parse_copr_repo(self.copr_repo)
+        repo = CoprRepo.from_id(self.copr_repo)
         owner = f'group_{repo.name}' if repo.is_group else repo.name
         # TODO: Replace hardcoded hub URL by passing it from PrepareArtifacts to providers.
         repo_filename = f"_copr:copr.fedorainfracloud.org:{owner}:{repo.project}.repo"
