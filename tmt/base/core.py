@@ -2919,9 +2919,9 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
 
         self.policies = policies or []
         self.recipe_manager = RecipeManager(logger)
-        self.recipe = self.recipe_manager.load(
-            self, recipe_path, self._tree.tree if self._tree is not None else None
-        )
+        self.recipe = None
+        if recipe_path is not None and self._tree is not None:
+            self.recipe = self.recipe_manager.load(self, recipe_path, self._tree.tree)
 
     @property
     def run_workdir(self) -> Path:
@@ -3033,17 +3033,6 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         )
 
     @property
-    def _environment_from_recipe(self) -> Environment:
-        """
-        Environment variables from the recipe.
-        """
-
-        if self.recipe is None:
-            return Environment()
-
-        return self.recipe.run.environment.copy()
-
-    @property
     def environment(self) -> Environment:
         """
         Environment variables of the run.
@@ -3053,18 +3042,21 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
 
         * run's environment, saved from the previous runs in the same
           workdir,
-        * run's environment, loaded from the recipe file.
         * run's environment, ``--environment`` and ``--environment-file``
           options.
+
+        If a recipe was provided, the environment is taken directly
+        from the recipe instead.
         """
 
-        return Environment(
-            {
-                **self._environment_from_workdir,
-                **self._environment_from_recipe,
-                **self._environment_from_cli,
-            }
-        )
+        if self.recipe is None:
+            return Environment(
+                {
+                    **self._environment_from_workdir,
+                    **self._environment_from_cli,
+                }
+            )
+        return self.recipe.run.environment.copy()
 
     def save(self) -> None:
         """
