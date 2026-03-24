@@ -151,6 +151,7 @@ repos:
     hooks:
       - id: ansible-lint
         language: python # Required for Renovate additional_dependencies
+        language_version: "3.13"
         args:
           - ansible/
           - examples/ansible/

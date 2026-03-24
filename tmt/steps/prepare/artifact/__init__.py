@@ -98,7 +98,7 @@ class PrepareArtifactData(PrepareStepData):
             """,
     )
 
-    verify: bool = field(
+    auto_verify: bool = field(
         default=True,
         option='--verify/--no-verify',
         is_flag=True,

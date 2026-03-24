@@ -397,7 +397,7 @@ class Prepare(tmt.steps.Step):
         artifact_phases_with_verify = [
             phase
             for phase in self._phases
-            if isinstance(phase, PrepareArtifact) and phase.data.verify
+            if isinstance(phase, PrepareArtifact) and phase.data.auto_verify
         ]
         has_verify_phase = any(
             isinstance(phase, PrepareVerifyInstallation) for phase in self._phases
