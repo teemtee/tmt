@@ -14,12 +14,16 @@ rlJournalStart
 
         rlRun "data_dir=\$(mktemp -d)" 0 "Create temp data directory"
 
+        # FIXME: https://github.com/teemtee/tmt/issues/4742
+        # Both distros use Fedora koji - the koji.build provider always reads
+        # the default 'koji' profile which points to Fedora koji.
+        # Fedora-built diffstat (1.68) is newer than CentOS baseos (1.66)
+        # so the artifact version is always preferred on both distros.
+        get_koji_build_id "diffstat" "f\${fedora_release:-43}"
+
         if rlIsFedora; then
-            get_koji_build_id "centpkg" "f\${fedora_release}"
             rlRun "cp -r data-fedora/. \$data_dir/" 0 "Copy test data"
         elif rlIsCentOS; then
-            setup_koji_stream_profile
-            get_koji_build_id "centpkg" "c\${centos_release}s" "stream"
             rlRun "cp -r data-centos/. \$data_dir/" 0 "Copy test data"
         else
             rlDie "Unsupported distribution, must be Fedora or CentOS"
@@ -34,7 +38,7 @@ rlJournalStart
             provision -h \$PROVISION_HOW --image \$image" \
             0 "Run verification test with correct repos"
 
-        rlAssertGrep "pass .* / centpkg" $rlRun_LOG
+        rlAssertGrep "pass .* / diffstat" $rlRun_LOG
         rlAssertGrep "pass .* / make" $rlRun_LOG
         rlAssertGrep "pass .* / diffutils" $rlRun_LOG
         rlAssertGrep "All packages verified successfully." $rlRun_LOG
@@ -51,7 +55,7 @@ rlJournalStart
         rlAssertGrep "4 packages" $rlRun_LOG
         rlAssertGrep "pass .* / make" $rlRun_LOG
         rlAssertGrep "pass .* / diffutils" $rlRun_LOG
-        rlAssertGrep "fail .* / centpkg" $rlRun_LOG
+        rlAssertGrep "fail .* / diffstat" $rlRun_LOG
         rlAssertGrep "actual 'tmt-artifact-shared'" $rlRun_LOG
         rlAssertGrep "expected repo 'SOME_NON_EXISTENT_REPO'" $rlRun_LOG
         rlAssertGrep "fail .* / random-non-existent-package" $rlRun_LOG

@@ -15,7 +15,7 @@
     prepare+:
       - how: verify-installation
         verify:
-            centpkg: tmt-artifact-shared
+            diffstat: tmt-artifact-shared
             make: fedora
             diffutils: fedora
 
@@ -23,7 +23,7 @@
     prepare+:
       - how: verify-installation
         verify:
-            centpkg: SOME_NON_EXISTENT_REPO
+            diffstat: SOME_NON_EXISTENT_REPO
             make: fedora
             diffutils: fedora
             random-non-existent-package: some-repo
@@ -31,6 +31,6 @@
 /test:
     test: /bin/true
     require:
-      - centpkg
+      - diffstat
       - make
       - diffutils
