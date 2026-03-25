@@ -163,9 +163,9 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
     exceptions: list[Exception] = simple_field(default_factory=list)
 
     @property
-    def discovery_phase(self) -> DiscoverPlugin[Any]:
+    def discover_phase(self) -> DiscoverPlugin[Any]:
         """
-        Discovery phase the test comes from.
+        Discover phase the test comes from.
         """
 
         if isinstance(self.phase.discover, DiscoverPlugin):
@@ -379,7 +379,7 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
                 f"{self.phase.parent.plan.my_run.unique_id}-{self.test.serial_number}"
             )
 
-            environment['TMT_SOURCE_DIR'] = EnvVarValue(self.discovery_phase.source_dir)
+            environment['TMT_SOURCE_DIR'] = EnvVarValue(self.discover_phase.source_dir)
 
         else:
             environment = self._environment
