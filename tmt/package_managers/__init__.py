@@ -378,12 +378,8 @@ class PackageManager(tmt.utils.Common, Generic[PackageManagerEngineT]):
         if stdout is None:
             raise GeneralError("Repository query provided no output")
 
-        result: list[RpmVersion] = []
-        for line in stdout.strip().splitlines():
-            line = line.strip()
-            if line:
-                result.append(RpmVersion.from_nevra(line))
-        return result
+        stripped_lines = (line.strip() for line in stdout.strip().splitlines())
+        return [RpmVersion.from_nevra(line) for line in stripped_lines if line]
 
     def get_package_origin(self, packages: Iterable[str]) -> 'dict[str, PackageOrigin]':
         """
