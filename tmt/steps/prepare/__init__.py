@@ -1,4 +1,3 @@
-import copy
 from typing import TYPE_CHECKING, Literal, Optional, TypeVar, cast
 
 import fmf.utils
@@ -369,23 +368,10 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
             missing='skip',
         )
 
-        # Prepare guests (including workdir sync)
-        guest_copies: list[Guest] = []
-
-        for guest in self.plan.provision.ready_guests:
-            # Create a guest copy and change its parent so that the
-            # operations inside prepare plugins on the guest use the
-            # prepare step config rather than provision step config.
-            guest_copy = copy.copy(guest)
-            guest_copy.inject_logger(
-                guest._logger.clone().apply_verbosity_options(**self._cli_options)
+        if self._guest_copies:
+            sync_with_guests(
+                self, 'push', PushTask(self._guest_copies, self._logger), self._logger
             )
-            guest_copy.parent = self
-
-            guest_copies.append(guest_copy)
-
-        if guest_copies:
-            sync_with_guests(self, 'push', PushTask(guest_copies, self._logger), self._logger)
 
             # To separate "push" from "prepare" queue visually
             self.info('')
@@ -400,7 +386,9 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
                 self._queue.enqueue_plugin(
                     phase=prepare_phase,  # type: ignore[arg-type]
                     guests=[
-                        guest for guest in guest_copies if prepare_phase.enabled_on_guest(guest)
+                        guest
+                        for guest in self._guest_copies
+                        if prepare_phase.enabled_on_guest(guest)
                     ],
                 )
 
@@ -480,18 +468,18 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
             )
 
         # Notify guests that the prepare step has completed.
-        for guest in guest_copies:
+        for guest in self._guest_copies:
             guest.on_step_complete(self)
 
         self.info('')
 
         # Pull artifacts created in the plan data directory
         # if there was at least one plugin executed
-        if self.phases() and guest_copies:
+        if self.phases() and self._guest_copies:
             sync_with_guests(
                 self,
                 'pull',
-                PullTask(guest_copies, self.plan.data_directory, self._logger),
+                PullTask(self._guest_copies, self.plan.data_directory, self._logger),
                 self._logger,
             )
 
