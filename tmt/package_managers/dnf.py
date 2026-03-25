@@ -10,10 +10,10 @@ from tmt.package_managers import (
     Package,
     PackageManager,
     PackageManagerEngine,
+    Repository,
     escape_installables,
     provides_package_manager,
 )
-from tmt.package_managers.rpm import Repository
 from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScript
 
 

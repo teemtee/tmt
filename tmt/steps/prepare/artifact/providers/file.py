@@ -8,7 +8,7 @@ from typing import ClassVar, Optional
 import tmt.log
 import tmt.utils
 from tmt.guest import Guest, TransferOptions
-from tmt.package_managers.rpm import RpmVersion
+from tmt.package_managers._rpm import RpmVersion
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
