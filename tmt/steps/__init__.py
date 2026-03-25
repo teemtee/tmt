@@ -3322,6 +3322,7 @@ class PluginTask(
         super().__init__(guests, logger)
 
         self.phase = phase
+        self.order = phase.order
 
     @property
     def phase_name(self) -> str:
@@ -3362,7 +3363,6 @@ class PhaseQueue(tmt.queue.Queue[Union[ActionTask, PluginTask[StepDataT, PluginR
             )
 
         task = PluginTask(phase, guests, phase._logger)
-        task.order = phase.order
 
         self.enqueue_task(task)
 
