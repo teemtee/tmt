@@ -19,8 +19,7 @@ setup_distro_environment() {
         rlDie "Test requires Fedora"
     fi
 
-    # TODO: Temporary hardcoded release - should be taken from function input
-    fedora_release=43
+    fedora_release="${1:-43}"
     image_name="fedora/${fedora_release}:latest"
     build_container_image "$image_name"
 }
