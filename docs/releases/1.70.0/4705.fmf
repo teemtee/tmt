@@ -1,7 +1,7 @@
 description: |
   Introduced the ``--exposable-runner-devices`` tmt command option, and
   a corresponding environment variable, ``TMT_EXPOSABLE_RUNNER_DEVICES``.
-  When a guest asks for a runner device to be exposed to said guest, e.g.
+  When a :term:`guest` asks for a :term:`runner` device to be exposed to said guest, e.g.
   via podman's ``--device`` option or as a libvirt "node device", only
   the devices whose path matches any of the regular expressions passed
   to the option would be exposed to said guest. If this is not set,
