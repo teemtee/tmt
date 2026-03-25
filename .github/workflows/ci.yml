@@ -46,7 +46,7 @@ jobs:
     needs: [ pre-commit ]
 
   overall-outcome:
-    name: ✅ GitHub Actions Overall Outcome
+    name: GitHub Actions Overall Outcome
     if: always()
     needs: [ pre-commit, build-wheel, shellcheck, doc-tests ]
     runs-on: ubuntu-slim
