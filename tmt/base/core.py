@@ -2610,6 +2610,13 @@ class Tree(tmt.utils.Common):
             plans = []
             for plan in unresolved_plans:
                 try:
+                    # Do not resolve disabled plans during `tmt run`
+                    if run is not None and not plan.enabled:
+                        plan.debug(
+                            f"Plan {plan.name} is not enabled, skipping imports resolution",
+                            level=3,
+                        )
+                        continue
                     plans += plan.resolve_imports()
                 except Exception as error:
                     if self.import_before_name_filter:
