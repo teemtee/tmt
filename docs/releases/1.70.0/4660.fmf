@@ -1,3 +1,3 @@
 description: |
-    New :ref:`/plugins/prepare/verify-installation` plugin to verify that
-    packages were installed from expected repositories.
+    Introduced the :ref:`/plugins/prepare/verify-installation` prepare plugin.
+    This verifies that packages were installed from expected repositories.
