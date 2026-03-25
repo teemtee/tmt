@@ -139,6 +139,15 @@ rlJournalStart
         rlRun -s "tmt -c how=full run -r --dry plan -n /plans/full/tmt" 0 "Run plan (dry mode)"
     rlPhaseEnd
 
+    rlPhaseStartTest "Remote plan should not be fetched if disabled by adjust"
+        rlRun -s "tmt -ddd -c distro=fedora-rawhide run --remove --dry plan --name /plans/disabled-by-adjust" 2 "Expect no plans to be found"
+        rlAssertNotGrep "Run command: git clone" $rlRun_LOG
+        rlAssertGrep "Plan /plans/disabled-by-adjust is not enabled, skipping imports resolution" $rlRun_LOG
+        rlAssertGrep "No plans found." $rlRun_LOG
+        rlRun -s "tmt -dd -c distro=fedora-rawhide -c how=full plan show /plans/disabled-by-adjust" 0 "Show plan correctly"
+        rlAssertGrep "Run command: git clone" $rlRun_LOG
+    rlPhaseEnd
+
     rlPhaseStartCleanup
         rlRun "popd"
     rlPhaseEnd
