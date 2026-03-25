@@ -321,7 +321,13 @@ linkcheck_request_headers = {
     "*": {
         "Accept": "text/html",
         "User-Agent": "sphinx/linkcheck",
-    }
+    },
+    # Cloudfront is very strict with the User-Agent that they allow
+    # https://stackoverflow.com/a/79767899
+    "https://reportportal.io/": {
+        "Accept": "text/html",
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:148.0) Gecko/20100101 Firefox/148.0",
+    },
 }
 
 # custom linkcheck cache variables
