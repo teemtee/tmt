@@ -1,4 +1,3 @@
-import copy
 from typing import Optional, TypeVar, cast
 
 import fmf.utils
@@ -130,21 +129,6 @@ class Cleanup(tmt.steps.StepWithQueue[CleanupStepData, PluginOutcome]):
             self.warn("Nothing to cleanup, no guests provisioned.", shift=1)
             return
 
-        # Prepare guest copies
-        guest_copies: list[Guest] = []
-
-        for guest in self.plan.provision.guests:
-            # Create a guest copy and change its parent so that the
-            # operations inside cleanup plugins on the guest use the
-            # cleanup step config rather than provision step config.
-            guest_copy = copy.copy(guest)
-            guest_copy.inject_logger(
-                guest._logger.clone().apply_verbosity_options(**self._cli_options)
-            )
-            guest_copy.parent = self
-
-            guest_copies.append(guest_copy)
-
         # Pick only the CleanupPlugin phases, Action phases are not
         # expected in the cleanup step
         phases: list[CleanupPlugin[CleanupStepData]] = self.phases(classes=(CleanupPlugin,))
@@ -155,7 +139,9 @@ class Cleanup(tmt.steps.StepWithQueue[CleanupStepData, PluginOutcome]):
             if phase.enabled_by_when:
                 self._queue.enqueue_plugin(
                     phase=phase,
-                    guests=[guest for guest in guest_copies if phase.enabled_on_guest(guest)],
+                    guests=[
+                        guest for guest in self._guest_copies if phase.enabled_on_guest(guest)
+                    ],
                 )
 
         results: list[PhaseResult] = []
