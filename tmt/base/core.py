@@ -3033,6 +3033,17 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         )
 
     @property
+    def _environment_from_recipe(self) -> Environment:
+        """
+        Environment variables from the recipe.
+        """
+
+        if self.recipe is None:
+            return Environment()
+
+        return self.recipe.run.environment.copy()
+
+    @property
     def environment(self) -> Environment:
         """
         Environment variables of the run.
@@ -3048,15 +3059,18 @@ class Run(HasRunWorkdir, HasEnvironment, tmt.utils.Common):
         If a recipe was provided, the environment is taken directly
         from the recipe instead.
         """
-
-        if self.recipe is None:
+        if self._environment_from_recipe:
             return Environment(
                 {
-                    **self._environment_from_workdir,
-                    **self._environment_from_cli,
+                    **self._environment_from_recipe,
                 }
             )
-        return self.recipe.run.environment.copy()
+        return Environment(
+            {
+                **self._environment_from_workdir,
+                **self._environment_from_cli,
+            }
+        )
 
     def save(self) -> None:
         """
