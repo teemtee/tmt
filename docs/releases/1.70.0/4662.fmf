@@ -1,0 +1,3 @@
+description: |
+  Rsync commands will now use temporary directories, preventing some issues
+  with incomplete rsync transfers.
