@@ -5,5 +5,5 @@ description: |
   via podman's ``--device`` option or as a libvirt "node device", only
   the devices whose path matches any of the regular expressions passed
   to the option would be exposed to said guest. If this is not set,
-  no host devices will be allowed to be shared with the guests.
+  no runner devices will be allowed to be shared with the guests.
 order: 10
