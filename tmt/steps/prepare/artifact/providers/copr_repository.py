@@ -128,7 +128,7 @@ class CoprRepositoryProvider(ArtifactProvider):
             )
         except tmt.utils.RunError as error:
             raise tmt.utils.PrepareError(
-                f"Failed to read '{repo_filename}' from the guest. "
+                f"Failed to read '{repo_filename}' from the guest."
             ) from error
 
         self.repository = Repository.from_content(output.stdout or '', self.copr_repo, self.logger)
