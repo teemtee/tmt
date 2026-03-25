@@ -1,5 +1,6 @@
 import abc
 import copy
+import functools
 import threading
 from collections.abc import Iterable, Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
@@ -20,6 +21,7 @@ TaskResultT = TypeVar('TaskResultT')
 TaskT = TypeVar('TaskT', bound='Task')  # type: ignore[type-arg]
 
 
+@functools.total_ordering
 class Task(abc.ABC, Generic[TaskResultT]):
     """
     A base class for queueable actions.
@@ -57,14 +59,15 @@ class Task(abc.ABC, Generic[TaskResultT]):
     def __init__(self, logger: Logger) -> None:
         self.logger = logger
 
-    def __repr__(self) -> str:
-        return f'<{self.__class__.__name__} name={self.name} order={self.order}>'
-
     # Magic methods to support queue sorting: sort tasks by their `order`,
-    # `order=None` means "undefined" and comes last.
+    # `order=None` means "undefined" and comes last. `@total_ordering`
+    # should fill in the blanks.
     def __gt__(self, other: Any) -> bool:
         if not isinstance(other, self.__class__):
-            return False
+            raise GeneralError(
+                f"Cannot compare task of type '{self.__class__.__name__}'"
+                f" with '{type(other).__name__}'."
+            )
 
         if self.order is None and other.order is None:
             return False
@@ -80,23 +83,14 @@ class Task(abc.ABC, Generic[TaskResultT]):
 
         raise NotImplementedError
 
-    def __gte__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
-            return True
+            raise GeneralError(
+                f"Cannot compare task of type '{self.__class__.__name__}'"
+                f" with '{type(other).__name__}'."
+            )
 
-        if self.order is None and other.order is None:
-            return True
-
-        if self.order is None and other.order is not None:
-            return True
-
-        if self.order is not None and other.order is None:
-            return False
-
-        if self.order is not None and other.order is not None:
-            return self.order >= other.order
-
-        raise NotImplementedError
+        return self.order == other.order
 
     @property
     @abc.abstractmethod
@@ -403,8 +397,8 @@ class Queue(list[TaskT]):
     #: otherwise, :py:meth:`run` will quit.
     _keep_running: bool
 
-    #: Tracks how many tasks were added to the queue.
-    _task_counter: int
+    #: Number of tasks that were already invoked.
+    _invoked_tasks: int
 
     #: Lock protecting modifications of the queue, i.e. the list of
     #: tasks.
@@ -417,22 +411,24 @@ class Queue(list[TaskT]):
         self._keep_running = True
         self._logger = logger
 
-        self._task_counter = 0
+        self._invoked_tasks = 0
         self._queue_lock = threading.Lock()
 
     @property
-    def _first_task_index(self) -> int:
+    def _head_task_number(self) -> int:
         """
-        Index of the first task in the queue, including all completed tasks.
-
-        :raises GeneralError: when accessed without holding the queue
-            lock, :py:attr:`_queue_lock`.
+        Task number of the task currently at the beginning of the queue.
         """
 
-        if not self._queue_lock.locked():
-            raise GeneralError("Cannot access queued tasks without holding a queue lock.")
+        return self._invoked_tasks
 
-        return self._task_counter - len(self)
+    @property
+    def _tail_task_number(self) -> int:
+        """
+        Task number of the last task in the queue.
+        """
+
+        return self._invoked_tasks + len(self)
 
     def enqueue_task(self, task: TaskT) -> None:
         """
@@ -443,13 +439,6 @@ class Queue(list[TaskT]):
         # isn't.
         with self._queue_lock:
             self.append(task)
-            self._task_counter += 1
-
-            self._logger.info(
-                f'queued {self.name} task #{self._task_counter}',
-                task.name,
-                color='cyan',
-            )
 
             # Reorder the remaining tasks.
             current_order = [task.name for task in self]
@@ -458,22 +447,25 @@ class Queue(list[TaskT]):
 
             new_order = [task.name for task in self]
 
-            if current_order != new_order:
+            if current_order == new_order:
                 self._logger.info(
-                    f'queued {self.name} changed order',
+                    f'queued {self.name} task #{self._tail_task_number}',
+                    task.name,
+                    color='cyan',
+                )
+
+            else:
+                self._logger.info(
+                    f'queued {self.name} task #{self._tail_task_number}, caused queue reordering',
+                    task.name,
                     color='cyan',
                 )
 
                 # PLR1704: redefining `task` - on purpose, parameter is
                 # no longer needed for anything.
-                for i, task in enumerate(self):  # noqa: PLR1704
-                    # The number assigned to each task is preseted as if
-                    # it continues after already completed tasks. For
-                    # example, 10 tasks at the beginning, 8 tasks left
-                    # to run, the message below should state `task #3`
-                    # for the first task.
+                for task_number, task in enumerate(self, start=self._head_task_number):  # noqa: PLR1704
                     self._logger.info(
-                        f'queued {self.name} task #{self._first_task_index + i + 1}',
+                        f'queued {self.name} task #{task_number}',
                         task.name,
                         color='cyan',
                     )
@@ -497,13 +489,15 @@ class Queue(list[TaskT]):
         # after addition, which is not atomic.
         while self:
             with self._queue_lock:
-                task_index = self._first_task_index
+                self._invoked_tasks += 1
+
+                task_number = self._head_task_number
                 task = self.pop(0)
 
             self._logger.info('')
 
             self._logger.info(
-                f'{self.name} task #{task_index + 1}',
+                f'{self.name} task #{task_number}',
                 task.name,
                 color='cyan',
             )
