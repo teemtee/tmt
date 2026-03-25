@@ -120,26 +120,3 @@ get_koji_nvr() {
     KOJI_NVR="${BASH_REMATCH[1]}"
     rlLogInfo "Found NVR: $KOJI_NVR"
 }
-
-# Setup the koji 'stream' profile for CentOS Stream koji
-#
-# Creates /etc/koji.conf.d/stream.conf if it does not already exist.
-# Required before using 'koji --profile stream' on hosts that do not
-# have the profile pre-configured.
-#
-# Usage: setup_koji_stream_profile
-#
-setup_koji_stream_profile() {
-    if koji --profile stream help &>/dev/null; then
-        rlLogInfo "koji stream profile already configured"
-        return
-    fi
-    rlRun "mkdir -p /etc/koji.conf.d"
-    cat > /etc/koji.conf.d/stream.conf << 'EOF'
-[stream]
-server = https://koji.stream.centos.org/kojihub
-weburl = https://koji.stream.centos.org/koji
-topurl = https://kojipkgs.stream.centos.org/
-EOF
-    rlRun "koji --profile stream help &>/dev/null" 0 "Verify koji stream profile"
-}
