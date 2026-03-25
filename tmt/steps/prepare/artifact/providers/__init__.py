@@ -183,11 +183,18 @@ class ArtifactProvider(ABC):
     """
     Base class for artifact providers.
 
-    Each provider must implement:
+    Two provider patterns exist:
 
-    * parsing and validating the artifact ID,
-    * listing available artifacts,
-    * downloading a single given artifact.
+    * **Download providers** (e.g. ``koji.build``): override :py:attr:`artifacts`
+      as a ``@cached_property``, implement :py:meth:`_download_artifact` and
+      :py:meth:`contribute_to_shared_repo`. Do not use :py:attr:`_artifacts`.
+
+    * **Repository providers** (e.g. ``copr.repository``): implement
+      :py:meth:`get_repositories`. After installation, :py:meth:`enumerate_artifacts`
+      queries the package manager and populates :py:attr:`_artifacts`.
+
+    .. TODO: Refactor into two distinct abstract base classes to make the
+       required interface explicit at the type level.
     """
 
     #: Identifier of this artifact provider. It is valid and unique
@@ -199,8 +206,10 @@ class ArtifactProvider(ABC):
     #: Lower values have higher priority in package managers.
     repository_priority: int
 
-    #: Artifacts enumerated from this provider's repositories after they have
-    #: been installed on the guest.
+    #: Artifacts enumerated from this provider's repositories via
+    #: :py:meth:`enumerate_artifacts`. Populated only for repository providers
+    #: after their repositories are installed on the guest.
+    #: Not used by download providers (which override :py:attr:`artifacts` directly).
     _artifacts: list[ArtifactInfo]
 
     def __init__(self, raw_id: str, repository_priority: int, logger: tmt.log.Logger):
@@ -334,8 +343,11 @@ class ArtifactProvider(ABC):
         self, guest: Guest
     ) -> None:  # TODO: refactor this once the NEVRA parsing is centralized.
         """
-        Enumerate artifacts available from this provider after its repositories
-        have been installed on the guest.
+        Enumerate artifacts from repositories returned by :py:meth:`get_repositories`
+        and populate :py:attr:`_artifacts`. Call this after repositories are installed.
+
+        For repository providers only. Does not include artifacts contributed to
+        the shared repository — those are handled by :py:meth:`contribute_to_shared_repo`.
         """
         for repository in self.get_repositories():
             try:
