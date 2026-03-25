@@ -2,6 +2,6 @@ description: |
     The :ref:`/plugins/provision/container` plugin now supports the
     ``expose-device`` key to expose runner devices to the guest. For example,
     ``expose-device: /dev/kvm`` can be used for testing ``qemu`` with ``kvm``
-    acceleration. ``--exposable-runner-devices``/``TMT_EXPOSABLE_RUNNER_DEVICES``
+    acceleration. Option ``--exposable-runner-devices`` or environment variable ``TMT_EXPOSABLE_RUNNER_DEVICES``
     **must** be specified to use this.
 order: 11
