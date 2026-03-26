@@ -63,7 +63,7 @@ class Task(abc.ABC, Generic[TaskResultT]):
     # `order=None` means "undefined" and comes last. `@total_ordering`
     # should fill in the blanks.
     def __gt__(self, other: Any) -> bool:
-        if not isinstance(other, self.__class__):
+        if not isinstance(other, Task):
             raise GeneralError(
                 f"Cannot compare task of type '{self.__class__.__name__}'"
                 f" with '{type(other).__name__}'."
@@ -84,7 +84,7 @@ class Task(abc.ABC, Generic[TaskResultT]):
         raise NotImplementedError
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, self.__class__):
+        if not isinstance(other, Task):
             raise GeneralError(
                 f"Cannot compare task of type '{self.__class__.__name__}'"
                 f" with '{type(other).__name__}'."
