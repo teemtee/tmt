@@ -276,15 +276,9 @@ class _RecipeStep(SpecBasedContainer[_RawRecipeStep, _RawRecipeStep], Serializab
 
     @classmethod
     def from_step(cls, step: 'Step') -> '_RecipeStep':
-        try:
-            step_data = step.data
-        except tmt.utils.SpecificationError:
-            # Do not save invalid phases
-            step_data = []
-
         return _RecipeStep(
             enabled=bool(step.enabled),
-            phases=[phase.to_minimal_spec() for phase in step_data],
+            phases=step._raw_data,
         )
 
     # ignore[override]: does not match the signature on purpose, we need to pass logger
@@ -334,16 +328,10 @@ class _RecipeDiscoverStep(_RecipeStep):
 
     @classmethod
     def from_step(cls, step: 'Step') -> '_RecipeDiscoverStep':
-        try:
-            step_data = step.data
-        except tmt.utils.SpecificationError:
-            # Do not save invalid phases
-            step_data = []
-
         assert isinstance(step, Discover)
         return _RecipeDiscoverStep(
             enabled=bool(step.enabled),
-            phases=[phase.to_minimal_spec() for phase in step_data],
+            phases=step._raw_data,
             tests=[_RecipeTest.from_test_origin(test_origin) for test_origin in step.tests()],
         )
 
@@ -374,14 +362,9 @@ class _RecipeExecuteStep(_RecipeStep):
 
     @classmethod
     def from_step(cls, step: 'Step') -> '_RecipeExecuteStep':
-        try:
-            step_data = step.data
-        except tmt.utils.SpecificationError:
-            # Do not save invalid phases
-            step_data = []
         return _RecipeExecuteStep(
             enabled=bool(step.enabled),
-            phases=[phase.to_minimal_spec() for phase in step_data],
+            phases=step._raw_data,
             results_path=(step.step_workdir / 'results.yaml').relative_to(step.run_workdir),
         )
 

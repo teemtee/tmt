@@ -30,7 +30,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Test recipe loading of imported plan"
-        rlRun -s "tmt run -vvv --scratch --id $run --recipe import.yaml discover"
+        rlRun -s "tmt run -vvv --scratch --id $run --recipe import.yaml"
         rlAssertGrep "summary: 2 tests selected" $rlRun_LOG
     rlPhaseEnd
 

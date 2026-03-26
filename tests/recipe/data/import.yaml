@@ -16,22 +16,9 @@ plans:
     discover:
         enabled: true
         phases:
-          - name: default-0
-            how: fmf
-            order: 50
-            url-content-type: git
-            dist-git-source: false
-            dist-git-download-only: false
-            dist-git-install-builddeps: false
-            filter:
-              - tag:remote
-            modified-only: false
-            dist-git-init: false
-            dist-git-remove-fmf-root: false
-            dist-git-merge: false
-            sync-repo: false
-            fmf-id: false
-            prune: false
+          - how: fmf
+            filter: tag:remote
+            name: default-0
         tests:
           - name: /tests/one
             discover-phase: default-0
@@ -70,58 +57,40 @@ plans:
     provision:
         enabled: false
         phases:
-          - name: default-0
-            how: local
-            order: 50
-            become: false
+          - how: local
+            name: default-0
     prepare:
         enabled: false
         phases:
           - name: enable-latest-copr
-            how: install
-            order: 50
             summary: Enable copr repo with the latest tmt bits
-            copr:
-              - '@teemtee/latest'
-            missing: fail
+            how: install
+            copr: '@teemtee/latest'
           - name: disable-tag-repo
-            how: shell
-            order: 50
             summary: Completely disable the tag repository
-            script:
-              - "dnf repolist | grep testing-farm-tag-repository || exit 0\nif command
-                -v dnf5; then\n    dnf config-manager setopt testing-farm-tag-repository.enabled=0\n\
+            how: shell
+            script: "dnf repolist | grep testing-farm-tag-repository || exit 0\nif
+                command -v dnf5; then\n    dnf config-manager setopt testing-farm-tag-repository.enabled=0\n\
                 else\n    dnf config-manager --set-disabled testing-farm-tag-repository\n\
                 fi\n"
     execute:
         enabled: false
         phases:
-          - name: default-0
-            how: tmt
-            order: 50
-            duration: 1h
-            ignore-duration: false
-            exit-first: false
-            interactive: false
-            restraint-compatible: false
-            no-progress-bar: false
+          - how: tmt
+            name: default-0
         results-path: plans/import/execute/results.yaml
     report:
         enabled: false
         phases:
           - name: default-0
             how: display
-            order: 50
-            display-guest: auto
     finish:
         enabled: false
         phases:
           - name: default-0
             how: shell
-            order: 50
     cleanup:
         enabled: false
         phases:
           - name: default-0
             how: tmt
-            order: 50
