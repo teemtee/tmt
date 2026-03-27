@@ -3,8 +3,6 @@ Copr Repository Artifact Provider
 """
 
 import re
-from collections.abc import Sequence
-from functools import cached_property
 from re import Pattern
 from typing import Optional
 
@@ -93,11 +91,10 @@ class CoprRepositoryProvider(ArtifactProvider):
 
         return value
 
-    @cached_property
-    def artifacts(self) -> Sequence[ArtifactInfo]:
-        # Copr repository provider does not enumerate individual artifacts.
-        # The repository is enabled and packages are available through the package manager.
-        return []
+    def get_repositories(self) -> list[Repository]:
+        if self.repository is None:
+            return []
+        return [self.repository]
 
     def _download_artifact(self, artifact: ArtifactInfo, guest: Guest, destination: Path) -> None:
         """This provider only enables repositories; it does not download individual RPMs."""
