@@ -414,6 +414,9 @@ class Queue(list[TaskT]):
         self._invoked_tasks = 0
         self._queue_lock = threading.Lock()
 
+    # We only need to track the head and tail to properly calculate the
+    # task queue number dynamically. Adding task number to each task
+    # would require re-defining it whenever the queue get reordered.
     @property
     def _head_task_number(self) -> int:
         """
