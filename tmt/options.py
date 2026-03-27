@@ -647,11 +647,34 @@ def create_method_class(methods: MethodDictType) -> type[click.Command]:
             how = None
             subcommands = tmt.steps.STEPS + tmt.steps.ACTIONS + ['tests', 'plans']
 
+            def _effective_nargs(param: click.Parameter) -> int:
+                if isinstance(param, click.core.Option) and (param.is_flag or param.count):
+                    return 0
+                return param.nargs
+
             def _find_option_by_arg(arg: str) -> Optional[click.Parameter]:
+                # Check base command params first
                 for option in self.params:
                     if arg in option.opts or arg in option.secondary_opts:
                         return option
-                return None
+
+                # Search across all plugin method commands for plugin-specific
+                # options. The same short option (e.g. `-i`) may appear in
+                # multiple plugins with different nargs (flag vs value-consuming).
+                # Collect all matches and return the one that consumes the most
+                # arguments — this is conservative and ensures _find_how properly
+                # skips over option values.
+                matches: list[click.Parameter] = []
+                for method_command in methods.values():
+                    for option in method_command.params:
+                        if arg in option.opts or arg in option.secondary_opts:
+                            matches.append(option)
+                            break
+
+                if not matches:
+                    return None
+
+                return max(matches, key=_effective_nargs)
 
             def _find_how(args: list[str]) -> Optional[str]:
                 while args:
