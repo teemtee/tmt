@@ -40,7 +40,6 @@ from tmt.utils import (
     CommandOutput,
     Environment,
     EnvVarValue,
-    GeneralError,
     HasEnvironment,
     HasStepWorkdir,
     Path,
@@ -379,22 +378,28 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
         return environment
 
     def invoke_check(self, event: CheckEvent, check: Check) -> list[CheckResult]:
-        with Stopwatch() as timer:
-            results = check.go(
-                event=event,
-                invocation=self,
-                environment=self.environment,
-                logger=self.logger,
-            )
+        results, exc, timer = Stopwatch.measure(
+            check.go,
+            event=event,
+            invocation=self,
+            environment=self.environment,
+            logger=self.logger,
+        )
 
-        for result in results:
-            result.event = event
+        if exc is not None:
+            raise exc
 
-            result.start_time = timer.start_time_formatted
-            result.end_time = timer.end_time_formatted
-            result.duration = timer.duration_formatted
+        if results is not None:
+            for result in results:
+                result.event = event
 
-        return results
+                result.start_time = timer.start_time_formatted
+                result.end_time = timer.end_time_formatted
+                result.duration = timer.duration_formatted
+
+            return results
+
+        raise tmt.utils.GeneralError('Check produced no results but raised no exception.')
 
     def invoke_checks(self, event: CheckEvent, checks: Sequence[Check]) -> list[CheckResult]:
         return list(
@@ -516,21 +521,19 @@ class TestInvocation(HasStepWorkdir, HasEnvironment):
             if error is not None:
                 self.exceptions.append(error)
 
-                if isinstance(error, tmt.utils.RunError):
-                    output = error.output
-
-                    self.return_code = error.returncode
-
-                else:
+                if not isinstance(error, tmt.utils.RunError):
                     raise error
 
-            elif output is not None:
+                self.return_code = error.returncode
+
+                return error.output
+
+            if output is not None:
                 self.return_code = tmt.utils.ProcessExitCodes.SUCCESS
 
-            else:
-                raise GeneralError('Command produced no output but raised no exception.')
+                return output
 
-            return output
+            raise tmt.utils.GeneralError('Test produced no output but raised no exception')
 
         if deadline is None:
             output = _invoke()
