@@ -26,7 +26,7 @@ rlJournalStart
             rlRun -s "$tmt login -c true -s $step"
 
             if [ "$step" = "provision" ]; then
-                rlRun "grep '^    $step$' -A13 '$rlRun_LOG' | grep -i interactive"
+                rlRun "grep '^    $step$' -A14 '$rlRun_LOG' | grep -i interactive"
             elif [ "$step" = "prepare" ]; then
                 rlRun "grep '^    $step$' -A17 '$rlRun_LOG' | grep -i interactive"
             elif [ "$step" = "execute" ]; then
