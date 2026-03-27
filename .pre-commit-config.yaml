@@ -147,7 +147,7 @@ repos:
           )$
 
   - repo: https://github.com/ansible-community/ansible-lint.git
-    rev: v26.2.0
+    rev: v26.3.0
     hooks:
       - id: ansible-lint
         language: python # Required for Renovate additional_dependencies
@@ -164,7 +164,7 @@ repos:
           # in order to be parsed by ansible-lint
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.15.4
+    rev: v0.15.5
     hooks:
       - id: ruff-check
         args:
@@ -192,7 +192,7 @@ repos:
           - "fmf>=1.6.0"
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
+    rev: v2.4.2
     hooks:
       - id: codespell
         additional_dependencies:
@@ -255,7 +255,7 @@ repos:
           - 'versionadded,versionchanged'
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.10.7
+    rev: 0.10.9
     hooks:
       # Keep pyproject.toml and uv.lock in sync
       - id: uv-lock
