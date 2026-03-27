@@ -13,6 +13,16 @@ import tmt.utils
 from tmt.container import container, simple_field
 from tmt.utils import Command, CommandOutput, GeneralError, Path, PrepareError, ShellScript
 
+if TYPE_CHECKING:
+    from tmt._compat.typing import TypeAlias
+    from tmt.guest import Guest
+
+    #: A type of package manager names.
+    GuestPackageManager: TypeAlias = str
+
+    #: A package origin: either an actual repository name or a :class:`SpecialPackageOrigin`.
+    PackageOrigin: TypeAlias = Union[str, 'SpecialPackageOrigin']
+
 
 @container(frozen=True)
 class Version:
@@ -169,17 +179,6 @@ class SpecialPackageOrigin(str, enum.Enum):
     #: Package is installed but its source repository cannot be determined
     #: (e.g. pre-installed in a container image).
     UNKNOWN = '<unknown>'
-
-
-if TYPE_CHECKING:
-    from tmt._compat.typing import TypeAlias
-    from tmt.guest import Guest
-
-    #: A type of package manager names.
-    GuestPackageManager: TypeAlias = str
-
-    #: A package origin: either an actual repository name or a :class:`SpecialPackageOrigin`.
-    PackageOrigin: TypeAlias = Union[str, SpecialPackageOrigin]
 
 
 #
