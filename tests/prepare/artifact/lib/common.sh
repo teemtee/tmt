@@ -7,21 +7,18 @@
 # and image_name variables, and builds the container image.
 #
 # Sets the following global variables:
-#   fedora_release - The Fedora release version (e.g., "43"), Fedora only
-#   centos_release - The CentOS Stream release version (e.g., "10"), CentOS only
+#   release - The distro release version (e.g., "43" for Fedora, "10" for CentOS)
 #   image_name - The container image name (e.g., "fedora/43:latest")
 #
 # Usage: setup_distro_environment
 #
 setup_distro_environment() {
+    release=$(grep VERSION_ID /etc/os-release | cut -d= -f2 | tr -d '"')
+
     if rlIsFedora; then
-        # TODO: Temporary hardcoded release - should be taken from function input
-        fedora_release=43
-        image_name="fedora/${fedora_release}:latest"
+        image_name="fedora/${release}:latest"
     elif rlIsCentOS; then
-        # TODO: Temporary hardcoded release - should be taken from function input
-        centos_release=10
-        image_name="centos/stream${centos_release}/upstream:latest"
+        image_name="centos/stream${release}/upstream:latest"
     else
         rlDie "Test requires Fedora or CentOS"
     fi

@@ -17,7 +17,7 @@ rlJournalStart
         setup_distro_environment
 
         # 1. REMOTE URL (noarch)
-        get_koji_nvr "cowsay" "f${fedora_release}"
+        get_koji_nvr "cowsay" "f${release}"
         COWSAY_NVR="$KOJI_NVR"
 
         # Construct URL: Parses NVR (Name-Version-Release) and assembles Koji URL
@@ -27,7 +27,7 @@ rlJournalStart
         rlLog "Using cowsay URL: $REMOTE_RPM_URL"
 
         # 2. LOCAL FILE (arch-specific)
-        get_koji_nvr "figlet" "f${fedora_release}"
+        get_koji_nvr "figlet" "f${release}"
         FIGLET_NVR="$KOJI_NVR"
 
         rlRun "pushd $rpm_dir && koji download-build --arch=$ARCH $FIGLET_NVR; popd" 0 "Download figlet RPM for local test"
@@ -35,8 +35,8 @@ rlJournalStart
         rlAssertExists "$LOCAL_RPM"
 
         rlRun "multi_rpm_dir=$(mktemp -d)" 0 "Create directory for multiple RPMs"
-        # Use $fedora_release (set by setup_distro_environment) to ensure packages
-        rlRun "dnf download --forcearch=$ARCH --releasever=$fedora_release --destdir=$multi_rpm_dir boxes fortune-mod" 0 "Download boxes and fortune-mod RPMs using dnf"
+        # Use $release (set by setup_distro_environment) to ensure packages
+        rlRun "dnf download --forcearch=$ARCH --releasever=$release --destdir=$multi_rpm_dir boxes fortune-mod" 0 "Download boxes and fortune-mod RPMs using dnf"
     rlPhaseEnd
 
     rlPhaseStartTest "Test file provider with remote URL, local RPM, and directory with multiple RPMs"
