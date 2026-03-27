@@ -1603,14 +1603,14 @@ class CommandCollector(abc.ABC):
         *,
         sourced_files: Optional[list[Path]] = None,
         cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
+        environment: Optional[tmt.utils.Environment] = None,
     ) -> None:
         """
         Collect a command for later batch execution.
 
         :param command: the command to collect.
         :param cwd: working directory for the command.
-        :param env: environment variables for the command.
+        :param environment: environment variables for the command.
         """
 
         raise NotImplementedError
@@ -2147,7 +2147,7 @@ class Guest(
         friendly_command: Optional[str] = None,
         silent: bool = False,
         cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
+        environment: Optional[tmt.utils.Environment] = None,
         interactive: bool = False,
         log: Optional[tmt.log.LoggingFunction] = None,
         **kwargs: Any,
@@ -2167,7 +2167,7 @@ class Guest(
             reduced.
         :param cwd: if set, command would be executed in the given directory,
             otherwise the current working directory is used.
-        :param env: environment variables to combine with the current environment
+        :param environment: environment variables to combine with the current environment
             before running the command.
         :param interactive: if set, the command would be executed in an interactive
             manner, i.e. with stdout and stdout connected to terminal for live
@@ -2185,7 +2185,7 @@ class Guest(
             friendly_command=friendly_command,
             silent=silent,
             cwd=cwd,
-            env=env,
+            environment=environment,
             interactive=interactive,
             log=log or self._command_verbose_logger,
             **kwargs,
@@ -2278,7 +2278,7 @@ class Guest(
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
+        environment: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: Literal[True] = True,
@@ -2298,7 +2298,7 @@ class Guest(
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
+        environment: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: Literal[False] = False,
@@ -2318,7 +2318,7 @@ class Guest(
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
+        environment: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: bool = True,
@@ -2336,7 +2336,7 @@ class Guest(
 
         :param command: either a command or a shell script to execute.
         :param cwd: if set, execute command in this directory on the guest.
-        :param env: if set, set these environment variables before running the command.
+        :param environment: if set, set these environment variables before running the command.
         :param friendly_command: nice, human-friendly representation of the command.
         :param immediately: if False, the command may be collected for later
             batch execution on guests that support it (e.g., bootc guests).
@@ -2850,7 +2850,7 @@ class GuestSsh(Guest, CommandCollector):
         *,
         sourced_files: Optional[list[Path]] = None,
         cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
+        environment: Optional[tmt.utils.Environment] = None,
     ) -> None:
         """
         Collect a command for image mode container build.
@@ -2871,7 +2871,7 @@ class GuestSsh(Guest, CommandCollector):
         # Build the command script using the same approach as execute()
         # Start with environment exports
         collected_commands: ShellScript = ShellScript.from_scripts(
-            self._prepare_environment(env).to_shell_exports()
+            self._prepare_environment(environment).to_shell_exports()
         )
 
         # Add working directory change (properly quoted like in execute())
@@ -3247,7 +3247,7 @@ class GuestSsh(Guest, CommandCollector):
                 friendly_command=friendly_command,
                 silent=silent,
                 cwd=parent.plan.worktree,
-                env=self._prepare_environment(),
+                environment=self._prepare_environment(),
                 log=log,
             )
         except tmt.utils.RunError as exc:
@@ -3301,7 +3301,7 @@ class GuestSsh(Guest, CommandCollector):
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
+        environment: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: Literal[True] = True,
@@ -3321,7 +3321,7 @@ class GuestSsh(Guest, CommandCollector):
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
+        environment: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: Literal[False] = False,
@@ -3340,7 +3340,7 @@ class GuestSsh(Guest, CommandCollector):
         self,
         command: Union[tmt.utils.Command, tmt.utils.ShellScript],
         cwd: Optional[Path] = None,
-        env: Optional[tmt.utils.Environment] = None,
+        environment: Optional[tmt.utils.Environment] = None,
         friendly_command: Optional[str] = None,
         test_session: bool = False,
         immediately: bool = True,
@@ -3358,7 +3358,7 @@ class GuestSsh(Guest, CommandCollector):
 
         :param command: either a command or a shell script to execute.
         :param cwd: execute command in this directory on the guest.
-        :param env: if set, set these environment variables before running the command.
+        :param environment: if set, set these environment variables before running the command.
         :param friendly_command: nice, human-friendly representation of the command.
         :param test_session: if True, this is the actual test being run.
         :param immediately: if False, the command may be collected for later
@@ -3377,7 +3377,9 @@ class GuestSsh(Guest, CommandCollector):
         # For guests in image mode collect non testing commands with
         # immediately=False for later batch execution.
         if not immediately and self.facts.is_image_mode:
-            self.collect_command(command, sourced_files=sourced_files, cwd=cwd, env=env)
+            self.collect_command(
+                command, sourced_files=sourced_files, cwd=cwd, environment=environment
+            )
             return None
 
         # Abort if guest is unavailable
@@ -3402,7 +3404,7 @@ class GuestSsh(Guest, CommandCollector):
         # Accumulate all necessary commands - they will form a "shell" script, a single
         # string passed to SSH to execute on the remote machine.
         remote_commands: ShellScript = ShellScript.from_scripts(
-            self._prepare_environment(env).to_shell_exports()
+            self._prepare_environment(environment).to_shell_exports()
         )
 
         # Change to given directory on guest if cwd provided
