@@ -45,8 +45,8 @@ jobs:
       ref: ${{ inputs.ref }}
     needs: [ pre-commit ]
 
-  pass:
-    name: ✅ Pass
+  overall-outcome:
+    name: GitHub Actions Overall Outcome
     if: always()
     needs: [ pre-commit, build-wheel, shellcheck, doc-tests ]
     runs-on: ubuntu-slim
