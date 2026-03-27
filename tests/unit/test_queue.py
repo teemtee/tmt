@@ -5,8 +5,6 @@ from tmt.log import Logger
 from tmt.queue import Queue
 from tmt.queue import Task as _Task
 
-from . import MATCH, assert_log
-
 
 class Task(_Task[None]):
     def __init__(self, name: str, logger: Logger) -> None:
@@ -58,7 +56,7 @@ def test_reordering(root_logger: Logger, caplog) -> None:
 
     queue: Queue[Task] = Queue('dummy queue', root_logger)
 
-    tasks: Task[None] = [
+    tasks: list[Task[None]] = [
         Task('task 1', root_logger),
         Task('task 2', root_logger),
         Task('task 3', root_logger),
@@ -95,16 +93,5 @@ def test_reordering(root_logger: Logger, caplog) -> None:
 
     for task in tasks:
         queue.enqueue_task(task)
-
-    assert_log(caplog, message=MATCH(r'queued dummy queue task #1: task 1'))
-    assert_log(
-        caplog, message=MATCH(r'queued dummy queue task #2, caused queue reordering: task 2')
-    )
-    assert_log(
-        caplog, message=MATCH(r'queued dummy queue task #5, caused queue reordering: task 5')
-    )
-    assert_log(
-        caplog, message=MATCH(r'queued dummy queue task #6, caused queue reordering: task 6')
-    )
 
     assert [task.name for task in queue] == expected_order

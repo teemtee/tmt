@@ -464,6 +464,25 @@ class Queue(list[TaskT]):
 
         return self._invoked_tasks + len(self)
 
+    def _show_tasks(self, label: str) -> None:
+        self._logger.info(label, color='cyan')
+
+        if not self:
+            return
+
+        task_logger = self._logger.descend()
+
+        # Narrow type: this shall no longer be undefined as we
+        # do have at least one item in the queue.
+        assert self._head_task_number is not None
+
+        for task_number, task in enumerate(self, start=self._head_task_number):
+            task_logger.info(
+                f'#{task_number}',
+                task.name,
+                color='cyan',
+            )
+
     def enqueue_task(self, task: TaskT) -> None:
         """
         Put new task into a queue
@@ -474,6 +493,11 @@ class Queue(list[TaskT]):
         with self._queue_lock:
             self.append(task)
 
+            self._logger.debug(
+                f'{self.name} queue: added task',
+                task.name,
+            )
+
             # Reorder the remaining tasks.
             current_order = [task.name for task in self]
 
@@ -481,32 +505,8 @@ class Queue(list[TaskT]):
 
             new_order = [task.name for task in self]
 
-            if current_order == new_order:
-                self._logger.info(
-                    f'queued {self.name} task #{self._tail_task_number}',
-                    task.name,
-                    color='cyan',
-                )
-
-            else:
-                # Narrow type: this shall no longer be undefined as we
-                # do have at least one item in the queue.
-                assert self._head_task_number is not None
-
-                self._logger.info(
-                    f'queued {self.name} task #{self._tail_task_number}, caused queue reordering',
-                    task.name,
-                    color='cyan',
-                )
-
-                # PLR1704: redefining `task` - on purpose, parameter is
-                # no longer needed for anything.
-                for task_number, task in enumerate(self, start=self._head_task_number):  # noqa: PLR1704
-                    self._logger.info(
-                        f'queued {self.name} task #{task_number}',
-                        task.name,
-                        color='cyan',
-                    )
+            if current_order != new_order:
+                self._show_tasks(f'{self.name} queue: reordering after task {task.name}')
 
     def run(self) -> Iterator[TaskT]:
         """
@@ -515,6 +515,8 @@ class Queue(list[TaskT]):
         Tasks are executed in the order, for each invoked task new
         instance of this class is yielded.
         """
+
+        self._show_tasks(f'queued {self.name} tasks')
 
         # `self` test does not need to be protected by a lock: nothing
         # except the `pop()` below removes tasks from the queue, so if
