@@ -10,7 +10,7 @@ from tmt.checks import Check, CheckEvent, CheckPlugin, _RawCheck, provides_check
 from tmt.container import container, field
 from tmt.guest import GuestCapability
 from tmt.result import CheckResult, ResultOutcome, save_failures
-from tmt.utils import Path, Stopwatch
+from tmt.utils import Path, RunError, ShellScript, Stopwatch
 from tmt.utils.hints import hints_as_notes
 
 if TYPE_CHECKING:
@@ -203,7 +203,19 @@ class Dmesg(CheckPlugin[DmesgCheck]):
         # Avoid circular imports
         import tmt.base.core
 
-        return [tmt.base.core.DependencySimple('/usr/bin/dmesg')]
+        # TODO: replace with DependencyCommand('dmesg') once implemented,
+        # see https://github.com/teemtee/tmt/issues/4754
+        # On pre-usr-merge systems (e.g. RHEL 6), dmesg lives at /bin/dmesg
+        # and the rpm database tracks that path rather than /usr/bin/dmesg.
+        for candidate in ('/usr/bin/dmesg', '/bin/dmesg'):
+            try:
+                guest.execute(ShellScript(f'rpm -q --whatprovides {candidate}'))
+                return [tmt.base.core.DependencySimple(candidate)]
+            except RunError:
+                continue
+
+        # Neither path is rpm-tracked; fall back to the package name.
+        return [tmt.base.core.DependencySimple('util-linux')]
 
     @classmethod
     def before_test(
