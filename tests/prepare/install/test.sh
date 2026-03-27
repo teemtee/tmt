@@ -3,32 +3,26 @@
 . ../../images.sh || exit 1
 
 function fetch_downloaded_packages () {
+    image="$1"
     in_subdirectory="$2"
 
     if [ ! -e $package_cache/tree.rpm ]; then
-        if [ "$IMAGE_MODE" = "yes" ]; then
-            # For image mode, download RPMs directly on the runner.
-            # RPMs may not exactly match the guest distro version, but
-            # that's fine — we're testing the local RPM installation
-            # mechanism (Containerfile COPY + dnf install), not package
-            # compatibility.
-            rlRun "dnf download --destdir $package_cache tree diffutils"
-            rlRun "mv $package_cache/tree-*.rpm $package_cache/tree.rpm"
-            rlRun "mv $package_cache/diffutils-*.rpm $package_cache/diffutils.rpm"
-        else
-            # For some reason, this command will get stuck in rlRun...
-            container_id="$(podman run -d $1 sleep 3600)"
+        # Transform image mode qcow2 URL to a distro compatible container image for artifact download
+        [ "$IMAGE_MODE" = "yes" ] && image=${IMAGE_MODE_QCOW2_CONTAINER_MAP["$image"]}
 
-            rlRun "podman exec $container_id bash -c \"set -x; \
-                                                        dnf install -y 'dnf-command(download)' \
-                                                        && dnf download --destdir /tmp tree diffutils \
-                                                        && mv /tmp/tree*.rpm /tmp/tree.rpm \
-                                                        && mv /tmp/diffutils*.rpm /tmp/diffutils.rpm\""
-            rlRun "podman cp $container_id:/tmp/tree.rpm $package_cache/"
-            rlRun "podman cp $container_id:/tmp/diffutils.rpm $package_cache/"
-            rlRun "podman kill $container_id"
-            rlRun "podman rm $container_id"
-        fi
+        # For some reason, this command will get stuck in rlRun...
+        container_id="$(podman run -d $image sleep 3600)"
+
+        rlRun "podman exec $container_id bash -c \"set -x; \
+                                                    dnf install -y 'dnf-command(download)' \
+                                                    && dnf download --destdir /tmp tree diffutils \
+                                                    && mv /tmp/tree*.rpm /tmp/tree.rpm \
+                                                    && mv /tmp/diffutils*.rpm /tmp/diffutils.rpm\""
+
+        rlRun "podman cp $container_id:/tmp/tree.rpm $package_cache/"
+        rlRun "podman cp $container_id:/tmp/diffutils.rpm $package_cache/"
+        rlRun "podman kill $container_id"
+        rlRun "podman rm $container_id"
     fi
 
     if [ -z "$in_subdirectory" ]; then
@@ -173,13 +167,12 @@ rlJournalStart
             rlAssertGrep "package manager: $package_manager$" $rlRun_LOG
 
             if is_image_mode "$image"; then
-                # Image mode uses Containerfile build, image switch and reboot.
-                # The prepare step itself handles the reboot — if it completes
-                # successfully, packages are baked into the new image.
                 rlAssertGrep "package: building container image with dependencies" $rlRun_LOG
                 rlAssertGrep "switching to new image" $rlRun_LOG
                 rlAssertGrep "rebooting to apply new image" $rlRun_LOG
-            elif is_ubuntu "$image" || is_debian "$image"; then
+            fi
+
+            if is_ubuntu "$image" || is_debian "$image"; then
                 # Runs 1 extra phase, to populate local caches.
                 rlAssertGrep "summary: 3 preparations applied" $rlRun_LOG
             else
@@ -218,6 +211,9 @@ rlJournalStart
             fi
         rlPhaseEnd
 
+        # Limit these test cases to:
+        # * container provisioner - to save resources, they do not provide additional value with the virtual provisioner
+        # * image mode - the code handling is different from ^ and we need to make sure these cases work well
         if ([ "$PROVISION_HOW" = "container" ] && rlIsFedora 43 && is_fedora_43 "$image") || is_image_mode "$image"; then
             rlPhaseStartTest "$phase_prefix Install downloaded packages from current directory (plan)"
                 fetch_downloaded_packages "$image"
