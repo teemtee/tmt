@@ -66,7 +66,7 @@ rlJournalStart
         rlRun "export TMT_CONNECT_TIMEOUT=300"
     rlPhaseEnd
 
-    while IFS= read -r image; do
+    for image in $IMAGES; do
         phase_prefix="$(test_phase_prefix $image)"
 
         rlPhaseStartTest "$phase_prefix Prepare runtime"
@@ -448,7 +448,7 @@ rlJournalStart
                 rlRun "$tmt execute plan --name debuginfo"
             rlPhaseEnd
         fi
-    done <<< "$IMAGES"
+    done
 
     rlPhaseStartCleanup
         rlRun "popd"
