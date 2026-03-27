@@ -3294,6 +3294,7 @@ class ActionTask(tmt.queue.GuestlessTask[None]):
         super().__init__(logger)
 
         self.phase = phase
+        self.order = phase.order
 
     @property
     def name(self) -> str:

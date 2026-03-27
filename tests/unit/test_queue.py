@@ -22,6 +22,35 @@ class Task(_Task[None]):
         return
 
 
+def test_head_tail_numbers(root_logger: Logger) -> None:
+    queue: Queue[Task] = Queue('dummy queue', root_logger)
+
+    assert queue._head_task_number is None
+    assert queue._tail_task_number is None
+
+    queue.enqueue_task(Task('task 1', root_logger))
+
+    assert queue._head_task_number == 1
+    assert queue._tail_task_number == 1
+
+    queue.enqueue_task(Task('task 2', root_logger))
+
+    assert queue._head_task_number == 1
+    assert queue._tail_task_number == 2
+
+    queue.enqueue_task(Task('task 3', root_logger))
+
+    assert queue._head_task_number == 1
+    assert queue._tail_task_number == 3
+
+    # Simulate the first task has been invoked:
+    queue.pop(0)
+    queue._invoked_tasks += 1
+
+    assert queue._head_task_number == 2
+    assert queue._tail_task_number == 3
+
+
 def test_reordering(root_logger: Logger, caplog) -> None:
     """
     Test whether tasks are correctly ordered.
