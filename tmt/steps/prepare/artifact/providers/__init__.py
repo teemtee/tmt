@@ -16,7 +16,6 @@ from tmt.container import container
 from tmt.guest import Guest
 from tmt.package_managers import Repository, Version
 from tmt.plugins import PluginRegistry
-from tmt.utils import GeneralError as GeneralError
 from tmt.utils import Path, ShellScript
 
 
