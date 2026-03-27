@@ -14,14 +14,13 @@ rlJournalStart
 
         rlRun "data_dir=\$(mktemp -d)" 0 "Create temp data directory"
 
+        # centpkg is built in Fedora koji - use Fedora release tag for both distros
+        get_koji_build_id "centpkg" "f\${fedora_release}"
+
         if rlIsFedora; then
-            # centpkg is available in Fedora repos
-            get_koji_build_id "centpkg" "f\${release}"
             rlRun "cp -r data-fedora/. \$data_dir/" 0 "Copy Fedora test data"
         elif rlIsCentOS; then
-            # centpkg is available in EPEL
             # EPEL is enabled via prepare step in data-centos/main.fmf
-            get_koji_build_id "centpkg" "f\${release}"
             rlRun "cp -r data-centos/. \$data_dir/" 0 "Copy CentOS test data"
         else
             rlDie "Unsupported distribution, must be Fedora or CentOS"

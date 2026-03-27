@@ -8,6 +8,7 @@
 #
 # Sets the following global variables:
 #   release - The distro release version (e.g., "43" for Fedora, "10" for CentOS)
+#   fedora_release - The Fedora release version for koji queries (e.g., "43")
 #   image_name - The container image name (e.g., "fedora/43:latest")
 #
 # Usage: setup_distro_environment
@@ -16,8 +17,11 @@ setup_distro_environment() {
     release=$(grep VERSION_ID /etc/os-release | cut -d= -f2 | tr -d '"')
 
     if rlIsFedora; then
+        fedora_release="$release"
         image_name="fedora/${release}:latest"
     elif rlIsCentOS; then
+        # For koji queries, use Fedora release (packages are in Fedora koji)
+        fedora_release="${FEDORA_RELEASE:-43}"
         image_name="centos/stream${release}/upstream:latest"
     else
         rlDie "Test requires Fedora or CentOS"
