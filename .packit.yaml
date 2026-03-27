@@ -127,6 +127,16 @@ _:
               how: provision
           <<: *tmt-cloud-resources
 
+  # Image mode
+  - &image-mode
+    tf_extra_params:
+      environments:
+        - tmt:
+            context:
+              how: provision
+              image_mode: "yes"
+          <<: *tmt-cloud-resources
+
 jobs:
   # Build released bits to stable
   - <<: *copr-under-teemtee
@@ -179,13 +189,7 @@ jobs:
   - <<: *provision
     identifier: provision-virtual-image-mode
     tmt_plan: /plans/provision/virtual
-    tf_extra_params:
-      environments:
-        - tmt:
-            context:
-              how: provision
-              image_mode: "yes"
-          <<: *tmt-cloud-resources
+    <<: *image-mode
 
   # Test internal plugins
   - <<: *test-base
