@@ -527,10 +527,10 @@ class Queue(list[TaskT]):
         # after addition, which is not atomic.
         while self:
             with self._queue_lock:
-                self._invoked_tasks += 1
-
                 task_number = self._head_task_number
                 task = self.pop(0)
+
+                self._invoked_tasks += 1
 
             self._logger.info('')
 
