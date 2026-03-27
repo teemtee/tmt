@@ -342,40 +342,60 @@ class Plan(
             expand_node_data(node.data, self.fmf_context)  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
 
         # Initialize test steps
+        def _normalize_raw_step_phases(
+            step_name: tmt.steps.StepName,
+        ) -> list[tmt.steps._RawStepData]:
+            raw_step_data: Any = node.get(name=step_name)  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
+
+            # Create an empty step by default (can be updated from cli)
+            if raw_step_data is None:
+                return [{}]
+
+            # Convert to list if only a single config provided
+            if isinstance(raw_step_data, dict):
+                return [cast(tmt.steps._RawStepData, raw_step_data)]
+
+            # List is as good as it gets
+            if isinstance(raw_step_data, list):
+                return cast(list[tmt.steps._RawStepData], raw_step_data)
+
+            # Shout about invalid configuration
+            raise tmt.utils.GeneralError(f"Invalid '{step_name}' config in '{self}'.")
+
         self.discover = tmt.steps.discover.Discover(
             logger=logger.descend(logger_name='discover'),
             plan=self,
-            data=self.node.get('discover'),  # pyright: ignore[reportUnknownVariableType, reportArgumentType]
+            raw_data=_normalize_raw_step_phases('discover'),
         )
         self.provision = tmt.steps.provision.Provision(
             logger=logger.descend(logger_name='provision'),
             plan=self,
-            data=self.node.get('provision'),  # pyright: ignore[reportUnknownVariableType, reportArgumentType]
+            raw_data=_normalize_raw_step_phases('provision'),
         )
         self.prepare = tmt.steps.prepare.Prepare(
             logger=logger.descend(logger_name='prepare'),
             plan=self,
-            data=self.node.get('prepare'),  # pyright: ignore[reportUnknownVariableType, reportArgumentType]
+            raw_data=_normalize_raw_step_phases('prepare'),
         )
         self.execute = tmt.steps.execute.Execute(
             logger=logger.descend(logger_name='execute'),
             plan=self,
-            data=self.node.get('execute'),  # pyright: ignore[reportUnknownVariableType, reportArgumentType]
+            raw_data=_normalize_raw_step_phases('execute'),
         )
         self.report = tmt.steps.report.Report(
             logger=logger.descend(logger_name='report'),
             plan=self,
-            data=self.node.get('report'),  # pyright: ignore[reportUnknownVariableType, reportArgumentType]
+            raw_data=_normalize_raw_step_phases('report'),
         )
         self.finish = tmt.steps.finish.Finish(
             logger=logger.descend(logger_name='finish'),
             plan=self,
-            data=self.node.get('finish'),  # pyright: ignore[reportUnknownVariableType, reportArgumentType]
+            raw_data=_normalize_raw_step_phases('finish'),
         )
         self.cleanup = tmt.steps.cleanup.Cleanup(
             logger=logger.descend(logger_name='cleanup'),
             plan=self,
-            data=self.node.get('cleanup'),  # pyright: ignore[reportUnknownVariableType, reportArgumentType]
+            raw_data=_normalize_raw_step_phases('cleanup'),
         )
 
         self._update_metadata()
