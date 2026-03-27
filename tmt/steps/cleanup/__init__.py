@@ -149,6 +149,8 @@ class Cleanup(tmt.steps.StepWithQueue[CleanupStepData, PluginOutcome]):
         # expected in the cleanup step
         phases: list[CleanupPlugin[CleanupStepData]] = self.phases(classes=(CleanupPlugin,))
 
+        self._queue.reset()
+
         for phase in phases:
             if phase.enabled_by_when:
                 self._queue.enqueue_plugin(

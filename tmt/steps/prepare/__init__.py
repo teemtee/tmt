@@ -390,6 +390,8 @@ class Prepare(tmt.steps.StepWithQueue[PrepareStepData, PluginOutcome]):
             # To separate "push" from "prepare" queue visually
             self.info('')
 
+        self._queue.reset()
+
         for prepare_phase in self.phases(classes=(Action, PreparePlugin)):
             if isinstance(prepare_phase, Action):
                 self._queue.enqueue_action(phase=prepare_phase)
