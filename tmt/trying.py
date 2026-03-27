@@ -786,6 +786,7 @@ class Try(tmt.utils.Common):
         data = prepare_data_class(
             name="tmt-try-fips",
             how='feature',
+            order=tmt.steps.TRY_PHASE_ORDER_PREPARE_FEATURE_FIPS,
             fips="enabled",  # type: ignore[reportCallIssue,call-arg,unused-ignore]
         )
 

@@ -25,6 +25,29 @@ class FipsStepData(PrepareFeatureData):
 
 @provides_feature('fips')
 class Fips(ToggleableFeature):
+    """
+    Enable FIPS mode on the guest.
+
+    Enable FIPS mode on RHEL 7, 8, 9 and 10 and CentOS Stream
+    8, 9 and 10 systems.
+
+    .. code-block:: yaml
+
+        prepare:
+            how: feature
+            fips: enabled
+
+    .. code-block:: shell
+
+        prepare --how feature --fips enabled
+
+    .. note::
+
+       In order to prevent issues with installation of packages signed by
+       non-FIPS-compliant algorithms we recommend enabling FIPS mode after
+       package installation prepare steps. Use ``order:`` to enforce that.
+    """
+
     _data_class = FipsStepData
 
     PLAYBOOKS = {'fips-enable.yaml'}

@@ -112,6 +112,11 @@ PHASE_ORDER_PREPARE_INSTALL_REQUIRES = 70
 PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS = 75
 #: Verification of package source repositories after installation.
 PHASE_ORDER_PREPARE_VERIFY_INSTALLATION = 79
+#: Enabling FIPS mode.
+#:
+#: To prevent issues with installation of packages signed by non-FIPS-compliant algorithms
+#: FIPS should be enabled after package installation in 'try'
+TRY_PHASE_ORDER_PREPARE_FEATURE_FIPS = PHASE_ORDER_PREPARE_INSTALL_RECOMMENDS + 10
 
 # Supported steps and actions
 StepName = Literal['discover', 'provision', 'prepare', 'execute', 'report', 'finish', 'cleanup']
