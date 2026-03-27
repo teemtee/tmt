@@ -62,7 +62,7 @@ IMAGE_MODE_QCOW2_CONTAINER_MAP=(
 )
 
 # Set of image mode virtual images to test on.
-TEST_IMAGE_MODE_IMAGES="${TEST_IMAGE_MODE_IMAGES:-${!IMAGE_MODE_QCOW2_CONTAINER_MAP[*]}}"
+TEST_IMAGE_MODE_IMAGES="${TEST_IMAGE_MODE_IMAGES:-$(printf "%s\n" "${!IMAGE_MODE_QCOW2_CONTAINER_MAP[@]}")}"
 
 # A couple of "is image this?" helpers, to simplify conditions.
 function is_fedora_rawhide () {
