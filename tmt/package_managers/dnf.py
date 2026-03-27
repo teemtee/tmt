@@ -1,6 +1,6 @@
 import re
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
+from typing import ClassVar, Optional, cast
 
 from tmt._compat.pathlib import Path
 from tmt.package_managers import (
@@ -10,20 +10,10 @@ from tmt.package_managers import (
     Package,
     PackageManager,
     PackageManagerEngine,
+    Repository,
     escape_installables,
     provides_package_manager,
 )
-
-if TYPE_CHECKING:
-    from tmt._compat.typing import TypeAlias
-
-    # TODO: Move Repository abstraction to tmt.package_manager subpackage
-    # This class will be added in a future PR.
-    # For now, just type it as Any to satisfy pyright.
-    Repository: TypeAlias = Any
-else:
-    Repository: Any = None  # type: ignore[assignment]
-
 from tmt.utils import Command, CommandOutput, GeneralError, RunError, ShellScript
 
 

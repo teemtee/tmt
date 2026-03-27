@@ -13,12 +13,12 @@ import tmt.log
 import tmt.utils
 import tmt.utils.hints
 from tmt.guest import Guest
+from tmt.package_managers._rpm import RpmVersion
 from tmt.steps.prepare.artifact.providers import (
     ArtifactInfo,
     ArtifactProvider,
     ArtifactProviderId,
     DownloadError,
-    RpmVersion,
     provides_artifact_provider,
 )
 from tmt.utils import ShellScript
