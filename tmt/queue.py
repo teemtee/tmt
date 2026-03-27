@@ -428,18 +428,39 @@ class Queue(list[TaskT]):
     # task queue number dynamically. Adding task number to each task
     # would require re-defining it whenever the queue get reordered.
     @property
-    def _head_task_number(self) -> int:
+    def _head_task_number(self) -> Optional[int]:
         """
         Task number of the task currently at the beginning of the queue.
+
+        For example, for a queue with three tasks, none invoked yet, the
+        head task number would be ``1``. After invoking the first task,
+        the head task number would be ``1``.
+
+        :returns: task number of the first task in the queue, or
+            ``None`` if the queue is empty.
         """
 
-        return self._invoked_tasks
+        if not self:
+            return None
+
+        return self._invoked_tasks + 1
 
     @property
-    def _tail_task_number(self) -> int:
+    def _tail_task_number(self) -> Optional[int]:
         """
         Task number of the last task in the queue.
+
+        For example, for a queue with three tasks, none invoked yet, the
+        tail task number would be ``3``. After invoking the first task,
+        the tail task would still be ``3``. If new task is added, the
+        tail task number would be ``4``.
+
+        :returns: task number of the last task in the queue, or
+            ``None`` if the queue is empty.
         """
+
+        if not self:
+            return None
 
         return self._invoked_tasks + len(self)
 
@@ -468,6 +489,10 @@ class Queue(list[TaskT]):
                 )
 
             else:
+                # Narrow type: this shall no longer be undefined as we
+                # do have at least one item in the queue.
+                assert self._head_task_number is not None
+
                 self._logger.info(
                     f'queued {self.name} task #{self._tail_task_number}, caused queue reordering',
                     task.name,
